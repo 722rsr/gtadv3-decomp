@@ -1,0 +1,127 @@
+{
+  "all_match": true,
+  "div0_vma": "0x0802de98",
+  "negative_controls": [
+    {
+      "candidate_bytes": 312,
+      "candidate_sha256": "d38ff8be91a75f33f3d8d141536dac35e5e859ad0911ab292e6ccd15408631f5",
+      "control": "gcc-2.95.3:__interwork_call_via_rX",
+      "status": "ABSENT",
+      "vma": null
+    }
+  ],
+  "results": [
+    {
+      "candidate_bytes": 120,
+      "candidate_sha256": "e3ef1938ce3cecdd1e61ff9301362d659e2b030069d6d42445af26365d1a63f6",
+      "end": "0x0802dfe4",
+      "matched_bytes": 120,
+      "region_bytes": 120,
+      "routine": "__aeabi_uidiv",
+      "status": "MATCH",
+      "tree": "agbcc",
+      "vma": "0x0802df6c"
+    },
+    {
+      "candidate_bytes": 192,
+      "candidate_sha256": "643a91ef78170d9c270060bd416c9f0ffca95daa23f453487a826655d040b905",
+      "end": "0x0802e0a4",
+      "matched_bytes": 192,
+      "region_bytes": 192,
+      "routine": "__aeabi_umod",
+      "status": "MATCH",
+      "tree": "agbcc",
+      "vma": "0x0802dfe4"
+    },
+    {
+      "candidate_bytes": 148,
+      "candidate_sha256": "f46cbd7bb8da813a06df16b8833308ff4b3099da77549b2f10fddf7e0ad80f52",
+      "end": "0x0802de96",
+      "matched_bytes": 146,
+      "region_bytes": 146,
+      "routine": "__aeabi_idiv",
+      "status": "MATCH",
+      "tree": "agbcc",
+      "vma": "0x0802de04"
+    },
+    {
+      "candidate_bytes": 208,
+      "candidate_sha256": "fd8220786a37de50bfb649bba304a69201f025ec2e4fda2315b48d9204504ad7",
+      "end": "0x0802df6a",
+      "matched_bytes": 206,
+      "region_bytes": 206,
+      "routine": "__aeabi_imod",
+      "status": "MATCH",
+      "tree": "agbcc",
+      "vma": "0x0802de9c"
+    },
+    {
+      "candidate_bytes": 60,
+      "candidate_sha256": "074f3ace44a2eb0745a927fc7ef482e0f52b4c91c32643ac56cf0c4af34a6d73",
+      "end": "0x0802de04",
+      "matched_bytes": 60,
+      "region_bytes": 60,
+      "routine": "__aeabi_call_via_rX",
+      "status": "MATCH",
+      "tree": "agbcc",
+      "vma": "0x0802ddc8"
+    },
+    {
+      "candidate_bytes": 120,
+      "candidate_sha256": "e3ef1938ce3cecdd1e61ff9301362d659e2b030069d6d42445af26365d1a63f6",
+      "end": "0x0802dfe4",
+      "matched_bytes": 120,
+      "region_bytes": 120,
+      "routine": "__aeabi_uidiv",
+      "status": "MATCH",
+      "tree": "gcc-2.95.3",
+      "vma": "0x0802df6c"
+    },
+    {
+      "candidate_bytes": 192,
+      "candidate_sha256": "643a91ef78170d9c270060bd416c9f0ffca95daa23f453487a826655d040b905",
+      "end": "0x0802e0a4",
+      "matched_bytes": 192,
+      "region_bytes": 192,
+      "routine": "__aeabi_umod",
+      "status": "MATCH",
+      "tree": "gcc-2.95.3",
+      "vma": "0x0802dfe4"
+    },
+    {
+      "candidate_bytes": 148,
+      "candidate_sha256": "f46cbd7bb8da813a06df16b8833308ff4b3099da77549b2f10fddf7e0ad80f52",
+      "end": "0x0802de96",
+      "matched_bytes": 146,
+      "region_bytes": 146,
+      "routine": "__aeabi_idiv",
+      "status": "MATCH",
+      "tree": "gcc-2.95.3",
+      "vma": "0x0802de04"
+    },
+    {
+      "candidate_bytes": 208,
+      "candidate_sha256": "fd8220786a37de50bfb649bba304a69201f025ec2e4fda2315b48d9204504ad7",
+      "end": "0x0802df6a",
+      "matched_bytes": 206,
+      "region_bytes": 206,
+      "routine": "__aeabi_imod",
+      "status": "MATCH",
+      "tree": "gcc-2.95.3",
+      "vma": "0x0802de9c"
+    },
+    {
+      "candidate_bytes": 60,
+      "candidate_sha256": "074f3ace44a2eb0745a927fc7ef482e0f52b4c91c32643ac56cf0c4af34a6d73",
+      "end": "0x0802de04",
+      "matched_bytes": 60,
+      "region_bytes": 60,
+      "routine": "__aeabi_call_via_rX",
+      "status": "MATCH",
+      "tree": "gcc-2.95.3",
+      "vma": "0x0802ddc8"
+    }
+  ],
+  "rom": "baserom.gba",
+  "verdict": "all runtime routines match the ROM"
+}
