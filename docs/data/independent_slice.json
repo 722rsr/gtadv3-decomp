@@ -1,0 +1,1155 @@
+{
+  "errors": [],
+  "external_boundary": [],
+  "generator": "tools/independent_slice.py",
+  "generator_sha256": "70bbffcc078b558dcd715491dbeb52080a5c83130dd591a3abe601aaef4124eb",
+  "header": {
+    "complement_checksum": {
+      "formula": "-(sum of bytes 0x0A0..0x0BC) - 0x19",
+      "ok": true,
+      "recomputed": "0xE3",
+      "stored": "0xE3"
+    },
+    "fixed_byte": "0x96",
+    "game_code": "A2GE",
+    "global_checksum": {
+      "note": "retail image stores zero here rather than the halfword sum",
+      "stored": "0x0000"
+    },
+    "maker_code": "78",
+    "software_version": "0x00",
+    "title": "GT ADVANCE 3"
+  },
+  "regions": [
+    {
+      "description": "cartridge header (fields + Nintendo logo)",
+      "end": "0x0000C0",
+      "matches_baserom": true,
+      "path": "asm/header.s",
+      "sha256": "a9689a894d0076a25a192c29dcb329ba32941bc1e73016338a9f388cfab4bdfe",
+      "size": 192,
+      "start": "0x000000",
+      "vma_end": "0x080000C0",
+      "vma_start": "0x08000000"
+    },
+    {
+      "description": "crt0, IntrMain and IRQ hook plumbing",
+      "end": "0x0002C4",
+      "matches_baserom": true,
+      "path": "asm/boot.s",
+      "sha256": "eea3a3ffac4bedccb676cd02606f98b1e9022cbb0c8e45820da8e15be2a916fd",
+      "size": 516,
+      "start": "0x0000C0",
+      "vma_end": "0x080002C4",
+      "vma_start": "0x080000C0"
+    },
+    {
+      "description": "AgbMain and boot-adjacent helpers",
+      "end": "0x000A60",
+      "matches_baserom": true,
+      "path": "asm/agbmain.s",
+      "sha256": "b6e12df240619a756dd015ff576b0d311d5f53a730de24bda48cbf249f3223b5",
+      "size": 1948,
+      "start": "0x0002C4",
+      "vma_end": "0x08000A60",
+      "vma_start": "0x080002C4"
+    },
+    {
+      "description": "every reconstructed engine region, in ROM order (generated manifest)",
+      "end": "0x02E158",
+      "matches_baserom": true,
+      "path": "asm/passthrough.inc",
+      "sha256": "429f8258e9940c0fc47d35a621415afb9c88424ce1675bc5a589303ffc7bf108",
+      "size": 186104,
+      "start": "0x000A60",
+      "vma_end": "0x0802E158",
+      "vma_start": "0x08000A60"
+    }
+  ],
+  "rom": {
+    "code_end": "0x02E158",
+    "path": "baserom.gba",
+    "sha256": "f583ea5911c963774f8f26941c6cc4c5512d4586c2933fdd8829124041535c03"
+  },
+  "schema": "gtadv3.independent_slice.v1",
+  "slice": {
+    "bytes": 188760,
+    "end": "0x02E158",
+    "external_symbol_count": 0,
+    "incbin_count": 0,
+    "linker_script": "ldscript_slice.ld",
+    "matches_baserom": true,
+    "name": "code",
+    "sha256": "c1150ffd31756a56e25132baf780107de1ecad9a821db8b5901fb5b92484e028",
+    "start": "0x000000",
+    "top_level": "asm/code.s",
+    "vma_end": "0x0802E158",
+    "vma_start": "0x08000000"
+  },
+  "source_closure": [
+    {
+      "path": "asm/agbmain.s",
+      "sha256": "f5e9c4e8d5c9d04823866fadc330607970293288b2ec3fa00114db23d16cd76a"
+    },
+    {
+      "path": "asm/ai_award_bitset.s",
+      "sha256": "1911da9efb4cc89758ccb74d40eaf5ee4999e4f508ee3753f9a0111847f43f46"
+    },
+    {
+      "path": "asm/ai_award_leaf.s",
+      "sha256": "8708f41f42eb75b33988fa707867483709a0e17cdf1fb94d399948034f4e59c8"
+    },
+    {
+      "path": "asm/ai_award_mid.s",
+      "sha256": "6cf9757a5c1fcfacc64adb5ee7f25d62de7283164f230f0204967c80a0ec88f7"
+    },
+    {
+      "path": "asm/ai_award_tail.s",
+      "sha256": "3e6c0e2a7345c394b5c748e31947cef2db95f574dafa4fd8b59bc84db5d09962"
+    },
+    {
+      "path": "asm/ai_catalog.s",
+      "sha256": "4f2338c68ab2315d661b18a00df0fc0fb081640b17f7998d1e705945b20fb9aa"
+    },
+    {
+      "path": "asm/ai_collect.s",
+      "sha256": "bd455072830d51b1684608e13083b58f484f7733a63870e09a80e385c6578d34"
+    },
+    {
+      "path": "asm/ai_grid.s",
+      "sha256": "fdd5e084d38f09aabc7934410c3dcbafcbe655102a503b0e0e77ce43b07919d6"
+    },
+    {
+      "path": "asm/ai_grid_more.s",
+      "sha256": "1e6990c91015a53d1de5594fa235b2a65bcff909b2349add987f79eec76ad3b7"
+    },
+    {
+      "path": "asm/ai_grid_more2.s",
+      "sha256": "d1a2d4ed9f79d0a58381cec7914d1008bd3f563a958bc3634e7aa84c207a6ef1"
+    },
+    {
+      "path": "asm/ai_grid_more3.s",
+      "sha256": "639999dfae7a5dba2864ff128da236610646eac0a63dd5c067de01d8bb15d3d9"
+    },
+    {
+      "path": "asm/ai_grid_more4.s",
+      "sha256": "9c512774d0bd604a3392c63561f70a6f7298192cbdc57269880dfa2236fbdb38"
+    },
+    {
+      "path": "asm/ai_grid_more5.s",
+      "sha256": "5f382d3c0d9996f49c9d72cdc6249a61dd3eac58a19e50d54a5727ee87afae3f"
+    },
+    {
+      "path": "asm/ai_line_accessor4.s",
+      "sha256": "cb5d33e144ea40250338da873e7e44ce6d1f2624a678e39a86a8ec83e73451b3"
+    },
+    {
+      "path": "asm/ai_line_accessors.s",
+      "sha256": "383c9743491a6b0a5b9cbb61acb35b4a5a37357770c2a1301e5cebeded135906"
+    },
+    {
+      "path": "asm/ai_line_clear.s",
+      "sha256": "52028b6ab4f3e85e832658d0e7ad045d80650514a11ca4ecbddb8dee5a2c3ede"
+    },
+    {
+      "path": "asm/ai_line_compare.s",
+      "sha256": "e9d0925b5c18bb26484518e12707bbf57a072953272b058c9020b925a5637597"
+    },
+    {
+      "path": "asm/ai_line_copy.s",
+      "sha256": "3759d4d8f2131f0a0c10e12d1c396fd5ccd01da752f3ba54523cc366760aee9d"
+    },
+    {
+      "path": "asm/ai_line_helpers.s",
+      "sha256": "99d05ba1544c70e890e4945fead95626c2058678ee882b1c81f2c55b5e5d48e8"
+    },
+    {
+      "path": "asm/ai_line_more.s",
+      "sha256": "17003e28afb0905889efc17dbe24c95e79a018ef2cb38020919e089efacf8c29"
+    },
+    {
+      "path": "asm/ai_line_probe.s",
+      "sha256": "2b1dc4b9dc25311507384eae0e7d117c0528e8dcd9e903bb92802e4fa7aadaef"
+    },
+    {
+      "path": "asm/ai_line_score.s",
+      "sha256": "044a20f2f528b931d7906f8b3202f455afd3638f64fa8048a223dfcf7e164f03"
+    },
+    {
+      "path": "asm/ai_line_sio.s",
+      "sha256": "10048c455ecbb487e9251788d951cf6560e9d20cf0f6b68bf55ac2f4ced17faf"
+    },
+    {
+      "path": "asm/ai_line_tail.s",
+      "sha256": "3b44007b7085b0de214e3bb8024fff0c7feb4716b26ff8535af1e635f4b3a198"
+    },
+    {
+      "path": "asm/ai_line_update.s",
+      "sha256": "73a5c5a29198610b5d33a5d7391120c344a105abc8a08bb65abd1b3999fdf996"
+    },
+    {
+      "path": "asm/ai_line_write.s",
+      "sha256": "78befc066d04679e5af309e257f76c05f0964ca0c4568e1cc689416a9e1ed366"
+    },
+    {
+      "path": "asm/ai_phase_pump.s",
+      "sha256": "d582a9fadd7e305d703379b4b7e60d27f51633de1a4a10dfb0c412d8a1b389d7"
+    },
+    {
+      "path": "asm/ai_raceevt.s",
+      "sha256": "4e6c4153c8f378d85e9bdb5249653e7d74122c697e7d22098b2289a5b4340f51"
+    },
+    {
+      "path": "asm/ai_racefsm.s",
+      "sha256": "cd828efa787709d807b5f6f8ae36f8d9bdb980f133554e2f08948bc73e47bde6"
+    },
+    {
+      "path": "asm/award_grid.s",
+      "sha256": "92e7c52109715bd52446405319be8c1487364062f65cdcf447c935df7eb573b3"
+    },
+    {
+      "path": "asm/award_pkt.s",
+      "sha256": "ef4d4eba1291442be83cb511f9fec492d03a4428bf259b9085d3db1e6f5bc0d3"
+    },
+    {
+      "path": "asm/award_twins.s",
+      "sha256": "bc8af9626c7239b168a8da836252f0e2272ceeb3e5912f1792a8b935e1c2a994"
+    },
+    {
+      "path": "asm/blocka.s",
+      "sha256": "061d0b88ef0f7028200dfd4c87fce82f725f59c8ba526900e11a4eb1084962ee"
+    },
+    {
+      "path": "asm/blockb.s",
+      "sha256": "3223a9ba70c8011aeed400aa9fd41dd1b1ece8bf20dfbaa2d57e8a261a5da660"
+    },
+    {
+      "path": "asm/boot.s",
+      "sha256": "f843b6ab76e9e1e2085b927d075c3a6773545c070a8c43bb359d49e2f992d53a"
+    },
+    {
+      "path": "asm/car_award.s",
+      "sha256": "51caff4838ce0354400db9d19ed1d91d2c25307a650daa31c1568a9e74b5287d"
+    },
+    {
+      "path": "asm/carphys_racer.s",
+      "sha256": "b55cecc2af88b4847f63ca846ca90c3fffba6b6c8acd294727f65da99ceae0d3"
+    },
+    {
+      "path": "asm/carphys_racer_tail.s",
+      "sha256": "f86a5271028dfabb269691ce816d686b1ccf20189a0801006400e72b0b873192"
+    },
+    {
+      "path": "asm/carphys_tick.s",
+      "sha256": "07c43cca9db017044bc263aae460ad30192826a6ac96e581f50351b15b7b852d"
+    },
+    {
+      "path": "asm/code.s",
+      "sha256": "9a4cc93509d3a447d25de58000d698d679ca5d39a4f52f9d6a7368b6e4354996"
+    },
+    {
+      "path": "asm/code_2254.s",
+      "sha256": "d5d6e2e55bec0d163818cfb57d9edf301c49ecec2f83abce2653d268cb415aa6"
+    },
+    {
+      "path": "asm/code_22cb4.s",
+      "sha256": "7d4259a90153c12d5471f44db0199a2a5ab21e19f262af819ec986914c3c50bb"
+    },
+    {
+      "path": "asm/code_22d20.s",
+      "sha256": "fd00fa7304b2af80ac98164f1dec3a5ab46aa61f0e0bde9b5631129dd6932ed0"
+    },
+    {
+      "path": "asm/code_22e4.s",
+      "sha256": "9c67696cebf0788780585a55f9c39a3d53a8c561b60fe3826e94a72ca4da4e83"
+    },
+    {
+      "path": "asm/code_235f4.s",
+      "sha256": "f6d854ff48ffd0da64240bf4cfe92e4f036aa2f50d3162440792c914dcb870bf"
+    },
+    {
+      "path": "asm/code_23628.s",
+      "sha256": "d712631f9bff7fce3ae498c9effb0e4219c9cd5d50fd47218f030e7940d195f0"
+    },
+    {
+      "path": "asm/code_2381c.s",
+      "sha256": "3d60c44e06426d8f139ce840e260eece7fbd24cf88a30589934ddf78cc7961d6"
+    },
+    {
+      "path": "asm/code_23a34.s",
+      "sha256": "f8bedb94086638f44e794f7d47ca351fc7c57b7f4d6b7c6d4c2153ec079d13f2"
+    },
+    {
+      "path": "asm/code_23bd4.s",
+      "sha256": "3fb534e615c0dacd53bef23febb59081ce9fc7589744712d190ff45f524271d5"
+    },
+    {
+      "path": "asm/code_23d4c.s",
+      "sha256": "821e04d85b6eb6c1ccdb6d1372e010e8f88bb91337ac70158d1da64f5a6340ed"
+    },
+    {
+      "path": "asm/code_23e0c.s",
+      "sha256": "908222e135347f2b8d2c413ad6af11c16f469e08819085940e79f909fe5b1388"
+    },
+    {
+      "path": "asm/code_23e7c.s",
+      "sha256": "bdb843ba2771417a1abfac9f37dae4a429e77afcd9cdb6a77dd95b84e6d9df6c"
+    },
+    {
+      "path": "asm/code_24048.s",
+      "sha256": "23d83cec61e78c8ea6f2f575f776d5601a75918847a97e84f319eeeed185f9e8"
+    },
+    {
+      "path": "asm/code_240d0.s",
+      "sha256": "2e1133efa4b525c73870f09fb8d3c26293634bbe9500f05928c5a5d345877f59"
+    },
+    {
+      "path": "asm/code_24138.s",
+      "sha256": "3a1f5331db550b0d802aedfe8cdd3c969dbbd0b6a5c7805f9ca934bb1094d330"
+    },
+    {
+      "path": "asm/code_24144.s",
+      "sha256": "d9411a5dbed73ad9f636139528b30b16d347bd267813054a1b784a386caa0f29"
+    },
+    {
+      "path": "asm/code_24150.s",
+      "sha256": "2d16e9034af406b7ce21d20f6dd541690b19c280abd093c5497a1e05cb19ab4a"
+    },
+    {
+      "path": "asm/code_2417c.s",
+      "sha256": "94488f7b3765740d899df8b5b6193e18700805217407f951aee8750276be3b56"
+    },
+    {
+      "path": "asm/code_241c8.s",
+      "sha256": "09114479a355d34dc3b5c61704762f3e54e83eb9a3dd36980a89736f27445d02"
+    },
+    {
+      "path": "asm/code_2446c.s",
+      "sha256": "d88bc29056fb4ea8336511d5abc782a92a1ad3ea679e9af1fd026d86245ca4e6"
+    },
+    {
+      "path": "asm/code_24ac.s",
+      "sha256": "1230958d5c487809738de5307d6c861e843fd017026503826d01b530eb42fdbb"
+    },
+    {
+      "path": "asm/code_24e54.s",
+      "sha256": "2e923f296b85b4df4f864e17af4e3447ce1abb8dcfcc10e5426fefd6c39e6431"
+    },
+    {
+      "path": "asm/code_24f34.s",
+      "sha256": "0ff31a685d044804846ade1960a879249e465f8f2dd3582bf1971e7a9d39d6b2"
+    },
+    {
+      "path": "asm/code_24f4c.s",
+      "sha256": "6b1346d254d66976585bdbb28f0c39c033c57c857da3d436c6a4072a682452c0"
+    },
+    {
+      "path": "asm/code_24f74.s",
+      "sha256": "814d2e6767313984d31890676370e1b1862bf96d391f729e0b21ca984323a276"
+    },
+    {
+      "path": "asm/code_24f9c.s",
+      "sha256": "7efa1c920f96ba9ef7972fbcf68f2843a1e6a8a49922f94bfcbe026eb91d55a6"
+    },
+    {
+      "path": "asm/code_24fc4.s",
+      "sha256": "0b02b817750553f19b31cac19d6fc62e0a87fba05c15b40ead4415b669541c05"
+    },
+    {
+      "path": "asm/code_25264.s",
+      "sha256": "ecf01950baa2d446cbda305ef72b8760b2a9bc6aaf860adf3d6cb63a3b4ba241"
+    },
+    {
+      "path": "asm/code_258a8.s",
+      "sha256": "2cff5587d2d2d99eaafe1b9c28971a1b23f10383c4febcf8f69fe9f7a3b0cc1f"
+    },
+    {
+      "path": "asm/code_25930.s",
+      "sha256": "967779165960868c917aa1ac3e40650576351545c19e51d1d0c479fe2569ab05"
+    },
+    {
+      "path": "asm/code_26068.s",
+      "sha256": "a243c743f492463c9f970bb5013d137884c996c96bab3464957e5851409a41a9"
+    },
+    {
+      "path": "asm/code_26180.s",
+      "sha256": "3b214aa75bf74f8995279c700e0c70554d2f5b140e1e8dc04126d8aa09703e1b"
+    },
+    {
+      "path": "asm/code_261d4.s",
+      "sha256": "382606fb382dbd5fd6ada41ee75e4d77bad36ec4c491641adc749e315281eca2"
+    },
+    {
+      "path": "asm/code_263de.s",
+      "sha256": "ec1ee22cf75470acf86e979367efc23b536a14c35d0679c825a5106ebe80e740"
+    },
+    {
+      "path": "asm/code_263e0.s",
+      "sha256": "ad55e783112d131bf50ec6c68f068d890497cf82362f46940b2e35870f02e854"
+    },
+    {
+      "path": "asm/code_2694.s",
+      "sha256": "7318b8240fd2f81c02c07bccf4a328428d514c3a4abe6f3028bd86a7614d59a4"
+    },
+    {
+      "path": "asm/code_26f30.s",
+      "sha256": "b49328c0c384b07d48720e31ab7f97a7583f8a1f55db65bcc43e5daf9343c7a7"
+    },
+    {
+      "path": "asm/code_26f8.s",
+      "sha256": "f281e0762f68c3267b4eaefdc552ac7e032eb308d842ca9ca015fc3861c6e8f9"
+    },
+    {
+      "path": "asm/code_2730.s",
+      "sha256": "e5be70de29835db531b4d8bef5a11bd6a766bfbe2d406563bff7eac0992f0aef"
+    },
+    {
+      "path": "asm/code_279c.s",
+      "sha256": "d959f193bec726b3481440d5e985c11ddb33f3b1a8df53e36bbf1cf3dc6693cf"
+    },
+    {
+      "path": "asm/code_295c.s",
+      "sha256": "4bdc370569b1c9f48239f7470023c04c0f654436876e6045435579f084753941"
+    },
+    {
+      "path": "asm/code_2a3c.s",
+      "sha256": "9856a1053fbfed8524fae1150da61677de0934b6bab774d383c479fb83b1e08e"
+    },
+    {
+      "path": "asm/code_2a68.s",
+      "sha256": "8a2e5944b877f2297568c6ecd102ce04a3542af946ef1d1535163de8f5216b01"
+    },
+    {
+      "path": "asm/code_2a80.s",
+      "sha256": "a79926869628543cb948a7175185fe312e3390679cb27f1bc524026e76af1306"
+    },
+    {
+      "path": "asm/code_2dd86.s",
+      "sha256": "9018ab5c3f3a327db24a338228446571bd6f3ce105309024c2b4b7b6a35d3515"
+    },
+    {
+      "path": "asm/code_2ddc6.s",
+      "sha256": "c7994a227eaff90abfdf5bdc0447b7ea2531877bef15247e9b789b0856acf4fd"
+    },
+    {
+      "path": "asm/code_2de96.s",
+      "sha256": "b509cc4579264c1624482dc19282cfc847dd802a778488123ad6ac84433ab062"
+    },
+    {
+      "path": "asm/code_2df6a.s",
+      "sha256": "fcd71b23876b3daeb5f20ce37a681600e60d3cc7ae6a4b8b923f91a7e4f5b147"
+    },
+    {
+      "path": "asm/code_4a2c.s",
+      "sha256": "9b54ca0639f2c050df4b30223f8bf836056b6bb7729f68a574fb2c6cf05f9b64"
+    },
+    {
+      "path": "asm/code_4af4.s",
+      "sha256": "02bee700f928a78534025ede1d9ea408e28c11f7e5cc87251d71ba64e5ac332f"
+    },
+    {
+      "path": "asm/code_4b50.s",
+      "sha256": "fd33bccbf45acc6a174fdc903c4927a11ae4d2173a1080b0d8aa50781fb81a29"
+    },
+    {
+      "path": "asm/code_4b68.s",
+      "sha256": "070619743224a49d754ffbf395e1e868852a1d89c0172675bca3f96e3cf08edb"
+    },
+    {
+      "path": "asm/code_4b74.s",
+      "sha256": "9a8efbbf055ec477f7df2a38371934d011d2af68864ff3ea8ab3d6947f56a735"
+    },
+    {
+      "path": "asm/code_4b9c.s",
+      "sha256": "ee21304d0108d82e8c8402e3b29ec6095e8301fdde286b82487c34730e1d9eb5"
+    },
+    {
+      "path": "asm/code_4cc4.s",
+      "sha256": "4a12d0164ab8d9f48ac49b134e95f47747324c60f2bdce5c93ddd75fcaad2934"
+    },
+    {
+      "path": "asm/code_4cd4.s",
+      "sha256": "84217286d8f3ac033006849ed54cc349e2847c0bb564ec09abfb99f742dcaaaf"
+    },
+    {
+      "path": "asm/code_4cf0.s",
+      "sha256": "59c8b99be71d813e8ea86b3a069a51e233053bb8eed3bf6d096fdd8828a45342"
+    },
+    {
+      "path": "asm/code_4d4c.s",
+      "sha256": "0a08dd53177b9ccc63d31594858492876c0215f2f6593dff67290247278c8e36"
+    },
+    {
+      "path": "asm/code_4e6c.s",
+      "sha256": "b00d3d8393fac64e270e7e417e20bd96b378fd9b0c1870c7c3a1dda422463be3"
+    },
+    {
+      "path": "asm/code_57d0.s",
+      "sha256": "cf49458e72bd3c05f5eaf6d8612431dbb2d7d77d18ad3504c97dadb9106a54a0"
+    },
+    {
+      "path": "asm/code_5988.s",
+      "sha256": "0bd2ba08508955d328e87d7be69b6f41e473d2e41187b00a65a4432b16deea08"
+    },
+    {
+      "path": "asm/code_5b3c.s",
+      "sha256": "330b84eadfe46fa2982577cc261b2231e244c437af57bf35db47588da9556857"
+    },
+    {
+      "path": "asm/code_c668.s",
+      "sha256": "447c3806fc237dd0f564df5a493bcec0b7fbc979df35ab61558e0299d96fc028"
+    },
+    {
+      "path": "asm/code_ce2c.s",
+      "sha256": "066203dc1c5e05b738c7aaa62c3eec2ee01affde7e21e3b9c405cc15e831aaea"
+    },
+    {
+      "path": "asm/code_fa0.s",
+      "sha256": "30e502f84a95befb7b9da8ad8cb318ee6c64cd07851f01c096e641e88f5a2b3d"
+    },
+    {
+      "path": "asm/course_builders_8290.s",
+      "sha256": "58894e44894851e4e3f7731a598386e40fc7797a48a3c8be4b441462e3d2f04d"
+    },
+    {
+      "path": "asm/course_cal.s",
+      "sha256": "2d0f8c1769ae8717f6944249200369d8c61cd7e9b15a01c3ab113e180f24fef7"
+    },
+    {
+      "path": "asm/course_collision.s",
+      "sha256": "f39610ca6f2d485bc93ae778e66f66f644f4216dd24f8fa87422cda2eb82e7ea"
+    },
+    {
+      "path": "asm/course_collision_loop.s",
+      "sha256": "d0611448b63c0a9f734bb83694ccf61a3fdab006b4ffb48dd5e76dbe939dc365"
+    },
+    {
+      "path": "asm/course_collision_more.s",
+      "sha256": "ab51250b6b0b11f881f42c7c8ee89488e6e5bdbea9adb4e55023c58e5f4ef397"
+    },
+    {
+      "path": "asm/course_cursor_reset.s",
+      "sha256": "b578ad8f7dfc2033d89a6f2cecbfe6aaf6a68edc6cd45cc0b66243d3820983cb"
+    },
+    {
+      "path": "asm/course_dispatch_8aac.s",
+      "sha256": "864598dabcc2a403d9b55e3a029e0629ddc94dabdc5651bf8d684647a32f7553"
+    },
+    {
+      "path": "asm/course_leaves_95f0.s",
+      "sha256": "f6d9187d93d81b20408d7d87c00f04ac8a27f3161aa8071c3ef0085c59bbbe1b"
+    },
+    {
+      "path": "asm/course_load.s",
+      "sha256": "1b55635c3e27b0f7dbbd4abb46cd770cc9a8b15ca5428cecb928b25cb39abfe0"
+    },
+    {
+      "path": "asm/course_orch.s",
+      "sha256": "74189172789dd83c3042cd7e3fab8f17426b6691e14aa7e83788d8b215964f7b"
+    },
+    {
+      "path": "asm/course_proximity.s",
+      "sha256": "c7577e9271c72eac0a211c685560457e9d1512d7583f1b335cb80950ca9687e8"
+    },
+    {
+      "path": "asm/course_proximity_more.s",
+      "sha256": "e3804532f491f101f9ccf49b8e351b9c1c46b0895c30ffeac0ef68185446c911"
+    },
+    {
+      "path": "asm/course_records_7bfc.s",
+      "sha256": "2f183b0c797f81b93eccf5bd1a561d748fc29a59175d366ef42a83dd7bf92910"
+    },
+    {
+      "path": "asm/course_resource_access.s",
+      "sha256": "5937af0f9ddcf43148edb7740fdc383df33140cdaf2d383eeb1ad0381de700c0"
+    },
+    {
+      "path": "asm/course_resource_helpers.s",
+      "sha256": "4a3337471812873bc3e475e43eb315564fda5c6d8306e39b8bb158709121efe1"
+    },
+    {
+      "path": "asm/course_resource_init.s",
+      "sha256": "eebab48ef802b41b52af350d519ee3188dce2563da39f96406cebebed578766e"
+    },
+    {
+      "path": "asm/course_resource_leaf.s",
+      "sha256": "ca1f98289e9f4c9b4bdb32f8086bcb7a0eb6bd65538a3c1caf0d443061e6bae6"
+    },
+    {
+      "path": "asm/course_resource_leaf_more.s",
+      "sha256": "543be4a1d51f90ed7d53d2f131135b9c123a3edbbce3cff342169f25253a4e0a"
+    },
+    {
+      "path": "asm/course_resource_leaf_more2.s",
+      "sha256": "e88a26d5b447374e1fc3025138ae2bb68fc5736463ebc03bb25fb2d360342c50"
+    },
+    {
+      "path": "asm/course_resource_more.s",
+      "sha256": "2963d23a108e72828f3de1bf2aacefa73ab6ba78b506358c0ca2c82124763a1b"
+    },
+    {
+      "path": "asm/course_scan.s",
+      "sha256": "72897c9a41ab523fa09f0e0b269492d553a5d9c8c4f315355a3ea9f2255e1118"
+    },
+    {
+      "path": "asm/course_stream.s",
+      "sha256": "c58e27a5f3a86fd3282746ad1344a181e660b69b509c4e3f3b2b66509c62b6f8"
+    },
+    {
+      "path": "asm/course_stream_6650.s",
+      "sha256": "d58acf68a6d7f8d54c39ad6ce785e79dfc2e534fe15517d112dd93b0ec293320"
+    },
+    {
+      "path": "asm/course_stream_more.s",
+      "sha256": "54d66f65829db7c1b0fdae7692c02bd09e273587bddb40c0b47662193ecae55f"
+    },
+    {
+      "path": "asm/course_stream_tail.s",
+      "sha256": "7672e3a05f20fce33073cd5ca8aa7350d440031205878c08752c96f4b1fa4595"
+    },
+    {
+      "path": "asm/course_stream_tail_more.s",
+      "sha256": "77b93d4b394400cbd255c0be611cac57500272c4a4c05c03ecfef0459dff2cbe"
+    },
+    {
+      "path": "asm/garage_26f50.s",
+      "sha256": "672d588cfd07319361602b52de203f606811de0e96ed5a30399234c804ef84b7"
+    },
+    {
+      "path": "asm/ghost.s",
+      "sha256": "7fda2725fd41e415ac388eb890fb84e067b4952e4c9814237423d38064fd08d3"
+    },
+    {
+      "path": "asm/go_start.s",
+      "sha256": "4826bd86df49b41703bd2f9b563e8c1f33b4accfd7894d038687ba9ac5df2143"
+    },
+    {
+      "path": "asm/grant_delay.s",
+      "sha256": "a01e0c69f630323cda4b8e5011edda76c3b402db6ce2aa780016d30d9bb55c32"
+    },
+    {
+      "path": "asm/handlers.s",
+      "sha256": "11f205329c458fefd325ecc7b8108d5cf3f4008fa9023c8adec27bbcb6331df0"
+    },
+    {
+      "path": "asm/header.s",
+      "sha256": "3ab4d88df5836a1d612dc9a8b7b12804dbf6efd9e31f3c56c32c57004f75c2cc"
+    },
+    {
+      "path": "asm/idle.s",
+      "sha256": "19e65075afba7bb253e390c8de89e1b8bd24f165cb753487e9171f24acf59cce"
+    },
+    {
+      "path": "asm/keypad.s",
+      "sha256": "4e2f6f6d0422caab6a04e8ffb4903acab3c3bdd9a74d355933300634b600def1"
+    },
+    {
+      "path": "asm/menu_c0f0.s",
+      "sha256": "1ef6fff4714be56cfcef87cccc41dd035b71b4a3aac34b63e5e7cdd5b32d6ed4"
+    },
+    {
+      "path": "asm/menu_c2c4.s",
+      "sha256": "7689f4eaa4845bd5346900c4d127105b440dfd1682403b6bd54790a83eb01384"
+    },
+    {
+      "path": "asm/menu_c340.s",
+      "sha256": "add19ab36bbdfc9b69057ed5cbf7de0b631c952d25970467cd6cd99e40a83660"
+    },
+    {
+      "path": "asm/menu_c454.s",
+      "sha256": "98c6d9032bfe739a6f041da6c8ae87b5fd7eda9829911aa691ca19bb836dd0ae"
+    },
+    {
+      "path": "asm/menu_c4d0.s",
+      "sha256": "fe23f7eb623c46a58686cd4f6720d0dd02e11be5ff6f96f0706fe767b63015ef"
+    },
+    {
+      "path": "asm/menu_c604.s",
+      "sha256": "3cb65e156c7e6a4af0f101f559e0aee5298086dddb627b7b68ceff0e82e47f31"
+    },
+    {
+      "path": "asm/menu_c7f4.s",
+      "sha256": "b9eed9fc5cc6a094cdab58be5933f1ddd7f78abf22a610398cca42f6b35304c2"
+    },
+    {
+      "path": "asm/menu_c814.s",
+      "sha256": "7e4bbec0c30eac394eaa044b04620a5d9a63bc4fc8c3c4ab49de43f3d5b0a4de"
+    },
+    {
+      "path": "asm/menu_c884.s",
+      "sha256": "f5e09b06ffd1fabe40a742a6049a12f233241212a3c78c61662c3e84dd87113e"
+    },
+    {
+      "path": "asm/menu_cae4.s",
+      "sha256": "0a68b0b20a68b00f5340bc26fe5a87ce51658f8e7763e180bcf6b69fe6ddcadd"
+    },
+    {
+      "path": "asm/menu_cc38.s",
+      "sha256": "55303b033b2cd45ffd7fa44e2e2d9891d1858ae94be9d5d2e3b1b12962dadde4"
+    },
+    {
+      "path": "asm/menu_ccec.s",
+      "sha256": "9662ba560993e621b7b9fb4753cc80bcecd17c84f6efb3e54e480dae99ebe182"
+    },
+    {
+      "path": "asm/menu_ce70.s",
+      "sha256": "edd3b2253e623f22d1d9240a71b4dab814753910ced3b18bcd3a2f566edfa344"
+    },
+    {
+      "path": "asm/menu_ce78.s",
+      "sha256": "6e2befe37418a74474b2ba1894d15a9d7098c0bf6d0dbdaff83b6ebdcbf7312d"
+    },
+    {
+      "path": "asm/menu_cfe4.s",
+      "sha256": "85498cb861276978c0a4ef624e3024e2113084a9b8fac7dd46866541a444a7bf"
+    },
+    {
+      "path": "asm/menu_ctor.s",
+      "sha256": "fcedf8b534851946198ed9025bc923bb83e8506b702743e7513f681d1fb68dd8"
+    },
+    {
+      "path": "asm/menu_ctor2.s",
+      "sha256": "72f892075e667def569e766966b6f3a47af52aa7f06b323353d43e1691bb628d"
+    },
+    {
+      "path": "asm/menu_d048.s",
+      "sha256": "406d7f5aabf111d66d55968652b713b67535498655e5114a351f9e0354521925"
+    },
+    {
+      "path": "asm/menu_d13c.s",
+      "sha256": "d52a13aa5339e5b415fa2335abf270e9ecd47f636b4d8a659d86258a232133f8"
+    },
+    {
+      "path": "asm/menu_d1b4.s",
+      "sha256": "b7df3693d850627c209306fe519f3b539296f18adfd233bc3076866f484da76b"
+    },
+    {
+      "path": "asm/menu_d280.s",
+      "sha256": "ddf37e1cccb9b5d2b80ef1660895b646a1a3006c5d7a4f66567ea96d7d5ca756"
+    },
+    {
+      "path": "asm/menu_d3a4.s",
+      "sha256": "25527ef92adeae3e685964d71ae0b64dbf21524e351faa4c4e3d4ca34042365d"
+    },
+    {
+      "path": "asm/menu_d470.s",
+      "sha256": "80a21596ae1216613c213c179ade4b8aaeba4812c42c078eb1faaf2b86539351"
+    },
+    {
+      "path": "asm/menu_d4ea.s",
+      "sha256": "09fbfaf3b0613a7cb724663c5b862daa189bc3461026dfb6e8a7865c38a7def2"
+    },
+    {
+      "path": "asm/menu_d8e4.s",
+      "sha256": "62972b994b9c0c48f939d622a479c079f138c09e76e8bc5c38b488e2af04cdfb"
+    },
+    {
+      "path": "asm/menu_d9a4.s",
+      "sha256": "19c52dead85a8f15b80bbbcdd0b68a875b9700bcd036a9379b539a8aef561b40"
+    },
+    {
+      "path": "asm/menu_dab8.s",
+      "sha256": "558e5d4c6a2f2418e46cfdfb605960b6ec85c207efae0f62377bbc2c3f83f634"
+    },
+    {
+      "path": "asm/menu_dbe8.s",
+      "sha256": "1123af1f2c682f924ded4998fe21b6bc74fe0b20f5d8ed2810948c180dd8bea2"
+    },
+    {
+      "path": "asm/menu_dispatch.s",
+      "sha256": "f4907dd3dc46c4b2003a9bdbceedb6d7c97f2af21f186890ef834553f1f6626b"
+    },
+    {
+      "path": "asm/menu_e650.s",
+      "sha256": "22931b66aeb411950d558f39bf9364122290312da8e002e7d5120c65bb84ae54"
+    },
+    {
+      "path": "asm/menu_ebd8.s",
+      "sha256": "4d151c8eae53f11327b832a0e133f72b886223f0f9579cb42a7c25343f99ffc2"
+    },
+    {
+      "path": "asm/menu_f040.s",
+      "sha256": "981ed2f7c450a4b5127918f87c7287785b4024a42243e23051bce2bea1ad7505"
+    },
+    {
+      "path": "asm/menu_f22c.s",
+      "sha256": "3f282008556fc396ad6377d18aff67180677285e3cc2b0d66dcf86d20bc5eec2"
+    },
+    {
+      "path": "asm/menu_f5a0.s",
+      "sha256": "046d27bf8f0f077b7ddf2b992d7ec81781c2dbfd29ccda007ec6958780c250b7"
+    },
+    {
+      "path": "asm/menu_f6d0.s",
+      "sha256": "e144312003cc7bd87fb10ca47d87130563a80e5352279c061a94fa2c7b398df5"
+    },
+    {
+      "path": "asm/menu_f810.s",
+      "sha256": "11637ad5c26738b02b43d8f67e73bbfffa8449737f4ad33bbb5e21b52174cab9"
+    },
+    {
+      "path": "asm/menu_f8b4.s",
+      "sha256": "d0676419aad3eafec2e0863a18b7acdf440e892b195bc24b2f1ba5fcc203cf67"
+    },
+    {
+      "path": "asm/menu_f924.s",
+      "sha256": "f4bd7fe575f2b145d819aa6f1ed893317da8a91d22f640091f3d28094063fcd2"
+    },
+    {
+      "path": "asm/menu_fa24.s",
+      "sha256": "13cffdd563340d444847ee36edea3394fb87925d6546ccafeaea9400d7a1bd2b"
+    },
+    {
+      "path": "asm/menu_ff78.s",
+      "sha256": "874e07257d90b72ad957de86af9f1146d56b5e868cfb9a4d1d2ece021b83d417"
+    },
+    {
+      "path": "asm/menu_pkt.s",
+      "sha256": "98aaf7d4a448882d274d53ea2e455acb0b5f5cd426f39510cbec3d5c89ece53e"
+    },
+    {
+      "path": "asm/menu_place.s",
+      "sha256": "4a535c1b7ba9f890d17a5159b422246c8c39f2e93d2ccff9f18ad62c88e0a9b3"
+    },
+    {
+      "path": "asm/menu_progress_update.s",
+      "sha256": "948ae86ec62168eed15092bd690d7e6596ee3d7c5b4a007ee5f2ef05f4292a5e"
+    },
+    {
+      "path": "asm/menu_record_apply.s",
+      "sha256": "521195a7d248b8b23f5bb5d777761a6fecd525ae96df28601fea828f3a3999ff"
+    },
+    {
+      "path": "asm/menu_record_update.s",
+      "sha256": "d1aea037ec95c640522b51a3614a3e8999b5475843a1c77dd90cfa9b02229240"
+    },
+    {
+      "path": "asm/menu_setup.s",
+      "sha256": "c1093105b300c251c3743ecd24d3f5878a986c7e05726879d5e67197a7401978"
+    },
+    {
+      "path": "asm/mixer_2b888.s",
+      "sha256": "9fb4685c0a07ea14cf92fa11076fd158500e406a32bc9e57fa9774d0952ba71d"
+    },
+    {
+      "path": "asm/passthrough.inc",
+      "sha256": "c55014cc4368201ee4a40ab3fc6cc67028dad8d86f506f3b87d3e9b830dd4cb1"
+    },
+    {
+      "path": "asm/race_cluster.s",
+      "sha256": "da494172fa1e647ac727eba971c7c18e974666f83e696b108651f40f2345a26d"
+    },
+    {
+      "path": "asm/race_dispatch.s",
+      "sha256": "a2bbc19c497046690d7f103e16625cdeede2afce7ec67e5464622b90948d0907"
+    },
+    {
+      "path": "asm/race_progress.s",
+      "sha256": "e33b27c69513a16d1bb64c86023b43cb27f2d8e44ce47b08a8d9e5267f572f8a"
+    },
+    {
+      "path": "asm/race_scene.s",
+      "sha256": "5a5a69b923c92fa4878ff3aa90685f3b8a10b91a123c3faf61a9728caacbafd2"
+    },
+    {
+      "path": "asm/race_setup_18adc.s",
+      "sha256": "262c1accdaea13faaa901e47651deb60c79edaebb063711cc9deed142de936e4"
+    },
+    {
+      "path": "asm/rec35_16002.s",
+      "sha256": "a729c8b8f0cfa4686ad2297ceab2e5c9abf648dd2811c7fe6dd02b5d12f90acf"
+    },
+    {
+      "path": "asm/rec35_driver.s",
+      "sha256": "183946ef69f609e60442ba76ec59addc421d0ee898a801a416bd0f3c28b811b6"
+    },
+    {
+      "path": "asm/rec35_helper.s",
+      "sha256": "daf6ccdd5210c3a7dfb1fa32af18a5518bf6236caefb4a3e768e63e43e396304"
+    },
+    {
+      "path": "asm/rec35_init.s",
+      "sha256": "841639ed7f255a4bd8f72033c4b061fa5e798f2aaa51f95284b0905c4a1742e6"
+    },
+    {
+      "path": "asm/rec35_runtime.s",
+      "sha256": "b3fba9e0988ed7bcf2c18bd320aa5bb309a7bb26583d49139d5fbc7ffe3ef133"
+    },
+    {
+      "path": "asm/rec35_stage.s",
+      "sha256": "67049a59473a0f1e361241f71c3c8f496f2e811faf45dff5e2e0a5c8ab75ddc1"
+    },
+    {
+      "path": "asm/resource_wrap.s",
+      "sha256": "ee4290648bdfa0e81e49dbc89af45f9bef8ce3591a05dfcbf2f55a2556f9b071"
+    },
+    {
+      "path": "asm/runtime_2aac.s",
+      "sha256": "1dd09094f4f2509e8f524a6b12ce85f55fa30079e9d7324b178e54bf79dbf0ec"
+    },
+    {
+      "path": "asm/runtime_mem.s",
+      "sha256": "f2b96acfdba89b25f90cd464f173eeef69e29446d53cbb46f84901c00a3290ff"
+    },
+    {
+      "path": "asm/save_alloc.s",
+      "sha256": "cc8bd2470e6d899c0e8a2828a9646eba756f995a03bf242770dd8b6d6c78f9de"
+    },
+    {
+      "path": "asm/save_alloc_more.s",
+      "sha256": "be3653094b4a42fd4cac97bf671d85e8895615d4a93d49a2d50aba8f5596c156"
+    },
+    {
+      "path": "asm/save_checksum.s",
+      "sha256": "42f46fcebc7533d03ef1342aa511254f5275b97e5c526b47e3c8dda871989e3a"
+    },
+    {
+      "path": "asm/save_delay.s",
+      "sha256": "f07b658c6b2bb633b660885fe18378bc433658101c6a2a1fcc89352b612ecd91"
+    },
+    {
+      "path": "asm/save_desc.s",
+      "sha256": "1ba058e207c02a354148a63d5791048ea3727963dd3d15676defba7008f24340"
+    },
+    {
+      "path": "asm/save_slot_api.s",
+      "sha256": "25dc951a796e1043669a7739dd8a0a2fb47807f9bf6e2b839943ed72d37f5eab"
+    },
+    {
+      "path": "asm/save_timer_queue.s",
+      "sha256": "c58ebe7ffd4b63eef264b85ec42c9731be52fae3b5d43c7b3eb028f7c859f9c6"
+    },
+    {
+      "path": "asm/save_trigger_accessors.s",
+      "sha256": "95b1b4bcf8d74b20f89057e4f717ffcf09d376ec618fbb4c163112da95a75278"
+    },
+    {
+      "path": "asm/saveblock.s",
+      "sha256": "c98d7ada11242c1912f1dd16280c96d585b99f564c1ad1b0d1d4ecb47b29ae19"
+    },
+    {
+      "path": "asm/softirq.s",
+      "sha256": "ee0a20a46f6fe56193c5b7e757acb02728db5efe1d5fb0137bb1f91fed4dd81b"
+    },
+    {
+      "path": "asm/sound_aeabi_idiv.s",
+      "sha256": "7ec8ebca429444a46e27c9fd1575d17682af58011291ad23b40252b0f517041b"
+    },
+    {
+      "path": "asm/sound_aeabi_idiv_core.s",
+      "sha256": "d042be5359bd4c207fcdc08db984fd153a8e556e45c1902b8cdb807769d9e6a5"
+    },
+    {
+      "path": "asm/sound_alloc.s",
+      "sha256": "2cc6013f5a22e8e593d429e91822b61949c48c68afae1c378306a0ee9c0430e7"
+    },
+    {
+      "path": "asm/sound_api.s",
+      "sha256": "1673e8b2c434f6c821d901ab9231a9d3e6bb39d160e7d2ac51295cf6cc6fff81"
+    },
+    {
+      "path": "asm/sound_bank.s",
+      "sha256": "74b7e073bb4e235e8daff1c916dc9782e118921b0b80982ebbe3d57dbc025235"
+    },
+    {
+      "path": "asm/sound_beb4.s",
+      "sha256": "9cf07f82c664d486f3f0a7c2963fe702772798ca198b699dc25cda3ead6a0a75"
+    },
+    {
+      "path": "asm/sound_c11c.s",
+      "sha256": "802ab69180e49df59865da56f06138beadbb09427d22978b8b94d860e8f14a8e"
+    },
+    {
+      "path": "asm/sound_channel_cluster.s",
+      "sha256": "329331592ca65d0affac23bdf95aeda2ffb99105f2c2911633c6105738449258"
+    },
+    {
+      "path": "asm/sound_cmd.s",
+      "sha256": "d56d57d918b49149c34b2fdbcf65ac10fda6b3b4e8d7e05da67a56b0cad9efcb"
+    },
+    {
+      "path": "asm/sound_control.s",
+      "sha256": "8d3540898bbaf4bbefaff821e5780386fda55bec1b964ce6e82580ad89dcbbb8"
+    },
+    {
+      "path": "asm/sound_d034.s",
+      "sha256": "3fc4fa33ae4d09bf47145984aaeaf2914a25a8122f6cf0da3af5de4d765ec3bf"
+    },
+    {
+      "path": "asm/sound_d480.s",
+      "sha256": "236ba6c85f5425d4d49c70529cd2da90b44a5e0aba84323ed9277ddd2da22965"
+    },
+    {
+      "path": "asm/sound_d4a8.s",
+      "sha256": "bd9951c0d98458efc814d86c4cf74b5129237a35c166f1db2746d49df1d8d8f2"
+    },
+    {
+      "path": "asm/sound_d510.s",
+      "sha256": "7fffd78a29457f154197c18545812fc4ca70fb7f04b754a8bfe93769abaef380"
+    },
+    {
+      "path": "asm/sound_d584.s",
+      "sha256": "f0e6197409a3ba58b181266adf229f4cb98dd9e2562cbf58ef6e4deccb9177ba"
+    },
+    {
+      "path": "asm/sound_d6f4.s",
+      "sha256": "d3948b88e1d3f8061be445e36c46665bfc778a1e34a11f944e9e0f8a23b3bd0a"
+    },
+    {
+      "path": "asm/sound_d974.s",
+      "sha256": "c52e9fd50986608585a2053adea0fa306343b6ebd4d2a789beab42b3e4d1c421"
+    },
+    {
+      "path": "asm/sound_d9b0.s",
+      "sha256": "5d75490b73544b0f36c0103f76387fe8375b4eb1b21173a09c3a32da070caccd"
+    },
+    {
+      "path": "asm/sound_da20.s",
+      "sha256": "84516699a949a0b721e10df66c0d85fffcb9d06ba6a1812ea50e65910fac0693"
+    },
+    {
+      "path": "asm/sound_db24.s",
+      "sha256": "75681b1be75b7700ae5429b8c9b85d9a492e99164dc9b1995976585ad2ef022b"
+    },
+    {
+      "path": "asm/sound_dba4.s",
+      "sha256": "3e3ce5cb16aebc1b1b57df85ec9ae90bc2c3f149085f492082442a250bd6a3b1"
+    },
+    {
+      "path": "asm/sound_dc54.s",
+      "sha256": "fbcdb534fb92386584be5957c3d32cc47b794fe2f694d1616a41b63f09d9ec88"
+    },
+    {
+      "path": "asm/sound_dd30.s",
+      "sha256": "c3cac63644f962d8fbecd24e7e826d06a5bf6d07285838e423887748785e6822"
+    },
+    {
+      "path": "asm/sound_dd88.s",
+      "sha256": "2b94816921725c3877fdde867c9a84b47b9ea0337fffc06cefa464dd77ffb427"
+    },
+    {
+      "path": "asm/sound_divmod.s",
+      "sha256": "24473ed3f9960ee6b48bddf74e257c52e485d7d3441c7a6e71f3277251796698"
+    },
+    {
+      "path": "asm/sound_fade.s",
+      "sha256": "ad71c83182fd491369720b11a970eefe231bc13f6e2dc6900b8e7e128ba588fd"
+    },
+    {
+      "path": "asm/sound_followon.s",
+      "sha256": "90e4f4343dcd208319d04364be4d236e15157e2afe789f16bfdfaadcfa908c99"
+    },
+    {
+      "path": "asm/sound_hw_mode.s",
+      "sha256": "8e9ca850069c86540668551fd444378066122da3d0c2da25761251e2c67f8fd1"
+    },
+    {
+      "path": "asm/sound_init.s",
+      "sha256": "5d85f17d480a79bc480b17a6ce4bdaa773a93fa240d3d1ff571abe9729e00838"
+    },
+    {
+      "path": "asm/sound_interp.s",
+      "sha256": "4e70a0e34f75b7d8019cb4535c34cb2af44ccf90ea19dcb023572de600456993"
+    },
+    {
+      "path": "asm/sound_mixer_leaf.s",
+      "sha256": "020e68358b966908a3b1ad14b95bddcd018b72bab5571840a8fbad6b09da56f3"
+    },
+    {
+      "path": "asm/sound_mixer_tail.s",
+      "sha256": "f7f693c526f79531bde635488f680c122177e21e3d0b062c1aaa4804849b4902"
+    },
+    {
+      "path": "asm/sound_more.s",
+      "sha256": "88ce63260c8f3f1d96b05b248273dfdee4d0dd8821b60d8656d2f9b6548a22fe"
+    },
+    {
+      "path": "asm/sound_note_on.s",
+      "sha256": "e334d43ef0a1de93d722e790a0d1322adc6d5aca1fffa1a7a557c8ad6024cd1e"
+    },
+    {
+      "path": "asm/sound_pause.s",
+      "sha256": "ffa6346dfe872335e51f58ac83cf206727719d944c81c00cbfcdfdcee6f4f245"
+    },
+    {
+      "path": "asm/sound_premix.s",
+      "sha256": "ac4e1e9b014408d9ae983a8f90410a76903bbd7d99a6f099f09e9add7a7ac6c6"
+    },
+    {
+      "path": "asm/sound_pump.s",
+      "sha256": "0c1b1a312fca18741f0761a7536e80d2f7cf7cc16e7465a4275d506f4c510abe"
+    },
+    {
+      "path": "asm/sound_reset.s",
+      "sha256": "74e7c1d1ee8f3a73a42695eab01e0f9284ba03f5df3c71b059f1d5826a41d49f"
+    },
+    {
+      "path": "asm/sound_reset_more.s",
+      "sha256": "9371f41938bf8cb83ac759d949bae8ccc97e934922aa8778adcf8bf29c6d6a12"
+    },
+    {
+      "path": "asm/sound_seq.s",
+      "sha256": "20ee82fa11d49d64ac4c3a006400af3fa362a5f961d4d0a094d049195a7d689b"
+    },
+    {
+      "path": "asm/sound_start.s",
+      "sha256": "bf1c78b5ae38ed0f73215970930a36cded31e2f3e13deba698220a9d9a52b4dd"
+    },
+    {
+      "path": "asm/sound_state.s",
+      "sha256": "2298860be495a2c84e80ffb0f2afd4857d6a6ba177c3914c4d232d5a1399fc14"
+    },
+    {
+      "path": "asm/sound_stop.s",
+      "sha256": "b063bdd401347cff07b4f8cfa60ba42c3ecae3c0650397d247d7ec5befffbcac"
+    },
+    {
+      "path": "asm/sound_stop_all.s",
+      "sha256": "61362b306851535de06b122607a44aee2b47db0614f90fda5bf380748a8062e9"
+    },
+    {
+      "path": "asm/sound_thunk.s",
+      "sha256": "44e6b1749265cba7593f8694b447709deb383e2dba66b39db678d9c5111b0275"
+    },
+    {
+      "path": "asm/sound_tick.s",
+      "sha256": "ce6097d057c0a89dc789c7329ea9d11943a9bb02277b7715b3e81cbb1239970a"
+    },
+    {
+      "path": "asm/sound_uaeabi_uidiv.s",
+      "sha256": "71a1c371b3deae9737aeae8f8adc7c0dbf438e0f8a429711961c2c2f8d12d38a"
+    },
+    {
+      "path": "asm/sound_unlink.s",
+      "sha256": "b33a015b7f42119c3fcb6dc9f42fe322999531e480e59a8a1cb7b1900cae1208"
+    },
+    {
+      "path": "asm/sound_veneer.s",
+      "sha256": "81238af6eb0158f8bbfcb0f45285e6fd19cdafb8baeae0edb4a9c5ea3561a21a"
+    },
+    {
+      "path": "asm/sound_voice_apply.s",
+      "sha256": "8ba5502f1b9cf5521fc47182a2c7218eee318261ce25f284915708c1b7e9cd83"
+    },
+    {
+      "path": "asm/sound_voice_clamp.s",
+      "sha256": "c0389cf43bf10ce39dabefa1d65bacb095253340362c0014cf76a6ca0911aa83"
+    },
+    {
+      "path": "asm/sound_voice_follow.s",
+      "sha256": "c4ee3a5ba142ff369674cc6d4802d12ac35d4401ae854d9345fbff5a97d83f07"
+    },
+    {
+      "path": "asm/sound_voice_tick.s",
+      "sha256": "2892af6391824cf1812fa0ae270e889fe49cccb68231fbca8af4e1e9e46a7de2"
+    },
+    {
+      "path": "asm/surface_access.s",
+      "sha256": "14b21f935ab100bc2361666de96bd69781d8cae3f4bff6152eb19c09e1387c30"
+    },
+    {
+      "path": "asm/wrapper_pair.s",
+      "sha256": "f3f3e7f17992cd01fc57dcff4b533a17e4b1d69203862315048c7412812a7a93"
+    }
+  ]
+}

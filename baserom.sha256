@@ -1,0 +1,7 @@
+# Baseline ROM: GT Advance 3 - Pro Concept Racing (USA)
+# Serial: AGB-A2GE-USA   Game code: A2GE
+# Size: 8388608 bytes (8 MiB, padded with 0x00 after 0x7B04C4)
+#
+# A local copy of this file must be present as ./baserom.gba (gitignored).
+# Verify with:  shasum -a 256 -c baserom.sha256
+f583ea5911c963774f8f26941c6cc4c5512d4586c2933fdd8829124041535c03  baserom.gba

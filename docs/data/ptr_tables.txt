@@ -1,0 +1,18 @@
+# Contiguous ROM-pointer runs (candidate tables/literal pools)
+# offset  count
+0x009C14  103
+0x00A684  53
+0x00C3B0  22
+0x00C758  22
+0x00D868  16
+0x00DDC0  29
+0x00E698  35
+0x01413C  21
+0x0232B4  16
+0x0292A0  22
+0x02D724  19
+0x02E210  20
+0x0614E0  36
+0x0CB190  66
+0x0CB2C0  70
+0x0CBAA4  35

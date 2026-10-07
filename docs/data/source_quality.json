@@ -1,0 +1,7051 @@
+{
+ "definitions": {
+  "asm": "naked function or asm-dominated body; not decompiled",
+  "c": "plain C; decompiled",
+  "c_fakematch": "C with only empty barriers, directives, or register pins; decompiled",
+  "partial": "C with instructions spliced in through asm(); not decompiled"
+ },
+ "functions": {
+  "0x0800025c": {
+   "class": "c",
+   "file": "src/foundation_boot.c",
+   "name": "VCounterHandler",
+   "size": 12
+  },
+  "0x08000268": {
+   "class": "c",
+   "file": "src/foundation_boot.c",
+   "name": "VBlankHandler",
+   "size": 40
+  },
+  "0x08000290": {
+   "class": "c",
+   "file": "src/foundation_boot.c",
+   "name": "IrqInstallHooks",
+   "size": 52
+  },
+  "0x08000590": {
+   "class": "c",
+   "file": "src/foundation_agbmain.c",
+   "name": "PaletteFill_00590",
+   "size": 48
+  },
+  "0x080006a4": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 1
+   },
+   "file": "src/agbmain_session.c",
+   "name": "SessionPump_080006A4",
+   "size": 24
+  },
+  "0x080006bc": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 2
+   },
+   "file": "src/agbmain_session.c",
+   "name": "SessionExit_080006BC",
+   "size": 80
+  },
+  "0x08001370": {
+   "class": "c",
+   "file": "src/runtime_accessors.c",
+   "name": "_08001370",
+   "size": 76
+  },
+  "0x080013bc": {
+   "class": "c",
+   "file": "src/foundation_fa0.c",
+   "name": "Helper_013BC",
+   "size": 36
+  },
+  "0x080014a4": {
+   "class": "c",
+   "file": "src/foundation_fa0.c",
+   "name": "Helper_014A4",
+   "size": 16
+  },
+  "0x080015a0": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 12,
+    "naked": true
+   },
+   "file": "src/runtime_accessors.c",
+   "name": "_080015A0",
+   "size": 24
+  },
+  "0x080015f4": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/state_block_a.c",
+   "name": "StateA_GetRecordHalfword",
+   "size": 44
+  },
+  "0x08001620": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/state_block_a.c",
+   "name": "StateA_GetRecordHalfwordOffset",
+   "size": 48
+  },
+  "0x08001650": {
+   "class": "c",
+   "file": "src/state_block_a.c",
+   "name": "StateA_GetFirstHalfword",
+   "size": 16
+  },
+  "0x08001660": {
+   "class": "c",
+   "file": "src/state_block_a.c",
+   "name": "StateA_GetIndexedHalfword",
+   "size": 20
+  },
+  "0x08001674": {
+   "class": "c",
+   "file": "src/state_block_a.c",
+   "name": "StateA_GetRecordPtr",
+   "size": 12
+  },
+  "0x08001680": {
+   "class": "c",
+   "file": "src/state_block_a.c",
+   "name": "StateA_GetRecordHalfwordInverted",
+   "size": 24
+  },
+  "0x08001698": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 1
+   },
+   "file": "src/state_block_a.c",
+   "name": "StateA_GetIndexedHalfwordInverted",
+   "size": 32
+  },
+  "0x080016b8": {
+   "class": "c",
+   "file": "src/state_block_a.c",
+   "name": "StateA_GetRecordPtrInverted",
+   "size": 24
+  },
+  "0x080016d0": {
+   "class": "c",
+   "file": "src/state_block_a.c",
+   "name": "StateA_SetPendingParam",
+   "size": 12
+  },
+  "0x080016dc": {
+   "class": "c",
+   "file": "src/state_block_a.c",
+   "name": "StateA_ClearPendingAndScratch",
+   "size": 16
+  },
+  "0x080016ec": {
+   "class": "c",
+   "file": "src/state_block_a.c",
+   "name": "StateA_Register",
+   "size": 24
+  },
+  "0x08001704": {
+   "class": "c",
+   "file": "src/state_block_a.c",
+   "name": "StateA_Fill1754",
+   "size": 32
+  },
+  "0x08001724": {
+   "class": "c",
+   "file": "src/state_block_a.c",
+   "name": "StateA_SetReqMode",
+   "size": 12
+  },
+  "0x08001730": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 10,
+    "naked": true
+   },
+   "file": "src/state_block_a.c",
+   "name": "StateA_IsGameMode",
+   "size": 20
+  },
+  "0x08001744": {
+   "class": "c",
+   "file": "src/state_block_a.c",
+   "name": "StateA_IsSpecialMode",
+   "size": 16
+  },
+  "0x08001754": {
+   "class": "c",
+   "file": "src/state_block_a.c",
+   "name": "StateA_Nop_1754",
+   "size": 4
+  },
+  "0x08001818": {
+   "class": "c",
+   "file": "src/state_block_a.c",
+   "name": "StateA_RequestMode1",
+   "size": 12
+  },
+  "0x08001824": {
+   "class": "c",
+   "file": "src/state_block_a.c",
+   "name": "StateA_RequestMode0",
+   "size": 12
+  },
+  "0x08001830": {
+   "class": "c",
+   "file": "src/state_block_a.c",
+   "name": "StateA_Nop_1830",
+   "size": 4
+  },
+  "0x08001834": {
+   "class": "c",
+   "file": "src/state_block_a.c",
+   "name": "StateA_SyncPerFrame",
+   "size": 32
+  },
+  "0x08001aa0": {
+   "class": "c",
+   "file": "src/idle_dispatch.c",
+   "name": "Idle_Mode5Handler",
+   "size": 44
+  },
+  "0x08001b50": {
+   "class": "c",
+   "file": "src/idle_dispatch.c",
+   "name": "Idle_Mode10Handler",
+   "size": 44
+  },
+  "0x08001cb4": {
+   "class": "c",
+   "file": "src/idle_accessors.c",
+   "name": "Idle_GetD0Word",
+   "size": 16
+  },
+  "0x08001cc4": {
+   "class": "c",
+   "file": "src/idle_accessors.c",
+   "name": "Idle_GetD0WordHalved",
+   "size": 20
+  },
+  "0x08001e14": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 2
+   },
+   "file": "src/idle_dispatch.c",
+   "name": "Idle_GetDescriptorWord",
+   "size": 28
+  },
+  "0x08001e30": {
+   "class": "c",
+   "file": "src/idle_dispatch.c",
+   "name": "Idle_IsSelZero",
+   "size": 24
+  },
+  "0x08001e48": {
+   "class": "c",
+   "file": "src/idle_accessors.c",
+   "name": "Idle_WriteEvent",
+   "size": 20
+  },
+  "0x08001e5c": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1,
+    "pin": 3
+   },
+   "file": "src/idle_accessors.c",
+   "name": "Idle_GetRecordHalfword",
+   "size": 48
+  },
+  "0x08001e8c": {
+   "class": "c",
+   "file": "src/idle_accessors.c",
+   "name": "Idle_GetDirectHalfword",
+   "size": 24
+  },
+  "0x08001ea4": {
+   "class": "c",
+   "file": "src/idle_accessors.c",
+   "name": "Idle_GetIndexedHalfword2",
+   "size": 20
+  },
+  "0x08001eb8": {
+   "class": "c",
+   "file": "src/idle_dispatch.c",
+   "name": "Idle_DecScratch08",
+   "size": 16
+  },
+  "0x08001f08": {
+   "class": "c",
+   "file": "src/idle_dispatch.c",
+   "name": "Idle_SetupMode3",
+   "size": 28
+  },
+  "0x08001f24": {
+   "class": "c",
+   "file": "src/idle_accessors.c",
+   "name": "Idle_Wrap_1F24",
+   "size": 12
+  },
+  "0x08001f30": {
+   "class": "c",
+   "file": "src/idle_accessors.c",
+   "name": "Idle_Wrap_1F30",
+   "size": 12
+  },
+  "0x08001f3c": {
+   "class": "c",
+   "file": "src/idle_accessors.c",
+   "name": "Idle_IsMode1",
+   "size": 24
+  },
+  "0x08001f54": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1,
+    "pin": 4
+   },
+   "file": "src/idle_accessors.c",
+   "name": "Idle_GetRecordPtr",
+   "size": 44
+  },
+  "0x08001f80": {
+   "class": "c",
+   "file": "src/idle_accessors.c",
+   "name": "Idle_SetRecordCountW",
+   "size": 12
+  },
+  "0x08001f8c": {
+   "class": "c",
+   "file": "src/idle_accessors.c",
+   "name": "Idle_GetRecordCount",
+   "size": 12
+  },
+  "0x08001f98": {
+   "class": "c",
+   "file": "src/idle_accessors.c",
+   "name": "Idle_RequestMode6",
+   "size": 28
+  },
+  "0x08001fb4": {
+   "class": "c",
+   "file": "src/idle_accessors.c",
+   "name": "Idle_RequestMode10",
+   "size": 28
+  },
+  "0x08001fd0": {
+   "class": "c",
+   "file": "src/runtime_accessors.c",
+   "name": "_08001FD0",
+   "size": 16
+  },
+  "0x08001fe0": {
+   "class": "c",
+   "file": "src/runtime_accessors.c",
+   "name": "_08001FE0",
+   "size": 16
+  },
+  "0x08001ff0": {
+   "class": "c",
+   "file": "src/runtime_accessors.c",
+   "name": "_08001FF0",
+   "size": 36
+  },
+  "0x08002014": {
+   "class": "c",
+   "file": "src/idle_accessors.c",
+   "name": "Idle_IsSpecialModeAny",
+   "size": 36
+  },
+  "0x08002038": {
+   "class": "c",
+   "file": "src/idle_accessors.c",
+   "name": "Idle_GetCurrentMode",
+   "size": 12
+  },
+  "0x08002044": {
+   "class": "c",
+   "file": "src/idle_accessors.c",
+   "name": "Idle_GetCounterC",
+   "size": 12
+  },
+  "0x08002050": {
+   "class": "c",
+   "file": "src/idle_accessors.c",
+   "name": "Idle_GetD8Word",
+   "size": 16
+  },
+  "0x08002060": {
+   "class": "c",
+   "file": "src/idle_accessors.c",
+   "name": "Idle_SetFlag2W",
+   "size": 12
+  },
+  "0x0800206c": {
+   "class": "c",
+   "file": "src/idle_accessors.c",
+   "name": "Idle_GetRecordFiltered",
+   "size": 16
+  },
+  "0x0800207c": {
+   "class": "c",
+   "file": "src/idle_accessors.c",
+   "name": "Idle_ArenaRegister",
+   "size": 52
+  },
+  "0x080020b0": {
+   "class": "c",
+   "file": "src/idle_accessors.c",
+   "name": "ArenaConsume",
+   "size": 56
+  },
+  "0x080020e8": {
+   "class": "c",
+   "file": "src/block_b.c",
+   "name": "BlockB_SetExpected",
+   "size": 12
+  },
+  "0x080020f4": {
+   "class": "c",
+   "file": "src/block_b.c",
+   "name": "BlockB_Register",
+   "size": 24
+  },
+  "0x0800210c": {
+   "class": "c",
+   "file": "src/block_b.c",
+   "name": "BlockB_Reset",
+   "size": 24
+  },
+  "0x08002124": {
+   "class": "c",
+   "file": "src/block_b.c",
+   "name": "BlockB_Arm",
+   "size": 28
+  },
+  "0x08002140": {
+   "class": "c",
+   "file": "src/block_b.c",
+   "name": "BlockB_GetMatchOrZero",
+   "size": 24
+  },
+  "0x08002158": {
+   "class": "c",
+   "file": "src/block_b.c",
+   "name": "BlockB_ForwardEvent",
+   "size": 32
+  },
+  "0x08002178": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 18,
+    "naked": true
+   },
+   "file": "src/block_b.c",
+   "name": "BlockB_DispatchIfLess",
+   "size": 40
+  },
+  "0x0800222c": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 18,
+    "naked": true
+   },
+   "file": "src/block_b.c",
+   "name": "BlockB_DispatchIfLess2",
+   "size": 40
+  },
+  "0x08002254": {
+   "class": "c",
+   "file": "src/race_control_leaves.c",
+   "name": "Code2254_Wrapper0",
+   "size": 24
+  },
+  "0x0800226c": {
+   "class": "c",
+   "file": "src/race_control_leaves.c",
+   "name": "Code2254_Wrapper1",
+   "size": 44
+  },
+  "0x08002298": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 17,
+    "naked": true
+   },
+   "file": "src/idle_accessors.c",
+   "name": "Idle_2298_ReloadCurrent",
+   "size": 40
+  },
+  "0x080022c0": {
+   "class": "c",
+   "file": "src/idle_accessors.c",
+   "name": "Idle_22C0_IsMode1",
+   "size": 12
+  },
+  "0x080022cc": {
+   "class": "c",
+   "file": "src/runtime_record_helpers.c",
+   "name": "_080022CC",
+   "size": 12
+  },
+  "0x080022d8": {
+   "class": "c",
+   "file": "src/runtime_record_helpers.c",
+   "name": "_080022D8",
+   "size": 12
+  },
+  "0x08002340": {
+   "class": "c",
+   "file": "src/idle_accessors.c",
+   "name": "Idle_IdSearch",
+   "size": 48
+  },
+  "0x08002370": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 9,
+    "naked": true
+   },
+   "file": "src/idle_accessors.c",
+   "name": "Idle_ModeRow",
+   "size": 20
+  },
+  "0x08002384": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 1,
+    "naked": true
+   },
+   "file": "src/idle_accessors.c",
+   "name": "Idle_Stub_2384",
+   "size": 4
+  },
+  "0x08002388": {
+   "class": "c",
+   "file": "src/code_22e4.c",
+   "name": "sub_08002388",
+   "size": 36
+  },
+  "0x080023ac": {
+   "class": "c",
+   "file": "src/code_22e4.c",
+   "name": "_080023AC",
+   "size": 12
+  },
+  "0x080023b8": {
+   "class": "c",
+   "file": "src/code_22e4.c",
+   "name": "_080023B8",
+   "size": 12
+  },
+  "0x080023c4": {
+   "class": "c",
+   "file": "src/code_22e4.c",
+   "name": "_080023C4",
+   "size": 96
+  },
+  "0x08002424": {
+   "class": "c",
+   "file": "src/code_22e4.c",
+   "name": "Code2424_IrqConfigReset",
+   "size": 12
+  },
+  "0x08002488": {
+   "class": "c",
+   "file": "src/keypad.c",
+   "name": "KeypadGetEdge",
+   "size": 12
+  },
+  "0x08002494": {
+   "class": "c",
+   "file": "src/keypad.c",
+   "name": "KeypadGetHeld",
+   "size": 12
+  },
+  "0x080024a0": {
+   "class": "c",
+   "file": "src/keypad.c",
+   "name": "KeypadGetRepeat",
+   "size": 12
+  },
+  "0x080024ac": {
+   "class": "c",
+   "file": "src/track_car_helpers.c",
+   "name": "Code24AC_VideoInit",
+   "size": 136
+  },
+  "0x08002534": {
+   "class": "c",
+   "file": "src/track_car_helpers.c",
+   "name": "Code2534_ByteCopy",
+   "size": 24
+  },
+  "0x08002618": {
+   "class": "c",
+   "file": "src/event_dma_queue.c",
+   "name": "ScenePost_2618",
+   "size": 92
+  },
+  "0x08002674": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 1
+   },
+   "file": "src/ghost2.c",
+   "name": "Ghost_SampleBufPtr",
+   "size": 32
+  },
+  "0x08002694": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1,
+    "pin": 1
+   },
+   "file": "src/numeric_leaves.c",
+   "name": "Code2694_InitWork",
+   "size": 72
+  },
+  "0x080026dc": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/numeric_leaves.c",
+   "name": "GridStore_26DC",
+   "size": 28
+  },
+  "0x080026f8": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/numeric_leaves.c",
+   "name": "Code26F8_GetIWRAM_S16",
+   "size": 28
+  },
+  "0x08002714": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/numeric_leaves.c",
+   "name": "GridStore_2714",
+   "size": 28
+  },
+  "0x08002730": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 2
+   },
+   "file": "src/runtime_state_dispatch.c",
+   "name": "GridS16_2730",
+   "size": 28
+  },
+  "0x08002780": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/numeric_leaves.c",
+   "name": "GridFlagTest_2780",
+   "size": 28
+  },
+  "0x080027ec": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/numeric_leaves.c",
+   "name": "GridFlagTest_27EC",
+   "size": 28
+  },
+  "0x08002844": {
+   "class": "c",
+   "file": "src/runtime_record_helpers.c",
+   "name": "_08002844",
+   "size": 136
+  },
+  "0x080028cc": {
+   "class": "c",
+   "file": "src/runtime_record_helpers.c",
+   "name": "_080028CC",
+   "size": 68
+  },
+  "0x08002910": {
+   "class": "c",
+   "file": "src/runtime_record_helpers.c",
+   "name": "_08002910",
+   "size": 20
+  },
+  "0x08002924": {
+   "class": "c",
+   "file": "src/runtime_record_helpers.c",
+   "name": "_08002924",
+   "size": 44
+  },
+  "0x08002950": {
+   "class": "c",
+   "file": "src/runtime_record_helpers.c",
+   "name": "Code2950_ObjFlush",
+   "size": 12
+  },
+  "0x08002a0c": {
+   "class": "c",
+   "file": "src/save.c",
+   "name": "IrqRestore_2A0C",
+   "size": 48
+  },
+  "0x08002a3c": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1,
+    "pin": 6
+   },
+   "file": "src/foundation_boot.c",
+   "name": "IrqInstall",
+   "size": 44
+  },
+  "0x08002a68": {
+   "class": "c",
+   "file": "src/foundation_boot.c",
+   "name": "IrqResetSlot0",
+   "size": 24
+  },
+  "0x08002af4": {
+   "class": "c",
+   "file": "src/foundation_runtime.c",
+   "name": "Place_x4",
+   "size": 12
+  },
+  "0x08002b00": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 1
+   },
+   "file": "src/foundation_runtime.c",
+   "name": "Store_02B00",
+   "size": 28
+  },
+  "0x08002b1c": {
+   "class": "c",
+   "file": "src/foundation_runtime.c",
+   "name": "Store_02B1C",
+   "size": 20
+  },
+  "0x08002b30": {
+   "class": "c",
+   "file": "src/foundation_runtime.c",
+   "name": "Store_02B30",
+   "size": 20
+  },
+  "0x08002b44": {
+   "class": "c",
+   "file": "src/foundation_runtime.c",
+   "name": "Store_02B44",
+   "size": 12
+  },
+  "0x08002bb4": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/foundation_runtime.c",
+   "name": "Store_02BB4",
+   "size": 36
+  },
+  "0x08002bd8": {
+   "class": "c",
+   "file": "src/foundation_runtime.c",
+   "name": "LoadSub_02BD8",
+   "size": 16
+  },
+  "0x08002be8": {
+   "class": "c",
+   "file": "src/foundation_runtime.c",
+   "name": "Inc_02BE8",
+   "size": 20
+  },
+  "0x08002bfc": {
+   "class": "c",
+   "file": "src/runtime_hud.c",
+   "name": "ObjAlloc_02BFC",
+   "size": 56
+  },
+  "0x08002c34": {
+   "class": "c",
+   "file": "src/foundation_runtime.c",
+   "name": "Insert_02C34",
+   "size": 20
+  },
+  "0x08002c48": {
+   "class": "c",
+   "file": "src/foundation_runtime.c",
+   "name": "Store_02C48",
+   "size": 24
+  },
+  "0x08002c60": {
+   "class": "c",
+   "file": "src/foundation_runtime.c",
+   "name": "Store_02C60",
+   "size": 20
+  },
+  "0x08002c74": {
+   "class": "c",
+   "file": "src/foundation_runtime.c",
+   "name": "Store_02C74",
+   "size": 16
+  },
+  "0x08002c84": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 2
+   },
+   "file": "src/foundation_runtime.c",
+   "name": "Wrap_02C84",
+   "size": 20
+  },
+  "0x08002d98": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 1
+   },
+   "file": "src/foundation_runtime.c",
+   "name": "Wrap_02D98",
+   "size": 32
+  },
+  "0x08003130": {
+   "class": "c",
+   "file": "src/foundation_runtime.c",
+   "name": "Get_03130",
+   "size": 12
+  },
+  "0x0800313c": {
+   "class": "c",
+   "file": "src/foundation_runtime.c",
+   "name": "Store_0313C",
+   "size": 12
+  },
+  "0x08003148": {
+   "class": "c",
+   "file": "src/runtime_hud.c",
+   "name": "strlength_03148",
+   "size": 20
+  },
+  "0x0800315c": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 1,
+    "pin": 8
+   },
+   "file": "src/runtime_hud.c",
+   "name": "_0800315C",
+   "size": 56
+  },
+  "0x08003194": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 3,
+    "pin": 10
+   },
+   "file": "src/runtime_hud.c",
+   "name": "_08003194",
+   "size": 64
+  },
+  "0x08003210": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 1,
+    "pin": 8
+   },
+   "file": "src/runtime_hud.c",
+   "name": "_08003210",
+   "size": 56
+  },
+  "0x08003248": {
+   "class": "c",
+   "file": "src/foundation_runtime.c",
+   "name": "Wrap_03248",
+   "size": 40
+  },
+  "0x08003270": {
+   "class": "c",
+   "file": "src/foundation_runtime.c",
+   "name": "Wrap_03270",
+   "size": 40
+  },
+  "0x08003298": {
+   "class": "c",
+   "file": "src/foundation_runtime.c",
+   "name": "Wrap_03298",
+   "size": 40
+  },
+  "0x080032c0": {
+   "class": "c",
+   "file": "src/runtime_hud.c",
+   "name": "LaneEmit_02C0",
+   "size": 32
+  },
+  "0x0800364c": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/runtime_hud.c",
+   "name": "ObjCenter_0364C",
+   "size": 76
+  },
+  "0x08003698": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/runtime_hud.c",
+   "name": "ObjCenter_03698",
+   "size": 72
+  },
+  "0x080036e0": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/runtime_hud.c",
+   "name": "ObjCenter_036E0",
+   "size": 72
+  },
+  "0x08003728": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/runtime_hud.c",
+   "name": "ObjCenter_03728",
+   "size": 68
+  },
+  "0x080037bc": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/runtime_hud.c",
+   "name": "ObjMeasure_037BC",
+   "size": 84
+  },
+  "0x08003810": {
+   "class": "c",
+   "file": "src/runtime_hud.c",
+   "name": "ObjTwo_03810",
+   "size": 40
+  },
+  "0x08003838": {
+   "class": "c",
+   "file": "src/runtime_hud.c",
+   "name": "ObjLane_03838",
+   "size": 36
+  },
+  "0x0800385c": {
+   "class": "c",
+   "file": "src/runtime_hud.c",
+   "name": "ObjLane_0385C",
+   "size": 36
+  },
+  "0x08003880": {
+   "class": "c",
+   "file": "src/runtime_hud.c",
+   "name": "_08003880",
+   "size": 36
+  },
+  "0x080038a4": {
+   "class": "c",
+   "file": "src/runtime_hud.c",
+   "name": "ObjLane_038A4",
+   "size": 36
+  },
+  "0x080038c8": {
+   "class": "c",
+   "file": "src/runtime_hud.c",
+   "name": "ObjLane_038C8",
+   "size": 36
+  },
+  "0x080038ec": {
+   "class": "c",
+   "file": "src/runtime_hud.c",
+   "name": "ObjLane_038EC",
+   "size": 32
+  },
+  "0x0800390c": {
+   "class": "c",
+   "file": "src/runtime_hud.c",
+   "name": "ObjLane_0390C",
+   "size": 32
+  },
+  "0x0800392c": {
+   "class": "c",
+   "file": "src/runtime_hud.c",
+   "name": "ObjCenter_0392C",
+   "size": 20
+  },
+  "0x08003940": {
+   "class": "c",
+   "file": "src/runtime_hud.c",
+   "name": "ObjCenter_03940",
+   "size": 20
+  },
+  "0x08003954": {
+   "class": "c",
+   "file": "src/runtime_hud.c",
+   "name": "ObjMeasure_03954",
+   "size": 36
+  },
+  "0x08003978": {
+   "class": "c",
+   "file": "src/runtime_hud.c",
+   "name": "ObjMeasure_03978",
+   "size": 36
+  },
+  "0x0800399c": {
+   "class": "c",
+   "file": "src/runtime_hud.c",
+   "name": "ObjMeasure_0399C",
+   "size": 36
+  },
+  "0x080039c0": {
+   "class": "c",
+   "file": "src/runtime_hud.c",
+   "name": "ObjMeasure_039C0",
+   "size": 36
+  },
+  "0x080039e4": {
+   "class": "c",
+   "file": "src/runtime_hud.c",
+   "name": "ObjMeasure_039E4",
+   "size": 36
+  },
+  "0x08003a08": {
+   "class": "c",
+   "file": "src/runtime_hud.c",
+   "name": "ObjCenter_03A08",
+   "size": 32
+  },
+  "0x08003a28": {
+   "class": "c",
+   "file": "src/runtime_hud.c",
+   "name": "ObjCenter_03A28",
+   "size": 32
+  },
+  "0x08003a48": {
+   "class": "c",
+   "file": "src/runtime_hud.c",
+   "name": "ObjCenter_03A48",
+   "size": 32
+  },
+  "0x08003a68": {
+   "class": "c",
+   "file": "src/runtime_hud.c",
+   "name": "ObjCenter_03A68",
+   "size": 32
+  },
+  "0x08003a88": {
+   "class": "c",
+   "file": "src/runtime_hud.c",
+   "name": "ObjCenter_03A88",
+   "size": 32
+  },
+  "0x08003aa8": {
+   "class": "c",
+   "file": "src/runtime_hud.c",
+   "name": "ObjCenter_03AA8",
+   "size": 32
+  },
+  "0x08003ac8": {
+   "class": "c",
+   "file": "src/runtime_hud.c",
+   "name": "ObjTwo_03AC8",
+   "size": 20
+  },
+  "0x08003adc": {
+   "class": "c",
+   "file": "src/runtime_hud.c",
+   "name": "ObjTwo_03ADC",
+   "size": 20
+  },
+  "0x08003af0": {
+   "class": "c",
+   "file": "src/runtime_hud.c",
+   "name": "ObjReq_03AF0",
+   "size": 40
+  },
+  "0x08003b18": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/runtime_hud.c",
+   "name": "GlyphAdvance_03B18",
+   "size": 20
+  },
+  "0x08003b54": {
+   "class": "c",
+   "file": "src/runtime_hud.c",
+   "name": "ObjDigits_03B54",
+   "size": 36
+  },
+  "0x08003b78": {
+   "class": "c",
+   "file": "src/runtime_hud.c",
+   "name": "ObjDigits_03B78",
+   "size": 36
+  },
+  "0x08003b9c": {
+   "class": "c",
+   "file": "src/runtime_hud.c",
+   "name": "ObjDigits_03B9C",
+   "size": 36
+  },
+  "0x08003bc0": {
+   "class": "c",
+   "file": "src/runtime_hud.c",
+   "name": "ObjDigits_03BC0",
+   "size": 36
+  },
+  "0x08003be4": {
+   "class": "c",
+   "file": "src/runtime_hud.c",
+   "name": "ObjDigits_03BE4",
+   "size": 40
+  },
+  "0x08003c0c": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/runtime_hud.c",
+   "name": "ObjDigitsRight_03C0C",
+   "size": 60
+  },
+  "0x08003c80": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 2
+   },
+   "file": "src/runtime_hud.c",
+   "name": "HexWrite_03C80",
+   "size": 52
+  },
+  "0x08003d18": {
+   "class": "c",
+   "file": "src/runtime_hud.c",
+   "name": "TimeStr_03D18",
+   "size": 52
+  },
+  "0x08003f64": {
+   "class": "c",
+   "file": "src/runtime_hud.c",
+   "name": "ObjHex_03F64",
+   "size": 36
+  },
+  "0x08003f88": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 1,
+    "pin": 11
+   },
+   "file": "src/runtime_hud.c",
+   "name": "ObjAttr_03F88",
+   "size": 76
+  },
+  "0x08004090": {
+   "class": "c",
+   "file": "src/runtime_hud.c",
+   "name": "TextCenter_04090",
+   "size": 44
+  },
+  "0x080040bc": {
+   "class": "c",
+   "file": "src/runtime_hud.c",
+   "name": "SpriteFind_040BC",
+   "size": 40
+  },
+  "0x080040e4": {
+   "class": "c",
+   "file": "src/runtime_hud.c",
+   "name": "SpriteInit_040E4",
+   "size": 20
+  },
+  "0x080040f8": {
+   "class": "c",
+   "file": "src/runtime_hud.c",
+   "name": "SpriteUpdate_040F8",
+   "size": 48
+  },
+  "0x080041e0": {
+   "class": "c",
+   "file": "src/runtime_hud.c",
+   "name": "CamY_041E0",
+   "size": 24
+  },
+  "0x080041f8": {
+   "class": "c",
+   "file": "src/runtime_hud.c",
+   "name": "CamProject_041F8",
+   "size": 84
+  },
+  "0x0800424c": {
+   "class": "c",
+   "file": "src/runtime_hud.c",
+   "name": "CamY_0424C",
+   "size": 20
+  },
+  "0x08004324": {
+   "class": "c",
+   "file": "src/runtime_hud.c",
+   "name": "CamSet_04324",
+   "size": 12
+  },
+  "0x080043b8": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/runtime_hud.c",
+   "name": "TrackDigit_043B8",
+   "size": 136
+  },
+  "0x08004440": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/runtime_hud.c",
+   "name": "TrackDigit_04440",
+   "size": 132
+  },
+  "0x080044c4": {
+   "class": "c",
+   "file": "src/runtime_hud.c",
+   "name": "TrackArrow_044C4",
+   "size": 68
+  },
+  "0x080046d0": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 3
+   },
+   "file": "src/runtime_hud.c",
+   "name": "BgRotDispatch_046D0",
+   "size": 108
+  },
+  "0x0800473c": {
+   "class": "c",
+   "file": "src/runtime_hud.c",
+   "name": "CamAux_0473C",
+   "size": 12
+  },
+  "0x08004748": {
+   "class": "c",
+   "file": "src/runtime_hud.c",
+   "name": "CamSet_04748",
+   "size": 16
+  },
+  "0x08004a0c": {
+   "class": "c",
+   "file": "src/foundation_subsys.c",
+   "name": "HeapReset",
+   "size": 32
+  },
+  "0x08004a2c": {
+   "class": "c",
+   "file": "src/foundation_subsys.c",
+   "name": "SubsysStoreConfig",
+   "size": 28
+  },
+  "0x08004a48": {
+   "class": "c",
+   "file": "src/foundation_subsys.c",
+   "name": "SubsysCreateInstance",
+   "size": 92
+  },
+  "0x08004aa4": {
+   "class": "c",
+   "file": "src/foundation_subsys.c",
+   "name": "SubsysLoadInstance",
+   "size": 80
+  },
+  "0x08004b50": {
+   "class": "c",
+   "file": "src/foundation_subsys.c",
+   "name": "SceneAdvance",
+   "size": 24
+  },
+  "0x08004b68": {
+   "class": "c",
+   "file": "src/foundation_subsys.c",
+   "name": "MgrGet80",
+   "size": 12
+  },
+  "0x08004b74": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 5,
+    "naked": true
+   },
+   "file": "src/foundation_subsys.c",
+   "name": "MgrTestBit4",
+   "size": 12
+  },
+  "0x08004b80": {
+   "class": "c",
+   "file": "src/foundation_subsys.c",
+   "name": "MgrClearBit4",
+   "size": 16
+  },
+  "0x08004b90": {
+   "class": "c",
+   "file": "src/foundation_subsys.c",
+   "name": "_08004B90",
+   "size": 12
+  },
+  "0x08004b9c": {
+   "class": "c",
+   "file": "src/foundation_subsys.c",
+   "name": "FlagCheck_04B9C",
+   "size": 16
+  },
+  "0x08004bac": {
+   "class": "c",
+   "file": "src/runtime_state_dispatch.c",
+   "name": "SubstateOr1_04BAC",
+   "size": 12
+  },
+  "0x08004bb8": {
+   "class": "c",
+   "file": "src/foundation_subsys.c",
+   "name": "SubstateClear_04BB8",
+   "size": 16
+  },
+  "0x08004bc8": {
+   "class": "c",
+   "file": "src/foundation_subsys.c",
+   "name": "SubstateSet1_04BC8",
+   "size": 16
+  },
+  "0x08004bd8": {
+   "class": "c",
+   "file": "src/foundation_subsys.c",
+   "name": "SubstateSet2_04BD8",
+   "size": 20
+  },
+  "0x08004bec": {
+   "class": "c",
+   "file": "src/foundation_subsys.c",
+   "name": "FlagCheck_04BEC",
+   "size": 16
+  },
+  "0x08004bfc": {
+   "class": "c",
+   "file": "src/foundation_subsys.c",
+   "name": "Store44_04BFC",
+   "size": 16
+  },
+  "0x08004c0c": {
+   "class": "c",
+   "file": "src/foundation_subsys.c",
+   "name": "Load44_04C0C",
+   "size": 12
+  },
+  "0x08004c18": {
+   "class": "c",
+   "file": "src/foundation_subsys.c",
+   "name": "Store44Indexed_04C18",
+   "size": 24
+  },
+  "0x08004c30": {
+   "class": "c",
+   "file": "src/foundation_subsys.c",
+   "name": "Load44Indexed_04C30",
+   "size": 24
+  },
+  "0x08004c48": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/foundation_subsys.c",
+   "name": "MgrGridSet_04C48",
+   "size": 24
+  },
+  "0x08004c60": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/foundation_subsys.c",
+   "name": "MgrGridGet_04C60",
+   "size": 24
+  },
+  "0x08004c78": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/foundation_subsys.c",
+   "name": "MgrStore94_04C78",
+   "size": 12
+  },
+  "0x08004ca8": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/foundation_subsys.c",
+   "name": "MgrGridGetRow_04CA8",
+   "size": 28
+  },
+  "0x08004cc4": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/foundation_subsys.c",
+   "name": "CounterClear",
+   "size": 16
+  },
+  "0x08004cd4": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1,
+    "pin": 2
+   },
+   "file": "src/foundation_subsys.c",
+   "name": "CounterBump",
+   "size": 28
+  },
+  "0x08004d4c": {
+   "class": "c",
+   "file": "src/foundation_subsys.c",
+   "name": "_08004D4C",
+   "size": 124
+  },
+  "0x08004dc8": {
+   "class": "c",
+   "file": "src/foundation_subsys.c",
+   "name": "Leaf_04DC8",
+   "size": 36
+  },
+  "0x08004dec": {
+   "class": "c",
+   "file": "src/foundation_subsys.c",
+   "name": "_08004DEC",
+   "size": 8
+  },
+  "0x08004df4": {
+   "class": "c",
+   "file": "src/foundation_subsys.c",
+   "name": "Leaf_04DF4",
+   "size": 24
+  },
+  "0x08004e0c": {
+   "class": "c",
+   "file": "src/foundation_subsys.c",
+   "name": "Leaf_04E0C",
+   "size": 16
+  },
+  "0x08004e1c": {
+   "class": "c",
+   "file": "src/foundation_subsys.c",
+   "name": "Leaf_04E1C",
+   "size": 36
+  },
+  "0x08004e40": {
+   "class": "c",
+   "file": "src/foundation_subsys.c",
+   "name": "ExecCmd_04E40",
+   "size": 44
+  },
+  "0x08004e6c": {
+   "class": "c",
+   "file": "src/foundation_subsys.c",
+   "name": "ScenePhase",
+   "size": 12
+  },
+  "0x08004e78": {
+   "class": "c",
+   "file": "src/foundation_subsys.c",
+   "name": "_08004E78",
+   "size": 48
+  },
+  "0x08004ea8": {
+   "class": "c",
+   "file": "src/foundation_subsys.c",
+   "name": "Thunk_04EA8",
+   "size": 24
+  },
+  "0x08004ec0": {
+   "class": "c",
+   "file": "src/foundation_subsys.c",
+   "name": "Thunk_04EC0",
+   "size": 24
+  },
+  "0x08004ed8": {
+   "class": "c",
+   "file": "src/foundation_subsys.c",
+   "name": "Thunk_04ED8",
+   "size": 24
+  },
+  "0x08004ef0": {
+   "class": "c",
+   "file": "src/foundation_subsys.c",
+   "name": "StoreState92",
+   "size": 12
+  },
+  "0x08004f24": {
+   "class": "c",
+   "file": "src/event_dma_queue.c",
+   "name": "_08004F24",
+   "size": 16
+  },
+  "0x08004f34": {
+   "class": "c",
+   "file": "src/event_dma_queue.c",
+   "name": "Event_Broadcast0",
+   "size": 52
+  },
+  "0x0800501c": {
+   "class": "c",
+   "file": "src/foundation_subsys.c",
+   "name": "Clear0501C",
+   "size": 32
+  },
+  "0x08005080": {
+   "class": "c",
+   "file": "src/event_dma_queue.c",
+   "name": "NodePair_05080",
+   "size": 36
+  },
+  "0x080050a4": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/event_dma_queue.c",
+   "name": "OAMSlotAttrSet",
+   "size": 16
+  },
+  "0x080050b4": {
+   "class": "c",
+   "file": "src/event_dma_queue.c",
+   "name": "OAMSlotAttrSetWrap",
+   "size": 12
+  },
+  "0x080050c0": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/event_dma_queue.c",
+   "name": "OAMSlotParamSet",
+   "size": 16
+  },
+  "0x080050d0": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1,
+    "pin": 1
+   },
+   "file": "src/event_dma_queue.c",
+   "name": "CounterAdd_050D0",
+   "size": 24
+  },
+  "0x08005260": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1,
+    "pin": 1
+   },
+   "file": "src/course_resource.c",
+   "name": "VramEmit_05260",
+   "size": 60
+  },
+  "0x08005500": {
+   "class": "c",
+   "file": "src/event_dma_queue.c",
+   "name": "ObjQueueReset",
+   "size": 44
+  },
+  "0x0800552c": {
+   "class": "c",
+   "file": "src/event_dma_queue.c",
+   "name": "ObjQueuePush",
+   "size": 48
+  },
+  "0x080055cc": {
+   "class": "c",
+   "file": "src/event_dma_queue.c",
+   "name": "ObjQueueSoftReset",
+   "size": 12
+  },
+  "0x080055d8": {
+   "class": "c",
+   "file": "src/event_dma_queue.c",
+   "name": "ObjQueueInit",
+   "size": 28
+  },
+  "0x080055f4": {
+   "class": "c",
+   "file": "src/foundation_subsys.c",
+   "name": "ObjQueueResetMain_055F4",
+   "size": 16
+  },
+  "0x08005604": {
+   "class": "c",
+   "file": "src/event_dma_queue.c",
+   "name": "ObjQueueFlushMain",
+   "size": 16
+  },
+  "0x08005664": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/event_dma_queue.c",
+   "name": "ObjQueueSubmitZero",
+   "size": 84
+  },
+  "0x080056b8": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/event_dma_queue.c",
+   "name": "ObjQueueGate",
+   "size": 12
+  },
+  "0x080056c4": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/event_dma_queue.c",
+   "name": "SlotCharBase",
+   "size": 24
+  },
+  "0x080056dc": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/event_dma_queue.c",
+   "name": "SlotScreenBase",
+   "size": 24
+  },
+  "0x080056f4": {
+   "class": "c",
+   "file": "src/event_dma_queue.c",
+   "name": "SlotLaneSet_56F4",
+   "size": 8
+  },
+  "0x080056fc": {
+   "class": "c",
+   "file": "src/event_dma_queue.c",
+   "name": "ObjManagerInit",
+   "size": 48
+  },
+  "0x08005758": {
+   "class": "c",
+   "file": "src/save.c",
+   "name": "SaveAllocFree",
+   "size": 16
+  },
+  "0x08005768": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1,
+    "pin": 1
+   },
+   "file": "src/save.c",
+   "name": "SaveAllocWriteByte",
+   "size": 24
+  },
+  "0x08005780": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/save.c",
+   "name": "SaveAllocReadByte",
+   "size": 16
+  },
+  "0x08005790": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/save.c",
+   "name": "SaveAllocFreeHigh",
+   "size": 20
+  },
+  "0x080057a4": {
+   "class": "c",
+   "file": "src/save.c",
+   "name": "SaveAllocInit",
+   "size": 44
+  },
+  "0x080057d0": {
+   "class": "c",
+   "file": "src/foundation_late.c",
+   "name": "SaveSlotConfig",
+   "size": 60
+  },
+  "0x08005860": {
+   "class": "c",
+   "file": "src/save.c",
+   "name": "SaveChecksum",
+   "size": 36
+  },
+  "0x08005a58": {
+   "class": "c",
+   "file": "src/save.c",
+   "name": "SaveTimerQueueInit",
+   "size": 16
+  },
+  "0x08005a68": {
+   "class": "c",
+   "file": "src/save.c",
+   "name": "SaveTimerQueueZero",
+   "size": 36
+  },
+  "0x08005a8c": {
+   "class": "c",
+   "file": "src/save.c",
+   "name": "SaveTimerQueueIsZero",
+   "size": 24
+  },
+  "0x08005aa4": {
+   "class": "c",
+   "file": "src/save.c",
+   "name": "SaveTimerQueueArm",
+   "size": 64
+  },
+  "0x08005b3c": {
+   "class": "c",
+   "file": "src/code_5b3c_math.c",
+   "name": "TimerFiredCount_05B3C",
+   "size": 16
+  },
+  "0x08005b4c": {
+   "class": "c",
+   "file": "src/code_5b3c_math.c",
+   "name": "TimerPayload_05B4C",
+   "size": 16
+  },
+  "0x08005b5c": {
+   "class": "c",
+   "file": "src/code_5b3c_math.c",
+   "name": "MathLeaf_05B5C",
+   "size": 8
+  },
+  "0x08005b64": {
+   "class": "c",
+   "file": "src/code_5b3c_math.c",
+   "name": "TimerSign_05B64",
+   "size": 24
+  },
+  "0x08005b7c": {
+   "class": "c",
+   "file": "src/code_5b3c_math.c",
+   "name": "MathAbs_05B7C",
+   "size": 16
+  },
+  "0x08005b8c": {
+   "class": "c",
+   "file": "src/code_5b3c_math.c",
+   "name": "MathSign_05B8C",
+   "size": 28
+  },
+  "0x08005d74": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 1
+   },
+   "file": "src/code_5b3c_math.c",
+   "name": "MathLeaf_05D74",
+   "size": 24
+  },
+  "0x08005d8c": {
+   "class": "c",
+   "file": "src/code_5b3c_math.c",
+   "name": "MathLeaf_05D8C",
+   "size": 24
+  },
+  "0x08005da4": {
+   "class": "c",
+   "file": "src/code_5b3c_math.c",
+   "name": "MathLeaf_05DA4",
+   "size": 32
+  },
+  "0x08005dc4": {
+   "class": "c",
+   "file": "src/code_5b3c_math.c",
+   "name": "MathLeaf_05DC4",
+   "size": 32
+  },
+  "0x08005de4": {
+   "class": "c",
+   "file": "src/code_5b3c_math.c",
+   "name": "MathLeaf_05DE4",
+   "size": 48
+  },
+  "0x08005e14": {
+   "class": "c",
+   "file": "src/code_5b3c_math.c",
+   "name": "MathLeaf_05E14",
+   "size": 104
+  },
+  "0x08005e7c": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 1
+   },
+   "file": "src/code_5b3c_math.c",
+   "name": "MathLeaf_05E7C",
+   "size": 96
+  },
+  "0x08005f2c": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/save.c",
+   "name": "SaveTriggerA",
+   "size": 24
+  },
+  "0x08005f44": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/save.c",
+   "name": "SaveTriggerB",
+   "size": 24
+  },
+  "0x08005f5c": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/save.c",
+   "name": "SaveTriggerC",
+   "size": 24
+  },
+  "0x08005f74": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/save.c",
+   "name": "SaveTriggerD",
+   "size": 24
+  },
+  "0x08005f8c": {
+   "class": "c",
+   "file": "src/course_resource.c",
+   "name": "Surface_DiffStore",
+   "size": 12
+  },
+  "0x08005f98": {
+   "class": "c",
+   "file": "src/course_resource.c",
+   "name": "Surface_GetRoot",
+   "size": 12
+  },
+  "0x08005fa4": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 2
+   },
+   "file": "src/course_resource.c",
+   "name": "Surface_Sample",
+   "size": 48
+  },
+  "0x08005fd4": {
+   "class": "c",
+   "file": "src/course_resource.c",
+   "name": "Surface_GetRecord12",
+   "size": 12
+  },
+  "0x08005fe0": {
+   "class": "c",
+   "file": "src/course_resource.c",
+   "name": "Surface_IndexRecord",
+   "size": 24
+  },
+  "0x08005ff8": {
+   "class": "c",
+   "file": "src/course_resource.c",
+   "name": "Surface_Nop0",
+   "size": 4
+  },
+  "0x08005ffc": {
+   "class": "c",
+   "file": "src/course_resource.c",
+   "name": "Surface_Adjust",
+   "size": 28
+  },
+  "0x080060ec": {
+   "class": "c",
+   "file": "src/course_orch.c",
+   "name": "Course_VariantCopy",
+   "size": 20
+  },
+  "0x08006100": {
+   "class": "c",
+   "file": "src/course_orch.c",
+   "name": "Course_Group0Payload12",
+   "size": 20
+  },
+  "0x08006114": {
+   "class": "c",
+   "file": "src/course_orch.c",
+   "name": "Course_VariantZero",
+   "size": 36
+  },
+  "0x08006138": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 3,
+    "pin": 1
+   },
+   "file": "src/course_orch.c",
+   "name": "Course_Orchestrator",
+   "size": 128
+  },
+  "0x08006574": {
+   "class": "c",
+   "file": "src/course_orch.c",
+   "name": "Course_SurfaceLoad",
+   "size": 28
+  },
+  "0x08006618": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 4
+   },
+   "file": "src/course_stream.c",
+   "name": "Course_StreamInit",
+   "size": 56
+  },
+  "0x08006650": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 4,
+    "pin": 2
+   },
+   "file": "src/course_stream.c",
+   "name": "Course_StreamDispatcher",
+   "size": 40
+  },
+  "0x08006aec": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 1
+   },
+   "file": "src/course_stream.c",
+   "name": "Course_NextRecord",
+   "size": 52
+  },
+  "0x08006b20": {
+   "class": "c",
+   "file": "src/course_stream.c",
+   "name": "Course_CursorReset",
+   "size": 16
+  },
+  "0x08006bc8": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 2
+   },
+   "file": "src/course_stream_more.c",
+   "name": "_08006BC8",
+   "size": 72
+  },
+  "0x08006c10": {
+   "class": "c",
+   "file": "src/course_stream_more.c",
+   "name": "_08006C10",
+   "size": 80
+  },
+  "0x08006c60": {
+   "class": "c",
+   "file": "src/course_stream_more.c",
+   "name": "_08006C60",
+   "size": 52
+  },
+  "0x08006c94": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 6
+   },
+   "file": "src/course_stream_more.c",
+   "name": "_08006C94",
+   "size": 36
+  },
+  "0x08006d68": {
+   "class": "c",
+   "file": "src/course_stream.c",
+   "name": "Course_StreamTail_06D68",
+   "size": 16
+  },
+  "0x08006d78": {
+   "class": "c",
+   "file": "src/course_stream.c",
+   "name": "Course_StreamTail_06D78",
+   "size": 16
+  },
+  "0x08006d88": {
+   "class": "c",
+   "file": "src/course_stream.c",
+   "name": "Course_StreamTail_06D88",
+   "size": 20
+  },
+  "0x08006e1c": {
+   "class": "c",
+   "file": "src/runtime_record_helpers.c",
+   "name": "_08006E1C",
+   "size": 84
+  },
+  "0x08007484": {
+   "class": "c",
+   "file": "src/runtime_record_helpers.c",
+   "name": "_08007484",
+   "size": 4
+  },
+  "0x08007488": {
+   "class": "c",
+   "file": "src/course_resource.c",
+   "name": "Course_07488",
+   "size": 4
+  },
+  "0x0800748c": {
+   "class": "c",
+   "file": "src/course_resource.c",
+   "name": "Course_ArrBase",
+   "size": 12
+  },
+  "0x08007498": {
+   "class": "c",
+   "file": "src/course_resource.c",
+   "name": "Course_Seek",
+   "size": 16
+  },
+  "0x080074a8": {
+   "class": "c",
+   "file": "src/course_resource.c",
+   "name": "Course_GetU32At4",
+   "size": 4
+  },
+  "0x080074ac": {
+   "class": "c",
+   "file": "src/course_resource.c",
+   "name": "Course_ClearSlot_074AC",
+   "size": 40
+  },
+  "0x08007538": {
+   "class": "c",
+   "file": "src/course_resource.c",
+   "name": "Course_EmitLane_07538",
+   "size": 56
+  },
+  "0x08007570": {
+   "class": "c",
+   "file": "src/course_resource.c",
+   "name": "Course_EmitLane_07570",
+   "size": 52
+  },
+  "0x080075a4": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 2
+   },
+   "file": "src/course_resource.c",
+   "name": "Course_EmitLane_075A4",
+   "size": 68
+  },
+  "0x080075e8": {
+   "class": "c",
+   "file": "src/course_resource.c",
+   "name": "Course_EmitLane_075E8",
+   "size": 44
+  },
+  "0x08007614": {
+   "class": "c",
+   "file": "src/course_resource.c",
+   "name": "Course_EmitLane_07614",
+   "size": 48
+  },
+  "0x08007644": {
+   "class": "c",
+   "file": "src/course_resource.c",
+   "name": "Course_Leaf_07644",
+   "size": 20
+  },
+  "0x08007658": {
+   "class": "c",
+   "file": "src/course_resource.c",
+   "name": "Course_Leaf_07658",
+   "size": 12
+  },
+  "0x080078ec": {
+   "class": "c",
+   "file": "src/course_resource_helpers.c",
+   "name": "Course_0x080078EC",
+   "size": 56
+  },
+  "0x08007924": {
+   "class": "c",
+   "file": "src/course_resource_helpers.c",
+   "name": "Course_0x08007924",
+   "size": 20
+  },
+  "0x08007938": {
+   "class": "c",
+   "file": "src/course_resource_helpers.c",
+   "name": "Course_0x08007938",
+   "size": 64
+  },
+  "0x08007978": {
+   "class": "c",
+   "file": "src/course_resource.c",
+   "name": "Course_07978",
+   "size": 20
+  },
+  "0x0800798c": {
+   "class": "c",
+   "file": "src/course_resource_more.c",
+   "name": "_0800798C",
+   "size": 40
+  },
+  "0x080079b4": {
+   "class": "c",
+   "file": "src/course_resource_more.c",
+   "name": "_080079B4",
+   "size": 80
+  },
+  "0x08007a04": {
+   "class": "c",
+   "file": "src/course_resource_more.c",
+   "name": "_08007A04",
+   "size": 84
+  },
+  "0x08007a58": {
+   "class": "c",
+   "file": "src/course_resource_more.c",
+   "name": "_08007A58",
+   "size": 100
+  },
+  "0x08007abc": {
+   "class": "c",
+   "file": "src/course_resource.c",
+   "name": "Course_ResourceLeaf_07ABC",
+   "size": 92
+  },
+  "0x08007ec4": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 1
+   },
+   "file": "src/course_records.c",
+   "name": "Course_Math_SumU16",
+   "size": 28
+  },
+  "0x08007ee0": {
+   "class": "c",
+   "file": "src/course_records.c",
+   "name": "Course_Math_AbsRoundAvg",
+   "size": 40
+  },
+  "0x08008074": {
+   "class": "c",
+   "file": "src/course_records.c",
+   "name": "Course_State_Store0",
+   "size": 12
+  },
+  "0x08008080": {
+   "class": "c",
+   "file": "src/course_records.c",
+   "name": "Course_State_Store14",
+   "size": 12
+  },
+  "0x0800808c": {
+   "class": "c",
+   "file": "src/course_records.c",
+   "name": "Course_State_Store6",
+   "size": 12
+  },
+  "0x08008098": {
+   "class": "c",
+   "file": "src/course_records.c",
+   "name": "Course_State_Store10",
+   "size": 12
+  },
+  "0x080080a4": {
+   "class": "c",
+   "file": "src/course_records.c",
+   "name": "Course_State_ClampStore2",
+   "size": 40
+  },
+  "0x080080cc": {
+   "class": "c",
+   "file": "src/course_records.c",
+   "name": "Course_State_Store64",
+   "size": 12
+  },
+  "0x080080d8": {
+   "class": "c",
+   "file": "src/course_records.c",
+   "name": "Course_State_Store68",
+   "size": 12
+  },
+  "0x080080e4": {
+   "class": "c",
+   "file": "src/course_records.c",
+   "name": "Course_State_Store72_104",
+   "size": 16
+  },
+  "0x080080f4": {
+   "class": "c",
+   "file": "src/course_records.c",
+   "name": "Course_State_Store72_150",
+   "size": 16
+  },
+  "0x08008104": {
+   "class": "c",
+   "file": "src/course_records.c",
+   "name": "Course_State_Flag78",
+   "size": 16
+  },
+  "0x08008114": {
+   "class": "c",
+   "file": "src/course_records.c",
+   "name": "Course_State_Store12Flag77",
+   "size": 32
+  },
+  "0x08008134": {
+   "class": "c",
+   "file": "src/course_records.c",
+   "name": "Course_State_Store8Flag76",
+   "size": 48
+  },
+  "0x080081f8": {
+   "class": "c",
+   "file": "src/course_records.c",
+   "name": "Course_State_Store18_48",
+   "size": 16
+  },
+  "0x08008208": {
+   "class": "c",
+   "file": "src/course_records.c",
+   "name": "Course_State_Store22_24",
+   "size": 20
+  },
+  "0x08008284": {
+   "class": "c",
+   "file": "src/course_records.c",
+   "name": "Course_State_Store32",
+   "size": 12
+  },
+  "0x080095f0": {
+   "class": "c",
+   "file": "src/course_leaves.c",
+   "name": "CourseLeaves_095F0",
+   "size": 44
+  },
+  "0x0800961c": {
+   "class": "c",
+   "file": "src/course_leaves.c",
+   "name": "CourseLeaves_0961C",
+   "size": 44
+  },
+  "0x08009648": {
+   "class": "c",
+   "file": "src/course_leaves.c",
+   "name": "CourseLeaves_09648",
+   "size": 44
+  },
+  "0x08009674": {
+   "class": "c",
+   "file": "src/course_records.c",
+   "name": "Course_GetU32_030003E4_0",
+   "size": 12
+  },
+  "0x08009680": {
+   "class": "c",
+   "file": "src/course_records.c",
+   "name": "Course_SetU32_030003E4_0",
+   "size": 12
+  },
+  "0x0800968c": {
+   "class": "c",
+   "file": "src/course_records.c",
+   "name": "Course_Fetch_S16_20Shift",
+   "size": 24
+  },
+  "0x080097e8": {
+   "class": "c",
+   "file": "src/course_leaves.c",
+   "name": "_080097E8",
+   "size": 72
+  },
+  "0x08009830": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 1
+   },
+   "file": "src/course_record_access.c",
+   "name": "CourseLeaves_09830",
+   "size": 152
+  },
+  "0x080098c8": {
+   "class": "c",
+   "file": "src/course_leaves.c",
+   "name": "CourseLeaves_098C8",
+   "size": 56
+  },
+  "0x08009b28": {
+   "class": "c",
+   "file": "src/course_leaves.c",
+   "name": "CourseLeaves_09B28",
+   "size": 40
+  },
+  "0x08009b50": {
+   "class": "c",
+   "file": "src/course_leaves.c",
+   "name": "CourseLeaves_09B50",
+   "size": 16
+  },
+  "0x08009bcc": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/car_tick_helpers.c",
+   "name": "_08009BCC",
+   "size": 44
+  },
+  "0x08009f58": {
+   "class": "c",
+   "file": "src/car_racer_constants.c",
+   "name": "CarRacer_Return3",
+   "size": 4
+  },
+  "0x08009ffc": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 17,
+    "naked": true
+   },
+   "file": "src/car_tick_helpers.c",
+   "name": "Rec9FFC",
+   "size": 36
+  },
+  "0x0800a020": {
+   "class": "c",
+   "file": "src/car_tick_dispatch.c",
+   "name": "_0800A020",
+   "size": 4
+  },
+  "0x0800a024": {
+   "class": "c",
+   "file": "src/car_tick_dispatch.c",
+   "name": "_0800A024",
+   "size": 4
+  },
+  "0x0800a028": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/car_tick_helpers.c",
+   "name": "CarTick_Rec_0A028",
+   "size": 68
+  },
+  "0x0800a06c": {
+   "class": "c",
+   "file": "src/car_racer_constants.c",
+   "name": "CarRacer_Return15",
+   "size": 4
+  },
+  "0x0800a070": {
+   "class": "c",
+   "file": "src/car_racer_constants.c",
+   "name": "CarRacer_Return17",
+   "size": 4
+  },
+  "0x0800a11c": {
+   "class": "c",
+   "file": "src/car_racer_constants.c",
+   "name": "CarRacer_Return26",
+   "size": 4
+  },
+  "0x0800a120": {
+   "class": "c",
+   "file": "src/car_racer_constants.c",
+   "name": "CarRacer_Return20",
+   "size": 4
+  },
+  "0x0800a124": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/car_tick_helpers.c",
+   "name": "CarTick_Rec_0A124",
+   "size": 44
+  },
+  "0x0800a1a4": {
+   "class": "c",
+   "file": "src/car_tick_helpers.c",
+   "name": "CarTick_Rec_0A1A4",
+   "size": 12
+  },
+  "0x0800a1b0": {
+   "class": "c",
+   "file": "src/car_racer_constants.c",
+   "name": "CarRacer_Return49",
+   "size": 12
+  },
+  "0x0800a1bc": {
+   "class": "c",
+   "file": "src/car_racer_constants.c",
+   "name": "CarRacer_Return49b",
+   "size": 12
+  },
+  "0x0800a1c8": {
+   "class": "c",
+   "file": "src/car_tick_helpers.c",
+   "name": "CarTick_Rec_0A1C8",
+   "size": 12
+  },
+  "0x0800a1d4": {
+   "class": "c",
+   "file": "src/car_tick_dispatch.c",
+   "name": "CarTick_Rec_0A1D4",
+   "size": 12
+  },
+  "0x0800a1e0": {
+   "class": "c",
+   "file": "src/car_tick_dispatch.c",
+   "name": "CarTick_Rec_0A1E0",
+   "size": 12
+  },
+  "0x0800a1ec": {
+   "class": "c",
+   "file": "src/car_tick_dispatch.c",
+   "name": "CarTick_Rec_0A1EC",
+   "size": 12
+  },
+  "0x0800a1f8": {
+   "class": "c",
+   "file": "src/car_tick_dispatch.c",
+   "name": "CarTick_Rec_0A1F8",
+   "size": 12
+  },
+  "0x0800a204": {
+   "class": "c",
+   "file": "src/car_tick_dispatch.c",
+   "name": "CarTick_Rec_0A204",
+   "size": 12
+  },
+  "0x0800a210": {
+   "class": "c",
+   "file": "src/car_tick_dispatch.c",
+   "name": "CarTick_Rec_0A210",
+   "size": 12
+  },
+  "0x0800a21c": {
+   "class": "c",
+   "file": "src/car_tick_dispatch.c",
+   "name": "CarTick_Rec_0A21C",
+   "size": 12
+  },
+  "0x0800a228": {
+   "class": "c",
+   "file": "src/car_tick_helpers.c",
+   "name": "_0800A228",
+   "size": 20
+  },
+  "0x0800a23c": {
+   "class": "c",
+   "file": "src/car_tick_dispatch.c",
+   "name": "CarTick_Rec_0A23C",
+   "size": 12
+  },
+  "0x0800a248": {
+   "class": "c",
+   "file": "src/car_tick_dispatch.c",
+   "name": "CarTick_Rec_0A248",
+   "size": 12
+  },
+  "0x0800a8fc": {
+   "class": "c",
+   "file": "src/car_tick_helpers.c",
+   "name": "_0800A8FC",
+   "size": 12
+  },
+  "0x0800a908": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/car_tick_helpers.c",
+   "name": "_0800A908",
+   "size": 48
+  },
+  "0x0800a938": {
+   "class": "c",
+   "file": "src/car_tick_helpers.c",
+   "name": "_0800A938",
+   "size": 20
+  },
+  "0x0800a980": {
+   "class": "c",
+   "file": "src/car_tick_dispatch.c",
+   "name": "_0800A980",
+   "size": 32
+  },
+  "0x0800a9a0": {
+   "class": "c",
+   "file": "src/car_tick_dispatch.c",
+   "name": "CarTick_GridA",
+   "size": 64
+  },
+  "0x0800a9e0": {
+   "class": "c",
+   "file": "src/car_tick_dispatch.c",
+   "name": "CarTick_GridB",
+   "size": 64
+  },
+  "0x0800aa20": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 2
+   },
+   "file": "src/car_tick_dispatch.c",
+   "name": "CarTick_Shared",
+   "size": 32
+  },
+  "0x0800bc04": {
+   "class": "c",
+   "file": "src/scene_record_dispatch.c",
+   "name": "MenuNoop_BC04",
+   "size": 4
+  },
+  "0x0800be20": {
+   "class": "c",
+   "file": "src/menus.c",
+   "name": "MenuRecordApply_0800BE20",
+   "size": 84
+  },
+  "0x0800c010": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 1
+   },
+   "file": "src/scene_record_dispatch.c",
+   "name": "MenuCtor_0C010",
+   "size": 224
+  },
+  "0x0800c0f0": {
+   "class": "c",
+   "file": "src/menus.c",
+   "name": "MenuC0F0_0800C0F0",
+   "size": 32
+  },
+  "0x0800c110": {
+   "class": "c",
+   "file": "src/menus.c",
+   "name": "MenuC110_0800C110",
+   "size": 24
+  },
+  "0x0800c128": {
+   "class": "c",
+   "file": "src/menus.c",
+   "name": "MenuC128_0800C128",
+   "size": 16
+  },
+  "0x0800c138": {
+   "class": "c",
+   "file": "src/menus.c",
+   "name": "MenuC138_0800C138",
+   "size": 48
+  },
+  "0x0800c168": {
+   "class": "c",
+   "file": "src/runtime_state_dispatch.c",
+   "name": "MenuDispatch_C168",
+   "size": 124
+  },
+  "0x0800c1e4": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 1
+   },
+   "file": "src/scene_record_dispatch.c",
+   "name": "MenuCtor2_0C1E4",
+   "size": 224
+  },
+  "0x0800c2c4": {
+   "class": "c",
+   "file": "src/menu_c2c4.c",
+   "name": "MenuC2C4_Enable",
+   "size": 32
+  },
+  "0x0800c2e4": {
+   "class": "c",
+   "file": "src/menu_c2c4.c",
+   "name": "MenuC2C4_Teardown",
+   "size": 24
+  },
+  "0x0800c2fc": {
+   "class": "c",
+   "file": "src/menu_c2c4.c",
+   "name": "MenuC2C4_Flush",
+   "size": 16
+  },
+  "0x0800c30c": {
+   "class": "c",
+   "file": "src/menu_c2c4.c",
+   "name": "MenuC2C4_PtrDispatch",
+   "size": 52
+  },
+  "0x0800c340": {
+   "class": "c",
+   "file": "src/menu_c2c4.c",
+   "name": "MenuC340_Dispatch",
+   "size": 60
+  },
+  "0x0800c37c": {
+   "class": "c",
+   "file": "src/menu_c2c4.c",
+   "name": "MenuC340_ByteGate",
+   "size": 20
+  },
+  "0x0800c390": {
+   "class": "c",
+   "file": "src/menu_c2c4.c",
+   "name": "MenuC340_SetMode",
+   "size": 12
+  },
+  "0x0800c4ac": {
+   "class": "c",
+   "file": "src/runtime_record_helpers.c",
+   "name": "_0800C4AC",
+   "size": 32
+  },
+  "0x0800c4cc": {
+   "class": "c",
+   "file": "src/runtime_record_helpers.c",
+   "name": "_0800C4CC",
+   "size": 4
+  },
+  "0x0800c604": {
+   "class": "c",
+   "file": "src/menus.c",
+   "name": "MenuC604_0800C604",
+   "size": 60
+  },
+  "0x0800c640": {
+   "class": "c",
+   "file": "src/menus.c",
+   "name": "MenuC640_0800C640",
+   "size": 24
+  },
+  "0x0800c658": {
+   "class": "c",
+   "file": "src/menus.c",
+   "name": "MenuC658_0800C658",
+   "size": 16
+  },
+  "0x0800c730": {
+   "class": "c",
+   "file": "src/foundation_late.c",
+   "name": "LateFlagCheck",
+   "size": 20
+  },
+  "0x0800c7f4": {
+   "class": "c",
+   "file": "src/menus.c",
+   "name": "MenuC7F4_0800C7F4",
+   "size": 32
+  },
+  "0x0800cc38": {
+   "class": "c",
+   "file": "src/menus.c",
+   "name": "MenuCC38_0800CC38",
+   "size": 4
+  },
+  "0x0800cc80": {
+   "class": "c",
+   "file": "src/menus.c",
+   "name": "MenuCC80_0800CC80",
+   "size": 48
+  },
+  "0x0800ccb0": {
+   "class": "c",
+   "file": "src/menus.c",
+   "name": "MenuCCB0_0800CCB0",
+   "size": 24
+  },
+  "0x0800ccc8": {
+   "class": "c",
+   "file": "src/menus.c",
+   "name": "MenuCCC8_0800CCC8",
+   "size": 36
+  },
+  "0x0800ccec": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/menu_ccec.c",
+   "name": "_0800CCEC",
+   "size": 92
+  },
+  "0x0800cd48": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/menu_ccec.c",
+   "name": "_0800CD48",
+   "size": 164
+  },
+  "0x0800cdec": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 2
+   },
+   "file": "src/menu_ccec.c",
+   "name": "_0800CDEC",
+   "size": 64
+  },
+  "0x0800ce2c": {
+   "class": "c",
+   "file": "src/foundation_late.c",
+   "name": "LateDispatch_CE2C",
+   "size": 68
+  },
+  "0x0800ce70": {
+   "class": "c",
+   "file": "src/menus.c",
+   "name": "MenuCE70_0800CE70",
+   "size": 8
+  },
+  "0x0800ce78": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/menu_records.c",
+   "name": "MenuRec_0800CE78",
+   "size": 92
+  },
+  "0x0800cf60": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 2
+   },
+   "file": "src/menu_records.c",
+   "name": "MenuRec_0800CF60",
+   "size": 64
+  },
+  "0x0800cfa0": {
+   "class": "c",
+   "file": "src/menu_records.c",
+   "name": "MenuRec_0800CFA0",
+   "size": 68
+  },
+  "0x0800d13c": {
+   "class": "c",
+   "file": "src/runtime_record_helpers.c",
+   "name": "_0800D13C",
+   "size": 64
+  },
+  "0x0800d17c": {
+   "class": "c",
+   "file": "src/runtime_record_helpers.c",
+   "name": "_0800D17C",
+   "size": 56
+  },
+  "0x0800d1b4": {
+   "class": "c",
+   "file": "src/menu_d1b4.c",
+   "name": "MenuD1B4_Reset",
+   "size": 12
+  },
+  "0x0800d1c0": {
+   "class": "c",
+   "file": "src/menu_d1b4.c",
+   "name": "MenuD1B4_Draw",
+   "size": 44
+  },
+  "0x0800d1ec": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 4
+   },
+   "file": "src/menu_d1b4.c",
+   "name": "MenuD1B4_Move",
+   "size": 84
+  },
+  "0x0800d240": {
+   "class": "c",
+   "file": "src/menu_d1b4.c",
+   "name": "MenuD1B4_Noop",
+   "size": 4
+  },
+  "0x0800d244": {
+   "class": "c",
+   "file": "src/menu_d1b4.c",
+   "name": "MenuD1B4_Dispatch",
+   "size": 60
+  },
+  "0x0800d280": {
+   "class": "c",
+   "file": "src/menus.c",
+   "name": "MenuD280_0800D280",
+   "size": 24
+  },
+  "0x0800d298": {
+   "class": "c",
+   "file": "src/menu_d280.c",
+   "name": "_0800D298",
+   "size": 20
+  },
+  "0x0800d2ac": {
+   "class": "c",
+   "file": "src/menu_d280.c",
+   "name": "_0800D2AC",
+   "size": 4
+  },
+  "0x0800d3a4": {
+   "class": "c",
+   "file": "src/scene_record_dispatch.c",
+   "name": "MenuSelectHandler_0D3A4",
+   "size": 204
+  },
+  "0x0800d470": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 1
+   },
+   "file": "src/scene_record_dispatch.c",
+   "name": "MenuEventDispatch_0D470",
+   "size": 122
+  },
+  "0x0800d4ec": {
+   "class": "c",
+   "file": "src/menus.c",
+   "name": "MenuD4EC_0800D4EC",
+   "size": 88
+  },
+  "0x0800d544": {
+   "class": "c",
+   "file": "src/menu_stage.c",
+   "name": "MenuStage_0800D544",
+   "size": 88
+  },
+  "0x0800d59c": {
+   "class": "c",
+   "file": "src/menu_stage.c",
+   "name": "MenuStage_0800D59C",
+   "size": 12
+  },
+  "0x0800d5e4": {
+   "class": "c",
+   "file": "src/menu_stage.c",
+   "name": "MenuStage_0800D5E4",
+   "size": 104
+  },
+  "0x0800d64c": {
+   "class": "c",
+   "file": "src/menu_stage.c",
+   "name": "MenuStage_0800D64C",
+   "size": 4
+  },
+  "0x0800d650": {
+   "class": "c",
+   "file": "src/menu_stage.c",
+   "name": "MenuStage_0800D650",
+   "size": 12
+  },
+  "0x0800d65c": {
+   "class": "c",
+   "file": "src/menu_stage.c",
+   "name": "MenuStage_0800D65C",
+   "size": 8
+  },
+  "0x0800d664": {
+   "class": "c",
+   "file": "src/menu_stage.c",
+   "name": "MenuStage_0800D664",
+   "size": 124
+  },
+  "0x0800d6e0": {
+   "class": "c",
+   "file": "src/menu_stage.c",
+   "name": "MenuStage_0800D6E0",
+   "size": 36
+  },
+  "0x0800d704": {
+   "class": "c",
+   "file": "src/menu_stage.c",
+   "name": "MenuStage_0800D704",
+   "size": 36
+  },
+  "0x0800d728": {
+   "class": "c",
+   "file": "src/menu_stage.c",
+   "name": "MenuStage_0800D728",
+   "size": 4
+  },
+  "0x0800d72c": {
+   "class": "c",
+   "file": "src/menu_stage.c",
+   "name": "MenuStage_0800D72C",
+   "size": 8
+  },
+  "0x0800d734": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 1
+   },
+   "file": "src/menu_stage.c",
+   "name": "MenuStage_0800D734",
+   "size": 68
+  },
+  "0x0800d778": {
+   "class": "c",
+   "file": "src/car_tick_helpers.c",
+   "name": "CarTickNoop_D778",
+   "size": 4
+  },
+  "0x0800d77c": {
+   "class": "c",
+   "file": "src/menu_stage.c",
+   "name": "MenuStage_0800D77C",
+   "size": 8
+  },
+  "0x0800d784": {
+   "class": "c",
+   "file": "src/menu_stage.c",
+   "name": "MenuStage_0800D784",
+   "size": 12
+  },
+  "0x0800d790": {
+   "class": "c",
+   "file": "src/menu_stage.c",
+   "name": "MenuStage_0800D790",
+   "size": 36
+  },
+  "0x0800d7b4": {
+   "class": "c",
+   "file": "src/menu_stage.c",
+   "name": "MenuStage_0800D7B4",
+   "size": 12
+  },
+  "0x0800d7c0": {
+   "class": "c",
+   "file": "src/menu_stage.c",
+   "name": "MenuStage_0800D7C0",
+   "size": 4
+  },
+  "0x0800d7c4": {
+   "class": "c",
+   "file": "src/menus.c",
+   "name": "MenuD7C4_0800D7C4",
+   "size": 8
+  },
+  "0x0800d7cc": {
+   "class": "c",
+   "file": "src/menu_stage.c",
+   "name": "MenuStage_0800D7CC",
+   "size": 52
+  },
+  "0x0800d800": {
+   "class": "c",
+   "file": "src/menu_stage.c",
+   "name": "MenuStage_0800D800",
+   "size": 40
+  },
+  "0x0800d828": {
+   "class": "c",
+   "file": "src/menu_stage.c",
+   "name": "MenuStage_0800D828",
+   "size": 44
+  },
+  "0x0800d854": {
+   "class": "c",
+   "file": "src/menu_stage.c",
+   "name": "MenuStage_0800D854",
+   "size": 144
+  },
+  "0x0800d95c": {
+   "class": "c",
+   "file": "src/menu_stage.c",
+   "name": "memcpy_0800D95C",
+   "size": 24
+  },
+  "0x0800d974": {
+   "class": "c",
+   "file": "src/menu_stage.c",
+   "name": "MenuStage_0800D974",
+   "size": 8
+  },
+  "0x0800d97c": {
+   "class": "c",
+   "file": "src/menu_stage.c",
+   "name": "MenuStage_0800D97C",
+   "size": 40
+  },
+  "0x0800d9a4": {
+   "class": "c",
+   "file": "src/menu_records.c",
+   "name": "MenuRec_0800D9A4",
+   "size": 84
+  },
+  "0x0800d9f8": {
+   "class": "c",
+   "file": "src/menu_records.c",
+   "name": "MenuRec_0800D9F8",
+   "size": 88
+  },
+  "0x0800da50": {
+   "class": "c",
+   "file": "src/menu_records.c",
+   "name": "MenuRec_0800DA50",
+   "size": 56
+  },
+  "0x0800da88": {
+   "class": "c",
+   "file": "src/menu_records.c",
+   "name": "MenuRec_0800DA88",
+   "size": 48
+  },
+  "0x0800dc7c": {
+   "class": "c",
+   "file": "src/menus.c",
+   "name": "MenuDC7C_0800DC7C",
+   "size": 164
+  },
+  "0x0800dd20": {
+   "class": "c",
+   "file": "src/menus.c",
+   "name": "MenuDD20_0800DD20",
+   "size": 124
+  },
+  "0x0800de4c": {
+   "class": "c",
+   "file": "src/menu_dbe8_helpers.c",
+   "name": "MenuDE4C_0800DE4C",
+   "size": 4
+  },
+  "0x0800dfe0": {
+   "class": "c",
+   "file": "src/menus.c",
+   "name": "MenuDFE0_0800DFE0",
+   "size": 16
+  },
+  "0x0800e0bc": {
+   "class": "c",
+   "file": "src/menus.c",
+   "name": "MenuE0BC_0800E0BC",
+   "size": 88
+  },
+  "0x0800e114": {
+   "class": "c",
+   "file": "src/menus.c",
+   "name": "MenuE114_0800E114",
+   "size": 72
+  },
+  "0x0800e2e4": {
+   "class": "c",
+   "file": "src/menu_dbe8_helpers.c",
+   "name": "MenuE2E4_0800E2E4",
+   "size": 44
+  },
+  "0x0800e598": {
+   "class": "c",
+   "file": "src/menu_dbe8_helpers.c",
+   "name": "MenuE598_0800E598",
+   "size": 4
+  },
+  "0x0800e7a0": {
+   "class": "c",
+   "file": "src/runtime_record_helpers.c",
+   "name": "_0800E7A0",
+   "size": 4
+  },
+  "0x0800e7a4": {
+   "class": "c",
+   "file": "src/runtime_record_helpers.c",
+   "name": "_0800E7A4",
+   "size": 4
+  },
+  "0x0800e7a8": {
+   "class": "c",
+   "file": "src/menus.c",
+   "name": "MenuE7A8_0800E7A8",
+   "size": 36
+  },
+  "0x0800ebd8": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1,
+    "pin": 2
+   },
+   "file": "src/menus.c",
+   "name": "MenuEbd8_0800EBD8",
+   "size": 212
+  },
+  "0x0800ed68": {
+   "class": "c",
+   "file": "src/menus.c",
+   "name": "MenuED68_0800ED68",
+   "size": 48
+  },
+  "0x0800ed98": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 3
+   },
+   "file": "src/menus.c",
+   "name": "MenuED98_0800ED98",
+   "size": 104
+  },
+  "0x0800f040": {
+   "class": "c",
+   "file": "src/menus.c",
+   "name": "MenuF040_0800F040",
+   "size": 124
+  },
+  "0x0800f0bc": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/menus.c",
+   "name": "MenuF0BC_0800F0BC",
+   "size": 120
+  },
+  "0x0800f134": {
+   "class": "c",
+   "file": "src/menus.c",
+   "name": "MenuF134_0800F134",
+   "size": 248
+  },
+  "0x0800f59c": {
+   "class": "c",
+   "file": "src/runtime_state_dispatch.c",
+   "name": "Stub_0F59C",
+   "size": 4
+  },
+  "0x0800f5a0": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/menus.c",
+   "name": "MenuF5A0_0800F5A0",
+   "size": 76
+  },
+  "0x0800f6d0": {
+   "class": "c",
+   "file": "src/menus.c",
+   "name": "MenuF6D0_0800F6D0",
+   "size": 48
+  },
+  "0x0800f700": {
+   "class": "c",
+   "file": "src/menus.c",
+   "name": "MenuF700_0800F700",
+   "size": 68
+  },
+  "0x0800f744": {
+   "class": "c",
+   "file": "src/menus.c",
+   "name": "MenuF744_0800F744",
+   "size": 52
+  },
+  "0x0800f778": {
+   "class": "c",
+   "file": "src/menus.c",
+   "name": "MenuF778_0800F778",
+   "size": 28
+  },
+  "0x0800f794": {
+   "class": "c",
+   "file": "src/menus.c",
+   "name": "MenuF794_0800F794",
+   "size": 44
+  },
+  "0x0800f7c0": {
+   "class": "c",
+   "file": "src/menus.c",
+   "name": "MenuF7C0_0800F7C0",
+   "size": 44
+  },
+  "0x0800f7ec": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/menus.c",
+   "name": "MenuF7EC_0800F7EC",
+   "size": 36
+  },
+  "0x080108d4": {
+   "class": "c",
+   "file": "src/menus.c",
+   "name": "Menu108D4_0800108D4",
+   "size": 28
+  },
+  "0x080108f0": {
+   "class": "c",
+   "file": "src/menus.c",
+   "name": "Menu108F0_0800108F0",
+   "size": 36
+  },
+  "0x08010914": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/menus.c",
+   "name": "Menu010914_080010914",
+   "size": 44
+  },
+  "0x08010940": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/menus.c",
+   "name": "Menu010940_080010940",
+   "size": 44
+  },
+  "0x08011cbc": {
+   "class": "c",
+   "file": "src/menu_ff78_d.c",
+   "name": "MenuFF78_11CBC",
+   "size": 64
+  },
+  "0x08011cfc": {
+   "class": "c",
+   "file": "src/menu_ff78_d.c",
+   "name": "MenuFF78_11CFC",
+   "size": 76
+  },
+  "0x08011d48": {
+   "class": "c",
+   "file": "src/menu_ff78_f.c",
+   "name": "MenuFF78_11D48",
+   "size": 124
+  },
+  "0x08011dc4": {
+   "class": "c",
+   "file": "src/menu_ff78_d.c",
+   "name": "MenuFF78_11DC4",
+   "size": 76
+  },
+  "0x08011e10": {
+   "class": "c",
+   "file": "src/menu_ff78_d.c",
+   "name": "MenuFF78_11E10",
+   "size": 72
+  },
+  "0x08011e58": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 2
+   },
+   "file": "src/menu_ff78_g.c",
+   "name": "MenuFF78_11E58",
+   "size": 136
+  },
+  "0x08011ee0": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 2
+   },
+   "file": "src/menu_ff78_g.c",
+   "name": "MenuFF78_11EE0",
+   "size": 136
+  },
+  "0x08011f68": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 2
+   },
+   "file": "src/menu_ff78_g.c",
+   "name": "MenuFF78_11F68",
+   "size": 136
+  },
+  "0x08011ff0": {
+   "class": "c",
+   "file": "src/menu_ff78_d.c",
+   "name": "MenuFF78_11FF0",
+   "size": 68
+  },
+  "0x08012034": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/menu_ff78_e.c",
+   "name": "MenuFF78_12034",
+   "size": 116
+  },
+  "0x0801226c": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/menu_ff78_g.c",
+   "name": "MenuFF78_1226C",
+   "size": 116
+  },
+  "0x080122e0": {
+   "class": "c",
+   "file": "src/menu_ff78_j.c",
+   "name": "MenuFF78_122E0",
+   "size": 248
+  },
+  "0x080124ec": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/menu_ff78_g.c",
+   "name": "MenuFF78_124EC",
+   "size": 136
+  },
+  "0x08012574": {
+   "class": "c",
+   "file": "src/menu_ff78_c.c",
+   "name": "_080012574",
+   "size": 4
+  },
+  "0x08012578": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/menu_ff78_e.c",
+   "name": "MenuFF78_12578",
+   "size": 76
+  },
+  "0x080127f4": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/menu_ff78_e.c",
+   "name": "MenuFF78_127F4",
+   "size": 92
+  },
+  "0x08012850": {
+   "class": "c",
+   "file": "src/menu_ff78_c.c",
+   "name": "_080012850",
+   "size": 4
+  },
+  "0x08012a44": {
+   "class": "c",
+   "file": "src/menu_ff78_g.c",
+   "name": "MenuFF78_12A44",
+   "size": 124
+  },
+  "0x08012b34": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/menu_ff78_d.c",
+   "name": "MenuFF78_12B34",
+   "size": 52
+  },
+  "0x08012c7c": {
+   "class": "c",
+   "file": "src/menus.c",
+   "name": "Menu12C7C_080012C7C",
+   "size": 20
+  },
+  "0x08012d54": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 2
+   },
+   "file": "src/menus.c",
+   "name": "MenuTick_080012D54",
+   "size": 76
+  },
+  "0x08012e5c": {
+   "class": "c",
+   "file": "src/menus.c",
+   "name": "Menu12E5C_080012E5C",
+   "size": 24
+  },
+  "0x08012e74": {
+   "class": "c",
+   "file": "src/menu_ff78_f.c",
+   "name": "MenuFF78_12E74",
+   "size": 40
+  },
+  "0x08012e9c": {
+   "class": "c",
+   "file": "src/menu_ff78_e.c",
+   "name": "MenuFF78_12E9C",
+   "size": 52
+  },
+  "0x08012ed0": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 2
+   },
+   "file": "src/menu_ff78_e.c",
+   "name": "MenuFF78_12ED0",
+   "size": 68
+  },
+  "0x08012f14": {
+   "class": "c",
+   "file": "src/menu_ff78_c.c",
+   "name": "_080012F14",
+   "size": 4
+  },
+  "0x08012f6c": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 2,
+    "pin": 1
+   },
+   "file": "src/menu_ff78_e.c",
+   "name": "MenuFF78_12F6C",
+   "size": 44
+  },
+  "0x080133e0": {
+   "class": "c",
+   "file": "src/menu_ff78_c.c",
+   "name": "_0800133E0",
+   "size": 4
+  },
+  "0x08013950": {
+   "class": "c",
+   "file": "src/menu_ff78_h.c",
+   "name": "MenuFF78_13950",
+   "size": 160
+  },
+  "0x08013e4c": {
+   "class": "c",
+   "file": "src/menus.c",
+   "name": "Menu13E4C_080013E4C",
+   "size": 20
+  },
+  "0x08013e60": {
+   "class": "c",
+   "file": "src/menu_ff78_c.c",
+   "name": "_080013E60",
+   "size": 4
+  },
+  "0x08013e64": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/menu_ff78_f.c",
+   "name": "MenuFF78_13E64",
+   "size": 76
+  },
+  "0x0801411c": {
+   "class": "c",
+   "file": "src/menu_ff78_f.c",
+   "name": "MenuFF78_1411C",
+   "size": 140
+  },
+  "0x080141a8": {
+   "class": "c",
+   "file": "src/menu_ff78_c.c",
+   "name": "_0800141A8",
+   "size": 4
+  },
+  "0x08014a08": {
+   "class": "c",
+   "file": "src/menu_ff78_i.c",
+   "name": "MenuFF78_14A08",
+   "size": 188
+  },
+  "0x08014bcc": {
+   "class": "c",
+   "file": "src/menu_ff78_c.c",
+   "name": "_080014BCC",
+   "size": 4
+  },
+  "0x08014bd0": {
+   "class": "c",
+   "file": "src/menu_ff78_h.c",
+   "name": "MenuFF78_14BD0",
+   "size": 160
+  },
+  "0x08014c70": {
+   "class": "c",
+   "file": "src/menus.c",
+   "name": "Menu14C70_080014C70",
+   "size": 20
+  },
+  "0x08014c84": {
+   "class": "c",
+   "file": "src/menu_ff78_c.c",
+   "name": "_080014C84",
+   "size": 4
+  },
+  "0x0801529c": {
+   "class": "c",
+   "file": "src/menus.c",
+   "name": "Menu1529C_08001529C",
+   "size": 12
+  },
+  "0x080152a8": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1,
+    "pin": 1
+   },
+   "file": "src/menu_ff78_f.c",
+   "name": "MenuFF78_152A8",
+   "size": 92
+  },
+  "0x0801549c": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/menu_ff78_f.c",
+   "name": "MenuFF78_1549C",
+   "size": 68
+  },
+  "0x08015930": {
+   "class": "c",
+   "file": "src/menu_ff78_d.c",
+   "name": "MenuFF78_15930",
+   "size": 124
+  },
+  "0x080159ac": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 1
+   },
+   "file": "src/menu_ff78_d.c",
+   "name": "MenuFF78_159AC",
+   "size": 96
+  },
+  "0x08015b54": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 2
+   },
+   "file": "src/menu_ff78_f.c",
+   "name": "MenuFF78_15B54",
+   "size": 76
+  },
+  "0x08015c9c": {
+   "class": "c",
+   "file": "src/menu_ff78_f.c",
+   "name": "MenuFF78_15C9C",
+   "size": 20
+  },
+  "0x08015cb0": {
+   "class": "c",
+   "file": "src/menu_ff78_c.c",
+   "name": "_080015CB0",
+   "size": 4
+  },
+  "0x08016164": {
+   "class": "c",
+   "file": "src/rec35_16002.c",
+   "name": "Rec35_RecordClear",
+   "size": 60
+  },
+  "0x080161a0": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/rec35_16002.c",
+   "name": "Rec35_RecordClear2",
+   "size": 80
+  },
+  "0x080161f0": {
+   "class": "c",
+   "file": "src/rec35_16002.c",
+   "name": "Rec35_PlaceRecords",
+   "size": 124
+  },
+  "0x080163b4": {
+   "class": "c",
+   "file": "src/rec35_16002.c",
+   "name": "Rec35_Noop",
+   "size": 4
+  },
+  "0x08016508": {
+   "class": "c",
+   "file": "src/rec35_runtime.c",
+   "name": "Rec35_BxLrStub",
+   "size": 4
+  },
+  "0x080166e8": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 2
+   },
+   "file": "src/rec35_runtime.c",
+   "name": "Rec35_Leaf_166E8",
+   "size": 76
+  },
+  "0x080167c4": {
+   "class": "c",
+   "file": "src/rec35_runtime.c",
+   "name": "Rec35_Leaf_167C4",
+   "size": 88
+  },
+  "0x0801681c": {
+   "class": "c",
+   "file": "src/rec35_runtime.c",
+   "name": "Rec35_Dispatch_1681C",
+   "size": 156
+  },
+  "0x080168b8": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 2
+   },
+   "file": "src/rec35_runtime.c",
+   "name": "Rec35_Leaf_168B8",
+   "size": 48
+  },
+  "0x08016940": {
+   "class": "c",
+   "file": "src/rec35_runtime.c",
+   "name": "Rec35_BxLr_16940",
+   "size": 4
+  },
+  "0x08016ad4": {
+   "class": "c",
+   "file": "src/rec35_runtime.c",
+   "name": "Rec35_Leaf_16AD4",
+   "size": 28
+  },
+  "0x08016dc0": {
+   "class": "c",
+   "file": "src/rec35_mid_region.c",
+   "name": "Rec35_Leaf_16DC0",
+   "size": 36
+  },
+  "0x080173e8": {
+   "class": "c",
+   "file": "src/rec35_runtime.c",
+   "name": "Rec35_Leaf_173E8",
+   "size": 44
+  },
+  "0x08017414": {
+   "class": "c",
+   "file": "src/rec35_runtime.c",
+   "name": "Rec35_Leaf_17414",
+   "size": 44
+  },
+  "0x08017c34": {
+   "class": "c",
+   "file": "src/rec35_mid_region.c",
+   "name": "Rec35_Paint_17C34",
+   "size": 68
+  },
+  "0x08017d50": {
+   "class": "c",
+   "file": "src/rec35_runtime.c",
+   "name": "Rec35_BxLr_17D50",
+   "size": 4
+  },
+  "0x08017f00": {
+   "class": "c",
+   "file": "src/rec35_runtime.c",
+   "name": "Rec35_BxLr_17F00",
+   "size": 4
+  },
+  "0x08018174": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 1
+   },
+   "file": "src/rec35_mid_region.c",
+   "name": "Rec35_EvDispatch_18174",
+   "size": 156
+  },
+  "0x08018210": {
+   "class": "c",
+   "file": "src/rec35_runtime.c",
+   "name": "Rec35_Leaf_18210",
+   "size": 32
+  },
+  "0x08018230": {
+   "class": "c",
+   "file": "src/rec35_runtime.c",
+   "name": "Rec35_Leaf_18230",
+   "size": 48
+  },
+  "0x08018260": {
+   "class": "c",
+   "file": "src/rec35_runtime.c",
+   "name": "Rec35_Leaf_18260",
+   "size": 24
+  },
+  "0x08018278": {
+   "class": "c",
+   "file": "src/rec35_runtime.c",
+   "name": "Rec35_Leaf_18278",
+   "size": 96
+  },
+  "0x080182d8": {
+   "class": "c",
+   "file": "src/rec35_runtime.c",
+   "name": "Rec35_Leaf_182D8",
+   "size": 36
+  },
+  "0x080182fc": {
+   "class": "c",
+   "file": "src/rec35_runtime.c",
+   "name": "Rec35_BxLr_182FC",
+   "size": 4
+  },
+  "0x08018300": {
+   "class": "c",
+   "file": "src/rec35_runtime.c",
+   "name": "Rec35_Dispatch_18300",
+   "size": 68
+  },
+  "0x08018344": {
+   "class": "c",
+   "file": "src/rec35_runtime.c",
+   "name": "Rec35_Leaf_18344",
+   "size": 32
+  },
+  "0x08018364": {
+   "class": "c",
+   "file": "src/rec35_runtime.c",
+   "name": "Rec35_Leaf_18364",
+   "size": 36
+  },
+  "0x08018388": {
+   "class": "c",
+   "file": "src/rec35_runtime.c",
+   "name": "Rec35_BxLr_18388",
+   "size": 4
+  },
+  "0x0801838c": {
+   "class": "c",
+   "file": "src/rec35_runtime.c",
+   "name": "Rec35_Leaf_1838C",
+   "size": 8
+  },
+  "0x08018394": {
+   "class": "c",
+   "file": "src/rec35_runtime.c",
+   "name": "Rec35_Dispatch_18394",
+   "size": 68
+  },
+  "0x080183d8": {
+   "class": "c",
+   "file": "src/rec35_runtime.c",
+   "name": "Rec35_Leaf_183D8",
+   "size": 64
+  },
+  "0x08018418": {
+   "class": "c",
+   "file": "src/rec35_runtime.c",
+   "name": "Rec35_BxLr_18418",
+   "size": 4
+  },
+  "0x0801841c": {
+   "class": "c",
+   "file": "src/rec35_runtime.c",
+   "name": "Rec35_BxLr_1841C",
+   "size": 4
+  },
+  "0x08018420": {
+   "class": "c",
+   "file": "src/rec35_runtime.c",
+   "name": "Rec35_Leaf_18420",
+   "size": 20
+  },
+  "0x08018434": {
+   "class": "c",
+   "file": "src/rec35_runtime.c",
+   "name": "Rec35_Leaf_18434",
+   "size": 40
+  },
+  "0x080184a8": {
+   "class": "c",
+   "file": "src/rec35_setup_tail.c",
+   "name": "Rec35_ConstFill_184A8",
+   "size": 72
+  },
+  "0x080184f0": {
+   "class": "c",
+   "file": "src/rec35_runtime.c",
+   "name": "Rec35_Leaf_184F0",
+   "size": 24
+  },
+  "0x08018508": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/rec35_setup_tail.c",
+   "name": "Rec35_GridFill3_18508",
+   "size": 56
+  },
+  "0x080186a8": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 2
+   },
+   "file": "src/rec35_dispatch_tail.c",
+   "name": "Rec35_Gate_186A8",
+   "size": 72
+  },
+  "0x080186f0": {
+   "class": "c",
+   "file": "src/rec35_dispatch_tail.c",
+   "name": "Rec35_Dispatch_186F0",
+   "size": 124
+  },
+  "0x0801876c": {
+   "class": "c",
+   "file": "src/rec35_dispatch_tail.c",
+   "name": "Rec35_Setup_1876C",
+   "size": 32
+  },
+  "0x0801878c": {
+   "class": "c",
+   "file": "src/rec35_dispatch_tail.c",
+   "name": "Rec35_Countdown_1878C",
+   "size": 36
+  },
+  "0x080187b0": {
+   "class": "c",
+   "file": "src/rec35_dispatch_tail.c",
+   "name": "Rec35_BxLr_187B0",
+   "size": 4
+  },
+  "0x080187b4": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 2
+   },
+   "file": "src/rec35_dispatch_tail.c",
+   "name": "Rec35_Leaf_187B4",
+   "size": 36
+  },
+  "0x080187d8": {
+   "class": "c",
+   "file": "src/rec35_dispatch_tail.c",
+   "name": "Rec35_Dispatch_187D8",
+   "size": 68
+  },
+  "0x0801881c": {
+   "class": "c",
+   "file": "src/rec35_dispatch_tail.c",
+   "name": "Rec35_Setup_1881C",
+   "size": 32
+  },
+  "0x0801883c": {
+   "class": "c",
+   "file": "src/rec35_dispatch_tail.c",
+   "name": "Rec35_Countdown_1883C",
+   "size": 36
+  },
+  "0x08018860": {
+   "class": "c",
+   "file": "src/rec35_dispatch_tail.c",
+   "name": "Rec35_BxLr_18860",
+   "size": 4
+  },
+  "0x08018864": {
+   "class": "c",
+   "file": "src/rec35_dispatch_tail.c",
+   "name": "Rec35_Leaf_18864",
+   "size": 8
+  },
+  "0x0801886c": {
+   "class": "c",
+   "file": "src/rec35_dispatch_tail.c",
+   "name": "Rec35_Dispatch_1886C",
+   "size": 68
+  },
+  "0x08018a50": {
+   "class": "c",
+   "file": "src/ghost.c",
+   "name": "Ghost_RacerAt",
+   "size": 28
+  },
+  "0x08018a6c": {
+   "class": "c",
+   "file": "src/ghost.c",
+   "name": "Ghost_CarRecordField6",
+   "size": 28
+  },
+  "0x08018a88": {
+   "class": "c",
+   "file": "src/ghost.c",
+   "name": "Ghost_SetRaceCtxU16_74",
+   "size": 16
+  },
+  "0x08018a98": {
+   "class": "c",
+   "file": "src/ghost.c",
+   "name": "Ghost_RaiseFlag2",
+   "size": 16
+  },
+  "0x08018aa8": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 16,
+    "naked": true
+   },
+   "file": "src/ghost.c",
+   "name": "Ghost_FlagOp",
+   "size": 36
+  },
+  "0x08018acc": {
+   "class": "c",
+   "file": "src/ghost.c",
+   "name": "Ghost_FlagTest",
+   "size": 16
+  },
+  "0x08019860": {
+   "class": "c",
+   "file": "src/race_setup.c",
+   "name": "Race_Setup_19860",
+   "size": 12
+  },
+  "0x080199b0": {
+   "class": "c",
+   "file": "src/race_setup_helpers.c",
+   "name": "sub_0800199B0",
+   "size": 28
+  },
+  "0x08019c9c": {
+   "class": "c",
+   "file": "src/race_setup_helpers.c",
+   "name": "_080019C9C",
+   "size": 32
+  },
+  "0x08019dbc": {
+   "class": "c",
+   "file": "src/race_setup_helpers.c",
+   "name": "_080019DBC",
+   "size": 32
+  },
+  "0x08019ec8": {
+   "class": "c",
+   "file": "src/race_setup_helpers.c",
+   "name": "sub_080019EC8",
+   "size": 84
+  },
+  "0x0801a0bc": {
+   "class": "c",
+   "file": "src/race_cluster.c",
+   "name": "Race_Cluster_C",
+   "size": 44
+  },
+  "0x0801a44c": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 1
+   },
+   "file": "src/race_scene_a1.c",
+   "name": "_08001A44C",
+   "size": 96
+  },
+  "0x0801b1a4": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 3
+   },
+   "file": "src/race_scene.c",
+   "name": "Race_Scene_Dispatch_1B1A4",
+   "size": 216
+  },
+  "0x0801b27c": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1,
+    "pin": 2
+   },
+   "file": "src/race_scene_a1.c",
+   "name": "_08001B27C",
+   "size": 232
+  },
+  "0x0801b730": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 2
+   },
+   "file": "src/race_scene_a1.c",
+   "name": "_08001B730",
+   "size": 76
+  },
+  "0x0801bfac": {
+   "class": "c",
+   "file": "src/race_scene_a2.c",
+   "name": "_08001BFAC",
+   "size": 16
+  },
+  "0x0801bfbc": {
+   "class": "c",
+   "file": "src/race_scene_a2.c",
+   "name": "_08001BFBC",
+   "size": 256
+  },
+  "0x0801c0bc": {
+   "class": "c",
+   "file": "src/race_scene_a2.c",
+   "name": "_08001C0BC",
+   "size": 16
+  },
+  "0x0801c0cc": {
+   "class": "c",
+   "file": "src/race_scene_a2.c",
+   "name": "_08001C0CC",
+   "size": 20
+  },
+  "0x0801c27c": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 6
+   },
+   "file": "src/race_scene_a2.c",
+   "name": "_08001C27C",
+   "size": 196
+  },
+  "0x0801d218": {
+   "class": "c",
+   "file": "src/race_scene.c",
+   "name": "Race_Scene_Wrapper_1D218",
+   "size": 12
+  },
+  "0x0801d224": {
+   "class": "c",
+   "file": "src/race_scene_b1.c",
+   "name": "_08001D224",
+   "size": 64
+  },
+  "0x0801d264": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 3
+   },
+   "file": "src/race_scene_b1.c",
+   "name": "_08001D264",
+   "size": 28
+  },
+  "0x0801d280": {
+   "class": "c",
+   "file": "src/race_scene_b1.c",
+   "name": "_08001D280",
+   "size": 8
+  },
+  "0x0801d6d0": {
+   "class": "c",
+   "file": "src/race_scene.c",
+   "name": "Race_Scene_BxLr",
+   "size": 4
+  },
+  "0x0801d6d4": {
+   "class": "c",
+   "file": "src/race_scene.c",
+   "name": "Race_Scene_EventDispatch_1D6D4",
+   "size": 124
+  },
+  "0x0801d750": {
+   "class": "c",
+   "file": "src/race_scene_b1.c",
+   "name": "_08001D750",
+   "size": 104
+  },
+  "0x0801d910": {
+   "class": "c",
+   "file": "src/race_scene_b1.c",
+   "name": "_08001D910",
+   "size": 64
+  },
+  "0x0801d950": {
+   "class": "c",
+   "file": "src/race_scene_b1.c",
+   "name": "_08001D950",
+   "size": 36
+  },
+  "0x0801d9c8": {
+   "class": "c",
+   "file": "src/race_scene.c",
+   "name": "Race_Scene_BxLr_1D9C8",
+   "size": 4
+  },
+  "0x0801db0c": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/race_scene_b1.c",
+   "name": "_08001DB0C",
+   "size": 64
+  },
+  "0x0801db4c": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1,
+    "pin": 1
+   },
+   "file": "src/race_scene_b1.c",
+   "name": "_08001DB4C",
+   "size": 116
+  },
+  "0x0801dbc0": {
+   "class": "c",
+   "file": "src/race_scene_b1.c",
+   "name": "_08001DBC0",
+   "size": 96
+  },
+  "0x0801dc20": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1,
+    "pin": 1
+   },
+   "file": "src/race_scene_b1.c",
+   "name": "_08001DC20",
+   "size": 108
+  },
+  "0x0801e1e0": {
+   "class": "c",
+   "file": "src/race_scene_c.c",
+   "name": "_08001E1E0",
+   "size": 80
+  },
+  "0x0801e2d0": {
+   "class": "c",
+   "file": "src/race_scene_c.c",
+   "name": "_08001E2D0",
+   "size": 52
+  },
+  "0x0801e304": {
+   "class": "c",
+   "file": "src/race_scene_c.c",
+   "name": "_08001E304",
+   "size": 52
+  },
+  "0x0801e338": {
+   "class": "c",
+   "file": "src/race_scene.c",
+   "name": "Race_Scene_Leaf_E338",
+   "size": 44
+  },
+  "0x0801e364": {
+   "class": "c",
+   "file": "src/race_scene.c",
+   "name": "Race_Scene_Leaf_E364",
+   "size": 44
+  },
+  "0x0801e390": {
+   "class": "c",
+   "file": "src/race_scene.c",
+   "name": "Race_Scene_Leaf_E390",
+   "size": 44
+  },
+  "0x0801e4c0": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 2
+   },
+   "file": "src/race_scene_c.c",
+   "name": "_08001E4C0",
+   "size": 52
+  },
+  "0x0801e4f4": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/race_scene_c.c",
+   "name": "_08001E4F4",
+   "size": 52
+  },
+  "0x0801e528": {
+   "class": "c",
+   "file": "src/race_scene_c.c",
+   "name": "_08001E528",
+   "size": 68
+  },
+  "0x0801e56c": {
+   "class": "c",
+   "file": "src/race_scene_c.c",
+   "name": "_08001E56C",
+   "size": 68
+  },
+  "0x0801e68c": {
+   "class": "c",
+   "file": "src/race_scene_c.c",
+   "name": "_08001E68C",
+   "size": 76
+  },
+  "0x0801e6d8": {
+   "class": "c",
+   "file": "src/race_scene_c.c",
+   "name": "_08001E6D8",
+   "size": 64
+  },
+  "0x0801e718": {
+   "class": "c",
+   "file": "src/race_scene_c.c",
+   "name": "_08001E718",
+   "size": 76
+  },
+  "0x0801e9d8": {
+   "class": "c",
+   "file": "src/race_scene.c",
+   "name": "Race_Scene_BxLr_1E9D8",
+   "size": 4
+  },
+  "0x0801e9dc": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/race_scene_c.c",
+   "name": "_08001E9DC",
+   "size": 76
+  },
+  "0x0801eb48": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/race_scene_c.c",
+   "name": "_08001EB48",
+   "size": 92
+  },
+  "0x0801eba4": {
+   "class": "c",
+   "file": "src/race_scene.c",
+   "name": "Race_Scene_BxLr_1EBA4",
+   "size": 4
+  },
+  "0x0801f554": {
+   "class": "c",
+   "file": "src/race_scene.c",
+   "name": "Race_Scene_Leaf_F554",
+   "size": 20
+  },
+  "0x0801f568": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/race_scene_d1.c",
+   "name": "_08001F568",
+   "size": 76
+  },
+  "0x0801f668": {
+   "class": "c",
+   "file": "src/race_scene_d1.c",
+   "name": "_08001F668",
+   "size": 56
+  },
+  "0x0801f6a0": {
+   "class": "c",
+   "file": "src/race_scene.c",
+   "name": "Race_Scene_BxLr_1F6A0",
+   "size": 4
+  },
+  "0x0801f6a4": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/race_scene_d1.c",
+   "name": "_08001F6A4",
+   "size": 192
+  },
+  "0x0801f82c": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/race_scene_d1.c",
+   "name": "_08001F82C",
+   "size": 112
+  },
+  "0x0801f89c": {
+   "class": "c",
+   "file": "src/race_scene_d1.c",
+   "name": "_08001F89C",
+   "size": 124
+  },
+  "0x0801f918": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/race_scene_d1.c",
+   "name": "_08001F918",
+   "size": 68
+  },
+  "0x0801f9ec": {
+   "class": "c",
+   "file": "src/race_scene_d1.c",
+   "name": "_08001F9EC",
+   "size": 16
+  },
+  "0x0801f9fc": {
+   "class": "c",
+   "file": "src/race_scene_d1.c",
+   "name": "_08001F9FC",
+   "size": 16
+  },
+  "0x0801fa64": {
+   "class": "c",
+   "file": "src/race_scene_d2.c",
+   "name": "_08001FA64",
+   "size": 120
+  },
+  "0x0801fadc": {
+   "class": "c",
+   "file": "src/race_scene_d2.c",
+   "name": "_08001FADC",
+   "size": 124
+  },
+  "0x0801fbac": {
+   "class": "c",
+   "file": "src/race_scene_d1.c",
+   "name": "_08001FBAC",
+   "size": 44
+  },
+  "0x0801ff24": {
+   "class": "c",
+   "file": "src/race_scene_e.c",
+   "name": "_08001FF24",
+   "size": 88
+  },
+  "0x0801ff7c": {
+   "class": "c",
+   "file": "src/race_scene_e.c",
+   "name": "_08001FF7C",
+   "size": 88
+  },
+  "0x080203e8": {
+   "class": "c",
+   "file": "src/race_scene_e.c",
+   "name": "_0800203E8",
+   "size": 176
+  },
+  "0x08020878": {
+   "class": "c",
+   "file": "src/race_scene.c",
+   "name": "Race_Scene_BxLr_20878",
+   "size": 4
+  },
+  "0x08020958": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 2
+   },
+   "file": "src/race_scene_e.c",
+   "name": "_080020958",
+   "size": 68
+  },
+  "0x0802099c": {
+   "class": "c",
+   "file": "src/race_scene.c",
+   "name": "Race_Scene_BxLr_2099C",
+   "size": 4
+  },
+  "0x08020d28": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 2
+   },
+   "file": "src/race_scene_e.c",
+   "name": "_080020D28",
+   "size": 220
+  },
+  "0x08020f50": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/race_scene_e.c",
+   "name": "_080020F50",
+   "size": 200
+  },
+  "0x08021248": {
+   "class": "c",
+   "file": "src/race_scene.c",
+   "name": "Race_Scene_BxLr_21248",
+   "size": 4
+  },
+  "0x0802124c": {
+   "class": "c",
+   "file": "src/race_scene.c",
+   "name": "Race_Scene_Leaf_2124C",
+   "size": 20
+  },
+  "0x08021260": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 2
+   },
+   "file": "src/race_scene_e.c",
+   "name": "_080021260",
+   "size": 76
+  },
+  "0x080212ac": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/race_scene_e.c",
+   "name": "_0800212AC",
+   "size": 176
+  },
+  "0x0802135c": {
+   "class": "c",
+   "file": "src/car_physics_core.c",
+   "name": "CarPhysRacer_MarkScene",
+   "size": 20
+  },
+  "0x08021370": {
+   "class": "c",
+   "file": "src/car_physics_core.c",
+   "name": "CarPhysRacer_Nop",
+   "size": 4
+  },
+  "0x08021828": {
+   "class": "c",
+   "file": "src/car_physics_core.c",
+   "name": "CarPhysRacer_RaceStartLatch",
+   "size": 56
+  },
+  "0x080218f8": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 2
+   },
+   "file": "src/race_scene_helpers.c",
+   "name": "CarDisplay_218F8",
+   "size": 216
+  },
+  "0x08021afc": {
+   "class": "c",
+   "file": "src/race_scene_helpers.c",
+   "name": "CarDisplay_21AFC",
+   "size": 60
+  },
+  "0x08021b38": {
+   "class": "c",
+   "file": "src/race_scene_helpers.c",
+   "name": "_080021B38",
+   "size": 104
+  },
+  "0x08021ba0": {
+   "class": "c",
+   "file": "src/runtime_state_dispatch.c",
+   "name": "CarEv7Dispatch_21BA0",
+   "size": 88
+  },
+  "0x08021bf8": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/car_physics_core.c",
+   "name": "CarPhysRacer_Dispatcher",
+   "size": 156
+  },
+  "0x08021c94": {
+   "class": "c",
+   "file": "src/car_physics_core.c",
+   "name": "Gap_021C94_Select",
+   "size": 44
+  },
+  "0x08021cc0": {
+   "class": "c",
+   "file": "src/race_phase_vms.c",
+   "name": "RaceVM_021CC0",
+   "size": 4
+  },
+  "0x08021cc4": {
+   "class": "c",
+   "file": "src/race_phase_vms.c",
+   "name": "RaceVM_021CC4",
+   "size": 252
+  },
+  "0x08022240": {
+   "class": "c",
+   "file": "src/race_phase_vms.c",
+   "name": "RaceVM_022240",
+   "size": 60
+  },
+  "0x0802227c": {
+   "class": "c",
+   "file": "src/race_phase_vms.c",
+   "name": "RaceVM_02227C",
+   "size": 4
+  },
+  "0x08022280": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/race_phase_vms.c",
+   "name": "RaceVM_022280",
+   "size": 156
+  },
+  "0x0802231c": {
+   "class": "c",
+   "file": "src/race_phase_vms.c",
+   "name": "RaceVM_02231C",
+   "size": 4
+  },
+  "0x08022320": {
+   "class": "c",
+   "file": "src/race_phase_vms.c",
+   "name": "RaceVM_022320",
+   "size": 40
+  },
+  "0x08022348": {
+   "class": "c",
+   "file": "src/race_phase_vms.c",
+   "name": "RaceVM_022348",
+   "size": 4
+  },
+  "0x0802234c": {
+   "class": "c",
+   "file": "src/race_phase_vms.c",
+   "name": "RaceVM_02234C",
+   "size": 116
+  },
+  "0x080223c0": {
+   "class": "c",
+   "file": "src/race_phase_vms.c",
+   "name": "RaceVM_0223C0",
+   "size": 48
+  },
+  "0x080223f0": {
+   "class": "c",
+   "file": "src/race_phase_vms.c",
+   "name": "RaceVM_0223F0",
+   "size": 60
+  },
+  "0x0802242c": {
+   "class": "c",
+   "file": "src/race_phase_vms.c",
+   "name": "RaceVM_02242C",
+   "size": 12
+  },
+  "0x08022438": {
+   "class": "c",
+   "file": "src/race_phase_vms.c",
+   "name": "RaceVM_022438",
+   "size": 28
+  },
+  "0x08022454": {
+   "class": "c",
+   "file": "src/race_phase_vms.c",
+   "name": "RaceVM_022454",
+   "size": 36
+  },
+  "0x08022478": {
+   "class": "c",
+   "file": "src/race_phase_vms.c",
+   "name": "RaceVM_022478",
+   "size": 4
+  },
+  "0x080226d4": {
+   "class": "c",
+   "file": "src/race_phase_vms.c",
+   "name": "RaceVM_0226D4",
+   "size": 124
+  },
+  "0x0802285c": {
+   "class": "c",
+   "file": "src/race_phase_vms.c",
+   "name": "RaceVM_02285C",
+   "size": 156
+  },
+  "0x080228f8": {
+   "class": "c",
+   "file": "src/race_phase_vms.c",
+   "name": "RaceVM_0228F8",
+   "size": 36
+  },
+  "0x0802291c": {
+   "class": "c",
+   "file": "src/race_phase_vms.c",
+   "name": "RaceVM_02291C",
+   "size": 4
+  },
+  "0x08022acc": {
+   "class": "c",
+   "file": "src/race_phase_vms.c",
+   "name": "RaceVM_022ACC",
+   "size": 124
+  },
+  "0x08022cb4": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 3
+   },
+   "file": "src/runtime_state_dispatch.c",
+   "name": "CarRecEventReset_22CB4",
+   "size": 108
+  },
+  "0x08022d20": {
+   "class": "c",
+   "file": "src/car_racer_constants.c",
+   "name": "CarRacer_NoOp22D20",
+   "size": 4
+  },
+  "0x08022d24": {
+   "class": "c",
+   "file": "src/code_22d20.c",
+   "name": "Code22D24_UpdateCell",
+   "size": 32
+  },
+  "0x08022d44": {
+   "class": "c",
+   "file": "src/code_22d20.c",
+   "name": "Code22D44_SendPacket",
+   "size": 48
+  },
+  "0x08022d74": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 1
+   },
+   "file": "src/code_22d20.c",
+   "name": "Code22D74_RecEq",
+   "size": 52
+  },
+  "0x08023144": {
+   "class": "c",
+   "file": "src/car_racer_constants.c",
+   "name": "CarRacer_NoOp23144",
+   "size": 4
+  },
+  "0x080235f0": {
+   "class": "c",
+   "file": "src/code_22d20.c",
+   "name": "Code235F0_NoOp",
+   "size": 4
+  },
+  "0x080235f4": {
+   "class": "c",
+   "file": "src/race_control_leaves.c",
+   "name": "Code235F4_Dispatch",
+   "size": 52
+  },
+  "0x08023ae4": {
+   "class": "c",
+   "file": "src/code_23a34.c",
+   "name": "_080023AE4",
+   "size": 124
+  },
+  "0x08023e78": {
+   "class": "c",
+   "file": "src/runtime_state_dispatch.c",
+   "name": "Stub_23E78",
+   "size": 4
+  },
+  "0x08023fe4": {
+   "class": "c",
+   "file": "src/ai_race_leaves.c",
+   "name": "Ai_RingReset",
+   "size": 20
+  },
+  "0x08024048": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 15,
+    "naked": true
+   },
+   "file": "src/race_control_leaves.c",
+   "name": "Code24048_StepQueuePush",
+   "size": 32
+  },
+  "0x08024068": {
+   "class": "c",
+   "file": "src/ghost2.c",
+   "name": "Ghost_Kind_24068",
+   "size": 20
+  },
+  "0x0802407c": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 2
+   },
+   "file": "src/ghost2.c",
+   "name": "Ghost_BindSampleBuffers",
+   "size": 72
+  },
+  "0x080240c4": {
+   "class": "c",
+   "file": "src/ghost2.c",
+   "name": "Ghost_GetRecA",
+   "size": 12
+  },
+  "0x080240d0": {
+   "class": "c",
+   "file": "src/ghost2.c",
+   "name": "Ghost_GetRecP",
+   "size": 12
+  },
+  "0x080240dc": {
+   "class": "c",
+   "file": "src/ghost2.c",
+   "name": "Ghost_RecA_ClearValid",
+   "size": 16
+  },
+  "0x080240ec": {
+   "class": "c",
+   "file": "src/ghost2.c",
+   "name": "Ghost_RecA_SetW08",
+   "size": 12
+  },
+  "0x080240f8": {
+   "class": "c",
+   "file": "src/ghost2.c",
+   "name": "Ghost_RecA_SetW04",
+   "size": 12
+  },
+  "0x08024104": {
+   "class": "c",
+   "file": "src/ghost2.c",
+   "name": "Ghost_RecA_SetH02",
+   "size": 12
+  },
+  "0x08024110": {
+   "class": "c",
+   "file": "src/ghost2.c",
+   "name": "Ghost_RecA_CopyBlob",
+   "size": 28
+  },
+  "0x0802412c": {
+   "class": "c",
+   "file": "src/ghost2.c",
+   "name": "Ghost_MgrClear",
+   "size": 12
+  },
+  "0x08024138": {
+   "class": "c",
+   "file": "src/ghost2.c",
+   "name": "Ghost_MgrSet",
+   "size": 12
+  },
+  "0x08024144": {
+   "class": "c",
+   "file": "src/ghost2.c",
+   "name": "Ghost_MgrState",
+   "size": 12
+  },
+  "0x08024150": {
+   "class": "c",
+   "file": "src/ghost2.c",
+   "name": "Ghost_Invalidate",
+   "size": 8
+  },
+  "0x08024158": {
+   "class": "c",
+   "file": "src/ghost2.c",
+   "name": "Ghost_Commit",
+   "size": 36
+  },
+  "0x0802417c": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 2,
+    "directive": 1
+   },
+   "file": "src/ghost2.c",
+   "name": "Ghost_Snapshot",
+   "size": 76
+  },
+  "0x08024634": {
+   "class": "c",
+   "file": "src/save.c",
+   "name": "SaveBlock1Load",
+   "size": 28
+  },
+  "0x08024650": {
+   "class": "c",
+   "file": "src/save.c",
+   "name": "SaveBlock1Save",
+   "size": 24
+  },
+  "0x08024668": {
+   "class": "c",
+   "file": "src/save.c",
+   "name": "SaveStubBxLr",
+   "size": 4
+  },
+  "0x08024710": {
+   "class": "c",
+   "file": "src/save.c",
+   "name": "SaveStubBxLr_10",
+   "size": 4
+  },
+  "0x08024714": {
+   "class": "c",
+   "file": "src/save.c",
+   "name": "SaveStubBxLr_14",
+   "size": 4
+  },
+  "0x08024718": {
+   "class": "c",
+   "file": "src/save.c",
+   "name": "SaveStubBxLr_18",
+   "size": 4
+  },
+  "0x0802471c": {
+   "class": "c",
+   "file": "src/save.c",
+   "name": "SaveGhostBulkSave",
+   "size": 36
+  },
+  "0x08024740": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 2,
+    "pin": 3
+   },
+   "file": "src/save.c",
+   "name": "SaveGarageMaskSet",
+   "size": 44
+  },
+  "0x0802476c": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 2
+   },
+   "file": "src/save.c",
+   "name": "SaveGarageMaskTest",
+   "size": 40
+  },
+  "0x08024b18": {
+   "class": "c",
+   "file": "src/runtime_state_dispatch.c",
+   "name": "SaveRet1_24B18",
+   "size": 4
+  },
+  "0x08024b1c": {
+   "class": "c",
+   "file": "src/runtime_state_dispatch.c",
+   "name": "SaveRet1_24B1C",
+   "size": 4
+  },
+  "0x08024b20": {
+   "class": "c",
+   "file": "src/runtime_state_dispatch.c",
+   "name": "SaveRet1_24B20",
+   "size": 4
+  },
+  "0x08024b24": {
+   "class": "c",
+   "file": "src/save.c",
+   "name": "SaveBlock2Load",
+   "size": 40
+  },
+  "0x08024b4c": {
+   "class": "c",
+   "file": "src/save.c",
+   "name": "_08024B4C",
+   "size": 4
+  },
+  "0x08024b50": {
+   "class": "c",
+   "file": "src/save.c",
+   "name": "_08024B50",
+   "size": 4
+  },
+  "0x08024b54": {
+   "class": "c",
+   "file": "src/save.c",
+   "name": "SaveBlock2Save",
+   "size": 28
+  },
+  "0x08024b70": {
+   "class": "c",
+   "file": "src/save.c",
+   "name": "SaveGuardedFull",
+   "size": 80
+  },
+  "0x08024bc0": {
+   "class": "c",
+   "file": "src/save.c",
+   "name": "SaveGuardedSaveOnly",
+   "size": 24
+  },
+  "0x08024bd8": {
+   "class": "c",
+   "file": "src/save.c",
+   "name": "SaveGuardedLoadOnly",
+   "size": 24
+  },
+  "0x08024bf0": {
+   "class": "c",
+   "file": "src/save.c",
+   "name": "SaveGhostRecPair_BF0",
+   "size": 12
+  },
+  "0x08024bfc": {
+   "class": "c",
+   "file": "src/save.c",
+   "name": "SaveGhostRecPair_BFC",
+   "size": 12
+  },
+  "0x08024c08": {
+   "class": "c",
+   "file": "src/save.c",
+   "name": "SaveNoOp_24C08",
+   "size": 4
+  },
+  "0x08024c0c": {
+   "class": "c",
+   "file": "src/save.c",
+   "name": "SaveNoOp_24C0C",
+   "size": 4
+  },
+  "0x08024c10": {
+   "class": "c",
+   "file": "src/save.c",
+   "name": "SaveNoOp_24C10",
+   "size": 4
+  },
+  "0x08024c14": {
+   "class": "c",
+   "file": "src/save.c",
+   "name": "SaveNoOp_24C14",
+   "size": 4
+  },
+  "0x08024c18": {
+   "class": "c",
+   "file": "src/save.c",
+   "name": "SaveNoOp_24C18",
+   "size": 4
+  },
+  "0x08024c1c": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 11,
+    "naked": true
+   },
+   "file": "src/save.c",
+   "name": "SaveGuardedNoOp_24C1C",
+   "size": 32
+  },
+  "0x08024c3c": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/ai_catalog.c",
+   "name": "Ai_CatalogA",
+   "size": 28
+  },
+  "0x08024c58": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/ai_catalog.c",
+   "name": "Ai_CatalogB",
+   "size": 28
+  },
+  "0x08024c74": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/ai_catalog.c",
+   "name": "Ai_CatalogC",
+   "size": 28
+  },
+  "0x08024d4c": {
+   "class": "c",
+   "file": "src/ai_catalog.c",
+   "name": "Ai_CatalogGroupPtr",
+   "size": 16
+  },
+  "0x08024d5c": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/ai_catalog.c",
+   "name": "Ai_CatalogGroupOfId",
+   "size": 24
+  },
+  "0x08024d74": {
+   "class": "c",
+   "file": "src/ai_catalog.c",
+   "name": "Ai_CatalogMaxId",
+   "size": 4
+  },
+  "0x08024d78": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/ai_catalog.c",
+   "name": "Ai_CatalogGroupSize",
+   "size": 40
+  },
+  "0x08024dd8": {
+   "class": "c",
+   "file": "src/ai_catalog.c",
+   "name": "Ai_CatalogGroupCount",
+   "size": 4
+  },
+  "0x08024ddc": {
+   "class": "c",
+   "file": "src/ai_catalog.c",
+   "name": "Ai_CatalogBindA",
+   "size": 36
+  },
+  "0x08024e00": {
+   "class": "c",
+   "file": "src/ai_catalog.c",
+   "name": "Ai_CatalogBindB",
+   "size": 36
+  },
+  "0x08024e24": {
+   "class": "c",
+   "file": "src/ai_catalog.c",
+   "name": "Ai_CatalogStoreHelper",
+   "size": 16
+  },
+  "0x08024e34": {
+   "class": "c",
+   "file": "src/ai_catalog.c",
+   "name": "Ai_CatalogOwnedTotal",
+   "size": 32
+  },
+  "0x08024e54": {
+   "class": "c",
+   "file": "src/track_car_helpers.c",
+   "name": "Code24E54_Lookup",
+   "size": 40
+  },
+  "0x08024efc": {
+   "class": "c",
+   "file": "src/runtime_record_helpers.c",
+   "name": "_080024EFC",
+   "size": 32
+  },
+  "0x08024f1c": {
+   "class": "c",
+   "file": "src/track_car_helpers.c",
+   "name": "Code24E54_Strb",
+   "size": 12
+  },
+  "0x08024f28": {
+   "class": "c",
+   "file": "src/track_car_helpers.c",
+   "name": "Code24E54_Ldrb",
+   "size": 12
+  },
+  "0x08024f34": {
+   "class": "c",
+   "file": "src/ai_catalog.c",
+   "name": "Ai_CatalogClear10",
+   "size": 24
+  },
+  "0x08024f4c": {
+   "class": "c",
+   "file": "src/numeric_leaves.c",
+   "name": "Code24F4C_TableLookup",
+   "size": 40
+  },
+  "0x08024f74": {
+   "class": "c",
+   "file": "src/numeric_leaves.c",
+   "name": "Code24F74_TableLookup",
+   "size": 40
+  },
+  "0x08024f9c": {
+   "class": "c",
+   "file": "src/numeric_leaves.c",
+   "name": "Code24F9C_TableLookup",
+   "size": 40
+  },
+  "0x08024fc4": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 1,
+    "pin": 1
+   },
+   "file": "src/numeric_leaves.c",
+   "name": "Code24FC4_TableLookup",
+   "size": 36
+  },
+  "0x08024fe8": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 1,
+    "pin": 1
+   },
+   "file": "src/ai_line_leaves.c",
+   "name": "Ai_LineHelperLoad",
+   "size": 36
+  },
+  "0x0802500c": {
+   "class": "c",
+   "file": "src/ai_line_leaves.c",
+   "name": "Ai_LineFindSlot",
+   "size": 28
+  },
+  "0x08025084": {
+   "class": "c",
+   "file": "src/ai_line_leaves.c",
+   "name": "Ai_LineFindSlot2",
+   "size": 28
+  },
+  "0x080250fc": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 1
+   },
+   "file": "src/ai_line_leaves.c",
+   "name": "Ai_LineEqual",
+   "size": 52
+  },
+  "0x08025130": {
+   "class": "c",
+   "file": "src/ai_line_leaves.c",
+   "name": "_08025130",
+   "size": 104
+  },
+  "0x08025198": {
+   "class": "c",
+   "file": "src/ai_line_leaves.c",
+   "name": "_08025198",
+   "size": 100
+  },
+  "0x080251fc": {
+   "class": "c",
+   "file": "src/ai_line_leaves.c",
+   "name": "Ai_LineTimingHelper",
+   "size": 24
+  },
+  "0x08025248": {
+   "class": "c",
+   "file": "src/ai_line_leaves.c",
+   "name": "Ai_LineWrite",
+   "size": 28
+  },
+  "0x080254e8": {
+   "class": "c",
+   "file": "src/ai_line_leaves.c",
+   "name": "Ai_LineGet0",
+   "size": 24
+  },
+  "0x08025500": {
+   "class": "c",
+   "file": "src/ai_line_leaves.c",
+   "name": "Ai_LineGet1",
+   "size": 24
+  },
+  "0x08025518": {
+   "class": "c",
+   "file": "src/ai_line_leaves.c",
+   "name": "Ai_LineGet2",
+   "size": 24
+  },
+  "0x08025530": {
+   "class": "c",
+   "file": "src/ai_line_leaves.c",
+   "name": "Ai_LineGet3",
+   "size": 24
+  },
+  "0x080256bc": {
+   "class": "c",
+   "file": "src/ai_line_leaves.c",
+   "name": "Ai_CatalogFieldTmpA",
+   "size": 28
+  },
+  "0x080256d8": {
+   "class": "c",
+   "file": "src/ai_line_leaves.c",
+   "name": "Ai_CatalogFieldTmpB",
+   "size": 28
+  },
+  "0x080256f4": {
+   "class": "c",
+   "file": "src/ai_line_leaves.c",
+   "name": "Ai_CatalogFieldTmpC",
+   "size": 28
+  },
+  "0x08025710": {
+   "class": "c",
+   "file": "src/ai_line_leaves.c",
+   "name": "Ai_CatalogFieldTmpD",
+   "size": 28
+  },
+  "0x0802572c": {
+   "class": "c",
+   "file": "src/ai_line_more.c",
+   "name": "Ai_Line2572C",
+   "size": 36
+  },
+  "0x080257d4": {
+   "class": "c",
+   "file": "src/ai_line_more.c",
+   "name": "Ai_Line257D4",
+   "size": 28
+  },
+  "0x080257f0": {
+   "class": "c",
+   "file": "src/ai_line_more.c",
+   "name": "Ai_Line257F0",
+   "size": 28
+  },
+  "0x0802580c": {
+   "class": "c",
+   "file": "src/ai_line_more.c",
+   "name": "_0802580C",
+   "size": 16
+  },
+  "0x0802581c": {
+   "class": "c",
+   "file": "src/ai_line_more.c",
+   "name": "Ai_LineFindCourse",
+   "size": 44
+  },
+  "0x08025848": {
+   "class": "c",
+   "file": "src/ai_line_more.c",
+   "name": "Ai_LineConst32",
+   "size": 4
+  },
+  "0x0802584c": {
+   "class": "c",
+   "file": "src/ai_line_more.c",
+   "name": "Ai_LineLookupA",
+   "size": 16
+  },
+  "0x0802585c": {
+   "class": "c",
+   "file": "src/ai_line_more.c",
+   "name": "Ai_LineLookupB",
+   "size": 16
+  },
+  "0x0802586c": {
+   "class": "c",
+   "file": "src/ai_line_more.c",
+   "name": "Ai_LineLookupC",
+   "size": 16
+  },
+  "0x0802587c": {
+   "class": "c",
+   "file": "src/ai_line_more.c",
+   "name": "Ai_LineFindIn6010C",
+   "size": 44
+  },
+  "0x080258a8": {
+   "class": "c",
+   "file": "src/numeric_leaves.c",
+   "name": "Code258A8_SimpleLookup",
+   "size": 16
+  },
+  "0x080258b8": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/course_cal.c",
+   "name": "Course_GetCup",
+   "size": 20
+  },
+  "0x080258cc": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/course_cal.c",
+   "name": "Course_GetSeqnum",
+   "size": 20
+  },
+  "0x080258e0": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/course_cal.c",
+   "name": "Course_GetSong",
+   "size": 20
+  },
+  "0x080258f4": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/course_cal.c",
+   "name": "Course_GetCourseDefault",
+   "size": 20
+  },
+  "0x08025908": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/course_cal.c",
+   "name": "Course_GetCourseVariant",
+   "size": 20
+  },
+  "0x0802591c": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/course_cal.c",
+   "name": "Course_GetParam",
+   "size": 20
+  },
+  "0x08025a80": {
+   "class": "c",
+   "file": "src/code_25930.c",
+   "name": "Code25930_GetCount",
+   "size": 12
+  },
+  "0x08025a8c": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/code_25930.c",
+   "name": "Code25930_GetEntry",
+   "size": 16
+  },
+  "0x08025a9c": {
+   "class": "c",
+   "file": "src/code_25930.c",
+   "name": "Code25930_FindEntry",
+   "size": 36
+  },
+  "0x08025afc": {
+   "class": "c",
+   "file": "src/code_25930.c",
+   "name": "Code25930_GetSpecialCount",
+   "size": 12
+  },
+  "0x08025b08": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/code_25930.c",
+   "name": "Code25930_GetSpecial",
+   "size": 16
+  },
+  "0x08025b18": {
+   "class": "c",
+   "file": "src/code_25930.c",
+   "name": "Code25930_FindSpecial",
+   "size": 36
+  },
+  "0x08025b3c": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/code_25930.c",
+   "name": "Code25930_CopyTemplate370",
+   "size": 76
+  },
+  "0x08025b88": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/code_25930.c",
+   "name": "Code25930_CopyTemplateC70",
+   "size": 64
+  },
+  "0x08025bc8": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/code_25930.c",
+   "name": "Code25930_Alloc84",
+   "size": 40
+  },
+  "0x08025bf0": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/code_25930.c",
+   "name": "Code25930_StoreId",
+   "size": 24
+  },
+  "0x08025c08": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/code_25930.c",
+   "name": "Code25930_Alloc182At",
+   "size": 40
+  },
+  "0x08025c60": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 2
+   },
+   "file": "src/rec35_runtime.c",
+   "name": "Rec35_RecordFill_25C60",
+   "size": 36
+  },
+  "0x08025c84": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1,
+    "pin": 7
+   },
+   "file": "src/code_25930.c",
+   "name": "Code25930_GridSet",
+   "size": 112
+  },
+  "0x08025cf4": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 2
+   },
+   "file": "src/runtime_state_dispatch.c",
+   "name": "AiGridGet_25CF4",
+   "size": 112
+  },
+  "0x08025d64": {
+   "class": "c",
+   "file": "src/ai_grid_leaves.c",
+   "name": "Ai_GridCountCol",
+   "size": 44
+  },
+  "0x08025d90": {
+   "class": "c",
+   "file": "src/ai_grid_leaves.c",
+   "name": "Ai_GridRowsFull",
+   "size": 44
+  },
+  "0x08025e1c": {
+   "class": "c",
+   "file": "src/ai_grid_leaves.c",
+   "name": "Ai_GridGetPacked",
+   "size": 84
+  },
+  "0x08025e70": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 19,
+    "naked": true
+   },
+   "file": "src/ai_grid_leaves.c",
+   "name": "Ai_GridWriteRecord",
+   "size": 40
+  },
+  "0x08025e98": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 19,
+    "naked": true
+   },
+   "file": "src/ai_grid_leaves.c",
+   "name": "Ai_GridReadRecord",
+   "size": 40
+  },
+  "0x08025fac": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 2,
+    "pin": 2
+   },
+   "file": "src/ai_award_leaves.c",
+   "name": "Ai_OwnedTest",
+   "size": 68
+  },
+  "0x08025ff0": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/ai_award_leaves.c",
+   "name": "Ai_SetOwnedFlag",
+   "size": 20
+  },
+  "0x08026004": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1,
+    "pin": 2
+   },
+   "file": "src/ai_award_leaves.c",
+   "name": "Ai_GetOwnedFlag",
+   "size": 28
+  },
+  "0x08026020": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 2
+   },
+   "file": "src/ai_award_leaves.c",
+   "name": "Ai_ClaimSlotAndSetBit",
+   "size": 72
+  },
+  "0x08026068": {
+   "class": "c",
+   "file": "src/race_phase_vms.c",
+   "name": "RaceVM_026068",
+   "size": 32
+  },
+  "0x0802612c": {
+   "class": "c",
+   "file": "src/runtime_record_helpers.c",
+   "name": "_08002612C",
+   "size": 36
+  },
+  "0x08026150": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/ai_award_leaves.c",
+   "name": "Ai_AwardLeafSetRet",
+   "size": 48
+  },
+  "0x08026180": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/track_car_helpers.c",
+   "name": "Code26180_Full",
+   "size": 48
+  },
+  "0x080261b0": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/ai_award_leaves.c",
+   "name": "Ai_AwardLeafGet",
+   "size": 20
+  },
+  "0x080261c4": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/ai_award_leaves.c",
+   "name": "Ai_AwardLeafPut",
+   "size": 16
+  },
+  "0x080261d4": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/track_car_helpers.c",
+   "name": "Code261D4_Get",
+   "size": 20
+  },
+  "0x080261e8": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/track_car_helpers.c",
+   "name": "PoolStore_261E8",
+   "size": 16
+  },
+  "0x080261f8": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/track_car_helpers.c",
+   "name": "PoolLoad_261F8",
+   "size": 20
+  },
+  "0x0802620c": {
+   "class": "c",
+   "file": "src/track_car_helpers.c",
+   "name": "RegisterBase_2620C",
+   "size": 20
+  },
+  "0x08026220": {
+   "class": "c",
+   "file": "src/track_car_helpers.c",
+   "name": "_08026220",
+   "size": 16
+  },
+  "0x080263c4": {
+   "class": "c",
+   "file": "src/runtime_state_dispatch.c",
+   "name": "ResourceWrapper_263C4",
+   "size": 26
+  },
+  "0x080264d8": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 1
+   },
+   "file": "src/sprite_obj_263e0.c",
+   "name": "Sprite_CourseByte",
+   "size": 72
+  },
+  "0x08026868": {
+   "class": "c",
+   "file": "src/sprite_obj_263e0.c",
+   "name": "Sprite_CopyPal",
+   "size": 24
+  },
+  "0x08026880": {
+   "class": "c",
+   "file": "src/sprite_obj_263e0.c",
+   "name": "Sprite_CourseRecord3",
+   "size": 24
+  },
+  "0x08026938": {
+   "class": "c",
+   "file": "src/sprite_obj_263e0.c",
+   "name": "Sprite_UnlinkSlot",
+   "size": 16
+  },
+  "0x08026948": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 1
+   },
+   "file": "src/sprite_obj_263e0.c",
+   "name": "Sprite_Create1",
+   "size": 100
+  },
+  "0x080269ac": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 2
+   },
+   "file": "src/sprite_obj_263e0.c",
+   "name": "Sprite_Create2",
+   "size": 116
+  },
+  "0x08026a20": {
+   "class": "c",
+   "file": "src/sprite_obj_263e0.c",
+   "name": "Sprite_SetXY",
+   "size": 12
+  },
+  "0x08026a2c": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 2
+   },
+   "file": "src/sprite_obj_263e0.c",
+   "name": "Sprite_SetXYRel",
+   "size": 32
+  },
+  "0x08026a4c": {
+   "class": "c",
+   "file": "src/sprite_obj_263e0.c",
+   "name": "Sprite_SetTenTwelve",
+   "size": 12
+  },
+  "0x08026a58": {
+   "class": "c",
+   "file": "src/sprite_obj_263e0.c",
+   "name": "Sprite_SetFlag16",
+   "size": 8
+  },
+  "0x08026a60": {
+   "class": "c",
+   "file": "src/sprite_obj_263e0.c",
+   "name": "Sprite_SetFlag17",
+   "size": 8
+  },
+  "0x08026a68": {
+   "class": "c",
+   "file": "src/sprite_obj_263e0.c",
+   "name": "Sprite_Tick",
+   "size": 16
+  },
+  "0x08026b00": {
+   "class": "c",
+   "file": "src/sprite_obj_263e0.c",
+   "name": "Sprite_Event",
+   "size": 48
+  },
+  "0x08026c84": {
+   "class": "c",
+   "file": "src/sprite_obj_263e0.c",
+   "name": "Sprite_EmitRecord",
+   "size": 40
+  },
+  "0x08026f30": {
+   "class": "c",
+   "file": "src/numeric_leaves.c",
+   "name": "Code26F30_Alloc",
+   "size": 32
+  },
+  "0x08026f50": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/garage.c",
+   "name": "Garage_PlaceRecord",
+   "size": 48
+  },
+  "0x08026f80": {
+   "class": "c",
+   "file": "src/garage.c",
+   "name": "Garage_F80",
+   "size": 68
+  },
+  "0x08026fc4": {
+   "class": "c",
+   "file": "src/garage.c",
+   "name": "Garage_FC4",
+   "size": 48
+  },
+  "0x080270d8": {
+   "class": "c",
+   "file": "src/garage.c",
+   "name": "Garage_DispXY_270D8",
+   "size": 44
+  },
+  "0x08027104": {
+   "class": "c",
+   "file": "src/garage.c",
+   "name": "Garage_ByteStore_27104",
+   "size": 16
+  },
+  "0x08027114": {
+   "class": "c",
+   "file": "src/garage.c",
+   "name": "Garage_DispSel_27114",
+   "size": 12
+  },
+  "0x08027210": {
+   "class": "c",
+   "file": "src/garage.c",
+   "name": "Garage_ModeFlag_27210",
+   "size": 36
+  },
+  "0x080276f0": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 1
+   },
+   "file": "src/garage.c",
+   "name": "Garage_276F0",
+   "size": 76
+  },
+  "0x0802773c": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 1
+   },
+   "file": "src/garage.c",
+   "name": "Garage_2773C",
+   "size": 76
+  },
+  "0x08027788": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 1
+   },
+   "file": "src/garage.c",
+   "name": "Garage_27788",
+   "size": 76
+  },
+  "0x080277d4": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 1
+   },
+   "file": "src/garage.c",
+   "name": "Garage_277D4",
+   "size": 84
+  },
+  "0x080278dc": {
+   "class": "c",
+   "file": "src/garage_records.c",
+   "name": "_0800278DC",
+   "size": 20
+  },
+  "0x08027d08": {
+   "class": "c",
+   "file": "src/garage_records.c",
+   "name": "_080027D08",
+   "size": 40
+  },
+  "0x0802804c": {
+   "class": "c",
+   "file": "src/garage.c",
+   "name": "Garage_2804C",
+   "size": 68
+  },
+  "0x08028090": {
+   "class": "c",
+   "file": "src/garage.c",
+   "name": "Garage_28090",
+   "size": 28
+  },
+  "0x080280ac": {
+   "class": "c",
+   "file": "src/garage_records.c",
+   "name": "_0800280AC",
+   "size": 20
+  },
+  "0x080280c0": {
+   "class": "c",
+   "file": "src/garage_records.c",
+   "name": "_0800280C0",
+   "size": 20
+  },
+  "0x080280d4": {
+   "class": "c",
+   "file": "src/garage.c",
+   "name": "Garage_280D4",
+   "size": 96
+  },
+  "0x08028134": {
+   "class": "c",
+   "file": "src/garage.c",
+   "name": "Garage_28134",
+   "size": 84
+  },
+  "0x080281f8": {
+   "class": "c",
+   "file": "src/garage.c",
+   "name": "Garage_281F8",
+   "size": 68
+  },
+  "0x0802823c": {
+   "class": "c",
+   "file": "src/garage.c",
+   "name": "Garage_2823C",
+   "size": 20
+  },
+  "0x08028250": {
+   "class": "c",
+   "file": "src/garage_records.c",
+   "name": "_080028250",
+   "size": 8
+  },
+  "0x08028258": {
+   "class": "c",
+   "file": "src/garage_records.c",
+   "name": "_080028258",
+   "size": 8
+  },
+  "0x08028260": {
+   "class": "c",
+   "file": "src/garage.c",
+   "name": "Garage_28260",
+   "size": 112
+  },
+  "0x080282d0": {
+   "class": "c",
+   "file": "src/garage.c",
+   "name": "Garage_282D0",
+   "size": 92
+  },
+  "0x0802858c": {
+   "class": "c",
+   "file": "src/garage.c",
+   "name": "Garage_2858C",
+   "size": 96
+  },
+  "0x080285ec": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 1
+   },
+   "file": "src/garage.c",
+   "name": "Garage_285EC",
+   "size": 176
+  },
+  "0x0802869c": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 1,
+    "naked": true
+   },
+   "file": "src/garage.c",
+   "name": "Garage_Stub_2869C",
+   "size": 4
+  },
+  "0x080286a0": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 1,
+    "naked": true
+   },
+   "file": "src/garage.c",
+   "name": "Garage_Stub_286A0",
+   "size": 4
+  },
+  "0x080286a4": {
+   "class": "c",
+   "file": "src/garage_records.c",
+   "name": "_0800286A4",
+   "size": 140
+  },
+  "0x08028730": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 1,
+    "naked": true
+   },
+   "file": "src/garage.c",
+   "name": "Garage_Stub_28730",
+   "size": 4
+  },
+  "0x08028734": {
+   "class": "c",
+   "file": "src/garage.c",
+   "name": "Garage_28734",
+   "size": 12
+  },
+  "0x08028740": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 1,
+    "naked": true
+   },
+   "file": "src/garage.c",
+   "name": "Garage_Stub_28740",
+   "size": 4
+  },
+  "0x08028780": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 1,
+    "naked": true
+   },
+   "file": "src/garage.c",
+   "name": "Garage_Stub_28780",
+   "size": 4
+  },
+  "0x08028828": {
+   "class": "c",
+   "file": "src/garage.c",
+   "name": "Garage_28828",
+   "size": 12
+  },
+  "0x08028834": {
+   "class": "c",
+   "file": "src/garage_records.c",
+   "name": "_080028834",
+   "size": 84
+  },
+  "0x08028888": {
+   "class": "c",
+   "file": "src/garage.c",
+   "name": "Garage_28888",
+   "size": 24
+  },
+  "0x080288a0": {
+   "class": "c",
+   "file": "src/garage_records.c",
+   "name": "_0800288A0",
+   "size": 28
+  },
+  "0x08028948": {
+   "class": "c",
+   "file": "src/garage_records.c",
+   "name": "_080028948",
+   "size": 28
+  },
+  "0x080289c0": {
+   "class": "c",
+   "file": "src/garage.c",
+   "name": "Garage_289C0",
+   "size": 16
+  },
+  "0x080289d0": {
+   "class": "c",
+   "file": "src/garage_records.c",
+   "name": "_0800289D0",
+   "size": 48
+  },
+  "0x08028a00": {
+   "class": "c",
+   "file": "src/garage_records.c",
+   "name": "_080028A00",
+   "size": 84
+  },
+  "0x08028a54": {
+   "class": "c",
+   "file": "src/garage_records.c",
+   "name": "_080028A54",
+   "size": 108
+  },
+  "0x08028ac0": {
+   "class": "c",
+   "file": "src/garage_records.c",
+   "name": "_080028AC0",
+   "size": 128
+  },
+  "0x08028b40": {
+   "class": "c",
+   "file": "src/garage.c",
+   "name": "Garage_28B40",
+   "size": 20
+  },
+  "0x08028b54": {
+   "class": "c",
+   "file": "src/garage.c",
+   "name": "Garage_28B54",
+   "size": 32
+  },
+  "0x08028b74": {
+   "class": "c",
+   "file": "src/garage.c",
+   "name": "Garage_28B74",
+   "size": 20
+  },
+  "0x08028b88": {
+   "class": "c",
+   "file": "src/garage_records.c",
+   "name": "_080028B88",
+   "size": 48
+  },
+  "0x08028bb8": {
+   "class": "c",
+   "file": "src/garage_records.c",
+   "name": "_080028BB8",
+   "size": 44
+  },
+  "0x08028be4": {
+   "class": "c",
+   "file": "src/garage_records.c",
+   "name": "_080028BE4",
+   "size": 112
+  },
+  "0x08028eb0": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 1
+   },
+   "file": "src/garage_records.c",
+   "name": "_080028EB0",
+   "size": 100
+  },
+  "0x08028f14": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 1,
+    "naked": true
+   },
+   "file": "src/garage.c",
+   "name": "Garage_Stub_28F14",
+   "size": 4
+  },
+  "0x08028f18": {
+   "class": "c",
+   "file": "src/garage_records.c",
+   "name": "_080028F18",
+   "size": 40
+  },
+  "0x080291f4": {
+   "class": "c",
+   "file": "src/garage_records.c",
+   "name": "_0800291F4",
+   "size": 20
+  },
+  "0x08029208": {
+   "class": "c",
+   "file": "src/garage.c",
+   "name": "Garage_29208",
+   "size": 16
+  },
+  "0x08029218": {
+   "class": "c",
+   "file": "src/garage.c",
+   "name": "Garage_29218",
+   "size": 12
+  },
+  "0x08029224": {
+   "class": "c",
+   "file": "src/garage.c",
+   "name": "Garage_29224",
+   "size": 12
+  },
+  "0x08029230": {
+   "class": "c",
+   "file": "src/garage_records.c",
+   "name": "_080029230",
+   "size": 84
+  },
+  "0x080293d8": {
+   "class": "c",
+   "file": "src/garage_records.c",
+   "name": "_0800293D8",
+   "size": 40
+  },
+  "0x080294c0": {
+   "class": "c",
+   "file": "src/garage_records.c",
+   "name": "_0800294C0",
+   "size": 60
+  },
+  "0x080294fc": {
+   "class": "c",
+   "file": "src/garage_records.c",
+   "name": "_0800294FC",
+   "size": 96
+  },
+  "0x0802955c": {
+   "class": "c",
+   "file": "src/garage_records.c",
+   "name": "_08002955C",
+   "size": 152
+  },
+  "0x08029e30": {
+   "class": "c",
+   "file": "src/garage_records.c",
+   "name": "_080029E30",
+   "size": 48
+  },
+  "0x0802a740": {
+   "class": "c",
+   "file": "src/garage_records.c",
+   "name": "_08002A740",
+   "size": 36
+  },
+  "0x0802a828": {
+   "class": "c",
+   "file": "src/garage_records.c",
+   "name": "_08002A828",
+   "size": 68
+  },
+  "0x0802a8f0": {
+   "class": "c",
+   "file": "src/race_setup.c",
+   "name": "RaceDraftTrim_2A8F0",
+   "size": 8
+  },
+  "0x0802a8f8": {
+   "class": "c",
+   "file": "src/garage_records.c",
+   "name": "_08002A8F8",
+   "size": 20
+  },
+  "0x0802aacc": {
+   "class": "c",
+   "file": "src/garage_records.c",
+   "name": "_08002AACC",
+   "size": 92
+  },
+  "0x0802ab90": {
+   "class": "c",
+   "file": "src/garage_records.c",
+   "name": "_08002AB90",
+   "size": 8
+  },
+  "0x0802ac2c": {
+   "class": "c",
+   "file": "src/garage_records.c",
+   "name": "_08002AC2C",
+   "size": 88
+  },
+  "0x0802b07c": {
+   "class": "c",
+   "file": "src/sound.c",
+   "name": "SoundVBlank",
+   "size": 28
+  },
+  "0x0802b1e4": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 1
+   },
+   "file": "src/sound.c",
+   "name": "SoundSetMasterVol",
+   "size": 48
+  },
+  "0x0802b214": {
+   "class": "c",
+   "file": "src/sound.c",
+   "name": "SoundSetMasterVolCond",
+   "size": 32
+  },
+  "0x0802b234": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 2
+   },
+   "file": "src/sound.c",
+   "name": "SoundStopMute",
+   "size": 40
+  },
+  "0x0802b25c": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 1
+   },
+   "file": "src/sound.c",
+   "name": "SoundPause",
+   "size": 36
+  },
+  "0x0802b280": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 1
+   },
+   "file": "src/sound.c",
+   "name": "SoundResume",
+   "size": 36
+  },
+  "0x0802b30c": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 2
+   },
+   "file": "src/sound.c",
+   "name": "SoundFadeOut",
+   "size": 36
+  },
+  "0x0802b368": {
+   "class": "c",
+   "file": "src/sound.c",
+   "name": "_0802B368",
+   "size": 28
+  },
+  "0x0802b384": {
+   "class": "c",
+   "file": "src/sound.c",
+   "name": "SoundSetSecVol",
+   "size": 32
+  },
+  "0x0802b3a4": {
+   "class": "c",
+   "file": "src/sound.c",
+   "name": "SoundApplySecVol",
+   "size": 20
+  },
+  "0x0802b44c": {
+   "class": "c",
+   "file": "src/sound.c",
+   "name": "SoundReapplySpeedA",
+   "size": 20
+  },
+  "0x0802b460": {
+   "class": "c",
+   "file": "src/sound.c",
+   "name": "SoundReapplySpeedB",
+   "size": 20
+  },
+  "0x0802b474": {
+   "class": "c",
+   "file": "src/sound.c",
+   "name": "SoundReapplySpeedC",
+   "size": 20
+  },
+  "0x0802b64c": {
+   "class": "c",
+   "file": "src/runtime_record_helpers.c",
+   "name": "_0802B64C",
+   "size": 16
+  },
+  "0x0802b65c": {
+   "class": "c",
+   "file": "src/runtime_record_helpers.c",
+   "name": "_0802B65C",
+   "size": 16
+  },
+  "0x0802b7b4": {
+   "class": "c",
+   "file": "src/sound_extra.c",
+   "name": "SoundPremixGetPtr",
+   "size": 4
+  },
+  "0x0802b7b8": {
+   "class": "c",
+   "file": "src/sound_extra.c",
+   "name": "SoundPremixPitch",
+   "size": 32
+  },
+  "0x0802b7d8": {
+   "class": "c",
+   "file": "src/sound_premix.c",
+   "name": "Sfx_08002B7D8",
+   "size": 4
+  },
+  "0x0802b7dc": {
+   "class": "c",
+   "file": "src/sound_premix.c",
+   "name": "Sfx_08002B7DC",
+   "size": 4
+  },
+  "0x0802b7e0": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 20,
+    "naked": true
+   },
+   "file": "src/sound_premix.c",
+   "name": "Sfx_08002B7E0",
+   "size": 44
+  },
+  "0x0802b80c": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/garage_records.c",
+   "name": "RecordSetter_2B80C",
+   "size": 12
+  },
+  "0x0802b818": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 4
+   },
+   "file": "src/sound_premix.c",
+   "name": "Sfx_08002B818",
+   "size": 112
+  },
+  "0x0802bc64": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 4
+   },
+   "file": "src/sound_support.c",
+   "name": "SoundUnlinkVoice",
+   "size": 32
+  },
+  "0x0802bc84": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 22,
+    "naked": true
+   },
+   "file": "src/sound_seq_follow.c",
+   "name": "SoundChannelFreeAll",
+   "size": 48
+  },
+  "0x0802bcb4": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 10,
+    "naked": true
+   },
+   "file": "src/sound_channel_bcb4.c",
+   "name": "SoundBCB4_Copy",
+   "size": 24
+  },
+  "0x0802bcce": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 11,
+    "naked": true
+   },
+   "file": "src/sound_seq_follow.c",
+   "name": "SoundBCCE_ValidateFrag",
+   "size": 26
+  },
+  "0x0802bcea": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 4,
+    "naked": true
+   },
+   "file": "src/sound_seq_follow.c",
+   "name": "SoundBCEA_FetchTail",
+   "size": 10
+  },
+  "0x0802bcf4": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1,
+    "pin": 5
+   },
+   "file": "src/sound_seq_follow.c",
+   "name": "SoundBCF4_FetchBE",
+   "size": 32
+  },
+  "0x0802bd14": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 13,
+    "naked": true
+   },
+   "file": "src/sound_seq_follow.c",
+   "name": "SoundBD14_Dispatch",
+   "size": 28
+  },
+  "0x0802bd30": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 2
+   },
+   "file": "src/sound_channel_bd30.c",
+   "name": "SoundBD30_Rewind",
+   "size": 20
+  },
+  "0x0802bd44": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 22,
+    "naked": true
+   },
+   "file": "src/sound_seq_follow.c",
+   "name": "SoundBD44_LoopStart",
+   "size": 48
+  },
+  "0x0802bd74": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 4,
+    "naked": true
+   },
+   "file": "src/sound_channel_bd74.c",
+   "name": "SoundBD74_Store",
+   "size": 12
+  },
+  "0x0802bd80": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 9,
+    "naked": true
+   },
+   "file": "src/sound_channel_bd80.c",
+   "name": "SoundBD80_Scale",
+   "size": 20
+  },
+  "0x0802bd94": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 8,
+    "naked": true
+   },
+   "file": "src/sound_channel_bd94.c",
+   "name": "SoundBD94_Store",
+   "size": 20
+  },
+  "0x0802bda8": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 20,
+    "naked": true
+   },
+   "file": "src/sound_seq_follow.c",
+   "name": "SoundBDA8_LoadRecord",
+   "size": 48
+  },
+  "0x0802bdd8": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 8,
+    "naked": true
+   },
+   "file": "src/sound_channel_bdd8.c",
+   "name": "SoundBDD8_Store",
+   "size": 20
+  },
+  "0x0802bdec": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 9,
+    "naked": true
+   },
+   "file": "src/sound_channel_bdec.c",
+   "name": "SoundBDEC_Store",
+   "size": 20
+  },
+  "0x0802be00": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 9,
+    "naked": true
+   },
+   "file": "src/sound_channel_be00.c",
+   "name": "SoundBE00_Store",
+   "size": 20
+  },
+  "0x0802be14": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 8,
+    "naked": true
+   },
+   "file": "src/sound_channel_be14.c",
+   "name": "SoundBE14_Store",
+   "size": 20
+  },
+  "0x0802be28": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 4,
+    "naked": true
+   },
+   "file": "src/sound_channel_be28.c",
+   "name": "SoundBE28_Store",
+   "size": 12
+  },
+  "0x0802be34": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 11,
+    "naked": true
+   },
+   "file": "src/sound_seq_follow.c",
+   "name": "SoundBE34_TrackSel",
+   "size": 24
+  },
+  "0x0802be4c": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 9,
+    "naked": true
+   },
+   "file": "src/sound_seq_follow.c",
+   "name": "SoundBE4C_Volume",
+   "size": 20
+  },
+  "0x0802be60": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 9,
+    "naked": true
+   },
+   "file": "src/sound_seq_follow.c",
+   "name": "SoundBE60_PSGWrite",
+   "size": 24
+  },
+  "0x0802c3d0": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 2
+   },
+   "file": "src/sound_voice_helpers.c",
+   "name": "SoundVoiceFollowA",
+   "size": 28
+  },
+  "0x0802c3ec": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 3
+   },
+   "file": "src/sound_seq_follow.c",
+   "name": "SoundC3EC_FetchByte",
+   "size": 12
+  },
+  "0x0802c3f8": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 7,
+    "naked": true
+   },
+   "file": "src/sound_seq_follow.c",
+   "name": "SoundC3F8_NoteOn",
+   "size": 20
+  },
+  "0x0802c40c": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 7,
+    "naked": true
+   },
+   "file": "src/sound_seq_follow.c",
+   "name": "SoundC40C_EnvByte",
+   "size": 20
+  },
+  "0x0802c484": {
+   "class": "c",
+   "file": "src/sound_seq_follow.c",
+   "name": "SoundC484_Noop",
+   "size": 4
+  },
+  "0x0802c488": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 1
+   },
+   "file": "src/sound_support.c",
+   "name": "SoundPauseGateOff",
+   "size": 28
+  },
+  "0x0802c4a4": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 1
+   },
+   "file": "src/sound_support.c",
+   "name": "SoundPauseGateOn",
+   "size": 32
+  },
+  "0x0802c53c": {
+   "class": "c",
+   "file": "src/sound_support.c",
+   "name": "SoundThunk",
+   "size": 12
+  },
+  "0x0802c548": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 1
+   },
+   "file": "src/sound_deep.c",
+   "name": "SoundFollowOnCopy",
+   "size": 44
+  },
+  "0x0802c5c0": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1,
+    "pin": 1
+   },
+   "file": "src/runtime_state_dispatch.c",
+   "name": "SoundC5C0_BankCheck",
+   "size": 84
+  },
+  "0x0802c614": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1,
+    "pin": 1
+   },
+   "file": "src/sound_deep.c",
+   "name": "SoundMoreHelper",
+   "size": 52
+  },
+  "0x0802c648": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1,
+    "pin": 1
+   },
+   "file": "src/sound_seq_follow.c",
+   "name": "SoundC648_Unclaim",
+   "size": 52
+  },
+  "0x0802c67c": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 19,
+    "naked": true
+   },
+   "file": "src/sound_seq_follow.c",
+   "name": "SoundC67C_StopAll",
+   "size": 44
+  },
+  "0x0802c6a8": {
+   "class": "c",
+   "file": "src/sound_seq_follow.c",
+   "name": "SoundC6A8_PauseOff",
+   "size": 12
+  },
+  "0x0802c6b4": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 19,
+    "naked": true
+   },
+   "file": "src/sound_seq_follow.c",
+   "name": "SoundC6B4_PauseAll",
+   "size": 44
+  },
+  "0x0802c6e0": {
+   "class": "c",
+   "file": "src/sound_seq_follow.c",
+   "name": "SoundC6E0_PauseOn",
+   "size": 16
+  },
+  "0x0802c6f0": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 3
+   },
+   "file": "src/sound_seq_follow.c",
+   "name": "SoundC6F0_VolPair",
+   "size": 32
+  },
+  "0x0802c710": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 1
+   },
+   "file": "src/sound_seq_follow.c",
+   "name": "SoundC710_VolPair2",
+   "size": 40
+  },
+  "0x0802c780": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1,
+    "pin": 1
+   },
+   "file": "src/sound_core.c",
+   "name": "SoundVoiceInit",
+   "size": 280
+  },
+  "0x0802c898": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 2,
+    "naked": true
+   },
+   "file": "src/sound_sequence_init.c",
+   "name": "_0802C898",
+   "size": 4
+  },
+  "0x0802c89c": {
+   "class": "c",
+   "file": "src/sound_sequence_init.c",
+   "name": "_0802C89C",
+   "size": 20
+  },
+  "0x0802c8b0": {
+   "class": "c",
+   "file": "src/sound_sequence_init.c",
+   "name": "_0802C8B0",
+   "size": 20
+  },
+  "0x0802c8c4": {
+   "class": "c",
+   "file": "src/sound_core.c",
+   "name": "SoundStateInit",
+   "size": 204
+  },
+  "0x0802cb20": {
+   "class": "c",
+   "file": "src/sound_core.c",
+   "name": "SoundCmdCommit",
+   "size": 100
+  },
+  "0x0802cb84": {
+   "class": "c",
+   "file": "src/runtime_state_dispatch.c",
+   "name": "SoundStop_2CB84",
+   "size": 56
+  },
+  "0x0802cfcc": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 9,
+    "pin": 5
+   },
+   "file": "src/sound_voice_helpers.c",
+   "name": "SoundVoiceClamp",
+   "size": 104
+  },
+  "0x0802d5ec": {
+   "class": "c",
+   "file": "src/sound_sequence_init.c",
+   "name": "_0802D5EC",
+   "size": 32
+  },
+  "0x0802d60c": {
+   "class": "c",
+   "file": "src/sound_sequence_init.c",
+   "name": "_0802D60C",
+   "size": 116
+  },
+  "0x0802d680": {
+   "class": "c",
+   "file": "src/sound_sequence_init.c",
+   "name": "_0802D680",
+   "size": 116
+  },
+  "0x0802d86c": {
+   "class": "c",
+   "file": "src/sound_command_dispatch.c",
+   "name": "SoundD6F4_VecCall",
+   "size": 20
+  },
+  "0x0802d8c8": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/sound_command_dispatch.c",
+   "name": "SoundD6F4_Byte36",
+   "size": 20
+  },
+  "0x0802d8dc": {
+   "class": "c",
+   "file": "src/sound_command_dispatch.c",
+   "name": "SoundD6F4_Byte44",
+   "size": 20
+  },
+  "0x0802d8f0": {
+   "class": "c",
+   "file": "src/sound_command_dispatch.c",
+   "name": "SoundD6F4_Byte45",
+   "size": 20
+  },
+  "0x0802d904": {
+   "class": "c",
+   "file": "src/sound_command_dispatch.c",
+   "name": "SoundD6F4_Byte46",
+   "size": 20
+  },
+  "0x0802d918": {
+   "class": "c",
+   "file": "src/sound_command_dispatch.c",
+   "name": "SoundD6F4_Byte47",
+   "size": 20
+  },
+  "0x0802d92c": {
+   "class": "c",
+   "file": "src/sound_command_dispatch.c",
+   "name": "SoundD6F4_Byte30",
+   "size": 12
+  },
+  "0x0802d938": {
+   "class": "c",
+   "file": "src/sound_command_dispatch.c",
+   "name": "SoundD6F4_Byte31",
+   "size": 12
+  },
+  "0x0802d944": {
+   "class": "c",
+   "file": "src/sound_command_dispatch.c",
+   "name": "SoundD6F4_Byte38",
+   "size": 20
+  },
+  "0x0802d958": {
+   "class": "c",
+   "file": "src/sound_command_dispatch.c",
+   "name": "SoundD6F4_Byte39",
+   "size": 20
+  },
+  "0x0802d96c": {
+   "class": "c",
+   "file": "src/sound_command_dispatch.c",
+   "name": "SoundD6F4_Nop",
+   "size": 4
+  },
+  "0x0802d970": {
+   "class": "asm",
+   "detail": {
+    "insn": 2,
+    "insn_lines": 2,
+    "naked": true
+   },
+   "file": "src/bios_wrappers.c",
+   "name": "CpuFastSet",
+   "size": 4
+  },
+  "0x0802d974": {
+   "class": "asm",
+   "detail": {
+    "insn": 2,
+    "insn_lines": 2,
+    "naked": true
+   },
+   "file": "src/bios_wrappers.c",
+   "name": "CpuSet",
+   "size": 4
+  },
+  "0x0802d978": {
+   "class": "asm",
+   "detail": {
+    "insn": 2,
+    "insn_lines": 2,
+    "naked": true
+   },
+   "file": "src/bios_wrappers.c",
+   "name": "Div",
+   "size": 4
+  },
+  "0x0802d97c": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 3,
+    "naked": true
+   },
+   "file": "src/bios_wrappers.c",
+   "name": "DivRem",
+   "size": 8
+  },
+  "0x0802d984": {
+   "class": "asm",
+   "detail": {
+    "insn": 2,
+    "insn_lines": 2,
+    "naked": true
+   },
+   "file": "src/bios_wrappers.c",
+   "name": "LZ77UnCompVram",
+   "size": 4
+  },
+  "0x0802d988": {
+   "class": "asm",
+   "detail": {
+    "insn": 2,
+    "insn_lines": 2,
+    "naked": true
+   },
+   "file": "src/bios_wrappers.c",
+   "name": "LZ77UnCompWram",
+   "size": 4
+  },
+  "0x0802d98c": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 3,
+    "naked": true
+   },
+   "file": "src/runtime_accessors.c",
+   "name": "_0802D98C",
+   "size": 8
+  },
+  "0x0802d994": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 9,
+    "naked": true
+   },
+   "file": "src/runtime_accessors.c",
+   "name": "_0802D994",
+   "size": 24
+  },
+  "0x0802d9ac": {
+   "class": "asm",
+   "detail": {
+    "insn": 2,
+    "insn_lines": 2,
+    "naked": true
+   },
+   "file": "src/bios_wrappers.c",
+   "name": "Sqrt",
+   "size": 4
+  },
+  "0x0802d9b0": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 3,
+    "naked": true
+   },
+   "file": "src/bios_wrappers.c",
+   "name": "VBlankIntrWaitR2",
+   "size": 8
+  },
+  "0x0802d9fc": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/runtime_state_dispatch.c",
+   "name": "SoundD9FC_Latch",
+   "size": 36
+  },
+  "0x0802de98": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 1,
+    "naked": true
+   },
+   "file": "src/sound_extra.c",
+   "name": "SoundDivNoop_2DE98",
+   "size": 4
+  }
+ },
+ "totals": {
+  "asm": {
+   "bytes": 1136,
+   "functions": 55
+  },
+  "c": {
+   "bytes": 27166,
+   "functions": 740
+  },
+  "c_fakematch": {
+   "bytes": 14466,
+   "functions": 216
+  },
+  "partial": {
+   "bytes": 0,
+   "functions": 0
+  }
+ },
+ "version": 1
+}

@@ -1,0 +1,38 @@
+# Never commit the ROM or derived binaries
+*.gba
+baserom.gba
+baserom.sav
+
+# Regenerable ROM-derived inventories (tools/findstr.py; see docs/rom_map.md)
+docs/data/strings_ascii.txt
+
+# Build artifacts / extracted assets
+build/
+build-slice/
+extracted/
+assets/
+*.o
+*.elf
+
+# OS noise
+.DS_Store
+
+# Python artifacts
+.venv/
+__pycache__/
+*.pyc
+
+# gbadisasm build tree (cloned source + binary; rebuild via tools/build_gbadisasm.sh)
+tools/gbadisasm/
+
+# GBA decomp tool trees (rebuild via tools/build_*.sh)
+tools/asm-differ/
+tools/gbagfx/
+tools/gbafix/
+
+# Local C and assembly build outputs
+build-c/
+build-s/
+
+# Independently assembled objects for the C link (asm/code.s, asm/data_tail.s)
+build-code/

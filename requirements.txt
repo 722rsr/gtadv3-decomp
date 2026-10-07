@@ -1,0 +1,2 @@
+# Required by the C matching and object-equivalence checks.
+pyelftools==0.33
