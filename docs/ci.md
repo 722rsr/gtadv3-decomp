@@ -41,11 +41,18 @@ pools, and alignment. Reconstructed assembly alone receives no C-match credit.
 The remaining 8,199,848 bytes are reported as unmatched data, including trailing
 ROM padding. This is not a claim that the full independent C ROM is complete.
 
-The report groups selected functions by their assembly owner and retains the
-unselected executable bytes as a separate unit. It omits aggregate function
-counts and fuzzy-match scores because the selection manifest is not an
-exhaustive function census or a partial-match scan. It does not claim that
-all selected bodies are free of inline assembly. The existing `objdiff.json`
+The report uses the audited ownership map to group the entire executable slice
+by assembly source region. Every byte contributes to its region's area, including
+unselected code. The `fuzzy_match_percent` field used by decomp.dev for color is
+a conservative byte-weighted score: verified selected spans contribute 100%,
+and all other bytes contribute zero. It equals the C-owned byte percentage;
+it does not estimate instruction similarity for unmatched functions.
+
+Drill-down lists include selected functions and explicitly named unselected byte
+ranges so their areas still cover the whole region. These ranges may include
+multiple functions, literal pools, header bytes, or padding; they are not a
+function census. Aggregate function counts remain omitted. The report does not
+claim that all selected bodies are free of inline assembly. The existing `objdiff.json`
 is a placeholder with an empty `units` list, not a configured comparison
 workspace or the source of these metrics.
 
