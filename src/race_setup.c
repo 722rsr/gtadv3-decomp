@@ -145,6 +145,7 @@ void _0800195F8(void) __attribute__((alias("Race_Setup_195F8")));
 // _080019860: direct wrapper for _08027FCC (no pool, bl only)
 extern void _080027FCC(void);   // slice-closure spelling; body + `Sub_` alias in src/garage.c
 void Race_Setup_19860(void) { _080027FCC(); }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _080019860(void) __attribute__((alias("Race_Setup_19860")));
 #endif

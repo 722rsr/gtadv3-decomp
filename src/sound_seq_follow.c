@@ -690,6 +690,7 @@ int sub_0802C420(void *s, int a, int b, int c) __attribute__((alias("SoundC420_E
 // 0x0802C484 — no-op leaf.
 void SoundC484_Noop(void) {
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _0802C484(void) __attribute__((alias("SoundC484_Noop")));
 void sub_0802C484(void) __attribute__((alias("SoundC484_Noop")));
@@ -815,6 +816,7 @@ void sub_0802C67C(void) __attribute__((alias("SoundC67C_StopAll")));
 void SoundC6A8_PauseOff(void *s) {
     _0802C488(s);
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _0802C6A8(void *a) __attribute__((alias("SoundC6A8_PauseOff")));
 void sub_0802C6A8(void *a) __attribute__((alias("SoundC6A8_PauseOff")));
@@ -872,6 +874,7 @@ void sub_0802C6B4(void) __attribute__((alias("SoundC6B4_PauseAll")));
 void SoundC6E0_PauseOn(void *s, int v) {
     _0802C4A4(s, (u16)v);
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _0802C6E0(void *a, int b) __attribute__((alias("SoundC6E0_PauseOn")));
 void sub_0802C6E0(void *a, int b) __attribute__((alias("SoundC6E0_PauseOn")));

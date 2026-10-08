@@ -178,14 +178,17 @@ int sub_0800AA20(void) __attribute__((alias("CarTick_Shared")));
 
 // Simple record-tick wrappers 0xA1D4/0xA1E0/0xA1EC/0xA1F8 and 0xA204/0xA21C/0xA23C/0xA248 — bounded, no pool, push lr / bl _0800AA20
 int CarTick_Rec_0A1D4(void *ctx){ return _0800AA20(); (void)ctx; }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 int _0800A1D4(void *c) __attribute__((alias("CarTick_Rec_0A1D4")));
 #endif
 int CarTick_Rec_0A1E0(void *ctx){ return _0800AA20(); (void)ctx; }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 int _0800A1E0(void *c) __attribute__((alias("CarTick_Rec_0A1E0")));
 #endif
 int CarTick_Rec_0A1EC(void *ctx){ return _0800AA20(); (void)ctx; }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 int _0800A1EC(void *c) __attribute__((alias("CarTick_Rec_0A1EC")));
 #endif
@@ -205,6 +208,7 @@ int _0800A980(void *ctx)
 __asm__(".align 2, 0");
 
 int CarTick_Rec_0A1F8(void *ctx){ return _0800AA20(); (void)ctx; }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 int _0800A1F8(void *c) __attribute__((alias("CarTick_Rec_0A1F8")));
 #endif
@@ -226,14 +230,17 @@ __asm__(".align 2, 0");
 int _0800A210(void *c) __attribute__((alias("CarTick_Rec_0A210")));
 #endif
 int CarTick_Rec_0A21C(void *ctx){ return _0800AA20(); (void)ctx; }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 int _0800A21C(void *c) __attribute__((alias("CarTick_Rec_0A21C")));
 #endif
 int CarTick_Rec_0A23C(void *ctx){ return _0800AA20(); (void)ctx; }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 int _0800A23C(void *c) __attribute__((alias("CarTick_Rec_0A23C")));
 #endif
 int CarTick_Rec_0A248(void *ctx){ return _0800AA20(); (void)ctx; }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 int _0800A248(void *c) __attribute__((alias("CarTick_Rec_0A248")));
 #endif

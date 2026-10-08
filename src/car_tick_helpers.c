@@ -478,6 +478,7 @@ int _0800A8FC(void)
 {
     return _0800AA20();
 }
+__asm__(".align 2, 0");
 
 // ----------------------------------------------------------------------------
 // 0x0800A908 _0800A908 — phase loader (record 37): when s16[WA+0x1084]
@@ -855,6 +856,7 @@ int CarTick_Rec_0A1C8(void *ctx)
     (void)ctx;
     return _0800AA20();
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 int _0800A1C8(void *c) __attribute__((alias("CarTick_Rec_0A1C8")));
 #endif
@@ -862,6 +864,7 @@ int _0800A1C8(void *c) __attribute__((alias("CarTick_Rec_0A1C8")));
 // 0x0800D778 — 2B `bx lr` no-op (car_tick_d778.s tail slot; the router's
 // `case 10` calls it as a phase placeholder that does nothing).
 void CarTickNoop_D778(void) {}
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _0800D778(void) __attribute__((alias("CarTickNoop_D778")));
 void sub_0800D778(void) __attribute__((alias("CarTickNoop_D778")));

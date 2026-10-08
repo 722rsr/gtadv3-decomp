@@ -220,6 +220,7 @@ u16 CourseLeaves_09B50(void) {
     u16 v = _08002494();
     return (u16)v;
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 u16 _08009B50(void) __attribute__((alias("CourseLeaves_09B50")));
 u16 sub_08009B50(void) __attribute__((alias("CourseLeaves_09B50")));

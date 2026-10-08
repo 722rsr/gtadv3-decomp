@@ -91,6 +91,7 @@ class ReportTests(unittest.TestCase):
             for path in ('Makefile', 'requirements.txt', 'baserom.sha256', 'src/a.c'):
                 (root / path).write_text('original')
             (root / 'tools/matching_slice_functions.json').write_text('{}')
+            (root / 'tools/data_regions.json').write_text(json.dumps({'version': 1, 'regions': []}))
             (root / 'docs/data/code_data_ownership.json').write_text(json.dumps(ownership_fixture()))
             data = report.expected_report(root)
             (root / report.REPORT).write_bytes(data)

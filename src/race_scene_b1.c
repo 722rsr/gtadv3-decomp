@@ -421,17 +421,22 @@ int _08001D750(int mode) {
 // `extra` must sit in r6 precisely because r7 is a transfer register.
 typedef struct { s32 w[12]; } RSB7B8_Tmpl;
 
-void *_08001D7B8(void *out_, int mode, int center, int extra) {
+unsigned long long _08001D7B8(void *out_, int mode, int center, int extra) {
     register volatile u8 *out __asm__("r5") = (volatile u8 *)out_;
     register int m __asm__("r12") = mode;
     register int ctr __asm__("r4") = center;
     register int ext __asm__("r6") = extra;
     register int r __asm__("r2");
     register int e __asm__("r3");
-    e = 0;
+    register unsigned long long ret_val __asm__("r0");
     {
         RSB7B8_Tmpl t = *(const RSB7B8_Tmpl *)(uintptr_t)0x0805FBECu;
         r = 0;
+        e = 0;
+        // The ROM initializes r3 here even though `ext` replaces it before
+        // either output store. Keep that otherwise-dead value through an asm
+        // input so agbcc retains the `movs r3,#0` in the same position.
+        __asm__ volatile("" : "+r" (e));
         if ((u32)m <= 14u) {
             register int x0 __asm__("r0") = t.w[0];
             register int s0 __asm__("r1") = (int)((u32)x0 >> 31);
@@ -457,20 +462,21 @@ void *_08001D7B8(void *out_, int mode, int center, int extra) {
             register int s8 __asm__("r1") = (int)((u32)x8 >> 31);
             r = ctr - ((x8 + s8) >> 1);
         }
-        if (m > 49) {
-            register int xa __asm__("r0") = t.w[10];
-            register int sa __asm__("r1") = (int)((u32)xa >> 31);
-            r = ctr - ((xa + sa) >> 1);
+        {
+            // The final ROM comparison copies the selector from ip into r7.
+            register int over __asm__("r7") = m;
+            if (over > 49) {
+                register int xa __asm__("r0") = t.w[10];
+                register int sa __asm__("r1") = (int)((u32)xa >> 31);
+                r = ctr - ((xa + sa) >> 1);
+            }
         }
     }
     e = ext;
     *(volatile u32 *)(out + 0u) = (u32)r;
     *(volatile u32 *)(out + 4u) = (u32)e;
-    // Cast only: `out` is a `volatile u8 *` pinned to r5, and the pin is what the
-    // removal control shows is load-bearing (38 -> 13 without it). Dropping the
-    // qualifier on the return would discard the volatile; a cast is the same
-    // value in the same register, so the emitted code is unchanged.
-    return (void *)out;
+    __asm__("add r0, r5, #0" : "=r" (ret_val) : "r" (out));
+    return ret_val;
 }
 // ----------------------------------------------------------------------------
 // ---- 0x08001D858 — record-lane reset leaf ----
@@ -801,5 +807,6 @@ void RaceScene_Event_654(void) __attribute__((alias("_08001D654")));
 // Same rule 6 need for 0x08001D750: the splice deletes the asm label
 // `sub_08001D750` and promoted callers reference that spelling.
 int sub_08001D750(int mode) __attribute__((alias("_08001D750")));
+unsigned long long sub_08001D7B8(void *out, int mode, int center, int extra) __attribute__((alias("_08001D7B8")));
 void sub_08001DC20(void *rec, int sel) __attribute__((alias("_08001DC20")));
 #endif

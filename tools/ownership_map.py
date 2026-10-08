@@ -25,6 +25,8 @@ import sys
 from pathlib import Path
 from typing import Any, Iterable
 
+import data_regions
+
 
 ROOT = Path(__file__).resolve().parents[1]
 ROM_BASE = 0x08000000
@@ -77,17 +79,19 @@ DATA_ONLY_SOURCES: set[str] = {"data_tail.s"}
 
 # Direct .incbin ranges are deliberately explicit.  A newly introduced raw
 # range must be classified here before the audit can pass.
+# All cataloged data through content end is now generated; only verified zero
+# padding remains as a direct ROM-backed span.
 RAW_OVERRIDES: list[dict[str, Any]] = [
     {
-        "start": 0x02E158,
+        "start": 0x7B04C4,
         "end": ROM_SIZE,
-        "classification": "asset-data+padding",
-        "status": "private-rom-data-input",
-        "owner": "extracted/generated data inputs (pending independent integration)",
+        "classification": "padding",
+        "status": "owned-zero-padding",
+        "owner": "linker/source-generated zero padding",
         "evidence": [
             "asm/data_tail.s",
-            "baserom.sha256 documents content end 0x7B04C4 and zero padding",
-            "docs/data/lz77_blobs.txt, mto_entries.txt, and track_resources.txt",
+            "baserom.sha256 content-end record",
+            "all bytes after 0x7B04C4 are zero",
         ],
         "strict_blocker": False,
     },
@@ -98,6 +102,7 @@ INCBIN_RE = re.compile(
     r'^\s*\.incbin\s+"baserom\.gba"\s*,\s*'
     r"(0x[0-9a-fA-F]+)\s*,\s*(0x[0-9a-fA-F]+)"
 )
+GENERATED_INCBIN_RE = re.compile(r'^\s*\.incbin\s+"(build/data/[^"\n]+)"\s*(?:@.*)?$')
 RANGE_RE = re.compile(
     r"(0x[0-9a-fA-F]+)\s*[-–]\s*(0x[0-9a-fA-F]+)"
 )
@@ -217,6 +222,9 @@ def parse_raw_inc_bins(closure: list[Path]) -> list[dict[str, Any]]:
         for number, line in active_lines(path):
             if ".incbin" not in line:
                 continue
+            generated = GENERATED_INCBIN_RE.match(line)
+            if generated and generated.group(1) in {row['binary'] for row in data_regions.load_regions(ROOT)}:
+                continue
             match = INCBIN_RE.match(line)
             if not match:
                 raise OwnershipError(
@@ -245,6 +253,32 @@ def parse_raw_inc_bins(closure: list[Path]) -> list[dict[str, Any]]:
                 f"and {hex_range(current['start'], current['end'])}"
             )
     return records
+
+
+def generated_data_inputs(closure, rom):
+    """Recognize only registered, reproduced private generator outputs."""
+    rows = {row['binary']: row for row in data_regions.verify_outputs(ROOT)}
+    found = []
+    seen = set()
+    for path in closure:
+        for line_number, line in active_lines(path):
+            match = GENERATED_INCBIN_RE.match(line)
+            if not match:
+                continue
+            binary = match.group(1)
+            if binary not in rows or binary in seen:
+                raise OwnershipError(f'unknown or repeated generated input: {binary}')
+            seen.add(binary)
+            row = rows[binary]
+            start, end = int(row['start'], 16), int(row['end'], 16)
+            if (ROOT / binary).read_bytes() != rom[start:end]:
+                raise OwnershipError(f'generated input differs from reference: {binary}')
+            found.append({'start': start, 'end': end, 'size': end - start,
+                          'path': relpath(path), 'line': line_number,
+                          'binary': binary, 'id': row['id'], 'sha256': row['sha256']})
+    if seen != set(rows):
+        raise OwnershipError('registered generated data is absent from the assembly include closure')
+    return found
 
 
 def raw_override(start: int, end: int) -> dict[str, Any] | None:
@@ -435,8 +469,10 @@ def scan_raw_executable_references(
 
 
 def classify_raw_interval(start: int, end: int) -> dict[str, Any]:
-    # The one large .incbin is split at the documented content end.
-    if start == 0x02E158 and end <= CONTENT_END:
+    # Reviewed raw inputs may be split at the documented content end.
+    if CODE_END <= start < end <= CONTENT_END and any(
+        row["start"] <= start and end <= row["end"] for row in RAW_OVERRIDES
+    ):
         return {
             "classification": "asset-data",
             "status": "private-rom-data-input",
@@ -563,10 +599,12 @@ def build_segments(
     raw_records: list[dict[str, Any]],
     source_records: list[dict[str, Any]],
     reference_evidence: dict[str, dict[str, Any]],
+    generated_records: list[dict[str, Any]] | None = None,
 ) -> tuple[list[dict[str, Any]], list[str]]:
     errors: list[str] = []
+    generated_records = generated_records or []
     boundaries = {0, ROM_SIZE, CONTENT_END}
-    for record in raw_records + source_records:
+    for record in raw_records + source_records + generated_records:
         boundaries.add(record["start"])
         boundaries.add(record["end"])
     ordered = sorted(boundaries)
@@ -576,6 +614,9 @@ def build_segments(
             continue
         raw_hits = [record for record in raw_records if record["start"] <= start and end <= record["end"]]
         source_hits = [record for record in source_records if record["start"] <= start and end <= record["end"]]
+        generated_hits = [record for record in generated_records if record['start'] <= start and end <= record['end']]
+        if generated_hits and (raw_hits or source_hits or len(generated_hits) != 1):
+            errors.append(f'generated data overlaps another owner at {hex_range(start, end)}')
         if len(raw_hits) > 1:
             errors.append(f"multiple raw owners for {hex_range(start, end)}")
         if raw_hits:
@@ -609,6 +650,20 @@ def build_segments(
                 "intended_owner": classification["owner"],
                 "evidence": evidence,
                 "strict_blocker": bool(classification["strict_blocker"]),
+            }
+        elif generated_hits:
+            generated = generated_hits[0]
+            segment = {
+                "start": start, "end": end, "size": end - start,
+                "classification": "generated-data", "status": "verified-generated-data",
+                "executable": False, "backing": generated['binary'],
+                "owners": [f"{generated['path']}:{generated['line']}"],
+                "source_owners": ['tools/data_regions.py'],
+                "intended_owner": generated['id'],
+                "evidence": ['tools/data_regions.json',
+                             'editable input regenerated and compared byte-for-byte against pinned ROM',
+                             f"span SHA-256 {generated['sha256']}"],
+                "strict_blocker": False,
             }
         elif source_hits:
             owners = sorted({item["path"] for item in source_hits})
@@ -747,7 +802,8 @@ def make_report(rom_path: Path) -> dict[str, Any]:
     raw_records = parse_raw_inc_bins(closure)
     source_records, source_errors = source_ranges(closure)
     reference_evidence = scan_raw_executable_references(rom, raw_records)
-    segments, segment_errors = build_segments(raw_records, source_records, reference_evidence)
+    generated_records = generated_data_inputs(closure, rom)
+    segments, segment_errors = build_segments(raw_records, source_records, reference_evidence, generated_records)
     dependency = dependency_findings()
     header = header_facts(rom)
 
@@ -802,6 +858,7 @@ def make_report(rom_path: Path) -> dict[str, Any]:
         "raw_data_bytes": sum(
             item["size"] for item in segments if item["classification"] == "asset-data"
         ),
+        "generated_data_bytes": sum(item["size"] for item in segments if item["classification"] == "generated-data"),
         "padding_bytes": sum(
             item["size"] for item in segments if item["classification"] == "padding"
         ),
@@ -922,6 +979,7 @@ def render_markdown(report: dict[str, Any]) -> str:
         f"| Raw executable bytes | `{summary['raw_executable_bytes']}` |",
         f"| Raw header bytes | `{summary['raw_header_bytes']}` |",
         f"| Cataloged data-tail bytes | `{summary['raw_data_bytes']}` |",
+        f"| Verified generated data bytes | `{summary['generated_data_bytes']}` |",
         f"| Zero padding bytes | `{summary['padding_bytes']}` |",
         f"| Direct `.incbin` spans | `{summary['raw_incbin_count']}` |",
         f"| Included assembly source files | `{summary['source_file_count']}` |",
@@ -1003,7 +1061,7 @@ def render_markdown(report: dict[str, Any]) -> str:
             "",
             f"- `0x002E158..0x{CONTENT_END:06X}` is the cataloged ROM data/asset tail; its SHA-256 is `{rom['data_tail_sha256']}`.",
             f"- `0x{CONTENT_END:06X}..0x{ROM_SIZE:06X}` is padding; non-zero byte count is `{rom['padding_nonzero_bytes']}`.",
-            "- Data/header inputs are allowed for the reference build and are reported as private reference inputs; they still need extraction/generation steps before an independent build can consume them.",
+            "- Remaining raw data inputs still need reviewed extraction/generation steps. Verified generated regions are listed separately above; see `docs/data-integration.md`.",
             "",
             "## Method and limitations",
             "",
@@ -1025,17 +1083,46 @@ def render_markdown(report: dict[str, Any]) -> str:
 
 
 def self_test() -> None:
-    # The only raw input left is the cataloged data tail.  If any executable
+    # The reviewed raw data tail excludes the generated spans.  If any executable
     # pocket reappears as an .incbin, RAW_OVERRIDES has to grow again and the
     # strict gate has to say so.
-    assert raw_override(0x02E158, ROM_SIZE) is not None
+    assert raw_override(0x7B04C4, ROM_SIZE) is not None
+    assert raw_override(0x02E158, 0x0CE438) is None
+    assert raw_override(0x28A35C, 0x3D7DA4) is None
+    assert raw_override(0x3D7DA4, 0x799640) is None
+    assert raw_override(0x799640, 0x7B04C4) is None
+    assert raw_override(0x0CE438, 0x16BA2C) is None
+    assert raw_override(0x16BA2C, 0x23CEFC) is None
+    assert raw_override(0x23CEFC, 0x252DC4) is None
+    assert raw_override(0x25AF78, 0x284E2C) is None
+    assert raw_override(0x2856DC, 0x28A35C) is None
+    assert raw_override(0x252DC4, 0x253604) is None
+    assert raw_override(0x253604, 0x254044) is None
+    assert raw_override(0x254044, 0x25A118) is None
+    assert raw_override(0x25A118, 0x25A230) is None
+    assert raw_override(0x25A230, 0x25AF78) is None
+    assert raw_override(0x284E2C, 0x2856DC) is None
     assert raw_override(0x000000, 0x0000C0) is None  # header is asm/header.s
     assert raw_override(0x000C14, 0x000CA0) is None  # transcribed in handlers.s
     assert raw_override(0x000CA0, 0x000E80) is None
     assert raw_override(0x021860, 0x021BA0) is None  # transcribed in carphys_racer.s
     assert raw_override(0x021BA0, 0x021BF8) is None
     assert classify_raw_interval(0x7B04C4, 0x800000)["classification"] == "padding"
-    assert classify_raw_interval(0x02E158, CONTENT_END)["classification"] == "asset-data"
+    assert classify_raw_interval(0x02E158, 0x0CE438)["strict_blocker"]
+    assert classify_raw_interval(0x28A35C, 0x3D7DA4)["strict_blocker"]
+    assert classify_raw_interval(0x3D7DA4, 0x799640)["strict_blocker"]
+    assert classify_raw_interval(0x799640, 0x7B04C4)["strict_blocker"]
+    assert classify_raw_interval(0x0CE438, 0x16BA2C)["strict_blocker"]
+    assert classify_raw_interval(0x16BA2C, 0x23CEFC)["strict_blocker"]
+    assert classify_raw_interval(0x23CEFC, 0x252DC4)["strict_blocker"]
+    assert classify_raw_interval(0x25AF78, 0x284E2C)["strict_blocker"]
+    assert classify_raw_interval(0x2856DC, 0x28A35C)["strict_blocker"]
+    assert classify_raw_interval(0x252DC4, 0x253604)["strict_blocker"]
+    assert classify_raw_interval(0x253604, 0x254044)["strict_blocker"]
+    assert classify_raw_interval(0x254044, 0x25A118)["strict_blocker"]
+    assert classify_raw_interval(0x25A118, 0x25A230)["strict_blocker"]
+    assert classify_raw_interval(0x25A230, 0x25AF78)["strict_blocker"]
+    assert classify_raw_interval(0x284E2C, 0x2856DC)["strict_blocker"]
     first = {
         "start": 0,
         "end": 0x10,

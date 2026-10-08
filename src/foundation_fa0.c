@@ -76,6 +76,7 @@ void Helper_013BC(void *p){
         *(volatile u8*)((u8*)p+24) = 1;
     }
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _080013BC(void *a) __attribute__((alias("Helper_013BC")));
 #endif

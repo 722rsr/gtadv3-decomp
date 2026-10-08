@@ -1166,6 +1166,16 @@
       "sub_08003194"
     ]
   },
+  "0x080031d4": {
+    "c_name": "sub_080031D4",
+    "asm_file": "asm/runtime_2aac.s",
+    "start_marker": ".type sub_080031D4, %function",
+    "end_marker": ".type sub_08003210, %function",
+    "end_vma": "0x08003210",
+    "export": [
+      "sub_080031D4"
+    ]
+  },
   "0x08003210": {
     "c_name": "sub_08003210",
     "asm_file": "asm/runtime_2aac.s",
@@ -1260,6 +1270,17 @@
       "sub_08003728"
     ],
     "start_marker": ".type sub_08003728, %function"
+  },
+  "0x0800376c": {
+    "c_name": "sub_0800376C",
+    "asm_file": "asm/runtime_2aac.s",
+    "start_marker": ".type sub_0800376C, %function",
+    "end_marker": ".type sub_080037BC, %function",
+    "end_vma": "0x080037bc",
+    "export": [
+      "_0800376C",
+      "sub_0800376C"
+    ]
   },
   "0x080037bc": {
     "asm_file": "asm/runtime_2aac.s",
@@ -1673,6 +1694,50 @@
       "sub_080044C4"
     ],
     "start_marker": ".type sub_080044C4, %function"
+  },
+  "0x08004564": {
+    "c_name": "sub_08004564",
+    "asm_file": "asm/runtime_2aac.s",
+    "start_marker": ".type sub_08004564, %function",
+    "end_marker": ".type sub_080045B8, %function",
+    "end_vma": "0x080045b8",
+    "export": [
+      "_08004564",
+      "sub_08004564"
+    ]
+  },
+  "0x080045b8": {
+    "c_name": "sub_080045B8",
+    "asm_file": "asm/runtime_2aac.s",
+    "start_marker": ".type sub_080045B8, %function",
+    "end_marker": ".type sub_08004610, %function",
+    "end_vma": "0x08004610",
+    "export": [
+      "_080045B8",
+      "sub_080045B8"
+    ]
+  },
+  "0x08004610": {
+    "c_name": "sub_08004610",
+    "asm_file": "asm/runtime_2aac.s",
+    "start_marker": ".type sub_08004610, %function",
+    "end_marker": ".type sub_08004670, %function",
+    "end_vma": "0x08004670",
+    "export": [
+      "_08004610",
+      "sub_08004610"
+    ]
+  },
+  "0x08004670": {
+    "c_name": "sub_08004670",
+    "asm_file": "asm/runtime_2aac.s",
+    "start_marker": ".type sub_08004670, %function",
+    "end_marker": ".type sub_080046D0, %function",
+    "end_vma": "0x080046d0",
+    "export": [
+      "_08004670",
+      "sub_08004670"
+    ]
   },
   "0x080046d0": {
     "asm_file": "asm/runtime_2aac.s",
@@ -4612,6 +4677,7 @@
     "end_marker": ".type sub_080010914, %function",
     "end_vma": "0x08010914",
     "export": [
+      "_0800108F0",
       "sub_0800108F0"
     ],
     "start_marker": ".type sub_0800108F0, %function"
@@ -5849,6 +5915,17 @@
       "sub_08001D750"
     ],
     "start_marker": ".type sub_08001D750, %function"
+  },
+  "0x0801d7b8": {
+    "asm_file": "asm/race_scene.s",
+    "c_name": "_08001D7B8",
+    "end_marker": ".type sub_08001D858, %function",
+    "end_vma": "0x0801d858",
+    "export": [
+      "_08001D7B8",
+      "sub_08001D7B8"
+    ],
+    "start_marker": ".type sub_08001D7B8, %function"
   },
   "0x0801d910": {
     "asm_file": "asm/race_scene.s",

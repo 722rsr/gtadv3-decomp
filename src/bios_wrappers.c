@@ -56,6 +56,7 @@ void CpuSet_2D974(const void *a, void *b, unsigned c) { CpuSet(a, b, (u32)c); }
 __attribute__((naked)) int DivRem(int num, int den) {
     __asm__ volatile ("swi 0x06\n mov r0, r1\n bx lr\n");
 }
+__asm__(".align 2, 0");
 // The ROM's VBlank wait entry is NOT the bare `swi 5` wrapper above: the bytes
 // at 0x0802D9B0 are `movs r2,#0; swi 5; bx lr` (8 bytes,.short 0 pad at
 // 0x0802D9B6 that belongs to neither body). It needs its own definition, not

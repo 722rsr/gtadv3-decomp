@@ -15,6 +15,7 @@
 void Sfx_08002B7D8(int a, int b) {
     (void)a; (void)b;
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _08002B7D8(int a, int b) __attribute__((alias("Sfx_08002B7D8")));
 void sub_08002B7D8(int a, int b) __attribute__((alias("Sfx_08002B7D8")));
@@ -25,6 +26,7 @@ void sub_08002B7D8(int a, int b) __attribute__((alias("Sfx_08002B7D8")));
 void Sfx_08002B7DC(int a, int b) {
     (void)a; (void)b;
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _08002B7DC(int a, int b) __attribute__((alias("Sfx_08002B7DC")));
 void sub_08002B7DC(int a, int b) __attribute__((alias("Sfx_08002B7DC")));
@@ -109,6 +111,7 @@ void Sfx_08002B818(void *obj, int arg1) {
     st[0] = st[0] + out[0];
     st[1] = st[1] + out[1];
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _08002B818(void *a, int b) __attribute__((alias("Sfx_08002B818")));
 void sub_08002B818(void *a, int b) __attribute__((alias("Sfx_08002B818")));

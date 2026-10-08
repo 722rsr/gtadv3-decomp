@@ -39,6 +39,7 @@ extern void _0800DE4C(void *a);             // 0x0800DE4C (this file)
 void MenuDE4C_0800DE4C(void *rec) {
     (void)rec;
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _0800DE4C(void *a) __attribute__((alias("MenuDE4C_0800DE4C")));
 void sub_0800DE4C(void *a) __attribute__((alias("MenuDE4C_0800DE4C")));
@@ -69,6 +70,7 @@ void sub_0800E2E4(void *a, int b, u32 c) __attribute__((alias("MenuE2E4_0800E2E4
 // sub_0800E598 — no-op leaf.
 void MenuE598_0800E598(void) {
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _0800E598(void) __attribute__((alias("MenuE598_0800E598")));
 void sub_0800E598(void) __attribute__((alias("MenuE598_0800E598")));

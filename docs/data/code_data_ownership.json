@@ -2,7 +2,7 @@
   "dependency_findings": [],
   "errors": [],
   "generator": "tools/ownership_map.py",
-  "generator_sha256": "581f2d43ab9f7998ed3a9bc39cf49564d5861dbafe5972d99c0255891c6cc82a",
+  "generator_sha256": "cdced9b678f9e90f177b130482b38fc9ff6dbdefb72e10426176054b4e60683e",
   "inputs": {
     "code_end": "0x02E158",
     "source_closure": [
@@ -276,28 +276,28 @@
       "asm/surface_access.s",
       "asm/wrapper_pair.s"
     ],
-    "source_closure_sha256": "4ccde3bff63a6f87126a7d885a0d282d3b533c2ac5b831c7d008bb72ea348638"
+    "source_closure_sha256": "2aae5e35919b591b64364119171532415a9d17a305310a585768e06468651569"
   },
   "raw_incbin_spans": [
     {
-      "classification": "asset-data+padding",
+      "classification": "padding",
       "end": "0x800000",
       "evidence": [
         "asm/data_tail.s",
-        "baserom.sha256 documents content end 0x7B04C4 and zero padding",
-        "docs/data/lz77_blobs.txt, mto_entries.txt, and track_resources.txt"
+        "baserom.sha256 content-end record",
+        "all bytes after 0x7B04C4 are zero"
       ],
-      "line": 21,
-      "owner": "extracted/generated data inputs (pending independent integration)",
+      "line": 144,
+      "owner": "linker/source-generated zero padding",
       "path": "asm/data_tail.s",
-      "sha256": "ce5a30e85153782185cc482a5acedddde53e717f6eb755ce9bc3c8755e92b2e6",
-      "size": 8199848,
-      "start": "0x02E158",
-      "status": "private-rom-data-input",
+      "sha256": "c7c97eeab83ce36b22430a176168eb7dd4612a74791a095a4e752962c8885633",
+      "size": 326460,
+      "start": "0x7B04C4",
+      "status": "owned-zero-padding",
       "strict_blocker": false,
-      "text": ".incbin \"baserom.gba\", 0x02E158, 0x7D1EA8    @ -> end of ROM (0x800000)",
+      "text": ".incbin \"baserom.gba\", 0x7B04C4, 0x4FB3C    @ verified zero padding to end of ROM (0x800000)",
       "vma_end": "0x08800000",
-      "vma_start": "0x0802E158"
+      "vma_start": "0x087B04C4"
     }
   ],
   "rom": {
@@ -6449,25 +6449,364 @@
       "vma_start": "0x0802E0A4"
     },
     {
-      "backing": "baserom.gba:.incbin",
-      "classification": "asset-data",
-      "end": "0x7B04C4",
+      "backing": "build/data/early_data.bin",
+      "classification": "generated-data",
+      "end": "0x0CE438",
       "evidence": [
-        "asm/data_tail.s",
-        "baserom.sha256 content-end record"
+        "tools/data_regions.json",
+        "editable input regenerated and compared byte-for-byte against pinned ROM",
+        "span SHA-256 c1b4cd157f643bea68c58dae419a7d3058f8cce9c767ef1425f1a5f2d7e39620"
       ],
       "executable": false,
-      "intended_owner": "extracted/generated data inputs (pending independent integration)",
+      "intended_owner": "early_data",
       "owners": [
-        "asm/data_tail.s:21"
+        "asm/data_tail.s:28"
       ],
-      "size": 7873388,
-      "source_owners": [],
+      "size": 656096,
+      "source_owners": [
+        "tools/data_regions.py"
+      ],
       "start": "0x02E158",
-      "status": "private-rom-data-input",
+      "status": "verified-generated-data",
+      "strict_blocker": false,
+      "vma_end": "0x080CE438",
+      "vma_start": "0x0802E158"
+    },
+    {
+      "backing": "build/data/mto_group0.bin",
+      "classification": "generated-data",
+      "end": "0x16BA2C",
+      "evidence": [
+        "tools/data_regions.json",
+        "editable input regenerated and compared byte-for-byte against pinned ROM",
+        "span SHA-256 c55f865444d14e09ae29d445506675c105d2730347469b3eb2dfb83104497b95"
+      ],
+      "executable": false,
+      "intended_owner": "mto_group0",
+      "owners": [
+        "asm/data_tail.s:36"
+      ],
+      "size": 644596,
+      "source_owners": [
+        "tools/data_regions.py"
+      ],
+      "start": "0x0CE438",
+      "status": "verified-generated-data",
+      "strict_blocker": false,
+      "vma_end": "0x0816BA2C",
+      "vma_start": "0x080CE438"
+    },
+    {
+      "backing": "build/data/surface_map.bin",
+      "classification": "generated-data",
+      "end": "0x23CEFC",
+      "evidence": [
+        "tools/data_regions.json",
+        "editable input regenerated and compared byte-for-byte against pinned ROM",
+        "span SHA-256 e491ba06e8d70daa29e2b239f5b01e7508a67069b039aca4126ef2c2635162dc"
+      ],
+      "executable": false,
+      "intended_owner": "surface_map",
+      "owners": [
+        "asm/data_tail.s:44"
+      ],
+      "size": 857296,
+      "source_owners": [
+        "tools/data_regions.py"
+      ],
+      "start": "0x16BA2C",
+      "status": "verified-generated-data",
+      "strict_blocker": false,
+      "vma_end": "0x0823CEFC",
+      "vma_start": "0x0816BA2C"
+    },
+    {
+      "backing": "build/data/theme_texture.bin",
+      "classification": "generated-data",
+      "end": "0x252DC4",
+      "evidence": [
+        "tools/data_regions.json",
+        "editable input regenerated and compared byte-for-byte against pinned ROM",
+        "span SHA-256 92b9cc0c7093b67374c1e9003c04a7f7ca945b3beb53322facbd9ecc4c98f3fc"
+      ],
+      "executable": false,
+      "intended_owner": "theme_texture",
+      "owners": [
+        "asm/data_tail.s:52"
+      ],
+      "size": 89800,
+      "source_owners": [
+        "tools/data_regions.py"
+      ],
+      "start": "0x23CEFC",
+      "status": "verified-generated-data",
+      "strict_blocker": false,
+      "vma_end": "0x08252DC4",
+      "vma_start": "0x0823CEFC"
+    },
+    {
+      "backing": "build/data/theme_lut_a.bin",
+      "classification": "generated-data",
+      "end": "0x253604",
+      "evidence": [
+        "tools/data_regions.json",
+        "editable input regenerated and compared byte-for-byte against pinned ROM",
+        "span SHA-256 507c6d079e609c9d1ffc51a09abadc3f875d77c0d06e7fef8d0d3fbd1c9fe736"
+      ],
+      "executable": false,
+      "intended_owner": "theme_lut_a",
+      "owners": [
+        "asm/data_tail.s:60"
+      ],
+      "size": 2112,
+      "source_owners": [
+        "tools/data_regions.py"
+      ],
+      "start": "0x252DC4",
+      "status": "verified-generated-data",
+      "strict_blocker": false,
+      "vma_end": "0x08253604",
+      "vma_start": "0x08252DC4"
+    },
+    {
+      "backing": "build/data/theme_palette.bin",
+      "classification": "generated-data",
+      "end": "0x254044",
+      "evidence": [
+        "tools/data_regions.json",
+        "editable input regenerated and compared byte-for-byte against pinned ROM",
+        "span SHA-256 277c2c1cb02a4ed0bef836e383e84cb15a3a2f1aaab1e96db612743219904f20"
+      ],
+      "executable": false,
+      "intended_owner": "theme_palette",
+      "owners": [
+        "asm/data_tail.s:68"
+      ],
+      "size": 2624,
+      "source_owners": [
+        "tools/data_regions.py"
+      ],
+      "start": "0x253604",
+      "status": "verified-generated-data",
+      "strict_blocker": false,
+      "vma_end": "0x08254044",
+      "vma_start": "0x08253604"
+    },
+    {
+      "backing": "build/data/surface_tile.bin",
+      "classification": "generated-data",
+      "end": "0x25A118",
+      "evidence": [
+        "tools/data_regions.json",
+        "editable input regenerated and compared byte-for-byte against pinned ROM",
+        "span SHA-256 e936dd3f3c34757aa65f607851af5e829723773fee61f355e1f28f5a5c81e614"
+      ],
+      "executable": false,
+      "intended_owner": "surface_tile",
+      "owners": [
+        "asm/data_tail.s:76"
+      ],
+      "size": 24788,
+      "source_owners": [
+        "tools/data_regions.py"
+      ],
+      "start": "0x254044",
+      "status": "verified-generated-data",
+      "strict_blocker": false,
+      "vma_end": "0x0825A118",
+      "vma_start": "0x08254044"
+    },
+    {
+      "backing": "build/data/variant_palette.bin",
+      "classification": "generated-data",
+      "end": "0x25A230",
+      "evidence": [
+        "tools/data_regions.json",
+        "editable input regenerated and compared byte-for-byte against pinned ROM",
+        "span SHA-256 85ce0911a061f45fd14d89acfb04cb845cdc5d9b6859d0accdc7fe13ff444590"
+      ],
+      "executable": false,
+      "intended_owner": "variant_palette",
+      "owners": [
+        "asm/data_tail.s:84"
+      ],
+      "size": 280,
+      "source_owners": [
+        "tools/data_regions.py"
+      ],
+      "start": "0x25A118",
+      "status": "verified-generated-data",
+      "strict_blocker": false,
+      "vma_end": "0x0825A230",
+      "vma_start": "0x0825A118"
+    },
+    {
+      "backing": "build/data/variant_overlay.bin",
+      "classification": "generated-data",
+      "end": "0x25AF78",
+      "evidence": [
+        "tools/data_regions.json",
+        "editable input regenerated and compared byte-for-byte against pinned ROM",
+        "span SHA-256 ddd27d6a024395fecd1d7d8ff6d7253669e4e91af084356eecab7e4bf35d23e0"
+      ],
+      "executable": false,
+      "intended_owner": "variant_overlay",
+      "owners": [
+        "asm/data_tail.s:92"
+      ],
+      "size": 3400,
+      "source_owners": [
+        "tools/data_regions.py"
+      ],
+      "start": "0x25A230",
+      "status": "verified-generated-data",
+      "strict_blocker": false,
+      "vma_end": "0x0825AF78",
+      "vma_start": "0x0825A230"
+    },
+    {
+      "backing": "build/data/big_gfx.bin",
+      "classification": "generated-data",
+      "end": "0x284E2C",
+      "evidence": [
+        "tools/data_regions.json",
+        "editable input regenerated and compared byte-for-byte against pinned ROM",
+        "span SHA-256 7fa5078a14f86067013af07c3a7dcd880f114d3b1489df5f48a44b1f4f2c576f"
+      ],
+      "executable": false,
+      "intended_owner": "big_gfx",
+      "owners": [
+        "asm/data_tail.s:100"
+      ],
+      "size": 171700,
+      "source_owners": [
+        "tools/data_regions.py"
+      ],
+      "start": "0x25AF78",
+      "status": "verified-generated-data",
+      "strict_blocker": false,
+      "vma_end": "0x08284E2C",
+      "vma_start": "0x0825AF78"
+    },
+    {
+      "backing": "build/data/scenery_table.bin",
+      "classification": "generated-data",
+      "end": "0x2856DC",
+      "evidence": [
+        "tools/data_regions.json",
+        "editable input regenerated and compared byte-for-byte against pinned ROM",
+        "span SHA-256 d8976f49cbebaaa088561dc9f0b46ff1e2a8e39cdce90ff23e500415b2b0f022"
+      ],
+      "executable": false,
+      "intended_owner": "scenery_table",
+      "owners": [
+        "asm/data_tail.s:108"
+      ],
+      "size": 2224,
+      "source_owners": [
+        "tools/data_regions.py"
+      ],
+      "start": "0x284E2C",
+      "status": "verified-generated-data",
+      "strict_blocker": false,
+      "vma_end": "0x082856DC",
+      "vma_start": "0x08284E2C"
+    },
+    {
+      "backing": "build/data/minimap.bin",
+      "classification": "generated-data",
+      "end": "0x28A35C",
+      "evidence": [
+        "tools/data_regions.json",
+        "editable input regenerated and compared byte-for-byte against pinned ROM",
+        "span SHA-256 ed060fe948f1ef657d1bb118bf6430f17a97fe40407211a77b4f6382d6062da0"
+      ],
+      "executable": false,
+      "intended_owner": "minimap",
+      "owners": [
+        "asm/data_tail.s:116"
+      ],
+      "size": 19584,
+      "source_owners": [
+        "tools/data_regions.py"
+      ],
+      "start": "0x2856DC",
+      "status": "verified-generated-data",
+      "strict_blocker": false,
+      "vma_end": "0x0828A35C",
+      "vma_start": "0x082856DC"
+    },
+    {
+      "backing": "build/data/mid_gap.bin",
+      "classification": "generated-data",
+      "end": "0x3D7DA4",
+      "evidence": [
+        "tools/data_regions.json",
+        "editable input regenerated and compared byte-for-byte against pinned ROM",
+        "span SHA-256 37b47d51b3e9b7810932ce56aa72ae191b2fcca4063b2d28b24a486f7cae34ce"
+      ],
+      "executable": false,
+      "intended_owner": "mid_gap",
+      "owners": [
+        "asm/data_tail.s:124"
+      ],
+      "size": 1366600,
+      "source_owners": [
+        "tools/data_regions.py"
+      ],
+      "start": "0x28A35C",
+      "status": "verified-generated-data",
+      "strict_blocker": false,
+      "vma_end": "0x083D7DA4",
+      "vma_start": "0x0828A35C"
+    },
+    {
+      "backing": "build/data/blob_field.bin",
+      "classification": "generated-data",
+      "end": "0x799640",
+      "evidence": [
+        "tools/data_regions.json",
+        "editable input regenerated and compared byte-for-byte against pinned ROM",
+        "span SHA-256 c2efb302f0d1c0d990e36971bd4c89edf08e634fc7e220324b0759ccb03f12af"
+      ],
+      "executable": false,
+      "intended_owner": "blob_field",
+      "owners": [
+        "asm/data_tail.s:132"
+      ],
+      "size": 3938460,
+      "source_owners": [
+        "tools/data_regions.py"
+      ],
+      "start": "0x3D7DA4",
+      "status": "verified-generated-data",
+      "strict_blocker": false,
+      "vma_end": "0x08799640",
+      "vma_start": "0x083D7DA4"
+    },
+    {
+      "backing": "build/data/tail_end.bin",
+      "classification": "generated-data",
+      "end": "0x7B04C4",
+      "evidence": [
+        "tools/data_regions.json",
+        "editable input regenerated and compared byte-for-byte against pinned ROM",
+        "span SHA-256 c9881660184ed14d645b43d4fe3139f0ba4acca32e6a28b827b7a8e54ad76939"
+      ],
+      "executable": false,
+      "intended_owner": "tail_end",
+      "owners": [
+        "asm/data_tail.s:140"
+      ],
+      "size": 93828,
+      "source_owners": [
+        "tools/data_regions.py"
+      ],
+      "start": "0x799640",
+      "status": "verified-generated-data",
       "strict_blocker": false,
       "vma_end": "0x087B04C4",
-      "vma_start": "0x0802E158"
+      "vma_start": "0x08799640"
     },
     {
       "backing": "baserom.gba:.incbin",
@@ -6480,7 +6819,7 @@
       "executable": false,
       "intended_owner": "linker/source-generated zero padding",
       "owners": [
-        "asm/data_tail.s:21"
+        "asm/data_tail.s:144"
       ],
       "size": 326460,
       "source_owners": [],
@@ -8101,8 +8440,8 @@
     {
       "path": "asm/data_tail.s",
       "ranges": [],
-      "sha256": "aa577a5331c21b61b50aacbbf5752f3fc9b84396404a0f57163c7bec90420ca5",
-      "size": 1193
+      "sha256": "8d1eadcf375ef5a097ab7106fac99d897765b6d85f3a36d9930b971f74481e84",
+      "size": 5869
     },
     {
       "path": "asm/garage_26f50.s",
@@ -9740,13 +10079,14 @@
   "summary": {
     "assembly_source_bytes": 188760,
     "coverage_complete": true,
+    "generated_data_bytes": 7873388,
     "padding_bytes": 326460,
-    "raw_data_bytes": 7873388,
+    "raw_data_bytes": 0,
     "raw_executable_bytes": 0,
     "raw_header_bytes": 0,
     "raw_incbin_count": 1,
     "rom_bytes": 8388608,
-    "segment_count": 268,
+    "segment_count": 282,
     "source_file_count": 266,
     "strict_blocker_count": 0,
     "unclassified_bytes": 0

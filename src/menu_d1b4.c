@@ -42,6 +42,7 @@ void MenuD1B4_Reset(void *rec) {
     *(volatile u16 *)(r + 4) = 120;
     *(volatile u16 *)(r + 6) = 60;
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _0800D1B4(void *a) __attribute__((alias("MenuD1B4_Reset")));
 void sub_0800D1B4(void *a) __attribute__((alias("MenuD1B4_Reset")));
@@ -132,6 +133,7 @@ void sub_0800D1EC(void *a, int b, int c) __attribute__((alias("MenuD1B4_Move")))
 void MenuD1B4_Noop(void *rec) {
     (void)rec;
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _0800D240(void *a) __attribute__((alias("MenuD1B4_Noop")));
 void sub_0800D240(void *a) __attribute__((alias("MenuD1B4_Noop")));

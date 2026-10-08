@@ -111,6 +111,7 @@ int sub_08026068(int a) __attribute__((alias("RaceVM_026068")));
 // ============================================================================
 // sub_080021CC0 (0x080021CC0, 2 B) — `bx lr` no-op leaf (dispatcher slot 6).
 void RaceVM_021CC0(void) {}
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _080021CC0(void) __attribute__((alias("RaceVM_021CC0")));
 void sub_080021CC0(void) __attribute__((alias("RaceVM_021CC0")));
@@ -396,6 +397,7 @@ void sub_080022240(void *a) __attribute__((alias("RaceVM_022240")));
 // ============================================================================
 // sub_08002227C (0x08002227C, 2 B) — `bx lr` no-op leaf (dispatcher slot 2).
 void RaceVM_02227C(void *a, int b) {}
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _08002227C(void *a, int b) __attribute__((alias("RaceVM_02227C")));
 void sub_08002227C(void *a, int b) __attribute__((alias("RaceVM_02227C")));
@@ -448,6 +450,7 @@ void sub_080022280(void *a) __attribute__((alias("RaceVM_022280")));
 // sub_08002231C (0x08002231C, 2 B) — `bx lr` no-op leaf (dispatcher slot 5,
 // first half).
 void RaceVM_02231C(void *a) {}
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _08002231C(void *a) __attribute__((alias("RaceVM_02231C")));
 void sub_08002231C(void *a) __attribute__((alias("RaceVM_02231C")));
@@ -480,6 +483,7 @@ void sub_080022320(void *a, int b, u32 c) __attribute__((alias("RaceVM_022320"))
 // sub_080022348 (0x080022348, 4 B) — `bx lr` no-op leaf sitting at the head
 // of the dispatcher below (BL target of its slot-7 arm).
 void RaceVM_022348(void *a) {}
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _080022348(void *a) __attribute__((alias("RaceVM_022348")));
 void sub_080022348(void *a) __attribute__((alias("RaceVM_022348")));
@@ -659,6 +663,7 @@ void sub_080022454(void *a, void *b) __attribute__((alias("RaceVM_022454")));
 // ============================================================================
 // sub_080022478 (0x080022478, 2 B) — `bx lr` no-op leaf (dispatcher slot 12).
 void RaceVM_022478(void *a) {}
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _080022478(void *a) __attribute__((alias("RaceVM_022478")));
 void sub_080022478(void *a) __attribute__((alias("RaceVM_022478")));
@@ -949,6 +954,7 @@ void sub_0800228F8(void *a, void *b) __attribute__((alias("RaceVM_0228F8")));
 // ============================================================================
 // sub_08002291C (0x08002291C, 2 B) — `bx lr` no-op leaf (tail slot 12).
 void RaceVM_02291C(void) {}
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _08002291C(void) __attribute__((alias("RaceVM_02291C")));
 void sub_08002291C(void) __attribute__((alias("RaceVM_02291C")));

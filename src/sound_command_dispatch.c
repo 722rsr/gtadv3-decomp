@@ -184,38 +184,44 @@ void SoundD6F4_Byte36(void *a, void *seq) {
     D6F4Seq *s = (D6F4Seq *)seq;
     s->b36 = *(u8 *)(uintptr_t)s->cursor;
     s->cursor = s->cursor + 1;
-    __asm__(".align 2, 0");
 }
+__asm__(".align 2, 0");
 void SoundD6F4_Byte44(void *a, void *seq) {
     D6F4Seq *s = (D6F4Seq *)seq;
     s->b44 = *(u8 *)(uintptr_t)s->cursor;
     s->cursor = s->cursor + 1;
 }
+__asm__(".align 2, 0");
 void SoundD6F4_Byte45(void *a, void *seq) {
     D6F4Seq *s = (D6F4Seq *)seq;
     s->b45 = *(u8 *)(uintptr_t)s->cursor;
     s->cursor = s->cursor + 1;
 }
+__asm__(".align 2, 0");
 void SoundD6F4_Byte46(void *a, void *seq) {
     D6F4Seq *s = (D6F4Seq *)seq;
     s->b46 = *(u8 *)(uintptr_t)s->cursor;
     s->cursor = s->cursor + 1;
 }
+__asm__(".align 2, 0");
 void SoundD6F4_Byte47(void *a, void *seq) {
     D6F4Seq *s = (D6F4Seq *)seq;
     s->b47 = *(u8 *)(uintptr_t)s->cursor;
     s->cursor = s->cursor + 1;
 }
+__asm__(".align 2, 0");
 void SoundD6F4_Byte38(void *a, void *seq) {
     D6F4Seq *s = (D6F4Seq *)seq;
     s->b38 = *(u8 *)(uintptr_t)s->cursor;
     s->cursor = s->cursor + 1;
 }
+__asm__(".align 2, 0");
 void SoundD6F4_Byte39(void *a, void *seq) {
     D6F4Seq *s = (D6F4Seq *)seq;
     s->b39 = *(u8 *)(uintptr_t)s->cursor;
     s->cursor = s->cursor + 1;
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _0802D8C8(void *a, void *s) __attribute__((alias("SoundD6F4_Byte36")));
 void sub_0802D8C8(void *a, void *s) __attribute__((alias("SoundD6F4_Byte36")));
@@ -240,6 +246,7 @@ void sub_0802D938(void *a, void *s) __attribute__((alias("SoundD6F4_Byte31")));
 // ----------------------------------------------------------------------------
 // sub_0802D96C (0x0802D96C, 4 B) — `bx lr` no-op leaf.
 void SoundD6F4_Nop(void) { }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _0802D96C(void) __attribute__((alias("SoundD6F4_Nop")));
 void sub_0802D96C(void) __attribute__((alias("SoundD6F4_Nop")));

@@ -866,6 +866,18 @@
    "name": "_08003194",
    "size": 64
   },
+  "0x080031d4": {
+   "class": "partial",
+   "detail": {
+    "barrier": 3,
+    "insn": 2,
+    "insn_lines": 3,
+    "pin": 12
+   },
+   "file": "src/runtime_hud.c",
+   "name": "_080031D4",
+   "size": 60
+  },
   "0x08003210": {
    "class": "c_fakematch",
    "detail": {
@@ -935,6 +947,15 @@
    "file": "src/runtime_hud.c",
    "name": "ObjCenter_03728",
    "size": 68
+  },
+  "0x0800376c": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/runtime_hud.c",
+   "name": "ObjMeasure_0376C",
+   "size": 80
   },
   "0x080037bc": {
    "class": "c_fakematch",
@@ -1239,6 +1260,56 @@
    "file": "src/runtime_hud.c",
    "name": "TrackArrow_044C4",
    "size": 68
+  },
+  "0x08004564": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 1,
+    "directive": 2,
+    "pin": 2
+   },
+   "file": "src/runtime_hud.c",
+   "name": "BgRot_04564",
+   "size": 84
+  },
+  "0x080045b8": {
+   "class": "partial",
+   "detail": {
+    "barrier": 1,
+    "directive": 2,
+    "insn": 1,
+    "insn_lines": 1,
+    "pin": 4
+   },
+   "file": "src/runtime_hud.c",
+   "name": "BgRot_045B8",
+   "size": 88
+  },
+  "0x08004610": {
+   "class": "partial",
+   "detail": {
+    "barrier": 3,
+    "directive": 2,
+    "insn": 2,
+    "insn_lines": 2,
+    "pin": 7
+   },
+   "file": "src/runtime_hud.c",
+   "name": "BgRot_04610",
+   "size": 96
+  },
+  "0x08004670": {
+   "class": "partial",
+   "detail": {
+    "barrier": 3,
+    "directive": 2,
+    "insn": 1,
+    "insn_lines": 1,
+    "pin": 7
+   },
+   "file": "src/runtime_hud.c",
+   "name": "BgRot_04670",
+   "size": 96
   },
   "0x080046d0": {
    "class": "c_fakematch",
@@ -4097,6 +4168,18 @@
    "name": "_08001D750",
    "size": 104
   },
+  "0x0801d7b8": {
+   "class": "partial",
+   "detail": {
+    "barrier": 1,
+    "insn": 1,
+    "insn_lines": 1,
+    "pin": 20
+   },
+   "file": "src/race_scene_b1.c",
+   "name": "_08001D7B8",
+   "size": 160
+  },
   "0x0801d910": {
    "class": "c",
    "file": "src/race_scene_b1.c",
@@ -6346,10 +6429,7 @@
    "size": 44
   },
   "0x0802b80c": {
-   "class": "c_fakematch",
-   "detail": {
-    "directive": 1
-   },
+   "class": "c",
    "file": "src/garage_records.c",
    "name": "RecordSetter_2B80C",
    "size": 12
@@ -6836,10 +6916,7 @@
    "size": 20
   },
   "0x0802d8c8": {
-   "class": "c_fakematch",
-   "detail": {
-    "directive": 1
-   },
+   "class": "c",
    "file": "src/sound_command_dispatch.c",
    "name": "SoundD6F4_Byte36",
    "size": 20
@@ -7035,16 +7112,16 @@
    "functions": 55
   },
   "c": {
-   "bytes": 27166,
-   "functions": 740
+   "bytes": 27198,
+   "functions": 742
   },
   "c_fakematch": {
-   "bytes": 14466,
+   "bytes": 14598,
    "functions": 216
   },
   "partial": {
-   "bytes": 0,
-   "functions": 0
+   "bytes": 500,
+   "functions": 5
   }
  },
  "version": 1

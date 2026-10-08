@@ -126,6 +126,7 @@ void SubstateOr1_04BAC(void *ctx) {
     v |= *f;
     *f = v;
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _08004BAC(void *c) __attribute__((alias("SubstateOr1_04BAC")));
 void sub_08004BAC(void *c) __attribute__((alias("SubstateOr1_04BAC")));
@@ -427,6 +428,7 @@ void sub_0800254C(void) __attribute__((alias("ScreenInit_0254C")));
 // code_23e0c.s 0x080023E78 — bx lr stub
 // ============================================================================
 void Stub_23E78(void *rec) { (void)rec; }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _080023E78(void *a) __attribute__((alias("Stub_23E78")));
 void sub_080023E78(void *a) __attribute__((alias("Stub_23E78")));
@@ -709,6 +711,7 @@ void sub_0800F5EC(void *a, int b, u32 c, u32 d) __attribute__((alias("MenuF5EC")
 // menu_f22c.s 0x0800F59C — bx lr stub
 // ============================================================================
 void Stub_0F59C(void *rec) { (void)rec; }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _0800F59C(void *a) __attribute__((alias("Stub_0F59C")));
 void sub_0800F59C(void *a) __attribute__((alias("Stub_0F59C")));
@@ -794,6 +797,7 @@ void *ResourceWrapper_263C4(int a, void *b, int c) {
     sub_080262A4(r, (int)(uintptr_t)b);
     return r;
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void *_080263C4(int a, void *b, int c) __attribute__((alias("ResourceWrapper_263C4")));
 void *sub_080263C4(int a, void *b, int c) __attribute__((alias("ResourceWrapper_263C4")));

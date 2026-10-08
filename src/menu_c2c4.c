@@ -70,6 +70,7 @@ void MenuC2C4_Teardown(void) {
     sub_08002BB4();
     sub_08002B44();
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _0800C2E4(void) __attribute__((alias("MenuC2C4_Teardown")));
 void sub_0800C2E4(void) __attribute__((alias("MenuC2C4_Teardown")));
@@ -81,6 +82,7 @@ void MenuC2C4_Flush(void) {
     _08005604();
     sub_08002C98();
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _0800C2FC(void) __attribute__((alias("MenuC2C4_Flush")));
 void sub_0800C2FC(void) __attribute__((alias("MenuC2C4_Flush")));

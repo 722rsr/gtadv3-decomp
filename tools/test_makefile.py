@@ -19,6 +19,25 @@ class MakefileTests(unittest.TestCase):
         shutil.copyfile(ROOT / 'Makefile', self.root / 'Makefile')
         for folder in ('build', 'build-code', 'asm/macros'):
             (self.root / folder).mkdir(parents=True)
+        for name in ('tools/data_regions.py', 'tools/data_regions.json', 'tools/track_dump.py',
+                     'build/data/variant_palette.json', 'build/data/variant_palette.bin',
+                     'build/data/mto_group0.json', 'build/data/mto_group0.bin',
+                     'build/data/theme_lut_a.json', 'build/data/theme_lut_a.bin',
+                     'build/data/theme_palette.json', 'build/data/theme_palette.bin',
+                     'build/data/scenery_table.json', 'build/data/scenery_table.bin',
+                     'build/data/surface_tile.json', 'build/data/surface_tile.bin',
+                     'build/data/variant_overlay.json', 'build/data/variant_overlay.bin',
+                     'build/data/surface_map.json', 'build/data/surface_map.bin',
+                     'build/data/theme_texture.json', 'build/data/theme_texture.bin',
+                     'build/data/big_gfx.json', 'build/data/big_gfx.bin',
+                     'build/data/minimap.json', 'build/data/minimap.bin',
+                     'build/data/early_data.json', 'build/data/early_data.bin',
+                     'build/data/mid_gap.json', 'build/data/mid_gap.bin',
+                     'build/data/blob_field.json', 'build/data/blob_field.bin',
+                     'build/data/tail_end.json', 'build/data/tail_end.bin'):
+            path = self.root / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text('fixture')
         self.reference = b'synthetic reference, not ROM data'
         (self.root / 'baserom.gba').write_bytes(self.reference)
         (self.root / 'build/gtadv3.gba').write_bytes(self.reference)
@@ -67,14 +86,45 @@ class MakefileTests(unittest.TestCase):
                    'asm/macros/function.inc', 'asm/extra.s')
         for name in sources:
             (self.root / name).write_text('@ synthetic source\n')
-        for name in (*sources, 'baserom.gba'):
-            os.utime(self.root / name, (1_000_000_000, 1_000_000_000))
+        for path in self.root.rglob('*'):
+            if path.is_file():
+                os.utime(path, (1_000_000_000, 1_000_000_000))
         for target in ('build/rom.o', 'build-code/code.o', 'build-code/data.o'):
             (self.root / target).write_bytes(b'fixture')
             os.utime(self.root / target, (1_000_000_100, 1_000_000_100))
             self.assertEqual(self.make('-q', target).returncode, 0)
         cases = [('build/rom.o', name) for name in (*sources, 'baserom.gba')]
         cases += [('build-code/data.o', 'baserom.gba'),
+                  ('build-code/data.o', 'build/data/variant_palette.bin'),
+                  ('build/rom.o', 'build/data/variant_palette.bin'),
+                  ('build-code/data.o', 'build/data/mto_group0.bin'),
+                  ('build/rom.o', 'build/data/mto_group0.bin'),
+                  ('build-code/data.o', 'build/data/theme_lut_a.bin'),
+                  ('build/rom.o', 'build/data/theme_lut_a.bin'),
+                  ('build-code/data.o', 'build/data/theme_palette.bin'),
+                  ('build/rom.o', 'build/data/theme_palette.bin'),
+                  ('build-code/data.o', 'build/data/scenery_table.bin'),
+                  ('build/rom.o', 'build/data/scenery_table.bin'),
+                  ('build-code/data.o', 'build/data/surface_tile.bin'),
+                  ('build/rom.o', 'build/data/surface_tile.bin'),
+                  ('build-code/data.o', 'build/data/variant_overlay.bin'),
+                  ('build/rom.o', 'build/data/variant_overlay.bin'),
+                  ('build-code/data.o', 'build/data/surface_map.bin'),
+                  ('build/rom.o', 'build/data/surface_map.bin'),
+                  ('build-code/data.o', 'build/data/theme_texture.bin'),
+                  ('build/rom.o', 'build/data/theme_texture.bin'),
+                  ('build-code/data.o', 'build/data/big_gfx.bin'),
+                  ('build/rom.o', 'build/data/big_gfx.bin'),
+                  ('build-code/data.o', 'build/data/minimap.bin'),
+                  ('build/rom.o', 'build/data/minimap.bin'),
+                  ('build-code/data.o', 'build/data/early_data.bin'),
+                  ('build/rom.o', 'build/data/early_data.bin'),
+                  ('build-code/data.o', 'build/data/mid_gap.bin'),
+                  ('build/rom.o', 'build/data/mid_gap.bin'),
+                  ('build-code/data.o', 'build/data/blob_field.bin'),
+                  ('build/rom.o', 'build/data/blob_field.bin'),
+                  ('build-code/data.o', 'build/data/tail_end.bin'),
+                  ('build/rom.o', 'build/data/tail_end.bin'),
                   ('build-code/data.o', 'asm/data_tail.s'),
                   ('build-code/code.o', 'asm/macros/function.inc')]
         for target, source in cases:

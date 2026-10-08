@@ -174,6 +174,7 @@ void _08001878C(void *ctx) __attribute__((alias("Rec35_Countdown_1878C")));
 
 // _0800187B0: bx lr stub (incoming rec/u16/u16 all dead).
 void Rec35_BxLr_187B0(void *a, int b, int c) { (void)a; (void)b; (void)c; }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _0800187B0(void *a, int b, int c) __attribute__((alias("Rec35_BxLr_187B0")));
 void sub_0800187B0(void *a, int b, int c) __attribute__((alias("Rec35_BxLr_187B0")));
@@ -257,6 +258,7 @@ void _08001883C(void *ctx) __attribute__((alias("Rec35_Countdown_1883C")));
 
 // _080018860: bx lr stub (incoming rec/u16/u16 all dead).
 void Rec35_BxLr_18860(void *a, int b, int c) { (void)a; (void)b; (void)c; }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _080018860(void *a, int b, int c) __attribute__((alias("Rec35_BxLr_18860")));
 void sub_080018860(void *a, int b, int c) __attribute__((alias("Rec35_BxLr_18860")));

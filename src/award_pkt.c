@@ -10,7 +10,11 @@ __attribute__((weak)) void UiPacket_Consume(void *pkt){ (void)pkt; } // _080188B
 
 void Award_BuildTierPacket(void) {
     volatile u8 *wa = (volatile u8 *)WORK_AREA_BASE;
-    u8 pkt[56] = {0};
+    /* No `{0}`: the ROM reserves 56 bytes (`sub sp,#56`) but never zeroes
+       them — only the fields below are written. Zero-init pulls in a
+       `memset` the ROM has no `bl` for (UNRESOLVED) and adds 22 bytes. */
+    u8 pkt[56];
+    typedef struct { u32 w[3]; } rec12;
     // pkt[0]=10
     *(u16 *)(pkt+0) = 10;
     // cursor idx = u16[wa+0x574]
@@ -21,8 +25,9 @@ void Award_BuildTierPacket(void) {
     int off = idx * 12; // idx*12
     s8 field0 = *(volatile s8 *)(wa + 0x30 + off);
     *(s16 *)(pkt+26) = (s16)field0;
-    // copy 12-byte garage record wa+0x30+off -> pkt+28..39
-    for (int i=0;i<12;i++) pkt[28+i] = *(volatile u8 *)(wa + 0x30 + off + i);
+    /* 12-byte block copy (`ldmia`/`stmia`), not a byte loop: the ROM moves
+       three words at once. A byte loop costs 14 extra bytes (OVERSIZED). */
+    *(rec12 *)(pkt + 28) = *(volatile rec12 *)(wa + 0x30 + off);
 
     int cnt0=0,cnt1=0;
     for (int r=0;r<=3;r++) for (int c=0;c<=10;c++) {

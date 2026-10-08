@@ -205,6 +205,7 @@ void MenuC110_0800C110(void *rec) {
     // 0x080055F4 is likewise 0-arg (pool-loaded thunk).
     sub_080055F4(); sub_08002B50(); sub_08002BB4(); sub_08002B44();
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _0800C110(void *c) __attribute__((alias("MenuC110_0800C110")));
 void sub_0800C110(void *c) __attribute__((alias("MenuC110_0800C110")));
@@ -214,6 +215,7 @@ void MenuC128_0800C128(void *rec) {
     (void)rec; // both callees are 0-arg pool thunks (0x030002C0 queue)
     sub_08005604(); sub_08002C98();
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _0800C128(void *c) __attribute__((alias("MenuC128_0800C128")));
 void sub_0800C128(void *c) __attribute__((alias("MenuC128_0800C128")));
@@ -241,6 +243,7 @@ void sub_0800C138(void *a,int b) __attribute__((alias("MenuC138_0800C138")));
 // menu_cc38.s helpers — strong bodies in scene_record_dispatch.c (weak removed: ARM-live
 // self-shadow — menus.c calls both names)
 void MenuCC38_0800CC38(void *ctx) { (void)ctx; }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _0800CC38(void *c) __attribute__((alias("MenuCC38_0800CC38")));
 #endif
@@ -335,6 +338,7 @@ void MenuC640_0800C640(void) {
     sub_08002BB4();
     sub_08002B44();
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _0800C640(void) __attribute__((alias("MenuC640_0800C640")));
 void sub_0800C640(void) __attribute__((alias("MenuC640_0800C640")));
@@ -344,6 +348,7 @@ void MenuC658_0800C658(void) {
     sub_08005604();
     sub_08002C98();
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _0800C658(void) __attribute__((alias("MenuC658_0800C658")));
 void sub_0800C658(void) __attribute__((alias("MenuC658_0800C658")));
@@ -485,6 +490,7 @@ void MenuDFE0_0800DFE0(void *rec) {
     *(volatile u32*)((u8*)rec+60)=1;
     *(volatile u32*)((u8*)rec+28)=1;
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _0800DFE0(void *c) __attribute__((alias("MenuDFE0_0800DFE0")));
 #endif
@@ -1585,6 +1591,7 @@ void sub_0800D4EC(void *a) __attribute__((alias("MenuD4EC_0800D4EC")));
 void MenuD7C4_0800D7C4(void *rec) {
     *(volatile u32 *)rec = 11;
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _0800D7C4(void *a) __attribute__((alias("MenuD7C4_0800D7C4")));
 void sub_0800D7C4(void *a) __attribute__((alias("MenuD7C4_0800D7C4")));
@@ -1609,6 +1616,7 @@ void Menu12C7C_080012C7C(void) {
     u16 v = *(volatile u16*)mgr;
     _08002158(6, (int)v);
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _080012C7C(void) __attribute__((alias("Menu12C7C_080012C7C")));
 void sub_080012C7C(void) __attribute__((alias("Menu12C7C_080012C7C")));
@@ -1623,6 +1631,7 @@ void Menu13E4C_080013E4C(void) {
     u16 v = *(volatile u16*)mgr;
     _08002158(6, (int)v);
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _080013E4C(void) __attribute__((alias("Menu13E4C_080013E4C")));
 void sub_080013E4C(void) __attribute__((alias("Menu13E4C_080013E4C")));
@@ -1712,6 +1721,7 @@ void Menu108F0_0800108F0(void *rec) {
     sub_0802B368(1);
     sub_0802B234();
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _0800108F0(void *a) __attribute__((alias("Menu108F0_0800108F0")));
 void sub_0800108F0(void *a) __attribute__((alias("Menu108F0_0800108F0")));

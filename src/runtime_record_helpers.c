@@ -139,7 +139,9 @@ extern void  _08002B44(void);                            // 0x08002B44
 // ============================================================================
 
 void _0800E7A0(void) { }
+__asm__(".align 2, 0");
 void _0800E7A4(void) { }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void sub_0800E7A0(void) __attribute__((alias("_0800E7A0")));
 void sub_0800E7A4(void) __attribute__((alias("_0800E7A4")));
@@ -246,6 +248,7 @@ void _0802B64C(u32 ch)
 {
     _0802C548((u16)ch);
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void sub_0802B64C(u32 c) __attribute__((alias("_0802B64C")));
 #endif
@@ -271,6 +274,7 @@ int _080022CC(void)
 {
     return _08001CB4();
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 int sub_080022CC(void) __attribute__((alias("_080022CC")));
 int Sub_080022CC(void) __attribute__((alias("_080022CC")));
@@ -280,6 +284,7 @@ int _080022D8(void)
 {
     return _08001E14();
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 int sub_080022D8(void) __attribute__((alias("_080022D8")));
 #endif
@@ -294,6 +299,7 @@ void *_08007484(void *x)
 {
     return x;
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void *sub_08007484(void *x) __attribute__((alias("_08007484")));
 #endif
@@ -615,6 +621,7 @@ void _08002910(void)
 #endif
     _08002B44();
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void sub_08002910(void) __attribute__((alias("_08002910")));
 #endif
@@ -628,6 +635,7 @@ void Code2950_ObjFlush(void)
 {
     sub_08002C98();
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _08002950(void) __attribute__((alias("Code2950_ObjFlush")));
 void sub_08002950(void) __attribute__((alias("Code2950_ObjFlush")));

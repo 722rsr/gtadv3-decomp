@@ -169,6 +169,7 @@ void MathLeaf_05D74(void *p, int y, int angle) {
     _08005BA8(p, a);
 #endif
 }
+__asm__(".align 2, 0");
 
 #ifndef __APPLE__
 void _08005D74(void *a, int b, int c) __attribute__((alias("MathLeaf_05D74")));
@@ -206,6 +207,7 @@ void MathLeaf_05DA4(void *out, void *b) {
     o[1] = c;
     o[2] = v[0] * a + v[1] * c;
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _08005DA4(void *a, void *b) __attribute__((alias("MathLeaf_05DA4")));
 void sub_08005DA4(void *a, void *b) __attribute__((alias("MathLeaf_05DA4")));
