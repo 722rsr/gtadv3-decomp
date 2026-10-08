@@ -8,12 +8,18 @@ __attribute__((weak)) void sub_0802B888(u32 a, u32 b){ (void)a;(void)b; } // ARM
 // --- sound_d480.s _0802D480 vol-scale leaf (28 B, pool 0x68736D53) ---
 // Push {r4,lr}, lsls r1 #16/lsrs, ldr [r2+52] vs Smsh, strh +30, ldrh +28, muls r4, asrs #8, strh +32
 void SoundD480_VolScale(void *state, u16 vol){
-    volatile u32 *s = (volatile u32*)state;
-    if (s[13] != SOUND_MAGIC) return; // +52
-    ((volatile u16*)s)[15] = vol; // +30
-    u16 base = ((volatile u16*)s)[14]; // +28
-    s32 scaled = ((s32)vol * (s32)base) >> 8; // muls + asrs #8 (signed: ROM shifts arithmetically)
-    ((volatile u16*)s)[16] = (u16)scaled; // +32
+    volatile u32 *s = (volatile u32 *)state;
+    register u32 g __asm__("r3");
+    register s32 base __asm__("r4");
+    s32 scaled;
+    s32 v = vol;
+    g = s[13];
+    if (g != SOUND_MAGIC) return; /* +52 */
+    ((volatile u16 *)s)[15] = (u16)v; /* +30 */
+    base = ((volatile u16 *)s)[14]; /* +28 */
+    __asm__("" : "+r" (base));
+    scaled = (v * base) >> 8; /* muls + asrs #8 (signed: ROM shifts arithmetically) */
+    ((volatile u16 *)s)[16] = (u16)scaled; /* +32 */
 }
 #ifndef __APPLE__
 void _0802D480(void *s, u16 v) __attribute__((alias("SoundD480_VolScale")));

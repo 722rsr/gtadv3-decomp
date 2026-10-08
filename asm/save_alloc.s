@@ -26,3 +26,5 @@ sub_0800572C:
 	.word 0x030002D8
 .L_5754:
 	.word 0x0805BAA4
+
+save_alloc_end:

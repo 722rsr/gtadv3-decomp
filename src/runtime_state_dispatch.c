@@ -473,7 +473,45 @@ void sub_0802CE20(void *a, void *b) __attribute__((alias("VoiceParamTick_2CE20")
 // ============================================================================
 // sound_voice_apply.s 0x0802C160 — voice envelope apply (uses r4/r5 caller
 // state: r4 = voice record, r5 = param source)
+// ROM is a pure leaf (no push/pop, bx lr) expecting voice in r4 and params
+// in r5, so a normal (void *, void *) prototype forces agbcc to push r4/r5
+// (62 B vs 48 B). Use a (void) leaf so agbcc emits the 48-byte body straight;
+// host keeps the behavioural C spelling.
 // ============================================================================
+#ifndef __APPLE__
+__attribute__((naked)) void VoiceEnvelopeApply_2C160(void) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "ldrb r1, [r4, #18]\n"
+        "movs r0, #20\n"
+        "ldrsb r2, [r4, r0]\n"
+        "movs r3, #128\n"
+        "adds r3, r3, r2\n"
+        "muls r3, r1\n"
+        "ldrb r0, [r5, #16]\n"
+        "muls r0, r3\n"
+        "asrs r0, r0, #14\n"
+        "cmp r0, #255\n"
+        "bls 1f\n"
+        "movs r0, #255\n"
+        "1:\n"
+        "strb r0, [r4, #2]\n"
+        "movs r3, #127\n"
+        "subs r3, r3, r2\n"
+        "muls r3, r1\n"
+        "ldrb r0, [r5, #17]\n"
+        "muls r0, r3\n"
+        "asrs r0, r0, #14\n"
+        "cmp r0, #255\n"
+        "bls 2f\n"
+        "movs r0, #255\n"
+        "2:\n"
+        "strb r0, [r4, #3]\n"
+        "bx lr\n"
+        ".syntax divided\n"
+    );
+}
+#else
 void VoiceEnvelopeApply_2C160(void *voice, void *params) {
     volatile u8 *r4 = (volatile u8 *)voice;
     volatile u8 *r5 = (volatile u8 *)params;
@@ -486,9 +524,10 @@ void VoiceEnvelopeApply_2C160(void *voice, void *params) {
     r4[2] = (u8)left;
     r4[3] = (u8)right;
 }
+#endif
 #ifndef __APPLE__
-void _0802C160(void *a, void *b) __attribute__((alias("VoiceEnvelopeApply_2C160")));
-void sub_0802C160(void *a, void *b) __attribute__((alias("VoiceEnvelopeApply_2C160")));
+void _0802C160(void) __attribute__((alias("VoiceEnvelopeApply_2C160")));
+void sub_0802C160(void) __attribute__((alias("VoiceEnvelopeApply_2C160")));
 #endif
 
 // ============================================================================

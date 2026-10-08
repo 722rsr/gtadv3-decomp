@@ -480,21 +480,29 @@ void _08025C08(void *a, int b) __attribute__((alias("Code25930_Alloc182At")));
 void sub_08025C08(void *a, int b) __attribute__((alias("Code25930_Alloc182At")));
 #endif
 
+typedef struct { u32 w0, w1, w2, w3, w4; } C25Body20;
+extern const u8 C25RecTbl_C30[];
 // ----------------------------------------------------------------------------
 // 0x08025C30 — allocate 182 B into [rec+20], s16 id at [rec+24],
 // then copy 20 B body (ldmia/stmia pattern).
 void Code25930_Alloc182Body(void *rec, int id) {
     volatile u32 *o = (volatile u32 *)rec;
+#ifndef __APPLE__
+    int h = sub_0800572C(182);
+#else
     int h = _0800572C(182);
-    o[5] = (u32)h;      // [rec+20]
-    u32 off = ((u32)id << 2) + (u32)id;
+#endif
+    const u8 *base;
+    u32 off;
+    const u8 *row;
+    __asm__(".globl C25RecTbl_C30\nC25RecTbl_C30 = 0x080CD830\n");
+    o[5] = (u32)h;
+    base = (const u8 *)C25RecTbl_C30;
+    off = ((u32)id << 2) + (u32)id;
     off <<= 2;
-    volatile u32 *p = (volatile u32 *)(uintptr_t)(C25_REC_TBL + off);
-    o[6] = (u32)*(volatile s16 *)p;   // [rec+24]
-    // ldmia r0!,{r1,r2,r3}; stmia r4!,...; ldmia {r1,r3}; stmia — 20 bytes
-    volatile u32 *dst = (volatile u32 *)(uintptr_t)(o + 5);
-    dst[1] = p[0]; dst[2] = p[1]; dst[3] = p[2];
-    dst[4] = p[3]; dst[5] = p[4];
+    row = base + off;
+    o[6] = (u32)(s32)((const s16 *)(const void *)row)[0];
+    *(C25Body20 *)o = *(const C25Body20 *)(const void *)row;
 }
 #ifndef __APPLE__
 void _08025C30(void *a, int b) __attribute__((alias("Code25930_Alloc182Body")));

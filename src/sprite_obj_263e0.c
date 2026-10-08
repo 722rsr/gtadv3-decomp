@@ -189,8 +189,23 @@ void *sub_0800264D8(void *a, u32 b) __attribute__((alias("Sprite_CourseByte")));
 //   return arr + arg1*32
 // ============================================================================
 void *Sprite_CourseSurface(int idx, int n) {
-    u32 entry = *(volatile u32 *)(uintptr_t)(0x080CC1E4u + (u32)(idx << 2));
-    void *arr = _0800748C(_08007498(_08007498(CREC_TABLE2, (int)entry), 2));
+    void *tbl;
+    u32 *base;
+    u32 entry;
+    void *arr;
+    tbl = CREC_TABLE2;
+    base = (u32 *)(uintptr_t)0x080CC1E4u;
+    // Load-order pin (measured): the ROM holds `ldr r2,=0x083D7BE8 /
+    // ldr r1,=0x080CC1E4` back-to-back BEFORE `lsls r0,#2`, whereas agbcc
+    // keeps the entry-table literal live only around its use and emits
+    // `ldr r2 / lsls / ldr r1` (first difference +0x4, pool order flipped).
+    // Splitting both addresses into locals is not enough -- the scheduler
+    // still sinks the second load past the shift. The empty volatile barrier
+    // forces both literal loads to materialise before the shift with no
+    // emitted instructions (only a `.code 16` mode directive).
+    __asm__ volatile ("" : : : "memory");
+    entry = *(volatile u32 *)((u8 *)base + (idx << 2));
+    arr = _0800748C(_08007498(_08007498(tbl, (int)entry), 2));
     return (void *)((u8 *)arr + (n << 5));
 }
 #ifndef __APPLE__

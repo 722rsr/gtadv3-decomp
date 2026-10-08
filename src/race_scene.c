@@ -296,6 +296,25 @@ void _08001B410(void) __attribute__((alias("Race_Scene_BHandler_1B410")));
 // ROM holds it in r0 across both ORs. `.set` gives the compiler the constant;
 // the `.globl` + assignment inside the body makes it resolvable at link, because
 // `match_c_slice.py` splices only this body's own section out of the TU.
+// The two mask copies carry conflicting explicit register pins (m0 in r1,
+// m1 in r0). A plain `m1 = m0` would be coalesced into one long-lived pseudo
+// and take r4 (measured 54/68 with push {r4,lr}); the conflicting pins keep the
+// load (`ldr r1`) and the copy (`adds r0,r1,#0`) split exactly as the ROM has
+// them, and both ORs consume the r0 copy. Measured 58/68 against ROM.
+// Residual (10 bytes): t1 takes r4 instead of r1 (m0's r1 pin is scope-live
+// across OR1, so r1 is unavailable for the ldrh), hence `orrs r4,r0` /
+// `strh r4,[r3]`; the second OR targets r3 instead of r0 (`orrs r3,r0` /
+// `strh r3,[r1`) because the pinned m1 is scope-live past OR2 so the
+// destination cannot be the mask register; and the resulting push {r4,lr} /
+// pop {r4} / pop {r0} replaces the ROM's push {lr} / pop {r0} plus its
+// 2-byte pool pad. A plain (unpinned) m1 dies at OR2 and would fix the second
+// OR destination, but a plain long-lived mask always takes r4 over r0
+// (measured across ~300 allocation contexts: longs take r1, r2, r3, r4 in
+// definition order with r0 last, and r4 is code-neutrally unoccupiable), so
+// the r0 copy cannot be had without the pin, and the pin keeps it alive.
+// The r0-across-both-ORs shape with a dead home is unproducible: a late copy
+// (short copy in r0) overlaps p120 and pushes the home to r4, an early copy
+// (home in r1) leaves a long copy that takes r4.
 __asm__(".set RSB024Mask, 0x0000FFFF");
 extern char RSB024Mask;
 extern void Sub_08002B50(void);
@@ -309,12 +328,13 @@ void Race_Scene_Leaf_1B024(void) {
     Sub_08002B44();
     register volatile u8 *racectx __asm__("r2") = *(volatile u8 *volatile *)0x03004E20;
     register volatile u16 *p90 __asm__("r3") = (volatile u16 *)(racectx + 90);
-    u32 m0 = (u32)(uintptr_t)&RSB024Mask;
+    register u32 m0 __asm__("r1") = (u32)(uintptr_t)&RSB024Mask;
+    register u32 m1 __asm__("r0") = m0;
     register u32 t1 = *p90;
     *p90 = (u16)(t1 | m0);
     register volatile u16 *p120 __asm__("r1") = (volatile u16 *)(racectx + 120);
     register u32 t2 __asm__("r3") = *p120;
-    *p120 = (u16)(t2 | m0);
+    *p120 = (u16)(t2 | m1);
     *(volatile u32 *)(racectx + 12) = 0;
     *(volatile u32 *)(racectx + 16) = 0;
     *(volatile u32 *)(racectx + 20) = 0;

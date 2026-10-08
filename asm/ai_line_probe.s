@@ -33,3 +33,5 @@ _08025244:
 	movs r0, #1
 _08025246:
 	bx lr
+
+ai_line_probe_end:

@@ -2293,11 +2293,17 @@ void sub_08002C98(void) __attribute__((alias("ObjFlush_02C98")));
 void _08002C98(void) __attribute__((alias("ObjFlush_02C98")));
 #endif
 
+extern void _08002B00(void *p, int n);
+extern void _08002B1C(void *p, int n);
+extern void _08002B30(void *p, int n);
 // 0x08003104 — tail dispatch: bx r0 (r0 = handler VMA|1). Callers (5 BL sites,
 // e.g. @0x0800C0A6) pass record+96/100 addresses.
 void TailDispatch_03104(void *handler)
 {
-    ((void (*)(void))(uintptr_t)handler)();
+    _08002B00(handler, 128 << 2);
+    _08002B1C((u8 *)handler + (128 << 3), 32);
+    handler = (u8 *)handler + (144 << 3);
+    _08002B30(handler, 128);
 }
 void sub_08003104(void *handler) __attribute__((alias("TailDispatch_03104")));
 #ifndef __APPLE__

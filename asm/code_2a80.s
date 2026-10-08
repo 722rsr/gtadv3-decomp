@@ -4,6 +4,9 @@
 @ baserom.gba; byte-exact (make SHA gate). Unconverted targets keep numeric
 @ `bl 0x0800XXXX` form. Pools at original offsets.
 
+	.type sub_08002A80, %function
+sub_08002A80:
+_08002A80:
 	ldr r1, _08002A98
 	ldr r0, _08002A9C
 	str	r0, [r1, #0]
@@ -21,3 +24,5 @@ _08002A9C: .4byte 0x08000108
 _08002AA0: .4byte 0x0203F1B0
 _08002AA4: .4byte 0x84000140
 _08002AA8: .4byte 0x03007FFC
+
+code_2a80_end:

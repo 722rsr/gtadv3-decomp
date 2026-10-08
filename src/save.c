@@ -105,16 +105,14 @@ static inline volatile u16 *bump_used(void)   { return (volatile u16 *)(SaveBump
 
 void *SaveAlloc(u32 size) {
     volatile u16 *cur = bump_cursor();
-    u16 base = *cur;
-    u16 next = (u16)(base + (u16)size);
-    *cur = next;
-    if (((u32)next << 16) > (0x80u << 19)) {
-        // ROM overflow arm (asm/menu_e650.s sub_0800572C): r0 = the message
-        // pointer 0x0805BAA4, r1 = the already-bumped cursor — both live.
+    register u32 base __asm__("r4") = *cur;
+    u32 next = base + size;
+    *cur = (u16)next;
+    if ((next << 16) > (0x80u << 19)) {
         extern void _0800295C(u32 a, u32 b);
-        _0800295C(0x0805BAA4u, (u32)next);
+        _0800295C(0x0805BAA4u, (u32)*cur);
     }
-    return (void *)(uintptr_t)(0x030002DC + base);
+    return (void *)(uintptr_t)base;
 }
 #ifndef __APPLE__
 void *_0800572C(u32 s) __attribute__((alias("SaveAlloc")));

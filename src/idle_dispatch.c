@@ -12,6 +12,7 @@ extern void CpuSet_2D974(const void *src, void *dst, unsigned ctrl); // _08002D9
 extern u32  DivRemU_02DFE4(u32 num, u32 den); // sub_0802DFE4 remainder (r0)
 extern u32  sub_0802DF6C(u32 n, u32 d); // unsigned quotient (r0)
 extern void Warn(u32 a, u32 b); // sub_0800295C
+extern void _0800295C(u32 a, u32 b);
 extern u32  SessionReadWord(u32 off); // _0800070C
 extern void SessionPump(void); // _080006A4
 extern void PacketBuild(void *a, u32 b); // _08000848
@@ -93,13 +94,19 @@ void _08001988(void) __attribute__((alias("Idle_Mode3Handler")));
 
 // _08001A74 — mode 4 countdown
 void Idle_Mode4Handler(void) {
-    StateA_SetPendingParam(0x03EE);
-    s16 v = *(volatile s16*)(st8()+0x14);
-    u16 uv = *st16(0x14);
-    if (v > 0) {
-        *st16(0x14) = uv - 1;
+    u8 *base;
+    register u16 uv __asm__("r2");
+    s16 sv;
+    _080016D0(0x03EE);
+    base = (u8 *)*(volatile u32 *)STATE_BLOCK_A_SLOT_ADDR;
+    uv = *(volatile u16 *)(base + 0x14);
+    sv = *(s16 *)(base + 0x14);
+    if (sv > 0) {
+        register u16 tmp __asm__("r0");
+        tmp = uv - 1;
+        *(volatile u16 *)(base + 0x14) = tmp;
     } else {
-        *st16(0x12) = 1;
+        *(volatile u16 *)(base + 0x12) = 1;
     }
 }
 #ifndef __APPLE__
@@ -133,11 +140,24 @@ void _08001ACC(void) __attribute__((alias("Idle_Mode6Handler")));
 
 // _08001B20 — mode7
 void Idle_Mode7Handler(void) {
-    s16 v = *(volatile s16*)(st8()+0x14);
-    u16 uv = *st16(0x14);
-    if (v > 0) *st16(0x14)= uv-1;
-    else *st16(0x12)=8;
+    u8 *base;
+    register u16 uv __asm__("r2");
+    s16 sv;
+    base = (u8 *)*(volatile u32 *)STATE_BLOCK_A_SLOT_ADDR;
+    uv = *(volatile u16 *)(base + 0x14);
+    sv = *(s16 *)(base + 0x14);
+    if (sv > 0) {
+        register u16 tmp __asm__("r0");
+        tmp = uv - 1;
+        *(volatile u16 *)(base + 0x14) = tmp;
+    } else {
+        *(volatile u16 *)(base + 0x12) = 8;
+    }
+#ifndef __APPLE__
+    _080016D0(0x03F3);
+#else
     StateA_SetPendingParam(0x03F3);
+#endif
 }
 #ifndef __APPLE__
 void _08001B20(void) __attribute__((alias("Idle_Mode7Handler")));
@@ -345,23 +365,22 @@ void Idle_SetupMode2(u32 a, u32 b); // _08001EC8 etc. — stub behavioral
 void _08001EC8(u32 a,u32 b) __attribute__((alias("Idle_SetupMode2")));
 #endif
 void Idle_SetupMode2(u32 a, u32 b) {
-    register u32 r_a __asm__("r5") = a;
-    register u32 r_b __asm__("r0") = b;
-    register volatile u32 *slot __asm__("r6") = (volatile u32 *)STATE_BLOCK_A_SLOT_ADDR;
-    register volatile u8 *base __asm__("r4") = (volatile u8 *)(uintptr_t)*slot;
-    register u16 zero __asm__("r7") = 0;
-    u16 v;
+    u32 *slot = (u32 *)STATE_BLOCK_A_SLOT_ADDR;
+    u8 *base = (u8 *)*slot;
+    u32 savea = a;
+    u32 zero = 0;
+    u32 q;
     *(volatile u16 *)(base + 0x12) = 2;
-    *(volatile u32 *)(base + 0x2C) = r_b;
-    v = sub_0802DF6C(r_b + 11, 12);
-    *(volatile u16 *)(base + 0x16) = v;
-    if (v == 0)
-        Warn(0x0802E1D0, 0);
+    *(volatile u32 *)(base + 0x2C) = b;
+    q = sub_0802DF6C(b + 11, 12);
+    *(volatile u16 *)(base + 0x16) = (u16)q;
+    if ((q << 16) == 0)
+        _0800295C(0x0802E1D0, 0);
     {
-        volatile u8 *p = (volatile u8 *)(uintptr_t)*slot;
-        *(volatile u16 *)(p + 0x18) = zero;
-        *(volatile u16 *)(p + 0x1C) = zero;
-        *(volatile u32 *)(p + 0x24) = r_a;
+        u8 *p = (u8 *)*slot;
+        *(volatile u16 *)(p + 0x18) = (u16)zero;
+        *(volatile u16 *)(p + 0x1C) = (u16)zero;
+        *(volatile u32 *)(p + 0x24) = savea;
     }
 }
 // _08001F08 — one cached state-block pointer, and the zero materialised

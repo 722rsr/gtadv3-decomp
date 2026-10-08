@@ -45,3 +45,5 @@ _08025F20:
   .short 0x0000
 _08025F70: .word 0x08060D48
 _08025F74: .word 0x03001780
+
+ai_grid_more5_end:

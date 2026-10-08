@@ -9,7 +9,7 @@ void sub_080016AD4(void *c) __attribute__((alias("Rec35_Leaf_16AD4")));  /* rule
 // No guessed >64KB racectx; offsets proven via adds #imm and ldrsh/ldrh pools.
 // Preserve high-reg spills as locals, widths, phase tables, aliases.
 
-extern void *Sub_08004B68(void *a);
+extern void *sub_08004B68(void);
 extern void Sub_0802B214(int v);
 extern void Sub_08007770(int a, void *b, int c, int d, u32 e, u32 f); // 0x08007770 exact ROM (6-arg); resolves Rec35_Leaf_18278 residual
 extern void _08007770(int a, void *b, int c, int d, u32 e, u32 f); // R2-faithful strong body (course_resource_helpers.c)
@@ -61,29 +61,68 @@ extern void _0800D8E4(void *rec);   // 0x0800D8E4 menu_stage.c MenuStage_0800D8E
 #endif
 
 // _0800164D4(void *a, void *ctx) — record flag at ctx+84, course ids 21/27/30
-// The ROM loads the course id with a REGISTER index
-// (`movs r1,#2 / ldrsh r0,[r0,r1]`) and no separate widen pair. That is the
-// NON-VOLATILE read-through-a-struct form: a `volatile s16 *` lvalue makes
-// agbcc emit `ldrh [r0,#2]` + `lsls/asrs`, and a bare `(s16*)` cast folds the
-// halfword offset into the pool word. Reading a struct FIELD keeps the offset
-// in the index register (src/ai_line_more.c:77-80, src/course_leaves.c:164-166).
+//
+// Three ROM properties pin this spelling, and all three are measured against
+// asm/rec35_runtime.s 0x080164D4-0x08016508 (52 bytes = 50 of code + a 2-byte
+// `movs r0,r0` alignment pad that belongs to the span).
+//
+// 1. The course id is read with a REGISTER index (`movs r1,#2 / ldrsh r0,[r0,r1]`)
+//    and no separate widen pair. That is the NON-VOLATILE read-through-a-struct
+//    form: a `volatile s16 *` lvalue makes agbcc emit `ldrh [r0,#2]` +
+//    `lsls/asrs`, and a bare `(s16*)` cast folds the halfword offset into the
+//    pool word. Reading a struct FIELD keeps the offset in the index register
+//    (src/ai_line_more.c:77-80, src/course_leaves.c:164-166).
+//
+// 2. The four tests are `cmp #21/beq`, `cmp #21/blt`, `cmp #30/bgt`, `cmp #27/blt`.
+//    agbcc canonicalises every RELATIONAL comparison against a constant:
+//    `x < C` and `x >= C` both become `cmp #C-1` with `bgt`/`ble`, and
+//    `x <= C` becomes `cmp #C` with `bgt`. Verified over 20 spellings (plain
+//    `<`, `<=`, `>`, `>=`, `!`-forms, casts to int/long/unsigned, a reversed
+//    `C > x`, and `&&`-chains) -- none of them emits a `blt` against the
+//    ORIGINAL constant. Only `case` labels bypass the fold, because EQ has no
+//    C-1 rewrite and `expand_case` builds its range checks directly from the
+//    case values. So the ROM's tests are a `switch` over {21,27,28,29,30},
+//    and an if/else chain spelled with `<`/`>` (the previous form here) can
+//    never match: it emitted `cmp #20; ble` + `cmp #26; ble` instead.
+//
+//    The `&&`-chain spelling of the same set is also wrong: agbcc's range
+//    recognition rewrites `v >= 27 && v <= 30` into `(u16)(v - 27) <= 3`
+//    (`subs/lsls/lsrs` + `cmp #3/bhi`), which is why the set is spelled as
+//    case labels rather than as one range test.
+//
+// 3. Both arms compute the store address themselves and the store is shared:
+//    the address lands in r1 and the flag in r0 at the merge point, so the
+//    flag must travel through a variable assigned in EVERY arm and written
+//    once after the switch. Assigning the pointer per arm (not hoisting it
+//    above the switch) is what keeps the duplicated `adds r1,r4,#0` /
+//    `adds r1,#84` pair in both arms; hoisting it, or spelling the store out
+//    per arm, grows the body past 52 bytes (measured 56-60).
+//
+// The trailing `.align 2, 0` is the span's own pad: agbcc closes the section at
+// 50 bytes, and gas would otherwise round it up with the code nop `c0 46`. The
+// ROM pads with `00 00` (`movs r0,r0`), the same convention as Rec35_BxLrStub
+// below. Placement mirrors that one: after the body, before the alias block.
 typedef struct { u16 pad; s16 courseId; } Rec35_CourseHdr;
 void Rec35_RecordFlagSetter(void *a, void *ctx) {
-    const Rec35_CourseHdr *hdr = (const Rec35_CourseHdr *)Sub_08004B68(a);
-    s16 v = hdr->courseId;
-    // Chain order is load-bearing: the ROM tests 21/beq, 21/blt, 30/bgt, 27/blt
-    // in that order and materialises the constant only in the taken arm. A
-    // single shared store keeps the body at the ROM's 52 bytes; spelling the
-    // store out per arm, or pinning the record base, both let agbcc grow the
-    // body to 60-72 B (measured) by duplicating `adds <r>,<base>,#0`.
+    const Rec35_CourseHdr *hdr = (const Rec35_CourseHdr *)sub_08004B68();
+    volatile u16 *p;
     u16 out;
-    if (v == 21) out = 1;
-    else if (v < 21) out = 6;
-    else if (v > 30) out = 6;
-    else if (v < 27) out = 6;
-    else out = 1;
-    *(volatile u16 *)((u8 *)ctx + 84) = out;
+    switch (hdr->courseId) {
+    case 21:
+    case 27:
+    case 28:
+    case 29:
+    case 30:
+        p = (volatile u16 *)((u8 *)ctx + 84);
+        out = 1;
+        break;
+    default:
+        p = (volatile u16 *)((u8 *)ctx + 84);
+        out = 6;
+    }
+    *p = out;
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _0800164D4(void *a, void *b) __attribute__((alias("Rec35_RecordFlagSetter")));
 #endif
