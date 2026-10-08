@@ -29,14 +29,29 @@ int MathAbs16(int v) { // 0x05B8A variant: s16 sign-extend then abs
 }
 
 void MathHelper_05BA8(void *p, int angle){
-    s16 cosv = *(s16*)(0x0805BAF0 + (angle & 0xFFE));
-    s16 sinv = *(s16*)(0x0805CAF0 + (angle & 0xFFE));
-    s32 x = *(volatile s32*)p;
-    s32 y = *(volatile s32*)((u8*)p+4);
-    s32 nx = (x * cosv - y * sinv) >> 12;
-    s32 ny = (x * sinv + y * cosv) >> 12;
-    *(volatile s32*)((u8*)p+4) = ny;   // ROM stores y before x
-    *(volatile s32*)p = nx;
+    extern const s16 CosTbl05BA8[];
+    extern const s16 SinTbl05BA8[];
+    int cosv;
+    int sinv;
+    int x;
+    int t1;
+    int y;
+    int t2;
+    int nx;
+    int ny;
+    __asm__(".globl CosTbl05BA8\nCosTbl05BA8 = 0x0805BAF0\n");
+    __asm__(".globl SinTbl05BA8\nSinTbl05BA8 = 0x0805CAF0\n");
+    __asm__ volatile("" : : "r" (angle));
+    cosv = CosTbl05BA8[(angle & 0xFFE) >> 1];
+    sinv = SinTbl05BA8[(angle & 0xFFE) >> 1];
+    x = *(int *)p;
+    t1 = x * cosv;
+    y = *((int *)p + 1);
+    t2 = y * sinv;
+    nx = (t1 - t2) >> 12;
+    ny = (x * sinv + y * cosv) >> 12;
+    *((int *)p + 1) = ny;
+    *(int *)p = nx;
 }
 #ifndef __APPLE__
 void _08005BA8(void *a,int b) __attribute__((alias("MathHelper_05BA8")));

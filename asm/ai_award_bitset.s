@@ -31,3 +31,6 @@ _08025F82:
   .short 0x0000
 _08025FA4: .word 0x03001780
 _08025FA8: .word 0x080CD9D4
+
+ai_award_bitset_end:
+

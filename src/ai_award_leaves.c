@@ -11,23 +11,46 @@ static inline int do_packed_shift(int idx,int bits){
 __attribute__((unused)) static int _use_packed_shift = 0;
 
 // _08025F78 — set collection bit for car id
+//
+// ROM shape (52 B): `adds r1,r0 / ldr r2,=0x03001780 / cmp r1 / bge /
+// adds r0,r1,#7 / asrs r0,#3 / adds r2,#32 / adds r2,r0,r2 /
+// ldr r3,=0x080CD9D4 / lsls r0,#3 / subs r0,r1,r0 / movs r1,#7 /
+// ands r0,r1 / lsls r0,#1 / adds r0,r3 / ldrb r1,[r2] / ldrb r0,[r0] /
+// orrs r1,r0 / adds r0,r1 / strb r0,[r2]`. Load-bearing levers:
+//   * id pinned to r1 gives the opening `adds r1,r0` and `cmp r1`;
+//     r0 still holds id so `if (r1<0) dv=r1+7` needs no else move.
+//   * both addresses are absolute SYMBOL_REFs, so 0x03001780 stays a pool
+//     `ldr` and `+32` stays a separate `adds r2,#32` instead of folding to
+//     0x030017A0 (see Ai_SetOwnedFlag).
+//   * `r2 = dv+r2` (not `r2+=dv`) keeps the ROM operand order
+//     `adds r2,r0,r2`.
+//   * the tail is one statement `*r2 |= *(u8*)dv`: separate cur/mask
+//     temporaries allocate the mask to r3 (`ldrb r3,[r0]`) or flip the
+//     load order, while the single statement holds
+//     `ldrb r1,[r2] / ldrb r0,[r0] / orrs r1,r0 / adds r0,r1 / strb`.
 void Ai_AwardSetBit(int id){
-    int r1 = id;
-    int r0;
-    volatile u8 *base = (volatile u8*)(uintptr_t)AI_COLLECTION_BM_BASE;
-    // floor div for negatives as asm: if r1<0 r0=r1+7 else r0=r1; r0>>=3
-    if(r1 < 0) r0 = r1 + 7; else r0 = r1;
-    r0 >>= 3; // asrs #3
-    volatile u8 *bytePtr = base + 32 + (u32)r0; // 0x030017A0 base
-    const u8 *maskTbl = (const u8*)(uintptr_t)AI_MASK_TABLE;
-    int tmp = r0 << 3;
-    tmp = r1 - tmp; // id %8 with floor correction
-    tmp &= 7;
-    tmp <<= 1;
-    u8 mask = maskTbl[tmp]; // ldrb [maskTbl+tmp] — low byte of hword entry
-    u8 cur = *bytePtr;
-    cur |= mask;
-    *bytePtr = cur;
+    register int r1 __asm__("r1") = id;
+    register u8 *r2 __asm__("r2");
+    register u8 *r3 __asm__("r3");
+    int dv;
+    extern u8 AIColBM[] __asm__("AIColBM");
+    extern u8 AIMaskTbl[] __asm__("AIMaskTbl");
+    __asm__(".globl AIColBM\nAIColBM = 0x03001780\n");
+    __asm__(".globl AIMaskTbl\nAIMaskTbl = 0x080CD9D4\n");
+    r2 = (u8 *)AIColBM;
+    dv = id;
+    if (r1 < 0) dv = r1 + 7;
+    dv >>= 3;
+    r2 += 32;
+    r2 = (u8 *)((uintptr_t)dv + (uintptr_t)r2);
+    r3 = (u8 *)AIMaskTbl;
+    dv <<= 3;
+    dv = r1 - dv;
+    r1 = 7;
+    dv &= r1;
+    dv <<= 1;
+    dv += (int)(uintptr_t)r3;
+    *r2 |= *(u8 *)(uintptr_t)dv;
 }
 #ifndef __APPLE__
 void _08025F78(int id) __attribute__((alias("Ai_AwardSetBit")));

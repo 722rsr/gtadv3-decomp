@@ -211,11 +211,29 @@
    "name": "StateA_SyncPerFrame",
    "size": 32
   },
+  "0x08001a74": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 2
+   },
+   "file": "src/idle_dispatch.c",
+   "name": "Idle_Mode4Handler",
+   "size": 44
+  },
   "0x08001aa0": {
    "class": "c",
    "file": "src/idle_dispatch.c",
    "name": "Idle_Mode5Handler",
    "size": 44
+  },
+  "0x08001b20": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 2
+   },
+   "file": "src/idle_dispatch.c",
+   "name": "Idle_Mode7Handler",
+   "size": 48
   },
   "0x08001b50": {
    "class": "c",
@@ -283,6 +301,12 @@
    "file": "src/idle_dispatch.c",
    "name": "Idle_DecScratch08",
    "size": 16
+  },
+  "0x08001ec8": {
+   "class": "c",
+   "file": "src/idle_dispatch.c",
+   "name": "Idle_SetupMode2",
+   "size": 64
   },
   "0x08001f08": {
    "class": "c",
@@ -704,6 +728,15 @@
    "name": "Code2950_ObjFlush",
    "size": 12
   },
+  "0x080029d8": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 5
+   },
+   "file": "src/foundation_boot.c",
+   "name": "Foundation_SaveIrqSnapshot",
+   "size": 52
+  },
   "0x08002a0c": {
    "class": "c",
    "file": "src/save.c",
@@ -725,6 +758,15 @@
    "file": "src/foundation_boot.c",
    "name": "IrqResetSlot0",
    "size": 24
+  },
+  "0x08002a80": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 3
+   },
+   "file": "src/foundation_boot.c",
+   "name": "IrqInstallTable",
+   "size": 44
   },
   "0x08002af4": {
    "class": "c",
@@ -827,6 +869,12 @@
    "file": "src/foundation_runtime.c",
    "name": "Wrap_02D98",
    "size": 32
+  },
+  "0x08003104": {
+   "class": "c",
+   "file": "src/runtime_hud.c",
+   "name": "TailDispatch_03104",
+   "size": 44
   },
   "0x08003130": {
    "class": "c",
@@ -1478,6 +1526,15 @@
    "name": "MgrStore94_04C78",
    "size": 12
   },
+  "0x08004c84": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/foundation_subsys.c",
+   "name": "MgrGridSetRow_04C84",
+   "size": 36
+  },
   "0x08004ca8": {
    "class": "c_fakematch",
    "detail": {
@@ -1583,6 +1640,12 @@
    "file": "src/foundation_subsys.c",
    "name": "StoreState92",
    "size": 12
+  },
+  "0x08004efc": {
+   "class": "c",
+   "file": "src/foundation_subsys.c",
+   "name": "HeapPeek_04EFC",
+   "size": 40
   },
   "0x08004f24": {
    "class": "c",
@@ -1736,6 +1799,15 @@
    "name": "ObjManagerInit",
    "size": 48
   },
+  "0x0800572c": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 1
+   },
+   "file": "src/save.c",
+   "name": "SaveAlloc",
+   "size": 44
+  },
   "0x08005758": {
    "class": "c",
    "file": "src/save.c",
@@ -1847,6 +1919,16 @@
    "file": "src/code_5b3c_math.c",
    "name": "MathSign_05B8C",
    "size": 28
+  },
+  "0x08005ba8": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 1,
+    "directive": 2
+   },
+   "file": "src/foundation_math.c",
+   "name": "MathHelper_05BA8",
+   "size": 72
   },
   "0x08005d74": {
    "class": "c_fakematch",
@@ -3682,6 +3764,12 @@
    "name": "Rec35_Noop",
    "size": 4
   },
+  "0x080164d4": {
+   "class": "c",
+   "file": "src/rec35_runtime.c",
+   "name": "Rec35_RecordFlagSetter",
+   "size": 52
+  },
   "0x08016508": {
    "class": "c",
    "file": "src/rec35_runtime.c",
@@ -3747,6 +3835,12 @@
    "file": "src/rec35_runtime.c",
    "name": "Rec35_Leaf_17414",
    "size": 44
+  },
+  "0x080179f0": {
+   "class": "c",
+   "file": "src/rec35_mid_region.c",
+   "name": "Rec35_Emit_179F0",
+   "size": 48
   },
   "0x08017c34": {
    "class": "c",
@@ -4430,6 +4524,15 @@
    "file": "src/race_scene_d2.c",
    "name": "_08001FADC",
    "size": 124
+  },
+  "0x0801fb58": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 2
+   },
+   "file": "src/race_scene_d1.c",
+   "name": "_08001FB58",
+   "size": 84
   },
   "0x0801fbac": {
    "class": "c",
@@ -5255,6 +5358,16 @@
    "name": "Ai_LineTimingHelper",
    "size": 24
   },
+  "0x08025214": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 4,
+    "pin": 2
+   },
+   "file": "src/ai_line_leaves.c",
+   "name": "Ai_LineProbe",
+   "size": 52
+  },
   "0x08025248": {
    "class": "c",
    "file": "src/ai_line_leaves.c",
@@ -5516,6 +5629,15 @@
    "name": "Code25930_Alloc182At",
    "size": 40
   },
+  "0x08025c30": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/code_25930.c",
+   "name": "Code25930_Alloc182Body",
+   "size": 48
+  },
   "0x08025c60": {
    "class": "c_fakematch",
    "detail": {
@@ -5583,6 +5705,26 @@
    "file": "src/ai_grid_leaves.c",
    "name": "Ai_GridReadRecord",
    "size": 40
+  },
+  "0x08025f20": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1,
+    "pin": 3
+   },
+   "file": "src/ai_grid_leaves.c",
+   "name": "Ai_GridHalfwordGet",
+   "size": 88
+  },
+  "0x08025f78": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 4,
+    "pin": 3
+   },
+   "file": "src/ai_award_leaves.c",
+   "name": "Ai_AwardSetBit",
+   "size": 52
   },
   "0x08025fac": {
    "class": "c_fakematch",
@@ -5723,6 +5865,15 @@
    "file": "src/sprite_obj_263e0.c",
    "name": "Sprite_CourseByte",
    "size": 72
+  },
+  "0x08026520": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 1
+   },
+   "file": "src/sprite_obj_263e0.c",
+   "name": "Sprite_CourseSurface",
+   "size": 48
   },
   "0x08026868": {
    "class": "c",
@@ -5903,6 +6054,16 @@
    "file": "src/garage_records.c",
    "name": "_0800278DC",
    "size": 20
+  },
+  "0x08027ce0": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 1,
+    "pin": 3
+   },
+   "file": "src/garage_records.c",
+   "name": "_080027CE0",
+   "size": 40
   },
   "0x08027d08": {
    "class": "c",
@@ -6216,6 +6377,15 @@
    "name": "_080029230",
    "size": 84
   },
+  "0x08029354": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 2
+   },
+   "file": "src/garage_records.c",
+   "name": "_080029354",
+   "size": 40
+  },
   "0x080293d8": {
    "class": "c",
    "file": "src/garage_records.c",
@@ -6288,11 +6458,38 @@
    "name": "_08002AC2C",
    "size": 88
   },
+  "0x0802b04c": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 1
+   },
+   "file": "src/sound.c",
+   "name": "SoundInit",
+   "size": 48
+  },
   "0x0802b07c": {
    "class": "c",
    "file": "src/sound.c",
    "name": "SoundVBlank",
    "size": 28
+  },
+  "0x0802b190": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 1
+   },
+   "file": "src/sound.c",
+   "name": "SoundOff",
+   "size": 40
+  },
+  "0x0802b1b8": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 1
+   },
+   "file": "src/sound.c",
+   "name": "SoundOn",
+   "size": 44
   },
   "0x0802b1e4": {
    "class": "c_fakematch",
@@ -6891,6 +7088,16 @@
    "name": "SoundVoiceClamp",
    "size": 104
   },
+  "0x0802d480": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 1,
+    "pin": 2
+   },
+   "file": "src/sound_voice_helpers.c",
+   "name": "SoundD480_VolScale",
+   "size": 40
+  },
   "0x0802d5ec": {
    "class": "c",
    "file": "src/sound_sequence_init.c",
@@ -7112,12 +7319,12 @@
    "functions": 55
   },
   "c": {
-   "bytes": 27198,
-   "functions": 742
+   "bytes": 27446,
+   "functions": 747
   },
   "c_fakematch": {
-   "bytes": 14598,
-   "functions": 216
+   "bytes": 15562,
+   "functions": 235
   },
   "partial": {
    "bytes": 500,

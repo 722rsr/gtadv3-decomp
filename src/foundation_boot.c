@@ -28,12 +28,21 @@ void _0800295C(u32 a,u32 b) __attribute__((alias("Foundation_InitCommon")));
 
 // second half of that span — snapshot helpers
 void Foundation_SaveIrqSnapshot(void) {
-    *(volatile u16*)(0x030000F8 + 56) = *(volatile u16*)0x04000200;
-    *(volatile u16*)(0x030000F8 + 58) = *(volatile u16*)0x04000004;
-    *(volatile u16*)0x04000200 = 0;
-    *(volatile u16*)0x04000004 = 0;
-    extern void CpuFastSet(const void *s, void *d, u32 m);
-    CpuFastSet((void*)0x0203F170, (void*)0x030000F8, 28);
+    extern void sub_0802D974(const void *s, void *d, u32 m);
+    register u32 base __asm__("r1") = 0x030000F8;
+    register u32 ime __asm__("r4") = 0x04000200;
+    register u32 disp __asm__("r2");
+    register u32 zero __asm__("r3");
+    register u32 tmp __asm__("r0");
+    tmp = *(volatile u16 *)ime;
+    zero = 0;
+    *(volatile u16 *)(base + 56) = (u16)tmp;
+    disp = 0x04000004;
+    tmp = *(volatile u16 *)disp;
+    *(volatile u16 *)(base + 58) = (u16)tmp;
+    *(volatile u16 *)ime = (u16)zero;
+    *(volatile u16 *)disp = (u16)zero;
+    sub_0802D974((void *)0x0203F170, (void *)base, 28);
 }
 #ifndef __APPLE__
 void _080029D8(void) __attribute__((alias("Foundation_SaveIrqSnapshot")));
@@ -89,11 +98,18 @@ void _08002A68(void) __attribute__((alias("IrqResetSlot0")));
 void sub_08002A68(void) __attribute__((alias("IrqResetSlot0")));
 #endif
 void IrqInstallTable(void) {
-    *(volatile u32*)0x040000D4 = 0x08000108; // DMA3SAD = IntrMain ROM source
-    *(volatile u32*)0x040000D8 = 0x0203F1B0; // DMA3DAD = EWRAM copy dest
-    *(volatile u32*)0x040000DC = 0x84000140; // DMA3CNT = go (640 B copy)
-    (void)*(volatile u32*)0x040000DC; // read-back sync, as in asm
-    *(volatile u32*)0x03007FFC = 0x0203F1B0; // IRQ vector -> EWRAM copy
+    register volatile u32 *dma __asm__("r1") = (volatile u32 *)0x040000D4;
+    register u32 src __asm__("r0");
+    register u32 dest __asm__("r2");
+    src = 0x08000108; /* DMA3SAD = IntrMain ROM source */
+    *dma = src;
+    dest = 0x0203F1B0; /* DMA3DAD = EWRAM copy dest */
+    dma[1] = dest;
+    src = 0x84000140; /* DMA3CNT = go (640 B copy) */
+    dma[2] = src;
+    src = dma[2]; /* read-back sync, as in asm */
+    src = 0x03007FFC;
+    *(volatile u32 *)src = dest; /* IRQ vector -> EWRAM copy */
 }
 #ifndef __APPLE__
 void _08002A80(void) __attribute__((alias("IrqInstallTable")));

@@ -733,10 +733,12 @@ void _080017984(void *a) __attribute__((alias("Rec35_Emit_17984")));
 // ---------------------------------------------------------------------------
 // _0800179F0(rec) — single _08007B18 emit when u16[+182]==3
 void Rec35_Emit_179F0(void *rec) {
-    if (RD16P((u8 *)rec + 182) == 3) {
-        Sub_08007B18(rec, 4, 104, 128, 6, 1, 1, 0);
+    extern void sub_08007B18(void *a, int b, int c, int d, int e, int f, int g, int h);
+    if (*(u16 *)((u8 *)rec + 182) == 3) {
+        sub_08007B18(rec, 4, 104, 128, 6, 1, 1, 0);
     }
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _0800179F0(void *a) __attribute__((alias("Rec35_Emit_179F0")));
 #endif

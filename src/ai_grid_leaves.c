@@ -304,22 +304,46 @@ void sub_08025EC0(int a,int b) __attribute__((alias("Ai_GridHalfwordSet")));
 void Sub_08025EC0(int a,int b) __attribute__((alias("Ai_GridHalfwordSet")));
 #endif
 
-// _08025F20(id) -> s16>>shift & mask
+// _08025F20(id) -> s16>>shift & mask.  Byte-exact (88/88, whole body + pool).
+//
+// Four source shapes are load-bearing here; each was found by a probe run
+// that moved the score:
+//   * the IWRAM base is named as an absolute SYMBOL_REF
+//     (`AiGridHalfBase = 0x03001780`), not the `AI_GRID_BASE` CONST_INT.
+//     A CONST_INT base folds into the literal pool (the pool word becomes
+//     0x03001CF0 and the body shrinks to 80-84 bytes); the SYMBOL_REF keeps
+//     0x03001780 in the pool and forces the runtime `movs r3,#174 /
+//     lsls r3,r3,#3 / adds r1,r1,r3` pair.
+//   * the base is an integer (`uintptr_t`), not a pointer. `i4 + base` with
+//     a pointer base is canonicalized to base-first and emits
+//     `adds r0,r1,r0`; the integer add keeps the source order and emits the
+//     ROM's `adds r0,r0,r1` (same precedent as Ai_AwardLeafGet's off + base).
+//   * the doubled index is one expression, `i4 = (masked / 4) << 1`. Split
+//     across two statements (`i4 = masked / 4; i4 <<= 1`, let alone a
+//     `>> 2` shift), agbcc lowers the divide to `lsrs`; the single
+//     expression keeps the ROM's arithmetic `asrs r0,r4,#2`.
+//   * the return is one expression over the dereference and `tmp[sh]`.
+//     Naming the value/mask locals reorders the tail (mask address before
+//     the cell load, zero taken in r3, final shift kept in r2); the
+//     expression form gives the ROM's load-first tail with the shift
+//     amount in r1 (`lsls r1,r2,#1 / asrs r0,r1`).
+extern u8 AiGridHalfBase[] __asm__("AiGridHalfBase");
 int Ai_GridHalfwordGet(int id){
     u8 tmp[4];
-    bios_unpack((const void*)(uintptr_t)AI_GRID_MASK_TBL, tmp, 4u);
-    int masked=id &7;
-    int sh = packed_shift(masked,4);
-    int sh2= packed_shift(masked,4);
-    volatile u8 *base = (volatile u8*)(uintptr_t)AI_GRID_BASE;
-    int off = masked>>2;
-    off <<=1;
-    volatile s16 *cell = (volatile s16*)(base+1392+off);
-    s16 v = *cell;
-    u8 mask = tmp[sh];
-    int anded = v & mask;
-    int res = anded >> (sh2<<1);
-    return res;
+    _0802E0A4((void *)tmp, (const void *)(uintptr_t)AI_GRID_MASK_TBL, 4u);
+    int masked = id & 7;
+    int sh = packed_shift(masked, 4);
+    int sh2 = packed_shift(masked, 4);
+    __asm__(".globl AiGridHalfBase\nAiGridHalfBase = 0x03001780\n");
+    register uintptr_t base asm("r1");
+    register u32 off asm("r3");
+    register int i4 asm("r0");
+    base = (uintptr_t)AiGridHalfBase;
+    i4 = (masked / 4) << 1;
+    off = 174;
+    off = off << 3;
+    base += off;
+    return (*(s16 *)(i4 + base) & tmp[sh]) >> (sh2 << 1);
 }
 #ifndef __APPLE__
 int _08025F20(int a) __attribute__((alias("Ai_GridHalfwordGet")));

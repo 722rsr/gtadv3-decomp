@@ -564,33 +564,46 @@ void _08001FA0C(void) {
 // Pools: {0x080CBC74, 0x0203F8F0}. idx = (u8)c: t =
 // s16[0x080CBC74 + 2*idx]; t==-1 returns; else v =
 // s16[0x0203F8F2 + 2*(t-1)] and _08002ED0(a, b, v, d, 1, 0, 1, 0, 0, 1).
-// RESIDUAL (prefix 10). Three independent axes, measured
-// separately on compiled variants:
-//  1. Load width. Dropping `volatile` from the *pointee* (keeping the address
-//     cast) replaces `ldrh`+`lsls #16`+`asrs #16` with the ROM's single
-//     `ldrsh`, and it is the only change that produces the ROM's indexed form
-//     `movs r0,#0 / ldrsh r2,[r2,r0]`. But it also moves `t` out of r2, so the
-//     load lands in r1 and the second address degrades with it.
-//  2. Pool-load placement. The ROM interleaves `ldr r0,=0x080CBC74` BETWEEN
-//     `lsls r2,#24` and `lsrs r2,#23`; every spelling here completes the shift
-//     pair first. Naming the base a local and declaring it before the `>>`
-//     does not help: the constant is a `reg_equiv`, so reload materialises it
-//     at the point of use, after the shift.
-//  3. Second address. The ROM keeps `subs r0,r2,#1 / lsls r0,#1 / adds r1,#2
-//     / adds r0,r0,r1` with pool word 0x0203F8F0; gcc-2.95 folds
-//     `0x0203F8F2 + 2*(t-1)` to `0x0203F8F0 + 2*t` for every spelling tried
-//     (named base, separate `off = t-1; off *= 2;` statements, `s16*`/`u8*`
-//     pointer variables, `q[(t-1)]`).
-// ~20 shapes tried across the three axes; none scores above 56/84.
+// Three lowering facts, all load-bearing:
+//  * The first table base is a SYMBOL declared between the two shifts
+//    (`shifted = c<<24; base = Symbol; offset = shifted>>23`), so agbcc
+//    loads it between `lsls r2,#24` and `lsrs r2,#23` (same idiom as
+//    Ai_CatalogA/B/C in src/ai_catalog.c).
+//  * The load width is PLAIN `s16` (no `volatile`): `volatile` emits
+//    `ldrh`+`lsls #16`+`asrs #16`, plain gives the ROM's single `ldrsh`
+//    with a zero register.
+//  * The second address keeps `subs/lsls/adds #2/adds` by computing the
+//    byte offset before bumping the pointer (`p = P2; u = t-1;
+//    off = u*2; p += 1; v = *(p_addr + off)`): the `P2+1` fold that drops
+//    `subs`/`adds #2` needs a constant base, and a symbol base keeps it.
+//    Declaring `p` before `u` is what keeps `t` in r2 (and so the second
+//    base in r1, index in r0); the reverse order swaps them.
 // NOTE: incoming r3 (d) is never stored, only forwarded.
 // ----------------------------------------------------------------------------
 void _08001FB58(int a, int b, int c, int d) {
-    u32 idx = (((u32)c << 24) >> 23);
-    s16 t = *(volatile s16 *)(uintptr_t)(0x080CBC74u + idx);
+    u32 shifted;
+    u32 base;
+    u32 offset;
+    s16 *p;
+    int u;
+    s16 t;
     s16 v;
+    u32 off;
+    extern u8 RaceSceneD1Tbl74[];
+    extern s16 RaceSceneD1RamF8F0[];
+    __asm__(".globl RaceSceneD1Tbl74\nRaceSceneD1Tbl74 = 0x080CBC74");
+    __asm__(".globl RaceSceneD1RamF8F0\nRaceSceneD1RamF8F0 = 0x0203F8F0");
+    shifted = (u32)c << 24;
+    base = (u32)(uintptr_t)RaceSceneD1Tbl74;
+    offset = shifted >> 23;
+    t = *(s16 *)(uintptr_t)(offset + base);
     if (t == -1)
         return;
-    v = *(volatile s16 *)(uintptr_t)(0x0203F8F2u + (u32)(((s32)t - 1) * 2));
+    p = RaceSceneD1RamF8F0;
+    u = (int)t - 1;
+    off = (u32)((u32)u * 2);
+    p += 1;
+    v = *(s16 *)(uintptr_t)((u32)(uintptr_t)p + off);
     _08002ED0((void *)(u32)a, b, (int)v, d, 1, 0, 1, 0, 0, 1);
 }
 

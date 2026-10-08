@@ -468,9 +468,9 @@ void sub_08004EF0(u32 v) __attribute__((alias("StoreState92")));
 void *HeapPeek_04EFC(u32 n) {
     volatile u32 *mgr = (volatile u32 *)0x03000198u;
     u32 rem = mgr[36]; // +0x90 free
-    if (n > rem) {
-        extern void Warn(u32 a, u32 b); // sub_0800295C — fatal (never returns)
-        Warn(0x0805BA70u, n - rem);
+    if (rem < n) {
+        extern void sub_0800295C(u32 a, u32 b);
+        sub_0800295C(0x0805BA70u, rem);
     }
     return (void *)(uintptr_t)mgr[34]; // +0x88 cursor, unbumped
 }
@@ -919,11 +919,21 @@ void MgrStore94_04C78(u32 v){
 #ifndef __APPLE__
 void _08004C78(u32 v) __attribute__((alias("MgrStore94_04C78")));
 #endif
-// 0x08004C84 — per-row grid halfword STORE. `_08004C30`-style base, but the
-void MgrGridSetRow_04C84(u32 idx, u16 value){
-    s32 row = (s32)*(volatile s16*)((u8*)MgrGet80());
-    u8 *g = (u8*)(uintptr_t)*(volatile u32*)(uintptr_t)(MGR_BASE+12);
-    *(volatile u16*)(g + ((u32)row << 3) + ((idx << 16) >> 15)) = value;
+// 0x08004C84 — per-row grid halfword STORE (asm/code_4b9c.s:153-171).
+void MgrGridSetRow_04C84(u16 idx, u32 value){
+    u32 b;
+    u32 k;
+    u32 a, t;
+    s32 row;
+    MGR_OBJ_DEFINE;
+    b = (u32)(uintptr_t)MGR_OBJ;
+    k = 0;
+    row = ((s16 *)((u32)(uintptr_t)*(volatile u32*)(uintptr_t)(b + 8) + k))[k];
+    t = (u32)(uintptr_t)*(volatile u32*)(uintptr_t)(b + 12);
+    a = (u32)(idx << 1);
+    row = (row << 3) + (s32)t;
+    a = a + (u32)row;
+    *(volatile u16*)a = (u16)value;
 }
 // 0x08004CA8 — the read twin (unsigned halfword load). (asm/code_4b9c.s:150-162)
 //

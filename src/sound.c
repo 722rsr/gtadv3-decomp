@@ -40,13 +40,15 @@ static inline SoundMaster *soundMaster(void){
 
 // _0802B04C(state) — driver init, publish ptr, enable, levels |=0xFF
 void SoundInit(void *state){
+    SoundMaster *m = (SoundMaster *)state;
+    register u32 v __asm__("r0");
     sub_0802C4C4();
-    *(volatile u32 *)SOUND_MASTER_PTR = (u32)(uintptr_t)state;
-    volatile SoundMaster *m = (volatile SoundMaster *)state;
-    m->flags |= 1;
-    m->masterVol |= 0xFF;
-    m->chanCLevel |= 0xFF;
-    m->chanDLevel |= 0xFF;
+    *(volatile u32 *)SOUND_MASTER_PTR = (u32)(uintptr_t)m;
+    m->flags = 1;
+    v = 255;
+    m->masterVol |= v;
+    m->chanCLevel |= v;
+    m->chanDLevel |= v;
 }
 #ifndef __APPLE__
 void _0802B04C(void *s) __attribute__((alias("SoundInit")));
@@ -130,12 +132,48 @@ void sub_0802B098(void) __attribute__((alias("SoundVCounter")));
 void SoundTick(void) { SoundVBlank(); }
 void SoundSeqTick(void) { SoundVCounter(); }
 
-// _0802B190 off, _0802B1B8 on
+// : exact at 40/40.  Exactly one construct is load-bearing -- the mask's
+// register pin -- and the rest of the body is the honest lift:
+//   * `mask` is pinned to r0. This is what makes the ROM's register split come
+//     out: base r1 / mask r0 / byte temp r2, with the `mov r0,#1` landing
+//     BEFORE the flags load. Unpinned, agbcc allocates the mask to r2 in both
+//     blocks and the body is 44 bytes (control: 11/40, first difference +0x2).
+//   * The base gets NO pin, and that absence is load-bearing rather than
+//     incidental. Left to agbcc it lands in r1 on its own, which is what leaves
+//     r4 free to hold the 0x03001764 CELL address across the `bl` and produces
+//     the ROM's `ldr r4, =0x03001764 ... ldr r1, [r4]` reload on each side of
+//     the call. Forcing it is not free: pin the base to r0 and it steals r0
+//     from the mask (control: 34/40, first difference +0x4). A pin to r1 is
+//     byte-identical to the plain local, so per the group note above it is
+//     deliberately absent rather than left in as decoration.
+//   * The base is a separate `soundMaster()` call on each side, so the cell is
+//     re-read across the call exactly as the ROM reloads it, and it is NOT
+//     volatile: a volatile member lvalue costs a dead second `ldrb`
+//     (controls on this body: drop the reload and the ROM's post-call
+//     `ldr r1, [r4]` is gone -- 22/40, first difference +0x3; make the base
+//     volatile and the dead reloads return -- 26/40, candidate 44).
+// The accumulate form `mask &= m->flags; m->flags = mask` is NOT load-bearing
+// here -- the inline `m->flags &= 0xFE` is byte-identical, unlike on _0802B234
+// and _0802B30C where it is. It is kept because it is the form the group note
+// above describes for the flag-RMW twins, not because dropping it costs bytes.
+// The arg to sub_0802CB20 is the leftover `mask`. The ROM sets up NO argument
+// before the `bl`, and it cannot: the callee is `SoundCmdCommit`, whose state
+// parameter is `(void)state; // dead in ROM`. So r0 simply carries the guard
+// result into the call. Same idiom as sound_core.c:128, and note it is the
+// mask PIN that makes the forwarding free -- a literal `0` would emit a
+// `mov r0, #0` the ROM does not have.
 void SoundOff(void){
-    volatile SoundMaster *m = soundMaster();
-    if ((m->flags & 1)==0) return;
-    sub_0802CB20((void*)0);
-    m->flags &= 0xFE;
+    SoundMaster *m;
+    register u32 mask __asm__("r0");
+    m = soundMaster();
+    mask = 1;
+    mask &= m->flags;
+    if (mask == 0) return;
+    sub_0802CB20((void *)(uintptr_t)mask);
+    m = soundMaster();
+    mask = 0xFE;
+    mask &= m->flags;
+    m->flags = (u8)mask;
 }
 #ifndef __APPLE__
 void _0802B190(void) __attribute__((alias("SoundOff")));
@@ -143,11 +181,39 @@ void _0802B190(void) __attribute__((alias("SoundOff")));
 #ifndef __APPLE__
 void sub_0802B190(void) __attribute__((alias("SoundOff")));
 #endif
+// : exact at 44/44.  The guard block is _0802B190's verbatim, mask pin and all,
+// and the RMW block must NOT reuse the guard's variables. That is the one thing
+// load-bearing here, and it is a shape rather than a pin:
+//   * the ROM's second block re-loads the master into r0 and holds the mask in
+//     r1 -- the MIRROR of the guard block (base r1 / mask r0). Reusing the
+//     guard's `m`/`mask` forces that mirrored split onto the guard instead, so
+//     the RMW block lands 39/44 with its registers swapped (first difference
+//     +0x18). Giving the RMW block its own local lets agbcc allocate the two
+//     blocks independently, which is what reproduces the mirror. (control:
+//     reuse -> 39/44.)
+// The RMW block's plain form is enough and is deliberately left unpinned: the
+// only thing that matters is that it does NOT reuse the guard's `m`/`mask`,
+// and once it does not, agbcc allocates the mirror on its own. Pinning it
+// (`b`->r0 / `k`->r1) is byte-identical, so per the group note above it is
+// absent rather than decoration. What IS load-bearing is the guard's mask pin;
+// unpin the whole guard and the body spills to 48 bytes (control 20/44, first
+// difference +0x2).
+// The arg to sub_0802CB84 is the leftover guard `mask`, exactly as on
+// _0802B190: the ROM sets up no argument before either `bl`, and this callee
+// clobbers r0 on entry (`asm/sound_stop.s` opens with `ldr r0, _0802CBB0`).
 void SoundOn(void){
-    volatile SoundMaster *m = soundMaster();
-    if (m->flags & 1) return;
-    sub_0802C4C4(); sub_0802CB84((void*)0);
-    m->flags |= 1;
+    SoundMaster *m;
+    register u32 mask __asm__("r0");
+    m = soundMaster();
+    mask = 1;
+    mask &= m->flags;
+    if (mask != 0) return;
+    sub_0802C4C4();
+    sub_0802CB84((void *)(uintptr_t)mask);
+    {
+        SoundMaster *b = soundMaster();
+        b->flags |= 1;
+    }
 }
 #ifndef __APPLE__
 void _0802B1B8(void) __attribute__((alias("SoundOn")));

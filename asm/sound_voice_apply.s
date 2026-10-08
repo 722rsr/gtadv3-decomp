@@ -32,3 +32,5 @@ _0802C178:
 _0802C18C:
 	strb r0, [r4, #3]
 	bx lr
+
+sound_voice_apply_end:

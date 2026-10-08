@@ -26,3 +26,5 @@ _0802D49C:
 	bx r0
 	.short 0
 _0802D4A4: .word 0x68736D53
+
+sound_d480_end:

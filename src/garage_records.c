@@ -152,21 +152,21 @@ void _0800278DC(void *rec) {
 
 // ----------------------------------------------------------------------------
 // 0x08027CE0 — table entry leaf (pools 0x03001760/0x080CDC68).
-// The `s16` index read is deliberately NOT volatile: volatile makes agbcc
-// emit `ldrh; lsls #16; asrs #16` where the ROM has `movs rN,#22; ldrsh`.
-// Dropping it fixes the instruction selection exactly (measured 4/40, up from
-// 1/40) but the candidate LENGTH stays 44: the 2 bytes returned are swallowed
-// by the 4-byte alignment pad, so this body still reads OVERSIZED. Its real
-// excess is the callee-saved allocation — agbcc pushes {r4,lr} and pops twice
-// where the ROM is a leaf and needs none (6 bytes against 0).
+// Leaf using only r0/r1/r2: movs r1,#22; ldrsh r0,[r2,r1]; lsls #3;
+// ldr r1,=0x080CDC68; adds r1,r0,r1; ldrh; cmp #5; reload-inc-store.
 // ----------------------------------------------------------------------------
 u16 *_080027CE0(void) {
-    volatile u8 *base = *(volatile u8 *volatile *)0x03001760u;
-    s16 idx = *(const s16 *)(base + 22);
-    u16 *e = (u16 *)(uintptr_t)(0x080CDC68u + ((s32)idx << 3));
+    register u8 *b __asm__("r2") = *(u8 **)0x03001760u;
+    register s32 idx __asm__("r0");
+    register u16 *e __asm__("r1");
+    idx = *(s16 *)(b + 22);
+    idx <<= 3;
+    e = (u16 *)0x080CDC68u;
+    __asm__ ("" : "+r" (e) : "r" (idx));
+    e = (u16 *)((u32)idx + (u32)e);
     if (*e == 5)
         return e;
-    *(volatile s16 *)(base + 22) = (s16)(idx + 1);
+    *(u16 *)(b + 22) = (u16)(*(u16 *)(b + 22) + 1u);
     return e;
 }
 
@@ -814,35 +814,38 @@ void _080029230(void) {
 // ----------------------------------------------------------------------------
 // 0x08029354 — u32 wrap by +-0x10000.
 //
-// ROM shape, recorded because it is why this body does not match yet:
-// `adds r2,r0,#0; ldr r1,[r2,#0]; ldr r0,=0x0000FFFF; cmp r1,r0; ble +0x18`.
-// The low arm is emitted *after* the literal pool, the high arm loads
-// 0x2900FFFF inline and branches over the pool, and both converge on
-// `adds r0,r1,r3` + `str r0,[r2,#0]`. The `bge` at +0x18 reuses the `cmp`
-// flags and returns the pool constant still live in r0 without storing.
+// ROM: `adds r2,r0,#0; ldr r1,[r2,#0]; ldr r0,=0x0000FFFF; cmp r1,r0; ble`.
+// The high arm loads 0xFFFF0000 from the pool; the low arm materialises
+// 0x10000 as `movs r3,#128; lsls r3,#9`; both converge on
+// `adds r0,r1,r3; str r0,[r2,#0]`. The middle path reuses the `cmp` flags
+// (`cmp r1,#0; bge`) and returns with the pool constant still live in r0,
+// storing nothing.
 //
-// MEASURED NEGATIVE (isolated probe, 6 shapes): agbcc hoists *both* literal
-// loads above the `cmp` whenever the two arms tail-merge, and always
-// re-materialises a second `cmp` for the inner test; `OPaque` on the delta
-// does not suppress the hoist. So the body below keeps the ROM's *semantics*
-// rather than its shape. Note 0x2900FFFF is the high arm's comparison
-// threshold, NOT a wrap delta: adding it to the loaded word is a different
-// function, and it silently broke the car drive-model host test.
+// MEASURED (isolated agbcc probe): with plain locals the returned value
+// pulls `v` into r0, the constant into r2 and the pointer copy into r1,
+// plus a `mov` for the middle return — 42 bytes, 19/40. Pinning the pointer
+// copy to r2 and the loaded word to r1 reproduces the ROM allocation, and
+// a separate `w` per arm lets the add target r0 directly. `v - 0x10000`
+// canonicalises to the 0xFFFF0000 pool load; `v + 0x10000` to the movs/lsls
+// pair. The trailing halfword is `00 00` in ROM where gas pads the section
+// with `46 C0`, hence the file-scope `.align 2, 0` below (zero fill).
 // ----------------------------------------------------------------------------
 u32 _080029354(u32 *p) {
-    s32 v = (s32)*p;
+    register u32 *q __asm__("r2") = p;
+    register s32 v __asm__("r1") = (s32)*q;
     if (v > 0xFFFF) {
-        v -= 0x10000;
-        *p = (u32)v;
-        return (u32)v;
+        s32 w = v - 0x10000;
+        *q = (u32)w;
+        return (u32)w;
     }
     if (v < 0) {
-        v += 0x10000;
-        *p = (u32)v;
-        return (u32)v;
+        s32 w = v + 0x10000;
+        *q = (u32)w;
+        return (u32)w;
     }
-    return 0x0000FFFFu;
+    return 0xFFFFu;
 }
+__asm__(".align 2, 0");
 
 // ----------------------------------------------------------------------------
 // 0x0802937C — stepped approach (early path returns untouched r3).

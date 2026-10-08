@@ -93,7 +93,7 @@
     },
     {
       "path": "asm/ai_award_bitset.s",
-      "sha256": "1911da9efb4cc89758ccb74d40eaf5ee4999e4f508ee3753f9a0111847f43f46"
+      "sha256": "2f5fbd53276a09a110074b80ea94c7e16c76dbdcce52c584c0072f95dc36f63e"
     },
     {
       "path": "asm/ai_award_leaf.s",
@@ -137,7 +137,7 @@
     },
     {
       "path": "asm/ai_grid_more5.s",
-      "sha256": "5f382d3c0d9996f49c9d72cdc6249a61dd3eac58a19e50d54a5727ee87afae3f"
+      "sha256": "96b3428d5da768e41c0ac3a9d0adb0f1cb2153999f8c92dbdf31525ec348f839"
     },
     {
       "path": "asm/ai_line_accessor4.s",
@@ -169,7 +169,7 @@
     },
     {
       "path": "asm/ai_line_probe.s",
-      "sha256": "2b1dc4b9dc25311507384eae0e7d117c0528e8dcd9e903bb92802e4fa7aadaef"
+      "sha256": "2a61473c9833efa113efd4e8ca36fb185eee0773b220456a205318988f8184a5"
     },
     {
       "path": "asm/ai_line_score.s",
@@ -421,7 +421,7 @@
     },
     {
       "path": "asm/code_2a80.s",
-      "sha256": "a79926869628543cb948a7175185fe312e3390679cb27f1bc524026e76af1306"
+      "sha256": "98a7f60836e7ec0c5e7219f143a0dd9b2bd9609754eee75b86b85d6a2fd7c7b9"
     },
     {
       "path": "asm/code_2dd86.s",
@@ -893,7 +893,7 @@
     },
     {
       "path": "asm/save_alloc.s",
-      "sha256": "cc8bd2470e6d899c0e8a2828a9646eba756f995a03bf242770dd8b6d6c78f9de"
+      "sha256": "bdb60bd843148502ea5a74c679abb2d6d996fed42c09639bbf2028b975171fa4"
     },
     {
       "path": "asm/save_alloc_more.s",
@@ -977,7 +977,7 @@
     },
     {
       "path": "asm/sound_d480.s",
-      "sha256": "236ba6c85f5425d4d49c70529cd2da90b44a5e0aba84323ed9277ddd2da22965"
+      "sha256": "af0625d27aad15261a22e6e805acc154cdde9a549ef55a8d1e8ab8b6e9da6a70"
     },
     {
       "path": "asm/sound_d4a8.s",
@@ -1129,7 +1129,7 @@
     },
     {
       "path": "asm/sound_voice_apply.s",
-      "sha256": "8ba5502f1b9cf5521fc47182a2c7218eee318261ce25f284915708c1b7e9cd83"
+      "sha256": "c6a45b760ee4ce21735fc36e05109296cd9db11a8092bc4432858f92889c329d"
     },
     {
       "path": "asm/sound_voice_clamp.s",

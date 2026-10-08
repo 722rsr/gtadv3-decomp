@@ -39,18 +39,56 @@ s8 Sub_08025530(int a) __attribute__((alias("Ai_LineGet3")));
 s8 sub_08025530(int a) __attribute__((alias("Ai_LineGet3")));
 #endif
 
-// _08025214 probe
+// _08025214 — 52 B bit probe: `id` -> byte `id>>3` of the collection bitfield at
+// 0x030015E8 AND byte `id&7` of the mask table at 0x080C4768, as 0/1.
+//
+// Four things are load-bearing, each pinned by a register or an address node:
+//
+//  * `id` is PINNED to r3. It has to survive the divide (which clobbers r0) to
+//    reach `subs r0, r3, r0`, and r0 is the return register, so the allocator
+//    will not leave the value there by itself.
+//  * The divide is spelled `if (a < 0) dv = a + 7; dv >>= 3` rather than `a / 8`.
+//    Both lower to the same rounding-toward-zero sequence, but `a / 8` lets agbcc
+//    fold the copy of `id` away and test `cmp r0, #0` on the incoming argument.
+//    The explicit form forces `cmp r3, #0` against the pinned copy.
+//  * Both table bases are absolute SYMBOL_REFs, not integer constants, and each
+//    is written back through its own pointer variable
+//    (`bm = base; bm = (u8 *)((uintptr_t)bm + (uintptr_t)idx);`). That is what
+//    makes the literal load COALESCE with the pointer it feeds: the ROM has
+//    `adds r1, r0, r1` (destination == base register) where a plain `base + idx`
+//    emits a separate base register and a three-operand add instead.
+//  * `bit` is PINNED to r0. `bit` is computed after `idx` is consumed, and r0 is
+//    the natural accumulator for `lsls r0,r0,#3`, but agbcc's local allocator
+//    otherwise prefers the (still-unread) r3, giving `sub r3, r3, r0` and
+//    `add r2, r2, r3`. Pinning it also keeps the final `mt` pointer in r0 for the
+//    second `ldrb`, which is where the ROM has it.
+//
+// Without the symbol refs the pool words fold into the pointer adds and the
+// base register allocation shifts; the body then scores 41/52 with the first
+// difference at +0x02 (the `cmp`).
 int Ai_LineProbe(int id){
-    int r3=id;
-    int r0;
-    if(r3>=0) r0=r3>>3; else { r0=r3+7; r0>>=3; }
-    volatile u8 *bm = (volatile u8*)(uintptr_t)0x030015E8u + r0;
-    const u8 *maskTbl = (const u8*)(uintptr_t)0x080C4768u;
-    int bit = r3 - (r0<<3);
-    u8 mask = maskTbl[bit];
-    u8 cell = *bm;
-    int anded = cell & mask;
-    return anded ? 1 : 0;
+    register int a __asm__("r3");
+    int dv;
+    int idx;
+    register int bit __asm__("r0");
+    u8 *b2;
+    u8 *bm;
+    u8 *mt;
+    extern u8 AiLineColBM[] __asm__("AiLineColBM");
+    extern u8 AiLineMaskTbl[] __asm__("AiLineMaskTbl");
+    __asm__(".globl AiLineColBM\nAiLineColBM = 0x030015E8\n");
+    __asm__(".globl AiLineMaskTbl\nAiLineMaskTbl = 0x080C4768\n");
+    a = id;
+    dv = a;
+    if (a < 0) dv = a + 7;
+    idx = dv >> 3;
+    bm = AiLineColBM;
+    bm = (u8*)((uintptr_t)bm + (uintptr_t)idx);
+    b2 = AiLineMaskTbl;
+    bit = a - idx * 8;
+    mt = (u8*)((uintptr_t)b2 + (uintptr_t)bit);
+    if (*bm & *mt) return 1;
+    return 0;
 }
 #ifndef __APPLE__
 int _08025214(int a) __attribute__((alias("Ai_LineProbe")));
