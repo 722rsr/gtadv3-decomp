@@ -35,41 +35,86 @@ def inputs(root):
 
 def measures(code=0, matched=0, data=0):
     percent = 100.0 * matched / code if code else 0.0
-    return {'total_code': str(code), 'matched_code': str(matched),
+    return {'fuzzy_match_percent': percent,
+            'total_code': str(code), 'matched_code': str(matched),
             'matched_code_percent': percent, 'complete_code': str(matched),
             'complete_code_percent': percent, 'total_data': str(data),
             'matched_data': '0', 'complete_data': '0'}
 
 
-def make_report(manifest):
-    groups = {}
+def make_report(manifest, ownership):
+    # Use the audited ROM partition, not the splice file: some manifest entries
+    # replace includes in passthrough.inc but belong to a physical .s region.
+    regions = sorted(ownership['segments'], key=lambda row: int(row['start'], 16))
+    cursor = 0
+    for region in regions:
+        start, end = int(region['start'], 16), int(region['end'], 16)
+        if start != cursor or end <= start or end > ROM_SIZE or region['size'] != end - start:
+            raise ValueError('ownership regions must partition the ROM without gaps or overlaps')
+        if bool(region['executable']) != (end <= CODE_SIZE) or start < CODE_SIZE < end:
+            raise ValueError('ownership executable boundary differs from CODE_SIZE')
+        if region['executable'] and len(region['source_owners']) != 1:
+            raise ValueError('executable region must have one source owner')
+        cursor = end
+    if cursor != ROM_SIZE:
+        raise ValueError('ownership regions do not cover the full ROM')
+
+    selected = []
     previous_end = BASE
-    matched = 0
     for start, entry in sorted(manifest.items(), key=lambda pair: int(pair[0], 16)):
         address, end = int(start, 16), int(entry['end_vma'], 16)
         if not BASE <= address < end <= BASE + CODE_SIZE or address < previous_end:
             raise ValueError(f'invalid or overlapping selected span: {start}')
         previous_end = end
-        size = end - address
-        matched += size
-        groups.setdefault(entry['asm_file'], []).append({
-            'name': entry['c_name'], 'size': str(size), 'fuzzy_match_percent': 100.0,
-            'metadata': {'virtual_address': str(address)}})
+        selected.append((address - BASE, end - BASE, entry['c_name']))
+
+    groups = {}
+    assigned = 0
+    for region in regions:
+        if not region['executable']:
+            continue
+        start, end = int(region['start'], 16), int(region['end'], 16)
+        name = region['source_owners'][0]
+        group = groups.setdefault(name, {'size': 0, 'matched': 0, 'items': []})
+        group['size'] += end - start
+        cursor = start
+        for first, last, function in selected:
+            if last <= start or first >= end:
+                continue
+            if first < start or last > end:
+                raise ValueError(f'selected span crosses ownership boundary: {function}')
+            if cursor < first:
+                group['items'].append(range_item(cursor, first))
+            group['items'].append({'name': function, 'size': str(last - first),
+                                   'fuzzy_match_percent': 100.0,
+                                   'metadata': {'virtual_address': str(BASE + first)}})
+            group['matched'] += last - first
+            assigned += 1
+            cursor = last
+        if cursor < end:
+            group['items'].append(range_item(cursor, end))
+    if assigned != len(selected):
+        raise ValueError('selected spans are missing from the executable ownership map')
+
     units = []
-    for name, functions in sorted(groups.items()):
-        size = sum(int(f['size']) for f in functions)
-        units.append({'name': name + ' (selected C spans)',
-                      'measures': measures(size, size), 'functions': functions})
-    units.extend([
-        {'name': 'Remaining executable slice (includes header and padding)',
-         'measures': measures(CODE_SIZE - matched)},
-        {'name': 'Unreconstructed data tail (includes ROM padding)',
-         'measures': measures(data=ROM_SIZE - CODE_SIZE)},
-    ])
-    # Function totals and fuzzy scores are intentionally omitted: the manifest
-    # is a selection, not an exhaustive function census or a partial-match scan.
+    for name, group in sorted(groups.items()):
+        units.append({'name': name, 'measures': measures(group['size'], group['matched']),
+                      'functions': group['items']})
+    units.append({'name': 'Unreconstructed data tail (includes ROM padding)',
+                  'measures': measures(data=ROM_SIZE - CODE_SIZE)})
+    matched = sum(group['matched'] for group in groups.values())
+    # Binary scoring: selected spans contribute 100%, all other bytes 0%.
+    # No instruction-similarity claims or aggregate function census are made.
     return {'version': 2, 'measures': measures(CODE_SIZE, matched, ROM_SIZE - CODE_SIZE),
             'units': units}
+
+
+def range_item(start, end):
+    # Explicit byte ranges keep the drill-down honest without inventing function
+    # boundaries for remaining assembly, literal pools, header, or padding.
+    return {'name': f'Unselected range 0x{BASE + start:08X}-0x{BASE + end:08X}',
+            'size': str(end - start), 'fuzzy_match_percent': 0.0,
+            'metadata': {'virtual_address': str(BASE + start)}}
 
 
 def encoded(value):
@@ -77,7 +122,9 @@ def encoded(value):
 
 
 def expected_report(root):
-    return encoded(make_report(json.loads((root / 'tools/matching_slice_functions.json').read_text())))
+    return encoded(make_report(
+        json.loads((root / 'tools/matching_slice_functions.json').read_text()),
+        json.loads((root / 'docs/data/code_data_ownership.json').read_text())))
 
 
 def check(root):

@@ -483,7 +483,7 @@
     "tools/corpus_match_probe.py": "8db5c9182924229a4360c3a76de13a65ad873ff84e259db61efd8fe10f64828d",
     "tools/coverage.py": "9462fad6eac783dbc9e8b4c41c45aaa593fd9f1fb535c9f06b6e0eaedfafaaa4",
     "tools/cross_rom_archaeology.py": "6aa3dcaa8c70bee9b345e1fe1ba03964eb459c8e457d32f978b3fd9874867615",
-    "tools/decomp_report.py": "eb4847e8aaa04c17862ab335e6836d80b3ca758ec1aee686f5bc18e1eba4b59d",
+    "tools/decomp_report.py": "a606eb5dffbf1fd5a4caf551a61ae4fad9f4a34a2434cb4c79df5c8fdd53d24e",
     "tools/derisk_pool_probe.py": "89b17280221cc32b8269054dbc3fb95c6b2eba788d8b7b7c88d8ca20895093a4",
     "tools/derisk_probe.py": "a6341579889ab9ec52f024fe875e3e35b8a32f54b7bcb988033249b9371715da",
     "tools/egraph_search.py": "768360a72b9885492b9fb31bd5a615c148e22fcae5af8d9a310762c6794080c2",
@@ -522,7 +522,7 @@
     "tools/run_permuter.py": "f32ed975aed1b9027974616b80786fc262324abf75fef10bf9b72cc580aa4844",
     "tools/span_audit.py": "5f553058e8d6da55f9d63779df8d5c5a30cac3ca8bcc70d9c05a5c03fa12e4ad",
     "tools/strategy_router.py": "938f0be370fe0e4e2c96d29ad00b06adbe8df7b51b875e86dd69c969d69cf2a3",
-    "tools/test_decomp_report.py": "483daf8d5abd362c29b9f1560adba77dad82040a5252e7cec1511401992dfa55",
+    "tools/test_decomp_report.py": "d370cf0729d878a92099f608ff496b77751b5d89e5b248830a23e43f4cf5d196",
     "tools/test_experiment_strategies.py": "35e9f884989bf7b3f6af6efedd11c39bb5c49d56197068a1f7f665e9642ca2d1",
     "tools/test_makefile.py": "444bc1887f9ef28a018d0402b19f746c29608333cf6cef275c474253f7d1239c",
     "tools/test_matching_assist.py": "82b050b57bb4e539c3a3aab7f47e5f72eb531e9ae896ce22b8dd59a1c4fe1505",
@@ -533,6 +533,6 @@
     "tools/treemap.py": "7f438ee17ca4e5dc060c89d7bfa5a10335f6648d10bca7d4da6757d54b9614e4",
     "tools/xref.py": "01eed68787d79bb3f11514d198330054872a34944c8a54e14192a692e5a17aa6"
   },
-  "report_sha256": "2f578c211aa28e35db7e1d580e099c8256794acd33d7a8e41861738cca81ac70",
+  "report_sha256": "07ed5e0dda09761c7d503e288996eb318097e38b910c71826dd1b957ec09a2ff",
   "version": 1
 }
