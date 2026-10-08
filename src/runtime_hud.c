@@ -21,7 +21,7 @@ extern void _0800295C(u32 a0, u32 a1);
 // Forward declarations for the slice-closure `_` spellings; each is defined
 // below as an alias of the same body as its `sub_` twin (promotion rule 1).
 extern void sub_08003560(int a, u32 b, u32 c, u32 d, const volatile u8 *e);  /* defined below, alias of ObjList_03560 */
-extern void sub_08003350(int a, u32 b, u32 c, u32 d, const volatile u8 *e, u16 f);  /* defined below, alias of ObjList_03350 */
+extern void sub_08003350(int a, u32 b, u32 c, u32 d, const volatile u8 *e, u32 f);  /* defined below, alias of ObjList_03350 */
 extern void sub_0800364C(int a, u32 b, u32 c, u32 d, const volatile u8 *e);  /* defined below, alias of ObjCenter_0364C */
 extern void sub_08003698(int a, u32 b, u32 c, u32 d, const volatile u8 *e);  /* defined below, alias of ObjCenter_03698 */
 extern void sub_080036E0(int a, u32 b, u32 c, u32 d, const volatile u8 *e);  /* defined below, alias of ObjCenter_036E0 */
@@ -235,8 +235,11 @@ void _080031D4(volatile u8 *req)
         *(volatile u16 *)(o + 0) = (u16)tagv;
         register u32 f1 __asm__("r0") = *(volatile u32 *)(p + 4);
         *(volatile u16 *)(o + 2) = (u16)f1;
-        u32 v = (u32)(f3 << 1);
-        v += *(volatile u16 *)(src + 2);
+        register u32 v __asm__("r1") = (u32)(f3 << 1);
+        register u32 src2 __asm__("r2");
+        __asm__("ldrh %0, [%1, #2]" : "=l" (src2) : "l" (src));
+        __asm__(".syntax unified\n\tadds %0, %1, %0\n\t.syntax divided"
+                : "+l" (v) : "l" (src2) : "cc");
         register u32 idxv __asm__("r0") = *(volatile u32 *)(p + 20);
         idxv += 12;
         v |= idxv << 12;
@@ -370,9 +373,10 @@ typedef struct { u32 w[4]; } tmpl_tbl;
 //  1. `req[1] = x & 0x1FF` — a POOL literal (0x000001FF) is loaded and `ands`
 //     with the running x in r6; only this variant masks (0x08003560 stores r6
 //     raw).
-//  2. `add r0,sp,#76; ldrh r0,[r0,#0]; strh r0,[r4,#12]` writes the 6th
-//     argument — read straight off the caller's stack slot, hence a `u16`
-//     parameter that agbcc never materialises in a register.
+//  2. `add r0,sp,#76; ldrh r0,[r0,#0]; strh r0,[r4,#12]` writes the low
+//     halfword of the 6th argument. The C formal is `u32` so agbcc does not
+//     widen the frame to materialise a narrow stack parameter; the volatile
+//     halfword store keeps the same low-16-bit behavior.
 //  3. `ldrh` lands in r1, so `adv` also lives in r1 and the branch is `cmp
 //     r1,#0 / blt`; r0 is live across `bl sub_08002BFC` holding the mask, which
 //     is why the allocator keeps the two apart.
@@ -393,7 +397,7 @@ typedef struct { u32 w[4]; } tmpl_tbl;
 // the `0x080C49A0 + (*p << 1)` index (ROM r1/r2/r3, here r0/r1/r2) and of the
 // w5 ldrh (ROM r0, here r3). Prologue, epilogue, frame (40 B) and the 0x33..0xAF
 // loop body all match.
-void ObjList_03350(int sel, u32 x, u32 a2, u32 a3, const volatile u8 *str, u16 w5)
+void ObjList_03350(int sel, u32 x, u32 a2, u32 a3, const volatile u8 *str, u32 w5)
 {
     tmpl_tbl hdr;
     u32 req[6];
@@ -531,29 +535,16 @@ void _080034B0(int sel, u32 x, u32 a2, u32 a3, const volatile u8 *str, u32 w5, u
         x += lane;
     }
 }
-// Residual, measured  : 15 bytes in 164, in two
-// independent clusters, both downstream of register choice and NOT of shape.
-//  * 9 bytes at +0x33,+0x35,+0x36,+0x38,+0x3A,+0x3C,+0x3E,+0x40,+0x44 -- the
-//    `&req` node. The ROM computes `add r4,sp,#16`; agbcc computes
-//    `add r1,sp,#16` and then uses r1 for all three init stores (`mov r8,r1`
-//    at +0x44), which also forces the 0x03000160 pool load into r3 and the
-//    a2/a3 copy temps into r7/r0 instead of the ROM's r3/r7. This is the SAME
-//    single defect as 0x08003400's, at the SAME offset, and it is unreachable
-//    for the same reason: `mov r4,sp` + `stmia r4!` is the first hard register
-//    agbcc assigns, so the address is rematerialised into a call-clobbered
-//    scratch and a pin receives only a copy (`add r1,sp,#16; adds r4,r1,#0`,
-//    measured 73/164 here). Forcing the node callee-saved DOES win the class --
-//    agbcc gave it r6 and reused r6 in the block copy `ldmia r1!,{r2,r3,r6}`,
-//    the same reuse-after-death the ROM performs -- but r6 is `x`'s slot, so
-//    `x` moves r6 -> r7 and the copy list follows it: 130/164.
-//  * 6 bytes at +0x4C,+0x4E,+0x51,+0x52,+0x55,+0x56 -- the advance lookup.
-//    The ROM holds the character in r1 (`ldrb r1,[r5,#0]`) and uses r2/r3 for
-//    the table base and the ldrsh offset; agbcc folds the character into r0 and
-//    uses r1/r2. One temp where the ROM has two, because the ROM's `c*2` shift
-//    is a separate destination register while agbcc coalesces the character
-//    and the shift into r0. Untried: pinning a named `u32 c = *p;` so `c` is
-//    live across the shift. Not a span, order or reload problem -- the caller
-//    list, the `bx r9` veneer and all three pool words already resolve.
+// Residual, measured: 9 bytes in 164, all in the request-base setup at
+// +0x33,+0x35,+0x36,+0x38,+0x3A,+0x3C,+0x3E,+0x40,+0x44. The ROM computes
+// `add r4,sp,#16` and uses r4 for the three init stores before `mov r8,r4`;
+// agbcc computes `add r1,sp,#16` and uses r1, which also changes the literal
+// and argument-copy registers. This is the same allocator choice seen in
+// 0x08003400. Direct r4 locals and request-base pins were tried, but they widen
+// the frame or spill the dispatch pointer. The table lookup below is byte-exact:
+// it keeps the character in r1, the shifted/index/result in r0, the literal
+// base in r2, and the zero ldrsh offset in r3. The candidate now matches 155/164
+// bytes; the remaining nine bytes are only that init-store register cluster.
 
 void ObjList_03560(int sel, u32 x, u32 a2, u32 a3, const volatile u8 *str)
 {
@@ -562,7 +553,7 @@ void ObjList_03560(int sel, u32 x, u32 a2, u32 a3, const volatile u8 *str)
     // The ROM keeps THREE live addresses for the same array: r4 for the three
     // init stores (`add r4,sp,#16`), r8 for the dispatch argument
     // (`mov r8,r4`... `mov r0,r8`), and r7 as the loop copy (`mov r7,r8`).
-    // `rq` was once pinned to r8 here. Measured  :
+    // `rq` was once pinned to r8 here. It worsened the loop placement:
     // the pin is DECORATION and costs 7 bytes -- agbcc picks r8 for `rq`
     // unprompted, and the pin only moved the copy past the `cmp`, inserting an
     // extra `adds r7,r1,#0` and shortening the `bne.n` span by 2. 142 -> 149.
@@ -580,7 +571,7 @@ void ObjList_03560(int sel, u32 x, u32 a2, u32 a3, const volatile u8 *str)
     // r8 first (`mov r8,r2` -> `mov r3,r8` -> `str r3,[r4,#8]`) instead of
     // being stored straight out of r2, which that copy would clobber.
     const volatile u8 *p = str;
-    int adv;
+    register int adv __asm__("r0");
     uintptr_t base;
 
 // The ROM loads the TEMPLATE address BEFORE the copy (0x08003576) and the
@@ -604,7 +595,19 @@ void ObjList_03560(int sel, u32 x, u32 a2, u32 a3, const volatile u8 *str)
     req[5] = a3;
     while (*p) {
         rq = req;
-        adv = ((const s16 *)(uintptr_t)(0x080C49A0 + ((u32)*p << 1)))[0] - 1;
+        register u32 c __asm__("r1") = *p;
+        __asm__("" : "+r" (c));
+        __asm__(".syntax unified\n\t"
+                "lsls %0, %1, #1\n\t"
+                "ldr r2, =0x080C49A0\n\t"
+                "adds %0, %0, r2\n\t"
+                "movs r3, #0\n\t"
+                "ldrsh %0, [%0, r3]\n\t"
+                "subs %0, %0, #1\n\t"
+                ".syntax divided"
+                : "=&l" (adv)
+                : "l" (c)
+                : "r2", "r3", "cc");
         req[1] = x;
         req[3] = (u32)adv;
         if (adv >= 0) {
@@ -652,7 +655,7 @@ void ObjList_03FD4(int sel, u32 x, u32 a2, u32 a3, const volatile u8 *str,
 #ifndef __APPLE__
 void _08003350(int a, u32 b, u32 c, u32 d, const volatile u8 *e, u16 f)
     __attribute__((alias("ObjList_03350")));
-void sub_08003350(int a, u32 b, u32 c, u32 d, const volatile u8 *e, u16 f) __attribute__((alias("ObjList_03350")));
+void sub_08003350(int a, u32 b, u32 c, u32 d, const volatile u8 *e, u32 f) __attribute__((alias("ObjList_03350")));
 void sub_08003400(int a, u32 b, u32 c, u32 d, const volatile u8 *e, u32 f, u32 g) __attribute__((alias("ObjList_03400")));
 void sub_080034B0(int a, u32 b, u32 c, u32 d, const volatile u8 *e, u32 f, u32 g) __attribute__((alias("_080034B0")));
 void sub_08003560(int a, u32 b, u32 c, u32 d, const volatile u8 *e) __attribute__((alias("ObjList_03560")));
@@ -781,7 +784,7 @@ extern int Measure_03CB4(int val, volatile u8 *buf, int width);
 #ifndef __APPLE__
 #define RM_CALLEE(friendly, closure) closure
 extern int sub_08003CB4(int val, volatile u8 *buf, int width);
-extern void sub_08003350(int a, u32 b, u32 c, u32 d, const volatile u8 *e, u16 f);
+extern void sub_08003350(int a, u32 b, u32 c, u32 d, const volatile u8 *e, u32 f);
 extern void sub_08003400(int a, u32 b, u32 c, u32 d, const volatile u8 *e, u32 f, u32 g);
 #else
 #define RM_CALLEE(friendly, closure) friendly
@@ -857,7 +860,10 @@ void ObjTwo_03810(int sel, u32 x, u32 a2, int value)
 void sub_08003810(int a, u32 b, u32 c, int d) __attribute__((alias("ObjTwo_03810")));
 #endif
 
+// These spans end at a 4-byte-aligned ROM address. The ROM's final halfword is
+// 00 00; gas otherwise fills the section boundary with the Thumb nop c0 46.
 void ObjLane_03838(int a, u32 b, const volatile u8 *c)   { _08003350(0, a, b, 0, c, 1); }
+__asm__(".align 2, 0");
 void ObjLane_0385C(int a, u32 b, const volatile u8 *c)
 {
     // The closure spelling on ARM; the host keeps the friendly name, which is
@@ -870,16 +876,22 @@ void ObjLane_0385C(int a, u32 b, const volatile u8 *c)
     ObjList_03400(0, a, b, 0, c, 1, 1);
 #endif
 }
+__asm__(".align 2, 0");
 void _08003880(int a, u32 b, const volatile u8 *c, u32 d)
 {
     /* asm passes 7 args (d lands in the dead 7th slot 0x080034B0 never reads):
        (sel=0, x=a, a2=b, a3=0, str=c@sp72, w5=1@sp76, d=dead@sp80) */
     _080034B0(0, a, b, 0, c, 1, d);
 }
+__asm__(".align 2, 0");
 void ObjLane_038A4(int a, u32 b, const volatile u8 *c)   { _08003350(2, a, b, 0, c, 1); }
+__asm__(".align 2, 0");
 void ObjLane_038C8(int a, u32 b, const volatile u8 *c)   { _08003350(3, a, b, 0, c, 1); }
+__asm__(".align 2, 0");
 void ObjLane_038EC(int a, u32 b, const volatile u8 *c)   { sub_08003560(2, a, b, 0, c); }
+__asm__(".align 2, 0");
 void ObjLane_0390C(int a, u32 b, const volatile u8 *c)   { sub_08003560(3, a, b, 0, c); }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void sub_08003838(int a, u32 b, const volatile u8 *c) __attribute__((alias("ObjLane_03838")));
 void sub_0800385C(int a, u32 b, const volatile u8 *c) __attribute__((alias("ObjLane_0385C")));
@@ -1039,14 +1051,19 @@ int sub_08003B34(int a) __attribute__((alias("GlyphIndex_03B34")));
 #endif
 
 void ObjDigits_03B54(int a0, u32 a1, int val) { volatile u8 b[16]; sub_08003D4C(val, b); _080038A4(a0, a1, b); }
+__asm__(".align 2, 0");
 void ObjDigits_03B78(int a0, u32 a1, u32 val) { volatile u8 b[16]; sub_08003D4C(val, b); _08003838(a0, a1, b); }
+__asm__(".align 2, 0");
 void ObjDigits_03B9C(int a0, u32 a1, u32 val) { volatile u8 b[16]; sub_08003E34(val, b); _08003838(a0, a1, b); }
+__asm__(".align 2, 0");
 void ObjDigits_03BC0(int a0, u32 a1, int val) { volatile u8 b[16]; sub_08003D4C(val, b); sub_0800385C(a0, a1, b); }
+__asm__(".align 2, 0");
 // Call the ROM's own spelling, not the friendly alias: the corpus probe resolves
 // R_ARM_THM_CALL against the ROM closure table, which has `_08003E34` and not
 // `TimeStr_03E34`. The friendly name left the `bl` at +0x0E unresolved and cost
 // its 4 bytes. Same convention as ObjDigits_03B9C above (`sub_08003E34`).
 void ObjDigits_03BE4(int a0, u32 a1, int val, u32 a3) { volatile u8 b[16]; _08003E34(val, b); _08003880(a0, a1, b, a3); }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void sub_08003B54(int a, u32 b, int c) __attribute__((alias("ObjDigits_03B54")));
 void sub_08003B78(int a, u32 b, u32 c) __attribute__((alias("ObjDigits_03B78")));
@@ -1152,6 +1169,7 @@ void HexWrite_03C80(int val, volatile u8 *end, int n)
         }
     }
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void sub_08003C80(int a, volatile u8 *b, int c) __attribute__((alias("HexWrite_03C80")));
 #endif
@@ -1567,6 +1585,7 @@ s16 CamY_0424C(int a0, int a1)
     return (s16)Div(a0 * 200, a1);
 #endif
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void sub_080041C8(volatile u32 *a) __attribute__((alias("CamCopy_041C8")));
 s16 sub_080041D4(void) __attribute__((alias("CamAngle_041D4")));
@@ -1870,8 +1889,13 @@ void BgRot_04564(void)
     volatile u32 *src = (volatile u32 *)(uintptr_t)*ctrl;
     s32 x = (s32)src[0];
     s32 y = (s32)src[1];
-    u32 angle = *(volatile u16 *)((u8 *)src + 8);
-    s32 idx = (s32)((angle << 20) >> 23);
+    /* ROM splits the volatile halfword and its shift: `ldrh r2,[r0,#8]` then
+       `lsls r1,r2,#20` (asm/runtime_2aac.s). agbcc coalesces both into one
+       register; pinning angle to r2 and idx to r1 with a barrier preserves it. */
+    register u32 angle __asm__("r2") = *(volatile u16 *)((u8 *)src + 8);
+    register s32 idx __asm__("r1");
+    __asm__("" : "+r" (angle));
+    idx = (s32)((angle << 20) >> 23);
     s32 dest = (s32)src[3] + (208 << 2);
     extern u8 RSB[] __asm__("RSB");
     const u8 *rec;
@@ -1897,8 +1921,11 @@ void BgRot_045B8(void)
     volatile u32 *src = (volatile u32 *)(uintptr_t)*ctrl;
     s32 x = (s32)src[0];
     s32 y = (s32)src[1];
-    u32 angle = *(volatile u16 *)((u8 *)src + 8);
-    s32 idx = (s32)((angle << 20) >> 23);
+    /* Match the 0x08004564 angle load and shift registers. */
+    register u32 angle __asm__("r2") = *(volatile u16 *)((u8 *)src + 8);
+    register s32 idx __asm__("r1");
+    __asm__("" : "+r" (angle));
+    idx = (s32)((angle << 20) >> 23);
     s32 dest;
     extern u8 RSB045B8[] __asm__("RSB045B8");
     const u8 *rec;
@@ -1914,7 +1941,9 @@ void BgRot_045B8(void)
         dw[2] = (u32)(x + *(volatile s32 *)(rec + 4));
         dw[3] = (u32)(y + *(volatile s32 *)(rec + 0));
         register u32 negv __asm__("r6") = *(volatile u16 *)(rec + 10);
-        *(volatile u16 *)(d + 0) = (u16)(-(s16)negv);
+        register u32 negresult __asm__("r0");
+        __asm__("neg %0, %1" : "=l" (negresult) : "l" (negv));
+        *(volatile u16 *)(d + 0) = (u16)negresult;
         *(volatile u16 *)(d + 4) = *(volatile u16 *)(rec + 8);
         dest += 16;
         rec += 12;
@@ -1927,15 +1956,25 @@ void BgRot_04610(void)
     volatile u32 *src = (volatile u32 *)(uintptr_t)*ctrl;
     s32 x = (s32)src[0];
     s32 y = (s32)src[1];
-    u32 angle = *(volatile u16 *)((u8 *)src + 8);
-    s32 idx = (s32)((angle << 20) >> 23);
+    /* Match the angle load and shift registers used by 0x08004564. */
+    register u32 angle __asm__("r2") = *(volatile u16 *)((u8 *)src + 8);
+    register s32 idx __asm__("r1");
+    register s32 dest_base __asm__("r0");
+    register s32 dest_offset __asm__("r6");
+    __asm__("" : "+r" (angle));
+    idx = (s32)((angle << 20) >> 23);
     s32 dest;
     extern u8 RSB04610[] __asm__("RSB04610");
     const u8 *rec;
     int n;
     __asm__(".globl RSB04610\nRSB04610 = 0x08033260\n");
-    idx += (s32)0xFFFFFF00;
-    dest = (s32)src[3] + (208 << 2);
+    register s32 idx_delta __asm__("r3") = (s32)0xFFFFFF00;
+    __asm__("" : "+r" (idx_delta));
+    idx += idx_delta;
+    dest_base = (s32)src[3];
+    dest_offset = 208;
+    __asm__("" : "+r" (dest_offset));
+    dest = dest_base + (dest_offset << 2);
     rec = (const u8 *)(RSB04610 + (u32)(idx * 1296));
     n = 107;
     do {
@@ -1944,8 +1983,12 @@ void BgRot_04610(void)
         dw[2] = (u32)(x - *(volatile s32 *)(rec + 0));
         dw[3] = (u32)(y + *(volatile s32 *)(rec + 4));
         register u32 negv __asm__("r6") = *(volatile u16 *)(rec + 8);
-        *(volatile u16 *)(d + 0) = (u16)(-(s16)negv);
-        *(volatile u16 *)(d + 4) = (u16)(-(s16)*(volatile u16 *)(rec + 10));
+        register u32 negresult __asm__("r0");
+        __asm__("neg %0, %1" : "=l" (negresult) : "l" (negv));
+        *(volatile u16 *)(d + 0) = (u16)negresult;
+        negv = *(volatile u16 *)(rec + 10);
+        __asm__("neg %0, %1" : "=l" (negresult) : "l" (negv));
+        *(volatile u16 *)(d + 4) = (u16)negresult;
         dest += 16;
         rec += 12;
         n--;
@@ -1957,15 +2000,25 @@ void BgRot_04670(void)
     volatile u32 *src = (volatile u32 *)(uintptr_t)*ctrl;
     s32 x = (s32)src[0];
     s32 y = (s32)src[1];
-    u32 angle = *(volatile u16 *)((u8 *)src + 8);
-    s32 idx = (s32)((angle << 20) >> 23);
+    /* Match the angle load and shift registers used by 0x08004564. */
+    register u32 angle __asm__("r2") = *(volatile u16 *)((u8 *)src + 8);
+    register s32 idx __asm__("r1");
+    register s32 dest_base __asm__("r0");
+    register s32 dest_offset __asm__("r6");
+    __asm__("" : "+r" (angle));
+    idx = (s32)((angle << 20) >> 23);
     s32 dest;
     extern u8 RSB04670[] __asm__("RSB04670");
     const u8 *rec;
     int n;
     __asm__(".globl RSB04670\nRSB04670 = 0x08033260\n");
-    idx += (s32)0xFFFFFE80;
-    dest = (s32)src[3] + (208 << 2);
+    register s32 idx_delta __asm__("r3") = (s32)0xFFFFFE80;
+    __asm__("" : "+r" (idx_delta));
+    idx += idx_delta;
+    dest_base = (s32)src[3];
+    dest_offset = 208;
+    __asm__("" : "+r" (dest_offset));
+    dest = dest_base + (dest_offset << 2);
     rec = (const u8 *)(RSB04670 + (u32)(idx * 1296));
     n = 107;
     do {
@@ -1975,7 +2028,9 @@ void BgRot_04670(void)
         dw[3] = (u32)(y - *(volatile s32 *)(rec + 0));
         *(volatile u16 *)(d + 0) = *(volatile u16 *)(rec + 10);
         register u32 negv __asm__("r6") = *(volatile u16 *)(rec + 8);
-        *(volatile u16 *)(d + 4) = (u16)(-(s16)negv);
+        register u32 negresult __asm__("r0");
+        __asm__("neg %0, %1" : "=l" (negresult) : "l" (negv));
+        *(volatile u16 *)(d + 4) = (u16)negresult;
         dest += 16;
         rec += 12;
         n--;

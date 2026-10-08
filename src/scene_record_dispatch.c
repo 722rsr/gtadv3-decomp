@@ -1818,6 +1818,7 @@ void sub_08007B18(void *rec, int kind, int dx, int dy,
 // 0x0800BC04 — 2B `bx lr` no-op (menu_bc04.s tail slot; caller at
 // :355 is the same sequence, which the ROM proves does nothing).
 void MenuNoop_BC04(void) {}
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _0800BC04(void) __attribute__((alias("MenuNoop_BC04")));
 void sub_0800BC04(void) __attribute__((alias("MenuNoop_BC04")));

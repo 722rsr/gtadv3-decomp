@@ -391,6 +391,7 @@ int Idle_22C0_IsMode1(void) { return _08001F3C(); }
 #else
 int Idle_22C0_IsMode1(void) { return Idle_IsMode1(); }
 #endif
+__asm__(".align 2, 0");
 
 // 0x08002298 — 20B: `B = *(u32*)0x030000F4; u8[B+1] = 1; r0 = s16[B+8];
 // _08001F80(r0); _08001F08(rec)` ((consolidated/elsewhere): state-block-B arm — mark

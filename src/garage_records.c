@@ -202,6 +202,7 @@ void _0800280AC(void *rec) {
     if (v <= 0)
         *cell = 0;
 }
+__asm__(".align 2, 0");
 
 // ----------------------------------------------------------------------------
 // 0x080280C0 — byte-identical twin of 0x080280AC.
@@ -213,6 +214,7 @@ void _0800280C0(void *rec) {
     if (v <= 0)
         *cell = 0;
 }
+__asm__(".align 2, 0");
 
 // ----------------------------------------------------------------------------
 // 0x08028250 — plain decrement on [rec+4] (no clamp).
@@ -2291,8 +2293,8 @@ void _08002AD14(void *dst, void *spec) {
 void RecordSetter_2B80C(void *a, u32 b, u32 c, u32 d) {
     volatile u32 *p = *(volatile u32 *volatile *)((volatile u8 *)a + 8);
     p[0] = b; p[1] = c; p[2] = d;
-    __asm__(".align 2, 0");
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _0802B80C(void *a, u32 b, u32 c, u32 d) __attribute__((alias("RecordSetter_2B80C")));
 void sub_0802B80C(void *a, u32 b, u32 c, u32 d) __attribute__((alias("RecordSetter_2B80C")));

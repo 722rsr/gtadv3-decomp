@@ -20,7 +20,7 @@ $(BUILD):
 # Both code and data includes are inputs to the reference object.
 ASM_SOURCES := $(wildcard asm/*.s) $(wildcard asm/*.inc) $(wildcard asm/macros/*.inc)
 
-$(BUILD)/rom.o: asm/rom.s $(ASM_SOURCES) baserom.gba | $(BUILD)
+$(BUILD)/rom.o: asm/rom.s $(ASM_SOURCES) baserom.gba $(BUILD)/data/variant_palette.bin $(BUILD)/data/mto_group0.bin $(BUILD)/data/theme_lut_a.bin $(BUILD)/data/theme_palette.bin $(BUILD)/data/scenery_table.bin $(BUILD)/data/surface_tile.bin $(BUILD)/data/variant_overlay.bin $(BUILD)/data/surface_map.bin $(BUILD)/data/theme_texture.bin $(BUILD)/data/big_gfx.bin $(BUILD)/data/minimap.bin $(BUILD)/data/early_data.bin $(BUILD)/data/mid_gap.bin $(BUILD)/data/blob_field.bin $(BUILD)/data/tail_end.bin | $(BUILD)
 	$(AS) $(ASFLAGS) $< -o $@
 
 $(BUILD)/rom.elf: $(BUILD)/rom.o ldscript.ld
@@ -57,8 +57,108 @@ $(CODEBUILD):
 $(CODEBUILD)/code.o: asm/code.s $(ASM_SOURCES) | $(CODEBUILD)
 	$(AS) $(ASFLAGS) asm/code.s -o $@
 
-$(CODEBUILD)/data.o: asm/data_tail.s baserom.gba | $(CODEBUILD)
+$(CODEBUILD)/data.o: asm/data_tail.s baserom.gba $(BUILD)/data/variant_palette.bin $(BUILD)/data/mto_group0.bin $(BUILD)/data/theme_lut_a.bin $(BUILD)/data/theme_palette.bin $(BUILD)/data/scenery_table.bin $(BUILD)/data/surface_tile.bin $(BUILD)/data/variant_overlay.bin $(BUILD)/data/surface_map.bin $(BUILD)/data/theme_texture.bin $(BUILD)/data/big_gfx.bin $(BUILD)/data/minimap.bin $(BUILD)/data/early_data.bin $(BUILD)/data/mid_gap.bin $(BUILD)/data/blob_field.bin $(BUILD)/data/tail_end.bin | $(CODEBUILD)
 	$(AS) $(ASFLAGS) asm/data_tail.s -o $@
+
+# Private extraction input -> editable palette fields -> verified data bytes.
+# Extraction never overwrites existing edits. Remove the private JSON explicitly
+# to re-extract; a modified palette fails the byte gate without being discarded.
+$(BUILD)/data/variant_palette.json: baserom.gba tools/data_regions.json tools/data_regions.py tools/track_dump.py
+	@python3 tools/data_regions.py --extract variant_palette
+
+$(BUILD)/data/variant_palette.bin: $(BUILD)/data/variant_palette.json tools/data_regions.py tools/data_regions.json
+	@python3 tools/data_regions.py --generate variant_palette
+
+# Private extraction input -> editable course records -> verified data bytes.
+# Same no-overwrite and byte-gate policy as the palette family.
+$(BUILD)/data/mto_group0.json: baserom.gba tools/data_regions.json tools/data_regions.py tools/track_dump.py
+	@python3 tools/data_regions.py --extract mto_group0
+
+$(BUILD)/data/mto_group0.bin: $(BUILD)/data/mto_group0.json tools/data_regions.py tools/data_regions.json
+	@python3 tools/data_regions.py --generate mto_group0
+
+# Private extraction inputs -> editable raw MTO records -> verified data bytes.
+$(BUILD)/data/theme_lut_a.json: baserom.gba tools/data_regions.json tools/data_regions.py tools/track_dump.py
+	@python3 tools/data_regions.py --extract theme_lut_a
+
+$(BUILD)/data/theme_lut_a.bin: $(BUILD)/data/theme_lut_a.json tools/data_regions.py tools/data_regions.json
+	@python3 tools/data_regions.py --generate theme_lut_a
+
+$(BUILD)/data/theme_palette.json: baserom.gba tools/data_regions.json tools/data_regions.py tools/track_dump.py
+	@python3 tools/data_regions.py --extract theme_palette
+
+$(BUILD)/data/theme_palette.bin: $(BUILD)/data/theme_palette.json tools/data_regions.py tools/data_regions.json
+	@python3 tools/data_regions.py --generate theme_palette
+
+$(BUILD)/data/scenery_table.json: baserom.gba tools/data_regions.json tools/data_regions.py tools/track_dump.py
+	@python3 tools/data_regions.py --extract scenery_table
+
+$(BUILD)/data/scenery_table.bin: $(BUILD)/data/scenery_table.json tools/data_regions.py tools/data_regions.json
+	@python3 tools/data_regions.py --generate scenery_table
+
+$(BUILD)/data/surface_tile.json: baserom.gba tools/data_regions.json tools/data_regions.py tools/track_dump.py
+	@python3 tools/data_regions.py --extract surface_tile
+
+$(BUILD)/data/surface_tile.bin: $(BUILD)/data/surface_tile.json tools/data_regions.py tools/data_regions.json
+	@python3 tools/data_regions.py --generate surface_tile
+
+$(BUILD)/data/variant_overlay.json: baserom.gba tools/data_regions.json tools/data_regions.py tools/track_dump.py
+	@python3 tools/data_regions.py --extract variant_overlay
+
+$(BUILD)/data/variant_overlay.bin: $(BUILD)/data/variant_overlay.json tools/data_regions.py tools/data_regions.json
+	@python3 tools/data_regions.py --generate variant_overlay
+
+$(BUILD)/data/surface_map.json: baserom.gba tools/data_regions.json tools/data_regions.py tools/track_dump.py
+	@python3 tools/data_regions.py --extract surface_map
+
+$(BUILD)/data/surface_map.bin: $(BUILD)/data/surface_map.json tools/data_regions.py tools/data_regions.json
+	@python3 tools/data_regions.py --generate surface_map
+
+$(BUILD)/data/theme_texture.json: baserom.gba tools/data_regions.json tools/data_regions.py tools/track_dump.py
+	@python3 tools/data_regions.py --extract theme_texture
+
+$(BUILD)/data/theme_texture.bin: $(BUILD)/data/theme_texture.json tools/data_regions.py tools/data_regions.json
+	@python3 tools/data_regions.py --generate theme_texture
+
+$(BUILD)/data/big_gfx.json: baserom.gba tools/data_regions.json tools/data_regions.py tools/track_dump.py
+	@python3 tools/data_regions.py --extract big_gfx
+
+$(BUILD)/data/big_gfx.bin: $(BUILD)/data/big_gfx.json tools/data_regions.py tools/data_regions.json
+	@python3 tools/data_regions.py --generate big_gfx
+
+$(BUILD)/data/minimap.json: baserom.gba tools/data_regions.json tools/data_regions.py tools/track_dump.py
+	@python3 tools/data_regions.py --extract minimap
+
+$(BUILD)/data/minimap.bin: $(BUILD)/data/minimap.json tools/data_regions.py tools/data_regions.json
+	@python3 tools/data_regions.py --generate minimap
+
+$(BUILD)/data/early_data.json: baserom.gba tools/data_regions.json tools/data_regions.py tools/track_dump.py
+	@python3 tools/data_regions.py --extract early_data
+
+$(BUILD)/data/early_data.bin: $(BUILD)/data/early_data.json tools/data_regions.py tools/data_regions.json
+	@python3 tools/data_regions.py --generate early_data
+
+$(BUILD)/data/mid_gap.json: baserom.gba tools/data_regions.json tools/data_regions.py tools/track_dump.py
+	@python3 tools/data_regions.py --extract mid_gap
+
+$(BUILD)/data/mid_gap.bin: $(BUILD)/data/mid_gap.json tools/data_regions.py tools/data_regions.json
+	@python3 tools/data_regions.py --generate mid_gap
+
+$(BUILD)/data/blob_field.json: baserom.gba tools/data_regions.json tools/data_regions.py tools/track_dump.py
+	@python3 tools/data_regions.py --extract blob_field
+
+$(BUILD)/data/blob_field.bin: $(BUILD)/data/blob_field.json tools/data_regions.py tools/data_regions.json
+	@python3 tools/data_regions.py --generate blob_field
+
+$(BUILD)/data/tail_end.json: baserom.gba tools/data_regions.json tools/data_regions.py tools/track_dump.py
+	@python3 tools/data_regions.py --extract tail_end
+
+$(BUILD)/data/tail_end.bin: $(BUILD)/data/tail_end.json tools/data_regions.py tools/data_regions.json
+	@python3 tools/data_regions.py --generate tail_end
+
+.PHONY: data-check
+data-check: all code-objects
+	@python3 tools/data_regions.py --check
 
 # Fast static audits and tool regression checks.
 # The independent byte comparison is provided by matching-slice/matching-ready.
@@ -157,6 +257,7 @@ matching-slice: code-objects
 
 # Resolve probe symbols from a freshly assembled code object.
 matching-ready: all code-objects
+	@$(MAKE) data-check
 	@python3 tools/agbcc_c89_transform.py --self-test
 	@python3 tools/agbcc_c89_transform.py --out build/era-corpus/c89/generated --json build/era-corpus/c89/transform_report.json
 	@python3 tools/c89_equivalence.py --json build/era-corpus/c89/equivalence_report.json
@@ -221,6 +322,7 @@ ci-check: progress-check
 	@python3 tools/agbcc_c89_transform.py --self-test
 	@python3 tools/test_matching_assist.py
 	@python3 tools/test_decomp_report.py
+	@python3 tools/test_data_regions.py
 	@python3 tools/test_makefile.py
 
 progress-check:

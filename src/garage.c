@@ -112,6 +112,7 @@ extern void sub_08002ED0(void *a, int b, int c, int d, int e, int f, int g, int 
 void Garage_FC4(int a0, void *a1, int a2, int a3, int a4, int a5) {
     sub_08002ED0(a1, a2, a0, a3, a4, 3, 1, a5, 0, 1);
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void sub_080026FC4(int a0, void *a1, int a2, int a3, int a4, int a5) __attribute__((alias("Garage_FC4")));
 void _080026FC4(int a0, void *a1, int a2, int a3, int a4, int a5) __attribute__((alias("Garage_FC4")));
@@ -685,6 +686,7 @@ void Garage_2823C(void *a){
     *p = 6;
     sub_08004B90(sub_08004B68());
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _08002823C(void *a) __attribute__((alias("Garage_2823C")));
 void sub_08002823C(void *a) __attribute__((alias("Garage_2823C")));
@@ -996,6 +998,7 @@ void Garage_28734(void){
     extern void _08001818(void);
     _08001818();
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _080028734(void) __attribute__((alias("Garage_28734")));
 void sub_080028734(void) __attribute__((alias("Garage_28734")));
@@ -1026,6 +1029,7 @@ void Garage_28828(void){
     extern void _080028784(void);
     _080028784();
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _080028828(void) __attribute__((alias("Garage_28828")));
 void sub_080028828(void) __attribute__((alias("Garage_28828")));
@@ -1038,6 +1042,7 @@ void Garage_289C0(void *rec){
     u16 v = *(volatile u16*)((u8*)rec + 16);
     _08001E48(0, v);
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _0800289C0(void *a) __attribute__((alias("Garage_289C0")));
 void sub_0800289C0(void *a) __attribute__((alias("Garage_289C0")));
@@ -1062,6 +1067,7 @@ void Garage_29218(void){
     extern void _08004BD8(void);
     _08004BD8();
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _080029218(void) __attribute__((alias("Garage_29218")));
 void sub_080029218(void) __attribute__((alias("Garage_29218")));
@@ -1129,6 +1135,7 @@ void Garage_28888(int a, int b, int flag){
         _08004EC0(1);
     }
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _080028888(int a,int b,int c) __attribute__((alias("Garage_28888")));
 void sub_080028888(int a,int b,int c) __attribute__((alias("Garage_28888")));

@@ -21,7 +21,8 @@ independent link still depends on.
 | Reconstructed assembly bytes | `188760` |
 | Raw executable bytes | `0` |
 | Raw header bytes | `0` |
-| Cataloged data-tail bytes | `7873388` |
+| Cataloged data-tail bytes | `0` |
+| Verified generated data bytes | `7873388` |
 | Zero padding bytes | `326460` |
 | Direct `.incbin` spans | `1` |
 | Included assembly source files | `266` |
@@ -38,7 +39,7 @@ independent link still depends on.
 
 | File offset | VMA range | Size | Class | Status | Source | Strict |
 |---|---|---:|---|---|---|---|
-| `0x02E158..0x800000` | `0x0802E158..0x08800000` | `8199848` | asset-data+padding | private-rom-data-input | `asm/data_tail.s:21` | no |
+| `0x7B04C4..0x800000` | `0x087B04C4..0x08800000` | `326460` | padding | owned-zero-padding | `asm/data_tail.s:144` | no |
 
 The large tail is data/assets through the documented content end, followed by verified zero padding.
 
@@ -320,7 +321,7 @@ has already been replaced by C; C-lift coverage remains a separate gate.
 
 - `0x002E158..0x7B04C4` is the cataloged ROM data/asset tail; its SHA-256 is `8e135cf22b048efcd719457e95e400fec0131d9f38d0314a1c60520e9e03babc`.
 - `0x7B04C4..0x800000` is padding; non-zero byte count is `0`.
-- Data/header inputs are allowed for the reference build and are reported as private reference inputs; they still need extraction/generation steps before an independent build can consume them.
+- Remaining raw data inputs still need reviewed extraction/generation steps. Verified generated regions are listed separately above; see `docs/data-integration.md`.
 
 ## Method and limitations
 

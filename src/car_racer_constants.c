@@ -68,6 +68,7 @@ int sub_0800A1BC(void *) __attribute__((alias("CarRacer_Return49b")));
 // 0x08022D20 (4 B) = bx lr;.hword 0x0000  — no-op stub called from
 //                      race phase 12 by Code22C0C_Dispatch; safe to lift.
 void CarRacer_NoOp22D20(void *ctx) { (void)ctx; }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _08022D20(void *) __attribute__((alias("CarRacer_NoOp22D20")));
 void sub_08022D20(void *) __attribute__((alias("CarRacer_NoOp22D20")));
@@ -76,6 +77,7 @@ void sub_08022D20(void *) __attribute__((alias("CarRacer_NoOp22D20")));
 // 0x08023144 (4 B) = bx lr;.hword 0x0000  — no-op stub called from
 //                      Code23114_Dispatch.
 void CarRacer_NoOp23144(void *ctx) { (void)ctx; }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _08023144(void *) __attribute__((alias("CarRacer_NoOp23144")));
 void sub_08023144(void *) __attribute__((alias("CarRacer_NoOp23144")));

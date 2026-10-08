@@ -55,6 +55,7 @@ void Code2534_ByteCopy(const uint8_t *src, uint8_t *dst, uint32_t len){
         } while (--len);
     }
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void sub_08002534(const uint8_t *src, uint8_t *dst, uint32_t len) __attribute__((alias("Code2534_ByteCopy")));
 void _08002534(const uint8_t *src, uint8_t *dst, uint32_t len) __attribute__((alias("Code2534_ByteCopy")));

@@ -38,6 +38,7 @@ void sub_0802BE78(void) __attribute__((alias("SoundPump")));
 
 // _0802C53C thunk -> mixer
 void SoundThunk(void){ sub_0802B898(); }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _0802C53C(void) __attribute__((alias("SoundThunk")));
 void sub_0802C53C(void) __attribute__((alias("SoundThunk")));

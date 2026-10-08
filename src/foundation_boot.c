@@ -166,6 +166,7 @@ void VBlankHandler(void) { // _08000268
 void _08000268(void) __attribute__((alias("VBlankHandler")));
 #endif
 void VCounterHandler(void) { BOOT_CALL_SOUND_SEQ(); }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _0800025C(void) __attribute__((alias("VCounterHandler")));
 #endif

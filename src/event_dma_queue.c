@@ -202,6 +202,7 @@ void *NodePair_05080(void *arena, const void *src) {
     n[2] = (u32)(uintptr_t)ArenaConsume(arena, *(volatile u32 *)((const u8 *)src + 4));
     return (void *)(uintptr_t)n;
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void *_08005080(void *a, const void *b) __attribute__((alias("NodePair_05080")));
 void *sub_08005080(void *a, const void *b) __attribute__((alias("NodePair_05080")));
@@ -636,6 +637,7 @@ void ObjQueueSoftReset(volatile u8 *rec) {
     *(volatile u16 *)(rec + 2) = 0;
     *(volatile u32 *)(rec + 12) = *(volatile u32 *)(rec + 8);
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _080055CC(volatile u8 *a) __attribute__((alias("ObjQueueSoftReset")));
 void sub_080055CC(volatile u8 *a) __attribute__((alias("ObjQueueSoftReset")));

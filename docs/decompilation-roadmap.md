@@ -13,12 +13,14 @@ The independent executable slice covers ROM VMA `0x08000000–0x0802E158`
 (file offsets `0x000000–0x02E158`), or 188,760 bytes. It contains reconstructed
 assembly and the C functions selected by
 [`matching_slice_functions.json`](../tools/matching_slice_functions.json).
-The manifest selects 1,011 functions covering 42,768 bytes. `make matching-ready`
+The manifest selects 1,017 functions covering 43,272 bytes. `make matching-ready`
 checks this mixed C/assembly slice against the reference and verifies that a
 deliberately changed instruction fails the comparison.
 
-The remaining work is C reconstruction and matching, use of the independent C
-link for the complete ROM, and reconstruction of the data tail. See the
+The remaining work is C reconstruction and matching and use of the independent C
+link for the complete ROM. All cataloged data through content end `0x7B04C4`
+(7,873,388 bytes; padding excluded) now uses
+[verified generator inputs](data-integration.md). See the
 [ownership map](code_data_ownership.md), [compiler documentation](compiler_status.md),
 and [build verification guide](matching_workflow.md).
 

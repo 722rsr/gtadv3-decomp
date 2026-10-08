@@ -470,6 +470,7 @@ void Sprite_UnlinkSlot(void *mgr) {
     void *x = *(void **)((u8 *)mgr + 8);
     sub_080262A4(*(void **)((u8 *)x + 92));
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _08026938(void *a) __attribute__((alias("Sprite_UnlinkSlot")));
 void sub_08026938(void *a) __attribute__((alias("Sprite_UnlinkSlot")));

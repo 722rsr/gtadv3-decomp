@@ -450,6 +450,7 @@ void _080023220(void *a) __attribute__((alias("Code23220_Constructor")));
 // `bx lr` + a pad halfword. It ignores every register (the dispatcher's
 // `bl 0x80235F0` at 0x0802361E has r0 = ctx, which the callee never reads).
 void Code235F0_NoOp(void) {}
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _080235F0(void) __attribute__((alias("Code235F0_NoOp")));
 void sub_080235F0(void) __attribute__((alias("Code235F0_NoOp")));

@@ -111,6 +111,7 @@ void _0802135C(void *a, void *b) __attribute__((alias("CarPhysRacer_MarkScene"))
 #endif
 
 void CarPhysRacer_Nop(void){}
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _08021370(void) __attribute__((alias("CarPhysRacer_Nop")));
 #endif

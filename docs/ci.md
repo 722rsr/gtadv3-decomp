@@ -38,8 +38,11 @@ Code progress counts only selected C-owned spans that passed the independent
 link, including any padding within those spans. Its conservative denominator
 is the entire 188,760-byte executable slice, including startup, header, literal
 pools, and alignment. Reconstructed assembly alone receives no C-match credit.
-The remaining 8,199,848 bytes are reported as unmatched data, including trailing
-ROM padding. This is not a claim that the full independent C ROM is complete.
+The data denominator is 8,199,848 bytes, including trailing ROM padding.
+Verified generated regions from `tools/data_regions.json` receive data credit
+only when the ownership audit records the same registered range and generator
+input. The first region covers [280 palette bytes](data-integration.md); all
+remaining reference-backed data and padding stay unmatched. This is not a claim that the full independent C ROM is complete.
 
 The report uses the audited ownership map to group the entire executable slice
 by assembly source region. Every byte contributes to its region's area, including

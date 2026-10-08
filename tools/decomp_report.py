@@ -6,6 +6,8 @@ import json
 from pathlib import Path
 import subprocess
 
+import data_regions
+
 ROOT = Path(__file__).resolve().parents[1]
 REPORT = Path('docs/data/report.json')
 STAMP = Path('docs/data/report-inputs.json')
@@ -33,16 +35,18 @@ def inputs(root):
             and p.name != '.DS_Store' and '__pycache__' not in p.parts}
 
 
-def measures(code=0, matched=0, data=0):
+def measures(code=0, matched=0, data=0, matched_data=0):
     percent = 100.0 * matched / code if code else 0.0
-    return {'fuzzy_match_percent': percent,
+    data_percent = 100.0 * matched_data / data if data else 0.0
+    return {'fuzzy_match_percent': percent if code else data_percent,
             'total_code': str(code), 'matched_code': str(matched),
             'matched_code_percent': percent, 'complete_code': str(matched),
             'complete_code_percent': percent, 'total_data': str(data),
-            'matched_data': '0', 'complete_data': '0'}
+            'matched_data': str(matched_data), 'complete_data': str(matched_data),
+            'matched_data_percent': data_percent, 'complete_data_percent': data_percent}
 
 
-def make_report(manifest, ownership):
+def make_report(manifest, ownership, data_manifest=()):
     # Use the audited ROM partition, not the splice file: some manifest entries
     # replace includes in passthrough.inc but belong to a physical .s region.
     regions = sorted(ownership['segments'], key=lambda row: int(row['start'], 16))
@@ -100,12 +104,30 @@ def make_report(manifest, ownership):
     for name, group in sorted(groups.items()):
         units.append({'name': name, 'measures': measures(group['size'], group['matched']),
                       'functions': group['items']})
-    units.append({'name': 'Unreconstructed data tail (includes ROM padding)',
-                  'measures': measures(data=ROM_SIZE - CODE_SIZE)})
+    credited = 0
+    registered = {(int(row['start'], 16), int(row['end'], 16)): row for row in data_manifest}
+    seen = set()
+    for region in regions:
+        if region['executable'] or region.get('classification') != 'generated-data':
+            continue
+        key = (int(region['start'], 16), int(region['end'], 16))
+        row = registered.get(key)
+        if (row is None or region.get('status') != 'verified-generated-data'
+                or region.get('backing') != row['binary']
+                or region.get('intended_owner') != row['id']):
+            raise ValueError('generated data ownership is not registered and verified')
+        seen.add(key)
+        size = key[1] - key[0]
+        credited += size
+        units.append({'name': row['name'], 'measures': measures(data=size, matched_data=size)})
+    if seen != set(registered):
+        raise ValueError('registered data regions are missing verified ownership')
+    units.append({'name': 'Remaining private data tail (includes ROM padding)',
+                  'measures': measures(data=ROM_SIZE - CODE_SIZE - credited)})
     matched = sum(group['matched'] for group in groups.values())
     # Binary scoring: selected spans contribute 100%, all other bytes 0%.
     # No instruction-similarity claims or aggregate function census are made.
-    return {'version': 2, 'measures': measures(CODE_SIZE, matched, ROM_SIZE - CODE_SIZE),
+    return {'version': 2, 'measures': measures(CODE_SIZE, matched, ROM_SIZE - CODE_SIZE, credited),
             'units': units}
 
 
@@ -124,7 +146,8 @@ def encoded(value):
 def expected_report(root):
     return encoded(make_report(
         json.loads((root / 'tools/matching_slice_functions.json').read_text()),
-        json.loads((root / 'docs/data/code_data_ownership.json').read_text())))
+        json.loads((root / 'docs/data/code_data_ownership.json').read_text()),
+        data_regions.load_regions(root)))
 
 
 def check(root):

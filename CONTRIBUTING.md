@@ -59,6 +59,13 @@ fingerprints. A green CI result does **not** prove that a contributor ran the
 full build. Maintainers should review the evidence and rerun the local gates
 before merging code changes. See [CI and progress reporting](docs/ci.md).
 
+## Data regions
+
+Follow the [data integration guide](docs/data-integration.md) for the first
+working example. Data credit requires a reviewed format, a generator input
+consumed by the build, and byte verification of the complete owned range.
+Keep extracted editable values and binaries private under `build/`.
+
 ## Files and licensing
 
 Do not commit ROMs, extracted assets, save files, compiled binaries, local

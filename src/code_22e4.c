@@ -42,6 +42,7 @@ void _080023AC(int slot, void *handler)
 {
     sub_08002A3C(slot, handler);
 }
+__asm__(".align 2, 0");
 
 // ----------------------------------------------------------------------------
 // 0x080023B8 sub_080023B8 — IRQ table reinstall thunk
@@ -50,6 +51,7 @@ void _080023B8(void)
 {
     sub_08002A80();
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 // asm/code_22e4.s branches to the `sub_` spelling; the body is defined under
 // the `_` spelling, so the splice needs the alias to re-export it (rule 6).
@@ -107,6 +109,7 @@ void Code2424_IrqConfigReset(void)
 {
     CAL_2AAC();
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _08002424(void) __attribute__((alias("Code2424_IrqConfigReset")));
 void sub_08002424(void) __attribute__((alias("Code2424_IrqConfigReset")));

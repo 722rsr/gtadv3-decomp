@@ -358,6 +358,7 @@ void _08001B27C(int unused, u16 key) {
     if (((u32)key & 9u) != 0 && _08018ACC(32u) != 0)
         _08018AA8(2u, 1);
 }
+__asm__(".align 2, 0");
 
 // The 0x0801B27C span carries a twin label pair in the closure
 // (asm/race_scene.s:1803 `sub_08001B27C:` immediately followed by

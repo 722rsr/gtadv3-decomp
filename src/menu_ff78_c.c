@@ -27,15 +27,25 @@
 
 // ---- no-op stubs ----------------------------------------------------------
 void _080012574(volatile void *rec) { (void)rec; }
+__asm__(".align 2, 0");
 void _080012850(void) { }
+__asm__(".align 2, 0");
 void _080012F14(void) { }
+__asm__(".align 2, 0");
 void _0800133E0(void) { }
+__asm__(".align 2, 0");
 void _080013E60(void) { }
+__asm__(".align 2, 0");
 void _080014074(void) { }
+__asm__(".align 2, 0");
 void _0800141A8(void) { }
+__asm__(".align 2, 0");
 void _080014BCC(void) { }
+__asm__(".align 2, 0");
 void _080014C84(void) { }
+__asm__(".align 2, 0");
 void _080015CB0(void) { }
+__asm__(".align 2, 0");
 
 #ifndef __APPLE__
 void sub_080012574(volatile void *rec) __attribute__((alias("_080012574")));

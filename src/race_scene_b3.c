@@ -36,7 +36,7 @@
 // External callees (strong lifts or trampolines).
 HOST_STUB(void _08001D858(void *rec));                                   // 0x08001D858 record-lane reset
 HOST_STUB(int  _08001D750(int a));                                       // 0x08001D750 id remap (s16 result)
-HOST_STUB(void _08001D7B8(void *out, int a, int b, int c));              // 0x08001D7B8 paired-lane solve
+HOST_STUB(unsigned long long _08001D7B8(void *out, int a, int b, int c)); // 0x08001D7B8 paired-lane solve
 HOST_STUB(void _08001DB0C(void));                                        // 0x08001DB0C (asm passes rec in dead r0)
 HOST_STUB(void _08001DB4C(void *rec));                                   // 0x08001DB4C gate leaf
 HOST_STUB(void _08001DC20(void *rec, int x));                            // 0x08001DC20 index clamp + bind

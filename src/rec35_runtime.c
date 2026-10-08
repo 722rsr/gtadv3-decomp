@@ -91,6 +91,7 @@ void _0800164D4(void *a, void *b) __attribute__((alias("Rec35_RecordFlagSetter")
 // _080016508 — bx lr stub. Takes the record because _08001681C slot 11 does
 // `adds r0, r4, #0` before the bl; the stub ignores it.
 void Rec35_BxLrStub(void *a) { (void)a; }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _080016508(void *a) __attribute__((alias("Rec35_BxLrStub")));
 void sub_080016508(void *a) __attribute__((alias("Rec35_BxLrStub")));
@@ -317,6 +318,7 @@ void _080016AD4(void *c) __attribute__((alias("Rec35_Leaf_16AD4")));
 
 // _080016940: bx lr stub
 void Rec35_BxLr_16940(void) {}
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _080016940(void) __attribute__((alias("Rec35_BxLr_16940")));
 void sub_080016940(void) __attribute__((alias("Rec35_BxLr_16940")));
@@ -450,21 +452,25 @@ void _080016F28(void *c) __attribute__((alias("Rec35_Dispatch_16F28")));
 // zero-arg prototype r4 is dead at that point and agbcc folds the +56
 // addend into r4 itself instead of copying then adding.
 void Rec35_BxLr_17D50(void *rec) { (void)rec; }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _080017D50(void *rec) __attribute__((alias("Rec35_BxLr_17D50")));
 void sub_080017D50(void *rec) __attribute__((alias("Rec35_BxLr_17D50")));
 #endif
 void Rec35_BxLr_17F00(void) {}
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _080017F00(void) __attribute__((alias("Rec35_BxLr_17F00")));
 void sub_080017F00(void) __attribute__((alias("Rec35_BxLr_17F00")));
 #endif
 void Rec35_BxLr_18418(void) {}
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _080018418(void) __attribute__((alias("Rec35_BxLr_18418")));
 void sub_080018418(void) __attribute__((alias("Rec35_BxLr_18418")));
 #endif
 void Rec35_BxLr_1841C(void *hdr, void *a) { (void)hdr; (void)a; }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _08001841C(void *hdr, void *a) __attribute__((alias("Rec35_BxLr_1841C")));
 void sub_08001841C(void *hdr, void *a) __attribute__((alias("Rec35_BxLr_1841C")));
@@ -523,6 +529,7 @@ void Rec35_Leaf_18260(void *a, void *s) {
     Sub_080056F4(s, one, 1);
 #endif
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _080018260(void *a, void *b) __attribute__((alias("Rec35_Leaf_18260")));
 #endif
@@ -618,6 +625,7 @@ void Rec35_Leaf_18210(void *a, void *b, int c) {
     int v20 = *(volatile u32 *)((volatile u8 *)b + 20);
     sub_08007ABC((u32)(uintptr_t)pa4, (u32)v24, (u32)v20);
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _080018210(void *a, void *b, int c) __attribute__((alias("Rec35_Leaf_18210")));
 #endif
@@ -707,6 +715,7 @@ void sub_080018278(void *c) __attribute__((alias("Rec35_Leaf_18278")));
 // _0800182FC: single.hword 0x4770 (bx lr) + pad; BL target of _080018300 case 7,
 // which passes rec in r0 (0x0801833A: adds r0,r3,#0; bl _0800182FC) — unused.
 void Rec35_BxLr_182FC(void *rec) { (void)rec; }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _0800182FC(void *rec) __attribute__((alias("Rec35_BxLr_182FC")));
 #endif
@@ -714,6 +723,7 @@ void _0800182FC(void *rec) __attribute__((alias("Rec35_BxLr_182FC")));
 // _080018388: bx lr stub (2 B + pad; code continues at interior entry _08001838C).
 // Called with (rec, u16 b, u16 c) — all ignored.
 void Rec35_BxLr_18388(void *a, int b, int c) { (void)a; (void)b; (void)c; }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _080018388(void *a, int b, int c) __attribute__((alias("Rec35_BxLr_18388")));
 void sub_080018388(void *a, int b, int c) __attribute__((alias("Rec35_BxLr_18388")));

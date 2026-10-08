@@ -579,6 +579,7 @@ void _08004B90(void *mgr) {
     v |= *f;
     *f = v;
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void MgrSetBit4(void *a) __attribute__((alias("_08004B90")));
 void sub_08004B90(void *a) __attribute__((alias("_08004B90")));
@@ -746,6 +747,7 @@ void *Leaf_04E0C(void *a){
     return Leaf_04DF4(Leaf_04DC8(a));
 #endif
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void *_08004E0C(void *a) __attribute__((alias("Leaf_04E0C")));
 void *sub_08004E0C(void *a) __attribute__((alias("Leaf_04E0C")));
@@ -781,16 +783,19 @@ int _08004B9C(void *a) __attribute__((alias("FlagCheck_04B9C")));
 int SceneAdvanceIfNeeded(void *a) __attribute__((alias("FlagCheck_04B9C")));
 #endif
 void SubstateClear_04BB8(void *ctx){ *(volatile u16*)((u8*)ctx+6)=0; extern void _08004BAC(void*); _08004BAC(ctx); }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _08004BB8(void *a) __attribute__((alias("SubstateClear_04BB8")));
 void sub_08004BB8(void *a) __attribute__((alias("SubstateClear_04BB8")));
 #endif
 void SubstateSet1_04BC8(void *ctx){ *(volatile u16*)((u8*)ctx+6)=1; extern void _08004BAC(void*); _08004BAC(ctx); }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _08004BC8(void *a) __attribute__((alias("SubstateSet1_04BC8")));
 void sub_08004BC8(void *a) __attribute__((alias("SubstateSet1_04BC8")));
 #endif
 void SubstateSet2_04BD8(void *ctx){ void *c = sub_08004B68(); *(volatile u16*)((u8*)c+6)=2; extern void _08004BAC(void*); _08004BAC(c); (void)ctx; }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _08004BD8(void *a) __attribute__((alias("SubstateSet2_04BD8")));
 void sub_08004BD8(void *a) __attribute__((alias("SubstateSet2_04BD8")));
@@ -800,6 +805,7 @@ u16 FlagCheck_04BEC(void *ctx) {
     volatile u16 *p = (volatile u16 *)((u8 *)ctx + 4);
     return mask & *p;
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 u16 _08004BEC(void *a) __attribute__((alias("FlagCheck_04BEC")));
 u16 sub_08004BEC(void *a) __attribute__((alias("FlagCheck_04BEC")));

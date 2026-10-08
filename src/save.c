@@ -900,6 +900,7 @@ void _08024B70(void) __attribute__((alias("SaveGuardedFull")));
 #endif
 
 void SaveGuardedSaveOnly(void) { sub_0802B234(); sub_0802B190(); SAVE_CALL_BLOCK2_SAVE(); sub_0802B1B8(); }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _08024BC0(void) __attribute__((alias("SaveGuardedSaveOnly")));
 #endif
@@ -908,6 +909,7 @@ void _08024BC0(void) __attribute__((alias("SaveGuardedSaveOnly")));
 void GuardedSaveOnly(void) { SaveGuardedSaveOnly(); }
 void GuardedFullSave(void) { SaveGuardedFull(); }
 void SaveGuardedLoadOnly(void) { sub_0802B234(); sub_0802B190(); SAVE_CALL_BLOCK2_LOAD(); sub_0802B1B8(); }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _08024BD8(void) __attribute__((alias("SaveGuardedLoadOnly")));
 #endif
@@ -931,12 +933,19 @@ extern void *_080240D0(void);      // Ghost_GetRecP (host override)
 extern int _08024B18(void);        // SaveRet1_24B18 (src/runtime_state_dispatch.c)
 
 void *SaveGhostRecPair_BF0(void) { return SAVE_CALL_GHOST_REC_P(); }
+__asm__(".align 2, 0");
 void *SaveGhostRecPair_BFC(void) { return SAVE_CALL_GHOST_REC_P(); }
+__asm__(".align 2, 0");
 void SaveNoOp_24C08(void) { }
+__asm__(".align 2, 0");
 void SaveNoOp_24C0C(void) { }
+__asm__(".align 2, 0");
 void SaveNoOp_24C10(void) { }
+__asm__(".align 2, 0");
 void SaveNoOp_24C14(void) { }
+__asm__(".align 2, 0");
 void SaveNoOp_24C18(void) { }
+__asm__(".align 2, 0");
 
 // Guarded no-op sequence: the guarded bracket around two calls to the
 // return-1 stub. The `movs r0, #0/#1` before the two `_08024B18` calls is the

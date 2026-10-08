@@ -236,6 +236,7 @@ void Ai_CatalogStoreHelper(void *p, int v){
     extern void sub_08024F34(void*);
     sub_08024F34((u8*)p+4);
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _08024E24(void *a, int b) __attribute__((alias("Ai_CatalogStoreHelper")));
 void sub_08024E24(void *a, int b) __attribute__((alias("Ai_CatalogStoreHelper")));

@@ -48,6 +48,7 @@ void *Course_Group0Payload12(int idx, void *base) {
     void *p = _08006590(base, 0, idx);
     return (u8 *)p + 12;
 }
+__asm__(".align 2, 0");
 void Course_VariantZero(void) {
     // _08006114: stack-staged zero HALFWORD, CpuSet (svc 11) copy 1 word to 0x0203F758 ctrl 0x01000004
     volatile u16 zero = 0;
