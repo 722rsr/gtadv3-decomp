@@ -62,3 +62,4 @@ _08007BEE:
         pop {r4, r5, r6, r7}
         pop {r0}
         bx r0
+course_resource_leaf_more2_end:

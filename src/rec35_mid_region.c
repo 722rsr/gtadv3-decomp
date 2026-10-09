@@ -46,6 +46,8 @@
 // ============================================================================
 
 extern void *Sub_08004B68(void *a);
+extern void *sub_08004B68(void *a);
+typedef struct { u16 pad; s16 courseId; } Rec35_CourseHdr;
 extern void  Sub_08002E10(void *dst, void *src, int len);
 extern void  Sub_08007ABC(u32 a, u32 b, u32 c);
 extern void  Sub_0800D97C(void *a, int b);
@@ -79,6 +81,7 @@ extern int   Sub_08002060(int v);
 extern int   Sub_08002140(void);
 extern int   Sub_08002158(int id, int v);
 extern int   Sub_08002178(int id);
+extern int   _08002178(int id);
 extern void  Sub_0800226C(void *a, int b);
 extern void  Sub_08002298(void *a);
 extern int   Sub_080022C0(void);
@@ -607,17 +610,22 @@ void Rec35_Input_175BC(void *rec) {
 #ifndef __APPLE__
 void _0800175BC(void *a) __attribute__((alias("Rec35_Input_175BC")));
 #endif
-
 // ---------------------------------------------------------------------------
 // _08001774C(rec) — gate leaf (u16[+184] compare after key read)
 void Rec35_Leaf_1774C(void *rec) {
-    void *r5 = rec;
-    u16 a = (u16)Sub_08002178(0);
-    u16 b = (u16)Sub_08002178(1);
-    if (a != b) return;
-    u16 m = RD16P((u8 *)r5 + 188);
-    if ((u16)(m - 1) <= 1) Rec35_Leaf_17414(r5);
+    register u8 *r5 __asm__("r5") = (u8 *)rec;
+    u32 a = (u32)((int(*)(int, int))(void *)_08002178)(0, 4);
+    u32 b = (u32)((int(*)(int, int))(void *)_08002178)(1, 4);
+    u32 m;
+    if (((a << 16) >> 16) != ((b << 16) >> 16)) return;
+    m = *(u16 *)(r5 + 188);
+    m = ((m - 1) << 16) >> 16;
+    if (m > 1) return;
+    Rec35_Leaf_17414(r5);
 }
+#ifndef __APPLE__
+__asm__(".align 2, 0");
+#endif
 #ifndef __APPLE__
 void _08001774C(void *a) __attribute__((alias("Rec35_Leaf_1774C")));
 #endif
@@ -709,11 +717,13 @@ void _080017788(void *a, int b, int c) __attribute__((alias("Rec35_Input_17788")
 // _08001794C(rec) — two banner-sprite digits (0x08024BFC slot 0 → x=68,
 // slot 1 → x=108), each drawn only when its record's u16[+0] is set.
 void Rec35_Emit_1794C(void *rec) {
+    register void *r4 __asm__("r4");
+    register void *r5 __asm__("r5");
     (void)rec;
-    void *r4 = Sub_08024BFC();
-    void *r5 = Sub_08024BFC();
-    if (RD16P(r4) != 0) sub_08003BC0(152, 68, (int)RD32((u8 *)r4 + 4));
-    if (RD16P(r5) != 0) sub_08003BC0(152, 108, (int)RD32((u8 *)r5 + 4));
+    r4 = Sub_08024BFC();
+    r5 = Sub_08024BFC();
+    if (*(u16 *)r4 != 0) sub_08003BC0(152, 68, *(int *)((u8 *)r4 + 4));
+    if (*(u16 *)r5 != 0) sub_08003BC0(152, 108, *(int *)((u8 *)r5 + 4));
 }
 #ifndef __APPLE__
 void _08001794C(void *a) __attribute__((alias("Rec35_Emit_1794C")));
@@ -958,16 +968,36 @@ void _080017DAC(int ev, int a, int b, void *rec) __attribute__((alias("Rec35_EvD
 // ---------------------------------------------------------------------------
 // _080017ECC(a, rec) — ev1 flag setter
 void Rec35_Ev1_17ECC(void *a, void *rec) {
-    void *hdr = Sub_08004B68(a);
-    s16 v = RS16((u8 *)hdr + 2);
+#ifndef __APPLE__
+    register u8 *dst __asm__("r4") = (u8 *)rec;
+#else
+    u8 *dst = (u8 *)rec;
+#endif
+    const Rec35_CourseHdr *hdr = (const Rec35_CourseHdr *)sub_08004B68(a);
+#ifndef __APPLE__
+    register volatile u16 *p __asm__("r1");
+#else
+    volatile u16 *p;
+#endif
     u16 out;
-    if (v == 21) out = 1;
-    else if (v < 21) out = 6;
-    else if (v > 30) out = 6;
-    else if (v < 27) out = 6;
-    else out = 1;
-    WR16((u8 *)rec + 84, out);
+    switch (hdr->courseId) {
+    case 21:
+    case 27:
+    case 28:
+    case 29:
+    case 30:
+        p = (volatile u16 *)(dst + 84);
+        out = 1;
+        break;
+    default:
+        p = (volatile u16 *)(dst + 84);
+        out = 6;
+    }
+    *p = out;
 }
+#ifndef __APPLE__
+__asm__(".align 2, 0");
+#endif
 #ifndef __APPLE__
 void _080017ECC(void *a, void *b) __attribute__((alias("Rec35_Ev1_17ECC")));
 #endif
@@ -1022,19 +1052,21 @@ void _080017F04(void *a) __attribute__((alias("Rec35_Setup_17F04")));
 
 // ---------------------------------------------------------------------------
 // _080018064(rec, a, b) — countdown gate
-// ROM: r2=ldrsh[rec+132]; r2--; if (u16)r2>1 → return; else 0x0802B368(1);
+// ROM takes the counter in r2 (third arg b): (b<<16)-0x10000, lsr 16;
+// if (u32)r2>1 → return; else 0x0802B368(1);
 //   [rec+136]=1; [rec+12](u16)=0; [rec+116](u16)=1; [rec+36]=1.
 void Rec35_CountdownGate_18064(void *rec, int a, int b) {
-    (void)a; (void)b;
-    void *r4 = rec;
-    s16 r2 = RS16((u8 *)r4 + 132);
-    r2 = (s16)(r2 - 1);
-    if ((u16)r2 > 1) return;
+    register u8 *r4 __asm__("r4") = (u8 *)rec;
+    int r2 = b;
+    r2 = (r2 << 16) + -0x10000;
+    r2 = (int)((u32)r2 >> 16);
+    if ((u32)r2 > 1) return;
+    (void)a;
     Sub_0802B368(1);
-    WR32((u8 *)r4 + 136, 1);
-    WR16((u8 *)r4 + 12, 0);
-    WR16((u8 *)r4 + 116, 1);
-    WR32((u8 *)r4 + 36, 1);
+    *(u32 *)(r4 + 136) = 1;
+    *(u16 *)(r4 + 12) = 0;
+    *(u16 *)(r4 + 116) = 1;
+    *(u32 *)(r4 + 36) = 1;
 }
 #ifndef __APPLE__
 void _080018064(void *a, int b, int c) __attribute__((alias("Rec35_CountdownGate_18064")));

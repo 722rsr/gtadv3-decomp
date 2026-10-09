@@ -363,24 +363,28 @@ int sub_08007368(void *a, void *b, u32 c, void *d) __attribute__((alias("_080073
 
 int _08006D9C(void *state, void *vec)
 {
-    void *cur = _08006C10(state, 0);
+    register u8 *vv asm("r9");
+    register u8 *st asm("r8");
+    st = (u8 *)state;
+    vv = (u8 *)vec;
+    void *cur = _08006C10(st, 0);
     if (!cur)
         return 0;
-    void *prev = _08006C10(state, -1);
+    void *prev = _08006C10(st, -1);
     s32 dx, dy;
     if (prev) {
-        void *again = _08006C10(state, 0);
-        s32 a = *(volatile s16 *)((u8 *)again + 28) + *(volatile s32 *)((u8 *)again + 12);
-        s32 b = *(volatile s16 *)((u8 *)prev + 28) + *(volatile s32 *)((u8 *)prev + 12);
+        void *again = _08006C10(st, 0);
+        s32 a = *(s16 *)((u8 *)again + 28) + *(s32 *)((u8 *)again + 12);
+        s32 b = *(s16 *)((u8 *)prev + 28) + *(s32 *)((u8 *)prev + 12);
         dx = a - b;
-        s32 c = *(volatile s16 *)((u8 *)again + 30) + *(volatile s32 *)((u8 *)again + 16);
-        s32 d = *(volatile s16 *)((u8 *)prev + 30) + *(volatile s32 *)((u8 *)prev + 16);
+        s32 c = *(s16 *)((u8 *)again + 30) + *(s32 *)((u8 *)again + 16);
+        s32 d = *(s16 *)((u8 *)prev + 30) + *(s32 *)((u8 *)prev + 16);
         dy = c - d;
     } else {
-        dx = *(volatile s16 *)((u8 *)cur + 24);
-        dy = *(volatile s16 *)((u8 *)cur + 26);
+        dx = *(s16 *)((u8 *)cur + 24);
+        dy = *(s16 *)((u8 *)cur + 26);
     }
-    s32 dot = *(volatile s32 *)vec * dx + *(volatile s32 *)((u8 *)vec + 4) * dy;
+    s32 dot = *(s32 *)vv * dx + *(s32 *)(vv + 4) * dy;
     return (dot < 0) ? 1 : 0;
 }
 #ifndef __APPLE__
@@ -416,21 +420,28 @@ void *sub_08006E1C(void *a, void *b) __attribute__((alias("_08006E1C")));
 
 void *_08026230(int idx, void *ptr)
 {
-    volatile u32 *mgr = *(volatile u32 **)(uintptr_t)0x03001670u;
-    volatile u32 *slot = (volatile u32 *)((u8 *)mgr + (idx << 3) + 8);
+    u32 *mgr = *(u32 **)(uintptr_t)0x03001670u;
+    u32 *slot = (u32 *)((u8 *)mgr + (idx << 3) + 8);
+    u32 m1;
+    u32 accum;
+    void *arr;
     slot[0] = (u32)(uintptr_t)ptr;
-    slot[1] = mgr[1];
-    u32 accum = mgr[1];
-    void *arr = _0800748C(_08007498((void *)(uintptr_t)0x0879984Cu,
-                                    (int)(uintptr_t)ptr));
-    for (int i = 0; i <= 255; i++) {
-        int byte = i >= 0 ? (i >> 3) : ((i + 7) >> 3);
-        u8 bit = (u8)((*(volatile u8 *)((u8 *)arr + byte) >> (i & 7)) & 1);
-        if (bit)
-            accum += 0x900; /* 144<<4 */
+    m1 = mgr[1];
+    slot[1] = m1;
+    accum = m1;
+    arr = _0800748C(_08007498((void *)(uintptr_t)0x0879984Cu,
+                              (int)(uintptr_t)ptr));
+    {
+        u8 *ab = (u8 *)arr;
+        int i;
+        for (i = 0; i <= 255; i++) {
+            u8 b = *(ab + (i >> 3));
+            if (((b >> (i & 7)) & 1) != 0)
+                accum += 0x900; /* 144<<4 */
+        }
     }
     mgr[1] = accum;
-    return (void *)(uintptr_t)(u32)(uintptr_t)slot;
+    return (void *)slot;
 }
 #ifndef __APPLE__
 void *sub_08026230(int a, void *b) __attribute__((alias("_08026230")));

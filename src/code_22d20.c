@@ -424,20 +424,21 @@ void sub_080231B4(void *a) __attribute__((alias("Code231B4_CopyBack")));
 //     _08002618(1, 0); u16[self+144] = r5 (0)
 //   u16[self+156] = 1
 void Code23220_Constructor(void *self) {
-    volatile u8 *s = (volatile u8 *)self;
-    s16 v = *(volatile s16 *)(s + 156);
-    if (v != 0)
+    u8 *s = (u8 *)self;
+    u16 raw = *(u16 *)(s + 156);
+    if ((s16)raw != 0)
         return;
+    s16 v = (s16)raw;
     _08007770(1, C22D_ROM_FRAME, 3, 0, 0, 3);
     Code22D24_UpdateCell(self, (void *)(s + 176), 5);
     if (C22D_GATE_BYTE == 0) {
         _08002618(1, 1);
-        *(volatile u16 *)(s + 144) = 1;
+        *(u16 *)(s + 144) = 1;
     } else {
         _08002618(1, 0);
-        *(volatile u16 *)(s + 144) = (u16)v;   // stores r5 (=0 here)
+        *(u16 *)(s + 144) = (u16)v;   // stores r5 (=0 here)
     }
-    *(volatile u16 *)(s + 156) = 1;
+    *(u16 *)(s + 156) = 1;
 }
 #ifndef __APPLE__
 void _08023220(void *a) __attribute__((alias("Code23220_Constructor")));

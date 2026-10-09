@@ -857,3 +857,4 @@ _080015DC:
 	movs	r0, r0
 _080015EC: .4byte 0x04000128
 _080015F0: .4byte 0x0000795C
+code_fa0_end:

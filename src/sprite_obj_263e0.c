@@ -758,7 +758,11 @@ void _080026A68(void *a) __attribute__((alias("Sprite_Tick")));
 // ============================================================================
 void Sprite_Draw(void *rec) {
     if (*(volatile u8 *)((u8 *)rec + 16) != 0) {
+#ifndef __APPLE__
         sub_080026898((void *)(uintptr_t)*(volatile u32 *)((u8 *)rec + 92),
+#else
+        Sprite_EmitPair((void *)(uintptr_t)*(volatile u32 *)((u8 *)rec + 92),
+#endif
                         (int)((s16 *)rec)[4],
                         (int)((s16 *)rec)[2],
                         (int)((s16 *)rec)[3],
@@ -809,7 +813,11 @@ void Sprite_Paint(void *rec) {
     void *tile = Sprite_CourseSurface(*(s16 *)((u8 *)rec + 10),
                                       *(s16 *)((u8 *)rec + 12));
 #endif
+#ifndef __APPLE__
     sub_0800263E0((u8 *)base, (int)*(volatile u16 *)((u8 *)rec + 0));
+#else
+    Sprite_BlitTiles((u8 *)base, (int)*(volatile u16 *)((u8 *)rec + 0));
+#endif
 #ifndef __APPLE__
     // ROM loads the final index into r6, then shifts into r1. The empty asm
     // keeps agbcc from folding the load directly into the shifted r1 value.

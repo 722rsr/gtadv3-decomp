@@ -281,6 +281,8 @@ _0802B648_lit:
 
 @ ----------------------------------------------------------------------------
 @ _0802B64C(ch) — start wrapper -> sequencer sub_0802C548
+.type _0802B64C, %function
+.type sub_0802B64C, %function
 _0802B64C:
 sub_0802B64C:
 	push {lr}
@@ -293,6 +295,8 @@ sub_0802B64C:
 
 @ ----------------------------------------------------------------------------
 @ _0802B65C(ch) — pause wrapper -> sequencer sub_0802C614
+.type _0802B65C, %function
+.type sub_0802B65C, %function
 _0802B65C:
 sub_0802B65C:
 	push {lr}

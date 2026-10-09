@@ -62,11 +62,12 @@ HOST_STUB(void  _0800D854(void *rec));
 HOST_STUB(void  _0800D8E4(void *rec));
 HOST_STUB(void  _0800EF54(void *rec));
 HOST_STUB(void  _0800F22C(void *rec));
-HOST_STUB(void  _0800F5A0(void *rec, u32 a, u32 b, u32 c));
+HOST_STUB(void  _0800F5A0(void *rec));
 HOST_STUB(void  _0800EBD8(void *rec, u32 a, u32 b));
 HOST_STUB(void  _0800ECAC(void *rec, u32 a, u32 b));
 HOST_STUB(void  _0800E7CC(void *rec));
-HOST_STUB(void  _0800EE00(void *rec, u32 b));
+HOST_STUB(void  _0800E7A0(void *rec));
+HOST_STUB(void  _0800EE00(void *rec, u32 a, u32 b));
 HOST_STUB(void  _08007770(int a, void *b, int c, int d, u32 e, u32 f));
 HOST_STUB(void  sub_0800C4D0(void *rec));
 HOST_STUB(void  _0800C604(void *rec));
@@ -356,23 +357,23 @@ int sub_08000CA0(u32 a) __attribute__((alias("SessionStep_CA0")));
 #endif
 
 void CollectNearby_06A50(int camX, int camY) {
-    volatile u32 *outCount = (volatile u32 *)0x0203F8A8;
-    volatile u16 *outCursor = (volatile u16 *)0x0203F874;
-    volatile u32 *outArray = (volatile u32 *)0x0203F880;
+    u32 *outCount = (u32 *)0x0203F8A8;
+    u16 *outCursor = (u16 *)0x0203F874;
+    u32 *outArray = (u32 *)0x0203F880;
     *outCount = 0;
     *outCursor = 0;
 
     int wx = div8000_trunc(camX);
     int wy = div8000_trunc(camY);
 
-    volatile u8 *header = (volatile u8 *)(uintptr_t)*(volatile u32 *)0x0203F760;
-    int count = (int)(s16)*(volatile s16 *)(header + 46);
-    volatile u8 *recBase = (volatile u8 *)(uintptr_t)*(volatile u32 *)(header + 16);
+    u8 *header = (u8 *)(uintptr_t)*(u32 *)0x0203F760;
+    int count = (int)*(s16 *)(header + 46);
+    u8 *recBase = (u8 *)(uintptr_t)*(u32 *)(header + 16);
 
     for (int i = 0; i < count; i++) {
-        volatile u8 *rec = recBase + i * 8;
-        int rx = (int)(s16)*(volatile s16 *)(rec + 0);
-        int ry = (int)(s16)*(volatile s16 *)(rec + 2);
+        u8 *rec = recBase + i * 8;
+        int rx = (int)*(s16 *)(rec + 0);
+        int ry = (int)*(s16 *)(rec + 2);
         if (_08005B5C(wx - rx) <= 1 &&
             _08005B5C(wy - ry) <= 1) {
             u32 n = *outCount;
@@ -772,27 +773,35 @@ void sub_0800F9A0(void *a) __attribute__((alias("MenuF9A0_Scatter")));
 // (0→EBD8(a,r2,r3), 2→ECAC, 1→EE00); case11 → E7CC tail target of
 // table slot 12 → F22C; cases 2,3,7,8,9,10 → tail).
 // ============================================================================
-void MenuF5EC(void *rec, int ev, u32 a2, u32 a3) {
-    switch (ev - 1) {
-    case 0: _0800E650(rec, a3); break;
-    case 4:
+void MenuF5EC(int ev, u32 a, u32 b, void *rec) {
+    switch (ev) {
+    case 2: _0800E650(rec, a); break;
+    case 5:
         _0800D854((u8 *)rec + 40);
         _0800D8E4((u8 *)rec + 144);
         _0800EF54(rec);
         break;
-    case 5: {
-        _0800F5A0(rec, a2, a3, 0);
+    case 7: _0800F22C(rec); break;
+    case 6: {
+        _0800F5A0(rec);
         if (*(volatile u16 *)((u8 *)rec + 44) == 0) break;
-        int v = (int)*(volatile s16 *)((u8 *)rec + 228);
-        if (v == 0)      _0800EBD8(rec, a2, a3);
-        else if (v == 2) _0800ECAC(rec, a2, a3);
-        else if (v == 1) _0800EE00(rec, a2);
+        {
+            int v = (int)*(s16 *)((u8 *)rec + 228);
+            switch (v) {
+            case 0: _0800EBD8(rec, (u16)a, (u16)b); break;
+            case 2: _0800ECAC(rec, (u16)a, (u16)b); break;
+            case 1: _0800EE00(rec, (u16)a, (u16)b); break;
+            default: break;
+            }
+        }
         break;
     }
-    case 11: _0800E7CC(rec); break;
+    case 1: _0800E7CC(rec); break;
+    case 12: _0800E7A0(rec); break;
     default: break;
     }
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _0800F5EC(void *a, int b, u32 c, u32 d) __attribute__((alias("MenuF5EC")));
 void sub_0800F5EC(void *a, int b, u32 c, u32 d) __attribute__((alias("MenuF5EC")));

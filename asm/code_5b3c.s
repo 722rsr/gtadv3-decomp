@@ -580,3 +580,4 @@ _08005EDC:
 	pop	{r4, r5, r6}
 	pop	{r1}
 	bx	r1
+code_5b3c_end:

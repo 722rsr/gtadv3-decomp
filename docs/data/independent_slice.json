@@ -197,7 +197,7 @@
     },
     {
       "path": "asm/ai_raceevt.s",
-      "sha256": "12c33418d176d2bb4bc1105b0fb4edcbc79b375305a57907c91c520199b71ffc"
+      "sha256": "e01468fb90e0e512c19f939fb7f25b07a2b1625f1f7d9abef06495916b1b4ec8"
     },
     {
       "path": "asm/ai_racefsm.s",
@@ -241,7 +241,7 @@
     },
     {
       "path": "asm/carphys_tick.s",
-      "sha256": "2b2f146b092dec8b7d271de0c61df8c5ec17bfe495ce76916e0bbe7f6585988f"
+      "sha256": "4be699283e0c992aae47c1fd34c88e277ca3b8b3551eb6e078bbdbd0b869dc5c"
     },
     {
       "path": "asm/code.s",
@@ -493,7 +493,7 @@
     },
     {
       "path": "asm/code_5b3c.s",
-      "sha256": "330b84eadfe46fa2982577cc261b2231e244c437af57bf35db47588da9556857"
+      "sha256": "5f1f1d25a2897777d6c219e4a5a68b69110793d699e18a7bad4df0d7695f69ff"
     },
     {
       "path": "asm/code_c668.s",
@@ -505,7 +505,7 @@
     },
     {
       "path": "asm/code_fa0.s",
-      "sha256": "30e502f84a95befb7b9da8ad8cb318ee6c64cd07851f01c096e641e88f5a2b3d"
+      "sha256": "10cb0ff6da15a5ac0ca851852a577ef8b450d900ba5651f27accfdb7a49a41c3"
     },
     {
       "path": "asm/course_builders_8290.s",
@@ -577,11 +577,11 @@
     },
     {
       "path": "asm/course_resource_leaf_more.s",
-      "sha256": "543be4a1d51f90ed7d53d2f131135b9c123a3edbbce3cff342169f25253a4e0a"
+      "sha256": "31efb3383c491d0cab9733e7283b5c82781a0d9c4834a20f975ee400ea7b5f43"
     },
     {
       "path": "asm/course_resource_leaf_more2.s",
-      "sha256": "e88a26d5b447374e1fc3025138ae2bb68fc5736463ebc03bb25fb2d360342c50"
+      "sha256": "ed37a90c0de856dfee9d5bde2fbcf957dbd9a4a1e319209c52b8e6f99286871c"
     },
     {
       "path": "asm/course_resource_more.s",
@@ -637,7 +637,7 @@
     },
     {
       "path": "asm/idle.s",
-      "sha256": "19e65075afba7bb253e390c8de89e1b8bd24f165cb753487e9171f24acf59cce"
+      "sha256": "4de5c3af06c216694de24fb75404dcc61ff5afd7fa732a9ed340f661f4345321"
     },
     {
       "path": "asm/keypad.s",
@@ -777,7 +777,7 @@
     },
     {
       "path": "asm/menu_f5a0.s",
-      "sha256": "046d27bf8f0f077b7ddf2b992d7ec81781c2dbfd29ccda007ec6958780c250b7"
+      "sha256": "12cfc2da2536f60710a1e2772e83aa0c85545bd855f3765f6cecdb550f5c8698"
     },
     {
       "path": "asm/menu_f6d0.s",
@@ -925,7 +925,7 @@
     },
     {
       "path": "asm/saveblock.s",
-      "sha256": "c98d7ada11242c1912f1dd16280c96d585b99f564c1ad1b0d1d4ecb47b29ae19"
+      "sha256": "c10579f6c69176b04af79f2978fc0035d62fb84e0abeee5736bd3308ca658e1f"
     },
     {
       "path": "asm/softirq.s",
@@ -949,7 +949,7 @@
     },
     {
       "path": "asm/sound_bank.s",
-      "sha256": "74b7e073bb4e235e8daff1c916dc9782e118921b0b80982ebbe3d57dbc025235"
+      "sha256": "943d5fff77bc5709660881ffb9568efeb9c7750363ebb0150a824368537d8a09"
     },
     {
       "path": "asm/sound_beb4.s",
@@ -1001,7 +1001,7 @@
     },
     {
       "path": "asm/sound_d9b0.s",
-      "sha256": "5d75490b73544b0f36c0103f76387fe8375b4eb1b21173a09c3a32da070caccd"
+      "sha256": "fc065da1b19429b6521042b0e84d255edf298ec6587e9b9976dc268c349d4d5c"
     },
     {
       "path": "asm/sound_da20.s",
@@ -1009,7 +1009,7 @@
     },
     {
       "path": "asm/sound_db24.s",
-      "sha256": "75681b1be75b7700ae5429b8c9b85d9a492e99164dc9b1995976585ad2ef022b"
+      "sha256": "fc96701a8f2c49e84002b1180f14bd56bf26648b6991e1c536260f3d7f3e0bc1"
     },
     {
       "path": "asm/sound_dba4.s",
@@ -1021,11 +1021,11 @@
     },
     {
       "path": "asm/sound_dd30.s",
-      "sha256": "c3cac63644f962d8fbecd24e7e826d06a5bf6d07285838e423887748785e6822"
+      "sha256": "8e33f2ea3415fab9ab494922bf4cc6087d6f136c08c7fa0f47e546fadea519d5"
     },
     {
       "path": "asm/sound_dd88.s",
-      "sha256": "2b94816921725c3877fdde867c9a84b47b9ea0337fffc06cefa464dd77ffb427"
+      "sha256": "b44fde76a064ae2b8d46debc0b9b7afee88a8c4d80656c56a3692289c85a0b0d"
     },
     {
       "path": "asm/sound_divmod.s",
@@ -1089,7 +1089,7 @@
     },
     {
       "path": "asm/sound_seq.s",
-      "sha256": "4056791aef813f3986fad39a8ff2b68aa5c76b5ba522e87252aaf38690a93ea6"
+      "sha256": "85d2e5edfa61a19bf9980ee2558de0a5f2eb03aca9012b7a1aadf1f692c7ceb6"
     },
     {
       "path": "asm/sound_start.s",
@@ -1109,7 +1109,7 @@
     },
     {
       "path": "asm/sound_thunk.s",
-      "sha256": "44e6b1749265cba7593f8694b447709deb383e2dba66b39db678d9c5111b0275"
+      "sha256": "5f572f981bac38f6940e176f3bbfa1d59d4b0a9a36eb5377356cb29fc7429d6a"
     },
     {
       "path": "asm/sound_tick.s",

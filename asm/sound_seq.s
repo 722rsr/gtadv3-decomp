@@ -122,6 +122,8 @@ _0802B66C_lit_dir:
 @ Writes val>>2 to each selected active channel +0x13, sets flag |=3.
 @ Static callers: 0x0802B11C/0x0802B160/0x0802B174 (sound_api fade
 @ engine re-apply), 0x0802B4CE (sound_bank _0802B488).
+.type sub_0802B718, %function
+.type _0802B718, %function
 sub_0802B718:
 _0802B718:
 	push {r4, r5, lr}
@@ -154,6 +156,8 @@ _0802B718_lit_dir:
 @ sub_0802B74C(id, selmask, val) — PAN walker -> sub_0802D510.
 @ Writes (s8)val to channel +0x0B and val to +0x0D, sets flag |=0xC.
 @ Static callers: 0x0802B182 (sound_api), 0x0802B4EE (sound_bank).
+.type sub_0802B74C, %function
+.type _0802B74C, %function
 sub_0802B74C:
 _0802B74C:
 	push {r4, r5, lr}

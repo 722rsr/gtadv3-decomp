@@ -70,3 +70,4 @@ sub_0802DB24:
 	.word 0x040000DC
 .L_dba0:
 	.word 0x040000DE
+sound_db24_end:

@@ -17,7 +17,7 @@ int  Course_DistanceSqrtUdiv(int a,int b); // legacy stub for _08007F08 family
 u32  Course_Math_SumU16(void *rec, int i); // _08007EC4: (rec,i) via _08007498/_0800748C, ldrh pair, wide adds (caller strh)
 int  Course_Math_AbsRoundAvg(int a, int b); // _08007EE0: abs(a)+abs(b) - ((5*min)>>3), s32
 int  Course_Math_DistanceHeading(int x0,int y0,int x1,int y1); // _08007F08: s32 diff, muls, sqrt swi 8, udiv swi 6, table 0x080C9064/0x080CA064 s16
-void Course_Math_HeadingInterp(int p0,int p1,int p2, void *out, int sel); // _08007FC0: s16 clamp, table 0x080CB064 s16, muls s32>>12, strh
+int Course_Math_HeadingInterp(int p0, int p1, int p2, void *out); // _08007FC0: s16 clamp, table 0x080CB064 s16, muls s32>>12, strh, returns clamp flag
 
 // State leaves 0x08014-0x08284 — block behind 0x030003E0, widths proven via strh/strb/lsls
 u32 Course_08014(void); // _08008014: ldmia 32 B template 0x0805F604, Vu32 at 0x03002858/60 + IO 0x04000100, divide 23; returns the accumulated counter (r0)

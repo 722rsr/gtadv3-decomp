@@ -313,6 +313,7 @@ _0802473C: .4byte 0x03003574
 @ ----------------------------------------------------------------------------
 @ _08024740(val, k, part) - if val==1, OR mask table halfword `k` into the
 @ packed garage halfword at 0x030013D0+0x2E+k*2. Mask table 0x080CC1A8.
+.type _08024740, %function
 _08024740:
 	adds	r3, r2, #0
 	cmp	r0, #1
@@ -340,6 +341,7 @@ _08024768: .4byte 0x080CC1A8
 @ ----------------------------------------------------------------------------
 @ _0802476C(val, k) -> 0/1 - test mask bit `k` in packed halfword
 @ buf[0x2E + val*2] (mask table 0x080CC1A8). Note swapped roles vs setter.
+.type _0802476C, %function
 _0802476C:
 	ldr	r2, _0802478C           @ =0x030013D0
 	lsls	r0, r0, #1
@@ -936,6 +938,7 @@ _08024BC0:
 	bx	r0
 	movs	r0, r0
 
+.type _08024BD8, %function
 _08024BD8:
 	push	{lr}
 	bl	sub_0802B234

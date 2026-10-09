@@ -486,20 +486,18 @@ bool Sub_0802B3B8(u32 b) __attribute__((alias("SoundIsBankPlaying")));
 #ifndef __APPLE__
 bool sub_0802B3B8(u32 b) __attribute__((alias("SoundIsBankPlaying")));
 #endif
-void SoundSetSongSpeed(u32 a, u32 b){
-    volatile SoundMaster *m = soundMaster();
-    u32 off = a + b*98 + 0x080613B8u;
-    // ROM read would be *(u8*)off — host mock returns 0
-    u8 v = 0; // *(volatile u8*)off not dereferenced host
-    (void)off;
+void SoundSetSongSpeed(u16 a, u16 b){
+    SoundMaster *m = soundMaster();
+    u32 off = (u32)a + (u32)b*98 + 0x080613B8u;
+    u8 v = *(volatile u8 *)off;
     m->songSpeed = (u8)(v + 24);
     sub_0802B64C(m->songSpeed);
 }
 #ifndef __APPLE__
-void _0802B418(u32 a, u32 b) __attribute__((alias("SoundSetSongSpeed")));
+void _0802B418(u16 a, u16 b) __attribute__((alias("SoundSetSongSpeed")));
 #endif
 #ifndef __APPLE__
-void sub_0802B418(u32 a, u32 b) __attribute__((alias("SoundSetSongSpeed")));
+void sub_0802B418(u16 a, u16 b) __attribute__((alias("SoundSetSongSpeed")));
 #endif
 void SoundReapplySpeedA(void){ volatile SoundMaster *m=soundMaster(); sub_0802B65C(m->songSpeed); }
 #ifndef __APPLE__
@@ -558,7 +556,7 @@ void _08002B280(void) __attribute__((alias("SoundResume")));
 void _08002B30C(u8 step) __attribute__((alias("SoundFadeOut")));
 void _08002B368(u16 vol) __attribute__((alias("_0802B368")));
 void _08002B3A4(void) __attribute__((alias("SoundApplySecVol")));
-void _08002B418(u32 a, u32 b) __attribute__((alias("SoundSetSongSpeed")));
+void _08002B418(u16 a, u16 b) __attribute__((alias("SoundSetSongSpeed")));
 void _08002B44C(void) __attribute__((alias("SoundReapplySpeedA")));
 void _08002B460(void) __attribute__((alias("SoundReapplySpeedB")));
 void _08002B474(void) __attribute__((alias("SoundReapplySpeedC")));

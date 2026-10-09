@@ -106,15 +106,28 @@ void Helper_013E0(void *a, void *b, u32 c, u32 d, u32 stack20){
 #ifndef __APPLE__
 void _080013E0(void *a,void *b,u32 c,u32 d,u32 e) __attribute__((alias("Helper_013E0")));
 #endif
+// 0x080015B8: r2=cnt=0; r3=0x04000128; if ((*r3 & 128)==0) skip loop.
+// Loop (r5=lim 0x795C pool, r4=bit 128): cnt++; signed bgt exit;
+// reload *r3, mask copy r4->r0, loop while bit set. Tail: r0 = 150<<2
+// (600), bl _080015A0. Incoming r0 ignored (clobbered by mask first).
 void Helper_015B8(void *p){
-    // 0x015B8: push r4,r5, r2=0, ldrh [0x04000128], ands 128, loop over 0x04000120
-    volatile u16 *reg128 = (volatile u16*)0x04000128;
     (void)p;
-    u16 v = *reg128;
-    if((v & 128)==0) return;
-    // loop stub preserves 0x04000120 access
-    volatile u16 *reg120 = (volatile u16*)0x04000120;
-    (void)reg120;
+    u32 cnt = 0;
+    volatile u16 *reg = (volatile u16 *)0x04000128u;
+    extern void _080015A0(u32);
+    if ((*reg & 128u) != 0) {
+#ifndef __APPLE__
+        register u32 lim __asm__("r5") = 0x795Cu;
+#else
+        u32 lim = 0x795Cu;
+#endif
+        u32 bit = 128u;
+        do {
+            cnt++;
+            if ((int)cnt > (int)lim) break;
+        } while ((bit & *reg) != 0);
+    }
+    _080015A0(600u);
 }
 #ifndef __APPLE__
 void _080015B8(void *a) __attribute__((alias("Helper_015B8")));

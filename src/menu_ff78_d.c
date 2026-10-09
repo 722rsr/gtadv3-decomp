@@ -65,30 +65,48 @@ static inline s16 tbl_s16(u32 base, int idx) {
 
 // ----------------------------------------------------------------------------
 // sub_080011854 — variant: r5=(u16)a1; r6=_0800F6D0(s16[rec+188])-1.
-// if r5 != 0: build stack {3,1,1,0} + table[0x080CB5A6 + 2*s16[rec+226]]
-//   sub_08007B18(rec, s16[rec+100], kind=8, count=112,...).
-// if r5 != r6: similar with table[0x080CB5AA + 2*idx], kind=16.
+// Same double-indirection shape as 118DC (arg0=rec+100, r7=0 last word);
+// second gate is cmp r5,r6.
 // ----------------------------------------------------------------------------
 void MenuFF78_11854(void *rec_, int a1) {
+#ifndef __APPLE__
+    register volatile u8 *rec __asm__("r4") = (volatile u8 *)rec_;
+#else
     volatile u8 *rec = (volatile u8 *)rec_;
+#endif
     u16 r5 = (u16)a1;
-    s16 bc = RDS16(rec, 188);
-    u32 r6 = _0800F6D0(bc) - 1;
+    u32 z = 0;
+    s16 bc = ((s16 *)(rec + 188))[0];
+    int r6 = (int)_0800F6D0((s32)bc) - 1;
     if (r5 != 0) {
-        s16 idx = RDS16(rec, 226);
-        s16 tab = tbl_s16(0x080CB5A6u, idx);
-        s16 v = RDS16(rec, 100);
-        u32 sp[4] = {3, 1, 1, 0};
-        _08007B18(rec_, (s32)v, 8, 112, sp[0], sp[1], sp[2], sp[3]);
-        (void)tab;
+        s16 *tbase = (s16 *)0x080CB5A6u;
+#ifndef __APPLE__
+        register volatile u8 *p __asm__("r1") = rec;
+        __asm__ volatile ("" : "+r" (p));
+#else
+        volatile u8 *p = rec;
+#endif
+        s16 *sp = (s16 *)(p + 226);
+        s16 idx = sp[0];
+        s16 *tp = tbase + idx;
+        void *a0 = (void *)(rec + 100);
+        s16 v = tp[0];
+        _08007B18(a0, (s32)v, 8, 112, 3, 1, 1, (int)z);
     }
-    if (r5 != (u16)r6) {
-        s16 idx = RDS16(rec, 226);
-        s16 tab = tbl_s16(0x080CB5AAu, idx);
-        s16 v = RDS16(rec, 100);
-        u32 sp[4] = {3, 1, 1, 0};
-        _08007B18(rec_, (s32)v, 16, 112, sp[0], sp[1], sp[2], sp[3]);
-        (void)tab;
+    if ((int)r5 != r6) {
+        s16 *tbase = (s16 *)0x080CB5AAu;
+#ifndef __APPLE__
+        register volatile u8 *q __asm__("r1") = rec;
+        __asm__ volatile ("" : "+r" (q));
+#else
+        volatile u8 *q = rec;
+#endif
+        s16 *sq = (s16 *)(q + 226);
+        s16 idx = sq[0];
+        s16 *tq = tbase + idx;
+        void *a0 = (void *)(rec + 100);
+        s16 v = tq[0];
+        _08007B18(a0, (s32)v, 16, 112, 3, 1, 1, (int)z);
     }
 }
 #ifndef __APPLE__
@@ -99,25 +117,48 @@ void sub_080011854(void *a, int b) __attribute__((alias("MenuFF78_11854")));
 
 // ----------------------------------------------------------------------------
 // sub_0800118DC — variant: r5=(u16)a1.
-// if r5 != 0: stack {3,1,1,0}, table 0x080CB5A6 -> s16[rec+100] as kind, off=112
-// if r5 != 2: similar w/ table 0x080CB5AA, kind=16, off=112
+// ROM: double-indirection through pool tables; arg0 is rec+100 (not rec):
+// if r5 != 0: idx=s16[rec+226]; v=s16[0x080CB5A6+idx*2];
+//   _08007B18(rec+100, v, 8, 112, 3, 1, 1, 0).
+// if r5 != 2: same with 0x080CB5AA, kind=16. r6=0 preloaded for last word.
 // ----------------------------------------------------------------------------
 void MenuFF78_118DC(void *rec_, int a1) {
+#ifndef __APPLE__
+    register volatile u8 *rec __asm__("r4") = (volatile u8 *)rec_;
+#else
     volatile u8 *rec = (volatile u8 *)rec_;
+#endif
     u16 r5 = (u16)a1;
+    u32 z = 0;
     if (r5 != 0) {
-        s16 idx = RDS16(rec, 226);
-        (void)tbl_s16(0x080CB5A6u, idx);
-        s16 v = RDS16(rec, 100);
-        u32 sp[4] = {3, 1, 1, 0};
-        _08007B18(rec_, (s32)v, 8, 112, sp[0], sp[1], sp[2], sp[3]);
+        s16 *tbase = (s16 *)0x080CB5A6u;
+#ifndef __APPLE__
+        register volatile u8 *p __asm__("r1") = rec;
+        __asm__ volatile ("" : "+r" (p));
+#else
+        volatile u8 *p = rec;
+#endif
+        s16 *sp = (s16 *)(p + 226);
+        s16 idx = sp[0];
+        s16 *tp = tbase + idx;
+        void *a0 = (void *)(rec + 100);
+        s16 v = tp[0];
+        _08007B18(a0, (s32)v, 8, 112, 3, 1, 1, (int)z);
     }
     if (r5 != 2) {
-        s16 idx = RDS16(rec, 226);
-        (void)tbl_s16(0x080CB5AAu, idx);
-        s16 v = RDS16(rec, 100);
-        u32 sp[4] = {3, 1, 1, 0};
-        _08007B18(rec_, (s32)v, 16, 112, sp[0], sp[1], sp[2], sp[3]);
+        s16 *tbase = (s16 *)0x080CB5AAu;
+#ifndef __APPLE__
+        register volatile u8 *q __asm__("r1") = rec;
+        __asm__ volatile ("" : "+r" (q));
+#else
+        volatile u8 *q = rec;
+#endif
+        s16 *sq = (s16 *)(q + 226);
+        s16 idx = sq[0];
+        s16 *tq = tbase + idx;
+        void *a0 = (void *)(rec + 100);
+        s16 v = tq[0];
+        _08007B18(a0, (s32)v, 16, 112, 3, 1, 1, (int)z);
     }
 }
 #ifndef __APPLE__

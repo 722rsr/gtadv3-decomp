@@ -324,13 +324,28 @@ void _0800821C(void)
 // `strh r0,[r2,#0]` with r2 = 0x04000134 pool... decoded from the slice dump:
 // pools are (0x04000134, 0x04000128, 0x0003, 0x0400012A).
 void RecReset_0F48(void *rec) {
-    volatile u8 *b = (volatile u8 *)rec;
-    b[30] = 0; b[24] = 0; b[29] = 0; b[72] = 0;
-    *(volatile s16 *)(b + 22) = 0;
-    b[74] = 15;
-    *(volatile u16 *)0x04000134u = 0;
-    *(volatile u16 *)0x04000128u = 0x0003;
-    *(volatile u16 *)0x0400012Au = 0;
+    u8 *b = (u8 *)rec;
+    int z = 0;
+    u32 w = 0x2003u;
+    u8 *t = b;
+    u32 mmio;
+    u32 base;
+    b[30] = 0; b[24] = 0; b[29] = 0;
+    t = b;
+    t += 74;
+    *t = 15;
+    base = (u32)b;
+    b = (u8 *)base;
+    b += 72;
+    *b = (u8)z;
+    *(u16 *)((u8 *)base + 22) = (u16)z;
+    mmio = 0x04000134u;
+    *(volatile u16 *)mmio = (u16)z;
+    mmio = 0x04000128u;
+    base = w;
+    *(volatile u16 *)mmio = (u16)base;
+    mmio = 0x0400012Au;
+    *(volatile u16 *)mmio = (u16)z;
 }
 #ifndef __APPLE__
 void _08000F48(void *p) __attribute__((alias("RecReset_0F48")));

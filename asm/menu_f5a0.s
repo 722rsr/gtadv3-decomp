@@ -171,3 +171,4 @@ _0800F6C8:
   pop {r0}
   bx r0
   .2byte 0x0000            @ pad @ 0xF6CE
+menu_f5a0_end:

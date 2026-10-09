@@ -305,12 +305,19 @@ void sub_0800161F0(void *a, int b, int c) __attribute__((alias("Rec35_PlaceRecor
 //   m==0 or m==2: 07B18(rec, t, arg1, arg2, 4, 1, 1, 0)
 // ============================================================================
 void Rec35_PlaceByTable(void *rec, int arg1, int arg2) {
-    u16 t = *(volatile u16 *)(uintptr_t)(0x080CB89Cu + (u32)((s16)*(volatile u16 *)((u8 *)rec + 140)) * 2);
-    u32 m = *(volatile u32 *)((u8 *)rec + 152);
-    if (m == 1 || m == 3) {
+    u16 *tbase = (u16 *)0x080CB89Cu;
+    s16 idx = *(s16 *)((u8 *)rec + 140);
+    u16 t = tbase[idx];
+    int m = *(int *)((u8 *)rec + 152);
+    switch (m) {
+    case 1:
+    case 3:
         sub_08007B18(rec, (int)t, arg1, arg2, 5, 1, 1, 0);
-    } else if (m == 0 || m == 2) {
+        break;
+    case 0:
+    case 2:
         sub_08007B18(rec, (int)t, arg1, arg2, 4, 1, 1, 0);
+        break;
     }
 }
 #ifndef __APPLE__

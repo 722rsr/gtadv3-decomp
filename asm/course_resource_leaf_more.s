@@ -63,3 +63,4 @@ _08007B7C:
         pop {r4, r5, r6, r7}
         pop {r0}
         bx r0
+course_resource_leaf_more_end:

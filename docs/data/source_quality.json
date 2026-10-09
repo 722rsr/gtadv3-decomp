@@ -86,6 +86,15 @@
    "name": "_080015A0",
    "size": 24
   },
+  "0x080015b8": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 1
+   },
+   "file": "src/foundation_fa0.c",
+   "name": "Helper_015B8",
+   "size": 60
+  },
   "0x080015f4": {
    "class": "c_fakematch",
    "detail": {
@@ -932,6 +941,15 @@
    "file": "src/foundation_runtime.c",
    "name": "Wrap_02D98",
    "size": 32
+  },
+  "0x080030cc": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 2
+   },
+   "file": "src/foundation_runtime.c",
+   "name": "Helper_030CC",
+   "size": 56
   },
   "0x08003104": {
    "class": "c",
@@ -2279,6 +2297,15 @@
    "name": "MathLeaf_05E7C",
    "size": 96
   },
+  "0x08005edc": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 4
+   },
+   "file": "src/code_5b3c_math.c",
+   "name": "MathLeaf_05EDC",
+   "size": 80
+  },
   "0x08005f2c": {
    "class": "c_fakematch",
    "detail": {
@@ -2625,6 +2652,24 @@
    "file": "src/course_resource.c",
    "name": "Course_ResourceLeaf_07ABC",
    "size": 92
+  },
+  "0x08007b18": {
+   "class": "c",
+   "file": "src/scene_record_dispatch.c",
+   "name": "CourseEmit7B18",
+   "size": 116
+  },
+  "0x08007b8c": {
+   "class": "c",
+   "file": "src/scene_record_dispatch.c",
+   "name": "CourseEmit7B8C",
+   "size": 112
+  },
+  "0x08007bfc": {
+   "class": "c",
+   "file": "src/course_records.c",
+   "name": "Course_Iter_07BFC",
+   "size": 108
   },
   "0x08007ec4": {
    "class": "c_fakematch",
@@ -3212,6 +3257,24 @@
    "name": "MenuC658_0800C658",
    "size": 16
   },
+  "0x0800c668": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 2
+   },
+   "file": "src/foundation_late.c",
+   "name": "LateDispatch_C668",
+   "size": 100
+  },
+  "0x0800c6cc": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 2
+   },
+   "file": "src/foundation_late.c",
+   "name": "LateDispatch_C6CC",
+   "size": 100
+  },
   "0x0800c730": {
    "class": "c",
    "file": "src/foundation_late.c",
@@ -3744,6 +3807,12 @@
    "name": "MenuF5A0_0800F5A0",
    "size": 76
   },
+  "0x0800f5ec": {
+   "class": "c",
+   "file": "src/runtime_state_dispatch.c",
+   "name": "MenuF5EC",
+   "size": 228
+  },
   "0x0800f6d0": {
    "class": "c",
    "file": "src/menus.c",
@@ -3828,6 +3897,26 @@
    "file": "src/menus.c",
    "name": "Menu010940_080010940",
    "size": 44
+  },
+  "0x08011854": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 2,
+    "pin": 3
+   },
+   "file": "src/menu_ff78_d.c",
+   "name": "MenuFF78_11854",
+   "size": 136
+  },
+  "0x080118dc": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 2,
+    "pin": 3
+   },
+   "file": "src/menu_ff78_d.c",
+   "name": "MenuFF78_118DC",
+   "size": 124
   },
   "0x08011cbc": {
    "class": "c",
@@ -4392,6 +4481,15 @@
    "name": "Rec35_Leaf_17414",
    "size": 44
   },
+  "0x0801774c": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 1
+   },
+   "file": "src/rec35_mid_region.c",
+   "name": "Rec35_Leaf_1774C",
+   "size": 60
+  },
   "0x080179f0": {
    "class": "c",
    "file": "src/rec35_mid_region.c",
@@ -4419,11 +4517,29 @@
    "name": "Rec35_BxLr_17D50",
    "size": 4
   },
+  "0x08017ecc": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 2
+   },
+   "file": "src/rec35_mid_region.c",
+   "name": "Rec35_Ev1_17ECC",
+   "size": 52
+  },
   "0x08017f00": {
    "class": "c",
    "file": "src/rec35_runtime.c",
    "name": "Rec35_BxLr_17F00",
    "size": 4
+  },
+  "0x08018064": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 1
+   },
+   "file": "src/rec35_mid_region.c",
+   "name": "Rec35_CountdownGate_18064",
+   "size": 52
   },
   "0x08018128": {
    "class": "c",
@@ -4820,6 +4936,15 @@
    "file": "src/race_scene_a2.c",
    "name": "_08001C27C",
    "size": 196
+  },
+  "0x0801c3ac": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 4
+   },
+   "file": "src/race_scene_a2.c",
+   "name": "_08001C3AC",
+   "size": 52
   },
   "0x0801d218": {
    "class": "c",
@@ -8356,6 +8481,17 @@
    "name": "VBlankIntrWaitR2",
    "size": 8
   },
+  "0x0802d9b8": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 21,
+    "naked": true
+   },
+   "file": "src/sound_deep.c",
+   "name": "SoundD9BC_SelectorU16",
+   "size": 68
+  },
   "0x0802d9fc": {
    "class": "c_fakematch",
    "detail": {
@@ -8364,6 +8500,41 @@
    "file": "src/runtime_state_dispatch.c",
    "name": "SoundD9FC_Latch",
    "size": 36
+  },
+  "0x0802da20": {
+   "class": "c",
+   "file": "src/sound_deep.c",
+   "name": "SoundDA20_Setup",
+   "size": 56
+  },
+  "0x0802db24": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 7,
+    "pin": 7
+   },
+   "file": "src/sound_deep.c",
+   "name": "SoundDB24_Setup",
+   "size": 128
+  },
+  "0x0802dd30": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 3
+   },
+   "file": "src/sound_deep.c",
+   "name": "SoundDD30_Compare",
+   "size": 86
+  },
+  "0x0802dd88": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 1,
+    "pin": 4
+   },
+   "file": "src/sound_deep.c",
+   "name": "SoundDD88_Retry",
+   "size": 62
   },
   "0x0802ddc8": {
    "class": "c",
@@ -8469,16 +8640,16 @@
  },
  "totals": {
   "asm": {
-   "bytes": 1388,
-   "functions": 61
+   "bytes": 1456,
+   "functions": 62
   },
   "c": {
-   "bytes": 30462,
-   "functions": 791
+   "bytes": 31082,
+   "functions": 796
   },
   "c_fakematch": {
-   "bytes": 23626,
-   "functions": 308
+   "bytes": 24774,
+   "functions": 322
   },
   "partial": {
    "bytes": 1748,
