@@ -102,25 +102,53 @@ __asm__(".align 2, 0");
 
 // ----------------------------------------------------------------------------
 // ---- 0x08001E230 — gate-dispatched forward leaf + key-gated setup ----
-// Pools: {WA+0x10C3} x2. r1 dead. NOTE: asm sets r1=4 before the
-// _08002178 bl; the callee ignores r1 (blockb.s proof), so the C call
-// passes the single live arg.
+// Pools: {WA+0x10C3} x2. r1 dead at entry but live at the 2178 call.
+// NOTE: asm sets r1=4 before the _08002178 bl; the callee ignores r1
+// (blockb.s proof), so the C call passes it as a dead second arg via a
+// two-arg function-pointer cast. A single-arg call omits the `movs r1,#4`
+// and drops to 158/160 with the tail correct but one pool missing.
+// Three lowering facts, all load-bearing (same as _08001E1E0):
+//  1. First param is `volatile u8 *` in the SIGNATURE: agbcc then emits
+//     `adds r5,r0,#0` ahead of the `lsls r2,#16`; with `void *` it is a
+//     reg_equiv copy after the shift (first diff +0x2).
+//  2. WA byte via base symbol + offset (two pools, base then off), not a
+//     folded single literal. The `wa` symbol idiom is what EB48 uses; each
+//     use scopes its own `wa` local so the base dies before the call and no
+//     extra callee-saved register is pushed.
+//  3. The trailing s16 test is a PLAIN `s16` read (ldrsh); volatile emits
+//     ldrh+lsls+asrs. The sel value is pinned to r0 so the two `movs r0`
+//     arms keep the ROM's `b`-gap where the second pool pair lives; an
+//     unpinned `int sel` preloads `movs r1,#0` and parks the pools at the end.
+//  4. 158 B body + `00 00` ROM pad vs gas `46 c0`: file-scope align fills 0.
 // ----------------------------------------------------------------------------
-void _08001E230(void *rec_, u16 b, u16 c) {
-    volatile u8 *rec = (volatile u8 *)rec_;
+void _08001E230(volatile u8 *rec, u16 b, u16 c) {
     volatile u8 *r4;
     (void)b;
-    if (WA_U8(0x10C3) == 1) {
-        _08002158(4, *(volatile u16 *)(rec + 170));
-        r4 = rec + 168;
-    } else {
-        r4 = rec + 168;
-        _08002158(4, *(volatile u16 *)r4);
+    {
+        extern u8 RaceSceneCWaE230[];
+        __asm__(".globl RaceSceneCWaE230\nRaceSceneCWaE230 = 0x03001780");
+        const volatile u8 *wa = RaceSceneCWaE230;
+        if (*(volatile u8 *)(uintptr_t)(wa + 0x10C3) == 1) {
+            _08002158(4, *(volatile u16 *)(rec + 170));
+            r4 = rec + 168;
+        } else {
+            r4 = rec + 168;
+            _08002158(4, *(volatile u16 *)r4);
+        }
     }
-    *(volatile u16 *)r4 = _08002178(WA_U8(0x10C3) == 0 ? 1 : 0);
+    {
+        extern u8 RaceSceneCWaE230[];
+        const volatile u8 *wa = RaceSceneCWaE230;
+        register int sel __asm__("r0");
+        if (*(volatile u8 *)(uintptr_t)(wa + 0x10C3) == 0)
+            sel = 1;
+        else
+            sel = 0;
+        *(volatile u16 *)r4 = ((u16 (*)(int, int))_08002178)(sel, 4);
+    }
     if ((u16)(c - 1) <= 1u)
         *(volatile u16 *)(rec + 170) = 1;
-    if (*(volatile s16 *)r4 == 1) {
+    if (*(s16 *)r4 == 1) {
         _08002618(1, 0);
         *(volatile u16 *)(rec + 160) = 0;
         sub_0802B368(1);
@@ -130,6 +158,7 @@ void _08001E230(void *rec_, u16 b, u16 c) {
         *(volatile u32 *)(rec + 68) = 1;
     }
 }
+__asm__(".align 2, 0");
 
 // ----------------------------------------------------------------------------
 // ---- 0x08001E2D0 — guarded 8-arg emit (12,144,112,4,1,1,0) ----
@@ -171,30 +200,60 @@ void sub_08001E9DC(void *rec_) __attribute__((alias("_08001E9DC")));
 
 // ----------------------------------------------------------------------------
 // ---- 0x08001E3BC — four attr/param lane calls over WA+0x10E8..0x10F4 ----
-// Pools: {WA+0x10E8, WA+0x10EC, WA+0x10F0, WA+0x10F4}.
-// Stack word of each call = s16[rec+150].
+// Pools: {WA base 0x03001780 + 0x10E8/0x10EC/0x10F0/0x10F4} (base kept in r4).
+// Stack word of each call = s16[rec+150] reloaded per call via r6 pointer.
+// Four lowering facts, all load-bearing:
+//  1. WA words via base symbol + offset (two pools), not folded literals.
+//     The `wa` uintptr_t idiom is what E4C0/E4F4 use.
+//  2. Lane selects are PLAIN `s16` reads (ldrsh with r1=0); volatile emits
+//     ldrh+lsls+asrs.
+//  3. Tail is a POINTER local (`adds r6,r5,#150`), reloaded per call; a value
+//     local hoists to r4 and drops push {r6} (prefix 0).
+//  4. First WA word and lane load precede the tail-pointer materialisation:
+//     `w0`/`a0` locals then `tail` assignment puts `adds r6` after the first
+//     `ldrsh r3` like the ROM; declaring `tail` first hoists `adds r6` above
+//     the second pool load (134/152, first diff +0x8).
 // ----------------------------------------------------------------------------
-void _08001E3BC(void *rec_) {
-    volatile u8 *rec = (volatile u8 *)rec_;
-    s16 tail = *(volatile s16 *)(rec + 150);
-    _08001D910(84, 36, WA_U32(0x10E8), *(volatile s16 *)(rec + 172), tail);
-    _08001D910(84, 52, WA_U32(0x10EC), *(volatile s16 *)(rec + 174), tail);
-    _08001D910(84, 68, WA_U32(0x10F0), *(volatile s16 *)(rec + 176), tail);
-    _08001D910(84, 92, WA_U32(0x10F4), *(volatile s16 *)(rec + 180), tail);
+void _08001E3BC(volatile u8 *rec) {
+#ifndef __APPLE__
+    extern u8 RaceSceneCWa3BC[];
+    __asm__(".globl RaceSceneCWa3BC\nRaceSceneCWa3BC = 0x03001780");
+    uintptr_t wa = (uintptr_t)RaceSceneCWa3BC;
+#else
+    uintptr_t wa = (uintptr_t)WA;
+#endif
+    u32 w0 = *(volatile u32 *)(wa + 0x10E8u);
+    int a0 = ((const s16 *)(rec + 172))[0];
+    const s16 *tail = (const s16 *)(rec + 150);
+    _08001D910(84, 36, w0, a0, tail[0]);
+    _08001D910(84, 52, *(volatile u32 *)(wa + 0x10ECu), ((const s16 *)(rec + 174))[0], tail[0]);
+    _08001D910(84, 68, *(volatile u32 *)(wa + 0x10F0u), ((const s16 *)(rec + 176))[0], tail[0]);
+    _08001D910(84, 92, *(volatile u32 *)(wa + 0x10F4u), ((const s16 *)(rec + 180))[0], tail[0]);
 }
 
 // ----------------------------------------------------------------------------
 // ---- 0x08001E454 — four zeroed attr/param lane calls ----
-// Pools: {WA+0x10E8, WA+0x10EC, WA+0x10F0, WA+0x10F4}. Reads nothing from r0,
-// but every caller still re-materialises r0 = rec before the `bl` (0x801e6a0,
-// 0x801e96a), so the lifted source passes rec and the body simply ignores it.
+// Pools: {WA base + 0x10E8/0x10EC/0x10F0/0x10F4} (base kept in r4, zero in r5).
+// Reads nothing from r0, but every caller still re-materialises r0 = rec
+// before the `bl`, so the lifted source passes rec and the body ignores it.
+// WA words via base symbol + offset (two pools), not folded literals; the
+// `wa` uintptr_t idiom puts the base in r4 and the shared zero in r5 like
+// the ROM (`movs r5,#0` once, `str r5,[sp]` per call). Folded literals put
+// the zero in r4 and drop push {r5} (prefix 0).
 // ----------------------------------------------------------------------------
 void _08001E454(void *rec_) {
     (void)rec_;
-    _08001D910(84, 36, WA_U32(0x10E8), 0, 0);
-    _08001D910(84, 52, WA_U32(0x10EC), 0, 0);
-    _08001D910(84, 68, WA_U32(0x10F0), 0, 0);
-    _08001D910(84, 92, WA_U32(0x10F4), 0, 0);
+#ifndef __APPLE__
+    extern u8 RaceSceneCWa454[];
+    __asm__(".globl RaceSceneCWa454\nRaceSceneCWa454 = 0x03001780");
+    uintptr_t wa = (uintptr_t)RaceSceneCWa454;
+#else
+    uintptr_t wa = (uintptr_t)WA;
+#endif
+    _08001D910(84, 36, *(volatile u32 *)(wa + 0x10E8u), 0, 0);
+    _08001D910(84, 52, *(volatile u32 *)(wa + 0x10ECu), 0, 0);
+    _08001D910(84, 68, *(volatile u32 *)(wa + 0x10F0u), 0, 0);
+    _08001D910(84, 92, *(volatile u32 *)(wa + 0x10F4u), 0, 0);
 }
 
 // ----------------------------------------------------------------------------
@@ -351,9 +410,17 @@ void _08001E718(void *rec_) {
 // ----------------------------------------------------------------------------
 void _08001E764(void *rec_) {
     volatile u8 *rec = (volatile u8 *)rec_;
+#ifndef __APPLE__
+    extern u8 RaceSceneCWa764[];
+    __asm__(".globl RaceSceneCWa764\nRaceSceneCWa764 = 0x03001780");
+    uintptr_t wa = (uintptr_t)RaceSceneCWa764;
+#else
+    uintptr_t wa = (uintptr_t)WA;
+#endif
+    volatile u32 *p = (volatile u32 *)(wa + 0x10F8u);
     _08001E390(rec_);
-    _08001DA70(120, 64, WA_U32(0x10F8), 10);
-    if (WA_U32(0x10F8) > 9u) {
+    _08001DA70(120, 64, *p, 10);
+    if (*p > 9u) {
         Sub_08007BFC((void *)(rec + 16),
                      *(volatile u32 *)(rec + 292), *(volatile u32 *)(rec + 296),
                      56, 72, 10, 1, 1, 0);
@@ -379,12 +446,16 @@ void _08001E764(void *rec_) {
 }
 
 // ----------------------------------------------------------------------------
-// ---- 0x08001E8B4 — E4C0 + guarded emit + DBC0/D97C/DBE8/E9D8 tail ----
-// No pools.
+// ---- 0x08001E8B4 — E4C0 + E56C + guarded emit + DBC0/D97C/DBE8/E9D8 tail ----
+// No pools. NOTE: the E56C call is load-bearing: the ROM emits
+// `bl sub_08001E56C` between the E4C0 call and the guarded 7BFC emit.
+// Inlining the 7BFC alone omits that call (112 B vs 120 B, prefix 20).
+// 118 B body + `00 00` ROM pad vs gas `46 c0`: align fills 0.
 // ----------------------------------------------------------------------------
 void _08001E8B4(void *rec_) {
     volatile u8 *rec = (volatile u8 *)rec_;
     _08001E4C0();
+    _08001E56C(rec_);
     if ((u16)(*(volatile u16 *)(rec + 146) - 1) <= 2u)
         Sub_08007BFC((void *)(rec + 8),
                      *(volatile u32 *)(rec + 240), *(volatile u32 *)(rec + 244),
@@ -394,6 +465,7 @@ void _08001E8B4(void *rec_) {
     _0800DBE8((void *)(rec + 40));
     _08001E9D8(rec_);
 }
+__asm__(".align 2, 0");
 
 // ----------------------------------------------------------------------------
 // ---- 0x08001E92C — s8-gated emit + zeroed lanes + 9-arg packet emit ----

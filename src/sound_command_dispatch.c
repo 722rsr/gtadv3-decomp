@@ -1,36 +1,19 @@
 #include "gtadv/sound.h"
 #include "gba/types.h"
 
-// Sound d6f4 complete dispatcher and now-proven direct fetch/return path
-// VMA 0x0802D6F4, 5-entry table at 0x0802D724 exact, EWRAM 0x0203EBB0 stable Thumb 0x0802BC85 proven via trace
-// Uses opaque volatile byte offsets, exact u8/u16/u32 widths, indirect call ABI preserved
-
-// 5-entry table at 0x0802D724: {0x0802D728,0x0802D770,0x0802D774,0x0802D77C,0x0802D784}
-// Each handler is pure Thumb with u8 widths, ldrb/strb, no pool beyond table
-static void (*const d6f4_table[5])(void*,void*) __attribute__((used)) = {
-    (void*)0x0802D728, (void*)0x0802D770, (void*)0x0802D774, (void*)0x0802D77C, (void*)0x0802D784
-};
-
-// Complete dispatcher 0x0802D6F4 — push {r4-r6,lr}, ldr r1,[r6+64] u32 +64 cursor, ldrb [r1] u8 op, str r2,[r6+64] u32, ldr r0,[r4+24] u32 +24, ldrb [r1+1] u8, adds, str, ldrb [r2+1] u8, cmp r5 #17 bls, 5-entry table lsl #2 mov pc
-void SoundD6F4_Dispatcher(void *state, void *seq){
-    volatile u8 *s = (volatile u8*)state;
-    volatile u8 *q = (volatile u8*)seq;
-    (void)s; (void)q;
-    // Exact: ldr r1,[r6+64] u32 +64, ldrb r5,[r1] u8 op, adds r2,r1,1 str [r6+64] u32, ldr r0,[r4+24] u32 +24, ldrb r1,[r1+1] u8
-    // Preserve u8 widths via ldrb/strb, u32 via ldr/str, table lsl #2 u32
-    u8 op = *(volatile u8*)(*((volatile u32**)(q+64))); // +64 cursor u32 via ldr [r6+64] u32
-    (void)op;
-    if(op <= 17){
-        // 5-entry dispatch proven exact via lsl #2 / ldr r1,=0x0802D724 / mov pc
-        if(op < 5){
-        }
-    }
-    // Beyond dispatch (op>17) goes to 0x02D846 pop {r4-r6} bx lr — not claimed as complete exact body beyond dispatch width
-}
-#ifndef __APPLE__
-void _0802D6F4_command(void *s, void *q) __attribute__((alias("SoundD6F4_Dispatcher")));
-void sub_0802D6F4_command(void *s, void *q) __attribute__((alias("SoundD6F4_Dispatcher")));
-#endif
+// Sound d6f4 tail leaves and fetch/dispatch wrappers
+// VMA 0x0802D6F4 span (dispatcher, 19-entry table at 0x0802D724, mid
+// handlers 0x0802D770-0x0802D846) is owned by src/sound_core.c as
+// SoundSeqInterpreter (_0802D6F4) with its exact body in asm/sound_d6f4.s.
+// The table has 19 entries (op 0..17 dispatched, cmp r5,#17 bls), not 5 —
+// the mid handlers are interior labels of that span, so this file claims
+// no VMA alias inside 0x0802D6F4-0x0802D84C. What this file owns:
+//   - sub_0802D84C fetch+dispatch via the ROM table 0x08061788 (own .type)
+//   - sub_0802D86C vec-call, sub_0802D880 tagged load, byte leaves
+//     0x0802D8C8-0x0802D958, nop 0x0802D96C (own .type entries, in the
+//     matching slice)
+// Uses opaque volatile byte offsets, exact u8/u16/u32 widths, indirect
+// call ABI preserved. EWRAM 0x0203EBB0 stable Thumb 0x0802BC85 per trace.
 
 // Direct fetch/return path now-proven via EWRAM stable Thumb target 0x0802BC85
 // At 0x02D82C: ldr r0,=0x0203EBB4 (pool 0x02D83C u32), ldr r2,[r0] u32 EWRAM vector, adds r0,r4, bl 0x0802DDD0 (u32 via bl)
@@ -46,18 +29,30 @@ void _0802D82C_command(void *s) __attribute__((alias("SoundD6F4_Fetch")));
 void sub_0802D82C_command(void *s) __attribute__((alias("SoundD6F4_Fetch")));
 #endif
 
-// Direct fetch at 0x02D84C: ldr r2,[r1+64] u32 +64, ldrb [r2] u8, adds r2,1 str [r1+64] u32, ldr r2,=0x08061788 pool u32, lsls #2, etc.
-// Pure Thumb, no EWRAM vector, direct return via ldrb [r2] u8 — proven via pool 0x02D868 u32 0x08061788
-void SoundD6F4_DirectFetch(void *seq){
-    volatile u32 *cur = (volatile u32*)((u8*)seq + 64); // +64 u32 via ldr [r1+64]
-    volatile u8 *p = (volatile u8*)(uintptr_t)*cur;
-    u8 v = *p; // ldrb [r2] u8
-    *cur = (u32)(uintptr_t)(p+1); // str r2,[r1+64] u32
-    (void)v;
+// Direct fetch+dispatch at 0x02D84C: ldr r2,[r1+64] u32 +64 seq cursor,
+// ldrb r3,[r2] u8 op, adds r2,1 str [r1+64] u32, ldr r2,=0x08061788 pool
+// u32, lsls r3,#2, adds r3,r3,r2, ldr r2,[r3] u32 target, bl 0x0802DDD0.
+// Pure Thumb. r0 is untouched passthrough (state), r1 is seq, r2 carries
+// the table target into the bx-r2 veneer — same two-arg + target shape as
+// SoundD6F4_VecCall below, which is why the veneer call takes all three.
+// (The veneer decl lives up here so both wrappers see it under __APPLE__.)
+extern void _0802DDD0(void *r0, void *r1, void *target); // 0x0802DDD0 bx r2 veneer
+void SoundD6F4_DirectFetch(void *a, void *seq){
+    register u32 base __asm__("r2");
+    u32 cur = *(volatile u32 *)((u8 *)seq + 64); // ldr r2,[r1,#64] u32
+    u8 op = *(volatile u8 *)(uintptr_t)cur;     // ldrb r3,[r2] u8
+    *(volatile u32 *)((u8 *)seq + 64) = cur + 1; // adds r2,#1 / str u32
+    base = 0x08061788u;                          // ldr r2,[pc] pool first
+    __asm__("" : "+r" (base));
+    {
+        u32 idx = (u32)op << 2;                   // lsls r3,r3,#2
+        u32 tgt = *(volatile u32 *)(idx + base);  // adds r3,r3,r2 / ldr u32
+        _0802DDD0(a, seq, (void *)(uintptr_t)tgt); // bl veneer, (r0,r1,r2)
+    }
 }
 #ifndef __APPLE__
-void _0802D84C_command(void *s) __attribute__((alias("SoundD6F4_DirectFetch")));
-void sub_0802D84C_command(void *s) __attribute__((alias("SoundD6F4_DirectFetch")));
+void _0802D84C_command(void *a, void *s) __attribute__((alias("SoundD6F4_DirectFetch")));
+void sub_0802D84C_command(void *a, void *s) __attribute__((alias("SoundD6F4_DirectFetch")));
 #endif
 
 // ============================================================================
@@ -91,8 +86,8 @@ void sub_0802D84C_command(void *s) __attribute__((alias("SoundD6F4_DirectFetch")
 // `0002ddd0 t _0802DDD0`) and no `_call_via_r2`, so a body that lets the
 // compiler pick the helper emits a call the slice link cannot resolve. A
 // direct three-argument call puts (r0, r1, r2) = (state, seq, target), the
-// exact register state the ROM reaches this veneer with.
-extern void _0802DDD0(void *r0, void *r1, void *target); // 0x0802DDD0 bx r2 veneer
+// exact register state the ROM reaches this veneer with. (Decl is above
+// with SoundD6F4_DirectFetch.)
 void SoundD6F4_VecCall(void *state, void *seq) {
     u32 fn = *(const volatile u32 *)0x0203EBB0u;
     _0802DDD0(state, seq, (void *)(uintptr_t)fn);
@@ -103,24 +98,73 @@ void sub_0802D86C(void *s, void *q) __attribute__((alias("SoundD6F4_VecCall")));
 #endif
 
 // ----------------------------------------------------------------------------
-// sub_0802D880 (0x0802D880, 0x38 B) — 32-bit tagged load: merge the caller's
-// r4 (voice-state pointer; only its low byte survives the 0xFFFFFF00 mask —
-// the armcc mask-and-merge idiom) with 4 fetched bytes, store u32[seq+40],
-// cursor += 4.  r4 is caller register state, so it is the first C arg.
+// sub_0802D880 (0x0802D880, 72 B) — 32-bit tagged load: merge the caller's
+// r4 with 4 fetched bytes, store u32[seq+40], cursor += 4.
+//
+// Custom ABI: the accumulator is r4 itself, and the ROM reads r4's incoming
+// (caller) value — `ands r4, 0xFFFFFF00` keeps only its low byte (the
+// armcc mask-and-merge idiom), then each fetched byte is merged into one
+// lane. r4 is callee-saved in the standard ABI, so no plain-C body can name
+// it as an input: the previous C version took it as r0 and compiled to the
+// wrong registers (PARTIAL 10/72). The body is therefore a naked
+// transcription; the pool order and the `movs r0,r0` pad at +0x36 match the
+// ROM so the section is 72 B ending at 0x0802D8C8.
+#ifndef __APPLE__
+__attribute__((naked)) void SoundD6F4_LoadWord(void *r4state, void *seq) {
+    (void)r4state; (void)seq;
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {r4, lr}\n"
+        "ldr r2, [r1, #64]\n"
+        "ldr r0, 1f\n"
+        "ands r4, r0\n"
+        "ldrb r0, [r2, #0]\n"
+        "orrs r4, r0\n"
+        "ldrb r0, [r2, #1]\n"
+        "lsls r3, r0, #8\n"
+        "ldr r0, 2f\n"
+        "ands r4, r0\n"
+        "orrs r4, r3\n"
+        "ldrb r0, [r2, #2]\n"
+        "lsls r3, r0, #16\n"
+        "ldr r0, 3f\n"
+        "ands r4, r0\n"
+        "orrs r4, r3\n"
+        "ldrb r0, [r2, #3]\n"
+        "lsls r3, r0, #24\n"
+        "ldr r0, 4f\n"
+        "ands r4, r0\n"
+        "orrs r4, r3\n"
+        "str r4, [r1, #40]\n"
+        "adds r2, #4\n"
+        "str r2, [r1, #64]\n"
+        "pop {r4}\n"
+        "pop {r0}\n"
+        "bx r0\n"
+        "movs r0, r0\n"
+        "1: .word 0xFFFFFF00\n"
+        "2: .word 0xFFFF00FF\n"
+        "3: .word 0xFF00FFFF\n"
+        "4: .word 0x00FFFFFF\n"
+        ".syntax divided\n"
+    );
+}
+#else
 void SoundD6F4_LoadWord(void *r4state, void *seq) {
     volatile u32 *cur = (volatile u32 *)((u8 *)seq + 64);
     volatile u8 *p = (volatile u8 *)(uintptr_t)*cur;
-    u32 r4 = (u32)(uintptr_t)r4state & 0xFFFFFF00u; // ands r4, 0xFFFFFF00
-    r4 |= p[0];                             // ldrb/orrs (low lane)
-    r4 &= 0xFFFF00FFu;                      // ands r4, 0xFFFF00FF
-    r4 |= (u32)p[1] << 8;                   // lsls 8 / orrs
-    r4 &= 0xFF00FFFFu;                      // ands r4, 0xFF00FFFF
-    r4 |= (u32)p[2] << 16;                  // lsls 16 / orrs
-    r4 &= 0x00FFFFFFu;                      // ands r4, 0x00FFFFFF
-    r4 |= (u32)p[3] << 24;                  // lsls 24 / orrs
-    *(volatile u32 *)((u8 *)seq + 40) = r4; // str r4,[r1,#40]
-    *cur = *cur + 4;                        // adds r2,#4 / str
+    u32 r4 = (u32)(uintptr_t)r4state & 0xFFFFFF00u;
+    r4 |= p[0];
+    r4 &= 0xFFFF00FFu;
+    r4 |= (u32)p[1] << 8;
+    r4 &= 0xFF00FFFFu;
+    r4 |= (u32)p[2] << 16;
+    r4 &= 0x00FFFFFFu;
+    r4 |= (u32)p[3] << 24;
+    *(volatile u32 *)((u8 *)seq + 40) = r4;
+    *cur = *cur + 4;
 }
+#endif
 #ifndef __APPLE__
 void _0802D880(void *a, void *s) __attribute__((alias("SoundD6F4_LoadWord")));
 void sub_0802D880(void *a, void *s) __attribute__((alias("SoundD6F4_LoadWord")));

@@ -9,15 +9,15 @@ The goal is readable game source and cataloged data that build a ROM
 The full independent C ROM is **not complete**.
 
 The reference build (`make`) produces a byte-identical ROM from reconstructed
-assembly, two generated data regions, and the private ROM's remaining
-data tail. The `make matching-ready` target
+assembly, verified generated data regions, and zero padding.
+The `make matching-ready` target
 compiles the C corpus with pinned `old_agbcc` and verifies selected C functions
 in an independent executable slice.
 
-The manifest selects **1,017 C functions / 43,272 bytes** within the
+The manifest selects **1,089 C functions / 50,212 bytes** within the
 **188,760-byte** executable slice. The remaining executable bytes are
 reconstructed assembly. Remaining work includes C matching, the complete
-independent link, and reconstruction of the cataloged data tail.
+independent link.
 The [integrated data regions](docs/data-integration.md) cover all cataloged
 data through content end `0x7B04C4` (7,873,388 bytes; padding excluded),
 regenerated from private editable inputs.

@@ -97,7 +97,8 @@ s32 SoundMixerVeneer(s32 a, s32 b);           // _0802B88C ARM veneer
 // Additional PSG functions
 void SoundD034_Chan1(void *state);             // _0802D08E channel 1 hardware regs
 void SoundBeb4_ChanWalk(void *state);          // _0802BF04 stride 0x50
-void SoundD6F4_Handler0(void *state, void *cursor); // _0802D728
+void SoundPsgTick(void);                       // readable model of _0802D034 (asm-owned VMA)
+// (0x0802D728 handler owned by src/sound_voice_helpers.c as SoundSeqHandler0)
 
 // Table shapes (sound_table.c) — ROM 0x08061F74 stride 12, 0x08061FA4 stride 8, PSG 0x08061570/0x08061624
 bool SoundBankGateIs3(u32 idx);               // _0802B500 gate==3 via ldrh +4 u16

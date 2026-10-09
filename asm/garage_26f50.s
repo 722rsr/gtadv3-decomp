@@ -2131,6 +2131,9 @@ _080028024:
 	pop	{r0}
 	bx	r0
 	movs	r0, r0
+	.type sub_08002802C, %function
+sub_08002802C:
+_08002802C:
 	lsls	r1, r1, #16
 	movs	r0, #144
 	lsls	r0, r0, #12

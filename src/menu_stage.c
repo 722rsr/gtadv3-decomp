@@ -125,11 +125,23 @@ void sub_0800D59C(void *a) __attribute__((alias("MenuStage_0800D59C")));
 // (dead — no callee reads caller stack; preserved for fidelity); then
 // _08003940(4, 0x0805F92C) [song 4 + table], r4 = 0x0805F938,
 // r3 = _08002140, then _08003F18(50, 30, r4, r3).
+// The ROM copies the 12-byte block with a single `ldmia r0!,{r2,r3,r4}` /
+// `stmia r1!,{r2,r3,r4}` pair (source in r0, destination `sp` in r1), i.e. a
+// struct-style block copy through one base pointer. Three separately-addressed
+// word reads emit three `ldr [pc]`/`ldr [r0]`/`str [sp]` triples and three
+// extra pool words, which is the bug this shape fixes.
+typedef struct { u32 w[3]; } MenuStageT12;
 void MenuStage_0800D5A8(void *rec) {
-    u32 tmpl[3];
-    tmpl[0] = *(const volatile u32 *)0x0805F920;
-    tmpl[1] = *(const volatile u32 *)0x0805F924;
-    tmpl[2] = *(const volatile u32 *)0x0805F928;
+    MenuStageT12 tmpl;
+    // The ROM block copy reads the template through r0 and writes `sp`
+    // through r1 (`ldr r0,_0800D5D8 / ldmia r0! / stmia r1!`), the reverse of
+    // agbcc's default `dest=r0, src=r1`. Pinning the two pointer pseudos is
+    // what reproduces the ROM's role assignment; it also lets agbcc reuse the
+    // post-increment r0/r1 halfword for the following call pool load.
+    register const MenuStageT12 *src __asm__("r0") =
+        (const MenuStageT12 *)(uintptr_t)0x0805F920u;
+    register MenuStageT12 *dst __asm__("r1") = &tmpl;
+    *dst = *src;
     (void)tmpl; // dead stack copy in asm (ldmia/stmia to sp, never read)
     _08003940(4, (u32)0x0805F92C);
     _08003F18(50u, 30u, (const volatile u8 *)(uintptr_t)0x0805F938u, (int)_08002140());
@@ -577,45 +589,67 @@ void Menu_D854(void *a) __attribute__((alias("MenuStage_0800D854"))); // rec35_r
 //          u16[+0]=3. (+4 store label NOT reached: `b 0x0800D95A`.)
 // phase 4: *u32[+12] = {+0:10, +32:10, +28:1}; *u32[+8] = 1; u16[+4]=3.
 // phases 0/3: no-op (all comparisons miss, straight to `bx lr`).
-void MenuStage_0800D8E4(void *rec) {
-    volatile u8 *r2 = (volatile u8 *)rec;
-    s16 ph = *(volatile s16 *)(r2 + 4);
-    if (ph == 1) {
-        *(volatile u16 *)(r2 + 2) = 2;
-        *(volatile u16 *)(r2 + 0) = 3;
-        *(volatile u32 *)*(volatile u32 * volatile *)(r2 + 8) = (u32)ph;
-        *(volatile u16 *)(r2 + 4) = 2;
-        return;
-    }
-    if (ph == 2) {
-        s16 a = (s16)(*(volatile u16 *)(r2 + 0) - 1);
-        *(volatile u16 *)(r2 + 0) = (u16)a;
-        if (a <= 0) {
-            s16 b = (s16)(*(volatile u16 *)(r2 + 2) - 1);
-            *(volatile u16 *)(r2 + 2) = (u16)b;
-            if (b <= 0) {
-                *(volatile u16 *)(r2 + 4) = 4;
+// The ROM opens with `movs r0,#4; ldrsh r3,[r2,r0]`: a NON-volatile signed
+// halfword read. A `volatile s16` lvalue would emit `ldrh;lsls;asrs` instead.
+// The dispatch is a `switch` (agbcc's split-at-2 compare tree: ==2, >2 -> 3/4,
+// else ==1), not an if/else chain. Phase 2's decrement is 16-bit: `ldrh;subs;
+// strh` then the sign test is the shifted-word `lsls #16;cmp #0;bgt`
+// (equivalent to `(s16)v > 0`); the peer word flips 0<->1 through a SINGLE
+// shared store, so the two arms assign a value and `goto` past the store on
+// any other value.
+void MenuStage_0800D8E4(void *rec_) {
+    u8 *rec = (u8 *)rec_;
+    s16 ph = *(s16 *)(rec + 4);
+    switch (ph) {
+    case 1:
+        *(u16 *)(rec + 2) = 2;
+        *(u16 *)(rec + 0) = 3;
+        *(u32 *)*(u32 **)(rec + 8) = (u32)ph;
+        *(u16 *)(rec + 4) = 2;
+        break;
+    case 3:
+        break;
+    case 2: {
+        int a = *(u16 *)(rec + 0) - 1;
+        *(u16 *)(rec + 0) = a;
+        // `bgt _0800D95A` exits when counter A is still positive: the second
+        // counter, the peer flip AND the +0=3 reload all live inside this arm.
+        if ((a << 16) <= 0) {
+            int b = *(u16 *)(rec + 2) - 1;
+            *(u16 *)(rec + 2) = b;
+            if ((b << 16) <= 0) {
+                *(u16 *)(rec + 4) = 4;
             }
+            {
+                u32 *peer = *(u32 **)(rec + 8);
+                u32 pv = *peer;
+                // `if (pv != 0) { if (pv != 1) skip; pv = 0; } else pv = 1;`
+                // is what puts the `pv = 1` arm out of line (ROM `beq` to it)
+                // and the `pv = 0` arm inline, sharing one store.
+                if (pv != 0) {
+                    if (pv != 1) goto after_peer;
+                    pv = 0;
+                } else {
+                    pv = 1;
+                }
+                *peer = pv;
+            }
+        after_peer:
+            *(u16 *)(rec + 0) = 3;
         }
-        volatile u32 *peer = *(volatile u32 * volatile *)(r2 + 8);
-        s32 pv = (s32)*peer;
-        if (pv == 0) {
-            pv = 1;
-        } else if (pv == 1) {
-            pv = 0;
-        }
-        if (pv != (s32)*peer) *peer = (u32)pv; // `bne 0x0800D940` skips store
-        *(volatile u16 *)(r2 + 0) = 3;
-        return;
+        break;
     }
-    if (ph == 4) {
-        volatile u8 *p = *(volatile u8 * volatile *)(r2 + 12);
-        *(volatile u32 *)(p + 0) = 10;
-        *(volatile u32 *)(p + 32) = 10;
-        *(volatile u32 *)(p + 28) = 1;
-        *(volatile u32 *)*(volatile u32 * volatile *)(r2 + 8) = 1;
-        *(volatile u16 *)(r2 + 4) = 3;
-        return;
+    case 4: {
+        u32 *p = *(u32 **)(rec + 12);
+        p[0] = 10;
+        p[8] = 10;
+        p[7] = 1;
+        *(u32 *)*(u32 **)(rec + 8) = 1;
+        *(u16 *)(rec + 4) = 3;
+        break;
+    }
+    default:
+        break;
     }
 }
 #ifndef __APPLE__

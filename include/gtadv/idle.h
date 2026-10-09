@@ -22,10 +22,10 @@ void *Idle_GetRecordPtr(int idx);                      // _08001F54
 void Idle_SetRecordCount(u16 v);                      // _08001F80
 int Idle_GetRecordCount(void);                         // _08001F8C (was u16; see idle_accessors.c)
 u16 Idle_GetCurrentMode(void);                        // _08002038
-u16 Idle_GetCounterC(void);                           // _08002044 (+0x0C)
+u32 Idle_GetCounterC(void);                           // _08002044 (+0x0C; word ABI)
 u16 Idle_GetD8Word(void);                             // _08002050 (+0xD8)
 void Idle_SetFlag2(u8 v);                             // _08002060 (+0x02)
-u16 Idle_GetRecordFiltered(int idx);                  // _0800206C wrapper over _080015F4
+u32 Idle_GetRecordFiltered(int idx);                  // _0800206C wrapper over _080015F4; word ABI
 u32 Idle_GetD0Word(void);                             // _08001CB4 (+0xD0 raw word)
 s32 Idle_GetD0WordHalved(void);                      // _08001CC4 (+0xD0 halved, toward zero)
 void Idle_RequestMode10(u32 arg);                     // _08001FB4 (request mode 10, +0x28 = arg)

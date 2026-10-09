@@ -381,10 +381,109 @@ void _0800279D8(void *a0,int a1,int a2,int a3) __attribute__((alias("Garage_279D
 void sub_0800279D8(void *a0,int a1,int a2,int a3) __attribute__((alias("Garage_279D8")));
 #endif
 
-void Garage_27B94(void *a0){
-    // _080027B94: push {r4,r5,lr} sub sp #20, gate s16 at [a0+4] &0x0203F8E8 etc., pools 0x03001780/0x000010C3
-    volatile s16 *p = (volatile s16*)((u8*)a0+4);
-    (void)p;
+// 0x080027B94 — 332 B (0x08027B94..0x08027CE0): per-record progression follow-up.
+// `rec` is a 12-byte slot; `*(u32 *)(rec+4)` is the "info" record whose s16[0] is
+// the phase selector (1..3), and the record fields used here are s16[+8] (the
+// counter that drives every arm) and u8[+0].
+//
+// Callee spellings. Same split as `Garage_Call_27F60` above: the slice resolves
+// the VMA alias, the host build calls the friendly body. The two
+// `ObjCenter_*` prototypes are runtime_hud.c's; use the surviving `sub_`
+// VMA aliases at these call sites because those are the names the selected
+// C sections export into the independent slice.
+#ifndef __APPLE__
+extern void sub_08003A88(int a, u32 b, const volatile u8 *c);
+extern void sub_08003AA8(int a, u32 b, const volatile u8 *c);
+extern void _08018A88(u32 v);
+extern void _08007BFC(void *a, int b, int c, int d, int e, int f, int g, int h, int i);
+extern u32 sub_0802DFE4(u32 n, u32 d);
+#define Garage_Call_03A88 sub_08003A88
+#define Garage_Call_03AA8 sub_08003AA8
+#define Garage_Call_18A88 _08018A88
+#define Garage_Call_07BFC _08007BFC
+#define Garage_Call_02DFE4 sub_0802DFE4
+#else
+extern void ObjCenter_03A88(int a, u32 b, const volatile u8 *c);
+extern void ObjCenter_03AA8(int a, u32 b, const volatile u8 *c);
+extern void Ghost_SetRaceCtxU16_74(u32 v);
+extern void Course_Iter_07BFC(void *a, int b, int c, int d, int e, int f, int g, int h, int i);
+extern u32 DivRemU_02DFE4(u32 num, u32 den);
+#define Garage_Call_03A88 ObjCenter_03A88
+#define Garage_Call_03AA8 ObjCenter_03AA8
+#define Garage_Call_18A88 Ghost_SetRaceCtxU16_74
+#define Garage_Call_07BFC Course_Iter_07BFC
+#define Garage_Call_02DFE4 DivRemU_02DFE4
+#endif
+//
+// Two constraints the byte match depends on:
+//   * WA+0x10D8 is reached through an ASSEMBLER-RESOLVED symbol: the ROM emits
+//     `ldr r0,=0x03001780 / ldr r2,=0x000010D8 / adds r0,r0,r2` at all three
+//     sites, and a folded C constant collapses the pair into one pool word
+//     0x03002858 (measured). Same lever as src/rec35_dispatch_tail.c
+//     Rec35_Gate_186A8; the `.globl` stays INSIDE the function because agbcc
+//     folds a file-scope one away.
+//   * The record views are PLAIN pointers. With `volatile` pointees the
+//     `40 - u16[rec+8]` load is scheduled before the constant materialisation
+//     and lands in r1 instead of the ROM's r4.
+//   * `wa` is declared at each of its three uses, not once at function scope:
+//     a single local is hoisted into a callee-saved register and costs the
+//     `push {r4,r5,lr}` frame an extra register (measured: r6 and r5).
+void Garage_27B94(void *a0) {
+    u8 *rec = (u8 *)a0;
+    extern u8 GarageWaCountSlot[] __asm__("GarageWaCountSlot");
+    s16 v;
+    v = ((const s16 *)(*(u32 **)(rec + 4)))[0];
+    __asm__(".globl GarageWaCountSlot\nGarageWaCountSlot = 0x03001780\n");
+    switch (v) {
+    case 1: {
+        volatile u8 *wa = (volatile u8 *)(uintptr_t)GarageWaCountSlot;
+        if (Garage_Call_02DFE4(*(volatile u32 *)(wa + 0x10D8), 3u) == 0)
+            *(u16 *)(rec + 8) = (u16)(*(u16 *)(rec + 8) - 1);
+        if (((const s16 *)rec)[4] <= 23) {
+            rec[0] = 0;
+            break;
+        }
+        if (((const s16 *)rec)[4] <= 39) {
+            Garage_Call_03AA8(230, (u32)((const s16 *)rec)[4],
+                              *(const volatile u8 **)(*(u8 **)(rec + 4) + 4));
+            Garage_Call_18A88((u16)(40 - (u32)*(u16 *)(rec + 8)));
+            break;
+        }
+        Garage_Call_03A88(230, (u32)((const s16 *)rec)[4],
+                          *(const volatile u8 **)(*(u8 **)(rec + 4) + 4));
+        break;
+    }
+    case 2: {
+        if (((const s16 *)rec)[4] <= 159) {
+            u8 *st = *(u8 **)0x03001760u;
+            Garage_Call_07BFC((void *)(st + 0xD8), (int)((const s16 *)st)[4], 7, 156,
+                              (int)((const s16 *)rec)[4], (int)((const s16 *)st)[5], 0, 0, 0);
+        }
+        {
+            volatile u8 *wa = (volatile u8 *)(uintptr_t)GarageWaCountSlot;
+            if (Garage_Call_02DFE4(*(volatile u32 *)(wa + 0x10D8), 3u) == 0)
+                *(u16 *)(rec + 8) = (u16)(*(u16 *)(rec + 8) - 1);
+        }
+        if (((const s16 *)rec)[4] <= 99)
+            *(u16 *)(rec + 8) = 100;
+        break;
+    }
+    case 3: {
+        if (((const s16 *)rec)[4] <= 159) {
+            u8 *st = *(u8 **)0x03001760u;
+            Garage_Call_07BFC((void *)(st + 0xD8), (int)((const s16 *)st)[6], 8, 132,
+                              (int)((const s16 *)rec)[4], (int)((const s16 *)st)[7], 0, 0, 0);
+        }
+        {
+            volatile u8 *wa = (volatile u8 *)(uintptr_t)GarageWaCountSlot;
+            if (Garage_Call_02DFE4(*(volatile u32 *)(wa + 0x10D8), 3u) == 0)
+                *(u16 *)(rec + 8) = (u16)(*(u16 *)(rec + 8) - 1);
+        }
+        if (((const s16 *)rec)[4] <= 63)
+            *(u16 *)(rec + 8) = 64;
+        break;
+    }
+    }
 }
 #ifndef __APPLE__
 void _080027B94(void *a0) __attribute__((alias("Garage_27B94")));
@@ -450,9 +549,14 @@ void sub_080027D84(int a0) __attribute__((alias("Garage_27D84")));
 // Remaining bounded direct leaves from 0x027F60 onward — mechanically translated, opaque volatile pointers
 // Each preserves push {r4,lr} prologue, ldr rN,[pc,#imm] pools (0x03001760 etc.), direct offsets +4/+6/+8 etc., widths u8/s16/u32 via ldrb/ldrh/ldr/strb/strh, branches beq/bgt/ble on s16 cmp, table arithmetic lsls #1*1 etc., helper ABI bl 0x0802DF6C/0x08002ED0 with r0=X etc., no guessed course/garage stride
 // 0x080027F60 — 108 B (0x080027F60..0x080027FCC, tail 2-byte pad at 0x27FCA).
-// The INCOMING PARAMETER IS NEVER READ. The record base comes from the EWRAM
-// slot: `push {r4,lr}; ldr r4,=0x03001760; ldr r1,[r4]`, and r1 stays live
-// for the whole body. `a0` is kept only so the existing alias block still links.
+// The INCOMING PARAMETER IS NEVER READ, and the ROM's only caller
+// (0x080027FCC) calls it with a bare `bl`: r0 still holds whatever _080027FCC's
+// own caller left there. The C therefore takes NO parameter, so the call site
+// emits no argument-setup instruction at all. `a0` was kept in an earlier draft
+// only so the alias block still linked; it bought nothing and cost the callee a
+// dead declaration.
+// The record base comes from the EWRAM slot: `push {r4,lr}; ldr r4,=0x03001760;
+// ldr r1,[r4]`, and r1 stays live for the whole body.
 //
 //   v = (s16)rec[+2]                              `movs r2,#2; ldrsh r0,[r1,r2]`
 //   case 0: rec[+4] = 50                          `movs r0,#50; strh`
@@ -468,7 +572,7 @@ void sub_080027D84(int a0) __attribute__((alias("Garage_27D84")));
 // which would fold to an immediate offset and cost the two instructions each.
 // `DEC` is SHARED by cases 1 and 2 and it reuses the `w` already in r2, so
 // `w` is a function-scope local assigned in both arms before the `goto`.
-void Garage_27F60(void *a0){
+void Garage_27F60(void){
     extern void _08018A98(void);
     // ONE load of the slot; r1 stays live for the whole body and is reloaded
     // only after the call. The three views are casts of the SAME `rec` local,
@@ -483,10 +587,11 @@ void Garage_27F60(void *a0){
     volatile u32 *slot = (volatile u32 *)0x03001760u;
     u32 rec = *slot;
     s16 v;
-    u16 w;
-    // MEASURED NEUTRAL (41/108 both with and without): naming the guard does
-    // NOT stop agbcc copying the `w` load into r2. It stays inline.
-    (void)a0;
+    // Pinned to r2: the ROM loads `w` directly with `ldrh r2,[r1,#4]` in both
+    // cases 1 and 2. Without the pin agbcc loads into r0 and copies
+    // (`ldrh r0` / `adds r2,r0,#0`). The pin alone makes DEC `subs r2,#1`
+    // in place; the empty-asm keep-live below forces the ROM's `subs r0,r2,#1`.
+    register u16 w __asm__("r2");
     // The switch value is at byte offset 2, the s16 guard at byte offset 4.
     v = ((const s16 *)(uintptr_t)rec)[1];
     // A `switch` whose CASES ARE DECLARED 0,1,2,3. That order is what places the
@@ -504,7 +609,21 @@ void Garage_27F60(void *a0){
         goto bump;
     case 2:
         w = ((volatile u16 *)(uintptr_t)rec)[2];
-        if (((const s16 *)(uintptr_t)rec)[2] > 0) goto dec;
+        // DEC lives HERE, in case 2's fall-through, not after the switch:
+        // the ROM is `cmp; ble STRB; subs r0,r2,#1; strh; b OUT; STRB: ...`,
+        // so case 1's `bgt` lands in the middle of case 2's body. A `dec:`
+        // after the switch puts the shared block out-of-line and costs the
+        // extra branch pair (measured: 112 B vs 108 B).
+        if (((const s16 *)(uintptr_t)rec)[2] <= 0) goto strb2;
+    dec:
+        ((volatile u16 *)(uintptr_t)rec)[2] = w - 1;
+        // Keep `w` live past the store so agbcc cannot decrement r2 in place
+        // (`subs r2,#1`): the ROM is `subs r0,r2,#1 / strh r0`, i.e. `w` is
+        // preserved. Empty asm emits no instruction; same steering idiom as
+        // GARAGE_DISP_EXCHANGE / OPaque.
+        __asm__ volatile ("" : "+r" (w));
+        goto out;
+    strb2:
         ((volatile u8 *)(uintptr_t)rec)[19] = 1;
         goto reload;
     case 3:
@@ -516,14 +635,6 @@ void Garage_27F60(void *a0){
     default:
         goto out;
     }
-dec:
-    // SHARED by cases 1 and 2, and it consumes the `w` already in r2, which is
-    // why `w` is a function-scope local assigned in both arms before the goto.
-    // The `(u16)` cast is dropped: the implicit narrowing is what lets agbcc
-    // keep `w` in r2 and emit `subs r0,r2,#1` directly instead of copying the
-    // load into r2 first (measured: the cast costs an `adds r2,r0,#0` per case).
-    ((volatile u16 *)(uintptr_t)rec)[2] = w - 1;
-    goto out;
 reload:
     // `ldr r1,[r4]` -- required because _08018A98 may clobber r1. Case 0
     // reaches BUMP without it (`b 0x27fbe`, not `b 0x27fbc`).
@@ -534,12 +645,15 @@ bump:
 out:
     return;
 }
+// 108-body span: 2-byte tail pad at 0x080027FCA is `00 00`, not gas's Thumb
+// `nop` filler. Same idiom as Garage_27FCC / Garage_28B54.
+__asm__(".align 2, 0");
 #ifndef __APPLE__
-void _080027F60(void *a) __attribute__((alias("Garage_27F60")));
-void sub_080027F60(void *a) __attribute__((alias("Garage_27F60")));
+void _080027F60(void) __attribute__((alias("Garage_27F60")));
+void sub_080027F60(void) __attribute__((alias("Garage_27F60")));
 #endif
-// 0x080027FCC -- IMPLEMENTATION INCOMPLETE. Full ROM characterisation from
-// objdump --start-address=0x27fcc.
+// 0x080027FCC — garage-record follow-up sweep (0x08027FCC..0x0802802C, 96 B).
+// Full ROM characterisation from objdump --start-address=0x27fcc:
 //
 //   push {r4, r5, lr}
 //   _080027F60;                                   // bl 0x27f60, no args
@@ -564,11 +678,125 @@ void sub_080027F60(void *a) __attribute__((alias("Garage_27F60")));
 // this file), `_080027B94` (Garage_27B94) and `_080027D30` (Garage_27D30). All
 // three need a manifest entry exporting a name that some TU actually DEFINES,
 // or the slice link fails with `undefined reference`.
-void Garage_27FCC(void){ /* not lifted -- see ROM characterisation above */ }
+//
+// Load-order notes that the byte match depends on:
+//   * The slot constant is materialised TWICE, at the two points the ROM does
+//     (`ldr r0,=0x03001760` at entry, `ldr r3,=0x03001760` after the loop).
+//     Naming one slot local at function scope keeps it in the callee-saved
+//     register across the loop, and the second read then collapses to
+//     `ldr r1,[r4]` — 4 bytes short of the ROM. Declaring the second-only
+//     local where the ROM reloads it is what reproduces the second pool load.
+//   * `row` is callee-saved across the `_080027B94` call, which is the
+//     `push {r4,r5,lr}` frame.
+//   * The two halfword widths of [rec+6] are two reads on purpose: `ldrh` for
+//     the stored value and the `movs r4,#6`/`ldrsh` index form for the test.
+//   * The record views are PLAIN pointers. `volatile` on the pointee turns
+//     `((s8*)row)[0]` into `ldrb r0,[r4,#0]` and drops the `movs r0,#0`;
+//     measured on scratch bodies, only an unqualified `s8 *` reproduces both.
+//
+// Callee spellings. All three bodies are in this file, but the spliced slice
+// resolves the VMA alias (the friendly name is a C-only symbol the slice does
+// not link), and the host build has no alias at all -- a bare `_080027B94`
+// call would be an implicit declaration there. Same split as
+// src/ai_catalog.c `Call_FlatIndex`; see tools/apple_decls.py.
 #ifndef __APPLE__
+extern void _080027F60(void);
+extern void _080027B94(void *rec);
+extern void _080027D30(void);
+#define Garage_Call_27F60 _080027F60
+#define Garage_Call_27B94 _080027B94
+#define Garage_Call_27D30 _080027D30
+#else
+#define Garage_Call_27F60 Garage_27F60
+#define Garage_Call_27B94 Garage_27B94
+#define Garage_Call_27D30 Garage_27D30
+#endif
+void Garage_27FCC(void) {
+    u8 *rec;
+    // The ROM reaches the slot only AFTER the call: `push {r4,r5,lr}` /
+    // `bl 0x27f60` / `ldr r0,=0x03001760` / `ldr r1,[r0]`. Initialising `rec`
+    // before the call would put that pool load ahead of the `bl`.
+    Garage_Call_27F60();
+    rec = *(u8 *volatile *)0x03001760u;
+    if (rec[19] == 0)
+        return;
+    {
+        s8 *row = (s8 *)(rec + 24);
+        int i = 15;
+        do {
+            // The array-INDEX form, and through a plain `s8 *`: the ROM is
+            // `movs r0,#0` / `ldrsb r0,[r4,r0]`. A byte-offset cast folds to a
+            // single `ldrb r0,[r4,#0]` and a volatile pointee drops the signed
+            // load entirely.
+            if (row[0] != 0)
+                Garage_Call_27B94(row);
+            i--;
+            row += 12;
+        } while (i >= 0);
+    }
+    rec = *(u8 *volatile *)0x03001760u;
+    {
+        // Two widths of the same halfword: `ldrh r0,[r1,#6]` for the value that
+        // gets decremented and `movs r4,#6` / `ldrsh r2,[r1,r4]` for the signed
+        // test. Both are named so each read appears exactly once.
+        u16 w = *(u16 *)(rec + 6);
+        s16 g = ((const s16 *)rec)[3];
+        if (g > 0) {
+            *(u16 *)(rec + 6) = (u16)(w - 1);
+            return;
+        }
+        if (g != 0)
+            return;
+    }
+    {
+        // Live across the `_080027D30` call, so the ROM parks the slot ADDRESS
+        // in r4 (`adds r4,r3,#0`) and re-reads `[r4]` after every call.
+        // The record pointer is NOT named: the ROM loads it into r0
+        // (`ldr r0,[r4,#0]`) and immediately indexes it. A named local moves
+        // the pointer to r1 and the index register to r2.
+        volatile u32 *slot = (volatile u32 *)0x03001760u;
+        do {
+            Garage_Call_27D30();
+        } while (((const s16 *)(*(u32 *volatile *)slot))[3] == 0);
+    }
+}
+// 96-body span: the 2-byte tail pad at 0x802802a is `00 00`, not gas's Thumb
+// `nop` filler. Same idiom as Garage_28B54 below.
+__asm__(".align 2, 0");
+// 0x0802802C — 32 B (0x0802802C..0x0802804C, tail 2-byte pad at 0x80284A).
+// Typed here because the span inventory had no entry between 0x08027FCC and
+// 0x0802804C, which made _080027FCC's ROM span 32 bytes too long and hid this
+// leaf. It has NO BL caller anywhere in the ROM: the entry is only reachable as
+// an emitted non-static function, so the register contract below is read off
+// the body alone -- r1 is the operand, r0 is never read.
+//   if (((u32)(b << 16) & 0x90000u) != 0) {
+//       u8 *rec = *(u32 *)0x03001760;
+//       if (rec[19] != 0) rec[16] = 1;
+//   }
+void Garage_2802C(int unused, int bits) {
+    u32 v, k;
+    (void)unused;
+    // Written as a running mask (`k &= v`) rather than `(v & 0x90000u) != 0`:
+    // the ROM is `ands r0, r1`, i.e. the AND's destination is the CONSTANT's
+    // register. The single-expression form puts the result in the shifted
+    // value's register and emits `ands r1, r0` instead.
+    v = (u32)(bits << 16);
+    k = 0x90000u;
+    k &= v;
+    if (k != 0) {
+        u8 *rec = *(u8 *volatile *)0x03001760u;
+        if (rec[19] != 0)
+            rec[16] = 1;
+    }
+}
+#ifndef __APPLE__
+void _0802802C(int a, int b) __attribute__((alias("Garage_2802C")));
+void sub_0802802C(int a, int b) __attribute__((alias("Garage_2802C")));
+void _08002802C(void) __attribute__((alias("Garage_2802C")));
+void sub_08002802C(void) __attribute__((alias("Garage_2802C")));
 void _080027FCC(void) __attribute__((alias("Garage_27FCC")));
 void sub_080027FCC(void) __attribute__((alias("Garage_27FCC")));
-void Sub_08027FCC(void) __attribute__((alias("Garage_27FCC")));
+void Sub_080027FCC(void) __attribute__((alias("Garage_27FCC")));
 #endif
 // ---- 0x0802804C.. 0x08002823C: the HUD-gauge command family ----
 //
@@ -867,7 +1095,59 @@ void Garage_2847C(void *a, int b) {
 void _08002847C(void *a,int b) __attribute__((alias("Garage_2847C")));
 void sub_08002847C(void *a,int b) __attribute__((alias("Garage_2847C")));
 #endif
-void Garage_284FC(void *a,int b){ (void)a;(void)b; }
+// 0x080284FC — 144 B (0x080284FC..0x0802858C): the grow-side sibling of
+// Garage_2847C, dispatched by _0800286A4 case 16 (`_0800284FC(rec, arg)`).
+//   {6,8}: w = rec[+16] + 192; rec[+16] = w; if (w > 2399) rec[+16] = 2400;
+//          v1 = (s32)rec[+4] - (rec[+16] >> 3); rec[+4] = v1;
+//          v3 = 1920 - v1; rec[+12] = v3; if (v3 > 1919) rec[+12] = 1920;
+//   {5,7}: same width walk the other way: v3 = v1 - 1920; rec[+12] = v3;
+//          if (v3 <= -1920) rec[+12] = -1920;
+//   else return;
+//   tail: u16[0x030035C0+12] = u16[rec+8] - u16[rec+12]     (halfword views)
+//
+// EXACT 144/144. The {5,7} arm's two loads come out with the roles swapped
+// (`ldr r0,[r2,#16]`/`ldr r1,[r2,#4]` where the ROM has `ldr r1,[r2,#16]`/
+// `ldr r0,[r2,#4]`) when `v1`/`v3` are shared function-scope locals: the {6,8}
+// arm's allocation leaks into the second arm. Declaring `v1`/`v3` per-arm lets
+// each arm allocate independently and reproduces the ROM assignment.
+void Garage_284FC(void *a,int b) {
+    volatile u32 *rec = (volatile u32 *)a;
+    if (b == 6 || b == 8) {
+        // `w` is arm-scope, not function-scope: hoisting it to the top makes
+        // agbcc copy the loaded word into a second register (`adds r1,r0,#0`)
+        // and turn the 2400 store into `adds r0,#1` (measured).
+        s32 w = rec[4] + 192;
+        s32 v1, v3;
+        rec[4] = (u32)w;
+        if (w > 2399) rec[4] = 150u << 4;
+        v1 = (s32)rec[1] - ((s32)rec[4] >> 3);
+        rec[1] = (u32)v1;
+        v3 = 1920 - v1;
+        rec[3] = (u32)v3;
+        if (v3 > 1919) rec[3] = 1920u;
+    } else if (b == 5 || b == 7) {
+        s32 w = rec[4] + 192;
+        s32 v1, v3;
+        rec[4] = (u32)w;
+        if (w > 2399) rec[4] = 150u << 4;
+        // Straight subtraction here, unlike Garage_2847C: `v1` is the minuend.
+        v1 = (s32)rec[1] - ((s32)rec[4] >> 3);
+        rec[1] = (u32)v1;
+        v3 = v1 - 1920;
+        rec[3] = (u32)v3;
+        if (v3 <= -1920) rec[3] = 0xFFFFF880u;
+    } else {
+        return;
+    }
+    {
+        // The `u8`-based `p` and the `(u16 *)(p + 8)` / `(p + 12)` reads are
+        // load-bearing: through a `volatile u16 *h` the two halfword loads land
+        // in r0/r1 and the whole `push {r4,lr}` frame disappears (measured).
+        volatile u8 *p = (volatile u8 *)a;
+        volatile u16 *m = (volatile u16 *)(uintptr_t)0x030035C0u;
+        m[6] = (u16)(*(u16 *)(p + 8) - *(u16 *)(p + 12));
+    }
+}
 #ifndef __APPLE__
 void _0800284FC(void *a,int b) __attribute__((alias("Garage_284FC")));
 void sub_0800284FC(void *a,int b) __attribute__((alias("Garage_284FC")));

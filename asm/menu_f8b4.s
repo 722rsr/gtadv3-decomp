@@ -72,3 +72,6 @@ _0800F8DA:
 _0800F918: .4byte 0x0805F99A
 _0800F91C: .4byte 0x082D7660
 _0800F920: .4byte 0x080CB57C
+@ Region end (VMA 0x0800F924). Emits no bytes; gives the promotion
+@ screen an end marker for the last function in this region.
+menu_f8b4_end:

@@ -12,8 +12,8 @@ extern void StateA_RequestMode1(void);
 extern void Idle_WriteEvent(int id, u32 payload);
 extern u16 Idle_GetRecordHalfword(int idx0, int idx1);
 extern u16 Idle_GetDirectHalfword(int recOff, int hwIdx);
-extern u16 Idle_GetCounterC(void);
-extern u16 Idle_GetRecordFiltered(int idx);
+extern u32 Idle_GetCounterC(void);
+extern u32 Idle_GetRecordFiltered(int idx);
 extern bool Idle_IsMode1(void);
 // The closure spells 0x0800210C (BlockB_Reset) this way; the alias is declared
 // at the bottom of this unit, so call the closure spelling directly.
@@ -167,45 +167,51 @@ u16 BlockB_DispatchIfLess(int x) { (void)x; return 0; }
 // _080021A0 — refresh matcher: if +0x0C == expected, scan first +0x0C
 // records via _0800206C and count those equal to param (+0x06), else 0.
 void BlockB_RefreshMatcher(void) {
-    u16 count = Idle_GetCounterC(); // _08002044 (u16 +0x0C)
+    u32 matches = 0;
+    u32 initial = Idle_GetCounterC(); // _08002044 returns a word
     BlockB *b = (BlockB *)*(volatile u32 *)BLOCK_B_SLOT_ADDR;
     s16 expected = b->expected;
-    u16 matches = 0;
-    if ((s16)count == expected) {
-        for (int i = 0; i < (int)count; i++) {
-            u16 rec = Idle_GetRecordFiltered(i); // _0800206C
-            if (rec == b->param) matches++;
+    if (initial == expected) {
+        int i = 0;
+        int count;
+        goto check_count;
+loop_record:
+        {
+            u32 raw = Idle_GetRecordFiltered(i); // _0800206C
+            b = (BlockB *)*(volatile u32 *)BLOCK_B_SLOT_ADDR;
+            u16 rec = (u16)raw;
+            if (rec == b->param)
+                matches++;
         }
+        i++;
+check_count:
+        count = Idle_GetCounterC();
+        if (i < (int)count)
+            goto loop_record;
     }
-    b->matchCount = matches;
+    ((BlockB *)(uintptr_t)*(volatile u32 *)BLOCK_B_SLOT_ADDR)->matchCount = matches;
 }
 
 // _080021EC — frame processor
 void BlockB_Frame(void) {
-    BlockB *b = (BlockB *)*(volatile u32 *)BLOCK_B_SLOT_ADDR;
-    if (b->active != 0 && b->ack == 0) {
-        StateA_SetPendingParam(b->param);
-        BlockB_RefreshMatcher();
-    }
-    if (b->ack != 0) {
-        if (Idle_IsMode1()) {
-            b->ack = 0;
-        }
-    } else {
-        // original does: ldr r0,[r4]; ldrb r0,[r0,#1]; cmp #0; beq _08002220; else bl _08001F3C path
-        // So if ack==0, it still checks IsMode1 via fallthrough? Actually it loads ack again and if 0 jumps to _08002220 (skip clear).
-        // The second path: if ack==0, skip the IsMode1 check? Wait see asm: after first block, it loads ack again:
-        // _08002208: ldr r0,[r4]; ldrb r0,[r0,#1]; cmp #0; beq _08002220; otherwise bl _08001F3C and maybe clear.
-        // So ack==0 always skips the IsMode1/clear. So only ack!=0 does the clear check.
-        // Our code above already handles ack!=0 case; ack==0 does nothing, matching.
-    }
-    // The original second check is redundant for ack==0; we already did ack!=0 path.
-    // To match exactly, if ack was 0 we don't call IsMode1. Our code does not call for ack==0, so identical.
-    // However the original also re-checks after the first if (active) block: it always loads ack and if non-zero calls IsMode1.
-    // Our earlier `if (b->ack !=0)` already does that, regardless of active. So correct.
-    if (b->ack != 0 && Idle_IsMode1()) {
-        // duplicate check safe (weak)
-    }
+    register volatile u32 *slot __asm__("r4") =
+        (volatile u32 *)BLOCK_B_SLOT_ADDR;
+    register BlockB *ack_block __asm__("r0");
+    BlockB *b = (BlockB *)(uintptr_t)*slot;
+    if (b->active == 0)
+        goto reload_ack;
+    if (b->ack != 0)
+        goto check_ack;
+    StateA_SetPendingParam(b->param);
+    BlockB_RefreshMatcher();
+reload_ack:
+    // The ROM reloads the block pointer after the matcher calls.
+    ack_block = (BlockB *)(uintptr_t)*slot;
+    if (ack_block->ack == 0)
+        return;
+check_ack:
+    if (Idle_IsMode1())
+        ((BlockB *)(uintptr_t)*(volatile u32 *)BLOCK_B_SLOT_ADDR)->ack = 0;
 }
 
 #ifndef __APPLE__

@@ -63,6 +63,20 @@ extern void Sub_0800F778(u32 a, u32 b, u32 c);
 extern void Sub_0800D97C(void *a, int b);
 extern void Sub_0800DBE8(void *a);
 extern void Sub_080012574(volatile void *a);
+// Closure spellings for the _0800123D8 callees. On the ROM build each call must
+// name a label the closure actually defines (see J_CALLEE); the friendly `Sub_`
+// spellings above are host-only weak stubs and the promotion screen rejects them
+// with "closure defines ... (rename)".
+extern void sub_080011784(void *a);
+extern void sub_080011E10(void *a);
+extern void sub_080011CFC(void *a);
+extern void sub_080011B48(void *a);
+extern void sub_080011E58(void *a, u32 b);
+extern int sub_0802581C(int v);
+extern void sub_0800F778(u32 a, u32 b, u32 c);
+extern void sub_0800D97C(void *a, int b);
+extern void sub_0800DBE8(void *a);
+extern void sub_080012574(volatile void *a);
 #endif
 
 // Same split as FF_CALLEE (menu_ff78_f.c) and D1_CALLEE (race_scene_d1.c):
@@ -160,44 +174,60 @@ void sub_0800122E0(void *a, u32 b) __attribute__((alias("MenuFF78_122E0")));
 //       7C68(rec+48,u32[rec+408],u32[rec+412],32,72,11,1,0,0).
 //     else: 7C68(rec+48,u32[rec+408],u32[rec+412],20,112,11,1,0,0).
 //   D97C(rec+224,15); DBE8(rec+64); 12574(rec).
+// Reconstructed from asm/menu_ff78.s: every `rec+offset` selector read is a
+// NON-volatile s16 (`adds r0,#imm; movs r1,#0; ldrsh r0,[r0,r1]`); a volatile
+// s16 lvalue emits `ldrh;lsls`. The work-area base 0x03001780 is NOT kept in
+// a local: the ROM reloads it from its own pool word on each use
+// (`ldr r5,_080012490` then `ldr r1,_080012490`) and the offset 0x10C3 comes
+// from a second pool word, so the two are kept as separate constants to stop
+// agbcc folding them into one address (which costs the extra callee-saved r7).
 void MenuFF78_123D8(void *rec_) {
-    volatile u8 *rec = (volatile u8 *)rec_;
-    volatile u8 *wa = (volatile u8 *)(uintptr_t)0x03001780u;
-    Sub_080011784(rec_);
-    if (*(volatile s16 *)(uintptr_t)(rec + 202) <= 0) {
-        Sub_080011E10(rec_);
-        Sub_080011CFC(rec_);
-        Sub_080011B48(rec_);
-        if (*(volatile u8 *)(uintptr_t)(wa + 0x10C3u) == 1)
-            Sub_080011E58(rec_, *(volatile u16 *)(uintptr_t)(rec + 180));
+    u8 *rec = (u8 *)rec_;
+    // Assembler-resolved work-area base (docs/findings/track_car_26180_pool_order.md):
+    // a folded C constant would merge base+offset into one pool word, but the ROM
+    // keeps 0x03001780 and each offset in separate pools and adds them.
+    extern u8 J123D8_WA[];
+    u32 o10C3 = 0x10C3u;
+    u32 o5E4 = 0x5E4u;
+    u32 oFEE = 0xFEEu;
+    __asm__(".globl J123D8_WA\nJ123D8_WA = 0x03001780\n");
+    J_CALLEE(Sub_080011784, sub_080011784)((void *)rec);
+    if (*(s16 *)(rec + 202) <= 0) {
+        J_CALLEE(Sub_080011E10, sub_080011E10)((void *)rec);
+        J_CALLEE(Sub_080011CFC, sub_080011CFC)((void *)rec);
+        J_CALLEE(Sub_080011B48, sub_080011B48)((void *)rec);
+        if (*(volatile u8 *)((u8 *)(uintptr_t)J123D8_WA + o10C3) == 1)
+            J_CALLEE(Sub_080011E58, sub_080011E58)((void *)rec, *(volatile u16 *)(rec + 180));
         {
-            s16 i = *(volatile s16 *)(uintptr_t)(rec + 172);
-            s16 v = (s16)Sub_0802581C((int)i);
-            u32 k = (u32)(s32)v;
-            u32 off = ((k << 3) + k) << 3; // *72
-            u32 t = *(volatile u32 *)(uintptr_t)(wa + 0x5E4u + off);
-            Sub_0800F778(168, 76, t);
+            s16 i = *(s16 *)(rec + 172);
+            s16 v = (s16)J_CALLEE(Sub_0802581C, sub_0802581C)((int)i);
+            u32 off = (u32)((((s32)v << 3) + (s32)v) << 3); // *72
+            u8 *wa5 = (u8 *)(uintptr_t)J123D8_WA + o5E4;
+            u32 t = *(volatile u32 *)(wa5 + off);
+            J_CALLEE(Sub_0800F778, sub_0800F778)(168, 76, t);
         }
     }
-    if (*(volatile s16 *)(uintptr_t)(rec + 216) == 1) {
-        if (*(volatile u8 *)(uintptr_t)(wa + 0x10C3u) == 1) {
-            s16 w = *(volatile s16 *)(uintptr_t)(wa + 0xFEEu);
-            Sub_0800122E0(rec_, (u32)(u16)w);
-            _08007C68((void *)(uintptr_t)(rec + 48),
-                         *(volatile u32 *)(uintptr_t)(rec + 408),
-                         *(volatile u32 *)(uintptr_t)(rec + 412),
+    if (*(s16 *)(rec + 216) == 1) {
+        if (*(volatile u8 *)((u8 *)(uintptr_t)J123D8_WA + o10C3) == 1) {
+            s16 w = *(s16 *)((u8 *)(uintptr_t)J123D8_WA + oFEE);
+            J_CALLEE(Sub_0800122E0, sub_0800122E0)((void *)rec, (u32)(s32)w);
+            _08007C68((void *)(rec + 48),
+                         *(u32 *)(rec + 408), *(u32 *)(rec + 412),
                          32, 72, 11, 1, 0, 0);
         } else {
-            _08007C68((void *)(uintptr_t)(rec + 48),
-                         *(volatile u32 *)(uintptr_t)(rec + 408),
-                         *(volatile u32 *)(uintptr_t)(rec + 412),
+            _08007C68((void *)(rec + 48),
+                         *(u32 *)(rec + 408), *(u32 *)(rec + 412),
                          20, 112, 11, 1, 0, 0);
         }
     }
-    Sub_0800D97C((void *)(uintptr_t)(rec + 224), 15);
-    Sub_0800DBE8((void *)(uintptr_t)(rec + 64));
-    Sub_080012574(rec);
+    J_CALLEE(Sub_0800D97C, sub_0800D97C)((void *)(rec + 224), 15);
+    J_CALLEE(Sub_0800DBE8, sub_0800DBE8)((void *)(rec + 64));
+    J_CALLEE(Sub_080012574, sub_080012574)(rec);
 }
+// The ROM's 276-byte span ends in `00 00`. gas closes a Thumb code section
+// with the `46c0` nop; this file-scope `.align 2, 0` (after the body's `.size`,
+// still inside its section) pads with the explicit `0` fill instead.
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _0800123D8(void *a) __attribute__((alias("MenuFF78_123D8")));
 void sub_0800123D8(void *a) __attribute__((alias("MenuFF78_123D8")));

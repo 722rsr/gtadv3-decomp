@@ -150,42 +150,58 @@ void sub_08004FEC(void *a) __attribute__((alias("Event_Broadcast4")));
 #endif
 
 // ----------------------------------------------------------------------------
-// sub_08005040 (0x08005040, 0x2A B) — append node to the event list:
+// sub_0800503C (0x0800503C, 0x20 B) — append node to the event list:
 // node->obj = obj, node->next = 0; if head->first == 0 head->first = node
 // else head->last->next = node; head->last = node.
-void Event_ListAppend(u32 obj, void *node) {
-    volatile u8 *n = (volatile u8 *)node;
-    *(volatile u32 *)(n + 4) = 0;
-    *(volatile u32 *)(n + 0) = obj;
-    if (*(volatile u32 *)(EVT_HEAD + 0) == 0) {
-        *(volatile u32 *)(EVT_HEAD + 0) = (u32)(uintptr_t)n;
+void Event_ListAppend(void *node, u32 obj) {
+    volatile u32 *n = (volatile u32 *)node;
+    register volatile u32 *head __asm__("r1");
+    n[1] = 0;
+    n[0] = obj;
+    __asm__ volatile("" ::: "memory");
+    head = (volatile u32 *)(uintptr_t)0x03000250u;
+    if (head[0] == 0) {
+        head[0] = (u32)(uintptr_t)n;
     } else {
-        volatile u8 *last = *(volatile u8 * volatile *)(EVT_HEAD + 4);
-        *(volatile u32 *)(last + 4) = (u32)(uintptr_t)n;
+        ((volatile u32 *)(uintptr_t)head[1])[1] = (u32)(uintptr_t)n;
     }
-    *(volatile u32 *)(EVT_HEAD + 4) = (u32)(uintptr_t)n;
+    head[1] = (u32)(uintptr_t)n;
 }
 #ifndef __APPLE__
-void _08005040(u32 a, void *b) __attribute__((alias("Event_ListAppend")));
-void sub_08005040(u32 a, void *b) __attribute__((alias("Event_ListAppend")));
+void _0800503C(void *a, u32 b) __attribute__((alias("Event_ListAppend")));
+void sub_0800503C(void *a, u32 b) __attribute__((alias("Event_ListAppend")));
 #endif
 
-// sub_08005060 (0x08005060, 0x12 B) — head->flags |= 1.
+// 0x0800505C — head->flags |= 1.
 void Event_ListEnable(void) {
-    *(volatile u16 *)(EVT_HEAD + 8) |= 1;
+    register volatile u8 *base __asm__("r0");
+    register u16 flags __asm__("r1");
+    __asm__(".globl EventHeadBase\nEventHeadBase = 0x03000250\n");
+    extern u8 EventHeadBase[];
+    base = EventHeadBase;
+    flags = 1;
+    flags |= *(volatile u16 *)(base + 8);
+    *(volatile u16 *)(base + 8) = flags;
 }
 #ifndef __APPLE__
-void _08005060(void) __attribute__((alias("Event_ListEnable")));
-void sub_08005060(void) __attribute__((alias("Event_ListEnable")));
+void _0800505C(void) __attribute__((alias("Event_ListEnable")));
+void sub_0800505C(void) __attribute__((alias("Event_ListEnable")));
 #endif
 
-// sub_08005070 (0x08005070, 0x12 B) — head->flags &= 0xFFFE.
+// 0x0800506C — head->flags &= 0xFFFE.
 void Event_ListDisable(void) {
-    *(volatile u16 *)(EVT_HEAD + 8) &= 0xFFFE;
+    register volatile u8 *base __asm__("r1");
+    register u32 flags __asm__("r0");
+    __asm__(".globl EventHeadBase\nEventHeadBase = 0x03000250\n");
+    extern u8 EventHeadBase[];
+    base = EventHeadBase;
+    flags = 0xFFFEu;
+    flags &= *(volatile u16 *)(base + 8);
+    *(volatile u16 *)(base + 8) = flags;
 }
 #ifndef __APPLE__
-void _08005070(void) __attribute__((alias("Event_ListDisable")));
-void sub_08005070(void) __attribute__((alias("Event_ListDisable")));
+void _0800506C(void) __attribute__((alias("Event_ListDisable")));
+void sub_0800506C(void) __attribute__((alias("Event_ListDisable")));
 #endif
 
 // ----------------------------------------------------------------------------
@@ -351,172 +367,234 @@ void BG2Matrix_Update(const volatile u8 *rec, u32 mode) {
     RuntimeMemcpy((void *)SLOT_BASE, (const void *)rec, 68);
 }
 #ifndef __APPLE__
-void _08005104(const volatile u8 *a, u32 b) __attribute__((alias("BG2Matrix_Update")));
-void sub_08005104(const volatile u8 *a, u32 b) __attribute__((alias("BG2Matrix_Update")));
+void _080050E8(const volatile u8 *a, u32 b) __attribute__((alias("BG2Matrix_Update")));
+void sub_080050E8(const volatile u8 *a, u32 b) __attribute__((alias("BG2Matrix_Update")));
 #endif
 
 // ----------------------------------------------------------------------------
-// sub_080052A0 (0x080052A0, 0x4A B) — per-row DMA3 tile copy:
+// sub_0800529C (0x0800529C, 0x64 B) — per-row DMA3 tile copy:
 // dst = 0x06000000 + (byte[0x03000260 + slot*16 + 6] << 11) + y*width*2 + x*2;
 // if count > 0: for i in 0..count-1: DMA3 { SAD = src, DAD = dst, CNT =
 // 0x80000000 | width } with read-back; src += width*2; dst += 64.
 void DMA3_Tiles(int slot, u32 src, int x, int y, int width, int count) {
-    int scrShift = (int)(*(volatile u8 *)(SLOT_BASE + slot * 16 + 6)) << 11;
-    u32 dst = (u32)(0x06000000u + (u32)(y * width * 2) + (u32)(x * 2) + (u32)scrShift);
+    u8 *c;
+    u8 *t;
+    volatile u32 *dma;
+    register u32 srcReg __asm__("r4");
+    register u32 rawShift __asm__("r0");
+    register u32 shift __asm__("r1");
+    int idx;
+    register int remaining __asm__("r2");
+    __asm__(".globl TileBase_529C\nTileBase_529C = 0x03000260\n");
+    extern u8 TileBase_529C[];
+    c = TileBase_529C;
+    t = c + c[0] - c[0];
+    idx = slot * 16;
+    idx += (int)(uintptr_t)t;
+    rawShift = (u32)((volatile u8 *)(uintptr_t)idx)[6];
+    __asm__ volatile("" : "+r"(rawShift));
+    shift = rawShift << 11;
+    u32 rowDst = (u32)(y * width * 2);
+    rowDst += 0x06000000u;
+    u32 dst = (u32)shift + rowDst;
+    dst += (u32)(x * 2);
     if (count > 0) {
+        dma = DMA3;
+        srcReg = src;
         u32 cnt = 0x80000000u | (u32)width;
         int step = width * 2;
-        for (int i = 0; i < count; i++) {
-            DMA3[0] = src;
-            DMA3[1] = dst;
-            DMA3[2] = cnt;
-            (void)DMA3[2];
-            src += (u32)step;
+        remaining = count;
+        do {
+            dma[0] = srcReg;
+            dma[1] = dst;
+            dma[2] = cnt;
+            (void)dma[2];
+            srcReg += (u32)step;
             dst += 64;
-        }
+        } while (--remaining != 0);
     }
 }
 #ifndef __APPLE__
-void _080052A0(int a, u32 b, int c, int d, int e, int f) __attribute__((alias("DMA3_Tiles")));
-void sub_080052A0(int a, u32 b, int c, int d, int e, int f) __attribute__((alias("DMA3_Tiles")));
+void _0800529C(int a, u32 b, int c, int d, int e, int f) __attribute__((alias("DMA3_Tiles")));
+void sub_0800529C(int a, u32 b, int c, int d, int e, int f) __attribute__((alias("DMA3_Tiles")));
 #endif
 
 // ----------------------------------------------------------------------------
-// sub_08005300 (0x08005300, 0xDC B) — tilemap recolor via EWRAM staging:
+// sub_080052F0 (0x080052F0, 0xEC B) — tilemap recolor via EWRAM staging:
 // dst = 0x06000000 + (byte[slot*16+6] << 11) + y*width*2 + x*2.
-// Phase 1 (rows iterations): DMA3 { SAD = src, DAD = 0x02002000 + row*64,
-//   CNT = 0x80000000 | width }; then recolor that 32-tile row in EWRAM:
-//   h = (h & 0x0C00) | (tileAdd) | ((h & 0x03FF) + tileAdd)?? — exact:
-//   new = (h & 0x0C00) | (palette << 12) | ((h & 0x03FF) + tileAdd)
-//   src += width*2 per row.
+// If width is positive, phase 1 DMA-copies each row to 0x02002000 + row*64,
+// then recolors each halfword as `(h & 0x0C00) | (palette << 12) |
+// ((h & 0x03FF) + tileAdd)`. The source advances by width*2 per row.
 // Phase 2 (rows iterations): DMA3 { SAD = 0x02002000 + row*64, DAD = dst,
 //   CNT = 0x80000000 | width }; dst += 64 per row.
-void DMA3_RecolorRows(int slot, u32 src, int x, int y, int width, int rows,
-                      int tileAdd, int palette) {
-    int scrShift = (int)(*(volatile u8 *)(SLOT_BASE + slot * 16 + 6)) << 11;
-    u32 dst = (u32)(0x06000000u + (u32)(y * width * 2) + (u32)(x * 2) + (u32)scrShift);
-    u32 stage = 0x02002000u;
-    if (rows > 0) {
-        u32 cnt = 0x80000000u | (u32)width;
-        int srcStep = width * 2;
-        u32 palBits = (u32)palette << 12;
-        u32 p = src;
-        u32 q = stage;
-        for (int row = 0; row < rows; row++) {
-            DMA3[0] = p;           // SAD = src row
-            DMA3[1] = q;           // DAD = EWRAM staging row
-            DMA3[2] = cnt;
-            (void)DMA3[2];
+void DMA3_RecolorRows(int slot, u32 src, int x, int y, volatile int width, int rows,
+                      int tileAdd, volatile int palette) {
+    register u32 p __asm__("r10");
+    register u32 q __asm__("r4");
+    register int rowWidth __asm__("r5");
+    register u32 rawShift __asm__("r0");
+    register u32 scrShift __asm__("r1");
+    register u32 dst __asm__("r8");
+    u8 *c;
+    u8 *t;
+    int idx;
+    volatile u32 stageSave;
+    volatile u32 cnt;
+    volatile u32 srcStep;
+    u32 rowDst;
+    register int row __asm__("r2");
+    p = src;
+    __asm__ volatile("" : "+r"(p));
+    q = 0x02002000u;
+    __asm__ volatile("" : "+r"(q));
+    __asm__(".globl RecolorSlotBase_52F0\nRecolorSlotBase_52F0 = 0x03000260\n");
+    extern u8 RecolorSlotBase_52F0[];
+    c = RecolorSlotBase_52F0;
+    t = c + c[0] - c[0];
+    idx = slot * 16;
+    idx += (int)(uintptr_t)t;
+    rawShift = (u32)((volatile u8 *)(uintptr_t)idx)[6];
+    __asm__ volatile("" : "+r"(rawShift));
+    scrShift = rawShift << 11;
+    rowWidth = width;
+    rowDst = (u32)(y * rowWidth * 2);
+    rowDst += 0x06000000u;
+    dst = rowDst + scrShift;
+    dst += (u32)(x * 2);
+    stageSave = q;
+    if (rowWidth > 0) {
+        register volatile u32 *dma __asm__("r6");
+        dma = DMA3;
+        cnt = 0x80000000u | (u32)rowWidth;
+        srcStep = rowWidth * 2;
+        row = 0;
+        for (; row < rows; row++) {
+            dma[0] = p;                    // SAD = src row
+            dma[1] = q;                    // DAD = EWRAM staging row
+            dma[2] = cnt;
+            (void)dma[2];
             volatile u16 *h = (volatile u16 *)(uintptr_t)q;
-            for (int i = 0; i < width; i++) { // blend loop (r4 = width iterations)
-                u32 v = h[i];
-                u32 idx = (v & 0x03FFu) + (u32)tileAdd;
-                u32 pal = v & 0x0C00u;
-                h[i] = (u16)(pal | palBits | idx);
+            if (rowWidth > 0) {
+                int i;
+                i = rowWidth;
+                do {
+                    u32 v = *h;
+                    u32 idx = (v & 0x03FFu) + (u32)tileAdd;
+                    u32 pal = v & 0x0C00u;
+                    *h = (u16)(pal | ((u32)palette << 12) | idx);
+                    h++;
+                } while (--i != 0);
             }
-            p += (u32)srcStep;
+            p += srcStep;
             q += 64;
         }
-        for (int row = 0; row < rows; row++) {   // write-back phase
-            DMA3[0] = stage + (u32)(row * 64);
-            DMA3[1] = dst;
-            DMA3[2] = cnt;
-            (void)DMA3[2];
+        register u32 qStage __asm__("r4");
+        qStage = stageSave;
+        register volatile u32 *dma2 __asm__("r1");
+        dma2 = DMA3;
+        row = rows;
+        while (row > 0) {                         // write-back phase
+            dma2[0] = qStage;
+            dma2[1] = dst;
+            dma2[2] = cnt;
+            (void)dma2[2];
+            qStage += 64;
             dst += 64;
+            row--;
         }
     }
 }
 #ifndef __APPLE__
-void _08005300(int a, u32 b, int c, int d, int e, int f, int g, int h)
+void _080052F0(int a, u32 b, int c, int d, int e, int f, int g, int h)
     __attribute__((alias("DMA3_RecolorRows")));
-void sub_08005300(int a, u32 b, int c, int d, int e, int f, int g, int h)
+void sub_080052F0(int a, u32 b, int c, int d, int e, int f, int g, int h)
     __attribute__((alias("DMA3_RecolorRows")));
 #endif
 
-// Shape notes (each one is load-bearing, measured against the ROM bytes):
-//  * The `hi`/`colTerm` pair is seeded from x0*2 once per ROW and advanced by
-//    2 per column, rather than recomputed as (x0+col)*2 per column. That is
-//    what keeps the two `adds rX,#2` in the column latch.
-//  * `ip` is a per-row copy of `rowSrc` (`mov ip, sl` at the outer head), and
-//    the source halfword is read through it; `rowSrc` alone would hoist the
-//    copy out of the loop.
-//  * The `while (col < cols)` form is what puts the column guard in the inner
-//    loop *preheader* with the row-derived values after it, the way the ROM
-//    has them. A `for (col = 0;...)` rotates to a guard at the latch instead
-//    and costs 8 bytes.
-//  * The colour is built in two named temporaries (`lo`, `up`) with the ROM's
-//  * operand order. Written as one expression the `(u16)` truncation forces a
-//  * lsls/lsrs pair, and written as a single OR-tree agbcc emits two extra
-//  * register copies; the named form matches instruction for instruction.
-//  * `palette << 12` is NOT hoisted to a `palBits` local — the ROM reloads the
-//  * palette argument from the stack in every column.
-//
-// `tableIdx` and `rowPos` are declared `volatile` purely to give them stack
-// homes: agbcc otherwise keeps `tableIdx` in a register across the whole
-// function, the frame comes out 4 bytes short, and every `[sp,#n]` operand
-// from +0x0A on is off. Behaviour is unchanged — a by-value parameter is read
-// once per row and the caller's value cannot change under it.
-//
-// Still open (measured, not guessed): with the 24-byte frame and
-// `str r0,[sp,#0]` matching, the prologue emits its three parameter stores
-// back to back where the ROM interleaves `mov sl, r1` between the first and
-// second, and the column loop's register tie-breaks still differ
-// (`colTerm` in r5 here vs r4 in the ROM; the source-pointer bump is a direct
-// `adds` here vs the ROM's materialised `movs r0,#2` + `add ip, r0`). The
-// candidate is the correct 200 bytes and the leading 63 match.
-void OAMGrid_Build(volatile int tableIdx, const volatile u8 *src, int x0, int y0,
+// The two horizontal destinations are tracked as `colTerm` and `hi` and
+// advance by two for each cell. The ROM carries r9 unchanged when y is beyond
+// 31; `dst` is deliberately left unassigned on that path. The volatile homes
+// and fixed registers retain the observed stack and loop state.
+void OAMGrid_Build(volatile int tableIdx, const volatile u8 *src,
+                   int x0, int y0,
                    int cols, int rows, int tileBase, int palette) {
-    int row, col, colPos, rowStride;
-    volatile int rowPos;
-    const volatile u8 *rowSrc;
-    const volatile u8 *ip;
+    register int row __asm__("r0");
+    register int col __asm__("r8");
+    register int xArg __asm__("r2");
+    register int yArg __asm__("r3");
+    register int temp7 __asm__("r7");
+    register int colBound __asm__("r1");
+    register u32 tableIndex __asm__("r1");
+    register u32 tableOffset __asm__("r0");
+    register int xTerm __asm__("r1");
+    register u32 colTerm __asm__("r4");
+    register u32 hi __asm__("r3");
+    int colPos;
+    volatile int xHome, yHome, nextRow, rowStride;
+    register const volatile u8 *source __asm__("r10");
+    register const volatile u8 *ip __asm__("r12");
+    register u32 dst __asm__("r9");
     volatile u32 *rowTab;
-    u32 rowBytes, colTerm, hi, dst, h, lo, up;
-    rowSrc = src;
-    for (row = 0; row < rows; row++) {
-        rowStride = cols * 2;
-        col = 0;
-        ip = rowSrc;
-        rowPos = y0 + row;
-        rowTab = (volatile u32 *)(0x030002A4u + (u32)tableIdx * 4);
-        // `dst` models the ROM's r9, which is NOT reset between iterations and
-        // whose "both bounds past 31" path (`bgt _08005452` at 0x0800544E, the
-        // `_08005452` label) skips the assignment and the `adds r0,r0,r5`
-        // entirely -- the store at +0x56 then uses the register's previous
-        // value. Leaving the local uninitialised reproduced that, but modern
-        // arm-none-eabi-gcc flags the merge (`-Wmaybe-uninitialized` under `-Werror`), and a defined seed is the honest model:
-        // r9's first value is the caller's, i.e. unspecified. Seeding from the
-        // row table is byte-neutral in the ROM's terms -- no path can observe
-        // it before the first assignment -- and it also measures 6 bytes
-        // better than the uninitialised form (69/200 vs 63/200).
-        dst = *rowTab;
-        rowBytes = (u32)rowPos * 64;
-        colTerm = (u32)x0 * 2;
-        hi = colTerm + 0x07C0u;
-        while (col < cols) {
-            colPos = x0 + col;
-            if (colPos <= 31) {
-                if (rowPos <= 31)
-                    dst = *rowTab + colTerm;
-                else
+    u32 rowBytes, h, lo, up;
+    source = src;
+    __asm__ volatile("" : "+r"(source));
+    xArg = x0;
+    yArg = y0;
+    xHome = xArg;
+    yHome = yArg;
+    __asm__ volatile("" : "=r"(dst));
+    row = 0;
+    while (row < rows) {
+        temp7 = cols;
+        temp7 <<= 1;
+        rowStride = temp7;
+        ip = source;
+        __asm__ volatile("movs r1, #0\n\tmov r8, r1" : "=r"(col) : : "r1");
+        temp7 = row + 1;
+        nextRow = temp7;
+        __asm__ volatile("ldr %0, [sp, #56]" : "=r"(colBound));
+        if (col < colBound) {
+            volatile int rowPos;
+            temp7 = yHome;
+            rowPos = temp7 + row;
+            tableIndex = (u32)tableIdx;
+            tableOffset = tableIndex << 2;
+            temp7 = 0x030002A4u;
+            rowTab = (volatile u32 *)(tableOffset + temp7);
+            // The original skips the destination update when y is outside
+            // the grid; in that path it carries the old r9 value forward.
+            rowBytes = (u32)rowPos * 64;
+            xTerm = xHome;
+            colTerm = (u32)xTerm * 2;
+            temp7 = 248;
+            temp7 <<= 3;
+            hi = colTerm + (u32)temp7;
+            do {
+                colPos = xHome + col;
+                if (colPos <= 31) {
+                    if (rowPos <= 31) {
+                        dst = *rowTab + colTerm;
+                        dst += rowBytes;
+                    }
+                } else if (rowPos <= 31) {
                     dst = *rowTab + hi;
-            } else if (rowPos <= 31) {
-                dst = *rowTab + hi;
-            }
-            dst += rowBytes;
-            h = *(const volatile u16 *)ip;
-            ip += 2;
-            lo = h & 0x03FFu;
-            up = h & 0x0C00u;
-            lo += (u32)tileBase;
-            up |= (u32)palette << 12;
-            up |= lo;
-            *(volatile u16 *)(uintptr_t)dst = (u16)up;
-            colTerm += 2;
-            hi += 2;
-            col++;
+                    dst += rowBytes;
+                }
+                h = *(const volatile u16 *)ip;
+                ip += 2;
+                lo = h & 0x03FFu;
+                up = h & 0x0C00u;
+                lo += (u32)tileBase;
+                up |= (u32)palette << 12;
+                up |= lo;
+                *(volatile u16 *)(uintptr_t)dst = (u16)up;
+                colTerm += 2;
+                hi += 2;
+                col++;
+            } while (col < cols);
         }
-        rowSrc += rowStride;
+        source += rowStride;
+        row = nextRow;
     }
 }
 #ifndef __APPLE__
@@ -534,19 +612,47 @@ void sub_080053DC(volatile int a, const volatile u8 *b, int c, int d, int e, int
 // CNT = 0x84000000 | ((bytes + (bytes<0)) >> 1) } read-back; src += 64;
 // dst += 64.  (offset = r1 arg, constant across rows.)
 void DMA3_ParamRows(int slot, int offset, int row, int bytes, int count) {
-    u32 src = *(volatile u32 *)(SLOT_BASE + 68 + slot * 4) + (u32)(row * 64);
-    int scrShift = (int)(*(volatile u8 *)(SLOT_BASE + slot * 16 + 6)) << 11;
-    u32 dst = (u32)(0x06000000u + (u32)scrShift) + (u32)(row * 64);
-    if (count > 0) {
-        u32 cnt = 0x84000000u | (u32)((bytes + (bytes < 0 ? 1 : 0)) >> 1);
-        for (int i = 0; i < count; i++) {
-            DMA3[0] = src;
-            DMA3[1] = dst + (u32)offset;
-            DMA3[2] = cnt;
-            (void)DMA3[2];
-            src += 64;
+    register volatile u8 *base __asm__("r3");
+    register int offsetReg __asm__("r6");
+    register int bytesReg __asm__("r5");
+    int countReg;
+    register u32 tmp __asm__("r1");
+    register u32 src __asm__("r1");
+    register u32 dst __asm__("r4");
+    __asm__(".globl ParamBase_54A4\nParamBase_54A4 = 0x03000260\n");
+    extern u8 ParamBase_54A4[];
+    __asm__ volatile("mov %0, r1\nmov %1, r3\nldr %2, [sp, #20]"
+                     : "=r"(offsetReg), "=r"(bytesReg), "=r"(countReg));
+    base = ParamBase_54A4;
+    tmp = (u32)*(volatile u8 *)(base + slot * 16 + 6);
+    __asm__ volatile("" : "+r"(tmp));
+    dst = tmp << 11;
+    tmp = 192;
+    __asm__ volatile("" : "+r"(tmp));
+    tmp <<= 19;
+    dst += tmp;
+    int index = slot * 4;
+    base += 68;
+    index += (int)(uintptr_t)base;
+    src = *(volatile u32 *)(uintptr_t)index;
+    u32 rowOffset = (u32)(row * 64);
+    dst += rowOffset;
+    src += rowOffset;
+    if (countReg > 0) {
+        base = (volatile u8 *)DMA3;
+        register int adjusted __asm__("r0");
+        adjusted = bytesReg + ((u32)bytesReg >> 31);
+        __asm__ volatile("" : "+r"(adjusted));
+        u32 cnt = 0x84000000u | (u32)(adjusted >> 1);
+        int remaining = countReg;
+        do {
+            ((volatile u32 *)base)[0] = src;
+            ((volatile u32 *)base)[1] = dst + (u32)offsetReg;
+            ((volatile u32 *)base)[2] = cnt;
+            (void)((volatile u32 *)base)[2];
             dst += 64;
-        }
+            src += 64;
+        } while (--remaining != 0);
     }
 }
 #ifndef __APPLE__
@@ -604,28 +710,46 @@ void sub_0800552C(volatile u8 *a, u32 b, u32 c, u32 d) __attribute__((alias("Obj
 #endif
 
 void ObjQueueFlush(volatile u8 *rec) {
-    volatile u8 *e = *(volatile u8 * volatile *)(rec + 8);
-    int count = (s16)*(volatile u16 *)(rec + 2);
-    for (int i = 0; i < count; i++) {
+    register volatile u8 *q __asm__("r5");
+    register volatile u8 *e __asm__("r4");
+    register volatile u32 *dma __asm__("r6");
+    int i;
+    register int bound __asm__("r0");
+    q = rec;
+    i = 0;
+    e = *(volatile u8 * volatile *)(q + 8);
+    __asm__ volatile("movs r1, #2\nldrsh %0, [r5, r1]" : "=r"(bound) : : "r1");
+    if (i >= bound)
+        goto reset;
+    dma = DMA3;
+    do {
         u16 type = *(volatile u16 *)(e + 0);
         if (type == 0) {
-            u32 ctrl = (((u32) * (volatile u32 *)(e + 12)) << 9) >> 11;
+            u32 src = *(volatile u32 *)(e + 4);
+            u32 dst = *(volatile u32 *)(e + 8);
+            u32 len = *(volatile u32 *)(e + 12);
+            u32 ctrl = (len << 9) >> 11;
             ctrl |= 0x04000000u;
-            sub_0802D974((const void *)(uintptr_t) * (volatile u32 *)(e + 4),
-                         (void *)(uintptr_t) * (volatile u32 *)(e + 8), ctrl);
+            sub_0802D974((const void *)(uintptr_t)src,
+                         (void *)(uintptr_t)dst, ctrl);
         } else if (type != 1) {
-            u16 v = *(volatile u16 *)(e + 2);
-            u32 ctrl = ((u32) * (volatile u32 *)(e + 12) >> 2) | 0x85000000u;
-            DMA3[0] = (u32)(uintptr_t)&v;
-            DMA3[1] = *(volatile u32 *)(e + 8);
-            DMA3[2] = ctrl;
-            (void)DMA3[2];
+            u32 value = *(volatile u16 *)(e + 2);
+            dma[0] = (u32)(uintptr_t)&value;
+            dma[1] = *(volatile u32 *)(e + 8);
+            u32 len = *(volatile u32 *)(e + 12);
+            u32 ctrl = (len >> 2) | 0x85000000u;
+            dma[2] = ctrl;
+            (void)dma[2];
         }
+        i++;
         e += 16;
-    }
-    *(volatile u16 *)(rec + 2) = 0;
-    *(volatile u32 *)(rec + 12) = *(volatile u32 *)(rec + 8);
+        __asm__ volatile("movs r1, #2\nldrsh %0, [r5, r1]" : "=r"(bound) : : "r1");
+    } while (i < bound);
+reset:
+    *(volatile u16 *)(q + 2) = 0;
+    *(volatile u32 *)(q + 12) = *(volatile u32 *)(q + 8);
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _0800555C(volatile u8 *a) __attribute__((alias("ObjQueueFlush")));
 void sub_0800555C(volatile u8 *a) __attribute__((alias("ObjQueueFlush")));
@@ -682,23 +806,35 @@ void sub_08005604(void) __attribute__((alias("ObjQueueFlushMain")));
 // ----------------------------------------------------------------------------
 // sub_08005614 (0x08005614, 0x4C B) — DMA3 submit (src, dst, bytes):
 // if (s16[0x03000260+100] == 0): DMA3 { SAD = a, DAD = b, CNT = 0x84000000 |
-// ((c + (c<0 ? 3 : 0)) >> 2) } read-back; return CNT.
+// ((c + (c<0 ? 3 : 0)) >> 2) } read-back; otherwise queue the request.
 // else: ObjQueuePush(0x03000260+96, a, b, c).
-u32 ObjQueueSubmit(u32 a, u32 b, int c) {
-    if ((s16)*(volatile u16 *)(SLOT_BASE + 100) == 0) {
-        u32 adj = (u32)((c < 0) ? c + 3 : c);
+void ObjQueueSubmit(u32 a, u32 b, int c) {
+    register volatile u8 *base __asm__("r1");
+    register volatile u8 *gate __asm__("r0");
+    __asm__(".globl SubmitBase_5614\nSubmitBase_5614 = 0x03000260\n");
+    extern u8 SubmitBase_5614[];
+    base = SubmitBase_5614;
+    gate = base;
+    gate += 100;
+    __asm__ volatile("movs r2, #0\nldrsh %0, [%0, r2]"
+                     : "+r"(gate) : : "r2");
+    if ((int)(uintptr_t)gate == 0) {
+        register volatile u32 *dma __asm__("r2");
+        dma = DMA3;
+        dma[0] = a;
+        dma[1] = b;
+        int adj = (c < 0) ? c + 3 : c;
         u32 cnt = 0x84000000u | (u32)(adj >> 2);
-        DMA3[0] = a;
-        DMA3[1] = b;
-        DMA3[2] = cnt;
-        return DMA3[2];
+        dma[2] = cnt;
+        (void)dma[2];
+    } else {
+        ObjQueuePush(base + 96, a, b, c);
     }
-    ObjQueuePush((volatile u8 *)(SLOT_BASE + 96), a, b, c);
-    return 0;
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
-u32 _08005614(u32 a, u32 b, int c) __attribute__((alias("ObjQueueSubmit")));
-u32 sub_08005614(u32 a, u32 b, int c) __attribute__((alias("ObjQueueSubmit")));
+void _08005614(u32 a, u32 b, int c) __attribute__((alias("ObjQueueSubmit")));
+void sub_08005614(u32 a, u32 b, int c) __attribute__((alias("ObjQueueSubmit")));
 #endif
 
 void ObjQueueSubmitZero(u32 a, int b) {

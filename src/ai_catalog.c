@@ -74,34 +74,57 @@ void *sub_08024C58(int a) __attribute__((alias("Ai_CatalogB")));
 void *_08024C74(int a) __attribute__((alias("Ai_CatalogC")));
 #endif
 
+#ifndef __APPLE__
+extern const u32 Table24D78[];
+__asm__(".globl Table24D78\nTable24D78 = 0x080CC518\n");
+#endif
+
 int Ai_CatalogFlatIndex(int id){
-    int target=(s16)id;
-    const u32 *groupTbl=(const u32*)(uintptr_t)0x080CC518u;
-    int flat=0;
-    for(int g=0;g<=10;++g){
-        const u32 *list=(const u32*)(uintptr_t)groupTbl[g];
-        if(list==NULL) { flat++; continue; }
-        for(int i=0;;++i){ if((int)list[i]==-1) break; if((int)list[i]==target) return flat; }
+    int flat = 0;
+#ifndef __APPLE__
+    register const s32 * const *groupTbl asm("r4");
+#else
+    const s32 * const *groupTbl;
+#endif
+    const s32 *list;
+    int sentinel = -1;
+#ifndef __APPLE__
+    groupTbl = (const s32 * const *)(uintptr_t)Table24D78;
+#else
+    groupTbl = (const s32 * const *)0x080CC518;
+#endif
+    do {
+        list = *groupTbl;
+        if (*list != sentinel) {
+            do {
+                if (*list == id) return flat;
+                list++;
+            } while (*list != -1);
+        }
+        groupTbl++;
         flat++;
-    }
+    } while (flat <= 10);
     return 0;
 }
+#ifndef __APPLE__
+__asm__(".align 2, 0");
+#endif
 #ifndef __APPLE__
 int _08024C90(int a) __attribute__((alias("Ai_CatalogFlatIndex")));
 int sub_08024C90(int a) __attribute__((alias("Ai_CatalogFlatIndex")));
 int Sub_08024C90(int a) __attribute__((alias("Ai_CatalogFlatIndex")));
 #endif
 
-// Friendly-name wrapper used by car_award.c (u8 car id; VMA _08024C90).
-int Ai_CarCatalogIdx(u8 id) { return Ai_CatalogFlatIndex((int)id); }
-
 int Ai_CatalogIndexInGroup(int id, int g){
-    const s32 * const *groupTbl = (const s32 * const *)0x080CC518;
-    const s32 *list = groupTbl[g];
     int idx = 0;
+#ifndef __APPLE__
+    const s32 *list = (const s32 *)(uintptr_t)Table24D78[g];
+#else
+    const s32 *list = ((const s32 * const *)0x080CC518)[g];
+#endif
     if (*list != -1) {
         do {
-            if (*list == id) return idx;
+            if (id == *list) return idx;
             idx++;
             list++;
         } while (*list != -1);
@@ -109,22 +132,32 @@ int Ai_CatalogIndexInGroup(int id, int g){
     return 0;
 }
 #ifndef __APPLE__
+__asm__(".align 2, 0");
+#endif
+#ifndef __APPLE__
 int _08024CD0(int a,int b) __attribute__((alias("Ai_CatalogIndexInGroup")));
 #endif
 
-int Ai_CatalogOwnedIndexInGroup(int id,int g){
-    const u32 *groupTbl=(const u32*)(uintptr_t)0x080CC518u;
-    const u32 *list=(const u32*)(uintptr_t)groupTbl[g &0xF];
+int Ai_CatalogOwnedIndexInGroup(int id, int g){
+    int ownedCnt = 0;
+#ifndef __APPLE__
+    const s32 *list = (const s32 *)(uintptr_t)Table24D78[g];
+#else
+    const s32 *list = ((const s32 * const *)0x080CC518)[g];
+#endif
     extern int _08025FAC(int);
-    int ownedCnt=0;
-    for(int i=0;;++i){
-        int cur=(int)list[i]; if(cur==-1) break;
-        if(_08025FAC(cur)==0) continue;
-        if(cur==id) return ownedCnt;
-        ownedCnt++;
+    while (*list != -1) {
+        if (_08025FAC(*list)) {
+            if (id == *list) return ownedCnt;
+            ownedCnt++;
+        }
+        list++;
     }
     return 0;
 }
+#ifndef __APPLE__
+__asm__(".align 2, 0");
+#endif
 #ifndef __APPLE__
 int _08024D0C(int a,int b) __attribute__((alias("Ai_CatalogOwnedIndexInGroup")));
 int Sub_08024D0C(int a,int b) __attribute__((alias("Ai_CatalogOwnedIndexInGroup")));

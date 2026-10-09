@@ -5,15 +5,15 @@ data. The full independent C ROM is not complete.
 
 ## Build status
 
-The reference build (`make`) assembles reconstructed source and includes the
-private ROM's data tail. It checks the resulting ROM against `baserom.sha256`.
+The reference build (`make`) assembles reconstructed source, verified generated
+data regions, and zero padding. It checks the resulting ROM against `baserom.sha256`.
 Its matching hash does not establish a C-built ROM.
 
 The independent executable slice covers ROM VMA `0x08000000–0x0802E158`
 (file offsets `0x000000–0x02E158`), or 188,760 bytes. It contains reconstructed
 assembly and the C functions selected by
 [`matching_slice_functions.json`](../tools/matching_slice_functions.json).
-The manifest selects 1,017 functions covering 43,272 bytes. `make matching-ready`
+The manifest selects 1,089 functions covering 50,212 bytes. `make matching-ready`
 checks this mixed C/assembly slice against the reference and verifies that a
 deliberately changed instruction fails the comparison.
 

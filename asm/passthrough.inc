@@ -92,8 +92,6 @@ sub_08004CC4:
 sub_08004CD4:
 	.include "code_4cd4.s"
 	.thumb
-	.type sub_08004CF0, %function
-sub_08004CF0:
 	.include "code_4cf0.s"
 	.thumb
 	.type sub_08004D4C, %function

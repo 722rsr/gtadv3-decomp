@@ -323,7 +323,7 @@ int Idle_GetRecordCount(void) { return (int)*st_u16(0x0A); }
 // _08002038 -> current mode
 u16 Idle_GetCurrentMode(void) { return *st_u16(0x10); }
 // _08002044 -> +0x0C
-u16 Idle_GetCounterC(void) { return *st_u16(0x0C); }
+u32 Idle_GetCounterC(void) { return *st_u16(0x0C); }
 // _08002050 -> +0xD8
 u16 Idle_GetD8Word(void) { return *st_u16(0xD8); }
 // _08002060(f) set +0x02 flag. Same word-argument argument as _08001F80 (see
@@ -338,7 +338,7 @@ void Idle_SetFlag2(u8 v) { Idle_SetFlag2W(v); }
 // name immediately followed by '(' as a C DEFINITION site, and a comment
 // saying `_0800206C(idx)` would steal the attribution from the real owner,
 // src/menu_d280.c:21, and make the body unscorable.
-u16 Idle_GetRecordFiltered(int idx) {
+u32 Idle_GetRecordFiltered(int idx) {
     // ROM (16 B): push {lr} / bl _080015F4 / lsls r0,#16 / lsrs r0,#16 /
 #ifndef __APPLE__
     extern u32 _080015F4(int idx);
@@ -377,11 +377,11 @@ void _0800207C(void *h, void *region, int len) __attribute__((alias("Idle_ArenaR
 void _08001F80(u32 v) __attribute__((alias("Idle_SetRecordCountW")));
 int _08001F8C(void) __attribute__((alias("Idle_GetRecordCount")));
 u16 _08002038(void) __attribute__((alias("Idle_GetCurrentMode")));
-u16 _08002044(void) __attribute__((alias("Idle_GetCounterC")));
+u32 _08002044(void) __attribute__((alias("Idle_GetCounterC")));
 u16 _08002050(void) __attribute__((alias("Idle_GetD8Word")));
 void _08002060(u32 v) __attribute__((alias("Idle_SetFlag2W")));
 void Sub_08002060(u32 v) __attribute__((alias("Idle_SetFlag2W")));
-u16 _0800206C(int a) __attribute__((alias("Idle_GetRecordFiltered")));
+u32 _0800206C(int a) __attribute__((alias("Idle_GetRecordFiltered")));
 #endif
 
 // 0x080022C0 — 4B forwarder: `bl 0x08001F3C; bx lr` (pop {r1}; bx r1 tail).

@@ -417,17 +417,28 @@ void ObjList_03350(int sel, u32 x, u32 a2, u32 a3, const volatile u8 *str, u32 w
 #endif
     lane = *(volatile u32 *)(uintptr_t)(base + (u32)sel * 4);
     fnv = (u32)(uintptr_t)hdr.w[sel];
-    req[4] = 0x03000160u + (u32)sel * 4;
+    req[4] = (u32)sel * 4 + ({ register u32 tbl_base __asm__("r1") = 0x03000160u; __asm__("" : "+r" (tbl_base)); tbl_base; });
     req[2] = a2;
     req[5] = a3;
     while (*p) {
         rq = req;
-        adv = ((const s16 *)(uintptr_t)(0x080C49A0 + ((u32)*p << 1)))[0] - 1;
+        extern u8 GlyphAdvTbl[];
+        __asm__(".globl GlyphAdvTbl\nGlyphAdvTbl = 0x080C49A0\n");
+        register u32 c __asm__("r1") = *p;
+        __asm__("" : "+r" (c));
+        register u32 off __asm__("r0") = c << 1;
+        __asm__("" : "+r" (off));
+        register const s16 *tbl __asm__("r2") = (const s16 *)GlyphAdvTbl;
+        __asm__("" : "+r" (tbl));
+        adv = *(const s16 *)(off + (uintptr_t)tbl) - 1;
+        __asm__("" : : "r" (tbl));
         req[1] = x & 0x1FF;
         req[3] = (u32)adv;
         if (adv >= 0) {
             u32 obj = (u32)(uintptr_t)_08002BFC(x & 0x1FF);
-            *(volatile u16 *)(uintptr_t)(obj + 12) = w5;
+            register const u16 *pw5 __asm__("r0") = (const u16 *)(uintptr_t)&w5;
+            __asm__("" : "+r"(pw5));
+            *(volatile u16 *)(uintptr_t)(obj + 12) = *pw5;
             req[0] = obj;
             ((tmpl_fn)(uintptr_t)fnv)(rq);
             _08002C34(0, (void *)(uintptr_t)obj);
@@ -471,17 +482,28 @@ void ObjList_03400(int sel, u32 x, u32 a2, u32 a3, const volatile u8 *str, u32 w
 #endif
     lane = *(volatile u32 *)(uintptr_t)(base + (u32)sel * 4);
     fnv = (u32)(uintptr_t)hdr.w[sel];
-    req[4] = 0x03000160u + (u32)sel * 4;
+    req[4] = (u32)sel * 4 + ({ register u32 tbl_base __asm__("r1") = 0x03000160u; __asm__("" : "+r" (tbl_base)); tbl_base; });
     req[2] = a2;
     req[5] = a3;
     while (*p) {
         rq = req;
-        adv = ((const s16 *)(uintptr_t)(0x080C49A0 + ((u32)*p << 1)))[0] - 1;
+        extern u8 GlyphAdvTbl[];
+        __asm__(".globl GlyphAdvTbl\nGlyphAdvTbl = 0x080C49A0\n");
+        register u32 c __asm__("r1") = *p;
+        __asm__("" : "+r" (c));
+        register u32 off __asm__("r0") = c << 1;
+        __asm__("" : "+r" (off));
+        register const s16 *tbl __asm__("r2") = (const s16 *)GlyphAdvTbl;
+        __asm__("" : "+r" (tbl));
+        adv = *(const s16 *)(off + (uintptr_t)tbl) - 1;
+        __asm__("" : : "r" (tbl));
         req[1] = x & 0x1FF;
         req[3] = (u32)adv;
         if (adv >= 0) {
             u32 obj = (u32)(uintptr_t)_08002BFC(x & 0x1FF);
-            *(volatile u16 *)(uintptr_t)(obj + 12) = w6;
+            register const u16 *pw6 __asm__("r0") = (const u16 *)(uintptr_t)&w6;
+            __asm__("" : "+r"(pw6));
+            *(volatile u16 *)(uintptr_t)(obj + 12) = *pw6;
             req[0] = obj;
             ((tmpl_fn)(uintptr_t)fnv)(rq);
             _08002C34(0, (void *)(uintptr_t)obj);
@@ -516,17 +538,28 @@ void _080034B0(int sel, u32 x, u32 a2, u32 a3, const volatile u8 *str, u32 w5, u
 #endif
     lane = *(volatile u32 *)(uintptr_t)(base + (u32)sel * 4);
     fnv = (u32)(uintptr_t)hdr.w[sel];
-    req[4] = 0x03000160u + (u32)sel * 4;
+    req[4] = (u32)sel * 4 + ({ register u32 tbl_base __asm__("r1") = 0x03000160u; __asm__("" : "+r" (tbl_base)); tbl_base; });
     req[2] = a2;
     req[5] = a3;
     while (*p) {
         rq = req;
-        adv = ((const s16 *)(uintptr_t)(0x080C49A0 + ((u32)*p << 1)))[0] - 1;
+        extern u8 GlyphAdvTbl[];
+        __asm__(".globl GlyphAdvTbl\nGlyphAdvTbl = 0x080C49A0\n");
+        register u32 c __asm__("r1") = *p;
+        __asm__("" : "+r" (c));
+        register u32 off __asm__("r0") = c << 1;
+        __asm__("" : "+r" (off));
+        register const s16 *tbl __asm__("r2") = (const s16 *)GlyphAdvTbl;
+        __asm__("" : "+r" (tbl));
+        adv = *(const s16 *)(off + (uintptr_t)tbl) - 1;
+        __asm__("" : : "r" (tbl));
         req[1] = x & 0x1FF;
         req[3] = (u32)adv;
         if (adv >= 0) {
             u32 obj = (u32)(uintptr_t)_08002BFC(x & 0x1FF);
-            *(volatile u16 *)(uintptr_t)(obj + 12) = w5;
+            register const u16 *pw5 __asm__("r0") = (const u16 *)(uintptr_t)&w5;
+            __asm__("" : "+r"(pw5));
+            *(volatile u16 *)(uintptr_t)(obj + 12) = *pw5;
             req[0] = obj;
             ((tmpl_fn)(uintptr_t)fnv)(rq);
             _08002C34(0, (void *)(uintptr_t)obj);
@@ -590,24 +623,21 @@ void ObjList_03560(int sel, u32 x, u32 a2, u32 a3, const volatile u8 *str)
 #endif
     lane = *(volatile u32 *)(uintptr_t)(base + (u32)sel * 4);
     fnv = (u32)(uintptr_t)hdr.w[sel];
-    req[4] = 0x03000160u + (u32)sel * 4;
+    req[4] = (u32)sel * 4 + ({ register u32 tbl_base __asm__("r1") = 0x03000160u; __asm__("" : "+r" (tbl_base)); tbl_base; });
     req[2] = a2;
     req[5] = a3;
     while (*p) {
         rq = req;
+        extern u8 GlyphAdvTbl[];
+        __asm__(".globl GlyphAdvTbl\nGlyphAdvTbl = 0x080C49A0\n");
         register u32 c __asm__("r1") = *p;
         __asm__("" : "+r" (c));
-        __asm__(".syntax unified\n\t"
-                "lsls %0, %1, #1\n\t"
-                "ldr r2, =0x080C49A0\n\t"
-                "adds %0, %0, r2\n\t"
-                "movs r3, #0\n\t"
-                "ldrsh %0, [%0, r3]\n\t"
-                "subs %0, %0, #1\n\t"
-                ".syntax divided"
-                : "=&l" (adv)
-                : "l" (c)
-                : "r2", "r3", "cc");
+        register u32 off __asm__("r0") = c << 1;
+        __asm__("" : "+r" (off));
+        register const s16 *tbl __asm__("r2") = (const s16 *)GlyphAdvTbl;
+        __asm__("" : "+r" (tbl));
+        adv = *(const s16 *)(off + (uintptr_t)tbl) - 1;
+        __asm__("" : : "r" (c), "r" (tbl));
         req[1] = x;
         req[3] = (u32)adv;
         if (adv >= 0) {

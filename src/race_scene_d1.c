@@ -332,19 +332,30 @@ void _08001F6A4(void *rec_) {
 // s16==3: sound 4 + reset lanes), then WA mirror = u16[rec+8].
 // c==64/128: u16[rec+8]-/++. Clamp s16[rec+8] to 0..3; on change vs the
 // entry snapshot, sound 2.
+//
+// Two lowering facts, both load-bearing:
+//  1. First param is `volatile u8 *` in the SIGNATURE (adds r4,r0 before the
+//     lsls, same as E1E0/E230).
+//  2. Entry snapshot loads straight into r6 (`ldrh r6,[r4,#8]`); a plain u16
+//     local emits `ldrh r0` + `adds r6,r0`.
+//  3. WA mirror via base symbol + 132<<5 (ldr base, movs 132, lsls 5, adds),
+//     not a folded single literal.
 // ----------------------------------------------------------------------------
-void _08001F764(void *rec_, u16 b, u16 c) {
-    volatile u8 *rec = (volatile u8 *)rec_;
-    u16 entry;
+void _08001F764(volatile u8 *rec, u16 b, u16 c) {
+    register u16 entry __asm__("r6") = *(volatile u16 *)(rec + 8);
+    extern u8 RaceSceneD1Wa764[];
+    __asm__(".globl RaceSceneD1Wa764\nRaceSceneD1Wa764 = 0x03001780");
     (void)b;
-    entry = *(volatile u16 *)(rec + 8);
     if (c == 2) {
         _08002B368(4);
         *(volatile u32 *)(rec + 16) = 10;
         *(volatile u16 *)(rec + 20) = 0;
         *(volatile u32 *)(rec + 48) = 10;
         *(volatile u32 *)(rec + 44) = 0;
-        *(volatile u16 *)(uintptr_t)(WA + 4224u) = 3;
+        {
+            int blk = 132;
+            *(volatile u16 *)(RaceSceneD1Wa764 + (blk << 5)) = 3;
+        }
     }
     if (c == 1) {
         u16 v = *(volatile u16 *)(rec + 8);
@@ -364,7 +375,7 @@ void _08001F764(void *rec_, u16 b, u16 c) {
             *(volatile u32 *)(rec + 48) = 10;
             *(volatile u32 *)(rec + 44) = 0;
         }
-        *(volatile u16 *)(uintptr_t)(WA + 4224u) = *(volatile u16 *)(rec + 8);
+        *(volatile u16 *)(RaceSceneD1Wa764 + (132u << 5)) = *(volatile u16 *)(rec + 8);
     }
     if (c == 64)
         *(volatile u16 *)(rec + 8) = (u16)(*(volatile u16 *)(rec + 8) - 1);

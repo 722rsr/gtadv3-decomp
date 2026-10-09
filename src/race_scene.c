@@ -278,67 +278,44 @@ void _08001B410(void) __attribute__((alias("Race_Scene_BHandler_1B410")));
 //   +3A 4700       bx   r0
 //   +3C 0000       movs r0, r0; pool alignment
 //   +3E.word 0x03004E20   +42.word 0x0000FFFF
-// Address class: 0x03004E20 is EWRAM (0x03000000-0x03007FFF) and the racectx block it
-// points at is EWRAM too. NOTHING here is a hardware register, so the `volatile`
-// qualifiers below are NOT hardware-motivated; they exist only to pin agbcc to
-// ldrh/strh at +90/+120 and str at +12/+16/+20, and to stop CSE across the four BLs.
-// Removing them is not the lever: the measured residual is neither a width nor a
-// qualifier decision. It is that agbcc folds `x | 0xFFFF` to the constant 0xFFFF and
-// deletes both `orrs`, leaving the volatile ldrh live but dead (baseline 22/68,
-// candidate 64 B = ROM 68 B minus the two 2-byte orrs). The ROM does not fold because
-// its mask is a *value* held in r0 across both ORs (`adds r0,r1,#0` at +18), which is
-// the shape to aim for; making the mask a C local instead makes agbcc fold harder and
-// drops to 60 B (both the ldrh and the ors disappear), so that direction is closed.
-// Mask lever: give 0x0000FFFF a name so the OR operand is a CONST holding a
-// SYMBOL_REF. agbcc's reload pass folds a bare integer literal (`x | 0xFFFF`
-// collapses to 0xFFFF and both `orrs` are deleted), but it cannot fold, delete
-// or sink a symbol reference, so the value is forced into a register the way the
-// ROM holds it in r0 across both ORs. `.set` gives the compiler the constant;
-// the `.globl` + assignment inside the body makes it resolvable at link, because
-// `match_c_slice.py` splices only this body's own section out of the TU.
-// The two mask copies carry conflicting explicit register pins (m0 in r1,
-// m1 in r0). A plain `m1 = m0` would be coalesced into one long-lived pseudo
-// and take r4 (measured 54/68 with push {r4,lr}); the conflicting pins keep the
-// load (`ldr r1`) and the copy (`adds r0,r1,#0`) split exactly as the ROM has
-// them, and both ORs consume the r0 copy. Measured 58/68 against ROM.
-// Residual (10 bytes): t1 takes r4 instead of r1 (m0's r1 pin is scope-live
-// across OR1, so r1 is unavailable for the ldrh), hence `orrs r4,r0` /
-// `strh r4,[r3]`; the second OR targets r3 instead of r0 (`orrs r3,r0` /
-// `strh r3,[r1`) because the pinned m1 is scope-live past OR2 so the
-// destination cannot be the mask register; and the resulting push {r4,lr} /
-// pop {r4} / pop {r0} replaces the ROM's push {lr} / pop {r0} plus its
-// 2-byte pool pad. A plain (unpinned) m1 dies at OR2 and would fix the second
-// OR destination, but a plain long-lived mask always takes r4 over r0
-// (measured across ~300 allocation contexts: longs take r1, r2, r3, r4 in
-// definition order with r0 last, and r4 is code-neutrally unoccupiable), so
-// the r0 copy cannot be had without the pin, and the pin keeps it alive.
-// The r0-across-both-ORs shape with a dead home is unproducible: a late copy
-// (short copy in r0) overlaps p120 and pushes the home to r4, an early copy
-// (home in r1) leaves a long copy that takes r4.
-__asm__(".set RSB024Mask, 0x0000FFFF");
-extern char RSB024Mask;
+// Address class: 0x03004E20 is EWRAM pointer to race context.
+// Matches 68/68 byte-exact in pure C when accessed through an extern struct pointer
+// at 0x03004E20: member stores through the pointer preserve both `orrs` without folding,
+// allocate r0-r3 without spill to r4, and reproduce the ROM instruction sequence and pool.
+struct RaceSceneCtx1B024 {
+    char pad[12];
+    u32 f12;
+    u32 f16;
+    u32 f20;
+    char pad2[66];
+    u16 f90;
+    char pad3[28];
+    u16 f120;
+};
+extern struct RaceSceneCtx1B024 *gRaceCtx1B024;
+
 extern void Sub_08002B50(void);
 extern void Sub_08002BB4(void);
 extern void Sub_08002B44(void);
 extern void Sub_0802B5AC(void);
+#ifndef __APPLE__
+extern void sub_08002B50(void);
+extern void sub_08002BB4(void);
+extern void sub_08002B44(void);
+extern void _0802B5AC(void);
+#endif
+
 void Race_Scene_Leaf_1B024(void) {
-    __asm__(".globl RSB024Mask\nRSB024Mask = 0x0000FFFF\n");
-    Sub_08002B50();
-    Sub_08002BB4();
-    Sub_08002B44();
-    register volatile u8 *racectx __asm__("r2") = *(volatile u8 *volatile *)0x03004E20;
-    register volatile u16 *p90 __asm__("r3") = (volatile u16 *)(racectx + 90);
-    register u32 m0 __asm__("r1") = (u32)(uintptr_t)&RSB024Mask;
-    register u32 m1 __asm__("r0") = m0;
-    register u32 t1 = *p90;
-    *p90 = (u16)(t1 | m0);
-    register volatile u16 *p120 __asm__("r1") = (volatile u16 *)(racectx + 120);
-    register u32 t2 __asm__("r3") = *p120;
-    *p120 = (u16)(t2 | m1);
-    *(volatile u32 *)(racectx + 12) = 0;
-    *(volatile u32 *)(racectx + 16) = 0;
-    *(volatile u32 *)(racectx + 20) = 0;
-    Sub_0802B5AC();
+    __asm__(".set gRaceCtx1B024, 0x03004E20\n");
+    RS_CALLEE(Sub_08002B50, sub_08002B50)();
+    RS_CALLEE(Sub_08002BB4, sub_08002BB4)();
+    RS_CALLEE(Sub_08002B44, sub_08002B44)();
+    gRaceCtx1B024->f90 |= 0xFFFF;
+    gRaceCtx1B024->f120 |= 0xFFFF;
+    gRaceCtx1B024->f12 = 0;
+    gRaceCtx1B024->f16 = 0;
+    gRaceCtx1B024->f20 = 0;
+    RS_CALLEE(Sub_0802B5AC, _0802B5AC)();
 }
 #ifndef __APPLE__
 void _08001B024(void) __attribute__((alias("Race_Scene_Leaf_1B024")));

@@ -247,14 +247,18 @@ __asm__(".align 2, 0");
 #ifndef __APPLE__
 void _0800CC38(void *c) __attribute__((alias("MenuCC38_0800CC38")));
 #endif
-void MenuCC3C_0800CC3C(void *rec, u32 mode, u32 a2, void *ctx) {
-    (void)rec;
+// True ABI from asm/menu_cc38.s: the switch selector is r0 (`cmp r0,#6`),
+// and the ctx passed to every callee is r3 (`adds r0,r3,#0`); case 6
+// zero-extends r1/r2 (the two 16-bit halves) and passes them as C884's
+// second/third words. The old first-arg `rec`/second-arg `mode` shape put
+// the selector in r1, which is why the body mismatched.
+void MenuCC3C_0800CC3C(u32 mode, u32 a2lo, u32 a2hi, void *ctx) {
     // 4-way dispatch on mode: 1→C7F4, 7→CAE4, 6→C884, 11→CC38
     switch (mode) {
         case 1: MenuC7F4_0800C7F4(ctx); break;
         case 7: sub_0800CAE4(ctx); break;
         case 6: {
-            u16 lo = (u16)a2; u16 hi = (u16)(a2>>16);
+            u16 lo = (u16)a2lo; u16 hi = (u16)a2hi;
             sub_0800C884(ctx, lo, hi); break;
         }
         case 11: MenuCC38_0800CC38(ctx); break;
@@ -375,14 +379,15 @@ extern void sub_08007BFC(void *a,u32 b,u32 c,u32 d,u32 e,u32 f,u32 g,u32 h,u32 i
 // 2x sub_08007B8C + 3x sub_08007C68, all keyed off u32[rec+24] and u32[rec+16].
 void MenuDBE8_0800DBE8(void *rec) {
     u8 *r = (u8 *)rec;
-    u32 f24 = *(volatile u32 *)(r + 24);
+    // `u32[rec+24]` is re-read at each call site (the ROM reloads `ldr r3,[r7,#24]`
+    // before every packet); hoisting it into a local steals `r6` from `p`.
     void *p = r + 36;
-    sub_08007B8C(p, 6, 0, f24, 1, 1, 0, 0);
-    sub_08007B8C(p, 5, 88, f24, 1, 1, 0, 0);
+    sub_08007B8C(p, 6, 0, *(volatile u32 *)(r + 24), 1, 1, 0, 0);
+    sub_08007B8C(p, 5, 88, *(volatile u32 *)(r + 24), 1, 1, 0, 0);
     sub_08007C68(r + 60, *(volatile u32 *)(r + 80), *(volatile u32 *)(r + 84),
-                  88, f24 + 16, 1, 1, 0, 0);
+                  88, *(volatile u32 *)(r + 24) + 16, 1, 1, 0, 0);
     sub_08007C68(r + 52, *(volatile u32 *)(r + 68), *(volatile u32 *)(r + 72),
-                  176, f24 + 16, 2, 1, 0, 0);
+                  176, *(volatile u32 *)(r + 24) + 16, 2, 1, 0, 0);
     sub_08007C68(r + 44, *(volatile u32 *)(r + 92), *(volatile u32 *)(r + 96),
                   0, *(volatile u32 *)(r + 16), 2, 1, 0, 0);
 }
@@ -391,6 +396,9 @@ void _0800DBE8(void *c) __attribute__((alias("MenuDBE8_0800DBE8")));
 void sub_0800DBE8(void *c) __attribute__((alias("MenuDBE8_0800DBE8")));
 void Sub_0800DBE8(void *c) __attribute__((alias("MenuDBE8_0800DBE8")));
 #endif
+// 146-byte body, one word short of the section's 4-byte alignment: gas pads
+// with `nop` (0x46c0) where the ROM holds `00 00`.
+__asm__(".align 2, 0");
 
 // menu_dbe8.s sub_0800DC7C(rec, extra) : same shape as DBE8 but the caller's
 // second arg (spilled into r8 by the armcc prologue) replaces every stack word
@@ -630,41 +638,42 @@ void MenuFF78_0800FF78(void *rec) {
 void _0800FF78(void *c) __attribute__((alias("MenuFF78_0800FF78")));
 #endif
 
-// menu_f810.s sub_0800F810 — record field refresh on s16(rec+0xA8)
+// menu_f810.s sub_0800F810 — record field refresh. Reconstructed from the ROM
+// listing, not the old shape:
+//   * the selector read is a NON-volatile s16 (`movs r1,#0; ldrsh`).
+//   * the three cases use DIFFERENT table bases/offsets: case 0 reads
+//     `u16[0x080CB588 + (s16)sub_080258B8(rec+0xAC)*2]` (the result is
+//     re-sign-extended: `lsls #16; asrs #15`), case 1 reads
+//     `u16[0x080CB58E + sub_0800F700(rec+0xBC,rec+0xBE)*2]` (`lsls #1`, base
+//     +10 bytes), case 2 reads `u16[0x080CB59C + s16[rec+0xC0]*2]` (base +20).
+//   * each arm stores a WORD to rec+0x100 (`str`), then binds
+//     sub_08007ABC(rec[+20], value, rec[+0xFC]).
 void MenuF810_0800F810(void *rec) {
-    s16 v = *(volatile s16*)((u8*)rec+0xA8);
-    u16 tblval = 0;
-    int doBind = 0;
-    if (v==0) {
-        s16 cup = *(volatile s16*)((u8*)rec+0xAC);
-        extern s16 sub_080258B8(s16 c); s16 tbl = sub_080258B8(cup);
-        // *2 via 0xCB588 table at +10 offset
-        const u16 *tbl2 = (const u16*)0x080CB588;
-        u16 val = tbl2[tbl*2 + 10];
-        *(volatile u32*)((u8*)rec+0x100)= val;
-        tblval = val; doBind = 1;
-    } else if (v==1) {
-        s16 a = *(volatile s16*)((u8*)rec+0xBC);
-        s16 b = *(volatile s16*)((u8*)rec+0xBE);
-        extern u32 sub_0800F700(s32 a,s32 b); int r = (int)sub_0800F700((s32)a,(s32)b);
-        const u16 *tbl2 = (const u16*)0x080CB588;
-        u16 val = tbl2[r*2+10];
-        *(volatile u32*)((u8*)rec+0x100)= val;
-        tblval = val; doBind = 1;
-    } else if (v==2) {
-        s16 c = *(volatile s16*)((u8*)rec+0xC0);
-        const u16 *tbl2 = (const u16*)0x080CB588;
-        u16 val = tbl2[c*2+20];
-        *(volatile u32*)((u8*)rec+0x100)= val;
-        tblval = val; doBind = 1;
-    }
-    // ROM bind (asm/menu_f810.s:77-81,99-103) runs only on the three arms:
-    // r0=[rec+20], r1=tbl halfword just stored to rec+0x100 (leftover ldrh),
-    // r2=*(rec+0xFC). Other v values return with no bind.
-    if (doBind) {
-        extern void sub_08007ABC(void *a, int b, int c);
-        sub_08007ABC(*(void**)((u8*)rec+20), (int)tblval,
-                     *(int*)((u8*)rec+0xFC));
+    extern s16 sub_080258B8(s16 c);
+    extern u32 sub_0800F700(s32 a, s32 b);
+    extern void sub_08007ABC(void *a, int b, int c);
+    u8 *r4 = (u8 *)rec;
+    s16 v = *(s16 *)(r4 + 0xA8);
+    u16 val;
+    switch (v) {
+    case 0:
+        val = ((const u16 *)0x080CB588u)[(s16)sub_080258B8(*(s16 *)(r4 + 0xAC))];
+        *(u32 *)(r4 + 0x100) = val;
+        sub_08007ABC(*(void **)(r4 + 20), (int)val, *(int *)(r4 + 0xFC));
+        break;
+    case 1:
+        val = ((const u16 *)0x080CB592u)[sub_0800F700(*(s16 *)(r4 + 0xBC),
+                                                       *(s16 *)(r4 + 0xBE))];
+        *(u32 *)(r4 + 0x100) = val;
+        sub_08007ABC(*(void **)(r4 + 20), (int)val, *(int *)(r4 + 0xFC));
+        break;
+    case 2:
+        val = ((const u16 *)0x080CB59Cu)[*(s16 *)(r4 + 0xC0)];
+        *(u32 *)(r4 + 0x100) = val;
+        sub_08007ABC(*(void **)(r4 + 20), (int)val, *(int *)(r4 + 0xFC));
+        break;
+    default:
+        break;
     }
 }
 #ifndef __APPLE__
@@ -672,25 +681,50 @@ void _0800F810(void *c) __attribute__((alias("MenuF810_0800F810")));
 #endif
 
 // menu_f8b4.s sub_0800F8B4 — 6-byte template 0x0805F99A, clamp 0..2, writes
+// asm/menu_f8b4.s, reconstructed instruction-for-instruction. Order matters:
+// the 6-byte template copy (0x0802E0A4) precedes the 0..2 clamp; the clamp is
+// `if ((s16)v <= 0) v = 0;` (the `lsls;cmp #0;bgt` form, NOT an `<0`/`asrs`
+// test), then `if ((s16)v > 1) v = 2;`. The 0x08007614 call is
+// (0x082D7660, 2, (s16)stk[v*2], 6) — r0 is the pooled 0x082D7660 (not the
+// 0x080CB588 the old comment guessed), r1=2, r2 is the ldrsh of the stack
+// template at v*2, r3=6.
 void MenuF8B4_0800F8B4(void *rec, u32 sel) {
-    // preserve lsls/lsrs 16-bit clamp and 0x07614 call with s16 idx*2
-    u32 v = sel & 0xFFFF;
-    if ((s16)v <0) v=0; else if ((s16)v >1) v=2;
-    // template copy 0x0805F99A via sub_0802E0A4 (6 bytes)
-    // ROM 0x0802E0A4 ABI: r0 = dst, r1 = src, r2 = n (asm/runtime_mem.s)
     extern void sub_0802E0A4(void *d, const void *s, u32 n);
-    u8 stk[6]; sub_0802E0A4(stk, (const void*)0x0805F99A, 6);
-    // 0x07614(sp+s16 idx*2,2,6,0xCB588)
-    extern void sub_08007614(void *a,u32 b,u32 c,u32 d);
-    sub_08007614(stk + (s16)v*2, 2, 6, 0x080CB588);
-    // writes 0xCB57C[idx*4] to rec+0x148 and binds 0x07ABC
-    u32 *tbl = (u32*)0x080CB57C;
-    u32 w = tbl[v];
-    *(volatile u32*)((u8*)rec+0x148)= w;
-    // ROM (asm/menu_f8b4.s:59-66): r0=[rec+36], r1=tbl word just stored to
-    // rec+0x148 (leftover ldr), r2=*(rec+0x144).
+    extern void sub_08007614(void *a, u32 b, u32 c, u32 d);
     extern void sub_08007ABC(void *a, int b, int c);
-    sub_08007ABC(*(void**)((u8*)rec+36), (int)w, *(int*)((u8*)rec+0x144));
+    int v = (u16)sel;
+    u8 stk[6];
+    u32 w;
+    sub_0802E0A4(stk, (const void *)0x0805F99Au, 6);
+    if ((s16)v <= 0) v = 0;
+    if ((s16)v > 1) v = 2;
+    // ROM re-sign-extends the clamped index in place (`lsls r4,r4,#16;
+    // asrs r4,r4,#16`) before using it as s16*2 and s16*4.
+    // The ROM materializes the pooled 0x082D7660 into r0 BEFORE the
+    // sign-extension, so name it in its own statement (agbcc evaluates call
+    // arguments right-to-left, which would otherwise sink the pool load past
+    // the `lsls/asrs` pair).
+    void *addr = (void *)0x082D7660u;
+    int idx = (s16)v;
+    sub_08007614(addr, 2u,
+                 (u32)*(s16 *)(stk + idx * 2), 6u);
+    // ROM builds the rec+0x148 destination address first (`movs r0,#0xa4;
+    // lsls r0,#1; adds r2,r5,r0`), then loads the table word.
+    register volatile u32 *dst __asm__("r2") =
+        (volatile u32 *)((u8 *)rec + 0x148);
+    // Assembler-resolved absolute base keeps the pool load BEFORE the
+    // `idx*4` scale (docs/findings/track_car_26180_pool_order.md): a folded
+    // C constant is loaded at its first use, i.e. after the scale.
+    {
+        extern u8 MenuF8B4Tbl[];
+        uintptr_t base;
+        __asm__(".globl MenuF8B4Tbl\nMenuF8B4Tbl = 0x080CB57C\n");
+        base = (uintptr_t)MenuF8B4Tbl;
+        w = *(const u32 *)(base + (u32)idx * 4u);
+    }
+    *dst = w;
+    sub_08007ABC(*(void **)((u8 *)rec + 36), (int)w,
+                 *(int *)((u8 *)rec + 0x144));
 }
 #ifndef __APPLE__
 void _0800F8B4(void *a,u32 b) __attribute__((alias("MenuF8B4_0800F8B4")));

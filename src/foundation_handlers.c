@@ -12,24 +12,21 @@ typedef struct { vu8 _00; vu8 fsm; vu8 _02; vu8 _03; vu8 ready; vu8 c5; vu8 flag
 
 // Blob A — _08000AF4 (MultiSio 32-bit burst, timer3+serial)
 void EWRAM_Handler_BlobA(void){
-    vu32 sp0;
+    u32 snapshot[2];
     {
-        vu32 *p = (vu32*)0x04000120;
-        sp0 = p[0];
-        (void)p[1];
+        volatile u32 *p = (volatile u32 *)(uintptr_t)0x04000120;
+        snapshot[1] = p[1];
+        snapshot[0] = p[0];
     }
-    vu8 bit6 = (vu8)(((REG_SIOCNT >> 0) & 0) /* placeholder: extract bit7 via 0x04000128>>25 */);
-    // actual: ldr r0,[0x04000128]; lsls #25; lsrs #31 -> bit0 of SIODATA? Preserve width:
+    vu8 bit6;
     {
-        u32 v = *(vu32*)0x04000128;
-        bit6 = (u8)((v >> 7) & 1); // lsl 25 -> bit7 becomes bit31 then lsrs31
-        // asm does lsls r0,#25 then lsrs #31, so extracts bit6 (0x40) as 0/1
-        // original uses 0x04000128 SIOCNT bit6 — replicate
+        u32 v = *(volatile u32 *)(uintptr_t)0x04000128;
+        bit6 = (u8)((v >> 6) & 1); // lsl 25 then lsr 31 extracts SIOCNT bit 6
         SESS->siocnt6 = bit6;
     }
     // Compare stack snapshot vs 0xFEFE
     {
-        u16 v = (u16)sp0; // low half of SIODATA32 snapshot
+        u16 v = (u16)snapshot[0]; // low half of SIODATA32 snapshot
         if(v == 0xFEFE){
             if((s32)SESS->cnt18 > 9){
                 SESS->cnt18 = 0xFFFFFFFFu;
@@ -49,13 +46,12 @@ void EWRAM_Handler_BlobA(void){
     }
     if((s32)SESS->cnt14 <= 9){
         vu16 *p = (vu16*)(SESS->ptr20 + (SESS->cnt14<<1));
-        REG_SIODATA8 = 0; // actually 0x0400012A via strh
         *(vu16*)0x0400012A = *p;
     }
     if((s32)SESS->cnt14 <= 10) SESS->cnt14++;
     if((s32)SESS->cnt18 >= 0){
         vu16 *dst = (vu16*)(SESS->ptr24 + (SESS->cnt18<<1));
-        vu16 *src = (vu16*)&sp0;
+        vu16 *src = (vu16*)snapshot;
         for(int i=0;i<4;i++) dst[i*12] = src[i];
         if(SESS->cnt18==9) SESS->c5 = 1;
     }
@@ -108,11 +104,42 @@ void EWRAM_Handler_BlobB(void){
 void _08000E80(void) __attribute__((alias("EWRAM_Handler_BlobB")));
 #endif
 
-void InstallEWRAMHandlers(void){
-    extern void CpuFastSet(const void *s,void *d,u32 m);
-    CpuFastSet((void*)0x08000AF4, (void*)0x0203EE70, 0x04000048);
-    CpuFastSet((void*)0x08000E80, (void*)0x0203EE70, 0x04000048);
+void InstallEWRAMHandlers(int checksumMode, u32 inputBase){
+    volatile u16 *ime = (volatile u16 *)(uintptr_t)0x04000208;
+    volatile u16 *ie = (volatile u16 *)(uintptr_t)0x04000200;
+    volatile u16 *siocnt = (volatile u16 *)(uintptr_t)0x04000128;
+    volatile u32 *f150 = (volatile u32 *)(uintptr_t)0x0203F150;
+    u32 zero = 0;
+    u32 sum = 0;
+
+    extern void _0802D974(const void *src, void *dst, u32 mode);
+
+    *ime = 0;
+    *ie = (u16)(*ie & 0xFF3Fu);
+    *ime = 1;
+    *(volatile u16 *)(uintptr_t)0x04000134 = 0;
+    *siocnt = 0x2000;
+    *siocnt = (u16)(*siocnt | 0x4003u);
+
+    _0802D974(&zero, (void *)(uintptr_t)0x0203F150, 0x05000006u);
+    _0802D974((const void *)(uintptr_t)0x08000E81,
+              (void *)(uintptr_t)0x0203EE70, 0x04000048u);
+    f150[1] = inputBase;
+    f150[2] = 0xFFFFFFFFu;
+    *(volatile u32 *)(uintptr_t)0x04000128 = 0x2003u;
+
+    if (checksumMode != 0) {
+        volatile u32 *words = (volatile u32 *)(uintptr_t)inputBase;
+        *(volatile u32 *)(uintptr_t)0x0400010C = 0;
+        *(volatile u8 *)(uintptr_t)0x0203F150 = 1;
+        for (u32 i = 0; i < 0x20000u; i++)
+            sum += words[i];
+        *(volatile u32 *)(uintptr_t)0x0203F15C = ~sum;
+        *siocnt = 0x1000;
+        *siocnt = 0x1001;
+    }
 }
 #ifndef __APPLE__
-void _08000BF0(void) __attribute__((alias("InstallEWRAMHandlers")));
+void _08000BF0(int checksumMode, u32 inputBase)
+    __attribute__((alias("InstallEWRAMHandlers")));
 #endif
