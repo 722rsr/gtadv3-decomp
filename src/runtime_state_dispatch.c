@@ -68,13 +68,13 @@ HOST_STUB(void  _0800ECAC(void *rec, u32 a, u32 b));
 HOST_STUB(void  _0800E7CC(void *rec));
 HOST_STUB(void  _0800EE00(void *rec, u32 b));
 HOST_STUB(void  _08007770(int a, void *b, int c, int d, u32 e, u32 f));
-HOST_STUB(void  _0800C4D0(void *rec));
+HOST_STUB(void  sub_0800C4D0(void *rec));
 HOST_STUB(void  _0800C604(void *rec));
-HOST_STUB(void  _0800C640(void));
-HOST_STUB(void  _0800C658(void));
-HOST_STUB(void  _0800C668(int a, int b));
-HOST_STUB(void  _0800C6CC(int a, int b));
-HOST_STUB(void  _0800C730(void *rec));
+HOST_STUB(void  _0800C640(void *rec));
+HOST_STUB(void  _0800C658(void *rec));
+HOST_STUB(void  _0800C668(int rec, int value));
+HOST_STUB(void  _0800C6CC(int rec, int value));
+HOST_STUB(void  _0800C730(void *rec, u16 value));
 HOST_STUB(void  _080218F8(void *inst));
 HOST_STUB(void  _080219D0(void *inst));
 HOST_STUB(void  _0800218F8(void *inst));   // closure spelling of 0x080218F8
@@ -155,27 +155,32 @@ void sub_08021BA0(void *i) __attribute__((alias("CarEv7Dispatch_21BA0")));
 #endif
 
 // ============================================================================
-// code_c668.s 0x0800C744 — menu mode dispatcher (21-entry `mov pc` table
-// @0x0800C75C; mode = arg−1; r2 = arg forwarded as 2nd arg; cases:
-// 0→C4D0, 2→C604, 3→C640, 7→C658, 12→C668(a,r2), 13→C6CC(a,r2),
-// 20→C730(a,r2&0xFFFF), default→shared pop tail 0x0800C7EE).
+// code_c668.s 0x0800C744 — selector in r0 indexes a 21-entry `mov pc` table
+// @0x0800C75C after subtracting one. r1 is preserved in r2 as the forwarded
+// value; r3 is the record passed unchanged to the selected helper. Cases:
+// 1→C4D0, 3→C604, 4→C640, 8→C658, 13→C668(r3,r1), 14→C6CC(r3,r1),
+// 21→C730(r3,(u16)r1); default→shared pop tail 0x0800C7EE.
 // ============================================================================
-void MenuC744(void *rec, int mode, int arg) {
+void MenuC744(int mode, int value, int unused, void *rec) {
     switch (mode) {
-    case 0:  _0800C4D0((u8 *)rec + 192); break;
-    case 2:  _0800C604((u8 *)rec + 192); break;
-    case 3:  _0800C640(); break;
-    case 7:  _0800C658(); break;
-    case 12: _0800C668((int)(uintptr_t)((u8 *)rec + 192), arg); break;
-    case 13: _0800C6CC((int)(uintptr_t)((u8 *)rec + 192), arg); break;
-    case 20: _0800C730((u8 *)rec + 192); break; // r2 ignored (no-op host)
+    case 1:  sub_0800C4D0(rec); break;
+    case 3:  _0800C604(rec); break;
+    case 4:  _0800C640(rec); break;
+    case 8:  _0800C658(rec); break;
+    case 13: _0800C668((int)(uintptr_t)rec, value); break;
+    case 14: _0800C6CC((int)(uintptr_t)rec, value); break;
+    case 21: _0800C730(rec, (u16)value); break;
     default: break;
     }
+    (void)unused;
 }
 #ifndef __APPLE__
-void _0800C744(void *a, int b, int c) __attribute__((alias("MenuC744")));
-void sub_0800C744(void *a, int b, int c) __attribute__((alias("MenuC744")));
+void _0800C744(int mode, int value, int unused, void *rec) __attribute__((alias("MenuC744")));
+void sub_0800C744(int mode, int value, int unused, void *rec) __attribute__((alias("MenuC744")));
 #endif
+// The ROM span ends on a word boundary. Keep its 0x0000 filler after this
+// body's .size so the byte-level candidate carries the same final halfword.
+__asm__(".align 2, 0");
 
 // 1. OPERAND ORDER (the 31/36). agbcc materialised the constant first and the
 //    address second, emitting `movs r1,#1; ldr r0,=flag; strb r1,[r0]` — the
@@ -542,44 +547,91 @@ void sub_0802C160(void) __attribute__((alias("VoiceEnvelopeApply_2C160")));
 //   802ddc8: 4700  bx r0        802ddcc: 4708  bx r1... 802de00: 4770  bx lr
 //   802ddca: 46c0  mov r8,r8    802ddce: 46c0  mov r8,r8... 802de02: 46c0  mov r8,r8
 // They are reached as `ldr rN, <ram_addr>; bl veneer[rN]` to run code relocated
-// to RAM (src/foundation_subsys.c; asm/sound_veneer.s carries the
-// caller census). No C body can emit `bx r0`: `bx` to a register is not
-// expressible, and an empty function is `bx lr` (0x4770), which is the LAST
-// slot in the pool at 0x0802DE00, not the first. This stub exists so the
-// `_call_via_r0` closure spelling resolves. The probe's 3/4 is not partial
-// agreement on the body: this stub compiles to `70 47 c0 46` (`bx lr` plus the
-// assembler's `mov r8,r8` pad) against the slot's `00 47 c0 46`, so the three
-// matching bytes are the `47` and the pad, and the one differing byte is the
-// branch target itself -- `bx lr` (0x4770) where the slot wants `bx r0`
-// (0x4700). No C spelling closes that byte.
-// ============================================================================
-void Veneer_2DDC8(void) { }
+// to RAM (src/foundation_subsys.c; asm/sound_veneer.s carries the caller
+// census). C returns through `bx lr`, so each ARM body spells its indirect
+// branch directly and retains the pool's four-byte slot with the pad halfword.
+// ==========================================================================
+#ifdef __APPLE__
+#define DEFINE_SOUND_VENEER(name, reg) void name(void) { }
+#else
+#define DEFINE_SOUND_VENEER(name, reg) \
+    __attribute__((naked)) void name(void) { \
+        __asm__ volatile ("bx " reg "\n\t.hword 0x46c0"); \
+    }
+#endif
+DEFINE_SOUND_VENEER(Veneer_2DDC8, "r0")
+DEFINE_SOUND_VENEER(Veneer_2DDCC, "r1")
+DEFINE_SOUND_VENEER(Veneer_2DDD0, "r2")
+DEFINE_SOUND_VENEER(Veneer_2DDD4, "r3")
+DEFINE_SOUND_VENEER(Veneer_2DDD8, "r4")
+DEFINE_SOUND_VENEER(Veneer_2DDDC, "r5")
+DEFINE_SOUND_VENEER(Veneer_2DDE0, "r6")
+DEFINE_SOUND_VENEER(Veneer_2DDE4, "r7")
+DEFINE_SOUND_VENEER(Veneer_2DDE8, "r8")
+DEFINE_SOUND_VENEER(Veneer_2DDEC, "r9")
+DEFINE_SOUND_VENEER(Veneer_2DDF0, "r10")
+DEFINE_SOUND_VENEER(Veneer_2DDF4, "r11")
+DEFINE_SOUND_VENEER(Veneer_2DDF8, "r12")
+DEFINE_SOUND_VENEER(Veneer_2DDFC, "r13")
+DEFINE_SOUND_VENEER(Veneer_2DE00, "r14")
+#undef DEFINE_SOUND_VENEER
 #ifndef __APPLE__
 void _0802DDC8(void) __attribute__((alias("Veneer_2DDC8")));
 void sub_0802DDC8(void) __attribute__((alias("Veneer_2DDC8")));
+void _0802DDCC(void) __attribute__((alias("Veneer_2DDCC")));
+void _0802DDD0(void) __attribute__((alias("Veneer_2DDD0")));
+void _0802DDD4(void) __attribute__((alias("Veneer_2DDD4")));
+void _0802DDD8(void) __attribute__((alias("Veneer_2DDD8")));
+void _0802DDDC(void) __attribute__((alias("Veneer_2DDDC")));
+void _0802DDE0(void) __attribute__((alias("Veneer_2DDE0")));
+void _0802DDE4(void) __attribute__((alias("Veneer_2DDE4")));
+void _0802DDE8(void) __attribute__((alias("Veneer_2DDE8")));
+void _0802DDEC(void) __attribute__((alias("Veneer_2DDEC")));
+void _0802DDF0(void) __attribute__((alias("Veneer_2DDF0")));
+void _0802DDF4(void) __attribute__((alias("Veneer_2DDF4")));
+void _0802DDF8(void) __attribute__((alias("Veneer_2DDF8")));
+void _0802DDFC(void) __attribute__((alias("Veneer_2DDFC")));
+void _0802DE00(void) __attribute__((alias("Veneer_2DE00")));
 #endif
 
 // ============================================================================
-// sound_reset_more.s 0x0802CACC — sound FSM stepper over *(0x03007FF0)
-// State word [0] == "Smsh" (0x68736D53) magic; when hit: increment,
+// sound_reset_more.s 0x0802CACC — sound FSM stepper over
+// root = *(u32 *)0x03007FF0. State word root[0] == "Smsh" (0x68736D53);
+// when hit: increment,
 // zero 12 stride-64 channel cells at +80, re-arm 4 voice cells [+28] via
 // 0x0802DDCC (r0=idx 1..4, r1=[+44]), reset state to "Smsh".
 // ============================================================================
 void SoundCACC_Step(void) {
-    volatile u32 *root = (volatile u32 *)0x03007FF0;
-    if (*root != 0x68736D53u) return;
-    *root = *root + 1;
-    for (int i = 0; i < 12; i++) {
-        *(volatile u8 *)((volatile u8 *)root + 80 + i * 64) = 0;
+    register volatile u32 * volatile *cell __asm__("r0") =
+        (volatile u32 * volatile *)0x03007FF0u;
+    register volatile u32 *root __asm__("r6") = *cell;
+    register u32 state __asm__("r1") = root[0];
+    if (state != 0x68736D53u) return;
+    register u32 bumped __asm__("r0") = state + 1;
+    root[0] = bumped;
+    register int count __asm__("r5") = 12;
+    register volatile u8 *cursor __asm__("r4") = (volatile u8 *)root + 80;
+    register int zero __asm__("r0") = 0;
+    do {
+        *cursor = (u8)zero;
+        --count;
+        cursor += 64;
+    } while (count > 0);
+    register u32 voice __asm__("r4") = root[7];
+    u32 voicePresent = voice;
+    if (voicePresent != 0) {
+        register int index __asm__("r5") = 1;
+        int voiceZero = 0;
+        do {
+            register u32 arg __asm__("r0") = (u8)index;
+            __asm__ volatile("" : "+r" (arg));
+            ((void (*)(u32))(uintptr_t)root[11])(arg);
+            *(volatile u8 *)(uintptr_t)voice = (u8)voiceZero;
+            ++index;
+            voice += 64u;
+        } while (index <= 4);
     }
-    volatile u32 *voices = (volatile u32 *)((volatile u8 *)root + 28);
-    if (*voices != 0) {
-        for (u8 i = 1; i <= 4; i++) {
-            ((void (*)(u32))(uintptr_t)*(volatile u32 *)((volatile u8 *)root + 44))(i);
-            *(volatile u8 *)(uintptr_t)*voices = 0;
-        }
-    }
-    *root = 0x68736D53u;
+    root[0] = 0x68736D53u;
 }
 #ifndef __APPLE__
 void _0802CACC(void) __attribute__((alias("SoundCACC_Step")));
@@ -1142,9 +1194,34 @@ s16 sub_08002730(int a, int b) __attribute__((alias("GridS16_2730")));
 #endif
 
 void GridGateWrite_274C(int sel) {
+#ifndef __APPLE__
+    // Keep sel in r1 and the branch-local base/offset adds separate: the ROM
+    // has duplicate base/offset pool words and one shared halfword store.
+    register u32 storeValue __asm__("r1") = (u32)sel;
+    register uintptr_t cell __asm__("r0");
+    if (storeValue == 0u) {
+        register uintptr_t off __asm__("r2");
+        cell = 0x03001780u;
+        __asm__("" : "+r" (cell));
+        off = 0x1056u;
+        __asm__("" : "+r" (off));
+        cell += off;
+        __asm__("" : "+r" (cell));
+    } else {
+        cell = 0x03001780u;
+        __asm__("" : "+r" (cell));
+        storeValue = 0x1056u;
+        __asm__("" : "+r" (storeValue));
+        cell += storeValue;
+        __asm__("" : "+r" (cell));
+        storeValue = 1;
+    }
+    *(volatile u16 *)cell = (u16)storeValue;
+#else
     volatile u16 *cell = (volatile u16 *)(0x03001780 + 0x1056);
     if (sel == 0) *cell = 0;
     else          *cell = 1;
+#endif
     _0800279C(0);
 }
 #ifndef __APPLE__

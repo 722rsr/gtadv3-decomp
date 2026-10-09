@@ -13,7 +13,15 @@ void *sub_08004DF4(void *a) __attribute__((alias("Leaf_04DF4")));
 // manager fields, callback order, and BIOS fill controls from the ROM.
 
 extern void BiosCpuFastSet(const void *s, void *d, u32 m);
-extern void Warn(u32 a, u32 b); // sub_0800295C — fatal error reporter (ROM-exact trampoline)
+// asm/code_295c.s labels this address `sub_0800295C` (with `_0800295C` as the
+// twin); the C owner is Foundation_InitCommon (foundation_boot.c:10). Call the
+// closure's spelling so the spliced ROM resolves it. The alias is ARM-only,
+// so the host build keeps calling the friendly name.
+#ifndef __APPLE__
+extern void sub_0800295C(u32 a, u32 b); // fatal error reporter (ROM-exact trampoline)
+#else
+extern void Warn(u32 a, u32 b); // same body, host spelling
+#endif
 // asm/sound_d974.s labels this address `sub_0802D974` (and only that
 // spelling); the C owner is the naked CpuSet (bios_wrappers.c:62). Call the
 // closure's spelling so the spliced ROM resolves it. The alias is ARM-only,
@@ -52,7 +60,11 @@ void *AllocSlot(int n) {
         rem = *remainingPtr;
         __asm__ volatile("" : "+r"(rem));
         if ((u32)size > rem)
+#ifndef __APPLE__
+            sub_0800295C(0x0805BA60, (u32)size - rem); // fatal report (ROM never returns)
+#else
             Warn(0x0805BA60, (u32)size - rem); // fatal report (ROM never returns)
+#endif
         *cursor = *cursor + (u32)size;
         *remainingPtr = *remainingPtr - (u32)size;
         u32 z = 0;

@@ -31,6 +31,21 @@ extern int _08002D978(int a, int b);            // SWI Div quotient (bios_wrappe
 extern int _08002D97C(int a, int b);            // SWI DivRem remainder (bios_wrappers.c)
 extern int _08002DE04(int a, int b);            // signed __aeabi_idiv quotient (sound_extra.c)
 
+// Closure spellings for the two _0800821C callees. A HOST_STUB is NOT a
+// call-site binding: the spliced slice links the closure's own labels
+// (asm/sound_aeabi_idiv.s `sub_0802DE04`, asm/course_resource_leaf.s
+// `sub_08007ABC`), and the promotion screen blocks the body on a rename
+// otherwise (see src/race_scene_d1.c for the same split).
+#ifndef __APPLE__
+extern int sub_0802DE04(int a, int b);
+extern void sub_08007ABC(void *a, int b, int c);
+#endif
+#ifndef __APPLE__
+#define RA_CALLEE(friendly, closure) closure
+#else
+#define RA_CALLEE(friendly, closure) friendly
+#endif
+
 // ============================================================================
 // idle.s — mode-range predicates
 // ============================================================================
@@ -230,26 +245,69 @@ void _08008164(int id)
 
 void _0800821C(void)
 {
-    volatile u8 *base = *(volatile u8 *volatile *)(uintptr_t)0x030003E0u;
+    /* The pointer cell at 0x030003E0 is volatile and re-read at each use
+       site (four `ldr` reads in the ROM); its address stays in one
+       callee-saved register across the two calls (r5 in the ROM). The s16
+       reads are NOT volatile: a volatile halfword emits `ldrh;lsls;asrs`
+       where the ROM's `ldrsh` sign-extends for free (see
+       docs/findings/menu_workarea_and_store_order.md section 16). Each
+       block's base is a scoped temporary in the ROM's register (r1, r4,
+       r2, r0), dead after `+79` so the offset folds in place. */
+    register volatile u8 *volatile *cell __asm__("r5") =
+        (volatile u8 *volatile *)(uintptr_t)0x030003E0u;
 
-    *(volatile u16 *)(base + 22) = 16;
-    *(volatile u16 *)(base + 24) = 3;
-    *(volatile u8 *)(base + 79) = 1;
     {
-        int q = _08002DE04((int)*(volatile s16 *)(base + 16), 5);
-        *(volatile s16 *)(base + 30) = (s16)q;
-        if ((s16)q > 10)
-            *(volatile s16 *)(base + 30) = 10;
+        volatile u8 *b = *cell;
+        *(volatile u16 *)(b + 22) = 16;
+        *(volatile u16 *)(b + 24) = 3;
+        b += 79;
+        *(volatile u8 *)b = 1;
     }
     {
-        s16 slot = *(volatile s16 *)(base + 30);
-        s16 tv = *(volatile s16 *)(uintptr_t)(0x080CB074u + (u32)((s32)slot * 8) + 4u);
+        register volatile u8 *b __asm__("r4") = *cell;
+        int q = RA_CALLEE(_08002DE04, sub_0802DE04)((int)*(s16 *)(b + 16), 5);
+        *(volatile s16 *)(b + 30) = (s16)q;
+        if ((s16)q > 10)
+            *(volatile s16 *)(b + 30) = 10;
+    }
+    {
+        /* Table base as a named pointer over an assembler alias (findings
+           section 6) assigned before the index read: the pool word lands in
+           r1 ahead of the `*cell` reload. `row[2]` is the array-INDEX form
+           (garage.c recipe) for `movs r4,#4; ldrsh r1,[r3,r4]`; a `(u8*)+4`
+           cast would fold into the pool word. */
+        extern u8 T821C_TBL[];
+        register u8 *tbl __asm__("r1");
+        register int slot __asm__("r0");
+        register volatile u8 *b __asm__("r2");
+        int tv;
+
+        __asm__(".globl T821C_TBL\nT821C_TBL = 0x080CB074\n");
+        tbl = (u8 *)(uintptr_t)T821C_TBL;
+        b = *cell;
+        slot = *(s16 *)(b + 30);
+        {
+            int slot8 = slot * 8;
+            const s16 *row = (const s16 *)(slot8 + (int)(uintptr_t)tbl);
+            /* Keep tbl live past the row add so the result cannot inherit
+               its dying register (see tools/regalloc_report.py). */
+            __asm__("" : : "r"(tbl));
+            tv = row[2];
+            /* Keep slot8 live through the `ldrsh`: the reload materialising
+               the +4 then cannot take r0. */
+            __asm__("" : : "r"(slot8));
+        }
         if (tv == -1)
             return;
-        _08007ABC((void *)(uintptr_t)*(volatile u32 *)(base + 100),
-                  (int)tv, (int)*(volatile u16 *)(base + 62));
-        *(volatile u16 *)(base + 28) = 60;
-        *(volatile u8 *)(base + 79) = 1;
+        RA_CALLEE(_08007ABC, sub_08007ABC)(
+                  (void *)(uintptr_t)*(volatile u32 *)(b + 100),
+                  tv, (int)*(volatile u16 *)(b + 62));
+    }
+    {
+        volatile u8 *b = *cell;
+        *(volatile u16 *)(b + 28) = 60;
+        b += 79;
+        *(volatile u8 *)b = 1;
     }
 }
 

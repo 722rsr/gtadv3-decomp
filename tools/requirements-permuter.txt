@@ -1,0 +1,5 @@
+# Optional, separate from the ROM/matching build dependencies.
+# This fork uses pycparser.plyparser, which is absent in pycparser 3.
+pycparser==2.21
+toml==0.10.2
+Levenshtein==0.27.5

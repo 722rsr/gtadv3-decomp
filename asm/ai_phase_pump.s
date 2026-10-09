@@ -119,3 +119,9 @@ _08023A16:
   bx r0
 _08023A2C: .word 0x03001780
 _08023A30: .word 0x000010C3
+
+@ Byte-neutral end anchor for the splicer. This file declares exactly one
+@ `@ Region:` (0x023958-0x023A34) and has no `.include`; the promoted body at
+@ 0x08023958 ends on 0x023A34, exactly that boundary, so the anchor is safe.
+@ Without it the body is refused as 'no end marker in ai_phase_pump.s'.
+ai_phase_pump_end:

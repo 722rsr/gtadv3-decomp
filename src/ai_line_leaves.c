@@ -337,15 +337,15 @@ void _08025130(void *a, void *b){
     }
 }
 
-#ifndef __APPLE__
-extern const u8 LineScoreTable[];
-__asm__(".globl LineScoreTable\nLineScoreTable = 0x080CD6A8\n");
-#endif
 
 // score sums over 0x080CD6A8 table
 int Ai_LineScoreSum(const void *rec){
     const s8 *r = (const s8 *)rec;
 #ifndef __APPLE__
+    /* Absolute definition in-body: the splicer retains only the function's
+       section, so a file-scope asm definition is omitted from the link. */
+    extern const u8 LineScoreTable[];
+    __asm__(".globl LineScoreTable\nLineScoreTable = 0x080CD6A8\n");
     const u8 *tbl = LineScoreTable;
 #else
     const u8 *tbl = (const u8 *)(uintptr_t)0x080CD6A8u;

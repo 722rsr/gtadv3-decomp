@@ -94,6 +94,9 @@ void RaceVM_022920(void *rec);
 void RaceVM_022A14(void *rec, int r1, u32 v);
 void RaceVM_022ACC(void *rec, int r1, u32 v);
 void RaceVM_022B48(void *rec, int x, int y);
+#ifndef __APPLE__
+void sub_080022B48(void *rec, int x, int y);
+#endif
 void RaceVM_022BBC(void *rec);
 void RaceVM_022C2C(u32 ev, u32 p1, u32 p2, void *p3);
 int  RaceVM_026068(int i);
@@ -1108,26 +1111,40 @@ void sub_080022B48(void *a, int b, int c) __attribute__((alias("RaceVM_022B48"))
 #endif
 
 // ============================================================================
-// sub_080022BBC (0x080022BBC, 0x64 B) — paint twin: dec s16[rec+128]
-// (reload 15); rows at 0x080CC158 (num/img pairs), gates 0x080CC168+row*2;
-// r8 = rows+4. rows[s16[rec+132]] via 0x022ACC + 0x022B48;
-// _0800DBE8(rec+8).
+// sub_080022BBC (0x080022BBC, 0x5C B) — paint twin: dec s16[rec+128]
+// (reload 15); r8 = 0x080CC158+4. The 0x022ACC call receives
+// table[s16[rec+132]].word1 and rec[+136]; 0x022B48 receives table.word0
+// and table.word1; finish with _0800DBE8(rec+8).
 void RaceVM_022BBC(void *rec) {
-    volatile u8 *r4 = (volatile u8 *)rec;
+    register volatile u8 *r4 __asm__("r4") = (volatile u8 *)rec;
     _0800D97C((void *)(r4 + 128), 15);
-    const u8 *rows = (const u8 *)0x080CC158;
-    volatile u8 *r6 = r4 + 132;
-    s16 cur = *(volatile s16 *)r6;
-    const u8 *r8 = rows + 4;
-    u32 w1 = *(const volatile u32 *)(rows + (u32)cur * 8u);
-    u32 w2 = *(const volatile u32 *)(r8 + (u32)cur * 8u);
-    u32 gate = *(const volatile u32 *)(rows + 8u + (u32)cur * 8u);
-    RaceVM_022ACC(rec, (int)w1, w2);
-    w1 = *(const volatile u32 *)(rows + (u32)cur * 8u);
-    w2 = *(const volatile u32 *)(r8 + (u32)cur * 8u);
-    RaceVM_022B48(rec, (int)w1, (int)w2);
-    (void)gate;
-    _0800DBE8((void *)(r4 + 8));
+    register const u32 *r5 __asm__("r5") = (const u32 *)0x080CC158;
+    __asm__ volatile("" : "+r" (r5));
+    register volatile u8 *r6 __asm__("r6") = r4 + 132;
+    register u32 r1 __asm__("r1") = 0;
+    register s32 index __asm__("r0") = *(const s16 *)(r6 + r1);
+    index <<= 3;
+    r1 = (u32)(uintptr_t)r5 + 4;
+    register const u8 *r8 __asm__("r8") = (const u8 *)(uintptr_t)r1;
+    index += (u32)(uintptr_t)r8;
+    r1 = *(const u32 *)(uintptr_t)index;
+    register u32 modeAddress __asm__("r0") = (u32)(uintptr_t)r4 + 136;
+    register u32 mode __asm__("r2") = *(volatile u32 *)(uintptr_t)modeAddress;
+    RaceVM_022ACC((void *)r4, (int)r1, mode);
+    r1 = 0;
+    index = *(const s16 *)(r6 + r1);
+    index <<= 3;
+    r5 = (const u32 *)((u32)index + (u32)(uintptr_t)r5);
+    r1 = r5[0];
+    index += (u32)(uintptr_t)r8;
+    mode = *(const u32 *)(uintptr_t)index;
+#ifndef __APPLE__
+    sub_080022B48((void *)r4, (int)r1, (int)mode);
+#else
+    RaceVM_022B48((void *)r4, (int)r1, (int)mode);
+#endif
+    r4 += 8;
+    _0800DBE8((void *)r4);
 }
 #ifndef __APPLE__
 void _080022BBC(void *a) __attribute__((alias("RaceVM_022BBC")));

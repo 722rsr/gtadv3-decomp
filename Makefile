@@ -186,6 +186,13 @@ fast-check:
 .PHONY: experimental-check
 experimental-check:
 	@python3 tools/test_experiment_strategies.py
+	@python3 tools/test_run_permuter.py
+	@python3 tools/test_objdiff_build.py
+	@python3 tools/test_function_trace.py
+
+.PHONY: objdiff-config
+objdiff-config:
+	@python3 tools/objdiff_build.py --configure
 
 .PHONY: pre-commit
 pre-commit:

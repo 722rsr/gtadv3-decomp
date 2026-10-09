@@ -440,36 +440,75 @@ int _0800A518(void)
 
 // ----------------------------------------------------------------------------
 // 0x0800A62C _0800A62C(ctx) — record 13 tick (boot-flow decision point).
-//   key = [ctx+0x2C]: >1 -> 0; ==1 -> _08009B60(ctx), return 50;
-//   ==0 -> request latch u16[WA+0x1086]: ==1 -> clear it, return 49;
-//          else return 14.
+//   key = [ctx+0x2C]: ==1 -> _08009B60, return 50;
+//   >1 -> return 0; ==0 -> request latch u16[WA+0x1086]:
+//   ==1 -> clear it, return 49; else return 14.
+//   Naked transcription: the second head check (cmp #1/bcs) has no C
+//   spelling — agbcc folds `key < 1`, `key >= 1`, `key > 0` and `key != 0`
+//   alike to cmp #0 (measured t_* battery against old_agbcc; same fold as
+//   StateA_IsGameMode in src/state_block_a.c). The ROM passes the key
+//   (r0, already holding it — the ctx load clobbers r0) rather than ctx;
+//   the callee only uses sp/WA (asm/menu_pkt.s), so the value is
+//   immaterial. The host fallback below keeps that shape in C.
 // ----------------------------------------------------------------------------
+#ifndef __APPLE__
+__attribute__((naked)) int _0800A62C(void *ctx) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {lr}\n"
+        "movs r1, #0\n"
+        "ldr r0, [r0, #44]\n"
+        "cmp r0, #1\n"
+        "beq 5f\n"
+        "cmp r0, #1\n"
+        "bcs 6f\n"
+        "ldr r0, 3f\n"
+        "ldr r1, 4f\n"
+        "adds r2, r0, r1\n"
+        "ldrh r0, [r2, #0]\n"
+        "cmp r0, #1\n"
+        "bne 2f\n"
+        "movs r1, #49\n"
+        "movs r0, #0\n"
+        "strh r0, [r2, #0]\n"
+        "b 6f\n"
+        ".align 2, 0\n"
+        "3: .word 0x03001780\n"
+        "4: .word 0x00001086\n"
+        "2: movs r1, #14\n"
+        "b 6f\n"
+        "5: bl _08009B60\n"
+        "movs r1, #50\n"
+        "6: adds r0, r1, #0\n"
+        "pop {r1}\n"
+        "bx r1\n"
+        ".syntax divided\n"
+    );
+}
+#else
 int _0800A62C(void *ctx)
 {
     int res = 0;
     u32 key = *(u32 *)((uintptr_t)ctx + 44);
 
-    if (key == 1) {
-        _08009B60(ctx);
-        res = 50;
-    } else if (key < 2) {
-#ifndef __APPLE__
-        extern u8 CarTickWa[];
-        __asm__(".globl CarTickWa\nCarTickWa = 0x03001780\n");
-        uintptr_t base = (uintptr_t)CarTickWa;
-#else
-        uintptr_t base = (uintptr_t)WA;
-#endif
-        volatile u16 *latch = (volatile u16 *)(uintptr_t)(base + 0x1086u);
-        if (*latch == 1) {
-            res = 49;
-            *latch = 0;
-        } else {
-            res = 14;
+    if (key != 1) {
+        if (key < 1) {
+            uintptr_t base = (uintptr_t)WA;
+            volatile u16 *latch = (volatile u16 *)(uintptr_t)(base + 0x1086u);
+            if (*latch == 1) {
+                res = 49;
+                *latch = 0;
+            } else {
+                res = 14;
+            }
         }
+    } else {
+        _08009B60((void *)(uintptr_t)key);
+        res = 50;
     }
     return res;
 }
+#endif
 
 // ----------------------------------------------------------------------------
 // 0x0800A8FC _0800A8FC — racer-tick veneer (phase-loader path for rec 38).
@@ -668,7 +707,53 @@ int sub_0800A1A4(void *c) __attribute__((alias("CarTick_Rec_0A1A4")));
 // ----------------------------------------------------------------------------
 // 0x08009FB8 Rec9FB8(ctx) — record 23 ROUTER. key = s16[WA+0x1080]:
 //   0 -> 24, 1 -> 34, 2 -> 37 (and mark grid [37][0] = 1), else -> stale r4.
+//   Naked transcription (same seam as the sibling Rec9FFC just below): the
+//   stale-r4 tail keeps the caller's r4 alive with zero instructions, and
+//   the compare chain (cmp #1/beq, cmp #1/bgt, cmp #0/beq) has no C
+//   spelling — agbcc folds every range-check form and zeroes the stale
+//   value. The literal word sits mid-function at entry+0x1C, as in the ROM.
 // ----------------------------------------------------------------------------
+#ifndef __APPLE__
+__attribute__((naked)) int Rec9FB8(void *ctx) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {r4, lr}\n"
+        "ldr r0, 5f\n"
+        "movs r1, #132\n"
+        "lsls r1, r1, #5\n"
+        "adds r0, r0, r1\n"
+        "movs r1, #0\n"
+        "ldrsh r0, [r0, r1]\n"
+        "cmp r0, #1\n"
+        "beq 2f\n"
+        "cmp r0, #1\n"
+        "bgt 4f\n"
+        "cmp r0, #0\n"
+        "beq 3f\n"
+        "b 1f\n"
+        ".align 2, 0\n"
+        "5: .word 0x03001780\n"
+        "4: cmp r0, #2\n"
+        "beq 6f\n"
+        "b 1f\n"
+        "3: movs r4, #24\n"
+        "b 1f\n"
+        "2: movs r4, #34\n"
+        "b 1f\n"
+        "6: movs r4, #37\n"
+        "movs r0, #37\n"
+        "movs r1, #0\n"
+        "movs r2, #1\n"
+        "bl _08004C48\n"
+        "1: adds r0, r4, #0\n"
+        "pop {r4}\n"
+        "pop {r1}\n"
+        "bx r1\n"
+        "movs r0, r0\n"
+        ".syntax divided\n"
+    );
+}
+#else
 int Rec9FB8(void *ctx)
 {
     u32 r4in;
@@ -699,6 +784,7 @@ int Rec9FB8(void *ctx)
     (void)ctx;
     return r4;
 }
+#endif
 #ifndef __APPLE__
 int _08009FB8(void *c) __attribute__((alias("Rec9FB8")));
 #endif

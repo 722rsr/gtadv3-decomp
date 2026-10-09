@@ -921,32 +921,91 @@ void _0800295F4(void *rec);
 void _080029E30(void *rec, s16 d);
 
 int _08002944C(void *rec) {
+#ifndef __APPLE__
+    // The ROM keeps the record base in r2 through the slot-address calculation.
+    register u8 *r __asm__("r2") = (u8 *)rec;
+#else
     u8 *r = (u8 *)rec;
-    u16 r3 = *(volatile u16 *)(r + 140);
+#endif
+    // Ordinary record RAM: the plain sub-word load emits directly into r3.
+    u16 r3 = *(u16 *)(r + 140);
+#ifndef __APPLE__
+    // The ROM loads idx into r0, scales it into r1, then reuses r0 for
+    // record+76. These barriers keep agbcc from folding the address stages.
+    register u32 idx __asm__("r0") = *(volatile u8 *)(r + 156);
+    __asm__ volatile ("" : "+r" (idx));
+    register u32 slot_off __asm__("r1") = idx << 1;
+    __asm__ volatile ("" : "+r" (slot_off));
+    register u8 *slot_base __asm__("r0") = r;
+    __asm__ volatile ("" : "+r" (slot_base));
+    slot_base += 76;
+    const s16 *slot = (const s16 *)(slot_base + slot_off);
+#else
     u8 idx = *(volatile u8 *)(r + 156);
     const s16 *slot = (const s16 *)(r + 76 + ((u32)idx << 1));
+#endif
     if (*slot > 0) {
+#ifndef __APPLE__
+        // Keep the ROM's signed indexed load: copy the record base to r0,
+        // advance by 104 bytes, then load with r2=0.
+        register const s16 *num_base __asm__("r0") = (const s16 *)r;
+        __asm__ volatile ("" : "+r" (num_base));
+        num_base += 52;
+        register u32 num_index __asm__("r2") = 0;
+        int num = num_base[num_index];
+#else
         int num = *(const s16 *)(r + 104);
+#endif
         int den = *slot;
-        r3 = (u16)_08002DE04(num, den);
+        r3 = (u16)sub_0802DE04(num, den);
     }
     return (s16)r3;
 }
+// The 58-byte body is followed by ROM padding 00 00 before the next 4-byte
+// entry; request zero-fill instead of gas's default Thumb nop.
+__asm__(".align 2, 0");
 
 // ----------------------------------------------------------------------------
 // 0x08029488 — multiply leaf (mul only if slot s16 > 0).
 // ----------------------------------------------------------------------------
 int _080029488(void *rec) {
+#ifndef __APPLE__
+    register u8 *r __asm__("r2") = (u8 *)rec;
+    register u16 result __asm__("r3") = *(u16 *)(r + 104);
+    register u32 idx __asm__("r0") = *(volatile u8 *)(r + 156);
+    __asm__ volatile("" : "+r"(idx));
+    register u32 slotOffset __asm__("r1") = (u32)idx << 1;
+    register volatile u8 *slot __asm__("r0") = r + 76;
+    __asm__ volatile("" : "+r"(slot));
+    slot += slotOffset;
+    register u32 uv __asm__("r1") = *(volatile u16 *)slot;
+    register s32 zero __asm__("r4") = 0;
+    __asm__ volatile("" : "+r"(zero));
+    register s32 slotSigned __asm__("r0");
+    __asm__ volatile("ldrsh %0, [%1, %2]"
+                     : "=r"(slotSigned) : "r"(slot), "r"(zero) : "memory");
+    if (slotSigned > 0) {
+        register u8 *bptr __asm__("r0") = r;
+        bptr += 140;
+        result = *(volatile u16 *)bptr;
+        register u32 product __asm__("r2") = (u32)uv * result;
+        __asm__ volatile("mov r0, %1\n\tlsl r0, r0, #16\n\tlsr %0, r0, #16"
+                         : "=r"(result) : "r"(product) : "r0", "cc");
+    }
+    return (s16)result;
+#else
     u8 *r = (u8 *)rec;
-    u16 r3 = *(volatile u16 *)(r + 104);
+    u16 result = *(u16 *)(r + 104);
     u8 idx = *(volatile u8 *)(r + 156);
-    volatile u8 *slot = r + 76 + ((u32)idx << 1);
+    u32 slotOffset = (u32)idx << 1;
+    volatile u8 *slot = r + 76 + slotOffset;
     u16 uv = *(volatile u16 *)slot;
     if (*(s16 *)slot > 0) {
         u16 b = *(volatile u16 *)(r + 140);
-        r3 = (u16)(uv * b);
+        result = (u16)(uv * b);
     }
-    return (s16)r3;
+    return (s16)result;
+#endif
 }
 
 // ----------------------------------------------------------------------------

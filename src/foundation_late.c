@@ -49,10 +49,10 @@ void _0800C668(int a,int b) __attribute__((alias("LateDispatch_C668")));
 #ifndef __APPLE__
 void _0800C6CC(int a,int b) __attribute__((alias("LateDispatch_C668")));
 #endif
-void LateFlagCheck(void *a){ if(*(vu8*)((u8*)a+96)==0) { extern void _08004ED8(int); _08004ED8(1); } }
+void LateFlagCheck(void *a, u16 unused){ if(*(vu8*)((u8*)a+96)==0) { extern void _08004ED8(int); _08004ED8(1); } (void)unused; }
 #ifndef __APPLE__
-void _0800C730(void *a) __attribute__((alias("LateFlagCheck")));
-void sub_0800C730(void *a) __attribute__((alias("LateFlagCheck")));
+void _0800C730(void *a, u16 unused) __attribute__((alias("LateFlagCheck")));
+void sub_0800C730(void *a, u16 unused) __attribute__((alias("LateFlagCheck")));
 #endif
 
 void LateDispatch_CE2C(int id, int a,int b, void *ctx){

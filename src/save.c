@@ -71,12 +71,14 @@ extern int  _08024B24(void);                        // SaveBlock2Load
 extern int  _080059F0(u32 slotIdx, const void *src);// SaveSlotSave
 extern void _08024B54(void);                        // SaveBlock2Save
 extern void sub_0802446C(void);                     // SaveHook_0802446C
+extern void _08002A0C(void);                        // IrqRestore (closure spelling)
 #define SAVE_CALL_PRE_SAVE()          _08024A18()
 #define SAVE_CALL_POST_LOAD()         _08024A98()
 #define SAVE_CALL_BLOCK2_LOAD()       _08024B24()
 #define SAVE_CALL_SLOT_SAVE(i, src)   _080059F0((i), (src))
 #define SAVE_CALL_BLOCK2_SAVE()       _08024B54()
 #define SAVE_CALL_HOOK_2446C()        sub_0802446C()
+#define SAVE_CALL_IRQ_RESTORE()       _08002A0C()
 #else
 #define SAVE_CALL_PRE_SAVE()          SaveBlock2PreSave()
 #define SAVE_CALL_POST_LOAD()         SaveBlock2PostLoad()
@@ -84,6 +86,7 @@ extern void sub_0802446C(void);                     // SaveHook_0802446C
 #define SAVE_CALL_SLOT_SAVE(i, src)   SaveSlotSave((i), (src))
 #define SAVE_CALL_BLOCK2_SAVE()       SaveBlock2Save()
 #define SAVE_CALL_HOOK_2446C()        SaveHook_0802446C()
+#define SAVE_CALL_IRQ_RESTORE()       sub_08002A0C()
 #endif
 
 void _08024B4C(void) { }
@@ -278,7 +281,8 @@ u32 SaveDescAppend(u32 byteSize) {
     u32 off = idx * 8;
     volatile u8 *b = (volatile u8 *)ctrl;
     b += 12;
-    register volatile u32 *slot __asm__("r0") = (volatile u32 *)(off + b);
+    off += (u32)(uintptr_t)b;
+    register volatile u32 *slot __asm__("r0") = (volatile u32 *)(uintptr_t)off;
     u32 inc;
     u32 dev;
     slot[0] = ctrl[2];
@@ -287,16 +291,26 @@ u32 SaveDescAppend(u32 byteSize) {
     dev = ctrl[1];
     if ((s32)dev > 2)
         goto div;
+#ifdef __APPLE__
     if ((s32)dev < 1)
         goto div;
+#else
+    // Retain the ROM's signed `cmp #1; blt`; agbcc folds `< 1` into `<= 0`.
+    __asm__ volatile("cmp %0, #1\n\tblt 1f"
+                     : : "r" ((s32)dev) : "cc", "memory");
+#endif
     inc += 7;
     {
         u32 t = inc;
         if ((s32)t < 0)
             t = byteSize + 18;
-        inc = (u32)(((s32)t >> 3) << 3);
+        inc = (u32)((s32)t >> 3);
+        inc <<= 3;
     }
 div:
+#ifndef __APPLE__
+    __asm__("1:");
+#endif
     if ((s32)inc < 0)
         inc += 7;
     inc = (u32)((s32)inc >> 3);
@@ -356,7 +370,7 @@ void SaveReadSectors(u32 firstSector, void *dst, u32 byteSize) {
         n -= 1;
     } while ((s32)n != 0);
 done:
-    sub_08002A0C();
+    SAVE_CALL_IRQ_RESTORE();
 }
 #ifndef __APPLE__
 void _08005884(u32 a, void *b, u32 c) __attribute__((alias("SaveReadSectors")));
@@ -475,10 +489,20 @@ int SaveSlotSave(u32 slotIdx, const void *src) {
         u32 devType = *(volatile u32 *)(*(volatile u32 *)SaveDevPtr + 4);
         if ((s32)devType > 2)
             goto done;
+#ifdef __APPLE__
         if ((s32)devType < 1)
             goto done;
-        SaveWriteSectors((void *)stage, *(volatile u32 *)e, *(volatile u32 *)(e + 4) + 4);
+#else
+        // Keep the ROM's `cmp #1; blt` form; agbcc canonicalizes `< 1` into
+        // `cmp #0; ble`, which is equivalent but changes two bytes.
+        __asm__ volatile("cmp %0, #1\n\tblt 1f"
+                         : : "r" ((s32)devType) : "cc", "memory");
+#endif
+        sub_080058D0((void *)stage, *(volatile u32 *)e, *(volatile u32 *)(e + 4) + 4);
     }
+#ifndef __APPLE__
+    __asm__("1:");
+#endif
 done:
     return 1;
 }
@@ -498,24 +522,44 @@ int SaveSlotLoad(u32 slotIdx, void *dst) {
     u32 devType = *(volatile u32 *)(*(volatile u32 *)SaveDevPtr + 4);
     if ((s32)devType > 2)
         goto verify;
+#ifdef __APPLE__
     if ((s32)devType < 1)
         goto verify;
+#else
+    // Preserve the ROM's `cmp #1; blt` encoding; agbcc lowers `< 1` as
+    // `cmp #0; ble`, which is equivalent but changes the two instruction bytes.
+    __asm__ volatile("cmp %0, #1\n\tblt 1f"
+                     : : "r" ((s32)devType) : "cc", "memory");
+#endif
     {
         u32 sec = *(volatile u32 *)e;
         u8 *d = (u8 *)0x02000000u;
+#ifdef __APPLE__
         SaveReadSectors(sec, (void *)d, *(volatile u32 *)(e + 4) + 4);
+#else
+        sub_08005884(sec, (void *)d, *(volatile u32 *)(e + 4) + 4);
+#endif
     }
 verify:
+#ifndef __APPLE__
+    __asm__("1:");
+#endif
     {
-        u32 sz = *(volatile u32 *)(e + 4);
-        u32 calc = SaveChecksum((void *)SaveStage4, sz);
+        register u8 *stage4 __asm__("r5") = SaveStage4;
+        register u32 sz __asm__("r1") = *(volatile u32 *)(e + 4);
+#ifdef __APPLE__
+        u32 calc = SaveChecksum(stage4, sz);
+#else
+        u32 calc = sub_08005860(stage4, sz);
+#endif
         u8 *stage0 = (u8 *)0x02000000u;
         u32 stored = *(volatile u32 *)stage0;
         if (calc != stored)
             return 0;
         {
-            u32 words = ((sz + (sz >> 31)) << 10) >> 11;
-            sub_0802D974((void *)SaveStage4, dst, words);
+            register u32 copySz __asm__("r2") = *(volatile u32 *)(e + 4);
+            u32 words = ((copySz + (copySz >> 31)) << 10) >> 11;
+            sub_0802D974(stage4, dst, words);
         }
         return 1;
     }

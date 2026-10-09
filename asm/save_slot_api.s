@@ -52,3 +52,4 @@ _08005A42:
 _08005A4C: .word 0x0300032C
 _08005A50: .word 0x02000004
 _08005A54: .word 0x030003AC
+save_slot_api_end:

@@ -49,3 +49,4 @@ _0800580C:
 	bx r1
 .L_585c:
 	.word 0x03000320
+save_desc_end:

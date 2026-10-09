@@ -48,6 +48,15 @@
    "name": "SessionExit_080006BC",
    "size": 80
   },
+  "0x08000a60": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 8
+   },
+   "file": "src/foundation_softirq.c",
+   "name": "SoftIrqKicker",
+   "size": 148
+  },
   "0x08001370": {
    "class": "c",
    "file": "src/runtime_accessors.c",
@@ -225,6 +234,15 @@
    "file": "src/idle_dispatch.c",
    "name": "Idle_Mode5Handler",
    "size": 44
+  },
+  "0x08001acc": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 9
+   },
+   "file": "src/idle_dispatch.c",
+   "name": "Idle_Mode6Handler",
+   "size": 84
   },
   "0x08001b20": {
    "class": "c_fakematch",
@@ -479,6 +497,21 @@
    "name": "BlockB_DispatchIfLess",
    "size": 40
   },
+  "0x080021a0": {
+   "class": "c",
+   "file": "src/block_b.c",
+   "name": "BlockB_RefreshMatcher",
+   "size": 76
+  },
+  "0x080021ec": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 2
+   },
+   "file": "src/block_b.c",
+   "name": "BlockB_Frame",
+   "size": 64
+  },
   "0x0800222c": {
    "class": "asm",
    "detail": {
@@ -589,6 +622,16 @@
    "name": "Code2424_IrqConfigReset",
    "size": 12
   },
+  "0x08002430": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 1,
+    "pin": 3
+   },
+   "file": "src/keypad.c",
+   "name": "KeypadPoll",
+   "size": 88
+  },
   "0x08002488": {
    "class": "c",
    "file": "src/keypad.c",
@@ -680,6 +723,16 @@
    "name": "GridS16_2730",
    "size": 28
   },
+  "0x0800274c": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 6,
+    "pin": 3
+   },
+   "file": "src/runtime_state_dispatch.c",
+   "name": "GridGateWrite_274C",
+   "size": 52
+  },
   "0x08002780": {
    "class": "c_fakematch",
    "detail": {
@@ -688,6 +741,16 @@
    "file": "src/numeric_leaves.c",
    "name": "GridFlagTest_2780",
    "size": 28
+  },
+  "0x0800279c": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 9,
+    "pin": 3
+   },
+   "file": "src/numeric_leaves.c",
+   "name": "Code279C_SetFlag0",
+   "size": 80
   },
   "0x080027ec": {
    "class": "c_fakematch",
@@ -1353,6 +1416,15 @@
    "name": "TrackArrow_044C4",
    "size": 68
   },
+  "0x08004508": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 11
+   },
+   "file": "src/runtime_hud.c",
+   "name": "TrackDigit_04508",
+   "size": 88
+  },
   "0x08004564": {
    "class": "c_fakematch",
    "detail": {
@@ -1424,6 +1496,17 @@
    "name": "CamSet_04748",
    "size": 16
   },
+  "0x080049ac": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 1,
+    "directive": 1,
+    "pin": 4
+   },
+   "file": "src/foundation_subsys.c",
+   "name": "AllocSlot",
+   "size": 96
+  },
   "0x08004a0c": {
    "class": "c",
    "file": "src/foundation_subsys.c",
@@ -1447,6 +1530,16 @@
    "file": "src/foundation_subsys.c",
    "name": "SubsysLoadInstance",
    "size": 80
+  },
+  "0x08004af4": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 3,
+    "pin": 6
+   },
+   "file": "src/foundation_subsys.c",
+   "name": "SubsysInit",
+   "size": 92
   },
   "0x08004b50": {
    "class": "c",
@@ -1639,6 +1732,12 @@
    "file": "src/foundation_subsys.c",
    "name": "MgrBit40Set_04D2C",
    "size": 28
+  },
+  "0x08004d48": {
+   "class": "c",
+   "file": "src/foundation_subsys.c",
+   "name": "MgrSubstateRead_04D48",
+   "size": 4
   },
   "0x08004d4c": {
    "class": "c",
@@ -1833,6 +1932,18 @@
    "name": "DMA3_Tiles",
    "size": 84
   },
+  "0x080053dc": {
+   "class": "partial",
+   "detail": {
+    "barrier": 2,
+    "insn": 5,
+    "insn_lines": 9,
+    "pin": 14
+   },
+   "file": "src/event_dma_queue.c",
+   "name": "OAMGrid_Build",
+   "size": 200
+  },
   "0x080054a4": {
    "class": "partial",
    "detail": {
@@ -2008,11 +2119,47 @@
    "name": "SaveSlotConfig",
    "size": 60
   },
+  "0x0800580c": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 3,
+    "pin": 2
+   },
+   "file": "src/save.c",
+   "name": "SaveDescAppend",
+   "size": 84
+  },
   "0x08005860": {
    "class": "c",
    "file": "src/save.c",
    "name": "SaveChecksum",
    "size": 36
+  },
+  "0x08005884": {
+   "class": "c",
+   "file": "src/save.c",
+   "name": "SaveReadSectors",
+   "size": 76
+  },
+  "0x08005988": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 5,
+    "pin": 3
+   },
+   "file": "src/save.c",
+   "name": "SaveSlotLoad",
+   "size": 104
+  },
+  "0x080059f0": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 1,
+    "directive": 5
+   },
+   "file": "src/save.c",
+   "name": "SaveSlotSave",
+   "size": 104
   },
   "0x08005a58": {
    "class": "c",
@@ -2494,6 +2641,16 @@
    "name": "Course_Math_AbsRoundAvg",
    "size": 40
   },
+  "0x08007f08": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 2,
+    "pin": 10
+   },
+   "file": "src/course_records.c",
+   "name": "Course_Math_DistanceHeading",
+   "size": 184
+  },
   "0x08008074": {
    "class": "c",
    "file": "src/course_records.c",
@@ -2577,6 +2734,17 @@
    "file": "src/course_records.c",
    "name": "Course_State_Store22_24",
    "size": 20
+  },
+  "0x0800821c": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 2,
+    "directive": 1,
+    "pin": 5
+   },
+   "file": "src/runtime_accessors.c",
+   "name": "_0800821C",
+   "size": 104
   },
   "0x08008284": {
    "class": "c",
@@ -2677,6 +2845,17 @@
    "file": "src/car_racer_constants.c",
    "name": "CarRacer_Return3",
    "size": 4
+  },
+  "0x08009fb8": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 32,
+    "naked": true
+   },
+   "file": "src/car_tick_helpers.c",
+   "name": "Rec9FB8",
+   "size": 68
   },
   "0x08009ffc": {
    "class": "asm",
@@ -2826,6 +3005,17 @@
    "file": "src/car_tick_dispatch.c",
    "name": "CarTick_Rec_0A248",
    "size": 12
+  },
+  "0x0800a62c": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 26,
+    "naked": true
+   },
+   "file": "src/car_tick_helpers.c",
+   "name": "_0800A62C",
+   "size": 60
   },
   "0x0800a8fc": {
    "class": "c",
@@ -2986,6 +3176,12 @@
    "name": "MenuC340_SetMode",
    "size": 12
   },
+  "0x0800c39c": {
+   "class": "c",
+   "file": "src/menu_c2c4.c",
+   "name": "MenuC340_Command",
+   "size": 184
+  },
   "0x0800c4ac": {
    "class": "c",
    "file": "src/runtime_record_helpers.c",
@@ -3021,6 +3217,12 @@
    "file": "src/foundation_late.c",
    "name": "LateFlagCheck",
    "size": 20
+  },
+  "0x0800c744": {
+   "class": "c",
+   "file": "src/runtime_state_dispatch.c",
+   "name": "MenuC744",
+   "size": 176
   },
   "0x0800c7f4": {
    "class": "c",
@@ -3456,6 +3658,12 @@
    "file": "src/menu_dbe8_helpers.c",
    "name": "MenuE598_0800E598",
    "size": 4
+  },
+  "0x0800e59c": {
+   "class": "c",
+   "file": "src/menu_dbe8_helpers.c",
+   "name": "MenuE59C_0800E59C",
+   "size": 180
   },
   "0x0800e7a0": {
    "class": "c",
@@ -4190,6 +4398,15 @@
    "name": "Rec35_Emit_179F0",
    "size": 48
   },
+  "0x08017b84": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 4
+   },
+   "file": "src/rec35_mid_region.c",
+   "name": "Rec35_Emit_17B84",
+   "size": 52
+  },
   "0x08017c34": {
    "class": "c",
    "file": "src/rec35_mid_region.c",
@@ -4207,6 +4424,12 @@
    "file": "src/rec35_runtime.c",
    "name": "Rec35_BxLr_17F00",
    "size": 4
+  },
+  "0x08018128": {
+   "class": "c",
+   "file": "src/rec35_mid_region.c",
+   "name": "Rec35_Init_18128",
+   "size": 76
   },
   "0x08018174": {
    "class": "c_fakematch",
@@ -4459,6 +4682,24 @@
    "name": "Ghost_FlagTest",
    "size": 16
   },
+  "0x080191bc": {
+   "class": "partial",
+   "detail": {
+    "barrier": 3,
+    "insn": 1,
+    "insn_lines": 1,
+    "pin": 3
+   },
+   "file": "src/race_setup.c",
+   "name": "Race_Setup_191BC",
+   "size": 68
+  },
+  "0x080195b8": {
+   "class": "c",
+   "file": "src/race_setup.c",
+   "name": "Race_Setup_195B8",
+   "size": 64
+  },
   "0x08019860": {
    "class": "c",
    "file": "src/race_setup.c",
@@ -4476,6 +4717,12 @@
    "file": "src/race_setup_helpers.c",
    "name": "_080019C9C",
    "size": 32
+  },
+  "0x08019d6c": {
+   "class": "c",
+   "file": "src/race_setup_helpers.c",
+   "name": "sub_080019D6C",
+   "size": 80
   },
   "0x08019dbc": {
    "class": "c",
@@ -4643,11 +4890,32 @@
    "name": "_08001D950",
    "size": 36
   },
+  "0x0801d974": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 4,
+    "directive": 1,
+    "pin": 8
+   },
+   "file": "src/race_scene_b1.c",
+   "name": "_08001D974",
+   "size": 84
+  },
   "0x0801d9c8": {
    "class": "c",
    "file": "src/race_scene.c",
    "name": "Race_Scene_BxLr_1D9C8",
    "size": 4
+  },
+  "0x0801d9cc": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1,
+    "pin": 3
+   },
+   "file": "src/race_scene_b1.c",
+   "name": "_08001D9CC",
+   "size": 68
   },
   "0x0801db0c": {
    "class": "c_fakematch",
@@ -4690,6 +4958,16 @@
    "name": "_08001E1E0",
    "size": 80
   },
+  "0x0801e230": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1,
+    "pin": 1
+   },
+   "file": "src/race_scene_c.c",
+   "name": "_08001E230",
+   "size": 160
+  },
   "0x0801e2d0": {
    "class": "c",
    "file": "src/race_scene_c.c",
@@ -4719,6 +4997,24 @@
    "file": "src/race_scene.c",
    "name": "Race_Scene_Leaf_E390",
    "size": 44
+  },
+  "0x0801e3bc": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/race_scene_c.c",
+   "name": "_08001E3BC",
+   "size": 152
+  },
+  "0x0801e454": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/race_scene_c.c",
+   "name": "_08001E454",
+   "size": 108
   },
   "0x0801e4c0": {
    "class": "c_fakematch",
@@ -4767,6 +5063,12 @@
    "file": "src/race_scene_c.c",
    "name": "_08001E718",
    "size": 76
+  },
+  "0x0801e8b4": {
+   "class": "c",
+   "file": "src/race_scene_c.c",
+   "name": "_08001E8B4",
+   "size": 120
   },
   "0x0801e9d8": {
    "class": "c",
@@ -4833,6 +5135,16 @@
    "file": "src/race_scene_d1.c",
    "name": "_08001F6A4",
    "size": 192
+  },
+  "0x0801f764": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1,
+    "pin": 14
+   },
+   "file": "src/race_scene_d1.c",
+   "name": "_08001F764",
+   "size": 200
   },
   "0x0801f82c": {
    "class": "c_fakematch",
@@ -5167,6 +5479,16 @@
    "name": "RaceVM_022ACC",
    "size": 124
   },
+  "0x08022bbc": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 1,
+    "pin": 8
+   },
+   "file": "src/race_phase_vms.c",
+   "name": "RaceVM_022BBC",
+   "size": 92
+  },
   "0x08022cb4": {
    "class": "c_fakematch",
    "detail": {
@@ -5221,11 +5543,40 @@
    "name": "Code235F4_Dispatch",
    "size": 52
   },
+  "0x08023958": {
+   "class": "partial",
+   "detail": {
+    "barrier": 3,
+    "directive": 2,
+    "insn": 1,
+    "insn_lines": 3,
+    "pin": 9
+   },
+   "file": "src/ai_race_leaves.c",
+   "name": "_08023958",
+   "size": 220
+  },
   "0x08023ae4": {
    "class": "c",
    "file": "src/code_23a34.c",
    "name": "_080023AE4",
    "size": 124
+  },
+  "0x08023b60": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 1,
+    "pin": 2
+   },
+   "file": "src/code_23a34.c",
+   "name": "_080023B60",
+   "size": 116
+  },
+  "0x08023e0c": {
+   "class": "c",
+   "file": "src/race_control_leaves.c",
+   "name": "Code23E0C",
+   "size": 108
   },
   "0x08023e78": {
    "class": "c",
@@ -5233,11 +5584,37 @@
    "name": "Stub_23E78",
    "size": 4
   },
+  "0x08023e7c": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 3,
+    "pin": 2
+   },
+   "file": "src/race_control_leaves.c",
+   "name": "Code23E7C",
+   "size": 84
+  },
+  "0x08023ed0": {
+   "class": "c",
+   "file": "src/ai_race_leaves.c",
+   "name": "_08023ED0",
+   "size": 276
+  },
   "0x08023fe4": {
    "class": "c",
    "file": "src/ai_race_leaves.c",
    "name": "Ai_RingReset",
    "size": 20
+  },
+  "0x08023ff8": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 1,
+    "pin": 6
+   },
+   "file": "src/ai_race_leaves.c",
+   "name": "Ai_RingPush",
+   "size": 80
   },
   "0x08024048": {
    "class": "asm",
@@ -5548,6 +5925,27 @@
    "name": "Ai_CatalogC",
    "size": 28
   },
+  "0x08024c90": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 1
+   },
+   "file": "src/ai_catalog.c",
+   "name": "Ai_CatalogFlatIndex",
+   "size": 64
+  },
+  "0x08024cd0": {
+   "class": "c",
+   "file": "src/ai_catalog.c",
+   "name": "Ai_CatalogIndexInGroup",
+   "size": 60
+  },
+  "0x08024d0c": {
+   "class": "c",
+   "file": "src/ai_catalog.c",
+   "name": "Ai_CatalogOwnedIndexInGroup",
+   "size": 64
+  },
   "0x08024d4c": {
    "class": "c",
    "file": "src/ai_catalog.c",
@@ -5682,11 +6080,23 @@
    "name": "Ai_LineFindSlot",
    "size": 28
   },
+  "0x08025028": {
+   "class": "c",
+   "file": "src/ai_line_leaves.c",
+   "name": "Ai_LineCopyInsert",
+   "size": 92
+  },
   "0x08025084": {
    "class": "c",
    "file": "src/ai_line_leaves.c",
    "name": "Ai_LineFindSlot2",
    "size": 28
+  },
+  "0x080250a0": {
+   "class": "c",
+   "file": "src/ai_line_leaves.c",
+   "name": "Ai_LineCmpInsert",
+   "size": 92
   },
   "0x080250fc": {
    "class": "c_fakematch",
@@ -5755,6 +6165,39 @@
    "name": "Ai_LineGet3",
    "size": 24
   },
+  "0x08025548": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 1,
+    "directive": 2,
+    "pin": 3
+   },
+   "file": "src/ai_line_leaves.c",
+   "name": "Ai_LineScoreSum",
+   "size": 124
+  },
+  "0x080255c4": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 1,
+    "directive": 2,
+    "pin": 3
+   },
+   "file": "src/ai_line_more.c",
+   "name": "Ai_LineSumA",
+   "size": 124
+  },
+  "0x08025640": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 1,
+    "directive": 2,
+    "pin": 3
+   },
+   "file": "src/ai_line_more.c",
+   "name": "Ai_LineSumB",
+   "size": 124
+  },
   "0x080256bc": {
    "class": "c",
    "file": "src/ai_line_leaves.c",
@@ -5784,6 +6227,26 @@
    "file": "src/ai_line_more.c",
    "name": "Ai_Line2572C",
    "size": 36
+  },
+  "0x08025750": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 2,
+    "pin": 10
+   },
+   "file": "src/ai_line_more.c",
+   "name": "Ai_Line25750",
+   "size": 64
+  },
+  "0x08025790": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 2,
+    "pin": 10
+   },
+   "file": "src/ai_line_more.c",
+   "name": "Ai_Line25790",
+   "size": 68
   },
   "0x080257d4": {
    "class": "c",
@@ -5899,6 +6362,18 @@
    "name": "Course_GetParam",
    "size": 20
   },
+  "0x08025930": {
+   "class": "partial",
+   "detail": {
+    "directive": 4,
+    "insn": 2,
+    "insn_lines": 7,
+    "pin": 21
+   },
+   "file": "src/code_25930.c",
+   "name": "Code25930_BuildGrid",
+   "size": 336
+  },
   "0x08025a80": {
    "class": "c",
    "file": "src/code_25930.c",
@@ -5919,6 +6394,12 @@
    "file": "src/code_25930.c",
    "name": "Code25930_FindEntry",
    "size": 36
+  },
+  "0x08025ac0": {
+   "class": "c",
+   "file": "src/code_25930.c",
+   "name": "Code25930_BuildSpecial",
+   "size": 60
   },
   "0x08025afc": {
    "class": "c",
@@ -6035,6 +6516,16 @@
    "name": "Ai_GridRowsFull",
    "size": 44
   },
+  "0x08025dbc": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1,
+    "pin": 9
+   },
+   "file": "src/ai_grid_leaves.c",
+   "name": "Ai_GridSetPacked",
+   "size": 96
+  },
   "0x08025e1c": {
    "class": "c",
    "file": "src/ai_grid_leaves.c",
@@ -6062,6 +6553,16 @@
    "file": "src/ai_grid_leaves.c",
    "name": "Ai_GridReadRecord",
    "size": 40
+  },
+  "0x08025ec0": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 2,
+    "pin": 11
+   },
+   "file": "src/ai_grid_leaves.c",
+   "name": "Ai_GridHalfwordSet",
+   "size": 96
   },
   "0x08025f20": {
    "class": "c_fakematch",
@@ -6307,11 +6808,33 @@
    "name": "Sprite_Tick",
    "size": 16
   },
+  "0x08026a78": {
+   "class": "c",
+   "file": "src/sprite_obj_263e0.c",
+   "name": "Sprite_Draw",
+   "size": 60
+  },
+  "0x08026ab4": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 1,
+    "pin": 4
+   },
+   "file": "src/sprite_obj_263e0.c",
+   "name": "Sprite_Paint",
+   "size": 76
+  },
   "0x08026b00": {
    "class": "c",
    "file": "src/sprite_obj_263e0.c",
    "name": "Sprite_Event",
    "size": 48
+  },
+  "0x08026b30": {
+   "class": "c",
+   "file": "src/sprite_obj_263e0.c",
+   "name": "Sprite_Init",
+   "size": 80
   },
   "0x08026c84": {
    "class": "c",
@@ -6437,6 +6960,17 @@
    "name": "_080027D08",
    "size": 40
   },
+  "0x08027d30": {
+   "class": "partial",
+   "detail": {
+    "insn": 2,
+    "insn_lines": 3,
+    "pin": 2
+   },
+   "file": "src/garage.c",
+   "name": "Garage_27D30",
+   "size": 84
+  },
   "0x08027f60": {
    "class": "c_fakematch",
    "detail": {
@@ -6530,6 +7064,26 @@
    "file": "src/garage.c",
    "name": "Garage_282D0",
    "size": 92
+  },
+  "0x0802839c": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 2,
+    "pin": 4
+   },
+   "file": "src/garage.c",
+   "name": "Garage_2839C",
+   "size": 128
+  },
+  "0x0802841c": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 1,
+    "pin": 3
+   },
+   "file": "src/garage.c",
+   "name": "Garage_2841C",
+   "size": 96
   },
   "0x080284fc": {
    "class": "c",
@@ -6786,6 +7340,28 @@
    "name": "_0800293D8",
    "size": 40
   },
+  "0x0802944c": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 4,
+    "pin": 6
+   },
+   "file": "src/garage_records.c",
+   "name": "_08002944C",
+   "size": 60
+  },
+  "0x08029488": {
+   "class": "partial",
+   "detail": {
+    "barrier": 3,
+    "insn": 2,
+    "insn_lines": 4,
+    "pin": 10
+   },
+   "file": "src/garage_records.c",
+   "name": "_080029488",
+   "size": 56
+  },
   "0x080294c0": {
    "class": "c",
    "file": "src/garage_records.c",
@@ -6984,6 +7560,36 @@
    "name": "_0802B65C",
    "size": 16
   },
+  "0x0802b718": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 3,
+    "pin": 10
+   },
+   "file": "src/sound_sequence_controls.c",
+   "name": "SoundSeq_VolumeWalker",
+   "size": 52
+  },
+  "0x0802b74c": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 3,
+    "pin": 10
+   },
+   "file": "src/sound_sequence_controls.c",
+   "name": "SoundSeq_PanWalker",
+   "size": 52
+  },
+  "0x0802b780": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 3,
+    "pin": 10
+   },
+   "file": "src/sound_sequence_controls.c",
+   "name": "SoundSeq_ThirdWalker",
+   "size": 52
+  },
   "0x0802b7b4": {
    "class": "c",
    "file": "src/sound_extra.c",
@@ -7065,6 +7671,17 @@
    "name": "SoundBCB4_Copy",
    "size": 24
   },
+  "0x0802bccc": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 1,
+    "naked": true
+   },
+   "file": "src/sound_seq_follow.c",
+   "name": "SoundBCCC_Entry",
+   "size": 2
+  },
   "0x0802bcce": {
    "class": "asm",
    "detail": {
@@ -7075,6 +7692,17 @@
    "file": "src/sound_seq_follow.c",
    "name": "SoundBCCE_ValidateFrag",
    "size": 26
+  },
+  "0x0802bce8": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 1,
+    "naked": true
+   },
+   "file": "src/sound_extra.c",
+   "name": "SoundBCE8_CursorFetch",
+   "size": 2
   },
   "0x0802bcea": {
    "class": "asm",
@@ -7471,6 +8099,16 @@
    "name": "SoundStateInit",
    "size": 204
   },
+  "0x0802cacc": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 1,
+    "pin": 10
+   },
+   "file": "src/runtime_state_dispatch.c",
+   "name": "SoundCACC_Step",
+   "size": 84
+  },
   "0x0802cb20": {
    "class": "c",
    "file": "src/sound_core.c",
@@ -7727,6 +8365,96 @@
    "name": "SoundD9FC_Latch",
    "size": 36
   },
+  "0x0802ddc8": {
+   "class": "c",
+   "file": "src/runtime_state_dispatch.c",
+   "name": "Veneer_2DDC8",
+   "size": 4
+  },
+  "0x0802ddcc": {
+   "class": "c",
+   "file": "src/runtime_state_dispatch.c",
+   "name": "Veneer_2DDCC",
+   "size": 4
+  },
+  "0x0802ddd0": {
+   "class": "c",
+   "file": "src/runtime_state_dispatch.c",
+   "name": "Veneer_2DDD0",
+   "size": 4
+  },
+  "0x0802ddd4": {
+   "class": "c",
+   "file": "src/runtime_state_dispatch.c",
+   "name": "Veneer_2DDD4",
+   "size": 4
+  },
+  "0x0802ddd8": {
+   "class": "c",
+   "file": "src/runtime_state_dispatch.c",
+   "name": "Veneer_2DDD8",
+   "size": 4
+  },
+  "0x0802dddc": {
+   "class": "c",
+   "file": "src/runtime_state_dispatch.c",
+   "name": "Veneer_2DDDC",
+   "size": 4
+  },
+  "0x0802dde0": {
+   "class": "c",
+   "file": "src/runtime_state_dispatch.c",
+   "name": "Veneer_2DDE0",
+   "size": 4
+  },
+  "0x0802dde4": {
+   "class": "c",
+   "file": "src/runtime_state_dispatch.c",
+   "name": "Veneer_2DDE4",
+   "size": 4
+  },
+  "0x0802dde8": {
+   "class": "c",
+   "file": "src/runtime_state_dispatch.c",
+   "name": "Veneer_2DDE8",
+   "size": 4
+  },
+  "0x0802ddec": {
+   "class": "c",
+   "file": "src/runtime_state_dispatch.c",
+   "name": "Veneer_2DDEC",
+   "size": 4
+  },
+  "0x0802ddf0": {
+   "class": "c",
+   "file": "src/runtime_state_dispatch.c",
+   "name": "Veneer_2DDF0",
+   "size": 4
+  },
+  "0x0802ddf4": {
+   "class": "c",
+   "file": "src/runtime_state_dispatch.c",
+   "name": "Veneer_2DDF4",
+   "size": 4
+  },
+  "0x0802ddf8": {
+   "class": "c",
+   "file": "src/runtime_state_dispatch.c",
+   "name": "Veneer_2DDF8",
+   "size": 4
+  },
+  "0x0802ddfc": {
+   "class": "c",
+   "file": "src/runtime_state_dispatch.c",
+   "name": "Veneer_2DDFC",
+   "size": 4
+  },
+  "0x0802de00": {
+   "class": "c",
+   "file": "src/runtime_state_dispatch.c",
+   "name": "Veneer_2DE00",
+   "size": 4
+  },
   "0x0802de98": {
    "class": "asm",
    "detail": {
@@ -7741,20 +8469,20 @@
  },
  "totals": {
   "asm": {
-   "bytes": 1256,
-   "functions": 57
+   "bytes": 1388,
+   "functions": 61
   },
   "c": {
-   "bytes": 28474,
-   "functions": 757
+   "bytes": 30462,
+   "functions": 791
   },
   "c_fakematch": {
-   "bytes": 19698,
-   "functions": 267
+   "bytes": 23626,
+   "functions": 308
   },
   "partial": {
-   "bytes": 784,
-   "functions": 8
+   "bytes": 1748,
+   "functions": 14
   }
  },
  "version": 1

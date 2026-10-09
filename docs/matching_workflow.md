@@ -130,6 +130,11 @@ Compiler RTL dumps (`-da`) help distinguish instruction selection,
 scheduling, and register allocation. A failed finite search establishes a
 limit of the tested forms, not impossibility of every C representation.
 
+For additional controlled experiments, see the
+[newer agbcc recipe cookbook](findings/agbcc_matching_recipes.md): narrow-mode
+locals, loop-note barriers, allocator diagnostics, and reproducible transfer
+probes. It separates upstream observations from locally reproduced results.
+
 ## Selecting C sections
 
 Use a fresh `build/era-corpus/ready-report.json` and its `ready-work/` objects.

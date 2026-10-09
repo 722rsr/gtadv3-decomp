@@ -121,7 +121,7 @@
     },
     {
       "path": "asm/ai_grid_more.s",
-      "sha256": "1e6990c91015a53d1de5594fa235b2a65bcff909b2349add987f79eec76ad3b7"
+      "sha256": "03e8682fc51fef17e2eda0d8bf0b76e738f93e642899072e4e2e693a19cf1786"
     },
     {
       "path": "asm/ai_grid_more2.s",
@@ -133,7 +133,7 @@
     },
     {
       "path": "asm/ai_grid_more4.s",
-      "sha256": "9c512774d0bd604a3392c63561f70a6f7298192cbdc57269880dfa2236fbdb38"
+      "sha256": "82963e9c671381f2cd51d10599293545a93c8449aaf5fc82582181e403f06fc0"
     },
     {
       "path": "asm/ai_grid_more5.s",
@@ -173,7 +173,7 @@
     },
     {
       "path": "asm/ai_line_score.s",
-      "sha256": "044a20f2f528b931d7906f8b3202f455afd3638f64fa8048a223dfcf7e164f03"
+      "sha256": "a48037aa213494adbd0bd4c764de4560b739c8de480c8117ed0e7018cc0b33ee"
     },
     {
       "path": "asm/ai_line_sio.s",
@@ -193,11 +193,11 @@
     },
     {
       "path": "asm/ai_phase_pump.s",
-      "sha256": "d582a9fadd7e305d703379b4b7e60d27f51633de1a4a10dfb0c412d8a1b389d7"
+      "sha256": "94d5aa4bce5daeec538081d026a2579e4a5ee5a6ce7fc0d97e9fd14551f455a7"
     },
     {
       "path": "asm/ai_raceevt.s",
-      "sha256": "4e6c4153c8f378d85e9bdb5249653e7d74122c697e7d22098b2289a5b4340f51"
+      "sha256": "12c33418d176d2bb4bc1105b0fb4edcbc79b375305a57907c91c520199b71ffc"
     },
     {
       "path": "asm/ai_racefsm.s",
@@ -277,7 +277,7 @@
     },
     {
       "path": "asm/code_23a34.s",
-      "sha256": "f8bedb94086638f44e794f7d47ca351fc7c57b7f4d6b7c6d4c2153ec079d13f2"
+      "sha256": "e80a305ba3bbd56954d2fd03a18acbf7a7e1548b74ab50656e554786d3e4ad4b"
     },
     {
       "path": "asm/code_23bd4.s",
@@ -293,7 +293,7 @@
     },
     {
       "path": "asm/code_23e7c.s",
-      "sha256": "bdb843ba2771417a1abfac9f37dae4a429e77afcd9cdb6a77dd95b84e6d9df6c"
+      "sha256": "d6f6bd6e0777a9fc2182076b8a32987cefb32efc65f8afa52726c00ce14e7424"
     },
     {
       "path": "asm/code_24048.s",
@@ -445,7 +445,7 @@
     },
     {
       "path": "asm/code_4af4.s",
-      "sha256": "02bee700f928a78534025ede1d9ea408e28c11f7e5cc87251d71ba64e5ac332f"
+      "sha256": "805e26d6e10ae562e9644271a8675ab2a9e16b4e6264e796d3ff116c2fe3f40f"
     },
     {
       "path": "asm/code_4b50.s",
@@ -473,7 +473,7 @@
     },
     {
       "path": "asm/code_4cf0.s",
-      "sha256": "873b66a9ff113b3fc0ae46c76e4a76e74fefb67fec20e1104567167e2eb0bcbf"
+      "sha256": "34c4ebd2974dc9fd7554726ca3f958bb74c17ccf1b93da14f5802f2e26b469d0"
     },
     {
       "path": "asm/code_4d4c.s",
@@ -489,7 +489,7 @@
     },
     {
       "path": "asm/code_5988.s",
-      "sha256": "0bd2ba08508955d328e87d7be69b6f41e473d2e41187b00a65a4432b16deea08"
+      "sha256": "58be91e5f978f1cb13295a4605ff0dbc27669a719c66c6911a00062e81e48a64"
     },
     {
       "path": "asm/code_5b3c.s",
@@ -497,7 +497,7 @@
     },
     {
       "path": "asm/code_c668.s",
-      "sha256": "447c3806fc237dd0f564df5a493bcec0b7fbc979df35ab61558e0299d96fc028"
+      "sha256": "bfdaa27bdb416dc4b775b67dca7811066c55c36392d8248faa41e3062dbd04e7"
     },
     {
       "path": "asm/code_ce2c.s",
@@ -653,7 +653,7 @@
     },
     {
       "path": "asm/menu_c340.s",
-      "sha256": "add19ab36bbdfc9b69057ed5cbf7de0b631c952d25970467cd6cd99e40a83660"
+      "sha256": "8501558647fe06685d17550467165b8f48976ee0f719e8942815ed9a0c70edc2"
     },
     {
       "path": "asm/menu_c454.s",
@@ -753,7 +753,7 @@
     },
     {
       "path": "asm/menu_dbe8.s",
-      "sha256": "1123af1f2c682f924ded4998fe21b6bc74fe0b20f5d8ed2810948c180dd8bea2"
+      "sha256": "09313f9f3442c03bcc30fcf53db82ba2f26536cc71768947c3779768de6e3f9a"
     },
     {
       "path": "asm/menu_dispatch.s",
@@ -901,7 +901,7 @@
     },
     {
       "path": "asm/save_checksum.s",
-      "sha256": "42f46fcebc7533d03ef1342aa511254f5275b97e5c526b47e3c8dda871989e3a"
+      "sha256": "8851dd571b95e52c0af728ba3544e94d93ac6dae05e3d238e14d63f8387ec542"
     },
     {
       "path": "asm/save_delay.s",
@@ -909,11 +909,11 @@
     },
     {
       "path": "asm/save_desc.s",
-      "sha256": "1ba058e207c02a354148a63d5791048ea3727963dd3d15676defba7008f24340"
+      "sha256": "0aa00fa0757f9d78a102934acc4de7f9d7557650b4ab9f49c7dffbcd80dfdde4"
     },
     {
       "path": "asm/save_slot_api.s",
-      "sha256": "25dc951a796e1043669a7739dd8a0a2fb47807f9bf6e2b839943ed72d37f5eab"
+      "sha256": "fe60e15d5efb78f4ee83a07bfa01244174a5ba79ab1ed7df03540fc91c0bcb49"
     },
     {
       "path": "asm/save_timer_queue.s",
@@ -929,7 +929,7 @@
     },
     {
       "path": "asm/softirq.s",
-      "sha256": "ee0a20a46f6fe56193c5b7e757acb02728db5efe1d5fb0137bb1f91fed4dd81b"
+      "sha256": "bac0bbb68e4671ed396977e6531d8b6bbb423cb193d90b735b8aaf40539f7d00"
     },
     {
       "path": "asm/sound_aeabi_idiv.s",
@@ -1085,11 +1085,11 @@
     },
     {
       "path": "asm/sound_reset_more.s",
-      "sha256": "9371f41938bf8cb83ac759d949bae8ccc97e934922aa8778adcf8bf29c6d6a12"
+      "sha256": "58518999b0b1806a33dbd3392e949462c424033678b698a27d501e7a635d4051"
     },
     {
       "path": "asm/sound_seq.s",
-      "sha256": "20ee82fa11d49d64ac4c3a006400af3fa362a5f961d4d0a094d049195a7d689b"
+      "sha256": "4056791aef813f3986fad39a8ff2b68aa5c76b5ba522e87252aaf38690a93ea6"
     },
     {
       "path": "asm/sound_start.s",
@@ -1125,7 +1125,7 @@
     },
     {
       "path": "asm/sound_veneer.s",
-      "sha256": "81238af6eb0158f8bbfcb0f45285e6fd19cdafb8baeae0edb4a9c5ea3561a21a"
+      "sha256": "842f23371fbfac60e4c0f0342f20c57dd9d9bf39ea64e4749385eb24a1f67392"
     },
     {
       "path": "asm/sound_voice_apply.s",

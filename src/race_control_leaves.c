@@ -135,32 +135,43 @@ void _080235F4(void *ctx) __attribute__((alias("Code235F4_Dispatch")));
 void sub_0800235F4(void *ctx) __attribute__((alias("Code235F4_Dispatch")));
 #endif
 
-// 0x08023E7C — 49 B, VMA 0x08023E7C, pure Thumb, pools 0x03001780+0xFBC, WorkArea 0x0300273C phase, ctx+240/236
+// 0x08023E7C — 84 B, VMA 0x08023E7C, pure Thumb, pools 0x03001780+0xFBC, WorkArea 0x0300273C phase, ctx+240/236
 // Proven via ramwatch: WA+0xFBC=5 (observed 1→5, snap_00000030 FBC=1, race FBC=5), so first cmp #3 bne taken; ctx+240==1 path not taken under QUICK RACE (observed [r4+240]=0), but full CFG preserved.
 void Code23E7C(void *ctx){
     // r4 = ctx
-    // WA = 0x03001780, WA+0xFBC = 0x0300273C phase
-    volatile u16 *wa_fbc = (volatile u16*)(uintptr_t)(0x03001780 + 0xFBC);
-    if (*wa_fbc != 3) goto ret;
-    // ctx+240
+#ifndef __APPLE__
+    register uintptr_t waAddr __asm__("r0");
+    register u32 waOffset __asm__("r1");
+    waAddr = 0x03001780u;
+    __asm__("" : "+r" (waAddr));
+    waOffset = 0x0FBCu;
+    __asm__("" : "+r" (waOffset));
+    waAddr += waOffset;
+    __asm__("" : "+r" (waAddr));
+    u16 phase = *(volatile u16 *)waAddr;
+#else
+    u16 phase = *(volatile u16 *)(uintptr_t)(0x03001780u + 0x0FBCu);
+#endif
+    if (phase != 3) goto ret;
     u32 v240 = *(volatile u32*)((uintptr_t)ctx + 240);
     if (v240 != 1) goto ret;
     extern u32 _08002140(void);
-    if (_08002140() == 2) {
-        // _EC0: clear ctx+236
+    if (_08002140() != 2) {
+        volatile u32 *p236 = (volatile u32*)((uintptr_t)ctx + 236);
+        int v = (int)*p236 + 1;
+        *p236 = (u32)v;
+        if (v > 180) {
+            extern void _08004D4C(u32 a, u32 b, u32 c);
+            _08004D4C(21,0,0);
+        }
+    } else {
         *(volatile u32*)((uintptr_t)ctx + 236) = 0;
-        goto ret;
     }
-    // else: ctx+236++
-    volatile u32 *p236 = (volatile u32*)((uintptr_t)ctx + 236);
-    u32 v = *p236 + 1;
-    *p236 = v;
-    if (v <= 180) goto ret;
-    extern void _08004D4C(u32 a, u32 b, u32 c);
-    _08004D4C(21,0,0);
 ret:
     return;
 }
+// The ROM span ends with 00 00 after BX LR; request zero-fill, not Thumb NOP.
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _080023E7C(void *a) __attribute__((alias("Code23E7C")));
 void _08023E7C(void *a) __attribute__((alias("Code23E7C")));
@@ -278,8 +289,8 @@ void Code23D4C(void *ctx){
     s16 v140_2 = *(volatile s16*)p140; (void)v140_2;
     u32 w0 = *(volatile u32*)(uintptr_t)(tbl + ((u32)v140 << 3));
     u32 w4b = *(volatile u32*)(uintptr_t)(tbl + ((u32)v140 << 3) + 4u);
-    extern void _08023B60(void *a, int b, int c);
-    _08023B60(ctx, (int)w0, (int)w4b);
+    extern void sub_080023B60(void *a, int b, int c);
+    sub_080023B60(ctx, (int)w0, (int)w4b);
     extern void _0800DBE8(void *a);
     _0800DBE8((void*)((uintptr_t)ctx + 16));
     // ROM: u16[ctx+144] != 1 skips the whole tail to DE8 (asm/code_23d4c.s:41-45).
@@ -328,25 +339,26 @@ void Code23E0C(void *ctx){
     // +136 bl 0x0800D97C with 15
     extern void _0800D97C(void *a, int b);
     _0800D97C((void*)((uintptr_t)ctx + 136), 15);
-    // +140 s16 *8 via 0x080CC178 table
-    void *p140 = (void*)((uintptr_t)ctx + 140);
-    s16 v140 = *(volatile s16*)p140;
-    // ROM (code_23bd4/23d4c/23e0c, identical): r1 = u32[0x080CC178 + (s16)u16[ctx+140]*8 + 4],
-    // r2 = u32[ctx+168] for 23AE4; r1 = u32[base+v140*8], r2 = u32[base+v140*8+4] for 23B60.
-    // Both args are live in the bodies (23AE4 branches on r2, 23B60 forwards both into 07B18).
-    volatile u8 *tbl = (volatile u8*)(uintptr_t)0x080CC178u;
-    u32 w4 = *(volatile u32*)(uintptr_t)(tbl + ((u32)v140 << 3) + 4u);
-    void *p168 = (void*)((uintptr_t)ctx + 168);
-    u32 v168 = *(volatile u32*)p168;
+    // +140 s16 *8 via 0x080CC178 table. The two `movs r1,#0; ldrsh r0,[r5,r1]`
+    // loads are the array-INDEX form `((s16*)p)[0]` through a plain pointer;
+    // a volatile/direct `*(s16*)` folds to `ldrh`+extend and a `(u8*)+K` cast
+    // folds the offset. The scaled byte offset is kept in an int so the table
+    // arithmetic stays `lsls #3 / adds`, and base/base+4 are locals live
+    // across the 23AE4 call so they sit in callee-saved r4/r6 as the ROM shows.
+    u8 *tbl = (u8 *)(uintptr_t)0x080CC178u;
+    u8 *p140 = (u8 *)ctx + 140;
+    int off = ((s16 *)p140)[0] << 3;
+    u8 *tbl4 = tbl + 4;
+    u32 w4 = *(u32 *)(tbl4 + off);
+    u32 v168 = *(u32 *)((u8 *)ctx + 168);
     extern void _08023AE4(void *a, int b, int c);
     _08023AE4(ctx, (int)w4, (int)v168);
-    // Second +140 load for 23B60
-    s16 v140_2 = *(volatile s16*)p140;
-    (void)v140_2;
-    u32 w0 = *(volatile u32*)(uintptr_t)(tbl + ((u32)v140 << 3));
-    u32 w4b = *(volatile u32*)(uintptr_t)(tbl + ((u32)v140 << 3) + 4u);
-    extern void _08023B60(void *a, int b, int c);
-    _08023B60(ctx, (int)w0, (int)w4b);
+    // Second +140 load for 23B60 (reloaded after the call, not reused).
+    int off2 = ((s16 *)p140)[0] << 3;
+    u32 w0 = *(u32 *)(tbl + off2);
+    u32 w4b = *(u32 *)(tbl4 + off2);
+    extern void sub_080023B60(void *a, int b, int c);
+    sub_080023B60(ctx, (int)w0, (int)w4b);
     // ctx+16 -> 0x0800DBE8
     extern void _0800DBE8(void *a);
     _0800DBE8((void*)((uintptr_t)ctx + 16));

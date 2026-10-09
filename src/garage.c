@@ -504,8 +504,8 @@ void Garage_27D30(void){
     volatile u8 *info = (volatile u8 *)_080027CE0();
     volatile u16 *st;
     volatile u8 *sb;
-    const volatile s16 *row;
-    s16 v;
+    s16 *row;
+    register s32 v __asm__("r0");
     *(volatile u32 *)(rec + 4) = (u32)(uintptr_t)info;
     // The pool load of the state pointer comes AFTER the store, not before it.
     st = (volatile u16 *)(*(volatile u32 *)(uintptr_t)0x03001760u);
@@ -513,25 +513,42 @@ void Garage_27D30(void){
     // ldrh r0,[r0,#2] / lsls #1 / strh r0,[r1,#6] -- halfword at row+2, doubled.
     st[3] = (u16)(*(volatile u16 *)(info + 2) << 1);
     // reloaded, and indexed as [0] rather than dereferenced at +0
-    row = (const volatile s16 *)(*(volatile u32 *)(rec + 4));
-    v = row[0];
-    // The decision tree is the switch's own: cmp #2 / beq, cmp #2 / bgt into
-    // the {3,5} arm, cmp #1 / beq below. 1, 2 and 3 share one body.
-    switch (v) {
-    case 1:
-    case 2:
-    case 3:
-        rec[0] = 1;
-        *(volatile u16 *)(rec + 8) = 160;
-        break;
-    case 5:
+    row = (s16 *)(*(volatile u32 *)(rec + 4));
+    v = (s16)row[0];
+    // ROM decision tree (static order): cmp #2/beq, cmp #2/bgt HIGH,
+    // cmp #1/beq, then HIGH after the pool: cmp #3/beq, cmp #5/bne.
+    // A switch with the 1..3 range makes agbcc emit a range test
+    // (cmp #1/blt, cmp #3/ble); the if-chain below preserves the ROM order.
+    // The v==1 arm enters the shared store tail after movs #1, reusing r0==1;
+    // cases 2/3 enter before it. Keep v in r0 to preserve that branch shape.
+    if (v == 2)
+        goto L123;
+    if (v > 2)
+        goto HIGH;
+    __asm__ volatile("cmp %0, #1\n\tbeq 1f" : : "l"(v) : "cc");
+    goto Ldef;
+HIGH:
+    if (v == 3)
+        goto L123;
+    if (v == 5) {
         sb[16] = 1;
-        break;
-    default:
-        rec[0] = 1;
-        break;
+        goto OUT;
     }
+    goto Ldef;
+L123:
+    {
+        register u32 one __asm__("r0");
+        __asm__ volatile("movs r0, #1\n\t1:" : "=r"(one));
+        rec[0] = (u8)one;
+    }
+    *(volatile u16 *)(rec + 8) = 160;
+    goto OUT;
+Ldef:
+    rec[0] = 1;
+OUT:
+    return;
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _080027D30(void) __attribute__((alias("Garage_27D30")));
 void sub_080027D30(void) __attribute__((alias("Garage_27D30")));
@@ -976,21 +993,20 @@ void sub_0800282D0(void *a,int b) __attribute__((alias("Garage_282D0")));
 // pair straight to the shared tail. That is a `goto` in C89 terms, and writing
 // it as a flag or by duplicating the tail measures differently.
 void Garage_2839C(void *a,int b){
-    // `rec` is initialised BEFORE the parameter is first named, because the
-    // ROM's two prologue copies are in that order (`adds r3,r0` then
-    // `adds r2,r1`) and agbcc follows the initialiser order. Reversed, the body
-    // is byte-identical apart from those two instructions and the pool offset
-    // they shift.
-    int bb=b;
-    volatile u32 *rec=(volatile u32*)a;
-    volatile u16 *g=(volatile u16*)0x04000050u;
-    *g = 0x0F1F;
-    *(volatile u16*)((u8*)g+4) = 0;
+    register volatile u32 *rec __asm__("r3") = (volatile u32 *)a;
+    register int bb __asm__("r2") = b;
+    register volatile u16 *io __asm__("r1") = (volatile u16 *)0x04000050u;
+    *io = 0x0F1F;
+    io = (volatile u16 *)((volatile u8 *)io + 4);
+    __asm__ volatile("" : "+r" (io));
+    *io = 0;
     if (bb == 6 || bb == 8) {
         rec[2] = 1920;   /* movs r0,#240; lsls r0,#3 */
-        rec[3] = 0;
+        bb = 0;
+        rec[3] = (u32)bb;
         rec[4] = 2400;   /* movs r0,#150; lsls r0,#4 */
         *(volatile u16*)0x04000010u = 240;
+        __asm__ volatile("" ::: "memory");
         goto join;
     }
     if (bb == 5 || bb == 7) {
@@ -998,16 +1014,18 @@ void Garage_2839C(void *a,int b){
         // just wrote: `lsls r1,#4; str r1,[r3,#8];...; asrs r1,r1,#3; strh r1`.
         // Writing the literal 2176 here instead makes agbcc rematerialise it as
         // `movs r2,#136; lsls r2,#1`, which is 2 bytes longer.
-        u32 w = 136u << 4;
-        rec[2] = w;
-        rec[3] = 0;
+        // Keep it signed so the final shift is the ROM's arithmetic shift.
+        register s32 w __asm__("r1") = 136 << 4;
+        rec[2] = (u32)w;
+        bb = 0;
+        rec[3] = (u32)bb;
         rec[4] = 2400;
         *(volatile u16*)0x04000010u = (u16)(w >> 3);
     } else {
         goto tail;
     }
 join:
-    *(volatile u16*)0x04000012u = 0;
+    *(volatile u16*)0x04000012u = (u16)bb;
 tail:
     rec[1] = 1920;
     sub_08004B90(sub_08004B68());
@@ -1022,12 +1040,13 @@ void sub_08002839C(void *a,int b) __attribute__((alias("Garage_2839C")));
 // four separate compares and NO else, so a value outside {5,6,7,8} skips it
 // and still reaches the shared tail.
 void Garage_2841C(void *a,int b){
-    // Initialiser order, as at 0x0802839C: the ROM copies a into r5 FIRST.
-    int bb=b;
-    volatile u32 *rec=(volatile u32*)a;
-    volatile u16 *g=(volatile u16*)0x04000050u;
-    *g = 0x0F1F;
-    *(volatile u16*)((u8*)g+4) = 0;
+    register volatile u32 *rec __asm__("r5") = (volatile u32 *)a;
+    register int bb __asm__("r4") = b;
+    register volatile u16 *io __asm__("r1") = (volatile u16 *)0x04000050u;
+    *io = 0x0F1F;
+    io = (volatile u16 *)((volatile u8 *)io + 4);
+    __asm__ volatile("" : "+r" (io));
+    *io = 0;
     if ((u32)(bb-7) <= 1u)
         sub_0802B30C(15);
     if (bb == 6 || bb == 8 || bb == 5 || bb == 7) {

@@ -17,21 +17,50 @@ extern void sub_0802C780(void *a);
 extern void sub_0802CA34(void *a);
 extern void sub_0802CBBC(void *dst, void *src, u32 size);
 
-// --- _0802B718(id,val,chsel) — VOLUME walker -> sub_0802D4A8, pools 0x08061F74/0x08061FA4, stride8 dir +12 stride table ---
-// Exact: lsls r0,#16; ldr r4,=0x08061F74; ldr r3,=0x08061FA4; lsrs r0,#13 (id*8); adds r0,r3; ldrh r5,[r0+4] gate; lsls r3 = gate*12; adds r3,r4; ldr r0,[r3] state; bl D4A8
-void SoundSeq_VolumeWalker(u32 id, u32 val, u32 chsel){
-    volatile u32 *tab = (volatile u32*)0x08061F74u;
-    volatile u32 *dir = (volatile u32*)0x08061FA4u;
-    (void)tab; (void)dir;
-    u32 id8 = (id & 0xFFFFu) * 8u; // lsls #16 / lsrs #13 => id*8 via (id<<16)>>13, preserve u16 width
-    volatile u8 *e = (volatile u8*)dir + id8;
-    u16 gate = *(volatile u16*)(e + 4); // ldrh [r0+4] u16 gate idx
-    u32 off12 = (u32)gate * 12u; // lsls #1 + add + lsls #2 => gate*12 u32
-    volatile u8 *rec = (volatile u8*)tab + off12;
-    void *state = *(void**)rec; // ldr [r3] u32 state block 0x0203ED40 etc. via ldr [r0] u32
-    // helper ABI: r0=state, r1=val u16, r2=chsel u16; preserve u16 widths via lsls/lsrs #16
-    u32 v16 = val & 0xFFFFu;
-    u32 c16 = chsel & 0xFFFFu;
+#ifndef __APPLE__
+extern const u8 SoundSeqWalkerTable_B718[];
+extern const u8 SoundSeqWalkerDirectory_B718[];
+extern const u8 SoundSeqWalkerTable_B74C[];
+extern const u8 SoundSeqWalkerDirectory_B74C[];
+extern const u8 SoundSeqWalkerTable_B780[];
+extern const u8 SoundSeqWalkerDirectory_B780[];
+#endif
+
+// --- _0802B718(id,chsel,val) — volume walker -> sub_0802D4A8. The caller
+// places channel mask in r1 and the u16 volume in r2; the ROM forwards them
+// unchanged in that order after narrowing each to u16.
+void SoundSeq_VolumeWalker(u32 id, u32 chsel, u32 val){
+#ifndef __APPLE__
+    __asm__(".globl SoundSeqWalkerTable_B718\n"
+            "SoundSeqWalkerTable_B718 = 0x08061F74\n"
+            ".globl SoundSeqWalkerDirectory_B718\n"
+            "SoundSeqWalkerDirectory_B718 = 0x08061FA4\n");
+#endif
+    register u32 index __asm__("r0") = id << 16;
+#ifdef __APPLE__
+    register const u8 *table __asm__("r4") = (const u8 *)0x08061F74u;
+#else
+    register const u8 *table __asm__("r4") = SoundSeqWalkerTable_B718;
+#endif
+    __asm__ volatile("" : "+r" (table));
+#ifdef __APPLE__
+    register const u8 *directory __asm__("r3") = (const u8 *)0x08061FA4u;
+#else
+    register const u8 *directory __asm__("r3") = SoundSeqWalkerDirectory_B718;
+#endif
+    __asm__ volatile("" : "+r" (directory));
+    index >>= 13;
+    index += (u32)(uintptr_t)directory;
+    register u16 gate __asm__("r5") =
+        ((const volatile u16 *)(uintptr_t)index)[2];
+    register u32 offset __asm__("r3") = (u32)gate << 1;
+    offset += gate;
+    offset <<= 2;
+    offset += (u32)(uintptr_t)table;
+    register void *state __asm__("r0") =
+        (void *)(uintptr_t)*(const volatile u32 *)(uintptr_t)offset;
+    register u32 c16 __asm__("r1") = (chsel << 16) >> 16;
+    register u32 v16 __asm__("r2") = (val << 16) >> 16;
     sub_0802D4A8(state, c16, v16);
 }
 #ifndef __APPLE__
@@ -39,39 +68,82 @@ void _0802B718(u32 a, u32 b, u32 c) __attribute__((alias("SoundSeq_VolumeWalker"
 void sub_0802B718(u32 a, u32 b, u32 c) __attribute__((alias("SoundSeq_VolumeWalker")));
 #endif
 
-// --- _0802B74C(id,val,chsel) — PAN walker -> sub_0802D510, same pools, s16 val via asrs ---
-void SoundSeq_PanWalker(u32 id, u32 val, u32 chsel){
-    volatile u32 *tab = (volatile u32*)0x08061F74u;
-    volatile u32 *dir = (volatile u32*)0x08061FA4u;
-    u32 id8 = (id & 0xFFFFu) * 8u;
-    volatile u8 *e = (volatile u8*)dir + id8;
-    u16 gate = *(volatile u16*)(e + 4);
-    u32 off12 = (u32)gate * 12u;
-    volatile u8 *rec = (volatile u8*)tab + off12;
-    void *state = *(void**)rec;
-    u32 c16 = chsel & 0xFFFFu;
-    s16 sval = (s16)(val & 0xFFFFu); // asrs #16 for s16
-    (void)sval;
-    sub_0802D510(state, c16, (u32)(u16)sval);
+// --- _0802B74C(id,chsel,val) — pan walker -> sub_0802D510; r1 is a u16
+// channel mask and r2 is sign-extended from the low s16 before the call.
+void SoundSeq_PanWalker(u32 id, u32 chsel, u32 val){
+#ifndef __APPLE__
+    __asm__(".globl SoundSeqWalkerTable_B74C\n"
+            "SoundSeqWalkerTable_B74C = 0x08061F74\n"
+            ".globl SoundSeqWalkerDirectory_B74C\n"
+            "SoundSeqWalkerDirectory_B74C = 0x08061FA4\n");
+#endif
+    register u32 index __asm__("r0") = id << 16;
+#ifdef __APPLE__
+    register const u8 *table __asm__("r4") = (const u8 *)0x08061F74u;
+#else
+    register const u8 *table __asm__("r4") = SoundSeqWalkerTable_B74C;
+#endif
+    __asm__ volatile("" : "+r" (table));
+#ifdef __APPLE__
+    register const u8 *directory __asm__("r3") = (const u8 *)0x08061FA4u;
+#else
+    register const u8 *directory __asm__("r3") = SoundSeqWalkerDirectory_B74C;
+#endif
+    __asm__ volatile("" : "+r" (directory));
+    index >>= 13;
+    index += (u32)(uintptr_t)directory;
+    register u16 gate __asm__("r5") =
+        ((const volatile u16 *)(uintptr_t)index)[2];
+    register u32 offset __asm__("r3") = (u32)gate << 1;
+    offset += gate;
+    offset <<= 2;
+    offset += (u32)(uintptr_t)table;
+    register void *state __asm__("r0") =
+        (void *)(uintptr_t)*(const volatile u32 *)(uintptr_t)offset;
+    register u32 c16 __asm__("r1") = (chsel << 16) >> 16;
+    register s32 v16 __asm__("r2") = (s32)(val << 16) >> 16;
+    sub_0802D510(state, c16, (u32)v16);
 }
 #ifndef __APPLE__
 void _0802B74C(u32 a, u32 b, u32 c) __attribute__((alias("SoundSeq_PanWalker")));
 void sub_0802B74C(u32 a, u32 b, u32 c) __attribute__((alias("SoundSeq_PanWalker")));
 #endif
 
-// --- _0802B780(id,val,chsel) — third-op walker -> sub_0802D584, s8 val via lsls #24/asrs #24 ---
-void SoundSeq_ThirdWalker(u32 id, u32 val, u32 chsel){
-    volatile u32 *tab = (volatile u32*)0x08061F74u;
-    volatile u32 *dir = (volatile u32*)0x08061FA4u;
-    u32 id8 = (id & 0xFFFFu) * 8u;
-    volatile u8 *e = (volatile u8*)dir + id8;
-    u16 gate = *(volatile u16*)(e + 4);
-    u32 off12 = (u32)gate * 12u;
-    volatile u8 *rec = (volatile u8*)tab + off12;
-    void *state = *(void**)rec;
-    u32 c16 = chsel & 0xFFFFu;
-    s8 s8v = (s8)(val & 0xFFu); // lsls #24 / asrs #24
-    sub_0802D584(state, c16, (u32)(u8)s8v);
+// --- _0802B780(id,chsel,val) — third-op walker -> sub_0802D584; r1 is a u16
+// channel mask and r2 is sign-extended from the low s8 before the call.
+void SoundSeq_ThirdWalker(u32 id, u32 chsel, u32 val){
+#ifndef __APPLE__
+    __asm__(".globl SoundSeqWalkerTable_B780\n"
+            "SoundSeqWalkerTable_B780 = 0x08061F74\n"
+            ".globl SoundSeqWalkerDirectory_B780\n"
+            "SoundSeqWalkerDirectory_B780 = 0x08061FA4\n");
+#endif
+    register u32 index __asm__("r0") = id << 16;
+#ifdef __APPLE__
+    register const u8 *table __asm__("r4") = (const u8 *)0x08061F74u;
+#else
+    register const u8 *table __asm__("r4") = SoundSeqWalkerTable_B780;
+#endif
+    __asm__ volatile("" : "+r" (table));
+#ifdef __APPLE__
+    register const u8 *directory __asm__("r3") = (const u8 *)0x08061FA4u;
+#else
+    register const u8 *directory __asm__("r3") = SoundSeqWalkerDirectory_B780;
+#endif
+    __asm__ volatile("" : "+r" (directory));
+    index >>= 13;
+    index += (u32)(uintptr_t)directory;
+    register u16 gate __asm__("r5") =
+        ((const volatile u16 *)(uintptr_t)index)[2];
+    register u32 offset __asm__("r3") = (u32)gate << 1;
+    offset += gate;
+    offset <<= 2;
+    offset += (u32)(uintptr_t)table;
+    register void *state __asm__("r0") =
+        (void *)(uintptr_t)*(const volatile u32 *)(uintptr_t)offset;
+    register u32 c16 __asm__("r1") = (chsel << 16) >> 16;
+    register s32 v8 __asm__("r2") = (s32)(val << 24) >> 24;
+    sub_0802D584(state, c16, (u32)v8);
 }
 #ifndef __APPLE__
 void _0802B780(u32 a, u32 b, u32 c) __attribute__((alias("SoundSeq_ThirdWalker")));

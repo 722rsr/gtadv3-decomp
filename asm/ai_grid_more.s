@@ -50,3 +50,9 @@ _08025DE6:
   bx r0
 _08025E14: .word 0x08060D48
 _08025E18: .word 0x03001780
+
+@ Byte-neutral end anchor for the splicer. This file declares exactly one
+@ `@ Region:` (0x025DBC-0x025E1C) and has no `.include`; the body at
+@ 0x08025DBC runs to 0x025E1C, exactly that boundary, so the anchor is safe.
+@ Without it the body is refused as 'no end marker in ai_grid_more.s'.
+ai_grid_more_end:

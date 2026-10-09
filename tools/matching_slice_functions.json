@@ -59,6 +59,16 @@
     ],
     "start_marker": "_080006BC:"
   },
+  "0x08000a60": {
+    "c_name": "_08000A60",
+    "asm_file": "asm/softirq.s",
+    "start_marker": "sub_08000A60:",
+    "end_marker": "softirq_end:",
+    "end_vma": "0x08000af4",
+    "export": [
+      "sub_08000A60"
+    ]
+  },
   "0x08001370": {
     "asm_file": "asm/code_fa0.s",
     "c_name": "sub_08001370",
@@ -304,6 +314,16 @@
     "end_marker": "_08001ACC:",
     "end_vma": "0x08001acc",
     "start_marker": "_08001AA0:"
+  },
+  "0x08001acc": {
+    "c_name": "_08001ACC",
+    "asm_file": "asm/idle.s",
+    "start_marker": "_08001ACC:",
+    "end_marker": "_08001B20:",
+    "end_vma": "0x08001b20",
+    "export": [
+      "_08001ACC"
+    ]
   },
   "0x08001b20": {
     "c_name": "_08001B20",
@@ -666,6 +686,26 @@
       "_08002178"
     ]
   },
+  "0x080021a0": {
+    "c_name": "_080021A0",
+    "asm_file": "asm/blockb.s",
+    "start_marker": "_080021A0:",
+    "end_marker": "_080021EC:",
+    "end_vma": "0x080021ec",
+    "export": [
+      "_080021A0"
+    ]
+  },
+  "0x080021ec": {
+    "c_name": "_080021EC",
+    "asm_file": "asm/blockb.s",
+    "start_marker": "_080021EC:",
+    "end_marker": ".type _0800222C, %function",
+    "end_vma": "0x0800222c",
+    "export": [
+      "_080021EC"
+    ]
+  },
   "0x0800222c": {
     "c_name": "_0800222C",
     "asm_file": "asm/blockb.s",
@@ -806,6 +846,16 @@
     "end_vma": "0x08002430",
     "start_marker": ".type sub_08002424, %function"
   },
+  "0x08002430": {
+    "c_name": "_08002430",
+    "asm_file": "asm/keypad.s",
+    "start_marker": "_08002430:",
+    "end_marker": "_08002488:",
+    "end_vma": "0x08002488",
+    "export": [
+      "_08002430"
+    ]
+  },
   "0x08002488": {
     "asm_file": "asm/keypad.s",
     "c_name": "_08002488",
@@ -924,6 +974,17 @@
     ],
     "start_marker": ".type sub_08002730, %function"
   },
+  "0x0800274c": {
+    "c_name": "_0800274C",
+    "asm_file": "asm/code_2730.s",
+    "start_marker": ".type sub_0800274C, %function",
+    "end_marker": ".type sub_08002780, %function",
+    "end_vma": "0x08002780",
+    "export": [
+      "_0800274C",
+      "sub_0800274C"
+    ]
+  },
   "0x08002780": {
     "asm_file": "asm/code_2730.s",
     "c_name": "_08002780",
@@ -934,6 +995,17 @@
       "sub_08002780"
     ],
     "start_marker": ".type sub_08002780, %function"
+  },
+  "0x0800279c": {
+    "c_name": "_0800279C",
+    "asm_file": "asm/code_279c.s",
+    "start_marker": ".type sub_0800279C, %function",
+    "end_marker": ".type sub_080027EC, %function",
+    "end_vma": "0x080027ec",
+    "export": [
+      "_0800279C",
+      "sub_0800279C"
+    ]
   },
   "0x080027ec": {
     "asm_file": "asm/code_279c.s",
@@ -1804,6 +1876,17 @@
     ],
     "start_marker": ".type sub_080044C4, %function"
   },
+  "0x08004508": {
+    "c_name": "sub_08004508",
+    "asm_file": "asm/runtime_2aac.s",
+    "start_marker": ".type sub_08004508, %function",
+    "end_marker": ".type _08004560, %function",
+    "end_vma": "0x08004560",
+    "export": [
+      "_08004508",
+      "sub_08004508"
+    ]
+  },
   "0x08004564": {
     "c_name": "sub_08004564",
     "asm_file": "asm/runtime_2aac.s",
@@ -1877,6 +1960,16 @@
     ],
     "start_marker": ".type sub_08004748, %function"
   },
+  "0x080049ac": {
+    "c_name": "_080049AC",
+    "asm_file": "asm/runtime_2aac.s",
+    "start_marker": ".type _080049AC, %function",
+    "end_marker": ".type sub_08004A0C, %function",
+    "end_vma": "0x08004a0c",
+    "export": [
+      "_080049AC"
+    ]
+  },
   "0x08004a0c": {
     "asm_file": "asm/runtime_2aac.s",
     "c_name": "_08004A0C",
@@ -1918,6 +2011,17 @@
       "sub_08004AA4"
     ],
     "start_marker": ".type sub_08004AA4, %function"
+  },
+  "0x08004af4": {
+    "c_name": "_08004AF4",
+    "asm_file": "asm/code_4af4.s",
+    "start_marker": ".type sub_08004AF4, %function",
+    "end_marker": "code_4af4_end:",
+    "end_vma": "0x08004b50",
+    "export": [
+      "_08004AF4",
+      "sub_08004AF4"
+    ]
   },
   "0x08004b50": {
     "asm_file": "asm/code_4b50.s",
@@ -2183,6 +2287,16 @@
     "end_vma": "0x08004d48",
     "export": [
       "_08004D2C"
+    ]
+  },
+  "0x08004d48": {
+    "c_name": "_08004D48",
+    "asm_file": "asm/code_4cf0.s",
+    "start_marker": ".type _08004D48, %function",
+    "end_marker": "code_4cf0_end:",
+    "end_vma": "0x08004d4c",
+    "export": [
+      "_08004D48"
     ]
   },
   "0x08004d4c": {
@@ -2461,6 +2575,17 @@
       "_0800529C"
     ]
   },
+  "0x080053dc": {
+    "c_name": "_080053DC",
+    "asm_file": "asm/code_4e6c.s",
+    "start_marker": ".type sub_080053DC, %function",
+    "end_marker": ".type sub_080054A4, %function",
+    "end_vma": "0x080054a4",
+    "export": [
+      "_080053DC",
+      "sub_080053DC"
+    ]
+  },
   "0x080054a4": {
     "c_name": "_080054A4",
     "asm_file": "asm/code_4e6c.s",
@@ -2693,12 +2818,57 @@
     ],
     "start_marker": ".type sub_080057D0, %function"
   },
+  "0x0800580c": {
+    "c_name": "_0800580C",
+    "asm_file": "asm/save_desc.s",
+    "start_marker": ".type _0800580C, %function",
+    "end_marker": "save_desc_end:",
+    "end_vma": "0x08005860",
+    "export": [
+      "_0800580C"
+    ]
+  },
   "0x08005860": {
     "asm_file": "asm/save_checksum.s",
     "c_name": "_08005860",
     "end_marker": ".type sub_08005884, %function",
     "end_vma": "0x08005884",
-    "start_marker": ".type sub_08005860, %function"
+    "start_marker": ".type sub_08005860, %function",
+    "export": [
+      "sub_08005860"
+    ]
+  },
+  "0x08005884": {
+    "c_name": "_08005884",
+    "asm_file": "asm/save_checksum.s",
+    "start_marker": ".type sub_08005884, %function",
+    "end_marker": ".type sub_080058D0, %function",
+    "end_vma": "0x080058d0",
+    "export": [
+      "sub_08005884"
+    ]
+  },
+  "0x08005988": {
+    "c_name": "_08005988",
+    "asm_file": "asm/code_5988.s",
+    "start_marker": ".type sub_08005988, %function",
+    "end_marker": "code_5988_end:",
+    "end_vma": "0x080059f0",
+    "export": [
+      "_08005988",
+      "sub_08005988"
+    ]
+  },
+  "0x080059f0": {
+    "c_name": "_080059F0",
+    "asm_file": "asm/save_slot_api.s",
+    "start_marker": ".type sub_080059F0, %function",
+    "end_marker": "save_slot_api_end:",
+    "end_vma": "0x08005a58",
+    "export": [
+      "_080059F0",
+      "sub_080059F0"
+    ]
   },
   "0x08005a58": {
     "asm_file": "asm/save_timer_queue.s",
@@ -3413,6 +3583,17 @@
     ],
     "start_marker": ".type sub_08007EE0, %function"
   },
+  "0x08007f08": {
+    "c_name": "_08007F08",
+    "asm_file": "asm/course_records_7bfc.s",
+    "start_marker": ".type sub_08007F08, %function",
+    "end_marker": ".type sub_08007FC0, %function",
+    "end_vma": "0x08007fc0",
+    "export": [
+      "_08007F08",
+      "sub_08007F08"
+    ]
+  },
   "0x08008074": {
     "asm_file": "asm/course_records_7bfc.s",
     "c_name": "_08008074",
@@ -3557,6 +3738,16 @@
     "end_marker": ".type sub_0800821C, %function",
     "end_vma": "0x0800821c",
     "start_marker": ".type sub_08008208, %function"
+  },
+  "0x0800821c": {
+    "c_name": "_0800821C",
+    "asm_file": "asm/course_records_7bfc.s",
+    "start_marker": ".type sub_0800821C, %function",
+    "end_marker": ".type sub_08008284, %function",
+    "end_vma": "0x08008284",
+    "export": [
+      "sub_0800821C"
+    ]
   },
   "0x08008284": {
     "asm_file": "asm/course_records_7bfc.s",
@@ -3714,6 +3905,16 @@
       "sub_08009F58"
     ],
     "start_marker": "_08009F58:"
+  },
+  "0x08009fb8": {
+    "c_name": "_08009FB8",
+    "asm_file": "asm/carphys_tick.s",
+    "start_marker": "_08009FB8:",
+    "end_marker": "_08009FFC:",
+    "end_vma": "0x08009ffc",
+    "export": [
+      "_08009FB8"
+    ]
   },
   "0x08009ffc": {
     "c_name": "_08009FFC",
@@ -3897,6 +4098,13 @@
     "end_marker": "_0800A254:",
     "end_vma": "0x0800a254",
     "start_marker": "_0800A248:"
+  },
+  "0x0800a62c": {
+    "c_name": "_0800A62C",
+    "asm_file": "asm/carphys_tick.s",
+    "start_marker": "_0800A62C:",
+    "end_marker": "_0800A668:",
+    "end_vma": "0x0800a668"
   },
   "0x0800a8fc": {
     "asm_file": "asm/carphys_tick.s",
@@ -4094,6 +4302,16 @@
     "end_vma": "0x0800c39c",
     "start_marker": ".type sub_0800C390, %function"
   },
+  "0x0800c39c": {
+    "c_name": "_0800C39C",
+    "asm_file": "asm/menu_c340.s",
+    "start_marker": ".type sub_0800C39C, %function",
+    "end_marker": "menu_c340_end:",
+    "end_vma": "0x0800c454",
+    "export": [
+      "sub_0800C39C"
+    ]
+  },
   "0x0800c4ac": {
     "asm_file": "asm/menu_c454.s",
     "c_name": "sub_0800C4AC",
@@ -4147,6 +4365,17 @@
       "sub_0800C730"
     ],
     "start_marker": ".type sub_0800C730, %function"
+  },
+  "0x0800c744": {
+    "c_name": "_0800C744",
+    "asm_file": "asm/code_c668.s",
+    "start_marker": ".type sub_0800C744, %function",
+    "end_marker": "code_c668_end:",
+    "end_vma": "0x0800c7f4",
+    "export": [
+      "_0800C744",
+      "sub_0800C744"
+    ]
   },
   "0x0800c7f4": {
     "asm_file": "asm/menu_c7f4.s",
@@ -4807,6 +5036,17 @@
       "sub_0800E598"
     ],
     "start_marker": ".type sub_0800E598, %function"
+  },
+  "0x0800e59c": {
+    "c_name": "_0800E59C",
+    "asm_file": "asm/menu_dbe8.s",
+    "start_marker": ".type sub_0800E59C, %function",
+    "end_marker": "menu_dbe8_end:",
+    "end_vma": "0x0800e650",
+    "export": [
+      "_0800E59C",
+      "sub_0800E59C"
+    ]
   },
   "0x0800e7a0": {
     "asm_file": "asm/menu_e650.s",
@@ -5866,6 +6106,17 @@
       "sub_0800179F0"
     ]
   },
+  "0x08017b84": {
+    "c_name": "_080017B84",
+    "asm_file": "asm/rec35_runtime.s",
+    "start_marker": ".type sub_080017B84, %function",
+    "end_marker": ".type sub_080017BB8, %function",
+    "end_vma": "0x08017bb8",
+    "export": [
+      "_080017B84",
+      "sub_080017B84"
+    ]
+  },
   "0x08017c34": {
     "asm_file": "asm/rec35_runtime.s",
     "c_name": "_080017C34",
@@ -5895,6 +6146,17 @@
       "sub_080017F00"
     ],
     "start_marker": ".type sub_080017F00, %function"
+  },
+  "0x08018128": {
+    "c_name": "_080018128",
+    "asm_file": "asm/rec35_runtime.s",
+    "start_marker": ".type sub_080018128, %function",
+    "end_marker": ".type sub_080018174, %function",
+    "end_vma": "0x08018174",
+    "export": [
+      "_080018128",
+      "sub_080018128"
+    ]
   },
   "0x08018174": {
     "asm_file": "asm/rec35_runtime.s",
@@ -6260,6 +6522,28 @@
     ],
     "start_marker": "_08018ACC:"
   },
+  "0x080191bc": {
+    "c_name": "_0800191BC",
+    "asm_file": "asm/race_setup_18adc.s",
+    "start_marker": ".type sub_0800191BC, %function",
+    "end_marker": ".type sub_080019200, %function",
+    "end_vma": "0x08019200",
+    "export": [
+      "_0800191BC",
+      "sub_0800191BC"
+    ]
+  },
+  "0x080195b8": {
+    "c_name": "_0800195B8",
+    "asm_file": "asm/race_setup_18adc.s",
+    "start_marker": ".type sub_0800195B8, %function",
+    "end_marker": ".type sub_0800195F8, %function",
+    "end_vma": "0x080195f8",
+    "export": [
+      "_0800195B8",
+      "sub_0800195B8"
+    ]
+  },
   "0x08019860": {
     "asm_file": "asm/race_setup_18adc.s",
     "c_name": "_080019860",
@@ -6283,6 +6567,16 @@
     "end_marker": ".type _080019CBC, %function",
     "end_vma": "0x08019cbc",
     "start_marker": ".type _080019C9C, %function"
+  },
+  "0x08019d6c": {
+    "c_name": "sub_080019D6C",
+    "asm_file": "asm/race_setup_18adc.s",
+    "start_marker": ".type sub_080019D6C, %function",
+    "end_marker": ".type _080019DBC, %function",
+    "end_vma": "0x08019dbc",
+    "export": [
+      "_080019D6C"
+    ]
   },
   "0x08019dbc": {
     "asm_file": "asm/race_setup_18adc.s",
@@ -6491,6 +6785,16 @@
     ],
     "start_marker": ".type sub_08001D950, %function"
   },
+  "0x0801d974": {
+    "c_name": "_08001D974",
+    "asm_file": "asm/race_scene.s",
+    "start_marker": ".type sub_08001D974, %function",
+    "end_marker": ".type sub_08001D9C8, %function",
+    "end_vma": "0x0801d9c8",
+    "export": [
+      "sub_08001D974"
+    ]
+  },
   "0x0801d9c8": {
     "asm_file": "asm/race_scene.s",
     "c_name": "_08001D9C8",
@@ -6500,6 +6804,16 @@
       "sub_08001D9C8"
     ],
     "start_marker": ".type sub_08001D9C8, %function"
+  },
+  "0x0801d9cc": {
+    "c_name": "_08001D9CC",
+    "asm_file": "asm/race_scene.s",
+    "start_marker": ".type sub_08001D9CC, %function",
+    "end_marker": ".type sub_08001DA10, %function",
+    "end_vma": "0x0801da10",
+    "export": [
+      "sub_08001D9CC"
+    ]
   },
   "0x0801db0c": {
     "asm_file": "asm/race_scene.s",
@@ -6551,6 +6865,16 @@
       "sub_08001E1E0"
     ],
     "start_marker": ".type sub_08001E1E0, %function"
+  },
+  "0x0801e230": {
+    "c_name": "_08001E230",
+    "asm_file": "asm/race_scene.s",
+    "start_marker": ".type sub_08001E230, %function",
+    "end_marker": ".type sub_08001E2D0, %function",
+    "end_vma": "0x0801e2d0",
+    "export": [
+      "sub_08001E230"
+    ]
   },
   "0x0801e2d0": {
     "asm_file": "asm/race_scene.s",
@@ -6604,6 +6928,26 @@
       "sub_08001E390"
     ],
     "start_marker": ".type sub_08001E390, %function"
+  },
+  "0x0801e3bc": {
+    "c_name": "_08001E3BC",
+    "asm_file": "asm/race_scene.s",
+    "start_marker": ".type sub_08001E3BC, %function",
+    "end_marker": ".type sub_08001E454, %function",
+    "end_vma": "0x0801e454",
+    "export": [
+      "sub_08001E3BC"
+    ]
+  },
+  "0x0801e454": {
+    "c_name": "_08001E454",
+    "asm_file": "asm/race_scene.s",
+    "start_marker": ".type sub_08001E454, %function",
+    "end_marker": ".type sub_08001E4C0, %function",
+    "end_vma": "0x0801e4c0",
+    "export": [
+      "sub_08001E454"
+    ]
   },
   "0x0801e4c0": {
     "asm_file": "asm/race_scene.s",
@@ -6674,6 +7018,16 @@
       "sub_08001E718"
     ],
     "start_marker": ".type sub_08001E718, %function"
+  },
+  "0x0801e8b4": {
+    "c_name": "_08001E8B4",
+    "asm_file": "asm/race_scene.s",
+    "start_marker": ".type sub_08001E8B4, %function",
+    "end_marker": ".type sub_08001E92C, %function",
+    "end_vma": "0x0801e92c",
+    "export": [
+      "sub_08001E8B4"
+    ]
   },
   "0x0801e9d8": {
     "asm_file": "asm/race_scene.s",
@@ -6765,6 +7119,16 @@
       "sub_08001F6A4"
     ],
     "start_marker": ".type sub_08001F6A4, %function"
+  },
+  "0x0801f764": {
+    "c_name": "_08001F764",
+    "asm_file": "asm/race_scene.s",
+    "start_marker": ".type sub_08001F764, %function",
+    "end_marker": ".type sub_08001F82C, %function",
+    "end_vma": "0x0801f82c",
+    "export": [
+      "sub_08001F764"
+    ]
   },
   "0x0801f82c": {
     "asm_file": "asm/race_scene.s",
@@ -7269,6 +7633,17 @@
     ],
     "start_marker": ".type sub_080022ACC, %function"
   },
+  "0x08022bbc": {
+    "c_name": "_080022BBC",
+    "asm_file": "asm/carphys_racer_tail.s",
+    "start_marker": ".type sub_080022BBC, %function",
+    "end_marker": ".type _080022C18, %function",
+    "end_vma": "0x08022c18",
+    "export": [
+      "_080022BBC",
+      "sub_080022BBC"
+    ]
+  },
   "0x08022cb4": {
     "asm_file": "asm/code_22cb4.s",
     "c_name": "_08022CB4",
@@ -7348,6 +7723,16 @@
       "sub_0800235F4"
     ]
   },
+  "0x08023958": {
+    "c_name": "_08023958",
+    "asm_file": "asm/ai_phase_pump.s",
+    "start_marker": ".type sub_08023958, %function",
+    "end_marker": "ai_phase_pump_end:",
+    "end_vma": "0x08023a34",
+    "export": [
+      "sub_08023958"
+    ]
+  },
   "0x08023ae4": {
     "asm_file": "asm/code_23a34.s",
     "c_name": "_08023AE4",
@@ -7357,6 +7742,27 @@
       "sub_080023AE4"
     ],
     "start_marker": ".type sub_080023AE4, %function"
+  },
+  "0x08023b60": {
+    "c_name": "_08023B60",
+    "asm_file": "asm/code_23a34.s",
+    "start_marker": ".type sub_080023B60, %function",
+    "end_marker": "code_23a34_end:",
+    "end_vma": "0x08023bd4",
+    "export": [
+      "sub_080023B60"
+    ]
+  },
+  "0x08023e0c": {
+    "c_name": "_080023E0C",
+    "asm_file": "asm/code_23e0c.s",
+    "start_marker": ".type sub_080023E0C, %function",
+    "end_marker": ".type sub_080023E78, %function",
+    "end_vma": "0x08023e78",
+    "export": [
+      "_080023E0C",
+      "sub_080023E0C"
+    ]
   },
   "0x08023e78": {
     "asm_file": "asm/code_23e0c.s",
@@ -7368,12 +7774,40 @@
     ],
     "start_marker": ".type sub_080023E78, %function"
   },
+  "0x08023e7c": {
+    "c_name": "_080023E7C",
+    "asm_file": "asm/code_23e7c.s",
+    "start_marker": ".type sub_080023E7C, %function",
+    "end_marker": "code_23e7c_end:",
+    "end_vma": "0x08023ed0",
+    "export": [
+      "_080023E7C",
+      "sub_080023E7C"
+    ]
+  },
+  "0x08023ed0": {
+    "c_name": "_08023ED0",
+    "asm_file": "asm/ai_raceevt.s",
+    "start_marker": ".type _08023ED0, %function",
+    "end_marker": "_08023FE4:",
+    "end_vma": "0x08023fe4"
+  },
   "0x08023fe4": {
     "asm_file": "asm/ai_raceevt.s",
     "c_name": "_08023FE4",
     "end_marker": "_08023FF8:",
     "end_vma": "0x08023ff8",
     "start_marker": "_08023FE4:"
+  },
+  "0x08023ff8": {
+    "c_name": "_08023FF8",
+    "asm_file": "asm/ai_raceevt.s",
+    "start_marker": "_08023FF8:",
+    "end_marker": "ai_raceevt_end:",
+    "end_vma": "0x08024048",
+    "export": [
+      "_08023FF8"
+    ]
   },
   "0x08024048": {
     "c_name": "_080024048",
@@ -7803,6 +8237,37 @@
     ],
     "start_marker": "_08024C74:"
   },
+  "0x08024c90": {
+    "c_name": "_08024C90",
+    "asm_file": "asm/ai_catalog.s",
+    "start_marker": "_08024C90:",
+    "end_marker": ".type _08024CD0, %function",
+    "end_vma": "0x08024cd0",
+    "export": [
+      "_08024C90",
+      "sub_08024C90"
+    ]
+  },
+  "0x08024cd0": {
+    "c_name": "_08024CD0",
+    "asm_file": "asm/ai_catalog.s",
+    "start_marker": ".type _08024CD0, %function",
+    "end_marker": "_08024D0C:",
+    "end_vma": "0x08024d0c",
+    "export": [
+      "_08024CD0"
+    ]
+  },
+  "0x08024d0c": {
+    "c_name": "_08024D0C",
+    "asm_file": "asm/ai_catalog.s",
+    "start_marker": "_08024D0C:",
+    "end_marker": "_08024D4C:",
+    "end_vma": "0x08024d4c",
+    "export": [
+      "_08024D0C"
+    ]
+  },
   "0x08024d4c": {
     "asm_file": "asm/ai_catalog.s",
     "c_name": "_08024D4C",
@@ -8006,6 +8471,16 @@
     ],
     "start_marker": ".type sub_0802500C, %function"
   },
+  "0x08025028": {
+    "c_name": "_08025028",
+    "asm_file": "asm/ai_line_copy.s",
+    "start_marker": ".type sub_08025028, %function",
+    "end_marker": ".type sub_08025084, %function",
+    "end_vma": "0x08025084",
+    "export": [
+      "sub_08025028"
+    ]
+  },
   "0x08025084": {
     "asm_file": "asm/ai_line_copy.s",
     "c_name": "_08025084",
@@ -8015,6 +8490,16 @@
       "sub_08025084"
     ],
     "start_marker": ".type sub_08025084, %function"
+  },
+  "0x080250a0": {
+    "c_name": "_080250A0",
+    "asm_file": "asm/ai_line_compare.s",
+    "start_marker": ".type sub_080250A0, %function",
+    "end_marker": ".type sub_080250FC, %function",
+    "end_vma": "0x080250fc",
+    "export": [
+      "sub_080250A0"
+    ]
   },
   "0x080250fc": {
     "asm_file": "asm/ai_line_compare.s",
@@ -8121,6 +8606,39 @@
     ],
     "start_marker": ".type sub_08025530, %function"
   },
+  "0x08025548": {
+    "c_name": "_08025548",
+    "asm_file": "asm/ai_line_score.s",
+    "start_marker": ".type sub_08025548, %function",
+    "end_marker": "ai_line_score_end:",
+    "end_vma": "0x080255c4",
+    "export": [
+      "_08025548",
+      "sub_08025548"
+    ]
+  },
+  "0x080255c4": {
+    "c_name": "_080255C4",
+    "asm_file": "asm/ai_line_more.s",
+    "start_marker": ".type sub_080255C4, %function",
+    "end_marker": ".type sub_08025640, %function",
+    "end_vma": "0x08025640",
+    "export": [
+      "_080255C4",
+      "sub_080255C4"
+    ]
+  },
+  "0x08025640": {
+    "c_name": "_08025640",
+    "asm_file": "asm/ai_line_more.s",
+    "start_marker": ".type sub_08025640, %function",
+    "end_marker": ".type sub_080256BC, %function",
+    "end_vma": "0x080256bc",
+    "export": [
+      "_08025640",
+      "sub_08025640"
+    ]
+  },
   "0x080256bc": {
     "asm_file": "asm/ai_line_more.s",
     "c_name": "_080256BC",
@@ -8175,6 +8693,28 @@
       "sub_0802572C"
     ],
     "start_marker": ".type sub_0802572C, %function"
+  },
+  "0x08025750": {
+    "c_name": "_08025750",
+    "asm_file": "asm/ai_line_more.s",
+    "start_marker": ".type sub_08025750, %function",
+    "end_marker": ".type sub_08025790, %function",
+    "end_vma": "0x08025790",
+    "export": [
+      "_08025750",
+      "sub_08025750"
+    ]
+  },
+  "0x08025790": {
+    "c_name": "_08025790",
+    "asm_file": "asm/ai_line_more.s",
+    "start_marker": ".type sub_08025790, %function",
+    "end_marker": ".type sub_080257D4, %function",
+    "end_vma": "0x080257d4",
+    "export": [
+      "_08025790",
+      "sub_08025790"
+    ]
   },
   "0x080257d4": {
     "asm_file": "asm/ai_line_more.s",
@@ -8321,6 +8861,17 @@
     ],
     "start_marker": "_0802591C:"
   },
+  "0x08025930": {
+    "c_name": "_080025930",
+    "asm_file": "asm/code_25930.s",
+    "start_marker": ".type sub_080025930, %function",
+    "end_marker": ".type sub_08025A80, %function",
+    "end_vma": "0x08025a80",
+    "export": [
+      "_080025930",
+      "sub_080025930"
+    ]
+  },
   "0x08025a80": {
     "asm_file": "asm/code_25930.s",
     "c_name": "_080025A80",
@@ -8353,6 +8904,17 @@
       "sub_08025A9C"
     ],
     "start_marker": ".type sub_08025A9C, %function"
+  },
+  "0x08025ac0": {
+    "c_name": "_080025AC0",
+    "asm_file": "asm/code_25930.s",
+    "start_marker": ".type sub_080025AC0, %function",
+    "end_marker": ".type sub_08025AFC, %function",
+    "end_vma": "0x08025afc",
+    "export": [
+      "_080025AC0",
+      "sub_080025AC0"
+    ]
   },
   "0x08025afc": {
     "asm_file": "asm/code_25930.s",
@@ -8510,6 +9072,17 @@
     ],
     "start_marker": ".type sub_08025D90, %function"
   },
+  "0x08025dbc": {
+    "c_name": "_08025DBC",
+    "asm_file": "asm/ai_grid_more.s",
+    "start_marker": ".type sub_08025DBC, %function",
+    "end_marker": "ai_grid_more_end:",
+    "end_vma": "0x08025e1c",
+    "export": [
+      "_08025DBC",
+      "sub_08025DBC"
+    ]
+  },
   "0x08025e1c": {
     "asm_file": "asm/ai_grid_more2.s",
     "c_name": "_08025E1C",
@@ -8540,6 +9113,17 @@
     "export": [
       "_08025E98",
       "sub_08025E98"
+    ]
+  },
+  "0x08025ec0": {
+    "c_name": "_08025EC0",
+    "asm_file": "asm/ai_grid_more4.s",
+    "start_marker": ".type sub_08025EC0, %function",
+    "end_marker": "ai_grid_more4_end:",
+    "end_vma": "0x08025f20",
+    "export": [
+      "_08025EC0",
+      "sub_08025EC0"
     ]
   },
   "0x08025f20": {
@@ -8866,6 +9450,28 @@
     ],
     "start_marker": "_080026A68:"
   },
+  "0x08026a78": {
+    "c_name": "_08026A78",
+    "asm_file": "asm/code_263e0.s",
+    "start_marker": ".type sub_080026A78, %function",
+    "end_marker": ".type sub_080026AB4, %function",
+    "end_vma": "0x08026ab4",
+    "export": [
+      "_080026A78",
+      "sub_080026A78"
+    ]
+  },
+  "0x08026ab4": {
+    "c_name": "_08026AB4",
+    "asm_file": "asm/code_263e0.s",
+    "start_marker": ".type sub_080026AB4, %function",
+    "end_marker": ".type _080026B00, %function",
+    "end_vma": "0x08026b00",
+    "export": [
+      "_080026AB4",
+      "sub_080026AB4"
+    ]
+  },
   "0x08026b00": {
     "asm_file": "asm/code_263e0.s",
     "c_name": "_08026B00",
@@ -8875,6 +9481,17 @@
       "_080026B00"
     ],
     "start_marker": ".type _080026B00, %function"
+  },
+  "0x08026b30": {
+    "c_name": "_08026B30",
+    "asm_file": "asm/code_263e0.s",
+    "start_marker": ".type sub_080026B30, %function",
+    "end_marker": ".type _080026B80, %function",
+    "end_vma": "0x08026b80",
+    "export": [
+      "_080026B30",
+      "sub_080026B30"
+    ]
   },
   "0x08026c84": {
     "asm_file": "asm/code_263e0.s",
@@ -9042,6 +9659,17 @@
     "end_marker": ".type sub_080027D30, %function",
     "end_vma": "0x08027d30"
   },
+  "0x08027d30": {
+    "c_name": "_080027D30",
+    "asm_file": "asm/garage_26f50.s",
+    "start_marker": ".type sub_080027D30, %function",
+    "end_marker": ".type sub_080027D84, %function",
+    "end_vma": "0x08027d84",
+    "export": [
+      "_080027D30",
+      "sub_080027D30"
+    ]
+  },
   "0x08027f60": {
     "c_name": "_080027F60",
     "asm_file": "asm/garage_26f50.s",
@@ -9190,6 +9818,28 @@
       "sub_0800282D0"
     ],
     "start_marker": ".type sub_0800282D0, %function"
+  },
+  "0x0802839c": {
+    "c_name": "_08002839C",
+    "asm_file": "asm/garage_26f50.s",
+    "start_marker": ".type sub_08002839C, %function",
+    "end_marker": ".type sub_08002841C, %function",
+    "end_vma": "0x0802841c",
+    "export": [
+      "_08002839C",
+      "sub_08002839C"
+    ]
+  },
+  "0x0802841c": {
+    "c_name": "_08002841C",
+    "asm_file": "asm/garage_26f50.s",
+    "start_marker": ".type sub_08002841C, %function",
+    "end_marker": ".type sub_08002847C, %function",
+    "end_vma": "0x0802847c",
+    "export": [
+      "_08002841C",
+      "sub_08002841C"
+    ]
   },
   "0x080284fc": {
     "c_name": "_0800284FC",
@@ -9544,6 +10194,26 @@
     "end_vma": "0x08029400",
     "start_marker": "_0800293D8:"
   },
+  "0x0802944c": {
+    "c_name": "_08002944C",
+    "asm_file": "asm/garage_26f50.s",
+    "start_marker": ".type sub_08002944C, %function",
+    "end_marker": ".type sub_080029488, %function",
+    "end_vma": "0x08029488",
+    "export": [
+      "sub_08002944C"
+    ]
+  },
+  "0x08029488": {
+    "c_name": "_080029488",
+    "asm_file": "asm/garage_26f50.s",
+    "start_marker": ".type sub_080029488, %function",
+    "end_marker": ".type sub_0800294C0, %function",
+    "end_vma": "0x080294c0",
+    "export": [
+      "sub_080029488"
+    ]
+  },
   "0x080294c0": {
     "asm_file": "asm/garage_26f50.s",
     "c_name": "_0800294C0",
@@ -9826,6 +10496,38 @@
     ],
     "start_marker": "_0802B65C:"
   },
+  "0x0802b718": {
+    "c_name": "_0802B718",
+    "asm_file": "asm/sound_seq.s",
+    "start_marker": "sub_0802B718:",
+    "end_marker": "sub_0802B74C:",
+    "end_vma": "0x0802b74c",
+    "export": [
+      "_0802B718",
+      "sub_0802B718"
+    ]
+  },
+  "0x0802b74c": {
+    "c_name": "_0802B74C",
+    "asm_file": "asm/sound_seq.s",
+    "start_marker": "sub_0802B74C:",
+    "end_marker": ".type _0802B780, %function",
+    "end_vma": "0x0802b780",
+    "export": [
+      "_0802B74C",
+      "sub_0802B74C"
+    ]
+  },
+  "0x0802b780": {
+    "c_name": "_0802B780",
+    "asm_file": "asm/sound_seq.s",
+    "start_marker": ".type _0802B780, %function",
+    "end_marker": "sound_seq_end:",
+    "end_vma": "0x0802b7b4",
+    "export": [
+      "_0802B780"
+    ]
+  },
   "0x0802b7b4": {
     "asm_file": "asm/sound_premix.s",
     "c_name": "_0802B7B4",
@@ -9933,6 +10635,17 @@
     ],
     "start_marker": ".type sub_0802BCB4, %function"
   },
+  "0x0802bccc": {
+    "c_name": "_0802BCCC",
+    "asm_file": "asm/sound_channel_cluster.s",
+    "start_marker": ".type sub_0802BCCC, %function",
+    "end_marker": "_0802BCCE:",
+    "end_vma": "0x0802bcce",
+    "export": [
+      "_0802BCCC",
+      "sub_0802BCCC"
+    ]
+  },
   "0x0802bcce": {
     "asm_file": "asm/sound_channel_cluster.s",
     "c_name": "_0802BCCE",
@@ -9943,6 +10656,17 @@
       "_0802BCE4"
     ],
     "start_marker": "_0802BCCE:"
+  },
+  "0x0802bce8": {
+    "c_name": "_0802BCE8",
+    "asm_file": "asm/sound_channel_cluster.s",
+    "start_marker": ".type sub_0802BCE8, %function",
+    "end_marker": "_0802BCEA:",
+    "end_vma": "0x0802bcea",
+    "export": [
+      "_0802BCE8",
+      "sub_0802BCE8"
+    ]
   },
   "0x0802bcea": {
     "asm_file": "asm/sound_channel_cluster.s",
@@ -10385,6 +11109,17 @@
     ],
     "start_marker": ".type sub_0802C8C4, %function"
   },
+  "0x0802cacc": {
+    "c_name": "_0802CACC",
+    "asm_file": "asm/sound_reset_more.s",
+    "start_marker": ".type sub_0802CACC, %function",
+    "end_marker": "sound_reset_more_end:",
+    "end_vma": "0x0802cb20",
+    "export": [
+      "_0802CACC",
+      "sub_0802CACC"
+    ]
+  },
   "0x0802cb20": {
     "asm_file": "asm/sound_cmd.s",
     "c_name": "_0802CB20",
@@ -10696,6 +11431,157 @@
       "sub_0802D9FC"
     ],
     "start_marker": ".type sub_0802D9FC, %function"
+  },
+  "0x0802ddc8": {
+    "c_name": "_0802DDC8",
+    "asm_file": "asm/sound_veneer.s",
+    "start_marker": ".type sub_0802DDC8, %function",
+    "end_marker": ".type _0802DDCC, %function",
+    "end_vma": "0x0802ddcc",
+    "export": [
+      "_0802DDC8",
+      "sub_0802DDC8"
+    ]
+  },
+  "0x0802ddcc": {
+    "c_name": "_0802DDCC",
+    "asm_file": "asm/sound_veneer.s",
+    "start_marker": ".type _0802DDCC, %function",
+    "end_marker": ".type _0802DDD0, %function",
+    "end_vma": "0x0802ddd0",
+    "export": [
+      "_0802DDCC"
+    ]
+  },
+  "0x0802ddd0": {
+    "c_name": "_0802DDD0",
+    "asm_file": "asm/sound_veneer.s",
+    "start_marker": ".type _0802DDD0, %function",
+    "end_marker": ".type _0802DDD4, %function",
+    "end_vma": "0x0802ddd4",
+    "export": [
+      "_0802DDD0"
+    ]
+  },
+  "0x0802ddd4": {
+    "c_name": "_0802DDD4",
+    "asm_file": "asm/sound_veneer.s",
+    "start_marker": ".type _0802DDD4, %function",
+    "end_marker": ".type _0802DDD8, %function",
+    "end_vma": "0x0802ddd8",
+    "export": [
+      "_0802DDD4"
+    ]
+  },
+  "0x0802ddd8": {
+    "c_name": "_0802DDD8",
+    "asm_file": "asm/sound_veneer.s",
+    "start_marker": ".type _0802DDD8, %function",
+    "end_marker": ".type _0802DDDC, %function",
+    "end_vma": "0x0802dddc",
+    "export": [
+      "_0802DDD8"
+    ]
+  },
+  "0x0802dddc": {
+    "c_name": "_0802DDDC",
+    "asm_file": "asm/sound_veneer.s",
+    "start_marker": ".type _0802DDDC, %function",
+    "end_marker": ".type _0802DDE0, %function",
+    "end_vma": "0x0802dde0",
+    "export": [
+      "_0802DDDC"
+    ]
+  },
+  "0x0802dde0": {
+    "c_name": "_0802DDE0",
+    "asm_file": "asm/sound_veneer.s",
+    "start_marker": ".type _0802DDE0, %function",
+    "end_marker": ".type _0802DDE4, %function",
+    "end_vma": "0x0802dde4",
+    "export": [
+      "_0802DDE0"
+    ]
+  },
+  "0x0802dde4": {
+    "c_name": "_0802DDE4",
+    "asm_file": "asm/sound_veneer.s",
+    "start_marker": ".type _0802DDE4, %function",
+    "end_marker": ".type _0802DDE8, %function",
+    "end_vma": "0x0802dde8",
+    "export": [
+      "_0802DDE4"
+    ]
+  },
+  "0x0802dde8": {
+    "c_name": "_0802DDE8",
+    "asm_file": "asm/sound_veneer.s",
+    "start_marker": ".type _0802DDE8, %function",
+    "end_marker": ".type _0802DDEC, %function",
+    "end_vma": "0x0802ddec",
+    "export": [
+      "_0802DDE8"
+    ]
+  },
+  "0x0802ddec": {
+    "c_name": "_0802DDEC",
+    "asm_file": "asm/sound_veneer.s",
+    "start_marker": ".type _0802DDEC, %function",
+    "end_marker": ".type _0802DDF0, %function",
+    "end_vma": "0x0802ddf0",
+    "export": [
+      "_0802DDEC"
+    ]
+  },
+  "0x0802ddf0": {
+    "c_name": "_0802DDF0",
+    "asm_file": "asm/sound_veneer.s",
+    "start_marker": ".type _0802DDF0, %function",
+    "end_marker": ".type _0802DDF4, %function",
+    "end_vma": "0x0802ddf4",
+    "export": [
+      "_0802DDF0"
+    ]
+  },
+  "0x0802ddf4": {
+    "c_name": "_0802DDF4",
+    "asm_file": "asm/sound_veneer.s",
+    "start_marker": ".type _0802DDF4, %function",
+    "end_marker": ".type _0802DDF8, %function",
+    "end_vma": "0x0802ddf8",
+    "export": [
+      "_0802DDF4"
+    ]
+  },
+  "0x0802ddf8": {
+    "c_name": "_0802DDF8",
+    "asm_file": "asm/sound_veneer.s",
+    "start_marker": ".type _0802DDF8, %function",
+    "end_marker": ".type _0802DDFC, %function",
+    "end_vma": "0x0802ddfc",
+    "export": [
+      "_0802DDF8"
+    ]
+  },
+  "0x0802ddfc": {
+    "c_name": "_0802DDFC",
+    "asm_file": "asm/sound_veneer.s",
+    "start_marker": ".type _0802DDFC, %function",
+    "end_marker": ".type _0802DE00, %function",
+    "end_vma": "0x0802de00",
+    "export": [
+      "_0802DDFC"
+    ]
+  },
+  "0x0802de00": {
+    "c_name": "_0802DE00",
+    "asm_file": "asm/sound_veneer.s",
+    "start_marker": ".type _0802DE00, %function",
+    "end_marker": "sound_veneer_end:",
+    "end_vma": "0x0802de04",
+    "export": [
+      "_0802DE00"
+    ]
   },
   "0x0802de98": {
     "asm_file": "asm/code_2de96.s",

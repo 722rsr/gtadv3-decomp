@@ -130,39 +130,39 @@ void _08023ED0(int ev, int a, int b, void *ctx) {
         case 5: {
             extern void _0800D854(void *);
             extern void _0800D8E4(void *);
-            extern void _080235F4(void *);
+            extern void sub_080235F4(void *);   /* closure spelling */
             _0800D854((u8 *)ctx + 16);
             _0800D8E4((u8 *)ctx + 120);
-            _080235F4(ctx);
+            sub_080235F4(ctx);
             break;
         }
         case 7: {
             s16 phase = *(s16 *)((u8 *)ctx + 142);
             switch (phase) {
-                case 0: { extern void _08023BD4(void *); _08023BD4(ctx); break; }
-                case 1: { extern void _08023D4C(void *); _08023D4C(ctx); break; }
-                case 2: { extern void _08023E0C(void *); _08023E0C(ctx); break; }
+                case 0: { extern void sub_08023BD4(void *); sub_08023BD4(ctx); break; }
+                case 1: { extern void sub_08023D4C(void *); sub_08023D4C(ctx); break; }
+                case 2: { extern void sub_08023E0C(void *); sub_08023E0C(ctx); break; }
             }
             break;
         }
         case 6: {
-            extern void _08023E7C(void *);
-            _08023E7C(ctx);
+            extern void sub_08023E7C(void *);
+            sub_08023E7C(ctx);
             if (*(u16 *)((u8 *)ctx + 20) == 0)
                 break;
             {
                 s16 phase = *(s16 *)((u8 *)ctx + 142);
                 switch (phase) {
-                    case 0: { extern void _0802381C(void *, int, int); _0802381C(ctx, (u16)a, (u16)b); break; }
+                    case 0: { extern void sub_0802381C(void *, int, int); sub_0802381C(ctx, (u16)a, (u16)b); break; }
                     case 1: { _08023958(ctx, (u16)a, (u16)b); break; }
-                    case 2: { extern void _08023A34(void *, int, int); _08023A34(ctx, (u16)a, (u16)b); break; }
+                    case 2: { extern void sub_08023A34(void *, int, int); sub_08023A34(ctx, (u16)a, (u16)b); break; }
                 }
             }
             break;
         }
         case 1: {
-            extern void _08023628(void *);
-            _08023628(ctx);
+            extern void sub_08023628(void *);
+            sub_08023628(ctx);
             break;
         }
         case 12: {

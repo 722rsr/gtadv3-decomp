@@ -32,15 +32,18 @@ Snapshot files (body only, header stripped by collector/driver):
 
 Workflow (headless):
   python3 tools/ramwatch.py run baserom.gba inputs.csv \
-      --outdir build/caps/orig --port 46001 --interval 30
+      --outdir build/caps/orig --interval 30
   python3 tools/ramwatch.py run build/gtadv3.gba inputs.csv \
-      --outdir build/caps/rebuilt --port 46002 --interval 30
+      --outdir build/caps/rebuilt --interval 30
   python3 tools/ramdiff.py build/caps/orig build/caps/rebuilt
 
-Keys are applied at frame END (i.e. effective on f+1) exactly like the
-Lua watcher; both runs share the skew so comparisons stay valid.
+Row zero sets initial keys. Later rows apply after the numbered completed
+frame (effective on f+1). Snapshot names always use the actual completed
+frame, including the terminal snapshot. capture.json declares memory coverage.
 """
 import argparse
+import hashlib
+import json
 import socketserver
 import struct
 import sys
@@ -76,8 +79,11 @@ end
 console:log("ramwatch: connected to collector")
 
 local function send_snapshot(frame)
-    local iw = emu.memory.iwram:readRange(0, 0x8000)
-    local ew = emu.memory.wram:readRange(0, 0x40000)
+    local iw = emu:readRange(0x03000000, 0x8000)
+    local ew = emu:readRange(0x02000000, 0x40000)
+    local vr = emu:readRange(0x06000000, 0x18000)
+    local pal = emu:readRange(0x05000000, 0x400)
+    local oam = emu:readRange(0x07000000, 0x400)
     -- header: magic u32, frame u32, total u32, niw u32, new u32 (LE)
     local function le32(v)
         v = v %% 4294967296
@@ -87,17 +93,21 @@ local function send_snapshot(frame)
             math.floor(v / 16777216) %% 256)
     end
     sock:send(le32(%(magic)d) .. le32(frame) ..
-              le32(#iw + #ew + 8) .. le32(#iw) .. le32(#ew))
+              le32(#iw + #ew + #vr + #pal + #oam + 8) .. le32(#iw) .. le32(#ew))
     sock:send(iw)
     sock:send(ew)
+    sock:send(vr)
+    sock:send(pal)
+    sock:send(oam)
 end
 
+emu:setKeys(INPUTS[0] or 0)
 callbacks:add("frame", function()
     local f = emu:currentFrame()
-    if f >= STOPAT then return end
+    if f > STOPAT then return end
     local mask = INPUTS[f]
     if mask then emu:setKeys(mask) end
-    if EVERY > 0 and f %% EVERY == 0 then
+    if f == STOPAT or (EVERY > 0 and f %% EVERY == 0) then
         send_snapshot(f)
     end
 end)
@@ -120,6 +130,14 @@ def load_inputs(path):
                 continue  # header line like "frame,keymask"
             inputs[fr] = mask
     return inputs
+
+
+def capture_manifest(outdir, version, **extra):
+    regions = REGIONS_V2 if version == 2 else REGIONS_V2[:2]
+    data = dict(format_version=version,
+                regions=[dict(name=n, size=s, address=b) for n, s, b in regions],
+                **extra)
+    (Path(outdir) / 'capture.json').write_text(json.dumps(data, indent=2) + '\n')
 
 
 def held_changes(inputs, stop):
@@ -150,6 +168,8 @@ def cmd_gen(argv):
     ap.add_argument("--frames", type=int, default=3600,
                     help="stop scheduling after this many frames")
     args = ap.parse_args(argv)
+    if args.frames <= 0 or args.interval < 0:
+        ap.error('frames must be positive and interval nonnegative')
 
     inputs = load_inputs(args.inputs)
     last = max(inputs) if inputs else 0
@@ -172,6 +192,8 @@ def cmd_run(argv):
     ap.add_argument("--frames", type=int, default=3600,
                     help="stop after this many completed frames")
     args = ap.parse_args(argv)
+    if args.frames <= 0 or args.interval < 0:
+        ap.error('frames must be positive and interval nonnegative')
 
     try:
         import mgba.core
@@ -199,6 +221,11 @@ def cmd_run(argv):
     last = max(inputs) if inputs else 0
     _, changes = held_changes(inputs, max(args.frames, last + 1))
     pending = dict(changes)
+    core._core.setKeys(core._core, inputs.get(0, 0))
+    capture_manifest(outdir, 2, driver='headless',
+                     rom_sha256=hashlib.sha256(Path(args.rom).read_bytes()).hexdigest(),
+                     inputs_sha256=hashlib.sha256(Path(args.inputs).read_bytes()).hexdigest(),
+                     input_timing='row 0 before execution; row N after completed frame N')
 
     def snapshot(frame):
         parts = []
@@ -221,17 +248,15 @@ def cmd_run(argv):
     while True:
         core.run_frame()
         f = core.frame_counter
-        if f >= args.frames:
-            break
         if f in pending:
             core._core.setKeys(core._core, pending[f])
-        if args.interval > 0 and f % args.interval == 0:
+        if f == args.frames or (args.interval > 0 and f % args.interval == 0):
             snapshot(f)
             nsnap += 1
             if nsnap % 20 == 0:
                 print(f"  frame {f}: {nsnap} snapshots")
-    snapshot(args.frames - 1)  # terminal snapshot even if off-cadence
-    nsnap += 1
+        if f >= args.frames:
+            break
     print(f"done: {args.frames} frames, {nsnap} snapshots -> {outdir}")
 
 
@@ -258,6 +283,10 @@ class _Handler(socketserver.BaseRequestHandler):
                         print("bad magic, resync", file=sys.stderr)
                         buf = buf[1:]
                         continue
+                    if (niw, new) != (0x8000, 0x40000) or total - 8 not in (
+                            LEGACY_TOTAL, sum(s for _, s, _ in REGIONS_V2)):
+                        print('unsupported RAM snapshot layout', file=sys.stderr)
+                        return
                     expect = (frame, total, niw, new)
                     buf = buf[20:]
                 else:
@@ -265,6 +294,8 @@ class _Handler(socketserver.BaseRequestHandler):
                     if len(buf) < total - 8:
                         break
                     payload, buf = buf[:total - 8], buf[total - 8:]
+                    capture_manifest(outdir, 1 if len(payload) == LEGACY_TOTAL else 2,
+                                     driver='lua-tcp')
                     p = outdir / f"snap_{frame:08d}.bin"
                     tmp = outdir / f".tmp_{frame:08d}"
                     tmp.write_bytes(payload)

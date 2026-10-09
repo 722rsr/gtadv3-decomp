@@ -104,3 +104,9 @@ _08000AE6:
 	.align 2, 0
 _08000AEC: .4byte 0x04000208
 _08000AF0: .4byte 0x03007FF8
+
+@ Byte-neutral end anchor for the splicer. This file declares exactly one
+@ `@ Region:` (0x000A60-0x000AF4) and has no `.include`; the body at
+@ 0x08000A60 runs to 0x000AF4, exactly that boundary, so the anchor is safe.
+@ Without it the body is refused as 'no end marker in softirq.s'.
+softirq_end:

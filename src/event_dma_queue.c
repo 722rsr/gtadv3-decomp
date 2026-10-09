@@ -512,9 +512,13 @@ void sub_080052F0(int a, u32 b, int c, int d, int e, int f, int g, int h)
 #endif
 
 // The two horizontal destinations are tracked as `colTerm` and `hi` and
-// advance by two for each cell. The ROM carries r9 unchanged when y is beyond
-// 31; `dst` is deliberately left unassigned on that path. The volatile homes
-// and fixed registers retain the observed stack and loop state.
+// advance by two for each cell. When x is inside the grid but y is beyond
+// 31, the original still updates the destination through the far-column
+// term; only when both are outside does it carry the old r9 value forward.
+// The volatile homes and fixed registers retain the observed stack and
+// loop state. `tileBase`/`palette` reach the ALU through order-pinned
+// reloads (see bodies); `tableIndex` is reused as the reload register once
+// its setup use is dead.
 void OAMGrid_Build(volatile int tableIdx, const volatile u8 *src,
                    int x0, int y0,
                    int cols, int rows, int tileBase, int palette) {
@@ -525,7 +529,6 @@ void OAMGrid_Build(volatile int tableIdx, const volatile u8 *src,
     register int temp7 __asm__("r7");
     register int colBound __asm__("r1");
     register u32 tableIndex __asm__("r1");
-    register u32 tableOffset __asm__("r0");
     register int xTerm __asm__("r1");
     register u32 colTerm __asm__("r4");
     register u32 hi __asm__("r3");
@@ -544,10 +547,11 @@ void OAMGrid_Build(volatile int tableIdx, const volatile u8 *src,
     yHome = yArg;
     __asm__ volatile("" : "=r"(dst));
     row = 0;
-    while (row < rows) {
+    if (row < rows) {
         temp7 = cols;
         temp7 <<= 1;
         rowStride = temp7;
+        do {
         ip = source;
         __asm__ volatile("movs r1, #0\n\tmov r8, r1" : "=r"(col) : : "r1");
         temp7 = row + 1;
@@ -558,11 +562,15 @@ void OAMGrid_Build(volatile int tableIdx, const volatile u8 *src,
             temp7 = yHome;
             rowPos = temp7 + row;
             tableIndex = (u32)tableIdx;
-            tableOffset = tableIndex << 2;
-            temp7 = 0x030002A4u;
-            rowTab = (volatile u32 *)(tableOffset + temp7);
-            // The original skips the destination update when y is outside
-            // the grid; in that path it carries the old r9 value forward.
+            {
+                register u32 off __asm__("r0");
+                off = tableIndex << 2;
+                temp7 = 0x030002A4u;
+                rowTab = (volatile u32 *)(off + (u32)temp7);
+            }
+            // When y is outside the grid but x is inside, the original still
+            // updates the destination through the far-column term; only when
+            // both are outside does it carry the old r9 value forward.
             rowBytes = (u32)rowPos * 64;
             xTerm = xHome;
             colTerm = (u32)xTerm * 2;
@@ -573,28 +581,40 @@ void OAMGrid_Build(volatile int tableIdx, const volatile u8 *src,
                 colPos = xHome + col;
                 if (colPos <= 31) {
                     if (rowPos <= 31) {
-                        dst = *rowTab + colTerm;
-                        dst += rowBytes;
+                        dst = *rowTab + colTerm + rowBytes;
+                    } else {
+                        dst = *rowTab + hi + rowBytes;
                     }
-                } else if (rowPos <= 31) {
-                    dst = *rowTab + hi;
-                    dst += rowBytes;
+                } else {
+                    xTerm = rowPos;
+                    if (xTerm <= 31) {
+                        dst = *rowTab + hi + rowBytes;
+                    }
                 }
-                h = *(const volatile u16 *)ip;
-                ip += 2;
+                __asm__ volatile("mov r7, %1\n\tldrh %0, [r7, #0]\n\tmovs r0, #2\n\tadd %1, r0"
+                                 : "=r"(h), "+r"(ip));
                 lo = h & 0x03FFu;
                 up = h & 0x0C00u;
-                lo += (u32)tileBase;
-                up |= (u32)palette << 12;
+                __asm__ volatile("ldr %0, [sp, #64]" : "=r"(tableIndex));
+                lo += tableIndex;
+                {
+                    u32 palShift;
+                    __asm__ volatile("lsl %0, %1, #12" : "=l"(palShift) : "l"((u32)palette));
+                    up |= palShift;
+                }
                 up |= lo;
                 *(volatile u16 *)(uintptr_t)dst = (u16)up;
-                colTerm += 2;
                 hi += 2;
-                col++;
+                colTerm += 2;
+                temp7 = 1;
+                col += temp7;
             } while (col < cols);
         }
-        source += rowStride;
+        colBound = rowStride;
+        source += colBound;
         row = nextRow;
+        temp7 = rows;
+        } while (row < temp7);
     }
 }
 #ifndef __APPLE__

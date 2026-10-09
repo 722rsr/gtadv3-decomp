@@ -336,26 +336,28 @@ void _0800C604(void *c) __attribute__((alias("MenuC604_0800C604")));
 void sub_0800C604(void *c) __attribute__((alias("MenuC604_0800C604")));
 #endif
 
-void MenuC640_0800C640(void) {
+void MenuC640_0800C640(void *rec) {
     sub_080055F4();
     sub_08002B50();
     sub_08002BB4();
     sub_08002B44();
+    (void)rec;
 }
 __asm__(".align 2, 0");
 #ifndef __APPLE__
-void _0800C640(void) __attribute__((alias("MenuC640_0800C640")));
-void sub_0800C640(void) __attribute__((alias("MenuC640_0800C640")));
+void _0800C640(void *rec) __attribute__((alias("MenuC640_0800C640")));
+void sub_0800C640(void *rec) __attribute__((alias("MenuC640_0800C640")));
 #endif
 
-void MenuC658_0800C658(void) {
+void MenuC658_0800C658(void *rec) {
     sub_08005604();
     sub_08002C98();
+    (void)rec;
 }
 __asm__(".align 2, 0");
 #ifndef __APPLE__
-void _0800C658(void) __attribute__((alias("MenuC658_0800C658")));
-void sub_0800C658(void) __attribute__((alias("MenuC658_0800C658")));
+void _0800C658(void *rec) __attribute__((alias("MenuC658_0800C658")));
+void sub_0800C658(void *rec) __attribute__((alias("MenuC658_0800C658")));
 #endif
 
 // Large cluster 0xDBE8–0xFF78  — now fully register-traced

@@ -47,7 +47,7 @@ void Clear0501C(void); // _0800501C: exact CpuFastSet zero to 0x03000250, ctrl 0
 void SaveSlotConfig(int v); // _080057D0
 int SaveSlotVerify(int a,int b); // _08005988
 void LateDispatch_C668(int base,int id); // _0800C668/_0800C6CC
-void LateFlagCheck(void *a); // _0800C730
+void LateFlagCheck(void *a, u16 unused); // _0800C730
 void LateDispatch_CE2C(int id,int a,int b,void *ctx); // _0800CE2C
 // code_5b3c — only single-instruction math leaves are SUBSTANTIATED (see foundation_math.c)
 // Small math leaves are exposed for testing:

@@ -284,10 +284,6 @@ u32 Ai_GridReadRecord(u32 a,int b,int c){
 u32 _08025E98(u32 a,int b,int c) __attribute__((alias("Ai_GridReadRecord")));
 #endif
 
-#ifndef __APPLE__
-extern u8 AiGridHalfBase[];
-__asm__(".globl AiGridHalfBase\nAiGridHalfBase = 0x03001780\n");
-#endif
 
 // _08025EC0(id,val) halfword packed
 void Ai_GridHalfwordSet(int id, int val){
@@ -302,6 +298,10 @@ void Ai_GridHalfwordSet(int id, int val){
     register u32 off __asm__("r3");
     register int i4 __asm__("r0");
 #ifndef __APPLE__
+    /* Absolute definition in-body: the splicer retains only the function's
+       section, so a file-scope asm definition is omitted from the link. */
+    extern u8 AiGridHalfBase[];
+    __asm__(".globl AiGridHalfBase\nAiGridHalfBase = 0x03001780\n");
     base = (uintptr_t)AiGridHalfBase;
 #else
     base = (uintptr_t)0x03001780;
