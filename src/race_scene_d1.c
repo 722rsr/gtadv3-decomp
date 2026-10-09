@@ -702,10 +702,17 @@ void sub_08001FBAC(int a0, void *rec_) __attribute__((alias("_08001FBAC")));
 // 0x03001D64 + 12*s16[rec+156] + 72*s16[rec+28] + 8, 3).
 // ----------------------------------------------------------------------------
 void _08001FBD8(void *rec_) {
-    volatile u8 *rec = (volatile u8 *)rec_;
-    s16 a = *(volatile s16 *)(rec + 28);
-    s16 b = *(volatile s16 *)(rec + 156);
-    const void *src = (const void *)(uintptr_t)(0x03001D64u + (u32)((s32)b * 12) +
-                                                (u32)((s32)a * 72) + 8u);
-    _0800D95C((void *)(uintptr_t)0x03002808u, src, 3);
+    register u32 base __asm__("r3") = 0x03002808u;
+    register u8 *rec __asm__("r4") = (u8 *)rec_;
+    u8 *q;
+    int a;
+    int b;
+    int t;
+    a = (int)*(s16 *)(rec + 28);
+    a = (a * 9) << 3;
+    q = rec + 156;
+    b = (int)*(s16 *)q;
+    b = (b * 3) << 2;
+    t = (int)(base + 0xFFFFF55Cu);
+    _0800D95C((void *)base, (const void *)((u32)t + (u32)b + (u32)a + 8u), 3);
 }

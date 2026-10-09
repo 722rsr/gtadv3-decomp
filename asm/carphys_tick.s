@@ -1997,6 +1997,7 @@ _0800AA0C:
 @ Calls sub_08024048(&out[2]) for a step id pair; when out[0] == -1 the
 @ scene has no work left and the manager byte-stack is popped
 @ (sub_08004CF0) to keep the pump in sync.
+.type _0800AA20, %function
 _0800AA20:
 	push {lr}
 	sub sp, #8

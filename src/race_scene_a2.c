@@ -715,19 +715,40 @@ int _08001C340(void *p0) {
 }
 
 int _08001C3AC(void *a0, void *b0) {
-    volatile u8 *a = (volatile u8 *)a0;
-    volatile u8 *b = (volatile u8 *)b0;
-    int r;
-    if (!a) {
-        int nx = ~((int)*(volatile s16 *)(b + 8));
-        r = (nx == 0) ? 0 : 1;
-        *(volatile u16 *)(b + 8) = 0xFFFFu;
+    static const u16 kSet = 0xFFFFu;
+#ifndef __APPLE__
+    register u8 *b __asm__("r2") = (u8 *)b0;
+    register int r __asm__("r1") = 1;
+    register u16 keep __asm__("r4");
+#else
+    u8 *b = (u8 *)b0;
+    int r = 1;
+    u16 keep;
+#endif
+    if (a0 == 0) {
+        int v;
+        int nx;
+        int ng;
+        int o;
+        u16 c;
+        r = 8;
+        v = (int)*(s16 *)(b + r);
+        nx = ~v;
+        ng = -nx;
+        o = ng | nx;
+        r = (int)((u32)o >> 31);
+        c = kSet;
+        *(u16 *)(b + 8) = c;
     } else {
-        u16 f = *(volatile u16 *)(a + 8);
-        r = 1;
-        if (f == *(volatile u16 *)(b + 8))
+#ifndef __APPLE__
+        register u16 f __asm__("r3") = *(u16 *)((u8 *)a0 + 8);
+#else
+        u16 f = *(u16 *)((u8 *)a0 + 8);
+#endif
+        keep = *(u16 *)(b + 8);
+        if (f == keep)
             r = 0;
-        *(volatile u16 *)(b + 8) = f;
+        *(u16 *)(b + 8) = f;
     }
     return r;
 }

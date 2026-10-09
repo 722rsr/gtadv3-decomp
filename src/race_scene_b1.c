@@ -357,20 +357,22 @@ void _08001D288(void) {
 //   0xFFFD, 0x04000004, 0xFFEF, 0x040000D4, 0x040000DE}. No args, no return.
 // ----------------------------------------------------------------------------
 void _08001D654(void) {
-    if (WA_U16(0x10FCu) == 10u)
-        WA_U8(0x10C0u) = 1;
+    u8 *wa = (u8 *)(uintptr_t)0x03001780u;
+    u16 w = *(u16 *)(wa + 0x10FCu);
+    if (w == 10u)
+        *(volatile u8 *)(wa + 0x10C0u) = 1;
     _08002B5AC();
-    *(volatile u16 *)(uintptr_t)0x04000208u = 0;
-    *(volatile u16 *)(uintptr_t)0x04000200u =
-        (u16)(*(volatile u16 *)(uintptr_t)0x04000200u & 0xFFFDu);
-    *(volatile u16 *)(uintptr_t)0x04000004u =
-        (u16)(*(volatile u16 *)(uintptr_t)0x04000004u & 0xFFEFu);
-    *(volatile u16 *)(uintptr_t)0x04000208u = 1;
-    *(volatile u16 *)(uintptr_t)0x040000DEu = 0;
-    *(volatile u32 *)(uintptr_t)0x040000D4u = 0;
-    *(volatile u32 *)(uintptr_t)0x040000D8u = 0;
-    *(volatile u32 *)(uintptr_t)0x040000DCu = 0;
-    *(volatile u16 *)(uintptr_t)0x04000000u = 0;
+    *(u16 *)(uintptr_t)0x04000208u = 0;
+    *(u16 *)(uintptr_t)0x04000200u =
+        (u16)(*(u16 *)(uintptr_t)0x04000200u & 0xFFFDu);
+    *(u16 *)(uintptr_t)0x04000004u =
+        (u16)(*(u16 *)(uintptr_t)0x04000004u & 0xFFEFu);
+    *(u16 *)(uintptr_t)0x04000208u = 1;
+    *(u16 *)(uintptr_t)0x040000DEu = 0;
+    *(u32 *)(uintptr_t)0x040000D4u = 0;
+    *(u32 *)(uintptr_t)0x040000D8u = 0;
+    *(u32 *)(uintptr_t)0x040000DCu = 0;
+    *(u16 *)(uintptr_t)0x04000000u = 0;
     _080024AC();
 }
 
@@ -684,7 +686,7 @@ void _08001DA70(int a0, int a1, u32 a2, int a3) {
         int i;
         for (i = 1; i >= 0; i--) {
             _08002ED0((void *)(uintptr_t)(u32)cur, a1,
-                      *(volatile s16 *)(uintptr_t)(lane + 2u),
+                      *(s16 *)(uintptr_t)(lane + 2u),
                       a3, 1u, 2u, 1u, 0u, 0u, 1u);
             lane += 8u;
             cur += 24;
@@ -696,7 +698,7 @@ void _08001DA70(int a0, int a1, u32 a2, int a3) {
         int i;
         for (i = 0; i >= 0; i--) {
             _08002ED0((void *)(uintptr_t)(u32)cur, a1,
-                      *(volatile s16 *)(uintptr_t)(lane + 2u),
+                      *(s16 *)(uintptr_t)(lane + 2u),
                       a3, 1u, 2u, 1u, 0u, 0u, 1u);
             lane += 8u;
         }

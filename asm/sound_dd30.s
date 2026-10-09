@@ -51,3 +51,4 @@ sub_0802DD30:
 	pop {r4, r5}
 	pop {r1}
 	bx r1
+sound_dd30_end:

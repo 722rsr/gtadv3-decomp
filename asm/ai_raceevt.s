@@ -196,8 +196,8 @@ _08023FF4_lit: .word 0x030005B0
 
 @ ----------------------------------------------------------------------------
 @ _08023FF8(ev, arg) — append (ev, arg) to the scene event ring.
-@ Walks up to 10 records from base+4 while next != -1, writes the new
 @ tail {ev, arg}, terminates with next=-1 and clears the slot after.
+.type _08023FF8, %function
 _08023FF8:
 	push {r4, r5, r6, lr}
 	adds r5, r0, #0

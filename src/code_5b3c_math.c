@@ -334,29 +334,50 @@ int sub_08005E7C(void *a, void *b, void *c) __attribute__((alias("MathLeaf_05E7C
 
 // ----------------------------------------------------------------------------
 // 0x08005EDC — parallel test / intersection gate.
-//   frame A = perp of (b - a); frame B = perp of (a - b); intersect via
-//   05E14; return the low byte of the gate.
+// ROM: out->r6, b->r4; frameA[4]@sp = {a[0], a[1], b[1], -b[0]}; r5=sp+28;
+// 5DA4(r5, sp); frameB = {b[0], b[1], b[0], b[1]} via r1-hold pattern;
+// r4=sp+16 (b dies); 5DA4(r4, sp); gate = 5E14(out, r5, r4); return (s8)gate.
 int MathLeaf_05EDC(void *out, void *a, void *b) {
-    volatile u8 *o = (volatile u8 *)out;
-    volatile u8 *ra = (volatile u8 *)a;
-    volatile u8 *rb = (volatile u8 *)b;
-    // frame A: a, b.y, -b.x  (asm stores [b+4], negs [b+0])
-    s32 frameA[4];
-    frameA[0] = *(volatile s32 *)(ra + 0);
-    frameA[1] = *(volatile s32 *)(ra + 4);
-    frameA[2] = *(volatile s32 *)(rb + 4);
-    frameA[3] = -(*(volatile s32 *)(rb + 0));
-    // frame B: a, b.x, b.y
-    s32 frameB[4];
-    frameB[0] = *(volatile s32 *)(rb + 0);
-    frameB[1] = *(volatile s32 *)(rb + 4);
-    frameB[2] = *(volatile s32 *)(rb + 0);
-    frameB[3] = *(volatile s32 *)(rb + 4);
-    s32 inter[2];
-    int hit = MathLeaf_05E14(inter, (void *)frameA, (void *)frameB);
-    s32 gate = hit;
-    (void)o;
-    return (gate << 24) >> 24;
+#ifndef __APPLE__
+    register void *o __asm__("r6") = out;
+    register s32 *bb __asm__("r4") = (s32 *)b;
+#else
+    void *o = out;
+    s32 *bb = (s32 *)b;
+#endif
+    s32 *aa = (s32 *)a;
+    s32 w[4];
+    s32 ob[3];
+    s32 oa[3];
+    w[0] = aa[0];
+    w[1] = aa[1];
+    w[2] = bb[1];
+    w[3] = -bb[0];
+    {
+#ifndef __APPLE__
+        register s32 *r5 __asm__("r5");
+        register s32 *r4b __asm__("r4");
+#else
+        s32 *r5;
+        s32 *r4b;
+#endif
+        r5 = oa;
+        MathLeaf_05DA4(r5, w);
+        {
+            s32 t1 = bb[0];
+            w[0] = t1;
+            s32 t0 = bb[1];
+            w[1] = t0;
+            w[2] = t1;
+            w[3] = t0;
+        }
+        r4b = ob;
+        MathLeaf_05DA4(r4b, w);
+        {
+            int hit = MathLeaf_05E14(o, r5, r4b);
+            return (int)(s8)hit;
+        }
+    }
 }
 #ifndef __APPLE__
 int _08005EDC(void *a, void *b, void *c) __attribute__((alias("MathLeaf_05EDC")));

@@ -8,20 +8,17 @@ sub_0802D9B0:
 	swi 5
 	bx lr
 	.short 0
-	@ 0x0802D9B8 real entry: the next word is not sub_0802D9B0's pool (that
-	@ body has no ldr). Its bytes 00 04 00 0C are `lsls r0,#16; lsrs r0,#16`,
-	@ the u16 normalise prologue that falls through into sub_0802D9BC below.
-	@ Called via `bl 0x0802D9B8` from asm/code_57d0.s:29,34, and C-lifted as
-	@ SoundD9BC_SelectorU16 in src/sound_deep.c. Transcribed as instructions
-	@ (byte-identical to the.word) so the entry has a label the slice link
-	@ can resolve.
-	.type sub_0802D9B8, %function
+@ 0x0802D9B8 real entry: the next word is not sub_0802D9B0's pool (that
+@ body has no ldr). Its bytes 00 04 00 0C are `lsls r0,#16; lsrs r0,#16`,
+@ the u16 normalise prologue that falls through into the 0xD9BC selector
+@ below. Called via `bl 0x0802D9B8` from asm/code_57d0.s:29,34, and C-lifted
+@ as SoundD9BC_SelectorU16 in src/sound_deep.c covering 0xD9B8..0xD9FC.
+.type sub_0802D9B8, %function
 sub_0802D9B8:
 _0802D9B8:
-	lsls r0, r0, #16
-	lsrs r0, r0, #16
-
-	.type sub_0802D9BC, %function
+    lsls r0, r0, #16
+    lsrs r0, r0, #16
+@ sub_0802D9BC: interior fall-through point, not a separate entry.
 sub_0802D9BC:
 	movs r2, #0
 	cmp r0, #4

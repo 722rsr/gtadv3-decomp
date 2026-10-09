@@ -1310,12 +1310,12 @@ void Garage_28744(void){
     extern void sub_08007924(void*,int);
     extern void sub_08007938(void*,int,int);
     extern void _0802D984(const void*,void*);
-    void *p = (void*)0x02030000;
-    sub_08007978(p,0);
-    _0802D984(p, (void*)(uintptr_t)(192u<<19)); // 0x06000000 via movs #192 lsls #19
-    sub_08007924(p,0);
-    _0802D984(p, (void*)(uintptr_t)0x06004000u); // ldr r1,=06004000
-    sub_08007938(p,0,0);
+    register void *p __asm__("r4") = (void *)0x02030000;
+    sub_08007978(p, 0);
+    _0802D984(p, (void *)(192u << 19));
+    sub_08007924(p, 0);
+    _0802D984(p, (void *)0x06004000u);
+    sub_08007938(p, 0, 0);
 }
 #ifndef __APPLE__
 void _080028744(void) __attribute__((alias("Garage_28744")));

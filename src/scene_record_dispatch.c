@@ -260,16 +260,25 @@ void CourseEmit7B18(void *rec, int kind, int dx, int dy,
     u8 *r4 = (u8 *)rec;
     void *arr = _0800748C(_08007498(*(void **)(r4 + 4), kind));
     u8 *a = (u8 *)arr;
-    u32 base = (u32)(u16)(a[2] | ((u32)a[3] << 8)) + (u32)(u16)(r4[0] | ((u32)r4[1] << 8));
-    u32 cnt = a[7];
-    u8 *ent = a + 8;
-    for (u32 i = 0; i < cnt; i++, ent += 4) {
+    u32 t1 = (u32)*(u16 *)(r4 + 0);
+    u32 t0 = (u32)*(u16 *)(a + 2);
+    u32 base = t1 + t0;
+    int i = 0;
+    u8 *ent;
+    u32 one;
+    if (i >= (int)a[7]) goto done;
+    one = 1;
+    ent = a + 8;
+    do {
         u32 x = (u32)ent[2] + (u32)dx;
         u32 y = (u32)ent[3] + (u32)dy;
         u32 z = (u32)ent[0] + base;
         _08002ED0((void *)(uintptr_t)x, (int)y, (int)z, (int)s0, (int)s1,
-                   (int)ent[1], 1, (int)s2, (int)s3, 1);
-    }
+                   (int)ent[1], (int)one, (int)s2, (int)s3, (int)one);
+        ent += 4;
+        i++;
+    } while (i < (int)a[7]);
+done:;
 }
 
 // Likewise the 0x08007B8C ROM body (see CourseEmit7B18 above).
@@ -278,16 +287,23 @@ void CourseEmit7B8C(void *rec, int kind, int dx, int dy,
     u8 *r4 = (u8 *)rec;
     void *arr = _0800748C(_08007498(*(void **)(r4 + 4), kind));
     u8 *a = (u8 *)arr;
-    u32 r7 = (u32)(u16)(a[2] | ((u32)a[3] << 8)) + (u32)(u16)(r4[0] | ((u32)r4[1] << 8));
-    u32 cnt = a[7];
-    u8 *ent = a + 8;
-    for (u32 i = 0; i < cnt; i++, ent += 4) {
+    u32 t1 = (u32)*(u16 *)(r4 + 0);
+    u32 t0 = (u32)*(u16 *)(a + 2);
+    u32 base = t1 + t0;
+    int i = 0;
+    u8 *ent;
+    if (i >= (int)a[7]) goto done;
+    ent = a + 8;
+    do {
         u32 x = (u32)ent[2] + (u32)dx;
         u32 y = (u32)ent[3] + (u32)dy;
-        u32 z = (u32)ent[0] + r7;
+        u32 z = (u32)ent[0] + base;
         _08002ED0((void *)(uintptr_t)x, (int)y, (int)z, (int)s0, (int)s1,
                    (int)ent[1], 1, (int)s2, (int)s3, 0);
-    }
+        ent += 4;
+        i++;
+    } while (i < (int)a[7]);
+done:;
 }
 
 // 7BFC variant: x=b2+r3-in, y=b3+caller-sp+0, z=b0+r1-in(kind),

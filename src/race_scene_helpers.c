@@ -261,26 +261,32 @@ void _080021860(int a, int b, int course_row, int course_col, int mode);
 
 static void CarDisplay_21860(int a, int b, int course_row, int course_col, int mode)
 {
-    volatile u32 *tick = (volatile u32 *)(uintptr_t)0x030005A8u;
+    u32 *tick = (u32 *)(uintptr_t)0x030005A8u;
     s32 count = (s32)(*tick - 1u);
     *tick = (u32)count;
     if (count <= 0) {
-        volatile u16 *cursor = (volatile u16 *)(uintptr_t)0x0203F990u;
-        *cursor = (u16)(*cursor + 1u);
+        u16 *cursor0 = (u16 *)(uintptr_t)0x0203F990u;
+        *cursor0 = (u16)(*cursor0 + 1u);
         *tick = 5;
     }
     if (course_col <= 0 || course_col > 3)
         return;
 
-    volatile u16 *cursor = (volatile u16 *)(uintptr_t)0x0203F990u;
-    if ((s16)cursor[0] > 15)
-        cursor[0] = 0;
-    int lane = *(volatile s16 *)(uintptr_t)(0x080CBFECu
-                + (u32)course_row * 8u + (u32)course_col * 2u);
-    _08007570((void *)(uintptr_t)0x080C9754u, lane, (s16)cursor[1],
-              (s16)cursor[0] << 4, 16);
-    _08002ED0((void *)(uintptr_t)a, b, (s16)cursor[1], mode,
-              1, 2, 1, 0, 0, 1);
+    {
+        u16 *cursor = (u16 *)(uintptr_t)0x0203F990u;
+        s16 c0 = *(s16 *)cursor;
+        s16 c1 = *(s16 *)(cursor + 1);
+        int lane;
+        if (c0 > 15) {
+            cursor[0] = 0;
+            c0 = 0;
+        }
+        lane = *(s16 *)(uintptr_t)(0x080CBFECu
+                    + (u32)course_row * 8u + (u32)course_col * 2u);
+        _08007570((void *)(uintptr_t)0x080C9754u, lane, c1, c0 << 4, 16);
+        _08002ED0((void *)(uintptr_t)a, b, c1, mode,
+                  1, 2, 1, 0, 0, 1);
+    }
 }
 
 void CarDisplay_218F8(void *inst_)

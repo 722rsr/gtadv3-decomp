@@ -309,21 +309,37 @@ int Course_Math_DistanceHeading(int x0,int y0,int x1,int y1) { // _08007F08: sig
 // ROM has a zero-filled alignment halfword after the return instruction.
 __asm__(".align 2, 0");
 #endif
-void Course_Math_HeadingInterp(int p0,int p1,int p2, void *out, int sel) { // _08007FC0: s16 clamp, table 0x080CB064 s16, muls s32>>12
-    (void)p1; (void)p2; (void)sel;
-    s16 a = (s16)p0; // lsls/lsrs #16, asrs #16
-    s16 b = (s16)p1;
-    s16 c = b - a; // subs
-    if (a > 7) { a = 7; } // cmp #7, ble
-    const s16 *tbl = (const s16*)0x080CB064; // ldr pool
-    int idx = ((int)a * 2) >> 1; // asrs #15? Actually lsls #16; asrs #15 then adds tbl
-    s16 tv = tbl[idx]; // ldrsh
-    int res = tv * c; // muls
-    if (res < 0) res += 4095; // ldr 0xFFF
-    res >>= 12; // asrs #12
-    *(s16*)out = (s16)(a + res); // strh
+int Course_Math_HeadingInterp(int p0, int p1, int p2, void *out) {
+#ifndef __APPLE__
+    register void *o __asm__("r5") = out;
+    register int a4 __asm__("r4");
+    register int clamped __asm__("r6");
+    register u32 c __asm__("r1");
+#else
+    void *o = out;
+    int a4;
+    int clamped;
+    u32 c;
+#endif
+    u32 p1s;
+    u32 p0w = (u32)p0 << 16;
+    p1s = (u16)p1;
+    c = (u16)p2;
+    clamped = 0;
+    a4 = (int)(p0w >> 16);
+    int p0s = (int)p0w >> 16;
+    if (p0s > 7) { a4 = 7; clamped = 1; }
+    c = (u32)((s16)c - (int)(p1s = (u32)(s32)(s16)p1s));
+    {
+        int tv = ((s16 *)0x080CB064u)[(s16)a4];
+        int res = tv * (int)c;
+        if (res < 0) res += 0xFFF;
+        res >>= 12;
+        res += (int)p1s;
+        *(volatile s16 *)o = (s16)res;
+    }
+    return clamped;
 }
-
 // --- State leaves 0x08014-0x08284 (block behind 0x030003E0, widths proven) ---
 void Course_State_Store0(u16 v) { // _08008074: strh [r1+0] u16
     // The store pointer is deliberately non-volatile: with `volatile u16 *p`
@@ -515,21 +531,30 @@ s16 Course_Fetch_S16_20Shift(void *a) { // _0800968C: lsls #16; asrs #15; adds #
 
 void Course_Iter_07BFC(void *X, int a1, int a2, int a3,
                        u32 s0, u32 s1, u32 s2, u32 s3, u32 s4) {
-    void *seekbase = *(void *volatile *)((volatile u8 *)X + 4); // ldr r0,[r0,#4]
-    void *arr = _0800748C(_08007498(seekbase, a2));             // 07498(r1=a2) -> 0748C
-    volatile u8 *rows = (volatile u8 *)arr + 8;
-    u8 cnt = *(volatile u8 *)((volatile u8 *)arr + 7);          // ldrb [r6,#7]
+    void *seekbase = *(void **)((u8 *)X + 4);
+    void *arr = _0800748C(_08007498(seekbase, a2));
+    u8 *a = (u8 *)arr;
     extern void sub_08002ED0(void *, int, int, int, int, int, int, int, int, int);
-    for (int i = 0; i < cnt; i++) {
-        volatile u8 *r4 = rows + i * 4;                          // stride 4
-        u8 b0 = r4[0], b1 = r4[1], b2 = r4[2], b3 = r4[3];
-        // r0 = b2 + a3 (add r0,r8); r1 = b3 + s0; r2 = b0 + a1 (add r2,r9);
-        // r3 = s1; out s0 = s2, s1 = b1, s2 = 1, s3 = s3, s4 = s4, s5 = 1.
-        sub_08002ED0((void *)(uintptr_t)(b2 + a3), (int)(b3 + s0),
-                     (int)(b0 + a1), (int)s1, (int)s2, (int)b1, 1,
-                     (int)s3, (int)s4, 1);
-    }
+    int i = 0;
+    u8 *ent;
+    u32 one;
+    if (i >= (int)a[7]) goto done;
+    one = 1;
+    ent = a + 8;
+    do {
+        u32 x = (u32)ent[2] + (u32)a3;
+        u32 y = (u32)ent[3] + s0;
+        u32 z = (u32)ent[0] + (u32)a1;
+        sub_08002ED0((void *)(uintptr_t)x, (int)y, (int)z, (int)s1, (int)s2,
+                     (int)ent[1], (int)one, (int)s3, (int)s4, (int)one);
+        ent += 4;
+        i++;
+    } while (i < (int)a[7]);
+done:;
 }
+#ifndef __APPLE__
+__asm__(".align 2, 0");
+#endif
 extern void *_08002BFC(int a);
 extern void _08002C34(int idx, void *node);
 #ifndef __APPLE__
@@ -662,7 +687,7 @@ u32 _08007EC4(void *a, int b) __attribute__((alias("Course_Math_SumU16")));
 u32 sub_08007EC4(void *a, int b) __attribute__((alias("Course_Math_SumU16")));
 int _08007EE0(int a,int b) __attribute__((alias("Course_Math_AbsRoundAvg")));
 int _08007F08(int a,int b,int c,int d) __attribute__((alias("Course_Math_DistanceHeading")));
-void _08007FC0(int a,int b,int c, void *d, int e) __attribute__((alias("Course_Math_HeadingInterp")));
+int _08007FC0(int a, int b, int c, void *d) __attribute__((alias("Course_Math_HeadingInterp")));
 void _08008074(u16 a) __attribute__((alias("Course_State_Store0")));
 void _08008080(u16 a) __attribute__((alias("Course_State_Store14")));
 void _0800808C(u16 a) __attribute__((alias("Course_State_Store6")));

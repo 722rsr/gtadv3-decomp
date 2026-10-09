@@ -36,3 +36,4 @@ sub_0802DD88:
 	pop {r4, r5, r6}
 	pop {r1}
 	bx r1
+sound_dd88_end:

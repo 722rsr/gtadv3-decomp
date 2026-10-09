@@ -115,10 +115,10 @@ void _08002ED0(void *a, int b, int c, int d, int e, int f, int g, int h, int i, 
 void sub_08002ED0(void *a, int b, int c, int d, int e, int f, int g, int h, int i, int j) __attribute__((alias("EmitPlace_02ED0")));
 void Sub_08002ED0(void *a, int b, int c, int d, int e, int f, int g, int h, int i, int j) __attribute__((alias("EmitPlace_02ED0")));
 #endif
-static volatile u8 *emitplace_tbl(int f) { return (volatile u8 *)(uintptr_t)(0x080C4940u + ((s32)(s16)f << 3)); }
 void EmitPlace_02ED0(void *a, int b, int c, int d, int e, int f, int g, int h, int i, int j) {
     // 0x02ED0: table 0x080C4940 + (s16 f<<3), loop g times, high-reg r8/r9/sl spill, volatile halfwords
-    volatile u8 *tbl = emitplace_tbl(f);
+    // (table address inline: the ROM has no helper call here).
+    volatile u8 *tbl = (volatile u8 *)(uintptr_t)(0x080C4940u + ((s32)(s16)f << 3));
     s16 head4 = (s16)(tbl[4] | ((u32)tbl[5] << 8));
     if (g == 0) return;
     u32 r9 = (u32)b & 255u;
@@ -221,13 +221,30 @@ void RecordSetter_03004(int base,int v1,int z,int y,int idx,int row,int a6,int a
     extern void _08002C34(int, void*);
     _08002C34(idx, (void*)obj);
 }
+// 0x080030CC: inits u16 buf[4] = {160,0,0,0} on stack (mov r2,sp first),
+// then 32 CpuSet calls _08002D974(buf, key, 0x04000002) with key = r5 =
+// (224<<19) + i*8 (0x1C00000 base) and r4 = 31 counting down to 0 (bge).
 void Helper_030CC(void){
-    // 0x030CC: push {r4,r5,lr}, sub sp,#8, 160 at [sp], 0x1FF mask, strh triple
-    volatile u16 *sp = (volatile u16*)__builtin_alloca(8);
-    sp[0]=160;
-    // Exact: mov r2,sp; movs r1,#0; movs r0,#160; strh [r2]; mov r0,sp; ldr r0,[sp,#44] etc.
-    // Preserve volatile halfword at sp[0] and call sequence _08002BFC etc. is inlined here as direct
-    (void)sp;
+    u16 buf[4];
+#ifndef __APPLE__
+    register u32 key __asm__("r5");
+    register int n __asm__("r4");
+#else
+    u32 key;
+    int n;
+#endif
+    extern void sub_0802D974(const void *a, void *b, u32 c);
+    buf[0] = 160;
+    buf[1] = 0;
+    buf[2] = 0;
+    buf[3] = 0;
+    key = (u32)224 << 19;
+    n = 31;
+    do {
+        sub_0802D974(buf, (void *)key, 0x04000002u);
+        key += 8;
+        n--;
+    } while (n >= 0);
 }
 #ifndef __APPLE__
 void _080030CC(void) __attribute__((alias("Helper_030CC")));

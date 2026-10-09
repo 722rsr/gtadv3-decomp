@@ -498,7 +498,11 @@ int SaveSlotSave(u32 slotIdx, const void *src) {
         __asm__ volatile("cmp %0, #1\n\tblt 1f"
                          : : "r" ((s32)devType) : "cc", "memory");
 #endif
+#ifndef __APPLE__
         sub_080058D0((void *)stage, *(volatile u32 *)e, *(volatile u32 *)(e + 4) + 4);
+#else
+        SaveWriteSectors((void *)stage, *(volatile u32 *)e, *(volatile u32 *)(e + 4) + 4);
+#endif
     }
 #ifndef __APPLE__
     __asm__("1:");

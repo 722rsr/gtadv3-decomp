@@ -142,25 +142,25 @@ void sub_08001992C(void);
 // ----------------------------------------------------------------------------
 void sub_080018F94(void)
 {
-    volatile u8 *wa = (volatile u8 *)(uintptr_t)0x03001780u;
-    volatile u8 *racers = (volatile u8 *)(uintptr_t)0x03004E80u;
-    volatile u8 *racectx = *(volatile u8 *volatile *)(uintptr_t)0x03004E20u;
+    u8 *wa = (u8 *)(uintptr_t)0x03001780u;
+    u8 *racers = (u8 *)(uintptr_t)0x03004E80u;
+    u8 *racectx = *(u8 **)(uintptr_t)0x03004E20u;
     int n, i;
 
     _080018EC0();
-    n = (int)*(volatile s16 *)(wa + 0x10CA);
+    n = (int)*(s16 *)(wa + 0x10CA);
     if (1 < n) {
         for (i = 1; i < n; i++) {
-            volatile u8 *r4 = racers + i * 284;
-            if (_080044C4(*(volatile int *)(r4 + 0), *(volatile int *)(r4 + 4),
-                          (volatile u32 *)(r4 + 200))) {
+            u8 *r4 = racers + i * 284;
+            if (_080044C4(*(int *)(r4 + 0), *(int *)(r4 + 4),
+                          (u32 *)(r4 + 200))) {
                 _080018F14((void *)r4);
-                (*(volatile u16 *)(racectx + 70))++;
+                (*(u16 *)(racectx + 70))++;
             }
         }
     }
     {
-        volatile u16 *cnt = (volatile u16 *)(racectx + 70);
+        u16 *cnt = (u16 *)(racectx + 70);
         if ((int)(s16)*cnt > 3)
             *cnt = 4;
     }

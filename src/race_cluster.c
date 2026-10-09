@@ -73,19 +73,30 @@ void Race_Cluster_C(void) {
     *(volatile u32 *)(racers + idx) = res;
 }
 void Race_Cluster_D(void) {
-    volatile u8 *wa = (volatile u8 *)WORK_AREA_BASE;
-    volatile u8 *racers = (volatile u8 *)RACER_ARRAY_BASE;
-    u16 ph = *(volatile u16 *)(wa + 0x10FC); // ROM: ldrh
-    u16 v = *(volatile u16 *)(racers + 26);
-    int sel;
+    register u8 *racers __asm__("r4") = (u8 *)RACER_ARRAY_BASE;
+    u8 *cell = (u8 *)(WORK_AREA_BASE + 0x10FCu);
+    int ph = (int)*(u16 *)cell;
+    u32 v;
+    u32 sel;
+    u32 off = 280;
     if (ph == 10) {
+        v = (u32)*(u16 *)(racers + 26);
         sel = 0;
     } else {
-        (void)Ghost_FlagTest(32); // ROM calls _08018ACC on this path, result discarded
+#ifndef __APPLE__
+        (void)_08018ACC(32);
+#else
+        (void)Ghost_FlagTest(32);
+#endif
+        v = (u32)*(u16 *)(racers + 26);
         sel = 1;
     }
-    u32 res = (u32)(uintptr_t)Course_0x080263C4(0, (void *)(uintptr_t)v, sel);
-    *(volatile u32 *)(racers + 280) = res;
+#ifndef __APPLE__
+    v = (u32)(uintptr_t)sub_080263C4(0, (void *)v, (int)sel);
+#else
+    v = (u32)(uintptr_t)Course_0x080263C4(0, (void *)v, (int)sel);
+#endif
+    *(u32 *)(racers + off) = v;
 }
 
 void Race_Cluster_Dispatch(void) {

@@ -11,6 +11,7 @@
 @ trampoline into the software mixer render sub_0802B898 (raw blob
 @ 0x02B898-0x02BE74): the per-frame "note service" IS a full mix pass.
 @ Trailing halfword pad keeps the next function at its ROM offset.
+.type sub_0802C53C, %function
 sub_0802C53C:
 	push {lr}
 	bl sub_0802B898

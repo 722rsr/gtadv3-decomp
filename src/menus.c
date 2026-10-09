@@ -548,34 +548,65 @@ void MenuE0BC_0800E0BC(void) {
 void _0800E0BC(void) __attribute__((alias("MenuE0BC_0800E0BC")));
 #endif
 
-// menu_e650.s sub_0800E650 — 34-entry record selector on s16([0x03000198+2]-16)
+// menu_e650.s sub_0800E650 — 34-entry record selector on s16([sub_08004B68+2]-16)
+// via the jump table at 0xE69C. Arm order in ROM (store-5, FBC gate, grid
+// gate, store-1, store-6) is the source case order; the FBC/grid gates jump
+// to the default arm when closed, and all arms share one strh tail (dst+out
+// locals, dst assigned per arm).
+// The WA base comes through the E650WA absolute symbol (same F5A0WA idiom):
+// a visible 0x03001780 literal would let agbcc fold base+offset into one
+// pool, but the ROM keeps them as two pools plus `adds`.
+extern u8 E650WA[];
 void MenuE650_0800E650(void *rec, void *arg) {
-    *(volatile u16*)((u8*)rec + 0x10A) = 0;
-    // dispatch: s16([sub_08004B68+2]-16) -> table 0xE69C
-    extern void *sub_08004B68(void);
-    void *mgr = sub_08004B68();
-    s16 v = *(volatile s16*)((u8*)mgr + 2) - 16;
-    // high-register spill preserved via explicit stack in asm; C preserves table index
-    u16 out;
-    if (v <0 || v>33) out = 6;
-    else {
-        // cases 0..4,6,17,19,20 →5; 5→gate on 0x03001780+0xFBC; 15→gate on grid cell; etc.
-        // simplified substantiated: cases 11..14,16,23,33 →1, default 6, 0..4 etc →5
-        if ((v>=0 && v<=4) || v==6 || v==17 || v==19 || v==20) out=5;
-        else if (v==15) {
-            s16 a = *(volatile s16*)(0x03001780 + 0x0FF6);
-            s16 b = *(volatile s16*)(0x03001780 + 0x0FF2);
-            u16 cell = *(volatile u16*)(0x03001780 + a*2 + b*8 + 0x0FD0);
-            out = (cell==0 ? 1 : 6);
-        } else if (v==5) {
-            s16 cur = *(volatile s16*)(0x03001780 + 0x0FBC);
-            out = (cur==0 ? 6 : 5);
-        } else if (v>=11 && v<=14) out=1;
-        else out=6;
+    u16 *dst;
+    int out;
+    void *mgr;
+    int w;
+    __asm__(".globl E650WA\nE650WA = 0x03001780\n");
+    *(u16 *)((u8 *)rec + (133 << 1)) = 0;
+    {
+        u8 *w0 = E650WA;
+        if (*(u16 *)(w0 + 0x0FBCu) == 3)
+            *(u8 *)((u8 *)arg + 88) = 0;
     }
-    *(volatile u16*)((u8*)rec + 84) = out;
-    (void)arg;
+    mgr = _08004B68();
+    w = (int)(s16)(*(u16 *)((u8 *)mgr + 2) - 16);
+    switch (w) {
+    case 0: case 1: case 2: case 3: case 4:
+    case 6: case 17: case 19: case 20:
+        dst = (u16 *)((u8 *)arg + 84);
+        out = 5;
+        break;
+    case 5: {
+        u8 *w1 = E650WA;
+        if (*(s16 *)(w1 + 0x0FBCu) == 0)
+            goto def6;
+        dst = (u16 *)((u8 *)arg + 84);
+        out = 5;
+        break;
+    }
+    case 15: {
+        u8 *w2 = E650WA;
+        if ((int)*(s16 *)(w2 + (int)*(s16 *)(w2 + 0x0FF6u) * 2 + (int)*(s16 *)(w2 + 0x0FF2u) * 8 + (253 << 4)) != 0)
+            goto def6;
+        dst = (u16 *)((u8 *)arg + 84);
+        out = 1;
+        break;
+    }
+    case 11: case 12: case 13: case 14:
+    case 16: case 23: case 33:
+        dst = (u16 *)((u8 *)arg + 84);
+        out = 1;
+        break;
+    default:
+    def6:
+        dst = (u16 *)((u8 *)arg + 84);
+        out = 6;
+        break;
+    }
+    *dst = (u16)out;
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _0800E650(void *a,void *b) __attribute__((alias("MenuE650_0800E650")));
 void sub_0800E650(void *a,void *b) __attribute__((alias("MenuE650_0800E650")));
@@ -821,11 +852,12 @@ void _0800EBD8(void *a,u32 b,u32 c) __attribute__((alias("MenuEbd8_0800EBD8")));
 // than an `s16` for the same reason: it forces the sign extension at the
 // capture site instead of a bare `ldrh`.
 void MenuEcac_0800ECAC(void *rec, u32 a1, u32 a2) {
-    volatile u8 *r = (volatile u8 *)rec;
+    register volatile u8 *r asm("r4") = (volatile u8 *)rec;
+    register s16 *f asm("r5");
     u16 cmd = (u16)a2;
-    s16 *f = (s16 *)(r + 0xE0);
     int old;
     (void)a1;
+    f = (s16 *)(r + 0xE0);
     old = *f;
     if (cmd == 2) {
         u16 z;
@@ -839,10 +871,8 @@ void MenuEcac_0800ECAC(void *rec, u32 a1, u32 a2) {
         if (sub_08002780() == 1 && *(u16 *)f == 3) {
             sub_0802B368(10);
         } else {
-            f = (s16 *)(r + 0xE0);
-            if (*(u16 *)f == 2) {
-                sub_0802B368(10);
-            } else {
+            f = (s16 *)((volatile u8 *)r + 0xE0);
+            if (*(u16 *)f != 2) {
                 u32 one;
                 sub_0802B368(1);
                 *(volatile u16 *)(r + 0x2C) = 0;
@@ -852,6 +882,8 @@ void MenuEcac_0800ECAC(void *rec, u32 a1, u32 a2) {
                 if (*(u16 *)f == 3) {
                     *(volatile u16 *)(r + 0x30) = 8;
                 }
+            } else {
+                sub_0802B368(10);
             }
         }
     }
@@ -1489,23 +1521,23 @@ void sub_0800BE20(void *c) __attribute__((alias("MenuRecordApply_0800BE20")));
 // menu_record_update.s 0x0800BCD4 — high-reg spill (ip/r8), pools 0x001BB0A9 etc., direct branch + helper ABI
 extern void sub_0800BA3C(void *a, void *b, void *c);
 void MenuRecordUpdate_0800BCD4(void *a0, u32 a1, void *a2, u32 a3, void *sp24, void *sp28, void *sp32, void *sp36) {
-    volatile u8 *base = (volatile u8 *)0x03001780u;
+    u8 *base = (u8 *)0x03001780u;
     const u32 C = 0x001BB0A9u;
-    volatile u32 *tbl = (volatile u32 *)(base + 0x10E8);
+    u32 *tbl = (u32 *)(base + 0x10E8);
     u32 best = C;
     u32 bestIdx = 0;
     for (u32 i = 0; i <= 2; i++) {
         u32 v = tbl[i];
         if (v < C && v != 0) { best = v; bestIdx = i; }
     }
-    volatile u32 *outPtr = (volatile u32 *)sp36;
+    u32 *outPtr = (u32 *)sp36;
     u32 cur = *outPtr;
     if (best < cur && best != C) {
         *outPtr = best;
-        *(volatile u32 *)sp28 = 1;
+        *(u32 *)sp28 = 1;
     }
-    *(volatile u32 *)a2 = best;
-    *(volatile u16 *)((volatile u8 *)a3 + 0) = (u16)bestIdx;
+    *(u32 *)a2 = best;
+    *(u16 *)((u8 *)a3 + 0) = (u16)bestIdx;
     sub_0800BA3C(a0, sp32, sp24);
     (void)a1;
 }
