@@ -2,15 +2,14 @@
 #define GTADV_SOUND_MIXER_H
 #include "gba/types.h"
 
-// Mixer 0x0802B888-0x0802BC28 — five traced regions (tools/build_mixer.py)
-// Pools: 0x0805DBF4 etc., 0x03000170 IWRAM dispatch (blocked), 0x04000060 DMA
-// Each region preserves exact VMA alias, widths, and bx-rN transitions.
-// Only regions with proven ARM veneer/kernel and Thumb dispatch are lifted; IWRAM contract remains blocked.
+// Mixer 0x0802B888-0x0802BC28 — exact bytes in asm/mixer_2b888.s (+ tail /
+// leaf files). Pools: root cell 0x03007FF0 @B904, Smsh @B908, IWRAM vector
+// 0x03007001 @B90C, VCOUNT 0x04000006 @B910/@B9AC, mix buffer +848 @B914,
+// frame 1584 @B918. Vectors [root+32](arg [root+36]) and [root+40](arg
+// root) run through the shared `bx r3` gadget at 0x0802BC46. The ARM mix
+// kernels and the IWRAM-fed voice loop stay asm-owned (mixed ISA).
 
-u32 MixerVeneer_2B888(u32 a0, u32 a1); // ARM 0x02B888-0x02B898 (4 insns, bx lr)
-void MixerThumb_2B898(void);            // Thumb 0x02B898-0x02B928 (root guard and callbacks)
-void MixerArm_2B928(void *ctx);        // ARM 0x02B928-0x02B968 (32-bit mix kernel, bx r3)
-void MixerThumb_2B968(void *ctx);      // Thumb 0x02B968-0x02BA8C (voice dispatch, bx r3)
-void MixerArm_2BA8C(void *ctx);        // ARM 0x02BA8C-0x02BC28 (tight mix loop, bx r0 -> 0x02BC29 Thumb)
+u32 MixerVeneer_2B888(u32 a0, u32 a1); // ARM 0x02B888-0x02B898: umull high word
+void MixerThumb_2B898(void);          // Thumb 0x02B898+: Smsh guard + vector calls
 
 #endif

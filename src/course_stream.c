@@ -321,27 +321,44 @@ void Course_StreamTail_06CB8(void *a, void *b) {
     {
         s32 v = *acc - *rec;
         *acc = v;
-        if (v < (s32)0xFFFF8000u) *acc = (s32)0xFFFF8000u;
+        if (v < (s32)0xFFFF8000u) goto clamp_neg;
     }
+    return;
+clamp_neg:
+    *acc = (s32)0xFFFF8000u;
     return;
 forward:
     // The row lookup here is only null-checked: the ROM keeps r5 on the row
     // the FIRST _08006C10 call returned and never reloads it.
     if (!CS_CALLEE(Course_StreamMore_06C10, _08006C10)(a, 1)) return;
     *c10 = *c10 + 1;
-    *c18 = *c18 + 1;
-    *c16 = *c16 + 1;
-    if ((s16)*c22 < (s16)*c18) {
-        *c16 = *c16 + 1;
-        *c22 = *c18;
+    {
+        register u32 r2_c18 __asm__("r2") = *c18 + 1;
+        *c18 = (u16)r2_c18;
+        {
+            register u32 r3_c16 __asm__("r3") = *c16 + 1;
+            *c16 = (u8)r3_c16;
+            {
+                register s32 r1_v __asm__("r1") = (s32)(r2_c18 << 16);
+                register s16 r6_c22 __asm__("r6") = *c22;
+                register s32 r0_v __asm__("r0") = (s32)(r6_c22 << 16);
+                if (r0_v < r1_v) {
+                    register u32 r0_c16 __asm__("r0") = r3_c16 + 1;
+                    *c16 = (u8)r0_c16;
+                    *c22 = (u16)r2_c18;
+                }
+            }
+        }
     }
     rec = (s16 *)((u8 *)r5 + 8);
     {
         s32 v = *acc + *rec;
         *acc = v;
-        if (v > (s32)0x00007FFFu) *acc = (s32)0x00007FFFu;
+        if (v > (s32)0x00007FFFu) goto clamp_pos;
     }
     return;
+clamp_pos:
+    *acc = (s32)0x00007FFFu;
 }
 void Course_StreamMore_06BC8(void *a, void *b) {
     // _08006BC8: ldrh [b+12] etc., stores to a+10, +0/+4/+8/+12/+18 etc., widths u16/s16/u8
@@ -427,6 +444,7 @@ void _08006B20(void) __attribute__((alias("Course_CursorReset")));
 void *_08006AEC(void) __attribute__((alias("Course_NextRecord")));
 void *_08006B30(void) __attribute__((alias("Course_StreamMore_06B30")));
 void _08006CB8(void *a, void *b) __attribute__((alias("Course_StreamTail_06CB8")));
+void sub_08006CB8(void *a, void *b) __attribute__((alias("Course_StreamTail_06CB8")));
 int _08006D68(void *a) __attribute__((alias("Course_StreamTail_06D68")));
 int _08006D78(void *a) __attribute__((alias("Course_StreamTail_06D78")));
 int _08006D88(void *a) __attribute__((alias("Course_StreamTail_06D88")));

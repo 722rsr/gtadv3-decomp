@@ -84,10 +84,10 @@ void MenuFF78_14650(void *rec_, u32 a1, u32 a2) {
         u32 base = idx * 72;
         u32 r8v = a2 + idx * 8;
         for (u32 k = 0; k < 6; k++) {
-            u32 w1 = *(volatile u32 *)(uintptr_t)(rec + 248 + base + k * 12);
-            u32 w2 = *(volatile u32 *)(uintptr_t)(rec + 252 + base + k * 12);
+            u32 w1 = *(u32 *)(uintptr_t)(rec + 248 + base + k * 12);
+            u32 w2 = *(u32 *)(uintptr_t)(rec + 252 + base + k * 12);
             Sub_08007BFC((void *)(uintptr_t)(rec + 24), (int)w1, (int)w2,
-                         (int)a1, r8v, 11, 1, 0, 0);
+                         (int)(a1 + k * 16), r8v, 11, 1, 0, 0);
         }
     }
 }
@@ -193,24 +193,30 @@ void sub_080013950(void *a, void *b, u32 c, u32 d) __attribute__((alias("MenuFF7
 void MenuFF78_139F0(void *rec_, u32 a1_) {
     volatile u8 *rec = (volatile u8 *)rec_;
     u16 a1 = (u16)a1_;
-    if (*(volatile s16 *)(uintptr_t)(rec + 186) == 0 && a1 != 0) {
-        s16 r2 = *(volatile s16 *)(uintptr_t)(rec + 166);
-        if (r2 == 0) {
-            Sub_08007B18((void *)(uintptr_t)(rec + 68), 11, 112, 80,
-                         3, 1, 1, 0);
-        } else if (r2 == 1) {
-            Sub_08007B18((void *)(uintptr_t)(rec + 68), 14, 112, 80,
-                         3, 1, 1, 0);
+    if (*(s16 *)(uintptr_t)(rec + 186) == 0) {
+        if (a1 != 0) {
+            switch (*(s16 *)(uintptr_t)(rec + 166)) {
+            case 0:
+                sub_08007B18((void *)(uintptr_t)(rec + 68), 11, 112, 80,
+                             3, 1, 1, 0);
+                break;
+            case 1:
+                sub_08007B18((void *)(uintptr_t)(rec + 68), 14, 112, 80,
+                             3, 1, 1, 0);
+                break;
+            }
         }
-    }
-    if ((int)a1 != (int)*(volatile s16 *)(uintptr_t)(rec + 184)) {
-        s16 r2 = *(volatile s16 *)(uintptr_t)(rec + 166);
-        if (r2 == 0) {
-            Sub_08007B18((void *)(uintptr_t)(rec + 68), 15, 120, 80,
-                         3, 1, 1, 0);
-        } else if (r2 == 1) {
-            Sub_08007B18((void *)(uintptr_t)(rec + 68), 16, 120, 80,
-                         3, 1, 1, 0);
+        if ((int)a1 != (int)*(s16 *)(uintptr_t)(rec + 184)) {
+            switch (*(s16 *)(uintptr_t)(rec + 166)) {
+            case 0:
+                sub_08007B18((void *)(uintptr_t)(rec + 68), 15, 120, 80,
+                             3, 1, 1, 0);
+                break;
+            case 1:
+                sub_08007B18((void *)(uintptr_t)(rec + 68), 16, 120, 80,
+                             3, 1, 1, 0);
+                break;
+            }
         }
     }
 }
@@ -235,11 +241,12 @@ void MenuFF78_14078(void *rec_) {
         u32 base = outer * 72;
         u32 r8 = 1;
         for (u32 inner = 0; inner <= 5; inner++) {
-            int cell = (int)*(volatile s16 *)(uintptr_t)0x03002772u;
-            int g = Sub_08025CF4(cell, (int)outer, (int)(inner * 2));
-            int h = Sub_08025CF4(cell, (int)outer, (int)r8);
+            int g = Sub_08025CF4((int)*(s16 *)(uintptr_t)0x03002772u, (int)outer,
+                                 (int)(inner * 2));
+            int h = Sub_08025CF4((int)*(s16 *)(uintptr_t)0x03002772u, (int)outer,
+                                 (int)r8);
             u32 idx = (((u32)h) << 1) + (((u32)g) << 3);
-            s16 v = *(volatile s16 *)(uintptr_t)(spad + idx);
+            s16 v = *(s16 *)(uintptr_t)(spad + idx);
             *(volatile u32 *)(uintptr_t)(rec + 252 + base + inner * 12) =
                 (u32)(s32)v;
             u32 w0 = *(volatile u32 *)(uintptr_t)(rec + 28);

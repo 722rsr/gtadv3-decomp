@@ -12,21 +12,35 @@ void Ai_RingReset(void){
 void _08023FE4(void) __attribute__((alias("Ai_RingReset")));
 #endif
 
-void Ai_RingPush(int ev,int arg){
-    volatile u32 *base=(volatile u32*)(uintptr_t)0x030005B0u;
-    // walk 10 slots from base+4 while next != -1
-    volatile u32 *p = base+1; // record 0 at +4 (words 1,2,3)
-    for(int i=0;i<10;++i){
-        if(p[2]==0xFFFFFFFFu){
-            p[0]=(u32)ev;
-            p[1]=(u32)arg;
-            p[2]=0xFFFFFFFFu;
-            // clear next slot
-            volatile u32 *nxt = p+3;
-            if(i<9){ nxt[2]=0; } // actually asm clears slot after
-            break;
-        }
-        p+=3;
+void Ai_RingPush(int ev, int arg) {
+    register int i __asm__("r4") = 0;
+    register int *base __asm__("r0");
+    register int *b __asm__("r3");
+    register int first __asm__("r1");
+    register int neg1 __asm__("r2");
+    base = (int *)(uintptr_t)0x030005B0u;
+    __asm__("" : "+r"(base));
+    first = base[1];
+    neg1 = -1;
+    b = base;
+    if (first != neg1) {
+        const int *p = b + 1;
+        do {
+            p += 2;
+            i++;
+            if (i > 9)
+                break;
+        } while (*p != neg1);
+    }
+    {
+        int off = i * 8;
+        int *base_ev = b + 1;
+        *(int *)((uintptr_t)off + (uintptr_t)base_ev) = ev;
+        int *base_arg = b + 2;
+        *(int *)((uintptr_t)off + (uintptr_t)base_arg) = arg;
+        register int next_off __asm__("r0") = (i + 1) * 8;
+        *(int *)((uintptr_t)next_off + (uintptr_t)base_ev) = -1;
+        *(int *)((uintptr_t)next_off + (uintptr_t)base_arg) = 0;
     }
 }
 #ifndef __APPLE__
@@ -35,97 +49,132 @@ void Scene_PostEvent(int a,int b) __attribute__((alias("Ai_RingPush")));
 #endif
 
 // _08023958 — 121B phase pump, 6 BL sites, tier gate wa+0x10C3
-void _08023958(void *ctx,int a,int b){
-    u8 *c = (u8*)ctx;
+void _08023958(void *ctx, int a, int b) {
+    register u8 *c __asm__("r5") = (u8 *)ctx;
     u16 rb = (u16)b;
-    extern void _08002158(int,int);
+    u16 *p158 = (u16 *)(c + 158);
+    u16 *p164;
+    register u16 *p162 __asm__("r2");
+    extern void _08002158(int, int);
     extern void _0802B368(int);
-    u16 v158 = *(volatile u16*)(c+158);
-    if((u16)(v158-5) > 3){
-        _08002158(4, v158);
+    extern u8 AiWaBase[];
+    extern u8 AiWaOff[];
+    __asm__(".globl AiWaBase\nAiWaBase = 0x03001780\n");
+    __asm__(".globl AiWaOff\nAiWaOff = 0x10C3\n");
+
+    if ((u16)(*p158 - 5) > 3) {
+        _08002158(4, *p158);
     }
-    u16 *p164 = (u16*)(c+164);
-    u16 v158_2 = *(volatile u16*)(c+158);
-    if(v158_2 == 1){
-        if(rb == 2){
+    p164 = (u16 *)(c + 164);
+    if (*p158 == 1) {
+        if (rb == 2) {
             _0802B368(4);
-            s16 *p166 = (s16*)(c+166);
-            if(*p166 == 0) *p166 = (s16)rb;
-            *p164 = rb;
+            {
+                s16 *p166 = (s16 *)(c + 166);
+                if (*p166 == 0)
+                    *p166 = rb;
+                *p164 = rb;
+            }
         }
-        if(rb == 1){
-            s16 *p166 = (s16*)(c+166);
-            s16 cur = *(volatile s16*)p166;
-            if(cur == 0){
+        if (rb == 1) {
+            register s16 *r0_p __asm__("r0") = (s16 *)(c + 166);
+            register int val __asm__("r1");
+            register s16 *p166 __asm__("r4");
+            register int r2_zero __asm__("r2");
+            __asm__("" : "+r"(r0_p));
+            __asm__("movs %3, #0\n\tldrsh %0, [%1, %3]\n\tmov %2, %1"
+                    : "=r"(val), "+r"(r0_p), "=r"(p166), "=r"(r2_zero));
+            if (val == 0)
                 *p166 = 2;
-                cur = 2;
-            } else {
-                cur = *(volatile s16*)p166;
+            {
+                register int v __asm__("r0") = *(u16 *)p166;
+                if (v == 1)
+                    _0802B368(1);
+                else
+                    _0802B368(4);
             }
-            if(cur == 1) _0802B368(1);
-            else _0802B368(4);
-            *p164 = (u16)cur;
+            *p164 = *(u16 *)p166;
         }
     }
-    s16 v158_3 = *(volatile s16*)(c+158);
-    u16 *p162 = (u16*)(c+162);
-    if(v158_3==3 || v158_3==10 || v158_3==11){
-        if(v158_3==11){
-            u16 r = (u16)(rb-1);
-            if(r <= 1){
-                volatile u8 *wa = (volatile u8*)(uintptr_t)0x03001780u;
-                u8 gate = *(wa+0x10C3);
-                if(gate==1) *p162 = 1;
-            }
-        } else {
-            u16 r = (u16)(rb-1);
-            if(r <= 1){
-                volatile u8 *wa = (volatile u8*)(uintptr_t)0x03001780u;
-                u8 gate = *(wa+0x10C3);
-                if(gate==1) *p162 = 1;
+    {
+        s16 v158 = *(s16 *)(c + 158);
+        if (v158 == 3 || v158 == 10 || ((p162 = (u16 *)(c + 162)), v158 == 11)) {
+            u16 r = (u16)(rb - 1);
+            __asm__("" : "+r"(c));
+            p162 = (u16 *)(c + 162);
+            if (r <= 1) {
+                register u8 *base __asm__("r0") = AiWaBase;
+                register u32 off __asm__("r1") = (uintptr_t)AiWaOff;
+                if (*(base + off) == 1)
+                    *p162 = 1;
             }
         }
     }
-    if(rb==32) *(volatile s16*)(c+166)=2;
-    if(rb==16) *(volatile s16*)(c+166)=1;
-    u16 cur162 = *p162;
-    u16 cur164 = *p164;
-    _08002158(6, cur162);
-    _08002158(5, cur164);
+    if (rb == 32)
+        *(s16 *)(c + 166) = 2;
+    if (rb == 16)
+        *(s16 *)(c + 166) = 1;
+    _08002158(6, *p162);
+    _08002158(5, *p164);
+    __asm__("" :: "r"(c));
 }
 
 // _08023ED0 — 12-way record-42 handler, table at 0x08023EF0
-void _08023ED0(int ev,int a,int b, void *ctx){
-    if((unsigned)(ev-1) > 11) return;
-    switch(ev){
-        case 1: { extern void _08023628(void*); _08023628(ctx); break; }
-        case 2: { extern void _08022CB4(void*,int); _08022CB4(ctx,a); break; }
-        case 5: { extern void _0800D854(void*); _0800D854((u8*)ctx+16);
-                  extern void _0800D8E4(void*); _0800D8E4((u8*)ctx+120);
-                  extern void _080235F4(void*); _080235F4(ctx); break; }
-        case 6: {
-            extern void _08023E7C(void*);
-            _08023E7C(ctx);
-            if(*(volatile u16*)((u8*)ctx+20)==0) break;
-            {
-                s16 phase = *(volatile s16*)((u8*)ctx+142);
-                if(phase==0){ extern void _0802381C(void*,int,int); _0802381C(ctx,(u16)a,(u16)b); }
-                else if(phase==1){ _08023958(ctx,a,b); }
-                else if(phase==2){ extern void _08023A34(void*,int,int); _08023A34(ctx,(u16)a,(u16)b); }
-            }
+void _08023ED0(int ev, int a, int b, void *ctx) {
+    switch (ev) {
+        case 2: {
+            extern void _08022CB4(void *, int);
+            _08022CB4(ctx, a);
+            break;
+        }
+        case 5: {
+            extern void _0800D854(void *);
+            extern void _0800D8E4(void *);
+            extern void _080235F4(void *);
+            _0800D854((u8 *)ctx + 16);
+            _0800D8E4((u8 *)ctx + 120);
+            _080235F4(ctx);
             break;
         }
         case 7: {
-            s16 phase = *(volatile s16*)((u8*)ctx+142);
-            if(phase==0){ extern void _08023BD4(void*); _08023BD4(ctx); }
-            else if(phase==1){ extern void _08023D4C(void*); _08023D4C(ctx); }
-            else if(phase==2){ extern void _08023E0C(void*); _08023E0C(ctx); }
+            s16 phase = *(s16 *)((u8 *)ctx + 142);
+            switch (phase) {
+                case 0: { extern void _08023BD4(void *); _08023BD4(ctx); break; }
+                case 1: { extern void _08023D4C(void *); _08023D4C(ctx); break; }
+                case 2: { extern void _08023E0C(void *); _08023E0C(ctx); break; }
+            }
             break;
         }
-        case 12:{ extern void _08022D20(void*); _08022D20(ctx); break; }
-        default: break;
+        case 6: {
+            extern void _08023E7C(void *);
+            _08023E7C(ctx);
+            if (*(u16 *)((u8 *)ctx + 20) == 0)
+                break;
+            {
+                s16 phase = *(s16 *)((u8 *)ctx + 142);
+                switch (phase) {
+                    case 0: { extern void _0802381C(void *, int, int); _0802381C(ctx, (u16)a, (u16)b); break; }
+                    case 1: { _08023958(ctx, (u16)a, (u16)b); break; }
+                    case 2: { extern void _08023A34(void *, int, int); _08023A34(ctx, (u16)a, (u16)b); break; }
+                }
+            }
+            break;
+        }
+        case 1: {
+            extern void _08023628(void *);
+            _08023628(ctx);
+            break;
+        }
+        case 12: {
+            extern void _08022D20(void *);
+            _08022D20(ctx);
+            break;
+        }
+        default:
+            break;
     }
 }
+__asm__(".align 2, 0");
 
 // _0800AA40 — race FSM, 8-way at +0xFBC — BLOCKED: placeholder 43-event logic incomplete
 // Exact asm requires slot field at +0x100A+ b*2+a*8 via ldrsh, tier gate at +0x10E5 (ldrb s8),

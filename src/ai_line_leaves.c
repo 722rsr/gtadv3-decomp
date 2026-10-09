@@ -205,21 +205,22 @@ int Ai_LineEqual(const void *a,const void *b){
 int _080250FC(const void *a,const void *b) __attribute__((alias("Ai_LineEqual")));
 #endif
 
+struct LineEntry {
+    u32 w[3];
+};
+
 // _08025028 copy insert with shift
 void Ai_LineCopyInsert(void *dst, const void *src){
-    u32 *d=(u32*)dst;
-    const u32 *s=(const u32*)src;
-    u32 id = s[0];
-    int pos = Ai_LineFindSlot((int)id, d);
-    if(pos==5) return;
-    // shift 3..pos down
-    for(int i=3;i>=pos;--i){
-        d[(i+1)*3 +0]= d[i*3+0];
-        d[(i+1)*3 +1]= d[i*3+1];
-        d[(i+1)*3 +2]= d[i*3+2];
+    struct LineEntry *d = (struct LineEntry *)dst;
+    const struct LineEntry *s = (const struct LineEntry *)src;
+    int pos = Ai_LineFindSlot((int)s->w[0], d);
+    int i;
+    if (pos == 5)
+        return;
+    for (i = 3; i >= pos; i--) {
+        d[i + 1] = d[i];
     }
-    int off = pos*3;
-    d[off+0]=s[0]; d[off+1]=s[1]; d[off+2]=s[2];
+    d[pos] = *s;
 }
 #ifndef __APPLE__
 void _08025028(void *a,const void *b) __attribute__((alias("Ai_LineCopyInsert")));
@@ -228,18 +229,16 @@ void sub_08025028(void *a,const void *b) __attribute__((alias("Ai_LineCopyInsert
 
 // _080250A0 variant uses slot2 logic? same but with <=
 void Ai_LineCmpInsert(void *dst, const void *src){
-    u32 *d=(u32*)dst;
-    const u32 *s=(const u32*)src;
-    u32 id = s[0];
-    int pos = Ai_LineFindSlot2((int)id, d);
-    if(pos==5) return;
-    for(int i=3;i>=pos;--i){
-        d[(i+1)*3 +0]= d[i*3+0];
-        d[(i+1)*3 +1]= d[i*3+1];
-        d[(i+1)*3 +2]= d[i*3+2];
+    struct LineEntry *d = (struct LineEntry *)dst;
+    const struct LineEntry *s = (const struct LineEntry *)src;
+    int pos = Ai_LineFindSlot2((int)s->w[0], d);
+    int i;
+    if (pos == 5)
+        return;
+    for (i = 3; i >= pos; i--) {
+        d[i + 1] = d[i];
     }
-    int off = pos*3;
-    d[off+0]=s[0]; d[off+1]=s[1]; d[off+2]=s[2];
+    d[pos] = *s;
 }
 #ifndef __APPLE__
 void _080250A0(void *a,const void *b) __attribute__((alias("Ai_LineCmpInsert")));
@@ -338,24 +337,44 @@ void _08025130(void *a, void *b){
     }
 }
 
+#ifndef __APPLE__
+extern const u8 LineScoreTable[];
+__asm__(".globl LineScoreTable\nLineScoreTable = 0x080CD6A8\n");
+#endif
+
 // score sums over 0x080CD6A8 table
 int Ai_LineScoreSum(const void *rec){
-    const s8 *r=(const s8*)rec;
-    const u8 *tbl=(const u8*)(uintptr_t)0x080CD6A8u;
-    int sum=0;
-    int offs[8]={1,0,65,97,129,161,193,225};
-    int recOff[8]={2,6,4,7,5,9,3,8};
-    for(int i=0;i<8;++i){
-        s8 rv = r[recOff[i]];
-        const u8 *p = tbl + (rv*8) + offs[i];
-        sum += *p;
-    }
+    const s8 *r = (const s8 *)rec;
+#ifndef __APPLE__
+    const u8 *tbl = LineScoreTable;
+#else
+    const u8 *tbl = (const u8 *)(uintptr_t)0x080CD6A8u;
+#endif
+    const u8 *p2 = tbl + r[2] * 8;
+    const u8 *p6 = tbl + r[6] * 8 + 34;
+    register int v2 __asm__("r1") = p2[2];
+    __asm__("" : "+r"(v2));
+    register int v6 __asm__("r0") = *p6;
+    register int sum __asm__("r0");
+#ifndef __APPLE__
+    __asm__("add %0, %1, %2" : "=r"(sum) : "r"(v2), "r"(v6));
+#else
+    sum = v2 + v6;
+#endif
+    sum += (tbl + r[4] * 8)[66];
+    sum += (tbl + r[7] * 8)[98];
+    sum += (tbl + r[5] * 8)[130];
+    sum += (tbl + r[9] * 8)[162];
+    sum += (tbl + r[3] * 8)[194];
+    sum += (tbl + r[8] * 8)[226];
     return (s8)sum;
 }
 #ifndef __APPLE__
+__asm__(".align 2, 0");
 int _08025548(const void *a) __attribute__((alias("Ai_LineScoreSum")));
 int Sub_08025548(const void *a) __attribute__((alias("Ai_LineScoreSum")));
 #endif
+
 
 // _080256BC family: 8-byte record at 0x0805FCAC — each reads a different halfword.
 // All four ROM bodies build the index from r0 and r1 only (a*33 + b*3, then <<3);

@@ -73,9 +73,12 @@ void SaveAllocInit(u32 a, u32 b);          // _080057A4 (resource descriptor bui
 u32 SaveDescAppend(u32 byteSize);          // _0800580C — returns pre-append low byte of count
 
 // Checksum + sector I/O wrappers (asm/save_checksum.s)
+// Both sector bodies are VOID in the ROM (pop {r0} destroys r0); the slot
+// layer ignores their results. Declaring them int keeps r0 live and emits
+// pop {r1} instead.
 u32 SaveChecksum(const void *buf, u32 byteSize); // _08005860 seed 0x4E4D4D47
-int SaveReadSectors(u32 firstSector, void *dst, u32 byteSize);  // _08005884
-int SaveWriteSectors(u32 firstSector, const void *src, u32 byteSize); // _080058D0 ≤10 retries
+void SaveReadSectors(u32 firstSector, void *dst, u32 byteSize);  // _08005884
+void SaveWriteSectors(const void *src, u32 sector, u32 byteSize); // _080058D0 ≤10 retries, NOTE (src,sector) order
 
 // Slot API (asm/save_slot_api.s)
 int SaveSlotSave(u32 slotIdx, const void *src); // _080059F0 / sub_080059F0

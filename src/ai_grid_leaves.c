@@ -121,26 +121,33 @@ row_done: ;
 int _08025D90(int a) __attribute__((alias("Ai_GridRowsFull")));
 #endif
 
-void Ai_GridSetPacked(int type,int val){
+void Ai_GridSetPacked(int type, int val){
     u8 tmp[4];
-    bios_unpack((const void*)(uintptr_t)AI_GRID_MASK_TBL, tmp, 4u);
-    int masked = val & 3;
-    int sh = packed_shift(type,4);
-    volatile u8 *base = (volatile u8*)(uintptr_t)AI_GRID_BASE;
-    int idx = type;
-    if(idx<0) idx+=3;
-    idx >>=2;
-    volatile u8 *cell = base + 24 + idx; // +24 per asm (0x03001780+24)
-    u8 mask = tmp[sh];
-    u8 cur = *cell;
-    cur &= ~mask;
-    *cell = cur;
-    int sh2 = packed_shift(type,4);
-    int shifted = sh2<<1;
-    shifted = masked << shifted;
-    cur = *cell;
-    cur |= (u8)shifted;
-    *cell = cur;
+    register int v __asm__("r4") = val;
+    register volatile u8 *cell __asm__("r5");
+    _0802E0A4((void *)tmp, (const void *)(uintptr_t)AI_GRID_MASK_TBL, 4u);
+    v &= 3;
+    register int sh __asm__("r2") = packed_shift(type, 4);
+    register volatile u8 *base __asm__("r0") = (volatile u8 *)(uintptr_t)AI_GRID_BASE;
+    register int idx __asm__("r1") = type;
+    if (type < 0) idx = type + 3;
+    idx >>= 2;
+    base += 24;
+    cell = (volatile u8 *)(idx + (uintptr_t)base);
+    register u8 *t __asm__("r1") = tmp;
+    register volatile u8 *mp __asm__("r0") = t + sh;
+    register u32 cur __asm__("r1") = *cell;
+    register u32 mask __asm__("r0") = *mp;
+#ifndef __APPLE__
+    __asm__("bic %0, %1\n\tadd %1, %0, #0" : "+r"(cur), "+r"(mask));
+    *cell = mask;
+#else
+    *cell = cur & ~mask;
+#endif
+    int sh2 = packed_shift(type, 4);
+    v <<= (sh2 << 1);
+    v |= *cell;
+    *cell = v;
 }
 #ifndef __APPLE__
 void _08025DBC(int a,int b) __attribute__((alias("Ai_GridSetPacked")));
@@ -277,26 +284,47 @@ u32 Ai_GridReadRecord(u32 a,int b,int c){
 u32 _08025E98(u32 a,int b,int c) __attribute__((alias("Ai_GridReadRecord")));
 #endif
 
+#ifndef __APPLE__
+extern u8 AiGridHalfBase[];
+__asm__(".globl AiGridHalfBase\nAiGridHalfBase = 0x03001780\n");
+#endif
+
 // _08025EC0(id,val) halfword packed
-void Ai_GridHalfwordSet(int id,int val){
+void Ai_GridHalfwordSet(int id, int val){
     u8 tmp[4];
-    bios_unpack((const void*)(uintptr_t)AI_GRID_MASK_TBL, tmp, 4u);
-    int masked = id & 7;
-    int sh = packed_shift(masked,4);
-    volatile u8 *base = (volatile u8*)(uintptr_t)AI_GRID_BASE;
-    int byteOff = masked>>2;
-    byteOff <<=1;
-    volatile u16 *cell = (volatile u16*)(base + 1392 + byteOff); // 174*8=1392
-    u16 cur = *cell;
-    u8 mask = tmp[sh];
-    cur &= ~mask;
-    *cell = cur;
-    int sh2 = packed_shift(masked,4);
-    int shifted = sh2<<1;
-    int v = val << shifted;
-    cur = *cell;
-    cur |= (u16)v;
-    *cell = cur;
+    register int masked __asm__("r4") = id;
+    register int v __asm__("r6") = val;
+    register volatile u16 *cell __asm__("r5");
+    _0802E0A4((void *)tmp, (const void *)(uintptr_t)AI_GRID_MASK_TBL, 4u);
+    masked &= 7;
+    register int sh __asm__("r2") = packed_shift(masked, 4);
+    register uintptr_t base __asm__("r1");
+    register u32 off __asm__("r3");
+    register int i4 __asm__("r0");
+#ifndef __APPLE__
+    base = (uintptr_t)AiGridHalfBase;
+#else
+    base = (uintptr_t)0x03001780;
+#endif
+    i4 = (masked / 4) << 1;
+    off = 174;
+    off = off << 3;
+    base += off;
+    cell = (volatile u16 *)(i4 + base);
+    register u8 *t __asm__("r1") = tmp;
+    register volatile u8 *mp __asm__("r0") = t + sh;
+    register u32 cur __asm__("r3") = *cell;
+    register u32 mask __asm__("r0") = *mp;
+#ifndef __APPLE__
+    __asm__("bic %0, %1\n\tadd %1, %0, #0" : "+r"(cur), "+r"(mask));
+    *cell = mask;
+#else
+    *cell = cur & ~mask;
+#endif
+    int sh2 = packed_shift(masked, 4);
+    v <<= (sh2 << 1);
+    v |= *cell;
+    *cell = v;
 }
 #ifndef __APPLE__
 void _08025EC0(int a,int b) __attribute__((alias("Ai_GridHalfwordSet")));

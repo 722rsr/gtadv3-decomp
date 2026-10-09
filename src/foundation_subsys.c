@@ -9,11 +9,8 @@ void *sub_08004DF4(void *a) __attribute__((alias("Leaf_04DF4")));
 #include "gba/bios.h"
 #include "gba/types.h"
 
-// Subsystem loader helpers 0x08004A2C.. 0x08004E6C — behavioral C
-// Mirrors asm/code_4a2c.s.. code_4e6c.s; hardware effects via CpuFastSet etc.
-// Only the tiny, fully-decoded leaves are claimed as lifted; the larger
-// managers (4A2C/4AF4/4D4C/4E6C bodies) are not yet substantiated and are
-// left as TODO — they remain byte-exact in asm/code_4*.s.
+// Subsystem loader and manager routines. The C bodies preserve the observed
+// manager fields, callback order, and BIOS fill controls from the ROM.
 
 extern void BiosCpuFastSet(const void *s, void *d, u32 m);
 extern void Warn(u32 a, u32 b); // sub_0800295C — fatal error reporter (ROM-exact trampoline)
@@ -38,22 +35,37 @@ extern void CpuSet_2D974(const void *a, void *b, unsigned c);
 // "SCENE MEM ALLOC" 0x0805BA60, deficit n-rem) via sub_0800295C — its fatal
 // error handler, which never returns. Body 0x080049AC..0x08004A0A.
 void *AllocSlot(int n) {
-    volatile u8 *base = (volatile u8 *)0x03000198;
-    void *blk = *(void *volatile *)(base + 0x88);
-    if (n == 0) return 0;
-    u32 rem = *(volatile u32 *)(base + 0x90);
-    if ((u32)n > rem)
-        Warn(0x0805BA60, (u32)n - rem); // fatal report (ROM never returns)
-    *(volatile u32 *)(base + 0x88) = *(volatile u32 *)(base + 0x88) + (u32)n;
-    *(volatile u32 *)(base + 0x90) = rem - (u32)n;
-    u32 z = 0;
+    volatile u8 *mgr;
+    register int size __asm__("r4");
+    register volatile u32 *cursor __asm__("r6");
+    register volatile u32 *remainingPtr __asm__("r5");
+    void *blk;
+    register u32 rem __asm__("r1");
+    __asm__(".globl AllocMgr_49AC\nAllocMgr_49AC = 0x03000198\n");
+    extern u8 AllocMgr_49AC[];
+    size = n;
+    mgr = AllocMgr_49AC;
+    cursor = (volatile u32 *)(mgr + 0x88);
+    blk = (void *)(uintptr_t)*cursor;
+    if (size != 0) {
+        remainingPtr = (volatile u32 *)(mgr + 0x90);
+        rem = *remainingPtr;
+        __asm__ volatile("" : "+r"(rem));
+        if ((u32)size > rem)
+            Warn(0x0805BA60, (u32)size - rem); // fatal report (ROM never returns)
+        *cursor = *cursor + (u32)size;
+        *remainingPtr = *remainingPtr - (u32)size;
+        u32 z = 0;
 #ifndef __APPLE__
-    sub_0802D974(&z, blk, 0x05000000u | (((u32)n << 9) >> 11));
+        sub_0802D974(&z, blk, 0x05000000u | (((u32)size << 9) >> 11));
 #else
-    CpuSet_2D974(&z, blk, 0x05000000u | (((u32)n << 9) >> 11));
+        CpuSet_2D974(&z, blk, 0x05000000u | (((u32)size << 9) >> 11));
 #endif
-    return blk;
+        return blk;
+    }
+    return 0;
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void *_080049AC(int n) __attribute__((alias("AllocSlot")));
 void *sub_080049AC(int n) __attribute__((alias("AllocSlot")));
@@ -87,19 +99,9 @@ void HeapInit(u32 a,u32 b) __attribute__((alias("SubsysStoreConfig")));
 // _08004A48(record,idx): zero 24B at 0x030001A8 via CpuSet, swaps idx/prev in
 // +0x00/+0x62, stores record at +0x50, allocs scene RAM at +0x54, optional hdr
 // node at +0x4C.
-// The ROM epilogue is `adds r0, r5, #0 / pop {r4,r5,r6} / pop {r1} / bx r1`, so it
-// returns the ctx word, not void — _08004AA4 stores that result at mgr+8.
-//
-// STILL OPEN — the 3-register permutation. The ROM allocates
-//   record(arg0) → r6, idx(arg1) → r4, ctx → r5
-// and agbcc allocates
-//   record(arg0) → r4, idx(arg1) → r5, ctx → r6.
-// That accounts for every remaining differing byte. Measured, all on this body:
-//
-// Recorded as a plateau for this body. The one lever not tried is a second
-// local pin in a separate declaration block, which the note predicts
-// the C89 transform will reject ("budget exhausted") and which was measured
-// rejecting the analogous two-pin case on 0x0802C5C0.
+// The ROM epilogue returns the context word in r0; _08004AA4 stores that result
+// at mgr+8. The lifted body now follows that return path and the observed
+// context fields directly.
 void *SubsysCreateInstance(void *record, int idx) {
     volatile u8 *ctx = (volatile u8*)0x030001A8;
     u32 z=0;
@@ -145,11 +147,54 @@ void *SubsysCreateInstance(void *record, int idx) {
 void *_08004A48(void *a,int b) __attribute__((alias("SubsysCreateInstance")));
 #endif
 
-// _08004AF4(desc): zero-fills 45×8 at 0x030003E8, wires mgr+0/+4/+0xC, clears +0x70, +0x94, boots record 45
+// _08004AF4(desc): clear the descriptor table, install the manager callbacks
+// and table pointer, clear manager counters, then load the selected instance.
 void SubsysInit(void *desc) {
-    // substantiated structure from src/foundation_subsys.c (45×8, descriptor 0x080CB298)
-    (void)desc; // actual wiring kept in asm for byte-identity; C documents contract
-    extern void CounterClear(void); CounterClear();
+    register volatile u8 *d __asm__("r5");
+    register volatile u32 *mgr __asm__("r4");
+    register u32 count __asm__("r1");
+    u32 zero;
+    register u32 clear_bytes __asm__("r0");
+    d = (volatile u8 *)desc;
+    count = *(volatile u16 *)(d + 2);
+    __asm__("" : "+r"(count));
+    clear_bytes = count << 3;
+    __asm__("" : "+r"(clear_bytes));
+    if (clear_bytes != 0) {
+        register u32 raw_count __asm__("r0");
+        register u32 words __asm__("r2");
+        void *dst;
+        zero = 0;
+#ifndef __APPLE__
+        dst = (void *)(uintptr_t)*(volatile u32 *)(d + 12);
+        raw_count = *(volatile u16 *)(d + 2);
+        __asm__("" : "+r"(raw_count));
+        words = raw_count << 1;
+        words |= 0x05000000u;
+        sub_0802D974(&zero, dst, words);
+#else
+        CpuSet_2D974(&zero, (void *)(uintptr_t)*(volatile u32 *)(d + 12),
+                     0x05000000u | (u32)*(volatile u16 *)(d + 2) << 1);
+#endif
+    }
+    mgr = (volatile u32 *)(uintptr_t)0x03000198u;
+    mgr[0] = *(volatile u32 *)(d + 8);
+    mgr[1] = *(volatile u32 *)(d + 4);
+    mgr[3] = *(volatile u32 *)(d + 12);
+#ifndef __APPLE__
+    extern void sub_08004CC4(void);
+    extern void _08004AA4(int);
+    sub_08004CC4();
+    zero = 0;
+    mgr += 37;
+    sub_0802D974(&zero, (void *)mgr, 0x05000008u);
+    _08004AA4(*(volatile u16 *)d);
+#else
+    extern void SubsysLoadInstance(int idx);
+    CounterClear();
+    CpuSet_2D974(&zero, (void *)(uintptr_t)0x0300022Cu, 0x05000008u);
+    SubsysLoadInstance(*(volatile u16 *)d);
+#endif
 }
 #ifndef __APPLE__
 void _08004AF4(void *a) __attribute__((alias("SubsysInit")));
@@ -646,12 +691,73 @@ void _08004CD4(u32 v) __attribute__((alias("CounterBump")));
 // code_4cf0 — pop: decrement the depth first (when non-zero), then read the
 // byte at base+0x74+depth.
 int CounterRead(void){
-    volatile u16 *cnt = (volatile u16*)(uintptr_t)(MGR_BASE+112);
-    if (*cnt != 0) *cnt = (u16)(*cnt - 1);
-    return *(volatile u8*)(uintptr_t)(MGR_BASE+116+*cnt);
+    volatile u8 *base;
+    volatile u16 *cnt;
+    int depth;
+    u32 address;
+    u32 index;
+    MGR_OBJ_DEFINE;
+    base = MGR_OBJ;
+    cnt = (volatile u16 *)(base + 112);
+    depth = *cnt;
+    if (depth != 0) {
+        depth--;
+        *cnt = depth;
+    }
+    address = (u32)(uintptr_t)base + 116;
+    index = *cnt;
+    address = address + index;
+    return *(volatile u8 *)(uintptr_t)address;
 }
 #ifndef __APPLE__
 int _08004CF0(void) __attribute__((alias("CounterRead")));
+int sub_08004CF0(void) __attribute__((alias("CounterRead")));
+#endif
+
+// The four short manager leaves following CounterRead each have an
+// independent ROM entry.
+void MgrSubstateClear_04D10(void *ctx) {
+    *(volatile u16 *)((u8 *)ctx + 4) = 0;
+}
+__asm__(".align 2, 0");
+int MgrBit40Clear_04D18(void *ctx) {
+    register u32 mask __asm__("r1");
+    register u16 flags __asm__("r0");
+    mask = 0x40;
+    flags = *(volatile u16 *)((u8 *)ctx + 4);
+    mask &= flags;
+    if (mask != 0)
+        return 0;
+    return 1;
+}
+__asm__(".align 2, 0");
+void MgrBit40Set_04D2C(void *ctx, int enabled) {
+    volatile u16 *flags = (volatile u16 *)((u8 *)ctx + 4);
+    if (enabled != 0) {
+        register u32 value __asm__("r0");
+        register u16 old __asm__("r1");
+        value = 0x40;
+        old = *flags;
+        value |= old;
+        *flags = value;
+    } else {
+        register u32 value __asm__("r0");
+        register u16 old __asm__("r1");
+        value = 0xFFBF;
+        old = *flags;
+        value &= old;
+        *flags = value;
+    }
+}
+u16 MgrSubstateRead_04D48(void *ctx) {
+    return *(volatile u16 *)((u8 *)ctx + 6);
+}
+#ifndef __APPLE__
+void _08004D10(void *a) __attribute__((alias("MgrSubstateClear_04D10")));
+void sub_08004D10(void *a) __attribute__((alias("MgrSubstateClear_04D10")));
+int _08004D18(void *a) __attribute__((alias("MgrBit40Clear_04D18")));
+void _08004D2C(void *a, int b) __attribute__((alias("MgrBit40Set_04D2C")));
+u16 _08004D48(void *a) __attribute__((alias("MgrSubstateRead_04D48")));
 #endif
 
 // code_4b68 — current scene-state pointer = manager block field +8
@@ -1004,29 +1110,9 @@ void Clear0501C(void){
 #ifndef __APPLE__
 void _0800501C(void) __attribute__((alias("Clear0501C")));
 void sub_0800501C(void) __attribute__((alias("Clear0501C")));
-int sub_08004CF0(void) __attribute__((alias("CounterRead")));
 void sub_08004CC4(void) __attribute__((alias("CounterClear")));
 void sub_08004CD4(u32 v) __attribute__((alias("CounterBump")));
 #endif
-// 0x0800503C — the event-list append leaf that follows Clear0501C's pool. It
-// carries no entry label in asm/code_4e6c.s, so Clear0501C's span ran through
-// it; the label is now at that address. The head block at 0x03000250 is the
-// { first@0, last@4, flags@8 } record modelled in src/event_dma_queue.c:
-//   r2=r0; movs r0,#0; [r2+4]=0; [r2]=r1; r1=&head; r0=[r1];
-//   cmp r0,#0; bne +0x0E; [r1]=r2; b +0x0C; pool 0x03000250;
-//   +0x0E: r0=[r1+4]; [r0+4]=r2; +0x12: [r1+4]=r2; bx lr
-void _0800503C(void *node, u32 key){
-    volatile u32 *head = (volatile u32 *)(uintptr_t)0x03000250;
-    volatile u32 *n = (volatile u32 *)node;
-    n[1] = 0;
-    n[0] = key;
-    if (head[0] == 0) {
-        head[0] = (u32)(uintptr_t)n;
-    } else {
-        ((volatile u32 *)(uintptr_t)head[1])[1] = (u32)(uintptr_t)n;
-    }
-    head[1] = (u32)(uintptr_t)n;
-}
 #ifndef __APPLE__
 // Alias the REAL body, not `_08004B68`. An alias-of-an-alias is a second hop:
 // gcc emits `.thumb_set sub_08004B68, _08004B68`, and the slice link only

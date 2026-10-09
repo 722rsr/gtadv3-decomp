@@ -960,6 +960,50 @@
    "name": "LaneEmit_02C0",
    "size": 32
   },
+  "0x08003350": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 6,
+    "directive": 2,
+    "pin": 8
+   },
+   "file": "src/runtime_hud.c",
+   "name": "ObjList_03350",
+   "size": 176
+  },
+  "0x08003400": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 6,
+    "directive": 2,
+    "pin": 8
+   },
+   "file": "src/runtime_hud.c",
+   "name": "ObjList_03400",
+   "size": 176
+  },
+  "0x080034b0": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 6,
+    "directive": 2,
+    "pin": 8
+   },
+   "file": "src/runtime_hud.c",
+   "name": "_080034B0",
+   "size": 176
+  },
+  "0x08003560": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 5,
+    "directive": 2,
+    "pin": 7
+   },
+   "file": "src/runtime_hud.c",
+   "name": "ObjList_03560",
+   "size": 164
+  },
   "0x0800364c": {
    "class": "c_fakematch",
    "detail": {
@@ -1563,6 +1607,39 @@
    "name": "CounterBump",
    "size": 28
   },
+  "0x08004cf0": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/foundation_subsys.c",
+   "name": "CounterRead",
+   "size": 32
+  },
+  "0x08004d10": {
+   "class": "c",
+   "file": "src/foundation_subsys.c",
+   "name": "MgrSubstateClear_04D10",
+   "size": 8
+  },
+  "0x08004d18": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 2
+   },
+   "file": "src/foundation_subsys.c",
+   "name": "MgrBit40Clear_04D18",
+   "size": 20
+  },
+  "0x08004d2c": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 4
+   },
+   "file": "src/foundation_subsys.c",
+   "name": "MgrBit40Set_04D2C",
+   "size": 28
+  },
   "0x08004d4c": {
    "class": "c",
    "file": "src/foundation_subsys.c",
@@ -1665,6 +1742,36 @@
    "name": "Clear0501C",
    "size": 32
   },
+  "0x0800503c": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 1,
+    "pin": 1
+   },
+   "file": "src/event_dma_queue.c",
+   "name": "Event_ListAppend",
+   "size": 32
+  },
+  "0x0800505c": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1,
+    "pin": 2
+   },
+   "file": "src/event_dma_queue.c",
+   "name": "Event_ListEnable",
+   "size": 16
+  },
+  "0x0800506c": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1,
+    "pin": 2
+   },
+   "file": "src/event_dma_queue.c",
+   "name": "Event_ListDisable",
+   "size": 20
+  },
   "0x08005080": {
    "class": "c",
    "file": "src/event_dma_queue.c",
@@ -1715,6 +1822,30 @@
    "name": "VramEmit_05260",
    "size": 60
   },
+  "0x0800529c": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 1,
+    "directive": 1,
+    "pin": 4
+   },
+   "file": "src/event_dma_queue.c",
+   "name": "DMA3_Tiles",
+   "size": 84
+  },
+  "0x080054a4": {
+   "class": "partial",
+   "detail": {
+    "barrier": 3,
+    "directive": 1,
+    "insn": 1,
+    "insn_lines": 3,
+    "pin": 7
+   },
+   "file": "src/event_dma_queue.c",
+   "name": "DMA3_ParamRows",
+   "size": 92
+  },
   "0x08005500": {
    "class": "c",
    "file": "src/event_dma_queue.c",
@@ -1726,6 +1857,17 @@
    "file": "src/event_dma_queue.c",
    "name": "ObjQueuePush",
    "size": 48
+  },
+  "0x0800555c": {
+   "class": "partial",
+   "detail": {
+    "insn": 2,
+    "insn_lines": 4,
+    "pin": 4
+   },
+   "file": "src/event_dma_queue.c",
+   "name": "ObjQueueFlush",
+   "size": 112
   },
   "0x080055cc": {
    "class": "c",
@@ -1750,6 +1892,18 @@
    "file": "src/event_dma_queue.c",
    "name": "ObjQueueFlushMain",
    "size": 16
+  },
+  "0x08005614": {
+   "class": "partial",
+   "detail": {
+    "directive": 1,
+    "insn": 1,
+    "insn_lines": 2,
+    "pin": 3
+   },
+   "file": "src/event_dma_queue.c",
+   "name": "ObjQueueSubmit",
+   "size": 80
   },
   "0x08005664": {
    "class": "c_fakematch",
@@ -2157,6 +2311,15 @@
    "name": "_08006C94",
    "size": 36
   },
+  "0x08006cb8": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 6
+   },
+   "file": "src/course_stream.c",
+   "name": "Course_StreamTail_06CB8",
+   "size": 176
+  },
   "0x08006d68": {
    "class": "c",
    "file": "src/course_stream.c",
@@ -2457,6 +2620,16 @@
    "name": "Course_Fetch_S16_20Shift",
    "size": 24
   },
+  "0x08009748": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 3,
+    "pin": 9
+   },
+   "file": "src/course_leaves.c",
+   "name": "CourseLeaves_09748",
+   "size": 160
+  },
   "0x080097e8": {
    "class": "c",
    "file": "src/course_leaves.c",
@@ -2675,6 +2848,15 @@
    "name": "_0800A938",
    "size": 20
   },
+  "0x0800a94c": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 2
+   },
+   "file": "src/car_tick_helpers.c",
+   "name": "_0800A94C",
+   "size": 52
+  },
   "0x0800a980": {
    "class": "c",
    "file": "src/car_tick_dispatch.c",
@@ -2851,6 +3033,12 @@
    "file": "src/menus.c",
    "name": "MenuCC38_0800CC38",
    "size": 4
+  },
+  "0x0800cc3c": {
+   "class": "c",
+   "file": "src/menus.c",
+   "name": "MenuCC3C_0800CC3C",
+   "size": 68
   },
   "0x0800cc80": {
    "class": "c",
@@ -3029,6 +3217,15 @@
    "name": "MenuStage_0800D59C",
    "size": 12
   },
+  "0x0800d5a8": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 2
+   },
+   "file": "src/menu_stage.c",
+   "name": "MenuStage_0800D5A8",
+   "size": 60
+  },
   "0x0800d5e4": {
    "class": "c",
    "file": "src/menu_stage.c",
@@ -3158,6 +3355,12 @@
    "name": "MenuStage_0800D854",
    "size": 144
   },
+  "0x0800d8e4": {
+   "class": "c",
+   "file": "src/menu_stage.c",
+   "name": "MenuStage_0800D8E4",
+   "size": 120
+  },
   "0x0800d95c": {
    "class": "c",
    "file": "src/menu_stage.c",
@@ -3199,6 +3402,12 @@
    "file": "src/menu_records.c",
    "name": "MenuRec_0800DA88",
    "size": 48
+  },
+  "0x0800dbe8": {
+   "class": "c",
+   "file": "src/menus.c",
+   "name": "MenuDBE8_0800DBE8",
+   "size": 148
   },
   "0x0800dc7c": {
    "class": "c",
@@ -3372,6 +3581,16 @@
    "name": "MenuF7EC_0800F7EC",
    "size": 36
   },
+  "0x0800f8b4": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1,
+    "pin": 1
+   },
+   "file": "src/menus.c",
+   "name": "MenuF8B4_0800F8B4",
+   "size": 112
+  },
   "0x080108d4": {
    "class": "c",
    "file": "src/menus.c",
@@ -3489,6 +3708,15 @@
    "name": "MenuFF78_122E0",
    "size": 248
   },
+  "0x080123d8": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/menu_ff78_j.c",
+   "name": "MenuFF78_123D8",
+   "size": 276
+  },
   "0x080124ec": {
    "class": "c_fakematch",
    "detail": {
@@ -3527,6 +3755,16 @@
    "file": "src/menu_ff78_c.c",
    "name": "_080012850",
    "size": 4
+  },
+  "0x08012854": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 2,
+    "pin": 1
+   },
+   "file": "src/menu_ff78_k.c",
+   "name": "MenuFF78_12854",
+   "size": 316
   },
   "0x08012a44": {
    "class": "c",
@@ -3613,6 +3851,30 @@
    "name": "MenuFF78_13950",
    "size": 160
   },
+  "0x080139f0": {
+   "class": "c",
+   "file": "src/menu_ff78_h.c",
+   "name": "MenuFF78_139F0",
+   "size": 184
+  },
+  "0x08013aa8": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/menu_ff78_f.c",
+   "name": "MenuFF78_13AA8",
+   "size": 76
+  },
+  "0x08013af4": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 1
+   },
+   "file": "src/menu_ff78_f.c",
+   "name": "MenuFF78_13AF4",
+   "size": 116
+  },
   "0x08013e4c": {
    "class": "c",
    "file": "src/menus.c",
@@ -3634,6 +3896,27 @@
    "name": "MenuFF78_13E64",
    "size": 76
   },
+  "0x08013eb0": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/menu_ff78_k.c",
+   "name": "MenuFF78_13EB0",
+   "size": 228
+  },
+  "0x08013f94": {
+   "class": "c",
+   "file": "src/menu_ff78_k.c",
+   "name": "MenuFF78_13F94",
+   "size": 80
+  },
+  "0x08013fe4": {
+   "class": "c",
+   "file": "src/menu_ff78_k.c",
+   "name": "MenuFF78_13FE4",
+   "size": 148
+  },
   "0x0801411c": {
    "class": "c",
    "file": "src/menu_ff78_f.c",
@@ -3651,6 +3934,15 @@
    "file": "src/menu_ff78_i.c",
    "name": "MenuFF78_14A08",
    "size": 188
+  },
+  "0x08014ac4": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/menu_ff78_k.c",
+   "name": "MenuFF78_14AC4",
+   "size": 264
   },
   "0x08014bcc": {
    "class": "c",
@@ -3675,6 +3967,62 @@
    "file": "src/menu_ff78_c.c",
    "name": "_080014C84",
    "size": 4
+  },
+  "0x08014c88": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/menu_ff78_k.c",
+   "name": "MenuFF78_14C88",
+   "size": 268
+  },
+  "0x08014d94": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 4
+   },
+   "file": "src/menu_ff78_f.c",
+   "name": "MenuFF78_14D94",
+   "size": 168
+  },
+  "0x08014e3c": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/menu_ff78_f.c",
+   "name": "MenuFF78_14E3C",
+   "size": 100
+  },
+  "0x08014ea0": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/menu_ff78_f.c",
+   "name": "MenuFF78_14EA0",
+   "size": 116
+  },
+  "0x08014f14": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1,
+    "pin": 2
+   },
+   "file": "src/menu_ff78_f.c",
+   "name": "MenuFF78_14F14",
+   "size": 76
+  },
+  "0x08015230": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 2,
+    "pin": 2
+   },
+   "file": "src/menu_ff78_f.c",
+   "name": "MenuFF78_15230",
+   "size": 108
   },
   "0x0801529c": {
    "class": "c",
@@ -4155,6 +4503,15 @@
    "file": "src/race_scene_a1.c",
    "name": "_08001A44C",
    "size": 96
+  },
+  "0x0801b024": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/race_scene.c",
+   "name": "Race_Scene_Leaf_1B024",
+   "size": 68
   },
   "0x0801b1a4": {
    "class": "c_fakematch",
@@ -6055,6 +6412,15 @@
    "name": "_0800278DC",
    "size": 20
   },
+  "0x08027b94": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 2
+   },
+   "file": "src/garage.c",
+   "name": "Garage_27B94",
+   "size": 332
+  },
   "0x08027ce0": {
    "class": "c_fakematch",
    "detail": {
@@ -6070,6 +6436,28 @@
    "file": "src/garage_records.c",
    "name": "_080027D08",
    "size": 40
+  },
+  "0x08027f60": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 1,
+    "pin": 1
+   },
+   "file": "src/garage.c",
+   "name": "Garage_27F60",
+   "size": 108
+  },
+  "0x08027fcc": {
+   "class": "c",
+   "file": "src/garage.c",
+   "name": "Garage_27FCC",
+   "size": 96
+  },
+  "0x0802802c": {
+   "class": "c",
+   "file": "src/garage.c",
+   "name": "Garage_2802C",
+   "size": 32
   },
   "0x0802804c": {
    "class": "c",
@@ -6142,6 +6530,12 @@
    "file": "src/garage.c",
    "name": "Garage_282D0",
    "size": 92
+  },
+  "0x080284fc": {
+   "class": "c",
+   "file": "src/garage.c",
+   "name": "Garage_284FC",
+   "size": 144
   },
   "0x0802858c": {
    "class": "c",
@@ -6866,6 +7260,17 @@
    "name": "SoundBE60_PSGWrite",
    "size": 24
   },
+  "0x0802c160": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 24,
+    "naked": true
+   },
+   "file": "src/runtime_state_dispatch.c",
+   "name": "VoiceEnvelopeApply_2C160",
+   "size": 48
+  },
   "0x0802c3d0": {
    "class": "c_fakematch",
    "detail": {
@@ -7116,11 +7521,32 @@
    "name": "_0802D680",
    "size": 116
   },
+  "0x0802d84c": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 1,
+    "pin": 1
+   },
+   "file": "src/sound_command_dispatch.c",
+   "name": "SoundD6F4_DirectFetch",
+   "size": 32
+  },
   "0x0802d86c": {
    "class": "c",
    "file": "src/sound_command_dispatch.c",
    "name": "SoundD6F4_VecCall",
    "size": 20
+  },
+  "0x0802d880": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 32,
+    "naked": true
+   },
+   "file": "src/sound_command_dispatch.c",
+   "name": "SoundD6F4_LoadWord",
+   "size": 72
   },
   "0x0802d8c8": {
    "class": "c",
@@ -7315,20 +7741,20 @@
  },
  "totals": {
   "asm": {
-   "bytes": 1136,
-   "functions": 55
+   "bytes": 1256,
+   "functions": 57
   },
   "c": {
-   "bytes": 27446,
-   "functions": 747
+   "bytes": 28474,
+   "functions": 757
   },
   "c_fakematch": {
-   "bytes": 15562,
-   "functions": 235
+   "bytes": 19698,
+   "functions": 267
   },
   "partial": {
-   "bytes": 500,
-   "functions": 5
+   "bytes": 784,
+   "functions": 8
   }
  },
  "version": 1

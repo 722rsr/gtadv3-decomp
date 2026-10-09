@@ -15,11 +15,15 @@ void KeypadPoll(void) {
     // (~KEYINPUT). Idle (KEYINPUT=0x03FF) therefore stores cur=0xFC00 — the top
     // six bits are always-set garbage, and consumers test low bits only. Must NOT
     // mask to 0x03FF: the state block is byte-compared by the RAM harness.
-    u16 keys = (u16)~REG_KEYINPUT;
+    u32 keys = (u16)~REG_KEYINPUT;
 
-    volatile KeypadState *st = KEYPAD_STATE;
-    u16 prevHeld = st->cur;
-    u16 edge = (u16)(keys & ~prevHeld);
+    // The state block is ordinary IWRAM. The ROM does not perform volatile
+    // readbacks after its stores; only the KEYINPUT hardware register is
+    // volatile.
+    register KeypadState *st __asm__("r3") =
+        (KeypadState *)(uintptr_t)0x030035C0;
+    u32 prevHeld = st->cur;
+    u32 edge = keys & ~prevHeld;
 
     // Store edge and current
     st->edge = edge;
@@ -27,31 +31,35 @@ void KeypadPoll(void) {
     st->repeat = 0; // cleared, conditionally re-set below
 
     // Frame counter increments every poll (u16 wrap)
-    st->frameCounter++;
+    register u32 frame __asm__("r1") = (u32)st->frameCounter + 1;
+    __asm__("" : "+r"(frame));
+    *(volatile u16 *)((u8 *)st + 0x0A) = frame;
 
-    u16 lastHeld = st->lastHeld;
-    if (keys != lastHeld) {
+    register u16 lastHeld __asm__("r4") = st->lastHeld;
+    if (keys == lastHeld) {
+        // Held unchanged: tick countdown
+        int cd = st->countdown;
+        if (cd == 0) {
+            // Countdown expired: repeat fires every other frame (bit0 of frameCounter)
+            frame &= 1;
+            if (frame != 0)
+                st->repeat = lastHeld;
+        } else {
+            cd--;
+            st->countdown = cd;
+        }
+    } else {
         // Key state changed: latch new held value, set repeat = current,
         // reload countdown to 24 (initial repeat delay)
         st->lastHeld = keys;
         st->repeat = keys;
         st->countdown = 24;
-    } else {
-        // Held unchanged: tick countdown
-        u16 cd = st->countdown;
-        if (cd != 0) {
-            cd--;
-            st->countdown = cd;
-        } else {
-            // Countdown expired: repeat fires every other frame (bit0 of frameCounter)
-            if ((st->frameCounter & 1) == 0) {
-                // No repeat on even frames
-            } else {
-                st->repeat = lastHeld;
-            }
-        }
     }
 }
+#ifndef __APPLE__
+// The ROM's function section ends with a zero halfword after `bx lr`.
+__asm__(".pushsection .text.KeypadPoll,\"ax\",%progbits\n.align 2, 0\n.popsection");
+#endif
 
 u16 KeypadGetEdge(void) {
     return KEYPAD_STATE->edge;

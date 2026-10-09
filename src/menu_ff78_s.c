@@ -70,68 +70,72 @@ extern int Sub_08025640(const void *v); // 12-byte record ptr
 //       u32[...+4], 4,1,1,0); r5++.
 //   13AA8(rec); DBE8(rec+32); 13E60(rec).
 void MenuFF78_13B68(void *rec_) {
-    volatile u8 *rec = (volatile u8 *)rec_;
-    s16 s = *(volatile s16 *)(uintptr_t)(rec + 174);
-    Sub_080026A2C((void *)(uintptr_t)*(volatile u32 *)(uintptr_t)(rec + 580), 120, 32);
+    u8 *rec = (u8 *)rec_;
+    Sub_080026A2C((void *)(uintptr_t)*(u32 *)(uintptr_t)(rec + 580), 120, 32);
     {
-        u32 off = (u32)(s32)s * 20;
-        s8 b = (s8)*(volatile u8 *)(uintptr_t)(0x080CCEECu + off + 8);
-        if (b == 1)
-            Sub_08007B18(rec_, 30, 128, 80, 8, 1, 1, 0);
-    }
-    Sub_08007B18(rec_, 8, 72, 64, 7, 3, 1, 0);
-    Sub_08007B18(rec_, 20, 168, 48, 3, 1, 1, 0);
-    Sub_08007B18(rec_, 20, 168, 72, 3, 1, 1, 0);
-    Sub_08007B18(rec_, 17, 0, 56, 3, 1, 1, 0);
-    Sub_08007B18(rec_, 21, 0, 40, 3, 1, 1, 0);
-    if (*(volatile s16 *)(uintptr_t)(rec + 186) == 0)
-        Sub_0800139F0(rec_, *(volatile u16 *)(uintptr_t)(rec + 136));
+    extern u8 J13B68_BASE[];
+    __asm__(".globl J13B68_BASE\nJ13B68_BASE = 0x080CCEEC\n");
+    u8 *base = (u8 *)(uintptr_t)J13B68_BASE;
+    if ((s8)base[(u32)(s32)*(s16 *)(uintptr_t)(rec + 174) * 20 + 8] == 1)
+        Sub_08007B18((void *)rec, 30, 128, 80, 8, 1, 1, 0);
+    Sub_08007B18((void *)(uintptr_t)(rec + 68), 8, 72, 64, 7, 3, 1, 0);
+    Sub_08007B18((void *)rec, 20, 168, 48, 3, 1, 1, 0);
+    Sub_08007B18((void *)rec, 20, 168, 72, 3, 1, 1, 0);
+    Sub_08007B18((void *)rec, 17, 0, 56, 3, 1, 1, 0);
+    Sub_08007B18((void *)rec, 21, 0, 40, 3, 1, 1, 0);
+    if (*(s16 *)(uintptr_t)(rec + 186) == 0)
+        Sub_0800139F0((void *)rec, *(u16 *)(uintptr_t)(rec + 136));
     Sub_0800D97C((void *)(uintptr_t)(rec + 164), 15);
     Sub_0800D97C((void *)(uintptr_t)(rec + 168), 10);
-    Sub_08007B18(rec_, 18,
-                 (int)*(volatile u32 *)(uintptr_t)(rec + 156),
-                 (int)*(volatile u32 *)(uintptr_t)(rec + 160),
+    Sub_08007B18((void *)rec, 18,
+                 (int)*(u32 *)(uintptr_t)(rec + 156),
+                 (int)*(u32 *)(uintptr_t)(rec + 160),
                  3, 1, 1, 0);
-    Sub_080013AF4(rec_);
-    Sub_08007B18(rec_, 13, 56, 96, 3, 1, 1, 0);
-    Sub_08007B18(rec_, 14, 56, 112, 3, 1, 1, 0);
-    Sub_08007B18(rec_, 12, 56, 128, 3, 1, 1, 0);
+    Sub_080013AF4((void *)rec);
+    Sub_08007B18((void *)rec, 13, 56, 96, 3, 1, 1, 0);
+    Sub_08007B18((void *)rec, 14, 56, 112, 3, 1, 1, 0);
+    Sub_08007B18((void *)rec, 12, 56, 128, 3, 1, 1, 0);
     Sub_08007BFC((void *)(uintptr_t)(rec + 8),
-                 (int)*(volatile u32 *)(uintptr_t)(rec + 584),
-                 (int)*(volatile u32 *)(uintptr_t)(rec + 588),
+                 (int)*(u32 *)(uintptr_t)(rec + 584),
+                 (int)*(u32 *)(uintptr_t)(rec + 588),
                  88, 32, 9, 3, 1, 0);
     Sub_08007BFC((void *)(uintptr_t)(rec + 16),
-                 (int)*(volatile u32 *)(uintptr_t)(rec + 596),
-                 (int)*(volatile u32 *)(uintptr_t)(rec + 600),
+                 (int)*(u32 *)(uintptr_t)(rec + 596),
+                 (int)*(u32 *)(uintptr_t)(rec + 600),
                  171, 56, 5, 1, 1, 0);
     Sub_08007BFC((void *)(uintptr_t)(rec + 24),
-                 (int)*(volatile u32 *)(uintptr_t)(rec + 608),
-                 (int)*(volatile u32 *)(uintptr_t)(rec + 612),
+                 (int)*(u32 *)(uintptr_t)(rec + 608),
+                 (int)*(u32 *)(uintptr_t)(rec + 612),
                  171, 80, 5, 1, 1, 0);
     {
-        u32 t = (u32)(s32)s * 12 + 0x030017B0u;
-        int c0 = (int)(s8)(Sub_08025500((int)s) + Sub_08025548((const void *)(uintptr_t)t));
-        Sub_080013950(rec_, (void *)(uintptr_t)104, 104, (u32)c0);
-        int c1 = (int)(s8)(Sub_08025518((int)s) + Sub_080255C4((const void *)(uintptr_t)t));
-        Sub_080013950(rec_, (void *)(uintptr_t)104, 120, (u32)c1);
-        int c2 = (int)(s8)(Sub_08025530((int)s) + Sub_08025640((const void *)(uintptr_t)t));
-        Sub_080013950(rec_, (void *)(uintptr_t)104, 136, (u32)c2);
+        int c0 = (int)(s8)(Sub_08025500((int)*(s16 *)(uintptr_t)(rec + 174))
+            + Sub_08025548((const void *)(uintptr_t)((u32)(s32)*(s16 *)(uintptr_t)(rec + 174) * 12 + 0x030017B0u)));
+        Sub_080013950((void *)rec, (void *)(uintptr_t)104, 104, (u32)c0);
+        int c1 = (int)(s8)(Sub_08025518((int)*(s16 *)(uintptr_t)(rec + 174))
+            + Sub_080255C4((const void *)(uintptr_t)((u32)(s32)*(s16 *)(uintptr_t)(rec + 174) * 12 + 0x030017B0u)));
+        Sub_080013950((void *)rec, (void *)(uintptr_t)104, 120, (u32)c1);
+        int c2 = (int)(s8)(Sub_08025530((int)*(s16 *)(uintptr_t)(rec + 174))
+            + Sub_08025640((const void *)(uintptr_t)((u32)(s32)*(s16 *)(uintptr_t)(rec + 174) * 12 + 0x030017B0u)));
+        Sub_080013950((void *)rec, (void *)(uintptr_t)104, 136, (u32)c2);
     }
     {
-        u32 off = (u32)(s32)s * 20;
-        s8 lim = (s8)*(volatile u8 *)(uintptr_t)(0x080CCEECu + off);
-        u32 r5 = 0;
-        while ((int)r5 < (int)lim) {
-            int e = (int)*(volatile s16 *)(uintptr_t)(0x080CB6ACu + r5 * 2);
-            u32 w0 = *(volatile u32 *)(uintptr_t)(0x080CB6E0u + r5 * 8);
-            u32 w1 = *(volatile u32 *)(uintptr_t)(0x080CB6E0u + 4 + r5 * 8);
-            Sub_08007B18(rec_, e, (int)w0, (int)w1, 4, 1, 1, 0);
-            r5++;
+        extern u8 J13B68_E[];
+        __asm__(".globl J13B68_E\nJ13B68_E = 0x080CB6AC\n");
+        u32 i = 0;
+        s8 *base2 = (s8 *)(uintptr_t)base;
+        while ((int)i < (int)base2[(u32)(s32)*(s16 *)(uintptr_t)(rec + 174) * 20]) {
+            Sub_08007B18((void *)rec,
+                         (int)*(s16 *)(uintptr_t)((u8 *)J13B68_E + i * 2),
+                         (int)*(u32 *)(uintptr_t)(0x080CB6E0u + i * 8),
+                         (int)*(u32 *)(uintptr_t)(0x080CB6E0u + 4 + i * 8),
+                         4, 1, 1, 0);
+            i++;
         }
     }
-    Sub_080013AA8(rec_);
+    Sub_080013AA8((void *)rec);
     Sub_0800DBE8((void *)(uintptr_t)(rec + 32));
     Sub_080013E60();
+    }
 }
 #ifndef __APPLE__
 void _080013B68(void *a) __attribute__((alias("MenuFF78_13B68")));

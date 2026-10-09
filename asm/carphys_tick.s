@@ -1838,7 +1838,7 @@ _0800A938:
 
 @ ----------------------------------------------------------------------------
 @ _0800A94C(ctx) - secondary dispatch on ctx[+0]: 38 -> racer veneer,
-@ 37/47 -> their phase loaders, anything else -> plain pop.
+	.type _0800A94C, %function
 _0800A94C:
 	push {lr}
 	movs r2, #0

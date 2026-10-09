@@ -43,7 +43,7 @@ void Idle_Mode3Handler(void) {
     if (head == 0x03ED) {
         u16 v1 = StateA_GetIndexedHalfwordInverted(0);
         s16 cur = (s16)*st16(0x1A);
-        if ((s16)v1 == cur) {
+        if (v1 == cur) {
             if (v1 != 0) {
                 s16 v16 = (s16)*st16(0x16);
                 if ((s16)v1 == v16) {
@@ -83,9 +83,9 @@ void Idle_Mode3Handler(void) {
     s16 b = (s16)*st16(0x16);
     int v = a;
     if (a > b) v = b;
-    // signed divide helper sub_0802DE04 — clamp negative to 0
-    extern int DivSI(int n, int d);
-    int res = DivSI(v,1);
+    // The ROM divides min(+0x1A, +0x16) by the signed +0x16 value.
+    extern int sub_0802DE04(int n, int d);
+    int res = sub_0802DE04(v, b);
     *st32(0xD0) = res < 0 ? 0 : (u32)res;
 }
 #ifndef __APPLE__
@@ -124,14 +124,42 @@ void _08001AA0(void) __attribute__((alias("Idle_Mode5Handler")));
 
 // _08001ACC — mode6
 void Idle_Mode6Handler(void) {
-    u16 cnt = *st16(0x0A);
-    int r5=1, r4=1;
-    if (1 < (int)cnt) {
-        for (r4=1; r4 < (int)cnt; r4++) {
-            if (StateA_GetRecordHalfword(r4) != 0x03F4) r5++;
-        }
+    register int matches __asm__("r5") = 1;
+    register int i __asm__("r4") = 1;
+    register volatile u32 *slot __asm__("r0") =
+        (volatile u32 *)STATE_BLOCK_A_SLOT_ADDR;
+    register volatile u8 *initial_base __asm__("r1") =
+        (volatile u8 *)(uintptr_t)*slot;
+    register volatile u32 *saved_slot __asm__("r6") = slot;
+    register u16 count __asm__("r1") =
+        *(volatile u16 *)(initial_base + 0x0A);
+
+    // The assembly rereads the record count after each record lookup and
+    // again before the final comparison; callers can update this shared block.
+    if (matches < count) {
+        do {
+            register u32 record __asm__("r0") = StateA_GetRecordHalfword(i);
+            register u32 expected __asm__("r1") = 0xFD;
+            record <<= 16;
+            record >>= 16;
+            expected <<= 2;
+            if (record == expected)
+                matches++;
+            i++;
+            u16 current_count = *(volatile u16 *)((volatile u8 *)(uintptr_t)
+                *(volatile u32 *)STATE_BLOCK_A_SLOT_ADDR + 0x0A);
+            if (i >= current_count)
+                break;
+        } while (1);
     }
-    if (r5 == (int)cnt) { *st16(0x12)=7; *st16(0x14)=3; }
+
+    register volatile u8 *base __asm__("r1") =
+        (volatile u8 *)(uintptr_t)*saved_slot;
+    u16 final_count = *(volatile u16 *)(base + 0x0A);
+    if (matches == final_count) {
+        *(volatile u16 *)(base + 0x12) = 7;
+        *(volatile u16 *)(base + 0x14) = 3;
+    }
     StateA_SetPendingParam(0x03F2);
 }
 #ifndef __APPLE__

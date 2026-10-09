@@ -28,15 +28,19 @@ __attribute__((weak)) void sub_0800295C(u32 a, u32 b) { (void)a; (void)b; } // 0
 #ifndef __APPLE__
 extern void sub_080029D8(void);  // 0x080029D8 IRQ-suspend (raw asm)
 extern void sub_08002A68(void);  // 0x08002A68 handler-slot reset (raw asm)
+extern void sub_08002A0C(void);  // 0x08002A0C IRQ-restore (raw asm)
 #endif
 #ifdef __APPLE__
 __attribute__((weak)) void sub_080029D8(void) {}
 __attribute__((weak)) void sub_08002A68(void) {}
+__attribute__((weak)) void sub_08002A0C(void) {}
 #endif
 #ifdef __APPLE__
 __attribute__((weak)) u32 sub_08002AF4(u32 v) { (void)v; return 0; }
+#else
+extern u32 sub_08002AF4(u32 v);
 #endif
-__attribute__((weak)) void sub_0802DA20(u32 a, u32 b) { (void)a; (void)b; }
+__attribute__((weak)) int sub_0802DA20(u32 a, u32 b) { (void)a; (void)b; return 0; }
 __attribute__((weak)) int  sub_0802DBA4(u32 sec, void *dst) { (void)sec; (void)dst; return 0; }
 __attribute__((weak)) int  sub_0802DC54(u32 a, u32 b) { (void)a; return 0; }
 __attribute__((weak)) int  sub_0802DD30(u32 a, u32 b) { (void)a; return 0; }
@@ -255,35 +259,50 @@ void sub_080057A4(u32 a, u32 b) __attribute__((alias("SaveAllocInit")));
 // ----------------------------------------------------------------------------
 // Slot descriptor appender (asm/save_desc.s)
 // Control at 0x03000320: {count, devType, cursor, slots[]}
+// ROM (84 B, one pool 0x03000320):
+//   slot = ctrl+12+idx*8; slot[0]=cursor; slot[1]=byteSize;
+//   inc = byteSize+4;
+//   if (dev>2 || dev<1) goto div; else { inc+=7; t=inc; if (t<0) t=byteSize+18;
+//     inc=(t>>3)<<3; }
+// div: if (inc<0) inc+=7; inc>>=3; cursor+=inc; count++; return idx&0xFF.
+// The two comparisons are SIGNED bgt/blt (dev in [1,2]); (dev-1)<=1u would be
+// unsigned bhi. The final divide is asrs ALONE (sectors); the first round is
+// asrs+lsls. Both biases are explicit adds.
+// ----------------------------------------------------------------------------
 u32 SaveDescAppend(u32 byteSize) {
-    volatile SaveControl *ctrl = SAVE_CONTROL;
-    u32 idx = ctrl->count;
-    volatile SaveSlot *slot = &ctrl->slots[idx];
-    slot->firstSector = ctrl->cursor;
-    slot->byteSize = byteSize;
-    // Cursor advance: roundup8 when devType in {1,2}
-    u32 dev = ctrl->devType;
-    u32 inc = byteSize + 4; // original adds 4 then roundup? keep width contract
-    if (dev == 1 || dev == 2) {
-        // align to 8
-        inc = (byteSize + 7) & ~7u;
-        // special path for (byteSize+7)<0 adds 7 before asr — same as roundup8
-        if ((int)(byteSize + 7) < 0) inc = (byteSize + 18) & ~7u;
-    } else {
-        inc = 0;
-        if ((int)byteSize < 0) inc = 7;
-        inc = (inc + (int)byteSize) >> 3;
-        inc <<= 3;
+    __asm__(".globl SaveCtrlBase\nSaveCtrlBase = 0x03000320");
+    extern u8 SaveCtrlBase[];
+    u32 bs = byteSize;
+    register volatile u32 *ctrl __asm__("r2") = (volatile u32 *)SaveCtrlBase;
+    u32 idx = ctrl[0];
+    u32 off = idx * 8;
+    volatile u8 *b = (volatile u8 *)ctrl;
+    b += 12;
+    register volatile u32 *slot __asm__("r0") = (volatile u32 *)(off + b);
+    u32 inc;
+    u32 dev;
+    slot[0] = ctrl[2];
+    slot[1] = bs;
+    inc = byteSize + 4;
+    dev = ctrl[1];
+    if ((s32)dev > 2)
+        goto div;
+    if ((s32)dev < 1)
+        goto div;
+    inc += 7;
+    {
+        u32 t = inc;
+        if ((s32)t < 0)
+            t = byteSize + 18;
+        inc = (u32)(((s32)t >> 3) << 3);
     }
-    if ((int)inc < 0) inc = (inc + 7) & ~7u;
-    // Next cursor = old cursor + (inc>>3<<3) i.e. roundup8(byteSize) when EEPROM present else 0?
-    // Preserve original width: control+8 is cursor byte offset.
-    u32 oldCursor = ctrl->cursor;
-    u32 rounded = (byteSize + 7) & ~7u;
-    if (dev == 1 || dev == 2) ctrl->cursor = oldCursor + rounded;
-    else ctrl->cursor = oldCursor + ((inc >> 3) << 3);
-    ctrl->count = idx + 1;
-    return idx & 0xFFu;
+div:
+    if ((s32)inc < 0)
+        inc += 7;
+    inc = (u32)((s32)inc >> 3);
+    ctrl[2] += inc;
+    ctrl[0] += 1;
+    return (idx << 24) >> 24;
 }
 #ifndef __APPLE__
 u32 _0800580C(u32 s) __attribute__((alias("SaveDescAppend")));
@@ -309,55 +328,158 @@ u32 _08005860(const void *b, u32 s) __attribute__((alias("SaveChecksum")));
 u32 sub_08005860(const void *b, u32 s) __attribute__((alias("SaveChecksum")));
 #endif
 
-int SaveReadSectors(u32 firstSector, void *dst, u32 byteSize) {
-    u32 sectors = (byteSize + 7) >> 3;
+// ----------------------------------------------------------------------------
+// Sector I/O (asm/save_checksum.s, sub_08005884 / sub_080058D0)
+// Both bodies are VOID in the ROM (epilogue `pop {r0}; bx r0` destroys r0),
+// with IRQ suspend/resume (029D8/02A68 ... 02A0C) around a countdown loop.
+// The sector and return values are truncated to u16 at each call
+// (`lsls/lsrs #16`); the panic path reuses the truncated code in r1.
+// ----------------------------------------------------------------------------
+void SaveReadSectors(u32 firstSector, void *dst, u32 byteSize) {
+    u32 sec = firstSector;
     u8 *out = (u8 *)dst;
-    for (u32 i = 0; i < sectors; i++) {
-        int rc = sub_0802DBA4(firstSector + i, out);
-        if (rc != 0) return rc;
+    u32 t = byteSize + 7;
+    u32 n;
+    if ((s32)t < 0)
+        t += 7;
+    n = (u32)((s32)t >> 3);
+    sub_080029D8();
+    sub_08002A68();
+    if ((s32)n <= 0)
+        goto done;
+    do {
+        int rc = sub_0802DBA4((u16)sec, out);
+        if ((u16)rc != 0)
+            sub_0800295C(0x0805BAB0u, (u32)(u16)rc);
+        sec += 1;
         out += 8;
-    }
-    return 0;
+        n -= 1;
+    } while ((s32)n != 0);
+done:
+    sub_08002A0C();
 }
 #ifndef __APPLE__
-int _08005884(u32 a, void *b, u32 c) __attribute__((alias("SaveReadSectors")));
-int sub_08005884(u32 a, void *b, u32 c) __attribute__((alias("SaveReadSectors")));
-#endif
-
-int SaveWriteSectors(u32 firstSector, const void *src, u32 byteSize) {
-    u32 sectors = (byteSize + 7) >> 3;
-    const u8 *in = (const u8 *)src;
-    int retries = 0;
-    // IME/Timer0 dance omitted for host; preserve retry cap 10 and verify path.
-    for (u32 i = 0; i < sectors; i++) {
-        int w = sub_0802DC54(firstSector + i, (u32)(uintptr_t)in);
-        if (w != 0) { if (++retries > 10) return w; i--; continue; }
-        int v = sub_0802DD30(firstSector + i, (u32)(uintptr_t)in);
-        if (v != 0) { if (++retries > 10) return v; i--; continue; }
-        in += 8;
-    }
-    return 0;
-}
-#ifndef __APPLE__
-int _080058D0(u32 a, const void *b, u32 c) __attribute__((alias("SaveWriteSectors")));
-int sub_080058D0(u32 a, const void *b, u32 c) __attribute__((alias("SaveWriteSectors")));
+void _08005884(u32 a, void *b, u32 c) __attribute__((alias("SaveReadSectors")));
+void sub_08005884(u32 a, void *b, u32 c) __attribute__((alias("SaveReadSectors")));
 #endif
 
 // ----------------------------------------------------------------------------
-// Slot API (asm/save_slot_api.s)
-int SaveSlotSave(u32 slotIdx, const void *src) {
-    volatile SaveSlot *e = &SAVE_SLOTS[slotIdx & 0xFF];
-    u32 sz = e->byteSize;
-    u32 cksum = SaveChecksum(src, sz);
-    // Staging: [cksum][payload] at 0x02000000
-    *(volatile u32 *)0x02000000 = cksum;
-    CpuFastSet(src, (void *)0x02000004, (sz + 1) >> 1); // word count via CpuSet
-    volatile u32 *dev = (volatile u32 *)0x030003AC;
-    u32 devType = 0;
-    if (dev && *dev) devType = *(volatile u32 *)(*dev + 4);
-    if (devType == 1 || devType == 2) {
-        return SaveWriteSectors(e->firstSector, (void *)0x02000000, sz + 4);
+// Sector write (asm/save_checksum.s sub_080058D0, 184 B, 5 pools).
+// NOTE the parameter ORDER is (src, sector, size) — swapped vs the read side
+// (sector, dst, size). The slot caller (save_slot_api.s:41-44) sets r0=src
+// (0x02000000), r1=sector before the bl, and the body advances r5+=8 (src
+// bytes) with r8+=1 (sector). A (sector, src) declaration swaps the two
+// increments and can never match.
+// The body is VOID (pop {r0} destroys r0). Sector/return values truncate to
+// u16 per call; the panic second arg reuses the truncated code in r1. r6
+// first holds IME base 0x04000208, then the remaining count (disjoint ranges,
+// separate blocks — same r6-reuse idiom as race_scene_b2 C27C).
+// ----------------------------------------------------------------------------
+void SaveWriteSectors(const void *src, u32 sector, u32 byteSize) {
+    __asm__(".globl SaveWrIME\nSaveWrIME = 0x04000208");
+    __asm__(".globl SaveWrIE\nSaveWrIE = 0x04000200");
+    __asm__(".globl SaveWrP1\nSaveWrP1 = 0x0805BABC");
+    __asm__(".globl SaveWrP2\nSaveWrP2 = 0x0805BAD0");
+    __asm__(".globl SaveWrP3\nSaveWrP3 = 0x0805BAE0");
+    extern u8 SaveWrIME[];
+    extern u8 SaveWrIE[];
+    extern u8 SaveWrP1[];
+    extern u8 SaveWrP2[];
+    extern u8 SaveWrP3[];
+    register u8 *p5 __asm__("r5") = (u8 *)src;
+    register u32 s8 __asm__("r8") = sector;
+    u32 n = (byteSize + 7) >> 3;
+    u32 retries = 0;
+    *(volatile u16 *)SaveWrIME = 0;
+    sub_080029D8();
+    sub_08002A68();
+    {
+        u32 t = (u32)sub_08002AF4(9);
+        int rc0 = sub_0802DA20(0, t);
+        if ((u16)rc0 != 0)
+            sub_0800295C((u32)SaveWrP1, (u32)(u16)rc0);
     }
+    *(volatile u16 *)SaveWrIE |= 8;
+    *(volatile u16 *)SaveWrIME = 1;
+    if (n == 0)
+        goto done;
+    {
+        register u32 rem __asm__("r6") = n;
+        do {
+            int w = sub_0802DC54((u16)(u32)p5, s8);
+            if ((u16)w != 0) {
+                retries += 1;
+                if ((s32)retries > 10)
+                    sub_0800295C((u32)SaveWrP2, (u32)(u16)w);
+            } else {
+                int v = sub_0802DD30((u16)(u32)p5, s8);
+                if ((u16)v != 0) {
+                    retries += 1;
+                    if ((s32)retries > 10)
+                        sub_0800295C((u32)SaveWrP3, (u32)(u16)v);
+                } else {
+                    p5 += 8;
+                    s8 += 1;
+                    rem -= 1;
+                }
+            }
+            if ((s32)rem == 0)
+                break;
+            // retry path: do not advance; loop again
+            // NOTE: ROM retries by re-executing without advancing, via the
+            // trailing cmp/bne on rem; the C must not decrement on failure.
+            // The above if/else advances only on full success; on failure rem
+            // is unchanged so the loop repeats. To match the ROM's exact
+            // branch shape (beq skip-panic, ble skip-panic, bne loop) the
+            // retry counters and advances must stay in this nesting.
+            (void)0;
+        } while (1);
+    }
+done:
+    sub_08002A0C();
+}
+#ifndef __APPLE__
+void _080058D0(const void *a, u32 b, u32 c) __attribute__((alias("SaveWriteSectors")));
+void sub_080058D0(const void *a, u32 b, u32 c) __attribute__((alias("SaveWriteSectors")));
+#endif
+
+// ----------------------------------------------------------------------------
+// Slot API (asm/save_slot_api.s + code_5988.s)
+// Slot index via shifts ((idx<<24)>>21 = (idx&0xFF)*8); table base 0x0300032C
+// via pool. Staging through CpuSet (sub_0802D974), not CpuFastSet. DevType via
+// double-indirect with SIGNED bgt/blt (1..2 present). Write call order is
+// (src, sector, size+4); read call order is (sector, dst, size+4). Both sector
+// bodies are void so their results are ignored.
+// ----------------------------------------------------------------------------
+int SaveSlotSave(u32 slotIdx, const void *src) {
+    __asm__(".globl SaveSlotTbl\nSaveSlotTbl = 0x0300032C");
+    __asm__(".globl SaveDst4\nSaveDst4 = 0x02000004");
+    __asm__(".globl SaveDevPtr\nSaveDevPtr = 0x030003AC");
+    extern u8 SaveSlotTbl[];
+    extern u8 SaveDst4[];
+    extern u8 SaveDevPtr[];
+    volatile u8 *e = SaveSlotTbl + ((slotIdx << 24) >> 21);
+    u32 cksum = SaveChecksum(src, *(volatile u32 *)(e + 4));
+    u32 stk = cksum;
+    u8 *stage;
+    __asm__ volatile("" : "+r" (e));
+    stage = (u8 *)0x02000000u;
+    sub_0802D974(&stk, (void *)stage, 2);
+    {
+        void *d = (void *)SaveDst4;
+        u32 sz = *(volatile u32 *)(e + 4);
+        u32 words = ((sz + (sz >> 31)) << 10) >> 11;
+        sub_0802D974(src, d, words);
+    }
+    {
+        u32 devType = *(volatile u32 *)(*(volatile u32 *)SaveDevPtr + 4);
+        if ((s32)devType > 2)
+            goto done;
+        if ((s32)devType < 1)
+            goto done;
+        SaveWriteSectors((void *)stage, *(volatile u32 *)e, *(volatile u32 *)(e + 4) + 4);
+    }
+done:
     return 1;
 }
 #ifndef __APPLE__
@@ -366,19 +488,37 @@ int sub_080059F0(u32 a, const void *b) __attribute__((alias("SaveSlotSave")));
 #endif
 
 int SaveSlotLoad(u32 slotIdx, void *dst) {
-    volatile SaveSlot *e = &SAVE_SLOTS[slotIdx & 0xFF];
-    volatile u32 *dev = (volatile u32 *)0x030003AC;
-    u32 devType = 0;
-    if (dev && *dev) devType = *(volatile u32 *)(*dev + 4);
-    if (devType == 1 || devType == 2) {
-        int rc = SaveReadSectors(e->firstSector, (void *)0x02000000, e->byteSize + 4);
-        if (rc != 0) return 0;
+    __asm__(".globl SaveSlotTbl\nSaveSlotTbl = 0x0300032C");
+    __asm__(".globl SaveDevPtr\nSaveDevPtr = 0x030003AC");
+    __asm__(".globl SaveStage4\nSaveStage4 = 0x02000004");
+    extern u8 SaveSlotTbl[];
+    extern u8 SaveDevPtr[];
+    extern u8 SaveStage4[];
+    volatile u8 *e = SaveSlotTbl + ((slotIdx << 24) >> 21);
+    u32 devType = *(volatile u32 *)(*(volatile u32 *)SaveDevPtr + 4);
+    if ((s32)devType > 2)
+        goto verify;
+    if ((s32)devType < 1)
+        goto verify;
+    {
+        u32 sec = *(volatile u32 *)e;
+        u8 *d = (u8 *)0x02000000u;
+        SaveReadSectors(sec, (void *)d, *(volatile u32 *)(e + 4) + 4);
     }
-    u32 stored = *(volatile u32 *)0x02000000;
-    u32 calc = SaveChecksum((void *)0x02000004, e->byteSize);
-    if (calc != stored) return 0;
-    CpuFastSet((void *)0x02000000, dst, (e->byteSize + 4 + 3) >> 2);
-    return 1;
+verify:
+    {
+        u32 sz = *(volatile u32 *)(e + 4);
+        u32 calc = SaveChecksum((void *)SaveStage4, sz);
+        u8 *stage0 = (u8 *)0x02000000u;
+        u32 stored = *(volatile u32 *)stage0;
+        if (calc != stored)
+            return 0;
+        {
+            u32 words = ((sz + (sz >> 31)) << 10) >> 11;
+            sub_0802D974((void *)SaveStage4, dst, words);
+        }
+        return 1;
+    }
 }
 #ifndef __APPLE__
 int _08005988(u32 a, void *b) __attribute__((alias("SaveSlotLoad")));

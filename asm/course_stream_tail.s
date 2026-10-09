@@ -91,3 +91,4 @@ _08006D5C:
   bx r0
   .short 0x0000
 _08006D64: .word 0x00007FFF
+course_stream_tail_end:

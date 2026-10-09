@@ -58,54 +58,65 @@ void Course_Leaves_096A4(void *arg) {
 // _08009674/_08009680/_0800968C removed — duplicates of course_records.c owner; keep exactly one owner (course_records) to avoid ld -r duplicate
 
 void CourseLeaves_09748(u16 a, u16 sel) {
-    // _08009748: VMA 0x08009748 pure Thumb, pools 0x030003E4/0xFFFF/0x03001780+0x10CA etc.
+    // Pin the intermediates whose ROM Thumb operands have fixed register
+    // order: phase 0 uses r4 for the table offset, then zero as the ldrsh
+    // index; phase 1 adds r2+r0 into r0; phase 2 adds r4+r0 into r0.
+    register s32 delta __asm__("r2") = 0;
+    s32 phase;
+    register volatile u8 *blk __asm__("r1");
+    s32 sum;
+    s16 sum_s;
+    u8 *base;
+    u16 *p;
+    u16 max_u;
+    s16 bound;
     (void)a;
-    u16 sel_m = sel;
-    register u32 delta __asm__("r2") = 0;
-    if (sel_m == 32) delta = 0xFFFFu;
-    else if (sel_m == 16) delta = 1;
-    volatile u32 *slot = (volatile u32 *)0x030003E4u;
-    register volatile u8 *blk __asm__("r1") = *(volatile u8 * volatile *)slot; // unconditional deref: asm has no if (!blk)
-    u32 phase = *(volatile u32 *)(blk + 4);
-    if (phase == 1) goto ph1;
-    if (phase > 1) {
-        if (phase == 2) goto ph2;
-        return;
+    if (sel == 32) delta = 0xFFFF;
+    else if (sel == 16) delta = 1;
+    blk = *(volatile u8 * volatile *)0x030003E4u;
+    phase = *(volatile s32 *)(blk + 4);
+    switch (phase) {
+    case 0: {
+        register s32 e __asm__("r0") = (s16)delta;
+        sum = e + *(volatile u16 *)(blk + 20);
+        *(volatile u16 *)(blk + 20) = sum;
+        sum_s = sum;
+        if (sum_s <= 0) {
+            *(volatile u16 *)(blk + 20) = 1;
+        } else {
+            base = (u8 *)0x03001780u;
+            __asm__("" : "+r"(base));
+            register u32 table_off __asm__("r4") = 0x10CAu;
+            __asm__("" : "+r"(table_off));
+            p = (u16 *)(base + table_off);
+            max_u = *(volatile u16 *)p;
+            // The same r4 becomes the zero register used by ROM's ldrsh.
+            table_off = 0;
+            __asm__("" : "+r"(table_off));
+            bound = *(s16 *)p;
+            if (sum_s > bound) *(volatile u16 *)(blk + 20) = max_u;
+        }
+        break;
     }
-    if (phase == 0) goto ph0;
-    return;
-ph0: {
-        s16 d = (s16)delta;
-        u16 cur = *(volatile u16 *)(blk + 20);
-        s32 sum = (s32)cur + (s32)d;
-        u16 sum_u = (u16)sum;
-        *(volatile u16 *)(blk + 20) = sum_u;
-        s16 sum_s = (s16)sum_u;
-        if (sum_s <= 0) { *(volatile u16 *)(blk + 20) = 1; return; }
-        volatile u16 *p_max_u = (volatile u16 *)0x0300284Au;
-        volatile s16 *p_bound = (volatile s16 *)0x0300284Au;
-        u16 max_u = *p_max_u;
-        s16 bound = *p_bound;
-        if (sum_s > bound) *(volatile u16 *)(blk + 20) = max_u;
-        return;
+    case 1: {
+        register s32 e __asm__("r0") = (s16)delta;
+        register s32 cur __asm__("r2") = *(volatile u16 *)(blk + 22);
+        register s32 out __asm__("r0") = cur + e;
+        *(volatile u16 *)(blk + 22) = out;
+        break;
     }
-ph1: {
-        s16 d = (s16)delta;
-        u16 cur = *(volatile u16 *)(blk + 22);
-        s32 sum = (s32)cur + (s32)d;
-        *(volatile u16 *)(blk + 22) = (u16)sum;
-        return;
+    case 2: {
+        register s32 e __asm__("r0") = (s16)delta;
+        register u16 cur __asm__("r4") = *(volatile u16 *)(blk + 24);
+        sum = cur + e;
+        *(volatile u16 *)(blk + 24) = sum;
+        sum_s = sum;
+        if (sum_s <= 0) *(volatile u16 *)(blk + 24) = 1;
+        else if (sum_s > 3) *(volatile u16 *)(blk + 24) = 3;
+        break;
     }
-ph2: {
-        s16 d = (s16)delta;
-        u16 cur = *(volatile u16 *)(blk + 24);
-        s32 sum = (s32)cur + (s32)d;
-        u16 sum_u = (u16)sum;
-        *(volatile u16 *)(blk + 24) = sum_u;
-        s16 sum_s = (s16)sum_u;
-        if (sum_s <= 0) { *(volatile u16 *)(blk + 24) = 1; return; }
-        if (sum_s > 3) { *(volatile u16 *)(blk + 24) = 3; return; }
-        return;
+    default:
+        break;
     }
 }
 #ifndef __APPLE__

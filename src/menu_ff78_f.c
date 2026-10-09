@@ -45,8 +45,15 @@ __attribute__((weak)) void Sub_08002B384(u32 v) { (void)v; }
 // spelling -- `Sub_08002B368` would not survive the splice.
 __attribute__((weak)) void sub_0802B368(u32 v) { (void)v; }
 __attribute__((weak)) void Sub_08002B214(int v) { (void)v; }
+__attribute__((weak)) void sub_0802B214(int v) { (void)v; }
 __attribute__((weak)) void Sub_08002B3A4(void) {}
+__attribute__((weak)) void sub_0802B3A4(void) {}
+// 0x0802b3a4's manifest entry has NO `export` list, so the spliced section
+// publishes only its c_name `_0802B3A4`; calling `sub_0802B3A4` leaves the
+// slice link with an undefined reference.
+__attribute__((weak)) void _0802B3A4(void) {}
 __attribute__((weak)) void Sub_08002B234(void) {}
+__attribute__((weak)) void sub_0802B234(void) {}
 __attribute__((weak)) void Sub_08002618(u32 a, u32 b) { (void)a; (void)b; }
 // 0x08002618 is a PROMOTED entry whose manifest `export` is exactly
 // ['_08002618', 'sub_08002618']; src/event_dma_queue.c defines both as
@@ -54,8 +61,12 @@ __attribute__((weak)) void Sub_08002618(u32 a, u32 b) { (void)a; (void)b; }
 // of the exported spellings, not the friendly `Sub_` name.
 __attribute__((weak)) void sub_08002618(u32 a, u32 b) { (void)a; (void)b; }
 __attribute__((weak)) void Sub_080056F4(void *a, int b, int c) { (void)a; (void)b; (void)c; }
+// 0x080056f4 is a PROMOTED entry whose manifest export is exactly
+// ['_080056F4'], so a spliced body must call that spelling.
+__attribute__((weak)) void _080056F4(void *a, int b, int c) { (void)a; (void)b; (void)c; }
 __attribute__((weak)) int Sub_08024068(void) { return 0; }
 __attribute__((weak)) void Sub_0800D97C(void *a, int b) { (void)a; (void)b; }
+__attribute__((weak)) void sub_0800D97C(void *a, int b) { (void)a; (void)b; }
 __attribute__((weak)) void Sub_08002E0A4(void *d, const void *s, u32 n) { (void)d; (void)s; (void)n; }
 __attribute__((weak)) void Sub_08007770(int a, void *b, int c, int d, u32 e, u32 f) { (void)a; (void)b; (void)c; (void)d; (void)e; (void)f; }
 #else
@@ -74,14 +85,21 @@ extern void _08004D4C(int a, int b, int c);
 extern void Sub_08002B368(u32 v);
 extern void Sub_08002B384(u32 v);
 extern void sub_0802B368(u32 v);
+extern void sub_0802B384(u32 v);  // closure spelling (7 digits, per nm)
 extern void Sub_08002B214(int v);
+extern void sub_0802B214(int v);  // closure spelling (7 digits, per nm)
 extern void Sub_08002B3A4(void);
+extern void sub_0802B3A4(void);  // closure spelling (7 digits, per nm)
+extern void _0802B3A4(void);    // the only name the slice actually publishes
 extern void Sub_08002B234(void);
+extern void sub_0802B234(void);  // closure spelling (7 digits, per nm)
 extern void Sub_08002618(u32 a, u32 b);
 extern void sub_08002618(u32 a, u32 b);
 extern void Sub_080056F4(void *a, int b, int c);
+extern void _080056F4(void *a, int b, int c);
 extern int Sub_08024068(void);
 extern void Sub_0800D97C(void *a, int b);
+extern void sub_0800D97C(void *a, int b);  // closure spelling
 extern void Sub_08002E0A4(void *d, const void *s, u32 n);
 extern void sub_0802E0A4(void *d, const void *s, u32 n);  // 8 digits: the real symbol
 extern void Sub_08007770(int a, void *b, int c, int d, u32 e, u32 f);
@@ -292,24 +310,53 @@ void sub_0800152A8(void *a) __attribute__((alias("MenuFF78_152A8")));
 //   u8[WA+0x10C3]==0: u8[rec+88]=0, Sub_080056F4(rec,1,1), s16[base+136]=1.
 //   Then car-id map: 27..30 -> s16[rec+84]=1 else 6.
 void MenuFF78_15230(void *base_, void *rec_) {
-    volatile u8 *base = (volatile u8 *)base_;
-    volatile u8 *rec = (volatile u8 *)rec_;
-    *(volatile s16 *)(uintptr_t)(base + 136) = 0;
-    if (*(volatile u16 *)(uintptr_t)(0x03001780u + 0xFBCu) == 3) {
-        *(volatile u8 *)(uintptr_t)(rec + 88) = 0;
-        if (*(volatile u8 *)(uintptr_t)(0x03001780u + 0x10C3u) == 0) {
-            Sub_080056F4(rec_, 1, 1);
-            *(volatile s16 *)(uintptr_t)(base + 136) = 1;
+    // The ROM keeps the work-area base in r2 across BOTH gate reads and loads
+    // 0x0FBC/0x10C3 as separate pool words (`ldr r2,=0x03001780;
+    // ldr r1,=0x0FBC; adds`), so the base must be a runtime pointer assigned
+    // after the first store -- a folded literal would emit one 0x030027FC word.
+    register u8 *base __asm__("r5");
+    u8 *rec = (u8 *)rec_;
+    extern u8 MenuWaBaseF[] __asm__("MenuWaBaseF");
+    u8 *wa;
+    register u32 zero __asm__("r0");
+    int car;
+    __asm__(".globl MenuWaBaseF\nMenuWaBaseF = 0x03001780\n");
+    base = (u8 *)base_ + 136;
+    zero = 0;
+    *(u16 *)(uintptr_t)base = (u16)zero;
+    wa = (u8 *)(uintptr_t)MenuWaBaseF;
+    if (*(u16 *)(uintptr_t)(wa + 0xFBC) == 3) {
+        {
+            u8 *p88 = (u8 *)(uintptr_t)(rec + 88);
+            zero = 0;
+            *p88 = (u8)zero;
+        }
+        if (*(u8 *)(uintptr_t)(wa + 0x10C3) == 0) {
+            FF_CALLEE(Sub_080056F4, _080056F4)(rec_, 1, 1);
+            *(u16 *)(uintptr_t)base = 1;
         }
     }
-    u16 car = *(volatile u16 *)(uintptr_t)((volatile u8 *)Sub_08004B68() + 2);
-    *(volatile s16 *)(uintptr_t)(rec + 84) = (car >= 27 && car <= 30) ? 1 : 6;
+    // Signed s16 car id. Two separate `goto`s are what keep agbcc on
+    // `cmp #30;bgt;cmp #27;blt`; a combined `&&`/`||` range test folds to
+    // `(u32)(car-27) <= 3` with an ldrh+shift read instead of ldrsh.
+    car = *(s16 *)(uintptr_t)((u8 *)FF_CALLEE(Sub_08004B68, sub_08004B68)() + 2);
+    switch (car) {
+    case 27: case 28: case 29: case 30:
+        *(u16 *)(uintptr_t)(rec + 84) = 1;
+        break;
+    default:
+        *(u16 *)(uintptr_t)(rec + 84) = 6;
+        break;
+    }
 }
 #ifndef __APPLE__
 void _080015230(void *a, void *b) __attribute__((alias("MenuFF78_15230")));
 void Sub_080015230(void *a, void *b) __attribute__((alias("MenuFF78_15230")));
 void sub_080015230(void *a, void *b) __attribute__((alias("MenuFF78_15230")));
 #endif
+// 106-byte body, two short of the section's 4-byte alignment: gas pads with
+// `nop` (0x46c0) where the ROM holds `00 00`.
+__asm__(".align 2, 0");
 
 // ----------------------------------------------------------------------------
 // sub_080015C9C — (dead, rec): s16[rec+84] = 6 (car id fetched, unused).
@@ -369,28 +416,47 @@ void sub_08001411C(int a, void *b) __attribute__((alias("MenuFF78_1411C")));
 //   ev==32: cell--; ev==16: cell++. Clamp 1..12.
 //   Changed vs entry -> Sub_08002B384(3).
 void MenuFF78_14E3C(void *rec_, int dead, u32 ev_) {
+    // FINDING : signed reads need an `int` destination (an `s16` destination is
+    // only compared for equality, so agbcc skips the sign extension and loads
+    // `ldrh` + copies). The decrement/increment arms store the cell through a
+    // `u16` read (`ldrh;subs/adds;strh`), i.e. unsigned -- a `s16` read there
+    // inserts a redundant `lsls/asrs` pair. The final compare is `cmp r7,r0`
+    // (entry first), so the source orders it `entry != c`.
     (void)dead;
-    volatile u8 *rec = (volatile u8 *)rec_;
+    u8 *rec = (u8 *)rec_;
     u16 ev = (u16)ev_;
-    s16 entry = *(volatile s16 *)(uintptr_t)(rec + 136);
+    int entry = *(s16 *)(uintptr_t)(rec + 136);
+    int c;
     if (ev == 1) {
-        u16 v = *(volatile u16 *)(uintptr_t)(0x080CB7CEu + ((u32)(u16)entry << 1));
-        Sub_08002B214(v);
+        // Assembler-resolved table base: the ROM loads the pool word into r0
+        // and shifts `entry` into r1 (`ldr r0,=0x080CB7CE; lsls r1,r7,#1;
+        // adds r1,r1,r0`). A plain literal makes agbcc compute the index first
+        // in r0 and load the constant second.
+        extern u8 E3C_TBL[];
+        u8 *tbl;
+        u16 v;
+        __asm__(".globl E3C_TBL\nE3C_TBL = 0x080CB7CE\n");
+        tbl = (u8 *)(uintptr_t)E3C_TBL;
+        v = *(u16 *)(uintptr_t)(tbl + ((u32)entry << 1));
+        FF_CALLEE(Sub_08002B214, sub_0802B214)(v);
     }
     if (ev == 32) {
-        s16 c = *(volatile s16 *)(uintptr_t)(rec + 136);
-        *(volatile s16 *)(uintptr_t)(rec + 136) = (s16)(c - 1);
+        *(u16 *)(uintptr_t)(rec + 136) =
+            (u16)(*(u16 *)(uintptr_t)(rec + 136) - 1);
     }
     if (ev == 16) {
-        s16 c = *(volatile s16 *)(uintptr_t)(rec + 136);
-        *(volatile s16 *)(uintptr_t)(rec + 136) = (s16)(c + 1);
+        *(u16 *)(uintptr_t)(rec + 136) =
+            (u16)(*(u16 *)(uintptr_t)(rec + 136) + 1);
     }
-    if (*(volatile s16 *)(uintptr_t)(rec + 136) <= 0)
-        *(volatile s16 *)(uintptr_t)(rec + 136) = 1;
-    if (*(volatile s16 *)(uintptr_t)(rec + 136) > 12)
-        *(volatile s16 *)(uintptr_t)(rec + 136) = 12;
-    if (*(volatile s16 *)(uintptr_t)(rec + 136) != entry)
-        Sub_08002B384(3);
+    c = *(s16 *)(uintptr_t)(rec + 136);
+    if (c <= 0)
+        *(u16 *)(uintptr_t)(rec + 136) = 1;
+    c = *(s16 *)(uintptr_t)(rec + 136);
+    if (c > 12)
+        *(u16 *)(uintptr_t)(rec + 136) = 12;
+    c = *(s16 *)(uintptr_t)(rec + 136);
+    if (entry != c)
+        FF_CALLEE(Sub_08002B384, sub_0802B384)(3);
 }
 #ifndef __APPLE__
 void _080014E3C(void *a, int b, u32 c) __attribute__((alias("MenuFF78_14E3C")));
@@ -404,31 +470,47 @@ void sub_080014E3C(void *a, int b, u32 c) __attribute__((alias("MenuFF78_14E3C")
 //   ev==32: cell-- + 2B3A4; ev==16: cell++ + 2B3A4. Clamp 1..8.
 //   Changed vs entry -> Sub_08002B384(3).
 void MenuFF78_14EA0(void *rec_, int dead, u32 ev_) {
+    // Same shape as MenuFF78_14E3C (signed `int` reads, unsigned RMW arms) with
+    // a 2B3A4 side-effect per arm and cell rec+138 (clamp 1..8). The ev==1 arm
+    // re-reads the cell AFTER the 2B3A4 call, so the table index uses a fresh
+    // `ldrsh` rather than the preserved `entry` -- a plain re-read (not
+    // `entry`) is what stops agbcc reusing r7.
     (void)dead;
-    volatile u8 *rec = (volatile u8 *)rec_;
+    u8 *rec = (u8 *)rec_;
     u16 ev = (u16)ev_;
-    s16 entry = *(volatile s16 *)(uintptr_t)(rec + 138);
+    int entry = *(s16 *)(uintptr_t)(rec + 138);
+    int c;
     if (ev == 1) {
-        Sub_08002B3A4();
-        u16 v = *(volatile u16 *)(uintptr_t)(0x080CB7E8u + ((u32)(u16)entry << 1));
-        Sub_08002B384(v);
+        extern u8 EA0_TBL[];
+        u8 *tbl;
+        u16 v;
+        FF_CALLEE(Sub_08002B3A4, _0802B3A4)();
+        __asm__(".globl EA0_TBL\nEA0_TBL = 0x080CB7E8\n");
+        // Base load FIRST, then the reload: the ROM reserves r0 for the pool
+        // word, so the reload's zero index lands in r2. Writing the reload
+        // before the base assignment makes agbcc take r0 as the index scratch
+        // and load the base second.
+        tbl = (u8 *)(uintptr_t)EA0_TBL;
+        c = *(s16 *)(uintptr_t)(rec + 138);
+        v = *(u16 *)(uintptr_t)(tbl + ((u32)c << 1));
+        FF_CALLEE(Sub_08002B384, sub_0802B384)(v);
     }
     if (ev == 32) {
-        s16 c = *(volatile s16 *)(uintptr_t)(rec + 138);
-        *(volatile s16 *)(uintptr_t)(rec + 138) = (s16)(c - 1);
-        Sub_08002B3A4();
+        *(u16 *)(uintptr_t)(rec + 138) =
+            (u16)(*(u16 *)(uintptr_t)(rec + 138) - 1);
+        FF_CALLEE(Sub_08002B3A4, _0802B3A4)();
     }
     if (ev == 16) {
-        s16 c = *(volatile s16 *)(uintptr_t)(rec + 138);
-        *(volatile s16 *)(uintptr_t)(rec + 138) = (s16)(c + 1);
-        Sub_08002B3A4();
+        *(u16 *)(uintptr_t)(rec + 138) =
+            (u16)(*(u16 *)(uintptr_t)(rec + 138) + 1);
+        FF_CALLEE(Sub_08002B3A4, _0802B3A4)();
     }
-    if (*(volatile s16 *)(uintptr_t)(rec + 138) <= 0)
-        *(volatile s16 *)(uintptr_t)(rec + 138) = 1;
-    if (*(volatile s16 *)(uintptr_t)(rec + 138) > 8)
-        *(volatile s16 *)(uintptr_t)(rec + 138) = 8;
-    if (*(volatile s16 *)(uintptr_t)(rec + 138) != entry)
-        Sub_08002B384(3);
+    if (*(s16 *)(uintptr_t)(rec + 138) <= 0)
+        *(u16 *)(uintptr_t)(rec + 138) = 1;
+    if (*(s16 *)(uintptr_t)(rec + 138) > 8)
+        *(u16 *)(uintptr_t)(rec + 138) = 8;
+    if (entry != *(s16 *)(uintptr_t)(rec + 138))
+        FF_CALLEE(Sub_08002B384, sub_0802B384)(3);
 }
 #ifndef __APPLE__
 void _080014EA0(void *a, int b, u32 c) __attribute__((alias("MenuFF78_14EA0")));
@@ -444,18 +526,38 @@ void MenuFF78_14F14(void *rec_, int dead, u32 ev_) {
     (void)dead;
     volatile u8 *rec = (volatile u8 *)rec_;
     u16 ev = (u16)ev_;
-    volatile u8 *cell = (volatile u8 *)(uintptr_t)(0x03001780u + 0x5E0u);
-    s16 entry = *(volatile s16 *)(uintptr_t)cell;
+    // Assembler-resolved work-area base so the 0x5E0 offset stays a separate
+    // constant (the ROM synthesises it as `movs #0xbc; lsls #3`) added at
+    // runtime, instead of folding base+0x5E0 into one pool word.
+    extern u8 J14F14_WA[];
+    volatile u8 *wa;
+    int entry;
+    __asm__(".globl J14F14_WA\nJ14F14_WA = 0x03001780\n");
+    wa = (volatile u8 *)(uintptr_t)J14F14_WA;
+    // Signed int destination keeps the ROM's `movs r0,#0; ldrsh r5,[r3,r0]`
+    // (a plain s16 compare would let agbcc use `ldrh`, which needs no sign
+    // extension for an equality test).
+    entry = *(s16 *)(uintptr_t)(wa + 0x5E0u);
     if (ev == 32) {
         *(volatile s16 *)(uintptr_t)(rec + 140) = 1;
-        *(volatile s16 *)(uintptr_t)cell = 1;
+        *(volatile s16 *)(uintptr_t)(wa + 0x5E0u) = 1;
     }
     if (ev == 16) {
-        *(volatile s16 *)(uintptr_t)(rec + 140) = 2;
-        *(volatile s16 *)(uintptr_t)cell = 0;
+        // The ROM computes the rec+140 store address (into r0), then
+        // materialises the `0` into r2 (reusing the now-dead `ev`) and the `2`
+        // into r1, then stores both. Pin the zero so agbcc emits it in r2 at
+        // this point rather than folding it into a fresh register late.
+        volatile s16 *p16;
+        register s16 zero __asm__("r2");
+        register s16 two __asm__("r1");
+        p16 = (volatile s16 *)(uintptr_t)(rec + 140);
+        zero = 0;
+        two = 2;
+        *p16 = two;
+        *(volatile s16 *)(uintptr_t)(wa + 0x5E0u) = zero;
     }
-    if (*(volatile s16 *)(uintptr_t)cell != entry)
-        Sub_08002B384(1);
+    if (*(s16 *)(uintptr_t)(wa + 0x5E0u) != entry)
+        FF_CALLEE(Sub_08002B384, sub_0802B384)(1);
 }
 #ifndef __APPLE__
 void _080014F14(void *a, int b, u32 c) __attribute__((alias("MenuFF78_14F14")));
@@ -470,42 +572,55 @@ void sub_080014F14(void *a, int b, u32 c) __attribute__((alias("MenuFF78_14F14")
 //   ev==64: D97C(rec+128,15), cell--; ev==128: D97C(rec+128,15), cell++.
 //   Clamp 0..3. Changed vs entry -> 2B384(2); new==1 -> 2B234.
 void MenuFF78_14D94(void *rec_, int dead, u32 ev_) {
+    // Signed `int` `entry` read (ldrsh), unsigned RMW arms (ldrh), and the
+    // reset quad materialised as two reused temporaries (`ten` in r1, `zero`
+    // in r0) rather than four independent immediates.
     (void)dead;
-    volatile u8 *rec = (volatile u8 *)rec_;
+    u8 *rec = (u8 *)rec_;
     u16 ev = (u16)ev_;
-    s16 entry = *(volatile s16 *)(uintptr_t)(rec + 134);
+    int entry = *(s16 *)(uintptr_t)(rec + 134);
     if (ev == 2) {
-        Sub_08002B368(4);
-        *(volatile u32 *)(uintptr_t)(rec + 8) = 10;
-        *(volatile s16 *)(uintptr_t)(rec + 12) = 0;
-        *(volatile u32 *)(uintptr_t)(rec + 40) = 10;
-        *(volatile u32 *)(uintptr_t)(rec + 36) = 0;
+        FF_CALLEE(Sub_08002B368, sub_0802B368)(4);
+        register u32 ten __asm__("r1");
+        register u32 zero __asm__("r0");
+        ten = 10;
+        *(u32 *)(uintptr_t)(rec + 8) = ten;
+        zero = 0;
+        *(u16 *)(uintptr_t)(rec + 12) = (u16)zero;
+        *(u32 *)(uintptr_t)(rec + 40) = ten;
+        *(u32 *)(uintptr_t)(rec + 36) = zero;
     }
-    if (*(volatile s16 *)(uintptr_t)(rec + 134) == 3 && ev == 1) {
-        Sub_08002B368(1);
-        *(volatile u32 *)(uintptr_t)(rec + 8) = 10;
-        *(volatile s16 *)(uintptr_t)(rec + 12) = 0;
-        *(volatile u32 *)(uintptr_t)(rec + 40) = 10;
-        *(volatile u32 *)(uintptr_t)(rec + 36) = 0;
+    if (*(u16 *)(uintptr_t)(rec + 134) == 3 && ev == 1) {
+        FF_CALLEE(Sub_08002B368, sub_0802B368)(1);
+        {
+            register u32 ten __asm__("r1");
+            register u32 zero __asm__("r0");
+            ten = 10;
+            *(u32 *)(uintptr_t)(rec + 8) = ten;
+            zero = 0;
+            *(u16 *)(uintptr_t)(rec + 12) = (u16)zero;
+            *(u32 *)(uintptr_t)(rec + 40) = ten;
+            *(u32 *)(uintptr_t)(rec + 36) = zero;
+        }
     }
     if (ev == 64) {
-        Sub_0800D97C((void *)(uintptr_t)(rec + 128), 15);
-        s16 c = *(volatile s16 *)(uintptr_t)(rec + 134);
-        *(volatile s16 *)(uintptr_t)(rec + 134) = (s16)(c - 1);
+        FF_CALLEE(Sub_0800D97C, sub_0800D97C)((void *)(uintptr_t)(rec + 128), 15);
+        *(u16 *)(uintptr_t)(rec + 134) =
+            (u16)(*(u16 *)(uintptr_t)(rec + 134) - 1);
     }
     if (ev == 128) {
-        Sub_0800D97C((void *)(uintptr_t)(rec + 128), 15);
-        s16 c = *(volatile s16 *)(uintptr_t)(rec + 134);
-        *(volatile s16 *)(uintptr_t)(rec + 134) = (s16)(c + 1);
+        FF_CALLEE(Sub_0800D97C, sub_0800D97C)((void *)(uintptr_t)(rec + 128), 15);
+        *(u16 *)(uintptr_t)(rec + 134) =
+            (u16)(*(u16 *)(uintptr_t)(rec + 134) + 1);
     }
-    if (*(volatile s16 *)(uintptr_t)(rec + 134) <= 0)
-        *(volatile s16 *)(uintptr_t)(rec + 134) = 0;
-    if (*(volatile s16 *)(uintptr_t)(rec + 134) > 3)
-        *(volatile s16 *)(uintptr_t)(rec + 134) = 3;
-    if (*(volatile s16 *)(uintptr_t)(rec + 134) != entry) {
-        Sub_08002B384(2);
-        if (*(volatile s16 *)(uintptr_t)(rec + 134) == 1)
-            Sub_08002B234();
+    if (*(s16 *)(uintptr_t)(rec + 134) <= 0)
+        *(u16 *)(uintptr_t)(rec + 134) = 0;
+    if (*(s16 *)(uintptr_t)(rec + 134) > 3)
+        *(u16 *)(uintptr_t)(rec + 134) = 3;
+    if (entry != *(s16 *)(uintptr_t)(rec + 134)) {
+        FF_CALLEE(Sub_08002B384, sub_0802B384)(2);
+        if (*(u16 *)(uintptr_t)(rec + 134) == 1)
+            FF_CALLEE(Sub_08002B234, sub_0802B234)();
     }
 }
 #ifndef __APPLE__
@@ -513,6 +628,9 @@ void _080014D94(void *a, int b, u32 c) __attribute__((alias("MenuFF78_14D94")));
 void Sub_080014D94(void *a, int b, u32 c) __attribute__((alias("MenuFF78_14D94")));
 void sub_080014D94(void *a, int b, u32 c) __attribute__((alias("MenuFF78_14D94")));
 #endif
+// 166-byte body, two short of the section's 4-byte alignment: gas pads with
+// `nop` (0x46c0) where the ROM holds `00 00`.
+__asm__(".align 2, 0");
 
 // ----------------------------------------------------------------------------
 // sub_080013AA8 — gated 7B18 emit over table 0x080CB6B8 (stride 8).
@@ -520,13 +638,22 @@ void sub_080014D94(void *a, int b, u32 c) __attribute__((alias("MenuFF78_14D94")
 //   r2 = u32[0x080CB6B8 + s16[rec+172]*8], r3 = u32[...+4]:
 //   Sub_08007B18(rec, 6, r2, r3, 4, 1, 1, 0).
 void MenuFF78_13AA8(void *rec_) {
-    volatile u8 *rec = (volatile u8 *)rec_;
-    if (*(volatile s16 *)(uintptr_t)(rec + 186) != 0) return;
-    if (*(volatile s16 *)(uintptr_t)(rec + 170) != 1) return;
-    u32 idx = (u32)(u16)*(volatile s16 *)(uintptr_t)(rec + 172);
-    u32 off = idx << 3;
-    u32 r2 = *(volatile u32 *)(uintptr_t)(0x080CB6B8u + off);
-    u32 r3 = *(volatile u32 *)(uintptr_t)(0x080CB6B8u + 4 + off);
+    u8 *rec = (u8 *)rec_;
+    if (*(s16 *)(uintptr_t)(rec + 186) != 0) return;
+    if (*(s16 *)(uintptr_t)(rec + 170) != 1) return;
+    // Assembler-resolved table base: the ROM keeps 0x080CB6B8 in a register and
+    // derives the second entry with `adds r3,#4` one pool word, rather than
+    // folding base+4 into a second 0x080CB6BC literal.
+    extern u8 J13AA8_TBL[];
+    u8 *tbl = (u8 *)(uintptr_t)J13AA8_TBL;
+    u8 *tbl4;
+    u32 off;
+    u32 r2, r3;
+    __asm__(".globl J13AA8_TBL\nJ13AA8_TBL = 0x080CB6B8\n");
+    off = (u32)(s32)*(s16 *)(uintptr_t)(rec + 172) << 3;
+    r2 = *(volatile u32 *)(uintptr_t)(tbl + off);
+    tbl4 = tbl + 4;
+    r3 = *(volatile u32 *)(uintptr_t)(tbl4 + off);
     FF_CALLEE(Sub_08007B18, sub_08007B18)(rec_, 6, (int)r2, (int)r3, 4, 1, 1, 0);
 }
 #ifndef __APPLE__
@@ -541,18 +668,30 @@ void sub_080013AA8(void *a) __attribute__((alias("MenuFF78_13AA8")));
 //   r5==0: 7B18(rec,22,u32[rec+156],u32[rec+160]+8,6,1,1,0).
 //   r5==1: 7B18(rec,23,u32[rec+156]+24,u32[rec+160]+8,6,1,1,0).
 void MenuFF78_13AF4(void *rec_) {
-    volatile u8 *rec = (volatile u8 *)rec_;
+    u8 *rec = (u8 *)rec_;
+    register int g __asm__("r4");
+    s16 v;
     if (*(volatile u16 *)(uintptr_t)(rec + 186) != 1) return;
-    if (*(volatile s16 *)(uintptr_t)(rec + 166) != 1) return;
-    s16 r5 = *(volatile s16 *)(uintptr_t)(rec + 178);
-    if (r5 == 0) {
+    g = *(s16 *)(uintptr_t)(rec + 166);
+    if (g != 1) return;
+    v = *(s16 *)(uintptr_t)(rec + 178);
+    // A switch, not `if (v == 0) ... else if (v == 1) ...`: the ROM lays out a
+    // compare-and-branch chain (`cmp;beq case0;cmp;beq case1;b end`) with the
+    // case bodies after it. An if/else chain instead inlines case0 and reuses
+    // the running rec+178 pointer, which the beq target cannot.
+    switch (v) {
+    case 0: {
         u32 r2 = *(volatile u32 *)(uintptr_t)(rec + 156);
         u32 r3 = *(volatile u32 *)(uintptr_t)(rec + 160) + 8;
-        Sub_08007B18(rec_, 22, (int)r2, (int)r3, 6, 1, 1, 0);
-    } else if (r5 == 1) {
+        FF_CALLEE(Sub_08007B18, sub_08007B18)(rec_, 22, (int)r2, (int)r3, 6, g, g, v);
+        break;
+    }
+    case 1: {
         u32 r2 = *(volatile u32 *)(uintptr_t)(rec + 156) + 24;
         u32 r3 = *(volatile u32 *)(uintptr_t)(rec + 160) + 8;
-        Sub_08007B18(rec_, 23, (int)r2, (int)r3, 6, 1, 1, 0);
+        FF_CALLEE(Sub_08007B18, sub_08007B18)(rec_, 23, (int)r2, (int)r3, 6, v, v, 0);
+        break;
+    }
     }
 }
 #ifndef __APPLE__

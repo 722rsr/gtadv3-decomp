@@ -43,7 +43,13 @@ typedef struct { u8 ef90_lo[6]; u8 ef90_f6; } EF90_Blk;
 #define EF90_F6 (((EF90_Blk *)(uintptr_t)0x0203EF90)->ef90_f6)
 #define F110 ((volatile u8 *)(uintptr_t)0x0203F110)  // Verify probe arg / thunk copy dst
 #define F150 ((volatile u8 *)(uintptr_t)0x0203F110)  // legacy alias (Verify path)
-#define F150_PKT ((volatile u8 *)(uintptr_t)0x0203F150)  // PacketBuild flag source (pool _080008EC)
+
+typedef struct {
+    u8 bytes[0x1C];
+    volatile u8 * volatile tx_packet;
+} SessionPacketState;
+typedef struct { volatile u8 reserved[3]; volatile u8 byte3; } PacketFlagSource;
+#define F150_PKT_SOURCE ((volatile PacketFlagSource *)(uintptr_t)0x0203F150)
 
 // ----------------------------------------------------------------------------
 // _080008F4 — forward decl (defined below).
@@ -104,71 +110,70 @@ void sub_080006BC(void) __attribute__((alias("SessionExit_080006BC")));
 
 // ----------------------------------------------------------------------------
 // _0800070C(buf) -> u16 — session-word reader (per-frame tick).
-// Samples SIOCNT once; FSM on EF90[1]; composes status halfword.
+// The initial 32-bit read spans SIOCNT and the adjacent timer counter, as in
+// the ROM's `ldr r7,[r6]`; its low half drives the arming tests and return.
 u16 SessionRead_0800070C(void *buf) {
-    volatile u16 *siocnt = AG_SIOCNT;
-    u16 r7 = *siocnt;
+    volatile u32 *siocnt = (volatile u32 *)(uintptr_t)0x04000128;
+    u32 r7 = *siocnt;
     volatile u8 *r5 = EF90;
     u8 state = r5[1];
+    int run_watchdog = 0;
 
     if (state == 1) {
-        // watchdog: bump retry counter +8 up to 7
-        // (asm _08000794 tail: [r5+8] = min([r5+8]+1, 7) then state 2)
-        u8 cnt = r5[8];
-        if (cnt < 7)
-            r5[8] = (u8)(cnt + 1);
-        r5[1] = 2;
+        run_watchdog = 1;
     } else if (state == 2) {
-        // verify via _08008F4
         SessionVerify_080008F4(buf);
     } else if (state == 0) {
-        // arming: (SIOCNT & 0x30) == 0 && (SIOCNT & 0x88) == 8 &&
-        //         (SIOCNT & 4) == 0 && [EF90+0x14] == 12
-        if ((r7 & 0x30) == 0 && (r7 & 0x88) == 8 && (r7 & 4) == 0 &&
-            *(volatile u32 *)(r5 + 0x14) == 12) {
-            // IME=0; IE = (IE & 0xFF7F) | 0x40; IME=1
-            *AG_IMEM = 0;
-            u16 ie = *AG_IE;
-            ie = (u16)((ie & 0xFF7Fu) | 0x40u);
-            *AG_IE = ie;
-            *AG_IMEM = 1;
-            // TM3CNT_H: [0x04000129] = [0x04000129] & ~0x41 |...
-            volatile u8 *t3h = (volatile u8 *)(uintptr_t)0x04000129;
-            u8 v = *t3h;
-            v = (u8)(v & (u8)(~0x41));
-            *t3h = v;
-            // advance state to 1
-            r5[1] = 1;
-        } else {
-            r5[1] = 1;
+        if ((r7 & 0x30) != 0) {
+            run_watchdog = 1;
+        } else if ((r7 & 0x88) == 8) {
+            if ((r7 & 4) != 0 || *(volatile u32 *)(r5 + 0x14) != 12) {
+                run_watchdog = 1;
+            } else {
+                *AG_IMEM = 0;
+                u16 ie = *AG_IE;
+                *AG_IE = (u16)(ie & 0xFF7Fu);
+                ie = *AG_IE;
+                *AG_IE = (u16)(ie | 0x40u);
+                *AG_IMEM = 1;
+
+                volatile u8 *siocnt_hi = (volatile u8 *)(uintptr_t)0x04000129;
+                *siocnt_hi = (u8)(*siocnt_hi & (u8)~0x41u);
+                *(volatile u32 *)(uintptr_t)0x0400010C = 0xABFBu;
+                // 0x04000202 is IF; this acknowledges Timer3 and serial.
+                *(volatile u16 *)(uintptr_t)0x04000202 = 0xC0;
+                r5[0] = (u8)(r7 & 0x88u);
+                run_watchdog = 1;
+            }
         }
     }
 
-    // status halfword from state bytes (+2/+3/+6/+7/+8) and SIOCNT bits.
-    {
-        volatile u8 *b = EF90;
-        u32 r0 = (u32)b[2];
-        u32 r1 = (r0 << 28) >> 28;               // low nibble of +2
-        r1 = r1 | b[3];                           // OR valid bits
-        r1 = r1 & 0xF;
-        u32 r2 = b[6] & 0xF0;                     // high nibble of +6
-        u32 r6n = b[0];
-        if (r6n == 8)
-            r1 = (0x80 | r2) | r1;
-        else
-            r1 = r1 | r2;
-        if (b[7] != 0)
-            r1 |= 0x1000u;                        // movs r0,#0x80; lsls #5
-        u8 r5b = b[8];
-        u32 part = (u32)r5b >> 3;
-        u32 r2b = part << 15;
-        u32 sel = (((u32)r7 << 26) >> 30);
-        if (sel > 3) {
-            u32 acc = (0x2000u | r2b) | r1;       // movs r0,#0x80; lsls #6
-            return (u16)acc;
+    if (state == 0 && run_watchdog)
+        r5[1] = 1;
+
+    if (run_watchdog) {
+        // State 1 retries until the counter has already advanced past seven.
+        if ((r5[2] & 0xF0u) == 0 && (r5[6] & 0x40u) == 0) {
+            u8 retries = r5[8];
+            if (retries > 7)
+                r5[1] = 2;
+            else
+                r5[8] = (u8)(retries + 1);
         }
-        return (u16)(r1 | r2b);
+        SessionVerify_080008F4(buf);
     }
+
+    r5[11] = (u8)(r5[11] + 1);
+    u32 status = (u32)(r5[6] & 0x70u) | r5[3];
+    status |= (u32)(r5[2] & 0xF0u) << 4;
+    if (r5[0] == 8)
+        status |= 0x80u;
+    if (r5[7] != 0)
+        status |= 0x1000u;
+    status |= ((u32)r5[8] >> 3) << 15;
+    if (((r7 << 26) >> 30) > 3)
+        status |= 0x2000u;
+    return (u16)status;
 }
 #ifndef __APPLE__
 u16 _0800070C(void *a) __attribute__((alias("SessionRead_0800070C")));
@@ -190,39 +195,56 @@ u16 sub_0800070C(void *a) __attribute__((alias("SessionRead_0800070C")));
 //     EF90[4] = 1
 // Masks from asm negs: -17=~0x10, -33=~0x20, -65=~0x40, -16=~0x0F.
 void PacketBuild_08000848(void *payload, u32 flag) {
-    volatile u8 *r4 = EF90;
-    volatile u8 *pkt = (volatile u8 *)(uintptr_t)*(volatile u32 *)(r4 + 0x1C);
+    register u32 sum __asm__("r6") = 0;
+    register SessionPacketState *r4 __asm__("r4") =
+        (SessionPacketState *)(uintptr_t)0x0203EF90;
 
-    // merge flag bits into pkt[1]
-    u32 b = pkt[1];
-    b = (b & ~0x10u) | ((flag & 1u) << 4);   // ands r1,#1; lsls #4
-    pkt[1] = (u8)b;
-    b = pkt[1];
-    b = (b & ~0x20u) | ((u32)(F150_PKT[3] & 1u) << 5);
-    pkt[1] = (u8)b;
-    b = pkt[1];
-    u32 bit = ((u32)EF90[6] << 25) >> 31;
-    b = (b & ~0x40u) | (bit << 6);
-    pkt[1] = (u8)b;
-    pkt[0] = EF90[11];
-    b = pkt[1];
-    u32 nib = ((u32)EF90[2] << 28) >> 28;
-    u32 x = (u32)EF90[3] ^ nib;
+    // The first packet pointer is held across its byte read and write.
+    register volatile u8 *p0 __asm__("r3") = r4->tx_packet;
+    {
+        register u32 r1 __asm__("r1") = flag;
+        register u32 r2 __asm__("r2") = 1;
+        register u32 r5 __asm__("r5");
+        r1 &= r2;
+        r1 <<= 4;
+        r2 = 17;
+        r2 = 0 - r2;
+        r5 = p0[1];
+        r2 &= r5;
+        r2 |= r1;
+        p0[1] = (u8)r2;
+    }
+
+    volatile u8 *p1 = r4->tx_packet;
+    u32 flag2 = ((u32)(F150_PKT_SOURCE->byte3 & 1u) << 5);
+    u32 b = (p1[1] & ~0x20u) | flag2;
+    p1[1] = (u8)b;
+    volatile u8 *p2 = r4->tx_packet;
+    u32 bit = ((u32)r4->bytes[6] << 25) >> 31;
+    b = (p2[1] & ~0x40u) | (bit << 6);
+    p2[1] = (u8)b;
+    volatile u8 *p3 = r4->tx_packet;
+    p3[0] = r4->bytes[11];
+    volatile u8 *p4 = r4->tx_packet;
+    u32 nib = ((u32)r4->bytes[2] << 28) >> 28;
+    u32 x = (u32)r4->bytes[3] ^ nib;
     x &= 0xF;
-    b = (b & ~0x0Fu) | x;
-    pkt[1] = (u8)b;
+    b = (p4[1] & ~0x0Fu) | x;
+    p4[1] = (u8)b;
 
-    *(volatile u16 *)(pkt + 2) = 0;
-    _0802D974(payload, (void *)(uintptr_t)(pkt + 4), 0x04000004u);
+    volatile u8 *p5 = r4->tx_packet;
+    *(volatile u16 *)(p5 + 2) = 0;
+    p5 = r4->tx_packet;
+    _0802D974(payload, (void *)(uintptr_t)(p5 + 4), 0x04000004u);
 
-    u32 sum = 0;
-    volatile u16 *p = (volatile u16 *)(uintptr_t)*(volatile u32 *)(r4 + 0x1C);
+    volatile u16 *p = (volatile u16 *)(uintptr_t)r4->tx_packet;
     for (u32 i = 0; i <= 9; i++) {
         sum += p[i];
     }
     u16 ck = (u16)(~sum - 12);
-    *(volatile u16 *)(pkt + 2) = ck;
-    r4[4] = 1;
+    p5 = r4->tx_packet;
+    *(volatile u16 *)(p5 + 2) = ck;
+    r4->bytes[4] = 1;
 }
 #ifndef __APPLE__
 void _08000848(void *a, u32 b) __attribute__((alias("PacketBuild_08000848")));

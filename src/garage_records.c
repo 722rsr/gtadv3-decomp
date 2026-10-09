@@ -554,18 +554,35 @@ void sub_080028BE4(int cmd, int x, int y, void *ctx) __attribute__((alias("_0800
 // 0x08028C54 — 12x CpuFastSet lane copy + palette CpuSet.
 // ----------------------------------------------------------------------------
 void _080028C54(int slot, int sel) {
-    u32 lane = (u32)slot << 12;
-    u32 b = *(volatile u8 *)(uintptr_t)(0x02038000u + (((u32)sel & 0xFFFu) >> 4));
+    // Masking the PARAMETER in place is what puts the masked value in r1 (the
+    // ROM is `ldr r0,=0xFFF / ands r1,r0 / adds r0,r1,#0 / asrs r1,r0,#4`): a
+    // fresh local instead lands in r0 and shifts in place.
+    sel &= 0xFFF;
+    u32 k = (u32)(sel >> 4);
+    u32 b = *(volatile u8 *)(uintptr_t)(0x02038000u + k);
     u32 base = ((b << 3) + b) << 8;
-    static const u32 SRC[12] = { 0x02038100u, 0x020381C0u, 0x02038280u, 0x02038340u,
-        0x02038400u, 0x020384C0u, 0x02038580u, 0x02038640u, 0x02038700u, 0x020387C0u,
-        0x02038880u, 0x02038940u };
-    static const u32 DST[12] = { 0x06010120u, 0x06010220u, 0x06010320u, 0x06010420u,
-        0x06010520u, 0x06010620u, 0x06010920u, 0x06010A20u, 0x06010B20u, 0x06010C20u,
-        0x06010D20u, 0x06010E20u };
-    for (int i = 0; i < 12; i++)
-        _08002D970((const void *)(uintptr_t)(base + SRC[i]),
-                   (void *)(uintptr_t)(lane + DST[i]), 48u);
+    // `lane` is materialised where the ROM materialises it -- after `base`,
+    // not at function entry -- so `slot` survives in a callee-saved register.
+    u32 lane = (u32)slot << 12;
+    // The 12 lanes are UNROLLED, not tabled. The ROM emits one pool load and one
+    // `adds` per operand at each of the 12 call sites (0x8028C78, 0x8028C86, ...
+    // 0x8028D0E), so the source values are literals in the code; a `static const
+    // u32 SRC[12]` would put them in `.rodata`, which the slice cannot place at
+    // a ROM address (measured: the probe reports UNRESOLVED_RELOCATION on
+    // `.rodata`). `base` and `lane` stay live across all 12 calls, which is the
+    // `push {r4,r5,lr}` frame.
+    _08002D970((const void *)(uintptr_t)(base + 0x02038100u), (void *)(uintptr_t)(lane + 0x06010120u), 48u);
+    _08002D970((const void *)(uintptr_t)(base + 0x020381C0u), (void *)(uintptr_t)(lane + 0x06010220u), 48u);
+    _08002D970((const void *)(uintptr_t)(base + 0x02038280u), (void *)(uintptr_t)(lane + 0x06010320u), 48u);
+    _08002D970((const void *)(uintptr_t)(base + 0x02038340u), (void *)(uintptr_t)(lane + 0x06010420u), 48u);
+    _08002D970((const void *)(uintptr_t)(base + 0x02038400u), (void *)(uintptr_t)(lane + 0x06010520u), 48u);
+    _08002D970((const void *)(uintptr_t)(base + 0x020384C0u), (void *)(uintptr_t)(lane + 0x06010620u), 48u);
+    _08002D970((const void *)(uintptr_t)(base + 0x02038580u), (void *)(uintptr_t)(lane + 0x06010920u), 48u);
+    _08002D970((const void *)(uintptr_t)(base + 0x02038640u), (void *)(uintptr_t)(lane + 0x06010A20u), 48u);
+    _08002D970((const void *)(uintptr_t)(base + 0x02038700u), (void *)(uintptr_t)(lane + 0x06010B20u), 48u);
+    _08002D970((const void *)(uintptr_t)(base + 0x020387C0u), (void *)(uintptr_t)(lane + 0x06010C20u), 48u);
+    _08002D970((const void *)(uintptr_t)(base + 0x02038880u), (void *)(uintptr_t)(lane + 0x06010D20u), 48u);
+    _08002D970((const void *)(uintptr_t)(base + 0x02038940u), (void *)(uintptr_t)(lane + 0x06010E20u), 48u);
     _08002D974((const void *)0x0203C900u, (void *)0x05000200u, 0x04000008u);
 }
 

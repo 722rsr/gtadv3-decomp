@@ -91,37 +91,44 @@ void MenuE59C_0800E59C(int cmd, int arg, u32 param, void *rec) {
     u32 idx = (u32)(cmd - 1);
     if (idx > 11)
         return;
+    // Case bodies are emitted in the ROM's block order (cmd 2,5,7,6,1,12),
+    // which is what the jump table's target addresses lay out; rising order
+    // gives a differently-ordered body stream.
     switch (idx) {
-    case 0:
-        _0800DE50(rec);
-        break;
     case 1:
-        _0800DD9C(rec, (u32)arg);
+        _0800DD9C((void *)r4, (u32)arg);
         break;
     case 4:
         _0800D854((void *)(r4 + 32));
         _0800D8E4((void *)(r4 + 136));
         break;
+    case 6:
+        _0800E418((void *)r4);
+        break;
     case 5:
-        if (*(volatile u16 *)(r4 + 36) != 0) {
-            u32 a1 = ((u32)arg << 16) >> 16;
-            u32 a2 = ((u32)param << 16) >> 16;
-            if (((s16)*(volatile s16 *)(r4 + 20)) == 0)
-                _0800E15C(rec, a1, a2);
+        if (*(u16 *)(r4 + 36) != 0) {
+            // Two full copies of the zero-extend pair: the ROM duplicates
+            // `lsls/lsrs` in each arm, so the truncation lives inside them.
+            // `s16[rec+20]` is a NON-volatile read (`movs r1,#20;
+            // ldrsh r0,[r4,r1]`); a volatile s16 lvalue emits `ldrh`.
+            if (*(s16 *)(r4 + 20) == 0)
+                _0800E15C((void *)r4, (u32)(u16)arg, (u32)(u16)param);
             else
-                _0800E2E4(rec, (int)a1, a2);
+                _0800E2E4((void *)r4, (int)(u16)arg, (u32)(u16)param);
         }
         break;
-    case 6:
-        _0800E418(rec);
+    case 0:
+        _0800DE50((void *)r4);
         break;
     case 11:
-        _0800DE4C(rec);
+        _0800DE4C((void *)r4);
         break;
     default:
         break;
     }
 }
+// Body is 178 bytes; the ROM's 180-byte span ends in `00 00`.
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _0800E59C(int a, int b, u32 c, void *d) __attribute__((alias("MenuE59C_0800E59C")));
 void sub_0800E59C(int a, int b, u32 c, void *d) __attribute__((alias("MenuE59C_0800E59C")));

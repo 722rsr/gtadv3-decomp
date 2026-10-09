@@ -521,16 +521,20 @@ int _0800A938(void)
 // ----------------------------------------------------------------------------
 int _0800A94C(void *ctx)
 {
-    int rec = *(const s16 *)(uintptr_t)ctx;
-
-    if (rec == 38)
+    register const s16 *p = (const s16 *)ctx;
+    register int zero __asm__("r2") = 0;
+    register int val __asm__("r1");
+    val = p[zero];
+    switch (val) {
+    case 38:
         return _0800A8FC();
-    if (rec > 38) {
-        if (rec == 47)
-            return _0800A938();
-    } else if (rec == 37)
+    case 37:
         return _0800A908();
-    return sub_08004CF0();
+    case 47:
+        return _0800A938();
+    default:
+        return sub_08004CF0();
+    }
 }
 
 // ============================================================================

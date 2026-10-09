@@ -1045,14 +1045,16 @@ void _080018098(void *a, void *b, int c, int d) __attribute__((alias("Rec35_RowE
 // ---------------------------------------------------------------------------
 // _080018128(rec) — init
 void Rec35_Init_18128(void *rec) {
-    void *r4 = rec;
-    Sub_0800D97C((u8 *)r4 + 128, 15);
+    u8 *r4 = (u8 *)rec;
+    Sub_0800D97C(r4 + 128, 15);
     Sub_08007B18(r4, 2, 64, 64, 3, 1, 0, 0);
-    Rec35_RowEmit_18098(r4, (u8 *)r4 + 8, RS16((u8 *)r4 + 132) - 1, 72);
-    Sub_0800DBE8((u8 *)r4 + 8);
+    Rec35_RowEmit_18098(0, (void *)72, *(const s16 *)(r4 + 132) - 1, 4);
+    r4 += 8;
+    Sub_0800DBE8(r4);
 }
 #ifndef __APPLE__
 void _080018128(void *a) __attribute__((alias("Rec35_Init_18128")));
+void sub_080018128(void *a) __attribute__((alias("Rec35_Init_18128")));
 #endif
 
 // ---------------------------------------------------------------------------

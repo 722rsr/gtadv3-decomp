@@ -63,8 +63,10 @@ void sub_0800C2C4(void *a) __attribute__((alias("MenuC2C4_Enable")));
 #endif
 
 // ----------------------------------------------------------------------------
-// sub_0800C2E4 — teardown chain: 055F4 -> 02B50 -> 02BB4 -> 02B44.
-void MenuC2C4_Teardown(void) {
+// sub_0800C2E4 — teardown chain: 055F4 -> 02B50 -> 02BB4 -> 02B44. The
+// dispatcher passes rec in r0 (`adds r0,r3,#0`); the body ignores it.
+void MenuC2C4_Teardown(void *rec) {
+    (void)rec;
     _080055F4();
     sub_08002B50();
     sub_08002BB4();
@@ -72,20 +74,21 @@ void MenuC2C4_Teardown(void) {
 }
 __asm__(".align 2, 0");
 #ifndef __APPLE__
-void _0800C2E4(void) __attribute__((alias("MenuC2C4_Teardown")));
-void sub_0800C2E4(void) __attribute__((alias("MenuC2C4_Teardown")));
+void _0800C2E4(void *a) __attribute__((alias("MenuC2C4_Teardown")));
+void sub_0800C2E4(void *a) __attribute__((alias("MenuC2C4_Teardown")));
 #endif
 
 // ----------------------------------------------------------------------------
-// sub_0800C2FC — flush chain: 05604 -> 02C98.
-void MenuC2C4_Flush(void) {
+// sub_0800C2FC — flush chain: 05604 -> 02C98. Called with rec in r0 (ignored).
+void MenuC2C4_Flush(void *rec) {
+    (void)rec;
     _08005604();
     sub_08002C98();
 }
 __asm__(".align 2, 0");
 #ifndef __APPLE__
-void _0800C2FC(void) __attribute__((alias("MenuC2C4_Flush")));
-void sub_0800C2FC(void) __attribute__((alias("MenuC2C4_Flush")));
+void _0800C2FC(void *a) __attribute__((alias("MenuC2C4_Flush")));
+void sub_0800C2FC(void *a) __attribute__((alias("MenuC2C4_Flush")));
 #endif
 
 // ----------------------------------------------------------------------------
@@ -140,47 +143,61 @@ void sub_0800C340(void *a, int b) __attribute__((alias("MenuC340_Dispatch")));
 #endif
 
 // ----------------------------------------------------------------------------
-// sub_0800C37C — byte gate: if u8[rec+0x61] == 0 -> _08004ED8(1).
-void MenuC340_ByteGate(void *rec) {
+// sub_0800C37C — byte gate: if u8[rec+0x61] == 0 -> _08004ED8(1). The
+// dispatcher (sub_0800C39C) reaches it with a zero-extended u16 second word
+// (`lsls r1,#16; lsrs r1,#16`), so the parameter is declared even though the
+// body ignores it; that keeps the call site's 4 bytes.
+void MenuC340_ByteGate(void *rec, u16 arg) {
     volatile u8 *r = (volatile u8 *)rec;
+    (void)arg;
     if (r[0x61] == 0)
         _08004ED8(1);
 }
 #ifndef __APPLE__
-void _0800C37C(void *a) __attribute__((alias("MenuC340_ByteGate")));
-void sub_0800C37C(void *a) __attribute__((alias("MenuC340_ByteGate")));
+void _0800C37C(void *a, u16 b) __attribute__((alias("MenuC340_ByteGate")));
+void sub_0800C37C(void *a, u16 b) __attribute__((alias("MenuC340_ByteGate")));
 #endif
 
 // ----------------------------------------------------------------------------
-// sub_0800C390 — tail call _08002060(1).
-void MenuC340_SetMode(void) {
+// sub_0800C390 — tail call _08002060(1). The dispatcher passes rec in r0
+// (`adds r0,r3,#0`); the body ignores it.
+void MenuC340_SetMode(void *rec) {
+    (void)rec;
     _08002060(1);
 }
 #ifndef __APPLE__
-void _0800C390(void) __attribute__((alias("MenuC340_SetMode")));
-void sub_0800C390(void) __attribute__((alias("MenuC340_SetMode")));
+void _0800C390(void *a) __attribute__((alias("MenuC340_SetMode")));
+void sub_0800C390(void *a) __attribute__((alias("MenuC340_SetMode")));
 #endif
 
 // ----------------------------------------------------------------------------
 // sub_0800C39C — 21-entry command dispatcher (r0 = id 1..21, r1 = arg, r3 = rec).
-// Table 0x0800C3B0 (0-based after -1): id 2->C1E4, 4->C2C4, 5->C2E4,
-// 9->C2FC, 14->C30C(arg), 15->C340(arg), 21->C37C(u16 arg); else return.
+// The pool word at .L_c3B0 points at the real table .L_c3B4, so the switch
+// index is `id-1` (0-based) and the case values are the table slots:
+//   0->C1E4, 2->C2C4, 3->C2E4, 7->C2FC, 12->C30C(arg), 13->C340(arg),
+//   18->C390, 20->C37C(u16 arg); every other slot returns.
 void MenuC340_Command(int id, int arg, int a2, void *rec) {
     (void)a2;
-    u32 idx = (u32)(id - 1);
-    if (idx > 20)
+    int idx = id - 1;
+    if ((u32)idx > 20)
         return;
     switch (idx) {
-    case 1: _0800C1E4(rec); break;
-    case 3: MenuC2C4_Enable(rec); break;
-    case 4: MenuC2C4_Teardown(); break;
-    case 8: MenuC2C4_Flush(); break;
-    case 13: MenuC2C4_PtrDispatch(rec, arg); break;
-    case 14: MenuC340_Dispatch(rec, arg); break;
-    case 20: MenuC340_ByteGate(rec); break;
-    default: break;
+    case 0: _0800C1E4(rec); break;
+    case 2: MenuC2C4_Enable(rec); break;
+    case 3: MenuC2C4_Teardown(rec); break;
+    case 7: MenuC2C4_Flush(rec); break;
+    case 12: MenuC2C4_PtrDispatch(rec, arg); break;
+    case 13: MenuC340_Dispatch(rec, arg); break;
+    case 20: MenuC340_ByteGate(rec, (u16)arg); break;
+    case 18: MenuC340_SetMode(rec); break;
+    default:        break;
     }
 }
+// Body is 182 bytes; the ROM's 184-byte span ends in `00 00`. Under
+// -ffunction-sections gas closes a Thumb code section with the `46c0` nop;
+// this file-scope `.align 2, 0` (after the body's `.size`, still inside its
+// section) pads with the explicit `0` fill instead.
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _0800C39C(int a, int b, int c, void *d) __attribute__((alias("MenuC340_Command")));
 void sub_0800C39C(int a, int b, int c, void *d) __attribute__((alias("MenuC340_Command")));

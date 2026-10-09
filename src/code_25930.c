@@ -72,100 +72,126 @@ extern volatile u8 C25GridBase[];
 #define C25_REC_TBL     0x080CD830u
 #define C25_MASKS       0x08060D48u
 
+extern int C25_GridOut[];
+extern const u8 C25_Zones[];
+extern const u16 C25_ZoneIds[];
+extern int C25_CountOut[];
+#ifndef __APPLE__
+__asm__(".globl C25_GridOut\nC25_GridOut = 0x0203F9B0\n");
+__asm__(".globl C25_Zones\nC25_Zones = 0x0805FCAC\n");
+__asm__(".globl C25_ZoneIds\nC25_ZoneIds = 0x080600CC\n");
+__asm__(".globl C25_CountOut\nC25_CountOut = 0x0203FA40\n");
+#else
+static int C25_GridOut[32];
+static const u8 C25_Zones[1024];
+static const u16 C25_ZoneIds[32];
+static int C25_CountOut[1];
+#endif
+
 // ----------------------------------------------------------------------------
 // Head at 0x080025930 (no separate.type in the listing; the function begins
 // right after the 0x080258xx cluster tail). 32-row scan.
 void Code25930_BuildGrid(void) {
-    u32 r7 = 0;                 // output cursor
-    volatile u32 *out = C25_GRID_OUT;
-    // zero 124 bytes of the output array (31 words)
-    for (int i = 0; i < 31; i++)
-        out[i] = 0;
+    int count = 0;
+    register int latch __asm__("sl") = 0;
+    {
+        int base = (int)C25_GridOut;
+        int zero = 0;
+        int p = base + 124;
 
-    u32 r8 = 0;   // row (0..31)
-    for (;;) {
-        u32 sl = 0;             // match latch
-        u32 r9row = r8 + 1;
-        for (u32 r6 = 0; r6 <= 3; r6++) {
-            u32 r3 = 0;         // type index *264
-            u32 r5 = 3;         // zone type 3..10
-            for (;;) {
-                u32 zoneAddr = C25_ZONES + r3 + 72;
-                volatile u16 *zrow = (volatile u16 *)(uintptr_t)zoneAddr;
-                int v = _08025CF4(0, (int)r6, (int)r5);
-                if (v > 0) {
-                    v = _08025CF4(0, (int)r6, (int)r5);
-                    if (v <= 3) {
-                        volatile u16 *idrow = (volatile u16 *)(uintptr_t)(C25_ZONE_IDS + r8 * 2);
-                        if (zrow[0] == idrow[0]) {
-                            volatile u32 *slot = out + r7;
-                            s16 val = *(volatile s16 *)idrow;
-                            *slot = (u32)val;
-                            r7++;
-                            sl = 1;
+        do {
+            *(int *)p = zero;
+            p -= 4;
+        } while (p >= base);
+    }
+
+    {
+        register int row __asm__("r8") = 0;
+        do {
+            int zone_row = 0;
+            register int next_row __asm__("r9");
+            int zone_off;
+            {
+                register int tmp __asm__("r2") = 1;
+                tmp += row;
+                next_row = tmp;
+            }
+            zone_off = 0;
+            for (zone_row = 0; zone_row <= 3; zone_off += 264, zone_row++) {
+                register int zone_type __asm__("r5") = 3;
+                register const u16 *zptr __asm__("r4");
+                {
+                    register const u8 *r4_base __asm__("r4") = C25_Zones;
+                    register int r0 __asm__("r0") = zone_off + (int)r4_base;
+                    zptr = (const u16 *)(r0 + 72);
+                }
+                do {
+                    if (_08025CF4(0, zone_row, zone_type) > 0) {
+                        if (_08025CF4(0, zone_row, zone_type) <= 3) {
+                            register const u16 *zone_ids __asm__("r1") = C25_ZoneIds;
+                            const s16 *idptr = (const s16 *)((row * 2) + (uintptr_t)zone_ids);
+                            if (*zptr == *(const u16 *)idptr) {
+                                register const int *r0_out __asm__("r0") = C25_GridOut;
+                                register int r1_slot __asm__("r1") = count << 2;
+                                r1_slot += (int)r0_out;
+                                *(int *)r1_slot = *idptr;
+                                count++;
+                                latch = 1;
+                                goto latch_check;
+                            }
                         }
                     }
+                    zptr = (const u16 *)((const u8 *)zptr + 24);
+                    zone_type++;
+                } while (zone_type <= 10);
+            latch_check:
+                if (latch == 1) {
+                    latch = 0;
+                    break;
                 }
-                zoneAddr += 24;
-                r5++;
-                if (r5 > 10)
-                    break;
-                r3 += 0;    // r3 advances only after the row loop (see below)
             }
-            if (sl == 1) {
-                sl = 0;
-            } else {
-                r3 += 264;   // movs r1,#132; lsls r1,#1 -> 264
-                r6++;
-                if (r6 > 3)
-                    break;
-                r6--;        // asm re-enters the row loop with r6 unchanged
-                break;       // asm _0800259D4 path
-            }
-            if (r5 > 10) {
-                // fall through to _0800259A4 latch check
-            }
-        }
-        r8 = r9row;
-        if (r8 > 31)
-            break;
+            row = next_row;
+        } while (row <= 31);
     }
 
-    // Tail block: append col counts via _08025D64 / _08025D90.
-    u32 r6t = 0;
-    u32 r9t = (u32)(uintptr_t)(C25_ZONES + 72);
-    u32 r8t = r9t + 72;
-    u32 r5t = 0;
-    u32 r4t = (u32)(uintptr_t)(out + r7);
-    for (;;) {
-        int cnt = _08025D64(0, (int)r6t);
-        if ((u32)(cnt - 3) <= 7) {
-            s16 v = *(volatile s16 *)(uintptr_t)(C25_ZONES + cnt * 24 + r5t);
-            *(volatile u32 *)(uintptr_t)r4t = (u32)v;
-            r4t += 4;
-            r7++;
-        } else if (r6t <= 2) {
-            if (_08025D90(0) == (int)r6t) {
-                s16 v = *(volatile s16 *)(uintptr_t)r8t;
-                *(volatile u32 *)(uintptr_t)r4t = (u32)v;
-                r4t += 4;
-                r7++;
+    {
+        register int r6 __asm__("r6") = 0;
+        register const int *r1_out __asm__("r1") = C25_GridOut;
+        register const u8 *r9 __asm__("r9") = C25_Zones;
+        register const s16 *r8 __asm__("r8") = (const s16 *)(r9 + 72);
+        register int r5 __asm__("r5") = 0;
+        register int r0 __asm__("r0") = count << 2;
+        register int *r4 __asm__("r4") = (int *)(r0 + (uintptr_t)r1_out);
+        do {
+            int cnt = _08025D64(0, r6);
+            if ((unsigned)(cnt - 3) <= 7) {
+                *r4++ = *(const s16 *)(((cnt * 24) + r5) + (uintptr_t)r9);
+                count++;
+            } else if (cnt <= 2) {
+                if (_08025D90(0) == r6) {
+                    register int val __asm__("r0");
+                    __asm__("mov r2, %1\n\tmovs r3, #0\n\tldrsh %0, [r2, r3]" : "=r"(val) : "r"(r8) : "r2", "r3");
+                    *r4++ = val;
+                    count++;
+                }
             }
-        }
-        r8t += 264;
-        r5t += 264;
-        r6t++;
-        if (r6t > 3)
-            break;
+            __asm__("movs r0, #132\n\tlsl r0, r0, #1\n\tadd %0, r0\n\tadd %1, %1, r0"
+                    : "+r"(r8), "+r"(r5) : : "r0");
+            r6++;
+        } while (r6 <= 3);
     }
 
-    // count -> 0x0203FA40 (r7 - 1); if <= 0 reset to 0 and seed first entry.
-    u32 n = r7 - 1;
-    *C25_COUNT_OUT = n;
-    if ((s32)n <= 0) {
-        s16 first = *(volatile s16 *)(uintptr_t)(C25_ZONES + 72);
-        out[0] = (u32)first;
-        *C25_COUNT_OUT = 0;
+    {
+        int *cnt = C25_CountOut;
+        int n = count - 1;
+        *cnt = n;
+        if (n <= 0) {
+            register int *r1 __asm__("r1") = C25_GridOut;
+            register const u8 *r0 __asm__("r0") = C25_Zones;
+            r0 += 72;
+            *r1 = *(const s16 *)r0;
+            *cnt = 0;
+        }
     }
 }
 #ifndef __APPLE__
@@ -226,19 +252,19 @@ int sub_080025A9C(int a) __attribute__((alias("Code25930_FindEntry")));
 // ----------------------------------------------------------------------------
 // sub_080025AC0 — 2-entry presence scan building 0x0203FA30.
 void Code25930_BuildSpecial(void) {
-    u32 r6 = 0, r4 = 0;
-    volatile u32 *r5 = (volatile u32 *)(uintptr_t)C25_SPECIAL_TBL;
-    volatile u32 *r7 = C25_SPECIAL;
-    for (;;) {
-        if (_08026004((int)r4) == 1) {
-            s16 v = *(volatile s16 *)r5;
-            *r7++ = (u32)v;
+    int r6 = 0;
+    int r4 = 0;
+    const s16 *r5;
+    volatile u32 *r7;
+    r5 = (const s16 *)(uintptr_t)C25_SPECIAL_TBL;
+    r7 = C25_SPECIAL;
+    while (r4 <= 2) {
+        if (_08026004(r4) == 1) {
+            *r7++ = *r5;
             r6++;
         }
-        r5 += 2;    // adds r5,#8 (byte stride 8 = 2 words)
+        r5 += 4;
         r4++;
-        if (r4 > 2)
-            break;
     }
     *C25_SPECIAL_CNT = r6 - 1;
 }

@@ -121,6 +121,7 @@ _08024CCA:
 
 @ ----------------------------------------------------------------------------
 @ _08024CD0(id, g) — raw index of id within group g's list (no owner test)
+	.type _08024CD0, %function
 _08024CD0:
 	push {r4, lr}
 	adds r4, r0, #0

@@ -271,6 +271,8 @@ _08005054:
 _08005058:
 	str	r2, [r1, #4]
 	bx	lr
+	.type _0800505C, %function
+_0800505C:
 	ldr r0, _08005068
 	movs	r1, #1
 	ldrh	r2, [r0, #8]
@@ -278,6 +280,8 @@ _08005058:
 	strh	r1, [r0, #8]
 	bx	lr
 _08005068: .4byte 0x03000250
+	.type _0800506C, %function
+_0800506C:
 	ldr r1, _08005078
 	ldr r0, _0800507C
 	ldrh	r2, [r1, #8]
@@ -341,6 +345,7 @@ _080050D0:
 	movs	r0, r0
 _080050E4: .4byte 0x03000260
 _080050E8:
+	.type _080050E8, %function
 sub_080050E8:
 	push	{r4, r5, r6, r7, lr}
 	mov	r7, sl
