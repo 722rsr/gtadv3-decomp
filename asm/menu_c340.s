@@ -137,3 +137,9 @@ sub_0800C39C:
 	pop {r0}
 	bx r0
 	.short 0
+
+@ Byte-neutral end anchor for the splicer. This file declares exactly one
+@ region (VMA 0x0800C340-0x0800C454) and has no `.include`; the body at
+@ 0x0800C39C ends on 0x0800C454, exactly that boundary, so the anchor is safe.
+@ Without it the body is refused as 'no end marker in menu_c340.s'.
+menu_c340_end:

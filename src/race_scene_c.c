@@ -457,7 +457,7 @@ void _08001E8B4(void *rec_) {
     _08001E4C0();
     _08001E56C(rec_);
     if ((u16)(*(volatile u16 *)(rec + 146) - 1) <= 2u)
-        Sub_08007BFC((void *)(rec + 8),
+        sub_08007BFC((void *)(rec + 8),
                      *(volatile u32 *)(rec + 240), *(volatile u32 *)(rec + 244),
                      8, 112, 5, 1, 1, 0);
     _08001DBC0(rec_, *(s16 *)(rec + 162));

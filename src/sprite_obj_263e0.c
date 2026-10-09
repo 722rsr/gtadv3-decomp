@@ -758,15 +758,16 @@ void _080026A68(void *a) __attribute__((alias("Sprite_Tick")));
 // ============================================================================
 void Sprite_Draw(void *rec) {
     if (*(volatile u8 *)((u8 *)rec + 16) != 0) {
-        Sprite_EmitPair((void *)(uintptr_t)*(volatile u32 *)((u8 *)rec + 92),
-                        (int)(s16)*(volatile u16 *)((u8 *)rec + 8),
-                        (int)(s16)*(volatile u16 *)((u8 *)rec + 4),
-                        (int)(s16)*(volatile u16 *)((u8 *)rec + 6),
+        sub_080026898((void *)(uintptr_t)*(volatile u32 *)((u8 *)rec + 92),
+                        (int)((s16 *)rec)[4],
+                        (int)((s16 *)rec)[2],
+                        (int)((s16 *)rec)[3],
                         *(volatile u16 *)((u8 *)rec + 0),
                         *(volatile u16 *)((u8 *)rec + 2),
                         2, *(volatile u8 *)((u8 *)rec + 17), 1);
     }
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _08026A78(void *a) __attribute__((alias("Sprite_Draw")));
 void sub_08026A78(void *a) __attribute__((alias("Sprite_Draw")));
@@ -790,15 +791,34 @@ void sub_080026A78(void *a) __attribute__((alias("Sprite_Draw")));
 //   CpuFastSet(tile, 0x05000200 + u16[rec+2]*32, 8)
 // ============================================================================
 void Sprite_Paint(void *rec) {
-    int v = (int)(s16)*(volatile u16 *)((u8 *)rec + 8);
+    // Sprite records are ordinary RAM. Signed s16 lvalues let agbcc use the
+    // ROM's ldrsh instructions; volatile signed halfword reads expand instead.
+    int v = *(s16 *)((u8 *)rec + 8);
     if (v < 0) v += 255;
     int r1 = v >> 8;
     r1 <<= 7;
+#ifndef __APPLE__
+    // The ROM keeps the two call results in r5 and r4 across the next calls.
+    register void *base __asm__("r5") =
+        Sprite_CourseByte((void *)(uintptr_t)*(volatile u32 *)((u8 *)rec + 92), (u32)r1);
+    register void *tile __asm__("r4") =
+        Sprite_CourseSurface(*(s16 *)((u8 *)rec + 10),
+                             *(s16 *)((u8 *)rec + 12));
+#else
     void *base = Sprite_CourseByte((void *)(uintptr_t)*(volatile u32 *)((u8 *)rec + 92), (u32)r1);
-    void *tile = Sprite_CourseSurface((int)(s16)*(volatile u16 *)((u8 *)rec + 10),
-                                      (int)(s16)*(volatile u16 *)((u8 *)rec + 12));
-    Sprite_BlitTiles((u8 *)base, (int)*(volatile u16 *)((u8 *)rec + 0));
+    void *tile = Sprite_CourseSurface(*(s16 *)((u8 *)rec + 10),
+                                      *(s16 *)((u8 *)rec + 12));
+#endif
+    sub_0800263E0((u8 *)base, (int)*(volatile u16 *)((u8 *)rec + 0));
+#ifndef __APPLE__
+    // ROM loads the final index into r6, then shifts into r1. The empty asm
+    // keeps agbcc from folding the load directly into the shifted r1 value.
+    register u32 rawIndex __asm__("r6") = *(volatile u16 *)((u8 *)rec + 2);
+    __asm__("" : "+r" (rawIndex));
+    register u32 p __asm__("r1") = rawIndex << 5;
+#else
     u32 p = (u32)*(volatile u16 *)((u8 *)rec + 2) << 5;
+#endif
     _0802D970(tile, (void *)(uintptr_t)(0x05000200u + p), 8);
 }
 #ifndef __APPLE__
@@ -857,10 +877,11 @@ void Sprite_Init(void *rec) {
     SPR_MENU_REC = rec;
     u32 zero = 0;
     _0802D974(&zero, rec, 0x0500000Fu);
-    *(volatile u16 *)((u8 *)rec + 4) = (u16)_080261B0(12);
-    *(volatile u16 *)((u8 *)rec + 8) = (u16)_080261F8(12);
-    *(volatile u16 *)((u8 *)rec + 6) = (u16)_080261B0(13);
-    *(volatile u16 *)((u8 *)rec + 10) = (u16)_080261F8(13);
+    // The ROM reloads the shared record slot after each helper call.
+    *(volatile u16 *)((u8 *)(uintptr_t)SPR_MENU_REC + 4) = (u16)_080261B0(12);
+    *(volatile u16 *)((u8 *)(uintptr_t)SPR_MENU_REC + 8) = (u16)_080261F8(12);
+    *(volatile u16 *)((u8 *)(uintptr_t)SPR_MENU_REC + 6) = (u16)_080261B0(13);
+    *(volatile u16 *)((u8 *)(uintptr_t)SPR_MENU_REC + 10) = (u16)_080261F8(13);
 }
 #ifndef __APPLE__
 void _08026B30(void *a) __attribute__((alias("Sprite_Init")));

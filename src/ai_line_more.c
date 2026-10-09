@@ -3,15 +3,13 @@
 // ai_line_more.s remaining: 255C4/25640 sums + 2581C family
 // Provide faithful byte-for-byte behavior for host test (we just implement lookup sums)
 
-#ifndef __APPLE__
-extern const u8 LineScoreTable[];
-__asm__(".globl LineScoreTable\nLineScoreTable = 0x080CD6A8\n");
-#endif
 
 // _080255C4 — first catalog sum (8 bytes aggregated)
 int Ai_LineSumA(const void *rec){
     const s8 *r = (const s8 *)rec;
 #ifndef __APPLE__
+    extern const u8 LineScoreTable[];
+    __asm__(".globl LineScoreTable\nLineScoreTable = 0x080CD6A8\n");
     const u8 *tbl = LineScoreTable;
 #else
     const u8 *tbl = (const u8 *)(uintptr_t)0x080CD6A8u;
@@ -45,6 +43,8 @@ int Sub_080255C4(const void *a) __attribute__((alias("Ai_LineSumA")));
 int Ai_LineSumB(const void *rec){
     const s8 *r = (const s8 *)rec;
 #ifndef __APPLE__
+    extern const u8 LineScoreTable[];
+    __asm__(".globl LineScoreTable\nLineScoreTable = 0x080CD6A8\n");
     const u8 *tbl = LineScoreTable;
 #else
     const u8 *tbl = (const u8 *)(uintptr_t)0x080CD6A8u;
@@ -185,16 +185,14 @@ s16 Ai_Line2572C(int a,int b,int c){
 s16 _0802572C(int a,int b,int c) __attribute__((alias("Ai_Line2572C")));
 s16 Sub_0802572C(int a,int b,int c) __attribute__((alias("Ai_Line2572C")));
 #endif
-#ifndef __APPLE__
-extern const u8 Ai_Tbl5FCAC[];
-__asm__(".globl Ai_Tbl5FCAC\nAi_Tbl5FCAC = 0x0805FCAC\n");
-#endif
 
 int Ai_Line25750(int a, int b, int c) {
     register int b_reg __asm__("r4") = b;
     register int c_reg __asm__("r3") = c;
     if (a != 0) {
 #ifndef __APPLE__
+        extern const u8 Ai_Tbl5FCAC[];
+        __asm__(".globl Ai_Tbl5FCAC\nAi_Tbl5FCAC = 0x0805FCAC\n");
         register const u8 *base __asm__("r2") = Ai_Tbl5FCAC;
 #else
         register const u8 *base __asm__("r2") = (const u8 *)0x0805FCAC;
@@ -206,6 +204,8 @@ int Ai_Line25750(int a, int b, int c) {
         return *(const int *)(off + (uintptr_t)base);
     } else {
 #ifndef __APPLE__
+        extern const u8 Ai_Tbl5FCAC[];
+        __asm__(".globl Ai_Tbl5FCAC\nAi_Tbl5FCAC = 0x0805FCAC\n");
         register const u8 *base __asm__("r2") = Ai_Tbl5FCAC;
 #else
         register const u8 *base __asm__("r2") = (const u8 *)0x0805FCAC;
@@ -226,6 +226,8 @@ s16 Ai_Line25790(int a, int b, int c) {
     register int c_reg __asm__("r3") = c;
     if (a != 0) {
 #ifndef __APPLE__
+        extern const u8 Ai_Tbl5FCAC[];
+        __asm__(".globl Ai_Tbl5FCAC\nAi_Tbl5FCAC = 0x0805FCAC\n");
         register const u8 *base __asm__("r2") = Ai_Tbl5FCAC;
 #else
         register const u8 *base __asm__("r2") = (const u8 *)0x0805FCAC;
@@ -237,6 +239,8 @@ s16 Ai_Line25790(int a, int b, int c) {
         return *(const s16 *)(p + 8);
     } else {
 #ifndef __APPLE__
+        extern const u8 Ai_Tbl5FCAC[];
+        __asm__(".globl Ai_Tbl5FCAC\nAi_Tbl5FCAC = 0x0805FCAC\n");
         register const u8 *base __asm__("r2") = Ai_Tbl5FCAC;
 #else
         register const u8 *base __asm__("r2") = (const u8 *)0x0805FCAC;

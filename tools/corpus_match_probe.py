@@ -408,9 +408,10 @@ def _rom_functions_scan() -> dict[int, int]:
     The end is the next known entry, but only when that is plausible: an alias
     declaration is not a real body, so a 4-byte "function" whose next neighbour
     starts 4 bytes later must be given the extent of the *real* function it
-    belongs to. Using the next entry blindly understates a function's real size
-    and makes a 4-byte wrapper look like a 4-byte function when the ROM clearly
-    holds more.
+    belongs to. An independently typed or called entry exactly two bytes later
+    is different: the earlier entry can be a one-instruction prefix that falls
+    through into a shared tail, and extending it across the next entry makes
+    those two bodies overlap.
     """
     # Reuse the project's stronger function inventory: typed entry labels and
     # labels with real BL callers. Typed-only scanning misses short untyped
@@ -432,7 +433,8 @@ def _rom_functions_scan() -> dict[int, int]:
     spans: dict[int, int] = {}
     for i, vma in enumerate(ordered):
         end = ordered[i + 1] if i + 1 < len(ordered) else CODE_END
-        spans[vma] = max(end, vma + 4)
+        minimum = 2 if end == vma + 2 else 4
+        spans[vma] = max(end, vma + minimum)
     return spans
 
 
@@ -463,7 +465,8 @@ def _rom_functions_cached() -> dict[int, int]:
     total_size = sum(f.stat().st_size for f in asm_files)
     cov_tool = ROOT / "tools/coverage.py"
     cov_mtime = cov_tool.stat().st_mtime_ns if cov_tool.exists() else 0
-    sig = f"{len(asm_files)}:{total_size}:{newest_mtime}:{cov_mtime}"
+    probe_mtime = Path(__file__).stat().st_mtime_ns
+    sig = f"{len(asm_files)}:{total_size}:{newest_mtime}:{cov_mtime}:{probe_mtime}"
 
     if cache_file.exists():
         try:
@@ -1031,7 +1034,7 @@ def compare_function(rom: bytes, vma: int, name: str, blob: bytes, spans: dict[i
                      calls: list[dict], pools: list[dict],
                      sym_size: int | None = None) -> dict | None:
     """Compare one function's linked agbcc output against its ROM span."""
-    if len(blob) < 4:
+    if len(blob) < 2:
         return None
     if vma not in spans:
         return None
@@ -1262,20 +1265,21 @@ def self_test() -> int:
           parse_vma_name("_080028250") == parse_vma_name("_08028250") == 0x08028250)
     check("VMA parser rejects a trailing hex digit", parse_vma_name("_080282500") is None)
     check("untyped called leaf receives its real 8-byte span", rom_functions().get(0x08028250) == 0x08028258)
-    # Two classes of `known` entry legitimately have no C body, and both are
-    # consequences of BL_RE now seeing numeric operands. Neither is a defect and
-    # neither should be stubbed:
-    #   * the compiler-runtime veneers 0x0802DDC8..0x0802DDE4 (__aeabi_call_via_rX),
-    #     which live in the ROM and are exempted from build_c.py's trampoline rule
-    #     for exactly that reason;
-    #   * interior branch points that are `bl`-ed mid-body -- 0x0802C10C is
-    #     `bx r3`. They are not functions and must not be given candidates.
-    #     0x0802BCCE USED to be listed here ("2 bytes into a body"); it is now
-    #     a real, C-owned entry of its own -- the  label sweep made
-    #     the inventory see `bl`-targeted interior entries, and its 26-byte
-    #     validate fragment is promoted from src/sound_seq_follow.c. The
-    #     exemption had to go with it, or `no promoted body is silently
-    #     exempted` would have gone red the moment it was staged.
+    check("adjacent shared-tail entry keeps its 2-byte prefix span",
+          rom_functions().get(0x0802BCE8) == 0x0802BCEA)
+    check("adjacent validator entry keeps its 2-byte prefix span",
+          rom_functions().get(0x0802BCCC) == 0x0802BCCE)
+    # A `known` interior branch point is reached by `bl` but is not a function:
+    # 0x0802C10C is `bx r3` and must not be given a candidate. The register
+    # branch veneers at 0x0802DDC8..0x0802DDEC used to be treated as having no C
+    # bodies. They now have exact naked C definitions in runtime_state_dispatch.c
+    # (verified through the C89 path), so they are ordinary promoted candidates
+    # and must not remain in this exemption set. 0x0802BCCE USED to be listed
+    # here ("2 bytes into a body"); it is now a real, C-owned entry of its own
+    # -- the label sweep made the inventory see `bl`-targeted interior entries,
+    # and its 26-byte validate fragment is promoted from src/sound_seq_follow.c.
+    # The exemption had to go with it, or `no promoted body is silently
+    # exempted` would have gone red the moment it was staged.
     #
     # 0x0800A020 and 0x0800A024 were listed here as "`bx r7; nop`". That was
     # WRONG, and the error survived because the entry was never re-measured. The
@@ -1284,9 +1288,7 @@ def self_test() -> int:
     # silently exempted" check below is what caught it: promoting them made the
     # two classifications contradict each other, which is the only reason a
     # stale exemption ever announces itself.
-    NO_C_BODY = {0x0802DDC8, 0x0802DDCC, 0x0802DDD0, 0x0802DDD4, 0x0802DDD8,
-                 0x0802DDDC, 0x0802DDE0, 0x0802DDE4, 0x0802DDEC,
-                 0x0802C10C}
+    NO_C_BODY = {0x0802C10C}
     known = set(rom_functions())
     sourced = {entry[2] for entry in src_functions()}
     # Pin the BL_RE fix itself: a numeric `bl 0x0800XXXX` operand must reach the

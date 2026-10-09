@@ -559,11 +559,15 @@ void sub_080019AEC(int mode)
 void sub_080019D6C(void)
 {
     if (*(volatile u8 *)(uintptr_t)0x04000006u > 159) {
-        volatile u16 *base = (volatile u16 *)(128u << 19); /* 0x04000000 */
-        base[0] = 0x1341;
-        base[5] = 0x5E4A;      /* +10 */
-        base[10] = (u16)(*(volatile u32 *)(*(volatile u32 *)(uintptr_t)0x03004E20u + 8) >> 2);
-        base[11] = 6;          /* +22 */
+        volatile u16 *base = (volatile u16 *)(128u << 19);
+        // Preserve the ROM's 10, 10, then 2 byte destination advances.
+        *base = 0x1341;
+        base += 5;
+        *base = 0x5E4A;
+        base += 5;
+        *base = (u16)(*(volatile u32 *)(*(volatile u32 *)(uintptr_t)0x03004E20u + 8) >> 2);
+        base += 1;
+        *base = 6;
         _080023AC(3, (void *)(uintptr_t)0x08019DBDu);
     }
 }

@@ -1,9 +1,9 @@
 @ GT Advance 3 - armcc register-branch veneer pool (relocated-code calls)
 @ Region: file offset 0x02DDC8-0x02DE04 (VMA 0x0802DDC8-0x0802DE04).
-@ Not a function: 15 four-byte veneers `bx rN` + halfword pad (mov r8,r8),
-@ reached by `ldr rN, <ram_addr>; bl veneer[rN]` to execute code relocated
-@ to RAM (src/foundation_subsys.c). Pure Thumb, no pools, no ISA switch;
-@ byte-exact transcription (instruction audit,.
+@ Pool of 15 four-byte veneer entry points: `bx rN` + halfword pad
+@ (mov r8,r8), reached by `ldr rN, <ram_addr>; bl veneer[rN]` to execute code
+@ relocated to RAM (src/foundation_subsys.c). Each slot has its own typed entry
+@ so corpus matching and ownership use the four-byte veneer span.
 @
 @ Caller census (tools/xref.py, BL sites only):
 @   bx r0 (here)   : _08000908 in agbmain.s sub_08008F4 (session probe
@@ -32,48 +32,65 @@ sub_0802DDC8:
 _0802DDC8:
 	bx r0
 	.hword 0x46C0		@ pad (mov r8, r8)
+.type _0802DDCC, %function
 _0802DDCC:
 	bx r1
 	.hword 0x46C0
+.type _0802DDD0, %function
 _0802DDD0:
 	bx r2
 	.hword 0x46C0
+.type _0802DDD4, %function
 _0802DDD4:
 	bx r3
 	.hword 0x46C0
+.type _0802DDD8, %function
 _0802DDD8:
 	bx r4
 	.hword 0x46C0
+.type _0802DDDC, %function
 _0802DDDC:
 	bx r5
 	.hword 0x46C0
+.type _0802DDE0, %function
 _0802DDE0:
 	bx r6
 	.hword 0x46C0
+.type _0802DDE4, %function
 _0802DDE4:
 	bx r7
 	.hword 0x46C0
+.type _0802DDE8, %function
 _0802DDE8:
 	bx r8
 	.hword 0x46C0
+.type _0802DDEC, %function
 _0802DDEC:
 	bx r9
 	.hword 0x46C0
+.type _0802DDF0, %function
 _0802DDF0:
 	bx r10
 	.hword 0x46C0
+.type _0802DDF4, %function
 _0802DDF4:
 	bx r11
 	.hword 0x46C0
+.type _0802DDF8, %function
 _0802DDF8:
 	bx r12
 	.hword 0x46C0
+.type _0802DDFC, %function
 _0802DDFC:
 	bx r13
 	.hword 0x46C0
+.type _0802DE00, %function
 _0802DE00:
 	bx r14
 	.hword 0x46C0
+
+@ Synthetic end anchor for the final four-byte veneer slot, at 0x0802DE04.
+sound_veneer_end:
 
 @ agbcc EMITS the name `_call_via_r2` for an indirect call through r2, so there
 @ is no C call site to rename -- the symbol only ever appears in compiler output.
@@ -84,6 +101,9 @@ _0802DE00:
 @ and the closure agreed on 0x0802DDD0) and the linker then disagreed.
 	.thumb
 	.set _call_via_r2, _0802DDD0
+@ 0x02CACC calls the voice function through r1. agbcc emits `_call_via_r1`
+@ for that indirect call; bind it to the existing bx-r1 veneer at 0x0802DDCC.
+.set _call_via_r1, _0802DDCC
 @ 0x08003560 / 0x08003350 dispatch their template pointer from r9 and reach
 @ `bx r9` here. Same situation as _call_via_r2 above: agbcc emits the name
 @ `_call_via_r9` itself, there is no C call site to rename, and without the

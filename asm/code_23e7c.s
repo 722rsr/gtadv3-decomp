@@ -47,3 +47,7 @@ _080023EC8:
 	pop	{r0}
 	bx	r0
 	.hword 0x0000
+
+@ End-of-span marker for the splicer. This file owns exactly 0x08023E7C-0x08023ED0;
+@ the body, pool, and zero halfword end at that boundary. The label emits no bytes.
+code_23e7c_end:

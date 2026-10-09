@@ -99,27 +99,24 @@ void sub_0802B488(u32 a, u32 b, u32 c) __attribute__((alias("SoundBankVolPan")))
 // Provide minimal fetch byte / BE32 / loop-stack stubs preserving u8/u32 widths.
 // Full 328-line walker is TODO; these primitives are leaves with clear widths.
 u8 SoundFetchByte(void *stream){ return *(volatile u8*)((uintptr_t)stream); }
-u32 SoundBCE8_CursorFetch(void *dummy, void *seq){
-    // ROM 0x0802BCE8 (12 bytes, baserom.gba):
-    //     6c0a ldr r2,[r1,#64] / 1c53 adds r3,r2,#1 / 640b str r3,[r1,#64] /
-    //     7813 ldrb r3,[r2,#0] / e7ed b.n 0x0802BCCE / 0000 pad
-    // The first four instructions are `_0802C3EC`'s verbatim -- same VMA
-    // stride, same registers, same order -- so this is that body's shape.
-    register volatile u8 *r1 __asm__("r1");
-    register u32 cur __asm__("r2");
-    register u32 n   __asm__("r3");
-    register u8  b   __asm__("r3");
-    r1 = (volatile u8*)seq;
-    cur = *(volatile u32 *)(r1 + 64);
-    n = cur + 1;
-    *(volatile u32 *)(r1 + 64) = n;
-    b = *(volatile u8 *)(uintptr_t)cur;
-    (void)b;
+#ifndef __APPLE__
+// BCE8 is a two-byte entry prefix. It loads the cursor and falls through into
+// BCEA's shared fetch tail, which advances the cursor and returns via BCCE.
+__attribute__((naked)) u32 SoundBCE8_CursorFetch(void *dummy, void *seq) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "ldr r2, [r1, #64]\n"
+        ".syntax divided\n"
+    );
+}
+u32 _0802BCE8(void *dummy, void *s) __attribute__((alias("SoundBCE8_CursorFetch")));
+u32 sub_0802BCE8(void *dummy, void *s) __attribute__((alias("SoundBCE8_CursorFetch")));
+#else
+u32 SoundBCE8_CursorFetch(void *dummy, void *seq) {
     (void)dummy;
+    (void)seq;
     return 0;
 }
-#ifndef __APPLE__
-u32 _0802BCE8(void *dummy, void *s) __attribute__((alias("SoundBCE8_CursorFetch")));
 #endif
 
 

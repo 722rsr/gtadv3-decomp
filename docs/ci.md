@@ -55,9 +55,10 @@ Drill-down lists include selected functions and explicitly named unselected byte
 ranges so their areas still cover the whole region. These ranges may include
 multiple functions, literal pools, header bytes, or padding; they are not a
 function census. Aggregate function counts remain omitted. The report does not
-claim that all selected bodies are free of inline assembly. The existing `objdiff.json`
-is a placeholder with an empty `units` list, not a configured comparison
-workspace or the source of these metrics.
+claim that all selected bodies are free of inline assembly. `objdiff.json` provides
+per-function target/C comparisons, but it does not supply these metrics. Regenerate
+its inventory with `make objdiff-config` when function names, owners, or boundaries
+change.
 
 ## One-time decomp.dev activation
 

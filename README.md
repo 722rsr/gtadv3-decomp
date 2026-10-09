@@ -1,5 +1,7 @@
 # GT Advance 3 decompilation
 
+[![decomp.dev](https://decomp.dev/722rsr/gtadv3-decomp.svg?mode=shield)](https://decomp.dev/722rsr/gtadv3-decomp)
+
 Reconstruction of *GT Advance 3: Pro Concept Racing* (GBA, MTO/THQ).
 The goal is readable game source and cataloged data that build a ROM
 **byte-identical** to the US reference.
@@ -8,20 +10,23 @@ The goal is readable game source and cataloged data that build a ROM
 
 The full independent C ROM is **not complete**.
 
+[![GT Advance 3 Decompilation Treemap](https://decomp.dev/722rsr/gtadv3-decomp.png)](https://decomp.dev/722rsr/gtadv3-decomp)
+
 The reference build (`make`) produces a byte-identical ROM from reconstructed
 assembly, verified generated data regions, and zero padding.
 The `make matching-ready` target
 compiles the C corpus with pinned `old_agbcc` and verifies selected C functions
 in an independent executable slice.
 
-The manifest selects **1,089 C functions / 50,212 bytes** within the
+The manifest selects **1,174 C functions / 57,224 bytes** within the
 **188,760-byte** executable slice. The remaining executable bytes are
 reconstructed assembly. Remaining work includes C matching, the complete
 independent link.
 The [integrated data regions](docs/data-integration.md) cover all cataloged
 data through content end `0x7B04C4` (7,873,388 bytes; padding excluded),
 regenerated from private editable inputs.
-See [build status and completion criteria](docs/decompilation-roadmap.md).
+See [build status and completion criteria](docs/decompilation-roadmap.md) or
+view interactive progress on [decomp.dev](https://decomp.dev/722rsr/gtadv3-decomp).
 
 ## Repository map
 
@@ -105,8 +110,9 @@ independent C ROM.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution and verification steps.
 Hosted CI runs lightweight, ROM-free checks. [Progress reporting](docs/ci.md)
-documents the locally verified decomp.dev snapshot and one-time registration.
-`objdiff.json` is an unconfigured placeholder; see the
+documents the locally verified [decomp.dev](https://decomp.dev/722rsr/gtadv3-decomp) snapshot and registration.
+`objdiff.json` provides per-function target/C comparisons with automatic rebuilds;
+refresh its inventory with `make objdiff-config`. See the
 [optional viewer setup](tools/README.md#optional-assembly-viewers).
 
 ## License

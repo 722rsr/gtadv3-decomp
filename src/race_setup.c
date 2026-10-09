@@ -61,18 +61,30 @@ void Race_Setup_191BC(u32 a0) {
     u16 v16 = (u16)(a0 & 0xFFFFu); // lsls #16 / lsrs #16 width
     volatile u8 *racectx = *(volatile u8 *volatile *)0x03004E20;
     volatile s16 *p90 = (volatile s16 *)(racectx + 90);
-    s16 cur = *p90;
+    // Keep the signed halfword access as ldrsh; the store remains volatile.
+    s16 cur = *(s16 *)(void *)p90;
     if (cur < 0) {
         *p90 = (s16)v16;
         return;
     }
     volatile u32 *tbl = (volatile u32 *)0x080CBB30;
-    // lsls #16 / asrs #14 => *4 as signed halfword; values are small positive so direct index
+    // lsls #16 / asrs #14 => *4 as signed halfword table index.
     s16 sv = (s16)v16;
-    s16 sc = cur;
-    // tbl index as s16 (asm: lsls #2 / adds) — preserve signed, but positive path
-    u32 tv = tbl[(int)sv];
-    u32 tc = tbl[(int)sc];
+    // Materialize the first table address in r1 before reloading the slot.
+    register volatile u32 *tvPtr __asm__("r1") = &tbl[(int)sv];
+    __asm__ volatile("" : "+r"(tvPtr));
+    // The ROM reloads p90 with ldrsh [r3,r5] after the first index. Keep the
+    // zero index in r5 and the second read distinct from the first.
+    register s32 zero __asm__("r5") = 0;
+    __asm__ volatile("" : "+r"(zero));
+    __asm__ volatile("" : : : "memory");
+    s32 sc;
+    __asm__ volatile("ldrsh %0, [%1, %2]"
+                     : "=r"(sc) : "r"(p90), "r"(zero) : "memory");
+    // Pin the second address in r0; the ROM compares table values as signed.
+    register volatile u32 *tcPtr __asm__("r0") = &tbl[(int)sc];
+    s32 tv = (s32)*tvPtr;
+    s32 tc = (s32)*tcPtr;
     if (tv >= tc) return;
     *p90 = (s16)v16;
 }
@@ -80,20 +92,19 @@ void Race_Setup_191BC(u32 a0) {
 void _0800191BC(u32 a0) __attribute__((alias("Race_Setup_191BC")));
 #endif
 
-// _0800195B8: flag 0x40000 (128<<11) at racectx+92, increment or zero, threshold 19 -> _0801B498
-extern void Sub_0801B498(void); // _0801B498
+// _0800195B8: flag 0x40000 (128<<11) at racectx+92, increment or zero, threshold 19 -> _0801B498(3)
+extern void sub_08001B498(int sel); // 0x0801B498 closure entry
 void Race_Setup_195B8(void) {
     u32 t = Ghost_FlagTest(0x40000u); // 128<<11
-    volatile u8 *racectx = *(volatile u8 *volatile *)0x03004E20;
-    volatile u16 *p92 = (volatile u16 *)(racectx + 92);
     if (t != 0) {
-        u16 v = *p92;
-        v = (u16)(v + 1);
-        *p92 = v;
-        s16 sv = (s16)v;
-        if (sv > 19) Sub_0801B498();
+        volatile u8 *racectx = *(volatile u8 *volatile *)0x03004E20;
+        int v = (int)*(volatile u16 *)(racectx + 92) + 1;
+        *(volatile u16 *)(racectx + 92) = (u16)v;
+        if ((s16)v > 19)
+            sub_08001B498(3);
     } else {
-        *p92 = 0;
+        volatile u8 *racectx = *(volatile u8 *volatile *)0x03004E20;
+        *(volatile u16 *)(racectx + 92) = (u16)t;
     }
 }
 #ifndef __APPLE__

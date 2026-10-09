@@ -63,3 +63,9 @@ _08004D44: .4byte 0x0000FFBF
 _08004D48:
 	ldrh	r0, [r0, #6]
 	bx	lr
+
+@ Byte-neutral end anchor for the splicer. This file declares exactly one
+@ `@ Region:` (0x004CF0-0x004D4C) and has no `.include`; the body at
+@ 0x08004D48 ends on 0x004D4C, exactly that boundary, so the anchor is safe.
+@ Without it the body is refused as 'no end marker in code_4cf0.s'.
+code_4cf0_end:

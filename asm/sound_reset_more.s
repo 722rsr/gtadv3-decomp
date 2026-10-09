@@ -131,3 +131,4 @@ _0802CB12:
 	bx r0
 _0802CB18: .word 0x03007FF0
 _0802CB1C: .word 0x68736D53
+sound_reset_more_end:

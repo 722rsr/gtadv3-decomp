@@ -151,8 +151,44 @@ s16 sub_080026F8(int r0,int r1) __attribute__((alias("Code26F8_GetIWRAM_S16")));
 
 
 // 27xx : flags at 0x03001780+0x1056 / 0x105C
+// _0800279C is EXACT 80/80: keep each branch's WA+0x105C calculation
+// separate so agbcc retains the ROM's three duplicate literal pairs.
 void Code279C_SetFlag0(int v){
-    // _0800279C(v): calls _08002780 gate then writes to 0x03001780+0x105C
+#ifndef __APPLE__
+    register u32 value4 __asm__("r4") = (u32)v;
+    register uintptr_t cell __asm__("r0");
+    register u32 offsetOrValue __asm__("r1");
+    extern int _08002780(void);
+    int gate = _08002780();
+    if (gate == 0) {
+        if (value4 == 0u) {
+            cell = 0x03001780u;
+            __asm__("" : "+r" (cell));
+            offsetOrValue = 0x105Cu;
+            __asm__("" : "+r" (offsetOrValue));
+            cell += offsetOrValue;
+            __asm__("" : "+r" (cell));
+            *(volatile u16 *)cell = (u16)value4;
+            return;
+        }
+        cell = 0x03001780u;
+        __asm__("" : "+r" (cell));
+        offsetOrValue = 0x105Cu;
+        __asm__("" : "+r" (offsetOrValue));
+        cell += offsetOrValue;
+        __asm__("" : "+r" (cell));
+        offsetOrValue = 1;
+    } else {
+        cell = 0x03001780u;
+        __asm__("" : "+r" (cell));
+        offsetOrValue = 0x105Cu;
+        __asm__("" : "+r" (offsetOrValue));
+        cell += offsetOrValue;
+        __asm__("" : "+r" (cell));
+        offsetOrValue = 0;
+    }
+    *(volatile u16 *)cell = (u16)offsetOrValue;
+#else
     extern int _08002780(void);
     int gate = _08002780();
     volatile u16 *flag = (volatile u16 *)(0x03001780u + 0x105Cu);
@@ -167,6 +203,7 @@ void Code279C_SetFlag0(int v){
         volatile u16 *p = (volatile u16 *)(0x03001780u + 0x105Cu);
         *p = 0;
     }
+#endif
 }
 int Code279C_IsNonZero_105C(void){
     volatile s16 v = *(volatile s16 *)(0x03001780u + 0x105Cu);

@@ -67,3 +67,9 @@ _08025548:
 	bx lr
 	.short 0
 _080255C0: .word 0x080CD6A8
+
+@ Byte-neutral end anchor for the splicer. This file declares exactly one
+@ `@ Region:` (0x025548-0x0255C4) and has no `.include`; the body at
+@ 0x08025548 runs to 0x0255C4, exactly that boundary, so the anchor is safe.
+@ Without it the body is refused as 'no end marker in ai_line_score.s'.
+ai_line_score_end:

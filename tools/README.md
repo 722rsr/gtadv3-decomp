@@ -62,6 +62,7 @@ neither target replaces `make matching-ready`.
 | `strategy_router.py` | Select applicable diagnostics from measured function properties. |
 | `experiment_kit.py` | Shared candidate compiler, byte scorer, contracts, and output handling. |
 | `compiler_microscope.py` | Compare compiler RTL passes for controlled source variants. |
+| `fixtures/agbcc_recipes/` | Reproduce selected upstream matching motifs; see the [recipe cookbook](../docs/findings/agbcc_matching_recipes.md) for applicability and local results. |
 | `recipe_miner.py` | Derive typed templates from freshly verified exact examples. |
 | `leaf_synth.py` | Bounded synthesis for straight-line Thumb leaves. |
 | `branch_synth.py` | Synthesize call-free conditional bodies with semantic checks before byte scoring. |
@@ -84,6 +85,59 @@ and output in the owning translation unit and independent link.
 Strategy tools' `--out` names the output directory itself; a rerun replaces
 that directory's generated results.
 
+## agbcc permuter
+
+Install the optional dependencies in your Python environment, then prepare a
+fresh scratch workspace:
+
+```sh
+python3 -m pip install -r tools/requirements-permuter.txt
+python3 tools/run_permuter.py _08009FB8 --prepare-only
+```
+
+The wrapper provisions a pinned `WhenGryphonsFly/decomp-permuter-agbcc`, refreshes
+`build-code/code.o`, and runs a focused C89 corpus probe. It generates `base.c`,
+`target.o`, `compile.sh`, and `settings.toml` under `build/permuter/FUNCTION/`.
+Aliases are resolved to their actual C body; friendly names with a known VMA
+alias work too. Wrapper options can follow the function name. Pass fork options
+after `--`; for a new workspace and a baseline-only fork check:
+
+```sh
+python3 tools/run_permuter.py _08009FB8 --work-dir build/permuter/car-check -- --debug
+```
+
+To start an actual search, omit `--prepare-only` and `--debug`, and pass options
+such as `-- -j 4 --best-only`. Searches run until interrupted or the fork's stop
+condition is met. The wrapper enables `--stack-diffs`. Existing nonempty scratch
+directories are refused to protect manual `PERM_GENERAL` edits and search output;
+resume using the printed fork command **from the workspace directory**. The fork
+writes debug files into its current directory.
+
+Each candidate compiles with pinned `old_agbcc -O2 -mthumb-interwork
+-ffunction-sections` inside the original, preprocessed translation unit. Frozen
+`before.c` and `after.c` preserve declarations, attributes, aliases, globals and
+helper bodies. Parser-only declarations in `PERM_PRETEND` do not replace this
+compiler context. The scorer receives only the target function's resolved bytes
+at its ROM address, including its pool; ARM code/data mapping symbols are kept.
+`metadata.json` records compiler/ROM/source identities and symbol resolution;
+`baseline.json` records the initial score and byte comparison. Preparation fails
+if the fork's source round-trip changes the baseline or a relocation is unresolved.
+
+The fork's parser supports a subset of GNU C. Ordinary asm statements are retained
+as literal pragmas; targets containing named-register asm declarations, GNU
+statement expressions, or attributed function declarations are explicitly refused.
+Other parser failures are reported rather than producing a runnable workspace.
+Changing source or compiler inputs requires a fresh workspace; searches use a
+frozen snapshot, not live source edits. Run `python3 tools/test_run_permuter.py`
+for adapter regressions (also included in `make experimental-check`).
+
+Permuter scores are advisory: branch targets and some operand differences are
+normalized by the fork. A zero score does not prove byte identity. Search output
+contains the candidate body; review it in its owning source file, run the focused
+`corpus_match_probe.py --c89 --require-all --require-exact`, and then the independent
+link/`matching-ready` gate before promotion. No candidate is applied automatically.
+Scratch objects and ROM-derived bytes remain private build artifacts.
+
 ## Optional assembly viewers
 
 `build_asm_differ.sh` fetches asm-differ; it does not install Python packages.
@@ -103,10 +157,50 @@ source checkout already exists. Run `make` before comparing the reference ROM
 and `build/gtadv3.gba` through this wrapper. Those are reference-build comparisons;
 use the matching probes above to evaluate candidate C functions.
 
-`objdiff.json` is a **placeholder**, with an empty `units` list. It does not
-provide a configured object-comparison workspace. Configure target/base object
-pairs before using the GUI; the supported matching workflow is documented above.
-The decomp.dev report is generated separately by `make progress`.
+### objdiff
+
+Install [objdiff 3.8.2 or newer](https://github.com/encounter/objdiff/releases),
+complete the compiler/Python/ROM setup in the root README, and open this repository
+in the objdiff GUI. The checked-in `objdiff.json` lists known C functions grouped
+by source file, including nonmatches. Select a unit and build it; source/header/
+assembly changes trigger rebuilds. Objects are generated on demand, so opening a
+fresh checkout does not require compiling the entire corpus.
+
+`tools/objdiff_build.py` is the configured build command. It refreshes the assembled
+symbol closure, runs the selected function's C89/old_agbcc probe, resolves calls
+and pools at the ROM VMA, and publishes `target.o` and `candidate.o` under
+`build/objdiff/ADDRESS/`. Each diagnostic ELF contains one sized Thumb function,
+including its literal pool and alignment tail, with ARM code/data mapping symbols.
+The target bytes come from the hash-checked private ROM; candidate bytes come
+from the current C translation unit. No permuter package is required.
+
+Regenerate the config when function names, owners or boundaries change:
+
+```sh
+make objdiff-config
+python3 tools/objdiff_build.py --check-config
+```
+
+The CLI's one-shot diff reads existing objects; invoke the configured build first:
+
+```sh
+python3 tools/objdiff_build.py build/objdiff/08009fb8/candidate.o
+objdiff-cli diff -p . -u car_tick_helpers/_08009FB8 -o build/objdiff/car-diff.json
+```
+
+`comparison.json` beside the pair records the probe result and a strict resolved-byte
+comparison. Unresolved relocations, compiler failures, or changed source ownership
+fail the build and remove stale viewer objects. Not every inventory entry is
+necessarily compilable; such failures remain visible instead of being represented
+by reference bytes. The watcher excludes generated comparison/probe output to avoid
+rebuild loops.
+
+Objdiff percentages are diagnostic, not ownership or independent-link acceptance.
+These ROM-addressed ELF views have resolved relocations; inspect the accompanying
+probe call/pool records when investigating symbol targets. The authoritative
+decomp.dev report remains separately generated by `make progress`, and promotions
+still require the matching workflow above. Adapter regressions run with
+`python3 tools/test_objdiff_build.py` or `make experimental-check`.
 
 ## ROM and asset analysis
 
@@ -144,6 +238,10 @@ Objdump prints Thumb load/store displacements in decimal.
 
 `build_mgba_python.sh` builds libmGBA bindings under `build/` and prints the
 Python environment settings. `mgba_python_shim.c` supplies binding support.
+For registers and selected memory at individual calls, use
+[`function_trace.py`](function_trace.py); the
+[function capture guide](../docs/function_captures.md) includes setup, an
+idle-boot example, return-pairing limits, and optional live-emulator tests.
 Use `ramwatch.py run` with identical input for both ROMs, then `ramdiff.py`
 to compare captures. The capture format includes IWRAM, EWRAM, VRAM, palette
 RAM, and OAM.

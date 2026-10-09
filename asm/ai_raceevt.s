@@ -241,3 +241,9 @@ _0802401E:
 	bx r0
 	.align 2, 0
 _08024044_lit: .word 0x030005B0
+
+@ Byte-neutral end anchor for the splicer. This file declares exactly one
+@ `@ Region:` (0x023ED0-0x024048) and has no `.include`; the body at
+@ 0x08023FF8 ends on 0x024048, exactly that boundary, so the anchor is safe.
+@ Without it the body is refused as 'no end marker in ai_raceevt.s'.
+ai_raceevt_end:

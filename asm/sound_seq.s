@@ -118,7 +118,7 @@ _0802B66C_lit_dir:
 	.word 0x08061FA4
 
 @ ----------------------------------------------------------------------------
-@ sub_0802B718(id, val, chsel) — VOLUME walker -> sub_0802D4A8.
+@ sub_0802B718(id, selmask, val) — VOLUME walker -> sub_0802D4A8.
 @ Writes val>>2 to each selected active channel +0x13, sets flag |=3.
 @ Static callers: 0x0802B11C/0x0802B160/0x0802B174 (sound_api fade
 @ engine re-apply), 0x0802B4CE (sound_bank _0802B488).
@@ -151,7 +151,7 @@ _0802B718_lit_dir:
 	.word 0x08061FA4
 
 @ ----------------------------------------------------------------------------
-@ sub_0802B74C(id, val, chsel) — PAN walker -> sub_0802D510.
+@ sub_0802B74C(id, selmask, val) — PAN walker -> sub_0802D510.
 @ Writes (s8)val to channel +0x0B and val to +0x0D, sets flag |=0xC.
 @ Static callers: 0x0802B182 (sound_api), 0x0802B4EE (sound_bank).
 sub_0802B74C:
@@ -183,7 +183,7 @@ _0802B74C_lit_dir:
 	.word 0x08061FA4
 
 @ ----------------------------------------------------------------------------
-@ _0802B780(id, val, chsel) — third-op walker -> sub_0802D584.
+@ _0802B780(id, selmask, val) — third-op walker -> sub_0802D584.
 @ Writes (u8)val to channel +0x15, sets flag |=3. No static BL callers.
 	.type _0802B780, %function
 _0802B780:
@@ -212,3 +212,6 @@ _0802B780_lit_tab:
 	.word 0x08061F74
 _0802B780_lit_dir:
 	.word 0x08061FA4
+
+@ Synthetic end anchor at the region boundary 0x0802B7B4.
+sound_seq_end:

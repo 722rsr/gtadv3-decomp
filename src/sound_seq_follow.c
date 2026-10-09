@@ -34,9 +34,9 @@
 //   +64  u32 sequencer byte cursor (read/write)
 //   +68  u32 loop stack base (BD14 pushes cursor here)
 //
-// Note: 0x0802BCCE and 0x0802BCEA are interior labels of sub_0802BCCC and
-// sub_0802BCE8 respectively (armcc tail-merge targets), NOT separate
-// functions — internal calls within this file use the C bodies directly.
+// Note: BCCE and BCEA are tail-merged interior labels with independent call
+// sites. Their two-byte prefixes at BCCC and BCE8 are modeled separately, and
+// the shared tails retain their own entries at BCCE and BCEA.
 // ============================================================================
 
 #include "gba/types.h"
@@ -120,7 +120,9 @@ void SoundChannelFreeAll(u32 dummy, u8 *stream) { (void)dummy; (void)stream; }
 #endif
 
 // ----------------------------------------------------------------------------
-// 0x0802BCCC — stream-pointer validation leaf (r2 = word, r3 = result).
+// 0x0802BCCC is a two-byte cursor-fetch prefix: `ldrb r3,[r2]`, then fall
+// through to the shared validator at BCCE. This C helper models the combined
+// pointer validation for the host path used by SoundBCF4_FetchBE:
 //   if (w >> 25) != 0: keep
 //   else if (w < 0x080614E0): clear
 //   else if (w >> 14) == 0: keep, else clear
@@ -143,8 +145,15 @@ void SoundBCCC_Validate_alias(void) {}
 // guard-independent because CALLEE carries the `#ifndef __APPLE__`.
 #define SB_CALLEE(friendly, closure) CALLEE(friendly, closure)
 #ifndef __APPLE__
-u32 _0802BCCC(u32 w) __attribute__((alias("SoundBCCC_Validate")));
-u32 sub_0802BCCC(u32 w) __attribute__((alias("SoundBCCC_Validate")));
+__attribute__((naked)) static u32 SoundBCCC_Entry(u32 w) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "ldrb r3, [r2, #0]\n"
+        ".syntax divided\n"
+    );
+}
+u32 _0802BCCC(u32 w) __attribute__((alias("SoundBCCC_Entry")));
+u32 sub_0802BCCC(u32 w) __attribute__((alias("SoundBCCC_Entry")));
 #endif
 
 // ----------------------------------------------------------------------------

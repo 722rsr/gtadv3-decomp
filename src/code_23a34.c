@@ -117,28 +117,41 @@ void _080023AE4(void *rec, int a, int b)
 //   r0 = (s16)[rec+140] * 2 + 0x080CC190 → u16 w
 //   r0 = [rec+168]
 //   switch (r0):
-//     1, 2, 3: stack={5,1,1,0}; _08007B18(rec, (int)w, a, b, 5, 1, 1, 0)
-//     0:       stack={4,1,1,0}; _08007B18(rec, (int)w, a, b, 4, 1, 1, 0)
+//     1, 3: stack={5,1,1,0}; _08007B18(rec, (int)w, a, b, 5, 1, 1, 0)
+//     0, 2: stack={4,1,1,0}; _08007B18(rec, (int)w, a, b, 4, 1, 1, 0)
 //     default: nothing
 //   note: r0 arg for _08007B18 is rec (base, no +140 offset in this fn).
 // ----------------------------------------------------------------------------
 void _080023B60(void *rec, int a, int b)
 {
+#ifndef __APPLE__
+    // Preserve the ROM's lookup setup: table base in r1, rec still in r0.
+    register u32 table_base __asm__("r1") = 0x080CC190u;
+    register u32 record_base __asm__("r0") = (u32)(uintptr_t)rec;
+    __asm__ volatile ("" : "+r" (table_base), "+r" (record_base));
+    u16 w = *(u16 *)(uintptr_t)(table_base + ((int)(s16) * (u16 *)(uintptr_t)(record_base + 140)) * 2);
+#else
+    u16 w = *(u16 *)(uintptr_t)(0x080CC190u + ((int)(s16) * (u16 *)((uintptr_t)rec + 140)) * 2);
+#endif
     int sel = *(int *)((uintptr_t)rec + 168);
-    int kind;
 
-    if (sel == 1 || sel == 2 || sel == 3)
-        kind = 5;
-    else if (sel == 0)
-        kind = 4;
-    else
-        return;
-
-    {
-        u16 w = *(u16 *)(uintptr_t)(0x080CC190u + ((int)(s16) * (u16 *)((uintptr_t)rec + 140)) * 2);
-        _08007B18(rec, (int)w, a, b, kind, 1, 1, 0);
+    switch (sel) {
+    case 1:
+    case 3:
+        _08007B18(rec, (int)w, a, b, 5, 1, 1, 0);
+        break;
+    case 0:
+    case 2:
+        _08007B18(rec, (int)w, a, b, 4, 1, 1, 0);
+        break;
+    default:
+        break;
     }
 }
+#ifndef __APPLE__
+// The ROM span ends with 00 00; use zero fill instead of gas's Thumb nop.
+__asm__(".align 2, 0");
+#endif
 
 // ROM entry alias.
 #ifndef __APPLE__

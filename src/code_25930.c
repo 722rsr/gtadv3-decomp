@@ -77,10 +77,9 @@ extern const u8 C25_Zones[];
 extern const u16 C25_ZoneIds[];
 extern int C25_CountOut[];
 #ifndef __APPLE__
-__asm__(".globl C25_GridOut\nC25_GridOut = 0x0203F9B0\n");
-__asm__(".globl C25_Zones\nC25_Zones = 0x0805FCAC\n");
-__asm__(".globl C25_ZoneIds\nC25_ZoneIds = 0x080600CC\n");
-__asm__(".globl C25_CountOut\nC25_CountOut = 0x0203FA40\n");
+/* Absolute definitions live inside Code25930_BuildGrid's body: the splicer
+   retains only the function's section, so a file-scope asm definition is
+   omitted from the independent link (see docs/matching_workflow.md). */
 #else
 static int C25_GridOut[32];
 static const u8 C25_Zones[1024];
@@ -92,6 +91,16 @@ static int C25_CountOut[1];
 // Head at 0x080025930 (no separate.type in the listing; the function begins
 // right after the 0x080258xx cluster tail). 32-row scan.
 void Code25930_BuildGrid(void) {
+#ifndef __APPLE__
+    extern int C25_GridOut[];
+    extern const u8 C25_Zones[];
+    extern const u16 C25_ZoneIds[];
+    extern int C25_CountOut[];
+    __asm__(".globl C25_GridOut\nC25_GridOut = 0x0203F9B0\n");
+    __asm__(".globl C25_Zones\nC25_Zones = 0x0805FCAC\n");
+    __asm__(".globl C25_ZoneIds\nC25_ZoneIds = 0x080600CC\n");
+    __asm__(".globl C25_CountOut\nC25_CountOut = 0x0203FA40\n");
+#endif
     int count = 0;
     register int latch __asm__("sl") = 0;
     {

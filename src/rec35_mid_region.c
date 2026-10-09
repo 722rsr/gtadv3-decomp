@@ -63,6 +63,9 @@ extern void  Sub_080075E8(void *a, int b, int c);
 extern void *Sub_08005758(int n);
 extern void  Sub_08007B18(void *a, int b, int c, int d, int e, int f, int g, int h);
 extern void  Sub_08007BFC(void *a, int b, int c, int d, int e, int f, int g, int h, int i);
+#ifndef __APPLE__
+extern void  sub_08007BFC(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h, u32 i);
+#endif
 extern void  Sub_08007C68(void *a, int b, int c, int d, int e, int f, int g, int h, int i);
 extern void  _08007C68(void *a, u32 b, u32 c, u32 d, u32 e, u32 f, u32 g, u32 h, u32 i); // faithful strong body
 // CpuSet wrapper 0x0802D974 = `swi 0x0B; bx lr`, i.e. BIOS order
@@ -787,11 +790,27 @@ void _080017B00(void *a) __attribute__((alias("Rec35_Emit_17B00")));
 // _080017B84(rec) — single _08007BFC emitter (d=0, e=32, f=3)
 // The ROM's r3 slot is clobbered to 0 by the last stack store before the call.
 void Rec35_Emit_17B84(void *rec) {
-    Sub_08007BFC((u8 *)rec + 48, (int)RD32((u8 *)rec + 492), (int)RD32((u8 *)rec + 496),
+#ifndef __APPLE__
+    register u8 *base __asm__("r2") = (u8 *)rec;
+    register void *dst __asm__("r0") = base + 48;
+    register u32 offset __asm__("r3") = 492;
+    register u32 x __asm__("r1") = *(u32 *)(base + offset);
+    offset += 4;
+    u32 y = *(u32 *)(base + offset);
+    sub_08007BFC(dst, (int)x, (int)y,
                  0, 32, 3, 1, 1, 0);
+#else
+    u32 x = *(u32 *)((u8 *)rec + 492);
+    u32 y = *(u32 *)((u8 *)rec + 496);
+    Sub_08007BFC((u8 *)rec + 48, (int)x, (int)y,
+                 0, 32, 3, 1, 1, 0);
+#endif
 }
+// ROM inventory span ends with the zero-filled alignment halfword at +0x32.
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _080017B84(void *a) __attribute__((alias("Rec35_Emit_17B84")));
+void sub_080017B84(void *a) __attribute__((alias("Rec35_Emit_17B84")));
 #endif
 
 // ---------------------------------------------------------------------------
@@ -1045,12 +1064,13 @@ void _080018098(void *a, void *b, int c, int d) __attribute__((alias("Rec35_RowE
 // ---------------------------------------------------------------------------
 // _080018128(rec) — init
 void Rec35_Init_18128(void *rec) {
+    extern void sub_08007B18(void *a, int b, int c, int d, int e, int f, int g, int h);
     u8 *r4 = (u8 *)rec;
-    Sub_0800D97C(r4 + 128, 15);
-    Sub_08007B18(r4, 2, 64, 64, 3, 1, 0, 0);
-    Rec35_RowEmit_18098(0, (void *)72, *(const s16 *)(r4 + 132) - 1, 4);
+    sub_0800D97C(r4 + 128, 15);
+    sub_08007B18(r4, 2, 64, 64, 3, 1, 0, 0);
+    R35_CALLEE(Rec35_RowEmit_18098, _080018098)(0, (void *)72, *(const s16 *)(r4 + 132) - 1, 4);
     r4 += 8;
-    Sub_0800DBE8(r4);
+    sub_0800DBE8(r4);
 }
 #ifndef __APPLE__
 void _080018128(void *a) __attribute__((alias("Rec35_Init_18128")));

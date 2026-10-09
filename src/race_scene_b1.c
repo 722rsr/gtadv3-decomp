@@ -561,26 +561,45 @@ __asm__(".align 2, 0");
 // and the 10C3 gate byte is clear, clears b+88 and runs _080056F4(b,1,1)
 // to relatch a+160; always sets u16[b+84] = 1.
 //
-// STILL OPEN, measured  (RaceB1DA70): 26/84, candidate 80 vs ROM 84,
-// first difference +0x9. Instruction accounting is exact: the candidate is
-// missing ONE instruction, the second `movs r0,#0` before `strb r0,[r1,#0]`
-// (plus the 2-byte `movs r0,r0` pad that follows from it, hence 80 vs 84).
-// The ROM keeps the VALUE in r0 and the ADDRESS in r1 at all three stores, so
-// the first zero is dead by the time `adds r0,r2,r1` clobbers r0 and must be
-// rematerialised; agbcc instead keeps one zero in r1, which stays live across
-// the pool loads (base=r3, offsets=r0), so it CSEs. The two register roles
-// also differ: ROM `ldr r2,base / ldr r1,offFBC`, candidate `ldr r3,base /
-// ldr r0,offFBC`, so in the candidate r1 still equals pb and agbcc correctly
-// elides the ROM's `adds r1,r4,#0`.
-// MEASURED NEGATIVE, reverted: pinning the b+88 address to r1
-// (`register volatile u8 *p88 __asm__("r1") = pb + 88u;`) does move the store
-// to `strb` with the address in r1 and fixes `adds r5,#160` (was `add
-// r5,r5,#160`), but agbcc then picks r2 for the shared zero instead of r0, so
-// the store pair is still one pseudo and the score FALLS 26/84 -> 20/84.
-// Pool-register forcing (r2 base / r1 offsets) is the untried lever.
+// EXACT 84/84: keep the incoming record pointers in r5/r4, the IWRAM base
+// and offsets in r2/r1, and the computed addresses in r0. The empty asm ties
+// prevent agbcc from folding WA+offset into one literal. Pinning the final
+// b+84 address in r1 preserves the ROM's two-step pointer advance and pool
+// position.
 // ----------------------------------------------------------------------------
 void _08001D974(void *a_, void *b_) {
     WA_SPLIT_DECL;
+#ifndef __APPLE__
+    register volatile u8 *pa __asm__("r5") = (volatile u8 *)a_;
+    register volatile u8 *pb __asm__("r4") = (volatile u8 *)b_;
+    register uintptr_t waBase __asm__("r2");
+    register uintptr_t waOff __asm__("r1");
+    register uintptr_t waAddr __asm__("r0");
+    register u32 zero __asm__("r0");
+    pa += 160u;
+    zero = 0;
+    *(volatile u16 *)pa = (u16)zero;
+    waBase = (uintptr_t)&WABaseB1;
+    waOff = (uintptr_t)&WAOffFBC;
+    __asm__("" : "+r" (waBase), "+r" (waOff));
+    waAddr = waBase + waOff;
+    __asm__("" : "+r" (waAddr));
+    if (*(volatile u16 *)waAddr == 3u) {
+        register volatile u8 *p88 __asm__("r1") = pb + 88u;
+        zero = 0;
+        *p88 = (u8)zero;
+        waOff = (uintptr_t)&WAOff10C3;
+        __asm__("" : "+r" (waBase), "+r" (waOff));
+        waAddr = waBase + waOff;
+        __asm__("" : "+r" (waAddr));
+        if (*(volatile u8 *)waAddr == 0u) {
+            _080056F4((void *)(uintptr_t)pb, 1, 1);
+            *(volatile u16 *)pa = 1;
+        }
+    }
+    register volatile u8 *p84 __asm__("r1") = pb + 84u;
+    *(volatile u16 *)p84 = 1;
+#else
     volatile u8 *pa = (volatile u8 *)a_;
     volatile u8 *pb = (volatile u8 *)b_;
     *(volatile u16 *)(pa + 160u) = 0;
@@ -592,6 +611,7 @@ void _08001D974(void *a_, void *b_) {
         }
     }
     *(volatile u16 *)(pb + 84u) = 1;
+#endif
 }
 
 // ----------------------------------------------------------------------------
@@ -601,16 +621,32 @@ void _08001D974(void *a_, void *b_) {
 // over (tab[i], (s16)slot, 0, stack 16).
 // ----------------------------------------------------------------------------
 void _08001D9CC(void) {
-    u32 slot = 0x0203F8F2u;
-    u32 tab = 0x080CBBA2u;
-    for (int i = 0; i < 2; i++) {
-        u16 id = (u16)_08005758(16);
-        *(volatile u16 *)(uintptr_t)slot = id;
-        _08007570((void *)(uintptr_t)0x08336CA0u, *(volatile u16 *)(uintptr_t)tab,
-                  (s16)id, 0, 16);
-        slot += 8u;
-        tab += 2u;
-    }
+#ifndef __APPLE__
+    // ROM keeps the ascending two-iteration counter in r6.
+    register int i __asm__("r6") = 0;
+    // Keep the unadjusted literal in r0: ROM loads 0x0203F8F0 then adds 2.
+    register volatile s16 *slotBase __asm__("r0") =
+        (volatile s16 *)(uintptr_t)0x0203F8F0u;
+    register volatile s16 *slot __asm__("r4");
+#else
+    int i = 0;
+    volatile s16 *slot = (volatile s16 *)(uintptr_t)0x0203F8F0u + 1;
+#endif
+    volatile u16 *tab;
+#ifndef __APPLE__
+    __asm__ volatile("" : "+r"(slotBase));
+    slot = slotBase + 1;
+#endif
+    tab = (volatile u16 *)(uintptr_t)0x080CBBA2u;
+    do {
+        *slot = (s16)_08005758(16);
+        u16 entry = *tab;
+        s16 id = *(s16 *)(void *)slot;
+        _08007570((void *)(uintptr_t)0x08336CA0u, entry, id, 0, 16);
+        slot += 4;
+        tab += 1;
+        i++;
+    } while (i <= 1);
 }
 
 // ----------------------------------------------------------------------------

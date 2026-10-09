@@ -24,6 +24,13 @@ must not be committed.
 
 ## Third-party material
 
+`docs/findings/agbcc_matching_recipes.md` adapts matching observations from
+FacundoMainere's `gba-matching-decomp-skill` at revision
+`cf9978add0b38d7b7040ef2a4090694c39cfd873`. This adapted document is under the
+**MIT License**, copyright (c) 2026 FacundoMainere, rather than the CC0
+dedication. The license is retained at
+[`docs/third_party/gba-matching-decomp-skill/LICENSE`](docs/third_party/gba-matching-decomp-skill/LICENSE).
+
 `tools/third_party/gcc-2.95.3/lib1thumb.asm` is Free Software Foundation source
 from GCC 2.95.3, redistributed unmodified under the **GNU General Public
 License, version 2 or later** with its original copyright and license notice

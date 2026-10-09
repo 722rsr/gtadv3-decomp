@@ -50,7 +50,7 @@ extern void sub_0802B214(int v);
 
 // External callees (strong lifts or trampolines).
 HOST_STUB(void _08002B214(int v));                                             // 0x08002B214 sound wake
-HOST_STUB(void _08002B368(int v));                                             // 0x08002B368 sound cue
+HOST_STUB(void sub_0802B368(int v));                                           // 0x0802B368 sound cue
 HOST_STUB(void _08002124(u16 v));                                              // 0x08002124 BlockB arm
 HOST_STUB(int _08002140(void));                                                 // 0x08002140 BlockB match count (word return: a u16 one forces a lsls/lsrs pair)
 HOST_STUB(void *_08004B68(void));                                              // 0x08004B68 scene header
@@ -342,51 +342,83 @@ void _08001F6A4(void *rec_) {
 //     not a folded single literal.
 // ----------------------------------------------------------------------------
 void _08001F764(volatile u8 *rec, u16 b, u16 c) {
-    register u16 entry __asm__("r6") = *(volatile u16 *)(rec + 8);
+    register u32 entry __asm__("r6") = *(volatile u16 *)(rec + 8);
     extern u8 RaceSceneD1Wa764[];
     __asm__(".globl RaceSceneD1Wa764\nRaceSceneD1Wa764 = 0x03001780");
     (void)b;
     if (c == 2) {
-        _08002B368(4);
-        *(volatile u32 *)(rec + 16) = 10;
-        *(volatile u16 *)(rec + 20) = 0;
-        *(volatile u32 *)(rec + 48) = 10;
-        *(volatile u32 *)(rec + 44) = 0;
+        sub_0802B368(4);
+        {
+            register int ten __asm__("r1") = 10;
+            *(volatile u32 *)(rec + 16) = ten;
+            {
+                register int zero __asm__("r0") = 0;
+                *(volatile u16 *)(rec + 20) = zero;
+                *(volatile u32 *)(rec + 48) = ten;
+                *(volatile u32 *)(rec + 44) = zero;
+            }
+        }
         {
             int blk = 132;
             *(volatile u16 *)(RaceSceneD1Wa764 + (blk << 5)) = 3;
         }
     }
     if (c == 1) {
-        u16 v = *(volatile u16 *)(rec + 8);
-        if (v <= 2) {
-            _08002B368(1);
+        register u16 vv __asm__("r2") = *(volatile u16 *)(rec + 8);
+        register u32 sh __asm__("r1") = (u32)vv << 16;
+        if ((sh >> 16) <= 2) {
+            sub_0802B368(1);
             *(volatile u32 *)(rec + 12) = 1;
-            *(volatile u32 *)(rec + 16) = 10;
-            *(volatile u16 *)(rec + 20) = 0;
-            *(volatile u32 *)(rec + 48) = 10;
-            *(volatile u32 *)(rec + 44) = 1;
+            {
+                register int ten __asm__("r1") = 10;
+                *(volatile u32 *)(rec + 16) = ten;
+                {
+                    register int zero __asm__("r0") = 0;
+                    *(volatile u16 *)(rec + 20) = zero;
+                    *(volatile u32 *)(rec + 48) = ten;
+                    *(volatile u32 *)(rec + 44) = 1;
+                }
+            }
             if (*(volatile u16 *)(rec + 8) == 2)
                 *(volatile u16 *)(rec + 24) = 8;
-        } else if ((s16)v == 3) {
-            _08002B368(4);
-            *(volatile u32 *)(rec + 16) = 10;
-            *(volatile u16 *)(rec + 20) = 0;
-            *(volatile u32 *)(rec + 48) = 10;
-            *(volatile u32 *)(rec + 44) = 0;
+        } else {
+            register int signed_hi __asm__("r0") = (int)sh >> 16;
+            if (signed_hi == 3) {
+                sub_0802B368(4);
+                {
+                    register int ten __asm__("r1") = 10;
+                    *(volatile u32 *)(rec + 16) = ten;
+                    {
+                        register int zero __asm__("r0") = 0;
+                        *(volatile u16 *)(rec + 20) = zero;
+                        *(volatile u32 *)(rec + 48) = ten;
+                        *(volatile u32 *)(rec + 44) = zero;
+                    }
+                }
+            }
         }
-        *(volatile u16 *)(RaceSceneD1Wa764 + (132u << 5)) = *(volatile u16 *)(rec + 8);
+        {
+            register u8 *wa __asm__("r0") = RaceSceneD1Wa764;
+            register u16 tmp __asm__("r1") = *(volatile u16 *)(rec + 8);
+            register int blk __asm__("r2") = 132;
+            blk <<= 5;
+            wa += blk;
+            *(volatile u16 *)wa = tmp;
+        }
     }
     if (c == 64)
         *(volatile u16 *)(rec + 8) = (u16)(*(volatile u16 *)(rec + 8) - 1);
     if (c == 128)
         *(volatile u16 *)(rec + 8) = (u16)(*(volatile u16 *)(rec + 8) + 1);
-    if (*(volatile s16 *)(rec + 8) < 0)
+    if (*(s16 *)(uintptr_t)(rec + 8) < 0)
         *(volatile u16 *)(rec + 8) = 0;
-    if (*(volatile s16 *)(rec + 8) > 3)
+    if (*(s16 *)(uintptr_t)(rec + 8) > 3)
         *(volatile u16 *)(rec + 8) = 3;
-    if (entry != *(volatile u16 *)(rec + 8))
-        _08002B368(2);
+    {
+        register u16 current __asm__("r4") = *(volatile u16 *)(rec + 8);
+        if (entry != current)
+            sub_0802B368(2);
+    }
 }
 
 // ----------------------------------------------------------------------------

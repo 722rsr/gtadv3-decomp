@@ -215,3 +215,5 @@ _080023BCA:
 	pop	{r0}
 	bx	r0
 	.hword 0x0000
+
+code_23a34_end:

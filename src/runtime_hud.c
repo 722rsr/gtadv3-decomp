@@ -1704,9 +1704,9 @@ void _08004324(int a) __attribute__((alias("CamSet_04324")));
 // 0x043B8: strip 0x0802E260, cell stride 12, glyph halfword at cell+4
 // 0x04440: strip 0x0802FA60, cell stride 8,  glyph halfword at cell+2
 // 0x04508: in-record variant, NO CamSector/rotate gate (always returns 1):
-//          row = ([rec+4]>>8)*10 into strip 0x08030A60, glyph at cell+6 ->
+//          row = ([rec+4]>>8)*12 into strip 0x08030A60, glyphs at cell+6/+4 ->
 //          [rec+16], [rec+12]=32, [rec+8]=[rec+4]>>6, [rec+0]=120-
-//          Div(200*[rec+0],[rec+4]), [rec+4]=Div(0xED800,[rec+4])-(glyph-0x30)
+//          idiv(200*[rec+0],[rec+4]), [rec+4]=idiv(0xED800,[rec+4])-(glyph-0x30)
 // 0x04344: legacy 4-arg strip_digit model kept (entry VMA is an interior
 //          address, prologue not yet dumped; no ROM or C callers).
 // 0x044C4: strip 0x080C53E4 gate only (bias 0xFFFFEBAF, limit 0x1EBAE);
@@ -1817,14 +1817,27 @@ int TrackDigit_04440(volatile u32 *rec)
 __asm__(".align 2, 0");
 int TrackDigit_04508(volatile u32 *rec)
 {
-    s32 y = (s32)rec[1];                                           // +4
-    const u8 *cell = (const u8 *)(uintptr_t)(0x08030A60 + (u32)((y >> 8) * 10));
-    rec[4] = (u32)*(volatile s16 *)(cell + 6);                     // +16
-    rec[3] = 32u;                                                  // +12
-    rec[2] = (u32)(y >> 6);                                        // +8
-    rec[0] = (u32)(120 - Div(200 * (s32)rec[0], y));               // +0
-    rec[1] = (u32)(Div(0x000ED800, y) - (*(volatile s16 *)(cell + 4) - '0')); // +4
-    rec[11] = (u32)(uintptr_t)cell;                                // +44
+    register volatile u32 *r5 __asm__("r5") = rec;
+    register s32 r6 __asm__("r6") = (s32)r5[1];
+    register const u8 *r4 __asm__("r4") = (const u8 *)(uintptr_t)
+        (0x08030A60u + (u32)((r6 >> 8) * 12));
+    register int r1 __asm__("r1") = 6;
+    register s32 glyph __asm__("r0") = *(const s16 *)(r4 + r1);
+    r5[4] = (u32)glyph;
+    r5[3] = 32u;
+    r5[2] = (u32)(r6 >> 6);
+    register int numerator __asm__("r0") = 200 * (s32)r5[0];
+    register s32 denominator __asm__("r1") = r6;
+    r5[0] = (u32)(120 - sub_0802DE04(numerator, denominator));
+    register int constant __asm__("r0") = 0x000ED800;
+    denominator = r6;
+    register s32 quotient __asm__("r0") = sub_0802DE04(constant, denominator);
+    register int offset __asm__("r2") = 4;
+    register s32 digit __asm__("r1") = *(const s16 *)(r4 + offset);
+    digit -= '0';
+    quotient -= digit;
+    r5[1] = (u32)quotient;
+    r5[11] = (u32)(uintptr_t)r4;
     return 1;
 }
 int TrackArrow_044C4(int a0, int a1, volatile u32 *out)

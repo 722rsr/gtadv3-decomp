@@ -9,6 +9,7 @@ extern void _08002ED0(void *a, int b, int c, int d, int e, int f, int g, int h, 
 extern void _08002E0A4(void *a,void *b,int c);
 extern int _08002BE8(void);
 extern int _08002C48(int a, int b);
+extern u32 sub_0802DF6C(u32 numerator, u32 denominator);
 
 void Course_RecordsIterA(void *X) { (void)X; // legacy stub for hosts, iterators remain unaliased below
 }
@@ -226,26 +227,88 @@ int Course_Math_AbsRoundAvg(int a, int b) { // _08007EE0: |a|,|b|; if |b|>|a| ta
         return (aa + bb) - ((5 * aa) >> 3);
     return (bb + aa) - ((5 * bb) >> 3);
 }
-int Course_Math_DistanceHeading(int x0,int y0,int x1,int y1) { // _08007F08: s32 diff, muls, sqrt, udiv, table s16
-    int dx = x1 - x0; if (dx < 0) dx = -dx; // subs, bge, negs, s32
-    int dy = y1 - y0; if (dy < 0) dy = -dy;
-    int sx = dx < 0 ? 0 : 1; // mov r8 via cmp
-    int sy = dy < 0 ? 0 : 1;
-    if (dx==0 && dy==0) return 0;
-    int sq = dx*dx + dy*dy; // muls
-    int rt = Sqrt((u32)sq); // swi 8, u16 via lsls/lsrs #16
-    int rx = (dx << 11) / rt; // lsls #11, bl 02DF6C udiv u32
-    int ry = (dy << 11) / rt;
-    const s16 *tbl = (rx > ry) ? (const s16*)0x080CA064 : (const s16*)0x080C9064; // ldr pools, cmp, bgt
-    int idx = (rx > ry ? ry : rx) * 2; // lsls #1
-    s16 v = tbl[idx/2]; // ldrsh
-    // Adjustment via 1024/3072 pools per original 07F98-07FB2 (movs #128<<3 etc.)
-    if (sx==0 && sy==1) v += 1024;
-    else if (sx==0 && sy==0) v = 1024 - v;
-    else if (sx==1 && sy==0) v = 3072 - v;
-    else v += 3072;
-    return (int)v; // s16 -> s32 via asrs #16
+int Course_Math_DistanceHeading(int x0,int y0,int x1,int y1) { // _08007F08: signed deltas, unsigned normalized division, signed table result
+#ifndef __APPLE__
+    // Keep the ROM's argument and result lifetimes in r7/r5/r6; the barriers
+    // preserve its entry copies and the one-value scratch register.
+    register int y0_input __asm__("r7") = y0;
+    register int x1_input __asm__("r5") = x1;
+    register int y1_input __asm__("r6") = y1;
+    __asm__ volatile ("" : "+r" (y0_input), "+r" (x1_input), "+r" (y1_input));
+
+    register int dx __asm__("r5") = x1_input - x0;
+    int sx;
+    if (dx < 0) { dx = -dx; sx = 0; }
+    else {
+        register int one __asm__("r1") = 1;
+        __asm__ volatile ("" : "+r" (one));
+        sx = one;
+    }
+
+    register int dy __asm__("r6") = y1_input - y0_input;
+    int sy;
+    if (dy < 0) { dy = -dy; sy = 0; }
+    else { sy = 1; }
+#else
+    int dx = x1 - x0;
+    int sx;
+    if (dx < 0) { dx = -dx; sx = 0; }
+    else { sx = 1; }
+
+    int dy = y1 - y0;
+    int sy;
+    if (dy < 0) { dy = -dy; sy = 0; }
+    else { sy = 1; }
+#endif
+
+    if (dx == 0 && dy == 0) return 0;
+
+    int sq = dx * dx + dy * dy;
+    u16 root = (u16)Sqrt((u32)sq);
+    int rt = (int)root;
+#ifndef __APPLE__
+    register int rx __asm__("r5") =
+        (int)sub_0802DF6C((u32)dx << 11, (u32)rt);
+    register int ry __asm__("r6") =
+        (int)sub_0802DF6C((u32)dy << 11, (u32)rt);
+#else
+    int rx = (int)sub_0802DF6C((u32)dx << 11, (u32)rt);
+    int ry = (int)sub_0802DF6C((u32)dy << 11, (u32)rt);
+#endif
+
+    const s16 *tbl;
+#ifndef __APPLE__
+    register u32 index2 __asm__("r0");
+#else
+    u32 index2;
+#endif
+    if (rx <= ry) {
+        tbl = (const s16 *)0x080C9064;
+        index2 = (u32)rx << 1;
+    } else {
+        tbl = (const s16 *)0x080CA064;
+        index2 = (u32)ry << 1;
+    }
+#ifndef __APPLE__
+    register int v __asm__("r5") =
+        *(s16 *)(uintptr_t)(index2 + (uintptr_t)tbl);
+#else
+    int v = *(s16 *)(uintptr_t)(index2 + (uintptr_t)tbl);
+#endif
+
+    if (sx == 0) {
+        if (sy) v += 1024;
+        else v = 1024 - v;
+    } else {
+        if (sy) v = 3072 - v;
+        else v += 3072;
+    }
+    return v;
 }
+#ifndef __APPLE__
+// ROM has a zero-filled alignment halfword after the return instruction.
+__asm__(".align 2, 0");
+#endif
 void Course_Math_HeadingInterp(int p0,int p1,int p2, void *out, int sel) { // _08007FC0: s16 clamp, table 0x080CB064 s16, muls s32>>12
     (void)p1; (void)p2; (void)sel;
     s16 a = (s16)p0; // lsls/lsrs #16, asrs #16
@@ -469,15 +532,18 @@ void Course_Iter_07BFC(void *X, int a1, int a2, int a3,
 }
 extern void *_08002BFC(int a);
 extern void _08002C34(int idx, void *node);
+#ifndef __APPLE__
+extern void sub_08002ED0(void *a, int b, int c, int d, int e,
+                         int f, int g, int h, int i, int j);
+#endif
 
-// Faithful static _08002ED0 placement writer for the 07C68 row loop
-// (asm/runtime_2aac.s 0x02ED0; same transcription as the global
-// EmitPlace_02ED0 in foundation_runtime.c — copied, not shared, to keep
-// this TU self-contained).
+// Host-only fallback for the _08002ED0 placement writer. The ROM build calls
+// the closure symbol directly so the row loop retains its original call edge.
 // ROM _08002ED0 consumes TEN args (r0-r3 + 6 stack words).
 //   a0=r7 seed, a1=ip value (low byte), a2=r6 OR-mask, a3=dst<<12,
 //   s0=2C34 idx, s1=table idx, s2=loop count, s3=+4 mask<<10,
 //   s4=+0 mask<<10, s5=u16[place+12].
+#ifdef __APPLE__
 static u8 *emit_tbl(u32 s1) { return (u8 *)(uintptr_t)(0x080C4940u + (s1 << 3)); }
 static void EmitPlace_07C68(u32 a0, u32 a1, u32 a2, u32 a3,
                             u32 s0, u32 s1, u32 s2, u32 s3, u32 s4, u32 s5) {
@@ -507,20 +573,51 @@ static void EmitPlace_07C68(u32 a0, u32 a1, u32 a2, u32 a3,
         if (count == 0u) break;
     }
 }
+#endif
 
 // _08007C68 (asm/course_records_7bfc.s:89-142) — 9 machine args (4 reg +
+// The ROM reloads its final stack argument inside each row iteration; keeping
+// this by-value parameter volatile preserves that repeated load.
 void Course_Iter_07C68(void *X, u32 r1_add, u32 kind, u32 r3_add,
-                       u32 s0_yadd, u32 s1_p3, u32 s2_s0, u32 s3, u32 s4) {
+                       u32 s0_yadd, u32 s1_p3, u32 s2_s0, u32 s3,
+                       volatile u32 s4) {
+#ifndef __APPLE__
+    register u32 dx __asm__("r7") = r3_add;
+#else
+    u32 dx = r3_add;
+#endif
     void *arr = _0800748C(_08007498(*(void *volatile *)((volatile u8 *)X + 4), (int)kind));
     volatile u8 *a = (volatile u8 *)arr;
-    u32 cnt = a[7]; // ldrb [r6,#7]
-    volatile u8 *rows = a + 8;
-    for (u32 i = 0; i < cnt; i++) {
-        u32 x = (u32)rows[i * 4 + 2] + r3_add; // ldrb [r4,#2]; adds r0,r1,r7
-        u32 y = (u32)rows[i * 4 + 3] + s0_yadd; // ldrb [r4,#3]; adds r1,r2,r3
-        u32 z = (u32)rows[i * 4 + 0] + r1_add; // ldrb [r4,#0]; add r2,r8
-        u32 b1 = rows[i * 4 + 1]; // ldrb [r4,#1] -> 02ED0 s1
-        EmitPlace_07C68(x, y, z, s1_p3, s2_s0, b1, 1, s3, s4, 0);
+    u32 i = 0;
+    if ((int)i < (int)a[7]) {
+        volatile u8 *row = a + 8;
+        do {
+        // Keep each row byte in the ROM's scratch register until its add;
+        // without the barriers agbcc folds both loads into r0 and reorders
+        // the coordinate instructions.
+#ifndef __APPLE__
+        register u32 xsrc __asm__("r1") = row[2];
+        __asm__ volatile ("" : "+r" (xsrc));
+        u32 x = xsrc + dx;
+        register u32 ysrc __asm__("r2") = row[3];
+        __asm__ volatile ("" : "+r" (ysrc));
+        u32 y = ysrc + s0_yadd;
+#else
+        u32 x = (u32)row[2] + dx;
+        u32 y = (u32)row[3] + s0_yadd;
+#endif
+        u32 z = (u32)row[0] + r1_add;
+        u32 b1 = row[1];
+#ifdef __APPLE__
+        EmitPlace_07C68((u32)x, (u32)y, (u32)z, s1_p3, s2_s0,
+                        b1, 1, s3, s4, 0);
+#else
+        sub_08002ED0((void *)x, (int)y, (int)z, (int)s1_p3, (int)s2_s0,
+                     (int)b1, 1, (int)s3, (int)s4, 0);
+#endif
+            row += 4;
+            i++;
+        } while ((int)i < (int)a[7]);
     }
 }
 void Course_Iter_07CD0(void *X, u8 sl, u8 r9, u32 s56, u32 s60, u32 s64) {

@@ -2,6 +2,7 @@
 @ VMA 0x08005860-0x08005988 (296 bytes), pure Thumb with private pools.
 
 	.thumb
+	.global sub_08005860
 	.type sub_08005860, %function
 sub_08005860:
 	push {r4, lr}
