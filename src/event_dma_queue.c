@@ -97,11 +97,11 @@ void sub_08004F34(void *a) __attribute__((alias("Event_Broadcast0")));
 #endif
 
 // ----------------------------------------------------------------------------
-// sub_08004F6C (0x08004F6C, 0x40 B) — broadcast 2: cb2 = obj->field4, called
-// with (arg, node, (u16)a, (u16)b) via 0x0802DDDC (fn in r5).
+// _08004F68 (0x48 B) — broadcast 2: cb2 = obj->field4, called with
+// (arg, node, (u16)a, (u16)b) via 0x0802DDDC (fn in r5).
 void Event_Broadcast2(void *arg, u16 a, u16 b) {
-    if (_08004F24() != 0) return;
     volatile u8 *n = *(volatile u8 * volatile *)(EVT_HEAD + 0);
+    if (_08004F24() != 0) return;
     while (n != 0) {
         volatile u8 *obj = *(volatile u8 * volatile *)(n + 0);
         EvCb4 cb = *(EvCb4 volatile *)(obj + 4);
@@ -112,14 +112,15 @@ void Event_Broadcast2(void *arg, u16 a, u16 b) {
 #ifndef __APPLE__
 void _08004F6C(void *a, u16 b, u16 c) __attribute__((alias("Event_Broadcast2")));
 void sub_08004F6C(void *a, u16 b, u16 c) __attribute__((alias("Event_Broadcast2")));
+void _08004F68(void *a, u16 b, u16 c) __attribute__((alias("Event_Broadcast2")));
 #endif
 
 // ----------------------------------------------------------------------------
-// sub_08004FA4 (0x08004FA4, 0x30 B) — broadcast 3: cb3 = obj->field8,
-// (arg, node) via 0x0802DDD0.
+// _08004FB0 (0x34 B) — broadcast 3: cb3 = obj->field8, (arg, node) via
+// 0x0802DDD0.
 void Event_Broadcast3(void *arg) {
-    if (_08004F24() != 0) return;
     volatile u8 *n = *(volatile u8 * volatile *)(EVT_HEAD + 0);
+    if (_08004F24() != 0) return;
     while (n != 0) {
         volatile u8 *obj = *(volatile u8 * volatile *)(n + 0);
         EvCb2 cb = *(EvCb2 volatile *)(obj + 8);
@@ -130,13 +131,14 @@ void Event_Broadcast3(void *arg) {
 #ifndef __APPLE__
 void _08004FA4(void *a) __attribute__((alias("Event_Broadcast3")));
 void sub_08004FA4(void *a) __attribute__((alias("Event_Broadcast3")));
+void _08004FB0(void *a) __attribute__((alias("Event_Broadcast3")));
 #endif
 
 // ----------------------------------------------------------------------------
-// sub_08004FEC (0x08004FEC, 0x30 B) — broadcast 4: cb4 = obj->field12.
+// _08004FE4 (0x34 B) — broadcast 4: cb4 = obj->field12.
 void Event_Broadcast4(void *arg) {
-    if (_08004F24() != 0) return;
     volatile u8 *n = *(volatile u8 * volatile *)(EVT_HEAD + 0);
+    if (_08004F24() != 0) return;
     while (n != 0) {
         volatile u8 *obj = *(volatile u8 * volatile *)(n + 0);
         EvCb2 cb = *(EvCb2 volatile *)(obj + 12);
@@ -147,6 +149,16 @@ void Event_Broadcast4(void *arg) {
 #ifndef __APPLE__
 void _08004FEC(void *a) __attribute__((alias("Event_Broadcast4")));
 void sub_08004FEC(void *a) __attribute__((alias("Event_Broadcast4")));
+void _08004FE4(void *a) __attribute__((alias("Event_Broadcast4")));
+#endif
+
+// 0x08005018 — ROM's standalone return leaf, `bx lr; movs r0,r0`.
+void EventQueueReturn_05018(void) __attribute__((naked));
+void EventQueueReturn_05018(void) {
+    __asm__ volatile("bx lr\n\t.hword 0x0000");
+}
+#ifndef __APPLE__
+void _08005018(void) __attribute__((alias("EventQueueReturn_05018")));
 #endif
 
 // ----------------------------------------------------------------------------

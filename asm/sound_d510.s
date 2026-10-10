@@ -67,3 +67,4 @@ _0802D572:
 	pop {r0}
 	bx r0
 _0802D580: .word 0x68736D53
+sound_d510_end:

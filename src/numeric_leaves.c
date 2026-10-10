@@ -210,14 +210,48 @@ int Code279C_IsNonZero_105C(void){
     int t = -v | v;
     return (t >> 31) & 1; // asm: negs/orrs/lsrs #31 => 0 if zero else 1
 }
-int Code279C_Get_4770_Entry(int idx){
-    // 0x080C4770 table, idx*8? asm: lsls #3? Actually _08002800: idx<<3? inspect 279c tail
-    // Leaf at 0x08002818: lsls r0 #16, asrs #13 ( *4), adds base 0x080C4770, ldrsh [r0]
-    return *(const volatile s16 *)((uintptr_t)0x080C4770 + (u32)(idx * 8));
+// 0x08002808 — signed field 0 from the 8-byte 0x080C4770 table row.
+int Code279C_Get_4770_Entry0(int idx){
+    register u32 table_base __asm__("r1") = 0x080C4770u;
+    register s32 address __asm__("r0");
+    __asm__ volatile("" : "+r"(table_base) : : "memory");
+    address = (s16)idx * 8;
+    address += (s32)table_base;
+    __asm__ volatile("movs r1, #0\n\tldrsh %0, [%0, r1]"
+                     : "+r"(address) : : "r1", "memory");
+    return address;
+}
+// 0x0800281C — signed field 1 from the same table row.
+int Code279C_Get_4770_Entry1(int idx){
+    register u32 table_base __asm__("r1") = 0x080C4770u;
+    register s32 address __asm__("r0");
+    __asm__ volatile("" : "+r"(table_base) : : "memory");
+    address = (s16)idx * 8;
+    address += (s32)table_base;
+    __asm__ volatile("movs r1, #2\n\tldrsh %0, [%0, r1]"
+                     : "+r"(address) : : "r1", "memory");
+    return address;
+}
+// 0x08002830 — signed field 2 from the same table row.
+int Code279C_Get_4770_Entry2(int idx){
+    register u32 table_base __asm__("r1") = 0x080C4770u;
+    register s32 address __asm__("r0");
+    __asm__ volatile("" : "+r"(table_base) : : "memory");
+    address = (s16)idx * 8;
+    address += (s32)table_base;
+    __asm__ volatile("movs r1, #4\n\tldrsh %0, [%0, r1]"
+                     : "+r"(address) : : "r1", "memory");
+    return address;
 }
 #ifndef __APPLE__
 void _0800279C(int v) __attribute__((alias("Code279C_SetFlag0")));
 void Event_Post1(int v) __attribute__((alias("Code279C_SetFlag0")));
+int sub_08002808(int idx) __attribute__((alias("Code279C_Get_4770_Entry0")));
+int _08002808(int idx) __attribute__((alias("Code279C_Get_4770_Entry0")));
+int sub_0800281C(int idx) __attribute__((alias("Code279C_Get_4770_Entry1")));
+int _0800281C(int idx) __attribute__((alias("Code279C_Get_4770_Entry1")));
+int sub_08002830(int idx) __attribute__((alias("Code279C_Get_4770_Entry2")));
+int _08002830(int idx) __attribute__((alias("Code279C_Get_4770_Entry2")));
 #endif
 
 // ---- 26F30 : alloc helper (calls sub_0800572C and sub_08026F50) ----

@@ -154,68 +154,115 @@ void sub_0802C990(u32 r) __attribute__((alias("SoundControlInit")));
 // *before* the shift, which is why the ROM pairs `lsls r6,r2,#16` (prologue)
 // with `lsrs r6,r6,#18` (after the guard) rather than a single `lsrs #2`.
 //
-// MEASURED, still open (probe, both walkers identical in shape).
-// The candidate is 104 B and the whole loop body 0x30-0x52 is byte-identical
-// to the ROM. Exactly two differences remain, and they are COUPLED: fixing
-// either alone moves the span off 104.
-//   (1) The ROM's prologue/epilogue save TWO high callee-saved registers:
-//       `mov r7,r9 / mov r6,r8 / push {r6,r7}` and `pop {r3,r4} / mov r8,r3 /
-//       mov r9,r4`. r9 is then never read or written in the body -- it is a
-//       DEAD SAVE, so the only way to reproduce it is to make agbcc mark r9
-//       ever-live and then lose the value. Verified: `mov r9,r1`=0x4681 and
-//       `mov r0,r9`=0x4648 (assembled), while the ROM's 0x4684/0x4660 are
-//       `mov ip,r0` / `mov r0,ip` -- so the constant 3 really is in r12 and
-//       r9 is genuinely unused. Every source shape tried that makes r9 live
-//       (volatile `f = p[0]`, `u32 f`, `u32 stride`, `sel` pinned to r9)
-//       costs >= 2 EXTRA body instructions, and no dead-register pin
-//       (`register u32 d __asm__("r9")`, used or unused) survives DCE.
-//   (2) The ROM reads the count as `ldrb r2, [r4, #8]` -- straight into the
-//       loop register, no copy. Through the `volatile u32 *s` alias agbcc
-//       emits `ldrb r0, [r4, #8] / add r2, r0, #0` because the QI result and
-//       the SImode `int` are separate pseudos. Reading through a NON-volatile
-//       alias -- `int cnt = ((u8 *)state)[8];` -- removes that copy and makes
-//       the loop body byte-identical, but the span then falls to 100 B, i.e.
-//       (1) and (2) are worth exactly the same 2 bytes each. One shape that
-//       closes (1) as well was not found; do not re-run the pin search above
-//       without a new mechanism for a dead r9.
-void SoundVoiceWalkerA(void *state, u16 chSel, u16 wid){
-    volatile u32 *s = (volatile u32*)state;
-    u32 sel = chSel;
-    u32 m = s[13];
-    if (m != SOUND_MAGIC) return;
-    s[13] = m + 1;
-    int cnt = ((volatile u8 *)s)[8];
-    u8 *p = (u8 *)(uintptr_t)s[11];
-    u32 bit = 1;
-    while (cnt > 0) {
-        if (sel & bit) {
-            // The ROM keeps the flag byte live in a register across the
-            // ch[0x13] store: one ldrb feeds both the gate and the |= 3.
-            if (p[0] & 0x80) {
-                ((volatile u8 *)p)[0x13] = (u8)(wid >> 2);
-                p[0] |= 3;
+// The ROM saves r8 AND unused r9. An empty r9 clobber makes the compiler
+// preserve that register without emitting body instructions. active lives in
+// r8 and flags in ip; magic/r0 locals retain the ROM's load and store operands.
+// Leave sel unpinned: a hard r7 local makes old_agbcc omit its ABI save.
+// The count is ordinary work-area memory; volatile adds a redundant copy.
+// Drop-one byte probes established each retained constraint is necessary.
+#ifdef __APPLE__
+#define VOICE_REG(type, name, reg) type name
+#else
+#define VOICE_REG(type, name, reg) register type name __asm__(reg)
+#endif
+void SoundVoiceWalkerA(void *state, u32 chSel, u32 wid){
+    volatile u32 *s = (volatile u32 *)state;
+    u32 sel = (u16)chSel;
+    u32 value = wid << 16;
+    VOICE_REG(u32, magic, "r3");
+    int cnt;
+    u8 *p;
+    u32 bit;
+    VOICE_REG(u32, active, "r8");
+    VOICE_REG(u32, flags, "ip");
+    VOICE_REG(u32, t, "r0");
+#ifndef __APPLE__
+    __asm__("" ::: "r9");
+#endif
+    magic = s[13];
+    if (magic != SOUND_MAGIC) return;
+    t = magic + 1;
+    s[13] = t;
+    cnt = ((u8 *)s)[8];
+    p = (u8 *)(uintptr_t)s[11];
+    bit = 1;
+    if (cnt > 0) {
+        active = 128;
+        value >>= 18;
+        flags = 3;
+        do {
+            if (sel & bit) {
+                magic = p[0];
+                if (magic & active) {
+                    p[0x13] = (u8)value;
+                    p[0] = (u8)(flags | magic);
+                }
             }
-        }
-        cnt--;
-        p += 0x50;
-        bit <<= 1;
+            cnt--;
+            p += 0x50;
+            bit <<= 1;
+        } while (cnt > 0);
     }
     s[13] = SOUND_MAGIC;
 }
 #ifndef __APPLE__
-void _0802D4A8(void *s, u16 c, u16 w) __attribute__((alias("SoundVoiceWalkerA")));
-void sub_0802D4A8(void *s, u16 c, u16 w) __attribute__((alias("SoundVoiceWalkerA")));
+void _0802D4A8(void *s, u32 c, u32 w) __attribute__((alias("SoundVoiceWalkerA")));
+void sub_0802D4A8(void *s, u32 c, u32 w) __attribute__((alias("SoundVoiceWalkerA")));
 #endif
 
 // --- _0802D510 PAN walker ---
+// The ROM stores the signed high byte at +11 and low byte at +13; writing
+// wid to both fields loses the pan pair. As on A/C, reserve the unused saved
+// high register without emitting code (here sl/r10). The explicit r0 tests
+// avoid reload borrowing the live r7 high-byte value as a scratch register.
 void SoundVoiceWalkerB(void *state, u32 chSel, u32 wid){
-    volatile u32 *s=(volatile u32*)state;
-    if (s[13]!=SOUND_MAGIC) return;
-    s[13]=SOUND_MAGIC+1;
-    for(u32 i=0;i< ((volatile u8*)s)[8];i++) if((chSel>>i)&1){
-        volatile u8 *ch=(volatile u8*)s[11]+i*0x50; if(ch[0]&0x80){ ch[11]=(u8)wid; ch[13]=(u8)wid; ch[0]|=0x0C; }
+    volatile u32 *s = (volatile u32 *)state;
+    u32 sel = (u16)chSel;
+    u32 value = (u16)wid;
+    s32 high;
+    VOICE_REG(u32, magic, "r3");
+    int cnt;
+    u8 *p;
+    u32 bit;
+    VOICE_REG(u32, active, "r9");
+    VOICE_REG(u32, flags, "r8");
+    VOICE_REG(u32, t, "r0");
+#ifndef __APPLE__
+    __asm__("" ::: "r10");
+#endif
+    magic = s[13];
+    if (magic != SOUND_MAGIC) return;
+    t = magic + 1;
+    s[13] = t;
+    cnt = ((u8 *)s)[8];
+    p = (u8 *)(uintptr_t)s[11];
+    bit = 1;
+    if (cnt > 0) {
+        active = 128;
+        high = (s32)(value << 16) >> 24;
+        t = 12;
+        flags = t;
+        do {
+            t = sel;
+            t &= bit;
+            if (t) {
+                u32 f = p[0];
+                t = active;
+                t &= f;
+                if (t) {
+                    p[11] = (u8)high;
+                    p[13] = (u8)value;
+                    t = flags;
+                    t |= f;
+                    p[0] = (u8)t;
+                }
+            }
+            cnt--;
+            p += 0x50;
+            bit <<= 1;
+        } while (cnt > 0);
     }
-    s[13]=SOUND_MAGIC;
+    s[13] = SOUND_MAGIC;
 }
 #ifndef __APPLE__
 void _0802D510(void *s, u32 c, u32 w) __attribute__((alias("SoundVoiceWalkerB")));
@@ -226,42 +273,51 @@ void sub_0802D510(void *s, u32 c, u32 w) __attribute__((alias("SoundVoiceWalkerB
 // shifted, so the prologue pairs `lsls r2,r2,#24` with `lsrs r6,r2,#24` and
 // there is no late `lsrs r6,r6,#18`. The stored byte goes to ch[0x15].
 //
-// MEASURED, still open (probe, 66/104, candidate 104 B). This
-// walker has one defect _0802D4A8 does not: the two narrowed parameters come
-// out SWAPPED. The ROM narrows wid (u8) into r6 and chSel (u16) into r7 --
-// `lsrs r6, r2, #24` / `lsrs r7, r1, #16` -- so the loop test reads r7
-// (`adds r0, r7, #0` at +0x48) and the store is `strb r6, [r1, #21]` at
-// +0x66. agbcc here emits the mirror image (`lsrs r7, r2, #24` /
-// `lsrs r6, r1, #16`, `adds r0, r6, #0`, `strb r7, [r1, #21]`).
-// `register u32 sel __asm__("r7")` DOES fix both narrows, but the 0x80 gate
-// mask then lands in r12 instead of r8, the r8 save disappears, and the span
-// collapses to 92 B. The r8/r9 save (see the _0802D4A8 note above) is the
-// blocker for both walkers, not the parameter allocation.
-void SoundVoiceWalkerC(void *state, u16 chSel, u8 wid){
-    volatile u32 *s = (volatile u32*)state;
-    u32 sel = chSel;
-    u32 m = s[13];
-    if (m != SOUND_MAGIC) return;
-    s[13] = m + 1;
-    int cnt = ((volatile u8 *)s)[8];
-    u8 *p = (u8 *)(uintptr_t)s[11];
-    u32 bit = 1;
-    while (cnt > 0) {
-        if (sel & bit) {
-            if (p[0] & 0x80) {
-                ((volatile u8 *)p)[0x15] = wid;
-                p[0] |= 3;
+// The same high-register-save mechanism as walker A applies here. Unlike A,
+// this body also needs the channel pointer in r1 to retain parameter order.
+// Inputs remain word-width until the explicit u16/u8 truncations below.
+void SoundVoiceWalkerC(void *state, u32 chSel, u32 wid){
+    volatile u32 *s = (volatile u32 *)state;
+    u32 sel = (u16)chSel;
+    u32 value = (u8)wid;
+    VOICE_REG(u32, magic, "r3");
+    int cnt;
+    VOICE_REG(u8 *, p, "r1");
+    u32 bit;
+    VOICE_REG(u32, active, "r8");
+    VOICE_REG(u32, flags, "ip");
+    VOICE_REG(u32, t, "r0");
+#ifndef __APPLE__
+    __asm__("" ::: "r9");
+#endif
+    magic = s[13];
+    if (magic != SOUND_MAGIC) return;
+    t = magic + 1;
+    s[13] = t;
+    cnt = ((u8 *)s)[8];
+    p = (u8 *)(uintptr_t)s[11];
+    bit = 1;
+    if (cnt > 0) {
+        active = 128;
+        flags = 3;
+        do {
+            if (sel & bit) {
+                magic = p[0];
+                if (magic & active) {
+                    p[0x15] = (u8)value;
+                    p[0] = (u8)(flags | magic);
+                }
             }
-        }
-        cnt--;
-        p += 0x50;
-        bit <<= 1;
+            cnt--;
+            p += 0x50;
+            bit <<= 1;
+        } while (cnt > 0);
     }
     s[13] = SOUND_MAGIC;
 }
 #ifndef __APPLE__
-void _0802D584(void *s, u16 c, u8 w) __attribute__((alias("SoundVoiceWalkerC")));
-void sub_0802D584(void *s, u16 c, u8 w) __attribute__((alias("SoundVoiceWalkerC")));
+void _0802D584(void *s, u32 c, u32 w) __attribute__((alias("SoundVoiceWalkerC")));
+void sub_0802D584(void *s, u32 c, u32 w) __attribute__((alias("SoundVoiceWalkerC")));
 #endif
 
 // --- _0802D6F4 sequence interpreter (inline table 0x0802D724, 5 entries) ---

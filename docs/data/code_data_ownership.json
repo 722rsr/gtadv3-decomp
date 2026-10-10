@@ -2,7 +2,7 @@
   "dependency_findings": [],
   "errors": [],
   "generator": "tools/ownership_map.py",
-  "generator_sha256": "cdced9b678f9e90f177b130482b38fc9ff6dbdefb72e10426176054b4e60683e",
+  "generator_sha256": "a957ed5ea23fd2a9ff9704af62f5cb60caacb58136c892f1e44724f4282532d0",
   "inputs": {
     "code_end": "0x02E158",
     "source_closure": [
@@ -276,7 +276,7 @@
       "asm/surface_access.s",
       "asm/wrapper_pair.s"
     ],
-    "source_closure_sha256": "1d090df50a0d1912c1f3870f01d5f8965e90adcf175fac8ee34bfafa5f342b48"
+    "source_closure_sha256": "413fdc5ff24e5ca8339de910d71833d783c481328fbd1aebc516bc5a98beb767"
   },
   "raw_incbin_spans": [
     {
@@ -5301,29 +5301,6 @@
     {
       "backing": "asm/*.s",
       "classification": "assembly-source",
-      "end": "0x02C110",
-      "evidence": [
-        "included source region banner / generated passthrough layout",
-        "reference build is checked by make against baserom.gba"
-      ],
-      "executable": true,
-      "intended_owner": "reconstructed source assembly (reference link)",
-      "owners": [
-        "asm/sound_beb4.s"
-      ],
-      "size": 604,
-      "source_owners": [
-        "asm/sound_beb4.s"
-      ],
-      "start": "0x02BEB4",
-      "status": "owned-reference-assembly",
-      "strict_blocker": false,
-      "vma_end": "0x0802C110",
-      "vma_start": "0x0802BEB4"
-    },
-    {
-      "backing": "asm/*.s",
-      "classification": "assembly-source",
       "end": "0x02C11C",
       "evidence": [
         "included source region banner / generated passthrough layout",
@@ -5332,17 +5309,17 @@
       "executable": true,
       "intended_owner": "reconstructed source assembly (reference link)",
       "owners": [
-        "asm/passthrough.inc"
+        "asm/sound_beb4.s"
       ],
-      "size": 12,
+      "size": 616,
       "source_owners": [
-        "asm/passthrough.inc"
+        "asm/sound_beb4.s"
       ],
-      "start": "0x02C110",
+      "start": "0x02BEB4",
       "status": "owned-reference-assembly",
       "strict_blocker": false,
       "vma_end": "0x0802C11C",
-      "vma_start": "0x0802C110"
+      "vma_start": "0x0802BEB4"
     },
     {
       "backing": "asm/*.s",
@@ -7188,8 +7165,8 @@
           "start": "0x00B9F0"
         }
       ],
-      "sha256": "92e7c52109715bd52446405319be8c1487364062f65cdcf447c935df7eb573b3",
-      "size": 767
+      "sha256": "0b6463b89c5ecc29ef0aeeb560c78fe2f0ac6dd479e9125c6fd92ee668cb059e",
+      "size": 783
     },
     {
       "path": "asm/award_pkt.s",
@@ -7260,8 +7237,8 @@
           "start": "0x00B990"
         }
       ],
-      "sha256": "51caff4838ce0354400db9d19ed1d91d2c25307a650daa31c1568a9e74b5287d",
-      "size": 2331
+      "sha256": "f5bb27cca009c0dc292082dcc1ff8af03b86e83d180f31d38cead65c347bf4c7",
+      "size": 2346
     },
     {
       "path": "asm/carphys_racer.s",
@@ -7284,8 +7261,8 @@
           "start": "0x021C94"
         }
       ],
-      "sha256": "f86a5271028dfabb269691ce816d686b1ccf20189a0801006400e72b0b873192",
-      "size": 33504
+      "sha256": "1fe07f6e956f047f572c98849462f03e5926f5a79bef5c2f6bbae6e3bdbad95b",
+      "size": 33536
     },
     {
       "path": "asm/carphys_tick.s",
@@ -7762,8 +7739,8 @@
           "start": "0x0263E0"
         }
       ],
-      "sha256": "ad55e783112d131bf50ec6c68f068d890497cf82362f46940b2e35870f02e854",
-      "size": 23494
+      "sha256": "329c767a3fc8f9072e8f81a3884297dadceee57ea5635f5109ad5427b561e6cd",
+      "size": 23514
     },
     {
       "path": "asm/code_2694.s",
@@ -8050,8 +8027,8 @@
           "start": "0x004E6C"
         }
       ],
-      "sha256": "279035339e12768973a3211113c6d4d4636ee70bf8233260cbb929f3d4cc8bcc",
-      "size": 20035
+      "sha256": "fa70e1f15d2fd3f74ac122cedae9b2117e2b8ee286671d6bebeb0d76079c2f34",
+      "size": 20074
     },
     {
       "path": "asm/code_57d0.s",
@@ -9116,15 +9093,10 @@
           "end": "0x02BC64",
           "source": "generated-passthrough-layout",
           "start": "0x02BC62"
-        },
-        {
-          "end": "0x02C11C",
-          "source": "generated-passthrough-layout",
-          "start": "0x02C110"
         }
       ],
-      "sha256": "591481387dba33cb1b39e486e93b7b2c5dfc73d0960c54da0e8412564aceabb9",
-      "size": 23480
+      "sha256": "9b07ffbc5f687096352d3930e17eaf368ba8ad51eacf3a738c707b41598513bf",
+      "size": 23243
     },
     {
       "path": "asm/race_cluster.s",
@@ -9219,8 +9191,8 @@
           "start": "0x015E28"
         }
       ],
-      "sha256": "daf6ccdd5210c3a7dfb1fa32af18a5518bf6236caefb4a3e768e63e43e396304",
-      "size": 3588
+      "sha256": "43d79f8f425ada9a316d7253400ae08beba5f91a7a93d2cf315ef6386bb191d0",
+      "size": 3606
     },
     {
       "path": "asm/rec35_init.s",
@@ -9327,8 +9299,8 @@
           "start": "0x005860"
         }
       ],
-      "sha256": "8851dd571b95e52c0af728ba3544e94d93ac6dae05e3d238e14d63f8387ec542",
-      "size": 2317
+      "sha256": "c735d594e5e4feb6700c92970783cfc219fd1d85085d7f741f4bd7a3f30ddf7e",
+      "size": 2336
     },
     {
       "path": "asm/save_delay.s",
@@ -9478,13 +9450,13 @@
       "path": "asm/sound_beb4.s",
       "ranges": [
         {
-          "end": "0x02C110",
+          "end": "0x02C11C",
           "source": "region-banner",
           "start": "0x02BEB4"
         }
       ],
-      "sha256": "9cf07f82c664d486f3f0a7c2963fe702772798ca198b699dc25cda3ead6a0a75",
-      "size": 5624
+      "sha256": "858e95f4ad991d8ad7794e887be9038156345e4ec9fc31b56b30e683e32b288b",
+      "size": 5943
     },
     {
       "path": "asm/sound_c11c.s",
@@ -9567,8 +9539,8 @@
           "start": "0x02D4A8"
         }
       ],
-      "sha256": "bd9951c0d98458efc814d86c4cf74b5129237a35c166f1db2746d49df1d8d8f2",
-      "size": 1080
+      "sha256": "bb5d0ffd9ff85bd170d706090f80a9f86e47a056459d8882c411894341a3f9c0",
+      "size": 1096
     },
     {
       "path": "asm/sound_d510.s",
@@ -9579,8 +9551,8 @@
           "start": "0x02D510"
         }
       ],
-      "sha256": "7fffd78a29457f154197c18545812fc4ca70fb7f04b754a8bfe93769abaef380",
-      "size": 1182
+      "sha256": "1c5fffa1234fb354ad4f6eb2c65b6e135e4b82edf0b2359d1b589ab990609f19",
+      "size": 1198
     },
     {
       "path": "asm/sound_d584.s",
@@ -9747,8 +9719,8 @@
           "start": "0x02CF7C"
         }
       ],
-      "sha256": "8e9ca850069c86540668551fd444378066122da3d0c2da25761251e2c67f8fd1",
-      "size": 941
+      "sha256": "236b90149168012a78b079b29ec8fbc1a846fe91277a4f9ffc385e0ffc4d5fb4",
+      "size": 960
     },
     {
       "path": "asm/sound_init.s",
@@ -9771,8 +9743,8 @@
           "start": "0x02CED4"
         }
       ],
-      "sha256": "4e70a0e34f75b7d8019cb4535c34cb2af44ccf90ea19dcb023572de600456993",
-      "size": 1640
+      "sha256": "d08d04b81f8558fb17d9ab15bddb9052ed829fc89a6a4f07b21f063dea1ed71b",
+      "size": 1658
     },
     {
       "path": "asm/sound_mixer_leaf.s",
@@ -9999,8 +9971,8 @@
           "start": "0x02DDC8"
         }
       ],
-      "sha256": "842f23371fbfac60e4c0f0342f20c57dd9d9bf39ea64e4749385eb24a1f67392",
-      "size": 4374
+      "sha256": "4c70ba5d6bedc10f08e58e9667bc6378e5c341650e82e50c03b7bf14dda6059c",
+      "size": 4545
     },
     {
       "path": "asm/sound_voice_apply.s",
@@ -10086,7 +10058,7 @@
     "raw_header_bytes": 0,
     "raw_incbin_count": 1,
     "rom_bytes": 8388608,
-    "segment_count": 282,
+    "segment_count": 281,
     "source_file_count": 266,
     "strict_blocker_count": 0,
     "unclassified_bytes": 0

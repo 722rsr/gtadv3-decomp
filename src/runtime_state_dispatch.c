@@ -713,6 +713,35 @@ void _0802C5C0(int a) __attribute__((alias("SoundC5C0_BankCheck")));
 void sub_0802C5C0(int a) __attribute__((alias("SoundC5C0_BankCheck")));
 #endif
 
+// 0x0802C574 — replace the selected stream when its source or state requires it.
+void SoundC574_Replace(int arg) {
+    extern const u8 C574RowTbl[];
+    extern const u8 C574RecBase[];
+    volatile u8 *rec;
+    volatile u32 *row;
+    register u32 rowtbl __asm__("r2");
+    u32 hi = (u32)arg << 16;
+    __asm__(".globl C574RowTbl\nC574RowTbl = 0x08061F74\n.globl C574RecBase\nC574RecBase = 0x08061FA4\n");
+    rowtbl = (u32)(uintptr_t)C574RowTbl;
+    u32 recbase = (u32)(uintptr_t)C574RecBase;
+    rec = (volatile u8 *)(uintptr_t)(recbase + (hi >> 13));
+    row = *(volatile u32 **)(rowtbl + (*(volatile u16 *)(rec + 4)) * 12);
+    u32 claim = row[0];
+    u32 held = *(volatile u32 *)(rec + 0);
+    if (claim != held) {
+        _0802CC34((void *)row, (void *)(uintptr_t)held);
+        return;
+    }
+    u32 state = row[1];
+    if (*(volatile u16 *)((volatile u8 *)row + 4) != 0 && (s32)state >= 0)
+        return;
+    _0802CC34((void *)row, (void *)(uintptr_t)claim);
+}
+#ifndef __APPLE__
+void _0802C574(int a) __attribute__((alias("SoundC574_Replace")));
+void sub_0802C574(int a) __attribute__((alias("SoundC574_Replace")));
+#endif
+
 static inline int WA16s(int off) { return (int)*(volatile s16 *)(0x03001780 + off); }
 static inline volatile u16 *WA16p(int off) { return (volatile u16 *)(0x03001780 + off); }
 

@@ -113,6 +113,54 @@ int _08005B8C(s16 v) __attribute__((alias("MathSign_05B8C")));
 int sub_08005B8C(s16 v) __attribute__((alias("MathSign_05B8C")));
 #endif
 
+// 0x08005BF0 — rotate a pair of signed halfwords in place by the ROM angle.
+void MathRotate16_05BF0(void *p, int angle) {
+    extern const s16 CosTbl05BF0[];
+    extern const s16 SinTbl05BF0[];
+    s32 cosv;
+    s32 sinv;
+    s32 x;
+    s32 t1;
+    s32 y;
+    s32 t2;
+    u32 nx;
+    s32 ny;
+    __asm__(".globl CosTbl05BF0\nCosTbl05BF0 = 0x0805BAF0\n");
+    __asm__(".globl SinTbl05BF0\nSinTbl05BF0 = 0x0805CAF0\n");
+    __asm__ volatile("" : : "r" (angle));
+    cosv = CosTbl05BF0[(angle & 0xFFE) >> 1];
+    sinv = SinTbl05BF0[(angle & 0xFFE) >> 1];
+    x = *(s16 *)p;
+    t1 = x * cosv;
+    y = *((s16 *)p + 1);
+    t2 = y * sinv;
+    nx = (u32)(t1 - t2) >> 12;
+    ny = (x * sinv + y * cosv) >> 12;
+    *((s16 *)p + 1) = ny;
+    *(s16 *)p = nx;
+}
+#ifndef __APPLE__
+void _08005BF0(void *a, int b) __attribute__((alias("MathRotate16_05BF0")));
+void sub_08005BF0(void *a, int b) __attribute__((alias("MathRotate16_05BF0")));
+#endif
+
+// 0x08005C3C — copy the first vector, then store the second vector minus it.
+void MathDiff_05C3C(void *out, const void *a, const void *b) {
+    volatile s32 *dst = (volatile s32 *)out;
+    const s32 *first = (const s32 *)a;
+    const s32 *second = (const s32 *)b;
+    s32 x = first[0];
+    dst[0] = x;
+    s32 y = first[1];
+    dst[1] = y;
+    dst[2] = second[0] - x;
+    dst[3] = second[1] - y;
+}
+#ifndef __APPLE__
+void _08005C3C(void *a, const void *b, const void *c) __attribute__((alias("MathDiff_05C3C")));
+void sub_08005C3C(void *a, const void *b, const void *c) __attribute__((alias("MathDiff_05C3C")));
+#endif
+
 // ----------------------------------------------------------------------------
 // 0x08005B5C — abs leaf. (cmp r0,#0; bge; negs r0; bx lr)
 // NOTE: identical body exists as MathAbs in foundation_math.c; aliased here so

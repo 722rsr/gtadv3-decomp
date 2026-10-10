@@ -57,3 +57,16 @@ void sub_0802D82C_vec(void *s) __attribute__((alias("SoundSeq_EWRAMVector")));
 #endif
 
 // Note: BE32/DMA table meaning at 0x02BCE4 (BE32) and PSG +0x19/+0x1C overlap remain blocked and not claimed here
+
+// This four-byte dispatch tail is reached with its callback in r3. The
+// adjacent 12-byte literal pool at 0x0802C110-0x0802C11C is shared with the
+// sample pump and walker and remains in assembly.
+#ifndef __APPLE__
+__attribute__((naked)) void SoundCallViaR3_2C10C(void){
+    __asm__ volatile("bx r3\n\t.short 0x0000");
+}
+void _0802C10C(void) __attribute__((alias("SoundCallViaR3_2C10C")));
+void sub_0802C10C(void) __attribute__((alias("SoundCallViaR3_2C10C")));
+#else
+void SoundCallViaR3_2C10C(void){}
+#endif

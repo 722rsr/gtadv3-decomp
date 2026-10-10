@@ -156,3 +156,4 @@ sub_080058D0:
 	.word 0x0805BAD0
 .L_5984:
 	.word 0x0805BAE0
+save_checksum_end:

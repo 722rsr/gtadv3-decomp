@@ -101,6 +101,9 @@ sound_veneer_end:
 @ and the closure agreed on 0x0802DDD0) and the linker then disagreed.
 	.thumb
 	.set _call_via_r2, _0802DDD0
+@ The event broadcast at 0x08004F68 calls through its fifth register-held
+@ callback; bind agbcc's emitted name to the existing bx-r5 veneer.
+.set _call_via_r5, _0802DDDC
 @ 0x02CACC calls the voice function through r1. agbcc emits `_call_via_r1`
 @ for that indirect call; bind it to the existing bx-r1 veneer at 0x0802DDCC.
 .set _call_via_r1, _0802DDCC

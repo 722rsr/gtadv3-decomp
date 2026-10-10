@@ -57,6 +57,16 @@
    "name": "SoftIrqKicker",
    "size": 148
   },
+  "0x08000f48": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 3,
+    "pin": 3
+   },
+   "file": "src/runtime_accessors.c",
+   "name": "RecReset_0F48",
+   "size": 60
+  },
   "0x08001370": {
    "class": "c",
    "file": "src/runtime_accessors.c",
@@ -770,6 +780,42 @@
    "name": "GridFlagTest_27EC",
    "size": 28
   },
+  "0x08002808": {
+   "class": "partial",
+   "detail": {
+    "barrier": 1,
+    "insn": 1,
+    "insn_lines": 2,
+    "pin": 2
+   },
+   "file": "src/numeric_leaves.c",
+   "name": "Code279C_Get_4770_Entry0",
+   "size": 20
+  },
+  "0x0800281c": {
+   "class": "partial",
+   "detail": {
+    "barrier": 1,
+    "insn": 1,
+    "insn_lines": 2,
+    "pin": 2
+   },
+   "file": "src/numeric_leaves.c",
+   "name": "Code279C_Get_4770_Entry1",
+   "size": 20
+  },
+  "0x08002830": {
+   "class": "partial",
+   "detail": {
+    "barrier": 1,
+    "insn": 1,
+    "insn_lines": 2,
+    "pin": 2
+   },
+   "file": "src/numeric_leaves.c",
+   "name": "Code279C_Get_4770_Entry2",
+   "size": 20
+  },
   "0x08002844": {
    "class": "c",
    "file": "src/runtime_record_helpers.c",
@@ -1292,6 +1338,12 @@
    "name": "GlyphAdvance_03B18",
    "size": 20
   },
+  "0x08003b2c": {
+   "class": "c",
+   "file": "src/runtime_hud.c",
+   "name": "GlyphIndex_03B2C",
+   "size": 40
+  },
   "0x08003b54": {
    "class": "c",
    "file": "src/runtime_hud.c",
@@ -1330,6 +1382,12 @@
    "file": "src/runtime_hud.c",
    "name": "ObjDigitsRight_03C0C",
    "size": 60
+  },
+  "0x08003c48": {
+   "class": "c",
+   "file": "src/runtime_hud.c",
+   "name": "ObjDigit_03C48",
+   "size": 56
   },
   "0x08003c80": {
    "class": "c_fakematch",
@@ -1385,6 +1443,22 @@
    "file": "src/runtime_hud.c",
    "name": "SpriteUpdate_040F8",
    "size": 48
+  },
+  "0x08004128": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 2,
+    "pin": 6
+   },
+   "file": "src/runtime_hud.c",
+   "name": "SpriteHideAll_04128",
+   "size": 56
+  },
+  "0x08004160": {
+   "class": "c",
+   "file": "src/runtime_hud.c",
+   "name": "SpriteAlloc_04160",
+   "size": 32
   },
   "0x080041e0": {
    "class": "c",
@@ -1442,6 +1516,12 @@
    "file": "src/runtime_hud.c",
    "name": "TrackDigit_04508",
    "size": 88
+  },
+  "0x08004560": {
+   "class": "c",
+   "file": "src/runtime_hud.c",
+   "name": "HudHook_04560",
+   "size": 4
   },
   "0x08004564": {
    "class": "c_fakematch",
@@ -1513,6 +1593,18 @@
    "file": "src/runtime_hud.c",
    "name": "CamSet_04748",
    "size": 16
+  },
+  "0x08004758": {
+   "class": "partial",
+   "detail": {
+    "barrier": 8,
+    "insn": 1,
+    "insn_lines": 1,
+    "pin": 17
+   },
+   "file": "src/runtime_hud.c",
+   "name": "TrackProjectObject_04758",
+   "size": 192
   },
   "0x080049ac": {
    "class": "c_fakematch",
@@ -1853,6 +1945,34 @@
    "name": "Event_Broadcast0",
    "size": 52
   },
+  "0x08004f68": {
+   "class": "c",
+   "file": "src/event_dma_queue.c",
+   "name": "Event_Broadcast2",
+   "size": 72
+  },
+  "0x08004fb0": {
+   "class": "c",
+   "file": "src/event_dma_queue.c",
+   "name": "Event_Broadcast3",
+   "size": 52
+  },
+  "0x08004fe4": {
+   "class": "c",
+   "file": "src/event_dma_queue.c",
+   "name": "Event_Broadcast4",
+   "size": 52
+  },
+  "0x08005018": {
+   "class": "partial",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 2
+   },
+   "file": "src/event_dma_queue.c",
+   "name": "EventQueueReturn_05018",
+   "size": 4
+  },
   "0x0800501c": {
    "class": "c",
    "file": "src/foundation_subsys.c",
@@ -2159,6 +2279,16 @@
    "name": "SaveReadSectors",
    "size": 76
   },
+  "0x080058d0": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 5,
+    "pin": 4
+   },
+   "file": "src/save.c",
+   "name": "SaveWriteSectors",
+   "size": 184
+  },
   "0x08005988": {
    "class": "c_fakematch",
    "detail": {
@@ -2258,6 +2388,22 @@
    "file": "src/foundation_math.c",
    "name": "MathHelper_05BA8",
    "size": 72
+  },
+  "0x08005bf0": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 1,
+    "directive": 2
+   },
+   "file": "src/code_5b3c_math.c",
+   "name": "MathRotate16_05BF0",
+   "size": 76
+  },
+  "0x08005c3c": {
+   "class": "c",
+   "file": "src/code_5b3c_math.c",
+   "name": "MathDiff_05C3C",
+   "size": 28
   },
   "0x08005d74": {
    "class": "c_fakematch",
@@ -2449,6 +2595,18 @@
    "file": "src/course_stream.c",
    "name": "Course_StreamDispatcher",
    "size": 40
+  },
+  "0x08006678": {
+   "class": "partial",
+   "detail": {
+    "directive": 1,
+    "insn": 1,
+    "insn_lines": 1,
+    "pin": 13
+   },
+   "file": "src/course_stream.c",
+   "name": "Course_StreamRow",
+   "size": 604
   },
   "0x08006aec": {
    "class": "c_fakematch",
@@ -3150,6 +3308,21 @@
    "file": "src/car_tick_dispatch.c",
    "name": "CarTick_Shared",
    "size": 32
+  },
+  "0x0800b990": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/car_award.c",
+   "name": "Award_GrantCar",
+   "size": 96
+  },
+  "0x0800b9f0": {
+   "class": "c",
+   "file": "src/award_grid.c",
+   "name": "Award_GrantThresholdCars",
+   "size": 76
   },
   "0x0800bc04": {
    "class": "c",
@@ -4434,6 +4607,18 @@
    "name": "_080015CB0",
    "size": 4
   },
+  "0x08015e28": {
+   "class": "c",
+   "file": "src/rec35_stage.c",
+   "name": "Rec35_HelperA",
+   "size": 84
+  },
+  "0x08015e7c": {
+   "class": "c",
+   "file": "src/rec35_stage.c",
+   "name": "Rec35_HelperB",
+   "size": 84
+  },
   "0x08016164": {
    "class": "c",
    "file": "src/rec35_16002.c",
@@ -4861,6 +5046,16 @@
    "name": "Ghost_FlagTest",
    "size": 16
   },
+  "0x08018e28": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 6,
+    "pin": 9
+   },
+   "file": "src/race_setup.c",
+   "name": "Race_Setup_18E28",
+   "size": 152
+  },
   "0x080191bc": {
    "class": "partial",
    "detail": {
@@ -4891,11 +5086,65 @@
    "name": "sub_0800199B0",
    "size": 28
   },
+  "0x08019a2c": {
+   "class": "c",
+   "file": "src/race_setup_helpers.c",
+   "name": "sub_080019A2C",
+   "size": 88
+  },
+  "0x08019bf8": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 1,
+    "pin": 1
+   },
+   "file": "src/race_setup.c",
+   "name": "Race_Setup_19BF8",
+   "size": 60
+  },
+  "0x08019c34": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1,
+    "pin": 1
+   },
+   "file": "src/race_setup.c",
+   "name": "Race_Setup_19C34",
+   "size": 104
+  },
   "0x08019c9c": {
    "class": "c",
    "file": "src/race_setup_helpers.c",
    "name": "_080019C9C",
    "size": 32
+  },
+  "0x08019cbc": {
+   "class": "partial",
+   "detail": {
+    "barrier": 3,
+    "insn": 1,
+    "insn_lines": 1,
+    "pin": 3
+   },
+   "file": "src/race_setup.c",
+   "name": "_080019CBC",
+   "size": 56
+  },
+  "0x08019cf4": {
+   "class": "c",
+   "file": "src/race_setup.c",
+   "name": "_080019CF4",
+   "size": 60
+  },
+  "0x08019d30": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1,
+    "pin": 1
+   },
+   "file": "src/race_setup.c",
+   "name": "_080019D30",
+   "size": 60
   },
   "0x08019d6c": {
    "class": "c",
@@ -4909,10 +5158,52 @@
    "name": "_080019DBC",
    "size": 32
   },
+  "0x08019ddc": {
+   "class": "partial",
+   "detail": {
+    "barrier": 3,
+    "insn": 1,
+    "insn_lines": 1,
+    "pin": 3
+   },
+   "file": "src/race_setup.c",
+   "name": "_080019DDC",
+   "size": 56
+  },
+  "0x08019e14": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 2,
+    "directive": 1,
+    "pin": 4
+   },
+   "file": "src/race_setup.c",
+   "name": "_080019E14",
+   "size": 108
+  },
+  "0x08019e80": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1,
+    "pin": 1
+   },
+   "file": "src/race_setup.c",
+   "name": "_080019E80",
+   "size": 72
+  },
   "0x08019ec8": {
    "class": "c",
    "file": "src/race_setup_helpers.c",
    "name": "sub_080019EC8",
+   "size": 84
+  },
+  "0x08019f1c": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 2
+   },
+   "file": "src/race_setup.c",
+   "name": "_080019F1C",
    "size": 84
   },
   "0x0801a0bc": {
@@ -5358,6 +5649,12 @@
    "name": "_08001F918",
    "size": 68
   },
+  "0x0801f95c": {
+   "class": "c",
+   "file": "src/race_scene_d1.c",
+   "name": "RaceSceneD1_Dispatch_1F95C",
+   "size": 144
+  },
   "0x0801f9ec": {
    "class": "c",
    "file": "src/race_scene_d1.c",
@@ -5566,6 +5863,12 @@
    "name": "RaceVM_021CC4",
    "size": 252
   },
+  "0x080221a4": {
+   "class": "c",
+   "file": "src/race_phase_vms.c",
+   "name": "RaceVM_021A4",
+   "size": 156
+  },
   "0x08022240": {
    "class": "c",
    "file": "src/race_phase_vms.c",
@@ -5686,6 +5989,12 @@
    "file": "src/race_phase_vms.c",
    "name": "RaceVM_022BBC",
    "size": 92
+  },
+  "0x08022c18": {
+   "class": "c",
+   "file": "src/race_phase_vms.c",
+   "name": "RaceVM_022C18",
+   "size": 156
   },
   "0x08022cb4": {
    "class": "c_fakematch",
@@ -7227,6 +7536,12 @@
    "name": "Garage_28134",
    "size": 84
   },
+  "0x08028188": {
+   "class": "c",
+   "file": "src/garage_dispatchers.c",
+   "name": "GarageDispatch_28188",
+   "size": 112
+  },
   "0x080281f8": {
    "class": "c",
    "file": "src/garage.c",
@@ -7262,6 +7577,12 @@
    "file": "src/garage.c",
    "name": "Garage_282D0",
    "size": 92
+  },
+  "0x0802832c": {
+   "class": "c",
+   "file": "src/garage_dispatchers.c",
+   "name": "GarageDispatch_2832C",
+   "size": 112
   },
   "0x0802839c": {
    "class": "c_fakematch",
@@ -7404,6 +7725,12 @@
    "name": "_0800288A0",
    "size": 28
   },
+  "0x080288bc": {
+   "class": "c",
+   "file": "src/garage_dispatchers.c",
+   "name": "GarageDispatch_288BC",
+   "size": 140
+  },
   "0x08028948": {
    "class": "c",
    "file": "src/garage_records.c",
@@ -7532,6 +7859,15 @@
    "name": "_080029230",
    "size": 84
   },
+  "0x08029284": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 3
+   },
+   "file": "src/garage_dispatchers.c",
+   "name": "GarageDispatch_29284",
+   "size": 208
+  },
   "0x08029354": {
    "class": "c_fakematch",
    "detail": {
@@ -7546,6 +7882,15 @@
    "file": "src/garage_records.c",
    "name": "_0800293D8",
    "size": 40
+  },
+  "0x08029400": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 1
+   },
+   "file": "src/garage_records.c",
+   "name": "_080029400",
+   "size": 76
   },
   "0x0802944c": {
    "class": "c_fakematch",
@@ -7719,6 +8064,12 @@
    "name": "SoundFadeOut",
    "size": 36
   },
+  "0x0802b330": {
+   "class": "c",
+   "file": "src/sound.c",
+   "name": "SoundFadeRemaining",
+   "size": 56
+  },
   "0x0802b368": {
    "class": "c",
    "file": "src/sound.c",
@@ -7736,6 +8087,15 @@
    "file": "src/sound.c",
    "name": "SoundApplySecVol",
    "size": 20
+  },
+  "0x0802b418": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 1
+   },
+   "file": "src/sound.c",
+   "name": "SoundSetSongSpeed",
+   "size": 52
   },
   "0x0802b44c": {
    "class": "c",
@@ -8095,6 +8455,17 @@
    "name": "SoundBE60_PSGWrite",
    "size": 24
   },
+  "0x0802c10c": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 2,
+    "naked": true
+   },
+   "file": "src/sound_channel_lists.c",
+   "name": "SoundCallViaR3_2C10C",
+   "size": 4
+  },
   "0x0802c160": {
    "class": "asm",
    "detail": {
@@ -8184,6 +8555,16 @@
    "file": "src/sound_deep.c",
    "name": "SoundFollowOnCopy",
    "size": 44
+  },
+  "0x0802c574": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1,
+    "pin": 1
+   },
+   "file": "src/runtime_state_dispatch.c",
+   "name": "SoundC574_Replace",
+   "size": 76
   },
   "0x0802c5c0": {
    "class": "c_fakematch",
@@ -8328,6 +8709,22 @@
    "name": "SoundStop_2CB84",
    "size": 56
   },
+  "0x0802ced4": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 3,
+    "pin": 8
+   },
+   "file": "src/sound_interp_ced4.c",
+   "name": "SoundInterp_CED4",
+   "size": 168
+  },
+  "0x0802cf7c": {
+   "class": "c",
+   "file": "src/sound_hwmode_cf7c.c",
+   "name": "SoundHWMode_CF7C",
+   "size": 80
+  },
   "0x0802cfcc": {
    "class": "c_fakematch",
    "detail": {
@@ -8347,6 +8744,36 @@
    "file": "src/sound_voice_helpers.c",
    "name": "SoundD480_VolScale",
    "size": 40
+  },
+  "0x0802d4a8": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1,
+    "pin": 4
+   },
+   "file": "src/sound_core.c",
+   "name": "SoundVoiceWalkerA",
+   "size": 104
+  },
+  "0x0802d510": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1,
+    "pin": 4
+   },
+   "file": "src/sound_core.c",
+   "name": "SoundVoiceWalkerB",
+   "size": 116
+  },
+  "0x0802d584": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1,
+    "pin": 5
+   },
+   "file": "src/sound_core.c",
+   "name": "SoundVoiceWalkerC",
+   "size": 104
   },
   "0x0802d5ec": {
    "class": "c",
@@ -8722,20 +9149,20 @@
  },
  "totals": {
   "asm": {
-   "bytes": 1456,
-   "functions": 62
+   "bytes": 1460,
+   "functions": 63
   },
   "c": {
-   "bytes": 31082,
-   "functions": 796
+   "bytes": 32766,
+   "functions": 817
   },
   "c_fakematch": {
-   "bytes": 25694,
-   "functions": 329
+   "bytes": 27710,
+   "functions": 349
   },
   "partial": {
-   "bytes": 1832,
-   "functions": 15
+   "bytes": 2804,
+   "functions": 23
   }
  },
  "version": 1

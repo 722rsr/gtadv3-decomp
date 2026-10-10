@@ -231,6 +231,8 @@ _0800500E:
 	pop	{r0}
 	bx	r0
 _08005014: .4byte 0x03000250
+	.type _08005018, %function
+_08005018:
 	bx	lr
 	movs	r0, r0
 	.type sub_0800501C, %function
