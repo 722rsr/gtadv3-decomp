@@ -331,11 +331,29 @@ int Course_Math_HeadingInterp(int p0, int p1, int p2, void *out) {
     if (p0s > 7) { a4 = 7; clamped = 1; }
     c = (u32)((s16)c - (int)(p1s = (u32)(s32)(s16)p1s));
     {
-        int tv = ((s16 *)0x080CB064u)[(s16)a4];
+        s16 *table = (s16 *)0x080CB064u;
+#ifndef __APPLE__
+        // Materialize the literal base before the signed index scaling, in r2.
+        __asm__ volatile ("" : "+r" (table));
+#endif
+        int tv = table[(s16)a4];
+#ifndef __APPLE__
+        // Keep the selected index live through the ldrsh address calculation.
+        __asm__ volatile ("" : "+r" (a4));
+#endif
         int res = tv * (int)c;
         if (res < 0) res += 0xFFF;
         res >>= 12;
-        res += (int)p1s;
+#ifndef __APPLE__
+        // Thumb's three-register ADD must encode the ROM's r3+r0 operand order.
+        register int accum __asm__("r0") = res;
+        register int start __asm__("r3") = (int)p1s;
+        __asm__ volatile ("add %0, %1, %0"
+                          : "+r" (accum) : "r" (start) : "cc");
+        res = accum;
+#else
+        res = (int)p1s + res;
+#endif
         *(volatile s16 *)o = (s16)res;
     }
     return clamped;
@@ -608,6 +626,8 @@ void Course_Iter_07C68(void *X, u32 r1_add, u32 kind, u32 r3_add,
                        volatile u32 s4) {
 #ifndef __APPLE__
     register u32 dx __asm__("r7") = r3_add;
+    u32 dx_copy;
+    int call_z;
 #else
     u32 dx = r3_add;
 #endif
@@ -616,6 +636,9 @@ void Course_Iter_07C68(void *X, u32 r1_add, u32 kind, u32 r3_add,
     u32 i = 0;
     if ((int)i < (int)a[7]) {
         volatile u8 *row = a + 8;
+#ifndef __APPLE__
+        dx_copy = dx;
+#endif
         do {
         // Keep each row byte in the ROM's scratch register until its add;
         // without the barriers agbcc folds both loads into r0 and reorders
@@ -623,7 +646,7 @@ void Course_Iter_07C68(void *X, u32 r1_add, u32 kind, u32 r3_add,
 #ifndef __APPLE__
         register u32 xsrc __asm__("r1") = row[2];
         __asm__ volatile ("" : "+r" (xsrc));
-        u32 x = xsrc + dx;
+        u32 x = xsrc + dx_copy;
         register u32 ysrc __asm__("r2") = row[3];
         __asm__ volatile ("" : "+r" (ysrc));
         u32 y = ysrc + s0_yadd;
@@ -632,13 +655,14 @@ void Course_Iter_07C68(void *X, u32 r1_add, u32 kind, u32 r3_add,
         u32 y = (u32)row[3] + s0_yadd;
 #endif
         u32 z = (u32)row[0] + r1_add;
-        u32 b1 = row[1];
 #ifdef __APPLE__
+        u32 b1 = row[1];
         EmitPlace_07C68((u32)x, (u32)y, (u32)z, s1_p3, s2_s0,
                         b1, 1, s3, s4, 0);
 #else
-        sub_08002ED0((void *)x, (int)y, (int)z, (int)s1_p3, (int)s2_s0,
-                     (int)b1, 1, (int)s3, (int)s4, 0);
+        call_z = (int)z;
+        sub_08002ED0((void *)x, (int)y, call_z, (int)s1_p3, (int)s2_s0,
+                     (int)row[1], 1, (int)s3, (int)s4, 0);
 #endif
             row += 4;
             i++;
@@ -688,6 +712,7 @@ u32 sub_08007EC4(void *a, int b) __attribute__((alias("Course_Math_SumU16")));
 int _08007EE0(int a,int b) __attribute__((alias("Course_Math_AbsRoundAvg")));
 int _08007F08(int a,int b,int c,int d) __attribute__((alias("Course_Math_DistanceHeading")));
 int _08007FC0(int a, int b, int c, void *d) __attribute__((alias("Course_Math_HeadingInterp")));
+int sub_08007FC0(int a, int b, int c, void *d) __attribute__((alias("Course_Math_HeadingInterp")));
 void _08008074(u16 a) __attribute__((alias("Course_State_Store0")));
 void _08008080(u16 a) __attribute__((alias("Course_State_Store14")));
 void _0800808C(u16 a) __attribute__((alias("Course_State_Store6")));

@@ -52,3 +52,4 @@ _08005B34:
 	pop {r0}
 	bx r0
 	.short 0
+save_delay_end:

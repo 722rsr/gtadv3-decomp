@@ -749,7 +749,7 @@
     },
     {
       "path": "asm/menu_dab8.s",
-      "sha256": "558e5d4c6a2f2418e46cfdfb605960b6ec85c207efae0f62377bbc2c3f83f634"
+      "sha256": "1953201ee219325457faaeeca8c1486a1ffe14fa8e86c7c7ff38dbddd625e9f2"
     },
     {
       "path": "asm/menu_dbe8.s",
@@ -905,7 +905,7 @@
     },
     {
       "path": "asm/save_delay.s",
-      "sha256": "f07b658c6b2bb633b660885fe18378bc433658101c6a2a1fcc89352b612ecd91"
+      "sha256": "25bed4bc97de8e44a1cb5214c2599dd43bcfaea5dbcf4d88ab394de6c66b5264"
     },
     {
       "path": "asm/save_desc.s",

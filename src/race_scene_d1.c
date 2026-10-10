@@ -702,17 +702,30 @@ void sub_08001FBAC(int a0, void *rec_) __attribute__((alias("_08001FBAC")));
 // 0x03001D64 + 12*s16[rec+156] + 72*s16[rec+28] + 8, 3).
 // ----------------------------------------------------------------------------
 void _08001FBD8(void *rec_) {
+#ifndef __APPLE__
+    /* Preserve the ROM's r3 base load before the record reads. */
     register u32 base __asm__("r3") = 0x03002808u;
-    register u8 *rec __asm__("r4") = (u8 *)rec_;
+    register s32 v __asm__("r2");
+    register u32 a __asm__("r1");
+    register u32 b __asm__("r0");
+    __asm__ volatile("" : "+r"(base));
+#else
+    u32 base = 0x03002808u;
+    s32 v;
+    u32 a;
+    u32 b;
+#endif
+    u32 offset = 0xFFFFF55Cu;
+    u8 *rec = (u8 *)rec_;
     u8 *q;
-    int a;
-    int b;
-    int t;
-    a = (int)*(s16 *)(rec + 28);
-    a = (a * 9) << 3;
+    v = (int)*(s16 *)(rec + 28);
+    a = (u32)((v * 9) << 3);
     q = rec + 156;
-    b = (int)*(s16 *)q;
-    b = (b * 3) << 2;
-    t = (int)(base + 0xFFFFF55Cu);
-    _0800D95C((void *)base, (const void *)((u32)t + (u32)b + (u32)a + 8u), 3);
+    v = (int)*(s16 *)q;
+    b = (u32)((v * 3) << 2);
+    v = (s32)(base + offset);
+    b = b + (u32)v;
+    a = a + b;
+    a = a + 8u;
+    _0800D95C((void *)base, (const void *)a, 3);
 }

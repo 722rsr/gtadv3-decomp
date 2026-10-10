@@ -143,3 +143,6 @@ _0800DB98:
         .balign 4, 0
 _0800DBE0: .word 0x082AB030
 _0800DBE4: .word 0x082B283C
+
+@ Byte-neutral boundary for the full 0x130-byte initializer splice.
+menu_dab8_end:

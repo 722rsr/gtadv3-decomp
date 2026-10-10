@@ -904,14 +904,16 @@ s32 _0800293D8(s32 a, s32 b) {
 // 0x08029400 — clamp-step leaf.
 // ----------------------------------------------------------------------------
 s16 _080029400(u16 a, u16 b, s16 step) {
-    if (step <= 0)
-        return (s16)a;
-    s16 d = (s16)((s32)(s16)a - (s32)(s16)b);
-    s16 q = (s16)_08002DE04((s32)d, (s32)step);
-    s32 aq = (q < 0) ? -(s32)q : (s32)q;
-    if (aq <= 0)
-        return (s16)a;
-    return (s16)(u16)((s32)(s16)b + (s32)q);
+    if (step > 0) {
+        s32 signed_a = (s32)(s16)a;
+        s32 signed_b = (s32)(s16)b;
+        s16 d = (s16)(signed_a - signed_b);
+        s16 q = (s16)_08002DE04((s32)d, (s32)step);
+        s32 aq = (q < 0) ? -(s32)q : (s32)q;
+        if (aq > 0)
+            return (s16)(u16)(signed_b + (s32)q);
+    }
+    return (s16)a;
 }
 
 // Forward decls for intra-module calls (defined below).

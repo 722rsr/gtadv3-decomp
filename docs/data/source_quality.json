@@ -2203,6 +2203,16 @@
    "name": "SaveTimerQueueArm",
    "size": 64
   },
+  "0x08005ae4": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1,
+    "pin": 11
+   },
+   "file": "src/save.c",
+   "name": "SaveTimerQueueDrain",
+   "size": 88
+  },
   "0x08005b3c": {
    "class": "c",
    "file": "src/code_5b3c_math.c",
@@ -2671,6 +2681,16 @@
    "name": "Course_Iter_07BFC",
    "size": 108
   },
+  "0x08007c68": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 2,
+    "pin": 3
+   },
+   "file": "src/course_records.c",
+   "name": "Course_Iter_07C68",
+   "size": 104
+  },
   "0x08007ec4": {
    "class": "c_fakematch",
    "detail": {
@@ -2695,6 +2715,18 @@
    "file": "src/course_records.c",
    "name": "Course_Math_DistanceHeading",
    "size": 184
+  },
+  "0x08007fc0": {
+   "class": "partial",
+   "detail": {
+    "directive": 2,
+    "insn": 1,
+    "insn_lines": 1,
+    "pin": 6
+   },
+   "file": "src/course_records.c",
+   "name": "Course_Math_HeadingInterp",
+   "size": 84
   },
   "0x08008074": {
    "class": "c",
@@ -3668,6 +3700,16 @@
    "name": "MenuRec_0800DA88",
    "size": 48
   },
+  "0x0800dab8": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 6,
+    "pin": 1
+   },
+   "file": "src/scene_record_dispatch.c",
+   "name": "MenuObjInit_0DAB8",
+   "size": 304
+  },
   "0x0800dbe8": {
    "class": "c",
    "file": "src/menus.c",
@@ -3755,6 +3797,16 @@
    "file": "src/menus.c",
    "name": "MenuEbd8_0800EBD8",
    "size": 212
+  },
+  "0x0800ecac": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 1,
+    "pin": 3
+   },
+   "file": "src/menus.c",
+   "name": "MenuEcac_0800ECAC",
+   "size": 188
   },
   "0x0800ed68": {
    "class": "c",
@@ -4402,6 +4454,17 @@
    "file": "src/rec35_16002.c",
    "name": "Rec35_PlaceRecords",
    "size": 124
+  },
+  "0x0801626c": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 1,
+    "directive": 1,
+    "pin": 1
+   },
+   "file": "src/rec35_16002.c",
+   "name": "Rec35_PlaceByTable",
+   "size": 116
   },
   "0x080163b4": {
    "class": "c",
@@ -5333,6 +5396,16 @@
    "file": "src/race_scene_d1.c",
    "name": "_08001FBAC",
    "size": 44
+  },
+  "0x0801fbd8": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 1,
+    "pin": 4
+   },
+   "file": "src/race_scene_d1.c",
+   "name": "_08001FBD8",
+   "size": 60
   },
   "0x0801ff24": {
    "class": "c",
@@ -7287,6 +7360,15 @@
    "name": "Garage_Stub_28740",
    "size": 4
   },
+  "0x08028744": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 1
+   },
+   "file": "src/garage.c",
+   "name": "Garage_28744",
+   "size": 60
+  },
   "0x08028780": {
    "class": "asm",
    "detail": {
@@ -8648,12 +8730,12 @@
    "functions": 796
   },
   "c_fakematch": {
-   "bytes": 24774,
-   "functions": 322
+   "bytes": 25694,
+   "functions": 329
   },
   "partial": {
-   "bytes": 1748,
-   "functions": 14
+   "bytes": 1832,
+   "functions": 15
   }
  },
  "version": 1

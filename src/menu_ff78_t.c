@@ -167,6 +167,7 @@ void MenuFF78_141AC(void *rec_) {
     volatile u8 *wa = (volatile u8 *)(uintptr_t)0x03001780u;
     void *tile = (void *)(uintptr_t)0x082A798Cu;
     void *tm = (void *)(uintptr_t)0x082D7660u;
+    u32 new_var;
     Sub_08002B214(52);
     _08007770(0, (void *)(uintptr_t)0x082F0FF0u, 2, 0, 4, 1); // R2 C body (was Sub_ veneer)
     *(volatile u32 *)(uintptr_t)(rec + 104) = 6;
@@ -175,6 +176,7 @@ void MenuFF78_141AC(void *rec_) {
     Sub_0800DAB8((void *)(uintptr_t)(rec + 32));
     Sub_08007614(tile, 1, 0, 3);
     Sub_0800798C(tm, (void *)(uintptr_t)(rec + 16));
+    new_var = 176;
     Sub_080075E8(tm, 0, 10);
     Sub_080075E8(tm, 1, 11);
     Sub_08007A58((void *)(uintptr_t)(rec + 16));
@@ -202,7 +204,7 @@ void MenuFF78_141AC(void *rec_) {
         Sub_08007614(tm2, 0, 2, 9);
     }
     for (u32 k = 0; k <= 5; k++) {
-        u32 c4 = (u32)(uintptr_t)(rec + 176 + k * 12);
+        u32 c4 = (u32)(uintptr_t)(rec + new_var + k * 12);
         u32 c5 = (u32)(uintptr_t)(rec + 180 + k * 12);
         *(volatile u32 *)(uintptr_t)c4 = Sub_0800572C(12);
         int t = (int)*(volatile s16 *)(uintptr_t)(
@@ -253,7 +255,7 @@ void MenuFF78_141AC(void *rec_) {
             (u32)(22 * (int)*(volatile s16 *)(uintptr_t)(wa + 0xFF6u)));
         *(volatile u32 *)(uintptr_t)(rec + 180 + r2off) = (u32)t;
         Sub_08007ABC(*(volatile u32 *)(uintptr_t)(rec + 4), (u32)t,
-                     *(volatile u32 *)(uintptr_t)(rec + 176 + r2off));
+                     *(volatile u32 *)(uintptr_t)(rec + new_var + r2off));
     }
     Sub_080014078(rec_);
 }

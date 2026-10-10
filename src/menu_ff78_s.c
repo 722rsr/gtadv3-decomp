@@ -18,7 +18,7 @@ __attribute__((weak)) void Sub_0800DBE8(void *a) { (void)a; }
 __attribute__((weak)) void Sub_0800139F0(void *a, u32 b) { (void)a; (void)b; }
 __attribute__((weak)) void Sub_080013AF4(void *a) { (void)a; }
 __attribute__((weak)) void Sub_080013AA8(void *a) { (void)a; }
-__attribute__((weak)) void Sub_080013E60(void) { }
+__attribute__((weak)) void Sub_080013E60(void *a) { (void)a; }
 __attribute__((weak)) void Sub_080013950(void *a, void *b, u32 c, u32 d) { (void)a; (void)b; (void)c; (void)d; }
 __attribute__((weak)) void Sub_080026A2C(void *a, int b, int c) { (void)a; (void)b; (void)c; }
 __attribute__((weak)) int Sub_08025500(int v) { return v; }
@@ -35,7 +35,7 @@ extern void Sub_0800DBE8(void *a);
 extern void Sub_0800139F0(void *a, u32 b);
 extern void Sub_080013AF4(void *a);
 extern void Sub_080013AA8(void *a);
-extern void Sub_080013E60(void);
+extern void Sub_080013E60(void *a);
 extern void Sub_080013950(void *a, void *b, u32 c, u32 d);
 extern void Sub_080026A2C(void *a, int b, int c); // sprite_obj_263e.c Sprite_SetXYRel: ldr r4,[r0,#8]
 extern int Sub_08025500(int v);
@@ -122,8 +122,7 @@ void MenuFF78_13B68(void *rec_) {
         extern u8 J13B68_E[];
         __asm__(".globl J13B68_E\nJ13B68_E = 0x080CB6AC\n");
         u32 i = 0;
-        s8 *base2 = (s8 *)(uintptr_t)base;
-        while ((int)i < (int)base2[(u32)(s32)*(s16 *)(uintptr_t)(rec + 174) * 20]) {
+        while ((int)i < (int)((s8 *)(uintptr_t)base)[(u32)(s32)*(s16 *)(uintptr_t)(rec + 174) * 20]) {
             Sub_08007B18((void *)rec,
                          (int)*(s16 *)(uintptr_t)((u8 *)J13B68_E + i * 2),
                          (int)*(u32 *)(uintptr_t)(0x080CB6E0u + i * 8),
@@ -134,7 +133,7 @@ void MenuFF78_13B68(void *rec_) {
     }
     Sub_080013AA8((void *)rec);
     Sub_0800DBE8((void *)(uintptr_t)(rec + 32));
-    Sub_080013E60();
+    Sub_080013E60((void *)rec);
     }
 }
 #ifndef __APPLE__
