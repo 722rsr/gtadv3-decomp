@@ -305,8 +305,21 @@ void sub_0800161F0(void *a, int b, int c) __attribute__((alias("Rec35_PlaceRecor
 //   m==0 or m==2: 07B18(rec, t, arg1, arg2, 4, 1, 1, 0)
 // ============================================================================
 void Rec35_PlaceByTable(void *rec, int arg1, int arg2) {
+#ifndef __APPLE__
+    // Keep the entry pointer in r0 for the first field access; r3 holds its call copy.
+    register void *index_base __asm__("r0") = rec;
+    __asm__ volatile ("" : "+r" (index_base));
+#endif
     u16 *tbase = (u16 *)0x080CB89Cu;
+#ifndef __APPLE__
+    // Load the ROM table literal into r1 before the index arithmetic; r2 is the ldrsh offset.
+    __asm__ volatile ("" : "+r" (tbase));
+#endif
+#ifdef __APPLE__
     s16 idx = *(s16 *)((u8 *)rec + 140);
+#else
+    s16 idx = *(s16 *)((u8 *)index_base + 140);
+#endif
     u16 t = tbase[idx];
     int m = *(int *)((u8 *)rec + 152);
     switch (m) {
@@ -320,6 +333,10 @@ void Rec35_PlaceByTable(void *rec, int arg1, int arg2) {
         break;
     }
 }
+#ifndef __APPLE__
+// The ROM span ends with a zero-filled alignment halfword.
+__asm__(".align 2, 0");
+#endif
 #ifndef __APPLE__
 void _08001626C(void *a, int b, int c) __attribute__((alias("Rec35_PlaceByTable")));
 void sub_08001626C(void *a, int b, int c) __attribute__((alias("Rec35_PlaceByTable")));

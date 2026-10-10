@@ -1303,18 +1303,20 @@ void _080028734(void) __attribute__((alias("Garage_28734")));
 void sub_080028734(void) __attribute__((alias("Garage_28734")));
 #endif
 
-// Lifted: sub_080028744 — 52B bounded wrapper, pure Thumb, pools 02030000/06004000, exact boundary push {r4,lr} sub sp? Actually push {r4,lr} ldr 02030000 (52B, no sub sp, 5 calls)
-// Proven via objdump: 0x08028744: b510 push {r4,lr}; 4c04 ldr r4,=02030000; 1c20 adds r0,r4; 2100 movs r1,#0; f7ff fffe bl 07978; 21c0 movs r1,#192; 0289 lsls r1,#19; f7ff fffe bl 2D984 (r0=02030000 r1=06000000); 1c20 adds r0,r4; 2100 movs r1,#0; f7ff fffe bl 07924; 4b02 ldr r1,=06004000; f7ff fffe bl 2D984; 1c20 adds r0,r4; 2100 movs r1,#0; 2200 movs r2,#0; f7ff fffe bl 07938; bc10 pop {r4}; bc01 pop {r0}; 4700 bx r0
+// Lifted: sub_080028744 — 52B Thumb body plus two pool words (02030000/06004000).
+// The return values from 07978 and 07924 pass directly in r0 to 2D984.
+// Disassembly: push {r4,lr}; load p=02030000; 07978(p,0); 2D984(result,06000000);
+// 07924(p,0); 2D984(result,06004000); 07938(p,0,0); pop {r4}; pop {r0}; bx r0.
 void Garage_28744(void){
-    extern void sub_08007978(void*,int);
-    extern void sub_08007924(void*,int);
+    extern void *sub_08007978(void*,int);
+    extern void *sub_08007924(void*,int);
     extern void sub_08007938(void*,int,int);
-    extern void _0802D984(const void*,void*);
+    extern void sub_0802D984(const void*,void*);
     register void *p __asm__("r4") = (void *)0x02030000;
-    sub_08007978(p, 0);
-    _0802D984(p, (void *)(192u << 19));
-    sub_08007924(p, 0);
-    _0802D984(p, (void *)0x06004000u);
+    void *res = sub_08007978(p, 0);
+    sub_0802D984(res, (void *)(192u << 19));
+    res = sub_08007924(p, 0);
+    sub_0802D984(res, (void *)0x06004000u);
     sub_08007938(p, 0, 0);
 }
 #ifndef __APPLE__

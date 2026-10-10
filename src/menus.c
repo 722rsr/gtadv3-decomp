@@ -871,7 +871,14 @@ void MenuEcac_0800ECAC(void *rec, u32 a1, u32 a2) {
         if (sub_08002780() == 1 && *(u16 *)f == 3) {
             sub_0802B368(10);
         } else {
+#ifndef __APPLE__
+            register volatile u8 *next_f __asm__("r0") = r + 0xE0;
+            /* Match the ROM's r0 address temporary before copying to r5. */
+            __asm__ volatile ("" : "+r" (next_f));
+            f = (s16 *)next_f;
+#else
             f = (s16 *)((volatile u8 *)r + 0xE0);
+#endif
             if (*(u16 *)f != 2) {
                 u32 one;
                 sub_0802B368(1);

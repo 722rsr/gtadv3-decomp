@@ -18,7 +18,7 @@ The `make matching-ready` target
 compiles the C corpus with pinned `old_agbcc` and verifies selected C functions
 in an independent executable slice.
 
-The manifest selects **1,174 C functions / 57,224 bytes** within the
+The manifest selects **1,200 C functions / 59,672 bytes** within the
 **188,760-byte** executable slice. The remaining executable bytes are
 reconstructed assembly. Remaining work includes C matching, the complete
 independent link.

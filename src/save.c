@@ -678,22 +678,71 @@ void _08005AA4(u16 a, u8 b) __attribute__((alias("SaveTimerQueueArm")));
 #endif
 
 void SaveTimerQueueDrain(void) {
+#ifndef __APPLE__
+    register int fired __asm__("r3") = 0;
+    register volatile u32 *qptr __asm__("r0") = (volatile u32 *)TIMER_QUEUE_PTR_ADDR;
+    register volatile u32 *savedQptr __asm__("r6");
+    register volatile u8 *cursor __asm__("r2") = (volatile u8 *)(uintptr_t)*qptr;
+    register volatile u8 *dst __asm__("r5") = cursor + 16;
+    register int i __asm__("r4");
+#else
     volatile u32 *qptr = (volatile u32 *)TIMER_QUEUE_PTR_ADDR;
-    volatile u8 *q = (volatile u8 *)(uintptr_t)*qptr;
-    volatile u8 *dst = q + 16;
-    u32 fired = 0;
-    for (int i = 3; i >= 0; i--) {
-        volatile u8 *e = q + i*4;
-        if (e[0]==0) continue;
-        if (e[1]==0) { e[0]=0; *(volatile u32 *)dst = *(volatile u32 *)e; dst+=4; fired++; }
-        else e[1]--;
+    volatile u32 *savedQptr = qptr;
+    volatile u8 *cursor = (volatile u8 *)(uintptr_t)*qptr;
+    volatile u8 *dst = cursor + 16;
+    int fired = 0;
+    int i;
+#endif
+    savedQptr = qptr;
+#ifndef __APPLE__
+    __asm__("" : "+r"(savedQptr));
+#endif
+    /* The cursor walks q[0] to q[12] while i counts down, preserving fire order. */
+    i = 3;
+    do {
+        if (cursor[0] != 0) {
+#ifndef __APPLE__
+            register u32 delay __asm__("r0") = (u32)cursor[1];
+            register u32 test __asm__("r1") = delay;
+#else
+            u32 delay = cursor[1];
+            u32 test = delay;
+#endif
+            if (test == 0) {
+                cursor[0] = (u8)test;
+                *(volatile u32 *)dst = *(volatile u32 *)cursor;
+                dst += 4;
+                fired++;
+            } else {
+                cursor[1] = (u8)(delay - 1u);
+            }
+        }
+        i--;
+        cursor += 4;
+    } while (i >= 0);
+#ifndef __APPLE__
+    {
+        register volatile u32 *q __asm__("r0") = (volatile u32 *)(uintptr_t)*savedQptr;
+        register u16 count __asm__("r2");
+        register u16 newCount __asm__("r1");
+        *((volatile u16 *)((volatile u8 *)q + 34)) = (u16)fired;
+        count = *((volatile u16 *)((volatile u8 *)q + 32));
+        newCount = count - (u16)fired;
+        *((volatile u16 *)((volatile u8 *)q + 32)) = newCount;
     }
+#else
+    volatile u8 *q = (volatile u8 *)(uintptr_t)*savedQptr;
     volatile u16 *cnt = (volatile u16 *)(q + 32);
     volatile u16 *firedOut = (volatile u16 *)(q + 34);
     *firedOut = (u16)fired;
-    *cnt = (u16)(*cnt - (u16)fired);
-    if (fired) sub_08004D4C(11,0,0);
+    *cnt = (u16)(*cnt - fired);
+#endif
+    if (fired > 0) sub_08004D4C(11,0,0);
 }
+#ifndef __APPLE__
+/* The ROM splice includes this zero halfword after the return instruction. */
+__asm__(".pushsection .text.SaveTimerQueueDrain,\"ax\",%progbits\n.short 0\n.popsection");
+#endif
 #ifndef __APPLE__
 void _08005AE4(void) __attribute__((alias("SaveTimerQueueDrain")));
 void TimerListTick(void) __attribute__((alias("SaveTimerQueueDrain")));

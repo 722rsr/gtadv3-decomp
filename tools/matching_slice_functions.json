@@ -2935,6 +2935,18 @@
     ],
     "start_marker": ".type sub_08005AA4, %function"
   },
+  "0x08005ae4": {
+    "asm_file": "asm/save_delay.s",
+    "c_name": "_08005AE4",
+    "end_marker": "save_delay_end:",
+    "end_vma": "0x08005b3c",
+    "export": [
+      "_08005AE4",
+      "TimerListTick",
+      "sub_08005AE4"
+    ],
+    "start_marker": ".type sub_08005AE4, %function"
+  },
   "0x08005b3c": {
     "asm_file": "asm/code_5b3c.s",
     "c_name": "_08005B3C",
@@ -3627,6 +3639,17 @@
       "sub_08007BFC"
     ]
   },
+  "0x08007c68": {
+    "asm_file": "asm/course_records_7bfc.s",
+    "c_name": "_08007C68",
+    "end_marker": ".type sub_08007CD0, %function",
+    "end_vma": "0x08007cd0",
+    "export": [
+      "_08007C68",
+      "sub_08007C68"
+    ],
+    "start_marker": ".type sub_08007C68, %function"
+  },
   "0x08007ec4": {
     "asm_file": "asm/course_records_7bfc.s",
     "c_name": "_08007EC4",
@@ -3659,6 +3682,17 @@
       "sub_08007F08"
     ],
     "start_marker": ".type sub_08007F08, %function"
+  },
+  "0x08007fc0": {
+    "asm_file": "asm/course_records_7bfc.s",
+    "c_name": "_08007FC0",
+    "end_marker": ".type sub_08008014, %function",
+    "end_vma": "0x08008014",
+    "export": [
+      "_08007FC0",
+      "sub_08007FC0"
+    ],
+    "start_marker": ".type sub_08007FC0, %function"
   },
   "0x08008074": {
     "asm_file": "asm/course_records_7bfc.s",
@@ -5037,6 +5071,19 @@
     ],
     "start_marker": ".type sub_0800DA88, %function"
   },
+  "0x0800dab8": {
+    "asm_file": "asm/menu_dab8.s",
+    "c_name": "_0800DAB8",
+    "end_marker": "menu_dab8_end:",
+    "end_vma": "0x0800dbe8",
+    "export": [
+      "_0800DAB8",
+      "sub_0800DAB8",
+      "Sub_0800DAB8",
+      "Course_0x0800DAB8"
+    ],
+    "start_marker": ".type sub_0800DAB8, %function"
+  },
   "0x0800dbe8": {
     "asm_file": "asm/menu_dbe8.s",
     "c_name": "_0800DBE8",
@@ -5176,6 +5223,17 @@
       "sub_0800EBD8"
     ],
     "start_marker": ".type sub_0800EBD8, %function"
+  },
+  "0x0800ecac": {
+    "asm_file": "asm/menu_ebd8.s",
+    "c_name": "_0800ECAC",
+    "end_marker": ".type sub_0800ED68, %function",
+    "end_vma": "0x0800ed68",
+    "export": [
+      "_0800ECAC",
+      "sub_0800ECAC"
+    ],
+    "start_marker": ".type sub_0800ECAC, %function"
   },
   "0x0800ed68": {
     "asm_file": "asm/menu_ebd8.s",
@@ -6092,6 +6150,17 @@
       "sub_0800161F0"
     ],
     "start_marker": ".type sub_0800161F0, %function"
+  },
+  "0x0801626c": {
+    "asm_file": "asm/rec35_16002.s",
+    "c_name": "_08001626C",
+    "end_marker": ".type sub_0800162E0, %function",
+    "end_vma": "0x080162e0",
+    "export": [
+      "_08001626C",
+      "sub_08001626C"
+    ],
+    "start_marker": ".type sub_08001626C, %function"
   },
   "0x080163b4": {
     "asm_file": "asm/rec35_16002.s",
@@ -7380,6 +7449,17 @@
       "_08001FBAC"
     ],
     "start_marker": ".type sub_08001FBAC, %function"
+  },
+  "0x0801fbd8": {
+    "asm_file": "asm/race_scene.s",
+    "c_name": "_08001FBD8",
+    "end_marker": ".type sub_08001FC14, %function",
+    "end_vma": "0x0801fc14",
+    "export": [
+      "_08001FBD8",
+      "sub_08001FBD8"
+    ],
+    "start_marker": ".type sub_08001FBD8, %function"
   },
   "0x0801ff24": {
     "asm_file": "asm/race_scene.s",
@@ -10095,6 +10175,17 @@
       "_080028740"
     ],
     "start_marker": ".type sub_080028740, %function"
+  },
+  "0x08028744": {
+    "asm_file": "asm/garage_26f50.s",
+    "c_name": "_080028744",
+    "end_marker": ".type sub_080028780, %function",
+    "end_vma": "0x08028780",
+    "export": [
+      "_080028744",
+      "sub_080028744"
+    ],
+    "start_marker": ".type sub_080028744, %function"
   },
   "0x08028780": {
     "asm_file": "asm/garage_26f50.s",

@@ -419,19 +419,18 @@ void sub_0800BE74(void) __attribute__((alias("MenuPlaceUpdate_0BE74")));
 // _0800798C/_08007A58/_080075E8 family, save-alloc triple, 10-entry phase
 // table on s16[WA+0xFBC], then three _08007ABC bindings.
 // ============================================================================
-// ROM 0x0800DAB8: the ten case blocks each end in `movs r0,#k / b 0x0800DADE`
-// and the single store `str r0,[r6,#72]` sits at 0x0800DADE, which the
-// `default` (0x0800DAB0 `bhi.n`) jumps PAST. So the C stores per case and
-// has no `cls >= 0` test, and case 5 is `if/else if/else`, not a ternary
-// (`cmp r0,#1 / beq / cmp r0,#2 / beq` at 0x0800DAB2). Written that way the
-// prologue becomes byte-exact (only r4/r5/r6 saved) but the s16 address
-// `ldr r0,[pc] / ldr r1,[pc] / adds r0,r0,r1` (0x0800DABE) is 4 bytes that
-// agbcc will not generate from any constant spelling - it folds to one
-// literal - so the body stays short and every later byte shifts. Kept the
-// scoring form until that address form is reachable.
+// The switch arms follow the ROM's case-block order, so the emitted labels
+// also reproduce its non-monotonic 10-entry table. Every valid case branches
+// to one store; the out-of-range default branches past it. Absolute symbols
+// keep the two-word WA-plus-offset address sequence used by the ROM.
 void MenuObjInit_0DAB8(void *rec) {
+    extern u8 MenuObjWA_DAB8[] __asm__("MenuObjWA_DAB8");
+    extern u8 MenuObjModeOffset_DAB8[] __asm__("MenuObjModeOffset_DAB8");
+    extern u8 MenuObjSubmodeOffset_DAB8[] __asm__("MenuObjSubmodeOffset_DAB8");
+    __asm__(".globl MenuObjWA_DAB8\nMenuObjWA_DAB8 = 0x03001780\n");
+    __asm__(".globl MenuObjModeOffset_DAB8\nMenuObjModeOffset_DAB8 = 0x00000FBC\n");
+    __asm__(".globl MenuObjSubmodeOffset_DAB8\nMenuObjSubmodeOffset_DAB8 = 0x00001078\n");
     u8 *r6 = (u8 *)rec;
-    u8 *wa = (u8 *)(uintptr_t)0x03001780u;
     u8 *tmpl = (u8 *)(uintptr_t)0x082A798Cu;
     u8 *r4 = r6 + 0x24;
     _0800798C(tmpl, r4);
@@ -440,25 +439,37 @@ void MenuObjInit_0DAB8(void *rec) {
     _080075E8(tmpl, 3, 2);
     _0800798C((void *)(uintptr_t)0x082A95E4u, r6 + 0x34);
     *(u32 *)(r6 + 0x44) = (u32)_0800572C(0x10);
-    int cls = -1;
-    switch ((int)(s16)(*(u16 *)(wa + 0xFBC))) {
-    case 0: cls = 7; break;
-    case 1: cls = 6; break;
-    case 2: cls = 8; break;
-    case 3: cls = 5; break;
-    case 4: cls = 1; break;
-    case 5: {
-        int sub = (int)(s16)(*(u16 *)(wa + 0x1078));
-        cls = (sub == 1) ? 0xB : (sub == 2) ? 0xA : 2;
-        break;
+    register u32 cls __asm__("r0");
+    u32 mode_addr = (u32)(uintptr_t)MenuObjWA_DAB8 + (u32)(uintptr_t)MenuObjModeOffset_DAB8;
+    switch ((int)(s16)(*(u16 *)(uintptr_t)mode_addr)) {
+    case 0: cls = 7; goto store_class;
+    case 5: cls = 6; goto store_class;
+    case 1: cls = 8; goto store_class;
+    case 6: cls = 5; goto store_class;
+    case 2: cls = 1; goto store_class;
+    case 7: {
+        u32 sub_addr = (u32)(uintptr_t)MenuObjWA_DAB8 + (u32)(uintptr_t)MenuObjSubmodeOffset_DAB8;
+        int sub = (int)(s16)(*(u16 *)(uintptr_t)sub_addr);
+        if (sub == 1) goto submode_one;
+        if (sub == 2) goto submode_two;
+        cls = 2;
+        goto store_class;
+    submode_one:
+        cls = 0xB;
+        goto store_class;
+    submode_two:
+        cls = 0xA;
+        goto store_class;
     }
-    case 6: cls = 3; break;
-    case 7: cls = 0; break;
-    case 8: cls = 4; break;
-    case 9: cls = 9; break;
-    default: break;
+    case 3: cls = 3; goto store_class;
+    case 8: cls = 0; goto store_class;
+    case 4: cls = 4; goto store_class;
+    case 9: cls = 9; goto store_class;
+    default: goto after_class;
     }
-    if (cls >= 0) *(u32 *)(r6 + 0x48) = (u32)cls;
+store_class:
+    *(u32 *)(r6 + 0x48) = cls;
+after_class:
     _08007ABC((void *)(uintptr_t)*(u32 *)(r6 + 0x38),
               (void *)(uintptr_t)*(u32 *)(r6 + 0x48),
               (int)*(u32 *)(r6 + 0x44));
