@@ -1,7 +1,7 @@
 @ GT Advance 3 - sound driver: per-frame channel walker
-@ Region: file offset 0x02BEB4-0x02C110 (VMA _0802BEB4-0x0802C110).
-@ Pure Thumb channel dispatcher (604 B code + trampoline/pad).
-@ Shares pool at 0x02C110-0x02C118 with pump (08061754 / 03007FF0 / Smsh).
+@ Region: file offset 0x02BEB4-0x02C11C (VMA _0802BEB4-0x0802C11C).
+@ Pure Thumb channel dispatcher and shared pool (604 B code + 12 B literals).
+@ Pool at 0x02C110-0x02C118 is shared with the sample pump (08061754 / 03007FF0 / Smsh).
 @ Disassembled via arm-none-eabi-objdump force-thumb; byte-exact.
 @ Sole runtime pointer: literal word 0x0802BEB5 at 0x02CC30 (sound_alloc).
 @ Caller: none BL (runtime-dispatched)
@@ -337,6 +337,16 @@ _0802C0FC:
 	mov	sl, r2
 	mov	fp, r3
 	pop	{r3}
+.type _0802C10C, %function
 _0802C10C:
 	bx	r3
 	.short 0x0000
+.size _0802C10C, 4
+
+lit_0802C110:
+	.word 0x08061754			@ pitch table base (shared with the walker at BFBE)
+lit_0802C114:
+	.word 0x03007FF0			@ root-ptr cell (shared driver pool)
+lit_0802C118:
+	.word 0x68736D53			@ "Smsh" magic (shared driver pool)
+sound_beb4_end:

@@ -109,18 +109,10 @@ void _080019DBC(void) {
         _080023AC(3, (void *)(uintptr_t)0x08019DDDu);
 }
 
-// _080019CBC / _080019DDC (56 B each, asm/race_setup_18adc.s:2231 / :2364) are
-// Defined in another module, and the reason is measured rather than assumed. Their body
-// is `push {lr}` / `r0 = *(u8 *)0x04000006` / `r1 = 0x03005760` / `movs r2,#10`
-// / `ldrsh r1,[r1,r2]` / `ldrb r0,[r0]` / `cmp r0,r1` / `blt` /... — the limit
-// load is the REGISTER form of LDRSH with the byte offset 10 materialised in
-// r2. `*(s16 *)((u8*)0x03005760 + 10)` makes agbcc fold the offset into an
-// immediate (`ldrh r0,[r0,#10]` + widening pair, 16/56) and a local register
-// pin `register int off __asm__("r2")` uses the register but materialises
-// `movs r2,#0`, i.e. agbcc folds the pinned constant into the address and
-// initialises the pin with the folded value: 54/56, first difference +0x6.
-// The register-form index is an armcc choice this compiler does not reach, so
-// the pair stays unowned until a shape closes that halfword.
+// _080019CBC / _080019DDC (56 B each, asm/race_setup_18adc.s:2231 / :2364)
+// are lifted in race_setup.c. A register-pinned base plus an explicit register
+// LDRSH operand reproduces the ROM's `ldrsh r1,[r1,r2]` with r2=10; both bodies
+// now pass whole-function matching including their literal pools.
 
 // forward decls (lifted in this file)
 void sub_080018F94(void);
@@ -475,18 +467,22 @@ void sub_0800199CC(void)
 // ----------------------------------------------------------------------------
 void sub_080019A2C(int mode)
 {
-    volatile u8 *rc = *(volatile u8 *volatile *)(uintptr_t)0x03004E20u;
-
     _08018AA8(64, 1);
+    volatile u8 *rc = *(volatile u8 *volatile *)(uintptr_t)0x03004E20u;
     *(volatile u16 *)(rc + 72) = (u16)mode;
     *(volatile u16 *)(uintptr_t)0x04000050u = 0x0FDF;
 
-    if (mode == 0) {
+    switch (mode) {
+    case 0:
         *(volatile u16 *)(uintptr_t)0x04000054u = 16;
         *(volatile u16 *)(rc + 74) = 32;
-    } else if (mode == 1) {
+        break;
+    case 1:
         *(volatile u16 *)(uintptr_t)0x04000054u = 0;
         *(volatile u16 *)(rc + 74) = 32;
+        break;
+    default:
+        break;
     }
 }
 
@@ -706,11 +702,10 @@ void Sub_08019AEC(int mode) __attribute__((alias("sub_080019AEC")));
 void _0801992C(void) __attribute__((alias("sub_08001992C")));
 void _080199CC(void) __attribute__((alias("sub_0800199CC")));
 void _08019A2C(int mode) __attribute__((alias("sub_080019A2C")));
+void _080019A2C(int mode) __attribute__((alias("sub_080019A2C")));
 void _08019AEC(int mode) __attribute__((alias("sub_080019AEC")));
-// The closure spells these two with the 9-digit form (0x0800199B0 /
-// 0x0800199CC), which is the spelling a promoted caller uses. The 8-digit
-// aliases above denote the same address but are a different symbol, so a call
-// under the closure spelling stayed undefined and drew a ROM trampoline.
+// The closure uses 9-digit spellings for these entry points, so keep those
+// exact aliases beside the shorter C-facing names above.
 void _0800199B0(void) __attribute__((alias("sub_0800199B0")));
 void _0800199CC(void) __attribute__((alias("sub_0800199CC")));
 #endif

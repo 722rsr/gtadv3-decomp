@@ -50,3 +50,4 @@ _0802CFC2:
 	bx lr
 	.short 0
 _0802CFC8: .word 0x04000079
+sound_hw_mode_end:

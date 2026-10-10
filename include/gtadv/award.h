@@ -11,7 +11,7 @@
 //          asm/award_pkt.s (0x0800B0BC-0x0800B190), asm/award_twins.s (0x0800BA3C-0x0800BC08)
 // Assembly reference: asm/ai_collect.s
 
-void Award_GrantCar(u8 carId);                // _0800B990  (sub_0800B990)
+void Award_GrantCar(int carId);                // _0800B990  (sub_0800B990)
 void Award_GrantThresholdCars(void);          // _0800B9F0  (sub_0800B9F0)
 void Award_BuildTierPacket(void);             // _0800B0BC  (sub_0800B0BC) type-10 packet via _080188B0
 void Award_CopyTwinA(int idx, void *dst0, void *dst1); // _0800BA3C

@@ -402,7 +402,7 @@ void SaveWriteSectors(const void *src, u32 sector, u32 byteSize) {
     extern u8 SaveWrP3[];
     register u8 *p5 __asm__("r5") = (u8 *)src;
     register u32 s8 __asm__("r8") = sector;
-    u32 n = (byteSize + 7) >> 3;
+    register u32 n __asm__("r4") = (byteSize + 7) >> 3;
     u32 retries = 0;
     *(volatile u16 *)SaveWrIME = 0;
     sub_080029D8();
@@ -420,33 +420,29 @@ void SaveWriteSectors(const void *src, u32 sector, u32 byteSize) {
     {
         register u32 rem __asm__("r6") = n;
         do {
-            int w = sub_0802DC54((u16)(u32)p5, s8);
+            u32 sec16 = (u16)s8;
+            int w = sub_0802DC54(sec16, (u32)p5);
             if ((u16)w != 0) {
                 retries += 1;
-                if ((s32)retries > 10)
-                    sub_0800295C((u32)SaveWrP2, (u32)(u16)w);
-            } else {
-                int v = sub_0802DD30((u16)(u32)p5, s8);
+                if ((s32)retries <= 10)
+                    goto retry;
+                sub_0800295C((u32)SaveWrP2, (u32)(u16)w);
+            }
+            {
+                int v = sub_0802DD30(sec16, (u32)p5);
                 if ((u16)v != 0) {
                     retries += 1;
-                    if ((s32)retries > 10)
-                        sub_0800295C((u32)SaveWrP3, (u32)(u16)v);
-                } else {
-                    p5 += 8;
-                    s8 += 1;
-                    rem -= 1;
+                    if ((s32)retries <= 10)
+                        goto retry;
+                    sub_0800295C((u32)SaveWrP3, (u32)(u16)v);
                 }
             }
+            p5 += 8;
+            s8 += 1;
+            rem -= 1;
+        retry:
             if ((s32)rem == 0)
                 break;
-            // retry path: do not advance; loop again
-            // NOTE: ROM retries by re-executing without advancing, via the
-            // trailing cmp/bne on rem; the C must not decrement on failure.
-            // The above if/else advances only on full success; on failure rem
-            // is unchanged so the loop repeats. To match the ROM's exact
-            // branch shape (beq skip-panic, ble skip-panic, bne loop) the
-            // retry counters and advances must stay in this nesting.
-            (void)0;
         } while (1);
     }
 done:

@@ -58,7 +58,7 @@ void _0802B368(u16 vol);              // was SoundDeferredVol; the closure spell
 void SoundSetSecVol(u16 v);           // _0802B384
 void SoundApplySecVol(void);          // _0802B3A4
 bool SoundIsBankPlaying(u32 bank);    // _0802B3B8
-void SoundSetSongSpeed(u16 a, u16 b); // _0802B418
+void SoundSetSongSpeed(u32 a, u32 b); // _0802B418
 void SoundReapplySpeedA(void);        // _0802B44C
 void SoundReapplySpeedB(void);        // _0802B460
 void SoundReapplySpeedC(void);        // _0802B474

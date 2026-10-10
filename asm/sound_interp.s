@@ -93,3 +93,4 @@ _0802CF6E:
 	bx r1
 _0802CF74: .word 0x0806166C
 _0802CF78: .word 0x080616F0
+sound_interp_end:

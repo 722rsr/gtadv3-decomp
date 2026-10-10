@@ -10,17 +10,59 @@ extern void GuardedFullSave(void); // 0x08024B70
 extern void ScenePost(int a,int b); // 0x08002618
 extern void EventPost(void *list, int id); // 0x08025BF0 (ROM shape (P,S): [list+4] = s16[0x080CD830 + id*20])
 extern void EventBind(void *a, int b, int c); // 0x08007ABC (ROM shape: 3 reg args (void*,int,int),)
+#ifndef __APPLE__
+extern void sub_08025BF0(void *list, int id);
+extern void sub_08007ABC(void *a, int b, int c);
+#define REC35_POST sub_08025BF0
+#define REC35_BIND sub_08007ABC
+#else
+#define REC35_POST EventPost
+#define REC35_BIND EventBind
+#endif
 
+// The phase is an ordinary IWRAM halfword (ldrsh). EventBind receives the
+// posted node stored at ctx+0xA0, not the address of that pointer cell.
+// A switch preserves the case-1 pivot followed by signed bounds checks;
+// an if/range expression instead introduces an unsigned subtract-and-compare.
+// The section alignment restores the ROM's trailing zero halfword.
 void Rec35_HelperA(void *ctx){
-    s16 phase = *(volatile s16 *)((u8*)ctx + 0x94);
-    if (phase==1){ EventPost((void *)((u8*)ctx+0xA0),9); EventBind(*(void**)((u8*)ctx+12), (int)(uintptr_t)*(void**)((u8*)ctx+0xA4), (int)(uintptr_t)((u8*)ctx+0xA0)); }
-    else if (phase>=2 && phase<=3){ EventPost((void *)((u8*)ctx+0xA0),10); EventBind(*(void**)((u8*)ctx+12), (int)(uintptr_t)*(void**)((u8*)ctx+0xA4), (int)(uintptr_t)((u8*)ctx+0xA0)); }
+    s16 phase = *(s16 *)((u8 *)ctx + 0x94);
+    switch (phase) {
+    case 1:
+        REC35_POST((u8 *)ctx + 0xA0, 9);
+        REC35_BIND(*(void **)((u8 *)ctx + 12),
+                   (int)(uintptr_t)*(void **)((u8 *)ctx + 0xA4),
+                   (int)*(u32 *)((u8 *)ctx + 0xA0));
+        break;
+    case 2:
+    case 3:
+        REC35_POST((u8 *)ctx + 0xA0, 10);
+        REC35_BIND(*(void **)((u8 *)ctx + 12),
+                   (int)(uintptr_t)*(void **)((u8 *)ctx + 0xA4),
+                   (int)*(u32 *)((u8 *)ctx + 0xA0));
+        break;
+    }
 }
+__asm__(".align 2, 0");
 void Rec35_HelperB(void *ctx){
-    s16 phase = *(volatile s16 *)((u8*)ctx + 0x96);
-    if (phase==1){ EventPost((void *)((u8*)ctx+0xA0),17); EventBind(*(void**)((u8*)ctx+12), (int)(uintptr_t)*(void**)((u8*)ctx+0xA4), (int)(uintptr_t)((u8*)ctx+0xA0)); }
-    else if (phase>=2 && phase<=3){ EventPost((void *)((u8*)ctx+0xA0),18); EventBind(*(void**)((u8*)ctx+12), (int)(uintptr_t)*(void**)((u8*)ctx+0xA4), (int)(uintptr_t)((u8*)ctx+0xA0)); }
+    s16 phase = *(s16 *)((u8 *)ctx + 0x96);
+    switch (phase) {
+    case 1:
+        REC35_POST((u8 *)ctx + 0xA0, 17);
+        REC35_BIND(*(void **)((u8 *)ctx + 12),
+                   (int)(uintptr_t)*(void **)((u8 *)ctx + 0xA4),
+                   (int)*(u32 *)((u8 *)ctx + 0xA0));
+        break;
+    case 2:
+    case 3:
+        REC35_POST((u8 *)ctx + 0xA0, 18);
+        REC35_BIND(*(void **)((u8 *)ctx + 12),
+                   (int)(uintptr_t)*(void **)((u8 *)ctx + 0xA4),
+                   (int)*(u32 *)((u8 *)ctx + 0xA0));
+        break;
+    }
 }
+__asm__(".align 2, 0");
 
 void Rec35_StageA(void *ctx){
     s16 ph = *(volatile s16 *)((u8*)ctx + 0x94);

@@ -117,3 +117,4 @@ _08015EC8:
 	pop {r0}
 	bx r0
 	.short 0x0000           @ armcc pad halfword
+rec35_helper_end:

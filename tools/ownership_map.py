@@ -69,7 +69,7 @@ SOURCE_RANGE_OVERRIDES: dict[str, list[tuple[int, int]]] = {
 # They are reconstructed source, not raw ROM bytes, but have no standalone
 # region banner of their own.
 INLINE_SOURCE_RANGES: dict[str, list[tuple[int, int]]] = {
-    "asm/passthrough.inc": [(0x2BC62, 0x2BC64), (0x2C110, 0x2C11C)],
+    "asm/passthrough.inc": [(0x2BC62, 0x2BC64)],
 }
 
 # Source files that intentionally own no code range: they exist to carry a

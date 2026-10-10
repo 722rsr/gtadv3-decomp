@@ -631,14 +631,8 @@ sub_08026F30:
 	.include "sound_channel_cluster.s"
 @@ converted region 0x02BE78-0x02BEB4 :
 	.include "sound_pump.s"
-@@ converted region 0x02BEB4-0x02C110 (per-frame channel walker, pure Thumb, shares pool):
+@@ converted region 0x02BEB4-0x02C11C (per-frame channel walker and shared pool):
 	.include "sound_beb4.s"
-lit_0802C110:
-	.word 0x08061754			@ pitch table base (shared pool, referenced at BFBE)
-lit_0802C114:
-	.word 0x03007FF0			@ root-ptr cell (shared driver pool)
-lit_0802C118:
-	.word 0x68736D53			@ "Smsh" magic (shared driver pool)
 	@@ converted region 0x02C11C-0x02C160 :
 	.include "sound_c11c.s"
 	.thumb

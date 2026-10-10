@@ -8,10 +8,10 @@
 // IWRAM 0x03001780+0xFF2/0xFF6/0x0FD0..0x0FD8/0x0FC2/0x1076/0x1078 and the
 // ROM record tables 0x080CC078..0x080CC168. Transcribed instruction-faithful
 // from the byte-exact asm; register names kept in comments where the mapping
-// is non-obvious. armcc fall-through entries (0x08022240/0x08022438 inside
-// 0x08022348's body, 0x08022C2C inside the tail dispatcher's) are separate
-// entries — they are external BL targets (xref.py: 0x02239E→0x08022240,
-// 0x02254C→0x08022438).
+// is non-obvious. armcc fall-through entries 0x08022240/0x08022438 inside
+// 0x08022348's body are external BL targets (xref.py: 0x02239E→0x08022240,
+// 0x02254C→0x08022438). The 0x08022C2C label is the tail dispatcher's in-body
+// `mov pc,r0` instruction.
 //
 // Builder _08007B18 ABI (asm/course_resource_leaf_more.s): 4 reg args
 // (rec, dst, idx, sel) + 3 stack words (a4..a6) read at [sp,#60/64/68]
@@ -48,6 +48,7 @@ extern void _0802E0A4(void *dst, const void *src, u32 n); // RuntimeMemcpy
 extern void _08004BFC(int v);
 extern void _08004EC0(int v);
 extern int  _0800572C(int n);                       // save-alloc
+extern void Gap_021C94_Select(void *ctx, void *rec);
 // Call-site split. asm/save_alloc.s binds `sub_0800572C` at 0x0800572C (see the
 // note in src/ai_award_leaves.c, which records the same rename), and a
 // promoted body is spliced into a link where only the closure spelling is
@@ -57,6 +58,9 @@ extern int  _0800572C(int n);                       // save-alloc
 #ifndef __APPLE__
 #define PV_CALLEE(friendly, closure) closure
 extern int sub_0800572C(int n);
+extern void sub_080021C94(void *ctx, void *rec);
+extern void sub_080021DC0(void *rec, int r1, u32 v);
+extern void sub_08002205C(void *rec);
 #else
 #define PV_CALLEE(friendly, closure) friendly
 #endif
@@ -64,7 +68,7 @@ extern void _08007664(void *a, void *b, int c);     // course resource setup
 extern u8 RaceVM_WA[];
 
 // ---- forward decls (this cluster) ------------------------------------------
-void RaceVM_021CC0(void);
+void RaceVM_021CC0(void *rec);
 void RaceVM_021CC4(void *rec);
 void RaceVM_021DC0(void *rec, int r1, u32 v);
 void RaceVM_021F14(void *rec, int x, int y);
@@ -87,9 +91,10 @@ void RaceVM_022624(void *rec, int r1, u32 v);
 void RaceVM_0226D4(void *rec, int r1, u32 v);
 void RaceVM_022750(void *rec, int x, int y);
 void RaceVM_0227C0(void *rec);
+void RaceVM_021A4(u32 ev, u32 p1, u32 p2, void *p3);
 void RaceVM_02285C(u32 ev, u32 p1, u32 p2, void *p3);
 void RaceVM_0228F8(void *ctx, void *rec);
-void RaceVM_02291C(void);
+void RaceVM_02291C(void *rec);
 void RaceVM_022920(void *rec);
 void RaceVM_022A14(void *rec, int r1, u32 v);
 void RaceVM_022ACC(void *rec, int r1, u32 v);
@@ -98,7 +103,7 @@ void RaceVM_022B48(void *rec, int x, int y);
 void sub_080022B48(void *rec, int x, int y);
 #endif
 void RaceVM_022BBC(void *rec);
-void RaceVM_022C2C(u32 ev, u32 p1, u32 p2, void *p3);
+void RaceVM_022C18(u32 ev, u32 p1, u32 p2, void *p3);
 int  RaceVM_026068(int i);
 
 // ============================================================================
@@ -113,11 +118,11 @@ int sub_08026068(int a) __attribute__((alias("RaceVM_026068")));
 
 // ============================================================================
 // sub_080021CC0 (0x080021CC0, 2 B) — `bx lr` no-op leaf (dispatcher slot 6).
-void RaceVM_021CC0(void) {}
+void RaceVM_021CC0(void *rec) { (void)rec; }
 __asm__(".align 2, 0");
 #ifndef __APPLE__
-void _080021CC0(void) __attribute__((alias("RaceVM_021CC0")));
-void sub_080021CC0(void) __attribute__((alias("RaceVM_021CC0")));
+void _080021CC0(void *rec) __attribute__((alias("RaceVM_021CC0")));
+void sub_080021CC0(void *rec) __attribute__((alias("RaceVM_021CC0")));
 #endif
 
 // ============================================================================
@@ -887,6 +892,34 @@ void sub_0800227C0(void *a) __attribute__((alias("RaceVM_0227C0")));
 #endif
 
 // ============================================================================
+// _0800221A4 — parallel 12-way phase dispatcher (1-based table): 1->021CC4,
+// 2->021C94, 5->D854+D8E4, 6->u16[rec+12]!=0 ->021DC0, 7->02205C,
+// 12->021CC0. Slots 3/4/8/9/10/11 exit.
+void RaceVM_021A4(u32 ev, u32 p1, u32 p2, void *p3) {
+    if (ev == 0 || ev > 12) return;
+    switch (ev) {
+        // Keep the armcc case layout: 2, 5, 7, 6, 1, 12.
+        case 2: PV_CALLEE(Gap_021C94_Select, sub_080021C94)(p3, (void *)(uintptr_t)p1); break;
+        case 5: _0800D854((u8 *)p3 + 8); _0800D8E4((u8 *)p3 + 112); break;
+        case 7: PV_CALLEE(RaceVM_02205C, sub_08002205C)(p3); break;
+        case 6:
+            if (*(volatile u16 *)((u8 *)p3 + 12) != 0)
+                PV_CALLEE(RaceVM_021DC0, sub_080021DC0)(p3, (int)(u16)p1, (u16)p2);
+            break;
+        case 1: RaceVM_021CC4(p3); break;
+        case 12: RaceVM_021CC0(p3); break;
+        default: break;
+    }
+}
+// The ROM pads this dispatcher to its next 4-byte boundary with 0x0000.
+// agbcc's function section uses 0x46C0 by default, so preserve the literal
+// Thumb alignment halfword in this section.
+__asm__(".pushsection .text.RaceVM_021A4,\"ax\",%progbits\n\t.align 2, 0\n\t.popsection");
+#ifndef __APPLE__
+void _0800221A4(u32 ev, u32 p1, u32 p2, void *p3) __attribute__((alias("RaceVM_021A4")));
+#endif
+
+// ============================================================================
 // sub_08002285C (0x08002285C, 0x98 B) — 12-way event dispatcher (1-based
 // table at 0x08022878, pool base 0x08022874; slots 3/4/8/9/10/11 = exit):
 // 1→02247C (ctor), 2→022454 (setter), 5→D854+D8E4, 6→u16[+12]!=0 → 022624,
@@ -956,11 +989,11 @@ void sub_0800228F8(void *a, void *b) __attribute__((alias("RaceVM_0228F8")));
 
 // ============================================================================
 // sub_08002291C (0x08002291C, 2 B) — `bx lr` no-op leaf (tail slot 12).
-void RaceVM_02291C(void) {}
+void RaceVM_02291C(void *rec) { (void)rec; }
 __asm__(".align 2, 0");
 #ifndef __APPLE__
-void _08002291C(void) __attribute__((alias("RaceVM_02291C")));
-void sub_08002291C(void) __attribute__((alias("RaceVM_02291C")));
+void _08002291C(void *rec) __attribute__((alias("RaceVM_02291C")));
+void sub_08002291C(void *rec) __attribute__((alias("RaceVM_02291C")));
 #endif
 
 // ============================================================================
@@ -1152,29 +1185,32 @@ void sub_080022BBC(void *a) __attribute__((alias("RaceVM_022BBC")));
 #endif
 
 // ============================================================================
-// tail dispatcher (unlabeled continuation after the 0x08022BBC pool; 12-way
+// _080022C18 (0x080022C18, 0x9C B) — tail dispatcher (12-way
 // 1-based table, pool base word → 0x08022C34; slots 3/4/8..11 = exit): twin
 // of 0x02285C over the 0x08022xxx family — 1→022920 (ctor), 2→0228F8
 // (setter), 5→D854+D8E4, 6→u16[+12]!=0 → 022A14, 7→022BBC (paint),
 // 12→02291C (noop).
-void RaceVM_022C2C(u32 ev, u32 p1, u32 p2, void *p3) {
+void RaceVM_022C18(u32 ev, u32 p1, u32 p2, void *p3) {
     if (ev == 0 || ev > 12) return;
     switch (ev) {
-        case 1: RaceVM_022920(p3); break;
-        case 2: RaceVM_0228F8((void *)p3, (void *)(uintptr_t)p1); break;
+        // armcc laid the case bodies out in source order 2, 5, 7, 6, 1, 12.
+        case 2: PV_CALLEE(RaceVM_0228F8, sub_0800228F8)((void *)p3, (void *)(uintptr_t)p1); break;
         case 5: _0800D854((u8 *)p3 + 8); _0800D8E4((u8 *)p3 + 112); break;
+        case 7: PV_CALLEE(RaceVM_022BBC, sub_080022BBC)(p3); break;
         case 6:
             if (*(volatile u16 *)((u8 *)p3 + 12) != 0) {
-                RaceVM_022A14(p3, (int)(u16)p1, (u16)p2);
+                PV_CALLEE(RaceVM_022A14, sub_080022A14)(p3, (int)(u16)p1, (u16)p2);
             }
             break;
-        case 7: RaceVM_022BBC(p3); break;
-        case 12: RaceVM_02291C(); break;
+        case 1: PV_CALLEE(RaceVM_022920, sub_080022920)(p3); break;
+        case 12: PV_CALLEE(RaceVM_02291C, sub_08002291C)(p3); break;
         default: break;
     }
 }
+// Match the ROM's zero Thumb alignment halfword after the return.
+__asm__(".pushsection .text.RaceVM_022C18,\"ax\",%progbits\n\t.align 2, 0\n\t.popsection");
 #ifndef __APPLE__
-void _080022C2C(u32 a, u32 b, u32 c, void *d) __attribute__((alias("RaceVM_022C2C")));
+void _080022C18(u32 a, u32 b, u32 c, void *d) __attribute__((alias("RaceVM_022C18")));
 #endif
 
 // ============================================================================

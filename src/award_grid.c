@@ -1,28 +1,28 @@
 #include "gtadv/award.h"
-#include "gtadv/memory.h"
+#include "gtadv/callee.h"
 
-// asm/award_grid.s 0x0800B9F0 — counts completed cells (value 3) over ids 0..31 via 0x08025E1C per id,
-// then grants cars 51/78/89/26 at thresholds 7/15/23/31.
-
-// Extern contract for cell reader at 0x08025E1C: int sub_08025E1C(int id) returns u8 0..3 (low byte)
-__attribute__((weak)) int Sub_08025E1C(int id){ (void)id; return 0; }
-
-extern void Award_GrantCar(u8 id);
+// asm/award_grid.s 0x0800B9F0: count completed cells (low byte == 3)
+// across ids 0..31, then grant cars at completed counts 8, 16, 24, and 32.
+#ifndef __APPLE__
+extern int sub_08025E1C(int id);
+extern void _0800B990(int id);
+#endif
 
 void Award_GrantThresholdCars(void) {
     int cnt = 0;
-    for (int i = 0; i <= 31; i++) {
-        int v = Sub_08025E1C(i);
-        v = (v << 24) >> 24; // lsls #24 / lsrs #24 normalize as in asm
-        v &= 0xFF;
-        if (v == 3) cnt++;
+    int idx = 0;
+    for (; idx <= 31; idx++) {
+        if ((u8)CALLEE(Ai_GridGetPacked, sub_08025E1C)(idx) == 3) cnt++;
     }
-    if (cnt > 7)  Award_GrantCar(51);
-    if (cnt > 15) Award_GrantCar(78);
-    if (cnt > 23) Award_GrantCar(89);
-    if (cnt > 31) Award_GrantCar(26);
+    if (cnt > 7)  CALLEE(Award_GrantCar, _0800B990)(51);
+    if (cnt > 15) CALLEE(Award_GrantCar, _0800B990)(78);
+    if (cnt > 23) CALLEE(Award_GrantCar, _0800B990)(89);
+    if (cnt > 31) CALLEE(Award_GrantCar, _0800B990)(26);
 }
+// The ROM ends with a zero halfword, not gas's default Thumb nop fill.
+__asm__(".align 2, 0");
 
 #ifndef __APPLE__
 void _0800B9F0(void) __attribute__((alias("Award_GrantThresholdCars")));
+void sub_0800B9F0(void) __attribute__((alias("Award_GrantThresholdCars")));
 #endif

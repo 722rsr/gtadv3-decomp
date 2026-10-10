@@ -66,6 +66,8 @@ extern int Div(int a, int b);            // sub_0802D978 (bios_wrappers.c)
 extern int DivRem(int a, int b);         // sub_0802D97C
 extern int MathAbs(int v);               // 0x08005B5C (foundation_math.c)
 extern void MathRot(void *p, int angle); // 0x08005BA8
+extern int _08005B5C(int v);
+extern void sub_08005BA8(void *p, int angle);
 extern void CpuFastSet(const void *src, void *dst, u32 mode); // bios_wrappers.c (swi 0x0C)
 extern int TimeStr_03D4C(int val, volatile u8 *buf);  // defined below in this file
 extern int TimeStr_03E34(int val, volatile u8 *buf);
@@ -1065,6 +1067,22 @@ int GlyphAdvance_03B18(int a)
     tbl = GlyphAdvTbl;
     return *(s16 *)(tbl + ((u32)a << 1)) - 1;
 }
+// 0x08003B2C — return the first glyph index whose signed advance equals a+1.
+int GlyphIndex_03B2C(int a)
+{
+    int i = 0;
+    int want = a + 1;
+    s16 *entry = (s16 *)0x080C49A0u;
+    while (i <= 255) {
+        if (*entry != want) {
+            entry++;
+            i++;
+        } else {
+            return i;
+        }
+    }
+    return 0;
+}
 // 0x08003B34 — first index i in 0..255 with s16[0x080C49A0 + i*2] == a+1, else 0
 int GlyphIndex_03B34(int a)
 {
@@ -1077,6 +1095,8 @@ int GlyphIndex_03B34(int a)
 }
 #ifndef __APPLE__
 int sub_08003B18(int a) __attribute__((alias("GlyphAdvance_03B18")));
+int _08003B2C(int a) __attribute__((alias("GlyphIndex_03B2C")));
+int sub_08003B2C(int a) __attribute__((alias("GlyphIndex_03B2C")));
 int sub_08003B34(int a) __attribute__((alias("GlyphIndex_03B34")));
 #endif
 
@@ -1146,8 +1166,22 @@ void ObjFixed_03C58(int a0, u32 a1)
     a0 -= (int)table_at(8);
     ObjList_03350(2, (u32)a0, a1, 0, base, 1);
 }
+
+// 0x08003C48 — place one numeric glyph using the shared lane correction.
+void ObjDigit_03C48(int a0, u32 a1, int digit)
+{
+    u8 buf[16];
+    volatile u32 *table;
+    buf[0] = (u8)(digit + 48);
+    buf[1] = 0;
+    table = (volatile u32 *)(uintptr_t)0x080C4BA0u;
+    a0 -= (int)table[2];
+    ObjList_03350(2, (u32)a0, a1, 0, buf, 1);
+}
 #ifndef __APPLE__
 void sub_08003C58(int a, u32 b) __attribute__((alias("ObjFixed_03C58")));
+void sub_08003C48(int a, u32 b, int digit) __attribute__((alias("ObjDigit_03C48")));
+void _08003C48(int a, u32 b, int digit) __attribute__((alias("ObjDigit_03C48")));
 #endif
 
 // ----------------------------------------------------------------------------
@@ -1528,35 +1562,85 @@ void sub_080040E4(u32 a, u32 b) __attribute__((alias("SpriteInit_040E4")));
 void sub_080040F8(void) __attribute__((alias("SpriteUpdate_040F8")));
 #endif
 
-// 0x08004124 — for every slot with used != 0 and id == arg: used = 0.
-void SpriteHideAll_04124(u16 id)
+// 0x08004128 — clear the used halfword for every slot whose signed id matches.
+void SpriteHideAll_04128(u32 id)
 {
-    volatile u32 *t = (volatile u32 *)(uintptr_t)0x03000178;
-    volatile u8 *p = (volatile u8 *)(uintptr_t)t[0];
-    s16 want = (s16)id;
-    for (u32 i = 0; i < t[1]; i++, p += 16) {
-        if (*(volatile u16 *)(p + 2) != 0 && *(volatile s16 *)p == want)
-            *(volatile u16 *)(p + 2) = 0;
-    }
+#ifndef __APPLE__
+    register u32 key __asm__("r4") = (u16)id;
+    register s32 key_shift __asm__("r0");
+    register volatile u32 *state __asm__("r3") =
+        (volatile u32 *)(uintptr_t)0x03000178u;
+    register volatile u8 *slot __asm__("r1");
+    register s32 i __asm__("r2");
+    register u16 zero __asm__("r5");
+#else
+    u32 key = (u16)id;
+    volatile u32 *state = (volatile u32 *)(uintptr_t)0x03000178u;
+    volatile u8 *slot;
+    s32 i;
+    u16 zero;
+#endif
+    s32 count;
+    slot = (volatile u8 *)(uintptr_t)state[0];
+    i = 0;
+    count = (s32)state[1];
+    if (i >= count)
+        return;
+#ifndef __APPLE__
+    __asm__ volatile("lsl %0, %1, #16\n\tasr %1, %0, #16"
+                     : "=r"(key_shift), "+r"(key) : : "cc");
+#else
+    key = (s16)key;
+#endif
+    zero = 0;
+    do {
+        s32 current;
+#ifndef __APPLE__
+        __asm__ volatile("movs r6, #0\n\tldrsh %0, [%1, r6]"
+                         : "=r"(current) : "r"(slot) : "r6", "memory");
+#else
+        current = *(volatile s16 *)slot;
+#endif
+        if (current == (s32)key)
+            *(volatile u16 *)(slot + 2) = zero;
+        i++;
+        slot += 16;
+        count = (s32)state[1];
+    } while (i < count);
 }
 #ifndef __APPLE__
-void sub_08004124(u16 a) __attribute__((alias("SpriteHideAll_04124")));
+void sub_08004128(u32 a) __attribute__((alias("SpriteHideAll_04128")));
+void _08004128(u32 a) __attribute__((alias("SpriteHideAll_04128")));
 #endif
 
-// 0x08004158 — alloc: p = find; p.used = 1; p.id = arg0; p.a = arg1; p.b = arg2.
-void SpriteAlloc_04158(u16 id, u32 a1, u32 a2)
+// 0x08004160 — allocate the first free sprite slot and store all three fields.
+void SpriteAlloc_04160(u16 id, u32 a1, u32 a2)
 {
+#ifndef __APPLE__
+    extern volatile u8 *sub_080040BC(void);
+    volatile u8 *p = sub_080040BC();
+#else
     volatile u8 *p = SpriteFind_040BC();
-    if (!p)
-        return;
+#endif
     *(volatile u16 *)(p + 2) = 1;
     *(volatile u16 *)p = id;
     *(volatile u32 *)(p + 4) = a1;
     *(volatile u32 *)(p + 8) = a2;
 }
 #ifndef __APPLE__
-void sub_08004158(u16 a, u32 b, u32 c) __attribute__((alias("SpriteAlloc_04158")));
+void sub_08004160(u16 a, u32 b, u32 c) __attribute__((alias("SpriteAlloc_04160")));
+void _08004160(u16 a, u32 b, u32 c) __attribute__((alias("SpriteAlloc_04160")));
 #endif
+
+// 0x08004560 — intentional empty hook retained as a typed ROM entry.
+void HudHook_04560(void)
+{
+}
+#ifndef __APPLE__
+void sub_08004560(void) __attribute__((alias("HudHook_04560")));
+void _08004560(void) __attribute__((alias("HudHook_04560")));
+#endif
+__asm__(".align 2, 0");
 
 // 0x08004180 — free id: for each used slot with matching id, call the
 // re0x0802DDCC (bx r1) with r0 = slot.b, r1 = slot.a.
@@ -1889,6 +1973,65 @@ static int track_proj(volatile u32 *out, s32 sx, s32 sy, s32 sz, uintptr_t strip
     (void)sz;
     return 1;
 }
+int TrackProjectObject_04758(volatile u8 *obj)
+{
+    register volatile u32 *cam __asm__("r4") =
+        (volatile u32 *)(uintptr_t)0x03000188;
+    s32 point[2];
+    s32 dx = (s32)*(volatile s32 *)(obj + 4) - (s32)cam[0];
+    point[0] = dx;
+    if (RM_CALLEE(MathAbs, _08005B5C)(dx) > (192 << 9))
+        return 0;
+    s32 dy = (s32)*(volatile s32 *)(obj + 8) - (s32)cam[1];
+    point[1] = dy;
+    if (RM_CALLEE(MathAbs, _08005B5C)(dy) > (192 << 9))
+        return 0;
+    register s32 angleBase __asm__("r0") = 0x800;
+    __asm__ volatile("" : "+r"(angleBase));
+    register s32 angle __asm__("r1") = angleBase;
+    __asm__ volatile("" : "+r"(angle) : : "memory");
+    __asm__ volatile("ldrh r4, [r4, #8]" : "+r"(cam) : : "memory");
+    angle -= (s32)(uintptr_t)cam;
+    register s32 angleMask __asm__("r2") = 0xFFF;
+    __asm__ volatile("" : "+r"(angleMask));
+    register s32 angleMaskValue __asm__("r0") = angleMask;
+    __asm__ volatile("" : "+r"(angleMaskValue) : : "memory");
+    angle &= angleMaskValue;
+    RM_CALLEE(MathRot, sub_08005BA8)(point, angle);
+    register s32 y __asm__("r6") = point[1];
+    register s32 rowBias __asm__("r3") = (s32)0xFFFFE890;
+    __asm__ volatile("" : "+r"(rowBias) : : "memory");
+    register s32 row __asm__("r1") = y + rowBias;
+    if ((u32)row > 0x00015BA8u)
+        return 0;
+    register s32 y8 __asm__("r3") = y << 3;
+    __asm__ volatile("" : "+r"(y8) : : "memory");
+    register s32 x __asm__("r2") = point[0];
+    register s32 x8 __asm__("r0") = x << 3;
+    register s32 x7 __asm__("r1") = x8 - x;
+    register s32 clip __asm__("r0") = y8 - x7;
+    if (clip < 0)
+        return 0;
+    clip = -y8 - x7;
+    if (clip > 0)
+        return 0;
+    register s32 col __asm__("r1") = y >> 8;
+    register s32 tableOffset __asm__("r4") = col * 6;
+    __asm__ volatile("" : "+r"(tableOffset) : : "memory");
+    register uintptr_t tableBase __asm__("r0") = 0x080C53E4u;
+    __asm__ volatile("" : "+r"(tableBase) : : "memory");
+    register const u8 *record __asm__("r4") =
+        (const u8 *)(tableOffset + tableBase);
+    *(volatile u16 *)(obj + 54) = *(const u16 *)record;
+    record += 2;
+    *(volatile s32 *)(obj + 48) = *(const s16 *)record;
+    record += 2;
+    *(volatile s32 *)(obj + 44) = col;
+    *(volatile s32 *)(obj + 36) = 120 + sub_0802DE04(-180 * x, y);
+    *(volatile s32 *)(obj + 40) = *(const s16 *)record;
+    return 1;
+}
+__asm__(".align 2, 0");
 int TrackProj_04760(volatile u32 *out, int a0, int a1, int a2)
 {
     return track_proj(out, a0, a1, a2, 0x080C53E4);
@@ -1906,6 +2049,8 @@ int sub_08004508(volatile u32 *a) __attribute__((alias("TrackDigit_04508")));
 int _08004508(volatile u32 *a) __attribute__((alias("TrackDigit_04508")));
 int sub_080044C4(int a, int b, volatile u32 *c) __attribute__((alias("TrackArrow_044C4")));
 int _080044C4(int a, int b, volatile u32 *c) __attribute__((alias("TrackArrow_044C4")));
+int _08004758(volatile u8 *obj) __attribute__((alias("TrackProjectObject_04758")));
+int sub_08004758(volatile u8 *obj) __attribute__((alias("TrackProjectObject_04758")));
 int sub_08004760(volatile u32 *a, int b, int c, int d) __attribute__((alias("TrackProj_04760")));
 int sub_08004818(volatile u32 *a, volatile u32 *b) __attribute__((alias("TrackProj_04818")));
 #endif

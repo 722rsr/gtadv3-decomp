@@ -58,6 +58,10 @@ INCLUDE = [ROOT / "include", ROOT / "asm", ROOT / "build/toolchains/agbcc/ginclu
 OPTS = ("-O1", "-O2", "-Os")
 ROM_BASE = 0x08000000
 CODE_END = 0x0802E158
+EXPLICIT_SIZE_RE = re.compile(
+    r"^\s*\.size\s+([A-Za-z_][A-Za-z_0-9]*)\s*,\s*(0[xX][0-9A-Fa-f]+|[0-9]+)\s*(?:[@#].*)?$",
+    re.M,
+)
 
 # ---------------------------------------------------------------------------
 # Translation-unit compile cache.
@@ -411,7 +415,9 @@ def _rom_functions_scan() -> dict[int, int]:
     belongs to. An independently typed or called entry exactly two bytes later
     is different: the earlier entry can be a one-instruction prefix that falls
     through into a shared tail, and extending it across the next entry makes
-    those two bodies overlap.
+    those two bodies overlap. A numeric `.size NAME, N` in assembly pins an
+    intentional shorter boundary, such as a veneer followed by a shared literal
+    pool; the explicit size must still fit before the next known entry.
     """
     # Reuse the project's stronger function inventory: typed entry labels and
     # labels with real BL callers. Typed-only scanning misses short untyped
@@ -429,12 +435,30 @@ def _rom_functions_scan() -> dict[int, int]:
     # `known <= sourced` check instead -- see self_test.
     starts = {ROM_BASE + int(v, 16) for values in module.asm_vmas(str(ROOT / "asm")).values()
               for v in values}
+    explicit_sizes: dict[int, int] = {}
+    for asm_path in sorted(Path(ROOT / "asm").glob("*.s")) + sorted(Path(ROOT / "asm").glob("*.inc")):
+        for match in EXPLICIT_SIZE_RE.finditer(asm_path.read_text(encoding="utf-8")):
+            vma = parse_vma_name(match.group(1))
+            if vma is not None:
+                size = int(match.group(2), 0)
+                if vma in explicit_sizes and explicit_sizes[vma] != size:
+                    raise RuntimeError(f"conflicting explicit sizes at {vma:#010x}")
+                explicit_sizes[vma] = size
     ordered = sorted(starts)
     spans: dict[int, int] = {}
     for i, vma in enumerate(ordered):
         end = ordered[i + 1] if i + 1 < len(ordered) else CODE_END
         minimum = 2 if end == vma + 2 else 4
-        spans[vma] = max(end, vma + minimum)
+        inferred_end = max(end, vma + minimum)
+        explicit_size = explicit_sizes.get(vma)
+        if explicit_size is not None:
+            explicit_end = vma + explicit_size
+            if explicit_size < minimum or explicit_end > inferred_end:
+                raise RuntimeError(
+                    f"explicit size {explicit_size} at {vma:#010x} conflicts with next entry {end:#010x}"
+                )
+            inferred_end = explicit_end
+        spans[vma] = inferred_end
     return spans
 
 
@@ -1269,9 +1293,7 @@ def self_test() -> int:
           rom_functions().get(0x0802BCE8) == 0x0802BCEA)
     check("adjacent validator entry keeps its 2-byte prefix span",
           rom_functions().get(0x0802BCCC) == 0x0802BCCE)
-    # A `known` interior branch point is reached by `bl` but is not a function:
-    # 0x0802C10C is `bx r3` and must not be given a candidate. The register
-    # branch veneers at 0x0802DDC8..0x0802DDEC used to be treated as having no C
+    # The register branch veneers at 0x0802DDC8..0x0802DDEC used to be treated as having no C
     # bodies. They now have exact naked C definitions in runtime_state_dispatch.c
     # (verified through the C89 path), so they are ordinary promoted candidates
     # and must not remain in this exemption set. 0x0802BCCE USED to be listed
@@ -1288,7 +1310,9 @@ def self_test() -> int:
     # silently exempted" check below is what caught it: promoting them made the
     # two classifications contradict each other, which is the only reason a
     # stale exemption ever announces itself.
-    NO_C_BODY = {0x0802C10C}
+    # 0x0802C10C is a standalone `bx r3` function. Its explicit four-byte
+    # .size keeps the following shared literal pool outside the body span.
+    NO_C_BODY: set[int] = set()
     known = set(rom_functions())
     sourced = {entry[2] for entry in src_functions()}
     # Pin the BL_RE fix itself: a numeric `bl 0x0800XXXX` operand must reach the

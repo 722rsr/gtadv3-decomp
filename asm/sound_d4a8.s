@@ -61,3 +61,4 @@ _0802D500:
 	pop {r0}
 	bx r0
 _0802D50C: .word 0x68736D53
+sound_d4a8_end:

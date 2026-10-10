@@ -44,6 +44,8 @@ extern void sub_0802B214(int v);
 // 'D1_CALLEE' under __APPLE__" -- the check exists for exactly this.
 #ifndef __APPLE__
 #define D1_CALLEE(friendly, closure) closure
+extern void sub_08001F764(volatile u8 *rec, u16 b, u16 c);
+extern void sub_08001F6A0(void *rec);
 #else
 #define D1_CALLEE(friendly, closure) friendly
 #endif
@@ -73,6 +75,7 @@ HOST_STUB(void _0800D77C(void *a, int b, int c));                              /
 HOST_STUB(void _0800D9A4(void *a, int b, int c));                              // 0x0800D9A4 grid paint
 HOST_STUB(void _0800DAB8(void *p));                                            // 0x0800DAB8 obj init
 HOST_STUB(void _0800D854(void *p));                                            // 0x0800D854 record tick
+HOST_STUB(void _08001F6A0(void *rec));                                         // 0x08001F6A0 no-op table slot
 HOST_STUB(void _0800DBE8(void *p));                                            // 0x0800DBE8 record setup
 HOST_STUB(void _0800D95C(void *dst, const void *src, int n));                  // 0x0800D95C memcpy
 HOST_STUB(void _08001EB48(int a0, void *rec));                                 // 0x08001EB48 (race_scene_c.c)
@@ -729,3 +732,29 @@ void _08001FBD8(void *rec_) {
     a = a + 8u;
     _0800D95C((void *)base, (const void *)a, 3);
 }
+
+// ----------------------------------------------------------------------------
+// _08001F95C — 12-way scene event dispatcher, 1-based event table:
+// 1->F6A4, 2->F668, 5->D854(rec+16), 6->F764 when u16[rec+20]!=0,
+// 7->F918, 12->F6A0. Slots 3/4/8/9/10/11 exit.
+void RaceSceneD1_Dispatch_1F95C(u32 ev, u32 p1, u32 p2, void *p3) {
+    if (ev == 0 || ev > 12) return;
+    switch (ev) {
+        // Preserve the ROM's case block order: 2, 5, 7, 6, 1, 12.
+        case 2: D1_CALLEE(_08001F668, sub_08001F668)((int)p3, (void *)(uintptr_t)p1); break;
+        case 5: _0800D854((u8 *)p3 + 16); break;
+        case 7: D1_CALLEE(_08001F918, sub_08001F918)((volatile u8 *)p3); break;
+        case 6:
+            if (*(volatile u16 *)((u8 *)p3 + 20) != 0)
+                D1_CALLEE(_08001F764, sub_08001F764)((volatile u8 *)p3, (u16)p1, (u16)p2);
+            break;
+        case 1: _08001F6A4(p3); break;
+        case 12: D1_CALLEE(_08001F6A0, sub_08001F6A0)(p3); break;
+        default: break;
+    }
+}
+// ROM uses 0x0000 for the halfword that aligns the next function.
+__asm__(".align 2, 0");
+#ifndef __APPLE__
+void _08001F95C(u32 ev, u32 p1, u32 p2, void *p3) __attribute__((alias("RaceSceneD1_Dispatch_1F95C")));
+#endif

@@ -45,3 +45,4 @@ _0800BA34:
 	pop {r0}
 	bx r0
 	.short 0x0000
+award_grid_end:

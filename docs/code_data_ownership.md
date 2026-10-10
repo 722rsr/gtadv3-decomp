@@ -236,7 +236,7 @@ has already been replaced by C; C-lift coverage remains a separate gate.
 | `asm/menu_record_update.s` | `0x00BCD4..0x00BD40` |
 | `asm/menu_setup.s` | `0x00BC08..0x00BCD4` |
 | `asm/mixer_2b888.s` | `0x02B888..0x02BC28` |
-| `asm/passthrough.inc` | `0x02BC62..0x02BC64`<br>`0x02C110..0x02C11C` |
+| `asm/passthrough.inc` | `0x02BC62..0x02BC64` |
 | `asm/race_cluster.s` | `0x01A008..0x01A204` |
 | `asm/race_dispatch.s` | `0x00B190..0x00B4A8` |
 | `asm/race_progress.s` | `0x00AD84..0x00B0BC` |
@@ -266,7 +266,7 @@ has already been replaced by C; C-lift coverage remains a separate gate.
 | `asm/sound_alloc.s` | `0x02CBBC..0x02CC34` |
 | `asm/sound_api.s` | `0x02B04C..0x02B488` |
 | `asm/sound_bank.s` | `0x02B488..0x02B66C` |
-| `asm/sound_beb4.s` | `0x02BEB4..0x02C110` |
+| `asm/sound_beb4.s` | `0x02BEB4..0x02C11C` |
 | `asm/sound_c11c.s` | `0x02C11C..0x02C160` |
 | `asm/sound_channel_cluster.s` | `0x02BC84..0x02BE78` |
 | `asm/sound_cmd.s` | `0x02CB20..0x02CB84` |

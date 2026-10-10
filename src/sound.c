@@ -405,17 +405,34 @@ void _0802B30C(u8 s) __attribute__((alias("SoundFadeOut")));
 #ifndef __APPLE__
 void sub_0802B30C(u8 s) __attribute__((alias("SoundFadeOut")));
 #endif
+// Keep the 8/4 flag tests separate: combining them folds away the ROM's
+// second test. The work-area fields are ordinary loads through a live pointer
+// cell. Unsigned subtraction truncates to u16 before the signed return.
 s16 SoundFadeRemaining(void){
-    volatile SoundMaster *m = soundMaster();
-    if (m->masterVol==0xFF) return 0;
-    u8 f = m->flags;
-    if ((f & 8) || (f & 4)){
-        s16 t = (s16)m->fadeTarget;
-        s16 c = (s16)m->fadeCur;
-        return (s16)(t - c);
+    u32 result = 0;
+    u8 *m;
+    u32 flags;
+    u32 mask;
+    u32 target;
+    u32 cur;
+    m = *(u8 *volatile *)SOUND_MASTER_PTR;
+    if (m[9] == 255) return 0;
+    flags = m[8];
+    mask = 8;
+    mask &= flags;
+    if (mask == 0) {
+        mask = 4;
+        mask &= flags;
+        if (mask == 0) goto end;
     }
-    return 0;
+    target = *(u16 *)m;
+    cur = *(u16 *)(m + 2);
+    mask = target - cur;
+    result = (u16)mask;
+end:
+    return (s16)result;
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 s16 _0802B330(void) __attribute__((alias("SoundFadeRemaining")));
 #endif
@@ -486,18 +503,36 @@ bool Sub_0802B3B8(u32 b) __attribute__((alias("SoundIsBankPlaying")));
 #ifndef __APPLE__
 bool sub_0802B3B8(u32 b) __attribute__((alias("SoundIsBankPlaying")));
 #endif
-void SoundSetSongSpeed(u16 a, u16 b){
-    SoundMaster *m = soundMaster();
-    u32 off = (u32)a + (u32)b*98 + 0x080613B8u;
-    u8 v = *(volatile u8 *)off;
-    m->songSpeed = (u8)(v + 24);
-    sub_0802B64C(m->songSpeed);
+// Both lookup indices are signed halfwords in the ROM, not unsigned u16.
+// Load the table before sign-extension; after the store, reload the live
+// master cell into a separate local so the apply call sees its current value.
+void SoundSetSongSpeed(u32 a, u32 b){
+    u8 *volatile *cell = (u8 *volatile *)SOUND_MASTER_PTR;
+    u8 *m;
+    u8 *tbl;
+    s32 x, y;
+    u32 v;
+    m = *cell;
+    tbl = (u8 *)0x080613B8u;
+    __asm__("" : "+r"(tbl));
+    x = (s16)a;
+    y = (s16)b;
+    y *= 98;
+    x += y;
+    x += (uintptr_t)tbl;
+    v = *(u8 *)(uintptr_t)x;
+    v += 24;
+    m[13] = (u8)v;
+    {
+        u8 *current = *cell;
+        sub_0802B64C(current[13]);
+    }
 }
 #ifndef __APPLE__
-void _0802B418(u16 a, u16 b) __attribute__((alias("SoundSetSongSpeed")));
+void _0802B418(u32 a, u32 b) __attribute__((alias("SoundSetSongSpeed")));
 #endif
 #ifndef __APPLE__
-void sub_0802B418(u16 a, u16 b) __attribute__((alias("SoundSetSongSpeed")));
+void sub_0802B418(u32 a, u32 b) __attribute__((alias("SoundSetSongSpeed")));
 #endif
 void SoundReapplySpeedA(void){ volatile SoundMaster *m=soundMaster(); sub_0802B65C(m->songSpeed); }
 #ifndef __APPLE__
@@ -556,7 +591,7 @@ void _08002B280(void) __attribute__((alias("SoundResume")));
 void _08002B30C(u8 step) __attribute__((alias("SoundFadeOut")));
 void _08002B368(u16 vol) __attribute__((alias("_0802B368")));
 void _08002B3A4(void) __attribute__((alias("SoundApplySecVol")));
-void _08002B418(u16 a, u16 b) __attribute__((alias("SoundSetSongSpeed")));
+void _08002B418(u32 a, u32 b) __attribute__((alias("SoundSetSongSpeed")));
 void _08002B44C(void) __attribute__((alias("SoundReapplySpeedA")));
 void _08002B460(void) __attribute__((alias("SoundReapplySpeedB")));
 void _08002B474(void) __attribute__((alias("SoundReapplySpeedC")));

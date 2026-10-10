@@ -318,34 +318,69 @@ void _0800821C(void)
 // >15 and rolls it back otherwise); then three halfword constants through
 // literal pools:
 //   u16[0x04000134] = 0        (pool 0x08000F74)
-//   u16[0x04000128] = 0x0003   (pool 0x08000F7C, via r3=0x04000000 + 0x128)
+//   u16[0x04000128] = 0x2003   (pool 0x08000F7C)
 //   u16[0x0400012A] = 0        (pool 0x08000F80)
-// ROM: `strh r1,[r0,#0]` with r0 = pool 0x08000F78 word = 0x04000134;
-// `strh r0,[r2,#0]` with r2 = 0x04000134 pool... decoded from the slice dump:
-// pools are (0x04000134, 0x04000128, 0x0003, 0x0400012A).
+// Independent symbol bases keep all four pools instead of deriving one MMIO
+// address from another. The control word is loaded into r3 then copied to r0;
+// the empty constraint prevents constant rematerialization across that copy.
+#ifndef __APPLE__
+extern u8 SerialResetMode[], SerialMultiCtl[], SerialModeCtl[], SerialSend[];
+#endif
 void RecReset_0F48(void *rec) {
+#ifndef __APPLE__
+    register u8 *b __asm__("r2") = (u8 *)rec;
+    register u32 v __asm__("r3");
+#else
     u8 *b = (u8 *)rec;
-    int z = 0;
-    u32 w = 0x2003u;
-    u8 *t = b;
-    u32 mmio;
-    u32 base;
-    b[30] = 0; b[24] = 0; b[29] = 0;
+    u32 v;
+#endif
+    u32 z = 0;
+    u8 *t;
+    u8 *tail;
+    volatile u16 *port;
+    volatile u16 *single;
+    b[30] = (u8)z;
+    b[24] = (u8)z;
+    b[29] = (u8)z;
     t = b;
     t += 74;
     *t = 15;
-    base = (u32)b;
-    b = (u8 *)base;
-    b += 72;
-    *b = (u8)z;
-    *(u16 *)((u8 *)base + 22) = (u16)z;
-    mmio = 0x04000134u;
-    *(volatile u16 *)mmio = (u16)z;
-    mmio = 0x04000128u;
-    base = w;
-    *(volatile u16 *)mmio = (u16)base;
-    mmio = 0x0400012Au;
-    *(volatile u16 *)mmio = (u16)z;
+    tail = b;
+    tail += 72;
+    *tail = (u8)z;
+    *(u16 *)(b + 22) = (u16)z;
+#ifndef __APPLE__
+    __asm__(".globl SerialMultiCtl\nSerialMultiCtl = 0x04000134\n"
+            ".globl SerialModeCtl\nSerialModeCtl = 0x04000128\n"
+            ".globl SerialSend\nSerialSend = 0x0400012A\n");
+    single = (volatile u16 *)SerialMultiCtl;
+#else
+    single = (volatile u16 *)0x04000134u;
+#endif
+    *single = (u16)z;
+#ifndef __APPLE__
+    port = (volatile u16 *)SerialModeCtl;
+    __asm__(".globl SerialResetMode\nSerialResetMode = 0x2003\n");
+    v = (uintptr_t)SerialResetMode;
+#else
+    port = (volatile u16 *)0x04000128u;
+    v = 0x2003u;
+#endif
+    __asm__("" : "+r"(v));
+    {
+#ifndef __APPLE__
+        register u32 output __asm__("r0") = v;
+#else
+        u32 output = v;
+#endif
+        *port = (u16)output;
+    }
+#ifndef __APPLE__
+    single = (volatile u16 *)SerialSend;
+#else
+    single = (volatile u16 *)0x0400012Au;
+#endif
+    *single = (u16)z;
 }
 #ifndef __APPLE__
 void _08000F48(void *p) __attribute__((alias("RecReset_0F48")));

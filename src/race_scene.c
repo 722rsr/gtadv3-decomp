@@ -500,11 +500,11 @@ __asm__(".align 2, 0");
 void _08001EBA4(void) __attribute__((alias("Race_Scene_BxLr_1EBA4")));
 void sub_08001F6A0(void) __attribute__((alias("Race_Scene_BxLr_1F6A0")));
 #endif
-void Race_Scene_BxLr_1F6A0(void) {}
+void Race_Scene_BxLr_1F6A0(void *rec) { (void)rec; }
 __asm__(".align 2, 0");
 #ifndef __APPLE__
 void sub_080020878(void) __attribute__((alias("Race_Scene_BxLr_20878")));
-void _08001F6A0(void) __attribute__((alias("Race_Scene_BxLr_1F6A0")));
+void _08001F6A0(void *rec) __attribute__((alias("Race_Scene_BxLr_1F6A0")));
 #endif
 void Race_Scene_BxLr_20878(void) {}
 __asm__(".align 2, 0");

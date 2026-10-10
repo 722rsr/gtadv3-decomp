@@ -69,3 +69,4 @@ _0800B9E4_lit_1:
 	.word 0x00001058
 _0800B9E4_lit_2:
 	.word 0x0000103C
+car_award_end:

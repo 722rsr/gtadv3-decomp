@@ -2062,3 +2062,4 @@ _080022CAC:
 	pop	{r0}
 	bx	r0
 	.hword 0x0000
+.Lcarphys_racer_tail_end_22cb4:

@@ -106,46 +106,53 @@ void Course_StreamRow(void) {
     // _08006678: surface row-streamer. Lifted directly from the ROM bytes at
     // 0x08006678-0x080068D4: x = u32 at 0x0203F8C0 + 8*cursor, y = u32 at +4
     // (the ROM bumps ONE record base by 4 rather than naming a second array),
-    // destBase = 0x06004000 + ((x<<4)&0x70) + (((y<<4)&0x70)<<7), w/h from
-    // the header at 0x0203F760 (+8/+10, u16). In range -> 16 unrolled CpuSet
-    // copies of ctrl 0x04000004 from 0x02000000 + (x<<4) + (y<<4)*w stepping
-    // src += w, dst += 0x80; out of range -> 16 unrolled CpuSet fills of ctrl
-    // 0x01000008 from a 32-byte zeroed stack scratch. Both arms run the call
-    // through _0802D974 (the promoted CpuSet alias), NOT the local
-    // CpuSetWrapper: the ROM branches to 0x0802D974, so a C wrapper body here
-    // left the relocations unresolved.
+    // destBase = 0x06004000 + ((x<<4)&0x70) + (((y<<4)&0x70)<<7), w/h via
+    // the header-pointer chain rooted at 0x0203F760 (+8/+10, u16). In range
+    // -> 16 unrolled CpuSet copies of ctrl 0x04000004 from 0x02000000 +
+    // (x<<4) + (y<<4)*w stepping src += w, dst += 0x80; out of range -> 16
+    // unrolled CpuSet fills of ctrl 0x01000008 from a 32-byte zeroed stack
+    // scratch. Both arms run the call through _0802D974 (the promoted CpuSet
+    // alias), NOT the local CpuSetWrapper: the ROM branches to 0x0802D974, so
+    // a C wrapper body here left the relocations unresolved.
     // Bounds compare is the ROM's four-deep nest with no else clauses
     // (bge/bgt forward to the next test, plain `b` to the fill arm), so the
     // nesting below is load-bearing, not stylistic.
-    // The register pins below are load-bearing and encode the ROM's own
-    // allocation at 0x08006678: the record base in r2, advanced by an explicit
-    // `rec += 4` (a second array literal becomes a second pool word instead),
-    // x4/y4 in r3/r4, dst in r6, and the cursor pointer pinned so agbcc emits
-    // the ROM's `movs rN,#0` + register-indirect `ldrsh` pair rather than
-    // ldrh+lsls+asr. xb/xb2 pin the inner address sums: as literals agbcc
-    // reassociates each three-term sum to (var + const) + var, but the ROM
-    // builds the constant half first and only then adds the variable half.
+    // The register pins below encode the ROM's allocation at 0x08006678:
+    // cursor offset in r0, record base in r2, x/y values in r3/r4, mask and
+    // address terms in r0-r2, destination in r6, and CpuSet control in r5.
+    // The VRAM base is an assembler symbol so agbcc emits the pool load and
+    // ADD from the ROM instead of folding disjoint bits into OR instructions.
     register u32 rec __asm__("r2") = EWRAM_REC_X_ARRAY;
-    register volatile u8 *curp __asm__("r0") = (volatile u8 *)EWRAM_STREAM_CURSOR;
-    u32 off = (u32)(s16)*(s16 *)curp << 3;
-    register s32 x4 __asm__("r3") = (s32)(*(volatile u32 *)(rec + off)) << 4;
+    register u32 off __asm__("r0") = (u32)(s16)*(s16 *)(uintptr_t)EWRAM_STREAM_CURSOR << 3;
+    register u32 x __asm__("r1") = *(volatile u32 *)(uintptr_t)(off + rec);
+    register s32 x4 __asm__("r3") = (s32)x << 4;
+    register u32 y __asm__("r0");
     register s32 y4 __asm__("r4");
     rec += 4;
-    y4 = (s32)(*(volatile u32 *)(rec + off)) << 4;
-    u32 ypart = ((u32)y4 & 0x70u) << 7;
-    register u32 xb __asm__("r1") = ((u32)x4 & 0x70u) + VRAM_TILE_BASE;
-    register u32 dst __asm__("r6") = ypart + xb;
+    y = *(volatile u32 *)(uintptr_t)(off + rec);
+    y4 = (s32)y << 4;
+    extern const u8 CourseVramBase[];
+    __asm__(".globl CourseVramBase\nCourseVramBase = 0x06004000\n");
+    register u32 mask __asm__("r1") = 0x70;
+    register u32 ypart __asm__("r2") = ((u32)y4 & mask) << 7;
+    register u32 xpart __asm__("r0") = (u32)x4 & mask;
+    xpart += (u32)(uintptr_t)CourseVramBase;
+    register u32 dst __asm__("r6") = ypart + xpart;
     volatile u32 *hp = (volatile u32 *)EWRAM_ROOT_PTR_ADDR;
-    u32 w = *(volatile u16 *)(*(volatile u32 *)hp + SURFACE_HEADER_W_OFF);
-    u32 h = *(volatile u16 *)(*(volatile u32 *)hp + SURFACE_HEADER_H_OFF);
-    u32 ctrl;
+    register u32 header __asm__("r0") = *(volatile u32 *)(uintptr_t)*hp;
+    u32 w;
+    // Keep the width load's destination live through both bounds and row-stride use.
+    __asm__ volatile("ldrh %0, [%1, #8]" : "=r"(w) : "r"(header) : "memory");
+    u32 h = *(volatile u16 *)(uintptr_t)(header + SURFACE_HEADER_H_OFF);
+    register u32 ctrl __asm__("r5");
 
     if (x4 >= 0) {
         if (y4 >= 0) {
             if ((s32)w > x4) {
                 if ((s32)h > y4) {
-                    register u32 xb2 __asm__("r1") = (u32)x4 + EWRAM_SURFACE_MAP;
-                    u32 src = (u32)y4 * w + xb2;
+                    u32 row = (u32)y4 * w;
+                    register u32 xb2 __asm__("r0") = (u32)x4 + EWRAM_SURFACE_MAP;
+                    u32 src = row + xb2;
                     ctrl = 0x04000004u;
                     _0802D974((void *)src, (void *)dst, ctrl); src += w; dst += 0x80;
                     _0802D974((void *)src, (void *)dst, ctrl); src += w; dst += 0x80;
@@ -170,23 +177,22 @@ void Course_StreamRow(void) {
     }
     {
         u16 scratch[16];
-        ctrl = 0x01000008u;
-        scratch[0] = 0; _0802D974((void *)&scratch[0], (void *)dst, ctrl); dst += 0x80;
-        scratch[1] = 0; _0802D974((void *)&scratch[1], (void *)dst, ctrl); dst += 0x80;
-        scratch[2] = 0; _0802D974((void *)&scratch[2], (void *)dst, ctrl); dst += 0x80;
-        scratch[3] = 0; _0802D974((void *)&scratch[3], (void *)dst, ctrl); dst += 0x80;
-        scratch[4] = 0; _0802D974((void *)&scratch[4], (void *)dst, ctrl); dst += 0x80;
-        scratch[5] = 0; _0802D974((void *)&scratch[5], (void *)dst, ctrl); dst += 0x80;
-        scratch[6] = 0; _0802D974((void *)&scratch[6], (void *)dst, ctrl); dst += 0x80;
-        scratch[7] = 0; _0802D974((void *)&scratch[7], (void *)dst, ctrl); dst += 0x80;
-        scratch[8] = 0; _0802D974((void *)&scratch[8], (void *)dst, ctrl); dst += 0x80;
-        scratch[9] = 0; _0802D974((void *)&scratch[9], (void *)dst, ctrl); dst += 0x80;
-        scratch[10] = 0; _0802D974((void *)&scratch[10], (void *)dst, ctrl); dst += 0x80;
-        scratch[11] = 0; _0802D974((void *)&scratch[11], (void *)dst, ctrl); dst += 0x80;
-        scratch[12] = 0; _0802D974((void *)&scratch[12], (void *)dst, ctrl); dst += 0x80;
-        scratch[13] = 0; _0802D974((void *)&scratch[13], (void *)dst, ctrl); dst += 0x80;
-        scratch[14] = 0; _0802D974((void *)&scratch[14], (void *)dst, ctrl); dst += 0x80;
-        scratch[15] = 0; _0802D974((void *)&scratch[15], (void *)dst, ctrl); dst += 0x80;
+        { u16 *p = &scratch[0]; *p = 0; ctrl = 0x01000008u; _0802D974((void *)p, (void *)dst, ctrl); } dst += 0x80;
+        { u16 *p = &scratch[1]; *p = 0; _0802D974((void *)p, (void *)dst, ctrl); } dst += 0x80;
+        { u16 *p = &scratch[2]; *p = 0; _0802D974((void *)p, (void *)dst, ctrl); } dst += 0x80;
+        { u16 *p = &scratch[3]; *p = 0; _0802D974((void *)p, (void *)dst, ctrl); } dst += 0x80;
+        { u16 *p = &scratch[4]; *p = 0; _0802D974((void *)p, (void *)dst, ctrl); } dst += 0x80;
+        { u16 *p = &scratch[5]; *p = 0; _0802D974((void *)p, (void *)dst, ctrl); } dst += 0x80;
+        { u16 *p = &scratch[6]; *p = 0; _0802D974((void *)p, (void *)dst, ctrl); } dst += 0x80;
+        { u16 *p = &scratch[7]; *p = 0; _0802D974((void *)p, (void *)dst, ctrl); } dst += 0x80;
+        { u16 *p = &scratch[8]; *p = 0; _0802D974((void *)p, (void *)dst, ctrl); } dst += 0x80;
+        { u16 *p = &scratch[9]; *p = 0; _0802D974((void *)p, (void *)dst, ctrl); } dst += 0x80;
+        { u16 *p = &scratch[10]; *p = 0; _0802D974((void *)p, (void *)dst, ctrl); } dst += 0x80;
+        { u16 *p = &scratch[11]; *p = 0; _0802D974((void *)p, (void *)dst, ctrl); } dst += 0x80;
+        { u16 *p = &scratch[12]; *p = 0; _0802D974((void *)p, (void *)dst, ctrl); } dst += 0x80;
+        { u16 *p = &scratch[13]; *p = 0; _0802D974((void *)p, (void *)dst, ctrl); } dst += 0x80;
+        { u16 *p = &scratch[14]; *p = 0; _0802D974((void *)p, (void *)dst, ctrl); } dst += 0x80;
+        { u16 *p = &scratch[15]; *p = 0; _0802D974((void *)p, (void *)dst, ctrl); } dst += 0x80;
     }
 done:
     *(volatile s16 *)EWRAM_STREAM_CURSOR =
