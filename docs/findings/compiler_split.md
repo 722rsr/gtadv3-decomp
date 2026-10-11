@@ -5,6 +5,14 @@ The matching tools use `build/toolchains/agbcc/old_agbcc` with
 `agbcc` binary come from the pinned `pret/agbcc` build supplied by
 `make toolchain`.
 
+`src/runtime_memset.c` is the one translation-unit exception: its ROM body ends
+with `pop {r4,r5,pc}`, which `old_agbcc` emits with `-mno-thumb-interwork`.
+Keeping that ABI choice isolated preserves the default interworking behavior
+for every other source file. The explicit `.align 2, 0` after the function
+reproduces its zero halfword before the next ROM symbol. The shared profile is
+defined in `tools/agbcc_options.py`; the assembly boundary is in
+`asm/runtime_mem.s`.
+
 ## Conditional leaves
 
 For a leaf with conditional control flow, the comparison `agbcc` binary adds

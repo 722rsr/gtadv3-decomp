@@ -3,48 +3,30 @@
 #include "gba/regs.h"
 #include "gba/bios.h"
 
-// runtime_mem.s — memcpy / memset behavioral C (Thumb helpers 0x0802E0A4/0x0802E104)
-void RuntimeMemcpy(void *dst, const void *src, u32 n) {
-    // Use word-aligned fast path when possible, else byte copy — matches asm logic
-    u8 *d = (u8*)dst; const u8 *s = (const u8*)src;
-    if (n>=16 && (((uintptr_t)d | (uintptr_t)s) & 3)==0) {
-        u32 words = n/4;
-        u32 *dw=(u32*)d; const u32 *sw=(const u32*)s;
-        while(words--) *dw++=*sw++;
-        d=(u8*)dw; s=(const u8*)sw; n&=3;
-    }
-    while(n--) *d++=*s++;
-}
-#ifndef __APPLE__
-void _08002E0A4(void *a,const void *b,u32 c) __attribute__((alias("RuntimeMemcpy")));
-void Sub_08002E0A4(void *a,const void *b,u32 c) __attribute__((alias("RuntimeMemcpy")));
-void _0802E0A4(void *a,const void *b,u32 c) __attribute__((alias("RuntimeMemcpy")));
-void sub_0802E0A4(void *a,const void *b,u32 c) __attribute__((alias("RuntimeMemcpy")));
-#endif
-void RuntimeMemset(void *dst, int c, u32 n) {
-    u8 *d=(u8*)dst; u8 v=(u8)c;
-    if (n>=4 && ((uintptr_t)d &3)==0) {
-        u32 fill = v | (v<<8) | (v<<16) | (v<<24);
-        u32 *dw=(u32*)d;
-        while(n>=4){ *dw++=fill; n-=4; }
-        d=(u8*)dw;
-    }
-    while(n--) *d++=v;
-}
-#ifndef __APPLE__
-void _08002E104(void *a,int b,u32 c) __attribute__((alias("RuntimeMemset")));
-#endif
-
 // runtime_2aac.s — IRQ/DISPSTAT + placement helpers (summary, behavioral)
 // The full 4KB span contains ~100 small placement math leaves; we provide
 // the architecturally relevant ones plus stubs for the rest that keep linking.
 
-void RuntimeIrqConfig(void) { // _08002AAC
-    // serial unit 0x96 check, IE=5, DISPSTAT=0x2838, GamePak IRQ enable
-    // Behavioral: set DISPSTAT, IE, IME as in asm/agbmain.s
-    REG_DISPSTAT = 0x2838;
-    REG_IE = 5;
-    REG_IME = 1;
+// 0x08002AAC: enable VBlank/VCount IRQs, and GamePak IRQ only when the
+// cartridge fixed byte and game-code word match. This routine does not
+// write IME; its final DISPSTAT value is 0x3828, not 0x2838.
+void RuntimeIrqConfig(void) {
+    register volatile u16 *ie __asm__("r3") = (volatile u16 *)0x04000200u;
+    *ie = 5;
+    if (*(const u8 *)0x080000B2u == 150) {
+        register const u32 *codep __asm__("r0") = (const u32 *)0x080000ACu;
+        register const u32 *expectedp __asm__("r1") = (const u32 *)0x0802E1FCu;
+        // Materialize both addresses before either word is fetched, as in
+        // the ROM's ldr r0 / ldr r1 / ldr r2,[r0] / ldr r0,[r1].
+        __asm__("" : : "r"(codep), "r"(expectedp));
+        u32 code = *codep;
+        u32 expected = *expectedp;
+        if (code == expected) {
+            register u32 flags __asm__("r0") = *ie;
+            *ie = flags | 8192;
+        }
+    }
+    *(volatile u16 *)0x04000004u = 0x3828;
 }
 #ifndef __APPLE__
 void _08002AAC(void) __attribute__((alias("RuntimeIrqConfig")));
@@ -105,43 +87,80 @@ void _08002C60(int a, u32 b, u32 c) __attribute__((alias("Store_02C60")));
 //   e (r0 of the _08002C34(e, place) call), f (<<3 table index into 0x080C4940),
 //   g (loop count; 0 skips), h (<<10 into [place+4]), i (<<10 into sl for [place]),
 //   j (u16 [place+12]). Per-iteration: a += (s8)[tbl+6], c += (s16)[tbl+4].
-// The _08002BFC arg is dead (ROM overwrites r0 with [0x03000150] before use),
-// so the C passes 0. Replaces the old 6-arg RecordSetter_02ED0 model, which
-// mislabeled the args (02BFC took dst, 02C34 took (place, dst)) and dropped
-// the last four stack words.
+// The allocator's r0 argument is dead. Its no-argument assembler-name
+// declaration below preserves the ROM call without an extra movs r0,#0.
+// The table index is word-wide; the ROM does not truncate it to s16.
 void EmitPlace_02ED0(void *a, int b, int c, int d, int e, int f, int g, int h, int i, int j);
 #ifndef __APPLE__
 void _08002ED0(void *a, int b, int c, int d, int e, int f, int g, int h, int i, int j) __attribute__((alias("EmitPlace_02ED0")));
 void sub_08002ED0(void *a, int b, int c, int d, int e, int f, int g, int h, int i, int j) __attribute__((alias("EmitPlace_02ED0")));
 void Sub_08002ED0(void *a, int b, int c, int d, int e, int f, int g, int h, int i, int j) __attribute__((alias("EmitPlace_02ED0")));
 #endif
-void EmitPlace_02ED0(void *a, int b, int c, int d, int e, int f, int g, int h, int i, int j) {
-    // 0x02ED0: table 0x080C4940 + (s16 f<<3), loop g times, high-reg r8/r9/sl spill, volatile halfwords
-    // (table address inline: the ROM has no helper call here).
-    volatile u8 *tbl = (volatile u8 *)(uintptr_t)(0x080C4940u + ((s32)(s16)f << 3));
-    s16 head4 = (s16)(tbl[4] | ((u32)tbl[5] << 8));
-    if (g == 0) return;
-    u32 r9 = (u32)b & 255u;
-    s32 r8 = (s32)head4;
-    u32 r7 = (u32)(uintptr_t)a;
-    u32 r6 = (u32)c;
-    u32 sl = (u32)i << 10;
-    for (int n = 0; n < g; n++) {
+void EmitPlace_02ED0(void *base,int id,int z,int y,int idx,int row,int count,int bank,int shape,int clear) {
+    typedef struct { u16 attr0, attr1, advance; s8 dx; u8 pad; } EmitRow;
+    typedef struct { u16 attr0, attr1, attr2, pad; u32 next; u16 clear; } EmitObj;
+#ifndef __APPLE__
+    // Retain the assembly's interior label at the first stack-argument load.
+    __asm__(".global _08002EE4\n.set _08002EE4, EmitPlace_02ED0 + 20");
+#endif
+    int x = (int)(uintptr_t)base;
+    register int incoming __asm__("ip") = id;
+    register int tile __asm__("r6") = z;
+    volatile int depth = y;
+    __asm__("" : : "m"(row), "m"(count), "m"(bank), "m"(shape), "m"(clear) : "memory");
+    int rowindex = row;
+    __asm__("" : "+r"(rowindex));
+    register int remaining __asm__("r5") = count;
+    register u32 shapearg __asm__("r2") = shape;
+    const EmitRow *tbl = (const EmitRow *)(0x080C4940u + ((u32)rowindex << 3));
+    register u32 shapebits __asm__("sl") = shapearg << 10;
+    u16 advance = tbl->advance;
+    if (remaining == 0) return;
+    register u32 ybits __asm__("r9") = (u32)incoming & 255;
+    register int step __asm__("r8") = (s16)advance;
+    do {
+        extern void _08002C34(int,void *);
+#ifndef __APPLE__
+        extern void *EmitAllocate_02ED0(void) __asm__("_08002BFC");
+        EmitObj *obj = (EmitObj *)EmitAllocate_02ED0();
+#else
         extern void *_08002BFC(int);
-        void *place = _08002BFC(0);
-        // ldrh [r4+0]/[r4+2] u16, orr with sl/r9 and masked r7
-        s16 v0 = (s16)(tbl[0] | ((u32)tbl[1] << 8));
-        s16 v2 = (s16)(tbl[2] | ((u32)tbl[3] << 8));
-        *(volatile u16 *)place = (u16)(sl | (u32)(u16)v0 | r9);
-        *(volatile u16 *)((u8 *)place + 2) = (u16)((r7 & 0x1FFu) | (u32)(u16)v2);
-        // lsls d,#12 / orr r6 / orr (h<<10) for +4 halfword
-        *(volatile u16 *)((u8 *)place + 4) = (u16)(((u32)d << 12) | r6 | ((u32)h << 10));
-        *(volatile u16 *)((u8 *)place + 12) = (u16)j;
-        extern void _08002C34(int, void *);
-        _08002C34(e, place);
-        r7 = (u32)((s32)r7 + (s32)(s8)tbl[6]);
-        r6 = (u32)((s32)r6 + r8);
-    }
+        EmitObj *obj = (EmitObj *)_08002BFC(0);
+#endif
+        u32 attr0 = shapebits;
+        __asm__("" : "+r"(attr0));
+        register u32 tableattr __asm__("r3") = tbl->attr0;
+        obj->attr0 = attr0 | tableattr | ybits;
+        // The ROM loads the mask in r3, copies it to r2, then masks r0.
+        register u32 mask __asm__("r3") = 511;
+        register u32 maskcopy __asm__("r2") = mask;
+        __asm__("" : "+r"(maskcopy) : "r"(mask));
+        obj->attr1 = ((u32)x & maskcopy) | tbl->attr1;
+        register u32 d __asm__("r3") = depth;
+        register u32 bits __asm__("r0") = (d << 12) | (u32)tile;
+        __asm__("" : : "r"(d));
+        register u32 bankarg __asm__("r3") = bank;
+        __asm__("" : : "r"(bankarg));
+        register u32 bankfield __asm__("r2") = bankarg << 10;
+        bits |= bankfield;
+        __asm__("" : "+r"(bits));
+        obj->attr2 = bits;
+#ifndef __APPLE__
+        // Hardware ABI contract: the ROM reads only the low halfword of
+        // the tenth caller word at sp+56 after its fixed 36-byte frame.
+        // A normal cast emits a word load; &clear emits add sp,#56 instead
+        // of the ROM's mov r0,sp / ldrh r0,[r0,#56]. Byte gates cover the
+        // frame size and this exact access independently of the host model.
+        register const struct { u8 pad[56]; u16 clear; } *frame __asm__("sp");
+        __asm__("" : "=r"(frame));
+        obj->clear = frame->clear;
+#else
+        obj->clear = (u16)clear;
+#endif
+        _08002C34(idx,obj);
+        x += tbl->dx;
+        tile += step;
+    } while (--remaining != 0);
 }
 void RecordSetter_02F68(int x,int id,int y,int z,int idx,int row,int count);
 #ifndef __APPLE__
@@ -310,35 +329,49 @@ void Insert_02C34(int idx, void *node){
 void _08002C34(int a, void *b) __attribute__((alias("Insert_02C34")));
 #endif
 
-void Helper_02DB8(void *base,int id,int z,int y,int idx,int row,int count){
-    // 0x02DB8: 7-arg OAM emitter over table 0x080C4940 + (row<<3), do-while count.
-    //   r8 = (s16)u16[tbl+4];  per iteration:
-    //     obj = _08002BFC;
-    //     attr0 = (id & 0xFF) | u16[tbl+0]
-    //     attr2 = (base & 0x1FF) | u16[tbl+2]
-    //     attr4 = (y << 12) | z
-    //     attr12 = 0;  _08002C34(idx, obj)
-    //     base += s8[tbl+6]; z += r8
-    volatile u8 *tbl=(volatile u8*)(uintptr_t)(0x080C4940u + ((u32)row<<3));
-    if(count==0) return;
-    s16 r8=(s16)*(volatile u16*)(tbl+4);
-    int r7=(int)(uintptr_t)base;
-    int r6=z;
+// 0x08002DB8: emit count objects from one 8-byte ROM row. The returned
+// objects live in the RAM shadow pool, not hardware OAM. The ROM loads the
+// advance halfword even when count is zero, then sign-extends it for the loop.
+void Helper_02DB8(void *base,int id,int z,int y,int idx,int row,int count) {
+    typedef struct { u16 attr0, attr1, advance; s8 dx; u8 pad; } EmitRow;
+    typedef struct { u16 attr0, attr1, attr2, pad; u32 next; u16 clear; } EmitObj;
+    int x = (int)(uintptr_t)base;
+    register int incoming __asm__("ip") = id;
+    register int tile __asm__("r6") = z;
+    register int depth __asm__("sl") = y;
+    // Preserve the incoming-register copies before reading the stack row,
+    // and keep count in r5 so the table calculation uses r0/r1, not r4/r0.
+    int rowindex = row;
+    __asm__("" : "+r"(rowindex));
+    register int remaining __asm__("r5") = count;
+    const EmitRow *tbl = (const EmitRow *)(0x080C4940u + ((u32)rowindex << 3));
+    u16 advance = tbl->advance;
+    if (remaining == 0) return;
+    register u32 ybits __asm__("r9") = (u32)incoming & 255;
+    register int step __asm__("r8") = (s16)advance;
     do {
+        // The allocator overwrites r0 without reading it; the ROM call has
+        // no argument materialization. Its legacy int parameter is unused.
+        extern void _08002C34(int,void *);
+#ifndef __APPLE__
+        extern void *EmitAllocate_02DB8(void) __asm__("_08002BFC");
+        EmitObj *obj = (EmitObj *)EmitAllocate_02DB8();
+#else
         extern void *_08002BFC(int);
-        volatile u8 *place=(volatile u8*)_08002BFC(0);
-        u16 h0=*(volatile u16*)(tbl+0);
-        u16 h2=*(volatile u16*)(tbl+2);
-        *(volatile u16*)(place+0)=(u16)((id & 0xFF) | h0);
-        *(volatile u16*)(place+2)=(u16)((r7 & 0x1FF) | h2);
-        *(volatile u16*)(place+4)=(u16)(((u32)y<<12) | (u32)r6);
-        *(volatile u16*)(place+12)=0;
-        extern void _08002C34(int, void*);
-        _08002C34(idx, (void*)place);
-        r7+=(s8)*(volatile s8*)(tbl+6);
-        r6+=r8;
-        count--;
-    } while(count!=0);
+        EmitObj *obj = (EmitObj *)_08002BFC(0);
+#endif
+        u32 attr0 = ybits;
+        __asm__("" : "+r"(attr0));
+        obj->attr0 = attr0 | tbl->attr0;
+        obj->attr1 = ((u32)x & 511) | tbl->attr1;
+        // Shift depth inside the loop, retaining the unshifted sl value.
+        __asm__("" : "+r"(depth));
+        obj->attr2 = ((u32)depth << 12) | (u32)tile;
+        obj->clear = 0;
+        _08002C34(idx,obj);
+        x += tbl->dx;
+        tile += step;
+    } while (--remaining != 0);
 }
 #ifndef __APPLE__
 void _08002DB8(void *a,int b,int c,int d,int e,int f,int g)
@@ -346,14 +379,62 @@ void _08002DB8(void *a,int b,int c,int d,int e,int f,int g)
 void sub_08002DB8(void *a,int b,int c,int d,int e,int f,int g)
     __attribute__((alias("Helper_02DB8")));
 #endif
-void Helper_02E3C(void *a,int b,int c,int d,int e,int f){
-    // 0x02E3C: similar to 02DB8 but with 0x001FFFFF mask at 0x02BA4
-    (void)a;(void)b;(void)c;(void)d;(void)e;(void)f;
-    volatile u32 mask = *(volatile u32*)0x001FFFFF;
-    (void)mask;
+// 0x08002E3C: the eight-argument variant adds bank bits to attr2. The ROM
+// normalizes the eighth stack argument to u16 and retains it in sl; depth
+// occupies the single stack local and is loaded anew for each object.
+void Helper_02E3C(void *base,int id,int z,int y,int idx,int row,int count,u32 bank) {
+    typedef struct { u16 attr0, attr1, advance; s8 dx; u8 pad; } EmitRow;
+    typedef struct { u16 attr0, attr1, attr2, pad; u32 next; u16 clear; } EmitObj;
+    int x = (int)(uintptr_t)base;
+    register int incoming __asm__("ip") = id;
+    register int tile __asm__("r6") = z;
+    volatile int depth = y;
+    // Force the incoming copies and depth spill before the three stack
+    // loads, without emitting instructions or modifying the arguments.
+    __asm__("" : : "m"(row), "m"(count), "m"(bank) : "memory");
+    int rowindex = row;
+    __asm__("" : "+r"(rowindex));
+    register int remaining __asm__("r5") = count;
+    register u32 bankarg __asm__("r1") = bank;
+    register u32 bankbits __asm__("sl") = (u16)bankarg;
+    const EmitRow *tbl = (const EmitRow *)(0x080C4940u + ((u32)rowindex << 3));
+    u16 advance = tbl->advance;
+    if (remaining == 0) return;
+    register u32 ybits __asm__("r9") = (u32)incoming & 255;
+    register int step __asm__("r8") = (s16)advance;
+    do {
+        extern void _08002C34(int,void *);
+#ifndef __APPLE__
+        extern void *EmitAllocate_02E3C(void) __asm__("_08002BFC");
+        EmitObj *obj = (EmitObj *)EmitAllocate_02E3C();
+#else
+        extern void *_08002BFC(int);
+        EmitObj *obj = (EmitObj *)_08002BFC(0);
+#endif
+        u32 attr0 = ybits;
+        __asm__("" : "+r"(attr0));
+        obj->attr0 = attr0 | tbl->attr0;
+        obj->attr1 = ((u32)x & 511) | tbl->attr1;
+        __asm__("" : "+r"(bankbits));
+        // The ROM loads depth through r3, shifts into r0, and reuses r3
+        // for sl. Keep the final OR/store in r0 rather than destroying r2.
+        register u32 d __asm__("r3") = depth;
+        register u32 bits __asm__("r0") = (d << 12) | (u32)tile;
+        __asm__("" : : "r"(d));
+        bits |= bankbits << 10;
+        __asm__("" : "+r"(bits));
+        obj->attr2 = bits;
+        obj->clear = 0;
+        _08002C34(idx,obj);
+        x += tbl->dx;
+        tile += step;
+    } while (--remaining != 0);
 }
 #ifndef __APPLE__
-void _08002E3C(void *a,int b,int c,int d,int e,int f) __attribute__((alias("Helper_02E3C")));
+void _08002E3C(void *a,int b,int c,int d,int e,int f,int g,u32 h)
+    __attribute__((alias("Helper_02E3C")));
+void sub_08002E3C(void *a,int b,int c,int d,int e,int f,int g,u32 h)
+    __attribute__((alias("Helper_02E3C")));
 #endif
 
 // span-tail init — _080048D8 is scene-tail reset (writes 0x03000198+? per findings §6)
@@ -367,23 +448,44 @@ void _080048D8(void) __attribute__((alias("RuntimeTailInit")));
 // Each uses exact VMA, pool at original.4byte offset, and volatile u8/u16/s16/u32 widths.
 // No manager struct names — opaque *(volatile uX*)(uintptr_t)ADDR+off. Helper ABIs as extern.
 
-// _08002B50: 36B HeapFill — two CpuSet fills + 0x1FF-capped strh loop at +60
+// _08002B50: HeapFill — two CpuSet fills + 0x1FF-capped strh loop.
+// The first fill's source is the stack zero word itself (`mov r0,sp;
+// bl` with `[sp] = 0`), its ctrl is (v144 & 0x1FFFFF) | 160<<19 -- not a
+// hardcoded ctrl with &masked as source. The second fill's source is the
+// second stack word (`add r0,sp,#4`), dst is reloaded per... no: dst is
+// *0x03000134 once, ctrl is pool 0x05000100. The paint loop reloads its
+// base from the 0x03000134 cell EVERY iteration (`ldr r1,[r4]` first),
+// compares a pool-loaded 0x1FF bound, and stores via base+(i<<1).
 void Wrap_02B50(void){
-    volatile u32 *p140 = (volatile u32*)(uintptr_t)0x03000140;
-    volatile u32 *p144 = (volatile u32*)(uintptr_t)0x03000144;
-    extern void _0802D974(const void*,void*,u32);
-    u32 v140 = *p140; u32 v144 = *p144;
+    extern void sub_0802D974(const void*,void*,u32);
+    u32 z0 = 0;
+    u32 v140 = *(volatile u32*)(uintptr_t)0x03000140u;
+    // The ROM pool-loads 0x03000144 separately; an empty `+r` barrier does
+    // NOT stop agbcc folding it to `adds r0,#4` here (verified by direct
+    // probe: same-register allocation makes the barrier transparent), so
+    // the barrier clobbers r0 instead -- with r0's value unknown the
+    // compiler cannot derive the address and must pool-load it.
+    __asm__("" : : "r"(v140) : "r0");
+    u32 v144 = *(volatile u32*)(uintptr_t)0x03000144u;
     u32 masked = v144 & 0x001FFFFFu;
-    masked |= 0x05000000u; // 160<<19
-    // first fill: 8 bytes from sp to v140? In asm: mov r0,sp; bl 0x0802D974
-    // second fill: sp+4 to *(0x03000134) 0x05000100; we model as volatile stores
-    _0802D974((const void*)&masked, (void*)v140, 0x05000100u);
-    // loop strh 160 at [r4+ r2*2] where r4=*(0x03000134)
-    volatile u32 *p134 = (volatile u32*)(uintptr_t)0x03000134;
-    u32 base = *p134;
-    for(int i=0;i<=0x1FF;i+=4){
-        *(volatile u16*)(base + i*2) = 160;
-        if(i>=0x1FF) break;
+    masked |= (160u << 19);
+    sub_0802D974(&z0, (void*)v140, masked);
+    u32 z1 = 0;
+    // The src pointer materializes before the cell pool-load (ROM `add
+    // r0,sp,#4` precedes `ldr r4,=0x03000134`), so it is named here.
+    u32 *src1 = &z1;
+    volatile u32 *cell = (volatile u32*)(uintptr_t)0x03000134u;
+    sub_0802D974(src1, (void*)*cell, 0x05000100u);
+    int i = 0;
+    u32 bd = 0x1FFu;
+    u16 v = 160;
+    for (; i <= (int)bd; i += 4) {
+        // b is pinned to r1 (ROM `ldr r1,[r4]` first, index into r0);
+        // unpinned it takes r0 and the pair swaps. The address sum is
+        // written index-first so the result lands in r0 (`adds r0,r0,r1`,
+        // not `adds r1,r1,r0`).
+        register u32 b __asm__("r1") = *cell;
+        *(u16*)((i << 1) + b) = v;
     }
 }
 #ifndef __APPLE__
@@ -563,6 +665,4 @@ void Sub_08002BB4(void) __attribute__((alias("Store_02BB4")));
 void sub_08002BB4(void) __attribute__((alias("Store_02BB4")));
 int sub_08002BD8(void) __attribute__((alias("LoadSub_02BD8")));
 int sub_08002BE8(int) __attribute__((alias("Inc_02BE8")));
-void sub_0802E104(void *a,int b,u32 c) __attribute__((alias("RuntimeMemset")));
-void _0802E104(void *a,int b,u32 c) __attribute__((alias("RuntimeMemset")));
 #endif

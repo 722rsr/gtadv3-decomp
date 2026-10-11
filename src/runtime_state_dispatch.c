@@ -397,31 +397,39 @@ void sub_08006A50(int a, int b) __attribute__((alias("CollectNearby_06A50")));
 // char-block rows ctrl 0x04000010; 19 rows × 30 cols checker = ((r+c)&1)+1.
 // ============================================================================
 void ScreenInit_0254C(void) {
-    _08004EFC(1024);
+    u16 scratch[4];
     volatile u8 *r6 = (volatile u8 *)(uintptr_t)_08004EFC(1024);
 
-    _0802D974((const void *)0x01000010, (void *)r6, 0x01000010);
-    *(volatile u16 *)(r6 + 2) = 0x1111;
-    _0802D974((const void *)0x01000010, (void *)(r6 + 32), 0x01000010);
-    *(volatile u16 *)(r6 + 4) = 0x2222;
-    _0802D974((const void *)0x01000010, (void *)(r6 + 64), 0x01000010);
-    _0802D974((const void *)(uintptr_t)_080056C4(0), (void *)r6, 0x04000018);
+    scratch[0] = 0;
+    _0802D974((const void *)&scratch[0], (void *)r6, 0x01000010);
+    u16 *fill1 = &scratch[1];
+    *fill1 = 0x1111;
+    _0802D974((const void *)fill1, (void *)(r6 + 32), 0x01000010);
+    u16 *fill2 = &scratch[2];
+    *fill2 = 0x2222;
+    _0802D974((const void *)fill2, (void *)(r6 + 64), 0x01000010);
+    _0802D974((const void *)r6,
+              (void *)(uintptr_t)_080056C4(0), 0x04000018);
 
     *(volatile u16 *)(r6 + 0) = 0;
     *(volatile u16 *)(r6 + 2) = 0x6739;
     *(volatile u16 *)(r6 + 4) = 0x7BDE;
-    _0802D974((const void *)0x04000008, (void *)r6, 0x0500000A);
+    _0802D974((const void *)r6, (void *)(uintptr_t)0x05000000, 0x04000008);
 
-    u8 *p = (u8 *)r6;
     int row = 0;
     for (;;) {
-        for (int col = 0; col <= 29; col++) {
+        int col = 0;
+        int rowOffset = row * 64;
+        int nextRow = row + 1;
+        u8 *p = (u8 *)r6;
+        for (; col <= 29; col++) {
             u16 v = (u16)(((row + col) & 1) + 1);
             *(volatile u16 *)(uintptr_t)p = v;
             p += 2;
         }
-        _0802D974((const void *)(uintptr_t)(_080056DC(0) + row * 64), p, 0x04000010);
-        row++;
+        _0802D974((const void *)r6,
+                  (void *)(uintptr_t)(_080056DC(0) + rowOffset), 0x04000010);
+        row = nextRow;
         if (row > 19) break;
     }
 }
@@ -773,21 +781,72 @@ void sub_0800FE90(void *a) __attribute__((alias("MenuFE90")));
 #endif
 
 // ============================================================================
-// menu_f924.s 0x0800F9A0 — result scatter (rec +0xAC..+0xDC → work area
-// +0x576/+0xFE4/+0xFE6/+0xFEA/+0xFE0/+0xFEC; F700 signed-distance hook;
-// u16[rec+0xDC]==1 → _0800F7C0(rec)).
+// menu_f924.s 0x0800F9A0 — result scatter (rec +0xAC, +0xC0, F700 distance,
+// +0xB0, +0xC8, +0xC6 → WA +0x576, +0xFE4, +0xFE6, +0xFEC, +0xFE8,
+// +0xFEA; u16[rec+0xDC]==1 → _0800F7C0(rec)).
 // ============================================================================
 void MenuF9A0_Scatter(void *rec) {
     u8 *r = (u8 *)rec;
     volatile u8 *wa = (volatile u8 *)0x03001780;
-    *(volatile u16 *)(wa + 0x576) = *(volatile u16 *)(r + 172);
-    *(volatile u16 *)(wa + 0xFE4) = *(volatile u16 *)(r + 192);
-    u32 dist = _0800F700((int)*(volatile s16 *)(r + 188),
-                         (int)*(volatile s16 *)(r + 190));
-    *(volatile u16 *)(wa + 0xFE6) = (u16)dist;
-    *(volatile u16 *)(wa + 0xFEC) = *(volatile u16 *)(r + 176);
-    *(volatile u16 *)(wa + 0xFE2) = *(volatile u16 *)(r + 200);
-    *(volatile u16 *)(wa + 0xFEA) = *(volatile u16 *)(r + 198);
+    register u32 offset __asm__("r2");
+    {
+        register u16 value __asm__("r1") = *(volatile u16 *)(r + 172);
+        register volatile u16 *dst __asm__("r0");
+        offset = 0x576;
+        __asm__ volatile ("add %0, %1, %2" : "=r"(dst)
+                          : "r"(wa), "r"(offset) : "memory");
+        *dst = value;
+    }
+    {
+        register u16 value __asm__("r1") = *(volatile u16 *)(r + 192);
+        register volatile u16 *dst __asm__("r0");
+        offset = 0xFE4;
+        __asm__ volatile ("add %0, %1, %2" : "=r"(dst)
+                          : "r"(wa), "r"(offset) : "memory");
+        *dst = value;
+    }
+    {
+        register u8 *xBase __asm__("r0") = r + 188;
+        register s32 xZero __asm__("r1") = 0;
+        register s32 x __asm__("r0");
+        __asm__ volatile ("ldrsh r0, [r0, r1]" : "=r"(x)
+                          : "r"(xBase), "r"(xZero) : "memory");
+        register u8 *yBase __asm__("r1") = r + 190;
+        register s32 yZero __asm__("r2") = 0;
+        register s32 y __asm__("r1");
+        __asm__ volatile ("ldrsh r1, [r1, r2]" : "=r"(y)
+                          : "r"(yBase), "r"(yZero) : "memory");
+        register u32 dist __asm__("r0") = _0800F700(x, y);
+        {
+            register volatile u16 *dst __asm__("r1");
+            offset = 0xFE6;
+            __asm__ volatile ("add %0, %1, %2" : "=r"(dst)
+                              : "r"(wa), "r"(offset) : "memory");
+            *dst = (u16)dist;
+        }
+    }
+    {
+        register u16 value __asm__("r1") = *(volatile u16 *)(r + 176);
+        register volatile u16 *dst __asm__("r0");
+        offset += 6;
+        __asm__ volatile ("add %0, %1, %2" : "=r"(dst)
+                          : "r"(wa), "r"(offset) : "memory");
+        *dst = value;
+    }
+    {
+        register u16 value __asm__("r1") = *(volatile u16 *)(r + 200);
+        register volatile u16 *dst __asm__("r0");
+        offset -= 4;
+        __asm__ volatile ("add %0, %1, %2" : "=r"(dst)
+                          : "r"(wa), "r"(offset) : "memory");
+        *dst = value;
+    }
+    {
+        register u16 value __asm__("r0") = *(volatile u16 *)(r + 198);
+        register u32 offset __asm__("r1") = 0xFEA;
+        wa += offset;
+        *(volatile u16 *)wa = value;
+    }
     if (*(volatile u16 *)(r + 220) == 1) _0800F7C0(rec);
 }
 #ifndef __APPLE__
@@ -1181,23 +1240,58 @@ HOST_STUB(void *_08004B68(void));
 HOST_STUB(int   _08004CA8(int v));
 HOST_STUB(void  _08007664(void *a, void *b, int c));
 HOST_STUB(void *_08026948(void));
-HOST_STUB(void  _08026A4C(void *a, u16 b, u16 c));
+HOST_STUB(void  _08026A4C(void *a, int b, int c));
 HOST_STUB(void  _08026A58(void *a, u8 b));
 HOST_STUB(void  _08026A60(void *a, u8 b));
 HOST_STUB(void  _08026938(void *a, int b));
+#ifndef __APPLE__
+#define MCI_CALLEE(friendly, closure) closure
+extern void *sub_08004B68(void);
+extern void *_080026948(void);
+extern void _080026938(void *obj, int slot);
+#else
+#define MCI_CALLEE(friendly, closure) friendly
+#endif
 
 void MenuInit_CFE4(void *rec) {
-    u8 *r4 = (u8 *)rec;
-    _08004B68();
+    register u8 *r4 __asm__("r4") = (u8 *)rec;
+    MCI_CALLEE(_08004B68, sub_08004B68)();
     *(volatile u16 *)(r4 + 0) = (u16)_08004CA8(0);
-    _08007664((void *)(uintptr_t)0x08292B40u, (void *)0, 6);
-    *(volatile u16 *)(r4 + 6) = *(volatile u16 *)(0x03001780 + 0x574);
-    void *obj = _08026948();
+    _08007664((void *)0, (void *)(uintptr_t)0x08292B40u, 6);
+    {
+        register u32 waBase __asm__("r0") = 0x03001780u;
+        register u32 waOffset __asm__("r1") = 0x574u;
+        __asm__ volatile("" : "+r"(waBase), "+r"(waOffset));
+        waBase += waOffset;
+        *(volatile u16 *)(r4 + 6) = *(volatile u16 *)(uintptr_t)waBase;
+    }
+    void *obj = MCI_CALLEE(_08026948, _080026948)();
     *(volatile u32 *)(r4 + 28) = (u32)(uintptr_t)obj;
-    _08026A4C(obj, (u16)*(volatile s16 *)(r4 + 6), (u16)*(volatile s16 *)(r4 + 8));
-    _08026A58(obj, 1);
-    _08026A60(obj, 0);
-    _08026938(obj, (int)*(volatile s16 *)(r4 + 6));
+    {
+        register int arg1 __asm__("r1");
+        register int arg2 __asm__("r2");
+        __asm__ volatile(".code 16\n\t"
+                         "mov r2, #6\n\t"
+                         "ldrsh r1, [r4, r2]\n\t"
+                         "mov r3, #8\n\t"
+                         "ldrsh r2, [r4, r3]"
+                         : "=r"(arg1), "=r"(arg2)
+                         : "r"(r4) : "r3", "cc");
+        _08026A4C(obj, arg1, arg2);
+    }
+    _08026A58((void *)(uintptr_t)*(volatile u32 *)(r4 + 28), 1);
+    _08026A60((void *)(uintptr_t)*(volatile u32 *)(r4 + 28), 0);
+    {
+        register void *objAt28 __asm__("r0") =
+            (void *)(uintptr_t)*(volatile u32 *)(r4 + 28);
+        register int arg1 __asm__("r1");
+        __asm__ volatile(".code 16\n\t"
+                         "mov r2, #6\n\t"
+                         "ldrsh r1, [r4, r2]"
+                         : "=r"(arg1) : "r"(r4), "r"(objAt28)
+                         : "r2", "cc");
+    MCI_CALLEE(_08026938, _080026938)(objAt28, arg1);
+    }
 }
 #ifndef __APPLE__
 void _0800CFE4(void *a) __attribute__((alias("MenuInit_CFE4")));

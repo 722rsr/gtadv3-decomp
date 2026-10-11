@@ -20,7 +20,7 @@
 
 HOST_STUB(void  _08002D974(const void *src, void *dst, u32 ctrl)); // 0x08002D974 CpuSet
 HOST_STUB(void  _08002E0A4(void *d, const void *s, u32 n));        // 0x08002E0A4 memcpy
-HOST_STUB(void  _08002E104(void *a, int b, u32 c));                // 0x08002E104 memset-like
+HOST_STUB(void *_08002E104(void *a, int b, u32 c));                // 0x08002E104 memset-like
 HOST_STUB(void  _08018AA8(u32 mask, int set));                     // 0x08018AA8 flag set/clear
 HOST_STUB(int   _08018ACC(u32 mask));                              // 0x08018ACC flag test
 HOST_STUB(int   _08002BE8(int dummy));                             // 0x08002BE8 counter bump, s16 ret
@@ -143,17 +143,27 @@ void _08001A44C(void *dst_, const void *src_) {
 // ----------------------------------------------------------------------------
 void _08001A768(void *a_, int b, int c) {
     volatile u8 *a = (volatile u8 *)a_;
+#ifndef __APPLE__
+    register int bFlag __asm__("r5") = b;
+#else
+    int bFlag = b;
+#endif
+#ifndef __APPLE__
+    register int cFlag __asm__("sl") = c;
+#else
+    int cFlag = c;
+#endif
     volatile u8 *wa = (volatile u8 *)WORK_AREA;
     u32 zero = 0;
     _08002D974(&zero, (void *)a, 0x0500015Au);
-    if (b != 0) {
+    if (bFlag != 0) {
         _08018AA8(32u, 1);
     } else {
-        u32 z2 = 0;
+        u32 z2 = (u32)bFlag;
         _08002D974(&z2, (void *)(uintptr_t)0x03002864u, 0x05000006u);
     }
     if (*(volatile u8 *)(wa + 0x10BD) != 0) {
-        s16 v = *(volatile s16 *)(wa + 0x10FE);
+        s16 v = *(s16 *)(uintptr_t)(wa + 0x10FE);
         if (v > 15) {
             u32 t = *(volatile u32 *)(uintptr_t)(0x080CBAA4u + (u32)(v - 16) * 4u);
             volatile u8 *tab = (volatile u8 *)(uintptr_t)t;
@@ -175,7 +185,7 @@ void _08001A768(void *a_, int b, int c) {
             }
         }
     }
-    if (c != 0)
+    if (cFlag != 0)
         _08018AA8(0x8000u, 1);
     if (*(volatile u8 *)(wa + 0x10C2) != 0) {
         _08018AA8(0x1000000u, 1);

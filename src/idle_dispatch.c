@@ -16,6 +16,9 @@ extern void _0800295C(u32 a, u32 b);
 extern u32  SessionReadWord(u32 off); // _0800070C
 extern void SessionPump(void); // _080006A4
 extern void PacketBuild(void *a, u32 b); // _08000848
+#ifndef __APPLE__
+extern void _08000848(void *a, u32 b);
+#endif
 // sub_08000CA0 (block-B special-mode state stepper) now lifted in runtime_state_dispatch.c
 // (SessionStep_CA0); idle mode-8/11 path binds the strong C alias.
 extern int  SubCA0(u32 a); // sub_08000CA0
@@ -242,20 +245,35 @@ void _08001B7C(void) __attribute__((alias("Idle_Dispatcher")));
 
 // _08001C48 — idle work-area refresh
 void Idle_RefreshWorkArea(void) {
-    volatile u8 *st = st8();
+    register volatile u32 *slot __asm__("r4") =
+        (volatile u32 *)(uintptr_t)STATE_BLOCK_A_SLOT_ADDR;
+    volatile u8 *first = (volatile u8 *)(uintptr_t)*slot;
     // asm _08001C48: r0=st+0xC0 (src), r1=st+0xB0 (dst) — C0->B0, not B0->C0.
-    CpuSet((const void*)(st+0xC0), (void*)(st+0xB0), 0x04000004);
-    s16 cnt = *(volatile s16*)(st+8);
-    if (cnt==0) {
-        u32 z=0; CpuSet(&z, (void*)(st+0xC0), 0x05000004);
+    CpuSet((const void*)(first+0xC0), (void*)(first+0xB0), 0x04000004);
+    volatile u8 *st = (volatile u8 *)(uintptr_t)*slot;
+    register u16 rawCount __asm__("r0") = *(volatile u16 *)(st+8);
+    register u32 countOff __asm__("r3") = 8;
+    register s32 signedCount __asm__("r2");
+    __asm__ volatile ("ldrsh %0, [%1, %2]"
+                      : "=r" (signedCount) : "r" (st), "r" (countOff));
+    if (signedCount==0) {
+        u32 z=(u32)signedCount; CpuSet(&z, (void*)(st+0xC0), 0x05000004);
     } else {
-        *(volatile s16*)(st+8) = cnt-1;
+        *(volatile u16 *)(st+8) = rawCount-1;
     }
-    u16 cur = *st16(0x10);
+    slot = (volatile u32 *)(uintptr_t)STATE_BLOCK_A_SLOT_ADDR;
+    volatile u8 *modeState = (volatile u8 *)(uintptr_t)*slot;
+    u16 cur = *(volatile u16 *)(modeState+0x10);
     if (StateA_IsGameMode(cur)) {
-        u16 p = *st16(4);
-        *(volatile u16*)(st+0xC0) = p;
-        PacketBuild((void*)(st+0xB0), 0);
+        register volatile u8 *state __asm__("r0") =
+            (volatile u8 *)(uintptr_t)*slot;
+        register u16 p __asm__("r2") = *(volatile u16 *)(state+4);
+        *(volatile u16*)(state+0xC0) = p;
+#ifdef __APPLE__
+        PacketBuild((void*)(state+0xB0), 0);
+#else
+        _08000848((void*)(state+0xB0), 0);
+#endif
     }
 }
 #ifndef __APPLE__

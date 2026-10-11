@@ -48,6 +48,7 @@ extern u32 _08007488(void *x);
 extern void *_0800748C(void *x);
 extern void *_08007498(void *x,int i);
 extern u32 _080074A8(void *x);
+extern void _08007538(void *a,int b,void *c);
 extern void _08005614(void *a, void *b, int len);
 extern u32 _0800572C(u32);
 extern int _080050D0(int a,int b);
@@ -71,31 +72,45 @@ void _080074AC(void *a,void *b) __attribute__((alias("Course_ClearSlot_074AC")))
 #endif
 
 // _080074D4: loop over count via _08007488, per matching record call _08007538 then 0748C lane
+// _080074D4: count = 07488(u32[rec+4]); alloc = 0572C(0); u16[rec] = alloc;
+// loop i in [0,count): entry = 07498(u32[rec+4], i); if u32[entry]==1:
+//   07538(u32[rec+4], i, alloc); alloc += u8[0748C(entry)+7] (via 0572C lane).
+// (ROM asm/course_resource_access.s:57-105; the second 0748C+ldrb pair feeds
+// the running alloc sum, not a stored row value.)
+// _080074D4: count = 07488(u32[rec+4]); alloc = 0572C(0); u16[rec] = alloc;
+// loop i in [0,count): entry = 07498(u32[rec+4], i); if u32[entry]==1:
+//   07538(u32[rec+4], i, alloc); alloc += u8[0748C(entry)+7] (via 0572C lane).
+// (ROM asm/course_resource_access.s:57-105; the second 0748C+ldrb pair feeds
+// the running alloc sum, not a stored row value.)
+//
+// PROLOGUE SHAPE (measured): `push {r4-r7,lr} / mov r7,r8 / push {r7} /
+// adds r4,r0 / ldr r7,[r4+4]`. r7 is FIRST the r8 save slot, THEN reused for
+// base -- so base must NOT be pinned to r7 (the pin collides with the save
+// and the compiler saves r8 via r6 instead, first diff +0x0). Only count is
+// pinned (r8); base/entry/alloc take r7/r4/r6 naturally by declaration order.
 void Course_SetupRecords_074D4(void *rec) {
-    // push {r4-r7,sl,r8} etc. preserved via locals; explicit stack not needed beyond loop vars
-    u32 cntWord = _080074A8(rec); // ldr [r4+4] then bl 07488? Actually ldr r7,[r4+4]; bl 07488 with r0=r7
-    // In asm: ldr r7,[r4+4]; bl 07488; mov r8,r0 => r8 = count via 07488
-    void *cntPtr = (void*)(uintptr_t)cntWord; // placeholder for 07488 return
-    (void)cntPtr;
-    u32 cnt = *(volatile u16*)((volatile u8*)rec + 4); // ldr [rec+4] u32 then via 07488
-    // Simplified opaque: use cnt as u16
-    u16 n = (u16)cnt;
-    // r6 = _0800572C(0) initial alloc? Actually movs r0,#0; bl 0572C; strh etc.
-    u32 alloc0 = _0800572C(0);
-    volatile u16 *recH = (volatile u16*)rec;
-    *recH = (u16)alloc0;
-    // loop r5=0..n-1
-    for (u16 r5=0; r5 < n; r5++) {
-        void *entry = _08007498(rec, r5); // bl 07498 with r0=rec,r1=r5
-        u32 flag = *(volatile u32*)entry;
-        if (flag != 1) continue;
-        // calls _08007538 with r0= rec, r1=r5, r2=alloc0 (via r6)
-        extern void _08007538(void *a,int b,void *c);
-        _08007538(rec, r5, (void*)(uintptr_t)alloc0);
+    void *r4 = rec;
+    void *base = *(void **)((u8 *)r4 + 4);
+    register int count __asm__("r8") = (int)(uintptr_t)_08007488(base);
+    // STORE SHAPE (measured): `strh r0,[r4] / lsls r0,#16 / lsrs r6,r0,#16`.
+    // The store consumes the call result DIRECTLY, then r0 is shift-extended
+    // into r6 -- no reload (`ldrh r6,[r4]`, first diff +0x1A) and no early
+    // copy (`add r6,r0`, first diff +0x18). A u16-then-u32 assignment pair
+    // on the same call result expresses exactly store-then-extend.
+    int raw = (int)_0800572C(0);
+    *(volatile u16 *)r4 = (u16)raw;
+    register u32 alloc __asm__("r6") = (u32)(u16)raw;
+    register void *entry __asm__("r4");
+    for (u32 i = 0; (int)i < count; i++) {
+        entry = _08007498(base, (int)i);
+        if (*(volatile u32 *)entry != 1)
+            continue;
+        _08007538(base, (int)i, (void *)(uintptr_t)alloc);
         void *lane = _0800748C(entry);
-        u8 b7 = *(volatile u8*)((volatile u8*)lane + 7);
-        u32 r6val = (u32)b7 + (u32)alloc0;
-        (void)r6val;
+        u32 lanev = _0800572C(*(volatile u8 *)((u8 *)lane + 7));
+        (void)lanev;
+        lane = _0800748C(entry);
+        alloc += *(volatile u8 *)((u8 *)lane + 7);
     }
 }
 #ifndef __APPLE__

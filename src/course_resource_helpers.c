@@ -80,13 +80,17 @@ u32 sub_08007770(int a, void *b, int c, int d, u32 e, u32 f) __attribute__((alia
 #endif
 
 // ----------------------------------------------------------------------------
-// sub_0800785C — 4-DMA variant with sl = r0 (r0..r3 args):
-//   r4 = 07498(r1, r2); r5 = 07498(r1, 0); r8 = 07498(r4, 1);
-//   r9 = 050D0(r0, 07658(r5)); r4v = 0748C(r5); r3 = 074A8(r5);
-//   05260(r0, r4v, r9); DMA triple = {0748C(r8), 0x05000000+(r3<<5), 074A8(r8)>>2|0x84000000}
-void Course_0x0800785C(void *ctx, void *X, int rec_arg, int lane) {
+// sub_0800785C — 4-arg DMA variant with sl = ctx (r0..r3 args):
+//   r4 = 07498(X, rec); r5 = 07498(r4, 0); r8 = 07498(r4, 1);
+//   r9 = 050D0(ctx, 07658(r5)); r4v = 0748C(r5); r3 = 074A8(r5);
+//   05260(ctx, r4v, r9, r3); DMA triple = {0748C(r8), 0x05000000+(lane<<5),
+//   074A8(r8)>>2|0x84000000}; returns the 050D0 result (r9), so the epilogue
+//   is `pop {r1}; bx r1`, not the void `pop {r0}; bx r0`.
+//   (The second lookup feeds off r4, as in the 078EC sibling -- not off X.
+//   The DMA base is 160<<19 = 0x05000000, as in the 07770 sibling.)
+int Course_0x0800785C(void *ctx, void *X, int rec_arg, int lane) {
     void *r4 = _08007498(X, rec_arg);
-    void *r5 = _08007498(X, 0);
+    void *r5 = _08007498(r4, 0);
     void *r8 = _08007498(r4, 1);
     int r9 = _080050D0((int)(uintptr_t)ctx, (int)_08007658(r5));
     u32 r4v = (u32)(uintptr_t)_0800748C(r5);
@@ -95,14 +99,15 @@ void Course_0x0800785C(void *ctx, void *X, int rec_arg, int lane) {
     volatile u32 *dma = CRH_DMA3;
     dma[0] = (u32)(uintptr_t)_0800748C(r8);
     u32 w = (u32)lane << 5;
-    dma[1] = 0x06000000u + w;                            // 160<<19
+    dma[1] = 0x05000000u + w;
     u32 cnt = _080074A8(r8);
     dma[2] = (cnt >> 2) | 0x84000000u;
     (void)dma[2];
+    return r9;
 }
 #ifndef __APPLE__
-void _0800785C(void *a, void *b, int c, int d) __attribute__((alias("Course_0x0800785C")));
-void sub_0800785C(void *a, void *b, int c, int d) __attribute__((alias("Course_0x0800785C")));
+int _0800785C(void *a, void *b, int c, int d) __attribute__((alias("Course_0x0800785C")));
+int sub_0800785C(void *a, void *b, int c, int d) __attribute__((alias("Course_0x0800785C")));
 #endif
 
 // ----------------------------------------------------------------------------

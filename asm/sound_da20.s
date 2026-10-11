@@ -142,3 +142,5 @@ sub_0802DAE0:
 	.word 0x03001768
 .L_db20:
 	.word 0x03001774
+
+sound_da20_end:

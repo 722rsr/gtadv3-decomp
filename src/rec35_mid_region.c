@@ -91,7 +91,7 @@ extern void  Sub_08002618(int a, int b);
 extern void  Sub_08002714(int a, int b, int c);
 extern void  Sub_08003978(int a, int b, int c);
 extern void  Sub_08004D4C(int a, int b, int c);
-extern void *Sub_08024BFC(void); // 0-arg: asm body is push/bl/pop/bx, r0 never read
+extern void *Rec35GhostSlot(int slot) __asm__("_08024BFC");
 extern void  Sub_08024C0C(void); // asm body is `bx lr` (baserom 0x24C0C)
 extern void  Sub_08024C14(void); // asm body is `bx lr` (baserom 0x24C14)
 extern void  Sub_08024C18(void); // asm body is `bx lr` (baserom 0x24C18)
@@ -178,8 +178,8 @@ void _0800168E8(void *a, void *b) __attribute__((alias("Rec35_Ev3_168E8")));
 
 void Rec35_SyncRec_16944(void *rec) {
     void *r5 = rec;
-    void *r4 = Sub_08024BFC();
-    void *r0 = Sub_08024BFC();
+    void *r4 = Rec35GhostSlot(0);
+    void *r0 = Rec35GhostSlot(1);
     u16 a = RD16P(r4);
     u16 b = RD16P(r0);
     WR16((u8 *)r5 + 204, a);
@@ -207,8 +207,8 @@ void _080016944(void *a) __attribute__((alias("Rec35_SyncRec_16944")));
 void Rec35_PlacementEmit_16A20(void *rec) {
     void *r6 = rec;
     u32 sp[2];
-    sp[0] = (u32)Sub_08024BFC();
-    sp[1] = (u32)Sub_08024BFC();
+    sp[0] = (u32)Rec35GhostSlot(0);
+    sp[1] = (u32)Rec35GhostSlot(1);
     for (int i = 0; i <= 1; i++) {
         s16 r4 = RS16((u8 *)(u32)sp[i] + 16);
         Sub_080022E4(r4);
@@ -253,8 +253,8 @@ void Rec35_Leaf_16AF0(void *rec) {
         // i.e. CpuSet(src = rec+276 / rec+308, dst = the ghost record,
         // ctrl = 0x04000008). The old form used dst 0x04000000 and put the ghost
         // pointer in the *ctrl* word, so the count came out of an address.
-        Sub_08002D974((const void *)((u8 *)rec + 276), Sub_08024BFC(), 0x04000008u);
-        Sub_08002D974((const void *)((u8 *)rec + 308), Sub_08024BFC(), 0x04000008u);
+        Sub_08002D974((const void *)((u8 *)rec + 276), Rec35GhostSlot(0), 0x04000008u);
+        Sub_08002D974((const void *)((u8 *)rec + 308), Rec35GhostSlot(1), 0x04000008u);
         Rec35_SyncRec_16944(rec);
         Rec35_PlacementEmit_16A20(rec);
         WR16((u8 *)rec + 194, 1);
@@ -321,7 +321,7 @@ void Rec35_Leaf_16BBC(void *rec) {
         // (the `subs r2, #64` reuses the 340 constant); dst = the ghost record
         // (bl 0x08024BFC), ctrl = pool _080016D8C = 0x04000008.
         const void *r4p = (const void *)((u8 *)r5 + RS16((u8 *)r5 + 340) * 32 + 276);
-        Sub_08002D974(r4p, Sub_08024BFC(), 0x04000008u);
+        Sub_08002D974(r4p, Rec35GhostSlot(0), 0x04000008u);
         Sub_08024C10();
         Sub_08024C10();
         Sub_08024C1C();
@@ -405,8 +405,8 @@ void Rec35_Leaf_16DE4(void *rec) {
         break;
     }
     case 5: {                                   // 0x08016E30
-        void *r4 = Sub_08024BFC();
-        void *r1 = Sub_08024BFC();
+        void *r4 = Rec35GhostSlot(0);
+        void *r1 = Rec35GhostSlot(1);
         if (RD16P(r4) == 0 && RD16P(r1) == 0) { WR16((u8 *)r5 + 194, 7); break; }
         WR32((u8 *)r5 + 504, 0);
         Sub_08007ABC(RD32((u8 *)r5 + 52), RD32((u8 *)r5 + 500), 0);
@@ -558,8 +558,8 @@ void _080017528(void *a, int b, int c) __attribute__((alias("Rec35_Input_17528")
 //       [+194]=5; [rec+198]=r9(0); [rec+344]=r7; }
 void Rec35_Input_175BC(void *rec) {
     void *r4 = rec;
-    void *r5 = Sub_08024BFC();
-    void *r6 = Sub_08024BFC();
+    void *r5 = Rec35GhostSlot(0);
+    void *r6 = Rec35GhostSlot(1);
     if (RD16P((u8 *)r4 + 188) == 2) {
         if ((u16)Sub_08002178(0) == 2 && (u16)Sub_08002178(1) == 2) {
             WR16((u8 *)r4 + 190, 0);
@@ -717,11 +717,16 @@ void _080017788(void *a, int b, int c) __attribute__((alias("Rec35_Input_17788")
 // _08001794C(rec) — two banner-sprite digits (0x08024BFC slot 0 → x=68,
 // slot 1 → x=108), each drawn only when its record's u16[+0] is set.
 void Rec35_Emit_1794C(void *rec) {
+    // SLOT ARGS (measured): the ROM is `movs r0,#0 / bl / adds r4,r0 /
+    // movs r0,#1 / bl` -- the 0x08024BFC veneer passes r0 through to the
+    // 0x080240D0 getter. The TU extern binds the slot index under a local
+    // name with the closure's `_08024BFC` spelling; twin-call sites pass
+    // 0/1 in order.
     register void *r4 __asm__("r4");
     register void *r5 __asm__("r5");
     (void)rec;
-    r4 = Sub_08024BFC();
-    r5 = Sub_08024BFC();
+    r4 = Rec35GhostSlot(0);
+    r5 = Rec35GhostSlot(1);
     if (*(u16 *)r4 != 0) sub_08003BC0(152, 68, *(int *)((u8 *)r4 + 4));
     if (*(u16 *)r5 != 0) sub_08003BC0(152, 108, *(int *)((u8 *)r5 + 4));
 }
@@ -762,13 +767,13 @@ void _0800179F0(void *a) __attribute__((alias("Rec35_Emit_179F0")));
 // Guard on slot 1: (rec+16, [396],[400], d=9,  e=112) + (rec+24, [420],[424], d=76, e=112)
 void Rec35_Emit_17A20(void *rec) {
     void *r7 = rec;
-    if (RD16P(Sub_08024BFC()) != 0) {
+    if (RD16P(Rec35GhostSlot(0)) != 0) {
         Sub_08007BFC((u8 *)r7 + 16, (int)RD32((u8 *)r7 + 384), (int)RD32((u8 *)r7 + 388),
                      9, 72, 4, 1, 1, 0);
         Sub_08007BFC((u8 *)r7 + 24, (int)RD32((u8 *)r7 + 408), (int)RD32((u8 *)r7 + 412),
                      76, 72, 4, 1, 1, 0);
     }
-    if (RD16P(Sub_08024BFC()) != 0) {
+    if (RD16P(Rec35GhostSlot(1)) != 0) {
         Sub_08007BFC((u8 *)r7 + 16, (int)RD32((u8 *)r7 + 396), (int)RD32((u8 *)r7 + 400),
                      9, 112, 4, 1, 1, 0);
         Sub_08007BFC((u8 *)r7 + 24, (int)RD32((u8 *)r7 + 420), (int)RD32((u8 *)r7 + 424),
@@ -783,11 +788,11 @@ void _080017A20(void *a) __attribute__((alias("Rec35_Emit_17A20")));
 // _080017B00(rec) — two guarded emitters over rec+32 (e=60 / e=100)
 void Rec35_Emit_17B00(void *rec) {
     void *r5 = rec;
-    if (RD16P(Sub_08024BFC()) != 0) {
+    if (RD16P(Rec35GhostSlot(0)) != 0) {
         Sub_08007BFC((u8 *)r5 + 32, (int)RD32((u8 *)r5 + 432), (int)RD32((u8 *)r5 + 436),
                      16, 60, 7, 1, 1, 0);
     }
-    if (RD16P(Sub_08024BFC()) != 0) {
+    if (RD16P(Rec35GhostSlot(1)) != 0) {
         Sub_08007BFC((u8 *)r5 + 32, (int)RD32((u8 *)r5 + 444), (int)RD32((u8 *)r5 + 448),
                      16, 100, 7, 1, 1, 0);
     }

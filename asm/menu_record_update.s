@@ -59,3 +59,4 @@ _0800BD1A:
 _0800BD34: .word 0x001BB0A9
 _0800BD38: .word 0x03001780
 _0800BD3C: .word 0x000010E8
+menu_record_update_end:

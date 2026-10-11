@@ -63,7 +63,7 @@ HOST_STUB(void _08001B130(int v));                                             /
 HOST_STUB(void _08019A84(void));                                               // 0x08019A84 award leaf
 HOST_STUB(void _08005604(void));                                               // 0x08005604 scene helper
 HOST_STUB(void _08002D3C(void));                                               // 0x08002D3C block copy + VRAM fill
-HOST_STUB(void _08002B5AC(void));                                              // 0x08002B5AC sound stop
+HOST_STUB(void _0802B5AC(void));                                               // 0x0802B5AC sound stop
 HOST_STUB(void _080024AC(void));                                               // 0x080024AC keypad flush
 HOST_STUB(u16  _08002044(void));                                               // 0x08002044 lineup count
 HOST_STUB(void _08002158(int id, u16 payload));                                // 0x08002158 block-B forward
@@ -81,7 +81,9 @@ HOST_STUB(void _08007ABC(void *a, void *b, int c));                            /
 HOST_STUB(int  _08005758(int v));                                              // 0x08005758 IWRAM alloc
 HOST_STUB(int  _08002DE04(int n, int d));                                      // 0x08002DE04 quotient
 HOST_STUB(s32  _08002DE9C(s32 a, s32 b));                                      // 0x08002DE9C signed remainder
-HOST_STUB(int  _08002A764(void *src, void *dst));                              // 0x08002A764 state copier (garage_records.c)
+HOST_STUB(int  sub_0802DE04(int n, int d));                                    // closure spelling of quotient
+HOST_STUB(s32  sub_0802DE9C(s32 a, s32 b));                                    // closure spelling of remainder
+HOST_STUB(void _0802DDD0(void *a, void *b, void *c));                          // 0x0802DDD0 bx-r2 callback veneer
 HOST_STUB(void _080056F4(void *a, int b, int c));                              // 0x080056F4 record helper
 HOST_STUB(void _08003838(int a, u32 b, const volatile u8 *c));                 // 0x08003838 obj lane (ROM word 0x0805FC1C)
 HOST_STUB(void _08003B78(int a, u32 b, u32 c));                                // 0x08003B78 obj digits
@@ -197,9 +199,10 @@ __asm__(".align 2, 0");
 void _08001D288(void) {
     if (_08018ACC(0x800u) != 0) {
         u32 lane[13];
+        _0802DDD0((void *)(uintptr_t)0x03003A10u, lane,
+                  *(void *volatile *)(uintptr_t)0x03004EA4u);
         volatile u16 *dst = (volatile u16 *)(uintptr_t)0x03003A10u;
         volatile u16 *flagbase;
-        _08002A764((void *)(uintptr_t)0x03004EA4u, lane);
         {
             s32 w1 = (s32)lane[1];
             dst[0] = (u16)(w1 >> 16);
@@ -357,22 +360,40 @@ void _08001D288(void) {
 //   0xFFFD, 0x04000004, 0xFFEF, 0x040000D4, 0x040000DE}. No args, no return.
 // ----------------------------------------------------------------------------
 void _08001D654(void) {
-    u8 *wa = (u8 *)(uintptr_t)0x03001780u;
-    u16 w = *(u16 *)(wa + 0x10FCu);
-    if (w == 10u)
-        *(volatile u8 *)(wa + 0x10C0u) = 1;
-    _08002B5AC();
-    *(u16 *)(uintptr_t)0x04000208u = 0;
-    *(u16 *)(uintptr_t)0x04000200u =
-        (u16)(*(u16 *)(uintptr_t)0x04000200u & 0xFFFDu);
-    *(u16 *)(uintptr_t)0x04000004u =
-        (u16)(*(u16 *)(uintptr_t)0x04000004u & 0xFFEFu);
-    *(u16 *)(uintptr_t)0x04000208u = 1;
-    *(u16 *)(uintptr_t)0x040000DEu = 0;
-    *(u32 *)(uintptr_t)0x040000D4u = 0;
-    *(u32 *)(uintptr_t)0x040000D8u = 0;
-    *(u32 *)(uintptr_t)0x040000DCu = 0;
-    *(u16 *)(uintptr_t)0x04000000u = 0;
+    register u32 waBase __asm__("r1") = 0x03001780u;
+    register u32 waOffset __asm__("r2") = 0x10FCu;
+    __asm__ volatile("" : "+r"(waBase), "+r"(waOffset));
+    register u32 statusAddress __asm__("r0") = waBase + waOffset;
+    u16 w = *(volatile u16 *)(uintptr_t)statusAddress;
+    if (w == 10u) {
+        register u32 readyOffset __asm__("r0") = 134u;
+        readyOffset <<= 5;
+        waBase += readyOffset;
+        *(volatile u8 *)(uintptr_t)waBase = 1;
+    }
+
+    _0802B5AC();
+
+    register volatile u16 *irqControl __asm__("r3") =
+        (volatile u16 *)(uintptr_t)0x04000208u;
+    register u16 zero16 __asm__("r4") = 0;
+    *irqControl = zero16;
+    *(volatile u16 *)(uintptr_t)0x04000200u =
+        (u16)(*(volatile u16 *)(uintptr_t)0x04000200u & 0xFFFDu);
+    *(volatile u16 *)(uintptr_t)0x04000004u =
+        (u16)(*(volatile u16 *)(uintptr_t)0x04000004u & 0xFFEFu);
+    *irqControl = 1;
+
+    register volatile u32 *dmaBase __asm__("r1") =
+        (volatile u32 *)(uintptr_t)0x040000D4u;
+    register volatile u16 *dmaControl __asm__("r0") =
+        (volatile u16 *)(uintptr_t)0x040000DEu;
+    *dmaControl = zero16;
+    register u32 zero32 __asm__("r0") = 0;
+    dmaBase[0] = zero32;
+    dmaBase[1] = zero32;
+    dmaBase[2] = zero32;
+    *(volatile u16 *)((volatile u8 *)dmaBase - 212) = (u16)zero32;
     _080024AC();
 }
 
@@ -658,16 +679,32 @@ void _08001D9CC(void) {
 // index, and emits over the advancing 8-byte lane (s16 at +2).
 // ----------------------------------------------------------------------------
 void _08001DA10(int v) {
-    int q = _08002DE04(v, 10);
+    int q = sub_0802DE04(v, 10);
     int w[2];
-    u32 base = 0x0203F8F0u;
-    w[0] = _08002DE9C(q, 10);
-    w[1] = _08002DE9C(v, 10);
-    for (int i = 0; i < 2; i++) {
-        u16 t = *(volatile u16 *)(uintptr_t)(0x080CBBA2u + (u32)(w[i] * 2));
+    w[0] = sub_0802DE9C(q, 10);
+    w[1] = sub_0802DE9C(v, 10);
+    int i = 0;
+#ifndef __APPLE__
+    register u8 *table __asm__("r6") = (u8 *)(uintptr_t)0x080CBBA2u;
+    register u8 *base __asm__("r5") = (u8 *)(uintptr_t)0x0203F8F0u;
+    __asm__ volatile("" : "+r"(table), "+r"(base));
+#else
+    u8 *table = (u8 *)(uintptr_t)0x080CBBA2u;
+    u8 *base = (u8 *)(uintptr_t)0x0203F8F0u;
+#endif
+    for (; i < 2; i++) {
+        u16 t = *(volatile u16 *)(uintptr_t)(table + (u32)(w[i] * 2));
+#ifndef __APPLE__
+        register s32 laneOffset __asm__("r0") = 2;
+        register s32 laneValue __asm__("r2");
+        __asm__ volatile(".code 16\n\tldrsh r2, [r5, r0]"
+                         : "=r"(laneValue) : "r"(base), "r"(laneOffset) : "cc");
+#else
+        s32 laneValue = *(volatile s16 *)(base + 2);
+#endif
         _08007570((void *)(uintptr_t)0x08336CA0u, t,
-                  *(volatile s16 *)(uintptr_t)(base + 2u), 0, 16);
-        base += 8u;
+                  laneValue, 0, 16);
+        base += 8;
     }
 }
 
@@ -680,27 +717,59 @@ void _08001DA10(int v) {
 // to 0, so it runs exactly once (`movs r5,#0` / `subs` / `cmp #0` / `bge`).
 // Stack words are (1,2,1,0,0,1) in both paths.
 void _08001DA70(int a0, int a1, u32 a2, int a3) {
-    if ((s32)a2 > 9) {
-        u32 lane = 0x0203F8F0u;
-        int cur = a0 - 32;
-        int i;
-        for (i = 1; i >= 0; i--) {
-            _08002ED0((void *)(uintptr_t)(u32)cur, a1,
-                      *(s16 *)(uintptr_t)(lane + 2u),
-                      a3, 1u, 2u, 1u, 0u, 0u, 1u);
-            lane += 8u;
-            cur += 24;
-        }
-    } else {
-        u32 base = 0x0203F8F0u;
-        u32 lane = base + 8u;
+    if ((s32)a2 <= 9) {
+#ifndef __APPLE__
+        register int cur __asm__("r8") = a0 - 16;
+        __asm__ volatile("" : "+r"(cur));
+#else
         int cur = a0 - 16;
+#endif
+        u32 base = 0x0203F8F0u;
+        __asm__ volatile("" : "+r"(base));
+#ifndef __APPLE__
+        register int one __asm__("r4") = 1;
+        __asm__ volatile("" : "+r"(one));
+#else
+        int one = 1;
+#endif
+        u32 lane = base + 8u;
+#ifndef __APPLE__
+        register int zero __asm__("r7") = 0;
+        __asm__ volatile("" : "+r"(zero));
+#else
+        int zero = 0;
+#endif
         int i;
         for (i = 0; i >= 0; i--) {
             _08002ED0((void *)(uintptr_t)(u32)cur, a1,
                       *(s16 *)(uintptr_t)(lane + 2u),
-                      a3, 1u, 2u, 1u, 0u, 0u, 1u);
+                      a3, (u32)one, 2u, (u32)one, (u32)zero, (u32)zero,
+                      (u32)one);
             lane += 8u;
+        }
+    } else {
+#ifndef __APPLE__
+        register int one __asm__("r6") = 1;
+        __asm__ volatile("" : "+r"(one));
+#else
+        int one = 1;
+#endif
+        u32 lane = 0x0203F8F0u;
+        int cur = a0 - 32;
+#ifndef __APPLE__
+        register int zero __asm__("r8") = 0;
+        __asm__ volatile("" : "+r"(zero));
+#else
+        int zero = 0;
+#endif
+        int i;
+        for (i = 1; i >= 0; i--) {
+            _08002ED0((void *)(uintptr_t)(u32)cur, a1,
+                      *(s16 *)(uintptr_t)(lane + 2u),
+                      a3, (u32)one, 2u, (u32)one, (u32)zero, (u32)zero,
+                      (u32)one);
+            lane += 8u;
+            cur += 24;
         }
     }
 }
@@ -842,6 +911,9 @@ void RaceScene_Event_1D224(void) __attribute__((alias("_08001D224")));
 void sub_08001D224(void) __attribute__((alias("_08001D224")));
 void RaceScene_Event_288(void) __attribute__((alias("_08001D288")));
 void RaceScene_Event_654(void) __attribute__((alias("_08001D654")));
+void sub_08001D654(void) __attribute__((alias("_08001D654")));
+void sub_08001DA10(int v) __attribute__((alias("_08001DA10")));
+void sub_08001DA70(int a0, int a1, u32 a2, int a3) __attribute__((alias("_08001DA70")));
 // Same rule 6 need for 0x08001D750: the splice deletes the asm label
 // `sub_08001D750` and promoted callers reference that spelling.
 int sub_08001D750(int mode) __attribute__((alias("_08001D750")));

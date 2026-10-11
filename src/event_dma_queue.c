@@ -29,7 +29,7 @@
 //     become direct calls cb(args).
 // ============================================================================
 
-extern void RuntimeMemcpy(void *dst, const void *src, u32 len);
+extern void *RuntimeMemcpy(void *dst, const void *src, u32 len);
 //. The promoted callee at 0x0802D974 is exported by the manifest as
 // `sub_0802D974` (asm/sound_d974.s); `CpuSet_2D974` is a C-only wrapper in
 // src/bios_wrappers.c, which is NOT one of the slice link's TUs. Calling
@@ -434,16 +434,17 @@ void sub_0800529C(int a, u32 b, int c, int d, int e, int f) __attribute__((alias
 // ----------------------------------------------------------------------------
 // sub_080052F0 (0x080052F0, 0xEC B) — tilemap recolor via EWRAM staging:
 // dst = 0x06000000 + (byte[slot*16+6] << 11) + y*width*2 + x*2.
-// If width is positive, phase 1 DMA-copies each row to 0x02002000 + row*64,
-// then recolors each halfword as `(h & 0x0C00) | (palette << 12) |
+// For each positive row count, phase 1 DMA-copies each row to
+// 0x02002000 + row*64. When width is positive, each staged row is recolored
+// as `(h & 0x0C00) | (palette << 12) |
 // ((h & 0x03FF) + tileAdd)`. The source advances by width*2 per row.
 // Phase 2 (rows iterations): DMA3 { SAD = 0x02002000 + row*64, DAD = dst,
 //   CNT = 0x80000000 | width }; dst += 64 per row.
-void DMA3_RecolorRows(int slot, u32 src, int x, int y, volatile int width, int rows,
-                      int tileAdd, volatile int palette) {
+void DMA3_RecolorRows(int slot, u32 src, int x, int y, volatile int width, volatile int rows,
+                      volatile int tileAdd, volatile int palette) {
     register u32 p __asm__("r10");
     register u32 q __asm__("r4");
-    register int rowWidth __asm__("r5");
+    register int r5work __asm__("r5");
     register u32 rawShift __asm__("r0");
     register u32 scrShift __asm__("r1");
     register u32 dst __asm__("r8");
@@ -468,52 +469,85 @@ void DMA3_RecolorRows(int slot, u32 src, int x, int y, volatile int width, int r
     rawShift = (u32)((volatile u8 *)(uintptr_t)idx)[6];
     __asm__ volatile("" : "+r"(rawShift));
     scrShift = rawShift << 11;
-    rowWidth = width;
-    rowDst = (u32)(y * rowWidth * 2);
+    r5work = width;
+    rowDst = (u32)(y * r5work * 2);
     rowDst += 0x06000000u;
-    dst = rowDst + scrShift;
-    dst += (u32)(x * 2);
+    dst = scrShift + rowDst + (u32)(x * 2);
     stageSave = q;
-    if (rowWidth > 0) {
+    row = 0;
+    // r5 holds width through destination calculation, then becomes the row bound.
+    r5work = rows;
+    __asm__ volatile("" : "+r" (r5work));
+    if (row < r5work) {
         register volatile u32 *dma __asm__("r6");
         dma = DMA3;
-        cnt = 0x80000000u | (u32)rowWidth;
-        srcStep = rowWidth * 2;
-        row = 0;
-        for (; row < rows; row++) {
-            dma[0] = p;                    // SAD = src row
+        register u32 highBit __asm__("r0") = 0x80000000u;
+        register u32 transferWidth __asm__("r1") = (u32)width;
+        cnt = transferWidth | highBit;
+        register u32 sourceWidth __asm__("r3") = (u32)width;
+        srcStep = sourceWidth << 1;
+        do {
+            r5work = (int)p;
+            dma[0] = (u32)r5work;          // SAD = src row
             dma[1] = q;                    // DAD = EWRAM staging row
             dma[2] = cnt;
             (void)dma[2];
-            volatile u16 *h = (volatile u16 *)(uintptr_t)q;
-            if (rowWidth > 0) {
-                int i;
-                i = rowWidth;
+            register volatile u16 *h __asm__("r3") =
+                (volatile u16 *)(uintptr_t)q;
+            u32 qNext = (u32)(uintptr_t)h;
+            qNext += 64;
+            row++;
+            register int rowSaved __asm__("r12") = row;
+            register int loopWidth __asm__("r1") = width;
+            if (loopWidth > 0) {
+                register u32 maskTmp __asm__("r2") = 0x0C00u;
+                register u32 mask __asm__("r9");
+                __asm__ volatile("" : "+r" (maskTmp));
+                mask = maskTmp;
+                q = (u32)loopWidth;
+                register u32 palInput __asm__("r0") = (u32)palette;
+                r5work = (int)(palInput << 12);
                 do {
-                    u32 v = *h;
-                    u32 idx = (v & 0x03FFu) + (u32)tileAdd;
-                    u32 pal = v & 0x0C00u;
-                    *h = (u16)(pal | ((u32)palette << 12) | idx);
+                    row = (int)*h;
+                    loopWidth = 0x03FF;
+                    loopWidth &= row;
+                    register u32 pal __asm__("r0") = (u32)row & mask;
+                    row = tileAdd;
+                    loopWidth += row;
+                    pal |= (u32)r5work;
+                    pal |= (u32)loopWidth;
+                    *h = (u16)pal;
+                    q--;
                     h++;
-                } while (--i != 0);
+                } while (q != 0);
             }
-            p += srcStep;
-            q += 64;
-        }
-        register u32 qStage __asm__("r4");
-        qStage = stageSave;
+            sourceWidth = srcStep;
+            p += sourceWidth;
+            q = qNext;
+            row = rowSaved;
+            r5work = rows;
+            __asm__ volatile("" : "+r" (r5work));
+        } while (row < r5work);
+    }
+    register int writeRows __asm__("r0") = rows;
+    if (writeRows > 0) {
         register volatile u32 *dma2 __asm__("r1");
         dma2 = DMA3;
-        row = rows;
-        while (row > 0) {                         // write-back phase
-            dma2[0] = qStage;
+        register u32 writeCnt __asm__("r3") = 0x80000000u;
+        row = width;
+        writeCnt |= (u32)row;
+        row = writeRows;
+        do {                                      // write-back phase
+            r5work = stageSave;
+            dma2[0] = (u32)r5work;
             dma2[1] = dst;
-            dma2[2] = cnt;
+            dma2[2] = writeCnt;
             (void)dma2[2];
-            qStage += 64;
-            dst += 64;
-            row--;
-        }
+            r5work += 64;
+            stageSave = (u32)r5work;
+            __asm__ volatile("movs r5, #64\n\tadd %0, r5"
+                             : "+r" (dst) : : "r5");
+        } while (--row != 0);
     }
 }
 #ifndef __APPLE__

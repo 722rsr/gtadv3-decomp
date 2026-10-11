@@ -369,12 +369,43 @@ int sub_0802DD88(u32 s, void *b) __attribute__((alias("SoundDD88_Retry")));
 #endif
 
 // --- sound_mixer_tail.s 0x02BC28 ---
-// Thumb epilogue after ARM loop: subs + loop, restores Smsh, pops 8 regs. Preserve widths.
+// Thumb continuation after the ARM loop. This is entered with the mixer stack
+// frame and callee-saved register image already active; it must branch back to
+// the ARM loop or restore that image and return through its saved PC.
+#ifndef __APPLE__
+__attribute__((naked)) void SoundMixerTailEpilogue(void *state) {
+    (void)state;
+    __asm__ volatile (
+        ".syntax unified\n"
+        "ldr r0, [sp, #4]\n"
+        "subs r0, #1\n"
+        "ble 1f\n"
+        "adds r4, #64\n"
+        "b _0802B990\n"
+        "1:\n"
+        "ldr r0, [sp, #24]\n"
+        "ldr r3, 2f\n"
+        "str r3, [r0, #0]\n"
+        "add sp, #28\n"
+        "pop {r0, r1, r2, r3, r4, r5, r6, r7}\n"
+        "mov r8, r0\n"
+        "mov r9, r1\n"
+        "mov sl, r2\n"
+        "mov fp, r3\n"
+        "pop {r3}\n"
+        "bx r3\n"
+        ".align 2\n"
+        "2: .word 0x68736D53\n"
+        ".syntax divided\n"
+    );
+}
+#else
 void SoundMixerTailEpilogue(void *state){
     volatile u32 *s=(volatile u32*)state;
     if (s[1] > 0) return; // +4 countdown
     s[0]= SOUND_MAGIC; // +0 restore
 }
+#endif
 #ifndef __APPLE__
 void _0802BC28(void *s) __attribute__((alias("SoundMixerTailEpilogue")));
 void sub_0802BC28(void *s) __attribute__((alias("SoundMixerTailEpilogue")));

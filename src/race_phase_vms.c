@@ -81,7 +81,7 @@ void RaceVM_02231C(void *a);
 void RaceVM_022320(void *ctx, int r1, u32 v);
 void RaceVM_022348(void *a);
 void RaceVM_02234C(u32 ev, u32 p1, u32 p2, void *p3);
-u16  RaceVM_0223C0(int n);
+u32  RaceVM_0223C0(int n);
 void RaceVM_0223F0(void *rec);
 int  RaceVM_022438(int x);
 void RaceVM_022454(void *ctx, void *rec);
@@ -542,7 +542,7 @@ void sub_08002234C(u32 a, u32 b, u32 c, void *d) __attribute__((alias("RaceVM_02
 // ============================================================================
 // sub_0800223C0 (0x0800223C0, 0x30 B) — stack template u16[3] from ROM
 // 0x0805FC64 (RuntimeMemcpy 6 B); index clamp n to [0,2]; return u16[n].
-u16 RaceVM_0223C0(int n) {
+u32 RaceVM_0223C0(int n) {
     u32 tmp[2];   // 8-byte frame keeps the memcpy 4-aligned like sp+8
     _0802E0A4(tmp, (const void *)0x0805FC64, 6);
     int r4 = n;
@@ -551,8 +551,8 @@ u16 RaceVM_0223C0(int n) {
     return ((volatile u16 *)tmp)[r4];
 }
 #ifndef __APPLE__
-u16 _0800223C0(int a) __attribute__((alias("RaceVM_0223C0")));
-u16 sub_0800223C0(int a) __attribute__((alias("RaceVM_0223C0")));
+u32 _0800223C0(int a) __attribute__((alias("RaceVM_0223C0")));
+u32 sub_0800223C0(int a) __attribute__((alias("RaceVM_0223C0")));
 #endif
 
 // ============================================================================
@@ -761,10 +761,17 @@ void sub_08002247C(void *a) __attribute__((alias("RaceVM_02247C")));
 // counter dec/inc; clamp [0,2]; sound 2 on change.
 void RaceVM_022624(void *rec, int r1, u32 v) {
     (void)r1;
-    u8 *r5 = (u8 *)rec;
-    u16 r6 = (u16)v;
-    u8 *r4 = r5 + 132;
-    u16 saved = *(u16 *)r4;
+    register u8 *r5 asm("r5") = (u8 *)rec;
+    register u32 raw asm("r2") = v;
+    register u32 r6 asm("r6");
+    __asm__ volatile(".code 16\n\tlsl %0, %0, #16\n\tlsr %1, %0, #16"
+                     : "+r"(raw), "=&r"(r6));
+    register volatile u16 *r4 asm("r4") =
+        (volatile u16 *)(r5 + 132);
+    u16 saved;
+    __asm__ volatile(".code 16\n\tldrh %0, [%1]"
+                     : "=l"(saved) : "r"(r4));
+    __asm__ volatile("" : "+r"(r5), "+r"(r6), "+r"(r4));
     if (r6 == 2) {
         _0802B368(4);
         u32 ten = 10;
@@ -775,45 +782,75 @@ void RaceVM_022624(void *rec, int r1, u32 v) {
         *(volatile u32 *)(r5 + 36) = zero;
     }
     if (r6 == 1) {
-        s16 cur = *(s16 *)r4;
+        register int zero_check asm("r1") = 0;
+        __asm__ volatile("" : "+r"(zero_check));
+        register s32 cur asm("r0");
+        __asm__ volatile(".code 16\n\tldrsh %0, [%1, %2]"
+                         : "=r"(cur) : "r"(r4), "r"(zero_check));
         if (_08026068(cur) == 1) {
-            u16 place = RaceVM_0223C0(cur);
+            register int zero_place asm("r2") = 0;
+            __asm__ volatile("" : "+r"(zero_place));
+            register s32 cur_again asm("r0");
+            __asm__ volatile(".code 16\n\tldrsh %0, [%1, %2]"
+                             : "=r"(cur_again)
+                             : "r"(r4), "r"(zero_place));
+            u32 place = RaceVM_0223C0(cur_again);
             __asm__(".globl RaceVM_WA\nRaceVM_WA = 0x03001780\n");
-            u32 wa = (uintptr_t)RaceVM_WA;
-            u16 cell = 0x0FC2;
-            *(u16 *)(wa + cell) = place;
+            register u32 wa asm("r1") = (uintptr_t)RaceVM_WA;
+            register u32 cell asm("r3") = 0x0FC2;
+            __asm__ volatile("" : "+r"(wa), "+r"(cell));
+            register u32 addr asm("r1") = wa + cell;
+            __asm__ volatile("" : "+r"(addr));
+            register u32 zero asm("r4") = 0;
+            __asm__ volatile("" : "+r"(zero));
+            *(u16 *)addr = (u16)place;
             _0802B368(1);
-            *(volatile u32 *)(r5 + 196) = (u32)r6;
-            *(u16 *)(r5 + 12) = 0;                      // strh r4 (0)
-            *(u16 *)(r5 + 116) = (u16)r6;               // rec+196-80
-            *(volatile u32 *)(r5 + 36) = (u32)r6;
+            *(volatile u32 *)(r5 + 196) = r6;
+            *(u16 *)(r5 + 12) = (u16)zero;
+            *(u16 *)(r5 + 116) = (u16)r6;
+            *(volatile u32 *)(r5 + 36) = r6;
         } else {
             _0802B368(10);
         }
     }
-    // The ROM recomputes the cell pointer here (r2), after the r4 value was
-    // consumed, and clamps through a copy in r1 with a zero index register.
-    u8 *r2 = r5 + 132;
+    register volatile u16 *r2 asm("r2") =
+        (volatile u16 *)(r5 + 132);
     if (r6 == 64) {
-        u16 t = *(u16 *)r2;
-        *(u16 *)r2 = (u16)(t - 1);
+        u16 t = *r2;
+        *r2 = (u16)(t - 1);
     }
     if (r6 == 128) {
-        u16 t = *(u16 *)r2;
-        *(u16 *)r2 = (u16)(t + 1);
+        u16 t = *r2;
+        *r2 = (u16)(t + 1);
     }
-    // named `p1`, not `r1`: this function's second parameter is already `r1`,
-    // and a local with the same name is a hard redeclaration error.
-    u8 *p1 = r2;
-    if (*(s16 *)p1 < 0) *(u16 *)p1 = 0;
-    if (*(s16 *)p1 > 2) *(u16 *)p1 = 2;
-    if (saved != *(u16 *)r2) {
-        _0802B368(2);
+    register u8 *p1 asm("r1") = (u8 *)r2;
+    {
+        register int zero asm("r3") = 0;
+        __asm__ volatile("" : "+r"(zero));
+        register s32 cur asm("r0");
+        __asm__ volatile(".code 16\n\tldrsh %0, [%1, %2]"
+                         : "=r"(cur) : "r"(p1), "r"(zero));
+        if (cur < 0) *(volatile u16 *)p1 = 0;
     }
+    {
+        register int zero asm("r3") = 0;
+        __asm__ volatile("" : "+r"(zero));
+        register s32 cur asm("r0");
+        __asm__ volatile(".code 16\n\tldrsh %0, [%1, %2]"
+                         : "=r"(cur) : "r"(p1), "r"(zero));
+        if (cur > 2) *(volatile u16 *)p1 = 2;
+    }
+    register u16 current asm("r2") = *r2;
+    __asm__ volatile(".code 16\n\tcmp %0, %1\n\tbeq 1f\n\tmovs r0, #2\n\tbl _0802B368\n1:"
+                     : : "r"(saved), "r"(current)
+                     : "r0", "r1", "r3", "lr", "cc");
 }
 #ifndef __APPLE__
 void _080022624(void *a, int b, u32 c) __attribute__((alias("RaceVM_022624")));
 void sub_080022624(void *a, int b, u32 c) __attribute__((alias("RaceVM_022624")));
+#endif
+#ifndef __APPLE__
+__asm__(".short 0\n");
 #endif
 
 // ============================================================================

@@ -565,41 +565,81 @@ int _080019250(void *a, void *b) __attribute__((alias("Race_Setup_19250")));
 // _080018F14: sorted insert at 0x03000598 by word at +204 vs 0x03005E48 head
 // Pools: 0x03005E48 Vu32 gv, 0x03000598 Vu32 arr[3], widths ldr/str Vu32, ble/bge signed
 void Race_Setup_18F14(void *a) {
-    volatile u8 *pa = (volatile u8 *)a;
-    volatile u32 *pGlobal = (volatile u32 *)0x03005E48;
-    volatile u32 *arr = (volatile u32 *)0x03000598;
-    u32 key = *(volatile u32 *)(pa + 204);
-    u32 gv = *pGlobal;
-    if ((s32)gv <= (s32)key) return;
-    if (arr[0] == 0) {
-        arr[0] = (u32)(uintptr_t)a;
+    register void *record __asm__("r5") = a;
+    register volatile u32 *global __asm__("r1") =
+        (volatile u32 *)0x03005E48;
+    register volatile u32 *keyp __asm__("r0") =
+        (volatile u32 *)((volatile u8 *)a + 204);
+    register u32 limit __asm__("r2") = *global;
+    register u32 key __asm__("r0") = *keyp;
+    volatile u32 *global_tail = global;
+    if ((s32)limit <= (s32)key) return;
+
+    register s32 index __asm__("r4") = 0;
+    register volatile u32 *firstp __asm__("r0") =
+        (volatile u32 *)0x03000598;
+    register u32 first __asm__("r1") = *firstp;
+    register volatile u32 *records __asm__("r6") = firstp;
+    if (first == 0) {
+        *records = (u32)(uintptr_t)record;
         goto tail;
     }
-    for (int r4 = 0; r4 <= 2; r4++) {
-        u32 slot = arr[r4];
-        if (slot == 0) {
-            arr[r4] = (u32)(uintptr_t)a;
+compare_records:
+    {
+        __asm__ volatile ("" : "+r"(record) : : "memory");
+        register volatile u32 *recordKeyp __asm__("r1") =
+            (volatile u32 *)((volatile u8 *)record + 204);
+        register s32 offset __asm__("r2") = index * 4;
+        register volatile u32 *slotp __asm__("r0");
+        __asm__ volatile ("add r0, r2, r6" : "=r"(slotp)
+                          : "r"(offset), "r"(records) : "memory");
+        u32 slot = *slotp;
+        register volatile u32 *slotKeyp __asm__("r0") =
+            (volatile u32 *)((volatile u8 *)(uintptr_t)slot + 204);
+        u32 currentKey = *recordKeyp;
+        u32 slotKey = *slotKeyp;
+        if ((s32)currentKey < (s32)slotKey) {
+            register s32 move __asm__("r3") = 1;
+            if (move >= index) {
+                register volatile u32 *shift __asm__("r1") = records + 1;
+                do {
+                    shift[1] = shift[0];
+                    shift--;
+                    move--;
+                } while (move >= index);
+            }
+            __asm__ volatile ("add r0, r2, r6\n\tstr r5, [r0]"
+                              : : : "r0", "memory");
             goto tail;
         }
-        u32 slotKey = *(volatile u32 *)((volatile u8 *)(uintptr_t)slot + 204);
-        if ((s32)key >= (s32)slotKey) {
-            continue;
-        }
-        for (int i = 2; i > r4; i--) arr[i] = arr[i-1];
-        arr[r4] = (u32)(uintptr_t)a;
+    }
+    index++;
+    if (index > 2) goto tail;
+    {
+        register volatile u32 *nextp __asm__("r1");
+        __asm__ volatile ("lsl r0, r4, #2\n\tadd r1, r0, r6"
+                          : "=r"(nextp) : "r"(index), "r"(records)
+                          : "r0", "memory");
+        u32 next = *nextp;
+        if (next != 0) goto compare_records;
+        *nextp = (u32)(uintptr_t)record;
         goto tail;
     }
 tail:
     {
-        u32 v2 = arr[2];
-        if (v2 != 0) {
-            u32 k2 = *(volatile u32 *)((volatile u8 *)(uintptr_t)v2 + 204);
-            *pGlobal = k2;
+        u32 last = records[2];
+        if (last != 0) {
+            u32 lastKey = *(volatile u32 *)((volatile u8 *)(uintptr_t)last + 204);
+            *global_tail = lastKey;
         }
     }
 }
 #ifndef __APPLE__
+__asm__(".pushsection .text.Race_Setup_18F14,\"ax\",%progbits\n\t.short 0\n\t.popsection");
+#endif
+#ifndef __APPLE__
 void _080018F14(void *a) __attribute__((alias("Race_Setup_18F14")));
+void sub_080018F14(void *a) __attribute__((alias("Race_Setup_18F14")));
 #endif
 
 // All seven formerly unowned typed entries in race_setup_18adc.s now have

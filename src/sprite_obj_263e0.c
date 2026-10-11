@@ -370,15 +370,9 @@ void sub_080026674(void *a, int b, int c, int d, int e, int f, int g, int h, int
 // early-out `movs r0,#0` sits INSIDE the span, after the literal pool, with
 // both epilogue `pop`s shared by the two exits.
 //
-// SHAPE DECISION AT THE FIRST DIFFERENCE (+0x6, 35/108): the ROM materialises
-// the address into r2 (`adds r2, r0, r1`) so r0 stays free to die two
-// instructions later at `movs r0,#1`, whereas agbcc folds the same address
-// destructively into the incoming argument (`add r0, r0, r1`). The reason is
-// the load shape that follows: the ROM's INDEXED
-// `movs r1,#0 / ldrsb r1,[r2,r1]` needs a dedicated base register, and agbcc
-// emits register-DIRECT `ldrb r0,[r0]` plus an explicit widening
-// `lsls #24 / asrs #24` instead (+2 bytes, paid for by the unpinned version
-// carrying one extra pushed register).
+// The ROM-table reads are ordinary memory accesses. Pinning the signed-byte
+// address to r2 preserves the indexed ldrsb without widening instructions;
+// the masked offset is shifted arithmetically, as in the ROM's asrs r6,r0.
 // ============================================================================
 void *Sprite_CourseByte2(int a, u32 off) {
     // Register pin (measured : the ROM copies arg1 straight into
@@ -392,22 +386,19 @@ void *Sprite_CourseByte2(int a, u32 off) {
     // that has to survive every call -- is the same lever as _0800264D8: pin
     // the value that outlives the calls, not the result.
     register u32 o6 __asm__("r6") = off;
-    // MEASURED NEGATIVE : pinning the address base to r2 and a
-    // zero index to r1 does NOT produce the ROM's indexed
-    // `movs r1,#0 / ldrsb r1,[r2,r1]`. agbcc constant-folds both pins away
-    // before local allocation and still emits `add r0,r0,r1 / ldrb r0,[r0]`
-    // plus the `lsls #24 / asrs #24` widening -- byte-identical to no pin at
-    // all (35/108 either way, first difference still +0x6). The +2 bytes that
-    // widening costs are NOT recoverable by pinning.
-    s8 b = *(volatile s8 *)(uintptr_t)(0x080CDA74u + (u32)a);
+    // This is a ROM table, not a volatile hardware register. An ordinary
+    // signed-byte read emits the indexed ldrsb used by the original code.
+    register const s8 *bp __asm__("r2") =
+        (const s8 *)(uintptr_t)(0x080CDA74u + (u32)a);
+    s8 b = *bp;
     if (b == -1) return (void *)0;
     void *r5 = _0800748C(_08007498(CREC_TABLE1, (int)b));
     void *rec6 = _08007498(CREC_TABLE0, 6);
     void *arr = _0800748C(rec6);
     o6 &= 0xFFFu;
-    o6 = asr_low8(o6, arr);
+    o6 = (s32)o6 >> *(const u32 *)arr;
     void *arr2 = _0800748C(_08007498(rec6, 0));
-    u32 tile = 127u & (u32)*(volatile u8 *)((u8 *)arr2 + o6);
+    u32 tile = 127u & (u32)*(const u8 *)((u8 *)arr2 + o6);
     return (void *)((u8 *)r5 + (tile << 10));
 }
 #ifndef __APPLE__
@@ -453,9 +444,73 @@ void *sub_080026880(void) __attribute__((alias("Sprite_CourseRecord3")));
 void Sprite_EmitPair(void *unused0, int unused1, int x, int y,
                      u32 a4, u32 a5, u32 a6, u32 a7, u32 a8) {
     (void)unused0; (void)unused1;
+#ifndef __APPLE__
+    /* The ROM enters the allocator with r0 still holding the 0x400 mask. */
+    extern void *Sprite_EmitAllocate(void) __asm__("sub_08002BFC");
+    /* Keep the ROM's four-byte frame so its five stack arguments stay at the
+       original offsets; the matching compiler otherwise rounds this frame. */
+    struct SpritePairStack {
+        u8 pad[36];
+        volatile u32 a4;
+        volatile u32 a5;
+        volatile u32 a6;
+        volatile u32 a7;
+        volatile u32 a8;
+    };
+    __asm__ volatile("sub sp, #4" : : : "memory");
+    register volatile struct SpritePairStack *args __asm__("sp");
+    __asm__ volatile("" : "=r"(args));
+    register int xreg __asm__("r5") = x;
+    register u32 yreg __asm__("r8") = y;
+    register u32 signarg __asm__("r0") = args->a7;
+    register u32 a8value __asm__("r7") = args->a8;
+    register u32 zero __asm__("sl") = 0;
+    register u32 high __asm__("r9") = 0xC000u;
+    register u32 a5bits __asm__("r6");
+    __asm__ volatile("" : "+r"(xreg), "+r"(yreg) : : "memory");
+    __asm__ volatile("" : "+r"(signarg) : : "memory");
+    __asm__ volatile("" : "+r"(zero) : : "memory");
+    __asm__ volatile("" : "+r"(high) : : "memory");
+    register u32 attr0 __asm__("r4") =
+        (u32)((s32)(signarg | (u32)(-(s32)signarg)) >> 31) & 0x400u;
+    __asm__ volatile("" : "+r"(attr0) : : "memory");
+    u8 *obj = (u8 *)Sprite_EmitAllocate();
+    register u32 lowy __asm__("r2") = yreg;
+    lowy &= 0xFFu;
+    attr0 |= lowy;
+    *(volatile u16 *)(obj + 0) = (u16)attr0;
+    register int xpos __asm__("r0") = xreg;
+    xpos -= 56;
+    yreg = 0x1FFu;
+    register u32 maskcopy1 __asm__("r2") = yreg;
+    __asm__ volatile("" : "+r"(maskcopy1));
+    /* Preserve the ROM's redundant copy before its mask; agbcc folds it out. */
+    __asm__ volatile("mov r2, r8" : : : "memory");
+    *(volatile u16 *)(obj + 2) = (u16)(((u32)xpos & maskcopy1) | high);
+    register u32 a5raw __asm__("r0") = args->a5;
+    a5bits = a5raw << 12;
+    __asm__ volatile("" : "+r"(a5bits) : : "memory");
+    *(volatile u16 *)(obj + 4) = (u16)((args->a4 & 0xFFFFu) | a5bits | (a8value << 10));
+    register u32 zero1 __asm__("r2") = zero;
+    *(volatile u16 *)(obj + 12) = (u16)zero1;
+    _08002C34((int)args->a6, obj);
+    u8 *obj2 = (u8 *)Sprite_EmitAllocate();
+    *(volatile u16 *)(obj2 + 0) = (u16)attr0;
+    xreg -= 8;
+    register u32 maskcopy __asm__("r0") = yreg;
+    xreg &= maskcopy;
+    register u32 highcopy __asm__("r2") = high;
+    xreg |= highcopy;
+    *(volatile u16 *)(obj2 + 2) = (u16)xreg;
+    *(volatile u16 *)(obj2 + 4) = (u16)(((args->a4 + 64) & 0xFFFFu) | a5bits | (a8value << 10));
+    register u32 zero2 __asm__("r0") = zero;
+    *(volatile u16 *)(obj2 + 12) = (u16)zero2;
+    _08002C34((int)args->a6, obj2);
+    __asm__ volatile("add sp, #4" : : : "memory");
+#else
     int r5 = x;
     u32 r8 = y;
-    u32 flag = (u32)(((a7 | (u32)(-(s32)a7)) >> 31) & 0x400u);
+    u32 flag = (u32)((s32)(a7 | (u32)(-(s32)a7)) >> 31) & 0x400u;
     u8 *obj = (u8 *)_08002BFC(0);
     *(volatile u16 *)(obj + 0) = (u16)((r8 & 0xFFu) | flag);
     *(volatile u16 *)(obj + 2) = (u16)(((u32)(r5 - 56) & 0x1FFu) | 0xC000u);
@@ -468,6 +523,7 @@ void Sprite_EmitPair(void *unused0, int unused1, int x, int y,
     *(volatile u16 *)(obj2 + 4) = (u16)(((a4 + 64) & 0xFFFFu) | (a5 << 12) | (a8 << 10));
     *(volatile u16 *)(obj2 + 12) = 0;
     _08002C34((int)a6, obj2);
+#endif
 }
 #ifndef __APPLE__
 void _080026898(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h, u32 i)
@@ -971,13 +1027,34 @@ void sub_08026C84(int a, int b, int c, int d, int e) __attribute__((alias("Sprit
 // ============================================================================
 void Sprite_EmitTriple(void *base, int id, int x, int y) {
     extern void _08002DB8(void *, int, int, int, int, int, int);
+#ifndef __APPLE__
+    register u8 *obj __asm__("r9") = (u8 *)base;
+    int idv = id;
+    __asm__ volatile("" : "+r"(obj), "+r"(idv));
+    register int sx __asm__("r5") = x;
+    register u32 uy __asm__("r4") = (u32)y;
+    __asm__ volatile("" : "+r"(sx), "+r"(uy));
+    uy = (u16)uy;
+    __asm__ volatile("" : "+r"(uy));
+    register void *tpl __asm__("r6") = (void *)(uintptr_t)0x083A2100u;
+    __asm__ volatile("" : "+r"(tpl));
+    sx = (s16)sx;
+    __asm__ volatile("" : "+r"(sx));
+#else
+    u8 *obj = (u8 *)base;
+    int idv = id;
+    u16 uy = (u16)y;
+    void *tpl = (void *)(uintptr_t)0x083A2100u;
     int sx = (s16)x;
-    _08007538((void *)(uintptr_t)0x083A2100, 23, (void *)(uintptr_t)sx);
-    int sy = (s16)y;
-    _080075E8((void *)(uintptr_t)0x083A2100, 9, sy);
-    _08002DB8(base, id, sx, sy, 0, 6, 1);
-    _08002DB8((u8 *)base + 32, id, sx + 8, sy, 0, 6, 1);
-    _08002DB8((u8 *)base + 64, id, sx + 16, sy, 0, 8, 1);
+#endif
+    _08007538(tpl, 23, (void *)(uintptr_t)sx);
+    int sy = (s16)uy;
+    _080075E8(tpl, 9, sy);
+    _08002DB8(obj, idv, sx, sy, 0, 6, 1);
+    _08002DB8(obj + 32, idv, sx + 8, sy, 0, 6, 1);
+    obj += 64;
+    sx += 16;
+    _08002DB8(obj, idv, sx, sy, 0, 8, 1);
 }
 #ifndef __APPLE__
 void _08026CAC(void *a, int b, int c, int d) __attribute__((alias("Sprite_EmitTriple")));

@@ -63,3 +63,4 @@ _0800C87C:
 	pop {r0}
 	bx r0
 	.short 0
+menu_c814_end:

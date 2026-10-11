@@ -20,7 +20,8 @@ __attribute__((weak)) int Sub_0802572C(int a, int b, int c) { (void)a; (void)b; 
 extern void Sub_08007B18(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h);
 extern void Sub_08007BFC(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h, u32 i);
 extern int Sub_08025CF4(int a, int b, int c);
-extern int Sub_0802572C(int a, int b, int c); // 3-arg ABI (r2 forwarded to 0x080256D8)
+extern int Sub_0802572C(int a, int b, int c); // host fallback
+extern s16 _0802572C(int a, int b);             // ROM call is the 2-arg wrapper
 #endif
 
 // ----------------------------------------------------------------------------
@@ -29,7 +30,8 @@ extern int Sub_0802572C(int a, int b, int c); // 3-arg ABI (r2 forwarded to 0x08
 //   for r9 in -1..4:
 //     r4 = clamp(s16[rec+160]+r9, 0, s16[rec+158]).
 //     sl = 25CF4(s16[WA+0xFF2], s16[0x03002776], r4).
-//     r2 = clamp((s16)2572C(s16[0x03002776], r4), 0, 4).
+//     r2 = clamp((s16)2572C(s16[0x03002776], r4), 0, 4); the ROM call is
+//     the two-argument wrapper, which ignores the incoming r2 value.
 //     skip = (u16[rec+36]==0 && (r9==-1 || r9==4)); if skip continue.
 //     r1 = s16[0x080CB76C + r2*2];
 //     7B18(rec+16, 10, r1, base-24+iter*48, 10,1,0,0)
@@ -59,8 +61,15 @@ void MenuFF78_1479C(void *rec_) {
         int sl = Sub_08025CF4(
             (int)*(volatile s16 *)(uintptr_t)(wa + 0xFF2u),
             (int)*(volatile s16 *)(uintptr_t)0x03002776u, r4);
-        int r2 = (int)(s16)Sub_0802572C(
+        int course;
+#ifdef __APPLE__
+        course = Sub_0802572C(
             (int)*(volatile s16 *)(uintptr_t)0x03002776u, r4, 0);
+#else
+        course = _0802572C(
+            (int)*(volatile s16 *)(uintptr_t)0x03002776u, r4);
+#endif
+        int r2 = (int)(s16)course;
         if (r2 < 0) r2 = 0;
         if (r2 > 4) r2 = 4;
         int skip = (*(volatile u16 *)(uintptr_t)(rec + 36) == 0 &&

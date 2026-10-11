@@ -2,6 +2,8 @@
 void sub_08001D218(void) __attribute__((alias("Race_Scene_Wrapper_1D218")));  /* rule 6: the splice replaces this label */
 #include "gba/types.h"
 #include "gtadv/memory.h"
+#include "gtadv/course_cal.h"
+#include "gtadv/sound.h"
 
 // Reference: asm/race_scene.s 0x0801A294-0x0802135C (112 funcs)
 // Evidence-backed dispatchers and init/frame leaves with proven pools/caller offsets.
@@ -232,18 +234,22 @@ void _08001A4AC(void) __attribute__((alias("Race_Scene_Dispatch_1A4AC")));
 
 extern void Sub_08002A86C(void *rec, u32 bits, u32 flag);
 void Race_Scene_BHandler_1B410(void) {
-    volatile u8 *wa = (volatile u8*)WORK_AREA_BASE;
-    s16 cnt = *(volatile s16 *)(wa + 0x10CA);
-    for(int i=0;i<cnt;i++) Sub_08002A86C((void *)(uintptr_t)(0x03004EA4 + i*284), 1, 0);
-    if (Ghost_FlagTest(32)==0) {
-        u8 v = *(volatile u8 *)(wa + 0x1110);
-        if (v) {
-            s16 c = *(volatile s16 *)(wa + 0x10CA -18);
-            (void)c;
+    volatile u8 *wa = (volatile u8 *)WORK_AREA_BASE;
+    volatile s16 *countp = (volatile s16 *)(wa + 0x10CAu);
+    for (int i = 0; i < *countp; i++) {
+        Sub_08002A86C((void *)(uintptr_t)(0x03004EA4u + (u32)i * 284u),
+                      1, 0);
+    }
+    if (Ghost_FlagTest(32u) == 0u) {
+        s8 v = *(volatile s8 *)(wa + 0x1110u);
+        if (v != 0) {
+            s16 c = *(volatile s16 *)(wa + 0x1110u - 18u);
+            u16 song = (u16)Course_GetSong((int)c);
+            SoundSetMasterVol((u32)song);
         }
     }
-    Ghost_FlagOp(128,1);
-    Ghost_FlagOp(256,1);
+    Ghost_FlagOp(128u, 1);
+    Ghost_FlagOp(0x10000u, 1);
 }
 #ifndef __APPLE__
 void _08001B410(void) __attribute__((alias("Race_Scene_BHandler_1B410")));

@@ -61,17 +61,49 @@ extern void _08009748(u16 a, u16 b);                     // 0x08009748 (course_l
 //   07A04(rec+36, s16[rec+14]); 07614(0x08291F7C, 0, 1, s16[rec+16]);
 //   07614(0x08291F7C, 0, 0, s16[rec+18]); [rec+20] = 1;
 //   [rec+22] = u16[0x03001780+0x10C6]; [rec+24] = u16[0x03001780+0x10C8].
+//
+// The ROM carries no 40-byte stack buffer: the 0798C callee's sp argument
+// feeds straight through from the 4-byte frame, and the CpuSet source word
+// (`movs r0,#0 / str r0,[sp]`) is the same word reused as that argument.
+// A `u8 tpl[40]` local widens the frame (`sub sp,#0x2C`), so the scratch
+// pointer must alias the 4-byte frame slot instead.
+//
+// PROLOGUE SHAPE (measured): `adds r1,r0,#0 / ldr r4,[slot] / str r1,[r4]`.
+// The copy must be a PLAIN local initialized from the argument BEFORE the
+// slot base is materialized -- not a pinned register, not the argument
+// itself. `adds r5,r0,#0` appears only when the pin (or a wide live range)
+// keeps a second copy alive; without it the copy dies at the first store
+// and the slot load follows in ROM order.
 void CourseLeaves_096A4(void *rec) {
-    *CL_SLOT = (u32)(uintptr_t)rec;
-    u32 zero = 0;
-    _0802D974(&zero, (void *)(uintptr_t)rec, 0x0500000Bu);
+    // MEASURED pin matrix (prefix / first-diff):
+    //   no pins               adds r4,r0 / ldr r0     25/164 +0x4
+    //   pin r1 + pin r4       adds r5,r0 / adds r1,r5  20/164 +0x2
+    //   pin r1 only           adds r4,r0 / adds r1,r4  20/164 +0x2
+    // The allocator will not place the copy straight in r1: any live copy
+    // is assigned r4/r5 first, with r1 as a second copy at best. The ROM's
+    // single `adds r1,r0` with the slot in r4 is outside the allocator's
+    // reachable shapes for this live-range pattern; parking here and
+    // moving to the next cheapest band.
+    u32 *slot = (u32 *)(uintptr_t)0x030003E4u;
+    void *r1 = rec;
+    // The ROM's frame is 4 bytes: `push {r4,r5,lr} / sub sp,#4`, with the
+    // CpuSet source word living at [sp]. A named u32 zero materialized
+    // AFTER the slot base emits `movs r0,#0 / str r0,[sp]` in ROM order;
+    // declaring it `= 0` up front hoists the zero above the slot load.
+    u32 zero;
+    slot[0] = (u32)(uintptr_t)r1;
+    zero = 0;
+    _0802D974(&zero, (void *)(uintptr_t)r1, 0x0500000Bu);
 
     *(volatile s16 *)((u8 *)rec + 14) = _080261B0(10);
     *(volatile s16 *)((u8 *)rec + 16) = _080261F8(10);
     *(volatile s16 *)((u8 *)rec + 18) = _080261F8(11);
 
-    u8 tpl[40];
-    _0800798C((void *)(uintptr_t)CL_TPL, tpl);   // seeks child record (+36 arg path)
+    // The second 0798C argument is FILE-scope scratch, not a stack buffer:
+    // the ROM passes `mov r0,sp` with sp still 4 bytes down, i.e. the same
+    // word it just zero-filled. Passing &zero reuses that slot and keeps
+    // `sub sp,#4` instead of widening it to `sub sp,#0x2C`.
+    _0800798C((void *)(uintptr_t)CL_TPL, &zero);   // seeks child record (+36 arg path)
     u8 *dst36 = (u8 *)rec + 36;
     s16 v14 = *(volatile s16 *)((u8 *)rec + 14);
     _08007A04(dst36, v14);
@@ -169,30 +201,33 @@ void CourseLeaves_09900(void) {
     volatile u8 *blk = (volatile u8 *)(uintptr_t)*CL_SLOT;
     // ROM stack block: s0 = s16[blk+16], s1 = s2 = s3 = 0 (fix).
     _08007B18((void *)(uintptr_t)(blk + 36), 1, 88, 28,
-              (u32)(s32)(s16)*(volatile s16 *)(blk + 16), 0u, 0u, 0u);
+              (u32)(s32)(s16)*(s16 *)(blk + 16), 0u, 0u, 0u);
 
-    u32 r8 = 0, r5 = 0, r7 = 64;
-    (void)r5;
+    u32 r8 = 0, r5 = 0;
+    // Keep the shared zero in r5 before initializing the row position and
+    // pointers. The ROM reuses it for all three stack arguments each call.
+    __asm__("" : : "r"(r5));
+    u32 r7 = 64;
     u8 *r6 = rowB, *r4 = rowA;
     for (;;) {
         volatile u8 *b = (volatile u8 *)(uintptr_t)*CL_SLOT;
         u32 mode = *(volatile u32 *)b;
         if (mode == r8) {
-            s16 a0 = *(volatile s16 *)r4;
-            s16 b0 = *(volatile s16 *)r6;
+            s16 a0 = *(s16 *)r4;
+            s16 b0 = *(s16 *)r6;
             _08007B18((void *)(uintptr_t)(b + 36), a0, b0, (int)r7,
-                      (u32)(s32)(s16)*(volatile s16 *)(b + 16), 0u, 0u, 0u);
+                      (u32)(s32)(s16)*(s16 *)(b + 16), r5, r5, r5);
         } else {
-            s16 a0 = *(volatile s16 *)r4;
-            s16 b0 = *(volatile s16 *)r6;
+            s16 a0 = *(s16 *)r4;
+            s16 b0 = *(s16 *)r6;
             _08007B18((void *)(uintptr_t)(b + 36), a0, b0, (int)r7,
-                      (u32)(s32)(s16)*(volatile s16 *)(b + 18), 0u, 0u, 0u);
+                      (u32)(s32)(s16)*(s16 *)(b + 18), r5, r5, r5);
         }
         r7 += 24;
         r6 += 2;
         r4 += 2;
         r8++;
-        if (r8 > 2)
+        if ((s32)r8 > 2)
             break;
     }
 }

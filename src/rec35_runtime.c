@@ -235,27 +235,53 @@ void _0800166E8(void *a,int b,int c) __attribute__((alias("Rec35_Leaf_166E8")));
 //             [sp+12]=0, [sp+16]=0, [sp+20]=1; r3 = incoming r3).
 // True ROM arities (tools/arity_audit.py): _08007570 = 5 args (1 stack word),
 // _08002ED0 = 10 args (6 stack words).
-extern void _08007570(void *base, int idx, int b, int c, int e);
-extern void _08002ED0(void *a, int b, int c, int d, int e, int f, int g, int h, int i, int j);
+extern void sub_08007570(void *base, int idx, int b, int c, int e);
+extern void sub_08002ED0(void *a, int b, int c, int d, int e, int f, int g, int h, int i, int j);
 void Rec35_PlacementTick_16734(void *ctx, int a, int b, int c) {
+#ifndef __APPLE__
+    register int index __asm__("r1") = b;
+    __asm__ volatile("" : "+r"(index));
+    register volatile u32 *cnt __asm__("r2") = (volatile u32 *)0x0300058C;
+    __asm__ volatile("" : "+r"(cnt));
+#else
+    int index = b;
     volatile u32 *cnt = (volatile u32 *)0x0300058C;
-    volatile u16 *cur = (volatile u16 *)0x0203F8E8;
+#endif
     int v = (int)(*cnt) - 1;
     *cnt = (u32)v;
+#ifndef __APPLE__
+    register s16 *cur __asm__("r5") = (s16 *)0x0203F8E8;
+    __asm__ volatile("" : "+r"(cur));
+#else
+    s16 *cur = (s16 *)0x0203F8E8;
+#endif
     if (v <= 0) {
         *cur = (u16)(*cur + 1);
         *cnt = 5;
     }
-    if (*cur > 15) *cur = 0;
-    int s16val = *(volatile s16 *)(0x080CB8AC + ((int)(s16)b << 1));
-    _08007570((void *)0x08306B54, s16val,
-              (int)*(volatile s16 *)(0x0203F8E8 + 2),
-              (int)*(volatile s16 *)(0x0203F8E8 + 0) << 6, 64);
-    _08002ED0(ctx, a, (int)*(volatile s16 *)(0x0203F8E8 + 2),
-               c, 1, 3, 1, 0, 0, 1);
+#ifndef __APPLE__
+    register s16 *cur0 __asm__("r2") = cur;
+    __asm__ volatile("" : "+r"(cur0));
+#else
+    s16 *cur0 = cur;
+#endif
+    if (*cur0 > 15) *cur0 = 0;
+#ifndef __APPLE__
+    register void *base __asm__("r0") = (void *)0x08306B54;
+    __asm__ volatile("" : "+r"(base));
+    register const s16 *table __asm__("r2") = (const s16 *)0x080CB8AC;
+    __asm__ volatile("" : "+r"(table));
+#else
+    void *base = (void *)0x08306B54;
+    const s16 *table = (const s16 *)0x080CB8AC;
+#endif
+    int s16val = table[index];
+    sub_08007570(base, s16val, (int)cur[1], (int)cur[0] << 6, 64);
+    sub_08002ED0(ctx, a, (int)cur[1], c, 1, 3, 1, 0, 0, 1);
 }
 #ifndef __APPLE__
 void _080016734(void *c,int a,int b,int d) __attribute__((alias("Rec35_PlacementTick_16734")));
+void sub_080016734(void *c,int a,int b,int d) __attribute__((alias("Rec35_PlacementTick_16734")));
 #endif
 
 void Rec35_Leaf_167C4(void *ctx) {

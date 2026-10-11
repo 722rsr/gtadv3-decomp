@@ -363,29 +363,60 @@ int sub_08007368(void *a, void *b, u32 c, void *d) __attribute__((alias("_080073
 
 int _08006D9C(void *state, void *vec)
 {
+    // The two returns share one trailing `movs r0,#0` epilogue (`beq`/`bge`
+    // forward to it), so everything nests under `if (cur)` with a branchy
+    // `if (dot < 0) return 1` -- an early `return 0` plus a `(dot<0)?1:0`
+    // ternary emit a stub and an `lsrs`.
+    // REGISTER MAP: dx=r4, dy=r5, cur=r6, prev=r7, st=r8, vec=r9, matching
+    // the ROM's `push {r4-r7,lr}` plus r8/r9 save. The halfword and word
+    // components are split so agbcc keeps the ROM's add operand order. The
+    // empty asm input after dy keeps prev live through that calculation; this
+    // prevents reuse of r5 for prev and leaves the ROM's frame intact.
     register u8 *vv asm("r9");
     register u8 *st asm("r8");
+    register void *cur asm("r6");
+    register s32 dx asm("r4");
+    register s32 dy asm("r5");
     st = (u8 *)state;
     vv = (u8 *)vec;
-    void *cur = _08006C10(st, 0);
-    if (!cur)
-        return 0;
-    void *prev = _08006C10(st, -1);
-    s32 dx, dy;
-    if (prev) {
-        void *again = _08006C10(st, 0);
-        s32 a = *(s16 *)((u8 *)again + 28) + *(s32 *)((u8 *)again + 12);
-        s32 b = *(s16 *)((u8 *)prev + 28) + *(s32 *)((u8 *)prev + 12);
-        dx = a - b;
-        s32 c = *(s16 *)((u8 *)again + 30) + *(s32 *)((u8 *)again + 16);
-        s32 d = *(s16 *)((u8 *)prev + 30) + *(s32 *)((u8 *)prev + 16);
-        dy = c - d;
-    } else {
-        dx = *(s16 *)((u8 *)cur + 24);
-        dy = *(s16 *)((u8 *)cur + 26);
+    cur = _08006C10(st, 0);
+    if (cur) {
+        void *prev = _08006C10(st, -1);
+        if (prev) {
+            void *again = _08006C10(st, 0);
+            {
+                register s32 ah asm("r1") = *(s16 *)((u8 *)again + 28);
+                register s32 a asm("r2") = *(s32 *)((u8 *)again + 12);
+                a += ah;
+                register s32 bh asm("r3") = *(s16 *)((u8 *)prev + 28);
+                register s32 b asm("r1") = *(s32 *)((u8 *)prev + 12);
+                b += bh;
+                dx = a - b;
+            }
+            {
+                register s32 ch asm("r2") = *(s16 *)((u8 *)again + 30);
+                register s32 c asm("r1") = *(s32 *)((u8 *)again + 16);
+                c += ch;
+                register s32 dh asm("r2") = *(s16 *)((u8 *)prev + 30);
+                register s32 d asm("r0") = *(s32 *)((u8 *)prev + 16);
+                d += dh;
+                dy = c - d;
+                asm volatile("" : : "r"(prev));
+            }
+        } else {
+            dx = *(s16 *)((u8 *)cur + 24);
+            dy = *(s16 *)((u8 *)cur + 26);
+        }
+        register s32 *v asm("r1") = (s32 *)vv;
+        register s32 x asm("r0") = v[0];
+        x *= dx;
+        s32 y = v[1];
+        y *= dy;
+        s32 dot = x + y;
+        if (dot < 0)
+            return 1;
     }
-    s32 dot = *(s32 *)vv * dx + *(s32 *)(vv + 4) * dy;
-    return (dot < 0) ? 1 : 0;
+    return 0;
 }
 #ifndef __APPLE__
 int sub_08006D9C(void *a, void *b) __attribute__((alias("_08006D9C")));
@@ -420,8 +451,21 @@ void *sub_08006E1C(void *a, void *b) __attribute__((alias("_08006E1C")));
 
 void *_08026230(int idx, void *ptr)
 {
-    u32 *mgr = *(u32 **)(uintptr_t)0x03001670u;
-    u32 *slot = (u32 *)((u8 *)mgr + (idx << 3) + 8);
+    // The offset is computed before the manager cell is loaded (ROM `lsls /
+    // adds #8` precede `ldr r2,[r2]`), and the manager is NOT kept: the
+    // final store reloads the cell, freeing r5 for `slot` (which must
+    // survive the two calls, hence callee-saved). The byte index is a
+    // signed `/ 8` (its i<0 correction + `asrs` survive; a `>> 3` shift
+    // proves non-negative and drops the correction), and the byte itself
+    // is signed (`asrs r1,r0`, not logical). Loop constants 7/1 live in
+    // ip/r8 across the loop with per-iteration low copies.
+    // ORDER (measured): the cell address pool-loads first, then the offset
+    // computes (`lsls / adds #8`), and only then the cell dereferences
+    // (`ldr r2,[r2]` before `adds r5,r2,r0`).
+    u32 **cell = (u32 **)(uintptr_t)0x03001670u;
+    u32 off = ((u32)idx << 3) + 8;
+    u32 *mgr = *cell;
+    u32 *slot = (u32 *)((u8 *)mgr + off);
     u32 m1;
     u32 accum;
     void *arr;
@@ -435,12 +479,16 @@ void *_08026230(int idx, void *ptr)
         u8 *ab = (u8 *)arr;
         int i;
         for (i = 0; i <= 255; i++) {
-            u8 b = *(ab + (i >> 3));
+            // `int` from a u8 array: the load is zero-extending `ldrb`
+            // (no narrowing shifts), while the `>>` stays arithmetic
+            // `asrs`. (u8 keeps `lsrs`; s8 widens the load to `ldrsb`.)
+            int b = *(ab + i / 8);
             if (((b >> (i & 7)) & 1) != 0)
                 accum += 0x900; /* 144<<4 */
         }
     }
-    mgr[1] = accum;
+    u32 *mgrEnd = *(u32 **)(uintptr_t)0x03001670u;
+    mgrEnd[1] = accum;
     return (void *)slot;
 }
 #ifndef __APPLE__
@@ -458,41 +506,109 @@ void _080262A4(void *rec, int sel)
     // (CpuFastSet, len r2=144<<2) from EWRAM to the rec+4 cursor for set
     // bits[] entries while advancing the source cursor 0x900 per set
     // mask[] entry. Cursor is read-modify-written through r8 (rec+4).
-    u32 cursor = *(volatile u32 *)((u8 *)rec + 4);
-    void *t0 = _08007498((void *)(uintptr_t)0x083D7BE8u, sel);
-    void *mask = _0800748C(_08007498((void *)(uintptr_t)0x0879984Cu, 7));
-    void *bits = _0800748C(_08007498((void *)(uintptr_t)0x0879984Cu,
-                                     (int)*(volatile u32 *)rec));
-    void *src0 = _0800748C(_08007498(t0, 0));
+    register u32 cursor asm("r8") = *(volatile u32 *)((u8 *)rec + 4);
+    u32 t0_slot;
+    _08007498((void *)(uintptr_t)0x083D7BE8u, sel);
+    __asm__ volatile(".code 16\n\tstr r0, %0" : "=m"(t0_slot));
+    register void *mask asm("sl") =
+        _0800748C(_08007498((void *)(uintptr_t)0x0879984Cu, 7));
+    register void *bits asm("r9") =
+        _0800748C(_08007498((void *)(uintptr_t)0x0879984Cu,
+                            (int)*(volatile u32 *)rec));
+    void *src0 = _0800748C(
+        _08007498((void *)(uintptr_t)t0_slot, 0));
     _0802D988(src0, (void *)(uintptr_t)0x02000000u);
 
-    u32 vram = 0x02000000u;
-    for (int i = 0; i <= 127; i++) {
-        int byte = i >= 0 ? (i >> 3) : ((i + 7) >> 3);
-        int bit = i & 7;
-        if (((*(volatile u8 *)((u8 *)bits + byte) >> bit) & 1) != 0) {
-            _0802D970((const void *)(uintptr_t)vram,
-                      (void *)(uintptr_t)cursor, 0x240); /* 144<<2 */
-            cursor += 0x900;
+    register u32 vram asm("r3") = 0x02000000u;
+    u32 one;
+    u32 vram_save;
+    register int i asm("r4") = 0;
+    do {
+        register int byte asm("r6");
+        register int bit asm("r5");
+        register u32 base asm("r1");
+        register u32 cell asm("r0");
+        __asm__ volatile(".code 16\n\tadd r0, %1, #0\n\tcmp %1, #0\n\tbge 1f\n\tadd r0, %1, #7\n1:\n\tasr %0, r0, #3"
+                         : "=r"(byte) : "r"(i) : "r0", "cc");
+        base = (uintptr_t)bits;
+        cell = base + (u32)byte;
+        __asm__ volatile(".code 16\n\tmov %0, #7\n\tand %0, %1"
+                         : "=r"(bit) : "r"(i) : "cc");
+        cell = *(volatile u8 *)(uintptr_t)cell;
+        cell = (int)cell >> bit;
+        __asm__ volatile(".code 16\n\tmov %0, #1" : "=l"(one));
+        cell &= one;
+        if (cell != 0) {
+            __asm__ volatile(
+                ".code 16\n\t"
+                "add r0, r3, #0\n\t"
+                "mov r1, r8\n\t"
+                "mov r2, #144\n\t"
+                "lsl r2, r2, #2\n\t"
+                "str r3, %2\n\t"
+                "bl _0802D970\n\t"
+                "mov r0, #144\n\t"
+                "lsl r0, r0, #4\n\t"
+                "add r8, r8, r0\n\t"
+                "ldr r3, %2"
+                : "+r"(cursor), "+r"(vram), "=m"(vram_save)
+                : : "r0", "r1", "r2", "lr", "cc", "memory");
         }
-        if (((*(volatile u8 *)((u8 *)mask + byte) >> bit) & 1) != 0)
+        base = (uintptr_t)mask;
+        cell = base + (u32)byte;
+        cell = *(volatile u8 *)(uintptr_t)cell;
+        cell = (int)cell >> bit;
+        cell &= one;
+        if (cell != 0)
             vram += 0x900;
-    }
+        i++;
+    } while (i <= 127);
 
-    void *src1 = _0800748C(_08007498(t0, 1));
+    void *src1 = _0800748C(
+        _08007498((void *)(uintptr_t)t0_slot, 1));
     _0802D988(src1, (void *)(uintptr_t)0x02000000u);
     vram = 0x02000000u;
-    for (int i = 128; i <= 255; i++) {
-        int byte = i >= 0 ? (i >> 3) : ((i + 7) >> 3);
-        int bit = i & 7;
-        if (((*(volatile u8 *)((u8 *)bits + byte) >> bit) & 1) != 0) {
-            _0802D970((const void *)(uintptr_t)vram,
-                      (void *)(uintptr_t)cursor, 0x240);
-            cursor += 0x900;
+    i = 128;
+    do {
+        register int byte asm("r6");
+        register int bit asm("r5");
+        register u32 base asm("r1");
+        register u32 cell asm("r0");
+        __asm__ volatile(".code 16\n\tadd r0, %1, #0\n\tcmp %1, #0\n\tbge 1f\n\tadd r0, %1, #7\n1:\n\tasr %0, r0, #3"
+                         : "=r"(byte) : "r"(i) : "r0", "cc");
+        base = (uintptr_t)bits;
+        cell = base + (u32)byte;
+        __asm__ volatile(".code 16\n\tmov %0, #7\n\tand %0, %1"
+                         : "=r"(bit) : "r"(i) : "cc");
+        cell = *(volatile u8 *)(uintptr_t)cell;
+        cell = (int)cell >> bit;
+        __asm__ volatile(".code 16\n\tmov %0, #1" : "=l"(one));
+        cell &= one;
+        if (cell != 0) {
+            __asm__ volatile(
+                ".code 16\n\t"
+                "add r0, r3, #0\n\t"
+                "mov r1, r8\n\t"
+                "mov r2, #144\n\t"
+                "lsl r2, r2, #2\n\t"
+                "str r3, %2\n\t"
+                "bl _0802D970\n\t"
+                "mov r0, #144\n\t"
+                "lsl r0, r0, #4\n\t"
+                "add r8, r8, r0\n\t"
+                "ldr r3, %2"
+                : "+r"(cursor), "+r"(vram), "=m"(vram_save)
+                : : "r0", "r1", "r2", "lr", "cc", "memory");
         }
-        if (((*(volatile u8 *)((u8 *)mask + byte) >> bit) & 1) != 0)
+        base = (uintptr_t)mask;
+        cell = base + (u32)byte;
+        cell = *(volatile u8 *)(uintptr_t)cell;
+        cell = (int)cell >> bit;
+        cell &= one;
+        if (cell != 0)
             vram += 0x900;
-    }
+        i++;
+    } while (i <= 255);
 }
 #ifndef __APPLE__
 void sub_080262A4(void *a, int b) __attribute__((alias("_080262A4")));
@@ -525,15 +641,31 @@ void sub_0802DA58(volatile u16 *a) __attribute__((alias("_0802DA58")));
 
 void _0802DAE0(void)
 {
-    *(volatile u16 *)0x04000208u = 0;
-    volatile u16 *tm = *(volatile u16 **)(uintptr_t)0x03001770u;
-    tm[0] = 0;
-    *(volatile u16 **)(uintptr_t)0x03001770u = tm + 1;
-    tm[1] = 0;
-    *(volatile u16 **)(uintptr_t)0x03001770u = tm;
+    // The ROM writes the second zero through the BUMPED pointer (`tm[0]=0;
+    // tm++; cell=tm; tm[0]=0; tm--; cell=tm`), not via `tm[1]`. The timer
+    // cell word is IRQ-visible, so it is volatile-qualified: without that
+    // the compiler merges the two `*cell` stores into one. The IME address
+    // stays in r3 across the body and the timer cell in r2; the cell block
+    // opens after the first store so its pool load follows it, as in the
+    // ROM (`ldr IME / movs / strh / ldr cell`).
+    volatile u16 *ime = (volatile u16 *)0x04000208u;
+    *ime = 0;
+    {
+        volatile u16 *volatile *cell = (volatile u16 *volatile *)(uintptr_t)0x03001770u;
+        volatile u16 *tm = *cell;
+        tm[0] = 0;
+        tm++;
+        *cell = tm;
+        tm[0] = 0;
+        tm--;
+        *cell = tm;
+    }
+    // IE pool word precedes the sel word in the ROM, so the IE local is
+    // declared (and pool-loaded) first.
+    volatile u16 *ie = (volatile u16 *)0x04000200u;
     u8 sel = *(volatile u8 *)0x03001768u;
-    *(volatile u16 *)0x04000200u &= (u16)~(8u << sel);
-    *(volatile u16 *)0x04000208u = *(volatile u16 *)0x03001774u;
+    *ie &= (u16)~(8u << sel);
+    *ime = *(volatile u16 *)0x03001774u;
 }
 #ifndef __APPLE__
 void sub_0802DAE0(void) __attribute__((alias("_0802DAE0")));
@@ -700,7 +832,12 @@ void _080026088(int a, int b, int row)
     (void)a; (void)b;
     s16 v4 = _080261B0(12);
     s16 v5 = _080261F8(12);
-    volatile u16 *ent = (volatile u16 *)(uintptr_t)(0x080CD9E4u + (u32)row * 12);
+    // ROM table (0x080CD9E4), not a hardware register: plain s16 reads emit
+    // the ROM's indexed `ldrsh` (movs rN,#off / ldrsh rM,[r6,rN]). A
+    // `volatile u16` pointee zero-extends (`ldrh; lsl; asr`, +2 B per read)
+    // and diverges at +0x24 (prefix 36/164). The word load below keeps its
+    // own volatile spelling.
+    s16 *ent = (s16 *)(uintptr_t)(0x080CD9E4u + (u32)row * 12);
     u32 scratch[2];
     _0800798C((void *)(uintptr_t)*(volatile u32 *)(ent + 4), scratch);
     _08007ABC((void *)(uintptr_t)scratch[1], (int)(s16)ent[2], (int)v4);

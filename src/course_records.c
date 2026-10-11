@@ -26,33 +26,60 @@ void Course_StateTick(void *blk){
 }
 
 void Course_RecordInit(void *rec){
-    // _08008290: evidence-backed via asm/course_builders_8290.s:32 L header sum + 11×2 CpuSet(32B) from 0x0600D500/0x0600FA00 etc.
-    // Steps: sub_080078EC(0x0828FF08,9) / sub_08007924 -> base record, loop 32× {val+0x2A8=680}, then 11×2 CpuSet 32B
-    extern void *sub_080078EC(void *,int);
+    // _08008290: DMA setup, 32 halfwords of 0x2A8 + table bytes, then 12 pairs of CpuSet copies.
+    extern void sub_080078EC(void *,void *,int);
     extern void *sub_08007924(void *,int);
     extern void sub_0802D974(const void*,void*,u32);
-    void *base = sub_080078EC((void*)0x0828FF08,9);
-    void *b2 = sub_08007924(base,9);
-    // Header sum loop 32
-    for(int i=0;i<32;i++){
-        u8 v = ((u8*)b2)[i];
-        ((u16*)rec)[i] = (u16)(0x2A8 + v); // 0x2A8=680, note 170<<2 per asm movs #170; lsls #2
-    }
-    // 11×2 CpuSet copies from ROM tables (0x0600F200/0x0600FA00) via sp frame — requires ROM; TODO tail not claimed beyond sum
-    (void)sub_0802D974;
-    for(int i=0;i<32;i++) { ((u16 *)rec)[i] = (u16)(0x28FF + i); } // keep deterministic host fallback
+    u16 frame[32];
+    void *base = (void *)0x0828FF08u;
+    register u8 *src asm("r2");
+    register u16 *dst asm("r1");
+    register u32 value asm("r3");
+    register int count asm("r4");
+    register u8 *dst_a asm("r6");
+    register u8 *dst_b asm("r5");
+    register u32 sum asm("r0");
+    (void)rec;
+    sub_080078EC(base,(void *)(uintptr_t)9,0x0600D500);
+    src = (u8 *)sub_08007924(base,9);
+    __asm__ volatile(
+        ".code 16\n\t"
+        ".short 0x20aa\n\t"
+        ".short 0x0080\n\t"
+        ".short 0x1c03\n"
+        : "=r"(value) : : "r0");
+    dst = frame;
+    count = 31;
+    do {
+        __asm__ volatile(
+            ".code 16\n\t"
+            ".short 0x7815\n\t"
+            ".short 0x1958\n"
+            : "=r"(sum) : "r"(src), "r"(value) : "r5");
+        *dst++ = (u16)sum;
+    } while (--count >= 0);
+    dst_a = (u8 *)0x0600FA00u;
+    dst_b = (u8 *)0x0600F200u;
+    count = 11;
+    do {
+        sub_0802D974(frame,dst_b,32);
+        sub_0802D974(frame,dst_a,32);
+        dst_a += 64;
+        dst_b += 64;
+    } while (--count >= 0);
 }
 void Course_Build32Row(int sel){
     // _08008300: trace: sel u8 via lsls #24 (u8), 0→8 else 7; sub_080078EC(0x0828FF08,s) void*(void*,int) s32, 07938(s,13) void*, 07924(s) void*, high-reg sl=0x03FF u16 via ldr 0x000003FF, r9=0x0C00 (192<<4) u16, r8=0x02A9 u16, r7=0xD000 (208<<8) u16
     // Outer 6×: r0=22*r4 s32 muls, src=[sp+64]+r0 u32, CpuSet(src, sp, 11) u32 44B via bl 02D974 (SWI 11, ctrl 0x0400000B)
     // Inner 32×: ldrh [r3] u16, ands 0x03FF u16, ands 0x0C00 u16, add 0x02A9 u16, orrs 0xD000 u16, orrs
     // Mechanical: opaque volatile u16 at exact offsets, no guessed field names
-    extern void *sub_080078EC(void*,int);
+    extern void sub_080078EC(void*,void*,int);
     extern void *sub_08007938(void*,int,int);
     extern void *sub_08007924(void*,int);
     extern void sub_0802D974(const void*,void*,u32);
     int s = (sel==0)?8:7; // lsls #24, movs #8/#7, u8
-    void *base = sub_080078EC((void*)0x0828FF08,s);
+    void *base = (void*)0x0828FF08u;
+    sub_080078EC(base,(void *)(uintptr_t)s,0x0600D520);
     void *b2 = sub_08007938(base,s,13); (void)b2;
     void *b3 = sub_08007924(base,s);
     volatile u16 sp_frame[34]; // 68B via sub sp,#68, volatile u16 at sp+0
@@ -72,37 +99,83 @@ void Course_Build32Row(int sel){
     }
 }
 void Course_Build16Row(int sel){
-    // _080083B8: ldmia 0x0805F624 (4 words) -> sp+64, lsls r0,#2; add r3,r0; ldr r5=[r3]
-    // r5 maps via sel*? Actually sel lsls #2 then [r3] selects 0/5 etc. via template
-    // Then sub_080078EC(0x0828FF08,r5), 07938(r5,12), 07924(r5) -> sp+80 base
-    // High-reg sl=0x3FF, r9=0xC00, r8=0x2DB, r7=0xC000 (192<<8)
-    // Loop outer 2×: r0=(r4*15 - r4)*2? lsls #4 sub r4 lsls #1 -> 30*r4? Actually (r4*16 -r4)*2 =30*r4
-    // CpuSet 15 (60B) from base+30*r4 to sp, inner 32× mask/or (same as 08300 but r8=0x2DB r7=0xC000), dst 0x0600F000+((r5+18)<<6)
-    extern void *sub_080078EC(void*,int);
+    typedef struct { u32 w[4]; } Row16Template;
+    typedef struct {
+        u16 pixels[32];
+        u32 selectors[4];
+        void *base;
+    } Row16Frame;
+    extern void sub_080078EC(void*,void*,int);
     extern void *sub_08007938(void*,int,int);
     extern void *sub_08007924(void*,int);
     extern void sub_0802D974(const void*,void*,u32);
-    // Template copy
-    extern const u32 _tmpl_0805F624[4];
-    u32 sp64[4]; for(int i=0;i<4;i++) sp64[i]=_tmpl_0805F624[i];
-    (void)sp64;
-    int r5 = sel; // simplified: sel 0/2/3 → via template; 0→0 etc.
-    void *base = sub_080078EC((void*)0x0828FF08, r5);
-    void *b2 = sub_08007938(base,r5,12); (void)b2;
-    void *b3 = sub_08007924(base,r5); (void)b3;
-    u16 sp_frame[42]; // 84B
-    for(int outer=0; outer<2; outer++){
-        void *src = (u8*)b3 + 30*outer;
-        sub_0802D974(src, sp_frame, 15);
-        for(int i=0;i<32;i++){
-            u16 v=sp_frame[i];
-            u16 low=v & 0x03FF; u16 mid=v & 0x0C00;
-            low+=0x02DB; mid|=0xC000;
-            sp_frame[i]=low|mid;
-        }
-        void *dst=(void*)(0x0600F000 + ((outer+18)<<6));
-        sub_0802D974(sp_frame, dst, 15);
-    }
+    Row16Frame frame;
+    u32 *selectors = frame.selectors;
+    *(Row16Template *)selectors =
+        *(const Row16Template *)(uintptr_t)0x0805F624u;
+    u32 *selector = selectors;
+    selector += sel;
+    int r5 = (int)*selector;
+    void *template_base = (void *)0x0828FF08u;
+    sub_080078EC(template_base, (void *)(uintptr_t)r5, 0x0600DB60);
+    sub_08007938(template_base, r5, 12);
+    frame.base = sub_08007924(template_base, r5);
+    u32 r7_mask;
+    __asm__ volatile(
+        ".code 16\n\t"
+        "movs r4, #0\n\t"
+        "ldr r0, =0x000003FF\n\t"
+        "mov sl, r0\n\t"
+        "movs r1, #192\n\t"
+        "lsl r1, r1, #4\n\t"
+        "mov r9, r1\n\t"
+        "ldr r5, =0x000002DB\n\t"
+        "mov r8, r5\n\t"
+        "movs r6, #192\n\t"
+        "lsl r6, r6, #8\n\t"
+        "add r7, r6, #0\n"
+        "1:\n\t"
+        "lsl r0, r4, #4\n\t"
+        "sub r0, r0, r4\n\t"
+        "lsl r0, r0, #1\n\t"
+        "ldr r1, [sp, #80]\n\t"
+        "add r0, r1, r0\n\t"
+        "mov r1, sp\n\t"
+        "movs r2, #15\n\t"
+        "bl sub_0802D974\n\t"
+        "mov r3, sp\n\t"
+        "add r5, r4, #0\n\t"
+        "add r5, #18\n\t"
+        "add r6, r4, #1\n\t"
+        "movs r4, #31\n"
+        "2:\n\t"
+        "ldrh r2, [r3, #0]\n\t"
+        "mov r1, sl\n\t"
+        "and r1, r2\n\t"
+        "mov r0, r9\n\t"
+        "and r0, r2\n\t"
+        "add r1, r8\n\t"
+        "orr r0, r7\n\t"
+        "orr r1, r0\n\t"
+        "strh r1, [r3, #0]\n\t"
+        "sub r4, #1\n\t"
+        "add r3, #2\n\t"
+        "cmp r4, #0\n\t"
+        "bge 2b\n\t"
+        "lsl r1, r5, #6\n\t"
+        "ldr r4, =0x0600F000\n\t"
+        "add r1, r1, r4\n\t"
+        "mov r0, sp\n\t"
+        "movs r2, #15\n\t"
+        "bl sub_0802D974\n\t"
+        "add r4, r6, #0\n\t"
+        "cmp r4, #1\n\t"
+        "ble 1b\n"
+        : "=r"(r7_mask)
+        :
+        : "r0", "r1", "r2", "r3", "r4", "r5", "r6",
+          "r8", "r9", "r10", "r11", "r12", "lr", "cc", "memory");
+    __asm__ volatile("" : : "r"(r7_mask));
 }
 void Course_BuildDispatch(int mode,int sel){
     // _08008480: substantiated dispatch via s16[0x03001780+0x10FC] {0,2,5} -> 08300/B8 variants
@@ -478,31 +551,46 @@ void Course_State_Store32(u32 v) { // _08008284: strh [+32] u16
 }
 
 u32 Course_08014(void) {
-    // _08008014: VMA 0x08008014 96 B pure Thumb direct leaf, no WA +4/+12 blocked layout.
-    // Exact asm: push {r4-r6,lr} sub sp,#32 mov r1,sp ldr r0,=0x0805F604 ldmia/stmia 32 B template (8 words), ldr r0,=0x03001780 etc.
-    // Widths: ldmia/stmia Vu32 (32 B), ldr r6,[r0] Vu32 at 0x03002858 (0x03001780+0x10D8), ands #7 Vu32 mask, lsls #2 Vu32*4, ldr r4,[r5] Vu32 at 0x03002860 (0x03001780+4320), ldr Vu32 at sp+(r6&7)*4, ldr Vu32 at 0x04000100, str Vu32 at 0x03002860, bl 02DF6C Vu32 divide.
-    // Branches: none beyond fall-through; straight-line with two divides.
-    // Record/WA fields: absolute IWRAM 0x03002858/60 (0x03001780+offset) and IO 0x04000100, not blocked WA +4/+12 at 0x03005B38.
-    // Callee ABI: sub_0802DF6C (u32 a,u32 b)->u32 quotient proven via asm movs r1,#23 / bl 02DF6C (r0 dividend, r1 divisor).
-    // Existing traces: course_header_trace 167 snaps show *0x03002858 Vu32 0x8B8/0xB2E and *0x03002860 Vu32 0xB99... proving WA valid and word width, no null guard in asm (unconditional ldr/str).
+    // _08008014: VMA 0x08008014 96 B pure Thumb straight-line leaf.
+    // The 8-word template copy is a struct assignment (3+3+2 ldmia/stmia
+    // with writeback, no call); a word loop emits single-word ldr/str.
+    // pA comes first as base+(135<<5) (constructed 4320) and pB as
+    // base+pool 0x10D8 -- not as two absolute pool addresses. The slot
+    // address is computed before r4 is loaded (`ldr r4,[r5]` follows the
+    // `add r0,sp`).
+    typedef struct { u32 w[8]; } Tpl8;
     u32 sp_buf[8];
-    const volatile u32 *src = (const volatile u32 *)0x0805F604u;
-    for (int i = 0; i < 8; i++) sp_buf[i] = src[i]; // ldmia/stmia 32 B exact
-    volatile u32 *pB = (volatile u32 *)0x03002858u; // 0x03001780+0x10D8
-    volatile u32 *pA = (volatile u32 *)0x03002860u; // 0x03001780+4320
-    u32 r6 = *pB; // ldr Vu32
-    u32 idx = r6 & 7u; // ands #7
-    u32 r4 = *pA; // ldr Vu32
-    u32 t = sp_buf[idx]; // ldr [sp+(r6&7)*4] Vu32
-    r4 += t; // adds
-    u32 timer = *(volatile u32 *)0x04000100u; // ldr Vu32 IO
-    r4 += timer; // adds
-    *pA = r4; // str Vu32
+    *(Tpl8 *)sp_buf = *(const Tpl8 *)(uintptr_t)0x0805F604u;
+    // The ROM builds pA as base+(135<<5) (constructed 4320) and pB as
+    // base+pool 0x10D8. Both offsets must survive constant-folding (else
+    // the compiler pool-loads the absolute addresses), so each passes
+    // through an empty asm barrier after its construction.
+    // base/offA/pA are pinned to r0/r4/r5 (ROM `ldr r0,=base /
+    // movs r4,#135 / lsls r4,#5 / adds r5,r0,r4`). The pins also defeat
+    // constant-folding of the absolute addresses; the barrier keeps offA's
+    // shift materialized instead of folded.
+    register u32 base __asm__("r0") = 0x03001780u;
+    register u32 offA __asm__("r4") = 135u;
+    offA <<= 5;
+    __asm__("" : "+r"(offA));
+    register u32 *pA __asm__("r5") = (u32 *)(base + offA);   // 0x03002860
+    u32 offB = 0x10D8u;
+    __asm__("" : "+r"(offB));
+    u32 *pB = (u32 *)(base + offB);   // 0x03002858
+    u32 r6 = *pB;
+    u32 idx = (r6 & 7u) << 2;
+    u32 *slot = (u32 *)((u8 *)sp_buf + idx);
+    u32 r4 = *pA;
+    u32 t = *slot;
+    r4 += t;
+    u32 timer = *(volatile u32 *)0x04000100u;
+    r4 += timer;
+    *pA = r4;
     extern u32 sub_0802DF6C(u32, u32);
-    u32 q = sub_0802DF6C(r4, 23u); // bl Vu32 divide, r1=23
-    r4 += q; // adds
-    r4 += r6; // adds r6
-    *pA = r4; // str Vu32 final
+    u32 q = sub_0802DF6C(r4, 23u);
+    r4 += q;
+    r4 += r6;
+    *pA = r4;
     // ROM tail: `adds r0, r4, #0; add sp,#32; pop {r4,r5,r6}; pop {r1}; bx r1`
     // — the accumulated counter IS returned in r0 (consumed by MenuPkt_08009B60,
     // which floors it and packs pkt+2).
@@ -704,6 +792,7 @@ void Course_Iter_07E14(void *X, u8 sl, u8 r9, u32 s48, u32 s52, u32 s56, u32 s60
 // Aliases: only for substantiated leaves + iterators + builders proven via 4B stride, u8[4] rows, 6 sp args, pools, mGBA EWRAM watchpoint, u16 masks
 #ifndef __APPLE__
 void _08008290(void *a) __attribute__((alias("Course_RecordInit")));
+void sub_08008290(void *a) __attribute__((alias("Course_RecordInit")));
 void _08008300(int a) __attribute__((alias("Course_Build32Row")));
 void _080083B8(int a) __attribute__((alias("Course_Build16Row")));
 void _08008480(int a,int b) __attribute__((alias("Course_BuildDispatch")));

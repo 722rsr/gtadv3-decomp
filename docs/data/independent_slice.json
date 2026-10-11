@@ -409,7 +409,7 @@
     },
     {
       "path": "asm/code_295c.s",
-      "sha256": "4bdc370569b1c9f48239f7470023c04c0f654436876e6045435579f084753941"
+      "sha256": "8f49b5cf1a174f3a523550a51a3e0a5b16816d084799485b4dea588e5b73c99d"
     },
     {
       "path": "asm/code_2a3c.s",
@@ -673,7 +673,7 @@
     },
     {
       "path": "asm/menu_c814.s",
-      "sha256": "7e4bbec0c30eac394eaa044b04620a5d9a63bc4fc8c3c4ab49de43f3d5b0a4de"
+      "sha256": "1b538292b27db75889f4090e162508e8490a4d651af374d5665eee9091d03961"
     },
     {
       "path": "asm/menu_c884.s",
@@ -701,7 +701,7 @@
     },
     {
       "path": "asm/menu_cfe4.s",
-      "sha256": "85498cb861276978c0a4ef624e3024e2113084a9b8fac7dd46866541a444a7bf"
+      "sha256": "e3bfefe353f3ee9360376c559ef39838505bdd208bbc2bc4ade19bde052c8ee4"
     },
     {
       "path": "asm/menu_ctor.s",
@@ -725,7 +725,7 @@
     },
     {
       "path": "asm/menu_d280.s",
-      "sha256": "ddf37e1cccb9b5d2b80ef1660895b646a1a3006c5d7a4f66567ea96d7d5ca756"
+      "sha256": "595d1cccc2230fff5e96d394e18e21c043ad5cd59e15b721332b5d778176e083"
     },
     {
       "path": "asm/menu_d3a4.s",
@@ -785,7 +785,7 @@
     },
     {
       "path": "asm/menu_f810.s",
-      "sha256": "11637ad5c26738b02b43d8f67e73bbfffa8449737f4ad33bbb5e21b52174cab9"
+      "sha256": "ecb6ebbcc6b85f1ae5c07f8d12b92aea3d88bf7aaed490e756ee970c8ee802e7"
     },
     {
       "path": "asm/menu_f8b4.s",
@@ -793,7 +793,7 @@
     },
     {
       "path": "asm/menu_f924.s",
-      "sha256": "f4bd7fe575f2b145d819aa6f1ed893317da8a91d22f640091f3d28094063fcd2"
+      "sha256": "4364b37f9160d99d6c8a7ab85397990a964b925d767a4858ceb038ca7be9125e"
     },
     {
       "path": "asm/menu_fa24.s",
@@ -821,7 +821,7 @@
     },
     {
       "path": "asm/menu_record_update.s",
-      "sha256": "d1aea037ec95c640522b51a3614a3e8999b5475843a1c77dd90cfa9b02229240"
+      "sha256": "bd479bfdeede83415d6a90aa883ca4c8951d725aa0bac755675a5a0f61d16e57"
     },
     {
       "path": "asm/menu_setup.s",
@@ -885,11 +885,11 @@
     },
     {
       "path": "asm/runtime_2aac.s",
-      "sha256": "1dd09094f4f2509e8f524a6b12ce85f55fa30079e9d7324b178e54bf79dbf0ec"
+      "sha256": "3a175491c39ba0e55e37fb1da797b7cb6efcc658754eb746434822f634417623"
     },
     {
       "path": "asm/runtime_mem.s",
-      "sha256": "f2b96acfdba89b25f90cd464f173eeef69e29446d53cbb46f84901c00a3290ff"
+      "sha256": "55cd5a1e2db961f60cd3be86c6949b44ef263249f8094bf2541f076ed22db738"
     },
     {
       "path": "asm/save_alloc.s",
@@ -1005,7 +1005,7 @@
     },
     {
       "path": "asm/sound_da20.s",
-      "sha256": "84516699a949a0b721e10df66c0d85fffcb9d06ba6a1812ea50e65910fac0693"
+      "sha256": "ed42f438353faff30ca55e2b55b8965ad1051d99e61ac8d7e791a99ba984a890"
     },
     {
       "path": "asm/sound_db24.s",
@@ -1057,7 +1057,7 @@
     },
     {
       "path": "asm/sound_mixer_tail.s",
-      "sha256": "f7f693c526f79531bde635488f680c122177e21e3d0b062c1aaa4804849b4902"
+      "sha256": "01f00dee0780aff5f7c968173ff909eb7dba1a7cad71c6086cea2feabf27f732"
     },
     {
       "path": "asm/sound_more.s",
@@ -1149,7 +1149,7 @@
     },
     {
       "path": "asm/wrapper_pair.s",
-      "sha256": "f3f3e7f17992cd01fc57dcff4b533a17e4b1d69203862315048c7412812a7a93"
+      "sha256": "32cc77046c1a86d55f9b8dc79cee82b82d274712f47f1cc4fc1651c559984035"
     }
   ]
 }

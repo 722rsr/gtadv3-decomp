@@ -2,7 +2,7 @@
 // menu_ff78_h.c — reconstructed C for asm/menu_ff78.s (5 functions).
 //
 // Bodies transcribed instruction-for-instruction from the asm listing.
-// External callees use the Sub_ spellings the asm closure defines,
+// External callees use the closure spellings defined in the asm listings,
 // so behavior is identical by construction.
 //
 //   sub_080014650 (0x080014650) — (rec, a1, a2): 4x6 7BFC grid.
@@ -24,9 +24,10 @@ __attribute__((weak)) void Sub_08007B18(void *a, int b, int c, int d, u32 e, u32
 // `-undefined dynamic_lookup` binds lazily, so the suite still reads green.
 __attribute__((weak)) void sub_08007B18(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h) { (void)a; (void)b; (void)c; (void)d; (void)e; (void)f; (void)g; (void)h; }
 __attribute__((weak)) void Sub_08007BFC(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h, u32 i) { (void)a; (void)b; (void)c; (void)d; (void)e; (void)f; (void)g; (void)h; (void)i; }
-__attribute__((weak)) void Sub_08007ABC(u32 a, u32 b, u32 c) { (void)a; (void)b; (void)c; }
-__attribute__((weak)) int Sub_08025CF4(int a, int b, int c) { (void)a; (void)b; (void)c; return 0; }
-__attribute__((weak)) void Sub_08002E0A4(void *d, const void *s, u32 n) { (void)d; (void)s; (void)n; }
+__attribute__((weak)) void sub_08007BFC(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h, u32 i) { (void)a; (void)b; (void)c; (void)d; (void)e; (void)f; (void)g; (void)h; (void)i; }
+__attribute__((weak)) void _08007ABC(u32 a, u32 b, u32 c) { (void)a; (void)b; (void)c; }
+__attribute__((weak)) int _08025CF4(int a, int b, int c) { (void)a; (void)b; (void)c; return 0; }
+__attribute__((weak)) void _0802E0A4(void *d, const void *s, u32 n) { (void)d; (void)s; (void)n; }
 __attribute__((weak)) void Sub_0800141AC(void *a) { (void)a; }
 __attribute__((weak)) void Sub_08001411C(int a, void *b) { (void)a; (void)b; }
 __attribute__((weak)) void Sub_0800D854(void *a) { (void)a; }
@@ -51,9 +52,10 @@ __attribute__((weak)) void sub_0800141A8(void *a) { (void)a; }
 extern void Sub_08007B18(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h);
 extern void sub_08007B18(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h);
 extern void Sub_08007BFC(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h, u32 i);
-extern void Sub_08007ABC(u32 a, u32 b, u32 c);
-extern int Sub_08025CF4(int a, int b, int c);
-extern void Sub_08002E0A4(void *d, const void *s, u32 n);
+extern void sub_08007BFC(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h, u32 i);
+extern void _08007ABC(u32 a, u32 b, u32 c);
+extern int _08025CF4(int a, int b, int c);
+extern void _0802E0A4(void *d, const void *s, u32 n);
 extern void Sub_0800141AC(void *a);
 extern void Sub_08001411C(int a, void *b);
 extern void Sub_0800D854(void *a);
@@ -79,17 +81,61 @@ extern void sub_0800141A8(void *a);
 //   inner k 0..5: 7BFC(rec+24, u32[rec+248+base+k*12],
 //   u32[rec+252+base+k*12], a1, r8v, 11, 1, 0, 0).
 void MenuFF78_14650(void *rec_, u32 a1, u32 a2) {
+    volatile struct {
+        u32 a1;
+        u32 a2;
+    } args;
+#ifndef __APPLE__
+    register volatile u8 *rec __asm__("r3") = (volatile u8 *)rec_;
+    __asm__ volatile("" : "+r"(rec));
+    args.a1 = a1;
+    args.a2 = a2;
+    register int idx __asm__("r0") = 0;
+    register int next_idx __asm__("r9");
+#else
     volatile u8 *rec = (volatile u8 *)rec_;
-    for (u32 idx = 0; idx <= 3; idx++) {
-        u32 base = idx * 72;
-        u32 r8v = a2 + idx * 8;
-        for (u32 k = 0; k < 6; k++) {
-            u32 w1 = *(u32 *)(uintptr_t)(rec + 248 + base + k * 12);
-            u32 w2 = *(u32 *)(uintptr_t)(rec + 252 + base + k * 12);
-            Sub_08007BFC((void *)(uintptr_t)(rec + 24), (int)w1, (int)w2,
-                         (int)(a1 + k * 16), r8v, 11, 1, 0, 0);
+    args.a1 = a1;
+    args.a2 = a2;
+    int idx = 0;
+    int next_idx;
+#endif
+#ifndef __APPLE__
+    register void *target __asm__("r10") = (void *)(uintptr_t)(rec + 24);
+    __asm__ volatile("" : "+r"(target));
+#else
+    void *target = (void *)(uintptr_t)(rec + 24);
+#endif
+    volatile u32 *base1 = (volatile u32 *)(rec + 248);
+    volatile u32 *base2 = (volatile u32 *)(rec + 252);
+    do {
+#ifndef __APPLE__
+        __asm__ volatile("" : "+r"(target));
+#endif
+#ifndef __APPLE__
+        register u32 lane_off __asm__("r1") = (u32)idx * 8u;
+        __asm__ volatile("" : "+r"(lane_off));
+#else
+        u32 lane_off = (u32)idx * 8u;
+#endif
+        next_idx = idx + 1;
+#ifndef __APPLE__
+        __asm__ volatile("" : "+r"(next_idx));
+#endif
+        u32 row = (lane_off + (u32)idx) * 8u;
+        u32 r8v = args.a2 + lane_off;
+        u32 arg = args.a1;
+        volatile u32 *p2 = (volatile u32 *)(row + (uintptr_t)base2);
+        volatile u32 *p1 = (volatile u32 *)(row + (uintptr_t)base1);
+        int k;
+        for (k = 5; k >= 0; k--) {
+            sub_08007BFC(target, (int)*p1, (int)*p2, (int)arg,
+                         r8v, 11, 1, 0, 0);
+            arg += 16;
+            p2 += 3;
+            p1 += 3;
         }
-    }
+        idx = next_idx;
+    } while (idx <= 3);
 }
 #ifndef __APPLE__
 void _080014650(void *a, u32 b, u32 c) __attribute__((alias("MenuFF78_14650")));
@@ -234,26 +280,70 @@ void sub_0800139F0(void *a, u32 b) __attribute__((alias("MenuFF78_139F0")));
 //   u32[rec+252+outer*72+k*12] = (u32)s16v;
 //   7ABC(u32[rec+28], (u32)s16v, u32[rec+248+outer*72+k*12]).
 void MenuFF78_14078(void *rec_) {
-    volatile u8 *rec = (volatile u8 *)rec_;
+    register volatile u8 *rec asm("r9") = (volatile u8 *)rec_;
     u8 spad[32];
-    Sub_08002E0A4(spad, (const void *)(uintptr_t)0x0805F9C0u, 32);
-    for (u32 outer = 0; outer <= 3; outer++) {
-        u32 base = outer * 72;
-        u32 r8 = 1;
-        for (u32 inner = 0; inner <= 5; inner++) {
-            int g = Sub_08025CF4((int)*(s16 *)(uintptr_t)0x03002772u, (int)outer,
-                                 (int)(inner * 2));
-            int h = Sub_08025CF4((int)*(s16 *)(uintptr_t)0x03002772u, (int)outer,
-                                 (int)r8);
+    volatile u32 * volatile src_base;
+    volatile u32 * volatile dst_base;
+    int outer;
+    _0802E0A4(spad, (const void *)(uintptr_t)0x0805F9C0u, 32);
+    outer = 0;
+    dst_base = (volatile u32 *)(uintptr_t)(rec + 252);
+    {
+        register volatile u8 *src_addr asm("r1") = (volatile u8 *)rec;
+        src_addr += 248;
+        src_base = (volatile u32 *)src_addr;
+    }
+    while (outer <= 3) {
+        int inner = 0;
+        register int base asm("r0") = outer << 3;
+        __asm__ volatile ("" : "+r" (base));
+        register int next_low asm("r2") = outer + 1;
+        __asm__ volatile ("" : "+r" (next_low));
+        register int next_outer asm("sl") = next_low;
+        __asm__ volatile ("" : "+r" (next_outer));
+        register int one asm("r1") = 1;
+        __asm__ volatile ("" : "+r" (one));
+        register int r8 asm("r8") = one;
+        __asm__ volatile ("" : "+r" (r8));
+        base += outer;
+        base <<= 3;
+        register u32 src_origin asm("r2") = (u32)src_base;
+        __asm__ volatile ("" : "+r" (src_origin));
+        register volatile u32 *src asm("r6") =
+            (volatile u32 *)(uintptr_t)(base + src_origin);
+        __asm__ volatile ("" : "+r" (src));
+        register u32 dst_origin asm("r1") = (u32)dst_base;
+        __asm__ volatile ("" : "+r" (dst_origin));
+        register volatile u32 *dst asm("r5") =
+            (volatile u32 *)(uintptr_t)(base + dst_origin);
+        __asm__ volatile ("" : "+r" (dst));
+        while (inner <= 5) {
+            register u32 w0 asm("r0");
+            register const s16 *table0 asm("r2") =
+                (const s16 *)(uintptr_t)0x03002772u;
+            register int gval asm("r0");
+            __asm__ volatile ("movs r1, #0\n\tldrsh r0, [r2, r1]"
+                              : "=r" (gval) : "r" (table0) : "r1", "memory");
+            int g = _08025CF4(gval, outer, inner * 2);
+            register const s16 *table1 asm("r2") =
+                (const s16 *)(uintptr_t)0x03002772u;
+            register int hval asm("r0");
+            __asm__ volatile ("movs r1, #0\n\tldrsh r0, [r2, r1]"
+                              : "=r" (hval) : "r" (table1) : "r1", "memory");
+            int h = _08025CF4(hval, outer, r8);
             u32 idx = (((u32)h) << 1) + (((u32)g) << 3);
             s16 v = *(s16 *)(uintptr_t)(spad + idx);
-            *(volatile u32 *)(uintptr_t)(rec + 252 + base + inner * 12) =
-                (u32)(s32)v;
-            u32 w0 = *(volatile u32 *)(uintptr_t)(rec + 28);
-            u32 w2 = *(volatile u32 *)(uintptr_t)(rec + 248 + base + inner * 12);
-            Sub_08007ABC(w0, (u32)(s32)v, w2);
+            *dst = (u32)(s32)v;
+            __asm__ volatile ("mov r2, %1\n\tldr %0, [r2, #28]"
+                              : "=r" (w0) : "r" (rec) : "r2", "memory");
+            u32 w2 = *src;
+            _08007ABC(w0, (u32)(s32)v, w2);
+            src += 3;
+            dst += 3;
             r8 += 2;
+            inner++;
         }
+        outer = next_outer;
     }
 }
 #ifndef __APPLE__
