@@ -18,6 +18,17 @@
 #define HOST_STUB(sig) extern sig
 #endif
 
+#ifndef __APPLE__
+#define D2_CALLEE(friendly, closure) closure
+extern void *sub_08004B68(void);
+extern void sub_08007770(int a, void *b, int c, int d, u32 e, u32 f);
+extern void sub_0802B214(int v);
+extern int sub_0800572C(int v);
+extern s16 sub_080258A8(int idx);
+#else
+#define D2_CALLEE(friendly, closure) friendly
+#endif
+
 HOST_STUB(void _08002B368(u16 v));                                              // 0x08002B368 sound cue
 HOST_STUB(void _08002B214(int v));                                              // 0x08002B214 sound wake
 HOST_STUB(void *_08004B68(void));                                               // 0x08004B68 scene mgr
@@ -155,6 +166,7 @@ void _08001EE2C(void *rec0, u16 b, u16 c) {
 // ----------------------------------------------------------------------------
 void _08001EFAC(void *rec0) {
     volatile u8 *rec = (volatile u8 *)rec0;
+    const s8 *wa = (const s8 *)(uintptr_t)WA;
     /* Head: template emit + sprite XY + eight lane emits on rec+16. */
     _08007B18((void *)(rec + 60), 8, 72, 88, 6, 3, 1, 0);
     _080026A2C((void *)(uintptr_t)R32(rec, 268), 120, 56);
@@ -175,46 +187,46 @@ void _08001EFAC(void *rec0) {
     Sub_08007BFC((void *)(rec + 8), R32(rec, 220), R32(rec, 224), 168, 64, R32(rec, 228), 1, 1, 0);
     Sub_08007BFC((void *)(rec + 8), R32(rec, 232), R32(rec, 236), 168, 88, R32(rec, 240), 1, 1, 0);
     Sub_08007BFC((void *)(rec + 8), R32(rec, 244), R32(rec, 248), 168, 112, R32(rec, 252), 1, 1, 0);
-    /* Field-gated emit. NOTE: ROM is two branches around a reloaded compare
-       (u16[rec+136]==8 -> second lane; else first lane, reload, bne past the
-       second); memory is untouched between, so this if/else is exact. */
-    if (R16(rec, 136) == 8) {
-        _08007B18((void *)rec, R16(rec, 138), 104, 128, 5, 1, 1, 0);
-    } else {
-        int s = (int)S16(rec, 136);
-        _08007B18((void *)rec, 10,
-                   *(volatile u32 *)(uintptr_t)(0x080CBBE4u + (u32)(8 * s)),
-                   *(volatile u32 *)(uintptr_t)(0x080CBBE4u + 4u + (u32)(8 * s)),
-                   4, 1, 1, 0);
+    /* The ROM reloads rec+136 after the first emit. Keep two tests because
+       _08007B18 may update that field before the second lane is considered. */
+    if (R16(rec, 136) != 8) {
+        int s = (int)*(s16 *)(uintptr_t)((uintptr_t)rec + 136u);
+        u32 tableOff = (u32)(8 * s);
+        const u32 *entry = (const u32 *)(uintptr_t)(0x080CBBE4u + tableOff);
+        u32 first = entry[0];
+        u32 second = entry[1];
+        _08007B18((void *)rec, 10, first, second, 4, 1, 1, 0);
     }
+    if (R16(rec, 136) == 8)
+        _08007B18((void *)rec, R16(rec, 138), 104, 128, 5, 1, 1, 0);
     /* Pass 1: r5 = 0..2, x (r6) = 40, 32, 24; sl = rec+130 throughout.
        NOTE: the body also stores rec+24 to [sp,#20] once; no callee reads
        caller stack word 5 (7B18 takes 4, 7BFC takes 5 at [sp,#0..16]), so
        it is a dead armcc slot with no C counterpart. */
     for (int r5 = 0, r6 = 40; r5 <= 2; r5++, r6 -= 8) {
         if (r5 < _080025F20(0)) {
-            int v = (int)*(volatile s8 *)(uintptr_t)(WA + 12u * (u32)S16(rec, 130) + 50u);
+            int v = (int)wa[12u * (u32)*(s16 *)(uintptr_t)((uintptr_t)rec + 130u) + 50u];
             if (r5 < v)
                 _08007B18((void *)rec, 11, r6, 48, 3, 1, 1, 0);
             else
                 _08007B18((void *)rec, 12, r6, 48, 3, 1, 1, 0);
         }
         if (r5 < _080025F20(1)) {
-            int v = (int)*(volatile s8 *)(uintptr_t)(WA + 12u * (u32)S16(rec, 130) + 54u);
+            int v = (int)wa[12u * (u32)*(s16 *)(uintptr_t)((uintptr_t)rec + 130u) + 54u];
             if (r5 < v)
                 _08007B18((void *)rec, 11, r6, 72, 3, 1, 1, 0);
             else
                 _08007B18((void *)rec, 12, r6, 72, 3, 1, 1, 0);
         }
         if (r5 < _080025F20(2)) {
-            int v = (int)*(volatile s8 *)(uintptr_t)(WA + 12u * (u32)S16(rec, 130) + 52u);
+            int v = (int)wa[12u * (u32)*(s16 *)(uintptr_t)((uintptr_t)rec + 130u) + 52u];
             if (r5 < v)
                 _08007B18((void *)rec, 11, r6, 96, 3, 1, 1, 0);
             else
                 _08007B18((void *)rec, 12, r6, 96, 3, 1, 1, 0);
         }
         if (r5 < _080025F20(3)) {
-            int v = (int)*(volatile s8 *)(uintptr_t)(WA + 12u * (u32)S16(rec, 130) + 55u);
+            int v = (int)wa[12u * (u32)*(s16 *)(uintptr_t)((uintptr_t)rec + 130u) + 55u];
             if (r5 < v)
                 _08007B18((void *)rec, 11, r6, 120, 3, 1, 1, 0);
             else
@@ -224,28 +236,28 @@ void _08001EFAC(void *rec0) {
     /* Pass 2: r5 = 0..2, x (r6) = 192, 200, 208. */
     for (int r5 = 0, r6 = 192; r5 <= 2; r5++, r6 += 8) {
         if (r5 < _080025F20(4)) {
-            int v = (int)*(volatile s8 *)(uintptr_t)(WA + 12u * (u32)S16(rec, 130) + 53u);
+            int v = (int)wa[12u * (u32)*(s16 *)(uintptr_t)((uintptr_t)rec + 130u) + 53u];
             if (r5 < v)
                 _08007B18((void *)rec, 11, r6, 48, 3, 1, 1, 0);
             else
                 _08007B18((void *)rec, 12, r6, 48, 3, 1, 1, 0);
         }
         if (r5 < _080025F20(5)) {
-            int v = (int)*(volatile s8 *)(uintptr_t)(WA + 12u * (u32)S16(rec, 130) + 57u);
+            int v = (int)wa[12u * (u32)*(s16 *)(uintptr_t)((uintptr_t)rec + 130u) + 57u];
             if (r5 < v)
                 _08007B18((void *)rec, 11, r6, 72, 3, 1, 1, 0);
             else
                 _08007B18((void *)rec, 12, r6, 72, 3, 1, 1, 0);
         }
         if (r5 < _080025F20(6)) {
-            int v = (int)*(volatile s8 *)(uintptr_t)(WA + 12u * (u32)S16(rec, 130) + 51u);
+            int v = (int)wa[12u * (u32)*(s16 *)(uintptr_t)((uintptr_t)rec + 130u) + 51u];
             if (r5 < v)
                 _08007B18((void *)rec, 11, r6, 96, 3, 1, 1, 0);
             else
                 _08007B18((void *)rec, 12, r6, 96, 3, 1, 1, 0);
         }
         if (r5 < _080025F20(7)) {
-            int v = (int)*(volatile s8 *)(uintptr_t)(WA + 12u * (u32)S16(rec, 130) + 56u);
+            int v = (int)wa[12u * (u32)*(s16 *)(uintptr_t)((uintptr_t)rec + 130u) + 56u];
             if (r5 < v)
                 _08007B18((void *)rec, 11, r6, 120, 3, 1, 1, 0);
             else
@@ -324,40 +336,60 @@ void _08001FADC(void *dst0, int b, const u8 *tbl0, int n, int mode) {
 // ----------------------------------------------------------------------------
 void _08001FC14(void *rec0) {
     volatile u8 *rec = (volatile u8 *)rec0;
-    volatile u8 *wa = (volatile u8 *)WA;
-    int fbc = (int)S16(wa, 0xFBC);
+    register int fbc __asm__("r0") = (int)WA;
+    register int fbcOffset __asm__("r1") = 0xFBC;
+    register volatile u32 *p128 __asm__("r1");
     int alloc;
     int w;
-    if (fbc >= 0 && fbc <= 7) {
-        switch (fbc) {
-        case 0:
-        case 1:
-        case 4:
-        case 5:
-        case 7:
-            Sub_08007770(0, (void *)(uintptr_t)0x08344450u, 3, 0, 4, 1);
-            break;
-        case 2:
-            Sub_08007770(0, (void *)(uintptr_t)0x08344450u, 4, 0, 4, 1);
-            break;
-        default:
-            break;
-        }
+    __asm__ volatile("" : "+r"(fbc), "+r"(fbcOffset));
+    fbc += fbcOffset;
+    fbcOffset = 0;
+    __asm__ volatile(".code 16\n\tldrsh r0, [r0, r1]"
+                     : "+r"(fbc) : "r"(fbcOffset) : "cc");
+    switch (fbc) {
+    case 0:
+    case 1:
+    case 4:
+    case 5:
+    case 7:
+        D2_CALLEE(Sub_08007770, sub_08007770)(0, (void *)(uintptr_t)0x08344450u, 3, 0, 4, 1);
+        break;
+    case 2:
+        D2_CALLEE(Sub_08007770, sub_08007770)(0, (void *)(uintptr_t)0x08344450u, 4, 0, 4, 1);
+        break;
+    default:
+        break;
     }
     W32(rec, 104, 6);
     {
-        s16 cls = S16((volatile u8 *)_08004B68(), 0);
-        if (cls == 24) {
-            _08002B214(51);
+        volatile u8 *clsBase = (volatile u8 *)D2_CALLEE(_08004B68, sub_08004B68)();
+        register int cls __asm__("r0");
+        register int clsIndex __asm__("r1");
+        clsIndex = 0;
+        __asm__ volatile(".code 16\n\tldrsh r0, [r0, r1]"
+                         : "=r"(cls) : "0"(clsBase), "r"(clsIndex) : "cc");
+        switch (cls) {
+        case 24:
+            D2_CALLEE(_08002B214, sub_0802B214)(51);
             W32(rec, 116, 7);
-            W32(rec, 128, 1);
+            p128 = (volatile u32 *)(rec + 128);
+            __asm__ volatile("" : "+r"(p128));
+            *p128 = 1;
             W16(rec, 24, 0);
-        } else if (cls == 25) {
+            break;
+        case 25:
             W32(rec, 116, 13);
-            W32(rec, 128, 0);
+            p128 = (volatile u32 *)(rec + 128);
+            __asm__ volatile("" : "+r"(p128));
+            *p128 = 0;
             W16(rec, 24, 2);
-            if (S16(wa, 0xFBC) == 2)
+            fbc = (int)WA;
+            fbcOffset = 0xFBC;
+            __asm__ volatile("" : "+r"(fbc), "+r"(fbcOffset));
+            fbc += fbcOffset;
+            if (*(volatile u16 *)(uintptr_t)fbc == 2)
                 W16(rec, 24, 3);
+            break;
         }
     }
     _0800DAB8((void *)(rec + 32));
@@ -366,23 +398,42 @@ void _08001FC14(void *rec0) {
     _08007A58((void *)rec);
     _0800798C((void *)(uintptr_t)0x082DFBDCu, (void *)(rec + 8));
     _080075E8((void *)(uintptr_t)0x082DFBDCu, 0, 6);
-    alloc = _0800572C(12);
+    alloc = D2_CALLEE(_0800572C, sub_0800572C)(12);
     W32(rec, 176, (u32)alloc);
-    w = (int)_0800258A8((int)S16(wa, 0x576));
-    W32(rec, 180, (u32)(s32)(s16)w);
-    _08007ABC((void *)(uintptr_t)R32(rec, 12), (void *)(uintptr_t)(u32)(s32)(s16)w, (int)R32(rec, 176));
+    fbc = (int)WA;
+    fbcOffset = 0x576;
+    __asm__ volatile("" : "+r"(fbc), "+r"(fbcOffset));
+    fbc += fbcOffset;
+    fbcOffset = 0;
+    __asm__ volatile(".code 16\n\tldrsh r0, [r0, r1]"
+                     : "+r"(fbc) : "r"(fbcOffset) : "cc");
+    w = D2_CALLEE(_0800258A8, sub_080258A8)(fbc);
+    {
+        volatile u32 *out180 = (volatile u32 *)(rec + 180);
+        s16 value180 = (s16)w;
+        *out180 = (u32)(s32)value180;
+        _08007ABC((void *)(uintptr_t)R32(rec, 12), (void *)(uintptr_t)(u32)(s32)value180, (int)R32(rec, 176));
+    }
     _0800798C((void *)(uintptr_t)0x08345F84u, (void *)(rec + 16));
-    alloc = _0800572C(6);
+    alloc = D2_CALLEE(_0800572C, sub_0800572C)(6);
     W32(rec, 188, (u32)alloc);
     w = _08001F9EC(0);
-    W32(rec, 192, (u32)(s32)(s16)w);
-    _08007ABC((void *)(uintptr_t)R32(rec, 20), (void *)(uintptr_t)(u32)(s32)(s16)w, (int)R32(rec, 188));
+    {
+        volatile u32 *out192 = (volatile u32 *)(rec + 192);
+        s16 value192 = (s16)w;
+        *out192 = (u32)(s32)value192;
+        _08007ABC((void *)(uintptr_t)R32(rec, 20), (void *)(uintptr_t)(u32)(s32)value192, (int)R32(rec, 188));
+    }
     _0800798C((void *)(uintptr_t)0x08345F84u, (void *)(rec + 200));
-    alloc = _0800572C(1);
+    alloc = D2_CALLEE(_0800572C, sub_0800572C)(1);
     W32(rec, 200, (u32)alloc);
     w = _08001F9FC(0);
-    W32(rec, 204, (u32)(s32)(s16)w);
-    _08007ABC((void *)(uintptr_t)R32(rec, 20), (void *)(uintptr_t)(u32)(s32)(s16)w, (int)R32(rec, 200));
+    {
+        volatile u32 *out204 = (volatile u32 *)(rec + 204);
+        s16 value204 = (s16)w;
+        *out204 = (u32)(s32)value204;
+        _08007ABC((void *)(uintptr_t)R32(rec, 20), (void *)(uintptr_t)(u32)(s32)value204, (int)R32(rec, 200));
+    }
     _08001FA0C();
     W32(rec, 32, 0);
     W16(rec, 36, 1);
@@ -391,12 +442,20 @@ void _08001FC14(void *rec0) {
     W16(rec, 40, 6);
     W16(rec, 42, 5);
     {
-        int sel = (int)S16(rec, 24);
-        if (sel == 0)
+        register int sel __asm__("r0");
+        register int selOffset __asm__("r1") = 24;
+        __asm__ volatile(".code 16\n\tldrsh r0, [r6, r1]"
+                         : "=r"(sel) : "r"(selOffset), "r"(rec) : "cc");
+        switch (sel) {
+        case 0:
             _08001FE24((void *)rec);
-        else if (sel == 2)
+            break;
+        case 2:
             _08001FF24((void *)rec);
-        else if (sel == 3)
+            break;
+        case 3:
             _08001FF7C((void *)rec);
+            break;
+        }
     }
 }

@@ -24,27 +24,132 @@ extern void *Course_0x08026520(int a, int b); // 0x08026520
 extern void _0802D970(const void *a, void *b, u32 c); // swi 0x0C CpuFastSet
 
 void Race_Cluster_A(void) {
-    volatile u8 *wa = (volatile u8 *)WORK_AREA_BASE;
-    volatile u8 *racers = (volatile u8 *)RACER_ARRAY_BASE;
-    s16 cnt = *(volatile s16 *)(wa + 0x10CA);
-    for (int i=0;i<cnt;i++) {
-        u32 flag = Ghost_FlagTest(32);
-        int sel = flag ? (i==0?2:3) : (i==0?1:5);
-        u16 v = *(volatile u16 *)(racers + i*0x11C + 26);
-        u32 res = (u32)(uintptr_t)Course_0x080263C4(i, (void *)(uintptr_t)v, sel);
-        *(volatile u32 *)(racers + i*0x11C + 280) = res;
+    register volatile u8 *racers __asm__("r4") =
+        (volatile u8 *)RACER_ARRAY_BASE;
+    register s32 i __asm__("r5") = 0;
+    register u32 waBase __asm__("r0") = WORK_AREA_BASE;
+    register u32 countOffset __asm__("r2") = 0x10CAu;
+    __asm__ volatile("" : "+r"(racers), "+r"(i), "+r"(waBase),
+                      "+r"(countOffset));
+    register volatile s16 *countCell __asm__("r1") =
+        (volatile s16 *)(waBase + countOffset);
+    __asm__ volatile("" : "+r"(countCell));
+    register s32 count __asm__("r0");
+    __asm__ volatile(".code 16\n\t"
+                     "mov r2, #0\n\t"
+                     "ldrsh r0, [r1, r2]"
+                     : "=r"(count) : "r"(countCell)
+                     : "r2", "cc", "memory");
+    if (i >= count)
+        return;
+
+    register volatile s16 *countTail __asm__("r6") = countCell;
+    __asm__ volatile("" : "+r"(countTail));
+loop:
+    {
+        u32 flag;
+        register int selector __asm__("r2");
+        register u32 result __asm__("r0");
+#ifndef __APPLE__
+        flag = _08018ACC(32);
+#else
+        flag = Ghost_FlagTest(32);
+#endif
+        if (flag != 0) {
+            selector = 3;
+            if (i == 0)
+                selector = 2;
+        } else {
+            selector = 5;
+            if (i == 0)
+                selector = 1;
+        }
+#ifndef __APPLE__
+        result = (u32)(uintptr_t)sub_080263C4(
+            i, (void *)(uintptr_t)*(volatile u16 *)(racers + 26), selector);
+#else
+        result = (u32)(uintptr_t)Course_0x080263C4(
+            i, (void *)(uintptr_t)*(volatile u16 *)(racers + 26), selector);
+#endif
+        {
+            register u32 storeOffset __asm__("r2") = 140;
+            __asm__ volatile("" : "+r"(storeOffset));
+            storeOffset <<= 1;
+            register volatile u32 *target __asm__("r1") =
+                (volatile u32 *)(racers + storeOffset);
+            *target = result;
+        }
+    }
+    i++;
+    {
+        register u32 stride __asm__("r0") = 142;
+        stride <<= 1;
+        racers += stride;
+    }
+    {
+        register s32 nextCount __asm__("r0");
+        __asm__ volatile(".code 16\n\t"
+                         "mov r1, #0\n\t"
+                         "ldrsh r0, [r6, r1]"
+                         : "=r"(nextCount) : "r"(countTail)
+                         : "r1", "cc", "memory");
+        if (i < nextCount)
+            goto loop;
     }
 }
+#ifndef __APPLE__
+__asm__(".align 2, 0");
+#endif
 void Race_Cluster_B(void) {
-    volatile u8 *racers = (volatile u8 *)RACER_ARRAY_BASE;
-    for (int i=0;i<2;i++) {
-        u32 flag = Ghost_FlagTest(32);
-        int sel = flag ? 2 : 1;
-        if (i==1) sel = flag?3:4;
-        u16 v = *(volatile u16 *)(racers + i*0x11C + 26);
-        u32 res = (u32)(uintptr_t)Course_0x080263C4(i, (void *)(uintptr_t)v, sel);
-        *(volatile u32 *)(racers + i*0x11C + 280) = res;
-    }
+    register volatile u8 *racers __asm__("r4") =
+        (volatile u8 *)RACER_ARRAY_BASE;
+    register u32 storeOffset __asm__("r5");
+    register u32 stride __asm__("r0");
+    u32 flag;
+    register int selector __asm__("r2");
+    register u32 result __asm__("r0");
+    register volatile u32 *target __asm__("r1");
+
+#ifndef __APPLE__
+    flag = _08018ACC(32);
+#else
+    flag = Ghost_FlagTest(32);
+#endif
+    selector = 1;
+    if (flag != 0)
+        selector = 2;
+#ifndef __APPLE__
+    result = (u32)(uintptr_t)sub_080263C4(
+        0, (void *)(uintptr_t)*(volatile u16 *)(racers + 26), selector);
+#else
+    result = (u32)(uintptr_t)Course_0x080263C4(
+        0, (void *)(uintptr_t)*(volatile u16 *)(racers + 26), selector);
+#endif
+    storeOffset = 140;
+    storeOffset <<= 1;
+    target = (volatile u32 *)(racers + storeOffset);
+    *target = result;
+    stride = 142;
+    stride <<= 1;
+    racers += stride;
+
+#ifndef __APPLE__
+    flag = _08018ACC(32);
+#else
+    flag = Ghost_FlagTest(32);
+#endif
+    selector = 4;
+    if (flag != 0)
+        selector = 3;
+#ifndef __APPLE__
+    result = (u32)(uintptr_t)sub_080263C4(
+        1, (void *)(uintptr_t)*(volatile u16 *)(racers + 26), selector);
+#else
+    result = (u32)(uintptr_t)Course_0x080263C4(
+        1, (void *)(uintptr_t)*(volatile u16 *)(racers + 26), selector);
+#endif
+    target = (volatile u32 *)(racers + storeOffset);
+    *target = result;
 }
 void Race_Cluster_C(void) {
     volatile u8 *racers = (volatile u8 *)RACER_ARRAY_BASE;
@@ -74,14 +179,26 @@ void Race_Cluster_C(void) {
 }
 void Race_Cluster_D(void) {
     register u8 *racers __asm__("r4") = (u8 *)RACER_ARRAY_BASE;
-    u8 *cell = (u8 *)(WORK_AREA_BASE + 0x10FCu);
+    // The phase cell is base+pool 0x10FC, not one folded address (ROM
+    // `ldr r0,=WA / ldr r1,=0x10FC / adds`). The barrier sits on the base
+    // so the offset pool-loads second, in ROM order.
+    u32 wabase = WORK_AREA_BASE;
+    __asm__("" : "+r"(wabase));
+    u8 *cell = (u8 *)(wabase + 0x10FCu);
     int ph = (int)*(u16 *)cell;
     u32 v;
-    u32 sel;
-    u32 off = 280;
+    u32 a0;
+    u32 a2;
+    // ARGS (measured): both call args are set per-path (`movs r0,#0` lives
+    // in each branch, not hoisted to the join), and the call result feeds
+    // the store straight from r0 (no `adds r1,r0` copy). The two `a0 = 0`
+    // assignments are textually identical so the compiler merges them into
+    // one join movs; the barrier makes taken's opaque and unmergeable.
     if (ph == 10) {
         v = (u32)*(u16 *)(racers + 26);
-        sel = 0;
+        a0 = 0;
+        __asm__("" : "+r"(a0));
+        a2 = 0;
     } else {
 #ifndef __APPLE__
         (void)_08018ACC(32);
@@ -89,15 +206,25 @@ void Race_Cluster_D(void) {
         (void)Ghost_FlagTest(32);
 #endif
         v = (u32)*(u16 *)(racers + 26);
-        sel = 1;
+        a0 = 0;
+        a2 = 1;
     }
 #ifndef __APPLE__
-    v = (u32)(uintptr_t)sub_080263C4(0, (void *)v, (int)sel);
+    u32 result = (u32)(uintptr_t)sub_080263C4((int)a0, (void *)v, (int)a2);
 #else
-    v = (u32)(uintptr_t)Course_0x080263C4(0, (void *)v, (int)sel);
+    u32 result = (u32)(uintptr_t)Course_0x080263C4((int)a0, (void *)v, (int)a2);
 #endif
-    *(u32 *)(racers + off) = v;
+    // The call clobbers r2, so rematerialize the record offset after it.
+    register u32 idx __asm__("r2") = 280;
+    __asm__("" : "+r"(idx));
+    register u32 *target __asm__("r1") = (u32 *)(racers + idx);
+    *target = result;
 }
+#ifndef __APPLE__
+// _0801A0E8 occupies 68 ROM bytes: 66 instruction bytes followed by a zero
+// halfword. Emit that in its function section instead of gas's Thumb nop fill.
+__asm__(".align 2, 0");
+#endif
 
 void Race_Cluster_Dispatch(void) {
     volatile u8 *wa = (volatile u8 *)WORK_AREA_BASE;
@@ -133,6 +260,7 @@ void _0801A0BC(void) __attribute__((alias("Race_Cluster_C")));
 // re-emit and the link failed on an undefined reference.
 void sub_0801A0BC(void) __attribute__((alias("Race_Cluster_C")));
 void _0801A0E8(void) __attribute__((alias("Race_Cluster_D")));
+void sub_0801A0E8(void) __attribute__((alias("Race_Cluster_D")));
 void _0801A12C(void) __attribute__((alias("Race_Cluster_Dispatch")));
 #endif
 

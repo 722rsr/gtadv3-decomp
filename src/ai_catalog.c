@@ -220,10 +220,17 @@ int _08024D78(int a) __attribute__((alias("Ai_CatalogGroupSize")));
 
 int Ai_CatalogOwnedInGroup(int g){
     const u32 *t=(const u32*)(uintptr_t)0x080CC518u;
-    const u32 *list=(const u32*)(uintptr_t)t[g &0xF];
+    __asm__("" : "+r"(t));
+    const u32 *cur=(const u32*)(uintptr_t)t[g];
     extern int _08025FAC(int);
     int c=0;
-    for(int i=0;;++i){ int v=(int)list[i]; if(v==-1) break; if(_08025FAC(v)) c++; }
+    if ((int)*cur != -1) {
+        do {
+            int v = (int)*cur;
+            if (_08025FAC(v)) c++;
+            cur++;
+        } while ((int)*cur != -1);
+    }
     return c;
 }
 #ifndef __APPLE__

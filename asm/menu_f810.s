@@ -107,3 +107,6 @@ _0800F8AA:
   bx r0
   .align 2, 0
 _0800F8B0: .4byte 0x080CB588
+@ Region end (VMA 0x0800F8B4). Emits no bytes; anchors the final body in this
+@ region for the promotion screen.
+menu_f810_end:

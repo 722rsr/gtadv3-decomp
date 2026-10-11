@@ -48,12 +48,17 @@ HOST_STUB(int   _08002587C(int x));                                  // 0x080025
 #define RSE_CALLEE(friendly, closure) closure
 extern int _0802581C(int x);   // 0x08002581C lineup probe
 extern int _0802587C(int x);   // 0x08002587C lineup probe
+extern void sub_0802B368(int v); // closure spelling for 0x0802B368
 #else
 #define RSE_CALLEE(friendly, closure) friendly
 #endif
 HOST_STUB(s16   _0800258A8(int idx));                                // 0x0800258A8 numeric_leaves
-HOST_STUB(int   _0800258B8(int x));                                  // 0x0800258B8 course_cal cup
-HOST_STUB(int   _0800258CC(int x));                                  // 0x0800258CC course_cal seq
+HOST_STUB(s16   _0800258B8(int x));                                  // 0x0800258B8 course_cal cup
+HOST_STUB(s16   _0800258CC(int x));                                  // 0x0800258CC course_cal seq
+#ifndef __APPLE__
+extern s16 _080258B8(int x);  // closure spelling of 0x0800258B8
+extern s16 _080258CC(int x);  // closure spelling of 0x0800258CC
+#endif
 HOST_STUB(void  _08002124(u16 v));                                   // 0x08002124 BlockB arm
 HOST_STUB(int   _08002140(void));                                    // 0x08002140 engine key
 HOST_STUB(void *_08004B68(void));                                    // 0x08004B68 scene mgr
@@ -158,36 +163,56 @@ void _08001FE24(void *rec0) {
     WS(rec + 160, RD16(wa, 0xFC8));
     WS(rec + 162, RD16(wa, 0xFCA));
     WS(rec + 156, RD16(wa, 0xFCC));
-    int t = (int)_0800258A8((int)RD16(rec, 26));
-    W32(rec, 180, (u32)(s16)t);
-    _08007ABC((void *)R32(rec, 12), (void *)(uintptr_t)(u32)t, (int)R32(rec, 176));
-    // ROM: `movs r1,#1 / cmp r0,#31 / bgt / movs r1,#0` — the TRUE value is
-    // preloaded and the branch SKIPS the false assignment, which is the shape
-    // of `h = 1; if (x <= 31) h = 0;`, not of a `? :` ternary (agbcc inverts
-    // a ternary's condition and lays the false arm inline). The following
-    // `lsls r0,r1,#16 / adds r5,r0,#0` is the u16 -> int widening of `h`,
-    // and r5 is the callee-saved home because `hi` is live across three bls.
+    // Keep the short result in r1 until rec+180 is formed in r0; promotion to
+    // s32 then emits the ROM's sign extension immediately before the store.
+    register s16 t asm("r1") = _0800258A8((int)RD16(rec, 26));
+    register volatile u8 *t_slot asm("r0") = rec + 180;
+    register s32 t32 asm("r1") = t;
+    *(volatile s32 *)t_slot = t32;
+    _08007ABC((void *)R32(rec, 12), (void *)(uintptr_t)(u32)t32, (int)R32(rec, 176));
+    // The ROM preloads 1, clears it for lane <= 31, shifts the 0/1 flag by
+    // 16, then copies it to r5. The shifted value is only tested for zero, so
+    // it preserves the flag while matching the callee-saved guard across the
+    // later calls.
+    int lane = RD16(rec, 28);
     u16 h = 1;
-    if (RD16(rec, 28) <= 31)
+    if (lane <= 31)
         h = 0;
-    int hi = h;
+    register int shifted asm("r0") = h << 16;
+    asm volatile("" : "+r"(shifted));
+    int hi = shifted;
     if (!hi) {
-        int u = (int)(s16)_0800258B8((int)RD16(rec, 26));
-        int w = _08001F9EC(u);
-        W32(rec, 192, (u32)(s16)w);
-        _08007ABC((void *)R32(rec, 20), (void *)(uintptr_t)(u32)w, (int)R32(rec, 188));
+        int u = (int)(s16)RSE_CALLEE(_0800258B8, _080258B8)((int)RD16(rec, 26));
+        // This is the ROM's r1 result / r0 destination sequence. Reusing r1
+        // for the s16 promotion also supplies the helper's second argument.
+        register s32 w asm("r1") = _08001F9EC(u);
+        register volatile u8 *w_slot asm("r0") = rec + 192;
+        register s32 w16 asm("r1") = (s16)w;
+        *(volatile s32 *)w_slot = w16;
+        _08007ABC((void *)R32(rec, 20), (void *)(uintptr_t)(u32)w16, (int)R32(rec, 188));
     } else {
-        W32(rec, 192, 13);
-        _08007ABC((void *)R32(rec, 20), (void *)(uintptr_t)(u32)R32(rec, 188), 13);
+        // The ROM keeps rec+192 in r1, stores the constant through it, then
+        // decrements the same pointer to fetch rec+188 for the helper.
+        register volatile u8 *const_slot asm("r1") = rec + 192;
+        *(volatile s32 *)const_slot = 13;
+        _08007ABC((void *)R32(rec, 20), (void *)(uintptr_t)13,
+                  (int)*(volatile s32 *)(const_slot - 4));
     }
     if (!hi) {
-        int u2 = (int)(s16)_0800258CC((int)RD16(rec, 26));
-        int w2 = _08001F9FC(u2);
-        W32(rec, 204, (u32)(s16)w2);
-        _08007ABC((void *)R32(rec, 20), (void *)(uintptr_t)(u32)w2, (int)R32(rec, 200));
+        int u2 = (int)(s16)RSE_CALLEE(_0800258CC, _080258CC)((int)RD16(rec, 26));
+        // Same store-and-call register pattern as the preceding nonconstant
+        // branch, with the second lane's +204/+200 fields.
+        register s32 w2 asm("r1") = _08001F9FC(u2);
+        register volatile u8 *w2_slot asm("r0") = rec + 204;
+        register s32 w2_16 asm("r1") = (s16)w2;
+        *(volatile s32 *)w2_slot = w2_16;
+        _08007ABC((void *)R32(rec, 20), (void *)(uintptr_t)(u32)w2_16, (int)R32(rec, 200));
     } else {
-        W32(rec, 204, 14);
-        _08007ABC((void *)R32(rec, 20), (void *)(uintptr_t)(u32)R32(rec, 200), 14);
+        // Reuse rec+204 as the base for the rec+200 helper field.
+        register volatile u8 *const_slot2 asm("r1") = rec + 204;
+        *(volatile s32 *)const_slot2 = 14;
+        _08007ABC((void *)R32(rec, 20), (void *)(uintptr_t)14,
+                  (int)*(volatile s32 *)(const_slot2 - 4));
     }
 }
 
@@ -283,7 +308,7 @@ void _08001FFD4(void *rec0, int a1, int a2) {
         W32(rec, 180, (u32)t2);
         _08007ABC((void *)R32(rec, 12), (void *)(uintptr_t)(u32)t2, (int)R32(rec, 176));
         if (newsel == 0) {
-            int u = (int)_0800258B8((int)S16(rec, 26));
+            int u = (int)RSE_CALLEE(_0800258B8, _080258B8)((int)S16(rec, 26));
             int w = _08001F9EC(u);
             W32(rec, 192, (u32)w);
             _08007ABC((void *)R32(rec, 20), (void *)(uintptr_t)(u32)w, (int)R32(rec, 188));
@@ -292,7 +317,7 @@ void _08001FFD4(void *rec0, int a1, int a2) {
             _08007ABC((void *)R32(rec, 20), (void *)(uintptr_t)(u32)R32(rec, 188), 13);
         }
         if (newsel == 0) {
-            int u2 = (int)_0800258CC((int)S16(rec, 26));
+            int u2 = (int)RSE_CALLEE(_0800258CC, _080258CC)((int)S16(rec, 26));
             int w2 = _08001F9FC(u2);
             W32(rec, 204, (u32)w2);
             _08007ABC((void *)R32(rec, 20), (void *)(uintptr_t)(u32)w2, (int)R32(rec, 200));
@@ -311,77 +336,144 @@ void _080020198(void *rec0, int a1, int a2) {
     u8 raw[4];
     u8 map[4];
     volatile u8 *area;
+    u32 rowOff;
+    u32 areaBase;
     if (R16(rec, 160) == 1) {
-        int s28 = (int)S16(rec, 28);
-        int v = (int)S16(rec, 156);
-        area = (volatile u8 *)(0x03001D64u + (u32)s28 * 72u + (u32)(v * 3) * 4u) + 8;
+#ifndef __APPLE__
+        register int s28 __asm__("r0");
+        register int v __asm__("r2");
+#else
+        int s28;
+        int v;
+#endif
+        s28 = (int)*(s16 *)(uintptr_t)(rec + 28);
+        rowOff = (u32)s28 * 72u;
+        v = (int)*(s16 *)(uintptr_t)(rec + 156);
+        areaBase = 0x03001D64u + (u32)(v * 3) * 4u;
     } else {
-        area = (volatile u8 *)(0x03001DA0u + (u32)(int)S16(rec, 28) * 72u) + 8;
+#ifndef __APPLE__
+        register int off28 __asm__("r1") = 28;
+        register int s28 __asm__("r0");
+        __asm__ volatile("ldrsh %0, [%1, %2]"
+                         : "=r"(s28) : "r"(rec), "r"(off28) : "memory");
+#else
+        int s28 = (int)*(s16 *)(uintptr_t)(rec + 28);
+#endif
+        rowOff = (u32)s28 * 72u;
+        areaBase = 0x03001DA0u;
     }
+    rowOff += areaBase;
+    area = (volatile u8 *)(uintptr_t)(rowOff + 8u);
+#ifndef __APPLE__
+    __asm__ volatile("" : "+r"(area));
+#endif
     {
+        u8 *mapPtr = map;
         volatile u16 *tbl = (volatile u16 *)0x080CBC74u;
-        map[0] = (u8)tbl[R8(area, 0)];
-        map[1] = (u8)tbl[R8(area, 1)];
-        map[2] = (u8)tbl[R8(area, 2)];
+#ifndef __APPLE__
+        {
+            register u8 idx0 __asm__("r2") = R8(area, 0);
+            register volatile u16 *lookup0 __asm__("r0") = tbl + idx0;
+            __asm__ volatile("" : "+r"(lookup0));
+            mapPtr[0] = (u8)*lookup0;
+        }
+        {
+            register u8 idx1 __asm__("r3") = R8(area, 1);
+            register volatile u16 *lookup1 __asm__("r0") = tbl + idx1;
+            __asm__ volatile("" : "+r"(lookup1));
+            mapPtr[1] = (u8)*lookup1;
+        }
+        {
+            register u8 idx2 __asm__("r2") = R8(area, 2);
+            register volatile u16 *lookup2 __asm__("r0") = tbl + idx2;
+            __asm__ volatile("" : "+r"(lookup2));
+            mapPtr[2] = (u8)*lookup2;
+        }
+#else
+        mapPtr[0] = (u8)tbl[R8(area, 0)];
+        mapPtr[1] = (u8)tbl[R8(area, 1)];
+        mapPtr[2] = (u8)tbl[R8(area, 2)];
+#endif
     }
     _0800D95C((void *)raw, (const void *)(uintptr_t)area, 3);
-    int c164 = (int)S16(rec, 164);
+    int c164 = (int)*(s16 *)(uintptr_t)(rec + 164);
     if (c164 <= 2) {
         if (sel == 1) {
-            _08002B368(1);
-            W16(rec, 164, (u16)(R16(rec, 164) + 1u));
+            RSE_CALLEE(_08002B368, sub_0802B368)(1);
+            W16I(rec, 164, R16(rec, 164) + 1);
         }
         if (sel == 2) {
-            if (S16(rec, 164) != 0)
-                _08002B368(4);
-            W16(rec, 164, (u16)(R16(rec, 164) - 1u));
+            if (*(s16 *)(uintptr_t)(rec + 164) != 0)
+                RSE_CALLEE(_08002B368, sub_0802B368)(4);
+            W16I(rec, 164, R16(rec, 164) - 1);
         }
     } else {
         if (sel == 1) {
-            _08002B368(1);
+            RSE_CALLEE(_08002B368, sub_0802B368)(1);
             W32(rec, 32, 10);
             W16(rec, 36, 0);
             W32(rec, 64, 10);
             W32(rec, 60, (u32)sel); // r5 (==1 here)
         }
         if (sel == 2) {
-            W16(rec, 164, (u16)sel); // ==2
-            _08002B368(4);
+            W16I(rec, 164, sel); // ==2
+            RSE_CALLEE(_08002B368, sub_0802B368)(4);
         }
     }
-    if (S16(rec, 164) < 0)
+    if (*(s16 *)(uintptr_t)(rec + 164) < 0)
         W16(rec, 164, 0);
-    if (S16(rec, 164) > 3)
+    if (*(s16 *)(uintptr_t)(rec + 164) > 3)
         W16(rec, 164, 3);
-    if (S16(rec, 164) <= 2) {
+    if (*(s16 *)(uintptr_t)(rec + 164) <= 2) {
+        int key64 = key & 64;
         volatile u8 *lane = rec + 152;
-        if ((key & 64) && S16(lane, 0) <= 0) {
-            _08002B368(2);
-            int idx = (int)S16(rec, 164);
+        if (key64 != 0 && *(s16 *)(uintptr_t)lane <= 0) {
+            RSE_CALLEE(_08002B368, sub_0802B368)(2);
+            int idx = (int)*(s16 *)(uintptr_t)(rec + 164);
             map[idx] = (u8)(map[idx] - 1u);
-            int v = (int)map[idx];
+            __asm__ volatile("" : : : "memory");
+            u32 v = (u32)map[(int)RD16(rec, 164)];
             if (v == 0)
-                map[idx] = 53;
+                map[(int)RD16(rec, 164)] = 53;
             else if (v > 53)
-                map[idx] = 1;
-            raw[idx] = *(volatile u8 *)((*(volatile u32 *)0x080CBE74u) + map[idx]);
+                map[(int)RD16(rec, 164)] = 1;
+            __asm__ volatile("" : : : "memory");
+            int rawIdx = (int)RD16(rec, 164);
+#ifndef __APPLE__
+            register u8 *rawEntry __asm__("r2") = raw + rawIdx;
+            register u8 *mapEntry __asm__("r1") = map + rawIdx;
+            __asm__ volatile("" : "+r"(rawEntry), "+r"(mapEntry) : : "memory");
+            rawEntry[0] = *(volatile u8 *)((*(volatile u32 *)0x080CBE74u) + mapEntry[0]);
+#else
+            raw[rawIdx] = *(volatile u8 *)((*(volatile u32 *)0x080CBE74u) + map[rawIdx]);
+#endif
             W16(lane, 0, 10);
         }
-        if ((key & 128) && S16(lane, 0) <= 0) {
-            _08002B368(2);
-            int idx = (int)S16(rec, 164);
+        if ((key & 128) && *(s16 *)(uintptr_t)lane <= 0) {
+            RSE_CALLEE(_08002B368, sub_0802B368)(2);
+            int idx = (int)*(s16 *)(uintptr_t)(rec + 164);
             map[idx] = (u8)(map[idx] + 1u);
-            int v = (int)map[idx];
+            __asm__ volatile("" : : : "memory");
+            u32 v = (u32)map[(int)RD16(rec, 164)];
             if (v == 0)
-                map[idx] = 53;
+                map[(int)RD16(rec, 164)] = 53;
             else if (v > 53)
-                map[idx] = 1;
-            raw[idx] = *(volatile u8 *)((*(volatile u32 *)0x080CBE74u) + map[idx]);
+                map[(int)RD16(rec, 164)] = 1;
+            __asm__ volatile("" : : : "memory");
+            int rawIdx = (int)RD16(rec, 164);
+#ifndef __APPLE__
+            register u8 *rawEntry __asm__("r2") = raw + rawIdx;
+            register u8 *mapEntry __asm__("r1") = map + rawIdx;
+            __asm__ volatile("" : "+r"(rawEntry), "+r"(mapEntry) : : "memory");
+            rawEntry[0] = *(volatile u8 *)((*(volatile u32 *)0x080CBE74u) + mapEntry[0]);
+#else
+            raw[rawIdx] = *(volatile u8 *)((*(volatile u32 *)0x080CBE74u) + map[rawIdx]);
+#endif
             W16(lane, 0, 10);
         }
         {
             int t = (int)R16(lane, 0) - 1;
-            W16(lane, 0, (u16)t);
+            W16I(lane, 0, t);
             if ((s16)(u16)t <= 0)
                 W16(lane, 0, 0);
         }
@@ -392,11 +484,60 @@ void _080020198(void *rec0, int a1, int a2) {
         area[2] = raw[2];
     }
     if (R16(rec, 162) == 1) {
+#ifndef __APPLE__
+        register volatile u8 *wa __asm__("r2") = (volatile u8 *)WA;
+        __asm__ volatile("" : "+r"(wa));
+        register volatile u8 *dst __asm__("r0");
+        register int offset __asm__("r3");
+        dst = (volatile u8 *)(uintptr_t)(
+            (u32)(int)*(s16 *)(uintptr_t)(rec + 28) * 72u + (u32)(uintptr_t)wa);
+        __asm__ volatile("" : "+r"(dst));
+        {
+            register u8 value __asm__("r1") = raw[0];
+            __asm__ volatile("" : "+r"(value) : : "memory");
+            offset = 197;
+            __asm__ volatile("" : "+r"(offset));
+            offset <<= 3;
+            dst += offset;
+            *dst = value;
+        }
+        dst = (volatile u8 *)(uintptr_t)(
+            (u32)(int)*(s16 *)(uintptr_t)(rec + 28) * 72u + (u32)(uintptr_t)wa);
+        __asm__ volatile("" : "+r"(dst));
+        {
+            register u8 value __asm__("r1") = raw[1];
+            __asm__ volatile("" : "+r"(value) : : "memory");
+            offset++;
+            dst += offset;
+            *dst = value;
+        }
+        {
+            register int row __asm__("r1");
+            __asm__ volatile(".code 16\n\t"
+                             "movs r0, #28\n\t"
+                             "ldrsh %0, [%1, r0]"
+                             : "=r"(row) : "r"(rec)
+                             : "r0", "cc", "memory");
+            dst = (volatile u8 *)(uintptr_t)(
+                (u32)row * 72u + (u32)(uintptr_t)wa);
+        }
+        __asm__ volatile("" : "+r"(dst));
+        {
+            register u8 value __asm__("r1") = raw[2];
+            __asm__ volatile("" : "+r"(value) : : "memory");
+            register int finalOffset __asm__("r2") = 0x62A;
+            __asm__ volatile("" : "+r"(finalOffset));
+            dst += finalOffset;
+            *dst = value;
+        }
+#else
         volatile u8 *wa = (volatile u8 *)WA;
-        volatile u8 *cb = wa + (u32)(int)S16(rec, 28) * 72u;
-        cb[1576] = raw[0];
-        cb[1577] = raw[1];
-        cb[0x62A] = raw[2]; // 0x62A == 1578
+        wa[(u32)(int)*(s16 *)(uintptr_t)(rec + 28) * 72u + 1576u] = raw[0];
+        __asm__ volatile("" : : : "memory");
+        wa[(u32)(int)*(s16 *)(uintptr_t)(rec + 28) * 72u + 1577u] = raw[1];
+        __asm__ volatile("" : : : "memory");
+        wa[(u32)(int)*(s16 *)(uintptr_t)(rec + 28) * 72u + 0x62Au] = raw[2];
+#endif
     }
 }
 
@@ -429,22 +570,64 @@ __asm__(".align 2, 0");
 
 // ---- 0x080020498 — 5-arg emit helper: mode 0 -> 01FADC, mode 1 -> 01FB58 loop ----
 void _080020498(void *rec0, int a, int b, void *area0, int mode) {
-    volatile u8 *rec = (volatile u8 *)rec0;
-    volatile u8 *area = (volatile u8 *)area0;
-    if (mode == 0) {
-        _08001FADC(a, b, (void *)(uintptr_t)area, 3, mode);
-    } else if (mode == 1) {
-        volatile u8 *cur = area;
-        int cursor = a;
-        for (int k = 0; k <= 2; k++) {
-            // ROM: call unless ([rec+164]==k AND u16[rec+174]!=1)
-            if ((int)S16(rec, 164) != k || R16(rec, 174) == 1)
-                _08001FB58(cursor, b, (int)*cur, 4);
+    register volatile u8 *rec __asm__("r8");
+    int bReg;
+    register volatile u8 *area __asm__("r2");
+    register int modeReg __asm__("r0");
+    __asm__ volatile(".code 16\n\tmov %0, %1"
+                     : "=r"(rec) : "r"(rec0) : "cc");
+    __asm__ volatile(".code 16\n\tmovs %0, %1"
+                     : "=r"(bReg) : "r"(b) : "cc");
+    __asm__ volatile(".code 16\n\tmovs %0, %1"
+                     : "=r"(area) : "r"(area0) : "cc");
+    __asm__ volatile(".code 16\n\tldr r0, [sp, #32]"
+                     : "=r"(modeReg) : : "cc", "memory");
+    switch (modeReg) {
+    case 0:
+        _08001FADC(a, bReg, (void *)(uintptr_t)area, 3, 4);
+        break;
+    case 1: {
+        register volatile u8 *cur __asm__("r5");
+        register int cursor __asm__("r4");
+        register int k __asm__("r6");
+        register volatile u8 *currentField __asm__("r9");
+        __asm__ volatile(
+            ".code 16\n\t"
+            "movs r6, #0\n\t"
+            "movs r0, #164\n\t"
+            "add r0, r8\n\t"
+            "mov r9, r0\n\t"
+            "movs r5, r2\n\t"
+            "movs r4, r1"
+            : "=r"(k), "=r"(currentField), "=r"(cur), "=r"(cursor)
+            :
+            : "r0", "cc", "memory");
+        do {
+            // ROM duplicates the call block for the two sides of this test.
+            register s32 current __asm__("r0");
+            __asm__ volatile(
+                ".code 16\n\t"
+                "mov r1, r9\n\t"
+                "movs r2, #0\n\t"
+                "ldrsh r0, [r1, r2]"
+                : "=r"(current)
+                :
+                : "r1", "r2", "cc", "memory");
+            if (current == k) {
+                if (R16(rec, 174) == 1)
+                    _08001FB58(cursor, bReg, (int)*cur, 4);
+            } else {
+                _08001FB58(cursor, bReg, (int)*cur, 4);
+            }
             cur++;
             cursor += 8;
-        }
+            k++;
+        } while (k <= 2);
+        break;
+    }
     }
 }
+__asm__(".align 2, 0");
 
 // ---- 0x08020518 — scene setup A (03B9C path) + pools {WA+0x5E4, 0x080CBC74 via FA64} ----
 void _080020518(void *rec0) {

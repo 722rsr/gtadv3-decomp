@@ -43,6 +43,8 @@ import tempfile
 import threading
 from pathlib import Path
 
+from agbcc_options import options_for as agbcc_options
+
 ROOT = Path(__file__).resolve().parents[1]
 # Matching compiler (see docs/findings/compiler_split.md): the transformer must
 # verify against the build the slice is matched with.
@@ -182,7 +184,8 @@ def compile_probe(text: str, tag: str):
     with i.open("w", encoding="utf-8") as h:
         if run(["clang", "-E", "-nostdinc", "-undef", *inc_flags(), str(c)], stdout=h).returncode:
             return False, 0, "preprocess"
-    out = run([AGBCC, "-O2", "-mthumb-interwork", str(i), "-o", str(s)])
+    out = run([AGBCC, *agbcc_options(f"{tag}.c", function_sections=False),
+               str(i), "-o", str(s)])
     if out.returncode == 0:
         return True, 0, "OK"
     for line in (out.stderr or "").splitlines():
@@ -465,6 +468,9 @@ def cached_transform_file(path: Path) -> tuple[str, dict]:
         h.update(path.read_bytes())
         c89_tool = Path(__file__).resolve()
         h.update(str(c89_tool.stat().st_mtime_ns if c89_tool.exists() else 0).encode())
+        options_tool = Path(__file__).with_name("agbcc_options.py")
+        h.update(str(options_tool.stat().st_mtime_ns if options_tool.exists() else 0).encode())
+        h.update(" ".join(agbcc_options(path, function_sections=False)).encode())
         h.update(str(AGBCC.stat().st_mtime_ns if AGBCC.exists() else 0).encode())
         key = h.hexdigest()[:32]
         cache_entry = CACHE_DIR / key

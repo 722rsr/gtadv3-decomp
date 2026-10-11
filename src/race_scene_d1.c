@@ -219,32 +219,46 @@ void sub_08001F568(volatile u8 *rec) __attribute__((alias("_08001F568")));
 // EB48's record (r1), with rec in EB48's dead r0 slot.
 // ----------------------------------------------------------------------------
 void _08001F5B4(int ev, u32 b, u32 c, void *rec_) {
+    extern u8 RaceSceneD1WA_F5B4[];
+    __asm__(".globl RaceSceneD1WA_F5B4\nRaceSceneD1WA_F5B4 = 0x03001780");
+#ifndef __APPLE__
+    register u32 breg __asm__("r5") = b;
+    register u32 creg __asm__("r6") = c;
+    register volatile u8 *rec __asm__("r4") = (volatile u8 *)rec_;
+#else
+    u32 breg = b;
+    u32 creg = c;
     volatile u8 *rec = (volatile u8 *)rec_;
+#endif
     int idx = ev - 1;
     if ((u32)idx > 11u)
         return;
     switch (idx) {
-    case 0:
-        _08001EBA8(rec_);
-        break;
     case 1:
-        _08001EB48((int)(uintptr_t)rec_, (void *)(uintptr_t)b);
+        _08001EB48((int)(uintptr_t)rec, (void *)(uintptr_t)breg);
         break;
     case 4:
         _0800D854((void *)(rec + 24));
-        if (WA_U16(0xFBC) == 3)
-            _08001F554(rec_);
-        break;
-    case 5:
-        _08001F568(rec_);
-        if (*(volatile u16 *)(rec + 28) != 0)
-            _08001EE2C(rec_, (u16)b, (u16)c);
+        {
+            u8 *wa = (u8 *)(uintptr_t)RaceSceneD1WA_F5B4;
+            u32 off = 0x0FBCu;
+            if (*(volatile u16 *)(uintptr_t)(wa + off) == 3)
+                _08001F554((void *)rec);
+        }
         break;
     case 6:
-        _08001EFAC(rec_);
+        _08001EFAC((void *)rec);
+        break;
+    case 5:
+        _08001F568((void *)rec);
+        if (*(volatile u16 *)(rec + 28) != 0)
+            _08001EE2C((void *)rec, (u16)breg, (u16)creg);
+        break;
+    case 0:
+        _08001EBA8((void *)rec);
         break;
     case 11:
-        _08001EBA4();
+        ((void (*)(void *))(void *)_08001EBA4)((void *)rec);
         break;
     default:
         break;
@@ -589,14 +603,13 @@ int _08001F9FC(int x) {
 // _08007614(0x08344450, 1, 0, 3) + (..., 1, 1, 4).
 // ----------------------------------------------------------------------------
 void _08001FA0C(void) {
-    // `base[1 + i]`, not a pre-offset pointer: the ROM's lane base is the
-    // literal 0x0203F8F0 walked by 2, and the store/load share one moving
-    // pointer. RESIDUAL: agbcc still folds `0x0203F8F0 + 2` into a single
-    // 0x0203F8F2 pool word, so the ROM's `ldr r0,[pc] / adds r4, r0, #2`
-    // pair (2 bytes) and the pool word itself are still missing.
-    u16 *base = (u16 *)(uintptr_t)0x0203F8F0u;
-    int i;
-    for (i = 0; i <= 63; i++) {
+    // The absolute symbol keeps the ROM's `ldr r0,[pc] / adds r4,r0,#2`
+    // sequence instead of folding the address into a 0x0203F8F2 pool word.
+    extern s16 RaceSceneD1RamF8F0[];
+    __asm__(".globl RaceSceneD1RamF8F0\nRaceSceneD1RamF8F0 = 0x0203F8F0");
+    int i = 0;
+    u16 *base = (u16 *)RaceSceneD1RamF8F0;
+    for (; i <= 63; i++) {
         base[1 + i] = (u16)_08005758(1);
         _08007570((void *)0x08344450u, 0,
                   (int)*(s16 *)(uintptr_t)&base[1 + i], i, 1);
@@ -604,6 +617,9 @@ void _08001FA0C(void) {
     _08007614((void *)0x08344450u, 1, 0, 3);
     _08007614((void *)0x08344450u, 1, 1, 4);
 }
+#ifndef __APPLE__
+void sub_08001FA0C(void) __attribute__((alias("_08001FA0C")));
+#endif
 
 // ----------------------------------------------------------------------------
 // ---- 0x0801FB58 — guarded 10-arg emit leaf (r3 passes through) ----
@@ -638,7 +654,6 @@ void _08001FB58(int a, int b, int c, int d) {
     extern u8 RaceSceneD1Tbl74[];
     extern s16 RaceSceneD1RamF8F0[];
     __asm__(".globl RaceSceneD1Tbl74\nRaceSceneD1Tbl74 = 0x080CBC74");
-    __asm__(".globl RaceSceneD1RamF8F0\nRaceSceneD1RamF8F0 = 0x0203F8F0");
     shifted = (u32)c << 24;
     base = (u32)(uintptr_t)RaceSceneD1Tbl74;
     offset = shifted >> 23;

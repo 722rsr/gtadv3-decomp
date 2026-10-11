@@ -124,35 +124,56 @@ void sub_0800CE78(void *a) __attribute__((alias("MenuRec_0800CE78")));
 //     obj = *(u32*)(rec+0x1018); _08026A4C(obj, cur, 0); _08026938(obj, cur)
 void MenuRec_0800CED4(void *rec, int a1, int a2) {
     (void)a1;
-    volatile u8 *r5 = (volatile u8 *)rec;
+    register volatile u8 *r5 __asm__("r5") = (volatile u8 *)rec;
     u16 r4 = (u16)a2;
     u16 r6 = r4;
-    s16 r7 = 0;
-    const s16 r9 = 2;
 
     _08004B68();
-    s16 r8 = *(volatile s16 *)(r5 + 6);
+    register u32 off6 __asm__("r1") = 6;
+    register s32 previous __asm__("r0");
+    __asm__ volatile ("ldrsh %0, [%1, %2]"
+                      : "=r" (previous) : "r" (r5), "r" (off6));
+    s32 r8 = previous;
+    s32 r7 = 0;
+    register s32 two __asm__("r2") = 2;
+    register s32 r9 __asm__("r9") = two;
 
-    if (r4 & 2)
+    if (r4 & two)
         _08004EA8(6);
     if (r4 & 32)
-        r7 = (s16)(r7 - 1);
+        r7 = r7 - 1;
     if (r6 & 16)
-        r7 = (s16)(r7 + 1);
+        r7 = r7 + 1;
 
-    u16 sum = (u16)(*(volatile u16 *)(r5 + 6) + (u16)r7);
-    *(volatile u16 *)(r5 + 6) = sum;
+    register s32 sum __asm__("r0");
+    __asm__ volatile ("ldrh r1, [%1, #6]\n\tadd %0, r1, %2"
+                      : "=r" (sum) : "r" (r5), "r" (r7) : "r1", "cc");
+    *(volatile u16 *)(r5 + 6) = (u16)sum;
     if ((s16)sum < 0)
         *(volatile u16 *)(r5 + 6) = (u16)0;
 
-    if (*(volatile s16 *)(r5 + 6) > 2)
+    register u32 clampOff __asm__("r2") = 6;
+    register s32 clampValue __asm__("r0");
+    __asm__ volatile ("ldrsh %0, [%1, %2]"
+                      : "=r" (clampValue) : "r" (r5), "r" (clampOff));
+    if (clampValue > 2)
         *(volatile u16 *)(r5 + 6) = (u16)r9;
 
-    s16 cur = *(volatile s16 *)(r5 + 6);
+    register u32 currentOff __asm__("r2") = 6;
+    register s32 cur __asm__("r1");
+    __asm__ volatile ("ldrsh %0, [%1, %2]"
+                      : "=r" (cur) : "r" (r5), "r" (currentOff));
     if (cur != r8) {
-        void *obj = (void *)(uintptr_t)*(volatile u32 *)(r5 + 0x1018);
-        _08026A4C(obj, cur, 0);
-        _08026938(obj, cur);
+        register volatile u32 *objSlot __asm__("r4") =
+            (volatile u32 *)(r5 + 0x1018);
+        void *obj1 = (void *)(uintptr_t)*objSlot;
+        _08026A4C(obj1, cur, 0);
+        void *obj2 = (void *)(uintptr_t)*objSlot;
+        register u32 finalOff __asm__("r2") = 6;
+        register s32 cur2 __asm__("r1");
+        __asm__ volatile ("ldrsh %0, [%1, %2]"
+                          : "=r" (cur2) : "r" (r5), "r" (finalOff));
+        _08026938(obj2, cur2);
     }
 }
 #ifndef __APPLE__

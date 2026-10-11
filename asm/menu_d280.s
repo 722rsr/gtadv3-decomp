@@ -136,3 +136,7 @@ _0800D394: .word 0x0805F8F0
 _0800D398: .word 0x0805F8F4
 _0800D39C: .word 0x0805F8FC
 _0800D3A0: .word 0x0805F904
+
+@ Region end at VMA 0x0800D3A4 after the final literal pool.
+@ Emits no bytes; anchors the last body in this region for promotion screening.
+menu_d280_end:

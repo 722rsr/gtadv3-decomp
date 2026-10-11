@@ -54,12 +54,12 @@ HOST_STUB(int   _08002BE8(int dummy));                               // counter 
 HOST_STUB(void  _08002C48(int a, u16 b));
 HOST_STUB(void  _08002D98(u32 a, u32 b, u32 c, u32 d, u32 e));
 #ifndef __APPLE__
-extern void  _0802E104(void *a, int b, u32 c);
+extern void *_0802E104(void *a, int b, u32 c);
 extern void  sub_0802D974(const void *src, void *dst, u32 ctrl);
 #define _08002E104 _0802E104
 #define _08002D974 sub_0802D974
 #else
-HOST_STUB(void  _08002E104(void *a, int b, u32 c));                  // memset-like
+HOST_STUB(void *_08002E104(void *a, int b, u32 c));                  // memset-like
 HOST_STUB(void  _08002D974(const void *src, void *dst, u32 ctrl));   // CpuSet
 #endif
 HOST_STUB(void  _08004C84(u32 a, u32 b));                            // trampoline -> ROM
@@ -991,7 +991,7 @@ void _08007B8C(void *r, int k, int x, int y, u32 a, u32 b, u32 c, u32 d)
 // ============================================================================
 void Sub_080011784(void *rec_) {
     volatile u8 *rec = (volatile u8 *)rec_;
-    s16 selector = *(volatile s16 *)(uintptr_t)(rec + 168);
+    s16 selector = *(s16 *)(uintptr_t)(rec + 168);
 
     switch (selector) {
     case 0: {
@@ -1008,11 +1008,16 @@ void Sub_080011784(void *rec_) {
         CourseEmit7B18(rec_, 8, 10, 72, 4, 1, 1, 0);
         break;
     case 3: {
-        s16 sub_selector = *(volatile s16 *)(uintptr_t)(rec + 226);
-        if (sub_selector == 0) {
+        s16 sub_selector = *(s16 *)(uintptr_t)(rec + 226);
+        switch (sub_selector) {
+        case 0:
             CourseEmit7B18(rec_, 11, 10, 88, 4, 1, 1, sub_selector);
-        } else if (sub_selector == 1) {
+            break;
+        case 1:
             CourseEmit7B18(rec_, 5, 10, 88, 4, sub_selector, sub_selector, 0);
+            break;
+        default:
+            break;
         }
         break;
     }
@@ -1027,6 +1032,9 @@ void _080011784(void *a) __attribute__((alias("Sub_080011784")));
 void sub_080011784(void *a) { Sub_080011784(a); }
 void _080011784(void *a) { Sub_080011784(a); }
 #endif
+// The 208-byte ROM span ends in 00 00; gas otherwise pads this Thumb section
+// with a nop after the matching 206-byte instruction stream.
+__asm__(".align 2, 0");
 
 // ============================================================================
 // Static faithful _08007770 course-resource setup (course_resource_helpers.s

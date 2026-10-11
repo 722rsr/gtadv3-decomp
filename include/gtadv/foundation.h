@@ -61,8 +61,8 @@ u8   SessionRxPoll(void);          // _0800021C (ARM stub returns old +5) — SU
 void FrameCounter_004BC(void);      // _080004BC frame counter bits at 0x03001780+0x108/+0x10B0 — SUBSTANTIATED (opaque IWRAM)
 void IrqInstallHooks(void);        // _08000290 installs VBlank/VCounter — SUBSTANTIATED
 void RuntimeIrqConfig(void);       // _08002AAC DISPSTAT/IE setup — SUBSTANTIATED
-void RuntimeMemcpy(void *dst, const void *src, u32 n); // _0802E0A4 — SUBSTANTIATED (verified memcpy)
-void RuntimeMemset(void *dst, int c, u32 n);            // _0802E104 — SUBSTANTIATED (verified memset)
+void *RuntimeMemcpy(void *dst, const void *src, u32 n); // _0802E0A4 — SUBSTANTIATED (verified memcpy)
+void *RuntimeMemset(void *dst, int c, u32 n);           // _0802E104 — SUBSTANTIATED (verified memset)
 // AgbMain (0x02C4) remains TODO — early init sequence not yet traced against agbmain.s
 // handlers / softirq — EWRAM ISRs and VBlank kicker (handlers.s/softirq.s)
 void EWRAM_Handler_BlobA(void); // _08000AF4

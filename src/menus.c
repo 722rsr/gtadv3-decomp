@@ -84,6 +84,7 @@ extern void _08002124(u16 v);
 extern int  sub_0800254C(void);
 extern u32  sub_08004EF0(u32 v);
 extern void *_08004B68(void);   // 0x08004B68 block-B manager pointer
+extern void *sub_08004B68(void); // closure spelling for promoted slice links
 extern void _0802B234(void);    // 0x0802B234, promoted; closure spelling
 extern int  sub_08002780(void);   // 0x08002780 grid flag test; closure spelling
 // These two were declared only as function-local externs inside a body further
@@ -92,6 +93,12 @@ extern int  sub_08002780(void);   // 0x08002780 grid flag test; closure spelling
 extern void sub_0802B368(u32 v);
 extern void _08002618(u32 a, u32 b);
 #endif // __APPLE__
+
+// The closure exports the VMA spellings for these ROM entries. Keep their
+// one-argument C declarations here; _0800C814 casts them to the register
+// signatures emitted by the original call sites.
+extern u16 _08002178(int a);
+extern void _08004C84(u32 idx, u16 value);
 
 // ----------------------------------------------------------------------------
 // Substantiated leaf: menu_pkt.s  _08009B60 (VMA 0x08009B60–0x08009BCC)
@@ -122,18 +129,45 @@ void sub_08009B60(void *c) __attribute__((alias("MenuPkt_08009B60")));
 // Record poller over block B matcher (verified via asm + xref to _08002178/_08002140).
 // Sets manager transition via _08004BFC/_08004C84/_08004EC0 vs _08004EA8.
 void MenuPoller_0800C814(void *ctx) {
-    u32 cnt = sub_08002140();
-    bool any1=false, any2=false;
-    for (u32 i=0;i<cnt;i++) {
-        u32 v = sub_08002178(i);
-        if ((v & 1) !=0) any1=true;
-        if ((v & 2) !=0 && i==0) any2=true;
+    register volatile u8 *rec __asm__("r5") = (volatile u8 *)ctx;
+    register int any1 __asm__("r6") = 0;
+    int any2 = 0;
+    register int i __asm__("r4") = 0;
+    for (; i < (int)_08002140(); i++) {
+        u16 v = (u16)((u16 (*)(int, int))(void *)_08002178)(i, 1);
+        if ((v & 1u) != 0)
+            any1 = 1;
+        {
+            register u32 two __asm__("r2") = 2;
+            if ((v & two) != 0) {
+                if (i == 0)
+                    any2 = 1;
+                *(volatile u16 *)(rec + 4) = (u16)two;
+            }
+        }
     }
     // menu_c814.s:45-51 — r0 = 0 (grid column), r1 = s16[rec+0] (the record's
     // own leading halfword, loaded with ldrsh after the _08004BFC call).
-    if (any1) { sub_08004BFC(5); sub_08004C84(0u, (u32)(u16)(s16)*(volatile u16 *)ctx); sub_08004EC0(1); }
-    else if (any2) { sub_08004EA8(1); *(volatile u8 *)((uintptr_t)ctx+28)=1; }
+    if (any1) {
+        sub_08004BFC(5);
+        {
+            register s32 signedKey __asm__("r1");
+            __asm__ volatile(
+                ".code 16\n\t"
+                "mov r0, #0\n\t"
+                "ldrsh r1, [r5, r0]"
+                : "=r"(signedKey)
+                : "r"(rec)
+                : "r0", "cc", "memory");
+            ((void (*)(u32, s32))(void *)_08004C84)(0u, signedKey);
+        }
+        sub_08004EC0(1);
+    } else if (any2) {
+        sub_08004EA8(1);
+        rec[28] = 1;
+    }
 }
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _0800C814(void *c) __attribute__((alias("MenuPoller_0800C814")));
 void sub_0800C814(void *c) __attribute__((alias("MenuPoller_0800C814")));
@@ -558,18 +592,32 @@ void _0800E0BC(void) __attribute__((alias("MenuE0BC_0800E0BC")));
 // pool, but the ROM keeps them as two pools plus `adds`.
 extern u8 E650WA[];
 void MenuE650_0800E650(void *rec, void *arg) {
+#ifndef __APPLE__
+    register u16 *dst __asm__("r1");
+    register int out __asm__("r0");
+#else
     u16 *dst;
     int out;
+#endif
     void *mgr;
     int w;
     __asm__(".globl E650WA\nE650WA = 0x03001780\n");
-    *(u16 *)((u8 *)rec + (133 << 1)) = 0;
+    dst = (u16 *)((u8 *)rec + (133 << 1));
+    out = 0;
+    *dst = (u16)out;
     {
         u8 *w0 = E650WA;
-        if (*(u16 *)(w0 + 0x0FBCu) == 3)
-            *(u8 *)((u8 *)arg + 88) = 0;
+        if (*(u16 *)(w0 + 0x0FBCu) == 3) {
+            dst = (u16 *)((u8 *)arg + 88);
+            out = 0;
+            *(u8 *)dst = (u8)out;
+        }
     }
+#ifdef __APPLE__
     mgr = _08004B68();
+#else
+    mgr = sub_08004B68();
+#endif
     w = (int)(s16)(*(u16 *)((u8 *)mgr + 2) - 16);
     switch (w) {
     case 0: case 1: case 2: case 3: case 4:
@@ -583,14 +631,37 @@ void MenuE650_0800E650(void *rec, void *arg) {
             goto def6;
         dst = (u16 *)((u8 *)arg + 84);
         out = 5;
+#ifndef __APPLE__
+        // Preserve the ROM's separate success block for case 5.
+        __asm__ volatile("" ::: "r2");
+#endif
         break;
     }
     case 15: {
-        u8 *w2 = E650WA;
-        if ((int)*(s16 *)(w2 + (int)*(s16 *)(w2 + 0x0FF6u) * 2 + (int)*(s16 *)(w2 + 0x0FF2u) * 8 + (253 << 4)) != 0)
+#ifndef __APPLE__
+        register u8 *w2 __asm__("r2") = E650WA;
+        register int row __asm__("r1") = (int)*(s16 *)(w2 + 0x0FF6u) * 2;
+        // Keep the ROM's second offset read separate from the first.
+        __asm__ volatile("" ::: "memory");
+        register int col __asm__("r0") = (int)*(s16 *)(w2 + 0x0FF2u);
+        col = col * 8;
+        row = row + col;
+        w2 += (253 << 4);
+        row = row + (int)w2;
+        if (*(s16 *)row != 0)
             goto def6;
+#else
+        u8 *w2 = E650WA;
+        if ((int)*(s16 *)(w2 + (int)*(s16 *)(w2 + 0x0FF6u) * 2 +
+                            (int)*(s16 *)(w2 + 0x0FF2u) * 8 + (253 << 4)) != 0)
+            goto def6;
+#endif
         dst = (u16 *)((u8 *)arg + 84);
         out = 1;
+#ifndef __APPLE__
+        // Preserve the ROM's separate success block for case 15.
+        __asm__ volatile("" ::: "r3");
+#endif
         break;
     }
     case 11: case 12: case 13: case 14:
@@ -674,40 +745,92 @@ void _0800FF78(void *c) __attribute__((alias("MenuFF78_0800FF78")));
 // menu_f810.s sub_0800F810 — record field refresh. Reconstructed from the ROM
 // listing, not the old shape:
 //   * the selector read is a NON-volatile s16 (`movs r1,#0; ldrsh`).
-//   * the three cases use DIFFERENT table bases/offsets: case 0 reads
-//     `u16[0x080CB588 + (s16)sub_080258B8(rec+0xAC)*2]` (the result is
-//     re-sign-extended: `lsls #16; asrs #15`), case 1 reads
-//     `u16[0x080CB58E + sub_0800F700(rec+0xBC,rec+0xBE)*2]` (`lsls #1`, base
-//     +10 bytes), case 2 reads `u16[0x080CB59C + s16[rec+0xC0]*2]` (base +20).
-//   * each arm stores a WORD to rec+0x100 (`str`), then binds
-//     sub_08007ABC(rec[+20], value, rec[+0xFC]).
+//   * all cases use the 0x080CB588 table. Case 0 uses twice the sign-extended
+//     sub_080258B8 result, case 1 uses twice sub_0800F700 plus 10 bytes, and
+//     case 2 uses twice rec+0xC0 plus 20 bytes.
+//   * cases 0 and 1 share the table load, WORD store to rec+0x100, and
+//     sub_08007ABC(rec[+20], value, rec[+0xFC]) tail. Case 2 has its own tail.
 void MenuF810_0800F810(void *rec) {
-    extern s16 sub_080258B8(s16 c);
+    extern s16 _080258B8(s16 c);
     extern u32 sub_0800F700(s32 a, s32 b);
     extern void sub_08007ABC(void *a, int b, int c);
     u8 *r4 = (u8 *)rec;
     s16 v = *(s16 *)(r4 + 0xA8);
-    u16 val;
-    switch (v) {
-    case 0:
-        val = ((const u16 *)0x080CB588u)[(s16)sub_080258B8(*(s16 *)(r4 + 0xAC))];
-        *(u32 *)(r4 + 0x100) = val;
-        sub_08007ABC(*(void **)(r4 + 20), (int)val, *(int *)(r4 + 0xFC));
-        break;
-    case 1:
-        val = ((const u16 *)0x080CB592u)[sub_0800F700(*(s16 *)(r4 + 0xBC),
-                                                       *(s16 *)(r4 + 0xBE))];
-        *(u32 *)(r4 + 0x100) = val;
-        sub_08007ABC(*(void **)(r4 + 20), (int)val, *(int *)(r4 + 0xFC));
-        break;
-    case 2:
-        val = ((const u16 *)0x080CB59Cu)[*(s16 *)(r4 + 0xC0)];
-        *(u32 *)(r4 + 0x100) = val;
-        sub_08007ABC(*(void **)(r4 + 20), (int)val, *(int *)(r4 + 0xFC));
-        break;
-    default:
-        break;
+    u8 *table;
+#ifndef __APPLE__
+    register u8 *dst asm("r2");
+#else
+    u8 *dst;
+#endif
+    s32 offset;
+#ifndef __APPLE__
+    register u32 val asm("r1");
+#else
+    register u32 val;
+#endif
+    if (v == 1)
+        goto case1;
+    if (v > 1)
+        goto above1;
+    if (v == 0)
+        goto case0;
+    goto done;
+above1:
+    if (v == 2)
+        goto case2;
+    goto done;
+case0: {
+        s16 result = _080258B8(*(s16 *)(r4 + 0xAC));
+#ifndef __APPLE__
+        register u32 scale asm("r3") = 128;
+#else
+        u32 scale = 128;
+#endif
+        scale <<= 1;
+        dst = r4 + scale;
+        table = (u8 *)0x080CB588u;
+        offset = (s32)((u32)result << 16) >> 15;
+        goto common01;
     }
+case1: {
+        s32 result = (s32)sub_0800F700(*(s16 *)(r4 + 0xBC),
+                                      *(s16 *)(r4 + 0xBE));
+#ifndef __APPLE__
+        register u32 scale asm("r3") = 128;
+#else
+        u32 scale = 128;
+#endif
+        scale <<= 1;
+        dst = r4 + scale;
+        table = (u8 *)0x080CB588u;
+        asm volatile("" : "+r"(table) : : "memory");
+        offset = result * 2;
+        table += 10;
+    }
+common01:
+    val = *(u16 *)(uintptr_t)(offset + (uintptr_t)table);
+    *(u32 *)dst = val;
+    sub_08007ABC(*(void **)(r4 + 20), (int)val, *(int *)(r4 + 0xFC));
+    goto done;
+case2: {
+#ifndef __APPLE__
+        register u32 scale asm("r0") = 128;
+#else
+        u32 scale = 128;
+#endif
+        scale <<= 1;
+        dst = r4 + scale;
+        table = (u8 *)0x080CB588u;
+        asm volatile("" : "+r"(table) : : "memory");
+        s32 index = *(s16 *)(r4 + 0xC0);
+        offset = index * 2;
+        table += 20;
+        val = *(u16 *)(uintptr_t)(offset + (uintptr_t)table);
+        *(u32 *)dst = val;
+        sub_08007ABC(*(void **)(r4 + 20), (int)val, *(int *)(r4 + 0xFC));
+    }
+done:
+    return;
 }
 #ifndef __APPLE__
 void _0800F810(void *c) __attribute__((alias("MenuF810_0800F810")));
@@ -1447,26 +1570,65 @@ void sub_0800D280(void *a, void *b) __attribute__((alias("MenuD280_0800D280")));
 void MenuF924_0800F924(void *a, void *b) {
     extern void _080056F4(void *s, u32 idx, u32 val);
     extern void *_08004B68(void);
-    u8 *r5 = (u8 *)a + 216;
     u8 *r4 = (u8 *)b;
+    u8 *r5 = (u8 *)a;
+    volatile u8 *globalBase = (volatile u8 *)(uintptr_t)0x03001780u;
 
-    *(volatile u16 *)r5 = 0;
-    if (*(volatile u16 *)(0x03001780u + 0xFBCu) == 3) {
-        *(volatile u8 *)(r4 + 88) = 0;
-        if (*(volatile u8 *)(0x03001780u + 0x10C3u) == 0) {
-            _080056F4(r4, 1, 1);
-            *(volatile u16 *)r5 = 1;
+    r5 += 216;
+    {
+        register u32 zero __asm__("r0") = 0;
+        *(volatile u16 *)r5 = (u16)zero;
+    }
+    {
+        register volatile u8 *base __asm__("r2") = globalBase;
+        register u32 stateOffset __asm__("r1") = 0xFBCu;
+        register volatile u16 *statep __asm__("r0");
+        __asm__ volatile ("add r0, r2, r1" : "=r"(statep)
+                          : "r"(base), "r"(stateOffset) : "memory");
+        if (*statep == 3) {
+            register volatile u8 *clearp __asm__("r1") = r4 + 88;
+            register u8 clearValue __asm__("r0") = 0;
+            *clearp = clearValue;
+            register u32 flagOffset __asm__("r1") = 0x10C3u;
+            register volatile u8 *flagp __asm__("r0");
+            __asm__ volatile ("add r0, r2, r1" : "=r"(flagp)
+                              : "r"(base), "r"(flagOffset) : "memory");
+            if (*flagp == 0) {
+                _080056F4(r4, 1, 1);
+                *(volatile u16 *)r5 = 1;
+            }
         }
     }
     {
-        s16 scene = *(volatile s16 *)((u8 *)_08004B68() + 2);
-        u16 out = 6;
-        if (scene == 35) out = 5;
-        else if (scene >= 35 && scene <= 40 && scene >= 39) out = 1;
-        *(volatile u16 *)(r4 + 84) = out;
+        register void *sceneBase __asm__("r0") = _08004B68();
+        register s32 sceneOffset __asm__("r1") = 2;
+        register s32 scene __asm__("r0");
+        __asm__ volatile ("ldrsh r0, [r0, r1]" : "=r"(scene)
+                          : "r"(sceneBase), "r"(sceneOffset) : "memory");
+        register volatile u16 *outp __asm__("r1");
+        register u16 value __asm__("r0");
+        if (scene == 35) {
+            outp = (volatile u16 *)(r4 + 84);
+            value = 5;
+            goto store_scene;
+        }
+        value = scene;
+        __asm__ volatile ("cmp r0, #35\n\tblt 1f\n\t"
+                          "cmp r0, #40\n\tbgt 1f\n\t"
+                          "cmp r0, #39\n\tblt 1f\n\t"
+                          "add r1, r4, #0\n\tadd r1, #84\n\t"
+                          "mov r0, #1\n\tb 2f\n"
+                          "1:\n\tadd r1, r4, #0\n\tadd r1, #84\n\t"
+                          "mov r0, #6\n"
+                          "2:"
+                          : "+r"(value), "=r"(outp)
+                          : "r"(r4) : "cc", "memory");
+store_scene:
+        *outp = value;
     }
 }
 #ifndef __APPLE__
+__asm__(".pushsection .text.MenuF924_0800F924,\"ax\",%progbits\n\t.short 0\n\t.popsection");
 void _0800F924(void *a, void *b) __attribute__((alias("MenuF924_0800F924")));
 void sub_0800F924(void *a, void *b) __attribute__((alias("MenuF924_0800F924")));
 #endif
@@ -1530,22 +1692,36 @@ extern void sub_0800BA3C(void *a, void *b, void *c);
 void MenuRecordUpdate_0800BCD4(void *a0, u32 a1, void *a2, u32 a3, void *sp24, void *sp28, void *sp32, void *sp36) {
     u8 *base = (u8 *)0x03001780u;
     const u32 C = 0x001BB0A9u;
-    u32 *tbl = (u32 *)(base + 0x10E8);
-    u32 best = C;
-    u32 bestIdx = 0;
-    for (u32 i = 0; i <= 2; i++) {
-        u32 v = tbl[i];
-        if (v < C && v != 0) { best = v; bestIdx = i; }
-    }
-    u32 *outPtr = (u32 *)sp36;
-    u32 cur = *outPtr;
-    if (best < cur && best != C) {
-        *outPtr = best;
+    register void *arg0 __asm__("r12") = a0;
+    register u32 *bestOut __asm__("r5") = (u32 *)a2;
+    register u16 *indexOut __asm__("r8") = (u16 *)a3;
+    u32 *currentPtr = (u32 *)sp36;
+    register u32 best __asm__("r3") = C;
+    register u16 bestIdx __asm__("r4") = 0;
+    register s32 i __asm__("r1") = 0;
+    register volatile u8 *tableBase __asm__("r0") = (volatile u8 *)base;
+    register u32 tableOffset __asm__("r6") = 0x10E8;
+    register volatile u32 *table __asm__("r2");
+    __asm__ volatile("add %0, %1, %2"
+                     : "=r" (table) : "r" (tableBase), "r" (tableOffset));
+    do {
+        register u32 value __asm__("r0") = *table;
+        if (value < best && value != 0) {
+            best = value;
+            __asm__ volatile("lsl r0, %1, #16\n\tlsr %0, r0, #16"
+                             : "=r" (bestIdx) : "r" (i) : "r0");
+        }
+        table++;
+        i++;
+    } while (i <= 2);
+    register u32 current __asm__("r0") = *currentPtr;
+    if ((s32)best < (s32)current && best != C) {
+        *currentPtr = best;
         *(u32 *)sp28 = 1;
     }
-    *(u32 *)a2 = best;
-    *(u16 *)((u8 *)a3 + 0) = (u16)bestIdx;
-    sub_0800BA3C(a0, sp32, sp24);
+    *bestOut = best;
+    *indexOut = bestIdx;
+    sub_0800BA3C(arg0, sp32, sp24);
     (void)a1;
 }
 #ifndef __APPLE__

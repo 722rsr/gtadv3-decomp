@@ -3084,6 +3084,9 @@ _080041B8:
 	bx	r0
 	movs	r0, r0
 _080041C0: .4byte 0x03000178
+	.type sub_080041C4, %function
+sub_080041C4:
+_080041C4:
 	ldr r2, _080041D0
 	ldr	r1, [r2, #0]
 	str	r1, [r0, #0]
@@ -3091,6 +3094,9 @@ _080041C0: .4byte 0x03000178
 	str	r1, [r0, #4]
 	bx	lr
 _080041D0: .4byte 0x0203F6B0
+	.type sub_080041D4, %function
+sub_080041D4:
+_080041D4:
 	ldr r0, _080041DC
 	movs	r1, #0
 	ldrsh	r0, [r0, r1]

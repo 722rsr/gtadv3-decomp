@@ -112,3 +112,5 @@ _0802E14A:
 	adds r0, r5, #0
 	pop {r4, r5, pc}
 	.short 0
+
+.Lruntime_mem_end:

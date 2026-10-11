@@ -213,3 +213,5 @@ _080263BC:
 	.word 0x083D7BE8
 _080263C0:
 	.word 0x0879984C
+
+wrapper_pair_end:

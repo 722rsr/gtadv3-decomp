@@ -276,7 +276,7 @@
       "asm/surface_access.s",
       "asm/wrapper_pair.s"
     ],
-    "source_closure_sha256": "413fdc5ff24e5ca8339de910d71833d783c481328fbd1aebc516bc5a98beb767"
+    "source_closure_sha256": "9f8669e9ea491075f7ecd2b4bbe83b56a794e5d01078e964157367a3e656eafc"
   },
   "raw_incbin_spans": [
     {
@@ -7811,8 +7811,8 @@
           "start": "0x00295C"
         }
       ],
-      "sha256": "4bdc370569b1c9f48239f7470023c04c0f654436876e6045435579f084753941",
-      "size": 2524
+      "sha256": "8f49b5cf1a174f3a523550a51a3e0a5b16816d084799485b4dea588e5b73c99d",
+      "size": 2580
     },
     {
       "path": "asm/code_2a3c.s",
@@ -8615,8 +8615,8 @@
           "start": "0x00C814"
         }
       ],
-      "sha256": "7e4bbec0c30eac394eaa044b04620a5d9a63bc4fc8c3c4ab49de43f3d5b0a4de",
-      "size": 1022
+      "sha256": "1b538292b27db75889f4090e162508e8490a4d651af374d5665eee9091d03961",
+      "size": 1037
     },
     {
       "path": "asm/menu_c884.s",
@@ -8699,8 +8699,8 @@
           "start": "0x00CFE4"
         }
       ],
-      "sha256": "85498cb861276978c0a4ef624e3024e2113084a9b8fac7dd46866541a444a7bf",
-      "size": 906
+      "sha256": "e3bfefe353f3ee9360376c559ef39838505bdd208bbc2bc4ade19bde052c8ee4",
+      "size": 921
     },
     {
       "path": "asm/menu_ctor.s",
@@ -8771,8 +8771,8 @@
           "start": "0x00D280"
         }
       ],
-      "sha256": "ddf37e1cccb9b5d2b80ef1660895b646a1a3006c5d7a4f66567ea96d7d5ca756",
-      "size": 2462
+      "sha256": "595d1cccc2230fff5e96d394e18e21c043ad5cd59e15b721332b5d778176e083",
+      "size": 2619
     },
     {
       "path": "asm/menu_d3a4.s",
@@ -8951,8 +8951,8 @@
           "start": "0x00F810"
         }
       ],
-      "sha256": "11637ad5c26738b02b43d8f67e73bbfffa8449737f4ad33bbb5e21b52174cab9",
-      "size": 2641
+      "sha256": "ecb6ebbcc6b85f1ae5c07f8d12b92aea3d88bf7aaed490e756ee970c8ee802e7",
+      "size": 2769
     },
     {
       "path": "asm/menu_f8b4.s",
@@ -8975,8 +8975,8 @@
           "start": "0x00F924"
         }
       ],
-      "sha256": "f4bd7fe575f2b145d819aa6f1ed893317da8a91d22f640091f3d28094063fcd2",
-      "size": 3747
+      "sha256": "4364b37f9160d99d6c8a7ab85397990a964b925d767a4858ceb038ca7be9125e",
+      "size": 3762
     },
     {
       "path": "asm/menu_fa24.s",
@@ -9059,8 +9059,8 @@
           "start": "0x00BCD4"
         }
       ],
-      "sha256": "d1aea037ec95c640522b51a3614a3e8999b5475843a1c77dd90cfa9b02229240",
-      "size": 1108
+      "sha256": "bd479bfdeede83415d6a90aa883ca4c8951d725aa0bac755675a5a0f61d16e57",
+      "size": 1132
     },
     {
       "path": "asm/menu_setup.s",
@@ -9251,8 +9251,8 @@
           "start": "0x002AAC"
         }
       ],
-      "sha256": "1dd09094f4f2509e8f524a6b12ce85f55fa30079e9d7324b178e54bf79dbf0ec",
-      "size": 68515
+      "sha256": "3a175491c39ba0e55e37fb1da797b7cb6efcc658754eb746434822f634417623",
+      "size": 68627
     },
     {
       "path": "asm/runtime_mem.s",
@@ -9263,8 +9263,8 @@
           "start": "0x02E0A4"
         }
       ],
-      "sha256": "f2b96acfdba89b25f90cd464f173eeef69e29446d53cbb46f84901c00a3290ff",
-      "size": 1804
+      "sha256": "55cd5a1e2db961f60cd3be86c6949b44ef263249f8094bf2541f076ed22db738",
+      "size": 1824
     },
     {
       "path": "asm/save_alloc.s",
@@ -9611,8 +9611,8 @@
           "start": "0x02DA20"
         }
       ],
-      "sha256": "84516699a949a0b721e10df66c0d85fffcb9d06ba6a1812ea50e65910fac0693",
-      "size": 2125
+      "sha256": "ed42f438353faff30ca55e2b55b8965ad1051d99e61ac8d7e791a99ba984a890",
+      "size": 2142
     },
     {
       "path": "asm/sound_db24.s",
@@ -9767,8 +9767,8 @@
           "start": "0x02BC28"
         }
       ],
-      "sha256": "f7f693c526f79531bde635488f680c122177e21e3d0b062c1aaa4804849b4902",
-      "size": 550
+      "sha256": "01f00dee0780aff5f7c968173ff909eb7dba1a7cad71c6086cea2feabf27f732",
+      "size": 573
     },
     {
       "path": "asm/sound_more.s",
@@ -10043,8 +10043,8 @@
           "start": "0x026230"
         }
       ],
-      "sha256": "f3f3e7f17992cd01fc57dcff4b533a17e4b1d69203862315048c7412812a7a93",
-      "size": 3366
+      "sha256": "32cc77046c1a86d55f9b8dc79cee82b82d274712f47f1cc4fc1651c559984035",
+      "size": 3385
     }
   ],
   "strict_blockers": [],

@@ -66,6 +66,11 @@ extern void _0800B190(void);      // Race_Dispatch (src/race_dispatch.c)
 #ifndef __APPLE__
 extern void sub_0800B190(void);
 #endif
+#ifdef __APPLE__
+static void CarTickDispatch_R0(int arg) { (void)arg; _0800B190(); }
+#else
+extern void CarTickDispatch_R0(int arg) __asm__("sub_0800B190");
+#endif
 extern void _08023FF8(int a, int b); // Ai_RingPush (src/ai_race_leaves.c)
 extern int  _08009B60(void *ctx); // rec13 packet builder (asm/menu_pkt.s)
 extern int  CarTick_Rec_0A1D4(void *c);
@@ -352,33 +357,62 @@ int _0800A344(void)
 // ----------------------------------------------------------------------------
 int _0800A44C(void)
 {
-    volatile u8 *wa = (volatile u8 *)(uintptr_t)WA;
-    int variant = (int)*(volatile s16 *)(wa + 0x107C);
-    int r1 = 0;
-
-    if (variant > 4)
-        return 0;
+    register int variant __asm__("r0") = (int)WA;
+    register int variantOffset __asm__("r2") = 0x107C;
+    register int result __asm__("r1");
+    __asm__ volatile("" : "+r"(variant), "+r"(variantOffset));
+    variant += variantOffset;
+    variantOffset = 0;
+    __asm__ volatile(".code 16\n\tldrsh r0, [r0, r2]"
+                     : "+r"(variant) : "r"(variantOffset) : "cc");
 
     switch (variant) {
     case 0:
+#ifndef __APPLE__
+        sub_0800B190();
+#else
         _0800B190();
-        r1 = 49;
+#endif
+        result = 49;
         break;
     case 1:
         sub_08004CC4();
-        sub_08004CD4(13); sub_08004CD4(14); sub_08004CD4(42);
-        r1 = _0800AA20();
+        sub_08004CD4(13);
+        sub_08004CD4(14);
+        sub_08004CD4(42);
+        result = _0800AA20();
         break;
-    case 2: case 3: case 4: {
-        int ev = (variant == 2) ? 16 : (variant == 3) ? 19 : 22;
+    case 2:
         sub_08004CC4();
-        sub_08004CD4(13); sub_08004CD4(14); sub_08004CD4(42); sub_08004CD4(15);
-        _08023FF8(ev, 0);
-        r1 = _0800AA20();
+        sub_08004CD4(13);
+        sub_08004CD4(14);
+        sub_08004CD4(42);
+        sub_08004CD4(15);
+        _08023FF8(16, 0);
+        result = _0800AA20();
+        break;
+    case 3:
+        sub_08004CC4();
+        sub_08004CD4(13);
+        sub_08004CD4(14);
+        sub_08004CD4(42);
+        sub_08004CD4(15);
+        _08023FF8(19, 0);
+        result = _0800AA20();
+        break;
+    case 4:
+        sub_08004CC4();
+        sub_08004CD4(13);
+        sub_08004CD4(14);
+        sub_08004CD4(42);
+        sub_08004CD4(15);
+        _08023FF8(22, 0);
+        result = _0800AA20();
+        break;
+    default:
         break;
     }
-    }
-    return r1;
+    return result;
 }
 
 // ----------------------------------------------------------------------------
@@ -911,27 +945,64 @@ int _0800A124(void *c) __attribute__((alias("CarTick_Rec_0A124")));
 // ----------------------------------------------------------------------------
 int CarTick_Rec_0A150(void *ctx)
 {
-    s32 phase = (s32)*(volatile s16 *)(uintptr_t)(WA + 0x0FBCu);
-    int r1 = 0;
+    register int result __asm__("r1") = 0;
+    __asm__ volatile("" : "+r"(result));
+    register u32 phaseBase __asm__("r0") = WA;
+    register u32 phaseOffset __asm__("r2") = 0x0FBCu;
+    __asm__ volatile("" : "+r"(phaseBase), "+r"(phaseOffset));
+    register int phase __asm__("r0");
+    __asm__ volatile(".code 16\n\t"
+                     "add r0, r0, r2\n\t"
+                     "movs r2, #0\n\t"
+                     "ldrsh r0, [r0, r2]"
+                     : "=r"(phase), "+r"(phaseOffset)
+                     : "0"(phaseBase) : "cc", "memory");
 
-    if (phase == 2) {
-        _0800B190();
-        _0800B190();
-        _0800B190();
-        r1 = 49;
-    } else if (phase == 1) {
-        _0800B190();
-        r1 = 49;
-    } else if (phase == 3) {
-        _0800B190();
-        _0800B190();
-        r1 = 49;
-    } else if (phase == 7) {
-        _0800B190();
-        r1 = 49;
+    if (phase == 2) goto phase2;
+    if (phase > 2) goto phase_above_2;
+    if (phase == 1) goto dispatch_once;
+    goto finish;
+
+phase_above_2:
+    if (phase == 3) goto phase3;
+    if (phase == 7) goto phase7;
+    goto finish;
+
+phase2:
+    {
+        register int arg __asm__("r0");
+        __asm__ volatile("" : "=r"(arg));
+        CarTickDispatch_R0(arg);
     }
+phase3:
+    {
+        register int arg __asm__("r0");
+        __asm__ volatile("" : "=r"(arg));
+        CarTickDispatch_R0(arg);
+    }
+phase7:
+    {
+        register u32 base __asm__("r0") = WA;
+        register u32 offset __asm__("r1") = 0x1078u;
+        __asm__ volatile("" : "+r"(base), "+r"(offset));
+        register int arg __asm__("r0");
+        __asm__ volatile(".code 16\n\t"
+                         "add r0, r0, r1\n\t"
+                         "movs r2, #0\n\t"
+                         "ldrsh r0, [r0, r2]"
+                         : "=r"(arg), "+r"(offset)
+                         : "0"(base) : "cc", "memory");
+    }
+dispatch_once:
+    {
+        register int arg __asm__("r0");
+        __asm__ volatile("" : "=r"(arg));
+        CarTickDispatch_R0(arg);
+    }
+    result = 49;
+finish:
     (void)ctx;
-    return r1;
+    return result;
 }
 #ifndef __APPLE__
 int _0800A150(void *c) __attribute__((alias("CarTick_Rec_0A150")));

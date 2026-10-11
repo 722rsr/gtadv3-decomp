@@ -54,6 +54,9 @@ _080029C4: .4byte 0x0000FFE7
 _080029C8: .4byte 0x040000D4
 _080029CC: .4byte 0x040000DE
 _080029D0: .4byte 0x00002001
+	.type sub_080029D4, %function
+sub_080029D4:
+_080029D4:
 	bx	lr
 	movs	r0, r0
 	.type sub_080029D8, %function

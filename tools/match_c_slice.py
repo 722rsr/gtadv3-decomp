@@ -281,6 +281,11 @@ def splice_section(vma: int, body: str, span_size: int) -> str:
     return ("    .syntax divided\n"
             f"{label}:\n"
             f"{body}"
+            # Inline assembly can leave GAS literal loads pending until the
+            # next section or end of file. Flush them at this function's
+            # boundary, after the compiler-emitted pool and before span pad,
+            # so the loads stay within Thumb's PC-relative range.
+            "    .ltorg\n"
             f"    .set {pad}, {span_size} - (. - {label})\n"
             f"    . = . + {pad}  @ inter-function alignment\n"
             "    .syntax unified\n")

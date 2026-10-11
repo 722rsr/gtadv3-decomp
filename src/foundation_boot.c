@@ -8,23 +8,60 @@
 
 // code_295c — Foundation_InitCommon(a0,a1) 0x0800295C
 void Foundation_InitCommon(u32 a0, u32 a1) {
-    *(volatile u32*)0x030035D0 = a0;
-    *(volatile u32*)0x030035D4 = a1;
+    // a0/a1 share one pool word (ROM `ldr r2,=0x030035D0 / str r0 / str r1`),
+    // not two absolute pools.
+    volatile u32 *base = (volatile u32 *)0x030035D0u;
+    base[0] = a0;
+    base[1] = a1;
     *(volatile u16*)0x04000208 = 0;
     *(volatile u16*)0x04000200 &= 0xFFFC;
     *(volatile u16*)0x04000004 &= 0xFFE7;
     *(volatile u16*)0x04000208 = 1;
+    // The DMA triplet base pool-loads separately (ROM `ldr r1,=0x040000D4`
+    // then `ldr r0,=0x040000DE`): without the barrier the compiler derives
+    // 0xD4 from 0xDE with `subs r0,#10` and drops a pool word.
+    volatile u32 *dma = (volatile u32 *)0x040000D4u;
+    __asm__("" : "+r"(dma));
     *(volatile u16*)0x040000DE = 0;
-    *(volatile u32*)0x040000D4 = 0;
-    *(volatile u32*)0x040000D8 = 0;
-    *(volatile u32*)0x040000DC = 0;
+    dma[0] = 0;
+    dma[1] = 0;
+    dma[2] = 0;
     *(volatile u16*)0x04000200 = 0x2001;
     *(volatile u16*)0x04000004 = 8;
-    // then calls 0x080028CC etc. — stubbed as no-op for host
+    // The ROM then calls the first init leaf once and repeats the other
+    // four forever (`bl 28CC / loop: bl 2910 / bl 2924 / bl 2D9B0 /
+    // bl 2950 / b loop`): this function never returns (no epilogue).
+    // sub_0802D9B0 is the closure's only spelling at 0x0802D9B0. 0x08002950
+    // is C-owned under its `_08002950` spelling (no sub_ export), so the
+    // call uses that; the other three match their owners' sub_ spellings.
+    extern void sub_080028CC(void);
+    extern void sub_08002910(void);
+    extern void sub_08002924(void);
+    extern void sub_0802D9B0(void);
+    extern void _08002950(void);
+    sub_080028CC();
+    for (;;) {
+        sub_08002910();
+        sub_08002924();
+        sub_0802D9B0();
+        _08002950();
+    }
 }
 #ifndef __APPLE__
 void _0800295C(u32 a,u32 b) __attribute__((alias("Foundation_InitCommon")));
 #endif
+
+// 0x080029D4 — default vector stub (`bx lr` + pad). Its Thumb-bit address
+// (0x080029D5) is stored as a vector-table default by the code_2a3c.s
+// clearer, so it is a real entry, not padding after InitCommon's pool.
+void Foundation_NoopVector(void) {
+}
+#ifndef __APPLE__
+void _080029D4(void) __attribute__((alias("Foundation_NoopVector")));
+void sub_080029D4(void) __attribute__((alias("Foundation_NoopVector")));
+#endif
+// Content is 2 bytes (`bx lr`); the ROM pads the 4-byte span with `00 00`.
+__asm__(".align 2, 0");
 
 // second half of that span — snapshot helpers
 void Foundation_SaveIrqSnapshot(void) {

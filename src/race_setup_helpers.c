@@ -134,29 +134,67 @@ void sub_08001992C(void);
 // ----------------------------------------------------------------------------
 void sub_080018F94(void)
 {
-    u8 *wa = (u8 *)(uintptr_t)0x03001780u;
-    u8 *racers = (u8 *)(uintptr_t)0x03004E80u;
-    u8 *racectx = *(u8 **)(uintptr_t)0x03004E20u;
-    int n, i;
-
+    register int i __asm__("r5");
+    register int stride __asm__("r6");
+    volatile s16 *countTail;
     _080018EC0();
-    n = (int)*(s16 *)(wa + 0x10CA);
-    if (1 < n) {
-        for (i = 1; i < n; i++) {
-            u8 *r4 = racers + i * 284;
+    i = 1;
+    {
+        register volatile u8 *wa __asm__("r0") = (volatile u8 *)0x03001780u;
+        register u32 countOffset __asm__("r2") = 0x10CA;
+        register volatile s16 *countp __asm__("r1");
+        __asm__ volatile ("add r1, r0, r2" : "=r"(countp)
+                          : "r"(wa), "r"(countOffset) : "memory");
+        register s32 zero __asm__("r2") = 0;
+        register s32 n __asm__("r0");
+        __asm__ volatile ("ldrsh r0, [r1, r2]" : "=r"(n)
+                          : "r"(countp), "r"(zero) : "memory");
+        if (i >= n) goto finish;
+        countTail = countp;
+        stride = 142;
+        stride <<= 1;
+loop_records:
+        {
+            u8 *r4 = (u8 *)(uintptr_t)(0x03004E80u + stride);
             if (_080044C4(*(int *)(r4 + 0), *(int *)(r4 + 4),
                           (u32 *)(r4 + 200))) {
                 _080018F14((void *)r4);
-                (*(u16 *)(racectx + 70))++;
+                register volatile u8 *racectx __asm__("r0") =
+                    *(volatile u8 *volatile *)(uintptr_t)0x03004E20u;
+                register volatile u16 *lapCount __asm__("r0") =
+                    (volatile u16 *)(racectx + 70);
+                register u16 lapTotal __asm__("r1") = *lapCount;
+                lapTotal++;
+                *lapCount = lapTotal;
             }
+            stride += 284;
+            i++;
+            register s32 currentCount __asm__("r0");
+            __asm__ volatile ("mov r1, #0\n\tldrsh r0, [r7, r1]"
+                              : "=r"(currentCount) : "r"(countTail)
+                              : "r1", "memory");
+            if (i < currentCount) goto loop_records;
         }
     }
+finish:
     {
-        u16 *cnt = (u16 *)(racectx + 70);
-        if ((int)(s16)*cnt > 3)
-            *cnt = 4;
+        register volatile u8 *racectx __asm__("r0") =
+            *(volatile u8 *volatile *)(uintptr_t)0x03004E20u;
+        register volatile s16 *cnt __asm__("r1") =
+            (volatile s16 *)(racectx + 70);
+        register s32 zero __asm__("r2") = 0;
+        register s32 value __asm__("r0");
+        __asm__ volatile ("ldrsh r0, [r1, r2]" : "=r"(value)
+                          : "r"(cnt), "r"(zero) : "memory");
+        if (value > 3) {
+            register u16 four __asm__("r0") = 4;
+            *cnt = four;
+        }
     }
 }
+#ifndef __APPLE__
+void _080018F94(void) __attribute__((alias("sub_080018F94")));
+#endif
 
 // ----------------------------------------------------------------------------
 // 0x080019318 sub_080019318 — ghost ghost-car record updater:
@@ -433,25 +471,66 @@ void sub_08001992C(void)
 
 // ----------------------------------------------------------------------------
 // 0x0800199CC sub_0800199CC — start-scene award check:
-//   if _08018ACC(1<<7):
+//   if _08018ACC(1<<14):
 //     rc = *0x03004E20
 //     if (s16)[rc+0x4F0] > 79 and (s16)[rc+94] > 0:
-//       rc2 = rc + 0x4E4
+//       rc2 = *(u32 *)(rc+0x4E4)
 //       if (s16)[rc2+18] >= (s16)[rc2+22]: sub_08001992C
 //   [rc+56] = 0; _08018AA8(1<<21, 0)
 // ----------------------------------------------------------------------------
 void sub_0800199CC(void)
 {
-    volatile u8 *rc = *(volatile u8 *volatile *)(uintptr_t)0x03004E20u;
-
     if (_08018ACC(128u << 7)) {
-        if ((int)(s16)*(volatile u16 *)(rc + 0x4F0) > 79 &&
-            (int)(s16)*(volatile u16 *)(rc + 94) > 0) {
-            volatile u8 *rc2 = rc + 0x4E4;
-            if ((int)(s16)*(volatile s16 *)(rc2 + 18) >= (int)(s16)*(volatile s16 *)(rc2 + 22))
-                sub_08001992C();
+        register volatile u8 *rc __asm__("r1") =
+            *(volatile u8 *volatile *)(uintptr_t)0x03004E20u;
+        register u32 offset __asm__("r2") = 158;
+        __asm__ volatile("" : "+r"(offset));
+        offset <<= 3;
+        __asm__ volatile("" : "+r"(offset));
+        register u32 addr __asm__("r0") = (u32)(uintptr_t)rc + offset;
+        __asm__ volatile("" : "+r"(addr));
+        register int total __asm__("r0");
+        __asm__ volatile(".code 16\n\t"
+                         "mov r2, #0\n\t"
+                         "ldrsh r0, [r0, r2]"
+                         : "=r"(total) : "0"(addr) : "r2", "cc");
+        if (total > 79) {
+            register u32 addr94 __asm__("r0") = (u32)(uintptr_t)rc;
+            __asm__ volatile("" : "+r"(addr94));
+            addr94 += 94;
+            __asm__ volatile("" : "+r"(addr94));
+            register int positive __asm__("r0");
+            __asm__ volatile(".code 16\n\t"
+                             "mov r2, #0\n\t"
+                             "ldrsh r0, [r0, r2]"
+                             : "=r"(positive) : "0"(addr94)
+                             : "r2", "cc");
+            if (positive > 0) {
+                register u32 offset4E4 __asm__("r2") = 0x4E4u;
+                __asm__ volatile("" : "+r"(offset4E4));
+                register volatile u8 *record __asm__("r0");
+                __asm__ volatile(".code 16\n\t"
+                                 "add r0, r1, r2\n\t"
+                                 "ldr r0, [r0]"
+                                 : "=r"(record)
+                                 : "r"(rc), "r"(offset4E4)
+                                 : "cc", "memory");
+                register int value22 __asm__("r0") =
+                    (int)(uintptr_t)record;
+                register int value18 __asm__("r1");
+                __asm__ volatile(".code 16\n\t"
+                                 "mov r2, #18\n\t"
+                                 "ldrsh r1, [r0, r2]\n\t"
+                                 "mov r2, #22\n\t"
+                                 "ldrsh r0, [r0, r2]"
+                                 : "+r"(value22), "=r"(value18)
+                                 : : "r2", "cc");
+                if (value18 >= value22)
+                    sub_08001992C();
+            }
         }
     }
+    volatile u8 *rc = *(volatile u8 *volatile *)(uintptr_t)0x03004E20u;
     *(volatile int *)(rc + 56) = 0;
     _08018AA8(128u << 21, 0);
 }

@@ -690,27 +690,44 @@ void _08001C27C(void *a0, void *b0, void *c0) {
 
 // ----------------------------------------------------------------------------
 // ---- 0x0801C340 — gate leaf over _08006C10(rec,-1) (single ptr arg, always
-// ---- returns 0). Pools: {WA+0x10C8, 0x17FF}.
+// ---- returns 0). Pools: {0x03001780, 0x10C8, 0x17FF}.
 // ----------------------------------------------------------------------------
 int _08001C340(void *p0) {
-    volatile u8 *p = (volatile u8 *)p0;
-    void *q = _08006C10((void *)(uintptr_t)p, -1);
-    u32 w;
-    int t;
-    if (_08018ACC(0x800000) == 0) // 128<<16
+    register volatile u8 *p __asm__("r4") = (volatile u8 *)p0;
+    register void *q __asm__("r5") = _08006C10((void *)(uintptr_t)p, -1);
+    register int threshold __asm__("r2");
+    register u32 w __asm__("r1");
+    register int t __asm__("r0");
+    if (_08018ACC(0x800000) != 0) // 128<<16
         return 0;
-    if (*(volatile s8 *)(p + 16) <= 0)
-        return 0;
+    {
+        register int signedByte __asm__("r0");
+        __asm__ volatile(".code 16\n\tmovs r0, #16\n\tldrsb r0, [r4, r0]"
+                         : "=r"(signedByte) : : "cc", "memory");
+        if (signedByte <= 0)
+            return 0;
+    }
     if ((*(volatile u32 *)q & 2u) == 0)
         return 0;
+    {
+        register u32 waBase __asm__("r0") = 0x03001780u;
+        register u32 waOffset __asm__("r1") = 0x10C8u;
+        __asm__ volatile("" : "+r"(waBase), "+r"(waOffset));
+        waBase += waOffset;
+        __asm__ volatile("" : "+r"(waBase));
+        __asm__ volatile(".code 16\n\tmovs r3, #0\n\tldrsh r2, [r0, r3]"
+                         : "=r"(threshold) : : "r3", "cc", "memory");
+    }
     w = *(volatile u32 *)(p + 12);
+    __asm__ volatile("" : "+r"(w));
     t = (int)(w + 0x800u); // 128<<4
+    __asm__ volatile("" : "+r"(t));
     if (t < 0)
         t = (int)(w + 0x17FFu);
     t >>= 12;
-    if ((int)WA_S16(0x10C8) > t)
+    if (threshold > t)
         return 0;
-    _08018AA8(0x4000, 1); // 128<<15
+    _08018AA8(0x400000u, 1); // 128<<15
     return 0;
 }
 

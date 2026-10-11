@@ -1422,16 +1422,37 @@ int TimeStr_03E34(int a, volatile u8 *b) __attribute__((alias("_08003E34")));
 // into a 16-byte buffer; emit buf at (2, x + len*8).
 void ObjIndexed_03F18(u32 x, u32 a1, const volatile u8 *str, int idx)
 {
-    u32 len = strlength_03148(str);
-    ObjList_03350(2, x, a1, 0, str, 1);
+#ifndef __APPLE__
+    register const volatile u8 *str8 __asm__("r8") = str;
+    register int idx6 __asm__("r6") = idx;
+    __asm__ volatile("" : "+r"(str8), "+r"(idx6));
+#else
+    const volatile u8 *str8 = str;
+    int idx6 = idx;
+#endif
+    u32 len = strlength_03148(str8);
     volatile u8 buf[16];
-    Measure_03CB4(idx, buf, 16);
-    ObjList_03350(2, x + len * 8, a1, 0, buf, 1);
+#ifndef __APPLE__
+    sub_08003CB4(idx6, buf, 16);
+#else
+    Measure_03CB4(idx6, buf, 16);
+#endif
+#ifndef __APPLE__
+    sub_080038A4((int)x, a1, str8);
+#else
+    ObjLane_038A4((int)x, a1, str8);
+#endif
+#ifndef __APPLE__
+    sub_080038A4((int)(x + len * 8), a1, buf);
+#else
+    ObjLane_038A4((int)(x + len * 8), a1, buf);
+#endif
 }
 #ifndef __APPLE__
 void sub_08003F18(u32 a, u32 b, const volatile u8 *c, int d) __attribute__((alias("ObjIndexed_03F18")));
 void _08003F18(u32 a, u32 b, const volatile u8 *c, int d) __attribute__((alias("ObjIndexed_03F18")));
 #endif
+__asm__(".align 2, 0");
 
 // 0x08003F64 — hex: HexWrite(val, buf, n) then emit at (2, x).
 void ObjHex_03F64(int a0, u32 a1, int val, int n)
@@ -1642,17 +1663,36 @@ void _08004560(void) __attribute__((alias("HudHook_04560")));
 #endif
 __asm__(".align 2, 0");
 
-// 0x08004180 — free id: for each used slot with matching id, call the
-// re0x0802DDCC (bx r1) with r0 = slot.b, r1 = slot.a.
+// 0x08004180 — free id: for each used slot with matching id, tail-dispatch via
+// 0x0802DDCC (bx r1) with r0 = slot.b and r1 = slot.a.
 void SpriteFree_04180(u16 id)
 {
+#ifndef __APPLE__
+    // ROM keeps the state pointer in r0 and reloads it after each indirect call.
+    register volatile s32 *t __asm__("r0") =
+        (volatile s32 *)(uintptr_t)0x03000178;
+#else
     volatile s32 *t = (volatile s32 *)(uintptr_t)0x03000178;
+#endif
     volatile u8 *p = (volatile u8 *)(uintptr_t)t[0];
-    for (s32 i = 0; i < t[1]; i++, p += 16) {
-        if (*(volatile u16 *)(p + 2) != 0 && *(volatile s16 *)p == (s16)id) {
-            typedef void (*rel_fn)(u32);
-            ((rel_fn)(uintptr_t)*(volatile u32 *)(p + 4))
-                (*(volatile u32 *)(p + 8));
+    for (s32 i = 0; i < t[1]; i++, p += 16,
+                   t = (volatile s32 *)(uintptr_t)0x03000178) {
+        if (*(volatile u16 *)(p + 2) != 0) {
+#ifndef __APPLE__
+            // ROM compares with movs r1,#0; ldrsh r0,[r4,r1].
+            register s32 zero __asm__("r1") = 0;
+            register s32 slotId __asm__("r0");
+            __asm__ volatile ("" : "+r"(zero));
+            __asm__ volatile (".code 16\n\tldrsh %0, [%1, %2]"
+                              : "=r"(slotId) : "r"(p), "r"(zero));
+            if (slotId == (s16)id) {
+#else
+            if (*(volatile s16 *)p == (s16)id) {
+#endif
+                typedef void (*rel_fn)(u32);
+                ((rel_fn)(uintptr_t)*(volatile u32 *)(p + 4))
+                    (*(volatile u32 *)(p + 8));
+            }
         }
     }
 }
@@ -1662,15 +1702,30 @@ void sub_08004180(u16 a) __attribute__((alias("SpriteFree_04180")));
 
 // ----------------------------------------------------------------------------
 // Camera family.
-// 0x080041C8 — dst = 0x0203F6B0 {x, y}.
-void CamCopy_041C8(volatile u32 *dst)
+// 0x080041C4 — dst = 0x0203F6B0 {x, y}.
+void CamCopy_041C4(volatile u32 *dst)
 {
     volatile u32 *src = (volatile u32 *)(uintptr_t)0x0203F6B0;
     dst[0] = src[0];
     dst[1] = src[1];
 }
-// 0x080041D4 — return s16 0x0203F728.
-s16 CamAngle_041D4(void) { return *(volatile s16 *)(uintptr_t)0x0203F728; }
+// 0x080041D4 — sign-extend the halfword at 0x0203F728 into r0.
+s32 CamAngle_041D4(void)
+{
+    volatile s16 *angle = (volatile s16 *)(uintptr_t)0x0203F728;
+#ifndef __APPLE__
+    // ROM uses r1=0 for ldrsh [r0,r1], rather than an immediate halfword load.
+    register s32 zero __asm__("r1") = 0;
+    __asm__ volatile ("" : "+r"(zero));
+    register s32 value;
+    __asm__ volatile (".code 16\n\tldrsh %0, [%1, %2]"
+                      : "=r"(value) : "r"(angle), "r"(zero));
+    return value;
+#else
+    s32 zero = 0;
+    return *(volatile s16 *)((volatile u8 *)angle + zero);
+#endif
+}
 // 0x080041E0 — s16(120 - (a0 * 200) / a1)
 s16 CamY_041E0(int a0, int a1)
 {
@@ -1701,8 +1756,10 @@ s16 CamY_0424C(int a0, int a1)
 }
 __asm__(".align 2, 0");
 #ifndef __APPLE__
-void sub_080041C8(volatile u32 *a) __attribute__((alias("CamCopy_041C8")));
-s16 sub_080041D4(void) __attribute__((alias("CamAngle_041D4")));
+void _080041C4(volatile u32 *a) __attribute__((alias("CamCopy_041C4")));
+void sub_080041C4(volatile u32 *a) __attribute__((alias("CamCopy_041C4")));
+s32 _080041D4(void) __attribute__((alias("CamAngle_041D4")));
+s32 sub_080041D4(void) __attribute__((alias("CamAngle_041D4")));
 s16 sub_080041E0(int a, int b) __attribute__((alias("CamY_041E0")));
 int sub_080041F8(int a, int b, volatile u32 *c) __attribute__((alias("CamProject_041F8")));
 s16 sub_0800424C(int a, int b) __attribute__((alias("CamY_0424C")));

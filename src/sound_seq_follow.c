@@ -664,30 +664,49 @@ void SoundC40C_EnvByte(void *a, void *seq) { (void)a; (void)seq; }
 // 0x0802C420 — interpolated volume ramp over ROM envelope tables.
 //   ip = seq; r6 = (u8)arg1; r7 = (u8)arg2 (<<24);
 //   if r6 > 178: r6 = 178, r7 = 0xFF000000.
-//   row = 0x08061570 + (r6 & 0x0F)*4; shift = (r6 >> 4);
-//   s5 = row[0] >> shift; row2 = 0x08061570 + ((r6+1+arg3) & 0x0F)*4;
-//   s0 = row2[0] >> shift; delta = _0802B888(s0 - s5, arg2);
-//   return _0802B888(s5 + delta, [seq+4]).
-// (r0 = seq passed through untouched; armcc tail form)
+//   encoded = u8[0x08061570 + level];
+//   sample = u32[0x08061624 + (encoded & 15)*4] >> (encoded >> 4).
+// Decode level and level+1 separately, interpolate with arg2's low byte
+// shifted into the high byte, then multiply by the gain word at seq+4.
+// The ROM overwrites r3 before using it: arg3 is not an interpolation input.
 int SoundC420_EnvRamp(void *seq, int a1, int a2, int a3) {
-    volatile u8 *r1 = (volatile u8 *)seq;
-    u32 r6 = (u32)((u32)a1 << 24) >> 24;
-    u32 r7 = (u32)a2 << 24;
-    if (r6 > 178) {
-        r6 = 178;
-        r7 = 0xFFu << 24;
+    register const u32 *record __asm__("ip") = (const u32 *)seq;
+    register u32 level __asm__("r6") = (u8)a1;
+    u32 fraction = (u32)a2 << 24;
+    register u32 encoded __asm__("r5");
+    u32 next, hi;
+    u32 nextlevel;
+    u32 tableindex;
+    register u32 lo __asm__("r5");
+    register u32 value __asm__("r4");
+    (void)a3;
+    if (level > 178) {
+        level = 178;
+        fraction = 0xFF000000u;
     }
-    (void)r7;
-    u32 r5 = *(volatile u32 *)(uintptr_t)(0x08061570u + ((r6 & 0x0F) * 4));
-    u32 shift = r6 >> 4;
-    u32 s5 = r5 >> shift;
-    u32 r1v = *(volatile u32 *)(uintptr_t)(0x08061570u + (((r6 + 1 + (u32)a3) & 0x0F) * 4));
-    u32 s0 = r1v >> (r1v >> 4 & 0) | (r1v >> shift);  // second table fetch
-    (void)s0;
-    s32 delta = (s32)_0802B888(s0 - s5, (u32)a2);
-    u32 sum = s5 + (u32)delta;
-    u32 r4 = *(volatile u32 *)(r1 + 4);
-    return (int)_0802B888(sum, r4);
+    const u8 *indices = (const u8 *)0x08061570u;
+    encoded = indices[level];
+    const u32 *scales = (const u32 *)0x08061624u;
+    // Materialize the shared mask before copying r5 to r0. These barriers
+    // emit no instructions; they preserve ROM load/copy order under agbcc.
+    u32 mask = 15;
+    __asm__("" : : "r"(mask));
+    tableindex = encoded;
+    __asm__("" : "+r"(tableindex));
+    lo = scales[tableindex & mask] >> (encoded >> 4);
+    nextlevel = level + 1;
+    __asm__("" : "+r"(nextlevel));
+    next = indices[nextlevel];
+    hi = scales[next & mask] >> (next >> 4);
+    // A member offset keeps the load at [r1,#4], not add #4 / ldr [r1].
+    value = ((const struct { u32 unused; u32 gain; } *)record)->gain;
+    __asm__("" : : "r"(level), "r"(fraction));
+    hi = _0802B888(hi - lo, fraction);
+    // The original copies the multiply result into r1 before adding lo.
+    register u32 sum __asm__("r1") = hi;
+    __asm__("" : "+r"(sum));
+    sum = lo + sum;
+    return (int)_0802B888(value, sum);
 }
 
 #ifndef __APPLE__

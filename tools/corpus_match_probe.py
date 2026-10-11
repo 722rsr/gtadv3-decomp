@@ -45,6 +45,7 @@ from pathlib import Path
 
 import agbcc_c89_transform as c89
 import export_audit
+from agbcc_options import options_for as agbcc_options
 
 ROOT = Path(__file__).resolve().parents[1]
 ROM = ROOT / "baserom.gba"
@@ -88,7 +89,11 @@ TU_CACHE = ROOT / "build/era-corpus/tu-cache"
 # work-dir independent; see _tu_cache_key.
 _LINEMARKER_PATH = re.compile(rb'(?m)^(# \d+ ")[^"]*(")')
 
-def _tu_cache_key(pre: Path, use_c89: bool) -> str:
+DEFAULT_AGBCC_OPTIONS = agbcc_options("default.c")
+
+
+def _tu_cache_key(pre: Path, use_c89: bool,
+                  options: tuple[str, ...] = DEFAULT_AGBCC_OPTIONS) -> str:
     """Content address for one TU's agbcc output.
 
     `pre` is the preprocessed source, so every `#include` is already folded in.
@@ -102,16 +107,17 @@ def _tu_cache_key(pre: Path, use_c89: bool) -> str:
     h = hashlib.sha256()
     h.update(_LINEMARKER_PATH.sub(rb"\1<P>\2", pre.read_bytes()))
     h.update(b"\0c89=" + str(use_c89).encode())
-    h.update(b"\0opts=-O2 -mthumb-interwork -ffunction-sections")
+    h.update(b"\0opts=" + " ".join(options).encode())
     for tool in (AGBCC, Path(__file__), ROOT / "tools/agbcc_c89_transform.py"):
         h.update(b"\0" + str(tool.name).encode() + b"=")
         h.update(str(tool.stat().st_mtime_ns if tool.exists() else 0).encode())
     return h.hexdigest()[:32]
 
 
-def tu_cache_lookup(pre: Path, use_c89: bool, dest_s: Path, dest_o: Path) -> bool:
+def tu_cache_lookup(pre: Path, use_c89: bool, dest_s: Path, dest_o: Path,
+                    options: tuple[str, ...] = DEFAULT_AGBCC_OPTIONS) -> bool:
     """Copy a cached TU's agbcc output into `dest_s`/`dest_o`; True on a hit."""
-    entry = TU_CACHE / _tu_cache_key(pre, use_c89)
+    entry = TU_CACHE / _tu_cache_key(pre, use_c89, options)
     if not (entry / "out.s").exists() or not (entry / "out.o").exists():
         return False
     dest_s.parent.mkdir(parents=True, exist_ok=True)
@@ -120,8 +126,9 @@ def tu_cache_lookup(pre: Path, use_c89: bool, dest_s: Path, dest_o: Path) -> boo
     return True
 
 
-def tu_cache_store(pre: Path, use_c89: bool, src: Path, obj: Path) -> None:
-    entry = TU_CACHE / _tu_cache_key(pre, use_c89)
+def tu_cache_store(pre: Path, use_c89: bool, src: Path, obj: Path,
+                   options: tuple[str, ...] = DEFAULT_AGBCC_OPTIONS) -> None:
+    entry = TU_CACHE / _tu_cache_key(pre, use_c89, options)
     entry.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(src, entry / "out.s")
     shutil.copyfile(obj, entry / "out.o")
@@ -1442,6 +1449,11 @@ def self_test() -> int:
                 run(["clang", "-E", "-nostdinc", "-undef", "-I", str(tdp), str(body)], stdout=h)
         check("TU cache key is stable for identical preprocessed text",
               _tu_cache_key(tdp / "a.i", True) == _tu_cache_key(tdp / "b.i", True))
+        check("per-TU ABI options select the memory-set profile",
+              "-mno-thumb-interwork" in agbcc_options("runtime_memset.c"))
+        check("per-TU ABI options invalidate the TU cache key",
+              _tu_cache_key(tdp / "a.i", True, agbcc_options("runtime_memset.c"))
+              != _tu_cache_key(tdp / "a.i", True, agbcc_options("ordinary.c")))
         # The property match_c_slice actually depends on: it gives every
         # promoted body its own --work-dir, and clang stamps that directory
         # into every linemarker. Without normalising the path field the key
@@ -1729,17 +1741,18 @@ def main() -> int:
         # changes it. Keying on the .c file instead would serve pre-edit
         # objects for every TU that includes the changed header, and a stale
         # object still produces a confident, byte-exact-looking score.
-        if tu_cache_lookup(pre, bool(args.c89), src, obj):
+        options = agbcc_options(path)
+        if tu_cache_lookup(pre, bool(args.c89), src, obj, options):
             hit = 1
         else:
             comp = 1
             # One compile per opt level would triple the work; -O2 is the default the
             # project builds C with, so measure that and report it as such.
-            if run([AGBCC, "-O2", "-mthumb-interwork", "-ffunction-sections", str(pre), "-o", str(src)]).returncode:
+            if run([AGBCC, *options, str(pre), "-o", str(src)]).returncode:
                 return (hit, comp, {"source": str(path.relative_to(ROOT)), "reason": "agbcc compile"}, unsc, res, 0)
             if run(["arm-none-eabi-as", "-mcpu=arm7tdmi", "-o", str(obj), str(src)]).returncode:
                 return (hit, comp, {"source": str(path.relative_to(ROOT)), "reason": "assembler"}, unsc, res, 0)
-            tu_cache_store(pre, bool(args.c89), src, obj)
+            tu_cache_store(pre, bool(args.c89), src, obj, options)
 
         sections, all_relocs = fast_parse_elf(obj)
         if sections is None:

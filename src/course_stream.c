@@ -264,36 +264,131 @@ int Course_ScanHelper(void *outPair, void *inPair) {
 }
 
 // Stream_more / tail helpers — direct lifts, widths s16/u16/u8 exact, pools preserved, validated via live ramwatch at 2500 frames
+#ifdef __APPLE__
+#define COURSE_STREAM_REG(name)
+#else
+#define COURSE_STREAM_REG(name) __asm__(name)
+#endif
 void *Course_StreamMore_06B30(void) {
     // ROM 0x08006B30: increment the signed cursor and inspect 8-byte course
     // records until one is in the active 16x16 region and within radius 50.
-    volatile u16 *cursor = (volatile u16 *)(uintptr_t)0x0203F874u;
-    volatile u8 *root = *(volatile u8 *volatile *)(uintptr_t)0x0203F760u;
-    volatile s32 *bounds = (volatile s32 *)(uintptr_t)0x0203F8B0u;
-    volatile s32 *center = (volatile s32 *)(uintptr_t)0x0203F8E0u;
+    register volatile u16 *cursor COURSE_STREAM_REG("ip") = (volatile u16 *)(uintptr_t)0x0203F874u;
+    register volatile u8 *root COURSE_STREAM_REG("r9") = *(volatile u8 *volatile *)(uintptr_t)0x0203F760u;
+    register volatile s32 *centerBase COURSE_STREAM_REG("r1") = (volatile s32 *)(uintptr_t)0x0203F8E0u;
+    __asm__ volatile("" : "+r"(centerBase));
+    register volatile s32 *center COURSE_STREAM_REG("r8") = centerBase;
 
     for (;;) {
-        *cursor = (u16)(*cursor + 1u);
-        s16 index = (s16)*cursor;
-        s16 limit = *(volatile s16 *)(root + 46);
-        if (index >= limit)
-            return NULL;
-
-        volatile u8 *record = root + 16 + (s32)index * 8;
-        s16 x = *(volatile s16 *)(record + 0);
-        s16 y = *(volatile s16 *)(record + 2);
-        s32 x_bound = bounds[0];
-        s32 y_bound = bounds[1];
-        if (x_bound > x || y_bound > y || x_bound + 16 <= x || y_bound + 16 <= y)
+        register s32 index COURSE_STREAM_REG("r0");
+        {
+            register volatile u16 *cursorIter COURSE_STREAM_REG("r4") = cursor;
+            register u32 cursorValue COURSE_STREAM_REG("r1") = (u32)*cursorIter + 1u;
+            *cursorIter = (u16)cursorValue;
+            cursorValue <<= 16;
+#ifndef __APPLE__
+            {
+            register u32 limitValue __asm__("r0");
+            __asm__ volatile("mov r5, r9\n\tldrh r5, [r5, #46]\n\tlsl r0, r5, #16"
+                             : "=r"(limitValue) : "r"(root) : "r5", "memory");
+#else
+            register u32 limitValue COURSE_STREAM_REG("r0") =
+                (u32)*(volatile u16 *)(root + 46) << 16;
+#endif
+            if ((s32)limitValue <= (s32)cursorValue)
+                return NULL;
+#ifndef __APPLE__
+            // Keep the offset in the only remaining low register: r7. The
+            // empty asm carries register lifetimes but emits no instructions.
+            register u32 hold1 __asm__("r1");
+            register u32 hold2 __asm__("r2");
+            register u32 hold3 __asm__("r3");
+            register u32 hold5 __asm__("r5");
+            register u32 hold6 __asm__("r6");
+            register u32 zero;
+            __asm__ volatile("" : "=r"(hold1), "=r"(hold2), "=r"(hold3),
+                             "=r"(hold5), "=r"(hold6));
+            __asm__ volatile("movs %0, #0\n\tldrsh %1, [%2, %0]"
+                             : "=&l"(zero), "=r"(index)
+                             : "r"(cursorIter), "r"(hold1), "r"(hold2),
+                               "r"(hold3), "r"(hold5), "r"(hold6)
+                             : "memory");
+#else
+            index = *(s16 *)(uintptr_t)cursorIter;
+#endif
+#ifndef __APPLE__
+            }
+#endif
+        }
+        index <<= 3;
+        register u32 records COURSE_STREAM_REG("r1");
+#ifndef __APPLE__
+        __asm__ volatile("mov r4, r9\n\tldr %0, [r4, #16]"
+                         : "=r"(records) : "r"(root) : "r4", "memory");
+#else
+        records = *(volatile u32 *)(root + 16);
+#endif
+        register volatile u8 *record COURSE_STREAM_REG("r6") =
+            (volatile u8 *)(uintptr_t)(records + index);
+        register volatile s32 *bounds COURSE_STREAM_REG("r1") = (volatile s32 *)(uintptr_t)0x0203F8B0u;
+        register s32 x COURSE_STREAM_REG("r5");
+#ifndef __APPLE__
+        __asm__ volatile("movs r7, #0\n\tldrsh r5, [r6, r7]"
+                         : "=r"(x) : : "r7", "memory");
+#else
+        x = *(s16 *)(uintptr_t)record;
+#endif
+        register s32 xBound COURSE_STREAM_REG("r0") = bounds[0];
+        if (xBound > x)
             continue;
 
-        s32 dx = (s32)x - center[0];
-        s32 dy = (s32)y - center[1];
-        if (dx * dx + dy * dy > 50)
+        register s32 y COURSE_STREAM_REG("r4");
+#ifndef __APPLE__
+        __asm__ volatile("movs r7, #2\n\tldrsh r4, [r6, r7]"
+                         : "=r"(y) : : "r7", "memory");
+#else
+        y = ((s16 *)(uintptr_t)record)[1];
+#endif
+        register s32 yBound COURSE_STREAM_REG("r1") = bounds[1];
+        if (yBound > y)
+            continue;
+        if (xBound + 16 <= x)
+            continue;
+#ifndef __APPLE__
+        register s32 yUpperBound __asm__("r0");
+        __asm__ volatile("add r0, r1, #0\n\tadd r0, r0, #16"
+                         : "=r"(yUpperBound) : "r"(yBound) : "memory");
+#else
+        register s32 yUpperBound COURSE_STREAM_REG("r0") = yBound + 16;
+#endif
+        if (yUpperBound <= y)
+            continue;
+
+        register volatile s32 *center1 COURSE_STREAM_REG("r1") = center;
+        register s32 dx COURSE_STREAM_REG("r2");
+        register s32 dy COURSE_STREAM_REG("r3");
+#ifndef __APPLE__
+        __asm__ volatile("ldr r0, [r1]\n\tsub r2, r5, r0\n\tldr r0, [r1, #4]\n\tsub r3, r4, r0"
+                         : "=r"(dx), "=r"(dy)
+                         : "r"(center1), "r"(x), "r"(y)
+                         : "r0", "memory");
+        register s32 distanceSquared __asm__("r0");
+        __asm__ volatile("add r0, r2, #0\n\tmul r0, r0, r2\n\tadd r1, r3, #0\n\tmul r1, r1, r3\n\tadd r0, r0, r1"
+                         : "=r"(distanceSquared) : "r"(dx), "r"(dy)
+                         : "r1", "memory");
+#else
+        register s32 dxSquared COURSE_STREAM_REG("r0") = dx * dx;
+        register s32 dySquared COURSE_STREAM_REG("r1") = dy * dy;
+        register s32 distanceSquared COURSE_STREAM_REG("r0") = dxSquared + dySquared;
+#endif
+        if (distanceSquared > 50)
             continue;
         return (void *)record;
     }
 }
+// The ROM ends this Thumb body with a zero halfword. Keep gas's default
+// section-alignment nop (0x46c0) out of the matched span.
+__asm__(".align 2, 0");
+#undef COURSE_STREAM_REG
 void Course_StreamTail_06CB8(void *a, void *b) {
     // _08006CB8: 176 bytes = 0x08006CB8..0x08006D63 + pools 0xFFFF8000
     // (0x08006D18) and 0x00007FFF (0x08006D64). Both helpers are called by

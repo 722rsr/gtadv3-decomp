@@ -42,44 +42,64 @@ extern void  sub_0802D988(const void *src, void *dst);     // LZ77UnCompWram (bi
 //     +0x18 +0x14 + 60
 //     +0x32 flag = ((u8)(p[14]-6) <= 1)
 void CourseOrch_080064EC(void *out, int idx, void *base) {
-    volatile u8 *o = (volatile u8 *)out;
-    volatile u8 *p = (volatile u8 *)(uintptr_t)_08006590(base, 0, idx);
+    // ROM table, not hardware: plain halfword reads emit the ROM's `ldrh`
+    // / `ldrsh` (the volatile forms zero/sign-extend with extra shifts and
+    // also defeat the indexed `ldrsh [r5, r0]` addressing used below).
+    // The two parameter spills are pinned in declaration order so the
+    // prologue copies `out` before `idx` (`adds r4,r0 / adds r3,r1`).
+    register u8 *o __asm__("r4") = (u8 *)out;
+    register int i __asm__("r3") = idx;
+    u8 *p = (u8 *)(uintptr_t)_08006590(base, 0, i);
 
-    *(volatile u16 *)(o + 0x28) = *(volatile u16 *)(p + 2);
-    *(volatile u16 *)(o + 0x2A) = *(volatile u16 *)(p + 4);
-    *(volatile u16 *)(o + 0x2C) = *(volatile u16 *)(p + 6);
-    *(volatile u16 *)(o + 0x2E) = *(volatile u16 *)(p + 8);
-    *(volatile u16 *)(o + 0x30) = *(volatile u16 *)(p + 10);
+    *(u16 *)(o + 0x28) = *(u16 *)(p + 2);
+    *(u16 *)(o + 0x2A) = *(u16 *)(p + 4);
+    *(u16 *)(o + 0x2C) = *(u16 *)(p + 6);
+    *(u16 *)(o + 0x2E) = *(u16 *)(p + 8);
+    *(u16 *)(o + 0x30) = *(u16 *)(p + 10);
 
-    *(volatile u32 *)(o + 0x00) = (u32)(uintptr_t)(p + 12);
-    *(volatile u32 *)(o + 0x04) = (u32)(uintptr_t)(p + 28);
+    // r3 keeps p+12 through the whole body (the tail reloads p[14] from it).
+    u8 *q = p + 12;
+    *(u32 *)(o + 0x00) = (u32)(uintptr_t)q;
+    u32 acc = (u32)(uintptr_t)(p + 28);
+    *(u32 *)(o + 0x04) = acc;
 
-    s16 nA = *(volatile s16 *)(p + 2);
-    u32 r1 = (u32)(uintptr_t)(p + 28) + (u32)((nA << 2) + nA) * 4;   // nA*20
-    *(volatile u32 *)(o + 0x08) = r1;
+    s16 nA = *(s16 *)(p + 2);
+    acc += (u32)((nA << 2) + nA) * 4;   // nA*20
+    *(u32 *)(o + 0x08) = acc;
 
-    s16 nB = *(volatile s16 *)(p + 4);
-    r1 += (u32)((nB << 1) + nB) * 4;                                  // nB*12
-    *(volatile u32 *)(o + 0x0C) = r1;
+    s16 nB = *(s16 *)(p + 4);
+    acc += (u32)((nB << 1) + nB) * 4;   // nB*12
+    *(u32 *)(o + 0x0C) = acc;
 
-    s16 nC = *(volatile s16 *)(p + 6);
-    r1 += (u32)((nC << 1) + nC) * 4;                                  // nC*12
-    *(volatile u32 *)(o + 0x10) = r1;
+    s16 nC = *(s16 *)(p + 6);
+    acc += (u32)((nC << 1) + nC) * 4;   // nC*12
+    *(u32 *)(o + 0x10) = acc;
 
-    s16 nD = *(volatile s16 *)(p + 8);
-    r1 += (u32)(nD << 3);                                             // nD*8
-    *(volatile u32 *)(o + 0x14) = r1;
+    s16 nD = *(s16 *)(p + 8);
+    acc += (u32)(nD << 3);              // nD*8
+    *(u32 *)(o + 0x14) = acc;
 
-    r1 += 60;
-    *(volatile u32 *)(o + 0x18) = r1;
+    acc += 60;
+    *(u32 *)(o + 0x18) = acc;
 
-    u8 f = (u8)(p[14] - 6);
-    *(volatile u16 *)(o + 0x32) = (u16)(f <= 1 ? 1 : 0);
+    // Tail flag: the ROM reuses the narrowed byte register for the 0/1
+    // result (`cmp; bhi zero; movs r0,#1; b; zero: movs r0,#0`), so the
+    // branches assign back into `f` itself -- a separate flag local takes
+    // r1 and lets the compiler hoist one materialization above the compare.
+    u8 f = (u8)(q[2] - 6);
+    if (f <= 1)
+        f = 1;
+    else
+        f = 0;
+    *(u16 *)(o + 0x32) = f;
 }
 #ifndef __APPLE__
 void _080064EC(void *a, int b, void *c) __attribute__((alias("CourseOrch_080064EC")));
 void sub_080064EC(void *a, int b, void *c) __attribute__((alias("CourseOrch_080064EC")));
 #endif
+// Content is 134 bytes (2 mod 4); the ROM pads the span with `00 00` where
+// gas defaults to `c0 46`.
+__asm__(".align 2, 0");
 
 // ----------------------------------------------------------------------------
 // _080061B8(arg0 unused, idx, base) — surface VARIANT gfx (groups 5/6/7).

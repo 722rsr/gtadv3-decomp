@@ -24,3 +24,5 @@ _0802BC32:
   pop {r3}
   bx r3
 _0802BC48: .word 0x68736D53
+
+sound_mixer_tail_end:
