@@ -23,11 +23,7 @@
 #include "gba/types.h"
 
 // ---- callees ---------------------------------------------------------------
-#ifdef __APPLE__
-#define HOST_STUB(sig) __attribute__((weak)) sig
-#else
 #define HOST_STUB(sig) extern sig
-#endif
 
 HOST_STUB(void _08007ABC(void *rec, int id, int lane));     // 0x08007ABC resource bind
 HOST_STUB(void _08002618(u32 a, u32 b));                    // 0x08002618 scene event
@@ -111,10 +107,8 @@ void MenuFF78_101FC(void *rec_) {
     _08007ABC((void *)(uintptr_t)RD32(rec, 36), (int)RD32(rec, 352), (int)RD32(rec, 348));
     _08007ABC((void *)(uintptr_t)RD32(rec, 36), (int)RD32(rec, 364), (int)RD32(rec, 360));
 }
-#ifndef __APPLE__
 void _0800101FC(void *a) __attribute__((alias("MenuFF78_101FC")));
 void sub_0800101FC(void *a) __attribute__((alias("MenuFF78_101FC")));
-#endif
 
 // ============================================================================
 // sub_080010370 — setup twin B: rebuild grid, pick entry from s16[WA+0x576].
@@ -153,10 +147,8 @@ void MenuFF78_10370(void *rec_) {
     _08007ABC((void *)(uintptr_t)RD32(rec, 36), (int)RD32(rec, 364), (int)RD32(rec, 360));
     _0800F810(rec_);
 }
-#ifndef __APPLE__
 void _080010370(void *a) __attribute__((alias("MenuFF78_10370")));
 void sub_080010370(void *a) __attribute__((alias("MenuFF78_10370")));
-#endif
 
 // ============================================================================
 // sub_0800104F0 — setup twin C: special-array rebuild + index pick.
@@ -192,10 +184,8 @@ void MenuFF78_104F0(void *rec_) {
     _08007ABC((void *)(uintptr_t)RD32(rec, 36), (int)RD32(rec, 364), (int)RD32(rec, 360));
     _0800F810(rec_);
 }
-#ifndef __APPLE__
 void _0800104F0(void *a) __attribute__((alias("MenuFF78_104F0")));
 void sub_0800104F0(void *a) __attribute__((alias("MenuFF78_104F0")));
-#endif
 
 // ============================================================================
 // sub_080010644 — setup twin D: BlockB arm 0x138D, grid rebuild, mode 4/2.
@@ -235,10 +225,8 @@ void MenuFF78_10644(void *rec_) {
     WR16(rec, 202, 30);                      // s16[rec+0xCA] = 30
     WR16(rec, 178, RD16(rec, 172));          // s16[rec+0xB2] = u16[rec+0xAC]
 }
-#ifndef __APPLE__
 void _080010644(void *a) __attribute__((alias("MenuFF78_10644")));
 void sub_080010644(void *a) __attribute__((alias("MenuFF78_10644")));
-#endif
 
 // ============================================================================
 // sub_0800107CC — setup twin E: 99 seeds into 0xBC/0xBE/0xC0 + WA mirrors.
@@ -272,10 +260,8 @@ void MenuFF78_107CC(void *rec_) {
     _08007ABC((void *)(uintptr_t)RD32(rec, 36), (int)RD32(rec, 340), (int)RD32(rec, 336));
     _0800F810(rec_);
 }
-#ifndef __APPLE__
 void _0800107CC(void *a) __attribute__((alias("MenuFF78_107CC")));
 void sub_0800107CC(void *a) __attribute__((alias("MenuFF78_107CC")));
-#endif
 
 // ============================================================================
 // sub_08001096C — input handler: mode 0/3 start/select toggles, clamp 4.
@@ -317,10 +303,8 @@ void MenuFF78_1096C(void *rec_, int a1, int a2) {
     }
     if (*(s16 *)(rec + 168) > 4) *(u16 *)(rec + 168) = 4;
 }
-#ifndef __APPLE__
 void _08001096C(void *a, int b, int c) __attribute__((alias("MenuFF78_1096C")));
 void sub_08001096C(void *a, int b, int c) __attribute__((alias("MenuFF78_1096C")));
-#endif
 
 // ============================================================================
 // sub_0800109D4 — gate-dispatched input handler: forward events via
@@ -434,7 +418,5 @@ void MenuFF78_109D4(void *rec_, int a1, int a2) {
         else if (g == 1) _080011214(rec_, (int)arg1, (int)r9);
     }
 }
-#ifndef __APPLE__
 void _0800109D4(void *a, int b, int c) __attribute__((alias("MenuFF78_109D4")));
 void sub_0800109D4(void *a, int b, int c) __attribute__((alias("MenuFF78_109D4")));
-#endif

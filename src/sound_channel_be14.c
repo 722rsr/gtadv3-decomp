@@ -10,7 +10,6 @@
 // Caller ABI: channel in r1 (nonstandard r1), r0 ignored, r2/r3 temps. Proven via ROM table at 0x061520 (0x0802BE15 thumb entry at file 0x061520: 15 BE 02 08) within 0x061520 8-entry table, dispatched via r1 channel.
 // Do not guess voice layout beyond +15 (u8) / +0 (u8) directly via strb/ldrb/orrs, proven via objdump.
 
-#ifndef __APPLE__
 void _0802BE14(void *a, void *b) __attribute__((alias("SoundBE14_Store")));
 void sub_0802BE14(void *a, void *b) __attribute__((alias("SoundBE14_Store")));
 __attribute__((naked)) void SoundBE14_Store(void *a, void *chan) {
@@ -28,6 +27,3 @@ __attribute__((naked)) void SoundBE14_Store(void *a, void *chan) {
         ".syntax divided\n"
     );
 }
-#else
-void SoundBE14_Store(void *a, void *b) { (void)a; (void)b; }
-#endif

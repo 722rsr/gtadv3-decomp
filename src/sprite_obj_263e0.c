@@ -20,46 +20,8 @@
 #include "gba/types.h"
 
 // ----------------------------------------------------------------------------
-// Extern callees. On the macOS host a standalone TU needs linkable bodies, so
-// weak no-ops are provided under __APPLE__ (overridden by strong test mocks,
-// exactly the override model the trampoline pipeline uses on ARM).
+// Extern callees.
 // ----------------------------------------------------------------------------
-#ifdef __APPLE__
-__attribute__((weak)) void _0802D970(const void *a, void *b, u32 c) { (void)a; (void)b; (void)c; }
-__attribute__((weak)) void _0802D974(const void *a, void *b, u32 c) { (void)a; (void)b; (void)c; }
-__attribute__((weak)) int _0802D978(int a, int b) { (void)b; return a; }
-__attribute__((weak)) int _0802D97C(int a, int b) { (void)b; return 0; }
-__attribute__((weak)) void _0802D988(const void *a, void *b) { (void)a; (void)b; }
-__attribute__((weak)) void *_08007498(void *X, int i) { (void)X; (void)i; return (void *)0; }
-__attribute__((weak)) void *_0800748C(void *X) { (void)X; return (void *)0; }
-__attribute__((weak)) void *_08002BFC(int a) { (void)a; return (void *)0; }
-__attribute__((weak)) void _08002C34(int a, void *b) { (void)a; (void)b; }
-__attribute__((weak)) void _08002C60(int a, u16 b, u16 c) { (void)a; (void)b; (void)c; }
-__attribute__((weak)) void _08002C74(int a, u16 b) { (void)a; (void)b; }
-__attribute__((weak)) void _08002C84(int a) { (void)a; }
-__attribute__((weak)) void *_08004E0C(void *a) { (void)a; return (void *)0; }
-__attribute__((weak)) int _08005758(u32 a) { (void)a; return 0; }
-__attribute__((weak)) int _08005790(u32 a) { (void)a; return 0; }
-__attribute__((weak)) void _080057A4(u32 a, u32 b) { (void)a; (void)b; }
-__attribute__((weak)) void _08007538(void *a, int b, void *c) { (void)a; (void)b; (void)c; }
-__attribute__((weak)) void _080075E8(void *a, int b, int c) { (void)a; (void)b; (void)c; }
-__attribute__((weak)) s16 _080261B0(int a) { (void)a; return 0; }
-__attribute__((weak)) void _080261D4(int a) { (void)a; }
-__attribute__((weak)) void _080261E8(int a, int b) { (void)a; (void)b; }
-__attribute__((weak)) s16 _080261F8(int a) { (void)a; return 0; }
-__attribute__((weak)) void _0802620C(void *a, void *b) { (void)a; (void)b; }
-__attribute__((weak)) void *_08026230(int a, void *b) { (void)a; (void)b; return (void *)0; }
-__attribute__((weak)) void sub_080262A4(void *a) { (void)a; }
-__attribute__((weak)) void sub_08026220(void) { }        // Code261D4_CopySlot
-// `track_car_helpers.c` exports sub_080262A4/sub_08026220 under
-// `#ifndef __APPLE__` only, so the host needs its own definition of the spelling
-// its CALL site uses. Same for the two below: _08026948 and _080269AC now call
-// the CLOSURE spellings, which `arm-none-eabi-nm -n build-code/code.o` binds as
-// `sub_080057A4` and `sub_08026230` — neither `_` form is a closure symbol.
-// Both now have C definitions (src/save.c:287, src/runtime_record_helpers.c:444).
-__attribute__((weak)) void sub_080057A4(u32 a, u32 b) { (void)a; (void)b; }
-__attribute__((weak)) void *sub_08026230(int a, void *b) { (void)a; (void)b; return (void *)0; }
-#else
 extern void _0802D970(const void *a, void *b, u32 c);   // swi 0x0C CpuFastSet (bios_wrappers.c)
 extern void _0802D974(const void *a, void *b, u32 c);   // swi 0x0B CpuSet (bios_wrappers.c)
 extern int _0802D978(int a, int b);                     // swi 0x06 Div (bios_wrappers.c)
@@ -82,11 +44,6 @@ extern void _080057A4(u32 a, u32 b);                    // save.c DMA3 descripto
 extern void sub_080057A4(u32 a, u32 b);                 // 0x080057A4 closure spelling (save.c)
 extern void _08007538(void *a, int b, void *c);         // Course_EmitLane_07538 (course_resource.c)
 extern void _080075E8(void *a, int b, int c);           // Course_EmitLane_075E8 (course_resource.c)
-/* Already inside this file's `#ifdef __APPLE__` host block (line 36), so no
-   further guard: the host needs the spelling the CALL site uses, which is the
-   `sub_` one, because track_car_helpers.c only exports that alias under
-   `#ifndef __APPLE__`. Guarding this again inverted the host path and
-   apple_decls caught the resulting undeclared call. */
 extern s16 _080261B0(int a);                            // Ai_AwardLeafGet (ai_award_leaves.c)
 extern void _080261D4(int a);                           // 0x080261D4 s16 +2 (asm;.set alias)
 extern void _080261E8(int a, int b);                    // 0x080261E8 u16 store +4 (asm;.set alias)
@@ -96,7 +53,6 @@ extern void *_08026230(int a, void *b);                 // 0x08026230 resource w
 extern void *sub_08026230(int a, void *b);               // 0x08026230 closure spelling (the `_`
                                                             // form is not bound by code.o)
 extern void sub_080262A4(void *a);                // 0x080262A4 resource wrap B (asm;.set alias)
-#endif
 
 // Course-record table bases (from the literal pools of this cluster).
 #define CREC_TABLE0  ((void *)(uintptr_t)0x087999D8)
@@ -139,11 +95,9 @@ void Sprite_BlitTiles(u8 *dst, int bank) {
         _0802D970(dst + i * 192, (void *)(uintptr_t)(vram[i] + base), 48);
     }
 }
-#ifndef __APPLE__
 void _0800263E0(u8 *a, int b) __attribute__((alias("Sprite_BlitTiles")));
 void sub_0800263E0(u8 *a, int b) __attribute__((alias("Sprite_BlitTiles")));
 void Course_0x080263E0(u8 *a, int b) __attribute__((alias("Sprite_BlitTiles"))); /* trampoline elimination: friendly-name spelling used by race_setup.c */
-#endif
 
 // ============================================================================
 // sub_0800264D8 (0x080264D8, 0x48 B) — course byte lookup:
@@ -177,10 +131,8 @@ void *Sprite_CourseByte(void *rec, u32 off) {
     // identical -- this is a commutation, not a rewrite of the arithmetic.
     return (void *)(uintptr_t)(*(volatile u32 *)((u8 *)rec + 4) + m);
 }
-#ifndef __APPLE__
 void *_0800264D8(void *a, u32 b) __attribute__((alias("Sprite_CourseByte")));
 void *sub_0800264D8(void *a, u32 b) __attribute__((alias("Sprite_CourseByte")));
-#endif
 
 // ============================================================================
 // sub_080026520 (0x08026520, 0x34 B) — course surface tile lookup:
@@ -208,11 +160,9 @@ void *Sprite_CourseSurface(int idx, int n) {
     arr = _0800748C(_08007498(_08007498(tbl, (int)entry), 2));
     return (void *)((u8 *)arr + (n << 5));
 }
-#ifndef __APPLE__
 void *_080026520(int a, int b) __attribute__((alias("Sprite_CourseSurface")));
 void *sub_080026520(int a, int b) __attribute__((alias("Sprite_CourseSurface")));
 void *Course_0x08026520(int a, int b) __attribute__((alias("Sprite_CourseSurface"))); /* trampoline elimination: friendly-name spelling used by race_cluster.c */
-#endif
 
 // ============================================================================
 // sub_080026554 (0x08026554, 0x120 B, unlabeled) — two-record OAM emitter.
@@ -257,10 +207,8 @@ void Sprite_PlacePair(void *rec, int x, void *spr) {
     *(volatile u16 *)(obj2 + 12) = 0;
     _08002C34((int)*(volatile u32 *)(r7 + 8), obj2);
 }
-#ifndef __APPLE__
 void _080026554(void *a, int b, void *c) __attribute__((alias("Sprite_PlacePair")));
 void sub_080026554(void *a, int b, void *c) __attribute__((alias("Sprite_PlacePair")));
-#endif
 
 // 0x08026550 shares the same pair-emitter body, with one ignored r3 input.
 void Sprite_PlacePairEntry_26550(void *rec, int x, void *spr, int unused)
@@ -268,10 +216,8 @@ void Sprite_PlacePairEntry_26550(void *rec, int x, void *spr, int unused)
     (void)unused;
     Sprite_PlacePair(rec, x, spr);
 }
-#ifndef __APPLE__
 void _08026550(void *rec, int x, void *spr, int unused)
     __attribute__((alias("Sprite_PlacePairEntry_26550")));
-#endif
 
 // ============================================================================
 // sub_080026674 (0x08026674, 0x188 B) — 9-arg emitter pair (race HUD lanes).
@@ -331,12 +277,10 @@ void Sprite_PlaceEmitters(void *rec, int off, int z, int y,
     *(volatile u16 *)(obj2 + 12) = 0;
     _08002C34(a6, obj2);
 }
-#ifndef __APPLE__
 void _080026674(void *a, int b, int c, int d, int e, int f, int g, int h, int i)
     __attribute__((alias("Sprite_PlaceEmitters")));
 void sub_080026674(void *a, int b, int c, int d, int e, int f, int g, int h, int i)
     __attribute__((alias("Sprite_PlaceEmitters")));
-#endif
 
 // ============================================================================
 // sub_0800267FC (0x080267FC, 0x6C B = 108 B) — course byte lookup variant.
@@ -401,11 +345,9 @@ void *Sprite_CourseByte2(int a, u32 off) {
     u32 tile = 127u & (u32)*(const u8 *)((u8 *)arr2 + o6);
     return (void *)((u8 *)r5 + (tile << 10));
 }
-#ifndef __APPLE__
 void *_0800267FC(int a, u32 b) __attribute__((alias("Sprite_CourseByte2")));
 void *sub_0800267FC(int a, u32 b) __attribute__((alias("Sprite_CourseByte2")));
 void *Course_0x080267FC(int a, u32 b) __attribute__((alias("Sprite_CourseByte2"))); /* trampoline elimination: friendly-name spelling used by race_setup.c */
-#endif
 
 // ============================================================================
 // sub_080026868 (0x08026868, 0x18 B) — palette upload:
@@ -414,10 +356,8 @@ void *Course_0x080267FC(int a, u32 b) __attribute__((alias("Sprite_CourseByte2")
 void Sprite_CopyPal(u8 *dst, int bank) {
     _0802D970(dst, (void *)(uintptr_t)(0x06010000u + ((u32)bank << 5)), 256);
 }
-#ifndef __APPLE__
 void _080026868(u8 *a, int b) __attribute__((alias("Sprite_CopyPal")));
 void sub_080026868(u8 *a, int b) __attribute__((alias("Sprite_CopyPal")));
-#endif
 
 // ============================================================================
 // sub_080026880 (0x08026880, 0x18 B, unlabeled) — ArrBase(Seek(0x0879A304, 3)).
@@ -425,10 +365,8 @@ void sub_080026868(u8 *a, int b) __attribute__((alias("Sprite_CopyPal")));
 void *Sprite_CourseRecord3(void) {
     return _0800748C(_08007498(CREC_TABLE1, 3));
 }
-#ifndef __APPLE__
 void *_080026880(void) __attribute__((alias("Sprite_CourseRecord3")));
 void *sub_080026880(void) __attribute__((alias("Sprite_CourseRecord3")));
-#endif
 
 // ============================================================================
 // sub_080026898 (0x08026898, 0x9C B) — 9-arg emitter pair (r0/r1 unused by
@@ -444,7 +382,6 @@ void *sub_080026880(void) __attribute__((alias("Sprite_CourseRecord3")));
 void Sprite_EmitPair(void *unused0, int unused1, int x, int y,
                      u32 a4, u32 a5, u32 a6, u32 a7, u32 a8) {
     (void)unused0; (void)unused1;
-#ifndef __APPLE__
     /* The ROM enters the allocator with r0 still holding the 0x400 mask. */
     extern void *Sprite_EmitAllocate(void) __asm__("sub_08002BFC");
     /* Keep the ROM's four-byte frame so its five stack arguments stay at the
@@ -507,30 +444,11 @@ void Sprite_EmitPair(void *unused0, int unused1, int x, int y,
     *(volatile u16 *)(obj2 + 12) = (u16)zero2;
     _08002C34((int)args->a6, obj2);
     __asm__ volatile("add sp, #4" : : : "memory");
-#else
-    int r5 = x;
-    u32 r8 = y;
-    u32 flag = (u32)((s32)(a7 | (u32)(-(s32)a7)) >> 31) & 0x400u;
-    u8 *obj = (u8 *)_08002BFC(0);
-    *(volatile u16 *)(obj + 0) = (u16)((r8 & 0xFFu) | flag);
-    *(volatile u16 *)(obj + 2) = (u16)(((u32)(r5 - 56) & 0x1FFu) | 0xC000u);
-    *(volatile u16 *)(obj + 4) = (u16)((a4 & 0xFFFFu) | (a5 << 12) | (a8 << 10));
-    *(volatile u16 *)(obj + 12) = 0;
-    _08002C34((int)a6, obj);
-    u8 *obj2 = (u8 *)_08002BFC(0);
-    *(volatile u16 *)(obj2 + 0) = (u16)((r8 & 0xFFu) | flag);
-    *(volatile u16 *)(obj2 + 2) = (u16)(((u32)(r5 - 8) & 0x1FFu) | 0xC000u);
-    *(volatile u16 *)(obj2 + 4) = (u16)(((a4 + 64) & 0xFFFFu) | (a5 << 12) | (a8 << 10));
-    *(volatile u16 *)(obj2 + 12) = 0;
-    _08002C34((int)a6, obj2);
-#endif
 }
-#ifndef __APPLE__
 void _080026898(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h, u32 i)
     __attribute__((alias("Sprite_EmitPair")));
 void sub_080026898(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h, u32 i)
     __attribute__((alias("Sprite_EmitPair")));
-#endif
 
 // ============================================================================
 // sub_080026938 (0x08026938, 0x10 B) + entry 0x0802693C — resource unlink:
@@ -542,12 +460,10 @@ void Sprite_UnlinkSlot(void *mgr) {
     sub_080262A4(*(void **)((u8 *)x + 92));
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _08026938(void *a) __attribute__((alias("Sprite_UnlinkSlot")));
 void sub_08026938(void *a) __attribute__((alias("Sprite_UnlinkSlot")));
 void _080026938(void *a) __attribute__((alias("Sprite_UnlinkSlot")));
 void sub_080026938(void *a) __attribute__((alias("Sprite_UnlinkSlot")));
-#endif
 
 // ============================================================================
 // Sprite record factory. The ROM carries this sequence INLINE in each of the
@@ -612,20 +528,14 @@ void *Sprite_Create1(void) {
     *(volatile u8 *)(rec + 16) = 1;
     *(volatile u8 *)(rec + 17) = z17;
     _0802620C(rec + 20, (void *)(uintptr_t)0x0202AC00);
-#ifndef __APPLE__
     _08026220();
-#else
-    sub_08026220();      // host stub spelling
-#endif
     *(volatile u32 *)(rec + 92) = (u32)(uintptr_t)sub_08026230(0, 0);
     return node;
 }
-#ifndef __APPLE__
 void *_08026948(void) __attribute__((alias("Sprite_Create1")));
 void *sub_08026948(void) __attribute__((alias("Sprite_Create1")));
 void *_080026948(void) __attribute__((alias("Sprite_Create1")));
 void *sub_080026948(void) __attribute__((alias("Sprite_Create1")));
-#endif
 
 // ============================================================================
 // sub_0800269AC (0x080269AC, 0x74 B = 116 B, unlabeled) — sprite factory #2.
@@ -687,19 +597,13 @@ void *Sprite_Create2(u32 v) {
     *(volatile u16 *)(rec + 8) = extra;
     *(volatile u8 *)(rec + 18) = 1;
     _0802620C(rec + 20, (void *)(uintptr_t)0x0202AC00);
-#ifndef __APPLE__
     _08026220();
-#else
-    sub_08026220();      // host stub spelling
-#endif
     *(volatile u32 *)(rec + 92) = (u32)(uintptr_t)sub_08026230(0, 0);
     return n9;
 }
-#ifndef __APPLE__
 void *_080269AC(u32 a) __attribute__((alias("Sprite_Create2")));
 void *sub_080269AC(u32 a) __attribute__((alias("Sprite_Create2")));
 void *_0800269AC(u32 a) __attribute__((alias("Sprite_Create2")));
-#endif
 
 // ============================================================================
 // sub_080026A20 (0x08026A20, 0xC B, unlabeled) — [mgr+8]+4 = x; +6 = y.
@@ -713,14 +617,12 @@ void Sprite_SetXY(void *mgr, u32 x, u32 y) {
     *(volatile u16 *)((uintptr_t)*(volatile u32 *)((u8 *)mgr + 8) + 6) = (u16)y;
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _08026A20(void *a, u32 b, u32 c) __attribute__((alias("Sprite_SetXY")));
 void sub_08026A20(void *a, u32 b, u32 c) __attribute__((alias("Sprite_SetXY")));
 // The closure spells 0x080026A20 with the 9-digit form; the 8-digit alias
 // above denotes the same address but is a different symbol, so a promoted
 // caller using the closure spelling stayed undefined and got a ROM trampoline.
 void _080026A20(void *a, u32 b, u32 c) __attribute__((alias("Sprite_SetXY")));
-#endif
 
 // ============================================================================
 // sub_080026A2C (0x08026A2C, 0x1C B) — [mgr+8]+4 = x - (s16)u16[0x030035C0+12]>>3;
@@ -741,10 +643,8 @@ void Sprite_SetXYRel(void *mgr, u32 x, u32 y) {
     *(volatile u16 *)(rec + 4) = (u16)x;
     *(volatile u16 *)((uintptr_t)*(volatile u32 *)((u8 *)mgr + 8) + 6) = (u16)y;
 }
-#ifndef __APPLE__
 void _080026A2C(void *a, u32 b, u32 c) __attribute__((alias("Sprite_SetXYRel")));
 void sub_080026A2C(void *a, u32 b, u32 c) __attribute__((alias("Sprite_SetXYRel")));
-#endif
 
 // ============================================================================
 // sub_080026A4C (0x08026A4C, 0xC B, unlabeled) — [mgr+8]+10 = a; +12 = b.
@@ -759,34 +659,28 @@ void Sprite_SetTenTwelve(void *mgr, u32 a, u32 b) {
     *(volatile u16 *)((uintptr_t)*(volatile u32 *)((u8 *)mgr + 8) + 12) = (u16)b;
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _08026A4C(void *a, u32 b, u32 c) __attribute__((alias("Sprite_SetTenTwelve")));
 void sub_08026A4C(void *a, u32 b, u32 c) __attribute__((alias("Sprite_SetTenTwelve")));
-#endif
 
 void Sprite_SetFlag16(void *mgr, u32 v) {
     *(volatile u8 *)((uintptr_t)*(volatile u32 *)((u8 *)mgr + 8) + 16) = (u8)v;
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _08026A58(void *a, u32 b) __attribute__((alias("Sprite_SetFlag16")));
 void sub_08026A58(void *a, u32 b) __attribute__((alias("Sprite_SetFlag16")));
 // The closure spells 0x080026A58 with the 9-digit form, and asm/code_263e0.s
 // defines that label on this span; without it the splice emits the label with
 // no C definition. Same reason as the 9-digit alias on Sprite_SetXY above.
 void _080026A58(void *a, u32 b) __attribute__((alias("Sprite_SetFlag16")));
-#endif
 
 void Sprite_SetFlag17(void *mgr, u32 v) {
     *(volatile u8 *)((uintptr_t)*(volatile u32 *)((u8 *)mgr + 8) + 17) = (u8)v;
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _08026A60(void *a, u32 b) __attribute__((alias("Sprite_SetFlag17")));
 void sub_08026A60(void *a, u32 b) __attribute__((alias("Sprite_SetFlag17")));
 // 9-digit closure spelling of 0x080026A60; see the note on Sprite_SetFlag16.
 void _080026A60(void *a, u32 b) __attribute__((alias("Sprite_SetFlag17")));
-#endif
 
 // ============================================================================
 // sub_080026A68 (0x08026A68, 0x10 B, unlabeled) — if (u8[rec+18] == 0)
@@ -797,7 +691,6 @@ void Sprite_Tick(void *rec) {
         *(volatile u16 *)((u8 *)rec + 8) = (u16)(*(volatile u16 *)((u8 *)rec + 8) + 64);
     }
 }
-#ifndef __APPLE__
 void _08026A68(void *a) __attribute__((alias("Sprite_Tick")));
 void sub_08026A68(void *a) __attribute__((alias("Sprite_Tick")));
 // 9-digit closure spelling of 0x08026A68: asm/code_263e0.s defines only
@@ -805,7 +698,6 @@ void sub_08026A68(void *a) __attribute__((alias("Sprite_Tick")));
 // the closure spelling so the spliced link resolves. Same one-hop pattern as
 // the 9-digit aliases on Sprite_SetFlag16/17.
 void _080026A68(void *a) __attribute__((alias("Sprite_Tick")));
-#endif
 
 // ============================================================================
 // sub_080026A78 (0x08026A78, 0x3C B) — if (u8[rec+16] != 0):
@@ -814,11 +706,7 @@ void _080026A68(void *a) __attribute__((alias("Sprite_Tick")));
 // ============================================================================
 void Sprite_Draw(void *rec) {
     if (*(volatile u8 *)((u8 *)rec + 16) != 0) {
-#ifndef __APPLE__
         sub_080026898((void *)(uintptr_t)*(volatile u32 *)((u8 *)rec + 92),
-#else
-        Sprite_EmitPair((void *)(uintptr_t)*(volatile u32 *)((u8 *)rec + 92),
-#endif
                         (int)((s16 *)rec)[4],
                         (int)((s16 *)rec)[2],
                         (int)((s16 *)rec)[3],
@@ -828,7 +716,6 @@ void Sprite_Draw(void *rec) {
     }
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _08026A78(void *a) __attribute__((alias("Sprite_Draw")));
 void sub_08026A78(void *a) __attribute__((alias("Sprite_Draw")));
 // 9-digit closure spelling of 0x08026A78. asm/code_263e0.s:806 spells this
@@ -841,7 +728,6 @@ void sub_08026A78(void *a) __attribute__((alias("Sprite_Draw")));
 // `make matching-ready` failed 151/152 there and nowhere else.
 void _080026A78(void *a) __attribute__((alias("Sprite_Draw")));
 void sub_080026A78(void *a) __attribute__((alias("Sprite_Draw")));
-#endif
 
 // ============================================================================
 // sub_080026AB4 (0x08026AB4, 0x48 B) — paint: course tile + palette upload.
@@ -857,35 +743,20 @@ void Sprite_Paint(void *rec) {
     if (v < 0) v += 255;
     int r1 = v >> 8;
     r1 <<= 7;
-#ifndef __APPLE__
     // The ROM keeps the two call results in r5 and r4 across the next calls.
     register void *base __asm__("r5") =
         Sprite_CourseByte((void *)(uintptr_t)*(volatile u32 *)((u8 *)rec + 92), (u32)r1);
     register void *tile __asm__("r4") =
         Sprite_CourseSurface(*(s16 *)((u8 *)rec + 10),
                              *(s16 *)((u8 *)rec + 12));
-#else
-    void *base = Sprite_CourseByte((void *)(uintptr_t)*(volatile u32 *)((u8 *)rec + 92), (u32)r1);
-    void *tile = Sprite_CourseSurface(*(s16 *)((u8 *)rec + 10),
-                                      *(s16 *)((u8 *)rec + 12));
-#endif
-#ifndef __APPLE__
     sub_0800263E0((u8 *)base, (int)*(volatile u16 *)((u8 *)rec + 0));
-#else
-    Sprite_BlitTiles((u8 *)base, (int)*(volatile u16 *)((u8 *)rec + 0));
-#endif
-#ifndef __APPLE__
     // ROM loads the final index into r6, then shifts into r1. The empty asm
     // keeps agbcc from folding the load directly into the shifted r1 value.
     register u32 rawIndex __asm__("r6") = *(volatile u16 *)((u8 *)rec + 2);
     __asm__("" : "+r" (rawIndex));
     register u32 p __asm__("r1") = rawIndex << 5;
-#else
-    u32 p = (u32)*(volatile u16 *)((u8 *)rec + 2) << 5;
-#endif
     _0802D970(tile, (void *)(uintptr_t)(0x05000200u + p), 8);
 }
-#ifndef __APPLE__
 void _08026AB4(void *a) __attribute__((alias("Sprite_Paint")));
 void sub_08026AB4(void *a) __attribute__((alias("Sprite_Paint")));
 // 9-digit closure spelling of 0x08026AB4 — same drift and same reason as the
@@ -895,41 +766,26 @@ void sub_08026AB4(void *a) __attribute__((alias("Sprite_Paint")));
 // modern arm-none-eabi-gcc (the C89-equivalence gate) rejects it.
 void _080026AB4(void *a) __attribute__((alias("Sprite_Paint")));
 void sub_080026AB4(void *a) __attribute__((alias("Sprite_Paint")));
-#endif
 
 void Sprite_Event(int ev, int a, int b, void *rec) {
     (void)a; (void)b;
     switch ((u32)ev) {
     case 5:
-#ifndef __APPLE__
         // Closure spellings: the spliced link holds asm/code.s plus this one
         // body and no C object, so the friendly names have nothing to bind
         // to. The host arms call the real bodies, preserving host behavior.
         _080026A68(rec);
-#else
-        Sprite_Tick(rec);
-#endif
         break;
     case 7:
-#ifndef __APPLE__
         sub_080026A78(rec);
-#else
-        Sprite_Draw(rec);
-#endif
         break;
     case 8:
-#ifndef __APPLE__
         sub_080026AB4(rec);
-#else
-        Sprite_Paint(rec);
-#endif
         break;
     }
 }
-#ifndef __APPLE__
 void _08026B00(int a, int b, int c, void *d) __attribute__((alias("Sprite_Event")));
 void sub_08026B00(int a, int b, int c, void *d) __attribute__((alias("Sprite_Event")));
-#endif
 
 // ============================================================================
 // sub_080026B30 (0x08026B30, 0x50 B) — menu-record init:
@@ -947,10 +803,8 @@ void Sprite_Init(void *rec) {
     *(volatile u16 *)((u8 *)(uintptr_t)SPR_MENU_REC + 6) = (u16)_080261B0(13);
     *(volatile u16 *)((u8 *)(uintptr_t)SPR_MENU_REC + 10) = (u16)_080261F8(13);
 }
-#ifndef __APPLE__
 void _08026B30(void *a) __attribute__((alias("Sprite_Init")));
 void sub_08026B30(void *a) __attribute__((alias("Sprite_Init")));
-#endif
 
 // ============================================================================
 // sub_080026B80 (0x08026B80, 0x104 B, unlabeled) — menu-record event handler.
@@ -995,10 +849,8 @@ void Sprite_MenuEvent(int ev) {
     _080075E8((void *)(uintptr_t)0x083A2100, (int)t2,
               (int)(s16)*(volatile u16 *)(entry + 22));
 }
-#ifndef __APPLE__
 void _08026B80(int a) __attribute__((alias("Sprite_MenuEvent")));
 void sub_08026B80(int a) __attribute__((alias("Sprite_MenuEvent")));
-#endif
 
 // ============================================================================
 // sub_080026C84 (0x08026C84, 0x28 B) — single OAM emitter via the 8-arg
@@ -1008,7 +860,6 @@ void Sprite_EmitRecord(int a, int b, int c, int d, int a4) {
     extern void _08003004(int, int, int, int, int, int, int, int);
     _08003004(a, b, (s16)c, (s16)d, 0, 2, 256, a4);
 }
-#ifndef __APPLE__
 void _08026C84(int a, int b, int c, int d, int e) __attribute__((alias("Sprite_EmitRecord")));
 // The closure spells this address `sub_080026C84` (nine digits) -- see
 // asm/code_263e0.s:1047 and `arm-none-eabi-nm build-code/code.o`. The
@@ -1016,7 +867,6 @@ void _08026C84(int a, int b, int c, int d, int e) __attribute__((alias("Sprite_E
 // that one leaves the spliced body unable to define the name the link needs.
 void sub_080026C84(int a, int b, int c, int d, int e) __attribute__((alias("Sprite_EmitRecord")));
 void sub_08026C84(int a, int b, int c, int d, int e) __attribute__((alias("Sprite_EmitRecord")));
-#endif
 
 // ============================================================================
 // sub_080026CAC (0x08026CAC, 0x9C B) — three Helper_02DB8 emitters:
@@ -1027,7 +877,6 @@ void sub_08026C84(int a, int b, int c, int d, int e) __attribute__((alias("Sprit
 // ============================================================================
 void Sprite_EmitTriple(void *base, int id, int x, int y) {
     extern void _08002DB8(void *, int, int, int, int, int, int);
-#ifndef __APPLE__
     register u8 *obj __asm__("r9") = (u8 *)base;
     int idv = id;
     __asm__ volatile("" : "+r"(obj), "+r"(idv));
@@ -1040,13 +889,6 @@ void Sprite_EmitTriple(void *base, int id, int x, int y) {
     __asm__ volatile("" : "+r"(tpl));
     sx = (s16)sx;
     __asm__ volatile("" : "+r"(sx));
-#else
-    u8 *obj = (u8 *)base;
-    int idv = id;
-    u16 uy = (u16)y;
-    void *tpl = (void *)(uintptr_t)0x083A2100u;
-    int sx = (s16)x;
-#endif
     _08007538(tpl, 23, (void *)(uintptr_t)sx);
     int sy = (s16)uy;
     _080075E8(tpl, 9, sy);
@@ -1056,10 +898,8 @@ void Sprite_EmitTriple(void *base, int id, int x, int y) {
     sx += 16;
     _08002DB8(obj, idv, sx, sy, 0, 8, 1);
 }
-#ifndef __APPLE__
 void _08026CAC(void *a, int b, int c, int d) __attribute__((alias("Sprite_EmitTriple")));
 void sub_08026CAC(void *a, int b, int c, int d) __attribute__((alias("Sprite_EmitTriple")));
-#endif
 
 // ============================================================================
 // sub_080026D48 (0x08026D48, 0x1E8 B, unlabeled) — menu-record per-frame tick.
@@ -1123,18 +963,12 @@ void Sprite_TickRecords(int car) {
         *(volatile u16 *)(entry + 30) = 0;
     }
 }
-#ifndef __APPLE__
 void _08026D48(int a) __attribute__((alias("Sprite_TickRecords")));
 void sub_08026D48(int a) __attribute__((alias("Sprite_TickRecords")));
-#endif
 
 // ROM entry alias.
-#ifndef __APPLE__
 void Sub_080026A2C(void *mgr, u32 x, u32 y) __attribute__((alias("Sprite_SetXYRel")));
-#endif
 
 // ROM entry alias.
-#ifndef __APPLE__
 void Sub_080026A4C(void *mgr, u32 a, u32 b) __attribute__((alias("Sprite_SetTenTwelve")));
 void _080026A4C(void *mgr, u32 a, u32 b) __attribute__((alias("Sprite_SetTenTwelve")));
-#endif

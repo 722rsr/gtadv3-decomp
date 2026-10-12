@@ -12,17 +12,6 @@
 #include "gba/types.h"
 
 // ---- extern callees --------------------------------------------------------
-#ifdef __APPLE__
-__attribute__((weak)) void _0802B368(int v) { (void)v; }
-__attribute__((weak)) void _08002618(int a, int b) { (void)a; (void)b; }
-__attribute__((weak)) void _0800DD9C(void *a, u32 b) { (void)a; (void)b; }
-__attribute__((weak)) void _0800D854(void *a) { (void)a; }
-__attribute__((weak)) void _0800D8E4(void *a) { (void)a; }
-__attribute__((weak)) void _0800E418(void *a) { (void)a; }
-__attribute__((weak)) void _0800E15C(void *a, u32 b, u32 c) { (void)a; (void)b; (void)c; }
-__attribute__((weak)) void _0800DE50(void *a) { (void)a; }
-__attribute__((weak)) void _0800DE4C(void *a) { (void)a; }
-#else
 extern void _0802B368(int v);               // 0x0802B368 sound entry
 extern void _08002618(int a, int b);        // 0x08002618
 extern void _0800DD9C(void *a, u32 b);      // 0x0800DD9C (menus.c)
@@ -32,7 +21,6 @@ extern void _0800E418(void *a);             // 0x0800E418 (menus.c)
 extern void _0800E15C(void *a, u32 b, u32 c); // 0x0800E15C (menus.c)
 extern void _0800DE50(void *a);             // 0x0800DE50 (menus.c)
 extern void _0800DE4C(void *a);             // 0x0800DE4C (this file)
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_0800DE4C — no-op leaf.
@@ -40,10 +28,8 @@ void MenuDE4C_0800DE4C(void *rec) {
     (void)rec;
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _0800DE4C(void *a) __attribute__((alias("MenuDE4C_0800DE4C")));
 void sub_0800DE4C(void *a) __attribute__((alias("MenuDE4C_0800DE4C")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_0800E2E4 — param handler:
@@ -61,20 +47,16 @@ void MenuE2E4_0800E2E4(void *rec, int a1, u32 param) {
         *(volatile u16 *)(r4 + 20) = 0;
     }
 }
-#ifndef __APPLE__
 void _0800E2E4(void *a, int b, u32 c) __attribute__((alias("MenuE2E4_0800E2E4")));
 void sub_0800E2E4(void *a, int b, u32 c) __attribute__((alias("MenuE2E4_0800E2E4")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_0800E598 — no-op leaf.
 void MenuE598_0800E598(void) {
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _0800E598(void) __attribute__((alias("MenuE598_0800E598")));
 void sub_0800E598(void) __attribute__((alias("MenuE598_0800E598")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_0800E59C — 12-entry command dispatcher (r0 = cmd, r3 = rec, r1 = arg,
@@ -129,7 +111,5 @@ void MenuE59C_0800E59C(int cmd, int arg, u32 param, void *rec) {
 }
 // Body is 178 bytes; the ROM's 180-byte span ends in `00 00`.
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _0800E59C(int a, int b, u32 c, void *d) __attribute__((alias("MenuE59C_0800E59C")));
 void sub_0800E59C(int a, int b, u32 c, void *d) __attribute__((alias("MenuE59C_0800E59C")));
-#endif

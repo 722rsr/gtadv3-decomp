@@ -7,22 +7,6 @@
 
 #include "gba/types.h"
 
-#ifdef __APPLE__
-__attribute__((weak)) void sub_080025C60(void *a, void *b) { (void)a; (void)b; }
-__attribute__((weak)) void sub_08007ABC(void *a, int b, int c) { (void)a; (void)b; (void)c; }
-__attribute__((weak)) void _08025C60(void *a, void *b) { (void)a; (void)b; }
-__attribute__((weak)) void _08007ABC(void *a, int b, int c) { (void)a; (void)b; (void)c; }
-__attribute__((weak)) void _08007C68(void *a, u32 b, u32 c, u32 d, u32 e, u32 f, u32 g, u32 h, u32 i)
-{ (void)a; (void)b; (void)c; (void)d; (void)e; (void)f; (void)g; (void)h; (void)i; }
-__attribute__((weak)) void _08007770(int a, void *b, int c, int d, int e, int f)
-{ (void)a; (void)b; (void)c; (void)d; (void)e; (void)f; }
-__attribute__((weak)) void _08002618(int a, int b) { (void)a; (void)b; }
-__attribute__((weak)) u16  _08002178(int a) { (void)a; return 0; }
-__attribute__((weak)) void _0800226C(void *a, int b) { (void)a; (void)b; }
-__attribute__((weak)) void _08002298(void *a) { (void)a; }
-__attribute__((weak)) int  _080022C0(void) { return 0; }
-__attribute__((weak)) void _0802D974(const void *a, void *b, u32 c) { (void)a; (void)b; (void)c; }
-#else
 extern void _08025C60(void *a, void *b);                  // 0x08025C60
 extern void _08007ABC(void *a, int b, int c);         // 0x08007ABC
 extern void sub_080025C60(void *a, void *b);               // 0x08025C60
@@ -38,7 +22,6 @@ extern void _0800226C(void *a, int b);                    // 0x0800226C
 extern void _08002298(void *a);                           // 0x08002298
 extern int  _080022C0(void);                              // 0x080022C0
 extern void _0802D974(const void *a, void *b, u32 c);     // bios_wrappers.c
-#endif
 
 // IWRAM anchors (byte-exact pool words in the listing):
 #define C22D_GRID_BASE   ((volatile u8 *)(uintptr_t)0x03001780)   // _08002313C
@@ -68,10 +51,8 @@ void Code22D24_UpdateCell(void *self, void *rec_arg, int arg) {
 // section -- so it pads with the `0` fill argument instead. No body byte
 // changes; only the two filler halfwords.
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _08022D24(void *a, void *b, int c) __attribute__((alias("Code22D24_UpdateCell")));
 void sub_08022D24(void *a, void *b, int c) __attribute__((alias("Code22D24_UpdateCell")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_08022D44 — packet send, 9 args to _08007C68.
@@ -91,10 +72,8 @@ void Code22D44_SendPacket(void *arg0, void *rec, int arg2) {
               (u32)*(volatile u32 *)(r1 + 4),
               (u32)arg2 + *(volatile u32 *)(r1 + 8), 6, 1, 0, 0);
 }
-#ifndef __APPLE__
 void _08022D44(void *a, void *b, int c) __attribute__((alias("Code22D44_SendPacket")));
 void sub_08022D44(void *a, void *b, int c) __attribute__((alias("Code22D44_SendPacket")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_08022D74 — record equality: [a+0](u32)==[b+0](u32),
@@ -128,10 +107,8 @@ int Code22D74_RecEq(void *ra, void *rb) {
         return 0;
     return 1;
 }
-#ifndef __APPLE__
 int _08022D74(void *a, void *b) __attribute__((alias("Code22D74_RecEq")));
 int sub_08022D74(void *a, void *b) __attribute__((alias("Code22D74_RecEq")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_08022DA8 — 35-row tournament permuter (428-B stack frame).
@@ -362,10 +339,8 @@ void Code22DA8_Permute(void *self) {
 
     (void)S;
 }
-#ifndef __APPLE__
 void _08022DA8(void *a) __attribute__((alias("Code22DA8_Permute")));
 void sub_08022DA8(void *a) __attribute__((alias("Code22DA8_Permute")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_08023148 — CpuSet copy of the 35-row record grid
@@ -397,10 +372,8 @@ void Code23148_CopyOut(void *arg) {
         row = nxt;
     } while (row <= 34);
 }
-#ifndef __APPLE__
 void _08023148(void *a) __attribute__((alias("Code23148_CopyOut")));
 void sub_08023148(void *a) __attribute__((alias("Code23148_CopyOut")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_080231B4 — inverse CpuSet copy: arg -> 0x03001D64 (5 sub-blocks) +
@@ -428,10 +401,8 @@ void Code231B4_CopyBack(void *arg) {
         row = nxt;
     } while (row <= 34);
 }
-#ifndef __APPLE__
 void _080231B4(void *a) __attribute__((alias("Code231B4_CopyBack")));
 void sub_080231B4(void *a) __attribute__((alias("Code231B4_CopyBack")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_08023220 — constructor gated on s16[self+156] (the earlier "0x0802321C"
@@ -459,16 +430,12 @@ void Code23220_Constructor(void *self) {
     // the fold from collapsing them into one 0x03002843 literal.
     {
         volatile u8 *wabase;
-#ifndef __APPLE__
         extern u8 C22DWaBase[];
         extern u8 C22DWaGateOff[];
         __asm__(".globl C22DWaBase\nC22DWaBase = 0x03001780\n");
         __asm__(".globl C22DWaGateOff\nC22DWaGateOff = 0x10C3\n");
         wabase = (volatile u8 *)((uintptr_t)C22DWaBase
                                  + (uintptr_t)C22DWaGateOff);
-#else
-        wabase = (volatile u8 *)(uintptr_t)0x03002843u;
-#endif
         if (*wabase == 0) {
             _08002618(1, 1);
             *(u16 *)(s + 144) = 1;
@@ -484,11 +451,9 @@ void Code23220_Constructor(void *self) {
 // body's `.size`, still inside its own function section, so it pads with the 0
 // fill argument. No body byte changes.
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _08023220(void *a) __attribute__((alias("Code23220_Constructor")));
 void sub_08023220(void *a) __attribute__((alias("Code23220_Constructor")));
 void _080023220(void *a) __attribute__((alias("Code23220_Constructor")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_080235F0 — the dispatcher sub_080235F4's case-2 target: two bytes,
@@ -496,10 +461,8 @@ void _080023220(void *a) __attribute__((alias("Code23220_Constructor")));
 // `bl 0x80235F0` at 0x0802361E has r0 = ctx, which the callee never reads).
 void Code235F0_NoOp(void) {}
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _080235F0(void) __attribute__((alias("Code235F0_NoOp")));
 void sub_080235F0(void) __attribute__((alias("Code235F0_NoOp")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_08023298 — s16[ctx+158] state machine (jump table 0x080232B8, 0-based;
@@ -659,9 +622,7 @@ void Code23298_StateMachine(void *ctx) {
         break;
     }
 }
-#ifndef __APPLE__
 void _08023298(void *a) __attribute__((alias("Code23298_StateMachine")));
 void sub_08023298(void *a) __attribute__((alias("Code23298_StateMachine")));
 void _080023298(void *a) __attribute__((alias("Code23298_StateMachine")));
 void sub_080023298(void *a) __attribute__((alias("Code23298_StateMachine")));
-#endif

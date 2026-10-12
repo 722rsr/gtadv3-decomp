@@ -43,21 +43,12 @@
 #include "gtadv/callee.h"
 
 // ---- extern callees --------------------------------------------------------
-#ifdef __APPLE__
-__attribute__((weak)) u32  _0802B888(u32 a, u32 b) { (void)b; return a; }
-__attribute__((weak)) void _0802BC64(void *c) { (void)c; }
-__attribute__((weak)) void _0802CD18(void *s) { (void)s; }
-__attribute__((weak)) void _0802C488(void *s) { (void)s; }
-__attribute__((weak)) void _0802C4A4(void *s, u16 v) { (void)s; (void)v; }
-__attribute__((weak)) void sub_0802C3D0(void *a, volatile u8 *b) { (void)a; (void)b; }
-#else
 extern u32  _0802B888(u32 a, u32 b);      // 0x0802B888 mixer veneer (sound_mixer.c)
 extern void _0802BC64(void *c);           // 0x0802BC64 voice unlink (sound_support.c)
 extern void _0802CD18(void *s);           // 0x0802CD18 stop-all helper (sound_stop_all.c)
 extern void _0802C488(void *s);           // 0x0802C488 pause-gate clear (sound_pause.c)
 extern void _0802C4A4(void *s, u16 v);    // 0x0802C4A4 pause-gate set (sound_pause.c)
 extern void sub_0802C3D0(void *a, volatile u8 *b); // 0x0802C3D0 envelope-apply (sound_voice_helpers.c)
-#endif
 
 // Forward declaration: the ROM's `bl 0x0802BCE8` is a real call to a body in
 // this TU, and its result is read from r3 (see `_0802C3EC` below).
@@ -80,7 +71,6 @@ extern u32 SqHdrIndex[];
 
 // ----------------------------------------------------------------------------
 // 0x0802BC84 — channel free-all helper
-#ifndef __APPLE__
 void _0802BC84(u32 d, void *s) __attribute__((alias("SoundChannelFreeAll")));
 void sub_0802BC84(u32 d, void *s) __attribute__((alias("SoundChannelFreeAll")));
 __attribute__((naked)) void SoundChannelFreeAll(u32 dummy, u8 *stream) {
@@ -115,9 +105,6 @@ __attribute__((naked)) void SoundChannelFreeAll(u32 dummy, u8 *stream) {
         ".syntax divided\n"
     );
 }
-#else
-void SoundChannelFreeAll(u32 dummy, u8 *stream) { (void)dummy; (void)stream; }
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x0802BCCC is a two-byte cursor-fetch prefix: `ldrb r3,[r2]`, then fall
@@ -137,14 +124,7 @@ static u32 SoundBCCC_Validate(u32 w) {
 }
 
 void SoundBCCC_Validate_alias(void) {}
-// Call-site split: the closure binds `sub_0802BCCC`; the friendly name is not a
-// closure symbol, so a promoted body calling it splices a section whose call
-// the link cannot bind. The selection rule is shared (include/gtadv/callee.h);
-// the per-file part is the alias pair below, which already defines BOTH
-// closure spellings in C, so no extern is needed. The macro itself is
-// guard-independent because CALLEE carries the `#ifndef __APPLE__`.
 #define SB_CALLEE(friendly, closure) CALLEE(friendly, closure)
-#ifndef __APPLE__
 __attribute__((naked)) static u32 SoundBCCC_Entry(u32 w) {
     __asm__ volatile (
         ".syntax unified\n"
@@ -154,7 +134,6 @@ __attribute__((naked)) static u32 SoundBCCC_Entry(u32 w) {
 }
 u32 _0802BCCC(u32 w) __attribute__((alias("SoundBCCC_Entry")));
 u32 sub_0802BCCC(u32 w) __attribute__((alias("SoundBCCC_Entry")));
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x0802BCCE — the shared cursor-validation fragment (26 bytes, incl. its
@@ -172,7 +151,6 @@ u32 sub_0802BCCC(u32 w) __attribute__((alias("SoundBCCC_Entry")));
 // TRANSCRIBED VERBATIM: the entry `push {r0}` / exit `pop {r0} / bx lr` is a
 // caller-register-preservation contract no C statement states, and the result
 // leaves in r3, not r0.
-#ifndef __APPLE__
 void _0802BCCE(void *s) __attribute__((alias("SoundBCCE_ValidateFrag")));
 __attribute__((naked)) void SoundBCCE_ValidateFrag(void *s) {
     __asm__ volatile (
@@ -205,9 +183,6 @@ __attribute__((naked)) void SoundBCCE_ValidateFrag(void *s) {
         ".syntax divided\n"
     );
 }
-#else
-void SoundBCCE_ValidateFrag(void *s) { (void)s; }
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x0802BCEA — cursor advance + fetch + tail merge (10 bytes). The interior
@@ -215,7 +190,6 @@ void SoundBCCE_ValidateFrag(void *s) { (void)s; }
 // through to here, and `_0802BE60` calls it directly by name. Its `b.n
 // _0802BCCE` is armcc's tail merge into the validator above: no sibling call
 // exists in agbcc (measured), so the branch itself is the wall.
-#ifndef __APPLE__
 void _0802BCEA(void *a, void *s) __attribute__((alias("SoundBCEA_FetchTail")));
 __attribute__((naked)) void SoundBCEA_FetchTail(void *a, void *seq) {
     __asm__ volatile (
@@ -228,9 +202,6 @@ __attribute__((naked)) void SoundBCEA_FetchTail(void *a, void *seq) {
         ".syntax divided\n"
     );
 }
-#else
-void SoundBCEA_FetchTail(void *a, void *seq) { (void)a; (void)seq; }
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x0802BCF4 — big-endian 4-byte fetch + validate, cursor += 4.
@@ -261,14 +232,11 @@ static void SoundBCF4_FetchBE(void *dummy, volatile u8 *seq) {
     (void)dummy;
 }
 
-#ifndef __APPLE__
 void _0802BCF4(void *dummy, void *s) __attribute__((alias("SoundBCF4_FetchBE")));
 void sub_0802BCF4(void *dummy, void *s) __attribute__((alias("SoundBCF4_FetchBE")));
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x0802BD14 — loop stack push / tail-branch dispatcher
-#ifndef __APPLE__
 void _0802BD14(void *a, void *b) __attribute__((alias("SoundBD14_Dispatch")));
 void sub_0802BD14(void *a, void *b) __attribute__((alias("SoundBD14_Dispatch")));
 __attribute__((naked)) void SoundBD14_Dispatch(void *a, void *chan) {
@@ -292,9 +260,6 @@ __attribute__((naked)) void SoundBD14_Dispatch(void *a, void *chan) {
         ".syntax divided\n"
     );
 }
-#else
-void SoundBD14_Dispatch(void *a, void *b) { (void)a; (void)b; }
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x0802BD44 — loop-start handler.
@@ -321,7 +286,6 @@ void SoundBD14_Dispatch(void *a, void *b) { (void)a; (void)b; }
 // (`...; Frag; return;`), so the semantics are a plain tail-share: the
 // fragment at `_0802BCF6` pops the lr this body pushed and returns to this
 // body's caller.
-#ifndef __APPLE__
 void _0802BD44(void *a, void *s) __attribute__((alias("SoundBD44_LoopStart")));
 void sub_0802BD44(void *a, void *s) __attribute__((alias("SoundBD44_LoopStart")));
 __attribute__((naked)) void SoundBD44_LoopStart(void *a, void *seq) {
@@ -355,9 +319,6 @@ __attribute__((naked)) void SoundBD44_LoopStart(void *a, void *seq) {
         ".syntax divided\n"
     );
 }
-#else
-void SoundBD44_LoopStart(void *a, void *seq) { (void)a; (void)seq; }
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x0802BDA8 — descriptor-record loader.
@@ -373,7 +334,6 @@ void SoundBD44_LoopStart(void *a, void *seq) { (void)a; (void)seq; }
 // interior fall-through of `_0802BCCC`, spelled by name so the probe can
 // resolve the branch at its ROM VMA). Register contract: r0 = seq (kept
 // untouched across the calls), r1 = seq copy, r2 = record pointer, r3 = byte.
-#ifndef __APPLE__
 void _0802BDA8(void *s) __attribute__((alias("SoundBDA8_LoadRecord")));
 void sub_0802BDA8(void *s) __attribute__((alias("SoundBDA8_LoadRecord")));
 __attribute__((naked)) void SoundBDA8_LoadRecord(void *seq) {
@@ -403,9 +363,6 @@ __attribute__((naked)) void SoundBDA8_LoadRecord(void *seq) {
         ".syntax divided\n"
     );
 }
-#else
-void SoundBDA8_LoadRecord(void *seq) { (void)seq; }
-#endif
 
 // ----------------------------------------------------------------------------
 // MEASURED BLOCKER for the whole 0x0802BCCC/BCE8/BCF4/BD44/BDA8/BE34/BE4C/BE60
@@ -451,7 +408,6 @@ void SoundBDA8_LoadRecord(void *seq) { (void)seq; }
 // TRANSCRIBED VERBATIM : the body minus the frame is
 // instruction-for-instruction the ROM's (measured 16/24 with pins), but the
 // `mov ip, lr` / `bx ip` frame is unreachable from C (see the group note).
-#ifndef __APPLE__
 void _0802BE34(void *a, void *s) __attribute__((alias("SoundBE34_TrackSel")));
 void sub_0802BE34(void *a, void *s) __attribute__((alias("SoundBE34_TrackSel")));
 __attribute__((naked)) void SoundBE34_TrackSel(void *a, void *seq) {
@@ -472,9 +428,6 @@ __attribute__((naked)) void SoundBE34_TrackSel(void *a, void *seq) {
         ".syntax divided\n"
     );
 }
-#else
-void SoundBE34_TrackSel(void *a, void *seq) { (void)a; (void)seq; }
-#endif
 
 
 // ----------------------------------------------------------------------------
@@ -486,7 +439,6 @@ void SoundBE34_TrackSel(void *a, void *seq) { (void)a; (void)seq; }
 //      bx ip                                                          (20 bytes)
 // Measured 0/20 -> 12/20; residue is the ip frame, same cause as `_0802BE34`.
 // TRANSCRIBED VERBATIM : same frame wall as `_0802BE34`.
-#ifndef __APPLE__
 void _0802BE4C(void *a, void *s) __attribute__((alias("SoundBE4C_Volume")));
 void sub_0802BE4C(void *a, void *s) __attribute__((alias("SoundBE4C_Volume")));
 __attribute__((naked)) void SoundBE4C_Volume(void *a, void *seq) {
@@ -504,9 +456,6 @@ __attribute__((naked)) void SoundBE4C_Volume(void *a, void *seq) {
         ".syntax divided\n"
     );
 }
-#else
-void SoundBE4C_Volume(void *a, void *seq) { (void)a; (void)seq; }
-#endif
 
 
 // ----------------------------------------------------------------------------
@@ -524,7 +473,6 @@ void SoundBE4C_Volume(void *a, void *seq) { (void)a; (void)seq; }
 // interior call -- the call itself is C-reachable (a declaration renamed with
 // `__asm__("_0802BCEA")` emits the right operand), but any real call forces
 // agbcc's push/pop frame. The private pool word rides at the end of the span.
-#ifndef __APPLE__
 void _0802BE60(void *a, void *s) __attribute__((alias("SoundBE60_PSGWrite")));
 void sub_0802BE60(void *a, void *s) __attribute__((alias("SoundBE60_PSGWrite")));
 __attribute__((naked)) void SoundBE60_PSGWrite(void *a, void *seq) {
@@ -543,9 +491,6 @@ __attribute__((naked)) void SoundBE60_PSGWrite(void *a, void *seq) {
         ".syntax divided\n"
     );
 }
-#else
-void SoundBE60_PSGWrite(void *a, void *seq) { (void)a; (void)seq; }
-#endif
 
 
 // ============================================================================
@@ -575,10 +520,8 @@ void SoundBE60_PSGWrite(void *a, void *seq) { (void)a; (void)seq; }
 // `return b;` re-introduces `adds r0,r3,#0` and makes the candidate 14 bytes.
 // The callers therefore pin their own copy to r3, which is exactly what the
 // ROM does (they read r3 after the `bl` and discard r0).
-#ifndef __APPLE__
 void _0802C3EC(void *a, void *s) __attribute__((alias("SoundC3EC_FetchByte")));
 void sub_0802C3EC(void *a, void *s) __attribute__((alias("SoundC3EC_FetchByte")));
-#endif
 static __attribute__((unused, noinline)) void SoundC3EC_FetchByte(void *a, volatile u8 *seq) {
     volatile u8 *r1 = (volatile u8 *)seq;
     register u32 cur __asm__("r2");
@@ -609,7 +552,6 @@ __asm__(".align 2, 0");
 // the whole residue is the ip frame.
 // TRANSCRIBED VERBATIM : body exact with pins (15/20), residue is
 // the `mov ip, lr` / `bx ip` frame only.
-#ifndef __APPLE__
 void _0802C3F8(void *a, void *s) __attribute__((alias("SoundC3F8_NoteOn")));
 void sub_0802C3F8(void *a, void *s) __attribute__((alias("SoundC3F8_NoteOn")));
 __attribute__((naked)) void SoundC3F8_NoteOn(void *a, void *seq) {
@@ -627,9 +569,6 @@ __attribute__((naked)) void SoundC3F8_NoteOn(void *a, void *seq) {
         ".syntax divided\n"
     );
 }
-#else
-void SoundC3F8_NoteOn(void *a, void *seq) { (void)a; (void)seq; }
-#endif
 
 
 // ----------------------------------------------------------------------------
@@ -637,7 +576,6 @@ void SoundC3F8_NoteOn(void *a, void *seq) { (void)a; (void)seq; }
 // Same shape and same residue as `_0802C3F8`, one byte store target apart.
 // TRANSCRIBED VERBATIM : same shape and same frame wall as
 // `_0802C3F8`, one byte store target apart.
-#ifndef __APPLE__
 void _0802C40C(void *a, void *s) __attribute__((alias("SoundC40C_EnvByte")));
 void sub_0802C40C(void *a, void *s) __attribute__((alias("SoundC40C_EnvByte")));
 __attribute__((naked)) void SoundC40C_EnvByte(void *a, void *seq) {
@@ -655,9 +593,6 @@ __attribute__((naked)) void SoundC40C_EnvByte(void *a, void *seq) {
         ".syntax divided\n"
     );
 }
-#else
-void SoundC40C_EnvByte(void *a, void *seq) { (void)a; (void)seq; }
-#endif
 
 
 // ----------------------------------------------------------------------------
@@ -709,20 +644,16 @@ int SoundC420_EnvRamp(void *seq, int a1, int a2, int a3) {
     return (int)_0802B888(value, sum);
 }
 
-#ifndef __APPLE__
 int _0802C420(void *s, int a, int b, int c) __attribute__((alias("SoundC420_EnvRamp")));
 int sub_0802C420(void *s, int a, int b, int c) __attribute__((alias("SoundC420_EnvRamp")));
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x0802C484 — no-op leaf.
 void SoundC484_Noop(void) {
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _0802C484(void) __attribute__((alias("SoundC484_Noop")));
 void sub_0802C484(void) __attribute__((alias("SoundC484_Noop")));
-#endif
 
 // ============================================================================
 // sound_more.s
@@ -786,14 +717,11 @@ void SoundC648_Unclaim(void *id) {
     if (*e0 == *(volatile u32 *)hdr)
         _0802C488((void *)(uintptr_t)e0);
 }
-#ifndef __APPLE__
 void _0802C648(void *a) __attribute__((alias("SoundC648_Unclaim")));
 void sub_0802C648(void *a) __attribute__((alias("SoundC648_Unclaim")));
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x0802C67C — stop-all loop over 4 headers.
-#ifndef __APPLE__
 __attribute__((naked)) void SoundC67C_StopAll(void) {
     __asm__ volatile (
         ".syntax unified\n"
@@ -822,22 +750,8 @@ __attribute__((naked)) void SoundC67C_StopAll(void) {
         ".syntax divided\n"
     );
 }
-#else
-void SoundC67C_StopAll(void) {
-    u32 count = 4;
-    volatile u8 *walk = (volatile u8 *)(uintptr_t)0x08061F74u;
-    if (count != 0) {
-        for (u32 i = 0; i < count; i++) {
-            _0802CD18((void *)(uintptr_t)*(volatile u32 *)(uintptr_t)walk);
-            walk += 12;
-        }
-    }
-}
-#endif
-#ifndef __APPLE__
 void _0802C67C(void) __attribute__((alias("SoundC67C_StopAll")));
 void sub_0802C67C(void) __attribute__((alias("SoundC67C_StopAll")));
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x0802C6A8 — tail call to the pause-gate clear.
@@ -845,13 +759,10 @@ void SoundC6A8_PauseOff(void *s) {
     _0802C488(s);
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _0802C6A8(void *a) __attribute__((alias("SoundC6A8_PauseOff")));
 void sub_0802C6A8(void *a) __attribute__((alias("SoundC6A8_PauseOff")));
-#endif
 
 // ----------------------------------------------------------------------------
-#ifndef __APPLE__
 __attribute__((naked)) void SoundC6B4_PauseAll(void) {
     __asm__ volatile (
         ".syntax unified\n"
@@ -880,22 +791,8 @@ __attribute__((naked)) void SoundC6B4_PauseAll(void) {
         ".syntax divided\n"
     );
 }
-#else
-void SoundC6B4_PauseAll(void) {
-    u32 count = 4;
-    volatile u8 *walk = (volatile u8 *)(uintptr_t)0x08061F74u;
-    if (count != 0) {
-        for (u32 i = 0; i < count; i++) {
-            _0802C488((void *)(uintptr_t)*(volatile u32 *)(uintptr_t)walk);
-            walk += 12;
-        }
-    }
-}
-#endif
-#ifndef __APPLE__
 void _0802C6B4(void) __attribute__((alias("SoundC6B4_PauseAll")));
 void sub_0802C6B4(void) __attribute__((alias("SoundC6B4_PauseAll")));
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x0802C6E0 — tail call to the pause-gate set (u16-truncated value).
@@ -903,10 +800,8 @@ void SoundC6E0_PauseOn(void *s, int v) {
     _0802C4A4(s, (u16)v);
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _0802C6E0(void *a, int b) __attribute__((alias("SoundC6E0_PauseOn")));
 void sub_0802C6E0(void *a, int b) __attribute__((alias("SoundC6E0_PauseOn")));
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x0802C6F0 — 'Smsh'-gated volume pair store.
@@ -926,10 +821,8 @@ void SoundC6F0_VolPair(void *seq, u16 v) {
         *(volatile u16 *)(r2 + 40) = (u16)c0101;
     }
 }
-#ifndef __APPLE__
 void _0802C6F0(void *a, u16 b) __attribute__((alias("SoundC6F0_VolPair")));
 void sub_0802C6F0(void *a, u16 b) __attribute__((alias("SoundC6F0_VolPair")));
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x0802C710 — 'Smsh'-gated pair store plus top-bit clear.
@@ -948,7 +841,5 @@ void SoundC710_VolPair2(void *seq, int v) {
         *(volatile u32 *)(r2 + 4) &= 0x7FFFFFFFu;
     }
 }
-#ifndef __APPLE__
 void _0802C710(void *a, int b) __attribute__((alias("SoundC710_VolPair2")));
 void sub_0802C710(void *a, int b) __attribute__((alias("SoundC710_VolPair2")));
-#endif

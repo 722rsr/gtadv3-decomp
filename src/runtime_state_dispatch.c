@@ -39,11 +39,7 @@ extern void sub_080262A4(void *a, int b);
 // Callees (all defined elsewhere; weak host no-ops keep this TU linkable
 // standalone on host builds; strong bodies win on the ARM link).
 // ----------------------------------------------------------------------------
-#ifdef __APPLE__
-#define HOST_STUB(sig) __attribute__((weak)) sig
-#else
 #define HOST_STUB(sig) extern sig
-#endif
 
 HOST_STUB(void  _0802D974(const void *src, void *dst, u32 ctrl));
 HOST_STUB(int   _0802D97C(int a, int b));               // swi 0x06 DivRem
@@ -102,20 +98,14 @@ static inline int div8000_trunc(int v) {
 // saveblock.s 0x08024B18 — `movs r0,#1; bx lr`
 // ============================================================================
 int SaveRet1_24B18(void) { return 1; }
-#ifndef __APPLE__
 int _08024B18(void) __attribute__((alias("SaveRet1_24B18")));
 int sub_08024B18(void) __attribute__((alias("SaveRet1_24B18")));
-#endif
 int SaveRet1_24B1C(void) { return 1; }
-#ifndef __APPLE__
 int _08024B1C(void) __attribute__((alias("SaveRet1_24B1C")));
 int sub_08024B1C(void) __attribute__((alias("SaveRet1_24B1C")));
-#endif
 int SaveRet1_24B20(void) { return 1; }
-#ifndef __APPLE__
 int _08024B20(void) __attribute__((alias("SaveRet1_24B20")));
 int sub_08024B20(void) __attribute__((alias("SaveRet1_24B20")));
-#endif
 
 // ============================================================================
 // code_4b9c.s 0x08004BAC — scene-manager substate-flag OR leaf
@@ -128,10 +118,8 @@ void SubstateOr1_04BAC(void *ctx) {
     *f = v;
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _08004BAC(void *c) __attribute__((alias("SubstateOr1_04BAC")));
 void sub_08004BAC(void *c) __attribute__((alias("SubstateOr1_04BAC")));
-#endif
 
 // ============================================================================
 // carphys_racer.s 0x08021BA0 — ev-7 per-car-id dispatch (raw.incbin pocket;
@@ -150,10 +138,8 @@ void CarEv7Dispatch_21BA0(void *inst) {
     }
     _0800DBE8((u8 *)inst + 56);
 }
-#ifndef __APPLE__
 void _08021BA0(void *i) __attribute__((alias("CarEv7Dispatch_21BA0")));
 void sub_08021BA0(void *i) __attribute__((alias("CarEv7Dispatch_21BA0")));
-#endif
 
 // ============================================================================
 // code_c668.s 0x0800C744 — selector in r0 indexes a 21-entry `mov pc` table
@@ -175,10 +161,8 @@ void MenuC744(int mode, int value, int unused, void *rec) {
     }
     (void)unused;
 }
-#ifndef __APPLE__
 void _0800C744(int mode, int value, int unused, void *rec) __attribute__((alias("MenuC744")));
 void sub_0800C744(int mode, int value, int unused, void *rec) __attribute__((alias("MenuC744")));
-#endif
 // The ROM span ends on a word boundary. Keep its 0x0000 filler after this
 // body's .size so the byte-level candidate carries the same final halfword.
 __asm__(".align 2, 0");
@@ -215,10 +199,8 @@ void SoundD9FC_Latch(void) {
         if ((t << 16) == 0) *(volatile u8 *)(uintptr_t)B16FlagVMA = 1;
     }
 }
-#ifndef __APPLE__
 void _0802D9FC(void) __attribute__((alias("SoundD9FC_Latch")));
 void sub_0802D9FC(void) __attribute__((alias("SoundD9FC_Latch")));
-#endif
 
 // ============================================================================
 // handlers.s 0x08000CA0 — block-B special-mode state stepper (modes 8/11).
@@ -350,11 +332,9 @@ int SessionStep_CA0(u32 arg) {
     d0[2] = (u8)(d0[2] + 1);
     return 0;
 }
-#ifndef __APPLE__
 int _08000CA0(u32 a) __attribute__((alias("SessionStep_CA0")));
 int SubCA0(u32 a) __attribute__((alias("SessionStep_CA0")));
 int sub_08000CA0(u32 a) __attribute__((alias("SessionStep_CA0")));
-#endif
 
 void CollectNearby_06A50(int camX, int camY) {
     u32 *outCount = (u32 *)0x0203F8A8;
@@ -382,10 +362,8 @@ void CollectNearby_06A50(int camX, int camY) {
         }
     }
 }
-#ifndef __APPLE__
 void _08006A50(int a, int b) __attribute__((alias("CollectNearby_06A50")));
 void sub_08006A50(int a, int b) __attribute__((alias("CollectNearby_06A50")));
-#endif
 
 // ============================================================================
 // code_24ac.s 0x0800254C — screen-tile initializer.
@@ -433,20 +411,16 @@ void ScreenInit_0254C(void) {
         if (row > 19) break;
     }
 }
-#ifndef __APPLE__
 void _0800254C(void) __attribute__((alias("ScreenInit_0254C")));
 void sub_0800254C(void) __attribute__((alias("ScreenInit_0254C")));
-#endif
 
 // ============================================================================
 // code_23e0c.s 0x080023E78 — bx lr stub
 // ============================================================================
 void Stub_23E78(void *rec) { (void)rec; }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _080023E78(void *a) __attribute__((alias("Stub_23E78")));
 void sub_080023E78(void *a) __attribute__((alias("Stub_23E78")));
-#endif
 
 // ============================================================================
 // sound_voice_tick.s 0x0802CE20 — voice param tick (per-channel struct)
@@ -479,10 +453,8 @@ void VoiceParamTick_2CE20(void *ch, void *unused) {
     }
     c[0] = flags & 0xFA;
 }
-#ifndef __APPLE__
 void _0802CE20(void *a, void *b) __attribute__((alias("VoiceParamTick_2CE20")));
 void sub_0802CE20(void *a, void *b) __attribute__((alias("VoiceParamTick_2CE20")));
-#endif
 
 // ============================================================================
 // sound_voice_apply.s 0x0802C160 — voice envelope apply (uses r4/r5 caller
@@ -492,7 +464,6 @@ void sub_0802CE20(void *a, void *b) __attribute__((alias("VoiceParamTick_2CE20")
 // (62 B vs 48 B). Use a (void) leaf so agbcc emits the 48-byte body straight;
 // host keeps the behavioural C spelling.
 // ============================================================================
-#ifndef __APPLE__
 __attribute__((naked)) void VoiceEnvelopeApply_2C160(void) {
     __asm__ volatile (
         ".syntax unified\n"
@@ -525,24 +496,8 @@ __attribute__((naked)) void VoiceEnvelopeApply_2C160(void) {
         ".syntax divided\n"
     );
 }
-#else
-void VoiceEnvelopeApply_2C160(void *voice, void *params) {
-    volatile u8 *r4 = (volatile u8 *)voice;
-    volatile u8 *r5 = (volatile u8 *)params;
-    int bal = r4[18];
-    int pan = (s8)r4[20];
-    int left  = (bal * ((pan + 128) * r5[16])) >> 14;
-    int right = (bal * ((127 - pan) * r5[17])) >> 14;
-    if ((u32)left  > 255) left  = 255;
-    if ((u32)right > 255) right = 255;
-    r4[2] = (u8)left;
-    r4[3] = (u8)right;
-}
-#endif
-#ifndef __APPLE__
 void _0802C160(void) __attribute__((alias("VoiceEnvelopeApply_2C160")));
 void sub_0802C160(void) __attribute__((alias("VoiceEnvelopeApply_2C160")));
-#endif
 
 // ============================================================================
 // sound_veneer.s 0x0802DDC8 — bx r0 veneer slot (4 bytes: bx r0 + nop pad).
@@ -560,14 +515,10 @@ void sub_0802C160(void) __attribute__((alias("VoiceEnvelopeApply_2C160")));
 // census). C returns through `bx lr`, so each ARM body spells its indirect
 // branch directly and retains the pool's four-byte slot with the pad halfword.
 // ==========================================================================
-#ifdef __APPLE__
-#define DEFINE_SOUND_VENEER(name, reg) void name(void) { }
-#else
 #define DEFINE_SOUND_VENEER(name, reg) \
     __attribute__((naked)) void name(void) { \
         __asm__ volatile ("bx " reg "\n\t.hword 0x46c0"); \
     }
-#endif
 DEFINE_SOUND_VENEER(Veneer_2DDC8, "r0")
 DEFINE_SOUND_VENEER(Veneer_2DDCC, "r1")
 DEFINE_SOUND_VENEER(Veneer_2DDD0, "r2")
@@ -584,7 +535,6 @@ DEFINE_SOUND_VENEER(Veneer_2DDF8, "r12")
 DEFINE_SOUND_VENEER(Veneer_2DDFC, "r13")
 DEFINE_SOUND_VENEER(Veneer_2DE00, "r14")
 #undef DEFINE_SOUND_VENEER
-#ifndef __APPLE__
 void _0802DDC8(void) __attribute__((alias("Veneer_2DDC8")));
 void sub_0802DDC8(void) __attribute__((alias("Veneer_2DDC8")));
 void _0802DDCC(void) __attribute__((alias("Veneer_2DDCC")));
@@ -601,7 +551,6 @@ void _0802DDF4(void) __attribute__((alias("Veneer_2DDF4")));
 void _0802DDF8(void) __attribute__((alias("Veneer_2DDF8")));
 void _0802DDFC(void) __attribute__((alias("Veneer_2DDFC")));
 void _0802DE00(void) __attribute__((alias("Veneer_2DE00")));
-#endif
 
 // ============================================================================
 // sound_reset_more.s 0x0802CACC — sound FSM stepper over
@@ -642,10 +591,8 @@ void SoundCACC_Step(void) {
     }
     root[0] = 0x68736D53u;
 }
-#ifndef __APPLE__
 void _0802CACC(void) __attribute__((alias("SoundCACC_Step")));
 void sub_0802CACC(void) __attribute__((alias("SoundCACC_Step")));
-#endif
 
 // 1. THREE SOURCE BUGS, not just shape (43 → 47 matched):
 //    * `(arg << 16) >> 13` on an `int` is an ARITHMETIC shift. The ROM's
@@ -716,10 +663,8 @@ void SoundC5C0_BankCheck(int arg) {
         if ((s32)state < 0) _0802C488((void *)row);
     }
 }
-#ifndef __APPLE__
 void _0802C5C0(int a) __attribute__((alias("SoundC5C0_BankCheck")));
 void sub_0802C5C0(int a) __attribute__((alias("SoundC5C0_BankCheck")));
-#endif
 
 // 0x0802C574 — replace the selected stream when its source or state requires it.
 void SoundC574_Replace(int arg) {
@@ -745,10 +690,8 @@ void SoundC574_Replace(int arg) {
         return;
     _0802CC34((void *)row, (void *)(uintptr_t)claim);
 }
-#ifndef __APPLE__
 void _0802C574(int a) __attribute__((alias("SoundC574_Replace")));
 void sub_0802C574(int a) __attribute__((alias("SoundC574_Replace")));
-#endif
 
 static inline int WA16s(int off) { return (int)*(volatile s16 *)(0x03001780 + off); }
 static inline volatile u16 *WA16p(int off) { return (volatile u16 *)(0x03001780 + off); }
@@ -775,10 +718,8 @@ void MenuFE90(void *rec) {
     if (ev >= 0) *WA16p(0x0D6) = (u16)ev;
     _08007770(0, (void *)0x082D9EF8, ph, 0, 4, 1);
 }
-#ifndef __APPLE__
 void _0800FE90(void *a) __attribute__((alias("MenuFE90")));
 void sub_0800FE90(void *a) __attribute__((alias("MenuFE90")));
-#endif
 
 // ============================================================================
 // menu_f924.s 0x0800F9A0 — result scatter (rec +0xAC, +0xC0, F700 distance,
@@ -849,10 +790,8 @@ void MenuF9A0_Scatter(void *rec) {
     }
     if (*(volatile u16 *)(r + 220) == 1) _0800F7C0(rec);
 }
-#ifndef __APPLE__
 void _0800F9A0(void *a) __attribute__((alias("MenuF9A0_Scatter")));
 void sub_0800F9A0(void *a) __attribute__((alias("MenuF9A0_Scatter")));
-#endif
 
 // ============================================================================
 // menu_f5a0.s 0x0800F5EC — record dispatch (12-way on arg−1; jump table
@@ -890,20 +829,16 @@ void MenuF5EC(int ev, u32 a, u32 b, void *rec) {
     }
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _0800F5EC(void *a, int b, u32 c, u32 d) __attribute__((alias("MenuF5EC")));
 void sub_0800F5EC(void *a, int b, u32 c, u32 d) __attribute__((alias("MenuF5EC")));
-#endif
 
 // ============================================================================
 // menu_f22c.s 0x0800F59C — bx lr stub
 // ============================================================================
 void Stub_0F59C(void *rec) { (void)rec; }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _0800F59C(void *a) __attribute__((alias("Stub_0F59C")));
 void sub_0800F59C(void *a) __attribute__((alias("Stub_0F59C")));
-#endif
 
 void CollectProximity_068D4(void) {
     volatile u16 *colSrc = (volatile u16 *)0x0203F728;
@@ -965,10 +900,8 @@ void CollectProximity_068D4(void) {
         if ((s8)cur[0] < 0) break;
     }
 }
-#ifndef __APPLE__
 void _080068D4(void) __attribute__((alias("CollectProximity_068D4")));
 void sub_080068D4(void) __attribute__((alias("CollectProximity_068D4")));
-#endif
 
 // ============================================================================
 // resource_wrap.s 0x080263C4 — resource wrapper: r = Wrap26230(a, c);
@@ -986,11 +919,9 @@ void *ResourceWrapper_263C4(int a, void *b, int c) {
     return r;
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void *_080263C4(int a, void *b, int c) __attribute__((alias("ResourceWrapper_263C4")));
 void *sub_080263C4(int a, void *b, int c) __attribute__((alias("ResourceWrapper_263C4")));
 void *Course_0x080263C4(int a, void *b, int c) __attribute__((alias("ResourceWrapper_263C4"))); /* trampoline elimination: friendly-name spelling used by race_cluster.c */
-#endif
 
 // ============================================================================
 // sound_stop.s 0x0802CB84 — stop/clear current sequence state (root at
@@ -1012,10 +943,8 @@ void SoundStop_2CB84(void *unused) {
     }
     root[0] = state - 10;
 }
-#ifndef __APPLE__
 void _0802CB84(void *a) __attribute__((alias("SoundStop_2CB84")));
 void sub_0802CB84(void *a) __attribute__((alias("SoundStop_2CB84")));
-#endif
 
 // ============================================================================
 // sound_start.s 0x0802CC34 — stream start/configuration helper
@@ -1082,10 +1011,8 @@ void SoundStart_2CC34(void *rec, void *cfg) {
     if (r7[3] & 0x80) _0802CA34((void *)r7);
     *(volatile u32 *)(r5 + 52) = magic;
 }
-#ifndef __APPLE__
 void _0802CC34(void *a, void *b) __attribute__((alias("SoundStart_2CC34")));
 void sub_0802CC34(void *a, void *b) __attribute__((alias("SoundStart_2CC34")));
-#endif
 
 // ============================================================================
 // sound_stop_all.s 0x0802CD18 — stop all active streams (magic gate;
@@ -1110,10 +1037,8 @@ void SoundStopAll_2CD18(void *rec) {
     }
     *(volatile u32 *)(s + 52) = 0x68736D53u;
 }
-#ifndef __APPLE__
 void _0802CD18(void *a) __attribute__((alias("SoundStopAll_2CD18")));
 void sub_0802CD18(void *a) __attribute__((alias("SoundStopAll_2CD18")));
-#endif
 
 // ============================================================================
 // sound_tick.s 0x0802C738 — per-voice flag scan (flags&0xC0 = active+64;
@@ -1143,10 +1068,8 @@ void SoundTick_2C738(void *root) {
         r4[0] = f & 0x3F;
     }
 }
-#ifndef __APPLE__
 void _0802C738(void *a) __attribute__((alias("SoundTick_2C738")));
 void sub_0802C738(void *a) __attribute__((alias("SoundTick_2C738")));
-#endif
 
 // ============================================================================
 // sound_uaeabi_uidiv.s 0x0802DF6C — __aeabi_uidiv (bit-by-bit restoring
@@ -1161,10 +1084,8 @@ u32 UDiv_2DF6C(u32 n, u32 d) {
     }
     return n / d; // host division is behaviorally equivalent for u32/u32
 }
-#ifndef __APPLE__
 u32 _0802DF6C(u32 a, u32 b) __attribute__((alias("UDiv_2DF6C")));
 u32 sub_0802DF6C(u32 a, u32 b) __attribute__((alias("UDiv_2DF6C")));
-#endif
 
 int AiGridGet_25CF4(int type, int row, int col) {
     u8 tmp[4];
@@ -1196,11 +1117,9 @@ int AiGridGet_25CF4(int type, int row, int col) {
     u8 out = (u8)(v & m);
     return (int)(u8)(out >> (sh * 2));
 }
-#ifndef __APPLE__
 int _08025CF4(int a, int b, int c) __attribute__((alias("AiGridGet_25CF4")));
 int Sub_08025CF4(int a, int b, int c) __attribute__((alias("AiGridGet_25CF4")));
 int sub_08025CF4(int a, int b, int c) __attribute__((alias("AiGridGet_25CF4")));
-#endif
 
 // ============================================================================
 // menu_dispatch.s 0x0800C168 — record-class ctor A `{0x0800C169, 0x1DE8}`
@@ -1229,10 +1148,8 @@ void MenuDispatch_C168(int id, u32 arg, int unused_slot, void *rec) {
     default: break;
     }
 }
-#ifndef __APPLE__
 void _0800C168(int a, u32 b, int c, void *d) __attribute__((alias("MenuDispatch_C168")));
 void sub_0800C168(int a, u32 b, int c, void *d) __attribute__((alias("MenuDispatch_C168")));
-#endif
 
 // ============================================================================
 // menu_cfe4.s 0x0800CFE4 — menu record initializer (scene mgr getter, cursor
@@ -1246,14 +1163,10 @@ HOST_STUB(void  _08026A4C(void *a, int b, int c));
 HOST_STUB(void  _08026A58(void *a, u8 b));
 HOST_STUB(void  _08026A60(void *a, u8 b));
 HOST_STUB(void  _08026938(void *a, int b));
-#ifndef __APPLE__
 #define MCI_CALLEE(friendly, closure) closure
 extern void *sub_08004B68(void);
 extern void *_080026948(void);
 extern void _080026938(void *obj, int slot);
-#else
-#define MCI_CALLEE(friendly, closure) friendly
-#endif
 
 void MenuInit_CFE4(void *rec) {
     register u8 *r4 __asm__("r4") = (u8 *)rec;
@@ -1295,10 +1208,8 @@ void MenuInit_CFE4(void *rec) {
     MCI_CALLEE(_08026938, _080026938)(objAt28, arg1);
     }
 }
-#ifndef __APPLE__
 void _0800CFE4(void *a) __attribute__((alias("MenuInit_CFE4")));
 void sub_0800CFE4(void *a) __attribute__((alias("MenuInit_CFE4")));
-#endif
 
 // ============================================================================
 // code_2730.s 0x08002730 — s16 grid reader (base 0x03001780+0x109C,
@@ -1309,26 +1220,19 @@ void sub_0800CFE4(void *a) __attribute__((alias("MenuInit_CFE4")));
 HOST_STUB(void _0800279C(int v));
 
 s16 GridS16_2730(int a, int b) {
-#ifndef __APPLE__
     extern u8 GridBase[] __asm__("GridBase");
     __asm__(".globl GridBase\nGridBase = 0x03001780\n");
     u32 base = (u32)(uintptr_t)GridBase;
-#else
-    u32 base = 0x03001780u;
-#endif
     int off = (b << 1) + (a << 3);
     u32 disp = 0x109Cu;
     u32 idx = 0;
     u32 addr = (u32)off + (base + disp);
     return ((s16 *)(addr + idx))[idx];
 }
-#ifndef __APPLE__
 s16 _08002730(int a, int b) __attribute__((alias("GridS16_2730")));
 s16 sub_08002730(int a, int b) __attribute__((alias("GridS16_2730")));
-#endif
 
 void GridGateWrite_274C(int sel) {
-#ifndef __APPLE__
     // Keep sel in r1 and the branch-local base/offset adds separate: the ROM
     // has duplicate base/offset pool words and one shared halfword store.
     register u32 storeValue __asm__("r1") = (u32)sel;
@@ -1351,27 +1255,18 @@ void GridGateWrite_274C(int sel) {
         storeValue = 1;
     }
     *(volatile u16 *)cell = (u16)storeValue;
-#else
-    volatile u16 *cell = (volatile u16 *)(0x03001780 + 0x1056);
-    if (sel == 0) *cell = 0;
-    else          *cell = 1;
-#endif
     _0800279C(0);
 }
-#ifndef __APPLE__
 void _0800274C(int a) __attribute__((alias("GridGateWrite_274C")));
 void Sub_0800274C(int a) __attribute__((alias("GridGateWrite_274C")));
 void sub_0800274C(int a) __attribute__((alias("GridGateWrite_274C")));
-#endif
 
 int GridSign_2784(void) {
     s16 v = *(volatile s16 *)(0x03001780 + 0x1056);
     return (int)((u32)(-(s32)v | (u32)v) >> 31);
 }
-#ifndef __APPLE__
 int _08002784(void) __attribute__((alias("GridSign_2784")));
 int sub_08002784(void) __attribute__((alias("GridSign_2784")));
-#endif
 
 // THREE levers, each with a removal control:
 //
@@ -1397,15 +1292,11 @@ void CarRecEventReset_22CB4(void *a, void *b) {
     // assembler SYMBOL_REF, so `simplify_rtx` cannot fold `0x03001780 + 0x10C3`
     // into the single literal 0x03002843 (it folds an integer literal `plus`,
     // but a symbol_ref is a real insn the reload pass cannot merge).
-#ifndef __APPLE__
     extern u8 B16GateBase[] __asm__("B16GateBase");
     extern u8 B16GateOff[]  __asm__("B16GateOff");
     __asm__(".globl B16GateBase\nB16GateBase = 0x03001780\n"
             ".globl B16GateOff\nB16GateOff = 0x10C3\n");
     const u8 *gate = B16GateBase + (uintptr_t)B16GateOff;
-#else
-    const u8 *gate = (const u8 *)(0x03001780u + 0x10C3u);
-#endif
     if (*gate == 0) {
         _080056F4(r4, 1, 1);
         *(volatile u16 *)(r5 + 144) = 1;
@@ -1419,7 +1310,6 @@ void CarRecEventReset_22CB4(void *a, void *b) {
     default: *(volatile u16 *)(r4 + 84) = 6; break;
     }
 }
-#ifndef __APPLE__
 void _08022CB4(void *a, void *b) __attribute__((alias("CarRecEventReset_22CB4")));
 void sub_08022CB4(void *a, void *b) __attribute__((alias("CarRecEventReset_22CB4")));
 // The closure (asm/code_22cb4.s) spells this address with NINE hex digits --
@@ -1428,14 +1318,9 @@ void sub_08022CB4(void *a, void *b) __attribute__((alias("CarRecEventReset_22CB4
 // are a different symbol at the same address and do not satisfy it.
 void _080022CB4(void *a, void *b) __attribute__((alias("CarRecEventReset_22CB4")));
 void sub_080022CB4(void *a, void *b) __attribute__((alias("CarRecEventReset_22CB4")));
-#endif
 
 // ROM entry alias.
-#ifndef __APPLE__
 u32 _08002DF6C(u32 n, u32 d) __attribute__((alias("UDiv_2DF6C")));
-#endif
 
 // ROM entry alias.
-#ifndef __APPLE__
 void _08023E78(void *rec) __attribute__((alias("Stub_23E78")));
-#endif

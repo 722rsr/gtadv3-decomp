@@ -129,9 +129,7 @@ end_06FD4:
     *(volatile u32*)((volatile u8*)r5+12) = *(volatile u32*)((volatile u8*)sl_tmp+4);
     return 1;
 }
-#ifndef __APPLE__
 int _08006FD4(void *a,void *b,void *c,void *d) __attribute__((alias("Course_CollisionMore")));
-#endif
 
 // _08007110 — 135 L, pool 0x001FFFFF at 0x720C s32, high-reg, s32 diffs + s16 bounds + 0x400 bound via 05B5C
 int Course_CollisionLoop(void *query, void *candidate, void *out) {
@@ -236,9 +234,7 @@ int Course_Scan(void *outPair, void *inPair) {
 void Course_StreamTail(void) {
     // stream_more / tail_more placeholders — DMA tail helpers, not yet lifted
 }
-#ifndef __APPLE__
 int _08006E70(void *a,void *b,void *c,void *d,void *e) __attribute__((alias("Course_CollisionTest")));
 int _08007110(void *a,void *b,void *c) __attribute__((alias("Course_CollisionLoop")));
 int _08006050(void *a,void *b) __attribute__((alias("Course_Scan")));
-#endif
 // Remaining 06FD4/07210/07368 left blocked with exact evidence: field map +12/+16 vs header nA*20/nB*12, rect +24/+4/+8/+12, 32-entry loop over [sp+40] needs indirect _08005DA4 table beyond +12 — no alias until pointer roots proven via watchpoint on sl/_08007664:r1

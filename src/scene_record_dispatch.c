@@ -27,14 +27,10 @@
 #include "gba/types.h"
 
 // ----------------------------------------------------------------------------
-// Callees (HOST_STUB = weak on Apple host builds, extern on ARM; strong
-// bodies win on the ARM link).
+// Callees (HOST_STUB: extern declarations for unlifted callees provided by
+// the assembly closure).
 // ----------------------------------------------------------------------------
-#ifdef __APPLE__
-#define HOST_STUB(sig) __attribute__((weak)) sig
-#else
 #define HOST_STUB(sig) extern sig
-#endif
 
 HOST_STUB(void  _0800BC04(void));                                    // bx-lr stub @0x0800BC04
 HOST_STUB(void  _0800BC08(void *a0, void *a1, void *a2, void *a3));
@@ -53,15 +49,10 @@ HOST_STUB(int   _08002D97C(int a, int b));                           // swi DivR
 HOST_STUB(int   _08002BE8(int dummy));                               // counter bump, s16 ret
 HOST_STUB(void  _08002C48(int a, u16 b));
 HOST_STUB(void  _08002D98(u32 a, u32 b, u32 c, u32 d, u32 e));
-#ifndef __APPLE__
 extern void *_0802E104(void *a, int b, u32 c);
 extern void  sub_0802D974(const void *src, void *dst, u32 ctrl);
 #define _08002E104 _0802E104
 #define _08002D974 sub_0802D974
-#else
-HOST_STUB(void *_08002E104(void *a, int b, u32 c));                  // memset-like
-HOST_STUB(void  _08002D974(const void *src, void *dst, u32 ctrl));   // CpuSet
-#endif
 HOST_STUB(void  _08004C84(u32 a, u32 b));                            // trampoline -> ROM
 HOST_STUB(void *_08007498(void *x, int i));
 HOST_STUB(void *_0800748C(void *x));
@@ -77,15 +68,10 @@ HOST_STUB(void  _080056FC(void));
 HOST_STUB(void  _080055D8(u32 a, u16 b));
 HOST_STUB(void  _08004D4C(u32 a, u32 b, u32 c));
 HOST_STUB(void  _080050E8(void *a, int b));
-#ifndef __APPLE__
 extern void  sub_080032E0(volatile u8 *p);
 extern void  sub_08003104(void *handler);
 #define _080032E0 sub_080032E0
 #define _08003104 sub_08003104
-#else
-HOST_STUB(void  _080032E0(volatile u8 *p));
-HOST_STUB(void  _08003104(void *handler));
-#endif
 HOST_STUB(void *_08004DC8(void *a));
 HOST_STUB(void  _08004EF0(void *a));
 HOST_STUB(void *_08004B68(void));
@@ -226,10 +212,8 @@ u32 DivRemU_02DFE4(u32 num, u32 den) {
     if (num < den) return num;
     return divrem_core(num, den);
 }
-#ifndef __APPLE__
 u32 _08002DFE4(u32 n, u32 d) __attribute__((alias("DivRemU_02DFE4")));
 u32 sub_08002DFE4(u32 n, u32 d) __attribute__((alias("DivRemU_02DFE4")));
-#endif
 
 // _08002DE9C: signed remainder. den==0 -> DE98 then 0; magnitudes through
 // the core; negate iff the original num was negative (bpl/negs).
@@ -243,10 +227,8 @@ s32 DivRemS_02DE9C(s32 num, s32 den) {
     if ((s32)saved < 0) r0 = 0u - r0;
     return (s32)r0;
 }
-#ifndef __APPLE__
 s32 _08002DE9C(s32 a, s32 b) __attribute__((alias("DivRemS_02DE9C")));
 s32 sub_08002DE9C(s32 a, s32 b) __attribute__((alias("DivRemS_02DE9C")));
-#endif
 
 // ============================================================================
 // The faithful _08002ED0 placement writer now lives globally as EmitPlace_02ED0
@@ -361,10 +343,8 @@ void MenuProgressUpdate_0BD40(void) {
     if (!domain) *(u32 *)(wa + 0x10F4) = 0u;
     *(u16 *)(wa + 0xFCE) = *(u16 *)r4;
 }
-#ifndef __APPLE__
 void _0800BD40(void) __attribute__((alias("MenuProgressUpdate_0BD40")));
 void sub_0800BD40(void) __attribute__((alias("MenuProgressUpdate_0BD40")));
-#endif
 
 // ============================================================================
 // menu_place.s 0x0800BE74 — placement/tier updater. Signed (sl) vs unsigned
@@ -409,10 +389,8 @@ void MenuPlaceUpdate_0BE74(void) {
     }
     *(wa + 0x10E5) = (u8)tier;
 }
-#ifndef __APPLE__
 void _0800BE74(void) __attribute__((alias("MenuPlaceUpdate_0BE74")));
 void sub_0800BE74(void) __attribute__((alias("MenuPlaceUpdate_0BE74")));
-#endif
 
 // ============================================================================
 // menu_dab8.s 0x0800DAB8 — menu object initializer. Resource attach via the
@@ -484,12 +462,10 @@ after_class:
     _08007ABC((void *)(uintptr_t)*(u32 *)(r6 + 0x30),
               (void *)(uintptr_t)*(u32 *)(r6 + 0x60), a3c);
 }
-#ifndef __APPLE__
 void _0800DAB8(void *p) __attribute__((alias("MenuObjInit_0DAB8")));
 void Sub_0800DAB8(void *p) __attribute__((alias("MenuObjInit_0DAB8")));
 void sub_0800DAB8(void *p) __attribute__((alias("MenuObjInit_0DAB8")));
 void Course_0x0800DAB8(void *p) __attribute__((alias("MenuObjInit_0DAB8"))); /* trampoline elimination: friendly-name spelling used by rec35_init.c */
-#endif
 
 // ============================================================================
 // menu_d470.s 0x0800D470 — menu event dispatcher (ev 1-based; 11-entry table
@@ -522,10 +498,8 @@ void MenuEventDispatch_0D470(int ev, u32 a, u32 b, void *rec) {
     }
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _0800D470(int e, u32 a, u32 b, void *r) __attribute__((alias("MenuEventDispatch_0D470")));
 void sub_0800D470(int e, u32 a, u32 b, void *r) __attribute__((alias("MenuEventDispatch_0D470")));
-#endif
 
 // ============================================================================
 // menu_d3a4.s 0x0800D3A4 — menu selection handler: token handshake, per-slot
@@ -567,10 +541,8 @@ d438:
     _08001E48(1, r7);
     _08001E48(2, *(u16 *)(r5 + 4));
 }
-#ifndef __APPLE__
 void _0800D3A4(void *r, u32 a, u32 b) __attribute__((alias("MenuSelectHandler_0D3A4")));
 void sub_0800D3A4(void *r, u32 a, u32 b) __attribute__((alias("MenuSelectHandler_0D3A4")));
-#endif
 
 // ============================================================================
 // menu_d048.s 0x0800D048 — menu record updater: key-bit lanes adjust the
@@ -618,10 +590,8 @@ void MenuRecordUpdater_0D048(void *rec, u32 dummy, u32 key) {
                    (int)(s16)(*(u16 *)(r4 + 8)));
     }
 }
-#ifndef __APPLE__
 void _0800D048(void *r, u32 d, u32 k) __attribute__((alias("MenuRecordUpdater_0D048")));
 void sub_0800D048(void *r, u32 d, u32 k) __attribute__((alias("MenuRecordUpdater_0D048")));
-#endif
 
 // 16-byte template the two menu constructors copy onto the stack; a whole
 // struct assignment is what agbcc expands to `ldmia/stmia r0!,{r2,r3,r4}`.
@@ -701,10 +671,8 @@ void MenuCtor2_0C1E4(void *rec) {
     *(void **)(r5 + 0x1DE4) = _08004DC8((void *)(uintptr_t)0x080CDFD0u);
     *(void **)(r5 + 0x1DE8) = _08004DC8((void *)(uintptr_t)0x080CDFD8u);
 }
-#ifndef __APPLE__
 void _0800C1E4(void *r) __attribute__((alias("MenuCtor2_0C1E4")));
 void sub_0800C1E4(void *r) __attribute__((alias("MenuCtor2_0C1E4")));
-#endif
 
 // ============================================================================
 // menu_ctor.s 0x0800C010 — menu/save scene constructor (twin of C1E4 with
@@ -763,10 +731,8 @@ void MenuCtor_0C010(void *rec) {
     *(void **)(r5 + 0x1DE4) = _08004DC8((void *)(uintptr_t)0x080CDFD8u);
     _08004EF0(*(void **)rr);
 }
-#ifndef __APPLE__
 void _0800C010(void *r) __attribute__((alias("MenuCtor_0C010")));
 void sub_0800C010(void *r) __attribute__((alias("MenuCtor_0C010")));
-#endif
 
 // ============================================================================
 // menu_c4d0.s 0x0800C4D0 — menu record-20 constructor: explicit stack-context
@@ -813,10 +779,8 @@ void MenuCtor20_0C4D0(void *rec) {
     *(void **)(r5 + 0x25E8) = _08004DC8((void *)(uintptr_t)0x080CDFD8u);
     *(void **)(r5 + 0x25EC) = _08004DC8((void *)(uintptr_t)0x080CDFE0u);
 }
-#ifndef __APPLE__
 void _0800C4D0(void *r) __attribute__((alias("MenuCtor20_0C4D0")));
 void sub_0800C4D0(void *r) __attribute__((alias("MenuCtor20_0C4D0")));
-#endif
 
 // ============================================================================
 // menu_cae4.s 0x0800CAE4 — menu/results detail renderer: template blit,
@@ -858,10 +822,8 @@ void MenuDetailRender_0CAE4(void *rec) {
     sub_08003954(160, 130u, (int)*(s8 *)(r7 + 29));
     _08002158(0, *(u16 *)r7);
 }
-#ifndef __APPLE__
 void _0800CAE4(void *r) __attribute__((alias("MenuDetailRender_0CAE4")));
 void sub_0800CAE4(void *r) __attribute__((alias("MenuDetailRender_0CAE4")));
-#endif
 
 // ============================================================================
 // menu_c884.s 0x0800C884 — menu record handler: key-scan gate (provably
@@ -963,10 +925,8 @@ c990:
     _08002158(2, *(u16 *)r5);
     _08002158(3, *(r5 + 28));
 }
-#ifndef __APPLE__
 void _0800C884(void *r, u32 a, u32 b) __attribute__((alias("MenuRecordHandler_0C884")));
 void sub_0800C884(void *r, u32 a, u32 b) __attribute__((alias("MenuRecordHandler_0C884")));
-#endif
 
 // ============================================================================
 // course_resource_leaf_more.s 0x08007B18 / more2.s 0x08007B8C — record
@@ -975,12 +935,10 @@ void sub_0800C884(void *r, u32 a, u32 b) __attribute__((alias("MenuRecordHandler
 // The bodies themselves are defined above, next to the emitter helpers they
 // share; only the VMA aliases live here.
 // ============================================================================
-#ifndef __APPLE__
 void _08007B18(void *r, int k, int x, int y, u32 a, u32 b, u32 c, u32 d)
     __attribute__((alias("CourseEmit7B18")));
 void _08007B8C(void *r, int k, int x, int y, u32 a, u32 b, u32 c, u32 d)
     __attribute__((alias("CourseEmit7B8C")));
-#endif
 
 // ============================================================================
 // menu_ff78.s 0x080011784 — record filler dispatcher based on s16[rec+168].
@@ -1025,13 +983,8 @@ void Sub_080011784(void *rec_) {
         break;
     }
 }
-#ifndef __APPLE__
 void sub_080011784(void *a) __attribute__((alias("Sub_080011784")));
 void _080011784(void *a) __attribute__((alias("Sub_080011784")));
-#else
-void sub_080011784(void *a) { Sub_080011784(a); }
-void _080011784(void *a) { Sub_080011784(a); }
-#endif
 // The 208-byte ROM span ends in 00 00; gas otherwise pads this Thumb section
 // with a nop after the matching 206-byte instruction stream.
 __asm__(".align 2, 0");
@@ -1124,10 +1077,8 @@ int CourseProximity_07210(void *state, void *out) {
     }
     return 0;
 }
-#ifndef __APPLE__
 int _08007210(void *s, void *o) __attribute__((alias("CourseProximity_07210")));
 int sub_08007210(void *s, void *o) __attribute__((alias("CourseProximity_07210")));
-#endif
 
 // ============================================================================
 // code_25264.s 0x08025264 — lineup builder: collects eligible car ids
@@ -1230,10 +1181,8 @@ void AiLineupBuilder_25264(int a0) {
         oi++;
     }
 }
-#ifndef __APPLE__
 void _08025264(int a) __attribute__((alias("AiLineupBuilder_25264")));
 void sub_08025264(int a) __attribute__((alias("AiLineupBuilder_25264")));
-#endif
 
 // ============================================================================
 // code_23628.s 0x08023628 — race scene constructor: sound select, twin
@@ -1303,10 +1252,8 @@ void RaceSceneCtor_23628(void *rec) {
     _08002124(0x138D);
     *(u32 *)(r7 + 240) = 1u;
 }
-#ifndef __APPLE__
 void _08023628(void *r) __attribute__((alias("RaceSceneCtor_23628")));
 void sub_08023628(void *r) __attribute__((alias("RaceSceneCtor_23628")));
-#endif
 
 // ============================================================================
 // ai_racefsm.s 0x0800AA40 — per-frame race/AI control FSM: car-index
@@ -1454,11 +1401,9 @@ common0:
         return;
     }
 }
-#ifndef __APPLE__
 void _0800AA40(void) __attribute__((alias("RaceFSM_AA40")));
 void sub_0800AA40(void) __attribute__((alias("RaceFSM_AA40")));
 void Ai_RaceFsm(void) __attribute__((alias("RaceFSM_AA40"))); /* trampoline elimination: friendly-name spelling used by race_progress.c */
-#endif
 
 // Trampoline decls for the six course-record emitters used by 8CA0. The
 // existing C bodies are hollow/partial (writes voided, void returns), so the
@@ -1726,10 +1671,8 @@ void CoursePhaseMachine_08CA0(void) {
     // (phase_case5 above); all paths converge on the _0800313C tail.
     _0800313C((u32)(uintptr_t)r7);
 }
-#ifndef __APPLE__
 void _08008CA0(void) __attribute__((alias("CoursePhaseMachine_08CA0")));
 void sub_08008CA0(void) __attribute__((alias("CoursePhaseMachine_08CA0")));
-#endif
 
 // Case 1/4/8 record burst + counter gate (8ED8). Returns tail cursor.
 static u8 *phase_case148(u8 *r7) {
@@ -1832,29 +1775,21 @@ static u8 *phase_case3(u8 *r7) {
 // __APPEND_MARKER__
 
 // ROM entry alias.
-#ifndef __APPLE__
 s32 _0802DE9C(s32 num, s32 den) __attribute__((alias("DivRemS_02DE9C")));
-#endif
 
 // ROM entry alias.
-#ifndef __APPLE__
 void sub_08007B8C(void *rec, int kind, int dx, int dy,
                     u32 s0, u32 s1, u32 s2, u32 s3) __attribute__((alias("CourseEmit7B8C")));
-#endif
 
 // ROM entry alias.
-#ifndef __APPLE__
 void Sub_08007B18(void *rec, int kind, int dx, int dy,
                     u32 s0, u32 s1, u32 s2, u32 s3) __attribute__((alias("CourseEmit7B18")));
 void sub_08007B18(void *rec, int kind, int dx, int dy,
                     u32 s0, u32 s1, u32 s2, u32 s3) __attribute__((alias("CourseEmit7B18")));
-#endif
 
 // 0x0800BC04 — 2B `bx lr` no-op (menu_bc04.s tail slot; caller at
 // :355 is the same sequence, which the ROM proves does nothing).
 void MenuNoop_BC04(void) {}
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _0800BC04(void) __attribute__((alias("MenuNoop_BC04")));
 void sub_0800BC04(void) __attribute__((alias("MenuNoop_BC04")));
-#endif

@@ -52,7 +52,7 @@ create separate ownership. The selected entries and their source paths live in
 Resolve symbols from the assembled include closure rooted at `asm/code.s`.
 Parsing an address out of a VMA-shaped name does not establish that a symbol
 exists. Inspect `arm-none-eabi-nm -n build-code/code.o` and the exact C spelling
-in `src/`; preserve required ARM aliases and host definitions together.
+in `src/`; preserve required ARM aliases.
 A selected C export may be valid even if it is absent from the assembly object:
 the C section provides it. `CpuSet` is one such example.
 

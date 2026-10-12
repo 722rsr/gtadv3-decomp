@@ -51,7 +51,6 @@ void SoftIrqKicker(void){
         ST->latch = 0;
     }
 }
-#ifndef __APPLE__
 void _08000A60(void) __attribute__((alias("SoftIrqKicker")));
 // The closure spells 0x08000A60 ONLY `sub_08000A60` (asm/softirq.s:28) -- the
 // `SoftIrqPump` alias this line used to carry has no VMA in its spelling, so
@@ -63,4 +62,3 @@ void _08000A60(void) __attribute__((alias("SoftIrqKicker")));
 // gcc emits `.thumb_set sub_08000A60, _08000A60` for an alias-of-an-alias and
 // the slice link splices only the body's own section.
 void sub_08000A60(void) __attribute__((alias("SoftIrqKicker")));
-#endif

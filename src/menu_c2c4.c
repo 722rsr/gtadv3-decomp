@@ -9,21 +9,6 @@
 #include "gba/types.h"
 
 // ---- extern callees --------------------------------------------------------
-#ifdef __APPLE__
-__attribute__((weak)) void _080050E8(void *a, int b) { (void)a; (void)b; }
-__attribute__((weak)) void _080056B8(int v) { (void)v; }
-__attribute__((weak)) void _08004E1C(void *a) { (void)a; }
-__attribute__((weak)) void _080055F4(void) {}
-__attribute__((weak)) void sub_08002B50(void) {}
-__attribute__((weak)) void sub_08002BB4(void) {}
-__attribute__((weak)) void sub_08002B44(void) {}
-__attribute__((weak)) void _08005604(void) {}
-__attribute__((weak)) void sub_08002C98(void) {}
-__attribute__((weak)) void _08004EF0(void *a) { (void)a; }
-__attribute__((weak)) void _08002060(int v) { (void)v; }
-__attribute__((weak)) void _08004ED8(int v) { (void)v; }
-__attribute__((weak)) void _0800C1E4(void *a) { (void)a; }
-#else
 extern void _080050E8(void *a, int b);      // 0x080050E8 (event_dma_queue.c)
 extern void _080056B8(int v);               // 0x080056B8 ObjQueueGate
 extern void _08004E1C(void *a);             // 0x08004E1C Leaf_04E1C
@@ -37,7 +22,6 @@ extern void _08004EF0(void *a);             // 0x08004EF0 (foundation_late.c)
 extern void _08002060(int v);               // 0x08002060 (garage.c caller)
 extern void _08004ED8(int v);               // 0x08004ED8
 extern void _0800C1E4(void *a);             // 0x0800C1E4 (menus.c)
-#endif
 
 // Record offsets (byte-exact pools):
 #define MC2_OFF_1DE4 0x1DE4
@@ -57,10 +41,8 @@ void MenuC2C4_Enable(void *rec) {
     u16 v = *(volatile u16 *)(r + 92);
     _08004E1C((void *)(uintptr_t)v);
 }
-#ifndef __APPLE__
 void _0800C2C4(void *a) __attribute__((alias("MenuC2C4_Enable")));
 void sub_0800C2C4(void *a) __attribute__((alias("MenuC2C4_Enable")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_0800C2E4 — teardown chain: 055F4 -> 02B50 -> 02BB4 -> 02B44. The
@@ -73,10 +55,8 @@ void MenuC2C4_Teardown(void *rec) {
     sub_08002B44();
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _0800C2E4(void *a) __attribute__((alias("MenuC2C4_Teardown")));
 void sub_0800C2E4(void *a) __attribute__((alias("MenuC2C4_Teardown")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_0800C2FC — flush chain: 05604 -> 02C98. Called with rec in r0 (ignored).
@@ -86,10 +66,8 @@ void MenuC2C4_Flush(void *rec) {
     sub_08002C98();
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _0800C2FC(void *a) __attribute__((alias("MenuC2C4_Flush")));
 void sub_0800C2FC(void *a) __attribute__((alias("MenuC2C4_Flush")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_0800C30C — pointer-dispatch leaf:
@@ -110,10 +88,8 @@ void MenuC2C4_PtrDispatch(void *rec, int which) {
         break;
     }
 }
-#ifndef __APPLE__
 void _0800C30C(void *a, int b) __attribute__((alias("MenuC2C4_PtrDispatch")));
 void sub_0800C30C(void *a, int b) __attribute__((alias("MenuC2C4_PtrDispatch")));
-#endif
 
 // ============================================================================
 // menu_c340.s
@@ -137,10 +113,8 @@ void MenuC340_Dispatch(void *rec, int which) {
         break;
     }
 }
-#ifndef __APPLE__
 void _0800C340(void *a, int b) __attribute__((alias("MenuC340_Dispatch")));
 void sub_0800C340(void *a, int b) __attribute__((alias("MenuC340_Dispatch")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_0800C37C — byte gate: if u8[rec+0x61] == 0 -> _08004ED8(1). The
@@ -153,10 +127,8 @@ void MenuC340_ByteGate(void *rec, u16 arg) {
     if (r[0x61] == 0)
         _08004ED8(1);
 }
-#ifndef __APPLE__
 void _0800C37C(void *a, u16 b) __attribute__((alias("MenuC340_ByteGate")));
 void sub_0800C37C(void *a, u16 b) __attribute__((alias("MenuC340_ByteGate")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_0800C390 — tail call _08002060(1). The dispatcher passes rec in r0
@@ -165,10 +137,8 @@ void MenuC340_SetMode(void *rec) {
     (void)rec;
     _08002060(1);
 }
-#ifndef __APPLE__
 void _0800C390(void *a) __attribute__((alias("MenuC340_SetMode")));
 void sub_0800C390(void *a) __attribute__((alias("MenuC340_SetMode")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_0800C39C — 21-entry command dispatcher (r0 = id 1..21, r1 = arg, r3 = rec).
@@ -198,7 +168,5 @@ void MenuC340_Command(int id, int arg, int a2, void *rec) {
 // this file-scope `.align 2, 0` (after the body's `.size`, still inside its
 // section) pads with the explicit `0` fill instead.
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _0800C39C(int a, int b, int c, void *d) __attribute__((alias("MenuC340_Command")));
 void sub_0800C39C(int a, int b, int c, void *d) __attribute__((alias("MenuC340_Command")));
-#endif

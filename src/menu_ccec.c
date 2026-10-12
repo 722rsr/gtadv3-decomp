@@ -11,32 +11,13 @@
 
 #include "gba/types.h"
 
-#ifdef __APPLE__
-__attribute__((weak)) void *_08004B68(void) { return (void *)0; }
-__attribute__((weak)) int   _08004CA8(int v) { (void)v; return 0; }
-__attribute__((weak)) void *_08026948(void) { return (void *)0; }
-__attribute__((weak)) void  _08026A4C(void *obj, int slot, int attr) { (void)obj; (void)slot; (void)attr; }
-__attribute__((weak)) void  _08026A58(void *obj, int v) { (void)obj; (void)v; }
-__attribute__((weak)) void  _08026A60(void *obj, int v) { (void)obj; (void)v; }
-__attribute__((weak)) void  _08026938(void *obj, int slot) { (void)obj; (void)slot; }
-__attribute__((weak)) void  _08004EA8(int v) { (void)v; }
-__attribute__((weak)) void  _08004EC0(int v) { (void)v; }
-__attribute__((weak)) void  _080038A4(int a, int b, const void *c) { (void)a; (void)b; (void)c; }
-__attribute__((weak)) void  _08003978(int a, int b, int c) { (void)a; (void)b; (void)c; }
-__attribute__((weak)) void  _08026A20(void *obj, int x, int y) { (void)obj; (void)x; (void)y; }
-#endif
 
 extern void *_08004B68(void);   // 0x08004B68 scene ctx getter
 extern int   _08004CA8(int v);  // 0x08004CA8
-#ifndef __APPLE__
 extern void *_080026948(void);        // 0x08026948 obj alloc (closure spelling)
 extern void  _080026938(void *obj, int slot); // 0x08026938 (closure spelling)
 #define _08026948 _080026948
 #define _08026938 _080026938
-#else
-extern void *_08026948(void);        // 0x08026948 obj alloc (no argument)
-extern void  _08026938(void *obj, int slot);           // 0x08026938
-#endif
 extern void  _08026A4C(void *obj, int slot, int attr); // 0x08026A4C
 extern void  _08026A58(void *obj, int v);              // 0x08026A58
 extern void  _08026A60(void *obj, int v);              // 0x08026A60
@@ -102,9 +83,7 @@ void _0800CCEC(void *rec)
 // on this one span, so the splice deletes the `sub_` spelling. C must define
 // it, or an export array naming `sub_0800CCEC` fails the independent link.
 // Guarded: clang rejects `alias` attributes on darwin.
-#ifndef __APPLE__
 void sub_0800CCEC(void *rec) __attribute__((alias("_0800CCEC")));
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x0800CD48 sub_0800CD48(rec, keys, arg2)

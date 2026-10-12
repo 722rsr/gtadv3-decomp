@@ -9,13 +9,11 @@ void Rec35_Driver(void *ctx,int ev,int a,int b){
     (void)a;(void)b;
     // 12-way dispatch on ev (1..12) via table; preserve indirect call
     switch(ev){
-        case 1: /* _08016FD0 */ break;
+        case 1: /* _08016FD0 (Rec35_Scene_16FD0, rec35_mid_region.c) */ break;
         case 2: /* _080168E8 */ break;
         case 5: Rec35_StageA(ctx); break;
         case 6: Rec35_StageB(ctx); break;
         default: break;
     }
 }
-#ifndef __APPLE__
 void _080163B8(void *c,int e,int a,int b) __attribute__((alias("Rec35_Driver")));
-#endif

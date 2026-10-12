@@ -16,15 +16,9 @@
 #include "gba/types.h"
 
 // ---- extern callees --------------------------------------------------------
-#ifdef __APPLE__
-__attribute__((weak)) void *_08006590(void *base, int grp, int idx) { (void)base; (void)grp; (void)idx; return 0; }
-__attribute__((weak)) void  sub_0802D984(const void *src, void *dst) { (void)src; (void)dst; }
-__attribute__((weak)) void  sub_0802D988(const void *src, void *dst) { (void)src; (void)dst; }
-#else
 extern void *_08006590(void *base, int grp, int idx);      // 0x08006590 (course_orch.c)
 extern void  sub_0802D984(const void *src, void *dst);     // LZ77UnCompVram (bios_wrappers.c)
 extern void  sub_0802D988(const void *src, void *dst);     // LZ77UnCompWram (bios_wrappers.c)
-#endif
 
 #define CO_DMA3   ((volatile u32 *)(uintptr_t)0x040000D4)
 #define CO_VAR    ((volatile u8 *)(uintptr_t)0x0203F758)
@@ -93,10 +87,8 @@ void CourseOrch_080064EC(void *out, int idx, void *base) {
         f = 0;
     *(u16 *)(o + 0x32) = f;
 }
-#ifndef __APPLE__
 void _080064EC(void *a, int b, void *c) __attribute__((alias("CourseOrch_080064EC")));
 void sub_080064EC(void *a, int b, void *c) __attribute__((alias("CourseOrch_080064EC")));
-#endif
 // Content is 134 bytes (2 mod 4); the ROM pads the span with `00 00` where
 // gas defaults to `c0 46`.
 __asm__(".align 2, 0");
@@ -150,10 +142,8 @@ void CourseOrch_080061B8(void *unused, int idx, void *base) {
     CO_DMA3[2] = 0x810000C0u;
     (void)CO_DMA3[2];
 }
-#ifndef __APPLE__
 void _080061B8(void *a, int b, void *c) __attribute__((alias("CourseOrch_080061B8")));
 void sub_080061B8(void *a, int b, void *c) __attribute__((alias("CourseOrch_080061B8")));
-#endif
 
 // ----------------------------------------------------------------------------
 // _0800628C(hdr, idx unused, base) — big gfx + palettes + minimap (8/9/10).
@@ -247,10 +237,8 @@ void CourseOrch_0800628C(void *hdr, int idx_unused, void *base) {
         dadA += 64;
     }
 }
-#ifndef __APPLE__
 void _0800628C(void *a, int b, void *c) __attribute__((alias("CourseOrch_0800628C")));
 void sub_0800628C(void *a, int b, void *c) __attribute__((alias("CourseOrch_0800628C")));
-#endif
 
 // ----------------------------------------------------------------------------
 // _08006468(out, idx, base) — theme TILES + PALETTE + LUT (groups 2/3/4).
@@ -322,7 +310,5 @@ void CourseOrch_08006468(void *out, int idx, void *base) {
     src = _08006590((void *)(uintptr_t)b, 3, (int)c);
     *(volatile u32 *)(o + 0x24) = (u32)(uintptr_t)src;
 }
-#ifndef __APPLE__
 void _08006468(void *a, int b, void *c) __attribute__((alias("CourseOrch_08006468")));
 void sub_08006468(void *a, int b, void *c) __attribute__((alias("CourseOrch_08006468")));
-#endif

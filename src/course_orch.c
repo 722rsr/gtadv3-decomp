@@ -19,7 +19,6 @@ extern void _0802D974(const void *src, void *dst, u32 ctrl); // CpuFastSet/ CpuS
 // _08006574 is the Course_SurfaceLoad alias at the foot of this file.
 // Same shape as RS_CALLEE (src/race_scene.c), FF_CALLEE (menu_ff78_f.c),
 // MS_CALLEE (src/menu_stage.c) and R35_CALLEE (rec35_mid_region.c).
-#ifndef __APPLE__
 #define CO_CALLEE(friendly, closure) closure
 extern void _080064EC(void *out, int idx, void *base); // Course_ParseHeader
 extern void _08006468(void *out, int idx, void *base); // Course_ThemeGfx
@@ -29,15 +28,6 @@ extern void _08006574(void *a, int b, void *c);        // Course_SurfaceLoad
 extern s16 _08025908(int idx);                        // calendar variant
 extern s16 _080258F4(int idx);                        // calendar default
 extern void _080060EC(void *src);                // Course_VariantCopy
-#else
-#define CO_CALLEE(friendly, closure) friendly
-// Host-build declarations. The `_080258F4` / `_08025908` aliases that the ARM
-// build calls live in src/course_cal.c under `#ifndef __APPLE__` (aliases are
-// unsupported on Darwin), so the Apple branch needs the friendly names the
-// split expands to. Both are real C definitions there.
-extern s16 Course_GetCourseDefault(int idx);
-extern s16 Course_GetCourseVariant(int idx);
-#endif
 
 void Course_VariantCopy(void *src) {
     // _080060EC: CpuFastSet(src, 0x0203F758, 4)
@@ -142,29 +132,20 @@ void Course_Orchestrator(void *out,int course,void *base){
     // the offset needs its own absolute anchor too. Declared INSIDE the body
     // because the slice link splices only this section, so a file-scope one
     // never reaches code.o (same reason as RS_WA in src/race_scene.c).
-#ifndef __APPLE__
     extern u8 COWa[] __asm__("COWa");
     extern u32 COOff[] __asm__("COOff");
     __asm__(".globl COWa\nCOWa = 0x03001780\n.globl COOff\nCOOff = 0x10C1\n");
 #define CO_WA COWa
 #define CO_OFF COOff
-#else
-#define CO_WA ((volatile u8 *)(uintptr_t)0x03001780u)
-#define CO_OFF 0x10C1u
-#endif
     int cid;
     // agbcc reserves the argument registers r0-r2 for the seven `bl`s and hands
     // the first long-lived pseudo the next free register, so `course` lands in
     // r3 (`add r3,r1,#0` in the prologue) and the COWa+COOff scratch falls into
     // r1. The ROM keeps `course` in r1 and scratches in r2. Pinning the
     // parameter to r1 with a local register variable reproduces both.
-#ifndef __APPLE__
     register int cor1 __asm__("r1");
     cor1 = course;
 #define CO_CRS cor1
-#else
-#define CO_CRS course
-#endif
     // The ROM's `cmp r0,#0 / beq` leaves the plain `cid = course` path as the
     // fall-through and puts the calendar pair out of line, so this is written
     // as two explicit transfers rather than an if/else (agbcc lays an if/else
@@ -211,7 +192,6 @@ void Course_LoadEntry(void) { // _0801A204: push {r4-r6,lr}, sub #28, pools 0x08
     // anchors (declared inside the body because the slice link splices only
     // this section): agbcc folds `0x03001780 + 0x1106` into one constant, and
     // the ROM keeps the pair as two pool words plus `adds r0,r4,r1`.
-#ifndef __APPLE__
     extern void _08006138(void *out, int idx, void *base); // Course_Orchestrator
     extern u32 LTSrc[] __asm__("LTSrc");
     extern u32 LWa[] __asm__("LWa");
@@ -222,12 +202,6 @@ void Course_LoadEntry(void) { // _0801A204: push {r4-r6,lr}, sub #28, pools 0x08
 #define LE_WA (u32)LWa
 #define LE_SEL (u32)LSel
 #define LE_RAW (u32)LRaw
-#else
-#define LE_T ((void *)(uintptr_t)0x0805FB98u)
-#define LE_WA 0x03001780u
-#define LE_SEL 0x1106u
-#define LE_RAW 0x10FEu
-#endif
     u32 tmpl[5];    // sp+0..sp+19; tmpl+2 == sp+8 is the second template copy
     u16 variant[4]; // sp+20..sp+27: the cell CpuSet fills, then the two
                     // selectors strh into variant[1] and variant[0]
@@ -246,17 +220,10 @@ void Course_LoadEntry(void) { // _0801A204: push {r4-r6,lr}, sub #28, pools 0x08
     // folds the second selector offset into `subs r0,#2`. All four selectors
     // stay INLINE in their index expressions as well: as separate `s16`
     // locals agbcc forms both 0x03002884/86 addresses before either read.
-#ifdef __APPLE__
-    u16 *t2;
-    u16 *vr;
-    u32 wbase;
-    u32 selv;
-#else
     register u16 *t2 __asm__("r6");
     register u16 *vr __asm__("r5");
     register u32 wbase __asm__("r4");
     register u32 selv __asm__("r1");
-#endif
     extern void _0802E0A4(void*,void*,int); // CpuSet 6
     extern void _0802D974(const void*,void*,u32);
     _0802E0A4(tmpl, LE_T, 6);
@@ -329,12 +296,9 @@ void Course_LoadEntry(void) { // _0801A204: push {r4-r6,lr}, sub #28, pools 0x08
 #undef LE_SEL
 #undef LE_RAW
 }
-#ifndef __APPLE__
 void _0801A204(void) __attribute__((alias("Course_LoadEntry")));
-#endif
 
 // Aliases (ARM only)
-#ifndef __APPLE__
 void _080060EC(void *a) __attribute__((alias("Course_VariantCopy")));
 void *_08006100(int a,void *b) __attribute__((alias("Course_Group0Payload12")));
 void _08006114(void) __attribute__((alias("Course_VariantZero")));
@@ -342,10 +306,7 @@ void _08006138(void *a,int b,void *c) __attribute__((alias("Course_Orchestrator"
 void _08006574(void *a,int b,void *c) __attribute__((alias("Course_SurfaceLoad")));
 void *_08006590(void *a,int b,int c) __attribute__((alias("Course_SeekRes")));
 int _080065D4(int a,int b,int c) __attribute__((alias("Course_AttrLookup")));
-#endif
 
 // ROM entry alias.
-#ifndef __APPLE__
 void RaceScene_Leaf_A204(void) __attribute__((alias("Course_LoadEntry")));
 void _08001A204(void) __attribute__((alias("Course_LoadEntry")));
-#endif

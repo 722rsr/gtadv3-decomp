@@ -56,10 +56,8 @@ void KeypadPoll(void) {
         st->countdown = 24;
     }
 }
-#ifndef __APPLE__
 // The ROM's function section ends with a zero halfword after `bx lr`.
 __asm__(".pushsection .text.KeypadPoll,\"ax\",%progbits\n.align 2, 0\n.popsection");
-#endif
 
 u16 KeypadGetEdge(void) {
     return KEYPAD_STATE->edge;
@@ -75,12 +73,10 @@ u16 KeypadGetRepeat(void) {
 
 // Original asm symbols — alias so existing BLs (e.g. from agbmain/idle)
 // resolve to the C implementation once linked.
-#ifndef __APPLE__
 void _08002430(void) __attribute__((alias("KeypadPoll")));
 u16 _08002488(void) __attribute__((alias("KeypadGetEdge")));
 u16 _08002494(void) __attribute__((alias("KeypadGetHeld")));
 u16 _080024A0(void) __attribute__((alias("KeypadGetRepeat")));
-#endif
 
 // Friendly-name wrappers used by lifted C callers (foundation_agbmain.c).
 // Values are full 16-bit complements of KEYINPUT (idle = 0xFC00); callers test

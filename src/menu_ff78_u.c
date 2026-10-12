@@ -10,16 +10,6 @@
 
 #include "gba/types.h"
 
-#ifdef __APPLE__
-__attribute__((weak)) void Sub_08002B368(u32 v) { (void)v; }
-__attribute__((weak)) void Sub_08007ABC(u32 a, u32 b, u32 c) { (void)a; (void)b; (void)c; }
-__attribute__((weak)) void Sub_0800DA50(void *a, int b, int c) { (void)a; (void)b; (void)c; }
-__attribute__((weak)) int Sub_080254E8(int v) { return v; }
-__attribute__((weak)) int Sub_080022E4(int v) { return v; }
-__attribute__((weak)) int Sub_08024C3C(int v) { return v; }
-__attribute__((weak)) int Sub_08024C58(int v) { return v; }
-__attribute__((weak)) void Sub_080026A4C(u32 a, int b, int c) { (void)a; (void)b; (void)c; }
-#else
 extern void Sub_08002B368(u32 v);
 extern void Sub_08007ABC(u32 a, u32 b, u32 c);
 extern void Sub_0800DA50(void *a, int b, int c);
@@ -29,7 +19,6 @@ extern int Sub_08024C3C(int v);
 extern int Sub_08024C58(int v);
 // ROM 0x08026A4C dereferences r0 (mgr ptr) and stores r1/r2 to halfwords:
 extern void Sub_080026A4C(void *mgr, int b, int c);
-#endif
 
 // WA pair helper: u8[WA+s*12+49] = lo(u16[rec+172]),
 // u8[WA+s*12+48] = lo(u16[rec+178]).
@@ -225,8 +214,6 @@ void MenuFF78_133E4(void *rec_, u32 a1_, u32 ev_) {
                       (int)*(volatile s16 *)(uintptr_t)(rec + 180),
                       (int)*(volatile s16 *)(uintptr_t)(rec + 172));
 }
-#ifndef __APPLE__
 void _0800133E4(void *a, u32 b, u32 c) __attribute__((alias("MenuFF78_133E4")));
 void Sub_0800133E4(void *a, u32 b, u32 c) __attribute__((alias("MenuFF78_133E4")));
 void sub_0800133E4(void *a, u32 b, u32 c) __attribute__((alias("MenuFF78_133E4")));
-#endif

@@ -38,11 +38,7 @@
 
 #include "gba/types.h"
 
-#ifdef __APPLE__
-#define HOST_STUB(sig) __attribute__((weak)) sig
-#else
 #define HOST_STUB(sig) extern sig
-#endif
 
 // _08007B18 = sub_08007B18 — course-record placement helper.
 // ABI: (rec, dst_idx, count, offset, a4, a5, a6, a7).
@@ -69,23 +65,15 @@ static inline s16 tbl_s16(u32 base, int idx) {
 // second gate is cmp r5,r6.
 // ----------------------------------------------------------------------------
 void MenuFF78_11854(void *rec_, int a1) {
-#ifndef __APPLE__
     register volatile u8 *rec __asm__("r4") = (volatile u8 *)rec_;
-#else
-    volatile u8 *rec = (volatile u8 *)rec_;
-#endif
     u16 r5 = (u16)a1;
     u32 z = 0;
     s16 bc = ((s16 *)(rec + 188))[0];
     int r6 = (int)_0800F6D0((s32)bc) - 1;
     if (r5 != 0) {
         s16 *tbase = (s16 *)0x080CB5A6u;
-#ifndef __APPLE__
         register volatile u8 *p __asm__("r1") = rec;
         __asm__ volatile ("" : "+r" (p));
-#else
-        volatile u8 *p = rec;
-#endif
         s16 *sp = (s16 *)(p + 226);
         s16 idx = sp[0];
         s16 *tp = tbase + idx;
@@ -95,12 +83,8 @@ void MenuFF78_11854(void *rec_, int a1) {
     }
     if ((int)r5 != r6) {
         s16 *tbase = (s16 *)0x080CB5AAu;
-#ifndef __APPLE__
         register volatile u8 *q __asm__("r1") = rec;
         __asm__ volatile ("" : "+r" (q));
-#else
-        volatile u8 *q = rec;
-#endif
         s16 *sq = (s16 *)(q + 226);
         s16 idx = sq[0];
         s16 *tq = tbase + idx;
@@ -109,11 +93,9 @@ void MenuFF78_11854(void *rec_, int a1) {
         _08007B18(a0, (s32)v, 16, 112, 3, 1, 1, (int)z);
     }
 }
-#ifndef __APPLE__
 void _080011854(void *a, int b) __attribute__((alias("MenuFF78_11854")));
 void Sub_080011854(void *a, int b) __attribute__((alias("MenuFF78_11854")));
 void sub_080011854(void *a, int b) __attribute__((alias("MenuFF78_11854")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_0800118DC — variant: r5=(u16)a1.
@@ -123,21 +105,13 @@ void sub_080011854(void *a, int b) __attribute__((alias("MenuFF78_11854")));
 // if r5 != 2: same with 0x080CB5AA, kind=16. r6=0 preloaded for last word.
 // ----------------------------------------------------------------------------
 void MenuFF78_118DC(void *rec_, int a1) {
-#ifndef __APPLE__
     register volatile u8 *rec __asm__("r4") = (volatile u8 *)rec_;
-#else
-    volatile u8 *rec = (volatile u8 *)rec_;
-#endif
     u16 r5 = (u16)a1;
     u32 z = 0;
     if (r5 != 0) {
         s16 *tbase = (s16 *)0x080CB5A6u;
-#ifndef __APPLE__
         register volatile u8 *p __asm__("r1") = rec;
         __asm__ volatile ("" : "+r" (p));
-#else
-        volatile u8 *p = rec;
-#endif
         s16 *sp = (s16 *)(p + 226);
         s16 idx = sp[0];
         s16 *tp = tbase + idx;
@@ -147,12 +121,8 @@ void MenuFF78_118DC(void *rec_, int a1) {
     }
     if (r5 != 2) {
         s16 *tbase = (s16 *)0x080CB5AAu;
-#ifndef __APPLE__
         register volatile u8 *q __asm__("r1") = rec;
         __asm__ volatile ("" : "+r" (q));
-#else
-        volatile u8 *q = rec;
-#endif
         s16 *sq = (s16 *)(q + 226);
         s16 idx = sq[0];
         s16 *tq = tbase + idx;
@@ -161,11 +131,9 @@ void MenuFF78_118DC(void *rec_, int a1) {
         _08007B18(a0, (s32)v, 16, 112, 3, 1, 1, (int)z);
     }
 }
-#ifndef __APPLE__
 void _0800118DC(void *a, int b) __attribute__((alias("MenuFF78_118DC")));
 void Sub_0800118DC(void *a, int b) __attribute__((alias("MenuFF78_118DC")));
 void sub_0800118DC(void *a, int b) __attribute__((alias("MenuFF78_118DC")));
-#endif
 
 // ============================================================================
 // sub_080011CBC — 36B leaf: if u16[rec+168]!=3, call _08007BFC(rec+16,
@@ -186,11 +154,9 @@ void MenuFF78_11CBC(void *rec_) {
 // section -- so it pads with the `0` fill argument instead. No body byte
 // changes; only the two filler halfwords.
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _080011CBC(void *a) __attribute__((alias("MenuFF78_11CBC")));
 void Sub_080011CBC(void *a) __attribute__((alias("MenuFF78_11CBC")));
 void sub_080011CBC(void *a) __attribute__((alias("MenuFF78_11CBC")));
-#endif
 
 // ============================================================================
 // sub_080011CFC — 38B leaf: _08007B18(rec, 9, 152, 88, {3,1,1,0}) +
@@ -204,11 +170,9 @@ void MenuFF78_11CFC(void *rec_) {
     u32 r2 = RD32(rec, 292);
     _08007BFC(dst, (int)r1, (int)r2, 152, 64, 3, 1, 1, 0);
 }
-#ifndef __APPLE__
 void _080011CFC(void *a) __attribute__((alias("MenuFF78_11CFC")));
 void Sub_080011CFC(void *a) __attribute__((alias("MenuFF78_11CFC")));
 void sub_080011CFC(void *a) __attribute__((alias("MenuFF78_11CFC")));
-#endif
 
 // ============================================================================
 // sub_080011DC4 — same body as 0x011CFC (38B): _08007B18(rec, 9, 152, 88,
@@ -222,11 +186,9 @@ void MenuFF78_11DC4(void *rec_) {
     u32 r2 = RD32(rec, 292);
     _08007BFC(dst, (int)r1, (int)r2, 152, 64, 3, 1, 1, 0);
 }
-#ifndef __APPLE__
 void _080011DC4(void *a) __attribute__((alias("MenuFF78_11DC4")));
 void Sub_080011DC4(void *a) __attribute__((alias("MenuFF78_11DC4")));
 void sub_080011DC4(void *a) __attribute__((alias("MenuFF78_11DC4")));
-#endif
 
 extern void _08026FC4(int a, void *b, int c, int d, int e, int f); // garage.c Garage_FC4
 void MenuFF78_11E10(void *rec_) {
@@ -237,11 +199,9 @@ void MenuFF78_11E10(void *rec_) {
     _08007BFC(dst, (int)r1, (int)r2, 80, 36, 10, 1, 1, 0);
     _08026FC4((int)RD32(rec, 240), (void *)(uintptr_t)80, 48, 7, 1, 1);
 }
-#ifndef __APPLE__
 void _080011E10(void *a) __attribute__((alias("MenuFF78_11E10")));
 void Sub_080011E10(void *a) __attribute__((alias("MenuFF78_11E10")));
 void sub_080011E10(void *a) __attribute__((alias("MenuFF78_11E10")));
-#endif
 
 // ============================================================================
 // sub_080011FF0 — 36B leaf: if (u16[rec+194]-1) <= 2, call
@@ -256,11 +216,9 @@ void MenuFF78_11FF0(void *rec_) {
     u32 r2 = RD32(rec, 0x148);
     _08007BFC(dst, (int)r1, (int)r2, 208, 120, 6, 1, 1, 0);
 }
-#ifndef __APPLE__
 void _080011FF0(void *a) __attribute__((alias("MenuFF78_11FF0")));
 void Sub_080011FF0(void *a) __attribute__((alias("MenuFF78_11FF0")));
 void sub_080011FF0(void *a) __attribute__((alias("MenuFF78_11FF0")));
-#endif
 
 // ============================================================================
 // sub_080012B34 — 36B leaf: _08007B18(rec, u16[0x080CB68C + 2*s16[rec+128]],
@@ -294,11 +252,9 @@ void MenuFF78_12B34(void *rec_) {
     __asm__(".globl _080CB68C\n_080CB68C = 0x080CB68C\n");
     _08007B18(rec_, (int)v, 104, 32, 6, 1, 0, 0);
 }
-#ifndef __APPLE__
 void _080012B34(void *a) __attribute__((alias("MenuFF78_12B34")));
 void Sub_080012B34(void *a) __attribute__((alias("MenuFF78_12B34")));
 void sub_080012B34(void *a) __attribute__((alias("MenuFF78_12B34")));
-#endif
 
 // ============================================================================
 // sub_080012AC0 — switch on u32[rec+140]: case 0/2 -> stack {3,1,0,0}
@@ -319,11 +275,9 @@ void MenuFF78_12AC0(void *rec_, int a1, int a2) {
         _08007B18(rec_, (int)v, (int)a1, (int)a2, sp[0], sp[1], sp[2], sp[3]);
     }
 }
-#ifndef __APPLE__
 void _080012AC0(void *a, int b, int c) __attribute__((alias("MenuFF78_12AC0")));
 void Sub_080012AC0(void *a, int b, int c) __attribute__((alias("MenuFF78_12AC0")));
 void sub_080012AC0(void *a, int b, int c) __attribute__((alias("MenuFF78_12AC0")));
-#endif
 
 // ============================================================================
 // sub_0800146D0 — 5-builder filler (with high-register ldrh/strh).
@@ -348,11 +302,9 @@ void MenuFF78_146D0(void *rec_) {
     _08007B18(r7, 5, (int)r8v + 120,  64, 5, 1, 0, 0);
     _08007B18(r7, 5, (int)r8v + 168,  64, 5, 1, 0, 0);
 }
-#ifndef __APPLE__
 void _0800146D0(void *a) __attribute__((alias("MenuFF78_146D0")));
 void Sub_0800146D0(void *a) __attribute__((alias("MenuFF78_146D0")));
 void sub_0800146D0(void *a) __attribute__((alias("MenuFF78_146D0")));
-#endif
 
 // ============================================================================
 // sub_080015930 — 29-iteration loop calling _08007B18 with r4+=8 each iter.
@@ -376,11 +328,9 @@ void MenuFF78_15930(void *rec_, int a1, int a2) {
         }
     }
 }
-#ifndef __APPLE__
 void _080015930(void *a, int b, int c) __attribute__((alias("MenuFF78_15930")));
 void Sub_080015930(void *a, int b, int c) __attribute__((alias("MenuFF78_15930")));
 void sub_080015930(void *a, int b, int c) __attribute__((alias("MenuFF78_15930")));
-#endif
 
 // ============================================================================
 // sub_0800159AC — switch on u32[rec+164]: case 0/2 -> {3,1,1,0}; case 1/3 -> {4,1,1,0}.
@@ -398,14 +348,10 @@ void MenuFF78_159AC(void *rec_, int a1, int a2, int a3) {
     // (rec, a3, a1, a2): the ROM copies a3 into r1 up front
     // (`adds r1,r3,#0 @ 0x080159B6`) and reloads r0/r2/r3 from r4/r5/r6 at
     // each call site.
-#ifndef __APPLE__
     // The ROM keeps `sel` in r0 for the WHOLE ladder (`cmp r0,#1` at
     // 0x080159BC..0x080159CE all read r0); unpinned, agbcc copies it to r2
     // and emits an `adds r2,r0,#0` the ROM does not have.
     register int sel __asm__("r0") = (int)RD32((volatile u8 *)rec_, 164);
-#else
-    int sel = (int)RD32((volatile u8 *)rec_, 164);
-#endif
     if (sel == 1) goto four;
     if (sel <= 1) {
         if (sel == 0) goto three;
@@ -421,12 +367,8 @@ three:
 end:
     return;
 }
-#ifndef __APPLE__
 void _0800159AC(void *a, int b, int c, int d) __attribute__((alias("MenuFF78_159AC")));
 void sub_0800159AC(void *a, int b, int c, int d) __attribute__((alias("MenuFF78_159AC")));
-#endif
 
 // ROM entry alias.
-#ifndef __APPLE__
 void Sub_0800159AC(void *rec_, int a1, int a2, int a3) __attribute__((alias("MenuFF78_159AC")));
-#endif

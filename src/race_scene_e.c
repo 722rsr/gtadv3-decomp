@@ -28,11 +28,7 @@
 
 #include "gba/types.h"
 
-#ifdef __APPLE__
-#define HOST_STUB(sig) __attribute__((weak)) sig
-#else
 #define HOST_STUB(sig) extern sig
-#endif
 
 HOST_STUB(int   _08002580C(int x));                                  // 0x08002580C table lookup
 HOST_STUB(int   _08002581C(int x));                                  // 0x08002581C lineup probe
@@ -44,21 +40,15 @@ HOST_STUB(int   _08002587C(int x));                                  // 0x080025
 // exports as aliases of Ai_LineFindCourse / Ai_LineFindIn6010C. The target
 // build must therefore call the closure spelling, while the Apple host build
 // keeps the stubbed nine-digit names.
-#ifndef __APPLE__
 #define RSE_CALLEE(friendly, closure) closure
 extern int _0802581C(int x);   // 0x08002581C lineup probe
 extern int _0802587C(int x);   // 0x08002587C lineup probe
 extern void sub_0802B368(int v); // closure spelling for 0x0802B368
-#else
-#define RSE_CALLEE(friendly, closure) friendly
-#endif
 HOST_STUB(s16   _0800258A8(int idx));                                // 0x0800258A8 numeric_leaves
 HOST_STUB(s16   _0800258B8(int x));                                  // 0x0800258B8 course_cal cup
 HOST_STUB(s16   _0800258CC(int x));                                  // 0x0800258CC course_cal seq
-#ifndef __APPLE__
 extern s16 _080258B8(int x);  // closure spelling of 0x0800258B8
 extern s16 _080258CC(int x);  // closure spelling of 0x0800258CC
-#endif
 HOST_STUB(void  _08002124(u16 v));                                   // 0x08002124 BlockB arm
 HOST_STUB(int   _08002140(void));                                    // 0x08002140 engine key
 HOST_STUB(void *_08004B68(void));                                    // 0x08004B68 scene mgr
@@ -227,9 +217,7 @@ void _08001FF24(void *rec0) {
     WS(rec + 156, RD16(wa, 0xFCC));
 }
 
-#ifndef __APPLE__
 void sub_08001FF24(void *rec0) __attribute__((alias("_08001FF24")));
-#endif
 
 // ---- 0x0801FF7C — record setup, lineup-probe +32 variant + pools {WA+0x576, 0xFC8/0xFCA/0xFCC} ----
 void _08001FF7C(void *rec0) {
@@ -242,9 +230,7 @@ void _08001FF7C(void *rec0) {
     WS(rec + 156, RD16(wa, 0xFCC));
 }
 
-#ifndef __APPLE__
 void sub_08001FF7C(void *rec0) __attribute__((alias("_08001FF7C")));
-#endif
 
 // ---- 0x0801FFD4 — key handler: countdown latch, lane tick, reselect + pools {0x08344450 x2} ----
 void _08001FFD4(void *rec0, int a1, int a2) {
@@ -339,38 +325,26 @@ void _080020198(void *rec0, int a1, int a2) {
     u32 rowOff;
     u32 areaBase;
     if (R16(rec, 160) == 1) {
-#ifndef __APPLE__
         register int s28 __asm__("r0");
         register int v __asm__("r2");
-#else
-        int s28;
-        int v;
-#endif
         s28 = (int)*(s16 *)(uintptr_t)(rec + 28);
         rowOff = (u32)s28 * 72u;
         v = (int)*(s16 *)(uintptr_t)(rec + 156);
         areaBase = 0x03001D64u + (u32)(v * 3) * 4u;
     } else {
-#ifndef __APPLE__
         register int off28 __asm__("r1") = 28;
         register int s28 __asm__("r0");
         __asm__ volatile("ldrsh %0, [%1, %2]"
                          : "=r"(s28) : "r"(rec), "r"(off28) : "memory");
-#else
-        int s28 = (int)*(s16 *)(uintptr_t)(rec + 28);
-#endif
         rowOff = (u32)s28 * 72u;
         areaBase = 0x03001DA0u;
     }
     rowOff += areaBase;
     area = (volatile u8 *)(uintptr_t)(rowOff + 8u);
-#ifndef __APPLE__
     __asm__ volatile("" : "+r"(area));
-#endif
     {
         u8 *mapPtr = map;
         volatile u16 *tbl = (volatile u16 *)0x080CBC74u;
-#ifndef __APPLE__
         {
             register u8 idx0 __asm__("r2") = R8(area, 0);
             register volatile u16 *lookup0 __asm__("r0") = tbl + idx0;
@@ -389,11 +363,6 @@ void _080020198(void *rec0, int a1, int a2) {
             __asm__ volatile("" : "+r"(lookup2));
             mapPtr[2] = (u8)*lookup2;
         }
-#else
-        mapPtr[0] = (u8)tbl[R8(area, 0)];
-        mapPtr[1] = (u8)tbl[R8(area, 1)];
-        mapPtr[2] = (u8)tbl[R8(area, 2)];
-#endif
     }
     _0800D95C((void *)raw, (const void *)(uintptr_t)area, 3);
     int c164 = (int)*(s16 *)(uintptr_t)(rec + 164);
@@ -439,14 +408,10 @@ void _080020198(void *rec0, int a1, int a2) {
                 map[(int)RD16(rec, 164)] = 1;
             __asm__ volatile("" : : : "memory");
             int rawIdx = (int)RD16(rec, 164);
-#ifndef __APPLE__
             register u8 *rawEntry __asm__("r2") = raw + rawIdx;
             register u8 *mapEntry __asm__("r1") = map + rawIdx;
             __asm__ volatile("" : "+r"(rawEntry), "+r"(mapEntry) : : "memory");
             rawEntry[0] = *(volatile u8 *)((*(volatile u32 *)0x080CBE74u) + mapEntry[0]);
-#else
-            raw[rawIdx] = *(volatile u8 *)((*(volatile u32 *)0x080CBE74u) + map[rawIdx]);
-#endif
             W16(lane, 0, 10);
         }
         if ((key & 128) && *(s16 *)(uintptr_t)lane <= 0) {
@@ -461,14 +426,10 @@ void _080020198(void *rec0, int a1, int a2) {
                 map[(int)RD16(rec, 164)] = 1;
             __asm__ volatile("" : : : "memory");
             int rawIdx = (int)RD16(rec, 164);
-#ifndef __APPLE__
             register u8 *rawEntry __asm__("r2") = raw + rawIdx;
             register u8 *mapEntry __asm__("r1") = map + rawIdx;
             __asm__ volatile("" : "+r"(rawEntry), "+r"(mapEntry) : : "memory");
             rawEntry[0] = *(volatile u8 *)((*(volatile u32 *)0x080CBE74u) + mapEntry[0]);
-#else
-            raw[rawIdx] = *(volatile u8 *)((*(volatile u32 *)0x080CBE74u) + map[rawIdx]);
-#endif
             W16(lane, 0, 10);
         }
         {
@@ -484,7 +445,6 @@ void _080020198(void *rec0, int a1, int a2) {
         area[2] = raw[2];
     }
     if (R16(rec, 162) == 1) {
-#ifndef __APPLE__
         register volatile u8 *wa __asm__("r2") = (volatile u8 *)WA;
         __asm__ volatile("" : "+r"(wa));
         register volatile u8 *dst __asm__("r0");
@@ -530,14 +490,6 @@ void _080020198(void *rec0, int a1, int a2) {
             dst += finalOffset;
             *dst = value;
         }
-#else
-        volatile u8 *wa = (volatile u8 *)WA;
-        wa[(u32)(int)*(s16 *)(uintptr_t)(rec + 28) * 72u + 1576u] = raw[0];
-        __asm__ volatile("" : : : "memory");
-        wa[(u32)(int)*(s16 *)(uintptr_t)(rec + 28) * 72u + 1577u] = raw[1];
-        __asm__ volatile("" : : : "memory");
-        wa[(u32)(int)*(s16 *)(uintptr_t)(rec + 28) * 72u + 0x62Au] = raw[2];
-#endif
     }
 }
 
@@ -742,13 +694,9 @@ void _08002087C(int ev, int b, int c, void *rec0) {
 
 void _080020958(void *unused, void *rec_) {
     (void)unused;
-#ifndef __APPLE__
     extern u8 RaceSceneE_Wa_20958[] __asm__("RaceSceneE_Wa_20958");
     __asm__(".globl RaceSceneE_Wa_20958\nRaceSceneE_Wa_20958 = 0x03001780\n");
     uintptr_t base = (uintptr_t)RaceSceneE_Wa_20958;
-#else
-    uintptr_t base = (uintptr_t)(0x03001780u);
-#endif
     if (*(volatile u16 *)(uintptr_t)(base + 0xFBCu) == 3) {
         *(volatile u8 *)(uintptr_t)((volatile u8 *)rec_ + 88) = 0;
     }
@@ -760,10 +708,8 @@ void _080020958(void *unused, void *rec_) {
     }
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void sub_080020958(void *unused, void *rec_) __attribute__((alias("_080020958")));
 void sub_08020958(void *unused, void *rec_) __attribute__((alias("_080020958")));
-#endif
 
 
 // ---- 0x080209A0 — big record setup: templates, car walk, 8-way table 0x08020B70 + pools below ----
@@ -935,9 +881,7 @@ void _080020D28(void *rec0, int a, int b, int gate, int h5) {
     }
 }
 
-#ifndef __APPLE__
 void sub_080020D28(void *rec0, int a, int b, int gate, int h5) __attribute__((alias("_080020D28")));
-#endif
 
 // ---- 0x08020E04 — key/counter handler: lane tick, clamp, rebind + pools {WA, 0x0203F980, 0x08349754, 0x080CBEF0, 0x080CBEB0, 0x080CBF30} ----
 // NOTE: b (r1-in) is dead; kept for ABI shape.
@@ -1045,9 +989,7 @@ void _080020F50(void *rec0, int sel) {
     }
 }
 
-#ifndef __APPLE__
 void sub_080020F50(void *rec0, int sel) __attribute__((alias("_080020F50")));
-#endif
 
 // agbcc closes a section with the 2-byte Thumb NOP `c0 46`; the 198-byte ROM
 // span ends `47 00 00 00` (`bx r0` then two zero bytes), so the 200-byte
@@ -1130,13 +1072,9 @@ void _0800210BC(void *rec0) {
 
 // ---- 0x08021260 — FBC-gated frame counter (event 21 past 180) + pools {WA+0xFBC} ----
 void _080021260(void *rec_) {
-#ifndef __APPLE__
     extern u8 RaceSceneWa21260[] __asm__("RaceSceneWa21260");
     __asm__(".globl RaceSceneWa21260\nRaceSceneWa21260 = 0x03001780\n");
     uintptr_t base = (uintptr_t)RaceSceneWa21260;
-#else
-    uintptr_t base = (uintptr_t)(0x03001780u);
-#endif
     if (*(volatile u16 *)(uintptr_t)(base + 0xFBCu) == 3) {
         if (_08002140() == 2) goto reset;
         u32 v = *(volatile u32 *)(uintptr_t)((volatile u8 *)rec_ + 208);
@@ -1226,11 +1164,8 @@ void _0800212AC(int ev, int b, int c, void *rec0) {
 // by `_0800212AC:`), so the splice deletes the `sub_` spelling and re-emits only
 // a `.thumb_set` agbcc actually wrote. C must therefore define it or the
 // independent link fails with an undefined reference. Alias the real body in
-// ONE hop. The guard is required: clang rejects `alias` attributes on darwin,
-// and no ARM gate sees it -- only tools/apple_decls.py does.
-#ifndef __APPLE__
+// ONE hop.
 void sub_0800212AC(int ev, int b, int c, void *rec0) __attribute__((alias("_0800212AC")));
-#endif
 
 // agbcc closes a section with the 2-byte Thumb NOP `c0 46`; the ROM ends this
 // span on two zero bytes. The explicit align makes the fill `0` instead, which

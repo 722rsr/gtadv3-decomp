@@ -10,9 +10,6 @@
 
 #include "gba/types.h"
 
-#ifdef __APPLE__
-#define HOST_STUB(sig) __attribute__((weak)) sig
-#else
 #define HOST_STUB(sig) extern sig
 
 // Closure spellings for _08001F6A4's two external callees. A HOST_STUB is NOT a
@@ -21,34 +18,12 @@
 // body on the rename. The digit count is load-bearing -- nm reports
 // `sub_0802B214` (7 hex digits), and the 8-digit `sub_08002B214` normalises to
 // the same address and still fails.
-//
-// The macro must sit OUTSIDE the __APPLE__ split above. Defining it inside the
-// `#else` branch leaves it undefined on the host build, and tools/apple_decls.py
-// catches that as a "call to undeclared 'D1_CALLEE' under __APPLE__" -- the
-// same reason the externs for the closure spellings have to stay where they
-// are, under the ROM branch.
 extern void sub_08007770(int a, void *b, int c, int d, u32 e, u32 f);
 extern void sub_0802B214(int v);
-#endif
 
-// Closure spellings for _08001F6A4's two external callees. A HOST_STUB is NOT a
-// call-site binding: it expands to `extern` on the ROM build, so `Sub_08007770`
-// there names a symbol the closure does not define, and the screen blocks the
-// body on the rename. The digit count is load-bearing -- nm reports
-// `sub_0802B214` (7 hex digits), and the 8-digit `sub_08002B214` normalises to
-// the same address and still fails.
-//
-// This macro MUST sit at file scope, below the __APPLE__ split above, not
-// inside its `#else`. Defined inside the ROM branch it is undefined on the
-// host build, and tools/apple_decls.py reports that as a "call to undeclared
-// 'D1_CALLEE' under __APPLE__" -- the check exists for exactly this.
-#ifndef __APPLE__
 #define D1_CALLEE(friendly, closure) closure
 extern void sub_08001F764(volatile u8 *rec, u16 b, u16 c);
 extern void sub_08001F6A0(void *rec);
-#else
-#define D1_CALLEE(friendly, closure) friendly
-#endif
 
 // External callees (strong lifts or trampolines).
 HOST_STUB(void _08002B214(int v));                                             // 0x08002B214 sound wake
@@ -204,9 +179,7 @@ void _08001F568(volatile u8 *rec) {
     }
 }
 
-#ifndef __APPLE__
 void sub_08001F568(volatile u8 *rec) __attribute__((alias("_08001F568")));
-#endif
 
 // ----------------------------------------------------------------------------
 // ---- 0x0801F5B4 — 12-way event dispatcher (table 0x0801F5D0) ----
@@ -221,15 +194,9 @@ void sub_08001F568(volatile u8 *rec) __attribute__((alias("_08001F568")));
 void _08001F5B4(int ev, u32 b, u32 c, void *rec_) {
     extern u8 RaceSceneD1WA_F5B4[];
     __asm__(".globl RaceSceneD1WA_F5B4\nRaceSceneD1WA_F5B4 = 0x03001780");
-#ifndef __APPLE__
     register u32 breg __asm__("r5") = b;
     register u32 creg __asm__("r6") = c;
     register volatile u8 *rec __asm__("r4") = (volatile u8 *)rec_;
-#else
-    u32 breg = b;
-    u32 creg = c;
-    volatile u8 *rec = (volatile u8 *)rec_;
-#endif
     int idx = ev - 1;
     if ((u32)idx > 11u)
         return;
@@ -294,9 +261,7 @@ void _08001F668(int a0, void *rec_) {
 // C replacement must publish BOTH spellings: without the `sub_` form the
 // underscore-form definition alone leaves the asm caller undefined at the slice
 // link. The manifest `export` for this body records both.
-#ifndef __APPLE__
 void sub_08001F668(int a0, void *rec_) __attribute__((alias("_08001F668")));
-#endif
 
 // ----------------------------------------------------------------------------
 // ---- 0x0801F6A4 — record setup leaf (wake 51, template lanes, WA+0x1080
@@ -485,9 +450,7 @@ void _08001F82C(volatile u8 *rec, int b, int c, int d) {
 // i.e. still inside the body's own section, and pads with the explicit `0` fill.
 __asm__(".align 2, 0");
 
-#ifndef __APPLE__
 void sub_08001F82C(volatile u8 *rec, int b, int c, int d) __attribute__((alias("_08001F82C")));
-#endif
 
 // ----------------------------------------------------------------------------
 // ---- 0x0801F89C — 30-iteration kind-gated 8-arg emit (stride 8) ----
@@ -525,9 +488,7 @@ void _08001F89C(volatile u8 *rec, int v, int mode) {
     }
 }
 
-#ifndef __APPLE__
 void sub_08001F89C(volatile u8 *rec, int v, int mode) __attribute__((alias("_08001F89C")));
-#endif
 
 // ----------------------------------------------------------------------------
 // ---- 0x0801F918 — paired-record emit + select emit + DBE8 tail ----
@@ -555,9 +516,7 @@ void _08001F918(volatile u8 *rec) {
 // `bl sub_08001F918`. A promoted entry's export must therefore carry both
 // spellings; the `sub_` twin is a direct alias of the C body with the same
 // signature (same pattern as _08001F568/_08001F89C above).
-#ifndef __APPLE__
 void sub_08001F918(volatile u8 *rec) __attribute__((alias("_08001F918")));
-#endif
 
 // ----------------------------------------------------------------------------
 // ---- 0x0801F9EC — s16 table lookup (table 0x080CBE78) ----
@@ -617,9 +576,7 @@ void _08001FA0C(void) {
     _08007614((void *)0x08344450u, 1, 0, 3);
     _08007614((void *)0x08344450u, 1, 1, 4);
 }
-#ifndef __APPLE__
 void sub_08001FA0C(void) __attribute__((alias("_08001FA0C")));
-#endif
 
 // ----------------------------------------------------------------------------
 // ---- 0x0801FB58 — guarded 10-arg emit leaf (r3 passes through) ----
@@ -709,9 +666,7 @@ void _08001FBAC(int a0, void *rec_) {
 // inside the body's own section, and pads with the explicit `0` fill.
 __asm__(".align 2, 0");
 
-#ifndef __APPLE__
 void sub_08001FBAC(int a0, void *rec_) __attribute__((alias("_08001FBAC")));
-#endif
 
 // ----------------------------------------------------------------------------
 // ---- 0x0801FBD8 — car-record block copy via D95C ----
@@ -720,19 +675,12 @@ void sub_08001FBAC(int a0, void *rec_) __attribute__((alias("_08001FBAC")));
 // 0x03001D64 + 12*s16[rec+156] + 72*s16[rec+28] + 8, 3).
 // ----------------------------------------------------------------------------
 void _08001FBD8(void *rec_) {
-#ifndef __APPLE__
     /* Preserve the ROM's r3 base load before the record reads. */
     register u32 base __asm__("r3") = 0x03002808u;
     register s32 v __asm__("r2");
     register u32 a __asm__("r1");
     register u32 b __asm__("r0");
     __asm__ volatile("" : "+r"(base));
-#else
-    u32 base = 0x03002808u;
-    s32 v;
-    u32 a;
-    u32 b;
-#endif
     u32 offset = 0xFFFFF55Cu;
     u8 *rec = (u8 *)rec_;
     u8 *q;
@@ -770,6 +718,4 @@ void RaceSceneD1_Dispatch_1F95C(u32 ev, u32 p1, u32 p2, void *p3) {
 }
 // ROM uses 0x0000 for the halfword that aligns the next function.
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _08001F95C(u32 ev, u32 p1, u32 p2, void *p3) __attribute__((alias("RaceSceneD1_Dispatch_1F95C")));
-#endif

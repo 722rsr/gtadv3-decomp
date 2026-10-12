@@ -11,19 +11,11 @@
 
 #include "gba/types.h"
 
-#ifdef __APPLE__
-__attribute__((weak)) void Sub_08007B18(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h) { (void)a; (void)b; (void)c; (void)d; (void)e; (void)f; (void)g; (void)h; }
-__attribute__((weak)) void Sub_08007BFC(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h, u32 i) { (void)a; (void)b; (void)c; (void)d; (void)e; (void)f; (void)g; (void)h; (void)i; }
-__attribute__((weak)) int Sub_0800F6D0(int v) { return v; }
-__attribute__((weak)) void Sub_080011854(void *a, u32 b) { (void)a; (void)b; }
-__attribute__((weak)) void Sub_0800118DC(void *a, u32 b) { (void)a; (void)b; }
-#else
 extern void Sub_08007B18(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h);
 extern void Sub_08007BFC(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h, u32 i);
 extern int Sub_0800F6D0(int v);
 extern void Sub_080011854(void *a, u32 b);
 extern void Sub_0800118DC(void *a, u32 b);
-#endif
 
 // Table base for the record-13 emit tails (stride-8 {w0, w1} pairs).
 #define FF78_TBL_B5B0 ((u32)0x080CB5B0u)
@@ -110,11 +102,9 @@ void MenuFF78_11958(void *rec_) {
         }
     }
 }
-#ifndef __APPLE__
 void _080011958(void *a) __attribute__((alias("MenuFF78_11958")));
 void Sub_080011958(void *a) __attribute__((alias("MenuFF78_11958")));
 void sub_080011958(void *a) __attribute__((alias("MenuFF78_11958")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_080011B48 — (rec): v = u16[rec+214]; v > 7 -> return.
@@ -165,8 +155,6 @@ void MenuFF78_11B48(void *rec_) {
         }
     }
 }
-#ifndef __APPLE__
 void _080011B48(void *a) __attribute__((alias("MenuFF78_11B48")));
 void Sub_080011B48(void *a) __attribute__((alias("MenuFF78_11B48")));
 void sub_080011B48(void *a) __attribute__((alias("MenuFF78_11B48")));
-#endif

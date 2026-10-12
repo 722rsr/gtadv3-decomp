@@ -77,12 +77,10 @@ int CarTick_GridB(int type,int row){
 // Same filler case as `CarTick_GridA` above, for `_0800A9E0`. 62/64 -> EXACT.
 __asm__(".align 2, 0");
 #if defined(__linux__) || defined(__ELF__)
-#ifndef __APPLE__
 int _0800A9A0(int t,int r) __attribute__((alias("CarTick_GridA")));
 int sub_0800A9A0(int t,int r) __attribute__((alias("CarTick_GridA")));
 int _0800A9E0(int t,int r) __attribute__((alias("CarTick_GridB")));
 int sub_0800A9E0(int t,int r) __attribute__((alias("CarTick_GridB")));
-#endif
 #endif
 
 // The s16 reads are deliberately NOT volatile: a volatile s16 read makes agbcc
@@ -151,9 +149,7 @@ int CarTick_Dispatcher(void *ctx){
     return step;
 }
 #if defined(__linux__) || defined(__ELF__)
-#ifndef __APPLE__
 int _0800A668(void *c) __attribute__((alias("CarTick_Dispatcher")));
-#endif
 #endif
 
 // Shared racer tick body 0xAA20 — bounded, pools 0x030005B0 queue, 0x03000610 manager
@@ -170,28 +166,20 @@ int CarTick_Shared(void){
     return a;
 }
 #if defined(__linux__) || defined(__ELF__)
-#ifndef __APPLE__
 int _0800AA20(void) __attribute__((alias("CarTick_Shared")));
 int sub_0800AA20(void) __attribute__((alias("CarTick_Shared")));
-#endif
 #endif
 
 // Simple record-tick wrappers 0xA1D4/0xA1E0/0xA1EC/0xA1F8 and 0xA204/0xA21C/0xA23C/0xA248 — bounded, no pool, push lr / bl _0800AA20
 int CarTick_Rec_0A1D4(void *ctx){ return _0800AA20(); (void)ctx; }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 int _0800A1D4(void *c) __attribute__((alias("CarTick_Rec_0A1D4")));
-#endif
 int CarTick_Rec_0A1E0(void *ctx){ return _0800AA20(); (void)ctx; }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 int _0800A1E0(void *c) __attribute__((alias("CarTick_Rec_0A1E0")));
-#endif
 int CarTick_Rec_0A1EC(void *ctx){ return _0800AA20(); (void)ctx; }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 int _0800A1EC(void *c) __attribute__((alias("CarTick_Rec_0A1EC")));
-#endif
 // 0x0800A980(ctx) — top-level substate dispatch (asm/carphys_tick.s:1880-1900):
 int _0800A980(void *ctx)
 {
@@ -209,38 +197,26 @@ __asm__(".align 2, 0");
 
 int CarTick_Rec_0A1F8(void *ctx){ return _0800AA20(); (void)ctx; }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 int _0800A1F8(void *c) __attribute__((alias("CarTick_Rec_0A1F8")));
-#endif
 int CarTick_Rec_0A204(void *ctx){ return _0800AA20(); (void)ctx; }
 // 10 bytes of code in a 4-aligned section: the ROM holds `00 00` at
 // 0x0800A20E where gas closes the section with `nop`. Same file-scope `.align`
 // idiom as the neighbouring leaves.
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 int _0800A204(void *c) __attribute__((alias("CarTick_Rec_0A204")));
-#endif
 // 0x0800A210 — unreferenced twin (asm/carphys_tick.s:852-858): the same
 // `push {lr}; bl 0x0800AA20; pop {r1}; bx r1` + `00 00` pad as its neighbours,
 // with no BL/literal xref anywhere in the closure. Typed in asm, so it is a
 // known start with no C candidate until this body exists.
 int CarTick_Rec_0A210(void *ctx){ return _0800AA20(); (void)ctx; }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 int _0800A210(void *c) __attribute__((alias("CarTick_Rec_0A210")));
-#endif
 int CarTick_Rec_0A21C(void *ctx){ return _0800AA20(); (void)ctx; }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 int _0800A21C(void *c) __attribute__((alias("CarTick_Rec_0A21C")));
-#endif
 int CarTick_Rec_0A23C(void *ctx){ return _0800AA20(); (void)ctx; }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 int _0800A23C(void *c) __attribute__((alias("CarTick_Rec_0A23C")));
-#endif
 int CarTick_Rec_0A248(void *ctx){ return _0800AA20(); (void)ctx; }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 int _0800A248(void *c) __attribute__((alias("CarTick_Rec_0A248")));
-#endif

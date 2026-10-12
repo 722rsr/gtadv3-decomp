@@ -36,10 +36,8 @@ void SoundVoiceFollow_NoteOff(void *unused, void *chan){
         } while (node != 0);
     }
 }
-#ifndef __APPLE__
 void _0802C390(void *c, void *s) __attribute__((alias("SoundVoiceFollow_NoteOff")));
 void sub_0802C390(void *c, void *s) __attribute__((alias("SoundVoiceFollow_NoteOff")));
-#endif
 
 // _0802C780 voice initializer — blocked, exact in src/sound_core.c as _0802C780 (SoundVoiceInit)
 // No duplicate alias here.
@@ -49,11 +47,7 @@ void sub_0802C390(void *c, void *s) __attribute__((alias("SoundVoiceFollow_NoteO
 
 // 0x0802CA34 (file 0x02CA34): apply packed sound configuration.
 // asm/sound_reset_more.s: the argument is flags, not a state pointer.
-#ifndef __APPLE__
 extern void _0802CB20(void *s);
-#else
-extern void SoundCmdCommit(void *s);
-#endif
 extern void _0802C990(u32 rate); // sound_core.c SoundControlInit; 0x0802C990
 void _0802CA34(void *config){
     register u32 flags __asm__("r3") = (u32)(uintptr_t)config;
@@ -122,25 +116,13 @@ void _0802CA34(void *config){
         fadeMask <<= 12;
         fadeMask &= flags;
         if (fadeMask) {
-#ifndef __APPLE__
             ((void (*)(void))(void *)_0802CB20)();
         // The slice links no C object, so a promoted body may only call a
-        // spelling the closure defines. `_0802C990` is aliased in
-        // sound_core.c under `#ifndef __APPLE__`, so the host build keeps the
-        // friendly name -- an undeclared call is a silent C89 implicit
-        // declaration, and a host link with `-undefined dynamic_lookup` binds lazily,
-        // so nothing would report it.
+        // spelling the closure defines.
             _0802C990(fadeMask);
-#else
-            ((void (*)(void))(void *)SoundCmdCommit)();
-        extern void SoundControlInit(u32 rate); // sound_core.c; host-only spelling
-            SoundControlInit(fadeMask);
-#endif
         }
     }
     *(volatile u32 *)root = 0x68736D53u;
 }
-#ifndef __APPLE__
 void SoundResetMore(void *s) __attribute__((alias("_0802CA34")));
 void sub_0802CA34(void *s) __attribute__((alias("_0802CA34")));
-#endif

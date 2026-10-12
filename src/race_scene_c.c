@@ -14,17 +14,12 @@
 
 #include "gba/types.h"
 
-#ifdef __APPLE__
-#define HOST_STUB(sig) __attribute__((weak)) sig
-#else
 #define HOST_STUB(sig) extern sig
-#endif
 
 // External callees (strong lifts or trampolines).
 HOST_STUB(void _08002B368(u16 v));                                              // 0x08002B368 sound cue
 // 0x0802b368 is a PROMOTED entry whose manifest `export` is exactly
-// ['sub_0802B368'], so a spliced body must call that spelling. src/sound.c
-// already provides it as a `#ifndef __APPLE__` alias of `_0802B368`.
+// ['sub_0802B368'], so a spliced body must call that spelling.
 HOST_STUB(void sub_0802B368(u16 v));
 HOST_STUB(int _08024068(void));                                                 // 0x08024068 record-kind probe
 HOST_STUB(void _08002158(int id, u16 payload));                                 // 0x08002158 block-B forward
@@ -40,7 +35,7 @@ HOST_STUB(void _08001D950(int a0, int a1, u32 a2, int a3, int a4));             
 HOST_STUB(void _08001D974(void *a, void *b));                                   // 0x08001D974 paired-record reset
 HOST_STUB(void _08001DBC0(void *rec, int v));                                   // 0x08001DBC0 clamped lane select
 HOST_STUB(void _08001DC8C(void *rec));                                          // 0x08001DC8C phase switcher
-HOST_STUB(void _08001D9C8(void));                                               // 0x08001D9C8 bx-lr stub (race_scene.c)
+HOST_STUB(void _08001D9C8(void *a));                                            // 0x08001D9C8 bx-lr stub (race_scene.c; ROM sets r0=rec anyway)
 HOST_STUB(void _08001DA70(int a0, int a1, u32 a2, int a3));                     // 0x08001DA70 gated emit
 HOST_STUB(void _08003B78(int a, u32 b, u32 c));                                 // 0x08003B78 obj digits
 HOST_STUB(void _08003838(int a, u32 b, const volatile u8 *c));                  // 0x08003838 obj lane (ROM word 0x0805FC1C)
@@ -184,7 +179,6 @@ void _08001E304(void *rec_) {
 // `sub_08001E2D0`/`sub_08001E304`, which the splice deletes, and other
 // assembly still branches to them. agbcc only writes the `.thumb_set` for a
 // spelling this TU aliases, so declare both here (rule 6).
-#ifndef __APPLE__
 void sub_08001E2D0(void *rec_) __attribute__((alias("_08001E2D0")));
 void sub_08001E304(void *rec_) __attribute__((alias("_08001E304")));
 // Same rule 6 need for 0x08001E528/0x08001E56C: two distinct spliced bodies,
@@ -196,7 +190,6 @@ void sub_08001E56C(void *rec_) __attribute__((alias("_08001E56C")));
 // `sub_08001E9DC` (asm/race_scene.s:8535) which the splice deletes, and the
 // asm defines both spellings at that one address.
 void sub_08001E9DC(void *rec_) __attribute__((alias("_08001E9DC")));
-#endif
 
 // ----------------------------------------------------------------------------
 // ---- 0x08001E3BC — four attr/param lane calls over WA+0x10E8..0x10F4 ----
@@ -215,13 +208,9 @@ void sub_08001E9DC(void *rec_) __attribute__((alias("_08001E9DC")));
 //     the second pool load (134/152, first diff +0x8).
 // ----------------------------------------------------------------------------
 void _08001E3BC(volatile u8 *rec) {
-#ifndef __APPLE__
     extern u8 RaceSceneCWa3BC[];
     __asm__(".globl RaceSceneCWa3BC\nRaceSceneCWa3BC = 0x03001780");
     uintptr_t wa = (uintptr_t)RaceSceneCWa3BC;
-#else
-    uintptr_t wa = (uintptr_t)WA;
-#endif
     u32 w0 = *(volatile u32 *)(wa + 0x10E8u);
     int a0 = ((const s16 *)(rec + 172))[0];
     const s16 *tail = (const s16 *)(rec + 150);
@@ -243,13 +232,9 @@ void _08001E3BC(volatile u8 *rec) {
 // ----------------------------------------------------------------------------
 void _08001E454(void *rec_) {
     (void)rec_;
-#ifndef __APPLE__
     extern u8 RaceSceneCWa454[];
     __asm__(".globl RaceSceneCWa454\nRaceSceneCWa454 = 0x03001780");
     uintptr_t wa = (uintptr_t)RaceSceneCWa454;
-#else
-    uintptr_t wa = (uintptr_t)WA;
-#endif
     _08001D910(84, 36, *(volatile u32 *)(wa + 0x10E8u), 0, 0);
     _08001D910(84, 52, *(volatile u32 *)(wa + 0x10ECu), 0, 0);
     _08001D910(84, 68, *(volatile u32 *)(wa + 0x10F0u), 0, 0);
@@ -260,15 +245,11 @@ void _08001E454(void *rec_) {
 // ---- 0x0801E4C0 — WA-gated obj digits/lane select ----
 // Pools: {WA+0x10F4, 0x0805FC1C}. Takes no args.
 void _08001E4C0(void) {
-#ifndef __APPLE__
     extern u8 RaceSceneCWa4C0[];
     __asm__(".globl RaceSceneCWa4C0\nRaceSceneCWa4C0 = 0x03001780\n");
     extern u8 RaceSceneCTbl4C0[];
     __asm__(".globl RaceSceneCTbl4C0\nRaceSceneCTbl4C0 = 0x0805FC1C\n");
     uintptr_t wa = (uintptr_t)RaceSceneCWa4C0;
-#else
-    uintptr_t wa = (uintptr_t)WA;
-#endif
     uintptr_t a = wa + 0x10F4u;
     u32 w = *(volatile u32 *)a;
     if (w != 0)
@@ -276,11 +257,7 @@ void _08001E4C0(void) {
     else
         _08003838(84, 92,
                   (const volatile u8 *)(uintptr_t)
-#ifndef __APPLE__
                   RaceSceneCTbl4C0
-#else
-                  0x0805FC1Cu
-#endif
                   );
 }
 
@@ -290,13 +267,9 @@ void _08001E4C0(void) {
 // Pools: {WA+0x10F8}.
 // ----------------------------------------------------------------------------
 void _08001E4F4(volatile u8 *rec) {
-#ifndef __APPLE__
     extern u8 RaceSceneCWa4F4[];
     __asm__(".globl RaceSceneCWa4F4\nRaceSceneCWa4F4 = 0x03001780\n");
     uintptr_t wa = (uintptr_t)RaceSceneCWa4F4;
-#else
-    uintptr_t wa = (uintptr_t)WA;
-#endif
     uintptr_t a = wa + 0x10F8u;
     u32 w = *(volatile u32 *)a;
     _08001D950(148, 92, w,
@@ -410,13 +383,9 @@ void _08001E718(void *rec_) {
 // ----------------------------------------------------------------------------
 void _08001E764(void *rec_) {
     volatile u8 *rec = (volatile u8 *)rec_;
-#ifndef __APPLE__
     extern u8 RaceSceneCWa764[];
     __asm__(".globl RaceSceneCWa764\nRaceSceneCWa764 = 0x03001780");
     uintptr_t wa = (uintptr_t)RaceSceneCWa764;
-#else
-    uintptr_t wa = (uintptr_t)WA;
-#endif
     volatile u32 *p = (volatile u32 *)(wa + 0x10F8u);
     _08001E390(rec_);
     _08001DA70(120, 64, *p, 10);
@@ -529,46 +498,65 @@ void _08001EA28(int ev, u32 b, u32 c, void *rec_) {
     int idx = ev - 1;
     if ((u32)idx > 11u)
         return;
+    // Every arm below passes `rec`, never `rec_`. While both spellings are
+    // live agbcc keeps a second callee-saved copy of the record
+    // (`adds r5,r4,#0` in the prologue) and the 288-byte span becomes 290.
+    //
+    // The ROM lays the case bodies down in the order 1, 4, 6, 5, 0, 11 -- NOT
+    // ascending. agbcc emits bodies in source order, so the labels here have
+    // to be written in that same order for the 12-word jump table (0x0801EA48)
+    // to point at the ROM's addresses.
     switch (idx) {
-    case 0:
-        _08001DC8C(rec_);
-        break;
     case 1:
-        _08001D974(rec_, (void *)(uintptr_t)b);
+        _08001D974((void *)rec, (void *)(uintptr_t)b);
         break;
     case 4:
         _0800D854((void *)(rec + 40));
         break;
-    case 5: {
-        s16 s;
-        _08001E9DC(rec_);
-        if (*(volatile u16 *)(rec + 44) == 0)
-            break;
-        s = *(volatile s16 *)(rec + 156);
-        if (s < 0)
-            break;
-        if (s <= 4)
-            _08001E1E0(rec_, (u16)b, (u16)c);
-        else if (s == 5)
-            _08001E230(rec_, (u16)b, (u16)c);
-        break;
-    }
     case 6: {
-        s16 s = *(volatile s16 *)(rec + 156);
-        if ((u32)s > 5u)
-            break;
+        // No explicit range test: the ROM has the single `cmp r0,#5 / bhi`
+        // that the `casesi` dispatch itself emits. An extra
+        // `if ((u32)s > 5u) break;` duplicates it and forces a zero-extending
+        // `ldrh` + shifts instead of the ROM's `movs r1,#0 / ldrsh`.
+        s16 s = *(s16 *)(rec + 156);
+        // Same story as the outer table: these bodies sit at 1, 0, 3, 4, 2, 5
+        // (table 0x0801EAA8), not ascending.
         switch (s) {
-        case 0: _08001E6D8(rec_); break;
-        case 1: _08001E68C(rec_); break;
-        case 2: _08001E764(rec_); break;
-        case 3: _08001E8B4(rec_); break;
-        case 4: _08001E718(rec_); break;
-        case 5: _08001E92C(rec_); break;
+        case 1: _08001E68C((void *)rec); break;
+        case 0: _08001E6D8((void *)rec); break;
+        case 3: _08001E8B4((void *)rec); break;
+        case 4: _08001E718((void *)rec); break;
+        case 2: _08001E764((void *)rec); break;
+        case 5: _08001E92C((void *)rec); break;
         }
         break;
     }
+    case 5: {
+        s16 s;
+        _08001E9DC((void *)rec);
+        if (*(volatile u16 *)(rec + 44) == 0)
+            break;
+        s = *(s16 *)(rec + 156);
+        if (s < 0)
+            break;
+        // Grouped cases give the ROM's `cmp #4 / ble` range node, and the
+        // `casesi` tree keeps both bodies after the dispatch exactly as the ROM
+        // does (an if/else chain threads the first body instead).
+        switch (s) {
+        case 0: case 1: case 2: case 3: case 4:
+            _08001E1E0((void *)rec, (u16)b, (u16)c);
+            break;
+        case 5:
+            _08001E230((void *)rec, (u16)b, (u16)c);
+            break;
+        }
+        break;
+    }
+    case 0:
+        _08001DC8C((void *)rec);
+        break;
     case 11:
-        _08001D9C8();
+        _08001D9C8((void *)rec);
         break;
     default:
         break;

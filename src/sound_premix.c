@@ -16,10 +16,8 @@ void Sfx_08002B7D8(int a, int b) {
     (void)a; (void)b;
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _08002B7D8(int a, int b) __attribute__((alias("Sfx_08002B7D8")));
 void sub_08002B7D8(int a, int b) __attribute__((alias("Sfx_08002B7D8")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_08002B7DC — effect sink B: `bx lr` (no-op with 2-arg ABI).
@@ -27,12 +25,9 @@ void Sfx_08002B7DC(int a, int b) {
     (void)a; (void)b;
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _08002B7DC(int a, int b) __attribute__((alias("Sfx_08002B7DC")));
 void sub_08002B7DC(int a, int b) __attribute__((alias("Sfx_08002B7DC")));
-#endif
 
-#ifndef __APPLE__
 __attribute__((naked)) void Sfx_08002B7E0(int id, int a1, int a2, int a3) {
     __asm__ volatile (
         ".syntax unified\n"
@@ -62,22 +57,8 @@ __attribute__((naked)) void Sfx_08002B7E0(int id, int a1, int a2, int a3) {
         ".syntax divided\n"
     );
 }
-#else
-void Sfx_08002B7E0(int id, int a1, int a2, int a3) {
-    switch ((u32)id) {
-    case 5:
-        Sfx_08002B7D8(a3, 0);
-        break;
-    case 6:
-        Sfx_08002B7DC((int)(u16)a1, (int)(u16)a2);
-        break;
-    }
-}
-#endif
-#ifndef __APPLE__
 void _08002B7E0(int a, int b, int c, int d) __attribute__((alias("Sfx_08002B7E0")));
 void sub_08002B7E0(int a, int b, int c, int d) __attribute__((alias("Sfx_08002B7E0")));
-#endif
 
 extern void _08005D74(void *p, int y, int angle);
 void Sfx_08002B818(void *obj, int arg1) {
@@ -112,7 +93,5 @@ void Sfx_08002B818(void *obj, int arg1) {
     st[1] = st[1] + out[1];
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _08002B818(void *a, int b) __attribute__((alias("Sfx_08002B818")));
 void sub_08002B818(void *a, int b) __attribute__((alias("Sfx_08002B818")));
-#endif

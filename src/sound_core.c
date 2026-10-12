@@ -39,10 +39,8 @@ void SoundBeb4Worker(void *state){
     }
     s[13] = SOUND_MAGIC;
 }
-#ifndef __APPLE__
 void _0802BEB4(void *s) __attribute__((alias("SoundBeb4Worker")));
 void sub_0802BEB4(void *s) __attribute__((alias("SoundBeb4Worker")));
-#endif
 
 // --- _0802C11C voice-list cleanup (62 B + private pool 0x03007FF0 at 0x02C15C) ---
 // Instruction shape is reproduced, byte-exactness is NOT reachable: the ROM
@@ -82,13 +80,8 @@ extern void _0802C10C(u32 bits); // 0x0802C10C `bx r3` dispatch thunk
 void SoundVoiceCleanup(void *unused, void *chan){
     (void)unused;
     volatile u8 *c = (volatile u8*)chan;
-#ifdef __APPLE__
-    u32 z;
-    u32 cb;
-#else
     register u32 z __asm__("r6");
     register u32 cb __asm__("r3");
-#endif
     volatile u32 *node;
     if ((c[0] & 0x80)==0) return;
     node = (volatile u32 *)*(volatile u32*)((uintptr_t)chan+32);
@@ -99,13 +92,9 @@ void SoundVoiceCleanup(void *unused, void *chan){
             if (mode != 0){
                 u32 mode_bits = ((volatile u8 *)node)[1] & 7u;
                 if (mode_bits != 0){
-#ifndef __APPLE__
                     { extern u8 SndRootCell[];
                       __asm__(".globl SndRootCell\nSndRootCell = 0x03007FF0\n");
                       cb = *(volatile u32 *)((uintptr_t)*(volatile u32 *)(uintptr_t)SndRootCell + 44u); }
-#else
-                    cb = *(volatile u32 *)((uintptr_t)*(volatile u32 *)SOUND_ROOT_PTR_CELL + 44u);
-#endif
                     _0802C10C(mode_bits);
                 }
                 ((volatile u8*)node)[0] = (u8)z;
@@ -116,16 +105,12 @@ void SoundVoiceCleanup(void *unused, void *chan){
     }
     *(volatile u32 *)((volatile u8 *)chan + 32) = (u32)(uintptr_t)node;
 }
-#ifndef __APPLE__
 void _0802C11C(void *a, void *b) __attribute__((alias("SoundVoiceCleanup")));
 void sub_0802C11C(void *a, void *b) __attribute__((alias("SoundVoiceCleanup")));
-#endif
 
 // Stub for remaining cluster primitives — preserve DMA register width (0x04000060) without guessing stream bytes
 void SoundChannelFetchByte(void *s, u8 *out){ (void)s; if(out) *out=0; }
-#ifndef __APPLE__
 void _0802BCE8a(void *s, u8 *o) __attribute__((alias("SoundChannelFetchByte")));
-#endif
 
 // --- _0802CB20 command commit + _0802C990 control (pure Thumb, pools at 0x02CB6C etc.) ---
 void SoundCmdCommit(void *state){
@@ -141,11 +126,9 @@ void SoundCmdCommit(void *state){
     u32 zero = 0;
     sub_0802D974(&zero, (void *)((uintptr_t)s + 848u), 0x0500018Cu);
 }
-#ifndef __APPLE__
 void _0802CB20(void *s) __attribute__((alias("SoundCmdCommit")));
 void sub_0802CB20(void *s) __attribute__((alias("SoundCmdCommit")));
 void Sub_0802CB20(void *s) __attribute__((alias("SoundCmdCommit")));
-#endif
 
 extern int _08002DE04(int num, int den); // 0x08002DE04 s32 quotient (sound_extra.c)
 extern void sub_0802CB84(void *a); // 0x08002CB84 stop/clear (runtime_state_dispatch.c)
@@ -183,10 +166,8 @@ void SoundControlInit(u32 rate) {
     // TM0CNT_H = 0x80 (start timer 0, prescaler 0, no IRQ)
     *(volatile u16 *)0x04000102u = 0x0080;
 }
-#ifndef __APPLE__
 void _0802C990(u32 r) __attribute__((alias("SoundControlInit")));
 void sub_0802C990(u32 r) __attribute__((alias("SoundControlInit")));
-#endif
 
 // --- _0802D4A8 voice flag walker (104 B, asm/sound_d4a8.s, private pool 0x0802D50C) ---
 // The three walkers were one shared `static void VoiceWalkerInner(...)` helper.
@@ -208,11 +189,7 @@ void sub_0802C990(u32 r) __attribute__((alias("SoundControlInit")));
 // Leave sel unpinned: a hard r7 local makes old_agbcc omit its ABI save.
 // The count is ordinary work-area memory; volatile adds a redundant copy.
 // Drop-one byte probes established each retained constraint is necessary.
-#ifdef __APPLE__
-#define VOICE_REG(type, name, reg) type name
-#else
 #define VOICE_REG(type, name, reg) register type name __asm__(reg)
-#endif
 void SoundVoiceWalkerA(void *state, u32 chSel, u32 wid){
     volatile u32 *s = (volatile u32 *)state;
     u32 sel = (u16)chSel;
@@ -224,9 +201,7 @@ void SoundVoiceWalkerA(void *state, u32 chSel, u32 wid){
     VOICE_REG(u32, active, "r8");
     VOICE_REG(u32, flags, "ip");
     VOICE_REG(u32, t, "r0");
-#ifndef __APPLE__
     __asm__("" ::: "r9");
-#endif
     magic = s[13];
     if (magic != SOUND_MAGIC) return;
     t = magic + 1;
@@ -253,10 +228,8 @@ void SoundVoiceWalkerA(void *state, u32 chSel, u32 wid){
     }
     s[13] = SOUND_MAGIC;
 }
-#ifndef __APPLE__
 void _0802D4A8(void *s, u32 c, u32 w) __attribute__((alias("SoundVoiceWalkerA")));
 void sub_0802D4A8(void *s, u32 c, u32 w) __attribute__((alias("SoundVoiceWalkerA")));
-#endif
 
 // --- _0802D510 PAN walker ---
 // The ROM stores the signed high byte at +11 and low byte at +13; writing
@@ -275,9 +248,7 @@ void SoundVoiceWalkerB(void *state, u32 chSel, u32 wid){
     VOICE_REG(u32, active, "r9");
     VOICE_REG(u32, flags, "r8");
     VOICE_REG(u32, t, "r0");
-#ifndef __APPLE__
     __asm__("" ::: "r10");
-#endif
     magic = s[13];
     if (magic != SOUND_MAGIC) return;
     t = magic + 1;
@@ -312,10 +283,8 @@ void SoundVoiceWalkerB(void *state, u32 chSel, u32 wid){
     }
     s[13] = SOUND_MAGIC;
 }
-#ifndef __APPLE__
 void _0802D510(void *s, u32 c, u32 w) __attribute__((alias("SoundVoiceWalkerB")));
 void sub_0802D510(void *s, u32 c, u32 w) __attribute__((alias("SoundVoiceWalkerB")));
-#endif
 // --- _0802D584 third-op walker (104 B, asm/sound_d584.s, private pool 0x0802D5E8) ---
 // Same shape as _0802D4A8 but the value is narrowed to u8 instead of u16-then-
 // shifted, so the prologue pairs `lsls r2,r2,#24` with `lsrs r6,r2,#24` and
@@ -335,9 +304,7 @@ void SoundVoiceWalkerC(void *state, u32 chSel, u32 wid){
     VOICE_REG(u32, active, "r8");
     VOICE_REG(u32, flags, "ip");
     VOICE_REG(u32, t, "r0");
-#ifndef __APPLE__
     __asm__("" ::: "r9");
-#endif
     magic = s[13];
     if (magic != SOUND_MAGIC) return;
     t = magic + 1;
@@ -363,10 +330,8 @@ void SoundVoiceWalkerC(void *state, u32 chSel, u32 wid){
     }
     s[13] = SOUND_MAGIC;
 }
-#ifndef __APPLE__
 void _0802D584(void *s, u32 c, u32 w) __attribute__((alias("SoundVoiceWalkerC")));
 void sub_0802D584(void *s, u32 c, u32 w) __attribute__((alias("SoundVoiceWalkerC")));
-#endif
 
 // --- _0802D6F4 sequence interpreter (inline table 0x0802D724, 5 entries) ---
 void SoundSeqInterpreter(void *state, void *cursor){
@@ -384,10 +349,8 @@ void SoundSeqInterpreter(void *state, void *cursor){
     // Full interpreter (0x02D728–0x02D846) remains TODO; preserve dispatch width only
     (void)state;
 }
-#ifndef __APPLE__
 void _0802D6F4(void *s, void *c) __attribute__((alias("SoundSeqInterpreter")));
 void sub_0802D6F4(void *s, void *c) __attribute__((alias("SoundSeqInterpreter")));
-#endif
 
 // --- _0802CD58 fade tick, _0802C780 init, _0802C8C4 state etc. — minimal width-preserving stubs ---
 void SoundFadeTick(void *state){
@@ -398,10 +361,8 @@ void SoundFadeTick(void *state){
     s[19]=s[18]; // reload from +36
     s[20] |= 2; // +40 |=2
 }
-#ifndef __APPLE__
 void _0802CD58(void *s) __attribute__((alias("SoundFadeTick")));
 void sub_0802CD58(void *s) __attribute__((alias("SoundFadeTick")));
-#endif
 void sub_0802D974(const void *s, void *d, u32 m); // CpuSet swi 0x0B (bios_wrappers.c)
 void sub_0802BCB4(void *a); // channel-table copy (sound_channel_bcb4.c)
 
@@ -537,10 +498,8 @@ void SoundVoiceInit(void *state) {
     }
     r4[0] = r6; // restore (net zero; kept for ISR-visibility parity)
 }
-#ifndef __APPLE__
 void _0802C780(void *s) __attribute__((alias("SoundVoiceInit")));
 void sub_0802C780(void *s) __attribute__((alias("SoundVoiceInit")));
-#endif
 void SoundStateInit(void *state) {
     volatile u8 *r5 = (volatile u8 *)state;
     *(volatile u32 *)r5 = 0;
@@ -568,10 +527,8 @@ void SoundStateInit(void *state) {
     sub_0802C990(0x00040000u); // 128<<11, as in asm (aliased to SoundControlInit below)
     *(volatile u32 *)r5 = 0x68736D53u; // "Smsh" magic published last
 }
-#ifndef __APPLE__
 void _0802C8C4(void *s) __attribute__((alias("SoundStateInit")));
 void sub_0802C8C4(void *s) __attribute__((alias("SoundStateInit")));
-#endif
 
 // TODO: remaining large pure-Thumb units still unsupported stay asm/
 // - sound_d034.s PSG 0x02D034 540L (4× channel envelope/timer, REG_SOUND1CNT etc. — needs PSG struct widths)

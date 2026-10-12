@@ -14,41 +14,8 @@
 
 #include "gba/types.h"
 
-#ifdef __APPLE__
-__attribute__((weak)) void Sub_08007B18(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h) { (void)a; (void)b; (void)c; (void)d; (void)e; (void)f; (void)g; (void)h; }
-__attribute__((weak)) void Sub_08007BFC(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h, u32 i) { (void)a; (void)b; (void)c; (void)d; (void)e; (void)f; (void)g; (void)h; (void)i; }
-__attribute__((weak)) void Sub_08007C68(void *a, u32 b, u32 c, int d, u32 e, u32 f, u32 g, u32 h, u32 i) { (void)a; (void)b; (void)c; (void)d; (void)e; (void)f; (void)g; (void)h; (void)i; }
-__attribute__((weak)) void *Sub_08024BF0(void) { return 0; }
-__attribute__((weak)) int Sub_0802581C(int v) { return v; }
-__attribute__((weak)) void Sub_080011E10(void *a) { (void)a; }
-__attribute__((weak)) void Sub_080011CFC(void *a) { (void)a; }
-__attribute__((weak)) void Sub_080011B48(void *a) { (void)a; }
-__attribute__((weak)) void Sub_080011E58(void *a, u32 b) { (void)a; (void)b; }
-__attribute__((weak)) void Sub_080011CBC(void *a) { (void)a; }
-__attribute__((weak)) void Sub_080012574(volatile void *a) { (void)a; }
-__attribute__((weak)) void Sub_0800F778(u32 a, u32 b, u32 c) { (void)a; (void)b; (void)c; }
-__attribute__((weak)) void Sub_0800D97C(void *a, int b) { (void)a; (void)b; }
-__attribute__((weak)) void Sub_0800DBE8(void *a) { (void)a; }
-__attribute__((weak)) void Sub_0800DC7C(void *a, int b) { (void)a; (void)b; }
-__attribute__((weak)) void Sub_080015930(void *a, u32 b, u32 c) { (void)a; (void)b; (void)c; }
-__attribute__((weak)) void Sub_0800159AC(void *a, u32 b, u32 c, u32 d) { (void)a; (void)b; (void)c; (void)d; }
-__attribute__((weak)) void Sub_080014C70(void *a, void *b) { (void)a; (void)b; }
-__attribute__((weak)) void Sub_0800D854(void *a) { (void)a; }
-__attribute__((weak)) void Sub_0800D8E4(void *a) { (void)a; }
-__attribute__((weak)) void Sub_080014F60(void *a) { (void)a; }
-__attribute__((weak)) void Sub_080014D94(void *a, int b, u32 c) { (void)a; (void)b; (void)c; }
-__attribute__((weak)) void Sub_080014E3C(void *a, int b, u32 c) { (void)a; (void)b; (void)c; }
-__attribute__((weak)) void Sub_080014EA0(void *a, int b, u32 c) { (void)a; (void)b; (void)c; }
-__attribute__((weak)) void Sub_080014F14(void *a, int b, u32 c) { (void)a; (void)b; (void)c; }
-__attribute__((weak)) void Sub_080014C88(void *a) { (void)a; }
-__attribute__((weak)) void Sub_080014C84(void) { }
-#else
-#ifndef __APPLE__
 extern void sub_08007B18(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h);
 #define Sub_08007B18 sub_08007B18
-#else
-extern void Sub_08007B18(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h);
-#endif
 extern void Sub_08007BFC(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h, u32 i);
 extern void Sub_08007C68(void *a, u32 b, u32 c, int d, u32 e, u32 f, u32 g, u32 h, u32 i);
 extern void _08007C68(void *a, u32 b, u32 c, u32 d, u32 e, u32 f, u32 g, u32 h, u32 i); // faithful strong body
@@ -77,7 +44,6 @@ extern void Sub_080014EA0(void *a, int b, u32 c);
 extern void Sub_080014F14(void *a, int b, u32 c);
 extern void Sub_080014C88(void *a);
 extern void Sub_080014C84(void);
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_0800121A8 — (rec): 24BF0 ptr; 11784/11E10/11CFC/11B48;
@@ -115,10 +81,8 @@ void MenuFF78_121A8(void *rec_) {
     Sub_0800DBE8((void *)(uintptr_t)(rec + 64));
     Sub_080012574(rec);
 }
-#ifndef __APPLE__
 void _0800121A8(void *a) __attribute__((alias("MenuFF78_121A8")));
 void sub_0800121A8(void *a) __attribute__((alias("MenuFF78_121A8")));
-#endif
 
 // ----------------------------------------------------------------------------
 // Shared shape of sub_080015A0C / 15AB0 — (rec):
@@ -158,18 +122,14 @@ static void MenuFF78_15Ax(void *rec_, u32 tbl, u32 tbl2, int use_dc7c, u32 s0) {
 }
 
 void MenuFF78_15A0C(void *rec_) { MenuFF78_15Ax(rec_, 0x080CB818u, 0x080CB840u, 1, 126); }
-#ifndef __APPLE__
 void _080015A0C(void *a) __attribute__((alias("MenuFF78_15A0C")));
 void Sub_080015A0C(void *a) __attribute__((alias("MenuFF78_15A0C")));
 void sub_080015A0C(void *a) __attribute__((alias("MenuFF78_15A0C")));
-#endif
 
 void MenuFF78_15AB0(void *rec_) { MenuFF78_15Ax(rec_, 0x080CB84Cu, 0x080CB874u, 0, 112); }
-#ifndef __APPLE__
 void _080015AB0(void *a) __attribute__((alias("MenuFF78_15AB0")));
 void Sub_080015AB0(void *a) __attribute__((alias("MenuFF78_15AB0")));
 void sub_080015AB0(void *a) __attribute__((alias("MenuFF78_15AB0")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_080014A08 — (rec): dual gated 7B18 pairs over rec+68.
@@ -229,11 +189,9 @@ void MenuFF78_14A08(void *rec_) {
         }
     }
 }
-#ifndef __APPLE__
 void _080014A08(void *a) __attribute__((alias("MenuFF78_14A08")));
 void Sub_080014A08(void *a) __attribute__((alias("MenuFF78_14A08")));
 void sub_080014A08(void *a) __attribute__((alias("MenuFF78_14A08")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_080015154 — (ev, a1, a2, rec): ev-1 indexes a 12-entry table.
@@ -281,7 +239,5 @@ void MenuFF78_15154(int ev, u32 a1, u32 a2, void *rec_) {
         break;
     }
 }
-#ifndef __APPLE__
 void _080015154(int a, u32 b, u32 c, void *d) __attribute__((alias("MenuFF78_15154")));
 void sub_080015154(int a, u32 b, u32 c, void *d) __attribute__((alias("MenuFF78_15154")));
-#endif

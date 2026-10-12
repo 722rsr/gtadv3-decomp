@@ -301,7 +301,6 @@ int Course_Math_AbsRoundAvg(int a, int b) { // _08007EE0: |a|,|b|; if |b|>|a| ta
     return (bb + aa) - ((5 * bb) >> 3);
 }
 int Course_Math_DistanceHeading(int x0,int y0,int x1,int y1) { // _08007F08: signed deltas, unsigned normalized division, signed table result
-#ifndef __APPLE__
     // Keep the ROM's argument and result lifetimes in r7/r5/r6; the barriers
     // preserve its entry copies and the one-value scratch register.
     register int y0_input __asm__("r7") = y0;
@@ -322,39 +321,19 @@ int Course_Math_DistanceHeading(int x0,int y0,int x1,int y1) { // _08007F08: sig
     int sy;
     if (dy < 0) { dy = -dy; sy = 0; }
     else { sy = 1; }
-#else
-    int dx = x1 - x0;
-    int sx;
-    if (dx < 0) { dx = -dx; sx = 0; }
-    else { sx = 1; }
-
-    int dy = y1 - y0;
-    int sy;
-    if (dy < 0) { dy = -dy; sy = 0; }
-    else { sy = 1; }
-#endif
 
     if (dx == 0 && dy == 0) return 0;
 
     int sq = dx * dx + dy * dy;
     u16 root = (u16)Sqrt((u32)sq);
     int rt = (int)root;
-#ifndef __APPLE__
     register int rx __asm__("r5") =
         (int)sub_0802DF6C((u32)dx << 11, (u32)rt);
     register int ry __asm__("r6") =
         (int)sub_0802DF6C((u32)dy << 11, (u32)rt);
-#else
-    int rx = (int)sub_0802DF6C((u32)dx << 11, (u32)rt);
-    int ry = (int)sub_0802DF6C((u32)dy << 11, (u32)rt);
-#endif
 
     const s16 *tbl;
-#ifndef __APPLE__
     register u32 index2 __asm__("r0");
-#else
-    u32 index2;
-#endif
     if (rx <= ry) {
         tbl = (const s16 *)0x080C9064;
         index2 = (u32)rx << 1;
@@ -362,12 +341,8 @@ int Course_Math_DistanceHeading(int x0,int y0,int x1,int y1) { // _08007F08: sig
         tbl = (const s16 *)0x080CA064;
         index2 = (u32)ry << 1;
     }
-#ifndef __APPLE__
     register int v __asm__("r5") =
         *(s16 *)(uintptr_t)(index2 + (uintptr_t)tbl);
-#else
-    int v = *(s16 *)(uintptr_t)(index2 + (uintptr_t)tbl);
-#endif
 
     if (sx == 0) {
         if (sy) v += 1024;
@@ -378,22 +353,13 @@ int Course_Math_DistanceHeading(int x0,int y0,int x1,int y1) { // _08007F08: sig
     }
     return v;
 }
-#ifndef __APPLE__
 // ROM has a zero-filled alignment halfword after the return instruction.
 __asm__(".align 2, 0");
-#endif
 int Course_Math_HeadingInterp(int p0, int p1, int p2, void *out) {
-#ifndef __APPLE__
     register void *o __asm__("r5") = out;
     register int a4 __asm__("r4");
     register int clamped __asm__("r6");
     register u32 c __asm__("r1");
-#else
-    void *o = out;
-    int a4;
-    int clamped;
-    u32 c;
-#endif
     u32 p1s;
     u32 p0w = (u32)p0 << 16;
     p1s = (u16)p1;
@@ -405,28 +371,20 @@ int Course_Math_HeadingInterp(int p0, int p1, int p2, void *out) {
     c = (u32)((s16)c - (int)(p1s = (u32)(s32)(s16)p1s));
     {
         s16 *table = (s16 *)0x080CB064u;
-#ifndef __APPLE__
         // Materialize the literal base before the signed index scaling, in r2.
         __asm__ volatile ("" : "+r" (table));
-#endif
         int tv = table[(s16)a4];
-#ifndef __APPLE__
         // Keep the selected index live through the ldrsh address calculation.
         __asm__ volatile ("" : "+r" (a4));
-#endif
         int res = tv * (int)c;
         if (res < 0) res += 0xFFF;
         res >>= 12;
-#ifndef __APPLE__
         // Thumb's three-register ADD must encode the ROM's r3+r0 operand order.
         register int accum __asm__("r0") = res;
         register int start __asm__("r3") = (int)p1s;
         __asm__ volatile ("add %0, %1, %0"
                           : "+r" (accum) : "r" (start) : "cc");
         res = accum;
-#else
-        res = (int)p1s + res;
-#endif
         *(volatile s16 *)o = (s16)res;
     }
     return clamped;
@@ -596,10 +554,8 @@ u32 Course_08014(void) {
     // which floors it and packs pkt+2).
     return r4;
 }
-#ifndef __APPLE__
 u32 _08008014(void) __attribute__((alias("Course_08014")));
 u32 sub_08008014(void) __attribute__((alias("Course_08014")));
-#endif
 
 void Course_Leaves_095F0(void) { // _080095F0: ldr 0x0828FF08/0x030003E4, ldrh [r1+50] u16, ldrsh [r1+12] s16, lsls #2, str 4 [sp], bl 07570
     extern void sub_08007570(void*,int,int,int,int);
@@ -658,15 +614,11 @@ void Course_Iter_07BFC(void *X, int a1, int a2, int a3,
     } while (i < (int)a[7]);
 done:;
 }
-#ifndef __APPLE__
 __asm__(".align 2, 0");
-#endif
 extern void *_08002BFC(int a);
 extern void _08002C34(int idx, void *node);
-#ifndef __APPLE__
 extern void sub_08002ED0(void *a, int b, int c, int d, int e,
                          int f, int g, int h, int i, int j);
-#endif
 
 // Host-only fallback for the _08002ED0 placement writer. The ROM build calls
 // the closure symbol directly so the row loop retains its original call edge.
@@ -674,37 +626,6 @@ extern void sub_08002ED0(void *a, int b, int c, int d, int e,
 //   a0=r7 seed, a1=ip value (low byte), a2=r6 OR-mask, a3=dst<<12,
 //   s0=2C34 idx, s1=table idx, s2=loop count, s3=+4 mask<<10,
 //   s4=+0 mask<<10, s5=u16[place+12].
-#ifdef __APPLE__
-static u8 *emit_tbl(u32 s1) { return (u8 *)(uintptr_t)(0x080C4940u + (s1 << 3)); }
-static void EmitPlace_07C68(u32 a0, u32 a1, u32 a2, u32 a3,
-                            u32 s0, u32 s1, u32 s2, u32 s3, u32 s4, u32 s5) {
-    u32 r7 = a0;
-    u32 ip = a1;
-    u32 r6 = a2;
-    u32 loc0 = a3;
-    u8 *tbl = emit_tbl(s1);
-    u32 count = s2;
-    u32 sl = s4 << 10;
-    s16 head4 = (s16)(tbl[4] | ((u32)tbl[5] << 8));
-    if (count == 0u) return;
-    u32 r9 = ip & 255u;
-    s32 r8 = (s32)head4;
-    for (;;) {
-        u8 *place = (u8 *)_08002BFC(0);
-        s16 c0 = (s16)(tbl[0] | ((u32)tbl[1] << 8));
-        s16 c2 = (s16)(tbl[2] | ((u32)tbl[3] << 8));
-        *(volatile u16 *)(place + 0) = (u16)(sl | (u32)(u16)c0 | r9);
-        *(volatile u16 *)(place + 2) = (u16)(((r7 & 0x1FFu)) | (u32)(u16)c2);
-        *(volatile u16 *)(place + 4) = (u16)((loc0 << 12) | r6 | (s3 << 10));
-        *(volatile u16 *)(place + 12) = (u16)s5;
-        _08002C34((int)s0, (void *)place);
-        r7 = (u32)((s32)r7 + (s32)(s8)(tbl[6]));
-        r6 = (u32)((s32)r6 + r8);
-        count--;
-        if (count == 0u) break;
-    }
-}
-#endif
 
 // _08007C68 (asm/course_records_7bfc.s:89-142) — 9 machine args (4 reg +
 // The ROM reloads its final stack argument inside each row iteration; keeping
@@ -712,46 +633,29 @@ static void EmitPlace_07C68(u32 a0, u32 a1, u32 a2, u32 a3,
 void Course_Iter_07C68(void *X, u32 r1_add, u32 kind, u32 r3_add,
                        u32 s0_yadd, u32 s1_p3, u32 s2_s0, u32 s3,
                        volatile u32 s4) {
-#ifndef __APPLE__
     register u32 dx __asm__("r7") = r3_add;
     u32 dx_copy;
     int call_z;
-#else
-    u32 dx = r3_add;
-#endif
     void *arr = _0800748C(_08007498(*(void *volatile *)((volatile u8 *)X + 4), (int)kind));
     volatile u8 *a = (volatile u8 *)arr;
     u32 i = 0;
     if ((int)i < (int)a[7]) {
         volatile u8 *row = a + 8;
-#ifndef __APPLE__
         dx_copy = dx;
-#endif
         do {
         // Keep each row byte in the ROM's scratch register until its add;
         // without the barriers agbcc folds both loads into r0 and reorders
         // the coordinate instructions.
-#ifndef __APPLE__
         register u32 xsrc __asm__("r1") = row[2];
         __asm__ volatile ("" : "+r" (xsrc));
         u32 x = xsrc + dx_copy;
         register u32 ysrc __asm__("r2") = row[3];
         __asm__ volatile ("" : "+r" (ysrc));
         u32 y = ysrc + s0_yadd;
-#else
-        u32 x = (u32)row[2] + dx;
-        u32 y = (u32)row[3] + s0_yadd;
-#endif
         u32 z = (u32)row[0] + r1_add;
-#ifdef __APPLE__
-        u32 b1 = row[1];
-        EmitPlace_07C68((u32)x, (u32)y, (u32)z, s1_p3, s2_s0,
-                        b1, 1, s3, s4, 0);
-#else
         call_z = (int)z;
         sub_08002ED0((void *)x, (int)y, call_z, (int)s1_p3, (int)s2_s0,
                      (int)row[1], 1, (int)s3, (int)s4, 0);
-#endif
             row += 4;
             i++;
         } while ((int)i < (int)a[7]);
@@ -790,7 +694,6 @@ void Course_Iter_07E14(void *X, u8 sl, u8 r9, u32 s48, u32 s52, u32 s56, u32 s60
 }
 
 // Aliases: only for substantiated leaves + iterators + builders proven via 4B stride, u8[4] rows, 6 sp args, pools, mGBA EWRAM watchpoint, u16 masks
-#ifndef __APPLE__
 void _08008290(void *a) __attribute__((alias("Course_RecordInit")));
 void sub_08008290(void *a) __attribute__((alias("Course_RecordInit")));
 void _08008300(int a) __attribute__((alias("Course_Build32Row")));
@@ -851,12 +754,9 @@ void Sub_08008098(u16 a) __attribute__((alias("Course_State_Store10")));
 // the slice link with `undefined reference`. Promotion rule 1 -- an exported
 // `sub_` twin must be defined in C too.
 void sub_08008098(u16 a) __attribute__((alias("Course_State_Store10")));
-#endif
 
 // ROM entry alias.
-#ifndef __APPLE__
 void Sub_08007BFC(void *X, int a1, int a2, int a3,
                        u32 s0, u32 s1, u32 s2, u32 s3, u32 s4) __attribute__((alias("Course_Iter_07BFC")));
 void sub_08007BFC(void *X, int a1, int a2, int a3,
                        u32 s0, u32 s1, u32 s2, u32 s3, u32 s4) __attribute__((alias("Course_Iter_07BFC")));
-#endif

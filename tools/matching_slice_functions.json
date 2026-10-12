@@ -7070,6 +7070,17 @@
       "sub_080016DE4"
     ]
   },
+  "0x08016f28": {
+    "c_name": "_080016F28",
+    "asm_file": "asm/rec35_runtime.s",
+    "start_marker": ".type sub_080016F28, %function",
+    "end_marker": ".type sub_080016FD0, %function",
+    "end_vma": "0x08016fd0",
+    "export": [
+      "_080016F28",
+      "sub_080016F28"
+    ]
+  },
   "0x080173e8": {
     "asm_file": "asm/rec35_runtime.s",
     "c_name": "_0800173E8",
@@ -8452,6 +8463,16 @@
       "sub_08001E9DC"
     ],
     "start_marker": ".type sub_08001E9DC, %function"
+  },
+  "0x0801ea28": {
+    "c_name": "_08001EA28",
+    "asm_file": "asm/race_scene.s",
+    "start_marker": ".type sub_08001EA28, %function",
+    "end_marker": ".type sub_08001EB48, %function",
+    "end_vma": "0x0801eb48",
+    "export": [
+      "sub_08001EA28"
+    ]
   },
   "0x0801eb48": {
     "asm_file": "asm/race_scene.s",

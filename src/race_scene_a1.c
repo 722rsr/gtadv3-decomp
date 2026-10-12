@@ -12,11 +12,7 @@
 
 #include "gba/types.h"
 
-#ifdef __APPLE__
-#define HOST_STUB(sig) __attribute__((weak)) sig
-#else
 #define HOST_STUB(sig) extern sig
-#endif
 
 HOST_STUB(void  _08002D974(const void *src, void *dst, u32 ctrl)); // 0x08002D974 CpuSet
 HOST_STUB(void  _08002E0A4(void *d, const void *s, u32 n));        // 0x08002E0A4 memcpy
@@ -143,16 +139,8 @@ void _08001A44C(void *dst_, const void *src_) {
 // ----------------------------------------------------------------------------
 void _08001A768(void *a_, int b, int c) {
     volatile u8 *a = (volatile u8 *)a_;
-#ifndef __APPLE__
     register int bFlag __asm__("r5") = b;
-#else
-    int bFlag = b;
-#endif
-#ifndef __APPLE__
     register int cFlag __asm__("sl") = c;
-#else
-    int cFlag = c;
-#endif
     volatile u8 *wa = (volatile u8 *)WORK_AREA;
     u32 zero = 0;
     _08002D974(&zero, (void *)a, 0x0500015Au);
@@ -332,17 +320,12 @@ void _08001A768(void *a_, int b, int c) {
 void _08001B068(int a) {
     if (a != 0) {
         _08018AA8(4u, 1);
-#ifdef __APPLE__
-        _080096A4((void *)(uintptr_t)(*(volatile u32 *)(uintptr_t)CTX + 860u));
-        *(volatile u16 *)(uintptr_t)(*(volatile u32 *)(uintptr_t)CTX + 122u) = 5;
-#else
         {
             register u32 cell __asm__("r4");
             cell = CTX;
             _080096A4((void *)(uintptr_t)(*(volatile u32 *)(uintptr_t)cell + 860u));
             *(volatile u16 *)(uintptr_t)(*(volatile u32 *)(uintptr_t)cell + 122u) = 5;
         }
-#endif
         _08002B460();
         _08002B25C();
     } else {
@@ -350,15 +333,9 @@ void _08001B068(int a) {
         u32 rec;
         s16 *pca;
         s16 a2, a3;
-#ifndef __APPLE__
         register u8 *wb __asm__("r2");
         register u32 off __asm__("r3");
         register int i __asm__("r5");
-#else
-        u8 *wb;
-        u32 off;
-        int i;
-#endif
         __asm__(".globl WaBase\nWaBase = 0x03001780\n");
         __asm__(".globl WaOffFE\nWaOffFE = 0x10FE\n");
         __asm__(".globl WaOffCA\nWaOffCA = 0x10CA\n");
@@ -478,11 +455,8 @@ __asm__(".align 2, 0");
 // and re-emits only a `.thumb_set` agbcc actually wrote, so C must define the
 // `sub_` spelling or the independent link fails with an undefined reference.
 // Alias the real body in ONE hop (chaining through a second alias is a known
-// link failure). The guard is required: clang rejects `alias` attributes on
-// darwin, and no ARM gate sees it -- only tools/apple_decls.py does.
-#ifndef __APPLE__
+// link failure).
 void sub_08001B27C(int unused, u16 key) __attribute__((alias("_08001B27C")));
-#endif
 
 // ----------------------------------------------------------------------------
 // ---- 0x0801B364 — two-u16 event router (ev9 body: 1B1A4/1B27C) ----
@@ -632,10 +606,8 @@ void _08001B498(int sel) {
 
 // Spelling aliases for the 0x08001B498 event dispatcher (race_scene.c uses
 // the Sub_ spelling).
-#ifndef __APPLE__
 void sub_08001B498(int v) __attribute__((alias("_08001B498")));
 void Sub_08001B498(int v) __attribute__((alias("_08001B498")));
-#endif
 
 // ----------------------------------------------------------------------------
 // ---- 0x0801B730 — interior of sub_08001B498: threshold test leaf ----
@@ -878,7 +850,5 @@ int _08001B9AC(void) {
 }
 
 // ROM entry alias.
-#ifndef __APPLE__
 void RaceScene_B364(u16 a, u16 b) __attribute__((alias("_08001B364")));
 void Sub_0801B498(int sel) __attribute__((alias("_08001B498")));
-#endif

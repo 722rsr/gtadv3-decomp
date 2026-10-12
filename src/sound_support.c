@@ -31,18 +31,14 @@ void SoundPump(void){
     *(volatile u16*)0x040000C6 = 0x0400;
     *(volatile u16*)0x040000C6 = 0xB600;
 }
-#ifndef __APPLE__
 void _0802BE78(void) __attribute__((alias("SoundPump")));
 void sub_0802BE78(void) __attribute__((alias("SoundPump")));
-#endif
 
 // _0802C53C thunk -> mixer
 void SoundThunk(void){ sub_0802B898(); }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _0802C53C(void) __attribute__((alias("SoundThunk")));
 void sub_0802C53C(void) __attribute__((alias("SoundThunk")));
-#endif
 
 // _0802C488 / _0802C4A4 pause gates (Smsh guard)
 //
@@ -78,10 +74,8 @@ void SoundPauseGateOff(void *state){
     if (g != SOUND_MAGIC) return; // +0x34 = idx13
     s[1] &= 0x7FFFFFFFu; // +0x04 clear bit31
 }
-#ifndef __APPLE__
 void _0802C488(void *s) __attribute__((alias("SoundPauseGateOff")));
 void sub_0802C488(void *s) __attribute__((alias("SoundPauseGateOff")));
-#endif
 void SoundPauseGateOn(void *state, u16 v){
     volatile u32 *s = (volatile u32 *)state;
     u16 fade = 0x100;
@@ -92,10 +86,8 @@ void SoundPauseGateOn(void *state, u16 v){
     ((volatile u16*)s)[18] = v; // +0x24
     ((volatile u16*)s)[20] = fade; // +0x28
 }
-#ifndef __APPLE__
 void _0802C4A4(void *s, u16 v) __attribute__((alias("SoundPauseGateOn")));
 void sub_0802C4A4(void *s, u16 v) __attribute__((alias("SoundPauseGateOn")));
-#endif
 // _0802BC64 unlink — doubly-linked active voice list.
 // Self-contained leaf, no calls, no pool, frameless `bx lr`.
 // ROM: `ldr r3,[r0,#44] / cmp / beq / ldr r1,[r0,#52] / ldr r2,[r0,#48] /
@@ -124,19 +116,15 @@ void SoundUnlinkVoice(void *chan){
     zero = 0;
     c[11]=zero;
 }
-#ifndef __APPLE__
 void _0802BC64(void *c) __attribute__((alias("SoundUnlinkVoice")));
 void sub_0802BC64(void *c) __attribute__((alias("SoundUnlinkVoice")));
-#endif
 
 // _0802BC4C clear 64B array, _0802DFE4 divmod
 void SoundClearVoiceArray(void *base){
     __builtin_memset(base, 0, 64);
 }
-#ifndef __APPLE__
 void _0802BC4C(void *b) __attribute__((alias("SoundClearVoiceArray")));
 void sub_0802BC4C(void *b) __attribute__((alias("SoundClearVoiceArray")));
-#endif
 
 
 // Friendly-name wrapper used by lifted C (idle_dispatch.c mode-3 tail,

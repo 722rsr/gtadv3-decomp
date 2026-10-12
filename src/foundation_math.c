@@ -13,15 +13,9 @@ int MathSign(int v) { // 0x05B6E/0x05B76: cmp/bge/bgt -> -1/0/1 (verified)
     if (v > 0) return 1;
     return 0;
 }
-#ifndef __APPLE__
 int _08005B3C_abs(int a) __attribute__((alias("MathAbs")));
-#endif
-#ifndef __APPLE__
 int _08005B6E_sign(int a) __attribute__((alias("MathSign")));
-#endif
-#ifndef __APPLE__
 int _08005B8A_abs16(int a) __attribute__((alias("MathAbs16")));
-#endif
 
 int MathAbs16(int v) { // 0x05B8A variant: s16 sign-extend then abs
     s16 s = (s16)v;
@@ -53,10 +47,8 @@ void MathHelper_05BA8(void *p, int angle){
     *((int *)p + 1) = ny;
     *(int *)p = nx;
 }
-#ifndef __APPLE__
 void _08005BA8(void *a,int b) __attribute__((alias("MathHelper_05BA8")));
 void sub_08005BA8(void *a,int b) __attribute__((alias("MathHelper_05BA8")));
-#endif
 
 // _08005C58 (asm/code_5b3c.s:184): modular interpolation over 12-bit angles.
 //   r6 = a & 0xFFF; r4 = b & 0xFFF; r5 = r6; t = |r5 - r4| (_08005B5C).
@@ -97,9 +89,7 @@ int MathHelper_05C58(int a,int b){
     }
     return (a12 + (sign << 1) * off) & 0xFFF;
 }
-#ifndef __APPLE__
 int _08005C58(int a,int b) __attribute__((alias("MathHelper_05C58")));
-#endif
 int MathHelper_05CB4(void *p){
     s32 x = *(s32*)p;
     s32 y = *(s32*)((u8*)p+4);
@@ -123,9 +113,7 @@ int MathHelper_05CB4(void *p){
         return e;
     }
 }
-#ifndef __APPLE__
 int _08005CB4(void *a) __attribute__((alias("MathHelper_05CB4")));
-#endif
 /*
  * 0x08005D74 (22 B) and 0x08005DA4 (34 B) are OWNED by src/code_5b3c_math.c
  * (`MathLeaf_05D74` / `MathLeaf_05DA4`, exported as _08005D74 / _08005DA4).
@@ -138,6 +126,4 @@ int _08005CB4(void *a) __attribute__((alias("MathHelper_05CB4")));
  */
 
 // ROM entry alias.
-#ifndef __APPLE__
 void MathRot(void *p, int angle) __attribute__((alias("MathHelper_05BA8")));
-#endif

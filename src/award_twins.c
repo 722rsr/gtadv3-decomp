@@ -74,9 +74,7 @@ void Award_CopyTwinB(int idx, void *src, void *unused) {
 }
 
 // Original aliases
-#ifndef __APPLE__
 void _0800BA3C(int idx, void *a, void *b) __attribute__((alias("Award_CopyTwinA")));
 void _0800BB0C(int idx, void *a, void *b) __attribute__((alias("Award_CopyTwinB")));
 void sub_0800BA3C(int idx, void *a, void *b) __attribute__((alias("Award_CopyTwinA")));
 void sub_0800BB0C(int idx, void *a, void *b) __attribute__((alias("Award_CopyTwinB")));
-#endif

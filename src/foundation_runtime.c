@@ -28,22 +28,18 @@ void RuntimeIrqConfig(void) {
     }
     *(volatile u16 *)0x04000004u = 0x3828;
 }
-#ifndef __APPLE__
 void _08002AAC(void) __attribute__((alias("RuntimeIrqConfig")));
 // The closure spells 0x08002AAC `sub_08002AAC`, and promoted bodies call it by
 // that name. Without this the alias exists in no C TU, the asm copy is a local
 // `t` symbol no separate object can resolve, and the call silently becomes a
 // ROM veneer -- which the byte oracle cannot see. One hop to the real body.
 void sub_08002AAC(void) __attribute__((alias("RuntimeIrqConfig")));
-#endif
 
 // hot placement helpers — substantiated from runtime_2aac.s
 // _08002AF4(x) = x*4 + 0x0203F170 (IRQ table base) — verified at 0x02AF4: lsls #2 + ldr constant
 u32 Place_x4(u32 x) { return x*4 + 0x0203F170; }
-#ifndef __APPLE__
 u32 _08002AF4(u32 x) __attribute__((alias("Place_x4")));
 u32 sub_08002AF4(u32 v) __attribute__((alias("Place_x4")));
-#endif
 // _08002C48 exact: ldr r2,=0x03000134; ldr r2,[r2]; lsls r1#16/lsrs#16 u16 val; lsls r0#5 *32; strh r1@[r0+6]/[r0+30]; pool _08002C5C=0x03000134
 void Store_02C48(int idx, u16 val){
     // preceding lsls r1,#16 / lsrs r1,#16 in asm normalizes to u16
@@ -55,9 +51,7 @@ void Store_02C48(int idx, u16 val){
     *p6 = v;
     *p30 = v;
 }
-#ifndef __APPLE__
 void _08002C48(int a, u16 b) __attribute__((alias("Store_02C48")));
-#endif
 // neighboring _08002C60 exact: ldr r3,=0x03000134; ldr r3,[r3]; lsls r0#5; adds r0,r3; strh r1@[r0+6]; strh r2@[r0+30]; pool _08002C70=0x03000134
 // The two halfword parameters are WORD-typed, and that is a ROM fact: the
 // stores are `strh r1,[r3,#6] / strh r2,[r3,#30]` with the incoming
@@ -73,9 +67,7 @@ void Store_02C60(int idx, u32 v1, u32 v2){
     *(volatile u16*)(((u32)idx<<5) + (uintptr_t)base + 6) = v1;
     *(volatile u16*)(((u32)idx<<5) + (uintptr_t)base + 30) = v2;
 }
-#ifndef __APPLE__
 void _08002C60(int a, u32 b, u32 c) __attribute__((alias("Store_02C60")));
-#endif
 
 // Substantive tail: _08002ED0 placement writer + IWRAM placement/accessor leaves
 // Evidence: asm/runtime_2aac.s 0x02ED0..0x048D8, table at 0x080C4940 (8 B rows).
@@ -91,18 +83,14 @@ void _08002C60(int a, u32 b, u32 c) __attribute__((alias("Store_02C60")));
 // declaration below preserves the ROM call without an extra movs r0,#0.
 // The table index is word-wide; the ROM does not truncate it to s16.
 void EmitPlace_02ED0(void *a, int b, int c, int d, int e, int f, int g, int h, int i, int j);
-#ifndef __APPLE__
 void _08002ED0(void *a, int b, int c, int d, int e, int f, int g, int h, int i, int j) __attribute__((alias("EmitPlace_02ED0")));
 void sub_08002ED0(void *a, int b, int c, int d, int e, int f, int g, int h, int i, int j) __attribute__((alias("EmitPlace_02ED0")));
 void Sub_08002ED0(void *a, int b, int c, int d, int e, int f, int g, int h, int i, int j) __attribute__((alias("EmitPlace_02ED0")));
-#endif
 void EmitPlace_02ED0(void *base,int id,int z,int y,int idx,int row,int count,int bank,int shape,int clear) {
     typedef struct { u16 attr0, attr1, advance; s8 dx; u8 pad; } EmitRow;
     typedef struct { u16 attr0, attr1, attr2, pad; u32 next; u16 clear; } EmitObj;
-#ifndef __APPLE__
     // Retain the assembly's interior label at the first stack-argument load.
     __asm__(".global _08002EE4\n.set _08002EE4, EmitPlace_02ED0 + 20");
-#endif
     int x = (int)(uintptr_t)base;
     register int incoming __asm__("ip") = id;
     register int tile __asm__("r6") = z;
@@ -120,13 +108,8 @@ void EmitPlace_02ED0(void *base,int id,int z,int y,int idx,int row,int count,int
     register int step __asm__("r8") = (s16)advance;
     do {
         extern void _08002C34(int,void *);
-#ifndef __APPLE__
         extern void *EmitAllocate_02ED0(void) __asm__("_08002BFC");
         EmitObj *obj = (EmitObj *)EmitAllocate_02ED0();
-#else
-        extern void *_08002BFC(int);
-        EmitObj *obj = (EmitObj *)_08002BFC(0);
-#endif
         u32 attr0 = shapebits;
         __asm__("" : "+r"(attr0));
         register u32 tableattr __asm__("r3") = tbl->attr0;
@@ -145,7 +128,6 @@ void EmitPlace_02ED0(void *base,int id,int z,int y,int idx,int row,int count,int
         bits |= bankfield;
         __asm__("" : "+r"(bits));
         obj->attr2 = bits;
-#ifndef __APPLE__
         // Hardware ABI contract: the ROM reads only the low halfword of
         // the tenth caller word at sp+56 after its fixed 36-byte frame.
         // A normal cast emits a word load; &clear emits add sp,#56 instead
@@ -154,19 +136,14 @@ void EmitPlace_02ED0(void *base,int id,int z,int y,int idx,int row,int count,int
         register const struct { u8 pad[56]; u16 clear; } *frame __asm__("sp");
         __asm__("" : "=r"(frame));
         obj->clear = frame->clear;
-#else
-        obj->clear = (u16)clear;
-#endif
         _08002C34(idx,obj);
         x += tbl->dx;
         tile += step;
     } while (--remaining != 0);
 }
 void RecordSetter_02F68(int x,int id,int y,int z,int idx,int row,int count);
-#ifndef __APPLE__
 void _08002F68(int a,int b,int c,int d,int e,int f,int g) __attribute__((alias("RecordSetter_02F68")));
 void sub_08002F68(int a,int b,int c,int d,int e,int f,int g) __attribute__((alias("RecordSetter_02F68")));
-#endif
 void RecordSetter_02F68(int x,int id,int y,int z,int idx,int row,int count){
     // 0x02F68 (asm/runtime_2aac.s:612-703): 7-arg sprite emitter over table
     // 0x080C4940 + (row<<3). Prebuild attr0 = h0 | 0x400 | (id & 0xFF);
@@ -196,10 +173,8 @@ void RecordSetter_02F68(int x,int id,int y,int z,int idx,int row,int count){
     }
 }
 void RecordSetter_03004(int base,int v1,int z,int y,int idx,int row,int a6,int a7);
-#ifndef __APPLE__
 void _08003004(int a,int b,int c,int d,int e,int f,int g,int h)
     __attribute__((alias("RecordSetter_03004")));
-#endif
 void RecordSetter_03004(int base,int v1,int z,int y,int idx,int row,int a6,int a7){
     // 0x03004: single-emit OAM record over table 0x080C4940 + (row<<3).
     //   r9 = (s16)_08002BE8(0x080C4940)   (bump counter u16[0x03000158])
@@ -256,7 +231,6 @@ void RecordSetter_03004(int base,int v1,int z,int y,int idx,int row,int a6,int a
     // entry reorder (z spill and the row load land above the three parameter
     // copies where the ROM has copies first). Non-exact by construction; keep
     // the improved body for whoever revisits it.
-#ifndef __APPLE__
     register int rbase __asm__("r8");
     register int rv1 __asm__("r6");
     register int ry __asm__("sl");
@@ -266,13 +240,6 @@ void RecordSetter_03004(int base,int v1,int z,int y,int idx,int row,int a6,int a
     register u16 h0 __asm__("r5");
     register u16 h2 __asm__("r4");
     register volatile u8 *obj __asm__("r2");
-#else
-    int rbase, rv1, ry, r9;
-    volatile u8 *tbl;
-    u16 h0, h2;
-    u16 orval;
-    volatile u8 *obj;
-#endif
     rbase = base;
     rv1 = v1;
     ry = y;
@@ -288,19 +255,12 @@ void RecordSetter_03004(int base,int v1,int z,int y,int idx,int row,int a6,int a
         extern void _08002C60(int, u32, u32);
         _08002C60(r9, (u16)a6, (u16)a7);
     }
-#ifndef __APPLE__
     // The allocator takes no argument in the ROM: a no-parameter
     // declaration keeps `bl _08002BFC` free of an argument setup.
     {
         extern void *EmitAlloc_03004(void) __asm__("_08002BFC");
         obj = (volatile u8*)EmitAlloc_03004();
     }
-#else
-    {
-        extern void *_08002BFC(int);
-        obj = (volatile u8*)_08002BFC(0);
-    }
-#endif
     // Non-volatile s8 loads: a volatile signed byte lvalue lowers to
     // `ldrb` plus an explicit sign extension, while the ROM's plain
     // `ldrsb` is what a non-volatile signed byte read emits. The halving is
@@ -339,13 +299,8 @@ void RecordSetter_03004(int base,int v1,int z,int y,int idx,int row,int a6,int a
 // (224<<19) + i*8 (0x1C00000 base) and r4 = 31 counting down to 0 (bge).
 void Helper_030CC(void){
     u16 buf[4];
-#ifndef __APPLE__
     register u32 key __asm__("r5");
     register int n __asm__("r4");
-#else
-    u32 key;
-    int n;
-#endif
     extern void sub_0802D974(const void *a, void *b, u32 c);
     buf[0] = 160;
     buf[1] = 0;
@@ -359,56 +314,38 @@ void Helper_030CC(void){
         n--;
     } while (n >= 0);
 }
-#ifndef __APPLE__
 void _080030CC(void) __attribute__((alias("Helper_030CC")));
-#endif
 
 // _08002B00 residual (B of 28; NOT alignment-only — the span ends
 void Store_02B00(u32 a,u32 b){ *(vu32*)0x03000134=a; __asm__("" ::: "r2"); *(vu32*)0x0300013C=b; *(vu32*)0x03000138=a; }
-#ifndef __APPLE__
 void _08002B00(u32 a,u32 b) __attribute__((alias("Store_02B00")));
-#endif
 void Store_02B1C(u32 a,u32 b){ *(vu32*)0x03000140=a; *(vu32*)0x03000144=b; }
-#ifndef __APPLE__
 void _08002B1C(u32 a,u32 b) __attribute__((alias("Store_02B1C")));
-#endif
 void Store_02B30(u32 a,u32 b){ *(vu32*)0x03000148=a; *(vu32*)0x0300014C=b; }
-#ifndef __APPLE__
 void _08002B30(u32 a,u32 b) __attribute__((alias("Store_02B30")));
-#endif
 void Store_02B44(void){ *(vu16*)0x03000158=0; }
-#ifndef __APPLE__
 void _08002B44(void) __attribute__((alias("Store_02B44")));
 // `sub_08002B44` is declared further down with `Sub_08002B44`, beside the other
 // two spellings of this body.
-#endif
 // _08002BB4 residual (B of 36; prefix 9, candidate 32 B). The
 void Store_02BB4(void){
     *(vu32*)0x03000154 = *(vu32*)0x03000148;
-#ifndef __APPLE__
     __asm__ volatile("" ::: "r1");
-#endif
     *(vu32*)0x03000150 = *(vu32*)0x0300014C;
 }
-#ifndef __APPLE__
 void _08002BB4(void) __attribute__((alias("Store_02BB4")));
-#endif
 int LoadSub_02BD8(void){
     const s16 *p = (const s16 *)0x03000158;
     return 32 - *p;
 }
-#ifndef __APPLE__
 int _08002BD8(void) __attribute__((alias("LoadSub_02BD8")));
-#endif
 int Inc_02BE8(int dummy){
     volatile u16 *p = (volatile u16 *)0x03000158;
     u16 cur = *p;
     *p = cur + 1;
     return (s16)cur;
 }
-#ifndef __APPLE__
 int _08002BE8(int) __attribute__((alias("Inc_02BE8")));
-#endif
 
 void Insert_02C34(int idx, void *node){
     // _08002C34: ldr r2,=0x03000140; ldr r2,[r2]; lsls r0,r0,#2; adds r2,r2,r0; ldr r0,[r2]; str r0,[r1,#8]; str r1,[r2]; bx lr
@@ -419,9 +356,7 @@ void Insert_02C34(int idx, void *node){
     *(volatile u32*)((u8*)node + 8) = old;
     *slot = (u32)(uintptr_t)node;
 }
-#ifndef __APPLE__
 void _08002C34(int a, void *b) __attribute__((alias("Insert_02C34")));
-#endif
 
 // 0x08002DB8: emit count objects from one 8-byte ROM row. The returned
 // objects live in the RAM shadow pool, not hardware OAM. The ROM loads the
@@ -447,13 +382,8 @@ void Helper_02DB8(void *base,int id,int z,int y,int idx,int row,int count) {
         // The allocator overwrites r0 without reading it; the ROM call has
         // no argument materialization. Its legacy int parameter is unused.
         extern void _08002C34(int,void *);
-#ifndef __APPLE__
         extern void *EmitAllocate_02DB8(void) __asm__("_08002BFC");
         EmitObj *obj = (EmitObj *)EmitAllocate_02DB8();
-#else
-        extern void *_08002BFC(int);
-        EmitObj *obj = (EmitObj *)_08002BFC(0);
-#endif
         u32 attr0 = ybits;
         __asm__("" : "+r"(attr0));
         obj->attr0 = attr0 | tbl->attr0;
@@ -467,12 +397,10 @@ void Helper_02DB8(void *base,int id,int z,int y,int idx,int row,int count) {
         tile += step;
     } while (--remaining != 0);
 }
-#ifndef __APPLE__
 void _08002DB8(void *a,int b,int c,int d,int e,int f,int g)
     __attribute__((alias("Helper_02DB8")));
 void sub_08002DB8(void *a,int b,int c,int d,int e,int f,int g)
     __attribute__((alias("Helper_02DB8")));
-#endif
 // 0x08002E3C: the eight-argument variant adds bank bits to attr2. The ROM
 // normalizes the eighth stack argument to u16 and retains it in sl; depth
 // occupies the single stack local and is loaded anew for each object.
@@ -498,13 +426,8 @@ void Helper_02E3C(void *base,int id,int z,int y,int idx,int row,int count,u32 ba
     register int step __asm__("r8") = (s16)advance;
     do {
         extern void _08002C34(int,void *);
-#ifndef __APPLE__
         extern void *EmitAllocate_02E3C(void) __asm__("_08002BFC");
         EmitObj *obj = (EmitObj *)EmitAllocate_02E3C();
-#else
-        extern void *_08002BFC(int);
-        EmitObj *obj = (EmitObj *)_08002BFC(0);
-#endif
         u32 attr0 = ybits;
         __asm__("" : "+r"(attr0));
         obj->attr0 = attr0 | tbl->attr0;
@@ -524,19 +447,15 @@ void Helper_02E3C(void *base,int id,int z,int y,int idx,int row,int count,u32 ba
         tile += step;
     } while (--remaining != 0);
 }
-#ifndef __APPLE__
 void _08002E3C(void *a,int b,int c,int d,int e,int f,int g,u32 h)
     __attribute__((alias("Helper_02E3C")));
 void sub_08002E3C(void *a,int b,int c,int d,int e,int f,int g,u32 h)
     __attribute__((alias("Helper_02E3C")));
-#endif
 
 // span-tail init — _080048D8 is scene-tail reset (writes 0x03000198+? per findings §6)
 // Implemented as heap cursor reset via 0x03000198+0x88/0x90 alias to _08004A0C
 void RuntimeTailInit(void){ extern void HeapReset(void); HeapReset(); }
-#ifndef __APPLE__
 void _080048D8(void) __attribute__((alias("RuntimeTailInit")));
-#endif
 
 // ---- Mechanical translation of remaining bounded runtime leaves (opaque IWRAM) ----
 // Each uses exact VMA, pool at original.4byte offset, and volatile u8/u16/s16/u32 widths.
@@ -582,9 +501,7 @@ void Wrap_02B50(void){
         *(u16*)((i << 1) + b) = v;
     }
 }
-#ifndef __APPLE__
 void _08002B50(void) __attribute__((alias("Wrap_02B50")));
-#endif
 
 // _08002C74 exact: ldr r2,=0x03000134; ldr r2,[r2]; lsls r0,#5; adds r0,r2; strh r1,[r0,#22]; pool _08002C80=0x03000134
 void Store_02C74(int idx, int val){
@@ -593,10 +510,8 @@ void Store_02C74(int idx, int val){
     volatile u16 *p = (volatile u16*)(((u32)idx << 5) + (uintptr_t)base + 22);
     *p = (u16)val;
 }
-#ifndef __APPLE__
 void _08002C74(int a, int b) __attribute__((alias("Store_02C74")));
 void sub_08002C74(int a, int b) __attribute__((alias("Store_02C74")));
-#endif
 
 // _08002C84 EXACT : 20/20, prefix 20, candidate 20 B. The
 // semantics were already right — `ldr r1,=0x03000134/ldr r1,[r1]/lsls r0,#5/
@@ -630,25 +545,19 @@ void Wrap_02C84(int idx){
     register s16 n __asm__("r1") = -v;
     *(volatile u16*)p = (u16)n;
 }
-#ifndef __APPLE__
 void _08002C84(int a) __attribute__((alias("Wrap_02C84")));
-#endif
 
 // _08003130 exact: ldr r0,=0x03000134; ldr r0,[r0]; bx lr; pool _08003138=0x03000134 Vu32
 u32 Get_03130(void){
     return *(volatile u32*)(uintptr_t)0x03000134;
 }
-#ifndef __APPLE__
 u32 _08003130(void) __attribute__((alias("Get_03130")));
-#endif
 
 // _0800313C exact: ldr r1,=0x03000138; str r0,[r1]; bx lr; pool _08003144=0x03000138 Vu32 (typed entry despite objdump order)
 void Store_0313C(u32 val){
     *(volatile u32*)(uintptr_t)0x03000138 = val;
 }
-#ifndef __APPLE__
 void _0800313C(u32 a) __attribute__((alias("Store_0313C")));
-#endif
 
 // _08002D3C: block copy 0x03000140->0x03000138 then OAM fill via _0802D970.
 // ROM (asm/runtime_2aac.s:329-378): push {r4-r6,lr}; tbl=*0x03000140 (r4,
@@ -713,11 +622,9 @@ void Wrap_02D3C(void){
     _0802D970((const void *)(uintptr_t)oamSrc,
               (void *)(uintptr_t)((u32)224 << 19), (u32)((u32)128 << 1));
 }
-#ifndef __APPLE__
 void _08002D3C(void) __attribute__((alias("Wrap_02D3C")));
 // Both entry spellings are branch/entry labels in the reference span.
 void sub_08002D3C(void) __attribute__((alias("Wrap_02D3C")));
-#endif
 
 // _08002D98: 4× strh at 0x03000134+r0+6/14/22/30 with *32 stride
 void Wrap_02D98(u32 r0, u32 r1, u32 r2, u32 r3, u32 r5){
@@ -738,9 +645,7 @@ void Wrap_02D98(u32 r0, u32 r1, u32 r2, u32 r3, u32 r5){
     *(volatile u16 *)(addr + 22) = (u16)r3;
     *(volatile u16 *)(addr + 30) = (u16)r5;
 }
-#ifndef __APPLE__
 void _08002D98(u32 a,u32 b,u32 c,u32 d,u32 e) __attribute__((alias("Wrap_02D98")));
-#endif
 
 void Wrap_03248(int a,int b,int c){
     extern void _08007538(void*,int,void*); extern int _08007614(void*,int,int,void*);
@@ -749,10 +654,8 @@ void Wrap_03248(int a,int b,int c){
     _08007614(tbl,3,0,(void*)(uintptr_t)b);
     (void)c;
 }
-#ifndef __APPLE__
 void _08003248(int a,int b,int c) __attribute__((alias("Wrap_03248")));
 void sub_08003248(int a,int b,int c) __attribute__((alias("Wrap_03248")));
-#endif
 
 // _08003270: +1 variant (asm/runtime_2aac.s:1026-1032: r2 = incoming r0)
 void Wrap_03270(int a,int b,int c){
@@ -762,10 +665,8 @@ void Wrap_03270(int a,int b,int c){
     _08007614(tbl,4,0,(void*)(uintptr_t)b);
     (void)c;
 }
-#ifndef __APPLE__
 void _08003270(int a,int b,int c) __attribute__((alias("Wrap_03270")));
 void sub_08003270(int a,int b,int c) __attribute__((alias("Wrap_03270")));
-#endif
 
 // _08003298: +2 variant (asm/runtime_2aac.s:1046-1052: r2 = incoming r0)
 void Wrap_03298(int a,int b,int c){
@@ -775,9 +676,7 @@ void Wrap_03298(int a,int b,int c){
     _08007614(tbl,5,0,(void*)(uintptr_t)b);
     (void)c;
 }
-#ifndef __APPLE__
 void _08003298(int a,int b,int c) __attribute__((alias("Wrap_03298")));
-#endif
 
 // _080032E6: dispatch over r5 0..3 via _080032E0/03326/03330/0333A wrappers
 void Wrap_032E6(int id, void *buf){
@@ -793,9 +692,7 @@ void Wrap_032E6(int id, void *buf){
         else if(i==3) Wrap_03298(0,0,0);
     }
 }
-#ifndef __APPLE__
 void _080032E6(int a,void *b) __attribute__((alias("Wrap_032E6")));
-#endif
 
 // _08003604: counted string scan then 6-arg emit via _08003350.
 // ROM (asm/runtime_2aac.s:1140-1185): push {r4-r7,lr}+sub sp,#8; save
@@ -829,7 +726,6 @@ void Wrap_03604(int a,int b,int c,void *d){
     }
     _08003350(a, x, b, c, (const void *)orig, 1);
 }
-#ifndef __APPLE__
 void _08003604(int a,int b,int c,void *d) __attribute__((alias("Wrap_03604")));
 // runtime_2aac.s branches here by the `sub_08003604` spelling; without this
 // alias the independent link would resolve that call with a ROM veneer.
@@ -842,4 +738,3 @@ void Sub_08002BB4(void) __attribute__((alias("Store_02BB4")));
 void sub_08002BB4(void) __attribute__((alias("Store_02BB4")));
 int sub_08002BD8(void) __attribute__((alias("LoadSub_02BD8")));
 int sub_08002BE8(int) __attribute__((alias("Inc_02BE8")));
-#endif

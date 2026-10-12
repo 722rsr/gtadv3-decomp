@@ -9,14 +9,12 @@
 
 extern u32 Ghost_FlagTest(u32 mask); // _08018ACC
 extern void *Course_0x080263C4(int a, void *b, int c); // 0x080263C4
-#ifndef __APPLE__
 // Closure spellings for the two callees above. `_08018ACC` and
 // `sub_080263C4` are the spellings `arm-none-eabi-nm` reports for 0x08018ACC
 // and 0x080263C4, and both are defined as real bodies in src/ghost.c and
 // src/runtime_state_dispatch.c -- so the call reaches C rather than a ROM veneer.
 extern u32 _08018ACC(u32 mask);
 extern void *sub_080263C4(int a, void *b, int c);
-#endif
 // ROM tail call shape (asm/race_cluster.s _0801A1B8): (u16[racer+26],
 // s16[WA+0x1DE4+2i]); its return is a 32-byte tile row copied by _0802D970
 // (CpuFastSet, ctrl 8 = 8 words) to 0x03005780 + i*32.
@@ -50,11 +48,7 @@ loop:
         u32 flag;
         register int selector __asm__("r2");
         register u32 result __asm__("r0");
-#ifndef __APPLE__
         flag = _08018ACC(32);
-#else
-        flag = Ghost_FlagTest(32);
-#endif
         if (flag != 0) {
             selector = 3;
             if (i == 0)
@@ -64,13 +58,8 @@ loop:
             if (i == 0)
                 selector = 1;
         }
-#ifndef __APPLE__
         result = (u32)(uintptr_t)sub_080263C4(
             i, (void *)(uintptr_t)*(volatile u16 *)(racers + 26), selector);
-#else
-        result = (u32)(uintptr_t)Course_0x080263C4(
-            i, (void *)(uintptr_t)*(volatile u16 *)(racers + 26), selector);
-#endif
         {
             register u32 storeOffset __asm__("r2") = 140;
             __asm__ volatile("" : "+r"(storeOffset));
@@ -97,9 +86,7 @@ loop:
             goto loop;
     }
 }
-#ifndef __APPLE__
 __asm__(".align 2, 0");
-#endif
 void Race_Cluster_B(void) {
     register volatile u8 *racers __asm__("r4") =
         (volatile u8 *)RACER_ARRAY_BASE;
@@ -110,21 +97,12 @@ void Race_Cluster_B(void) {
     register u32 result __asm__("r0");
     register volatile u32 *target __asm__("r1");
 
-#ifndef __APPLE__
     flag = _08018ACC(32);
-#else
-    flag = Ghost_FlagTest(32);
-#endif
     selector = 1;
     if (flag != 0)
         selector = 2;
-#ifndef __APPLE__
     result = (u32)(uintptr_t)sub_080263C4(
         0, (void *)(uintptr_t)*(volatile u16 *)(racers + 26), selector);
-#else
-    result = (u32)(uintptr_t)Course_0x080263C4(
-        0, (void *)(uintptr_t)*(volatile u16 *)(racers + 26), selector);
-#endif
     storeOffset = 140;
     storeOffset <<= 1;
     target = (volatile u32 *)(racers + storeOffset);
@@ -133,21 +111,12 @@ void Race_Cluster_B(void) {
     stride <<= 1;
     racers += stride;
 
-#ifndef __APPLE__
     flag = _08018ACC(32);
-#else
-    flag = Ghost_FlagTest(32);
-#endif
     selector = 4;
     if (flag != 0)
         selector = 3;
-#ifndef __APPLE__
     result = (u32)(uintptr_t)sub_080263C4(
         1, (void *)(uintptr_t)*(volatile u16 *)(racers + 26), selector);
-#else
-    result = (u32)(uintptr_t)Course_0x080263C4(
-        1, (void *)(uintptr_t)*(volatile u16 *)(racers + 26), selector);
-#endif
     target = (volatile u32 *)(racers + storeOffset);
     *target = result;
 }
@@ -159,7 +128,6 @@ void Race_Cluster_C(void) {
     // spans the call it is rematerialised after the call into r2, which is what
     // the ROM does at 0x0801a0d6. This single line is the whole 44/44 body.
     u32 idx = 280;
-#ifndef __APPLE__
     // Closure spellings, chosen as the twin that is BOTH a real closure label
     // and a real C body (src/ghost.c and src/runtime_state_dispatch.c respectively).
     // A bare `extern` for a name nothing in src/ defines passes the byte oracle
@@ -169,12 +137,6 @@ void Race_Cluster_C(void) {
     int sel = flag?2:1;
     u16 v = *(volatile u16 *)(racers + 26);
     u32 res = (u32)(uintptr_t)sub_080263C4(0, (void *)(uintptr_t)v, sel);
-#else
-    u32 flag = Ghost_FlagTest(32);
-    int sel = flag?2:1;
-    u16 v = *(volatile u16 *)(racers + 26);
-    u32 res = (u32)(uintptr_t)Course_0x080263C4(0, (void *)(uintptr_t)v, sel);
-#endif
     *(volatile u32 *)(racers + idx) = res;
 }
 void Race_Cluster_D(void) {
@@ -200,31 +162,21 @@ void Race_Cluster_D(void) {
         __asm__("" : "+r"(a0));
         a2 = 0;
     } else {
-#ifndef __APPLE__
         (void)_08018ACC(32);
-#else
-        (void)Ghost_FlagTest(32);
-#endif
         v = (u32)*(u16 *)(racers + 26);
         a0 = 0;
         a2 = 1;
     }
-#ifndef __APPLE__
     u32 result = (u32)(uintptr_t)sub_080263C4((int)a0, (void *)v, (int)a2);
-#else
-    u32 result = (u32)(uintptr_t)Course_0x080263C4((int)a0, (void *)v, (int)a2);
-#endif
     // The call clobbers r2, so rematerialize the record offset after it.
     register u32 idx __asm__("r2") = 280;
     __asm__("" : "+r"(idx));
     register u32 *target __asm__("r1") = (u32 *)(racers + idx);
     *target = result;
 }
-#ifndef __APPLE__
 // _0801A0E8 occupies 68 ROM bytes: 66 instruction bytes followed by a zero
 // halfword. Emit that in its function section instead of gas's Thumb nop fill.
 __asm__(".align 2, 0");
-#endif
 
 void Race_Cluster_Dispatch(void) {
     volatile u8 *wa = (volatile u8 *)WORK_AREA_BASE;
@@ -250,7 +202,6 @@ void Race_Cluster_Dispatch(void) {
     }
 }
 
-#ifndef __APPLE__
 void _0801A008(void) __attribute__((alias("Race_Cluster_A")));
 void _0801A070(void) __attribute__((alias("Race_Cluster_B")));
 void _0801A0BC(void) __attribute__((alias("Race_Cluster_C")));
@@ -262,9 +213,6 @@ void sub_0801A0BC(void) __attribute__((alias("Race_Cluster_C")));
 void _0801A0E8(void) __attribute__((alias("Race_Cluster_D")));
 void sub_0801A0E8(void) __attribute__((alias("Race_Cluster_D")));
 void _0801A12C(void) __attribute__((alias("Race_Cluster_Dispatch")));
-#endif
 
 // ROM entry alias.
-#ifndef __APPLE__
 void RaceScene_Dispatch_A12C(void) __attribute__((alias("Race_Cluster_Dispatch")));
-#endif

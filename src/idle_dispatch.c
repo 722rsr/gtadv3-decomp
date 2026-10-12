@@ -16,9 +16,7 @@ extern void _0800295C(u32 a, u32 b);
 extern u32  SessionReadWord(u32 off); // _0800070C
 extern void SessionPump(void); // _080006A4
 extern void PacketBuild(void *a, u32 b); // _08000848
-#ifndef __APPLE__
 extern void _08000848(void *a, u32 b);
-#endif
 // sub_08000CA0 (block-B special-mode state stepper) now lifted in runtime_state_dispatch.c
 // (SessionStep_CA0); idle mode-8/11 path binds the strong C alias.
 extern int  SubCA0(u32 a); // sub_08000CA0
@@ -91,9 +89,7 @@ void Idle_Mode3Handler(void) {
     int res = sub_0802DE04(v, b);
     *st32(0xD0) = res < 0 ? 0 : (u32)res;
 }
-#ifndef __APPLE__
 void _08001988(void) __attribute__((alias("Idle_Mode3Handler")));
-#endif
 
 // _08001A74 — mode 4 countdown
 void Idle_Mode4Handler(void) {
@@ -112,18 +108,14 @@ void Idle_Mode4Handler(void) {
         *(volatile u16 *)(base + 0x12) = 1;
     }
 }
-#ifndef __APPLE__
 void _08001A74(void) __attribute__((alias("Idle_Mode4Handler")));
-#endif
 
 // _08001AA0 — mode5
 void Idle_Mode5Handler(void) {
     if (_08001680() == 0x03EE) *st16(0x12)=1;
     _080016D0(0x03F1);
 }
-#ifndef __APPLE__
 void _08001AA0(void) __attribute__((alias("Idle_Mode5Handler")));
-#endif
 
 // _08001ACC — mode6
 void Idle_Mode6Handler(void) {
@@ -165,9 +157,7 @@ void Idle_Mode6Handler(void) {
     }
     StateA_SetPendingParam(0x03F2);
 }
-#ifndef __APPLE__
 void _08001ACC(void) __attribute__((alias("Idle_Mode6Handler")));
-#endif
 
 // _08001B20 — mode7
 void Idle_Mode7Handler(void) {
@@ -184,28 +174,16 @@ void Idle_Mode7Handler(void) {
     } else {
         *(volatile u16 *)(base + 0x12) = 8;
     }
-#ifndef __APPLE__
     _080016D0(0x03F3);
-#else
-    StateA_SetPendingParam(0x03F3);
-#endif
 }
-#ifndef __APPLE__
 void _08001B20(void) __attribute__((alias("Idle_Mode7Handler")));
-#endif
 
 // _08001B50 — mode10
 void Idle_Mode10Handler(void) {
     if (StateA_GetRecordHalfwordInverted()==0x03F3) *st16(0x12)=11;
-#ifndef __APPLE__
     _080016D0(0x03F4);
-#else
-    StateA_SetPendingParam(0x03F4);
-#endif
 }
-#ifndef __APPLE__
 void _08001B50(void) __attribute__((alias("Idle_Mode10Handler")));
-#endif
 
 // _08001B7C — per-frame mode dispatcher
 void Idle_Dispatcher(void) {
@@ -239,9 +217,7 @@ void Idle_Dispatcher(void) {
         case 9: Idle_Mode10Handler(); break;
     }
 }
-#ifndef __APPLE__
 void _08001B7C(void) __attribute__((alias("Idle_Dispatcher")));
-#endif
 
 // _08001C48 — idle work-area refresh
 void Idle_RefreshWorkArea(void) {
@@ -269,16 +245,10 @@ void Idle_RefreshWorkArea(void) {
             (volatile u8 *)(uintptr_t)*slot;
         register u16 p __asm__("r2") = *(volatile u16 *)(state+4);
         *(volatile u16*)(state+0xC0) = p;
-#ifdef __APPLE__
-        PacketBuild((void*)(state+0xB0), 0);
-#else
         _08000848((void*)(state+0xB0), 0);
-#endif
     }
 }
-#ifndef __APPLE__
 void _08001C48(void) __attribute__((alias("Idle_RefreshWorkArea")));
-#endif
 
 // _08001CD8 — input/ticker
 void Idle_Ticker(void) {
@@ -327,9 +297,7 @@ void Idle_Ticker(void) {
         if (d & 8)  (*st16(0x0C))++;
     }
 }
-#ifndef __APPLE__
 void _08001CD8(void) __attribute__((alias("Idle_Ticker")));
-#endif
 
 // Remaining small thunks/accessors not in idle_accessors.c
 // _08001E14 — 28 B with TWO pool words. asm/idle.s:654-669 is
@@ -340,21 +308,15 @@ void _08001CD8(void) __attribute__((alias("Idle_Ticker")));
 // intermediates are NAMED locals declared in the ROM's order: the table
 // pointer first, then the index shift, then the halfword load.
 u32 Idle_GetDescriptorWord(int idx) {
-#ifndef __APPLE__
     extern u8 RecDescTbl[] __asm__("RecDescTbl");
     __asm__(".globl RecDescTbl\nRecDescTbl = 0x0802E190\n");
     u32 tbl = (u32)(uintptr_t)RecDescTbl;
-#else
-    u32 tbl = 0x0802E190u;
-#endif
     u32 off = (u32)idx << 2;
     u16 sel = *st16(6);
     u32 sum = off + ((u32)sel << 4);
     return *(u32 *)((uintptr_t)sum + (uintptr_t)tbl);
 }
-#ifndef __APPLE__
 u32 _08001E14(int a) __attribute__((alias("Idle_GetDescriptorWord")));
-#endif
 // _08001E30 -> int — 1 when block A +6 == 0 (normal select active).
 // Word-typed return, and the `int r = 0` must be a NAMED local declared BEFORE
 // the load: agbcc materialises each initialiser where its declaration stands,
@@ -395,21 +357,15 @@ int Idle_IsSelZero(void) {
     if (*st16(6) == 0) r = 1;
     return r;
 }
-#ifndef __APPLE__
 int _08001E30(void) __attribute__((alias("Idle_IsSelZero")));
-#endif
 // _08001EB8(v) — `v-1` into block A +8. The ROM decrements the ARGUMENT
 // (`subs r0,#1`, asm/idle.s:774), not a re-read of the cell, so the word-typed
 // parameter replaces the old reload-and-decrement; the store is `strh`, so the
 // upper bits of the argument are dropped exactly as the ROM drops them.
 void Idle_DecScratch08(u32 v) { *st16(8) = v - 1; }
-#ifndef __APPLE__
 void _08001EB8(u32 v) __attribute__((alias("Idle_DecScratch08")));
-#endif
 void Idle_SetupMode2(u32 a, u32 b); // _08001EC8 etc. — stub behavioral
-#ifndef __APPLE__
 void _08001EC8(u32 a,u32 b) __attribute__((alias("Idle_SetupMode2")));
-#endif
 void Idle_SetupMode2(u32 a, u32 b) {
     u32 *slot = (u32 *)STATE_BLOCK_A_SLOT_ADDR;
     u8 *base = (u8 *)*slot;
@@ -438,6 +394,4 @@ void Idle_SetupMode3(u32 a) {
     { u16 c = 0x80 << 5; *(volatile u16 *)(p + 0x16) = c; }
     *(volatile u32 *)(p + 0x20) = a;
 }
-#ifndef __APPLE__
 void _08001F08(u32 a) __attribute__((alias("Idle_SetupMode3")));
-#endif

@@ -8,17 +8,10 @@
 
 #include "gba/types.h"
 
-#ifdef __APPLE__
-__attribute__((weak)) void sub_08000A60(void) { }
-__attribute__((weak)) void sub_08002A3C(int a, void *b) { (void)a; (void)b; }
-__attribute__((weak)) void sub_08002A80(void) { }
-__attribute__((weak)) void _08002AAC(void) { }
-#else
 extern void sub_08000A60(void);    // 0x08000A60 soft-IRQ kicker (src/foundation_softirq.c)
 extern void sub_08002A3C(int slot, void *handler); // 0x08002A3C IRQ install (foundation_boot.c)
 extern void sub_08002A80(void);    // 0x08002A80 IRQ table reinstall
 extern void _08002AAC(void);    // 0x08002AAC IRQ/DISPSTAT config (foundation_runtime.c)
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x08002388 sub_08002388 — enable IRQs + arm master enable flag:
@@ -52,13 +45,11 @@ void _080023B8(void)
     sub_08002A80();
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 // asm/code_22e4.s branches to the `sub_` spelling; the body is defined under
 // the `_` spelling, so the splice needs the alias to re-export it (rule 6).
 void _08002388(void) __attribute__((alias("sub_08002388")));
 void sub_080023AC(int slot, void *handler) __attribute__((alias("_080023AC")));
 void sub_080023B8(void) __attribute__((alias("_080023B8")));
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x080023C4 sub_080023C4 — full IRQ/timer/sound reset.
@@ -99,18 +90,11 @@ void _080023C4(void)
 // `sub_08002AAC`, so call that on the ROM build; the friendly name is the
 // host stub. Same split as FF_CALLEE / MS_CALLEE / R35_CALLEE elsewhere.
 extern void sub_08002AAC(void);
-#ifdef __APPLE__
-extern void RuntimeIrqConfig(void);
-#define CAL_2AAC RuntimeIrqConfig
-#else
 #define CAL_2AAC sub_08002AAC
-#endif
 void Code2424_IrqConfigReset(void)
 {
     CAL_2AAC();
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _08002424(void) __attribute__((alias("Code2424_IrqConfigReset")));
 void sub_08002424(void) __attribute__((alias("Code2424_IrqConfigReset")));
-#endif

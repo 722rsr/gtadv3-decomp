@@ -10,7 +10,6 @@
 // Caller ABI: channel in r1 (nonstandard r1), r0 ignored, r2/r3 temps. Proven via ROM table at 0x061504 (0x0802BD75 thumb entry) and pool at 0x02BCE4 (0x080614E0) not used here but leaf's r1 use is exact per listing.
 // Do not guess voice layout beyond +29 (u8) / +64 (u32) directly via strb/ldr, proven via objdump.
 
-#ifndef __APPLE__
 void _0802BD74(void *a, void *b) __attribute__((alias("SoundBD74_Store")));
 void sub_0802BD74(void *a, void *b) __attribute__((alias("SoundBD74_Store")));
 __attribute__((naked)) void SoundBD74_Store(void *a, void *chan) {
@@ -24,6 +23,3 @@ __attribute__((naked)) void SoundBD74_Store(void *a, void *chan) {
         ".syntax divided\n"
     );
 }
-#else
-void SoundBD74_Store(void *a, void *b) { (void)a; (void)b; }
-#endif

@@ -9,13 +9,8 @@
 
 #include "gba/types.h"
 
-#ifdef __APPLE__
-__attribute__((weak)) void *_08005F98(void) { return (void *)0; }
-__attribute__((weak)) int   _0802DE9C(int a, int b) { (void)a; return 0; }
-#else
 extern void *_08005F98(void);   // 0x08005F98 surface package getter (surface_access.s)
 extern int   _0802DE9C(int a, int b); // 0x0802DE9C signed divide core
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x08006BC8 sub_08006BC8(state, hdr) — surface row-state constructor:
@@ -64,9 +59,7 @@ void _08006BC8(void *state, void *hdr)
 // this one body, so the C replacement must publish both spellings. The manifest
 // `export` for this body records both; without the `sub_` form the underscore-form
 // definition alone leaves the `sub_` symbol undefined at the slice link.
-#ifndef __APPLE__
 void sub_08006BC8(void *state, void *hdr) __attribute__((alias("_08006BC8")));
-#endif
 
 __asm__(".align 2, 0");
 
@@ -196,6 +189,4 @@ int _08006C94(void *state, void *pos)
 }
 
 // ROM entry alias.
-#ifndef __APPLE__
 void * Sub_08006C10(void *state, int col_delta) __attribute__((alias("_08006C10")));
-#endif

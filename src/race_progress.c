@@ -142,8 +142,6 @@ int Race_PerFrameTail(void) {
     return _0800AA20();
 }
 
-#ifndef __APPLE__
 void _0800AD84(void) __attribute__((alias("Race_CommitCell")));
 void _0800AE78(void) __attribute__((alias("Race_AdvanceProgress")));
 int  _0800AF84(void) __attribute__((alias("Race_PerFrameTail")));
-#endif

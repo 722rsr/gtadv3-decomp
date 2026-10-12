@@ -11,21 +11,12 @@
 
 #include "gba/types.h"
 
-#ifdef __APPLE__
-__attribute__((weak)) void Sub_08002B368(u32 v) { (void)v; }
-__attribute__((weak)) int Sub_08024068(void) { return 0; }
-__attribute__((weak)) void Sub_08001549C(void *a) { (void)a; }
-__attribute__((weak)) void Sub_08002158(int cmd, u32 val) { (void)cmd; (void)val; }
-__attribute__((weak)) int Sub_08002178(u32 a) { (void)a; return 0; }
-__attribute__((weak)) void Sub_08002618(u32 a, u32 b) { (void)a; (void)b; }
-#else
 extern void Sub_08002B368(u32 v);
 extern int Sub_08024068(void);
 extern void Sub_08001549C(void *a);
 extern void Sub_08002158(int cmd, u32 val);
 extern int Sub_08002178(u32 a);
 extern void Sub_08002618(u32 a, u32 b);
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_080015620 — (rec, dead, ev): r6 = rec+144, entry = u16[rec+144].
@@ -96,11 +87,9 @@ void MenuFF78_15620(void *rec_, u32 dead, u32 ev_) {
     if (*(volatile u16 *)(uintptr_t)cell != entry)
         Sub_08002B368(2);
 }
-#ifndef __APPLE__
 void _080015620(void *a, u32 b, u32 c) __attribute__((alias("MenuFF78_15620")));
 void Sub_080015620(void *a, u32 b, u32 c) __attribute__((alias("MenuFF78_15620")));
 void sub_080015620(void *a, u32 b, u32 c) __attribute__((alias("MenuFF78_15620")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_08001573C — (rec, dead, ev): entry = u16[rec+144].
@@ -205,8 +194,6 @@ void MenuFF78_1573C(void *rec_, u32 dead, u32 ev_) {
         }
     }
 }
-#ifndef __APPLE__
 void _08001573C(void *a, u32 b, u32 c) __attribute__((alias("MenuFF78_1573C")));
 void Sub_08001573C(void *a, u32 b, u32 c) __attribute__((alias("MenuFF78_1573C")));
 void sub_08001573C(void *a, u32 b, u32 c) __attribute__((alias("MenuFF78_1573C")));
-#endif

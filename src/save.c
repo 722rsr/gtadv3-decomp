@@ -25,46 +25,26 @@ __attribute__((weak)) void sub_08025CF4(void) {} // kept for host-only links tha
 void SaveHook_0802446C(void);
 void SaveUpdate_080241C8(void);
 __attribute__((weak)) void sub_0800295C(u32 a, u32 b) { (void)a; (void)b; } // 0x0800295C Foundation_InitCommon, 2-arg (asm/code_295c.s)
-#ifndef __APPLE__
 extern void sub_080029D8(void);  // 0x080029D8 IRQ-suspend (raw asm)
 extern void sub_08002A68(void);  // 0x08002A68 handler-slot reset (raw asm)
 extern void sub_08002A0C(void);  // 0x08002A0C IRQ-restore (raw asm)
-#endif
-#ifdef __APPLE__
-__attribute__((weak)) void sub_080029D8(void) {}
-__attribute__((weak)) void sub_08002A68(void) {}
-__attribute__((weak)) void sub_08002A0C(void) {}
-#endif
-#ifdef __APPLE__
-__attribute__((weak)) u32 sub_08002AF4(u32 v) { (void)v; return 0; }
-#else
 extern u32 sub_08002AF4(u32 v);
-#endif
 __attribute__((weak)) int sub_0802DA20(u32 a, u32 b) { (void)a; (void)b; return 0; }
 __attribute__((weak)) int  sub_0802DBA4(u32 sec, void *dst) { (void)sec; (void)dst; return 0; }
 __attribute__((weak)) int  sub_0802DC54(u32 a, u32 b) { (void)a; return 0; }
 __attribute__((weak)) int  sub_0802DD30(u32 a, u32 b) { (void)a; return 0; }
 __attribute__((weak)) void sub_08004BFC(u32 v) { (void)v; }
 __attribute__((weak)) void sub_08004C84(u32 idx, u32 value) { (void)idx; (void)value; }
-#ifdef __APPLE__
-__attribute__((weak)) void sub_08004D4C(u32 a, u32 b, u32 c) { (void)a; (void)b; (void)c; }
-#else
 // ARM: real body SubsysDispatch (foundation_subsys.c). A live weak def here
 // would self-shadow: save.c calls sub_08004D4C(11,0,0) and a compile-time
 // local binding runs the no-op instead (-21 class).
 extern void sub_08004D4C(u32 a, u32 b, u32 c);
-#endif
 __attribute__((weak)) void sub_0802417C(void) {}
 __attribute__((weak)) void sub_0800D95C(void *d, const void *s, u32 n) { (void)d; (void)s; (void)n; }
 // ----------------------------------------------------------------------------
 // Call-site spellings for the closure-defined callees of the six saveblock
 // bodies this file owns (0x08024B54/70/BC0/BD8/BF0/BFC).
-//
-// The host build has none of these symbols, so the `#else` side calls the
-// friendly name -- the split tools/apple_decls.py requires, and the reason the
-// alias blocks are `#ifndef __APPLE__` in the first place.
 // ----------------------------------------------------------------------------
-#ifndef __APPLE__
 extern void _08024A18(void);                        // SaveBlock2PreSave
 extern void _08024A98(void);                        // SaveBlock2PostLoad
 extern int  _08024B24(void);                        // SaveBlock2Load
@@ -79,15 +59,6 @@ extern void _08002A0C(void);                        // IrqRestore (closure spell
 #define SAVE_CALL_BLOCK2_SAVE()       _08024B54()
 #define SAVE_CALL_HOOK_2446C()        sub_0802446C()
 #define SAVE_CALL_IRQ_RESTORE()       _08002A0C()
-#else
-#define SAVE_CALL_PRE_SAVE()          SaveBlock2PreSave()
-#define SAVE_CALL_POST_LOAD()         SaveBlock2PostLoad()
-#define SAVE_CALL_BLOCK2_LOAD()       SaveBlock2Load()
-#define SAVE_CALL_SLOT_SAVE(i, src)   SaveSlotSave((i), (src))
-#define SAVE_CALL_BLOCK2_SAVE()       SaveBlock2Save()
-#define SAVE_CALL_HOOK_2446C()        SaveHook_0802446C()
-#define SAVE_CALL_IRQ_RESTORE()       sub_08002A0C()
-#endif
 
 void _08024B4C(void) { }
 __asm__(".align 2, 0");
@@ -121,9 +92,7 @@ void *SaveAlloc(u32 size) {
     }
     return (void *)(uintptr_t)base;
 }
-#ifndef __APPLE__
 void *_0800572C(u32 s) __attribute__((alias("SaveAlloc")));
-#endif
 
 int SaveAllocFree(u32 size) {
     volatile u8 *base = SaveBumpBase;
@@ -137,13 +106,11 @@ int SaveAllocFree(u32 size) {
     *used = (u16)size;
     return *used; /* asm sub_08005758 reloads + returns the new cursor */
 }
-#ifndef __APPLE__
 int _08005758(u32 s) __attribute__((alias("SaveAllocFree")));
 int Sub_08005758(u32 s) __attribute__((alias("SaveAllocFree")));
 // The closure spells this VMA `sub_08005758` and the entry exports it, so the
 // owning TU must define that exact name. One hop to the real body.
 int sub_08005758(u32 s) __attribute__((alias("SaveAllocFree")));
-#endif
 
 // 0x08005768 — ROM (asm/save_alloc_more.s):
 //   `ldr r3,=0x030002D8 / adds r2,r3,#4 / adds r0,r0,r2 / ldrh r2,[r3] /
@@ -182,9 +149,7 @@ void SaveAllocWriteByte(u32 off, u32 v) {
     s = *cur + v;
     *cur = (u16)s;
 }
-#ifndef __APPLE__
 void _08005768(u32 a, u32 b) __attribute__((alias("SaveAllocWriteByte")));
-#endif
 
 u8 SaveAllocReadByte(u32 off) {
     // Declared here, not at file scope: the per-body splice extracts only this
@@ -196,9 +161,7 @@ u8 SaveAllocReadByte(u32 off) {
     base += 4;
     return base[off];
 }
-#ifndef __APPLE__
 u8 _08005780(u32 o) __attribute__((alias("SaveAllocReadByte")));
-#endif
 
 // 0x08005790 — free the top of the save heap: `ldr r1,=0x030002d8 /
 // adds r1,#68 / ldrh r2,[r1] / subs r0,r2,r0 / strh r0,[r1] / ldrh r0,[r1]`.
@@ -239,9 +202,7 @@ int SaveAllocFreeHigh(u32 size) {
     *p = (u16)size;
     return *p; /* asm sub_08005790 reloads + returns the new cursor */
 }
-#ifndef __APPLE__
 int _08005790(u32 s) __attribute__((alias("SaveAllocFreeHigh")));
-#endif
 
 void SaveAllocInit(u32 a, u32 b) {
     u32 v = 0;
@@ -251,13 +212,11 @@ void SaveAllocInit(u32 a, u32 b) {
     dma[2] = (b << 3) | (133u << 24);
     (void)dma[2];
 }
-#ifndef __APPLE__
 void _080057A4(u32 a, u32 b) __attribute__((alias("SaveAllocInit")));
 // The closure binds `sub_080057A4` at 0x080057a4, not the `_` form; a promoted
 // caller (0x08026948 / 0x080269AC in src/sprite_obj_263e0.c) must use that
 // spelling, and promotion rule 1 requires the exported twin be defined in C.
 void sub_080057A4(u32 a, u32 b) __attribute__((alias("SaveAllocInit")));
-#endif
 
 // ----------------------------------------------------------------------------
 // Slot descriptor appender (asm/save_desc.s)
@@ -291,14 +250,9 @@ u32 SaveDescAppend(u32 byteSize) {
     dev = ctrl[1];
     if ((s32)dev > 2)
         goto div;
-#ifdef __APPLE__
-    if ((s32)dev < 1)
-        goto div;
-#else
     // Retain the ROM's signed `cmp #1; blt`; agbcc folds `< 1` into `<= 0`.
     __asm__ volatile("cmp %0, #1\n\tblt 1f"
                      : : "r" ((s32)dev) : "cc", "memory");
-#endif
     inc += 7;
     {
         u32 t = inc;
@@ -308,9 +262,7 @@ u32 SaveDescAppend(u32 byteSize) {
         inc <<= 3;
     }
 div:
-#ifndef __APPLE__
     __asm__("1:");
-#endif
     if ((s32)inc < 0)
         inc += 7;
     inc = (u32)((s32)inc >> 3);
@@ -318,9 +270,7 @@ div:
     ctrl[0] += 1;
     return (idx << 24) >> 24;
 }
-#ifndef __APPLE__
 u32 _0800580C(u32 s) __attribute__((alias("SaveDescAppend")));
-#endif
 
 // ----------------------------------------------------------------------------
 // Checksum + sector I/O (asm/save_checksum.s)
@@ -337,10 +287,8 @@ u32 SaveChecksum(const void *buf, u32 byteSize) {
     for (; i < words; i++) seed += *p++;
     return seed;
 }
-#ifndef __APPLE__
 u32 _08005860(const void *b, u32 s) __attribute__((alias("SaveChecksum")));
 u32 sub_08005860(const void *b, u32 s) __attribute__((alias("SaveChecksum")));
-#endif
 
 // ----------------------------------------------------------------------------
 // Sector I/O (asm/save_checksum.s, sub_08005884 / sub_080058D0)
@@ -372,10 +320,8 @@ void SaveReadSectors(u32 firstSector, void *dst, u32 byteSize) {
 done:
     SAVE_CALL_IRQ_RESTORE();
 }
-#ifndef __APPLE__
 void _08005884(u32 a, void *b, u32 c) __attribute__((alias("SaveReadSectors")));
 void sub_08005884(u32 a, void *b, u32 c) __attribute__((alias("SaveReadSectors")));
-#endif
 
 // ----------------------------------------------------------------------------
 // Sector write (asm/save_checksum.s sub_080058D0, 184 B, 5 pools).
@@ -448,10 +394,8 @@ void SaveWriteSectors(const void *src, u32 sector, u32 byteSize) {
 done:
     sub_08002A0C();
 }
-#ifndef __APPLE__
 void _080058D0(const void *a, u32 b, u32 c) __attribute__((alias("SaveWriteSectors")));
 void sub_080058D0(const void *a, u32 b, u32 c) __attribute__((alias("SaveWriteSectors")));
-#endif
 
 // ----------------------------------------------------------------------------
 // Slot API (asm/save_slot_api.s + code_5988.s)
@@ -485,31 +429,18 @@ int SaveSlotSave(u32 slotIdx, const void *src) {
         u32 devType = *(volatile u32 *)(*(volatile u32 *)SaveDevPtr + 4);
         if ((s32)devType > 2)
             goto done;
-#ifdef __APPLE__
-        if ((s32)devType < 1)
-            goto done;
-#else
         // Keep the ROM's `cmp #1; blt` form; agbcc canonicalizes `< 1` into
         // `cmp #0; ble`, which is equivalent but changes two bytes.
         __asm__ volatile("cmp %0, #1\n\tblt 1f"
                          : : "r" ((s32)devType) : "cc", "memory");
-#endif
-#ifndef __APPLE__
         sub_080058D0((void *)stage, *(volatile u32 *)e, *(volatile u32 *)(e + 4) + 4);
-#else
-        SaveWriteSectors((void *)stage, *(volatile u32 *)e, *(volatile u32 *)(e + 4) + 4);
-#endif
     }
-#ifndef __APPLE__
     __asm__("1:");
-#endif
 done:
     return 1;
 }
-#ifndef __APPLE__
 int _080059F0(u32 a, const void *b) __attribute__((alias("SaveSlotSave")));
 int sub_080059F0(u32 a, const void *b) __attribute__((alias("SaveSlotSave")));
-#endif
 
 int SaveSlotLoad(u32 slotIdx, void *dst) {
     __asm__(".globl SaveSlotTbl\nSaveSlotTbl = 0x0300032C");
@@ -522,36 +453,21 @@ int SaveSlotLoad(u32 slotIdx, void *dst) {
     u32 devType = *(volatile u32 *)(*(volatile u32 *)SaveDevPtr + 4);
     if ((s32)devType > 2)
         goto verify;
-#ifdef __APPLE__
-    if ((s32)devType < 1)
-        goto verify;
-#else
     // Preserve the ROM's `cmp #1; blt` encoding; agbcc lowers `< 1` as
     // `cmp #0; ble`, which is equivalent but changes the two instruction bytes.
     __asm__ volatile("cmp %0, #1\n\tblt 1f"
                      : : "r" ((s32)devType) : "cc", "memory");
-#endif
     {
         u32 sec = *(volatile u32 *)e;
         u8 *d = (u8 *)0x02000000u;
-#ifdef __APPLE__
-        SaveReadSectors(sec, (void *)d, *(volatile u32 *)(e + 4) + 4);
-#else
         sub_08005884(sec, (void *)d, *(volatile u32 *)(e + 4) + 4);
-#endif
     }
 verify:
-#ifndef __APPLE__
     __asm__("1:");
-#endif
     {
         register u8 *stage4 __asm__("r5") = SaveStage4;
         register u32 sz __asm__("r1") = *(volatile u32 *)(e + 4);
-#ifdef __APPLE__
-        u32 calc = SaveChecksum(stage4, sz);
-#else
         u32 calc = sub_08005860(stage4, sz);
-#endif
         u8 *stage0 = (u8 *)0x02000000u;
         u32 stored = *(volatile u32 *)stage0;
         if (calc != stored)
@@ -564,7 +480,6 @@ verify:
         return 1;
     }
 }
-#ifndef __APPLE__
 int _08005988(u32 a, void *b) __attribute__((alias("SaveSlotLoad")));
 //. asm/code_5988.s declares BOTH spellings at 0x08005988
 // (`.type sub_08005988` / `sub_08005988:` then `_08005988:`), and the
@@ -573,26 +488,15 @@ int _08005988(u32 a, void *b) __attribute__((alias("SaveSlotLoad")));
 // `SaveSlotLoad: closure defines _08005988/sub_08005988 (rename)` and refuses
 // the body. One hop, aliasing the real body -- never aliasing an alias.
 int sub_08005988(u32 a, void *b) __attribute__((alias("SaveSlotLoad")));
-#endif
-// The promoted caller below names `sub_08005988`, so the HOST build must be
-// able to see that name too: leaving it inside the `#ifndef __APPLE__` guard
-// made the host build fail with `call to undeclared function 'sub_08005988'`
-// under -Werror=implicit-function-declaration. Keep the ARM and host declarations in
-// step -- a rename needs a host definition, not a bare extern.
-#ifdef __APPLE__
-int sub_08005988(u32 a, void *b);
-#endif
 
 // ----------------------------------------------------------------------------
 // Timer queue (asm/save_timer_queue.s + save_delay.s)
 void SaveTimerQueueInit(void) {
     *(volatile u32 *)TIMER_QUEUE_PTR_ADDR = TIMER_QUEUE_ADDR;
 }
-#ifndef __APPLE__
 void _08005A58(void) __attribute__((alias("SaveTimerQueueInit")));
 void SaveSystemInit(void) __attribute__((alias("SaveTimerQueueInit")));
 void sub_08005A58(void) __attribute__((alias("SaveTimerQueueInit")));
-#endif
 
 void SaveTimerQueueZero(void) {
     extern void sub_0802D974(const void *src, void *dst, u32 ctrl);
@@ -602,10 +506,8 @@ void SaveTimerQueueZero(void) {
     u32 zero = 0;
     sub_0802D974(&zero, (void *)*(volatile u32 *)TIMER_QUEUE_PTR_ADDR, 0x05000009u);
 }
-#ifndef __APPLE__
 void _08005A68(void) __attribute__((alias("SaveTimerQueueZero")));
 void SaveTick1(void) __attribute__((alias("SaveTimerQueueZero")));
-#endif
 
 bool SaveTimerQueueIsZero(void) {
     // The POINTER load stays volatile (it is the hardware cell read) but the
@@ -623,9 +525,7 @@ bool SaveTimerQueueIsZero(void) {
     if (*cnt == 0) r = 1;
     return r;
 }
-#ifndef __APPLE__
 bool _08005A8C(void) __attribute__((alias("SaveTimerQueueIsZero")));
-#endif
 
 void SaveTimerQueueArm(u16 time, u8 id) {
     // Facts measured along the way, kept so they are not re-run:
@@ -669,41 +569,23 @@ void SaveTimerQueueArm(u16 time, u8 id) {
 // body's own `-ffunction-sections` section -- and pads with the explicit `0`.
 __asm__(".align 2, 0");
 
-#ifndef __APPLE__
 void _08005AA4(u16 a, u8 b) __attribute__((alias("SaveTimerQueueArm")));
-#endif
 
 void SaveTimerQueueDrain(void) {
-#ifndef __APPLE__
     register int fired __asm__("r3") = 0;
     register volatile u32 *qptr __asm__("r0") = (volatile u32 *)TIMER_QUEUE_PTR_ADDR;
     register volatile u32 *savedQptr __asm__("r6");
     register volatile u8 *cursor __asm__("r2") = (volatile u8 *)(uintptr_t)*qptr;
     register volatile u8 *dst __asm__("r5") = cursor + 16;
     register int i __asm__("r4");
-#else
-    volatile u32 *qptr = (volatile u32 *)TIMER_QUEUE_PTR_ADDR;
-    volatile u32 *savedQptr = qptr;
-    volatile u8 *cursor = (volatile u8 *)(uintptr_t)*qptr;
-    volatile u8 *dst = cursor + 16;
-    int fired = 0;
-    int i;
-#endif
     savedQptr = qptr;
-#ifndef __APPLE__
     __asm__("" : "+r"(savedQptr));
-#endif
     /* The cursor walks q[0] to q[12] while i counts down, preserving fire order. */
     i = 3;
     do {
         if (cursor[0] != 0) {
-#ifndef __APPLE__
             register u32 delay __asm__("r0") = (u32)cursor[1];
             register u32 test __asm__("r1") = delay;
-#else
-            u32 delay = cursor[1];
-            u32 test = delay;
-#endif
             if (test == 0) {
                 cursor[0] = (u8)test;
                 *(volatile u32 *)dst = *(volatile u32 *)cursor;
@@ -716,7 +598,6 @@ void SaveTimerQueueDrain(void) {
         i--;
         cursor += 4;
     } while (i >= 0);
-#ifndef __APPLE__
     {
         register volatile u32 *q __asm__("r0") = (volatile u32 *)(uintptr_t)*savedQptr;
         register u16 count __asm__("r2");
@@ -726,24 +607,13 @@ void SaveTimerQueueDrain(void) {
         newCount = count - (u16)fired;
         *((volatile u16 *)((volatile u8 *)q + 32)) = newCount;
     }
-#else
-    volatile u8 *q = (volatile u8 *)(uintptr_t)*savedQptr;
-    volatile u16 *cnt = (volatile u16 *)(q + 32);
-    volatile u16 *firedOut = (volatile u16 *)(q + 34);
-    *firedOut = (u16)fired;
-    *cnt = (u16)(*cnt - fired);
-#endif
     if (fired > 0) sub_08004D4C(11,0,0);
 }
-#ifndef __APPLE__
 /* The ROM splice includes this zero halfword after the return instruction. */
 __asm__(".pushsection .text.SaveTimerQueueDrain,\"ax\",%progbits\n.short 0\n.popsection");
-#endif
-#ifndef __APPLE__
 void _08005AE4(void) __attribute__((alias("SaveTimerQueueDrain")));
 void TimerListTick(void) __attribute__((alias("SaveTimerQueueDrain")));
 void sub_08005AE4(void) __attribute__((alias("SaveTimerQueueDrain")));
-#endif
 
 // ----------------------------------------------------------------------------
 // Trigger accessors (asm/save_trigger_accessors.s)
@@ -768,10 +638,8 @@ s16 SaveTriggerA(u32 arg) {
     __asm__(".globl SaveTrigTblA\nSaveTrigTblA = 0x0805CAF0\n");
     return SaveTrigTblA[(arg & 0x0FFEu) >> 1];
 }
-#ifndef __APPLE__
 s16 _08005F2C(u32 a) __attribute__((alias("SaveTriggerA")));
 s16 sub_08005F2C(u32 a) __attribute__((alias("SaveTriggerA")));
-#endif
 
 s16 SaveTriggerB(u32 arg) {
     // The absolute symbol must be declared HERE, not at file scope: the
@@ -781,10 +649,8 @@ s16 SaveTriggerB(u32 arg) {
     __asm__(".globl SaveTrigTblB\nSaveTrigTblB = 0x0805BAF0\n");
     return SaveTrigTblB[(arg & 0x0FFEu) >> 1];
 }
-#ifndef __APPLE__
 s16 _08005F44(u32 a) __attribute__((alias("SaveTriggerB")));
 s16 sub_08005F44(u32 a) __attribute__((alias("SaveTriggerB")));
-#endif
 
 s16 SaveTriggerC(u32 arg) {
     // The absolute symbol must be declared HERE, not at file scope: the
@@ -794,10 +660,8 @@ s16 SaveTriggerC(u32 arg) {
     __asm__(".globl SaveTrigTblA\nSaveTrigTblA = 0x0805CAF0\n");
     return SaveTrigTblA[(arg & 0x0FFEu) >> 1];
 }
-#ifndef __APPLE__
 s16 _08005F5C(u32 a) __attribute__((alias("SaveTriggerC")));
 s16 sub_08005F5C(u32 a) __attribute__((alias("SaveTriggerC")));
-#endif
 
 s16 SaveTriggerD(u32 arg) {
     // The absolute symbol must be declared HERE, not at file scope: the
@@ -807,10 +671,8 @@ s16 SaveTriggerD(u32 arg) {
     __asm__(".globl SaveTrigTblB\nSaveTrigTblB = 0x0805BAF0\n");
     return SaveTrigTblB[(arg & 0x0FFEu) >> 1];
 }
-#ifndef __APPLE__
 s16 _08005F74(u32 a) __attribute__((alias("SaveTriggerD")));
 s16 sub_08005F74(u32 a) __attribute__((alias("SaveTriggerD")));
-#endif
 
 // ----------------------------------------------------------------------------
 // Saveblock #1 bitfield + grid (asm/saveblock.s)
@@ -820,36 +682,26 @@ void SaveBlock1SetBit(u32 bit, int set) {
     u32 idx = bit >> 3;
     if (set) arr[idx] |= mask; else arr[idx] &= (u8)~mask;
 }
-#ifndef __APPLE__
 void SaveBlock1SetBit_alias(u32 b, int s) __attribute__((alias("SaveBlock1SetBit")));
 void _0802466C(u32 b, int s) __attribute__((alias("SaveBlock1SetBit")));
-#endif
 
 u32 SaveBlock1TestBit(u32 bit) {
     volatile u8 *arr = (volatile u8 *)SAVE_BLOCK1_BUF_ADDR;
     u8 mask = (u8)(1u << (bit & 7));
     return arr[bit >> 3] & mask;
 }
-#ifndef __APPLE__
 u32 _080246BC(u32 b) __attribute__((alias("SaveBlock1TestBit")));
-#endif
 
 u16 SaveBlock1GetHWord(void) { return *(volatile u16 *)(SAVE_BLOCK1_BUF_ADDR + 12); }
-#ifndef __APPLE__
 u16 _080246DC(void) __attribute__((alias("SaveBlock1GetHWord")));
-#endif
 
 void SaveBlock1SetHWord(u16 v) { *(volatile u16 *)(SAVE_BLOCK1_BUF_ADDR + 12) = v; }
-#ifndef __APPLE__
 void _080246E8(u16 v) __attribute__((alias("SaveBlock1SetHWord")));
-#endif
 
 void *SaveBlock1GridPtr(u32 row, u32 col) {
     return (void *)(SAVE_BLOCK1_BUF_ADDR + 16 + row*60 + col*12);
 }
-#ifndef __APPLE__
 void *_080246F4(u32 r, u32 c) __attribute__((alias("SaveBlock1GridPtr")));
-#endif
 
 void SaveBlock1Init(void) {
     u32 zero = 0;
@@ -864,28 +716,14 @@ void SaveBlock1Init(void) {
     sub_0800D95C((void *)0x03002808, (void *)0x0805FC8C, 3);
     SaveUpdate_080241C8();
 }
-#ifndef __APPLE__
 void _08024568(void) __attribute__((alias("SaveBlock1Init")));
-#endif
 
 int SaveBlock1Load(void) {
     u32 idx = *(volatile u8 *)SAVE_BLOCK1_IDX_ADDR;
-    // The call site is split, per tools/apple_decls.py: `_08005988` is the
-    // spelling the include closure labels at 0x08005988 and the only one a
-    // promoted body can name, but it is declared only inside `#ifndef __APPLE__`
-    // (line 330's alias), so the host would take an implicit declaration. The
-    // `#else` side calls the real body by its friendly name, which is what a
-    // host test of this function actually wants.
-#ifndef __APPLE__
     _08005988(idx, (void *)SAVE_BLOCK1_BUF_ADDR);
-#else
-    SaveSlotLoad(idx, (void *)SAVE_BLOCK1_BUF_ADDR);
-#endif
     return 1;
 }
-#ifndef __APPLE__
 int _08024634(void) __attribute__((alias("SaveBlock1Load")));
-#endif
 
 // 0x08024650 — `push {lr}; ldr r0,[pc,#12]; ldrb r0,[r0]; ldr r1,[pc,#12];
 // bl <slot-save>; pop {r0}; bx r0` — ends in `pop {r0}`, which DESTROYS r0, so
@@ -902,9 +740,7 @@ void SaveBlock1Save(void) {
     u32 idx = *(volatile u8 *)SAVE_BLOCK1_IDX_ADDR;
     SAVE_CALL_SLOT_SAVE(idx, (void *)SAVE_BLOCK1_BUF_ADDR);
 }
-#ifndef __APPLE__
 void _08024650(void) __attribute__((alias("SaveBlock1Save")));
-#endif
 
 // Pack/unpack helpers (width-preserving)
 //
@@ -954,9 +790,7 @@ u32 SaveGarageMaskTest(u32 idx, u32 k) {
     v = (s16)(*packed & mask);
     return (v != 0) ? 1 : 0;
 }
-#ifndef __APPLE__
 u32 _0802476C(u32 a, u32 b) __attribute__((alias("SaveGarageMaskTest")));
-#endif
 
 // ROM 0x08024740: r1 indexes the PACKED halfword (`lsls r2,r1,#1` + base+0x2E)
 // and r2 the mask table (`lsls r1,r3,#1` + 0x080CC1A8); the callers in
@@ -985,9 +819,7 @@ void SaveGarageMaskSet(u32 val, u32 idx, u32 k) {
         *packed = cur;
     }
 }
-#ifndef __APPLE__
 void _08024740(u32 a, u32 b, u32 c) __attribute__((alias("SaveGarageMaskSet")));
-#endif
 
 void SaveGaragePack(void) {
     volatile u16 *packed = (volatile u16 *)(SAVE_BLOCK2_BUF_ADDR + 0x2E);
@@ -1011,9 +843,7 @@ void SaveGaragePack(void) {
     cur |= (rec[0x31] & 0x07);
     *packed = cur;
 }
-#ifndef __APPLE__
 void _08024794(void) __attribute__((alias("SaveGaragePack")));
-#endif
 
 void SaveGarageUnpack(void) {
     s16 idx = *(volatile s16 *)(GARAGE_BASE_ADDR + 0x574);
@@ -1025,9 +855,7 @@ void SaveGarageUnpack(void) {
     rec[0x34] = (u8)((packed >> 8) & 0x03);
     rec[0x31] = (u8)(packed & 0x07);
 }
-#ifndef __APPLE__
 void _0802488C(void) __attribute__((alias("SaveGarageUnpack")));
-#endif
 
 void SaveCarRecordsPack(void) {
     for (u32 i=0;i<CAR_RECORD_COUNT;i++) {
@@ -1040,9 +868,7 @@ void SaveCarRecordsPack(void) {
         ent[7] = rec[10];
     }
 }
-#ifndef __APPLE__
 void _0802494C(void) __attribute__((alias("SaveCarRecordsPack")));
-#endif
 
 void SaveCarRecordsUnpack(void) {
     for (u32 i=0;i<CAR_RECORD_COUNT;i++) {
@@ -1056,26 +882,20 @@ void SaveCarRecordsUnpack(void) {
         rec[11]= 0;
     }
 }
-#ifndef __APPLE__
 void _080249AC(void) __attribute__((alias("SaveCarRecordsUnpack")));
-#endif
 
 void SaveBlock2PreSave(void) {
     SaveGaragePack();
     SaveCarRecordsPack();
     // head mirror + scalars mirrored via CpuSet — width preserved
 }
-#ifndef __APPLE__
 void _08024A18(void) __attribute__((alias("SaveBlock2PreSave")));
-#endif
 
 void SaveBlock2PostLoad(void) {
     SaveGarageUnpack();
     SaveCarRecordsUnpack();
 }
-#ifndef __APPLE__
 void _08024A98(void) __attribute__((alias("SaveBlock2PostLoad")));
-#endif
 
 int SaveBlock2Load(void) {
     // The post-load hook fires on an EQUALS-ONE test against the BYTE-truncated
@@ -1093,9 +913,7 @@ int SaveBlock2Load(void) {
     if ((u8)sub_08005988(idx, (void *)SAVE_BLOCK2_BUF_ADDR) == 1) SAVE_CALL_POST_LOAD();
     return 1;
 }
-#ifndef __APPLE__
 int _08024B24(void) __attribute__((alias("SaveBlock2Load")));
-#endif
 
 // All four guarded/block2 SAVE bodies below are VOID in the ROM, and that is
 // byte-visible, not cosmetic. Their epilogue is `pop {r0}; bx r0` (B70:
@@ -1113,9 +931,7 @@ void SaveBlock2Save(void) {
     u32 idx = *(volatile u8 *)SAVE_BLOCK2_IDX_ADDR;
     SAVE_CALL_SLOT_SAVE(idx, (void *)SAVE_BLOCK2_BUF_ADDR);
 }
-#ifndef __APPLE__
 void _08024B54(void) __attribute__((alias("SaveBlock2Save")));
-#endif
 
 void SaveGuardedFull(void) {
     sub_0802B234(); sub_0802B190();
@@ -1126,41 +942,25 @@ void SaveGuardedFull(void) {
     SAVE_CALL_POST_LOAD();
     sub_0802B1B8();
 }
-#ifndef __APPLE__
 void _08024B70(void) __attribute__((alias("SaveGuardedFull")));
-#endif
 
 void SaveGuardedSaveOnly(void) { sub_0802B234(); sub_0802B190(); SAVE_CALL_BLOCK2_SAVE(); sub_0802B1B8(); }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _08024BC0(void) __attribute__((alias("SaveGuardedSaveOnly")));
-#endif
 // Friendly-name wrappers used by rec35_stage.c, which declares both of these
 // `extern void` (rec35_stage.c:8-9) — matching the ROM epilogues above.
 void GuardedSaveOnly(void) { SaveGuardedSaveOnly(); }
 void GuardedFullSave(void) { SaveGuardedFull(); }
 void SaveGuardedLoadOnly(void) { sub_0802B234(); sub_0802B190(); SAVE_CALL_BLOCK2_LOAD(); sub_0802B1B8(); }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _08024BD8(void) __attribute__((alias("SaveGuardedLoadOnly")));
-#endif
 
-// The host side has no `sub_` spelling, so the `#else` side keeps the
-// `_080240D0` spelling. BOTH the
-// declaration and the call are inside the guard -- an unguarded VMA-shaped call
-// is a silent C89 implicit declaration on Apple, and only tools/apple_decls.py
-// sees that class of hole.
 // Neither body is a source problem: 0x08024BF0 and 0x08024BFC are
 // 10/12 ALIGNMENT-ONLY. agbcc ends the 10-byte body with its `c0 46` nop pad
 // where the ROM carries `00 00`, so prefix(10) + 2 == rom_bytes(12) and the
 // only differing offsets are the last two. Do not "fix" that -- it is the pad.
-#ifndef __APPLE__
 extern void *sub_080240D0(void);   // Ghost_GetRecP (src/ghost2.c:122)
 #define SAVE_CALL_GHOST_REC_P()   sub_080240D0()
-#else
-extern void *_080240D0(void);      // Ghost_GetRecP (host override)
-#define SAVE_CALL_GHOST_REC_P()   _080240D0()
-#endif
 extern int _08024B18(void);        // SaveRet1_24B18 (src/runtime_state_dispatch.c)
 
 void *SaveGhostRecPair_BF0(void) { return SAVE_CALL_GHOST_REC_P(); }
@@ -1181,7 +981,6 @@ __asm__(".align 2, 0");
 // Guarded no-op sequence: the guarded bracket around two calls to the
 // return-1 stub. The `movs r0, #0/#1` before the two `_08024B18` calls is the
 // dead argument described above.
-#ifndef __APPLE__
 __attribute__((naked)) void SaveGuardedNoOp_24C1C(void) {
     __asm__ volatile (
         ".syntax unified\n"
@@ -1199,17 +998,7 @@ __attribute__((naked)) void SaveGuardedNoOp_24C1C(void) {
         ".syntax divided\n"
     );
 }
-#else
-void SaveGuardedNoOp_24C1C(void) {
-    sub_0802B234();
-    sub_0802B190();
-    (void)_08024B18();
-    (void)_08024B18();
-    sub_0802B1B8();
-}
-#endif
 
-#ifndef __APPLE__
 void *_08024BF0(void) __attribute__((alias("SaveGhostRecPair_BF0")));
 void *sub_08024BF0(void) __attribute__((alias("SaveGhostRecPair_BF0")));
 void *_08024BFC(void) __attribute__((alias("SaveGhostRecPair_BFC")));
@@ -1233,7 +1022,6 @@ void Sub_08024C10(void) __attribute__((alias("SaveNoOp_24C10")));
 void Sub_08024C14(void) __attribute__((alias("SaveNoOp_24C14")));
 void Sub_08024C18(void) __attribute__((alias("SaveNoOp_24C18")));
 void Sub_08024C1C(void) __attribute__((alias("SaveGuardedNoOp_24C1C")));
-#endif
 
 void SaveGhostBulkSave(void) {
     // One callee-saved base (r4) carries both ghost slots: the ROM loads
@@ -1246,9 +1034,7 @@ void SaveGhostBulkSave(void) {
     SAVE_CALL_SLOT_SAVE(0, p);
     SAVE_CALL_SLOT_SAVE(0, p + 32);
 }
-#ifndef __APPLE__
 void _0802471C(void) __attribute__((alias("SaveGhostBulkSave")));
-#endif
 
 // Scene/reset hook — substantiated from asm/saveblock.s and asm gap 0x2446C (objdump)
 // Preserves halfword/byte widths and indirect calls; no guessed struct.
@@ -1276,10 +1062,8 @@ void SaveHook_0802446C(void) {
     sub_0802417C(); // ghost snapshot @0x2453A
     SaveRebuild_08024338(); // zone rebuild @0x2453E
 }
-#ifndef __APPLE__
 void sub_0802446C(void) __attribute__((alias("SaveHook_0802446C")));
 void _0802446C(void) __attribute__((alias("SaveHook_0802446C")));
-#endif
 
 // Zone-grid updater — substantiated §10.1 (asm 0x241C8)
 // Loops k∈{0,1} c∈0..3: v=_08025D64(k,c) → grids, plus _0800A9A0/_0800A9E0 side effects.
@@ -1296,11 +1080,9 @@ void SaveUpdate_080241C8(void) {
         (void)_0800A9A0; (void)_080026DC;
     }
 }
-#ifndef __APPLE__
 void _080241C8(void) __attribute__((alias("SaveUpdate_080241C8")));
 void Sub_080241C8(void) __attribute__((alias("SaveUpdate_080241C8")));
 void sub_080241C8(void) __attribute__((alias("SaveUpdate_080241C8")));
-#endif
 
 // Full zone/event rebuild — substantiated §10.2 (asm 0x24338, sole caller @0x2453E)
 // Sequence: _08025B3C, _08025B88, zero 2×4×11 via _08025C84, _08025D90, _08025D64→0x103A, _080241C8, event clears, 32×_08025DBC, etc.
@@ -1322,10 +1104,8 @@ void SaveRebuild_08024338(void) {
     for(int k=0;k<=1;k++) for(int g=0;g<=3;g++) for(int j=0;j<=2;j++) _08025E70(k,g,j,0);
     _08025FF0(0);
 }
-#ifndef __APPLE__
 void _08024338(void) __attribute__((alias("SaveRebuild_08024338")));
 void sub_08024338(void) __attribute__((alias("SaveRebuild_08024338")));
-#endif
 
 // Additional veneers — pure bx lr stubs (no effect). One body per ROM address:
 // the splice binds one C body to one entry, so the three trailing stubs at
@@ -1340,18 +1120,12 @@ static void SaveStubBxLr_14(void) {}
 __asm__(".align 2, 0");
 static void SaveStubBxLr_18(void) {}
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _08024668(void) __attribute__((alias("SaveStubBxLr")));
 void _08024710(void) __attribute__((alias("SaveStubBxLr_10")));
 void _08024714(void) __attribute__((alias("SaveStubBxLr_14")));
 void _08024718(void) __attribute__((alias("SaveStubBxLr_18")));
-#endif
-#ifndef __APPLE__
 void * sub_0800572C(u32 s) __attribute__((alias("_0800572C")));
-#endif
-#ifndef __APPLE__
 void * Sub_0800572C(u32 s) __attribute__((alias("_0800572C")));
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x08002A0C — 36B IRQ-state restore ((consolidated/elsewhere); asm/agbmain.s §"0x080029D8"
@@ -1372,7 +1146,5 @@ void IrqRestore_2A0C(void) {
     *(volatile u16 *)0x04000004u = st[29];
     *(volatile u16 *)0x04000200u = st[28];
 }
-#ifndef __APPLE__
 void _08002A0C(void) __attribute__((alias("IrqRestore_2A0C")));
 void sub_08002A0C(void) __attribute__((alias("IrqRestore_2A0C")));
-#endif

@@ -8,11 +8,7 @@
 
 #include "gba/types.h"
 
-#ifdef __APPLE__
-#define HOST_STUB(sig) __attribute__((weak)) sig
-#else
 #define HOST_STUB(sig) extern sig
-#endif
 
 HOST_STUB(void _0802DDCC(void *a, void *b));   // 0x0802DDCC is `bx r1` (0x4708), NOT bx r0
 
@@ -24,9 +20,7 @@ __attribute__((naked)) u32 _0802C898(u32 a, u32 b, u32 c)
 {
     __asm__ volatile ("swi 0x2A\n bx lr\n");
 }
-#ifndef __APPLE__
 u32 sub_0802C898(u32 a, u32 b, u32 c) __attribute__((alias("_0802C898")));
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x0802C89C sub_0802C89C(a) — VBlank-side tick via the relocated-code veneer:
@@ -58,9 +52,7 @@ void _0802C8B0(void *self)
 // asm/sound_init.s:149-150 defines BOTH `sub_0802C8B0:` and `_0802C8B0:` on this
 // one body, so the C replacement must publish both spellings. Callers
 // (src/runtime_state_dispatch.c) use the `_`-form; the manifest `export` records both.
-#ifndef __APPLE__
 void sub_0802C8B0(void *self) __attribute__((alias("_0802C8B0")));
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x0802D5EC sub_0802D5EC(voice) — set voice "released" state bits:
@@ -120,9 +112,7 @@ __asm__(".align 2, 0");
 // requirement as _0802C8B0 above. Both asm call sites branch by address form
 // (`bl 0x0802D5EC`), so no caller rename is needed; the manifest `export`
 // records both.
-#ifndef __APPLE__
 void sub_0802D5EC(u8 *voice) __attribute__((alias("_0802D5EC")));
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x0802D60C sub_0802D60C(root, mask_u16, val_u8) — "Smsh" magic-gated

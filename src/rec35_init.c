@@ -36,6 +36,4 @@ void Rec35_Init(void *ctx) {
     // etc. preserve alias
 }
 
-#ifndef __APPLE__
 void _08015CB4(void *c) __attribute__((alias("Rec35_Init")));
-#endif

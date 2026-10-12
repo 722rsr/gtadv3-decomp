@@ -22,10 +22,8 @@ void SoundChannel_AllocFreeList(void *chan){
     }
     // Stack temporaries for r8/sl spill preserved via volatile u8* + uintptr_t, not invented struct
 }
-#ifndef __APPLE__
 void _0802C190_free(void *c) __attribute__((alias("SoundChannel_AllocFreeList")));
 void sub_0802C190_free(void *c) __attribute__((alias("SoundChannel_AllocFreeList")));
-#endif
 
 // Channel walker beyond free: 0x02BEB4 per-frame walker already in core, but free-list beyond +8 count needs +44 array walk
 void SoundChannel_WalkFree(void *state){
@@ -38,10 +36,8 @@ void SoundChannel_WalkFree(void *state){
         // Vibrato beyond +0x19 etc. remains TODO where +0x19 vs +0x1C overlap not proven, so stop at gate
     }
 }
-#ifndef __APPLE__
 void _0802BEB4_free(void *s) __attribute__((alias("SoundChannel_WalkFree")));
 void sub_0802BEB4_free(void *s) __attribute__((alias("SoundChannel_WalkFree")));
-#endif
 
 // Sequence walker with EWRAM vector proven: 0x0203EBB0 -> 0x0802BC85 Thumb via ldr r0,=0x0203EBB0 pool, ldr r2,[r0] u32, blx r2
 void SoundSeq_EWRAMVector(void *seq){
@@ -51,22 +47,16 @@ void SoundSeq_EWRAMVector(void *seq){
     // Preserve indirect call ABI r0=seq, r1=seq+64 etc., without inventing BE32 table
     (void)fn;
 }
-#ifndef __APPLE__
 void _0802D82C_vec(void *s) __attribute__((alias("SoundSeq_EWRAMVector")));
 void sub_0802D82C_vec(void *s) __attribute__((alias("SoundSeq_EWRAMVector")));
-#endif
 
 // Note: BE32/DMA table meaning at 0x02BCE4 (BE32) and PSG +0x19/+0x1C overlap remain blocked and not claimed here
 
 // This four-byte dispatch tail is reached with its callback in r3. The
 // adjacent 12-byte literal pool at 0x0802C110-0x0802C11C is shared with the
 // sample pump and walker and remains in assembly.
-#ifndef __APPLE__
 __attribute__((naked)) void SoundCallViaR3_2C10C(void){
     __asm__ volatile("bx r3\n\t.short 0x0000");
 }
 void _0802C10C(void) __attribute__((alias("SoundCallViaR3_2C10C")));
 void sub_0802C10C(void) __attribute__((alias("SoundCallViaR3_2C10C")));
-#else
-void SoundCallViaR3_2C10C(void){}
-#endif

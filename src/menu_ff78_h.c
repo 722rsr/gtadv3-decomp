@@ -14,41 +14,6 @@
 
 #include "gba/types.h"
 
-#ifdef __APPLE__
-__attribute__((weak)) void Sub_08007B18(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h) { (void)a; (void)b; (void)c; (void)d; (void)e; (void)f; (void)g; (void)h; }
-// The lower-case twin, needed because MenuFF78_13950 (0x08013950, promoted) now
-// calls 0x08007b18 under the CLOSURE's spelling: the spliced link holds
-// asm/code.s plus that one body and no C object, so `Sub_` has nothing to bind
-// to. Both arms need the split, not just the declaration: a bare `extern` under
-// `#ifndef __APPLE__` leaves the host build with an undefined symbol that
-// `-undefined dynamic_lookup` binds lazily, so the suite still reads green.
-__attribute__((weak)) void sub_08007B18(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h) { (void)a; (void)b; (void)c; (void)d; (void)e; (void)f; (void)g; (void)h; }
-__attribute__((weak)) void Sub_08007BFC(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h, u32 i) { (void)a; (void)b; (void)c; (void)d; (void)e; (void)f; (void)g; (void)h; (void)i; }
-__attribute__((weak)) void sub_08007BFC(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h, u32 i) { (void)a; (void)b; (void)c; (void)d; (void)e; (void)f; (void)g; (void)h; (void)i; }
-__attribute__((weak)) void _08007ABC(u32 a, u32 b, u32 c) { (void)a; (void)b; (void)c; }
-__attribute__((weak)) int _08025CF4(int a, int b, int c) { (void)a; (void)b; (void)c; return 0; }
-__attribute__((weak)) void _0802E0A4(void *d, const void *s, u32 n) { (void)d; (void)s; (void)n; }
-__attribute__((weak)) void Sub_0800141AC(void *a) { (void)a; }
-__attribute__((weak)) void Sub_08001411C(int a, void *b) { (void)a; (void)b; }
-__attribute__((weak)) void Sub_0800D854(void *a) { (void)a; }
-__attribute__((weak)) void Sub_0800D8E4(void *a) { (void)a; }
-__attribute__((weak)) void Sub_080013FE4(void *a) { (void)a; }
-__attribute__((weak)) void Sub_080014AC4(void *a) { (void)a; }
-__attribute__((weak)) void Sub_080014488(void *a, u32 b, u32 c) { (void)a; (void)b; (void)c; }
-__attribute__((weak)) void Sub_0800141A8(void *a) { (void)a; }
-// Closure spellings for the MenuFF78_14BD0 (0x08014BD0, promoted) call sites:
-// the spliced link holds asm/code.s plus that one body and no C object, so a
-// `Sub_` call has nothing to bind to. Host gets weak no-ops (same as the
-// Sub_ twins above); ARM gets externs resolving to the real bodies.
-__attribute__((weak)) void sub_08001411C(int a, void *b) { (void)a; (void)b; }
-__attribute__((weak)) void sub_0800D854(void *a) { (void)a; }
-__attribute__((weak)) void sub_0800D8E4(void *a) { (void)a; }
-__attribute__((weak)) void _080013FE4(void *a) { (void)a; }
-__attribute__((weak)) void sub_080014AC4(void *a) { (void)a; }
-__attribute__((weak)) void sub_080014488(void *a, u32 b, u32 c) { (void)a; (void)b; (void)c; }
-__attribute__((weak)) void sub_0800141AC(void *a) { (void)a; }
-__attribute__((weak)) void sub_0800141A8(void *a) { (void)a; }
-#else
 extern void Sub_08007B18(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h);
 extern void sub_08007B18(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h);
 extern void Sub_08007BFC(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h, u32 i);
@@ -73,7 +38,6 @@ extern void sub_080014AC4(void *a);
 extern void sub_080014488(void *a, u32 b, u32 c);
 extern void sub_0800141AC(void *a);
 extern void sub_0800141A8(void *a);
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_080014650 — (rec, a1, a2): 4 outer x 6 inner 7BFC grid.
@@ -85,42 +49,22 @@ void MenuFF78_14650(void *rec_, u32 a1, u32 a2) {
         u32 a1;
         u32 a2;
     } args;
-#ifndef __APPLE__
     register volatile u8 *rec __asm__("r3") = (volatile u8 *)rec_;
     __asm__ volatile("" : "+r"(rec));
     args.a1 = a1;
     args.a2 = a2;
     register int idx __asm__("r0") = 0;
     register int next_idx __asm__("r9");
-#else
-    volatile u8 *rec = (volatile u8 *)rec_;
-    args.a1 = a1;
-    args.a2 = a2;
-    int idx = 0;
-    int next_idx;
-#endif
-#ifndef __APPLE__
     register void *target __asm__("r10") = (void *)(uintptr_t)(rec + 24);
     __asm__ volatile("" : "+r"(target));
-#else
-    void *target = (void *)(uintptr_t)(rec + 24);
-#endif
     volatile u32 *base1 = (volatile u32 *)(rec + 248);
     volatile u32 *base2 = (volatile u32 *)(rec + 252);
     do {
-#ifndef __APPLE__
         __asm__ volatile("" : "+r"(target));
-#endif
-#ifndef __APPLE__
         register u32 lane_off __asm__("r1") = (u32)idx * 8u;
         __asm__ volatile("" : "+r"(lane_off));
-#else
-        u32 lane_off = (u32)idx * 8u;
-#endif
         next_idx = idx + 1;
-#ifndef __APPLE__
         __asm__ volatile("" : "+r"(next_idx));
-#endif
         u32 row = (lane_off + (u32)idx) * 8u;
         u32 r8v = args.a2 + lane_off;
         u32 arg = args.a1;
@@ -137,11 +81,9 @@ void MenuFF78_14650(void *rec_, u32 a1, u32 a2) {
         idx = next_idx;
     } while (idx <= 3);
 }
-#ifndef __APPLE__
 void _080014650(void *a, u32 b, u32 c) __attribute__((alias("MenuFF78_14650")));
 void Sub_080014650(void *a, u32 b, u32 c) __attribute__((alias("MenuFF78_14650")));
 void sub_080014650(void *a, u32 b, u32 c) __attribute__((alias("MenuFF78_14650")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_080014BD0 — (ev, a1, a2, rec): ev-1 indexes a 12-entry table.
@@ -177,10 +119,8 @@ void MenuFF78_14BD0(int ev, u32 a1, u32 a2, void *rec) {
         break;
     }
 }
-#ifndef __APPLE__
 void _080014BD0(int a, u32 b, u32 c, void *d) __attribute__((alias("MenuFF78_14BD0")));
 void sub_080014BD0(int a, u32 b, u32 c, void *d) __attribute__((alias("MenuFF78_14BD0")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_080013950 — (rec, arr, sl, cnt): u8 n = (u8)cnt clamped to 0..32;
@@ -222,11 +162,9 @@ void MenuFF78_13950(void *rec_, void *arr_, u32 sl_, u32 cnt_) {
 // closes a Thumb code section with `nop` (0x46c0) where the ROM holds
 // `00 00`. Same file-scope pad as MenuFF78_11CBC in menu_ff78_d.c.
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _080013950(void *a, void *b, u32 c, u32 d) __attribute__((alias("MenuFF78_13950")));
 void Sub_080013950(void *a, void *b, u32 c, u32 d) __attribute__((alias("MenuFF78_13950")));
 void sub_080013950(void *a, void *b, u32 c, u32 d) __attribute__((alias("MenuFF78_13950")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_0800139F0 — (rec, u16 a1):
@@ -266,11 +204,9 @@ void MenuFF78_139F0(void *rec_, u32 a1_) {
         }
     }
 }
-#ifndef __APPLE__
 void _0800139F0(void *a, u32 b) __attribute__((alias("MenuFF78_139F0")));
 void Sub_0800139F0(void *a, u32 b) __attribute__((alias("MenuFF78_139F0")));
 void sub_0800139F0(void *a, u32 b) __attribute__((alias("MenuFF78_139F0")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_080014078 — (rec): memcpy(spad, 0x0805F9C0, 32); 4 outer x 6 inner:
@@ -346,8 +282,6 @@ void MenuFF78_14078(void *rec_) {
         outer = next_outer;
     }
 }
-#ifndef __APPLE__
 void _080014078(void *a) __attribute__((alias("MenuFF78_14078")));
 void Sub_080014078(void *a) __attribute__((alias("MenuFF78_14078")));
 void sub_080014078(void *a) __attribute__((alias("MenuFF78_14078")));
-#endif

@@ -18,7 +18,7 @@ and only one of them was previously covered:
 
   direction 2 -- what a manifest entry PROMISES. Every name in an entry's
     `export` array, and its `c_name`, must be DEFINED in `src/`: a function
-    body, a `#ifndef __APPLE__` alias declaration, a `HOST_STUB(...)`, an
+    body, an alias declaration, a `HOST_STUB(...)`, an
     absolute symbol an in-body `__asm__` block emits, or a LABEL an in-body
     `__asm__` block emits beside its `.globl` (the interior-label lever --
     `_0802BCF6` and `_0802BCE4` are exported exactly this way). A bare

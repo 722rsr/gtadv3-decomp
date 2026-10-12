@@ -68,9 +68,7 @@ extern void  Sub_080075E8(void *a, int b, int c);
 extern void *Sub_08005758(int n);
 extern void  Sub_08007B18(void *a, int b, int c, int d, int e, int f, int g, int h);
 extern void  Sub_08007BFC(void *a, int b, int c, int d, int e, int f, int g, int h, int i);
-#ifndef __APPLE__
 extern void  sub_08007BFC(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h, u32 i);
-#endif
 extern void  Sub_08007C68(void *a, int b, int c, int d, int e, int f, int g, int h, int i);
 extern void  _08007C68(void *a, u32 b, u32 c, u32 d, u32 e, u32 f, u32 g, u32 h, u32 i); // faithful strong body
 // CpuSet wrapper 0x0802D974 = `swi 0x0B; bx lr`, i.e. BIOS order
@@ -138,7 +136,6 @@ static inline void WR32(void *p, u32 v) { *(u32 *)p = v; }
 // slice closure defines; the `_`/`sub_` twin is that spelling, while the host
 // build keeps the friendly `Sub_` name (clang rejects the aliases). Defined
 // here, not mid-file, so the low-VMA bodies can use it too.
-#ifndef __APPLE__
 #define R35_CALLEE(friendly, closure) closure
 extern void _080056F4(void *a, int b, int c);
 extern int  _08002140(void);
@@ -172,19 +169,12 @@ extern void _080017528(void *rec, int a, int id);
 extern void _080017788(void *rec, int a, int id);
 extern void _0800D854(void *a);
 extern void _0800D8E4(void *a);
-#else
-#define R35_CALLEE(friendly, closure) friendly
-// The host build expands R35_CALLEE to the friendly name, so every friendly
-// spelling used at a call site needs a declaration on this side too — the
-// closure-only externs above are invisible here.
-extern void Sub_080056F4(void *a, int b, int c);
-#endif
 
 // Forward decls (mutual recursion inside the cluster)
 void Rec35_Leaf_16AF0(void *rec);
 void Rec35_Leaf_16BBC(void *rec);
 void Rec35_Leaf_16DE4(void *rec);
-void Rec35_Leaf_16FD0(void *rec);
+void Rec35_Scene_16FD0(void *rec);
 void Rec35_Input_17440(void *rec, int a, int id);
 void Rec35_Input_17528(void *rec, int a, int id);
 void Rec35_Input_175BC(void *rec);
@@ -238,9 +228,7 @@ void Rec35_Ev3_168E8(void *ctx, void *rec) {
     (void)*(volatile u16 *)((u8 *)_08004B68() + 2);
     WR16((u8 *)rec + 84, 1);
 }
-#ifndef __APPLE__
 void _0800168E8(void *a, void *b) __attribute__((alias("Rec35_Ev3_168E8")));
-#endif
 
 // ROM: ghost cells -> [+204]/[+206]; selection cell -> [+208]/[+210]
 //   sel1 -> [208]=1 [210]=0 | sel2 -> [208]=0 [210]=1 | sel3 -> 0/0 | else: no write.
@@ -266,11 +254,7 @@ void Rec35_SyncRec_16944(void *rec) {
     void *r4 = Rec35GhostSlot(0);
     void *r0 = Rec35GhostSlot(1);
     u16 a = RD16P(r4);
-#ifndef __APPLE__
     register u16 *dst __asm__("r1") = (u16 *)((u8 *)r5 + 204);
-#else
-    u16 *dst = (u16 *)((u8 *)r5 + 204);
-#endif
     u16 z = 0;
     dst[0] = a;
     u16 b = RD16P(r0);
@@ -300,9 +284,7 @@ void Rec35_SyncRec_16944(void *rec) {
     *out2 = (u32)*(const s16 *)((const u8 *)tbl + off2);
     R35_CALLEE(Sub_08007ABC, _08007ABC)(RD32((u8 *)r5 + 12), *out2, RD32((u8 *)r5 + 468));
 }
-#ifndef __APPLE__
 void _080016944(void *a) __attribute__((alias("Rec35_SyncRec_16944")));
-#endif
 
 // ---------------------------------------------------------------------------
 // _080016A20(rec) — two-lap placement emit
@@ -317,41 +299,54 @@ void _080016944(void *a) __attribute__((alias("Rec35_SyncRec_16944")));
 // walked by 12 (`[r6,#4]`-style stores), 40 bytes short of the ROM. With the pin
 // the lap offset stays in r7 and rec stays in r6, as the ROM has them.
 //
-// Residual (134/180): the seven address computations are the same two adds in
-// the other association -- agbcc emits `(rec + off) + C` where the ROM has
-// `(rec + C) + off`. `off`, `i * 12`, `(C + off)`, integer-typed casts and
-// per-site base variables all canonicalise the same way.
+// Two levers pin the address association to the ROM's `(rec + C) + off`:
+//   * the lap offset is a real `off` local walked by 12 (fold-const.c's
+//     `associate:` only reassociates `(VAR + CON) + ARG1`, so a genuine
+//     variable keeps `(base) + off` intact -- `i * 12` gets strength-reduced
+//     into an IV and reassociated to `(off + rec) + C` instead);
+//   * each site's base is spelled as a `u8 *pa = (u8 *)r6 + C;` *statement*,
+//     so `pa + off` folds to `PLUS(rec + C, off)` and the constant lands in
+//     the register operand of the first add (`adds r0, r6, r3`), exactly as
+//     the ROM has it. Inlining `(u8 *)r6 + C + off` re-associates back to
+//     `(off + rec) + C`.
+//
+// Residual (142/180, candidate size exact): agbcc's scheduler hoists the
+// read-side pair `subs r3, #4 / adds r2, r6, r3` above the preceding store
+// instead of emitting it after the `ldr r0, [r6, #20]` argument load; the
+// instruction *set* and all register choices otherwise match.
 void Rec35_PlacementEmit_16A20(void *rec) {
     u32 sp[2];
-#ifndef __APPLE__
     register void *r6 __asm__("r6") = rec;
     __asm__ volatile("" : "+r"(r6));
-#else
-    void *r6 = rec;
-#endif
     // i is zeroed BEFORE the ghost fetches (`mov r0,#0 / mov r8,r0` sits ahead of
     // the first `bl`), so the initialiser belongs to the declaration, not a
     // `for` prologue.
     int i = 0;
+    u32 off;
     sp[0] = (u32)Rec35GhostSlot(0);
     sp[1] = (u32)Rec35GhostSlot(1);
-    for (; i <= 1; i++) {
+    off = 0;
+    for (; i <= 1; off += 12, i++) {
         s16 r4 = RS16((u8 *)(u32)sp[i] + 16);
         Sub_080022E4(r4);
         u32 v1 = (u32)Sub_08024D5C(r4);
-        WR32((u8 *)r6 + 388 + i * 12, v1);
-        R35_CALLEE(Sub_08007ABC, _08007ABC)(RD32((u8 *)r6 + 20), v1, RD32((u8 *)r6 + 384 + i * 12));
+        u8 *pa = (u8 *)r6 + 388;
+        u8 *pb = (u8 *)r6 + 384;
+        WR32(pa + off, v1);
+        R35_CALLEE(Sub_08007ABC, _08007ABC)(RD32((u8 *)r6 + 20), v1, RD32(pb + off));
         u32 v2 = (u32)Sub_08024C74(r4);
-        WR32((u8 *)r6 + 412 + i * 12, v2);
-        R35_CALLEE(Sub_08007ABC, _08007ABC)(RD32((u8 *)r6 + 28), v2, RD32((u8 *)r6 + 408 + i * 12));
+        u8 *pa2 = (u8 *)r6 + 412;
+        u8 *pb2 = (u8 *)r6 + 408;
+        WR32(pa2 + off, v2);
+        R35_CALLEE(Sub_08007ABC, _08007ABC)(RD32((u8 *)r6 + 28), v2, RD32(pb2 + off));
         s16 v3 = (s16)Sub_080258A8(RS16((u8 *)(u32)sp[i] + 2));
-        WR32((u8 *)r6 + 436 + i * 12, (u32)v3);
-        R35_CALLEE(Sub_08007ABC, _08007ABC)(RD32((u8 *)r6 + 36), (u32)v3, RD32((u8 *)r6 + 432 + i * 12));
+        u8 *pa3 = (u8 *)r6 + 436;
+        u8 *pb3 = (u8 *)r6 + 432;
+        WR32(pa3 + off, (u32)v3);
+        R35_CALLEE(Sub_08007ABC, _08007ABC)(RD32((u8 *)r6 + 36), (u32)v3, RD32(pb3 + off));
     }
 }
-#ifndef __APPLE__
 void _080016A20(void *a) __attribute__((alias("Rec35_PlacementEmit_16A20")));
-#endif
 
 // ---------------------------------------------------------------------------
 // _080016AF0(rec) — 8-way phase dispatcher (indirect table 0x08016B0C)
@@ -415,9 +410,7 @@ void Rec35_Leaf_16AF0(void *rec) {
         break;
     }
 }
-#ifndef __APPLE__
 void _080016AF0(void *a) __attribute__((alias("Rec35_Leaf_16AF0")));
-#endif
 
 // ---------------------------------------------------------------------------
 // _080016BBC(rec) — 8-way phase dispatcher (indirect table 0x08016BDC)
@@ -520,9 +513,7 @@ void Rec35_Leaf_16BBC(void *rec) {
         break;
     }
 }
-#ifndef __APPLE__
 void _080016BBC(void *a) __attribute__((alias("Rec35_Leaf_16BBC")));
-#endif
 
 // ---------------------------------------------------------------------------
 // _080016DC0(rec) — decrement u16[rec+346]
@@ -542,13 +533,11 @@ void Rec35_Leaf_16DC0(void *ctx) {
         *p = 0;
     }
 }
-#ifndef __APPLE__
 // `asm/rec35_runtime.s:3132` still branches to `bl sub_080016DC0`, so the
 // `sub_` twin must exist in C once this body is promoted (the manifest's
 // `export` list only re-emits a label whose VMA equals the entry's).
 void _080016DC0(void *c) __attribute__((alias("Rec35_Leaf_16DC0")));
 void sub_080016DC0(void *c) __attribute__((alias("Rec35_Leaf_16DC0")));
-#endif
 
 // ---------------------------------------------------------------------------
 // _080016DE4(rec) — 9-way phase dispatcher (indirect table 0x08016E04)
@@ -622,43 +611,211 @@ void Rec35_Leaf_16DE4(void *rec) {
         break;
     }
 }
-#ifndef __APPLE__
 void _080016DE4(void *a) __attribute__((alias("Rec35_Leaf_16DE4")));
-#endif
 
 // ---------------------------------------------------------------------------
-// _080016FD0(rec) — 5-way phase dispatcher (indirect table 0x08016F44)
-void Rec35_Leaf_16FD0(void *rec) {
-    void *r5 = rec;
-    int p = RS16((u8 *)r5 + 200);
-    switch (p & 7) {
-    case 0:                                     // 0x08016FC0
-        Rec35_Leaf_173E8(r5);
-        WR16((u8 *)r5 + 200, 2);
+// _080016FD0(rec) — race-scene constructor (1048 B).
+//
+// This VMA is NOT the 5-way phase dispatcher. That body belongs to 0x08016F28
+// (`Rec35_Dispatch_16F28`, src/rec35_runtime.c), which ends at 0x08016FCE — the
+// dispatcher used to be bound here as well, which is why this function probed as
+// `PARTIAL 5/1048 bytes, candidate 140`.
+//
+// ROM shape (asm/rec35_runtime.s:1351-1823):
+//   * two sub_08007770 resource binds (0x0831F244 / 0x082B7410), [+128]=6;
+//   * the 0x04B68 lookup whose s16 result (39 / 40) picks the record kind when
+//     WA+0xFBC is not 3; the kind cell is +180 and r9 keeps its address;
+//   * seven binds (0x0831F244, 0x08320060, 0x08324F00, 0x082DFBDC,
+//     0x082C4228, 0x082C4458, 0x08325A7C) and three 2-lap sub_0800572C →
+//     sub_08007ABC pair loops — cells +456/+460 (arg [rec+12]), +432/+436
+//     (arg [rec+36], value signed-narrowed), +384/+388 + +408/+412 (args
+//     [rec+20] / [rec+28]) — the same lap layout `Rec35_PlacementEmit_16A20`
+//     walks, plus the 0x08025BC8(rec+480, 5) bind feeding [rec+44]/[rec+484];
+//   * WA mirrors: [+364] = WA+0xFBE, [+362] = WA+0x574, [+348] = 20;
+//   * a 3-way switch on RS16(rec+180) (1 / 0 / 3, default) before the shared
+//     tail ([+344]=0, [+508]=1, [+512]=1).
+//
+// The WA base must stay a SYMBOL: the front end folds `0x03001780 + 0xFBC`
+// into one pool word, while the ROM really loads 0x03001780, loads 0x00000FBC
+// and adds them (same for 0xFBE / 0x574 / 0x10C3).
+void Rec35_Scene_16FD0(void *rec_) {
+    extern void sub_08007770(int, void *, int, int, int, int);
+    extern void sub_0800DAB8(void *);
+    extern void sub_0800798C(void *, void *);
+    extern void sub_08007A58(void *);
+    extern void sub_080075E8(void *, int, int);
+    extern u32  sub_0800572C(u32);
+    extern void *_08004B68(void);   // no-arg spelling used by the bare `bl`
+    extern int  sub_080258A8(int);
+    extern void sub_08025BC8(void *, int);
+    extern void sub_0802412C(void);
+    extern void _08002124(u16);
+    extern int  _08024BFC(int);
+    extern void sub_0802D974(const void *src, void *dst, u32 ctrl);
+    extern u8 R35SceneBM[];
+    __asm__(".globl R35SceneBM\nR35SceneBM = 0x03001780\n");
+    register void *r6 __asm__("r6") = rec_;
+    __asm__ volatile("" : "+r"(r6));
+    u8 *bm;
+    u8 *r9p;
+    s16 kind;
+    s16 ev;
+    int v;
+
+    sub_08007770(0, (void *)0x0831F244, 2, 0, 4, 1);
+    sub_08007770(1, (void *)0x082B7410, 1, 0, 0, 3);
+    WR32((u8 *)r6 + 128, 6);
+
+    bm = R35SceneBM;
+    kind = RS16(bm + 0xFBC);
+    if (kind == 3) {
+        WR32((u8 *)r6 + 140, 19);
+        WR16((u8 *)r6 + 180, (u16)kind);
+        r9p = (u8 *)r6 + 180;
+    } else {
+        ev = RS16(_08004B68());
+        r9p = (u8 *)r6 + 180;
+        if (ev == 39) {
+            WR32((u8 *)r6 + 140, 18);
+            WR16(r9p, 0);
+        } else if (ev == 40) {
+            WR32((u8 *)r6 + 140, 19);
+            WR16(r9p, 1);
+        }
+    }
+
+    WR32((u8 *)r6 + 152, 1);
+    sub_0800DAB8((u8 *)r6 + 56);
+    sub_0800798C((void *)0x0831F244, r6);
+    sub_08007A58(r6);
+    sub_080075E8((void *)0x0831F244, 0, 3);
+    sub_080075E8((void *)0x0831F244, 1, 6);
+    sub_0800798C((void *)0x08320060, (u8 *)r6 + 8);
+    sub_080075E8((void *)0x08320060, 0, 5);
+
+    {
+        u32 off = 0;
+        int i = 0;
+        for (; i <= 1; off += 12, i++) {
+            u8 *pa = (u8 *)r6 + 456;
+            u8 *pb = (u8 *)r6 + 460;
+            v = (int)sub_0800572C(150);
+            WR32(pa + off, (u32)v);
+            WR32(pb + off, 1);
+            R35_CALLEE(Sub_08007ABC, _08007ABC)(RD32((u8 *)r6 + 12), 1, RD32(pa + off));
+        }
+    }
+
+    sub_0800798C((void *)0x08324F00, (u8 *)r6 + 48);
+    v = (int)sub_0800572C(30);
+    WR32((u8 *)r6 + 492, (u32)v);
+    WR32((u8 *)r6 + 496, 0);
+    R35_CALLEE(Sub_08007ABC, _08007ABC)(RD32((u8 *)r6 + 52), 0, RD32((u8 *)r6 + 492));
+
+    sub_0800798C((void *)0x082DFBDC, (u8 *)r6 + 32);
+    sub_080075E8((void *)0x082DFBDC, 0, 7);
+
+    {
+        u32 off = 0;
+        int i = 0;
+        for (; i <= 1; off += 12, i++) {
+            u8 *pa = (u8 *)r6 + 432;
+            u8 *pb = (u8 *)r6 + 436;
+            v = (int)sub_0800572C(12);
+            WR32(pa + off, (u32)v);
+            v = sub_080258A8((int)RS16((u8 *)0x03001CF6));
+            WR32(pb + off, (u32)(s16)v);
+            R35_CALLEE(Sub_08007ABC, _08007ABC)(RD32((u8 *)r6 + 36), (u32)(s16)v, RD32(pa + off));
+        }
+    }
+
+    sub_080075E8((void *)0x082C4228, 0, 4);
+    sub_0800798C((void *)0x082C4458, (u8 *)r6 + 16);
+    sub_0800798C((void *)0x08325A7C, (u8 *)r6 + 24);
+
+    {
+        u32 off = 0;
+        int i = 0;
+        for (; i <= 1; off += 12, i++) {
+            u8 *pa = (u8 *)r6 + 384;
+            u8 *pb = (u8 *)r6 + 388;
+            u8 *pc = (u8 *)r6 + 408;
+            u8 *pd = (u8 *)r6 + 412;
+            v = (int)sub_0800572C(7);
+            WR32(pa + off, (u32)v);
+            WR32(pb + off, 4);
+            R35_CALLEE(Sub_08007ABC, _08007ABC)(RD32((u8 *)r6 + 20), 4, RD32(pa + off));
+            v = (int)sub_0800572C(7);
+            WR32(pc + off, (u32)v);
+            WR32(pd + off, 50);
+            R35_CALLEE(Sub_08007ABC, _08007ABC)(RD32((u8 *)r6 + 28), 50, RD32(pc + off));
+        }
+    }
+
+    sub_0800798C((void *)0x082B7410, (u8 *)r6 + 40);
+    sub_080075E8((void *)0x082B7410, 0, 8);
+
+    sub_08025BC8((u8 *)r6 + 480, 5);
+    R35_CALLEE(Sub_08007ABC, _08007ABC)(RD32((u8 *)r6 + 44), RD32((u8 *)r6 + 484), RD32((u8 *)r6 + 480));
+
+    WR32((u8 *)r6 + 168, (u32)(uintptr_t)((u8 *)r6 + 352));
+    WR32((u8 *)r6 + 172, (u32)(uintptr_t)((u8 *)r6 + 56));
+
+    WR32((u8 *)r6 + 56, 0);
+    WR16((u8 *)r6 + 60, 1);
+    Sub_0800D77C((u8 *)r6 + 76, 0, -32);
+    Sub_0800D77C((u8 *)r6 + 68, 0, 160);
+    WR16((u8 *)r6 + 64, 1);
+    WR16((u8 *)r6 + 66, 1);
+    WR16((u8 *)r6 + 182, 1);
+    WR32((u8 *)r6 + 352, 2);
+    WR16((u8 *)r6 + 188, 0);
+    WR16((u8 *)r6 + 190, 0);
+
+    if (RD16P(r9p) != 3)
+        R35_CALLEE(Rec35_SyncRec_16944, _080016944)(r6);
+    R35_CALLEE(Rec35_PlacementEmit_16A20, _080016A20)(r6);
+
+    bm = R35SceneBM;
+    WR16((u8 *)r6 + 364, RD16P(bm + 0xFBE));
+    WR16((u8 *)r6 + 362, RD16P(bm + 0x574));
+    WR16((u8 *)r6 + 348, 20);
+
+    switch (RS16(r9p)) {
+    case 1:                                     // 0x0801733C
+        WR32((u8 *)r6 + 496, 1);
+        R35_CALLEE(Sub_08007ABC, _08007ABC)(RD32((u8 *)r6 + 52), 1, RD32((u8 *)r6 + 492));
         break;
-    case 1:                                     // 0x08016F58
-        if ((R35_CALLEE(Sub_0802B3B8, _0802B3B8)(3) << 24) != 0) break;
-        if (RS16((u8 *)r5 + 182) == 1)      Sub_08024C0C();
-        else if (RS16((u8 *)r5 + 182) == 2) Sub_08024C0C();
-        else break;
-        R35_CALLEE(Rec35_SyncRec_16944, _080016944)(r5);
-        R35_CALLEE(Rec35_PlacementEmit_16A20, _080016A20)(r5);
-        WR16((u8 *)r5 + 200, 4);
+    case 0:                                     // 0x08017316
+        sub_0802412C();
+        WR32((u8 *)r6 + 496, 2);
+        R35_CALLEE(Sub_08007ABC, _08007ABC)(RD32((u8 *)r6 + 52), 2, RD32((u8 *)r6 + 492));
+        WR16((u8 *)r6 + 200, 0);
         break;
-    case 3:                                     // 0x08016FBA
-        WR16((u8 *)r5 + 60, 1);
+    case 3:                                     // 0x08017356
+        WR16((u8 *)r6 + 194, 0);
+        _08002124(0x1390);
+        bm = R35SceneBM;
+        if (*(u8 *)(bm + 0x10C3) == 1) {
+            WR16((u8 *)r6 + 196, 2);
+        } else {
+            R35_CALLEE(Sub_08024C1C, _08024C1C)();
+            R35_CALLEE(Rec35_SyncRec_16944, _080016944)(r6);
+            R35_CALLEE(Rec35_PlacementEmit_16A20, _080016A20)(r6);
+            WR16((u8 *)r6 + 196, 1);
+            sub_0802D974((const void *)(uintptr_t)_08024BFC(0), (u8 *)r6 + 212, 0x04000008u);
+            sub_0802D974((const void *)(uintptr_t)_08024BFC(1), (u8 *)r6 + 244, 0x04000008u);
+        }
         break;
-    case 4:                                     // 0x08016FB4
-        WR16((u8 *)r5 + 60, 1);
-        break;
-    case 2:                                     // 0x08016FC8 (exit)
     default:
         break;
     }
+
+    WR16((u8 *)r6 + 344, 0);
+    WR32((u8 *)r6 + 508, 1);
+    WR32((u8 *)r6 + 512, 1);
 }
-#ifndef __APPLE__
-void _080016FD0(void *a) __attribute__((alias("Rec35_Leaf_16FD0")));
-#endif
+void _080016FD0(void *a) __attribute__((alias("Rec35_Scene_16FD0")));
 
 // ---------------------------------------------------------------------------
 // _080017440(rec, a, id) — selection key handler
@@ -732,12 +889,8 @@ void Rec35_Input_17440(void *rec, int a, int id) {
         {
             // Same clamp shape as Rec35_Input_17528 (pointer in r2, clamp base
             // copied to r1 with an r3=0 index scratch).
-#ifndef __APPLE__
             register void *q __asm__("r1") = (u8 *)rec + 182;
             __asm__ volatile("" : "+r"(q));
-#else
-            void *q = (u8 *)rec + 182;
-#endif
             if (RS16(q) < 1) WR16(q, 1);
             if (RS16(q) > 3) WR16(q, 3);
         }
@@ -749,9 +902,7 @@ void Rec35_Input_17440(void *rec, int a, int id) {
         WR16(r4, 3);
     }
 }
-#ifndef __APPLE__
 void _080017440(void *a, int b, int c) __attribute__((alias("Rec35_Input_17440")));
-#endif
 
 // ---------------------------------------------------------------------------
 // _080017528(rec, a, id) — alternate selection key handler
@@ -784,12 +935,8 @@ skip:
         // with a r3=0 index scratch (`adds r1,r2,#0; movs r3,#0;
         // ldrsh r0,[r1,r3]`). Pinning the clamp base to r1 forces agbcc to
         // push `p` off r1 and materialise the copy.
-#ifndef __APPLE__
         register void *q __asm__("r1") = (u8 *)rec + 182;
         __asm__ volatile("" : "+r"(q));
-#else
-        void *q = (u8 *)rec + 182;
-#endif
         if (RS16(q) < 1) WR16(q, 1);
         if (RS16(q) > 3) WR16(q, 3);
     }
@@ -798,9 +945,7 @@ skip:
         Sub_0802B368(2);
     }
 }
-#ifndef __APPLE__
 void _080017528(void *a, int b, int c) __attribute__((alias("Rec35_Input_17528")));
-#endif
 
 // ---------------------------------------------------------------------------
 // _0800175BC(rec) — mode-2/4 selection FSM
@@ -822,15 +967,10 @@ void _080017528(void *a, int b, int c) __attribute__((alias("Rec35_Input_17528")
 void Rec35_Input_175BC(void *rec) {
     // ROM parks the two ghost-slot pointers in r5/r6 and the later state in
     // r7/r8/r9; agbcc prefers the high callee-saved pair for them, so pin.
-#ifndef __APPLE__
     register void *r5 __asm__("r5") = Rec35GhostSlot(0);
     __asm__ volatile("" : "+r"(r5));
     register void *r6 __asm__("r6") = Rec35GhostSlot(1);
     __asm__ volatile("" : "+r"(r6));
-#else
-    void *r5 = Rec35GhostSlot(0);
-    void *r6 = Rec35GhostSlot(1);
-#endif
     u16 zero;                                   // ROM keeps 0 in r9
     void *r8;                                   // r8 = rec+194 (the FSM cell)
     int mode;
@@ -912,9 +1052,7 @@ void Rec35_Input_175BC(void *rec) {
         return;
     }
 }
-#ifndef __APPLE__
 void _0800175BC(void *a) __attribute__((alias("Rec35_Input_175BC")));
-#endif
 // ---------------------------------------------------------------------------
 // _08001774C(rec) — gate leaf (u16[+184] compare after key read)
 void Rec35_Leaf_1774C(void *rec) {
@@ -928,12 +1066,8 @@ void Rec35_Leaf_1774C(void *rec) {
     if (m > 1) return;
     Rec35_Leaf_17414(r5);
 }
-#ifndef __APPLE__
 __asm__(".align 2, 0");
-#endif
-#ifndef __APPLE__
 void _08001774C(void *a) __attribute__((alias("Rec35_Leaf_1774C")));
-#endif
 
 // ---------------------------------------------------------------------------
 // _080017788(rec, a, id) — full-ctrl selection (see ROM register-plumbing note)
@@ -999,9 +1133,7 @@ void Rec35_Input_17788(void *rec, int a, int id) {
     if (cur >= 2 && cur <= 4)      Rec35_Input_175BC(r7);
     else if (cur >= 6 && cur <= 8) Rec35_Leaf_1774C(r7);
 }
-#ifndef __APPLE__
 void _080017788(void *a, int b, int c) __attribute__((alias("Rec35_Input_17788")));
-#endif
 
 // Call-site split for promoted bodies. `promotion_screen.py` only accepts a
 // promoted body whose call targets are spelled the way the assembly closure
@@ -1032,9 +1164,7 @@ void Rec35_Emit_1794C(void *rec) {
     if (*(u16 *)r4 != 0) sub_08003BC0(152, 68, *(int *)((u8 *)r4 + 4));
     if (*(u16 *)r5 != 0) sub_08003BC0(152, 108, *(int *)((u8 *)r5 + 4));
 }
-#ifndef __APPLE__
 void _08001794C(void *a) __attribute__((alias("Rec35_Emit_1794C")));
-#endif
 
 // ---------------------------------------------------------------------------
 // _080017984(rec) — two unconditional emitters over rec+8.
@@ -1046,9 +1176,7 @@ void Rec35_Emit_17984(void *rec) {
     R35_CALLEE(Sub_08007BFC, sub_08007BFC)(r8, (int)RD32((u8 *)rec + 468), (int)RD32((u8 *)rec + 472),
                  0, 88, 5, 1, 1, 0);
 }
-#ifndef __APPLE__
 void _080017984(void *a) __attribute__((alias("Rec35_Emit_17984")));
-#endif
 
 // ---------------------------------------------------------------------------
 // _0800179F0(rec) — single _08007B18 emit when u16[+182]==3
@@ -1059,9 +1187,7 @@ void Rec35_Emit_179F0(void *rec) {
     }
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _0800179F0(void *a) __attribute__((alias("Rec35_Emit_179F0")));
-#endif
 
 // ---------------------------------------------------------------------------
 // _080017A20(rec) — FOUR emitters in two guarded pairs.
@@ -1099,9 +1225,7 @@ void Rec35_Emit_17A20(void *rec) {
                      76, 112, 4, 1, 1, 0);
     }
 }
-#ifndef __APPLE__
 void _080017A20(void *a) __attribute__((alias("Rec35_Emit_17A20")));
-#endif
 
 // ---------------------------------------------------------------------------
 // _080017B00(rec) — two guarded emitters over rec+32 (e=60 / e=100)
@@ -1128,15 +1252,12 @@ void Rec35_Emit_17B00(void *rec) {
                      16, 100, 7, 1, 1, 0);
     }
 }
-#ifndef __APPLE__
 void _080017B00(void *a) __attribute__((alias("Rec35_Emit_17B00")));
-#endif
 
 // ---------------------------------------------------------------------------
 // _080017B84(rec) — single _08007BFC emitter (d=0, e=32, f=3)
 // The ROM's r3 slot is clobbered to 0 by the last stack store before the call.
 void Rec35_Emit_17B84(void *rec) {
-#ifndef __APPLE__
     register u8 *base __asm__("r2") = (u8 *)rec;
     register void *dst __asm__("r0") = base + 48;
     register u32 offset __asm__("r3") = 492;
@@ -1145,19 +1266,11 @@ void Rec35_Emit_17B84(void *rec) {
     u32 y = *(u32 *)(base + offset);
     sub_08007BFC(dst, (int)x, (int)y,
                  0, 32, 3, 1, 1, 0);
-#else
-    u32 x = *(u32 *)((u8 *)rec + 492);
-    u32 y = *(u32 *)((u8 *)rec + 496);
-    Sub_08007BFC((u8 *)rec + 48, (int)x, (int)y,
-                 0, 32, 3, 1, 1, 0);
-#endif
 }
 // ROM inventory span ends with the zero-filled alignment halfword at +0x32.
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _080017B84(void *a) __attribute__((alias("Rec35_Emit_17B84")));
 void sub_080017B84(void *a) __attribute__((alias("Rec35_Emit_17B84")));
-#endif
 
 // ---------------------------------------------------------------------------
 // _080017BB8(rec) — paint
@@ -1180,9 +1293,7 @@ void Rec35_Paint_17BB8(void *rec) {
     sub_0800DBE8((u8 *)rec + 56);
     Rec35_BxLr_17D50(rec);
 }
-#ifndef __APPLE__
 void _080017BB8(void *a) __attribute__((alias("Rec35_Paint_17BB8")));
-#endif
 
 // ---------------------------------------------------------------------------
 // _080017C34(rec) — paint variant without the +192 lap branch
@@ -1198,13 +1309,11 @@ void Rec35_Paint_17C34(void *rec) {
     sub_0800DBE8((u8 *)r4 + 56);
     Rec35_BxLr_17D50(r4);
 }
-#ifndef __APPLE__
 void _080017C34(void *a) __attribute__((alias("Rec35_Paint_17C34")));
 // The closure spells this VMA `sub_080017C34` (asm/rec35_runtime.s:2905) and
 // the entry exports it, so the owning TU must define that exact name. One hop
 // to the real body -- an alias-of-an-alias is not in the slice link.
 void sub_080017C34(void *a) __attribute__((alias("Rec35_Paint_17C34")));
-#endif
 
 // ---------------------------------------------------------------------------
 // _080017C78(rec) — paint variant gated by u8[WA+0x10C3] and s16[+194]
@@ -1251,9 +1360,7 @@ void Rec35_Paint_17C78(void *rec) {
     sub_0800DBE8((u8 *)r4 + 56);
     Rec35_BxLr_17D50(r4);
 }
-#ifndef __APPLE__
 void _080017C78(void *a) __attribute__((alias("Rec35_Paint_17C78")));
-#endif
 
 // ---------------------------------------------------------------------------
 // _080017D54(rec) — countdown
@@ -1278,9 +1385,7 @@ void Rec35_Countdown_17D54(void *rec) {
         WR32((u8 *)rec + 504, 0);
     }
 }
-#ifndef __APPLE__
 void _080017D54(void *a) __attribute__((alias("Rec35_Countdown_17D54")));
-#endif
 
 // ---------------------------------------------------------------------------
 // _080017DAC(ev, a, b, rec) — 12-way event dispatcher, table at 0x08017DCC:
@@ -1334,7 +1439,7 @@ void Rec35_EvDispatch_17DAC(int ev, int a, int b, void *rec) {
         break;
     }
     case 0:                                     // 0x08017EB6 → 0x08016FD0
-        R35_CALLEE(Rec35_Leaf_16FD0, _080016FD0)(r4);
+        R35_CALLEE(Rec35_Scene_16FD0, _080016FD0)(r4);
         break;
     case 11:                                    // 0x08017EBE → 0x08016940
         Rec35_BxLr_16940(r4);
@@ -1349,24 +1454,14 @@ void Rec35_EvDispatch_17DAC(int ev, int a, int b, void *rec) {
         break;
     }
 }
-#ifndef __APPLE__
 void _080017DAC(int ev, int a, int b, void *rec) __attribute__((alias("Rec35_EvDispatch_17DAC")));
-#endif
 
 // ---------------------------------------------------------------------------
 // _080017ECC(a, rec) — ev1 flag setter
 void Rec35_Ev1_17ECC(void *a, void *rec) {
-#ifndef __APPLE__
     register u8 *dst __asm__("r4") = (u8 *)rec;
-#else
-    u8 *dst = (u8 *)rec;
-#endif
     const Rec35_CourseHdr *hdr = (const Rec35_CourseHdr *)sub_08004B68(a);
-#ifndef __APPLE__
     register volatile u16 *p __asm__("r1");
-#else
-    volatile u16 *p;
-#endif
     u16 out;
     switch (hdr->courseId) {
     case 21:
@@ -1383,12 +1478,8 @@ void Rec35_Ev1_17ECC(void *a, void *rec) {
     }
     *p = out;
 }
-#ifndef __APPLE__
 __asm__(".align 2, 0");
-#endif
-#ifndef __APPLE__
 void _080017ECC(void *a, void *b) __attribute__((alias("Rec35_Ev1_17ECC")));
-#endif
 
 // ---------------------------------------------------------------------------
 // _080017F04(rec) — scene constructor
@@ -1404,7 +1495,11 @@ void Rec35_Setup_17F04(void *rec) {
     Sub_0800798C(r4, r7);
     sub_08007A58(r7);
     Sub_080075E8(r4, 0, 3);
-    int sl = 3;
+    // The running minimum lives in the ARM `sl` register in the ROM
+    // (`movs r0,#3 / mov sl,r0`), so the working value has to be pinned --
+    // with a plain local agbcc keeps it in r0..r3 and drops the sl save from
+    // the prologue entirely.
+    register int sl __asm__("sl") = 3;
     int r5 = 0;
     // The ROM re-reads the SAME two cells every iteration (r3 = WA+0xFF4 and
     // r9 = WA+0xFF8 are loop-invariant); only the column index i varies.
@@ -1434,9 +1529,7 @@ void Rec35_Setup_17F04(void *rec) {
     WR16((u8 *)r7 + 18, 5);
     WR32((u8 *)r7 + 136, 2);
 }
-#ifndef __APPLE__
 void _080017F04(void *a) __attribute__((alias("Rec35_Setup_17F04")));
-#endif
 
 // ---------------------------------------------------------------------------
 // _080018064(rec, a, b) — countdown gate
@@ -1456,9 +1549,7 @@ void Rec35_CountdownGate_18064(void *rec, int a, int b) {
     *(u16 *)(r4 + 116) = 1;
     *(u32 *)(r4 + 36) = 1;
 }
-#ifndef __APPLE__
 void _080018064(void *a, int b, int c) __attribute__((alias("Rec35_CountdownGate_18064")));
-#endif
 
 // ---------------------------------------------------------------------------
 // _080018098(rec, dst, idx, arg) — row emit
@@ -1470,50 +1561,30 @@ void _080018064(void *a, int b, int c) __attribute__((alias("Rec35_CountdownGate
 // from these pins. The pinned body only exists off-Apple (clang rejects the
 // absolute aliases); the host build keeps the plain spelling.
 void Rec35_RowEmit_18098(void *rec, void *dst, int idx, int arg) {
-#ifndef __APPLE__
     register int index __asm__("r1") = idx;
     __asm__ volatile("" : "+r"(index));
     register volatile u32 *cnt __asm__("r2") = (volatile u32 *)0x03000590;
     __asm__ volatile("" : "+r"(cnt));
-#else
-    int index = idx;
-    volatile u32 *cnt = (volatile u32 *)0x03000590;
-#endif
     int v = (int)(*cnt) - 1;
     *cnt = (u32)v;
-#ifndef __APPLE__
     register s16 *cur __asm__("r5") = (s16 *)0x0203F8E8;
     __asm__ volatile("" : "+r"(cur));
-#else
-    s16 *cur = (s16 *)0x0203F8E8;
-#endif
     if (v <= 0) {
         *cur = (u16)(*cur + 1);
         *cnt = 5;
     }
-#ifndef __APPLE__
     register s16 *cur0 __asm__("r2") = cur;
     __asm__ volatile("" : "+r"(cur0));
-#else
-    s16 *cur0 = cur;
-#endif
     if (*cur0 > 15) *cur0 = 0;
-#ifndef __APPLE__
     register void *base __asm__("r0") = (void *)0x08306B54;
     __asm__ volatile("" : "+r"(base));
     register const s16 *table __asm__("r2") = (const s16 *)0x080CB8E0;
     __asm__ volatile("" : "+r"(table));
-#else
-    void *base = (void *)0x08306B54;
-    const s16 *table = (const s16 *)0x080CB8E0;
-#endif
     int s16val = table[index];
     sub_08007570(base, s16val, (int)cur[1], (int)cur[0] << 6, 64);
     sub_08002ED0(rec, (int)(uintptr_t)dst, (int)cur[1], arg, 1, 3, 1, 0, 0, 1);
 }
-#ifndef __APPLE__
 void _080018098(void *a, void *b, int c, int d) __attribute__((alias("Rec35_RowEmit_18098")));
-#endif
 
 // ---------------------------------------------------------------------------
 // _080018128(rec) — init
@@ -1526,10 +1597,8 @@ void Rec35_Init_18128(void *rec) {
     r4 += 8;
     sub_0800DBE8(r4);
 }
-#ifndef __APPLE__
 void _080018128(void *a) __attribute__((alias("Rec35_Init_18128")));
 void sub_080018128(void *a) __attribute__((alias("Rec35_Init_18128")));
-#endif
 
 // ---------------------------------------------------------------------------
 // _080018174(ev, a, b, rec) — 12-way event dispatcher
@@ -1571,12 +1640,8 @@ void Rec35_EvDispatch_18174(int ev, int a, int b, void *rec) {
     }
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _080018174(int ev, int a, int b, void *rec) __attribute__((alias("Rec35_EvDispatch_18174")));
-#endif
 
 // ROM entry alias.
-#ifndef __APPLE__
 void Rec35_Leaf_16944(void *rec) __attribute__((alias("Rec35_SyncRec_16944")));
 void Rec35_Leaf_16A20(void *rec) __attribute__((alias("Rec35_PlacementEmit_16A20")));
-#endif

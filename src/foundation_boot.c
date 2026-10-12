@@ -47,19 +47,15 @@ void Foundation_InitCommon(u32 a0, u32 a1) {
         _08002950();
     }
 }
-#ifndef __APPLE__
 void _0800295C(u32 a,u32 b) __attribute__((alias("Foundation_InitCommon")));
-#endif
 
 // 0x080029D4 — default vector stub (`bx lr` + pad). Its Thumb-bit address
 // (0x080029D5) is stored as a vector-table default by the code_2a3c.s
 // clearer, so it is a real entry, not padding after InitCommon's pool.
 void Foundation_NoopVector(void) {
 }
-#ifndef __APPLE__
 void _080029D4(void) __attribute__((alias("Foundation_NoopVector")));
 void sub_080029D4(void) __attribute__((alias("Foundation_NoopVector")));
-#endif
 // Content is 2 bytes (`bx lr`); the ROM pads the 4-byte span with `00 00`.
 __asm__(".align 2, 0");
 
@@ -81,10 +77,8 @@ void Foundation_SaveIrqSnapshot(void) {
     *(volatile u16 *)disp = (u16)zero;
     sub_0802D974((void *)0x0203F170, (void *)base, 28);
 }
-#ifndef __APPLE__
 void _080029D8(void) __attribute__((alias("Foundation_SaveIrqSnapshot")));
 void sub_080029D8(void) __attribute__((alias("Foundation_SaveIrqSnapshot")));
-#endif
 void Foundation_RestoreIrqSnapshot(void) {
     extern void CpuFastSet(const void *s, void *d, u32 m);
     CpuFastSet((void*)0x030000F8, (void*)0x0203F170, 28);
@@ -112,15 +106,8 @@ void IrqInstall(int slot, void *handler) {
         *(volatile u32 *)(uintptr_t)p = (u32)0x080029D5;
     }
 }
-#ifdef __APPLE__
-// Host build: the C name is the real body, so the call site below resolves to
-// it directly and the closure spelling does not exist. The ROM build is the
-// other branch, where `IrqInstall` is not a symbol at all.
-void sub_08002A3C(int slot, void *handler) { IrqInstall(slot, handler); }
-#else
 void _08002A3C(int a, void *b) __attribute__((alias("IrqInstall")));
 void sub_08002A3C(int a, void *b) __attribute__((alias("IrqInstall")));
-#endif
 // The loop calls through `sub_08002A3C` rather than through the C name. The
 // screen resolves a body's call targets by SYMBOL NAME, and it sees
 // `IrqInstall` -- a name the closure does not define -- so it blocked
@@ -130,10 +117,8 @@ void sub_08002A3C(int a, void *b) __attribute__((alias("IrqInstall")));
 void IrqResetSlot0(void) {
     for(int i=0;i<1;i++) sub_08002A3C(i,NULL);
 }
-#ifndef __APPLE__
 void _08002A68(void) __attribute__((alias("IrqResetSlot0")));
 void sub_08002A68(void) __attribute__((alias("IrqResetSlot0")));
-#endif
 void IrqInstallTable(void) {
     register volatile u32 *dma __asm__("r1") = (volatile u32 *)0x040000D4;
     register u32 src __asm__("r0");
@@ -148,10 +133,8 @@ void IrqInstallTable(void) {
     src = 0x03007FFC;
     *(volatile u32 *)src = dest; /* IRQ vector -> EWRAM copy */
 }
-#ifndef __APPLE__
 void _08002A80(void) __attribute__((alias("IrqInstallTable")));
 void sub_08002A80(void) __attribute__((alias("IrqInstallTable")));
-#endif
 
 // boot.s Thumb helpers
 #include "gba/bios.h"
@@ -175,38 +158,21 @@ void sub_08002A80(void) __attribute__((alias("IrqInstallTable")));
 // sub_08002A3C/sub_08002A80 in this file -- aliased to the REAL body in one hop,
 // so this object resolves its own calls. Verified with `arm-none-eabi-nm` on
 // the per-TU objects: every one of the five is `T`.
-//
-// The host build has none of those symbols, so the `#else` side calls the
-// friendly name -- the split tools/apple_decls.py requires, and the reason the
-// alias blocks are `#ifndef __APPLE__` in the first place. Both the declaration
-// and the call are inside the guard: an unguarded VMA-shaped CALL is a silent
-// C89 implicit declaration on Apple, and only tools/apple_decls.py sees that.
 extern void SoundVBlank(void);    // 0x0802B07C SoundVBlank    (src/sound.c)
 extern void SoundVCounter(void);  // 0x0802B098 SoundVCounter  (src/sound.c)
 extern void SoftIrqKicker(void);  // 0x08000A60 SoftIrqKicker  (src/foundation_softirq.c)
-#ifndef __APPLE__
 extern void sub_08000A60(void);   // asm/softirq.s:28
 extern void sub_0802B07C(void);   // asm/sound_api.s:67
 extern void sub_0802B098(void);   // asm/sound_api.s:86
 #define BOOT_CALL_SOFTIRQ()      sub_08000A60()
 #define BOOT_CALL_SOUND_TICK()   sub_0802B07C()
 #define BOOT_CALL_SOUND_SEQ()    sub_0802B098()
-#else
-#define BOOT_CALL_SOFTIRQ()      SoftIrqKicker()
-#define BOOT_CALL_SOUND_TICK()   SoundVBlank()
-#define BOOT_CALL_SOUND_SEQ()    SoundVCounter()
-#endif
 
 // IrqInstall / IrqInstallTable are defined in THIS file, so this retarget is
 // declaration-and-call only -- the closure labels those two bodies carry are
 // asm/passthrough.inc:49 (`sub_08002A3C`) and :57 (`sub_08002A80`).
-#ifndef __APPLE__
 #define BOOT_CALL_IRQ_INSTALL(slot, handler) sub_08002A3C((slot), (handler))
 #define BOOT_CALL_IRQ_TABLE()                 sub_08002A80()
-#else
-#define BOOT_CALL_IRQ_INSTALL(slot, handler) IrqInstall((slot), (handler))
-#define BOOT_CALL_IRQ_TABLE()                 IrqInstallTable()
-#endif
 
 void VBlankHandler(void) { // _08000268
     BOOT_CALL_SOFTIRQ();
@@ -215,14 +181,10 @@ void VBlankHandler(void) { // _08000268
     *(volatile u16*)0x03007FF8 |= 1;
     REG_IME=1;
 }
-#ifndef __APPLE__
 void _08000268(void) __attribute__((alias("VBlankHandler")));
-#endif
 void VCounterHandler(void) { BOOT_CALL_SOUND_SEQ(); }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _0800025C(void) __attribute__((alias("VCounterHandler")));
-#endif
 
 void IrqInstallHooks(void) { // _08000290
     IrqResetSlot0();
@@ -231,9 +193,7 @@ void IrqInstallHooks(void) { // _08000290
     BOOT_CALL_IRQ_INSTALL(2,(void*)0x0800025D);
     BOOT_CALL_IRQ_TABLE();
 }
-#ifndef __APPLE__
 void _08000290(void) __attribute__((alias("IrqInstallHooks")));
-#endif
 
 // ARM session poll stub — behavioral: swap buffers, return old flag
 u8 SessionRxPoll(void) {
@@ -249,9 +209,7 @@ u8 SessionRxPoll(void) {
     REG_IME=1;
     return ret;
 }
-#ifndef __APPLE__
 u8 _0800021C(void) __attribute__((alias("SessionRxPoll")));
-#endif
 
 // pads
 void Foundation_Pad_2DD86(void) {}
@@ -260,7 +218,5 @@ void Foundation_Pad_2DE96(void) {}
 void Foundation_Pad_2DF6A(void) {}
 
 // ROM entry alias.
-#ifndef __APPLE__
 void Warn(u32 a0, u32 a1) __attribute__((alias("Foundation_InitCommon")));
 void sub_0800295C(u32 a0, u32 a1) __attribute__((alias("Foundation_InitCommon")));
-#endif

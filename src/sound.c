@@ -13,11 +13,6 @@ __attribute__((weak)) void sub_0802C5C0(void) {}
 extern void sub_0802CB20(void *a);
 extern void sub_0802CB84(void *a);
 extern void sub_0802C614(void);
-#ifdef __APPLE__
-__attribute__((weak)) void sub_0802CB20(void *a) { (void)a; }
-__attribute__((weak)) void sub_0802CB84(void *a) { (void)a; }
-__attribute__((weak)) void sub_0802C614(void) {}
-#endif
 __attribute__((weak)) void sub_0802B64C(u32 v) { (void)v; }
 __attribute__((weak)) void sub_0802B65C(u32 v) { (void)v; }
 __attribute__((weak)) void sub_0802B718(u32 a, u32 b, u32 c) { (void)a;(void)b;(void)c; }
@@ -50,12 +45,8 @@ void SoundInit(void *state){
     m->chanCLevel |= v;
     m->chanDLevel |= v;
 }
-#ifndef __APPLE__
 void _0802B04C(void *s) __attribute__((alias("SoundInit")));
-#ifndef __APPLE__
 void sub_0802B04C(void *s) __attribute__((alias("SoundInit")));
-#endif
-#endif
 
 // _0802B07C — VBlank pump when enabled
 void SoundVBlank(void){
@@ -67,12 +58,8 @@ void SoundVBlank(void){
     if ((m->flags & mask)==0) return;
     sub_0802BE78();
 }
-#ifndef __APPLE__
 void _0802B07C(void) __attribute__((alias("SoundVBlank")));
-#endif
-#ifndef __APPLE__
 void sub_0802B07C(void) __attribute__((alias("SoundVBlank")));
-#endif
 
 // _0802B098 — VCounter sequencer tick: service, fade engine, re-apply vol + ch C/D
 void SoundVCounter(void){
@@ -121,12 +108,8 @@ void SoundVCounter(void){
         sub_0802B74C(m->chanCLevel, (u32)m->chanD, 255);
     }
 }
-#ifndef __APPLE__
 void _0802B098(void) __attribute__((alias("SoundVCounter")));
-#endif
-#ifndef __APPLE__
 void sub_0802B098(void) __attribute__((alias("SoundVCounter")));
-#endif
 
 // Friendly-name wrappers used by foundation_boot.c VBlank/VCounter handlers.
 void SoundTick(void) { SoundVBlank(); }
@@ -175,12 +158,8 @@ void SoundOff(void){
     mask &= m->flags;
     m->flags = (u8)mask;
 }
-#ifndef __APPLE__
 void _0802B190(void) __attribute__((alias("SoundOff")));
-#endif
-#ifndef __APPLE__
 void sub_0802B190(void) __attribute__((alias("SoundOff")));
-#endif
 // : exact at 44/44.  The guard block is _0802B190's verbatim, mask pin and all,
 // and the RMW block must NOT reuse the guard's variables. That is the one thing
 // load-bearing here, and it is a shape rather than a pin:
@@ -215,12 +194,8 @@ void SoundOn(void){
         b->flags |= 1;
     }
 }
-#ifndef __APPLE__
 void _0802B1B8(void) __attribute__((alias("SoundOn")));
-#endif
-#ifndef __APPLE__
 void sub_0802B1B8(void) __attribute__((alias("SoundOn")));
-#endif
 
 // The one escape found: `volatile SoundMaster *m` makes _0802B30C emit the
 // ROM's EXACT three registers (base r1 / mask r0 / temp r2) — but the
@@ -262,28 +237,16 @@ void SoundSetMasterVol(u32 vol){
     mask &= m->flags;
     m->flags = (u8)mask;
 }
-#ifndef __APPLE__
 void _0802B1E4(u32 v) __attribute__((alias("SoundSetMasterVol")));
-#endif
-#ifndef __APPLE__
 void sub_0802B1E4(u32 v) __attribute__((alias("SoundSetMasterVol")));
-#endif
 void SoundSetMasterVolCond(u16 vol){
     SoundMaster *m = soundMaster();
     if (m->masterVol == vol) return;
-#ifndef __APPLE__
     sub_0802B1E4(vol);
-#else
-    SoundSetMasterVol(vol);
-#endif
 }
-#ifndef __APPLE__
 void _0802B214(u16 v) __attribute__((alias("SoundSetMasterVolCond")));
 void Sub_0802B214(u16 v) __attribute__((alias("SoundSetMasterVolCond")));
-#endif
-#ifndef __APPLE__
 void sub_0802B214(u16 v) __attribute__((alias("SoundSetMasterVolCond")));
-#endif
 // Each master access re-invokes soundMaster so the cell is re-read, matching
 // the ROM's `ldr rN,[r4]` after every call.  `mask` is a SEPARATE assignment
 // after the master load: an inline literal makes agbcc sink the `movs` past
@@ -310,12 +273,8 @@ void SoundStopMute(void){
     mask &= m->flags;
     m->flags = (u8)mask;
 }
-#ifndef __APPLE__
 void _0802B234(void) __attribute__((alias("SoundStopMute")));
-#endif
-#ifndef __APPLE__
 void sub_0802B234(void) __attribute__((alias("SoundStopMute")));
-#endif
 // : exact at 36/36, and this is the body that shows the
 // `register... __asm__` pin reaching a base pointer that agbcc's own
 // allocator will not put in r1.  The ROM loads the master cell into r1 for
@@ -338,12 +297,8 @@ void SoundPause(void){
     mask |= *(volatile u8 *)(p + 8);
     *(volatile u8 *)(p + 8) = mask;
 }
-#ifndef __APPLE__
 void _0802B25C(void) __attribute__((alias("SoundPause")));
-#endif
-#ifndef __APPLE__
 void sub_0802B25C(void) __attribute__((alias("SoundPause")));
-#endif
 // : exact at 36/36. Same two-block register split as
 // _0802B25C above, and the same fix: the cell word is pinned to r1 so the
 // guard's `ldr r1,[r4,#0]` and the post-call `ldr r1,[r4,#0]` agree, and the
@@ -360,12 +315,8 @@ void SoundResume(void){
     mask &= *(volatile u8 *)(p + 8);
     *(volatile u8 *)(p + 8) = (u8)mask;
 }
-#ifndef __APPLE__
 void _0802B280(void) __attribute__((alias("SoundResume")));
-#endif
-#ifndef __APPLE__
 void sub_0802B280(void) __attribute__((alias("SoundResume")));
-#endif
 
 // _0802B2A4 arm fade, _0802B30C fadeOut, _0802B330 remaining
 void SoundArmFade(u16 target, u8 step){
@@ -380,31 +331,19 @@ void SoundArmFade(u16 target, u8 step){
     }
     m->flags &= 0xEF;
 }
-#ifndef __APPLE__
 void _0802B2A4(u16 t, u8 s) __attribute__((alias("SoundArmFade")));
-#endif
-#ifndef __APPLE__
 void sub_0802B2A4(u16 t, u8 s) __attribute__((alias("SoundArmFade")));
-#endif
 void SoundFadeOut(u8 step){
     register SoundMaster *m __asm__("r1");
     register u8 mask __asm__("r0");
-#ifndef __APPLE__
     sub_0802B2A4(0, step);
-#else
-    SoundArmFade(0, step);
-#endif
     m = soundMaster();
     mask = 64;
     mask |= m->flags2;
     m->flags2 = (u8)mask;
 }
-#ifndef __APPLE__
 void _0802B30C(u8 s) __attribute__((alias("SoundFadeOut")));
-#endif
-#ifndef __APPLE__
 void sub_0802B30C(u8 s) __attribute__((alias("SoundFadeOut")));
-#endif
 // Keep the 8/4 flag tests separate: combining them folds away the ROM's
 // second test. The work-area fields are ordinary loads through a live pointer
 // cell. Unsigned subtraction truncates to u16 before the signed return.
@@ -433,12 +372,8 @@ end:
     return (s16)result;
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 s16 _0802B330(void) __attribute__((alias("SoundFadeRemaining")));
-#endif
-#ifndef __APPLE__
 s16 sub_0802B330(void) __attribute__((alias("SoundFadeRemaining")));
-#endif
 
 // _0802B368 deferred vol, _0802B384/_0802B3A4 sec vol
 //
@@ -453,33 +388,21 @@ void _0802B368(u16 vol){
     m->volChanged = 1;
     sub_0802B64C(vol);
 }
-#ifndef __APPLE__
 void Sub_0802B368(u16 v) __attribute__((alias("_0802B368")));
-#endif
-#ifndef __APPLE__
 void sub_0802B368(u16 v) __attribute__((alias("_0802B368")));
-#endif
 void SoundSetSecVol(u16 v){
     soundMaster()->secVol = (u8)v;
     soundMaster()->volChanged = 1;
     sub_0802B64C(v);
 }
-#ifndef __APPLE__
 void _0802B384(u16 v) __attribute__((alias("SoundSetSecVol")));
-#endif
-#ifndef __APPLE__
 void sub_0802B384(u16 v) __attribute__((alias("SoundSetSecVol")));
-#endif
 void SoundApplySecVol(void){
     volatile SoundMaster *m = soundMaster();
     sub_0802B65C(m->secVol);
 }
-#ifndef __APPLE__
 void _0802B3A4(void) __attribute__((alias("SoundApplySecVol")));
-#endif
-#ifndef __APPLE__
 void sub_0802B3A4(void) __attribute__((alias("SoundApplySecVol")));
-#endif
 
 // _0802B3B8 bank probe, _0802B418 speed
 bool SoundIsBankPlaying(u32 bank){
@@ -496,13 +419,9 @@ bool SoundIsBankPlaying(u32 bank){
     if ((s32)w < 0) return false;
     return true;
 }
-#ifndef __APPLE__
 bool _0802B3B8(u32 b) __attribute__((alias("SoundIsBankPlaying")));
 bool Sub_0802B3B8(u32 b) __attribute__((alias("SoundIsBankPlaying")));
-#endif
-#ifndef __APPLE__
 bool sub_0802B3B8(u32 b) __attribute__((alias("SoundIsBankPlaying")));
-#endif
 // Both lookup indices are signed halfwords in the ROM, not unsigned u16.
 // Load the table before sign-extension; after the store, reload the live
 // master cell into a separate local so the apply call sees its current value.
@@ -528,33 +447,17 @@ void SoundSetSongSpeed(u32 a, u32 b){
         sub_0802B64C(current[13]);
     }
 }
-#ifndef __APPLE__
 void _0802B418(u32 a, u32 b) __attribute__((alias("SoundSetSongSpeed")));
-#endif
-#ifndef __APPLE__
 void sub_0802B418(u32 a, u32 b) __attribute__((alias("SoundSetSongSpeed")));
-#endif
 void SoundReapplySpeedA(void){ volatile SoundMaster *m=soundMaster(); sub_0802B65C(m->songSpeed); }
-#ifndef __APPLE__
 void _0802B44C(void) __attribute__((alias("SoundReapplySpeedA")));
-#endif
-#ifndef __APPLE__
 void sub_0802B44C(void) __attribute__((alias("SoundReapplySpeedA")));
-#endif
 void SoundReapplySpeedB(void){ volatile SoundMaster *m=soundMaster(); sub_0802B65C(m->songSpeed); }
-#ifndef __APPLE__
 void _0802B460(void) __attribute__((alias("SoundReapplySpeedB")));
-#endif
-#ifndef __APPLE__
 void sub_0802B460(void) __attribute__((alias("SoundReapplySpeedB")));
-#endif
 void SoundReapplySpeedC(void){ volatile SoundMaster *m=soundMaster(); sub_0802B64C(m->songSpeed); }
-#ifndef __APPLE__
 void _0802B474(void) __attribute__((alias("SoundReapplySpeedC")));
-#endif
-#ifndef __APPLE__
 void sub_0802B474(void) __attribute__((alias("SoundReapplySpeedC")));
-#endif
 
 
 // sound_alloc.s CBBC, sound_cmd.s CB20, sound_control.s C990, sound_channel_cluster.s BC84 — blocked
@@ -573,7 +476,6 @@ void sub_0802B474(void) __attribute__((alias("SoundReapplySpeedC")));
 // TODO: remaining mixed-ISA mixer_2b888.s body remains blocked (needs mode-boundary trace, not guessed).
 
 // ROM entry alias.
-#ifndef __APPLE__
 bool Sound_0x0802B3B8(u32 bank) __attribute__((alias("SoundIsBankPlaying")));
 bool Sound_Cmd3(u32 bank) __attribute__((alias("SoundIsBankPlaying")));
 void Sub_08002B214(u16 vol) __attribute__((alias("SoundSetMasterVolCond")));
@@ -596,7 +498,6 @@ void _08002B44C(void) __attribute__((alias("SoundReapplySpeedA")));
 void _08002B460(void) __attribute__((alias("SoundReapplySpeedB")));
 void _08002B474(void) __attribute__((alias("SoundReapplySpeedC")));
 void sub_08002B368(u16 vol) __attribute__((alias("_0802B368")));
-#endif
 
 // ----------------------------------------------------------------------------
 // Round-six transcription — sound-bank song load/claim + channel swap
@@ -636,11 +537,9 @@ void SoundBankClaim_2B500(u32 idx, u32 w4, u32 w6) {
     *(volatile u16 *)(ds + 4) = (u16)w4;
     *(volatile u16 *)(ds + 6) = (u16)w6;
 }
-#ifndef __APPLE__
 void _0802B500(u32 a, u32 b, u32 c) __attribute__((alias("SoundBankClaim_2B500")));
 void sub_0802B500(u32 a, u32 b, u32 c) __attribute__((alias("SoundBankClaim_2B500")));
 void _08002B500(u32 a, u32 b, u32 c) __attribute__((alias("SoundBankClaim_2B500")));
-#endif
 
 // 0x0802B5AC — CHANNEL SWAP / TEARDOWN: promote D into C (or stop C).
 //   m = *(0x03001764); D = m[16];
@@ -679,9 +578,7 @@ void SoundBankSwap_2B5AC(void) {
     }
     m[16] = 0xFF;
 }
-#ifndef __APPLE__
 void _0802B5AC(void) __attribute__((alias("SoundBankSwap_2B5AC")));
 void sub_0802B5AC(void) __attribute__((alias("SoundBankSwap_2B5AC")));
 void Sub_0802B5AC(void) __attribute__((alias("SoundBankSwap_2B5AC")));
 void _08002B5AC(void) __attribute__((alias("SoundBankSwap_2B5AC")));  // 9-digit corpus spelling
-#endif

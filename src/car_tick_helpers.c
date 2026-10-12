@@ -10,45 +10,6 @@
 
 #include "gba/types.h"
 
-#ifdef __APPLE__
-__attribute__((weak)) int  sub_08004CF0(void) { return 0; }           // pop LIFO
-__attribute__((weak)) void sub_08004CC4(void) { }                     // reset LIFO
-__attribute__((weak)) void sub_08004CD4(u8 v) { (void)v; }            // push LIFO
-__attribute__((weak)) int  _0800AA20(void) { return 0; }              // shared racer tick
-__attribute__((weak)) void _08002340(int idx) { (void)idx; }          // id lookup (raw asm)
-__attribute__((weak)) void _080188B0(void *pkt) { (void)pkt; }        // UI packet consumer
-__attribute__((weak)) void _0800D778(void) { }                        // rec10 router (raw asm)
-__attribute__((weak)) void _08001F80(u16 v) { (void)v; }              // mode-request setter
-__attribute__((weak)) void _0802D974(const void *a, void *b, u32 c) { (void)a; (void)b; (void)c; }
-__attribute__((weak)) void _0800B190(void) { }                        // engine cmd dispatcher
-// The `#ifdef __APPLE__` twin of this one sits BELOW the `#else` (in the
-// agbcc branch), so it is dead code and the three calls further down had no
-// Apple-side declaration at all. Define it here where the host build sees it.
-__attribute__((weak)) void CarTickDispatch_R0(int arg) { (void)arg; _0800B190(); }
-__attribute__((weak)) void _08023FF8(int a, int b) { (void)a; (void)b; } // ring event
-__attribute__((weak)) int  _08009B60(void *ctx) { (void)ctx; return 0; } // rec13 packet (raw asm)
-__attribute__((weak)) int  CarTick_Shared(void) { return 0; }         // _0800AA20 twin
-__attribute__((weak)) int  CarTick_Rec_0A1D4(void *c) { (void)c; return 0; }
-__attribute__((weak)) int  CarTick_Rec_0A1E0(void *c) { (void)c; return 0; }
-__attribute__((weak)) int  CarTick_Rec_0A1EC(void *c) { (void)c; return 0; }
-__attribute__((weak)) int  CarTick_Rec_0A1F8(void *c) { (void)c; return 0; }
-__attribute__((weak)) int  CarTick_Rec_0A204(void *c) { (void)c; return 0; }
-__attribute__((weak)) int  CarTick_Rec_0A21C(void *c) { (void)c; return 0; }
-__attribute__((weak)) int  CarTick_Rec_0A23C(void *c) { (void)c; return 0; }
-__attribute__((weak)) int  CarTick_Rec_0A248(void *c) { (void)c; return 0; }
-__attribute__((weak)) int  CarTick_Rec_0A020(void *c) { (void)c; return 0; }
-__attribute__((weak)) int  CarTick_Rec_0A024(void *c) { (void)c; return 0; }
-__attribute__((weak)) int  CarTick_Rec_0A06C(void *c) { (void)c; return 0; }
-__attribute__((weak)) int  CarTick_Rec_0A070(void *c) { (void)c; return 0; }
-__attribute__((weak)) int  CarTick_Rec_0A11C(void *c) { (void)c; return 0; }
-__attribute__((weak)) int  CarTick_Rec_0A120(void *c) { (void)c; return 0; }
-__attribute__((weak)) int  CarTick_Rec_0A1B0(void *c) { (void)c; return 0; }
-__attribute__((weak)) int  CarTick_Rec_0A1B8(void *c) { (void)c; return 0; }
-__attribute__((weak)) int  CarTick_Rec_09FFC(void *c) { (void)c; return 0; }
-__attribute__((weak)) int  CarTick_Rec_0A150_ret(void *c) { (void)c; return 0; }
-__attribute__((weak)) int  Rec9F58(void *c) { (void)c; return 0; }
-__attribute__((weak)) int  RecAF84(void *c) { (void)c; return 0; }
-#else
 extern int  sub_08004CF0(void);   // pop LIFO (src/foundation_subsys.c) — int, not u8:
 //   every `return sub_08004CF0;` in this region (0x0800A938, 0x0800A908,
 //   0x08009BCC) returns r0 straight out with no u8->int widening, and the
@@ -67,14 +28,8 @@ extern void _0800B190(void);      // Race_Dispatch (src/race_dispatch.c)
 // Declaring only one of the two spellings leaves an implicit declaration on the
 // other side, and `-Wimplicit-function-declaration` is an error under the
 // `-Werror` flags -- the hole moves rather than closing.
-#ifndef __APPLE__
 extern void sub_0800B190(void);
-#endif
-#ifdef __APPLE__
-static void CarTickDispatch_R0(int arg) { (void)arg; _0800B190(); }
-#else
 extern void CarTickDispatch_R0(int arg) __asm__("sub_0800B190");
-#endif
 extern void _08023FF8(int a, int b); // Ai_RingPush (src/ai_race_leaves.c)
 extern int  _08009B60(void *ctx); // rec13 packet builder (asm/menu_pkt.s)
 extern int  CarTick_Rec_0A1D4(void *c);
@@ -104,7 +59,6 @@ extern int  Rec9F58(void *c);
 extern int  Rec9F5C(void *c);
 extern int  Rec9FB8(void *c);
 extern int  RecAF84(void *c);
-#endif
 
 #define WA 0x03001780u
 
@@ -129,13 +83,9 @@ extern void  _08004C48(u32 a, u32 b, u32 c); // manager grid store (foundation_s
 // ----------------------------------------------------------------------------
 int _08009BCC(void)
 {
-#ifndef __APPLE__
     extern u8 CarTickWa[];
     __asm__(".globl CarTickWa\nCarTickWa = 0x03001780\n");
     uintptr_t base = (uintptr_t)CarTickWa;
-#else
-    uintptr_t base = (uintptr_t)WA;
-#endif
     volatile u8 *gate = (volatile u8 *)(uintptr_t)(base + 0x10C0u);
     int r;
 
@@ -372,11 +322,7 @@ int _0800A44C(void)
 
     switch (variant) {
     case 0:
-#ifndef __APPLE__
         sub_0800B190();
-#else
-        _0800B190();
-#endif
         result = 49;
         break;
     case 1:
@@ -489,7 +435,6 @@ int _0800A518(void)
 //   the callee only uses sp/WA (asm/menu_pkt.s), so the value is
 //   immaterial. The host fallback below keeps that shape in C.
 // ----------------------------------------------------------------------------
-#ifndef __APPLE__
 __attribute__((naked)) int _0800A62C(void *ctx) {
     __asm__ volatile (
         ".syntax unified\n"
@@ -523,30 +468,6 @@ __attribute__((naked)) int _0800A62C(void *ctx) {
         ".syntax divided\n"
     );
 }
-#else
-int _0800A62C(void *ctx)
-{
-    int res = 0;
-    u32 key = *(u32 *)((uintptr_t)ctx + 44);
-
-    if (key != 1) {
-        if (key < 1) {
-            uintptr_t base = (uintptr_t)WA;
-            volatile u16 *latch = (volatile u16 *)(uintptr_t)(base + 0x1086u);
-            if (*latch == 1) {
-                res = 49;
-                *latch = 0;
-            } else {
-                res = 14;
-            }
-        }
-    } else {
-        _08009B60((void *)(uintptr_t)key);
-        res = 50;
-    }
-    return res;
-}
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x0800A8FC _0800A8FC — racer-tick veneer (phase-loader path for rec 38).
@@ -563,13 +484,9 @@ __asm__(".align 2, 0");
 // ----------------------------------------------------------------------------
 int _0800A908(void)
 {
-#ifndef __APPLE__
     extern u8 CarTickWa[];
     __asm__(".globl CarTickWa\nCarTickWa = 0x03001780\n");
     uintptr_t base = (uintptr_t)CarTickWa;
-#else
-    uintptr_t base = (uintptr_t)WA;
-#endif
     int v = *(const s16 *)(uintptr_t)(base + 0x1084u);
 
     if (v) {
@@ -651,9 +568,7 @@ int Rec9F5C(void *ctx)
     (void)ctx;
     return r4;
 }
-#ifndef __APPLE__
 int _08009F5C(void *c) __attribute__((alias("Rec9F5C")));
-#endif
 
 // PROBE 11/36. The gap is the stale-register seam, not the branch tree: the
 // ROM keeps the caller's r4 alive in a callee-saved register and so opens
@@ -663,7 +578,6 @@ int _08009F5C(void *c) __attribute__((alias("Rec9F5C")));
 // shapes (preloaded r4, inverted key!=1 nest, explicit else-assign) all give
 // 11/36, so the shape is not the lever.
 // --------------------------------------------------------------------------
-#ifndef __APPLE__
 __attribute__((naked)) int Rec9FFC(void *ctx) {
     __asm__ volatile (
         ".syntax unified\n"
@@ -690,30 +604,8 @@ __attribute__((naked)) int Rec9FFC(void *ctx) {
         ".syntax divided\n"
     );
 }
-#else
-int Rec9FFC(void *ctx)
-{
-    u32 r4in;
-    STALE_REG(r4in, r4);
-    u32 key = (u32)(uintptr_t)_08004C0C();
-    int r4;
-
-    if (key == 1)
-        r4 = (int)r4in;
-    else if (key < 1)
-        r4 = 15;
-    else if (key == 2)
-        r4 = 40;
-    else
-        r4 = (int)r4in;
-    (void)ctx;
-    return r4;
-}
-#endif
-#ifndef __APPLE__
 int _08009FFC(void *c) __attribute__((alias("Rec9FFC")));
 int sub_08009FFC(void *c) __attribute__((alias("Rec9FFC")));
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x0800A1A4 CarTick_Rec_0A1A4(ctx) — records 40/17/18: fire the engine
@@ -727,20 +619,12 @@ int CarTick_Rec_0A1A4(void *ctx)
     (void)ctx;
     // Retargeted to the spelling the CLOSURE uses: asm/race_dispatch.s labels
     // 0x0800b190 only `sub_0800B190`, and promotion_screen wants the call site
-    // to match it. The `#ifndef __APPLE__` split guards the CALL as well as the
-    // declaration -- guarding only the declaration leaves a silent C89 implicit
-    // declaration on Apple, which tools/apple_decls.py is there to catch.
-#ifndef __APPLE__
+    // to match it.
     sub_0800B190();
-#else
-    _0800B190();
-#endif
     return 49;
 }
-#ifndef __APPLE__
 int _0800A1A4(void *c) __attribute__((alias("CarTick_Rec_0A1A4")));
 int sub_0800A1A4(void *c) __attribute__((alias("CarTick_Rec_0A1A4")));
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x08009FB8 Rec9FB8(ctx) — record 23 ROUTER. key = s16[WA+0x1080]:
@@ -751,7 +635,6 @@ int sub_0800A1A4(void *c) __attribute__((alias("CarTick_Rec_0A1A4")));
 //   spelling — agbcc folds every range-check form and zeroes the stale
 //   value. The literal word sits mid-function at entry+0x1C, as in the ROM.
 // ----------------------------------------------------------------------------
-#ifndef __APPLE__
 __attribute__((naked)) int Rec9FB8(void *ctx) {
     __asm__ volatile (
         ".syntax unified\n"
@@ -791,41 +674,7 @@ __attribute__((naked)) int Rec9FB8(void *ctx) {
         ".syntax divided\n"
     );
 }
-#else
-int Rec9FB8(void *ctx)
-{
-    u32 r4in;
-    STALE_REG(r4in, r4);
-#ifndef __APPLE__
-    extern u8 CarTickWa[] __asm__("CarTickWa");
-    __asm__(".globl CarTickWa\nCarTickWa = 0x03001780\n");
-    uintptr_t base_wa = (uintptr_t)CarTickWa;
-#else
-    uintptr_t base_wa = (uintptr_t)WA;
-#endif
-    uintptr_t off = (uintptr_t)132u << 5;
-    s16 *kp = (s16 *)(base_wa + off);
-    int idx = 0;
-    s16 key = kp[idx];
-    int r4;
-
-    if (key == 1)
-        r4 = 34;
-    else if (key > 1) {
-        if (key == 2) {
-            r4 = 37;
-            _08004C48(37u, 0u, 1u);
-        } else
-            r4 = (int)r4in;
-    } else
-        r4 = (key == 0) ? 24 : (int)r4in;
-    (void)ctx;
-    return r4;
-}
-#endif
-#ifndef __APPLE__
 int _08009FB8(void *c) __attribute__((alias("Rec9FB8")));
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x0800A028 CarTick_Rec_0A028(ctx) — record 31 ROUTER.
@@ -834,13 +683,9 @@ int _08009FB8(void *c) __attribute__((alias("Rec9FB8")));
 // ----------------------------------------------------------------------------
 int CarTick_Rec_0A028(void *ctx)
 {
-#ifndef __APPLE__
     extern u8 CarTickWa[];
     __asm__(".globl CarTickWa\nCarTickWa = 0x03001780\n");
     uintptr_t base = (uintptr_t)CarTickWa;
-#else
-    uintptr_t base = (uintptr_t)WA;
-#endif
     s32 idx = ((s32)*(const s16 *)(uintptr_t)(base + 0x0FF6u) << 1)
              + ((s32)*(const s16 *)(uintptr_t)(base + 0x0FF2u) << 3);
     uintptr_t cb = base;
@@ -858,9 +703,7 @@ int CarTick_Rec_0A028(void *ctx)
     return r2;
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 int _0800A028(void *c) __attribute__((alias("CarTick_Rec_0A028")));
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x0800A074 CarTick_Rec_0A074(ctx) — record 15 POST-RACE ROUTER.
@@ -904,9 +747,7 @@ int CarTick_Rec_0A074(void *ctx)
         r2 = (int)r2in;
     return r2;
 }
-#ifndef __APPLE__
 int _0800A074(void *c) __attribute__((alias("CarTick_Rec_0A074")));
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x0800A124 CarTick_Rec_0A124(ctx) — record 20: drains the manager LIFO once
@@ -914,13 +755,9 @@ int _0800A074(void *c) __attribute__((alias("CarTick_Rec_0A074")));
 // ----------------------------------------------------------------------------
 int CarTick_Rec_0A124(void *ctx)
 {
-#ifndef __APPLE__
     extern u8 CarTickWa[];
     __asm__(".globl CarTickWa\nCarTickWa = 0x03001780\n");
     uintptr_t base = (uintptr_t)CarTickWa;
-#else
-    uintptr_t base = (uintptr_t)WA;
-#endif
     if (*(volatile u16 *)(uintptr_t)(base + 0x0FBCu) == 7) {
         (void)sub_08004CF0();
     } else {
@@ -931,9 +768,7 @@ int CarTick_Rec_0A124(void *ctx)
     return 15;
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 int _0800A124(void *c) __attribute__((alias("CarTick_Rec_0A124")));
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x0800A150 CarTick_Rec_0A150(ctx) — record 16 (points/HUD family).
@@ -1008,9 +843,7 @@ finish:
     (void)ctx;
     return result;
 }
-#ifndef __APPLE__
 int _0800A150(void *c) __attribute__((alias("CarTick_Rec_0A150")));
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x0800A1C8 CarTick_Rec_0A1C8(ctx) — record 21 (menu scene): plain racer-style
@@ -1022,15 +855,11 @@ int CarTick_Rec_0A1C8(void *ctx)
     return _0800AA20();
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 int _0800A1C8(void *c) __attribute__((alias("CarTick_Rec_0A1C8")));
-#endif
 
 // 0x0800D778 — 2B `bx lr` no-op (car_tick_d778.s tail slot; the router's
 // `case 10` calls it as a phase placeholder that does nothing).
 void CarTickNoop_D778(void) {}
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _0800D778(void) __attribute__((alias("CarTickNoop_D778")));
 void sub_0800D778(void) __attribute__((alias("CarTickNoop_D778")));
-#endif

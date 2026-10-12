@@ -356,7 +356,6 @@ void _080021B38(void *inst_)
 }
 __asm__(".align 2, 0");
 
-#ifndef __APPLE__
 int _08004330(void *record) __attribute__((alias("RaceSpriteReady_04330")));
 void _08018C44(void) __attribute__((alias("RaceScene_18C44")));
 void _08019010(void) __attribute__((alias("RaceScene_19010")));
@@ -370,4 +369,3 @@ void _08021AFC(void *inst) __attribute__((alias("CarDisplay_21AFC")));
 void CarDisplay_21B38(void *inst) __attribute__((alias("_080021B38")));
 void _08021B38(void *inst) __attribute__((alias("_080021B38")));
 void sub_080021B38(void *inst) __attribute__((alias("_080021B38")));
-#endif

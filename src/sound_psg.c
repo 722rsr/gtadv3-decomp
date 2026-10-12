@@ -320,10 +320,8 @@ void SoundBeb4_ChanWalk(void *state){
     u8 cnt = s[8];
     (void)cnt;
 }
-#ifndef __APPLE__
 void _0802BF04(void *s) __attribute__((alias("SoundBeb4_ChanWalk")));
 void sub_0802BF04(void *s) __attribute__((alias("SoundBeb4_ChanWalk")));
-#endif
 
 // --- sound_d6f4.s interpreter handler 0x02D728 — owned by
 // src/sound_voice_helpers.c as SoundSeqHandler0 (_0802D728); no duplicate

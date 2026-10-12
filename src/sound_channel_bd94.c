@@ -10,7 +10,6 @@
 // Caller ABI: channel in r1 (nonstandard r1), r0 ignored, r2/r3 temps. Proven via ROM table at 0x061504 (0x0802BD95 thumb entry at file 0x061506: 95 BD 02 08) within 0x061504 table (4 entries 0x0802BD75/0x0802BD81/0x0802BD95/0x0802BDA9), dispatched via r1 channel.
 // Do not guess voice layout beyond +10 (u8) / +0 (u8) directly via strb/ldrb/orrs, proven via objdump.
 
-#ifndef __APPLE__
 void _0802BD94(void *a, void *b) __attribute__((alias("SoundBD94_Store")));
 void sub_0802BD94(void *a, void *b) __attribute__((alias("SoundBD94_Store")));
 __attribute__((naked)) void SoundBD94_Store(void *a, void *chan) {
@@ -28,6 +27,3 @@ __attribute__((naked)) void SoundBD94_Store(void *a, void *chan) {
         ".syntax divided\n"
     );
 }
-#else
-void SoundBD94_Store(void *a, void *b) { (void)a; (void)b; }
-#endif

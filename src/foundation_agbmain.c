@@ -198,12 +198,8 @@ void AgbMain(void) { // _080002C4
     AgbMain_Run();
     // unreachable — original loops forever until the reset path
 }
-#ifndef __APPLE__
 void _080002C4(void) __attribute__((alias("AgbMain")));
-#endif
-#ifndef __APPLE__
 void _080002C5(void) __attribute__((alias("AgbMain")));
-#endif
 // agbmain loop pockets — 0x00590 EWRAM word clear — exact pools
 //
 // ROM 0x08000590..0x080005B7 (48 B) + pools 0x080005B8 = 0x0203EE64,
@@ -220,29 +216,17 @@ void _080002C5(void) __attribute__((alias("AgbMain")));
 // slot, not a BIOS fill -- a fill would set bit 24 and read one source word
 // repeatedly. Passing `&zero` keeps zero in the frame, which is what the
 // `str r0,[sp]` / `mov r0,sp` pair is for.
-// Call-site split. The closure binds `sub_0802D974` (and `_0802D974`), not the
-// friendly name `CpuSet`, so a promoted body calling `CpuSet` splices a section
-// whose BL the slice link cannot bind. `sub_0802D974` is itself declared only
-// under `#ifndef __APPLE__` (src/bios_wrappers.c), while `CpuSet` is defined
-// unconditionally, so the host build needs the friendly name. Same shape as
-// `RM_CALLEE` in src/runtime_hud.c and the split at ObjTwo_03810.
-#ifndef __APPLE__
+// The closure binds `sub_0802D974` (and `_0802D974`), not the friendly name `CpuSet`,
+// so a promoted body calling `CpuSet` splices a section whose BL the slice link cannot bind.
 extern void sub_0802D974(const void *src, void *dst, u32 mode);  // 0x0802D974, closure
                                                                    // spelling of CpuSet
                                                                    // (src/bios_wrappers.c)
-#endif
 void PaletteFill_00590(int v){
     u32 zero = 0;
-#ifndef __APPLE__
     sub_0802D974(&zero, (void *)0x0203EE64, 0x05000001u);
-#else
-    CpuSet(&zero, (void *)0x0203EE64, 0x05000001u);
-#endif
     if (v == 0) *(volatile u8 *)0x0203EE64 = 1;
 }
-#ifndef __APPLE__
 void _08000590(int a) __attribute__((alias("PaletteFill_00590")));
-#endif
 // Session entry: 0x080005C0 (file 0x0005C0), asm/agbmain.s.
 // Preserve the ROM source addresses for the copied executable IRQ handlers.
 void SessionHook_005C0(int arg){
@@ -273,16 +257,12 @@ void SessionHook_005C0(int arg){
     *ime = 1;
 }
 
-#ifndef __APPLE__
 void _080005C0(int a) __attribute__((alias("SessionHook_005C0")));
-#endif
 void VBlankIntrWait_Pocket(void){
     volatile u16 *vblank = (volatile u16*)0x04000208;
     (void)vblank;
 }
-#ifndef __APPLE__
 void _080003F4(void) __attribute__((alias("VBlankIntrWait_Pocket")));
-#endif
 // 0x080004BC — frame counter at 0x03001780+0x108 (opaque) and bitfield stores at +0x10B0..+0x110
 // Exact pools: _08000570=0x000010B0 at 0x004BC+0x0C, r5=0x03001780 base, sl=0x03001780+0x110, r6=counter at +0x108
 // Widths: u32 ldr/str [r6], u16 strh #1/#2/#4/#8/#0x10 at +0x10B0/+0x10B2/+0x10B4/+0x10B6/+0x110, masks #1/#2/#4/#8/#0x10 via ands
@@ -304,14 +284,8 @@ void FrameCounter_004BC(void){
     *dstSl = (u16)(v & 0x10);
     // Tail branches to _08000510 (cmp #0x20 bls) and keypad/IO at 0x04000200 remain exact blockers via ramwatch ScenePhase 0x04E6C; left documented without guessed +24 dispatch
 }
-#ifndef __APPLE__
 void _080004BC(void) __attribute__((alias("FrameCounter_004BC")));
-#endif
-#ifndef __APPLE__
 void sub_080004BC(void) __attribute__((alias("FrameCounter_004BC")));
-#endif
 
 // ROM entry alias.
-#ifndef __APPLE__
 void PaletteInit(int v) __attribute__((alias("PaletteFill_00590")));
-#endif

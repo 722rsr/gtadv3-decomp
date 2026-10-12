@@ -6,11 +6,7 @@
 // packed pitch values (low nibble: s16 table index; high nibble: shift),
 // interpolate with an 8-bit fraction, and add the 0x800 hardware bias.
 // These are data-table addresses, not loads from the function's own code.
-#ifdef __APPLE__
-#define INTERP_REG(type, name, reg) type name
-#else
 #define INTERP_REG(type, name, reg) register type name __asm__(reg)
-#endif
 
 s32 SoundInterp_CED4(u32 a, u32 b, u32 c){
     u32 av = (u8)a;
@@ -79,7 +75,5 @@ s32 SoundInterp_CED4(u32 a, u32 b, u32 c){
     t -= lo;
     return lo + ((t * cv) >> 8) + 0x800;
 }
-#ifndef __APPLE__
 s32 _0802CED4(u32 a, u32 b, u32 c) __attribute__((alias("SoundInterp_CED4")));
 s32 sub_0802CED4(u32 a, u32 b, u32 c) __attribute__((alias("SoundInterp_CED4")));
-#endif

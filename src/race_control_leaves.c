@@ -28,10 +28,8 @@ void Code2254_Wrapper0(void){
     *p = (u8)zero;
     extern void _080016D0(int); _080016D0(zero);
 }
-#ifndef __APPLE__
 void _08002254(void) __attribute__((alias("Code2254_Wrapper0")));
 void sub_08002254(void) __attribute__((alias("Code2254_Wrapper0")));
-#endif
 // _0800226C: second wrapper at 0x0226C — ldr r2,_08002294 (0x030000F4) -> r1=[r2] -> strb 1,[r1,#1] -> ldrsh r0,[r0,#8] -> bl _08001F80 -> bl _08001EC8 (opaque)
 // The slot load stays volatile (the pointer is re-read per call site) but the
 // POINTEE does not: `*(volatile s16*)` forces `ldrh`+`lsls`+`asrs`, while the
@@ -48,14 +46,11 @@ void Code2254_Wrapper1(void *a, int b){
     // (adds r0,r1; +11; UDiv 0x0802DF6C) — so a=P, b=S.
     extern void _08001EC8(void*,int); _08001EC8(a,b);
 }
-#ifndef __APPLE__
 void _0800226C(void *a,int b) __attribute__((alias("Code2254_Wrapper1")));
 void sub_0800226C(void *a,int b) __attribute__((alias("Code2254_Wrapper1")));
-#endif
 
 // 24048 — step queue push at 0x030005B0 — mechanically translated with opaque volatile
 // _080024048: r3=0x030005B0, r2=[r3], r1=r2<<3 + r3, r4=[r1,#4], r5=[r1,#8], r2++ -> [r3]=r2, [r0]=r4, [r0,#4]=r5, widths u32
-#ifndef __APPLE__
 __attribute__((naked)) void Code24048_StepQueuePush(void *out){
     __asm__ volatile (
         ".syntax unified\n"
@@ -78,13 +73,8 @@ __attribute__((naked)) void Code24048_StepQueuePush(void *out){
         ".syntax divided\n"
     );
 }
-#else
-void Code24048_StepQueuePush(void *out){ (void)out; }
-#endif
-#ifndef __APPLE__
 void _080024048(void *a) __attribute__((alias("Code24048_StepQueuePush")));
 void sub_080024048(void *a) __attribute__((alias("Code24048_StepQueuePush")));
-#endif
 
 // 241* family: ghost manager at 0x03000610 helpers — REMOVED duplicate alias collision at 0x24150
 // _080024150 / _08024150 is owned by ghost (Ghost_Invalidate, src/ghost2.c:49,
@@ -105,41 +95,26 @@ void Code2417C_GhostSnapshot(void){}
 void Code235F4_Dispatch(void *ctx){
     s16 v = *(s16 *)((uintptr_t)ctx + 142);
     // ROM forwards r0 (ctx) unchanged into every case (0x08023612/18/1E).
-#ifndef __APPLE__
     extern void _080023220(void *ctx);   // closure spellings of the callee VMA
     extern void sub_080023298(void *ctx);
     extern void sub_080235F0(void);
-#else
-    extern void Code23220_Constructor(void *ctx);
-    extern void Code23298_StateMachine(void *ctx);
-    extern void Code235F0_NoOp(void);
-#endif
     switch (v) {
-#ifndef __APPLE__
     case 0: _080023220(ctx); return;
     case 1: sub_080023298(ctx); return;
     case 2: sub_080235F0(); return;
-#else
-    case 0: Code23220_Constructor(ctx); return;
-    case 1: Code23298_StateMachine(ctx); return;
-    case 2: Code235F0_NoOp(); return;
-#endif
     default: return;
     }
 }
 // Trap 6: 2 (mod 4) content tail; pad this section with `00 00`.
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _0800235F4(void *ctx) __attribute__((alias("Code235F4_Dispatch")));
 void _080235F4(void *ctx) __attribute__((alias("Code235F4_Dispatch")));
 void sub_0800235F4(void *ctx) __attribute__((alias("Code235F4_Dispatch")));
-#endif
 
 // 0x08023E7C — 84 B, VMA 0x08023E7C, pure Thumb, pools 0x03001780+0xFBC, WorkArea 0x0300273C phase, ctx+240/236
 // Proven via ramwatch: WA+0xFBC=5 (observed 1→5, snap_00000030 FBC=1, race FBC=5), so first cmp #3 bne taken; ctx+240==1 path not taken under QUICK RACE (observed [r4+240]=0), but full CFG preserved.
 void Code23E7C(void *ctx){
     // r4 = ctx
-#ifndef __APPLE__
     register uintptr_t waAddr __asm__("r0");
     register u32 waOffset __asm__("r1");
     waAddr = 0x03001780u;
@@ -149,9 +124,6 @@ void Code23E7C(void *ctx){
     waAddr += waOffset;
     __asm__("" : "+r" (waAddr));
     u16 phase = *(volatile u16 *)waAddr;
-#else
-    u16 phase = *(volatile u16 *)(uintptr_t)(0x03001780u + 0x0FBCu);
-#endif
     if (phase != 3) goto ret;
     u32 v240 = *(volatile u32*)((uintptr_t)ctx + 240);
     if (v240 != 1) goto ret;
@@ -172,11 +144,9 @@ ret:
 }
 // The ROM span ends with 00 00 after BX LR; request zero-fill, not Thumb NOP.
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _080023E7C(void *a) __attribute__((alias("Code23E7C")));
 void _08023E7C(void *a) __attribute__((alias("Code23E7C")));
 void sub_080023E7C(void *a) __attribute__((alias("Code23E7C")));
-#endif
 // 22D20 / 23628 lifted elsewhere; no stubs here.
 // Owners: _08022D20-cluster → code_22d20.c (7 funcs),
 // _08023628 → scene_record_dispatch.c (RaceSceneCtor_23628).
@@ -263,11 +233,9 @@ void Code2381C(void *ctx, int a1, int a2){
     s16 cur2 = *(volatile s16*)((uintptr_t)ctx + 0);
     if (r8 != cur2) _08002B368(2);
 }
-#ifndef __APPLE__
 void _08002381C(void *a, int b, int c) __attribute__((alias("Code2381C")));
 void _0802381C(void *a, int b, int c) __attribute__((alias("Code2381C")));
 void sub_08002381C(void *a, int b, int c) __attribute__((alias("Code2381C")));
-#endif
 // 23A34 / 23BD4 lifted elsewhere; no stubs here.
 // Owners: _08023A34 → code_23a34.c, _08023BD4 → runtime_record_helpers.c.
 // 0x08023D4C — 97 B, VMA 0x08023D4C, pure Thumb, pools 0x080CC178+140 s16 *8, 0x00000FFF, WA+0xFBC not needed, ctx+144/158 etc.
@@ -327,11 +295,9 @@ void Code23D4C(void *ctx){
     extern void _080023E78(void *a);
     _080023E78(ctx);
 }
-#ifndef __APPLE__
 void _080023D4C(void *a) __attribute__((alias("Code23D4C")));
 void _08023D4C(void *a) __attribute__((alias("Code23D4C")));
 void sub_080023D4C(void *a) __attribute__((alias("Code23D4C")));
-#endif
 // 0x08023E0C — 62 B, VMA 0x08023E0C, pure Thumb, pools 0x080CC178+140 s16 *8, 0x03001780+0x10C3 via helpers, ctx+144 u16 guard
 // Proven via 6000-frame trace: WA+0xFBC=5 (phase 5), WA+0x10CA=8, race+140 s16 varying -26624..31650 (proves s16 ldrsh), race+144 38912 etc., WA+0x10C3=0, so +140 s16 path taken, +144==1 guard not taken (observed 38912), but full CFG preserved.
 void Code23E0C(void *ctx){
@@ -371,17 +337,13 @@ void Code23E0C(void *ctx){
     extern void _080023E78(void *a);
     _080023E78(ctx);
 }
-#ifndef __APPLE__
 void _080023E0C(void *a) __attribute__((alias("Code23E0C")));
 void _08023E0C(void *a) __attribute__((alias("Code23E0C")));
 void sub_080023E0C(void *a) __attribute__((alias("Code23E0C")));
-#endif
 
 // 240D0 / 24138 etc. tiny ghost flag helpers — REMOVED duplicate alias collision at 0x240D0
 // _0800240D0 / _080240D0 is owned by ghost (Ghost_GetRecP, asm/ghost2.s:36-45, ldr r0,=0x03000610 ldr r0,[r0,#8] bx lr; also asm/code_240d0.s:7-11); race_control empty helper removed per audit.
 void sub_08024048(void *a) __attribute__((alias("Code24048_StepQueuePush")));
 
 // ROM entry alias.
-#ifndef __APPLE__
 void Sub_0800226C(void *a, int b) __attribute__((alias("Code2254_Wrapper1")));
-#endif

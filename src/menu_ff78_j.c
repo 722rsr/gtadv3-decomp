@@ -16,23 +16,6 @@
 
 #include "gba/types.h"
 
-#ifdef __APPLE__
-__attribute__((weak)) void Sub_08007B18(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h) { (void)a; (void)b; (void)c; (void)d; (void)e; (void)f; (void)g; (void)h; }
-__attribute__((weak)) void Sub_08007BFC(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h, u32 i) { (void)a; (void)b; (void)c; (void)d; (void)e; (void)f; (void)g; (void)h; (void)i; }
-__attribute__((weak)) void Sub_08007C68(void *a, u32 b, u32 c, int d, u32 e, u32 f, u32 g, u32 h, u32 i) { (void)a; (void)b; (void)c; (void)d; (void)e; (void)f; (void)g; (void)h; (void)i; }
-__attribute__((weak)) void Sub_08007ABC(u32 a, u32 b, u32 c) { (void)a; (void)b; (void)c; }
-__attribute__((weak)) void Sub_08002E0A4(void *d, const void *s, u32 n) { (void)d; (void)s; (void)n; }
-__attribute__((weak)) int Sub_0802581C(int v) { return v; }
-__attribute__((weak)) void Sub_080011E10(void *a) { (void)a; }
-__attribute__((weak)) void Sub_080011CFC(void *a) { (void)a; }
-__attribute__((weak)) void Sub_080011B48(void *a) { (void)a; }
-__attribute__((weak)) void Sub_080011E58(void *a, u32 b) { (void)a; (void)b; }
-__attribute__((weak)) void Sub_0800122E0(void *a, u32 b) { (void)a; (void)b; }
-__attribute__((weak)) void Sub_0800F778(u32 a, u32 b, u32 c) { (void)a; (void)b; (void)c; }
-__attribute__((weak)) void Sub_0800D97C(void *a, int b) { (void)a; (void)b; }
-__attribute__((weak)) void Sub_0800DBE8(void *a) { (void)a; }
-__attribute__((weak)) void Sub_080012574(volatile void *a) { (void)a; }
-#else
 extern void Sub_08007B18(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h);
 extern void Sub_08007BFC(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h, u32 i);
 extern void Sub_08007C68(void *a, u32 b, u32 c, int d, u32 e, u32 f, u32 g, u32 h, u32 i);
@@ -77,20 +60,8 @@ extern void sub_0800F778(u32 a, u32 b, u32 c);
 extern void sub_0800D97C(void *a, int b);
 extern void sub_0800DBE8(void *a);
 extern void sub_080012574(volatile void *a);
-#endif
 
-// Same split as FF_CALLEE (menu_ff78_f.c) and D1_CALLEE (race_scene_d1.c):
-// friendly name on the host build, closure spelling on the ROM build.
-//
-// This macro MUST sit at file scope, below the __APPLE__ split above, not
-// inside its `#else`. Defined inside the ROM branch it is undefined on the
-// host build, and tools/apple_decls.py reports that as a "call to undeclared
-// 'J_CALLEE' under __APPLE__" -- the check exists for exactly this.
-#ifndef __APPLE__
 #define J_CALLEE(friendly, closure) closure
-#else
-#define J_CALLEE(friendly, closure) friendly
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_0800122E0 — (rec, u32 a1):
@@ -158,11 +129,9 @@ void MenuFF78_122E0(void *rec_, u32 a1_) {
     *(volatile u32 *)(uintptr_t)0x03000588u = (u32)a1;
     *(volatile u32 *)(uintptr_t)0x080CB5C8u = 1;
 }
-#ifndef __APPLE__
 void _0800122E0(void *a, u32 b) __attribute__((alias("MenuFF78_122E0")));
 void Sub_0800122E0(void *a, u32 b) __attribute__((alias("MenuFF78_122E0")));
 void sub_0800122E0(void *a, u32 b) __attribute__((alias("MenuFF78_122E0")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_0800123D8 — (rec):
@@ -228,7 +197,5 @@ void MenuFF78_123D8(void *rec_) {
 // with the `46c0` nop; this file-scope `.align 2, 0` (after the body's `.size`,
 // still inside its section) pads with the explicit `0` fill instead.
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _0800123D8(void *a) __attribute__((alias("MenuFF78_123D8")));
 void sub_0800123D8(void *a) __attribute__((alias("MenuFF78_123D8")));
-#endif

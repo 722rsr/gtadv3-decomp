@@ -28,79 +28,41 @@
 // definition is dropped from the spliced text and the reference goes undefined
 // at link time (src/save.c's `SaveBumpBase` records the same constraint, and
 // 0x08005780 is the promoted entry that proves the in-body form links).
-//
-// The host build has no absolute-symbol mechanism, so it uses a pointer to the
-// literal address; the host bodies are not byte-checked.
 // ---------------------------------------------------------------------------
 
 // 0x030000E4 — State Block A slot (holds the pointer to block A).
-#ifdef __APPLE__
-#define RAM_DEF_030000E4 ((void)0)
-#define RAM_SYM_030000E4 ((volatile u8 *)(uintptr_t)0x030000E4u)
-#else
 extern volatile u8 RamBlock_030000E4[];
 #define RAM_DEF_030000E4 __asm__(".set RamBlock_030000E4, 0x030000E4")
 #define RAM_SYM_030000E4 ((volatile u8 *)RamBlock_030000E4)
-#endif
 
 // 0x03000198 — subsystem manager block (see src/foundation_subsys.c).
-#ifdef __APPLE__
-#define RAM_DEF_03000198 ((void)0)
-#define RAM_SYM_03000198 ((volatile u8 *)(uintptr_t)0x03000198u)
-#else
 extern volatile u8 RamBlock_03000198[];
 #define RAM_DEF_03000198 __asm__(".set RamBlock_03000198, 0x03000198")
 #define RAM_SYM_03000198 ((volatile u8 *)RamBlock_03000198)
-#endif
 
 // 0x03000260 — event/DMA queue head block.
-#ifdef __APPLE__
-#define RAM_DEF_03000260 ((void)0)
-#define RAM_SYM_03000260 ((volatile u8 *)(uintptr_t)0x03000260u)
-#else
 extern volatile u8 RamBlock_03000260[];
 #define RAM_DEF_03000260 __asm__(".set RamBlock_03000260, 0x03000260")
 #define RAM_SYM_03000260 ((volatile u8 *)RamBlock_03000260)
-#endif
 
 // 0x030002D8 — save/heap bump cursor block.
-#ifdef __APPLE__
-#define RAM_DEF_030002D8 ((void)0)
-#define RAM_SYM_030002D8 ((volatile u8 *)(uintptr_t)0x030002D8u)
-#else
 extern volatile u8 RamBlock_030002D8[];
 #define RAM_DEF_030002D8 __asm__(".set RamBlock_030002D8, 0x030002D8")
 #define RAM_SYM_030002D8 ((volatile u8 *)RamBlock_030002D8)
-#endif
 
 // 0x030003E4 — course record table slot (holds the table pointer).
-#ifdef __APPLE__
-#define RAM_DEF_030003E4 ((void)0)
-#define RAM_SYM_030003E4 ((volatile u8 *)(uintptr_t)0x030003E4u)
-#else
 extern volatile u8 RamBlock_030003E4[];
 #define RAM_DEF_030003E4 __asm__(".set RamBlock_030003E4, 0x030003E4")
 #define RAM_SYM_030003E4 ((volatile u8 *)RamBlock_030003E4)
-#endif
 
 // 0x030013D0 — save block 2 buffer (SaveGarageMaskTest reads it at +0x2E).
-#ifdef __APPLE__
-#define RAM_DEF_030013D0 ((void)0)
-#define RAM_SYM_030013D0 ((volatile u8 *)(uintptr_t)0x030013D0u)
-#else
 extern volatile u8 RamBlock_030013D0[];
 #define RAM_DEF_030013D0 __asm__(".set RamBlock_030013D0, 0x030013D0")
 #define RAM_SYM_030013D0 ((volatile u8 *)RamBlock_030013D0)
-#endif
 
 // 0x03001780 — work area (WA).
-#ifdef __APPLE__
-#define RAM_DEF_03001780 ((void)0)
-#define RAM_SYM_03001780 ((volatile u8 *)(uintptr_t)0x03001780u)
-#else
 extern volatile u8 RamBlock_03001780[];
 #define RAM_DEF_03001780 __asm__(".set RamBlock_03001780, 0x03001780")
 #define RAM_SYM_03001780 ((volatile u8 *)RamBlock_03001780)
-#endif
 
 #endif // GTADV_RAM_BLOCKS_H

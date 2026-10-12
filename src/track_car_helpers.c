@@ -40,10 +40,8 @@ void Code24AC_VideoInit(void){
     dma[2] = 0x84000100;
     (void)dma[2];
 }
-#ifndef __APPLE__
 void _080024AC(void) __attribute__((alias("Code24AC_VideoInit")));
 void sub_080024AC(void) __attribute__((alias("Code24AC_VideoInit")));
-#endif
 
 void Code2534_ByteCopy(const uint8_t *src, uint8_t *dst, uint32_t len){
     const uint8_t *s = src;
@@ -56,25 +54,19 @@ void Code2534_ByteCopy(const uint8_t *src, uint8_t *dst, uint32_t len){
     }
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void sub_08002534(const uint8_t *src, uint8_t *dst, uint32_t len) __attribute__((alias("Code2534_ByteCopy")));
 void _08002534(const uint8_t *src, uint8_t *dst, uint32_t len) __attribute__((alias("Code2534_ByteCopy")));
-#endif
 
 void Code24E54_Strb(void *base, uint32_t val){
     uintptr_t addr = (uintptr_t)base + 0x030015D8;
     *(volatile uint8_t*)addr = (uint8_t)val;
 }
-#ifndef __APPLE__
 void _08024F1C(void *a, uint32_t b) __attribute__((alias("Code24E54_Strb")));
-#endif
 // 0x08024F28: ldr r1,=0x030015D8; adds r0,r1; ldrb r0,[r0] (u8)
 uint32_t Code24E54_Ldrb(void *base){
     return (uint32_t)*(volatile uint8_t*)((uintptr_t)base + 0x030015D8);
 }
-#ifndef __APPLE__
 uint32_t _08024F28(void *a) __attribute__((alias("Code24E54_Ldrb")));
-#endif
 
 // 24E54 : table lookup into the 7-word aggregate at 0x0805FC90.
 //
@@ -97,10 +89,8 @@ int Code24E54_Lookup(int idx){
     s16 i = idx;
     return (int)row.w[i];
 }
-#ifndef __APPLE__
 int _080024E54(int idx) __attribute__((alias("Code24E54_Lookup")));
 int sub_080024E54(int idx) __attribute__((alias("Code24E54_Lookup")));
-#endif
 // sub_080024E7C remains TODO here (ip/r8 high regs); sub_080024EFC is C-owned in
 // src/runtime_record_helpers.c, not here.
 
@@ -117,13 +107,9 @@ s16 Code26180_Full(int a0, int a1){
     s32 iw;
     volatile u16 *p;
     ret = sub_08005758(r0);
-#ifndef __APPLE__
     { extern u8 TrackAwardRecBase[];
       __asm__(".globl TrackAwardRecBase\nTrackAwardRecBase = 0x030015F0\n");
       base = (uintptr_t)TrackAwardRecBase; }
-#else
-    base = (uintptr_t)0x030015F0u;
-#endif
     iw = (s32)r4;
     off = (u32)((iw << 16) >> 13);
     p = (volatile u16 *)(uintptr_t)(off + base);
@@ -131,10 +117,8 @@ s16 Code26180_Full(int a0, int a1){
     p[1] = (u16)r5;
     return *(s16 *)p;
 }
-#ifndef __APPLE__
 s16 _080026180(int a,int b) __attribute__((alias("Code26180_Full")));
 s16 sub_080026180(int a,int b) __attribute__((alias("Code26180_Full")));
-#endif
 
 // What makes this work, all three parts measured:
 //   - Hoist the RESULT into a register-pinned local initialised to 0 BEFORE the
@@ -162,13 +146,11 @@ int Code26068_Tiny(int r0){
     }
     return res;
 }
-#ifndef __APPLE__
 // Entry twins `_08026068` / `sub_08026068` are NOT declared here: they already
 // exist as aliases of RaceVM_026068 in src/race_phase_vms.c, which is the C
 // owner of asm/code_26068.s. Redeclaring them would be a duplicate-symbol link
 // error. This file's `_080026068` spelling does not collide with either.
 int _080026068(int r0) __attribute__((alias("Code26068_Tiny")));
-#endif
 
 // 0x080261D4 (file offset 0x0261D4), 20 bytes: signed halfword at
 // record +2. Sign-extend the index before scaling; a halfword offset wraps.
@@ -176,39 +158,29 @@ int _080026068(int r0) __attribute__((alias("Code26068_Tiny")));
 // Non-volatile signed reads compile to the ROM ldrsh, rather than ldrh plus
 // an explicit sign extension. Each body retains its own symbol definition.
 s16 Code261D4_Get(s16 idx){
-#ifndef __APPLE__
     extern u8 TrackAwardRecBase[];
     __asm__(".globl TrackAwardRecBase\nTrackAwardRecBase = 0x030015F0\n");
     uintptr_t base = (uintptr_t)TrackAwardRecBase;
-#else
-    uintptr_t base = 0x030015F0u;
-#endif
     s32 off = (s32)((u32)idx << 16) >> 13;
     return *(s16 *)(base + off + 2);
 }
-#ifndef __APPLE__
 s16 _0800261D4(s16 idx) __attribute__((alias("Code261D4_Get")));
 s16 _080261D4(s16 idx) __attribute__((alias("Code261D4_Get")));
 s16 sub_080261D4(s16 idx) __attribute__((alias("Code261D4_Get")));
-#endif
 // 0x261E4: strh r1,[r0+4] where r0 = 0x030015F0 + s16*8
 void Code261D4_Set(s16 idx, uint32_t val){
     volatile uint8_t *base = (volatile uint8_t*)0x030015F0;
     s16 off = idx * 8;
     *(volatile uint16_t*)(base + off + 4) = (uint16_t)val;
 }
-#ifndef __APPLE__
 void _0800261E4(s16 idx, uint32_t val) __attribute__((alias("Code261D4_Set")));
-#endif
 // 0x26208: ldr r1,=0x030015F0; lsls r0#16 asrs #13; adds r0,r1; ldrsh [r0+4] (s16) — same base+4
 s16 Code261D4_Get4(s16 idx){
     volatile uint8_t *base = (volatile uint8_t*)0x030015F0;
     s16 off = idx * 8;
     return *(volatile s16*)(base + off + 4);
 }
-#ifndef __APPLE__
 s16 _080026208(s16 idx) __attribute__((alias("Code261D4_Get4")));
-#endif
 // 0x2621C: push lr; ldr r2,=0x03001670; str r0,[r2]; str r1,[r0]; bl _08026220 (slot store)
 void Code261D4_StoreSlot(void *a0, void *a1){
     *(volatile uintptr_t*)0x03001670u = (uintptr_t)a0;
@@ -216,20 +188,14 @@ void Code261D4_StoreSlot(void *a0, void *a1){
     extern void _08026220(void);
     _08026220();
 }
-#ifndef __APPLE__
 void _08002621C(void *a, void *b) __attribute__((alias("Code261D4_StoreSlot")));
-#endif
 // 0x26220: ldr r0,=0x03001670; ldr r1,[r0]; ldr r0,[r1]; str r0,[r1,4] (u32 copy)
 void _08026220(void){
     uintptr_t p = *(volatile uintptr_t*)0x03001670u;
     *(volatile uintptr_t*)(p + 4) = *(volatile uintptr_t*)p;
 }
-#ifndef __APPLE__
 void Code261D4_CopySlot(void) __attribute__((alias("_08026220")));
-#ifndef __APPLE__
 void sub_08026220(void) __attribute__((alias("_08026220")));
-#endif
-#endif
 // Remaining larger helpers — 25264 (lineup builder), 25930 (grid scan),
 // 263E0 (1.3k dispatcher) — all lifted elsewhere; no stubs here.
 // Owners: _08025264 → scene_record_dispatch.c (AiLineupBuilder_25264),
@@ -249,45 +215,31 @@ void RegisterBase_2620C(void *rec, void *val) {
     *(volatile void **)rec = val;
     _08026220();
 }
-#ifndef __APPLE__
 void _0802620C(void *a, void *b) __attribute__((alias("RegisterBase_2620C")));
 void sub_0802620C(void *a, void *b) __attribute__((alias("RegisterBase_2620C")));
-#endif
 
 // 0x080261E8 (file offset 0x0261E8), 16 bytes, asm/code_261d4.s.
 // The ROM consumes r1 at word width and narrows only at the halfword store:
 //   u16[0x030015F0 + idx*8 + 4] = v   (r0<<16>>13 == idx*8, signed lane).
 // Callers (race_scene_a1.c:199/203) pass (word, halfword).
 void PoolStore_261E8(int idx, int v){
-#ifndef __APPLE__
     extern u8 TrackAwardRecBase[];
     __asm__(".globl TrackAwardRecBase\nTrackAwardRecBase = 0x030015F0\n");
     uintptr_t base = (uintptr_t)TrackAwardRecBase;
-#else
-    uintptr_t base = 0x030015F0u;
-#endif
     s32 off = (s32)((u32)idx << 16) >> 13;
     *(volatile u16 *)(base + off + 4) = v;
 }
-#ifndef __APPLE__
 void _080261E8(int a, int b) __attribute__((alias("PoolStore_261E8")));
 void sub_080261E8(int a, int b) __attribute__((alias("PoolStore_261E8")));
-#endif
 
 // 0x080261F8 (file offset 0x0261F8), 20 bytes, asm/code_261d4.s:
 //   return s16[0x030015F0 + idx*8 + 4].
 s16 PoolLoad_261F8(int idx){
-#ifndef __APPLE__
     extern u8 TrackAwardRecBase[];
     __asm__(".globl TrackAwardRecBase\nTrackAwardRecBase = 0x030015F0\n");
     uintptr_t base = (uintptr_t)TrackAwardRecBase;
-#else
-    uintptr_t base = 0x030015F0u;
-#endif
     s32 off = (s32)((u32)idx << 16) >> 13;
     return *(s16 *)(base + off + 4);
 }
-#ifndef __APPLE__
 s16 _080261F8(int a) __attribute__((alias("PoolLoad_261F8")));
 s16 sub_080261F8(int a) __attribute__((alias("PoolLoad_261F8")));
-#endif

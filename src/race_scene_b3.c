@@ -27,11 +27,7 @@
 
 #include "gba/types.h"
 
-#ifdef __APPLE__
-#define HOST_STUB(sig) __attribute__((weak)) sig
-#else
 #define HOST_STUB(sig) extern sig
-#endif
 
 // External callees (strong lifts or trampolines).
 HOST_STUB(void _08001D858(void *rec));                                   // 0x08001D858 record-lane reset
