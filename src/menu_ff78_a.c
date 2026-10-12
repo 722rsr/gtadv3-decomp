@@ -55,10 +55,9 @@ extern void _0800108F0(void *rec);            // menus.c Menu108F0
 extern void _0802B368(u16 v);                 // sound.c SoundDeferredVol
 
 // 0x08025A80 — s16[0x0203FA40] leaf (canonical body in code_25930.c).
-int MenuFF78_25A80(void) {
-    extern int _08025A80(void);
-    return _08025A80();
-}
+// Call the ROM spelling directly so the relocation resolves against the
+// assembled closure; a local wrapper emitted an unresolvable local symbol.
+extern int _08025A80(void);
 
 // ---- shared anchors --------------------------------------------------------
 #define WA        0x03001780u
@@ -125,7 +124,7 @@ void MenuFF78_10370(void *rec_) {
     WR16(rec, 180, (u16)v);                  // s16[rec+0xB4]
     v = _08025A8C(RDS16(rec, 180));
     WR16(rec, 172, (u16)v);                  // s16[rec+0xAC]
-    v = MenuFF78_25A80();                    // 0x08025A80
+    v = _08025A80();                         // 0x08025A80
     WR16(rec, 184, (u16)v);                  // s16[rec+0xB8]
     v = _080258B8(RDS16(rec, 172));
     WR16(rec, 188, (u16)v);                  // s16[rec+0xBC]
@@ -200,7 +199,7 @@ void MenuFF78_10644(void *rec_) {
     WR16(rec, 180, (u16)v);                  // s16[rec+0xB4]
     v = _08025A8C(RDS16(rec, 180));
     WR16(rec, 172, (u16)v);                  // s16[rec+0xAC]
-    v = MenuFF78_25A80();                    // 0x08025A80
+    v = _08025A80();                         // 0x08025A80
     WR16(rec, 184, (u16)v);                  // s16[rec+0xB8]
     v = _080258B8(RDS16(rec, 172));
     WR16(rec, 188, (u16)v);                  // s16[rec+0xBC]
@@ -242,7 +241,7 @@ void MenuFF78_107CC(void *rec_) {
     WR16(rec, 176, WA_U16(0xFEC));           // s16[rec+0xB0] = u16[WA+0xFEC]
     WR16(rec, 200, WA_U16(0xFE8));           // s16[rec+0xC8] = u16[WA+0xFE8]
     WR16(rec, 198, WA_U16(0xFEA));           // s16[rec+0xC6] = u16[WA+0xFEA]
-    v = MenuFF78_25A80();                    // 0x08025A80
+    v = _08025A80();                         // 0x08025A80
     WR16(rec, 184, (u16)v);                  // s16[rec+0xB8]
     WR16(rec, 188, 99);                      // s16[rec+0xBC] = 99
     WR16(rec, 190, 99);                      // s16[rec+0xBE] = 99

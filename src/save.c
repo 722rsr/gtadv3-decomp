@@ -857,29 +857,89 @@ void SaveGarageUnpack(void) {
 }
 void _0802488C(void) __attribute__((alias("SaveGarageUnpack")));
 
+// Pack/unpack of the 35 car/garage records (#0..#34).
+//
+//  * Both bases are SYMBOLS with the record offset added separately
+//    (RAM_DEF/RAM_SYM_030013D0 and _03001780): the ROM keeps ONE literal for
+//    0x030013D0 in `ip` and reaches the fields with `adds rX,#164/#168`, and
+//    it builds the record base as `w + <literal 0x5E4>`. Spelling either as
+//    `ADDR + 0x5E4` folds into a single pool word and loses the whole body
+//    (the same fold trap documented at 0x0802476C).
+//  * The loop counter is a SIGNED `s32` and the bound is `<= 34`, which is
+//    what makes the ROM's `cmp r4,#34 / ble` signed; `i < CAR_RECORD_COUNT`
+//    with an unsigned counter emits the unsigned `bls` instead.
+//  * The 72-stride and the 8-stride each get their own rolling pointer
+//    (`src`/`rec` + r2=w + r3/r5), and the 8-strided entry base is re-derived
+//    per iteration from `i << 3` rather than strength-reduced, exactly as the
+//    ROM does.
+//  * entry.b0 is a HALFWORD read truncated on pack (`ldrh` + `strb`) and
+//    re-stored sign-extended on unpack (`ldrsb` + `strh`), and the unpack
+//    additionally zeroes rec+11. Both asymmetries are in the ROM.
+//
+// OPEN (pack 8/96, unpack 24/108). The residual is one decision inside
+// agbcc's loop optimizer, not a source shape: the ROM leaves the entry
+// address `base + 0xA4 + i*8` *un-strength-reduced* (it re-derives it each
+// iteration with `lsls r1,r4,#3 / mov r0,ip / adds r0,#164 / adds r1,r1,r0`)
+// and therefore keeps `i` live, which is also what stops the counter being
+// rewritten as a countdown. Measured with `build/variant_lab.py`: every
+// spelling of that destination that reaches the giv pass (`base + 0xA4 +
+// ioff`, `(i<<3)`, `i*8`, a `u32 *` subscript, a `u32`-casted local, a
+// pointer local assigned in the loop, volatile and non-volatile) yields the
+// same 92-byte body in which the destination IS strength-reduced into a
+// fourth rolling register (and so pushes r6 and counts down). The gate is
+// `loop.c:4597`, `! flag_reduce_all_givs && v->lifetime * threshold * benefit
+// < insn_count` -> `v->ignore = 1`, i.e. agbcc drops the *marginal* giv; the
+// original build dropped that one and this one does not. Forcing the drop by
+// making the index non-affine (`u16 i`) does remove the giv but then wraps the
+// counter (`lsls #16 / lsrs #16`) and re-derives `i*72` instead of rolling it,
+// which is worse. Same wall on the unpack side: the running `0x5E8+k` offset
+// lives in a callee-saved register there (r7), while here it is rematerialised
+// and the `+4/+5/+6` offsets come out of the literal pool (120 vs 108).
+// Do not re-run these spellings without a new idea; see docs/matching_workflow.md.
 void SaveCarRecordsPack(void) {
-    for (u32 i=0;i<CAR_RECORD_COUNT;i++) {
-        volatile u8 *rec = (volatile u8 *)(CAR_RECORD_BASE + i*CAR_RECORD_STRIDE);
-        volatile u8 *ent = (volatile u8 *)(SAVE_BLOCK2_BUF_ADDR + 0xA4 + i*8);
-        *(volatile u32 *)ent = *(volatile u32 *)rec;
-        ent[4] = rec[4];
-        ent[5] = rec[8];
-        ent[6] = rec[9];
-        ent[7] = rec[10];
+    u8 *base, *w, *src, *dst8;
+    u32 ioff;
+    s32 i;
+    RAM_DEF_030013D0;
+    RAM_DEF_03001780;
+    base = (u8 *)RAM_SYM_030013D0;
+    w = (u8 *)RAM_SYM_03001780;
+    src = w + 0x5E4;
+    dst8 = base + 0xA8;
+    for (i = 0; i <= 34; i++) {
+        ioff = (u32)i << 3;
+        *(volatile u32 *)(base + 0xA4 + ioff) = *(u32 *)src;
+        dst8[0] = (u8)*(u16 *)(w + 0x5E8 + (u32)i*72);
+        dst8[1] = *(u8 *)(w + 0x5E8 + (u32)i*72 + 4);
+        dst8[2] = *(u8 *)(w + 0x5E8 + (u32)i*72 + 5);
+        dst8[3] = *(u8 *)(w + 0x5E8 + (u32)i*72 + 6);
+        dst8 += 8;
+        src += 72;
     }
 }
 void _0802494C(void) __attribute__((alias("SaveCarRecordsPack")));
 
+// See the OPEN note above: same body shape, same agbcc giv drop, 120 vs 108.
 void SaveCarRecordsUnpack(void) {
-    for (u32 i=0;i<CAR_RECORD_COUNT;i++) {
-        volatile u8 *rec = (volatile u8 *)(CAR_RECORD_BASE + i*CAR_RECORD_STRIDE);
-        volatile u8 *ent = (volatile u8 *)(SAVE_BLOCK2_BUF_ADDR + 0xA4 + i*8);
-        *(volatile u32 *)rec = *(volatile u32 *)ent;
-        rec[4] = (u8)( (s8)ent[4] ); *(volatile u16 *)(rec+4) = (u16)(s16)(s8)ent[4]; // sign-extend halfword
-        rec[8] = ent[5];
-        rec[9] = ent[6];
-        rec[10]= ent[7];
-        rec[11]= 0;
+    u8 *base, *w, *ent8, *rec;
+    u32 ioff;
+    s32 i;
+    RAM_DEF_030013D0;
+    RAM_DEF_03001780;
+    base = (u8 *)RAM_SYM_030013D0;
+    w = (u8 *)RAM_SYM_03001780;
+    rec = w + 0x5E4;
+    ent8 = base + 0xA8;
+    for (i = 0; i <= 34; i++) {
+        ioff = (u32)i << 3;
+        *(u32 *)rec = *(u32 *)(base + 0xA4 + ioff);
+        *(u16 *)(w + 0x5E8 + (u32)i*72) = (u16)(s8)ent8[0];
+        *(u8 *)(w + 0x5E8 + (u32)i*72 + 4) = ent8[1];
+        *(u8 *)(w + 0x5E8 + (u32)i*72 + 5) = ent8[2];
+        *(u8 *)(w + 0x5E8 + (u32)i*72 + 6) = ent8[3];
+        *(u8 *)(w + 0x5EF + (u32)i*72) = 0;
+        ent8 += 8;
+        rec += 72;
     }
 }
 void _080249AC(void) __attribute__((alias("SaveCarRecordsUnpack")));

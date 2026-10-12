@@ -766,6 +766,8 @@ void sub_080019A84(void)
         _08018AA8(64u, 0);
     }
 }
+// Match the ROM's two zero pad bytes instead of GAS's Thumb `46 c0` fill.
+__asm__(".align 2, 0");
 
 // ROM entry alias.
 void _080199B0(void) __attribute__((alias("sub_0800199B0")));

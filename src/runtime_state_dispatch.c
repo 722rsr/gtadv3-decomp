@@ -1042,7 +1042,8 @@ void sub_0802CD18(void *a) __attribute__((alias("SoundStopAll_2CD18")));
 
 // ============================================================================
 // sound_tick.s 0x0802C738 — per-voice flag scan (flags&0xC0 = active+64;
-// _0802C8B0 VCounter tick; [+15]=2, [+19]=64, [+16]=0, [+17]=0, flags&=0x3F).
+// _0802C8B0 VCounter tick; ROM stores [+0]=0x80, [+15]=2, [+19]=64,
+// [+25]=22, and [+36]=1 after the call).
 // ============================================================================
 // Arity is deliberate: the ROM materialises r0 before the call (asm/sound_tick.s:26
 // `adds r0, r4, #0`, asm/sound_alloc.s:28 `adds r0, r7, #0`), and C cannot express an
@@ -1051,22 +1052,31 @@ void sub_0802CD18(void *a) __attribute__((alias("SoundStopAll_2CD18")));
 HOST_STUB(void _0802C8B0(void *self));
 
 void SoundTick_2C738(void *root) {
-    volatile u8 *r0 = (volatile u8 *)root;
-    int n = r0[8];
-    volatile u8 *r4 = (volatile u8 *)(uintptr_t)*(volatile u32 *)(r0 + 44);
+    volatile u8 *rootp = (volatile u8 *)root;
+    register int n asm("r5") = rootp[8];
+    register volatile u8 *r4 asm("r4") =
+        (volatile u8 *)(uintptr_t)*(volatile u32 *)(rootp + 44);
     if (n <= 0) return;
-    for (int i = n; i != 0; i--, r4 += 80) {
-        u8 f = r4[0];
-        if ((f & 0x80) == 0) continue;
-        if ((f & 0x40) == 0) continue;
+    int active = 0x80;
+    do {
+        register int f asm("r1") = r4[0];
+        register int gate asm("r0") = active;
+        gate &= f;
+        if (gate == 0) goto next_voice;
+        register int tick asm("r6") = 0x40;
+        gate = tick;
+        gate &= f;
+        if (gate == 0) goto next_voice;
         _0802C8B0((void *)(uintptr_t)r4);
-        r4[0] = 0x80;
+        r4[0] = active;
         r4[15] = 2;
-        r4[19] = 64;
-        r4[16] = 0;
-        r4[17] = 0;
-        r4[0] = f & 0x3F;
-    }
+        r4[19] = tick;
+        r4[25] = 22;
+        r4[36] = 1;
+    next_voice:
+        n--;
+        r4 += 80;
+    } while (n > 0);
 }
 void _0802C738(void *a) __attribute__((alias("SoundTick_2C738")));
 void sub_0802C738(void *a) __attribute__((alias("SoundTick_2C738")));
@@ -1074,6 +1084,9 @@ void sub_0802C738(void *a) __attribute__((alias("SoundTick_2C738")));
 // ============================================================================
 // sound_uaeabi_uidiv.s 0x0802DF6C — __aeabi_uidiv (bit-by-bit restoring
 // division; zero divisor routes through the _0802DE98 no-op leaf → 0).
+// NOT PROMOTABLE: ARMCC runtime (`mov pc, lr` / `pop {pc}` returns, lazy
+// single-register frame) like the rest of the EABI division block
+// (build/scan_armcc.py); byte-exact via asm/sound_uaeabi_uidiv.s.
 // ============================================================================
 HOST_STUB(void _0802DE98(void));
 

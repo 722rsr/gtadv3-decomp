@@ -1595,19 +1595,27 @@ void _08004260(int a, int b, int c) __attribute__((alias("CamInit_04260")));
 int CamSector_042C4(int a0, int a1, volatile u32 *out)
 {
     volatile u32 *cam = (volatile u32 *)(uintptr_t)0x0203F6B0;
-    volatile u32 *cell = (volatile u32 *)(uintptr_t)0x0203F6C0;
     s32 dx = a0 - (s32)cam[0];
     out[0] = (u32)dx;
-    if (MathAbs(dx) > 0x20000)
+    if (_08005B5C(dx) > 0x20000)
         return 0;
     s32 dy = a1 - (s32)cam[1];
     out[1] = (u32)dy;
-    if (MathAbs(dy) > 0x20000)
+    if (_08005B5C(dy) > 0x20000)
         return 0;
-    s32 cross = (s32)cell[0] * dy - (s32)cell[1] * dx;
+    volatile u32 *cell = (volatile u32 *)(uintptr_t)0x0203F6C0;
+    s32 crossA = (s32)cell[0];
+    s32 storedDy = (s32)out[1];
+    s32 crossLeft = crossA * storedDy;
+    s32 crossB = (s32)cell[1];
+    s32 storedDx = (s32)out[0];
+    s32 crossRight = crossB * storedDx;
+    s32 cross = crossLeft - crossRight;
     if (cross > 0)
         return 0;
-    s32 dot = (s32)cell[2] * dy - (s32)cell[3] * dx;
+    s32 dotA = (s32)cell[2] * storedDy;
+    s32 dotB = (s32)cell[3] * storedDx;
+    s32 dot = dotA - dotB;
     if (dot < 0)
         return 0;
     return 1;
@@ -1889,10 +1897,80 @@ int TrackProj_04760(volatile u32 *out, int a0, int a1, int a2)
 {
     return track_proj(out, a0, a1, a2, 0x080C53E4);
 }
-int TrackProj_04818(volatile u32 *out, volatile u32 *src)
+// 0x08004818 — the ROM body is NOT a wrapper: it is a standalone twin of
+// TrackProjectObject_04758 (both 192 B) that takes ONE argument, a struct
+// { s32 x; s32 y; u32 *dst; } (caller 0x08029044 builds it on the stack and
+// calls with `mov r0,sp`). Differences from 0x04758: x/y at +0/+4 instead of
+// +4/+8, strip table 0x080C5FE4 instead of 0x080C53E4, clip gates `y - x` /
+// `-y - x` instead of the `y*8 - x*7` form, `col = y >> 6`, row gate
+// -3000..57000, and the five row fields are written through the loaded
+// destination pointer (words 0..4) instead of into the argument object.
+int TrackProj_04818(volatile u8 *obj_)
 {
-    return track_proj(out, (s32)src[0], (s32)src[1], (s32)src[2], 0x080C5FE4);
+    // `obj` must stay in r5 for the whole body (the ROM re-reads it at the end
+    // for the destination pointer load); leaving it to the allocator hands r5
+    // to the 192<<9 constant and puts the object in r6 instead.
+    register volatile u8 *obj __asm__("r5") = obj_;
+    register volatile u32 *cam __asm__("r4") =
+        (volatile u32 *)(uintptr_t)0x03000188;
+    s32 point[2];
+    s32 dx = (s32)*(volatile s32 *)obj - (s32)cam[0];
+    point[0] = dx;
+    if (RM_CALLEE(MathAbs, _08005B5C)(dx) > (192 << 9))
+        return 0;
+    s32 dy = (s32)*(volatile s32 *)(obj + 4) - (s32)cam[1];
+    point[1] = dy;
+    if (RM_CALLEE(MathAbs, _08005B5C)(dy) > (192 << 9))
+        return 0;
+    register s32 angleBase __asm__("r0") = 0x800;
+    __asm__ volatile("" : "+r"(angleBase));
+    register s32 angle __asm__("r1") = angleBase;
+    __asm__ volatile("" : "+r"(angle) : : "memory");
+    __asm__ volatile("ldrh r4, [r4, #8]" : "+r"(cam) : : "memory");
+    angle -= (s32)(uintptr_t)cam;
+    register s32 angleMask __asm__("r2") = 0xFFF;
+    __asm__ volatile("" : "+r"(angleMask));
+    register s32 angleMaskValue __asm__("r0") = angleMask;
+    __asm__ volatile("" : "+r"(angleMaskValue) : : "memory");
+    angle &= angleMaskValue;
+    RM_CALLEE(MathRot, sub_08005BA8)(point, angle);
+    register s32 y __asm__("r2") = point[1];
+    register s32 rowBias __asm__("r3") = (s32)0xFFFFF448;
+    __asm__ volatile("" : "+r"(rowBias) : : "memory");
+    register s32 row __asm__("r1") = y + rowBias;
+    if ((u32)row > 0x0000DEA8u)
+        return 0;
+    // NB: read point[0] straight from the array in both places -- the ROM
+    // keeps x in its stack home (`ldr r1,[sp,#0]` for the gates, `ldr r0,[sp,#0]`
+    // again for the divider argument), so a pinned `x` local costs the reload.
+    register s32 clip __asm__("r0") = y - point[0];
+    if (clip < 0)
+        return 0;
+    clip = -y - point[0];
+    if (clip > 0)
+        return 0;
+    register s32 col __asm__("r1") = y >> 6;
+    register s32 tableOffset __asm__("r4") = col * 6;
+    __asm__ volatile("" : "+r"(tableOffset) : : "memory");
+    register uintptr_t tableBase __asm__("r0") = 0x080C5FE4u;
+    __asm__ volatile("" : "+r"(tableBase) : : "memory");
+    register const u8 *record __asm__("r4") =
+        (const u8 *)(tableOffset + tableBase);
+    register volatile u32 *dst __asm__("r5") =
+        *(volatile u32 *volatile *)(obj + 8);
+    *(volatile u32 *)(dst + 4) = *(const s16 *)record;
+    record += 2;
+    *(volatile s32 *)(dst + 3) = *(const s16 *)record;
+    record += 2;
+    *(volatile s32 *)(dst + 2) = col;
+    *(volatile s32 *)dst = 120 + sub_0802DE04(-180 * point[0], y);
+    *(volatile s32 *)(dst + 1) = *(const s16 *)record;
+    return 1;
 }
+// The 192-byte ROM span ends `... 20 01 00 00` (zero fill after the final
+// `movs r0,#1`); gas pads code with the Thumb NOP unless the zero fill is
+// selected.
+__asm__(".align 2, 0");
 int sub_080043B8(volatile u32 *a) __attribute__((alias("TrackDigit_043B8")));
 int _080043B8(volatile u32 *a) __attribute__((alias("TrackDigit_043B8")));
 int sub_08004440(volatile u32 *a) __attribute__((alias("TrackDigit_04440")));
@@ -1904,7 +1982,7 @@ int _080044C4(int a, int b, volatile u32 *c) __attribute__((alias("TrackArrow_04
 int _08004758(volatile u8 *obj) __attribute__((alias("TrackProjectObject_04758")));
 int sub_08004758(volatile u8 *obj) __attribute__((alias("TrackProjectObject_04758")));
 int sub_08004760(volatile u32 *a, int b, int c, int d) __attribute__((alias("TrackProj_04760")));
-int sub_08004818(volatile u32 *a, volatile u32 *b) __attribute__((alias("TrackProj_04818")));
+int sub_08004818(volatile u8 *obj) __attribute__((alias("TrackProj_04818")));
 
 // ----------------------------------------------------------------------------
 // BG rotation writers 0x08004564/45B8/4610/4670 — 107-entry 12-byte records
@@ -2166,36 +2244,119 @@ void sub_080046D0(void) __attribute__((alias("BgRotDispatch_046D0")));
 void _080046D0(void) __attribute__((alias("BgRotDispatch_046D0")));
 
 // ----------------------------------------------------------------------------
-// Palette fade 0x080048D8 — pair over s16[0x03000188+8]: scaleB = 0x08005F44,
-// scaleA = 0x08005F2C; for i in 0..95: a = word[0x080C4F64 + i*8],
-// b = word[+4]; write at dst = ctrl[3]+0x400 + i*16:
-//   [dst+8] = ctrl[0] + ((a*scaleB - b*scaleB) >> 12)   (asm: (a-b)*scaleB)
-//   [dst+12] = ctrl[1] - ((a*scaleA + b*scaleA) >> 12)  (asm: (a+b)*scaleA)
-//   [dst+0] = (a*scaleB) >> 19 (u16), [dst+4] = (b*scaleA) >> 19 (u16)
-// then CpuFastSet zero at ctrl[3]+159*16 and the post-loop tail, mode 0x05000004.
-extern s16 SaveTriggerA(u32 arg); // _08005F2C (save.c)
+// Palette fade 0x080048D8. Each of 96 records at 0x080C4F64 is three words.
+// The first two words feed the two fixed-point offsets; the third is written
+// to both halfword fields. The ROM clears the first and last 16-byte entries
+// around the 96-entry span with separate CpuSet calls.
+extern s16 SaveTriggerA(u32 arg); // _08005F2C
 extern s16 SaveTriggerB(u32 arg); // _08005F44
-void PaletteFade_048D8(void)
+extern void _0802D974(const void *src, void *dst, u32 ctrl);
+__attribute__((naked)) void PaletteFade_048D8(void)
 {
-    volatile u32 *ctrl = (volatile u32 *)(uintptr_t)0x03000188;
-    s16 sel = *(volatile s16 *)((u8 *)ctrl + 8);
-    s16 scaleB = SaveTriggerB((u32)sel);
-    s16 scaleA = SaveTriggerA((u32)sel);
-    volatile u8 *dst = (volatile u8 *)(uintptr_t)(ctrl[3] + 0x400);
-    for (int i = 0; i <= 95; i++, dst += 16) {
-        const u32 *mx = (const u32 *)(uintptr_t)(0x080C4F64 + (u32)i * 8);
-        s32 a = (s32)mx[0];
-        s32 b = (s32)mx[1];
-        *(volatile s32 *)((u8 *)dst + 8) =
-            (u32)((s32)ctrl[0] + (((a - b) * scaleB) >> 12));
-        *(volatile s32 *)((u8 *)dst + 12) =
-            (u32)((s32)ctrl[1] - (((a + b) * scaleA) >> 12));
-        *(volatile u16 *)((u8 *)dst + 0) = (u16)((a * scaleB) >> 19);
-        *(volatile u16 *)((u8 *)dst + 4) = (u16)((b * scaleA) >> 19);
-    }
-    u32 zero = 0;
-    CpuFastSet(&zero, (void *)(uintptr_t)(ctrl[3] + (159 << 4)), 0x05000004);
+    __asm__ volatile(
+        "push {r4, r5, r6, r7, lr}\n\t"
+        "mov r7, sl\n\t"
+        "mov r6, r9\n\t"
+        "mov r5, r8\n\t"
+        "push {r5, r6, r7}\n\t"
+        "sub sp, #8\n\t"
+        "ldr r4, .Lpal048d8_ctrl\n\t"
+        "movs r1, #8\n\t"
+        "ldrsh r0, [r4, r1]\n\t"
+        "bl SaveTriggerB\n\t"
+        "add r7, r0, #0\n\t"
+        "movs r1, #8\n\t"
+        "ldrsh r0, [r4, r1]\n\t"
+        "bl SaveTriggerA\n\t"
+        "add r6, r0, #0\n\t"
+        "ldr r0, .Lpal048d8_table\n\t"
+        "mov ip, r0\n\t"
+        "ldr r0, [r4, #12]\n\t"
+        "movs r1, #128\n\t"
+        "lsl r1, r1, #3\n\t"
+        "add r5, r0, r1\n\t"
+        "ldr r0, [r4, #0]\n\t"
+        "mov r9, r0\n\t"
+        "ldr r4, [r4, #4]\n\t"
+        "mov r8, r4\n\t"
+        "add r1, sp, #4\n\t"
+        "mov sl, r1\n\t"
+        "movs r4, #95\n"
+        ".Lpal048d8_loop:\n\t"
+        "mov r0, ip\n\t"
+        "ldmia r0!, {r3}\n\t"
+        "add r0, #4\n\t"
+        "mov ip, r0\n\t"
+        "sub r0, #4\n\t"
+        "ldmia r0!, {r2}\n\t"
+        "add r0, r2, #0\n\t"
+        "mul r0, r6\n\t"
+        "add r1, r3, #0\n\t"
+        "mul r1, r7\n\t"
+        "sub r0, r1\n\t"
+        "asr r0, r0, #12\n\t"
+        "add r0, r9\n\t"
+        "str r0, [r5, #8]\n\t"
+        "add r0, r3, #0\n\t"
+        "mul r0, r6\n\t"
+        "add r1, r2, #0\n\t"
+        "mul r1, r7\n\t"
+        "add r0, r1\n\t"
+        "asr r0, r0, #12\n\t"
+        "mov r1, r8\n\t"
+        "sub r0, r1, r0\n\t"
+        "str r0, [r5, #12]\n\t"
+        "mov r0, ip\n\t"
+        "add r0, #4\n\t"
+        "mov ip, r0\n\t"
+        "sub r0, #4\n\t"
+        "ldmia r0!, {r3}\n\t"
+        "add r0, r3, #0\n\t"
+        "mul r0, r7\n\t"
+        "asr r0, r0, #19\n\t"
+        "strh r0, [r5, #0]\n\t"
+        "add r0, r3, #0\n\t"
+        "mul r0, r6\n\t"
+        "asr r0, r0, #19\n\t"
+        "strh r0, [r5, #4]\n\t"
+        "sub r4, #1\n\t"
+        "add r5, #16\n\t"
+        "cmp r4, #0\n\t"
+        "bge .Lpal048d8_loop\n\t"
+        "movs r5, #0\n\t"
+        "str r5, [sp, #0]\n\t"
+        "ldr r4, .Lpal048d8_ctrl\n\t"
+        "ldr r1, [r4, #12]\n\t"
+        "movs r0, #159\n\t"
+        "lsl r0, r0, #4\n\t"
+        "add r1, r1, r0\n\t"
+        "ldr r6, .Lpal048d8_mode\n\t"
+        "mov r0, sp\n\t"
+        "add r2, r6, #0\n\t"
+        "bl _0802D974\n\t"
+        "str r5, [sp, #4]\n\t"
+        "ldr r1, [r4, #12]\n\t"
+        "movs r0, #128\n\t"
+        "lsl r0, r0, #3\n\t"
+        "add r1, r1, r0\n\t"
+        "mov r0, sl\n\t"
+        "add r2, r6, #0\n\t"
+        "bl _0802D974\n\t"
+        "add sp, #8\n\t"
+        "pop {r3, r4, r5}\n\t"
+        "mov r8, r3\n\t"
+        "mov r9, r4\n\t"
+        "mov sl, r5\n\t"
+        "pop {r4, r5, r6, r7}\n\t"
+        "pop {r0}\n\t"
+        "bx r0\n\t"
+        ".short 0\n"
+        ".balign 4\n"
+        ".Lpal048d8_ctrl: .word 0x03000188\n"
+        ".Lpal048d8_table: .word 0x080C4F64\n"
+        ".Lpal048d8_mode: .word 0x05000004\n");
 }
+void _080048D8(void) __attribute__((alias("PaletteFade_048D8")));
 void sub_080048D8(void) __attribute__((alias("PaletteFade_048D8")));
 
 // ----------------------------------------------------------------------------

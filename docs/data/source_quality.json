@@ -595,6 +595,24 @@
    "name": "_080022D8",
    "size": 12
   },
+  "0x080022e4": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/ai_catalog.c",
+   "name": "Ai_IdMap",
+   "size": 40
+  },
+  "0x0800230c": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/ai_catalog.c",
+   "name": "Ai_IdRemap",
+   "size": 52
+  },
   "0x08002340": {
    "class": "c",
    "file": "src/idle_accessors.c",
@@ -1634,6 +1652,12 @@
    "name": "CamInit_04260",
    "size": 100
   },
+  "0x080042c4": {
+   "class": "c",
+   "file": "src/runtime_hud.c",
+   "name": "CamSector_042C4",
+   "size": 96
+  },
   "0x08004324": {
    "class": "c",
    "file": "src/runtime_hud.c",
@@ -1761,6 +1785,29 @@
    "file": "src/runtime_hud.c",
    "name": "TrackProjectObject_04758",
    "size": 192
+  },
+  "0x08004818": {
+   "class": "partial",
+   "detail": {
+    "barrier": 7,
+    "insn": 1,
+    "insn_lines": 1,
+    "pin": 15
+   },
+   "file": "src/runtime_hud.c",
+   "name": "TrackProj_04818",
+   "size": 192
+  },
+  "0x080048d8": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 96,
+    "naked": true
+   },
+   "file": "src/runtime_hud.c",
+   "name": "PaletteFade_048D8",
+   "size": 212
   },
   "0x080049ac": {
    "class": "c_fakematch",
@@ -3001,6 +3048,18 @@
    "name": "Course_Leaf_07658",
    "size": 12
   },
+  "0x08007664": {
+   "class": "partial",
+   "detail": {
+    "barrier": 2,
+    "insn": 2,
+    "insn_lines": 2,
+    "pin": 11
+   },
+   "file": "src/course_resource.c",
+   "name": "Course_ResourceSetup",
+   "size": 268
+  },
   "0x0800785c": {
    "class": "c",
    "file": "src/course_resource_helpers.c",
@@ -3088,6 +3147,30 @@
    "file": "src/course_records.c",
    "name": "Course_Iter_07C68",
    "size": 104
+  },
+  "0x08007cd0": {
+   "class": "c",
+   "file": "src/course_records.c",
+   "name": "Course_Iter_07CD0",
+   "size": 124
+  },
+  "0x08007d4c": {
+   "class": "c",
+   "file": "src/course_records.c",
+   "name": "Course_Iter_07D4C",
+   "size": 104
+  },
+  "0x08007db4": {
+   "class": "c",
+   "file": "src/course_records.c",
+   "name": "Course_Iter_07DB4",
+   "size": 96
+  },
+  "0x08007e14": {
+   "class": "c",
+   "file": "src/course_records.c",
+   "name": "Course_Iter_07E14",
+   "size": 176
   },
   "0x08007ec4": {
    "class": "c_fakematch",
@@ -3346,6 +3429,16 @@
    "name": "CourseLeaves_09B50",
    "size": 16
   },
+  "0x08009b60": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1,
+    "pin": 5
+   },
+   "file": "src/menus.c",
+   "name": "MenuPkt_08009B60",
+   "size": 108
+  },
   "0x08009bcc": {
    "class": "c_fakematch",
    "detail": {
@@ -3360,6 +3453,12 @@
    "file": "src/car_racer_constants.c",
    "name": "CarRacer_Return3",
    "size": 4
+  },
+  "0x08009f5c": {
+   "class": "c",
+   "file": "src/car_tick_helpers.c",
+   "name": "Rec9F5C",
+   "size": 92
   },
   "0x08009fb8": {
    "class": "asm",
@@ -4641,6 +4740,16 @@
    "name": "MenuFF78_12034",
    "size": 116
   },
+  "0x080121a8": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1,
+    "pin": 2
+   },
+   "file": "src/menu_ff78_i.c",
+   "name": "MenuFF78_121A8",
+   "size": 196
+  },
   "0x0801226c": {
    "class": "c_fakematch",
    "detail": {
@@ -4799,6 +4908,15 @@
    "name": "_080012F14",
    "size": 4
   },
+  "0x08012f18": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 3
+   },
+   "file": "src/menu_ff78_e.c",
+   "name": "MenuFF78_12F18",
+   "size": 84
+  },
   "0x08012f6c": {
    "class": "c_fakematch",
    "detail": {
@@ -4808,6 +4926,19 @@
    "file": "src/menu_ff78_e.c",
    "name": "MenuFF78_12F6C",
    "size": 44
+  },
+  "0x08012f98": {
+   "class": "partial",
+   "detail": {
+    "barrier": 1,
+    "directive": 1,
+    "insn": 2,
+    "insn_lines": 6,
+    "pin": 3
+   },
+   "file": "src/menu_ff78_e.c",
+   "name": "MenuFF78_12F98",
+   "size": 140
   },
   "0x080133e0": {
    "class": "c",
@@ -5041,6 +5172,30 @@
    "name": "MenuFF78_1549C",
    "size": 68
   },
+  "0x080154e0": {
+   "class": "asm",
+   "detail": {
+    "barrier": 18,
+    "insn": 18,
+    "insn_lines": 24,
+    "pin": 42
+   },
+   "file": "src/menu_ff78_o.c",
+   "name": "MenuFF78_154E0",
+   "size": 320
+  },
+  "0x08015620": {
+   "class": "asm",
+   "detail": {
+    "barrier": 14,
+    "insn": 18,
+    "insn_lines": 31,
+    "pin": 35
+   },
+   "file": "src/menu_ff78_p.c",
+   "name": "MenuFF78_15620",
+   "size": 284
+  },
   "0x08015930": {
    "class": "c",
    "file": "src/menu_ff78_d.c",
@@ -5202,6 +5357,16 @@
    "name": "Rec35_SyncRec_16944",
    "size": 220
   },
+  "0x08016a20": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 1,
+    "pin": 1
+   },
+   "file": "src/rec35_mid_region.c",
+   "name": "Rec35_PlacementEmit_16A20",
+   "size": 180
+  },
   "0x08016ad4": {
    "class": "c",
    "file": "src/rec35_runtime.c",
@@ -5272,6 +5437,19 @@
    "file": "src/rec35_mid_region.c",
    "name": "Rec35_Input_17528",
    "size": 148
+  },
+  "0x080175bc": {
+   "class": "partial",
+   "detail": {
+    "barrier": 5,
+    "directive": 4,
+    "insn": 2,
+    "insn_lines": 6,
+    "pin": 5
+   },
+   "file": "src/rec35_mid_region.c",
+   "name": "Rec35_Input_175BC",
+   "size": 400
   },
   "0x0801774c": {
    "class": "c_fakematch",
@@ -5675,6 +5853,17 @@
    "name": "Race_Setup_18E28",
    "size": 152
   },
+  "0x08018ec0": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 30,
+    "naked": true
+   },
+   "file": "src/race_setup.c",
+   "name": "Race_Setup_18EC0",
+   "size": 84
+  },
   "0x08018f14": {
    "class": "partial",
    "detail": {
@@ -5709,6 +5898,18 @@
    "file": "src/race_setup.c",
    "name": "Race_Setup_191BC",
    "size": 68
+  },
+  "0x08019200": {
+   "class": "partial",
+   "detail": {
+    "barrier": 2,
+    "insn": 1,
+    "insn_lines": 2,
+    "pin": 8
+   },
+   "file": "src/race_setup.c",
+   "name": "Race_Setup_19200",
+   "size": 80
   },
   "0x080195b8": {
    "class": "c",
@@ -5949,6 +6150,19 @@
    "file": "src/race_scene.c",
    "name": "Race_Scene_Leaf_1B024",
    "size": 68
+  },
+  "0x0801b068": {
+   "class": "partial",
+   "detail": {
+    "barrier": 2,
+    "directive": 5,
+    "insn": 3,
+    "insn_lines": 9,
+    "pin": 9
+   },
+   "file": "src/race_scene_a1.c",
+   "name": "_08001B068",
+   "size": 200
   },
   "0x0801b1a4": {
    "class": "c_fakematch",
@@ -6313,6 +6527,16 @@
    "name": "_08001E8B4",
    "size": 120
   },
+  "0x0801e92c": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 1,
+    "directive": 1
+   },
+   "file": "src/race_scene_c.c",
+   "name": "_08001E92C",
+   "size": 172
+  },
   "0x0801e9d8": {
    "class": "c",
    "file": "src/race_scene.c",
@@ -6643,6 +6867,19 @@
    "name": "CarPhysRacer_RaceStartLatch",
    "size": 56
   },
+  "0x08021860": {
+   "class": "partial",
+   "detail": {
+    "barrier": 2,
+    "directive": 1,
+    "insn": 2,
+    "insn_lines": 4,
+    "pin": 7
+   },
+   "file": "src/race_scene_helpers.c",
+   "name": "CarDisplay_21860",
+   "size": 152
+  },
   "0x080218f8": {
    "class": "c_fakematch",
    "detail": {
@@ -6696,6 +6933,27 @@
    "file": "src/race_phase_vms.c",
    "name": "RaceVM_021CC4",
    "size": 252
+  },
+  "0x08021f14": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/race_phase_vms.c",
+   "name": "RaceVM_021F14",
+   "size": 116
+  },
+  "0x0802205c": {
+   "class": "partial",
+   "detail": {
+    "directive": 1,
+    "insn": 8,
+    "insn_lines": 20,
+    "pin": 19
+   },
+   "file": "src/race_phase_vms.c",
+   "name": "RaceVM_02205C",
+   "size": 328
   },
   "0x080221a4": {
    "class": "c",
@@ -6826,6 +7084,15 @@
    "file": "src/race_phase_vms.c",
    "name": "RaceVM_022ACC",
    "size": 124
+  },
+  "0x08022b48": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/race_phase_vms.c",
+   "name": "RaceVM_022B48",
+   "size": 116
   },
   "0x08022bbc": {
    "class": "c_fakematch",
@@ -8383,6 +8650,19 @@
    "name": "_0800278DC",
    "size": 20
   },
+  "0x080278f0": {
+   "class": "partial",
+   "detail": {
+    "barrier": 6,
+    "directive": 2,
+    "insn": 9,
+    "insn_lines": 23,
+    "pin": 20
+   },
+   "file": "src/garage.c",
+   "name": "Garage_Ticker_278F0",
+   "size": 232
+  },
   "0x08027b94": {
    "class": "c_fakematch",
    "detail": {
@@ -9510,6 +9790,18 @@
    "name": "SoundCallViaR3_2C10C",
    "size": 4
   },
+  "0x0802c11c": {
+   "class": "partial",
+   "detail": {
+    "directive": 3,
+    "insn": 2,
+    "insn_lines": 10,
+    "pin": 4
+   },
+   "file": "src/sound_core.c",
+   "name": "SoundVoiceCleanup",
+   "size": 68
+  },
   "0x0802c160": {
    "class": "asm",
    "detail": {
@@ -9710,6 +10002,15 @@
    "file": "src/sound_seq_follow.c",
    "name": "SoundC710_VolPair2",
    "size": 40
+  },
+  "0x0802c738": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 5
+   },
+   "file": "src/runtime_state_dispatch.c",
+   "name": "SoundTick_2C738",
+   "size": 72
   },
   "0x0802c780": {
    "class": "c_fakematch",
@@ -10343,20 +10644,20 @@
  },
  "totals": {
   "asm": {
-   "bytes": 2704,
-   "functions": 87
+   "bytes": 3604,
+   "functions": 91
   },
   "c": {
-   "bytes": 36734,
-   "functions": 830
+   "bytes": 37422,
+   "functions": 836
   },
   "c_fakematch": {
-   "bytes": 34926,
-   "functions": 393
+   "bytes": 36062,
+   "functions": 403
   },
   "partial": {
-   "bytes": 8076,
-   "functions": 59
+   "bytes": 10136,
+   "functions": 69
   }
  },
  "version": 1

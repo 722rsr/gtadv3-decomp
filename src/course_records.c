@@ -5,6 +5,7 @@
 
 extern void *_08007498(void *X,int i);
 extern void *_0800748C(void *X);
+extern void _08003004(int a,int b,int c,int d,int e,int f,int g,int h);
 extern void _08002ED0(void *a, int b, int c, int d, int e, int f, int g, int h, int i, int j);
 extern void _08002E0A4(void *a,void *b,int c);
 extern int _08002BE8(void);
@@ -661,36 +662,168 @@ void Course_Iter_07C68(void *X, u32 r1_add, u32 kind, u32 r3_add,
         } while ((int)i < (int)a[7]);
     }
 }
-void Course_Iter_07CD0(void *X, u8 sl, u8 r9, u32 s56, u32 s60, u32 s64) {
-    volatile u8 *arr = (volatile u8*)_0800748C(_08007498(X,0));
-    volatile u8 cnt = *(volatile u8*)(arr+7);
-    for (volatile u8 i=0;i<cnt;i++) {
-        volatile u8 b2 = *(volatile u8*)(arr + i*4 + 2);
-        volatile u8 b3 = *(volatile u8*)(arr + i*4 + 3);
-        volatile u8 x = b2 + sl;
-        (void)x; (void)b3; (void)r9; (void)s56; (void)s60; (void)s64;
-        // 240-ldrb path: ldrb [r6+4] u8, subs 240, lsrs #31, asrs #1 s32
-        volatile u8 v4 = *(volatile u8*)(arr + 4);
-        s32 t = (s32)v4 - 240; // subs
-        (void)t;
-    }
+// _08007CD0 — 124 bytes. Same row-loop family as Course_Iter_07BFC/_07DB4, but
+// the per-row z seed is `(240 - (int)arr[4]) / 2` (the ROM's
+// `movs r0,#240 / ldrb r1,[r6,#4] / subs / lsrs #31 / adds / asrs #1`) and the
+// emit call is sub_08002ED0 with arg8 hard-wired to 0:
+//   sub_08002ED0(ent[2]+h, ent[3]+a3, ent[0]+a1, a4, a5, ent[1], 1, 0, a6, 1).
+// Seven machine args: a4..a6 at [sp,#56..#64].
+void Course_Iter_07CD0(void *X, int a1, int a2, int a3, u32 a4, u32 a5, u32 a6) {
+    void *seekbase = *(void *volatile *)((volatile u8 *)X + 4);
+    void *arr = _0800748C(_08007498(seekbase, a2));
+    u8 *a = (u8 *)arr;
+    int h = (240 - (int)a[4]) / 2;
+    int i = 0;
+    u8 *ent;
+    u32 one;
+    if (i >= (int)a[7]) goto done;
+    one = 1;
+    ent = a + 8;
+    do {
+        u32 x = (u32)ent[2] + (u32)h;
+        u32 y = (u32)ent[3] + (u32)a3;
+        u32 z = (u32)ent[0] + (u32)a1;
+        _08002ED0((void *)(uintptr_t)x, (int)y, (int)z, (int)a4, (int)a5,
+                  (int)ent[1], (int)one, 0, (int)a6, (int)one);
+        ent += 4;
+        i++;
+    } while (i < (int)a[7]);
+done:;
 }
-void Course_Iter_07D4C(void *X, u8 sl, u8 r9, u32 s44, u32 s48, u32 s52, u32 s56) {
-    volatile u8 *arr = (volatile u8*)_0800748C(_08007498(X,0));
-    volatile u8 cnt = *(volatile u8*)(arr+7);
-    volatile u16 v2 = *(volatile u16*)(arr+2); // ldrh [r6+2] u16
-    (void)v2; (void)sl; (void)r9; (void)s44; (void)s48; (void)s52; (void)s56;
-    for (volatile u8 i=0;i<cnt;i++) { (void)arr; }
+// The 124-byte ROM span ends `47 00 00 00`; gas would fill the tail with the
+// 2-byte Thumb NOP, so select the zero fill.
+__asm__(".align 2, 0");
+// _08007D4C — 104 bytes. Same family: 8 machine args (a0..a3 in registers,
+// a4..a7 at [sp,#44..#56]). Two differences from _08007DB4: the seek kind is
+// a1 (748C gets a1, not a2), and the row's z seed is precomputed BEFORE the
+// loop as `(u16)arr[2] + (u16)X[0]` (the ROM's two `ldrh` at 0x1c/0x1e).
+// Call shape: _08003004(ent[2]+a2, ent[3]+a3, ent[0]+seed, a6, a7, ent[1],
+// a4, a5).
+void Course_Iter_07D4C(void *X, int a1, int a2, int a3, u32 a4, u32 a5, u32 a6,
+                       u32 a7) {
+    void *seekbase = *(void *volatile *)((volatile u8 *)X + 4);
+    void *arr = _0800748C(_08007498(seekbase, a1));
+    u8 *a = (u8 *)arr;
+    // The ROM's two `ldrh` are in the opposite order to the source statement
+    // order here: agbcc schedules the plain-C loads in reverse (writing v2 then
+    // x0 emits `ldrh r4,[r4,#0]` then `ldrh r0,[r6,#2]`, the reverse of the
+    // ROM). Swapping the two statements -- not the sum -- reproduces the ROM's
+    // `ldrh r0,[r6,#2] / ldrh r4,[r4,#0] / adds r7,r0,r4` while keeping the
+    // allocation that puts the loop's top count load in r3 (inline-asm loads
+    // fixed the order but moved that load to r0).
+    u16 x0 = *(u16 *)((u8 *)X + 0);
+    u16 v2 = *(u16 *)(a + 2);
+    int seed = (int)v2 + (int)x0;
+    int i = 0;
+    u8 *ent;
+    if (i >= (int)a[7]) goto done;
+    ent = a + 8;
+    do {
+        u32 x = (u32)ent[2] + (u32)a2;
+        u32 y = (u32)ent[3] + (u32)a3;
+        u32 z = (u32)ent[0] + (u32)seed;
+        _08003004((int)x, (int)y, (int)z, (int)a6, (int)a7,
+                  (int)ent[1], (int)a4, (int)a5);
+        ent += 4;
+        i++;
+    } while (i < (int)a[7]);
+done:;
 }
-void Course_Iter_07DB4(void *X, u8 sl, u8 r7, u32 s40, u32 s44, u32 s48, u32 s52, u32 s56) {
-    volatile u8 *arr = (volatile u8*)_0800748C(_08007498(X,0));
-    volatile u8 cnt = *(volatile u8*)(arr+7);
-    (void)cnt; (void)sl; (void)r7; (void)s40; (void)s44; (void)s48; (void)s52; (void)s56;
+// _08007DB4 — 96 bytes. Same family as Course_Iter_07BFC above (exact there),
+// but it calls _08003004 (RecordSetter_03004) instead of sub_08002ED0 and has
+// NINE machine args: a0..a3 in r0-r3 and a4..a8 at [sp,#40..#56]. The old stub
+// read the record pointer straight from X and passed `0` as the seek kind, and
+// it dropped the loop and the 9th parameter entirely.
+//
+// ROM: r8 = a1 (sl), r1 = a2 (seek kind), r7 = a3; arr = 748C(7498(*(X+4),a2));
+// loop rows at a+8, calling _08003004(ent[2]+a3, ent[3]+a4, ent[0]+a1,
+// a7, a8, ent[1], a5, a6). The row count a[7] is re-read at the bottom of the
+// loop (the ROM reloads `ldrb r0,[r6,#7]`), which the goto/do-while shape of
+// Course_Iter_07BFC reproduces.
+void Course_Iter_07DB4(void *X, int a1, int a2, int a3, u32 a4, u32 a5, u32 a6,
+                       u32 a7, u32 a8) {
+    void *seekbase = *(void *volatile *)((volatile u8 *)X + 4);
+    void *arr = _0800748C(_08007498(seekbase, a2));
+    u8 *a = (u8 *)arr;
+    int i = 0;
+    u8 *ent;
+    if (i >= (int)a[7]) goto done;
+    ent = a + 8;
+    do {
+        u32 x = (u32)ent[2] + (u32)a3;
+        u32 y = (u32)ent[3] + a4;
+        u32 z = (u32)ent[0] + (u32)a1;
+        _08003004((int)x, (int)y, (int)z, (int)a7, (int)a8,
+                  (int)ent[1], (int)a5, (int)a6);
+        ent += 4;
+        i++;
+    } while (i < (int)a[7]);
+done:;
 }
-void Course_Iter_07E14(void *X, u8 sl, u8 r9, u32 s48, u32 s52, u32 s56, u32 s60) {
-    volatile u8 *arr = (volatile u8*)_0800748C(_08007498(X,0));
-    volatile u8 cnt = *(volatile u8*)(arr+7);
-    (void)cnt; (void)sl; (void)r9; (void)s48; (void)s52; (void)s56; (void)s60;
+// _08007E14 — 176 bytes. Same row-loop family, plus a running 8-bit
+// heading/delta accumulator:
+//   prev = 0; acc = 0; i = 0;
+//   while (i < arr[7]) {
+//       cur = ent[0];
+//       acc += (cur < prev) ? cur + 256 - prev : cur - prev;   // wrap at 256
+//       prev = cur;
+//       if (a7) _08002F68(ent[2]+a3, ent[3]+a4, a1+acc, a5, a6, ent[1], 1);
+//       else    _08002DB8(ent[2]+a3, ent[3]+a4, a1+acc, a5, a6, ent[1], 1);
+//       ent += 4; i++;
+//   }
+// Eight machine args: a4..a7 at [sp,#48..#60]. The 8th arg is a plain `u8`,
+// not `volatile`: agbcc widens the incoming stack word with `lsls/lsrs #24`
+// into an SImode pseudo, which then spills to a FOUR-byte home and is
+// re-loaded with `ldr` per iteration (a volatile u8 would instead force a
+// byte home with strb/ldrb, and reserving the register for it pushes a1/a3
+// out of sl/r9).
+//
+// Three shape constraints, all measured (see build/cases_e14.py):
+//  * `delta` must be computed by two statements (`w = cur + 256; delta =
+//    w - prev;`). A single `cur + 256 - prev` is reassociated to
+//    `cur - (prev - 256)` and the 256 becomes a pool word (0xFFFFFF00) with
+//    a 2-byte-longer body;
+//  * the branches must be written `if (cur >= prev) delta = cur - prev; else
+//    ... wrap ...` so agbcc emits `blt` into the wrap clause like the ROM
+//    (the natural `cur < prev` order emits `bge`);
+//  * the call arguments must be spelled inside each branch: hoisting them into
+//    shared locals puts the argument setup before the `a7` test, and hoisting
+//    the literal `1` costs a callee-saved register.
+extern void _08002F68(int x, int id, int y, int z, int idx, int row, int count);
+extern void _08002DB8(void *a, int b, int c, int d, int e, int f, int g);
+void Course_Iter_07E14(void *X, int a1, int a2, int a3, u32 a4, u32 a5, u32 a6,
+                       u8 a7) {
+    void *seekbase = *(void *volatile *)((volatile u8 *)X + 4);
+    void *arr = _0800748C(_08007498(seekbase, a2));
+    u8 *a = (u8 *)arr;
+    int prev = 0;
+    int acc = 0;
+    int i = 0;
+    u8 *ent;
+    if (i >= (int)a[7]) goto done;
+    ent = a + 8;
+    do {
+        int cur = (int)ent[0];
+        int delta;
+        if (cur >= prev) {
+            delta = cur - prev;
+        } else {
+            int w = cur + 256;
+            delta = w - prev;
+        }
+        prev = cur;
+        acc += delta;
+        if (a7 != 0)
+            _08002F68((int)ent[2] + a3, (int)ent[3] + a4, a1 + acc,
+                      (int)a5, (int)a6, (int)ent[1], 1);
+        else
+            _08002DB8((void *)(uintptr_t)((u32)ent[2] + (u32)a3),
+                      (int)ent[3] + a4, a1 + acc,
+                      (int)a5, (int)a6, (int)ent[1], 1);
+        ent += 4;
+        i++;
+    } while (i < (int)a[7]);
+done:;
 }
 
 // Aliases: only for substantiated leaves + iterators + builders proven via 4B stride, u8[4] rows, 6 sp args, pools, mGBA EWRAM watchpoint, u16 masks
@@ -736,10 +869,18 @@ void sub_08009680(u32 a) __attribute__((alias("Course_SetU32_030003E4_0")));
 s16 _0800968C(void *a) __attribute__((alias("Course_Fetch_S16_20Shift")));
 void _08007BFC(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h, u32 i) __attribute__((alias("Course_Iter_07BFC")));
 void _08007C68(void *a, u32 b, u32 c, u32 d, u32 e, u32 f, u32 g, u32 h, u32 i) __attribute__((alias("Course_Iter_07C68")));
-void _08007CD0(void *a, u8 b, u8 c, u32 d, u32 e, u32 f) __attribute__((alias("Course_Iter_07CD0")));
-void _08007D4C(void *a, u8 b, u8 c, u32 d, u32 e, u32 f, u32 g) __attribute__((alias("Course_Iter_07D4C")));
-void _08007DB4(void *a, u8 b, u8 c, u32 d, u32 e, u32 f, u32 g, u32 h) __attribute__((alias("Course_Iter_07DB4")));
-void _08007E14(void *a, u8 b, u8 c, u32 d, u32 e, u32 f, u32 g) __attribute__((alias("Course_Iter_07E14")));
+void _08007CD0(void *a, int b, int c, int d, u32 e, u32 f, u32 g) __attribute__((alias("Course_Iter_07CD0")));
+void sub_08007CD0(void *a, int b, int c, int d, u32 e, u32 f, u32 g) __attribute__((alias("Course_Iter_07CD0")));
+void _08007D4C(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h) __attribute__((alias("Course_Iter_07D4C")));
+void sub_08007D4C(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h) __attribute__((alias("Course_Iter_07D4C")));
+void _08007DB4(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h,
+               u32 i) __attribute__((alias("Course_Iter_07DB4")));
+void sub_08007DB4(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h,
+                  u32 i) __attribute__((alias("Course_Iter_07DB4")));
+void _08007E14(void *a, int b, int c, int d, u32 e, u32 f, u32 g,
+               volatile u8 h) __attribute__((alias("Course_Iter_07E14")));
+void sub_08007E14(void *a, int b, int c, int d, u32 e, u32 f, u32 g,
+                  volatile u8 h) __attribute__((alias("Course_Iter_07E14")));
 u32 Sub_08009674(void) __attribute__((alias("Course_GetU32_030003E4_0")));
 u32 sub_08009674(void) __attribute__((alias("Course_GetU32_030003E4_0")));
 void sub_08007C68(void *a, u32 b, u32 c, u32 d, u32 e, u32 f, u32 g, u32 h, u32 i) __attribute__((alias("Course_Iter_07C68")));

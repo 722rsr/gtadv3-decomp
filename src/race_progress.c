@@ -59,42 +59,101 @@ void Race_CommitCell(void) {
     *dst1 = nv;
 }
 
-// _0800AE78 — advance committed state
+// _0800AE78 — advance committed state.
+//
+// Transcribed from asm/race_progress.s. Layout (WA = 0x03001780):
+//   col  = s16[WA+0x0FF8]        row cell = WA+0x0FF2
+//   base = col*2 + row*8
+//   vA   = s16[WA+0x0FFA + base] vB = s16[WA+0x102A + base]
+//   if (vA == 11): the "zero" cell at WA+0x101A + base (note: NOT 0x0FFA)
+//     is armed to 1 and the progress counter WA+0x0FF6 advances; the row cell
+//     is re-seeded from s16[WA+0x0FF0] once the counter passes its threshold.
+//   tail: vA == 3 && vB == 0 re-derives the row cell and arms WA+0x102A.
+// Three levers were needed to get the instruction *sequence* to match; they are
+// reusable and are the reason this body is not the earlier sketch:
+//  * The ROM's `ldrsh` loads require NON-volatile `s16 *` accesses. agbcc emits
+//    `ldrh; lsls #16; asrs #16` (or `asrs #15` when the value is doubled) for a
+//    `volatile s16` load, and never `ldrsh`, so no volatile spelling can match.
+//    The re-loads the ROM performs are rematerialisation, not aliasing.
+//  * `vA` / `vB` / `fr` must be `s32`, not `s16`. Only an SImode consumer makes
+//    the HImode load sign-extend; a `s16` used solely in `== const` tests lets
+//    agbcc drop to `ldrh`.
+//  * The work-area base is an assembler-resolved absolute SYMBOL, not the
+//    WORK_AREA_BASE CONST_INT: a constant base lets the compiler fold
+//    `wa + 0x0FFA` into one pool word (0x0300277A), while the ROM keeps the base
+//    in a register and materialises each offset on its own (pool 0x03001780
+//    plus 0x0FF8 / 0x0FF2 / 0x0FFA / 0x102A / 0x0FF6).
+//
+// RESIDUAL (83/268 B, first difference +0x1A). The instruction stream is now
+// aligned 1:1 with the ROM; what is left is allocator shape, not structure:
+//  * agbcc reassociates `(wa + 0x0FFA) + base` into `(base + wa) + 0x0FFA`
+//    (same three instructions, different order), so the pool keeps one fewer
+//    word and the cell-B/ZP/CONST addresses are re-derived from `base + wa`.
+//  * It also derives 0x0FFA as `0x0FF2 + 8` and 0x0FF6 as `0x101A - 36`
+//    instead of loading them, where the ROM uses fresh words.
+//  * Two register-shape misses: the ROM's `adds r5, r2, #0` (WA copied out of
+//    r2 so r2 can hold the counter pointer) never appears, and the ROM reuses
+//    an existing hard zero for `rowp[0] = 0` where agbcc rematerialises one.
+// Declaring the cell addresses as named pointer locals makes this worse
+// (272 B, frame change), so the expressions stay inline. Next lever to try:
+// pin `base` (r1) and the counter pointer so the reassociation above cannot
+// happen, and re-check whether the WA copy falls out of a second WA pseudo.
 void Race_AdvanceProgress(void) {
-    volatile u8 *wa = (volatile u8 *)WORK_AREA_BASE;
-    s16 col = *(volatile s16 *)(wa + 0x0FF8);
-    s16 row = *(volatile s16 *)(wa + 0x0FF2);
-    volatile u16 *cellA = (volatile u16 *)(wa + 0x0FFA + (u32)col*2 + (u32)row*8);
-    volatile u16 *cellB = (volatile u16 *)(wa + 0x102A + (u32)col*2 + (u32)row*8);
-    u16 vA = *cellA;
-    u16 vB = *cellB;
-    if (vA == 11) {
-        volatile u16 *zero = (volatile u16 *)(wa + 0x0FFA + (u32)col*2 + (u32)row*8 -16);
-        if (*zero == 0) {
-            *zero = 1;
-            volatile u16 *cnt = (volatile u16 *)(wa + 0x0FF6);
-            u16 c = *cnt + 1;
-            *cnt = c;
-            if (c > 3) {
-                s16 layerRow = *(volatile s16 *)(wa + 0x0FF2 -42); // WA+0x0FC8 approx
-                if (layerRow == 1) {
-                    if (row == 0) *cellA = 1;
-                } else {
-                    *cellA = *zero;
+    extern u8 RaceWaBase[];
+    __asm__(".globl RaceWaBase\nRaceWaBase = 0x03001780\n");
+    register u8 *wa __asm__("r2");
+    s16 col;
+    s32 base;
+    register s16 *rowp __asm__("r4");
+    s16 row;
+    wa = (u8 *)RaceWaBase;
+    col = ((s16 *)(wa + 0x0FF8))[0];
+    base = col * 2;
+    rowp = (s16 *)(wa + 0x0FF2);
+    row = rowp[0];
+    base += row * 8;
+    s32 vA = (s32)((s16 *)(wa + 0x0FFA + base))[0];
+    s32 vB = (s32)((s16 *)(wa + 0x102A + base))[0];
+    /* The ROM re-homes the base (`adds r5, r2, #0`) before the branchy half:
+       r2 is needed as the counter pointer there, so the second half reads a
+       second variable. Spelling that second variable keeps the copy. */
+    {
+        register u8 *wb __asm__("r5");
+        wb = wa;
+        if (vA == 11) {
+            s16 *zp = (s16 *)(wb + 0x101A + base);
+            if (zp[0] == 0) {
+                u16 *cntp = (u16 *)(wb + 0x0FF6);
+                int c;
+                zp[0] = 1;
+                c = cntp[0] + 1;
+                cntp[0] = c;
+                if ((s16)c > 3) {
+                    s32 fr = (s32)((s16 *)(wb + 0x0FF0))[0];
+                    if (fr == 1) {
+                        if (rowp[0] == 0) { rowp[0] = 1; cntp[0] = 0; }
+                        else { rowp[0] = 1; cntp[0] = 3; }
+                    } else {
+                        rowp[0] = 0;
+                        cntp[0] = 3;
+                    }
                 }
-                *(volatile u16 *)(wa + 0x0FF6) = 3;
-            }
-        } else {
-            *zero = 1;
-            volatile u16 *cnt2 = (volatile u16 *)(wa + 0x0FF6);
-            if (*(volatile s16 *)cnt2 > 2) {
-                *(volatile s16 *)(wa + 0x0FF2) = 0;
-                *(volatile s16 *)(wa + 0x0FF6) = 3;
+            } else {
+                s16 *cntp2 = (s16 *)(wb + 0x0FF6);
+                zp[0] = 1;
+                if (cntp2[0] > 2) {
+                    s32 fr = (s32)((s16 *)(wb + 0x0FF0))[0];
+                    if (fr == 1 && rowp[0] != 0) rowp[0] = 1;
+                    else rowp[0] = 0;
+                    cntp2[0] = 3;
+                }
             }
         }
-    }
-    if (vA == 3 && vB == 0) {
-        *(volatile u16 *)(wa + 0x102A + (u32)col*2 + (u32)row*8) = 1;
+        if (vA == 3 && vB == 0) {
+            s32 b2 = (s32)((s16 *)(wb + 0x0FF8))[0] * 2
+                   + (s32)((s16 *)(wb + 0x0FF2))[0] * 8;
+            ((s16 *)(wb + 0x102A + b2))[0] = 1;
+        }
     }
 }
 

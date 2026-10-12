@@ -180,11 +180,49 @@ __asm__(".align 2, 0");
 // 0x03003A1C; two-iteration key loop (idx 0..1) with the seven-scan
 // scatter; post-loop race+106/108 management; DMA3/IRQ tail.
 // ----------------------------------------------------------------------------
+// 0x08001D288 — race event 288 body (972 B). Progress this session: 22/972
+// -> 141/972 with real semantic repairs, but the body is still NOT exact
+// (candidate 984 B, +12). Repaired here, all measured against the ROM:
+//  * `_0802DDD0`'s arguments were WRONG: the ROM passes the cell 0x03004EA4
+//    first and `*(void *volatile *)0x080CBB28` third; the earlier transcription
+//    passed 0x03003A10 and `*(...)0x03004EA4`.
+//  * the entry-pointer field is read with `asrs` (signed), not `lsrs`.
+//  * `0x03004E8E` is the racer block (0x03004E80) field +14 reached from the
+//    cell 36 below, and the later work-area byte is `0x03001780 + 0x10C3` as
+//    two pool words -- neither is a folded absolute literal.
+// OPEN, +12 bytes / 68 surviving diff regions. The first is the `dst[6]`
+// constant: the ROM builds 0x5200 straight into r0 (`movs r0,#164 /
+// lsls r0,r0,#7 / strh r0,[r4,#12]`), this build materialises it in r1 and
+// copies (`adds r0,r1,#0`); `(u16)0x5200u` and a named local do not change it.
+// The rest are of the same family: sibling register choice after a local
+// reorder (`ldrh r5` vs `ldrh r0`), and the race-pointer load being scheduled
+// between the work-area `ldrb`/`cmp` instead of after the ternary branch. Do
+// not re-run the constant spellings without a new idea.
 void _08001D288(void) {
     if (_08018ACC(0x800u) != 0) {
         u32 lane[13];
-        _0802DDD0((void *)(uintptr_t)0x03003A10u, lane,
-                  *(void *volatile *)(uintptr_t)0x03004EA4u);
+        void *cfg;
+        void *tbl;
+        volatile u8 *cell8;
+        // Two-pool-word work-area anchor: the ROM emits `ldr r0,=0x03001780 /
+        // ldr r1,=0x000010C3 / adds r0,r0,r1`, not the folded 0x03002843.
+        WA_SPLIT_DECL;
+        // ROM order: `ldr r0,=0x080CBB28 / ldr r5,=0x03004EA4 / ldr r2,[r0] /
+        // adds r0,r5,#0 / mov r1,sp`, so the cell 0x03004EA4 is the FIRST
+        // argument and the table word at 0x080CBB28 is dereferenced for the
+        // third -- not 0x03003A10/0x03004EA4 as the earlier transcription had.
+        // Three statements, not one, because the ROM emits both pool loads
+        // before the deref: `ldr r0,=0x080CBB28 / ldr r5,=0x03004EA4 /
+        // ldr r2,[r0] / adds r0,r5,#0`. Folding the deref into the table
+        // statement puts it ahead of the cell load; folding the cell constant
+        // into the call puts it ahead of the table. The cell also stays live in
+        // a callee-saved register across the call, which is where the ROM's
+        // later `subs r5,#36` for the 0x03004E80 racer base comes from instead
+        // of a second pooled literal.
+        tbl = (void *)(uintptr_t)0x080CBB28u;
+        cell8 = (volatile u8 *)(uintptr_t)0x03004EA4u;
+        cfg = *(void *volatile *)tbl;
+        _0802DDD0((void *)cell8, lane, cfg);
         volatile u16 *dst = (volatile u16 *)(uintptr_t)0x03003A10u;
         volatile u16 *flagbase;
         {
@@ -199,21 +237,44 @@ void _08001D288(void) {
         }
         {
             int t = _08009674();
-            u32 v = (((u32)lane[6] >> 4) & 0xFFu) | ((u32)t << 8);
+            // The ROM shifts with `asrs` (arithmetic), so the field is a SIGNED
+            // word here. The low byte survives either way, but the instruction
+            // does not: `((u32)lane[6] >> 4)` emits `lsrs`.
+            s32 w6 = (s32)lane[6];
+            u32 v = (((u32)(w6 >> 4)) & 0xFFu) | ((u32)t << 8);
             dst[4] = (u16)v;
         }
         dst[5] = *(volatile u16 *)((volatile u8 *)(uintptr_t)lane[7] + 18u);
-        dst[6] = 0x5200u; // 164 << 7
+        dst[6] = (u16)0x5200u; // 164 << 7 (narrow store value: the ROM builds it straight into r0)
         flagbase = dst + 6; // 0x03003A1C
         _08001D264((void *)(uintptr_t)flagbase, 1u, (int)_08018ACC(0x200000u));
         _08001D264((void *)(uintptr_t)flagbase, 4u, (int)(lane[8] & 64u));
         _08001D264((void *)(uintptr_t)flagbase, 2u, (int)_08018ACC(0x400000u));
-        _08001D264((void *)(uintptr_t)flagbase, 16u,
-                   (*(volatile u16 *)(uintptr_t)0x03004E8Eu == 1) ? 1 : 0);
+        // 0x03004E8E is the racer block (0x03004E80) field +14, and the block
+        // base is 36 below the cell, so the ROM reaches it with no third pool
+        // word: `movs r2,#0 / subs r5,#36 / ldrh r5,[r5,#14]`.
+        //
+        // Measured in build/foldprobe.c (eight spellings, pinned compiler):
+        //  * `(u8 *)(cell - 36) + 14` and `((u16 *)(cell - 36))[7]` FOLD to
+        //    `sub #22 / ldrh [r0]` -- `fold` combines the two constants.
+        //  * a named `racer = cell - 36` local keeps `sub #36 / [r0,#14]` but
+        //    emits the `sub` ahead of the ternary's `movs r2,#0`.
+        //  * a struct CAST with the field at +14 (below) keeps the split AND
+        //    leaves `movs r2,#0` first, which is the ROM. The pointer
+        //    conversion is what stops `fold` from merging the constants.
         {
+            struct RacerBlk { u8 pad[14]; volatile u16 v; };
+            _08001D264((void *)(uintptr_t)flagbase, 16u,
+                       (((volatile struct RacerBlk *)(cell8 - 36))->v == 1) ? 1 : 0);
+        }
+        {
+            // The ROM reads the work-area byte BEFORE it loads the race
+            // pointer, and once: `ldr r0,=0x03001780 / ldr r1,=0x000010C3 /
+            // adds r0,r0,r1 / ldrb r0,[r0] / cmp r0,#0`.
+            u8 wa10c3 = *(volatile u8 *)WA_SPLIT((uintptr_t)&WAOff10C3);
             volatile u8 *race = *(volatile u8 *volatile *)(uintptr_t)0x03004E20u;
             _08001D264((void *)(uintptr_t)flagbase, 8u,
-                       (WA_U8(0x10C3u) == 0) ? (int)race[124] : (int)race[125]);
+                       (wa10c3 == 0) ? (int)race[124] : (int)race[125]);
         }
         {
             volatile u16 *cell = (volatile u16 *)(uintptr_t)0x03003A10u;
@@ -258,7 +319,7 @@ void _08001D288(void) {
                             *(racer + 314u) = (u8)t;
                         }
                         race = *(volatile u8 *volatile *)(uintptr_t)0x03004E20u;
-                        if (WA_U8(0x10C3u) == 0) {
+                        if (*(volatile u8 *)WA_SPLIT((uintptr_t)&WAOff10C3) == 0) {
                             u16 t = _08001D280((const void *)(uintptr_t)0x0300577Cu, 8u);
                             race[124] = (t != 0u) ? 1 : 0;
                         } else {

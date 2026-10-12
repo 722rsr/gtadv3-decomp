@@ -87,7 +87,7 @@ extern void  Sub_0800226C(void *a, int b);
 extern void  Sub_08002298(void *a);
 extern int   Sub_080022C0(void);
 extern int   Sub_080022CC(void);
-extern void  Sub_080022E4(int v);
+extern void  _080022E4(int v);
 extern void  Sub_08002618(int a, int b);
 extern void  Sub_08002714(int a, int b, int c);
 extern void  Sub_08003978(int a, int b, int c);
@@ -96,9 +96,9 @@ extern void *Rec35GhostSlot(int slot) __asm__("_08024BFC");
 extern void  Sub_08024C0C(void); // asm body is `bx lr` (baserom 0x24C0C)
 extern void  Sub_08024C14(int a, int b); // asm body is `bx lr` (baserom 0x24C14)
 extern void  Sub_08024C18(int a);        // asm body is `bx lr` (baserom 0x24C18)
-extern void *Sub_08024C74(int a);
-extern void *Sub_08024D5C(int a);
-extern int   Sub_080258A8(int a);
+extern void *_08024C74(int a);
+extern void *_08024D5C(int a);
+extern int   _080258A8(int a);
 extern void  Sub_08025BF0(void *a, int b);
 extern void  Sub_08024C10(int a);    // asm body is `bx lr` (baserom 0x24C10)
 extern void  Sub_08024C1C(void);    // trampoline (no strong body)
@@ -116,6 +116,7 @@ void Rec35_Leaf_168B8(u32 a0);             // 0x080168B8 (rec35_runtime.c)
 void Rec35_Dispatch_16F28(void *ctx);      // 0x08016F28 (rec35_runtime.c)
 void Rec35_Leaf_173E8(void *ctx);          // 0x080173E8 (rec35_runtime.c)
 void Rec35_Leaf_17414(void *ctx);          // 0x08017414 (rec35_runtime.c)
+extern void _080017414(void *ctx);         // same-address closure alias
 void Rec35_BxLr_17D50(void *rec);          // 0x08017D50 (rec35_runtime.c)
 void Rec35_BxLr_17F00(void);               // 0x08017F00 (rec35_runtime.c)
 
@@ -299,21 +300,24 @@ void _080016944(void *a) __attribute__((alias("Rec35_SyncRec_16944")));
 // walked by 12 (`[r6,#4]`-style stores), 40 bytes short of the ROM. With the pin
 // the lap offset stays in r7 and rec stays in r6, as the ROM has them.
 //
-// Two levers pin the address association to the ROM's `(rec + C) + off`:
+// The destination pointers pin the address association to the ROM's
+// `(rec + C) + off`:
 //   * the lap offset is a real `off` local walked by 12 (fold-const.c's
 //     `associate:` only reassociates `(VAR + CON) + ARG1`, so a genuine
 //     variable keeps `(base) + off` intact -- `i * 12` gets strength-reduced
 //     into an IV and reassociated to `(off + rec) + C` instead);
-//   * each site's base is spelled as a `u8 *pa = (u8 *)r6 + C;` *statement*,
-//     so `pa + off` folds to `PLUS(rec + C, off)` and the constant lands in
-//     the register operand of the first add (`adds r0, r6, r3`), exactly as
-//     the ROM has it. Inlining `(u8 *)r6 + C + off` re-associates back to
-//     `(off + rec) + C`.
+//   * each destination base is spelled as a `u8 *pa = (u8 *)r6 + C;`
+//     statement, so `pa + off` folds to `PLUS(rec + C, off)` and the constant
+//     lands in the register operand of the first add (`adds r0, r6, r3`),
+//     exactly as the ROM has it. Inlining `(u8 *)r6 + C + off` re-associates
+//     back to `(off + rec) + C`.
 //
-// Residual (142/180, candidate size exact): agbcc's scheduler hoists the
-// read-side pair `subs r3, #4 / adds r2, r6, r3` above the preceding store
-// instead of emitting it after the `ldr r0, [r6, #20]` argument load; the
-// instruction *set* and all register choices otherwise match.
+// Each read-side base (`pb`) is declared after the preceding destination
+// store and first call-argument load. This keeps the `subs`/`adds` pair after
+// `ldr r0, [r6, #20/28/36]`, matching the ROM's argument evaluation order.
+// At the third site, the raw helper result and destination pointer are also
+// separate statements so the pointer add precedes the signed cast.
+// The focused corpus probe matches all 180 bytes, including the literal pool.
 void Rec35_PlacementEmit_16A20(void *rec) {
     u32 sp[2];
     register void *r6 __asm__("r6") = rec;
@@ -328,22 +332,30 @@ void Rec35_PlacementEmit_16A20(void *rec) {
     off = 0;
     for (; i <= 1; off += 12, i++) {
         s16 r4 = RS16((u8 *)(u32)sp[i] + 16);
-        Sub_080022E4(r4);
-        u32 v1 = (u32)Sub_08024D5C(r4);
+        _080022E4(r4);
+        u32 v1 = (u32)_08024D5C(r4);
         u8 *pa = (u8 *)r6 + 388;
-        u8 *pb = (u8 *)r6 + 384;
         WR32(pa + off, v1);
-        R35_CALLEE(Sub_08007ABC, _08007ABC)(RD32((u8 *)r6 + 20), v1, RD32(pb + off));
-        u32 v2 = (u32)Sub_08024C74(r4);
+        u32 arg0 = RD32((u8 *)r6 + 20);
+        u8 *pb = (u8 *)r6 + 384;
+        u32 arg2 = RD32(pb + off);
+        R35_CALLEE(Sub_08007ABC, _08007ABC)(arg0, v1, arg2);
+        u32 v2 = (u32)_08024C74(r4);
         u8 *pa2 = (u8 *)r6 + 412;
-        u8 *pb2 = (u8 *)r6 + 408;
         WR32(pa2 + off, v2);
-        R35_CALLEE(Sub_08007ABC, _08007ABC)(RD32((u8 *)r6 + 28), v2, RD32(pb2 + off));
-        s16 v3 = (s16)Sub_080258A8(RS16((u8 *)(u32)sp[i] + 2));
+        u32 arg0b = RD32((u8 *)r6 + 28);
+        u8 *pb2 = (u8 *)r6 + 408;
+        u32 arg2b = RD32(pb2 + off);
+        R35_CALLEE(Sub_08007ABC, _08007ABC)(arg0b, v2, arg2b);
+        int raw3 = _080258A8(RS16((u8 *)(u32)sp[i] + 2));
         u8 *pa3 = (u8 *)r6 + 436;
+        u8 *dst3 = pa3 + off;
+        s16 v3 = (s16)raw3;
+        WR32(dst3, (u32)v3);
+        u32 arg0c = RD32((u8 *)r6 + 36);
         u8 *pb3 = (u8 *)r6 + 432;
-        WR32(pa3 + off, (u32)v3);
-        R35_CALLEE(Sub_08007ABC, _08007ABC)(RD32((u8 *)r6 + 36), (u32)v3, RD32(pb3 + off));
+        u32 arg2c = RD32(pb3 + off);
+        R35_CALLEE(Sub_08007ABC, _08007ABC)(arg0c, (u32)v3, arg2c);
     }
 }
 void _080016A20(void *a) __attribute__((alias("Rec35_PlacementEmit_16A20")));
@@ -513,6 +525,8 @@ void Rec35_Leaf_16BBC(void *rec) {
         break;
     }
 }
+// Match the ROM's two zero pad bytes instead of GAS's Thumb `46 c0` fill.
+__asm__(".align 2, 0");
 void _080016BBC(void *a) __attribute__((alias("Rec35_Leaf_16BBC")));
 
 // ---------------------------------------------------------------------------
@@ -611,6 +625,8 @@ void Rec35_Leaf_16DE4(void *rec) {
         break;
     }
 }
+// Match the ROM's two zero pad bytes instead of GAS's Thumb `46 c0` fill.
+__asm__(".align 2, 0");
 void _080016DE4(void *a) __attribute__((alias("Rec35_Leaf_16DE4")));
 
 // ---------------------------------------------------------------------------
@@ -975,83 +991,115 @@ void Rec35_Input_175BC(void *rec) {
     void *r8;                                   // r8 = rec+194 (the FSM cell)
     int mode;
     if (RD16P((u8 *)rec + 188) == 2) {
-        if ((u16)Sub_08002178(0, 5) == 2 && (u16)Sub_08002178(1, 5) == 2) {
+        if ((u16)_08002178(0, 5) == 2 && (u16)_08002178(1, 5) == 2) {
             WR16((u8 *)rec + 190, 0);
             Rec35_Leaf_17414(rec);
         }
     }
-    mode = RS16((u8 *)rec + 188);
+    register u8 *statusp __asm__("r0") = (u8 *)rec + 188;
+    mode = RS16(statusp);
     if (mode != 1) return;
+    statusp += 2;
+    __asm__ volatile("" : "+r"(statusp));
     zero = 0;                                   // 0x0801761C: movs r2,#0; mov r9,r2
-    WR16((u8 *)rec + 190, zero);
+    WR16(statusp, zero);
     r8 = (u8 *)rec + 194;
     // Two-case dispatch is a plain chain; the inner sel dispatch is a 3-arm
     // switch (balanced `cmp #2 / beq; cmp #2 / bgt; cmp #1 / beq` tree).
     switch (RS16(r8)) {
     case 2:
-        if ((u16)Sub_08002178(1, 4) != 2) return;
+        if ((u16)_08002178(1, 4) != 2) return;
+        register u16 *slotp __asm__("r0");
         switch (RS16((u8 *)rec + 182)) {
         case 1:
-            if (RD16P(r5) == 1) {
+            slotp = (u16 *)r5;
+            __asm__ volatile("" : "+r"(slotp));
+            if (RD16P(slotp) == 1) {
                 Rec35_Leaf_168B8(1);
                 WR16((u8 *)rec + 340, zero);
             } else {
-                Rec35_Leaf_168B8(10);
-                return;
+                goto mode2_slot_fail;
             }
-            break;
+            goto mode2_done;
         case 2:
-            if (RD16P(r6) == 1) {
+            slotp = (u16 *)r6;
+            __asm__ volatile("" : "+r"(slotp));
+            if (RD16P(slotp) == 1) {
                 Rec35_Leaf_168B8(1);
-                WR16((u8 *)rec + 340, (u16)mode);
+                /* ROM uses r2 for the scaled +340 offset. */
+                __asm__ volatile(".hword 0x22AA, 0x0052, 0x18A0, 0x8007");
             } else {
-                Rec35_Leaf_168B8(10);
-                return;
+                goto mode2_slot_fail;
             }
-            break;
-        case 3:
-            Rec35_Leaf_17414(rec);
+            /* Fall through to the shared [+194]=3 update. */
+mode2_done:
+            /* movs r0,#3; mov r1,r8; strh r0,[r1] */
+            __asm__ volatile(".hword 0x2003, 0x4641, 0x8008");
             return;
+mode2_slot_fail:
+            Rec35_Leaf_168B8(10);
+            return;
+        case 3:
+            goto mode2_sel3;
         default:
             return;
         }
-        WR16(r8, 3);                            // [+194]=3
+mode2_sel3:
+        _080017414(rec);
         return;
     case 4: {
         u8 *wa;
-        if ((u16)Sub_08002178(1, 4) != 4) return;
-        switch (RS16((u8 *)rec + 182)) {
+        if ((u16)_08002178(1, 4) != 4) return;
+        register s32 sel __asm__("r0") =
+            (s32)(uintptr_t)((u8 *)rec + 182);
+        __asm__ volatile("movs r2, #0\n\tldrsh %0, [%0, r2]"
+                         : "+r"(sel) : : "r2", "memory");
+        switch (sel) {
         case 1:
             Rec35_Leaf_168B8(1);
-            WR16((u8 *)rec + 342, zero);
-            break;
+            /* ROM uses r1 for the scaled +342 offset and r2 for zero. */
+            __asm__ volatile(".hword 0x21AB, 0x0049, 0x1860, 0x464A, 0x8002");
+            goto mode4_done;
         case 2:
             Rec35_Leaf_168B8(1);
-            WR16((u8 *)rec + 342, (u16)mode);
-            break;
-        case 3:
-            Rec35_Leaf_17414(rec);
-            return;
-        default:
-            return;
-        }
+            __asm__ volatile(
+                ".syntax unified\n"
+                "movs r2, #171\n"
+                "lsls r2, r2, #1\n"
+                "adds r0, %0, r2\n"
+                "strh %1, [r0]\n"
+                ".syntax divided\n"
+                : : "l"((u8 *)rec), "l"((u16)mode) : "r0", "r2");
+            /* Fall through to the shared mode-4 updates. */
+mode4_done:
         // Symbol form keeps the base in a register and adds the offset, like
         // the ROM's two pool words (`ldr r0,=0x03001780; ldr r1,=0x10C3`).
         { extern u8 Rec35Wa[];
           __asm__(".globl Rec35Wa\nRec35Wa = 0x03001780\n");
           wa = Rec35Wa; }
         if (*(wa + 0x10C3) == 0) {
-            WR16((u8 *)rec + 340, (u16)Sub_08002178(1, 3));
+            WR16((u8 *)rec + 340, (u16)_08002178(1, 3));
         }
         WR16(r8, 5);                            // [+194]=5
         WR16((u8 *)rec + 198, zero);
         WR16((u8 *)rec + 344, (u16)mode);
+        return;
+        case 3:
+            goto mode4_sel3;
+        default:
+            return;
+        }
+mode4_sel3:
+        Rec35_Leaf_17414(rec);
         return;
     }
     default:
         return;
     }
 }
+// The ROM has two zero pad bytes after the return; use zero fill instead of
+// GAS's Thumb alignment NOP at 0x0801774A.
+__asm__(".align 2, 0");
 void _0800175BC(void *a) __attribute__((alias("Rec35_Input_175BC")));
 // ---------------------------------------------------------------------------
 // _08001774C(rec) — gate leaf (u16[+184] compare after key read)
@@ -1176,6 +1224,8 @@ void Rec35_Emit_17984(void *rec) {
     R35_CALLEE(Sub_08007BFC, sub_08007BFC)(r8, (int)RD32((u8 *)rec + 468), (int)RD32((u8 *)rec + 472),
                  0, 88, 5, 1, 1, 0);
 }
+// Match the ROM's two zero pad bytes instead of GAS's Thumb `46 c0` fill.
+__asm__(".align 2, 0");
 void _080017984(void *a) __attribute__((alias("Rec35_Emit_17984")));
 
 // ---------------------------------------------------------------------------
@@ -1252,6 +1302,8 @@ void Rec35_Emit_17B00(void *rec) {
                      16, 100, 7, 1, 1, 0);
     }
 }
+// Match the ROM's two zero pad bytes instead of GAS's Thumb `46 c0` fill.
+__asm__(".align 2, 0");
 void _080017B00(void *a) __attribute__((alias("Rec35_Emit_17B00")));
 
 // ---------------------------------------------------------------------------
@@ -1393,9 +1445,9 @@ void _080017D54(void *a) __attribute__((alias("Rec35_Countdown_17D54")));
 //   [0] 0x08017EB6   [11] 0x08017EBE  all other entries -> the shared epilogue.
 // The range check comes out as `cmp #11 / bls <table> / b <exit>` only because
 // the epilogue sits past Thumb's +-256-byte conditional-branch reach; the two
-// mode dispatches are 3-arm switches (see Rec35_SyncRec_16944). Match is
-// prefix-only: the ROM's trailing 2 bytes are zero padding where agbcc emits a
-// `nop` align filler.
+// mode dispatches are 3-arm switches (see Rec35_SyncRec_16944). The ROM's
+// trailing two bytes are zero padding; the explicit fill after this body below
+// matches them in place of GAS's Thumb NOP filler.
 void Rec35_EvDispatch_17DAC(int ev, int a, int b, void *rec) {
     void *r5 = (void *)(u32)a;
     void *r6 = (void *)(u32)b;
@@ -1454,6 +1506,7 @@ void Rec35_EvDispatch_17DAC(int ev, int a, int b, void *rec) {
         break;
     }
 }
+__asm__(".align 2, 0");
 void _080017DAC(int ev, int a, int b, void *rec) __attribute__((alias("Rec35_EvDispatch_17DAC")));
 
 // ---------------------------------------------------------------------------

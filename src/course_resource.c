@@ -49,7 +49,7 @@ extern void _08005614(void *a, void *b, int len);
 extern u32 _0800572C(u32);
 extern int _080050D0(int a,int b);
 extern void _08005260(void *a, void *b, int c, int d); // 4-arg (r3 = transfer size)
-extern void _080052F0(int a, int b, int c, int d, int e, int f); // 6-arg (two tile dims)
+extern void _080052F0(int a, u32 b, int c, int d, int e, int f, int g, int h);
 extern void _08002ED0(void *a, int b, int c, int d, int e, int f, int g, int h, int i, int j);
 
 // _080074AC: CpuSet fill via 0x05000002 then str at [Y+4]
@@ -242,12 +242,11 @@ u32 _08007658(void *a) __attribute__((alias("Course_Leaf_07658")));
 // Third spelling used by scene_record_dispatch.c, same 1-arg u32 shape.
 u32 RomLeaf7658(void *a) __attribute__((alias("Course_Leaf_07658")));
 
-void Course_ResourceSetup(void *ctx, void *X, int idx) {
+u32 Course_ResourceSetup(void *ctx, void *X, int idx) {
     // _08007664 — transcribed from asm/course_resource_init.s:1-122 (VMA
-    volatile u32 *dma = (volatile u32 *)0x040000D4;
     extern int  _080050D0(int a, int b);
     extern void _08005260(void *a, void *b, int c, int d); // 4-arg (r3 = transfer size)
-    extern void _080052F0(int a, int b, int c, int d, int e, int f); // 6-arg (two tile dims)
+    extern void _080052F0(int a, u32 b, int c, int d, int e, int f, int g, int h);
     // 0x080056C4 = `ldr r1,=0x03000260; adds r0,r0,r1; ldrb r0,[r0,#5];
     // lsls r0,#14; ldr r1,=0x06000000; adds r0,r1; bx lr` — it *returns* a VRAM
     // char-block base in r0, so the ROM's `adds r1, r0, #0` after the call feeds
@@ -257,40 +256,54 @@ void Course_ResourceSetup(void *ctx, void *X, int idx) {
     extern void _0802D984(const void *src, void *dst);
     extern void _0802D988(const void *src, void *dst);
 
-    void *c0 = Course_Seek(X, idx);          // r4
-    void *c1 = Course_Seek(c0, 0);           // r5
-    void *c2 = Course_Seek(c0, 1);           // sl
-    void *c3 = Course_Seek(c0, 2);           // r9
-    void *flags = Course_ArrBase(c0);        // r7
-    u32 r0_050D0 = (u32)_080050D0((int)(uintptr_t)ctx, (int)Course_Leaf_07658(c1));
+    register void *rctx __asm__("r8") = ctx;
+    register void *c0 __asm__("r4") = Course_Seek(X, idx);
+    register void *c1 __asm__("r5") = Course_Seek(c0, 0);
+    register void *c2 __asm__("sl") = Course_Seek(c0, 1);
+    register void *c3 __asm__("r9") = Course_Seek(c0, 2);
+    void *flags = Course_ArrBase(c0);
+    u32 r0_050D0 = (u32)_080050D0((int)(uintptr_t)rctx, (int)Course_Leaf_07658(c1));
 
-    u16 flag = *(volatile u16 *)((u8 *)flags + 6);
+    register u32 flag __asm__("r6") = *(volatile u16 *)((u8 *)flags + 6);
+    register u32 haddr __asm__("r7");
     if (flag != 0) {
         // LZ77 arm: decompress c1's payload from _080056C4(ctx), then c3's into
-        // 0x02000000 (EWRAM, built as 128<<18), then hand w/h (each >>3, from
-        // u16[r8+0]/u16[r8+2]) to the 6-arg 0x080052F0 (asm init.s:86-97).
-        _0802D984(Course_ArrBase(c1), (void *)(uintptr_t)_080056C4((int)(uintptr_t)ctx));
+        // 0x02000000 (EWRAM, built as 128<<18), then pass descriptor width and
+        // height to the 8-argument _080052F0 (asm init.s:86-97).
+        _0802D984(Course_ArrBase(c1), (void *)(uintptr_t)_080056C4((int)(uintptr_t)rctx));
         _0802D988(Course_ArrBase(c3), (void *)(uintptr_t)0x02000000u);
-        {
-            const volatile u8 *r8 = (const volatile u8 *)_0800748C(c1);
-            int tw = (int)(*(volatile u16 *)(r8 + 0) >> 3);
-            int th = (int)(*(volatile u16 *)(r8 + 2) >> 3);
-            _080052F0((int)(uintptr_t)ctx, 0x02000000, 0, 0, tw, th);
-        }
-        (void)r0_050D0;
+        register u32 raw_tw __asm__("r1") = *(volatile u16 *)((u8 *)flags + 0);
+        __asm__ volatile("" : "+r" (raw_tw));
+        register int tw __asm__("r0") = (int)(raw_tw >> 3);
+        _080052F0((int)(uintptr_t)rctx, 0x02000000, 0, 0,
+                  tw, ({
+                      haddr = (u32)(uintptr_t)flags;
+                      __asm__ volatile("ldrh %0, [%0, #2]" : "+r"(haddr) : : "memory");
+                      (int)(haddr >> 3);
+                  }), 0, 0);
     } else {
         // Raw arm: row-emit fill of c1 (len = _080074A8(c1), asm init.s:81-83)
         // then c3 with the same length.
-        _08005260(ctx, Course_ArrBase(c1), 0, (int)_080074A8(c1));
-        _080052F0((int)(uintptr_t)ctx, (int)(uintptr_t)Course_ArrBase(c3), 0, 0, 0, 0);
-        (void)r0_050D0;
+        _08005260(rctx, Course_ArrBase(c1), 0, (int)_080074A8(c1));
+        void *c3_base = Course_ArrBase(c3);
+        register u32 raw_tw __asm__("r2") = *(volatile u16 *)((u8 *)flags + 0);
+        __asm__ volatile("" : "+r" (raw_tw));
+        register int tw __asm__("r0") = (int)(raw_tw >> 3);
+        _080052F0((int)(uintptr_t)rctx, (int)(uintptr_t)c3_base,
+                  0, 0, tw,
+                  ({
+                      haddr = (u32)(uintptr_t)flags;
+                      __asm__ volatile("ldrh %0, [%0, #2]" : "+r"(haddr) : : "memory");
+                      (int)(haddr >> 3);
+                  }), flag, flag);
     }
-    (void)c2;
     // Tail (0x08007738): DMA3 triple. r2 = (u32[c2+4] >> 2) | 0x84000000.
+    volatile u32 *dma = (volatile u32 *)0x040000D4;
     dma[0] = (u32)(uintptr_t)Course_ArrBase(c2);
     dma[1] = 0x05000000u;                    // 160 << 19
     dma[2] = (Course_GetU32At4(c2) >> 2) | 0x84000000u;
     (void)dma[2];                            // ROM re-reads DMA3CNT; harmless
+    return r0_050D0;
 }
 
 // Surface_access.s
@@ -514,7 +527,7 @@ void *_08007498(void *x,int i) __attribute__((alias("Course_Seek")));
 // spelling or the independent link reports `undefined reference`.
 void *sub_08007498(void *x,int i) __attribute__((alias("Course_Seek")));
 u32 _080074A8(void *x) __attribute__((alias("Course_GetU32At4")));
-void _08007664(void *a,void *b,int c) __attribute__((alias("Course_ResourceSetup")));
+u32 _08007664(void *a,void *b,int c) __attribute__((alias("Course_ResourceSetup")));
 void _08005F8C(void *a,void *b,void *c) __attribute__((alias("Surface_DiffStore")));
 void *_08005F98(void) __attribute__((alias("Surface_GetRoot")));
 u8 _08005FA4(int a, int b) __attribute__((alias("Surface_Sample")));
@@ -530,7 +543,7 @@ void Sub_08007ABC(void *a, int b, int c) __attribute__((alias("Course_ResourceLe
 void EventBind(void *a, int b, int c) __attribute__((alias("Course_ResourceLeaf_07ABC")));
 void EventBind_0x08007ABC(void *a, int b, int c) __attribute__((alias("Course_ResourceLeaf_07ABC")));
 void sub_08007570(void *a,int b,int c,int d,int units) __attribute__((alias("Course_EmitLane_07570")));
-void sub_08007664(void *a,void *b,int c) __attribute__((alias("Course_ResourceSetup")));
+u32 sub_08007664(void *a,void *b,int c) __attribute__((alias("Course_ResourceSetup")));
 
 // ROM entry alias.
 void sub_08007538(void *a,int b,void *c) __attribute__((alias("Course_EmitLane_07538")));
@@ -590,5 +603,5 @@ void VramBlit_052F0(int bank, int src, int off, int len, int tw, int th) {
         (void)tw; (void)src;
     }
 }
-void _080052F0(int a, int b, int c, int d, int e, int f) __attribute__((alias("VramBlit_052F0")));
-void sub_080052F0(int a, int b, int c, int d, int e, int f) __attribute__((alias("VramBlit_052F0")));
+void _080052F0(int a, u32 b, int c, int d, int e, int f, int g, int h) __attribute__((alias("VramBlit_052F0")));
+void sub_080052F0(int a, u32 b, int c, int d, int e, int f, int g, int h) __attribute__((alias("VramBlit_052F0")));

@@ -121,3 +121,5 @@ _08007738:
         pop {r1}
         bx r1
 _0800776C: .word 0x040000D4
+@ End of the declared 0x08007664-0x08007770 region; the next include starts at _08007770.
+course_resource_init_end:

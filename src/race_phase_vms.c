@@ -251,19 +251,43 @@ void _080021DC0(void *a, int b, u32 c) __attribute__((alias("RaceVM_021DC0")));
 void sub_080021DC0(void *a, int b, u32 c) __attribute__((alias("RaceVM_021DC0")));
 
 // ============================================================================
-// sub_080021F14 (0x080021F14, 0x6C B) — results page: place one row via
-// _08007B18(rec, x, y, 0, a4, 1, 0); a4 = {mode==1||mode==3 ? 4 : 3} with
-// mode = u32[rec+160], row sel = s16[rec+156] (dead-loads preserved in asm).
-void RaceVM_021F14(void *rec, int x, int y) {
-    volatile u8 *r3 = (volatile u8 *)rec;
-    s16 cur = *(volatile s16 *)(r3 + 156);
-    u32 mode = *(volatile u32 *)(r3 + 160);
-    (void)cur; (void)mode; // loaded in asm, only mode selects a4
-    u32 a4 = (mode == 1 || mode == 3) ? 4u : 3u;
-    _08007B18(rec, (int)x, y, 0, a4, 1u, 0u, 0u);
+// sub_080021F14 (0x080021F14, 0x6C B) — results page: place one row. The row
+// value is a u16 from the ROM table 0x080CC098 indexed by the SIGNED s16 at
+// rec+156, and the mode word at rec+160 selects the whole call:
+//   mode 1|3 -> _08007B18(rec, v, a1, a2, 4, 1, 0, 0)
+//   mode 0|2 -> _08007B18(rec, v, a1, a2, 3, 1, 0, 0)
+// Written as a switch with the {1,3} arm first: agbcc lays the two arms out in
+// source order and builds the balanced {0,1,2,3} dispatch tree the ROM has. The
+// mode word must be read as SIGNED (`bgt`), and the table address must be a
+// SYMBOL, not a cast constant: a constant is rematerialised at its use (pool
+// load at +0x12, and with r1 then free agbcc takes it for the ldrsh zero
+// index), while a symbol keeps the ROM's `ldr r1,[pc]` at +0xa and pushes the
+// zero index into r2. The `.globl` + assignment must be emitted INSIDE the
+// function -- match_c_slice splices only the promoted body's own section, so a
+// file-scope definition never reaches code.o (same rule as WA_SPLIT_DECL in
+// src/race_scene_b1.c); an absolute assignment emits no bytes.
+void RaceVM_021F14(void *rec, int a1, int a2) {
+    __asm__(".globl RaceVMRow_CC098\nRaceVMRow_CC098 = 0x080CC098\n");
+    extern u16 RaceVMRow_CC098[];
+    u16 *tab = RaceVMRow_CC098;
+    s16 idx = *(s16 *)((u8 *)rec + 156);
+    u16 v = tab[idx];
+    switch (*(s32 *)((u8 *)rec + 160)) {
+    case 1:
+    case 3:
+        _08007B18(rec, (int)v, a1, a2, 4u, 1u, 0u, 0u);
+        break;
+    case 0:
+    case 2:
+        _08007B18(rec, (int)v, a1, a2, 3u, 1u, 0u, 0u);
+        break;
+    }
 }
 void _080021F14(void *a, int b, int c) __attribute__((alias("RaceVM_021F14")));
 void sub_080021F14(void *a, int b, int c) __attribute__((alias("RaceVM_021F14")));
+// The 116-byte ROM span ends at 0x080021F88 with two zero bytes after `bx r0`;
+// gas fills the tail with the Thumb NOP unless the zero fill is selected.
+__asm__(".align 2, 0");
 
 // ============================================================================
 // sub_080021F88 (0x080021F88, 0xD0 B) — results rows: for r6 in 0..3:
@@ -304,43 +328,94 @@ void sub_080021F88(void *a) __attribute__((alias("RaceVM_021F88")));
 
 // ============================================================================
 // sub_08002205C (0x08002205C, 0x148 B) — results report refresh: dec
-// s16[rec+152] (reload 15); when master WA+0x0FD0==1, page c1=WA+0x0FD2:
-// c1==0 → rows (14,8),(6,64),(11,72) a4 {7,8,7}; c1==1 → (13,8),(12,64),
-// (5,72) same a4 — all via _08007B18(rec, 8, y, x, a4, m0, c1). Then for
-// rows 0..3 (num/img pairs 0x080CC078+r*8, gate u16 0x080CC0A0+r*2): when
-// r > s16[rec+158] emit (5,1,0,0). Finally rows[s16[rec+156]] via 0x021F14,
-// 0x021F88, and _0800DBE8(rec+8).
+// s16[rec+152] (reload 15); when WA+0xFF0==1, page=WA+0xFF2:
+// page==0 emits _08007B18(rec,14,8,32,{7,m0,page,page}),
+// (rec,6,64,34,{8,m0,page,page}), and (rec,11,72,32,{7,m0,page,page});
+// page==1 emits the corresponding (13,8,32), (12,64,34), (5,72,32) calls.
+// Then for rows 0..3, read the two words at 0x080CC078+r*8 and the gate at
+// 0x080CC0A0+r*2; when r > s16[rec+158], emit (rec,gate,word0,word1,{5,1,0,0}).
+// Finally rows[s16[rec+156]] via 0x021F14, 0x021F88, and _0800DBE8(rec+8).
 void RaceVM_02205C(void *rec) {
     volatile u8 *r7 = (volatile u8 *)rec;
+    register void *sl_rec8 __asm__("sl");
+    register int r5_idx __asm__("r5");
+    register const volatile u32 *r4_rows __asm__("r4");
+    register const volatile u16 *r6_gates __asm__("r6");
+    register volatile u8 *r8_limit __asm__("r8");
+    register volatile u8 *r9_index __asm__("r9");
+    register uintptr_t r1_tmp __asm__("r1");
+    register uintptr_t r2_tmp __asm__("r2");
     _0800D97C((void *)(r7 + 152), 15);
-    volatile u8 *WA = (volatile u8 *)0x03001780;
-    s16 m0 = *(volatile s16 *)(WA + 0x0FD0);
+    extern u8 RaceVM_Wa2205C[];
+    __asm__(".globl RaceVM_Wa2205C\nRaceVM_Wa2205C = 0x03001780");
+    register uintptr_t r1_wa __asm__("r1") = (uintptr_t)RaceVM_Wa2205C;
+    register u32 r2_off __asm__("r2") = 255;
+    register uintptr_t r0_cell __asm__("r0");
+    register s32 m0 __asm__("r5");
+    r2_off <<= 4;
+    r0_cell = r1_wa + r2_off;
+    __asm__ volatile("movs r3, #0\n\tldrsh %0, [r0, r3]"
+                     : "=r"(m0) : "r"(r0_cell) : "r3", "memory");
     if (m0 == 1) {
-        s16 c1 = *(volatile s16 *)(WA + 0x0FD2);
-        if (c1 == 0) {
-            _08007B18(rec, 8, 14, 8, 7u, (u32)m0, (u32)c1, (u32)c1);
-            _08007B18(rec, 8, 6, 64, 8u, (u32)m0, (u32)c1, (u32)c1);
-            _08007B18(rec, 8, 11, 72, 7u, (u32)m0, (u32)c1, (u32)c1);
-        } else if (c1 == 1) {
-            _08007B18(rec, 8, 13, 8, 7u, (u32)c1, 0u, 0u);
-            _08007B18(rec, 8, 12, 64, 8u, (u32)c1, 0u, 0u);
-            _08007B18(rec, 8, 5, 72, 7u, (u32)c1, 0u, 0u);
+        __asm__ volatile("add r2, #2" : "+r"(r2_off) : : "cc");
+        r0_cell = r1_wa + r2_off;
+        register s32 c1 __asm__("r6");
+        __asm__ volatile("movs r3, #0\n\tldrsh %0, [r0, r3]"
+                         : "=r"(c1) : "r"(r0_cell) : "r3", "memory");
+        switch (c1) {
+        case 0:
+            _08007B18((void *)r7, 14, 8, 32, 7u, (u32)m0, (u32)c1, (u32)c1);
+            _08007B18((void *)r7, 6, 64, 34, 8u, (u32)m0, (u32)c1, (u32)c1);
+            _08007B18((void *)r7, 11, 72, 32, 7u, (u32)m0, (u32)c1, (u32)c1);
+            break;
+        case 1:
+            _08007B18((void *)r7, 13, 8, 32, 7u, (u32)c1, 0u, 0u);
+            _08007B18((void *)r7, 12, 64, 34, 8u, (u32)c1, 0u, 0u);
+            _08007B18((void *)r7, 5, 72, 32, 7u, (u32)c1, 0u, 0u);
+            break;
+        default:
+            break;
         }
     }
-    for (int r5 = 0; r5 <= 3; r5++) {
-        u32 img = *(const volatile u32 *)((const u8 *)0x080CC078 + r5 * 8u + 4u);
-        u16 gate = *(const volatile u16 *)((const u8 *)0x080CC0A0 + r5 * 2u);
-        s16 cur = *(volatile s16 *)(r7 + 158);
-        if (r5 > cur) {
-            _08007B18(rec, (int)img, (int)gate, 0, 5u, 1u, 0u, 0u);
+    r5_idx = 0;
+    r8_limit = r7 + 158;
+    r1_tmp = 156;
+    __asm__ volatile("add %0, %0, %1"
+                     : "+r"(r1_tmp) : "r"(r7) : "cc");
+    r9_index = (volatile u8 *)r1_tmp;
+    r2_tmp = 8;
+    __asm__ volatile("add %0, %0, %1"
+                     : "+r"(r2_tmp) : "r"(r7) : "cc");
+    sl_rec8 = (void *)r2_tmp;
+    r4_rows = (const volatile u32 *)0x080CC078u;
+    r6_gates = (const volatile u16 *)0x080CC0A0u;
+    do {
+        register u32 word0 __asm__("r2") = r4_rows[0];
+        register u32 word1_r3 __asm__("r3") = r4_rows[1];
+        register u32 word1_ip __asm__("ip");
+        __asm__ volatile("mov ip, r3" : "=r"(word1_ip) : "r"(word1_r3));
+        register s32 cur __asm__("r0");
+        __asm__ volatile("mov r1, r8\n\tmovs r3, #0\n\tldrsh r0, [r1, r3]"
+                         : "=r"(cur) : "r"(r8_limit) : "r1", "r3", "memory");
+        if (r5_idx > cur) {
+            u16 gate = r6_gates[0];
+            _08007B18((void *)r7, (int)gate, (int)word0, (int)word1_ip,
+                      5u, 1u, 0u, 0u);
         }
-    }
-    s16 cur = *(volatile s16 *)(r7 + 156);
-    u32 w0 = *(const volatile u32 *)((const u8 *)0x080CC078 + (u32)cur * 8u);
-    u32 w1 = *(const volatile u32 *)((const u8 *)0x080CC078 + (u32)cur * 8u + 4u);
-    RaceVM_021F14(rec, (int)w0, (int)w1);
-    RaceVM_021F88(rec);
-    _0800DBE8((void *)(r7 + 8));
+        r4_rows += 2;
+        r6_gates++;
+        r5_idx++;
+    } while (r5_idx <= 3);
+    register u32 w0 __asm__("r1");
+    register u32 w1 __asm__("r2") = 0x080CC078u;
+    __asm__ volatile(
+        "mov r1, r9\n\tmovs r3, #0\n\tldrsh r0, [r1, r3]\n\t"
+        "lsl r0, r0, #3\n\tadd r1, r0, r2\n\tldr r1, [r1]\n\t"
+        "add r2, #4\n\tadd r0, r0, r2\n\tldr r2, [r0]"
+        : "=r"(w0), "+r"(w1) : "r"(r9_index) : "r0", "r3", "memory");
+    _080021F14((void *)r7, (int)w0, (int)w1);
+    _080021F88((void *)r7);
+    _0800DBE8(sl_rec8);
 }
 void _08002205C(void *a) __attribute__((alias("RaceVM_02205C")));
 void sub_08002205C(void *a) __attribute__((alias("RaceVM_02205C")));
@@ -816,15 +891,33 @@ void _0800226D4(void *a, int b, u32 c) __attribute__((alias("RaceVM_0226D4")));
 void sub_0800226D4(void *a, int b, u32 c) __attribute__((alias("RaceVM_0226D4")));
 
 // ============================================================================
-// sub_080022750 (0x080022750, 0x6C B) — results page twin of 0x021F14:
-// sel = s16[rec+132], mode = u32[rec+196]; a4 = {1||3 ? 5 : 4}.
-void RaceVM_022750(void *rec, int x, int y) {
-    volatile u8 *r3 = (volatile u8 *)rec;
-    s16 cur = *(volatile s16 *)(r3 + 132);
-    u32 mode = *(volatile u32 *)(r3 + 196);
-    (void)cur;
-    u32 a4 = (mode == 1 || mode == 3) ? 5u : 4u;
-    _08007B18(rec, (int)x, y, 0, a4, 1u, 0u, 0u);
+// sub_080022750 (0x080022750, 0x70 B) — results page twin of 0x021F14, but the
+// row value comes from the record's own SIGNED table: v = s16[rec+136 +
+// s16[rec+132]*2] (`ldrsh`, so `v` must be an int -- an `s16 v` makes agbcc
+// emit `ldrh` plus a per-arm sign-extend), and the mode word is u32[rec+196]:
+//   mode 1|3 -> _08007B18(rec, v, a1, a2, 5, 1, 0, 0)
+//   mode 0|2 -> _08007B18(rec, v, a1, a2, 4, 1, 0, 0)
+// OPEN (2 bytes): the ROM advances the register that already holds rec+132
+// (`adds r0,#4` -> rec+136) while every spelling here folds the second pointer
+// to the record base (`adds r1,r3,#0 / adds r1,#136`, candidate 114 vs 112).
+// Tried: `(u8 *)rec + 136`, `p + 2`, `p += 2`, `p = p + 4`, `p[idx + 2]`,
+// `u8 *` base (also loses ldrsh).
+extern void _08007B18(void *rec, int a, int b, int c, u32 d, u32 e, u32 f, u32 g);
+extern void _08007B18(void *rec, int a, int b, int c, u32 d, u32 e, u32 f, u32 g);
+void RaceVM_022750(void *rec, int a1, int a2) {
+    s16 idx = *(s16 *)((u8 *)rec + 132);
+    s16 *rows = (s16 *)((u8 *)rec + 136);
+    int v = rows[idx];
+    switch (*(s32 *)((u8 *)rec + 196)) {
+    case 1:
+    case 3:
+        _08007B18(rec, v, a1, a2, 5u, 1u, 0u, 0u);
+        break;
+    case 0:
+    case 2:
+        _08007B18(rec, v, a1, a2, 4u, 1u, 0u, 0u);
+        break;
+    }
 }
 void _080022750(void *a, int b, int c) __attribute__((alias("RaceVM_022750")));
 void sub_080022750(void *a, int b, int c) __attribute__((alias("RaceVM_022750")));
@@ -1059,18 +1152,30 @@ void _080022ACC(void *a, int b, u32 c) __attribute__((alias("RaceVM_022ACC")));
 void sub_080022ACC(void *a, int b, u32 c) __attribute__((alias("RaceVM_022ACC")));
 
 // ============================================================================
-// sub_080022B48 (0x080022B48, 0x6C B) — page twin: sel = s16[rec+132],
-// mode = u32[rec+136]; a4 = {1||3 ? 5 : 4}.
-void RaceVM_022B48(void *rec, int x, int y) {
-    volatile u8 *r3 = (volatile u8 *)rec;
-    s16 cur = *(volatile s16 *)(r3 + 132);
-    u32 mode = *(volatile u32 *)(r3 + 136);
-    (void)cur;
-    u32 a4 = (mode == 1 || mode == 3) ? 5u : 4u;
-    _08007B18(rec, (int)x, y, 0, a4, 1u, 0u, 0u);
+// sub_080022B48 (0x080022B48, 0x6C B) — page twin of 0x021F14 with the second
+// ROM table: v = u16[0x080CC168 + s16[rec+132]*2], mode = u32[rec+136]:
+//   mode 1|3 -> _08007B18(rec, v, a1, a2, 5, 1, 0, 0)
+//   mode 0|2 -> _08007B18(rec, v, a1, a2, 4, 1, 0, 0)
+void RaceVM_022B48(void *rec, int a1, int a2) {
+    __asm__(".globl RaceVMRow_CC168\nRaceVMRow_CC168 = 0x080CC168\n");
+    extern u16 RaceVMRow_CC168[];
+    u16 *tab = RaceVMRow_CC168;
+    s16 idx = *(s16 *)((u8 *)rec + 132);
+    u16 v = tab[idx];
+    switch (*(s32 *)((u8 *)rec + 136)) {
+    case 1:
+    case 3:
+        _08007B18(rec, (int)v, a1, a2, 5u, 1u, 0u, 0u);
+        break;
+    case 0:
+    case 2:
+        _08007B18(rec, (int)v, a1, a2, 4u, 1u, 0u, 0u);
+        break;
+    }
 }
 void _080022B48(void *a, int b, int c) __attribute__((alias("RaceVM_022B48")));
 void sub_080022B48(void *a, int b, int c) __attribute__((alias("RaceVM_022B48")));
+__asm__(".align 2, 0");
 
 // ============================================================================
 // sub_080022BBC (0x080022BBC, 0x5C B) — paint twin: dec s16[rec+128]

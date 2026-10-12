@@ -22,14 +22,18 @@ extern void Sub_080026A4C(void *mgr, int b, int c);
 
 // WA pair helper: u8[WA+s*12+49] = lo(u16[rec+172]),
 // u8[WA+s*12+48] = lo(u16[rec+178]).
-static void MenuFF78_WAPair(volatile u8 *rec, volatile u8 *wa, s16 s) {
-    u32 off = ((u32)(s32)s << 1) + (u32)(s32)s; // *3
-    off <<= 2; // *12
-    *(volatile u8 *)(uintptr_t)(wa + off + 49) =
-        (u8)*(volatile u16 *)(uintptr_t)(rec + 172);
-    *(volatile u8 *)(uintptr_t)(wa + off + 48) =
-        (u8)*(volatile u16 *)(uintptr_t)(rec + 178);
-}
+// MUST stay a macro: agbcc -O2 never inlines a `static` called 4 times, which
+// leaves four unresolved `bl MenuFF78_WAPair` in the candidate. The ROM has the
+// three-statement sequence inlined at every site.
+#define WA_PAIR(REC, WA, S)                                                   \
+    do {                                                                      \
+        u32 _wp_off = ((u32)(s32)(S) << 1) + (u32)(s32)(S); /* *3 */          \
+        _wp_off <<= 2;                                      /* *12 */        \
+        *(volatile u8 *)(uintptr_t)((WA) + _wp_off + 49) =                    \
+            (u8)*(volatile u16 *)(uintptr_t)((REC) + 172);                    \
+        *(volatile u8 *)(uintptr_t)((WA) + _wp_off + 48) =                    \
+            (u8)*(volatile u16 *)(uintptr_t)((REC) + 178);                    \
+    } while (0)
 
 // ----------------------------------------------------------------------------
 // sub_0800133E4 — (rec, u16 a1, u16 ev):
@@ -76,21 +80,18 @@ void MenuFF78_133E4(void *rec_, u32 a1_, u32 ev_) {
         if (s == 1) {
             Sub_08002B368(1);
             *(volatile s16 *)(uintptr_t)(rec + 186) = (s16)ev;
-            MenuFF78_WAPair(rec, wa,
-                            *(volatile s16 *)(uintptr_t)(rec + 174));
+            WA_PAIR(rec, wa, *(volatile s16 *)(uintptr_t)(rec + 174));
             *(volatile u32 *)(uintptr_t)(rec + 144) = 0;
         } else if (s == 0) {
             s16 c = *(volatile s16 *)(uintptr_t)(wa + 0xFC2u);
             if (c == 95) {
                 Sub_08002B368(1);
                 *(volatile s16 *)(uintptr_t)(rec + 186) = (s16)ev;
-                MenuFF78_WAPair(rec, wa,
-                                *(volatile s16 *)(uintptr_t)(rec + 174));
+                WA_PAIR(rec, wa, *(volatile s16 *)(uintptr_t)(rec + 174));
                 *(volatile u32 *)(uintptr_t)(rec + 144) = 0;
             } else if (c == 94 || c == 96) {
                 Sub_08002B368(1);
-                MenuFF78_WAPair(rec, wa,
-                                *(volatile s16 *)(uintptr_t)(rec + 174));
+                WA_PAIR(rec, wa, *(volatile s16 *)(uintptr_t)(rec + 174));
                 *(volatile u32 *)(uintptr_t)(rec + 32) = 10;
                 *(volatile s16 *)(uintptr_t)(rec + 36) = 0;
                 *(volatile u32 *)(uintptr_t)(rec + 64) = 10;
@@ -100,8 +101,7 @@ void MenuFF78_133E4(void *rec_, u32 a1_, u32 ev_) {
                     *(volatile u16 *)(uintptr_t)(rec + 176);
                 *(volatile u16 *)(uintptr_t)(wa + 0xFC2u) =
                     *(volatile u16 *)(uintptr_t)(rec + 174);
-                MenuFF78_WAPair(rec, wa,
-                                *(volatile s16 *)(uintptr_t)(wa + 0xFC2u));
+                WA_PAIR(rec, wa, *(volatile s16 *)(uintptr_t)(wa + 0xFC2u));
             }
         }
     }

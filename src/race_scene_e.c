@@ -998,22 +998,64 @@ __asm__(".align 2, 0");
 
 // ---- 0x08021018 — repeat emitter: kind 6 x (u/2), kind 5 on odd ----
 void _080021018(void *rec0, int a, int b, int c) {
-    volatile u8 *rec = (volatile u8 *)rec0;
+    register volatile u8 *rec __asm__("r9") = (volatile u8 *)rec0;
+    int a_slot = a;
+    register int breg __asm__("sl") = b;
     // u = clamp((s8)c, 0, 32): identity 1..31, 32 above, 0 at/below 0.
-    int s8c = (int)(s8)(u8)c;
-    int u;
-    if (s8c <= 0)
-        u = 0;
-    else if (s8c <= 31)
-        u = s8c;
-    else
-        u = 32;
-    int n = u >> 1;
-    for (int k = 0; k < n; k++)
-        _08007B18((void *)(uintptr_t)(rec + 8), 6, a + 8 * k, b, 9, 1, 1, 0);
-    if ((u & 1) != 0)
-        _08007B18((void *)(uintptr_t)(rec + 8), 5, a + 8 * n, b, 9, 1, 1, 0);
+    register u32 byte __asm__("r1") = (u8)c;
+    register s32 signedC __asm__("r3") = (s8)c;
+    if (signedC > 31)
+        byte = 32;
+    if ((s32)(byte << 24) <= 0)
+        byte = 0;
+    register u32 shifted __asm__("r0") = byte << 24;
+    __asm__ volatile("" : "+r" (shifted));
+    register s32 u __asm__("r1") = (s32)(s8)(shifted >> 24);
+    register s32 n0 __asm__("r0") = (u + (s32)(shifted >> 31)) >> 1;
+    __asm__ volatile("" : "+r" (n0));
+    register s32 n __asm__("r6") = n0;
+    register s32 odd __asm__("r8") = (s8)(u - (n << 1));
+    register int remaining __asm__("r5") = 0;
+    __asm__ volatile("" : "+r" (remaining));
+    if (remaining < n) {
+        int one = 1;
+        register int row __asm__("r4") = a_slot;
+        remaining = n;
+        do {
+            _08007B18((void *)({
+                register volatile u8 *row_record __asm__("r0") = rec;
+                __asm__ volatile("" : "+r" (row_record));
+                row_record += 8;
+                row_record;
+            }), 6, row, breg, 9, one, one, 0);
+            row += 8;
+            remaining--;
+        } while (remaining != 0);
+        // The ROM ends the `if` body with `adds r5,r6,#0` (remaining = n) at
+        // 0x08021084 and its `bge` at 0x08021060 jumps PAST it to 0x08021086
+        // (`mov r0,r8`), so the restore belongs INSIDE the `if`. With it
+        // outside, agbcc retargets the `bge` onto the shared store (target
+        // 0x08021084 -> 0x08021082) and the tail reads r5 = n instead of 0.
+        remaining = n;
+    }
+    if (odd == 1) {
+        // OPEN (148/164): the only remaining difference is the loop-body call's
+        // argument setup order. ROM site 1 materialises the outgoing stack-arg
+        // constants in r0 first (`movs r0,#9 / str r0,[sp,#0] / str r7,[sp,#4]
+        // / str r7,[sp,#8] / movs r0,#0 / str r0,[sp,#12]`) and only then
+        // `mov r0,r9 / adds r0,#8`; this TU computes r0 first and uses r1 as the
+        // constant scratch (which is exactly what the ROM's SECOND call site at
+        // 0x0802107C does, and that site matches byte-for-byte).
+        // Measured and rejected (all 148/164 or worse): plain `rec + 8`
+        // (OVERSIZED 166), named constants, `six`/`nine` locals, pinning the
+        // stack-arg constants to r0/r1, pinning the statement-expression temp to
+        // r1 (76/164). The r0 pin in the first argument is load-bearing for the
+        // rest of the frame; another 6 variants are in build/cases_21018c.py.
+        _08007B18((void *)(uintptr_t)(rec + 8), 5, a_slot + 8 * remaining,
+                  breg, 9, (u32)odd, (u32)odd, 0);
+    }
 }
+__asm__(".align 2, 0");
 
 // ---- 0x080210BC — scene assembly: 7B18/7BFC/D28/F50/1018 chain + pools below ----
 // Pools: 0x08349754, WA+0xFC0 gate, 0x080CBEB0, 0x080CBEF0, 0x080CBF30,

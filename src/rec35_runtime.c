@@ -490,6 +490,8 @@ void Rec35_Dispatch_16F28(void *ctx) {
         default: break;
     }
 }
+// Match the ROM's two zero pad bytes instead of GAS's Thumb `46 c0` fill.
+__asm__(".align 2, 0");
 void _080016F28(void *c) __attribute__((alias("Rec35_Dispatch_16F28")));
 
 // bx lr stubs (size 5, no pools, proven via single bx lr, no helper ABI)

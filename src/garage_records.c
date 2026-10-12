@@ -91,7 +91,7 @@ HOST_STUB(void sub_08003104(void *h));          // 0x08003104
 HOST_STUB(void sub_0800473C(u32 v));            // 0x0800473C
 HOST_STUB(void _08004748(u32 a, u32 b, u16 c)); // 0x08004748
 HOST_STUB(void _080048D8(void));                // 0x080048D8
-HOST_STUB(int sub_08004818(volatile u32 *a, volatile u32 *b)); // 0x08004818
+HOST_STUB(int sub_08004818(volatile u8 *obj)); // 0x08004818
 HOST_STUB(int _08002BE8(int d));                // 0x08002BE8
 HOST_STUB(void *_08002BFC(int a));              // 0x08002BFC
 HOST_STUB(void _08002C34(int i, void *n));      // 0x08002C34
@@ -783,7 +783,9 @@ void _080029044(void *ctx) {
         st[0] = w0;
         st[1] = *(u32 volatile *)(res + 4);
         st[2] = (u32)(uintptr_t)&st[3];
-        int pr = sub_08004818((volatile u32 *)st, (volatile u32 *)(uintptr_t)w0);
+        // The ROM body takes ONE argument (the stack struct); the earlier
+        // two-argument spelling only fed an unused r1.
+        int pr = sub_08004818((volatile u8 *)st);
         if (pr == 0)
             continue;
         s16 rnd = (s16)_08002BE8(pr);
@@ -2229,6 +2231,10 @@ void _08002AA30(void *rec, void *a1, void *a2, void *unused) {
         *(u32 *)(R + 92) &= ~(u32)128;
     }
 }
+// The 156-byte ROM span ends with two zero bytes after the final `bx r0` at
+// +0x98. The C instructions match through +0x99; gas's implicit Thumb section
+// close inserts `c0 46` instead, so retain the ROM's zero-filled tail explicitly.
+__asm__(".align 2, 0");
 
 // ----------------------------------------------------------------------------
 // 0x0802AACC — scan-apply (u8 count; zero clears 0x100).

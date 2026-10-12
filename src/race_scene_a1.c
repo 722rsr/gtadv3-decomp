@@ -40,10 +40,10 @@ HOST_STUB(void  _08002B368(int v));                                // 0x08002B36
 HOST_STUB(void  _08002B44C(void));                                 // 0x08002B44C
 HOST_STUB(void  _08002B234(void));                                 // 0x08002B234
 HOST_STUB(void  _08002B3A4(void));                                 // 0x08002B3A4
-HOST_STUB(void  _08002B460(void));                                 // 0x08002B460
-HOST_STUB(void  _08002B25C(void));                                 // 0x08002B25C
-HOST_STUB(void  _08002B474(void));                                 // 0x08002B474
-HOST_STUB(void  _08002B280(void));                                 // 0x08002B280
+HOST_STUB(void  _0802B460(void));                                  // 0x0802B460
+HOST_STUB(void  _0802B25C(void));                                  // 0x0802B25C
+HOST_STUB(void  _0802B474(void));                                  // 0x0802B474
+HOST_STUB(void  _0802B280(void));                                  // 0x0802B280
 HOST_STUB(void  _080191BC(int v));                                 // 0x080191BC
 HOST_STUB(void  _08019AEC(int v));                                 // 0x08019AEC
 HOST_STUB(void  _08019A2C(int v));                                 // 0x08019A2C
@@ -278,9 +278,11 @@ void _08001A768(void *a_, int b, int c) {
 //   folded `WORK_AREA + 0x10FE` pools as the single word 0x0300277E and
 //   loses both the adds and the shared base. Each operand is therefore its
 //   own assembler absolute symbol (docs/findings/track_car_26180_pool_order.md).
-// - the two halfwords are NON-volatile s16 loads: agbcc lowers a volatile
-//   signed halfword to ldrh+lsls+asrs, and a plain one to `movs rX,#0` +
-//   `ldrsh rD,[rB,rX]`, which is the ROM's shape at +0x4A and +0x7C.
+// - the two WA signed-halfword reads use ordered inline assembly. The first
+//   reads Wa+0x10FE before loading the 0x10CA offset; both use r3 as the
+//   zero-index and the second leaves its address in r4 for the runner loop.
+//   This keeps agbcc's reload pass from sinking the first read below the
+//   second address calculation.
 // - the walk re-reads its bound from *pca in the condition (guard via r4
 //   before the body repurposes r4 as the 03004E80 runner, back-edge via the
 //   r6 copy the allocator makes), so the bound must stay a memory read, not
@@ -289,33 +291,11 @@ void _08001A768(void *a_, int b, int c) {
 //   ONE test (entry `b` + back-edge `blt`) instead of the ROM's duplicated
 //   guard+back-edge pair, which is 4 instructions of layout.
 //
-// Probe: PARTIAL 183/200, first difference +0x4A. The whole then-path
-// (0x00-0x2C) and the whole walk (0x5C-0x86 on) are byte-identical; what is
-// left is a 5-halfword reorder in the two-argument pair: the ROM emits
-// `ldrsh r1,[r1,r3]` (a2) BEFORE `ldr r3,=0x10CA` / `adds r4,r2,r3` (pca),
-// while agbcc emits `ldr r3,=0x10CA` / `adds r4,r2,r3` (pca) BEFORE the a2
-// load and then has to give that load's zero index r2 instead of r3 (r3
-// holds the pca offset by then).
+// - the runner's two input words are volatile C reads to keep q[0] before
+//   q[1]. Its 284-byte stride is formed in r3 as 142<<1, then added to r4.
+//   The final WA+0x10FC read keeps the base in r0 and offset in r3.
 //
-// WHERE the reorder happens is verified, and it is NOT expansion: an `-dr`
-// RTL dump of this TU (build/era-corpus/ready-work/race_scene_a1.i.rtl, the
-// pre-reload dump) has the statements in exact source order --
-//   insn 96 (set reg40 (zero_extend (mem:HI (reg39))))   @ a2 read
-//   insn 98 (set reg33 reg40)
-//   insn 101 (set r3 (mem/u *.LC3))                      @ off = WaOffCA
-//   insn 103 (set reg32 (plus r2 r3))                    @ pca
-//   insn 106 (set reg41 (zero_extend (mem:HI (reg32))))  @ a3 read
-// so the a2 LOAD really does sink past the pca group, later in the pipeline
-// (reload is the only pass left that can place it; `-fno-regmove`,
-// `-fno-optimize-register-move`, `-fno-caller-saves`,
-// `-fno-expensive-optimizations`, `-fno-inline` and `-fno-defer-pop` all
-// leave the emitted order unchanged, so it is not any of those). The index
-// register is the tell: the ROM reuses the dying r3 for BOTH loads' zero
-// index, the candidate is only offered r2 at the a2 load because pca's
-// `adds r4,r2,r3` has already killed wb. pret/agbcc carries no insn
-// scheduler (`flag_schedule_insns` does not exist in its tree), so nothing
-// at the C level can move an insn back -- an empty `asm` on the value only
-// changes the load width (ldrh) or drops the guard.
+// The focused corpus probe matches all 200 bytes, including the literal pool.
 // ----------------------------------------------------------------------------
 void _08001B068(int a) {
     if (a != 0) {
@@ -326,15 +306,15 @@ void _08001B068(int a) {
             _080096A4((void *)(uintptr_t)(*(volatile u32 *)(uintptr_t)cell + 860u));
             *(volatile u16 *)(uintptr_t)(*(volatile u32 *)(uintptr_t)cell + 122u) = 5;
         }
-        _08002B460();
-        _08002B25C();
+        _0802B460();
+        _0802B25C();
     } else {
         extern u8 WaBase[], WaOffFE[], WaOffCA[], WaOffFC[];
         u32 rec;
-        s16 *pca;
-        s16 a2, a3;
-        register u8 *wb __asm__("r2");
         register u32 off __asm__("r3");
+        register u32 wb __asm__("r2");
+        register s16 *pca __asm__("r4");
+        register s32 a2 __asm__("r1");
         register int i __asm__("r5");
         __asm__(".globl WaBase\nWaBase = 0x03001780\n");
         __asm__(".globl WaOffFE\nWaOffFE = 0x10FE\n");
@@ -353,13 +333,16 @@ void _08001B068(int a) {
           rec = *(volatile u32 *)(uintptr_t)CTX;
           off = (u32)(uintptr_t)RecOff41C;
           rec = rec + off; }
-        wb = (u8 *)(uintptr_t)WaBase;
+        wb = (u32)(uintptr_t)WaBase;
         off = (u32)(uintptr_t)WaOffFE;
-        a2 = *(s16 *)(uintptr_t)((uintptr_t)wb + off);
+        __asm__ volatile("add r1, r2, r3\n\tmovs r3, #0\n\tldrsh r1, [r1, r3]"
+                         : "=r"(a2), "+r"(wb), "+r"(off)
+                         : : "cc", "memory");
         off = (u32)(uintptr_t)WaOffCA;
-        pca = (s16 *)(uintptr_t)((uintptr_t)wb + off);
-        a3 = *pca;
-        _080026FF4((void *)(uintptr_t)rec, (int)a2, (int)a3, 0);
+        __asm__ volatile("add r4, r2, r3\n\tmovs r3, #0\n\tldrsh r2, [r4, r3]"
+                         : "+r"(wb), "=r"(pca), "+r"(off)
+                         : : "cc", "memory");
+        _080026FF4((void *)(uintptr_t)rec, (int)a2, (int)wb, 0);
         /* Written as the rotated form the ROM carries EXACTLY: the entry
          * guard reads the bound through r4 (the register the bound pointer
          * holds from its pool add), then the 03004E80 runner claims r4 for
@@ -371,19 +354,30 @@ void _08001B068(int a) {
         i = 0;
         if (i < (int)*pca) {
             s16 *cnt = pca;
-            u32 *q = (u32 *)0x03004E80u;
+            register u32 *q __asm__("r4") = (u32 *)0x03004E80u;
             do {
-                _080270D8(q[0], q[1], i);
-                q = (u32 *)(uintptr_t)((u8 *)q + 284u);
+                u32 x = *(volatile u32 *)(uintptr_t)q;
+                u32 y = *(volatile u32 *)(uintptr_t)((u8 *)q + 4);
+                _080270D8(x, y, i);
+                __asm__ volatile("movs r3, #142\n\tlsl r3, r3, #1\n\tadd r4, r4, r3"
+                                 : "+r"(q) : : "cc");
                 i++;
             } while (i < (int)*cnt);
         }
-        if (*(volatile u16 *)(uintptr_t)((uintptr_t)WaBase + (uintptr_t)WaOffFC) == 5)
-            _08027210(0);
-        else
-            _08027210(1);
-        _08002B474();
-        _08002B280();
+        {
+            register u32 wa_base __asm__("r0") = (u32)(uintptr_t)WaBase;
+            register u32 wa_offset __asm__("r3") = (u32)(uintptr_t)WaOffFC;
+            __asm__ volatile("" : "+r"(wa_base), "+r"(wa_offset)
+                             : : "memory");
+            wa_base += wa_offset;
+            __asm__ volatile("" : "+r"(wa_base) : : "cc");
+            if (*(volatile u16 *)(uintptr_t)wa_base == 5)
+                _08027210(0);
+            else
+                _08027210(1);
+        }
+        _0802B474();
+        _0802B280();
     }
 }
 

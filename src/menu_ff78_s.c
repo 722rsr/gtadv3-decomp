@@ -103,15 +103,31 @@ void MenuFF78_13B68(void *rec_) {
         extern u8 J13B68_E[];
         __asm__(".globl J13B68_E\nJ13B68_E = 0x080CB6AC\n");
         u32 i = 0;
+        /* The ROM copies the table base into r8 in the loop PREHEADER
+           (`mov r8,r9` at 0x08013DD6, before the hoisted `ldr r4`). Declaring
+           the pin outside the loop instead moves the copy into the preheader
+           but forces an extra callee-saved register (`sl`), so the frame and
+           every pool offset change; keeping it inside the loop reproduces the
+           ROM frame exactly and leaves only these five bytes. */
         if ((int)i < (int)((s8 *)(uintptr_t)base)[(u32)(s32)*(s16 *)(uintptr_t)(rec + 174) * 20]) {
-            /* agbcc keeps the loop's copy of `base` in r8, one block late:
-               the ROM has `mov r8,r9` in the preheader (before the hoisted
-               `ldr r4`), this form emits it as the loop's first insn.  */
             for (;;) {
                 register u8 *lp __asm__("r8") = base;
                 __asm__ volatile("" : "+r"(lp));
+                /* NOTE: pinning the event-word table base to r4 here (to force
+                   the ROM's preheader order `mov r8,r9` then `ldr r4,[pc]`)
+                   costs an extra callee-saved register and 4 bytes -- measured
+                   at 641/744. The inline literal below is the 735/740 form.
+                   Round 2 (build/cases_13b68c.py, 11 more variants): a memory
+                   clobber on the `lp`/`idx_base` barriers, no barrier, and a
+                   plain (unpinned) `u8 *lp` all measure 735/740 (the unpinned
+                   form drops to 640) -- agbcc's scheduler emits the pool
+                   `ldr r4,[pc]` first regardless of the C order. */
+                /* Keep the event-table literal in r1 before index arithmetic. */
+                register const s16 *idx_base __asm__("r1") =
+                    (const s16 *)(uintptr_t)J13B68_E;
+                __asm__ volatile("" : "+r"(idx_base));
                 Sub_08007B18((void *)rec,
-                             (int)*(s16 *)(uintptr_t)((u8 *)J13B68_E + i * 2),
+                             (int)idx_base[i],
                              (int)*(u32 *)(uintptr_t)(0x080CB6E0u + i * 8),
                              (int)*(u32 *)(uintptr_t)(0x080CB6E0u + 4 + i * 8),
                              4, 1, 1, 0);
