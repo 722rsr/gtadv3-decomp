@@ -26,17 +26,13 @@ void Race_Scene_Dispatch_19_86C(void) {
         default: break;
     }
 }
-#ifndef __APPLE__
 void _08001986C(void) __attribute__((alias("Race_Scene_Dispatch_19_86C")));
-#endif
 
 // _08001D6D0: bx lr stub
 void Race_Scene_BxLr(void) {}
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _08001D6D0(void) __attribute__((alias("Race_Scene_BxLr")));
 void sub_08001D6D0(void) __attribute__((alias("Race_Scene_BxLr")));
-#endif
 
 // _08001D6D4: 12-way event dispatcher via table 0x08001D6EC. The ROM entry is
 //   `push {lr}; adds r3,r1,#0; subs r0,#1; cmp r0,#11; bhi <ret>`, so the
@@ -47,10 +43,7 @@ void sub_08001D6D0(void) __attribute__((alias("Race_Scene_BxLr")));
 //   (id, x, y) — not the 4-arg (a, ev, b, c) form this file used to declare.
 // Case order in the source is the code emission order (0x08001D71C onward):
 //   id1 -> 0x0801AAA0, id4 -> 0x0801B024, id5 -> 0x0801D224,
-//   id7 -> 0x0801D6D0 (the `bx lr` stub, a real call, spelled
-//   Race_Scene_BxLr — the `_08001D6D0` alias exists only under
-//   `#ifndef __APPLE__`, so calling it unguarded would be an implicit
-//   declaration in the host build; both spellings emit the same call),
+//   id7 -> 0x0801D6D0 (the `bx lr` stub, a real call, spelled Race_Scene_BxLr),
 //   id12 -> 0x0801D654,
 //   id6 -> 0x0801B364((u16)x,(u16)y), id8 -> 0x0801D288. Ids 2,3,9,10,11
 //   and out-of-range 0 / >12 fall through to the shared epilogue.
@@ -64,7 +57,6 @@ extern void RaceScene_B364(u16 x, u16 y); // 0x0801B364 (id6)
 // derives rule 6 from closure branch targets, so a friendly name reads as
 // "no VMA and not a promoted export". Same shape as FF_CALLEE (menu_ff78_f.c),
 // MS_CALLEE (menu_stage.c) and R35_CALLEE (rec35_mid_region.c).
-#ifndef __APPLE__
 #define RS_CALLEE(friendly, closure) closure
 extern void _08001AAA0(void);
 extern void _08001B024(void);
@@ -83,9 +75,6 @@ extern void sub_080019AEC(int mode);          // 0x08019AEC; real body is race_s
                                              // `sub_080019AEC`. The 9-digit `_080019AEC`
                                              // is also a closure label but has no C
                                              // definition, so calling it reaches the ROM body instead of C.
-#else
-#define RS_CALLEE(friendly, closure) friendly
-#endif
 void Race_Scene_EventDispatch_1D6D4(int id, int x, int y) {
     switch (id) {
     case 1: RS_CALLEE(RaceScene_Init_AAA0, _08001AAA0)(); break;
@@ -98,9 +87,7 @@ void Race_Scene_EventDispatch_1D6D4(int id, int x, int y) {
     default: break;
     }
 }
-#ifndef __APPLE__
 void _08001D6D4(int a, int b, int c) __attribute__((alias("Race_Scene_EventDispatch_1D6D4")));
-#endif
 
 // _08001A294: race init FSM. asm evidence (race_scene.s 0x08001A294 head):
 // zeroes u16@pool(0x08001A2BC-data), 3-word store, CpuSet 0x0802D974(sp-templ),
@@ -117,9 +104,7 @@ void Race_Scene_Init_1A294(void) {
     RaceScene_Dispatch_A12C();
     RaceScene_Leaf_A204();
 }
-#ifndef __APPLE__
 void _08001A294(void) __attribute__((alias("Race_Scene_Init_1A294")));
-#endif
 
 // _08001A4AC — the race seeder (asm/race_scene.s 0x08001A4AC–0x08001A740).
 // Full transcription. Reads s16[0x03001780+0x10FC] as the mode, indexes the
@@ -228,9 +213,7 @@ tail: {
     }
 }
 }
-#ifndef __APPLE__
 void _08001A4AC(void) __attribute__((alias("Race_Scene_Dispatch_1A4AC")));
-#endif
 
 extern void Sub_08002A86C(void *rec, u32 bits, u32 flag);
 void Race_Scene_BHandler_1B410(void) {
@@ -251,9 +234,7 @@ void Race_Scene_BHandler_1B410(void) {
     Ghost_FlagOp(128u, 1);
     Ghost_FlagOp(0x10000u, 1);
 }
-#ifndef __APPLE__
 void _08001B410(void) __attribute__((alias("Race_Scene_BHandler_1B410")));
-#endif
 
 // _08001B024 — ROM characterisation (measured, 68 B, 0x08001B024-0x08001B067,
 // pure Thumb, no callee-saved register, pool of exactly two words at +0x3C/+0x40).
@@ -304,12 +285,10 @@ extern void Sub_08002B50(void);
 extern void Sub_08002BB4(void);
 extern void Sub_08002B44(void);
 extern void Sub_0802B5AC(void);
-#ifndef __APPLE__
 extern void sub_08002B50(void);
 extern void sub_08002BB4(void);
 extern void sub_08002B44(void);
 extern void _0802B5AC(void);
-#endif
 
 void Race_Scene_Leaf_1B024(void) {
     __asm__(".set gRaceCtx1B024, 0x03004E20\n");
@@ -323,9 +302,7 @@ void Race_Scene_Leaf_1B024(void) {
     gRaceCtx1B024->f20 = 0;
     RS_CALLEE(Sub_0802B5AC, _0802B5AC)();
 }
-#ifndef __APPLE__
 void _08001B024(void) __attribute__((alias("Race_Scene_Leaf_1B024")));
-#endif
 
 // _08001B130: small flag wrapper, switch r0 0/1/2 (Ghost flags 0x200000 etc.)
 extern void Sub_08009674(void);
@@ -350,9 +327,7 @@ void Race_Scene_Leaf_1B130(int a0) {
         Ghost_FlagOp(0x100000u, 0); // 128<<13 = 0x100000
     }
 }
-#ifndef __APPLE__
 void _08001B130(int a0) __attribute__((alias("Race_Scene_Leaf_1B130")));
-#endif
 
 // _08001B1A4: 6-way dispatcher on a0 0..5 via table 0x0801B1CC (lsl #2 / mov pc)
 // Pools: _08001B1CC table, flag 0x200000 (128<<14) etc., no large racectx
@@ -397,13 +372,9 @@ void Race_Scene_Dispatch_1B1A4(int a0) {
     // but the ROM keeps the pair as two pool words plus `adds r1,r1,r2`.
     // Declaring the absolute symbol INSIDE the body is required -- the slice
     // link splices only this section, so a file-scope one never reaches code.o.
-#ifndef __APPLE__
     extern u8 RSWa[] __asm__("RSWa");
     __asm__(".globl RSWa\nRSWa = 0x03001780\n");
 #define RS_WA RSWa
-#else
-#define RS_WA ((volatile u8 *)(uintptr_t)0x03001780u)
-#endif
     int r4 = a0;
     if (Ghost_FlagTest(0x100000u) == 0) { // 128<<13 = 0x100000
         _08001B068(0);
@@ -419,16 +390,12 @@ void Race_Scene_Dispatch_1B1A4(int a0) {
         // sub_08009674 left in r0, i.e. its return value. The int-returning
         // re-spelling keeps the closure's VMA symbol while giving the call a
         // result to forward.
-#ifndef __APPLE__
         // Every callee below is called by the CLOSURE spelling, which is not the
         // friendly one: `arm-none-eabi-nm -n build-code/code.o` binds
         // sub_08009674 / sub_0800968C / sub_08001B498 / _08018AA8 / _080019AEC,
         // and a promoted body spliced into the slice has no asm to fall back on.
         case 2: { extern int Sub_08009674r(void) __asm__("sub_08009674");
                   RS_CALLEE(Race_Scene_Leaf_1B130, _08001B130)(Sub_08009674r()); } break;
-#else
-        case 2: Sub_08009674(); Race_Scene_Leaf_1B130(0); break;
-#endif
         // case 3 @ +0x56: the second call's result is truncated to s16
         // (`lsls r0,#16 / asrs r0,#16`) before Sub_08019AEC sees it.
         case 3:
@@ -458,14 +425,11 @@ void Race_Scene_Dispatch_1B1A4(int a0) {
         default: break;
     }
 }
-#ifndef __APPLE__
 void _08001B1A4(int a0) __attribute__((alias("Race_Scene_Dispatch_1B1A4")));
 // Exported by the manifest entry as `sub_08001B1A4`; defined here so the slice
 // link has a symbol to bind once this body is spliced out of asm/race_scene.s.
 void sub_08001B1A4(int a0) __attribute__((alias("Race_Scene_Dispatch_1B1A4")));
-#endif
 #undef RS_WA
-
 
 
 // _08001D218: wrapper for sub_08009B28 (no pool)
@@ -480,55 +444,39 @@ void Race_Scene_Wrapper_1D218(void) { _08009B28(); }
 // body's `.size`, i.e. still inside the body's own section, and pads with
 // the explicit `0` fill instead.
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _08001D218(void) __attribute__((alias("Race_Scene_Wrapper_1D218")));
-#endif
 
 void Race_Scene_BxLr_1D9C8(void) {}
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void sub_08001D9C8(void) __attribute__((alias("Race_Scene_BxLr_1D9C8")));
 void _08001D9C8(void) __attribute__((alias("Race_Scene_BxLr_1D9C8")));
-#endif
 // ROM body is a bare `bx lr`; every C caller in src/race_scene_c.c re-materialises
 // r0 = rec before the `bl` (0x801e6cc, 0x801e970,...), so the lifted source
 // passes rec even though this stub never reads it.
 void Race_Scene_BxLr_1E9D8(void *rec) { (void)rec; }
 __asm__(".align 2, 0");
 void sub_08001E9D8(void *) __attribute__((alias("Race_Scene_BxLr_1E9D8")));
-#ifndef __APPLE__
 void _08001E9D8(void *) __attribute__((alias("Race_Scene_BxLr_1E9D8")));
-#endif
 void sub_08001EBA4(void) __attribute__((alias("Race_Scene_BxLr_1EBA4")));
 void Race_Scene_BxLr_1EBA4(void) {}
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _08001EBA4(void) __attribute__((alias("Race_Scene_BxLr_1EBA4")));
 void sub_08001F6A0(void) __attribute__((alias("Race_Scene_BxLr_1F6A0")));
-#endif
 void Race_Scene_BxLr_1F6A0(void *rec) { (void)rec; }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void sub_080020878(void) __attribute__((alias("Race_Scene_BxLr_20878")));
 void _08001F6A0(void *rec) __attribute__((alias("Race_Scene_BxLr_1F6A0")));
-#endif
 void Race_Scene_BxLr_20878(void) {}
 __asm__(".align 2, 0");
 void sub_08002099C(void) __attribute__((alias("Race_Scene_BxLr_2099C")));
-#ifndef __APPLE__
 void _080020878(void) __attribute__((alias("Race_Scene_BxLr_20878")));
-#endif
 void sub_080021248(void) __attribute__((alias("Race_Scene_BxLr_21248")));
 void Race_Scene_BxLr_2099C(void) {}
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _08002099C(void) __attribute__((alias("Race_Scene_BxLr_2099C")));
-#endif
 void Race_Scene_BxLr_21248(void) {}
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _080021248(void) __attribute__((alias("Race_Scene_BxLr_21248")));
-#endif
 
 // _08001F554: hdr = MgrGet80/Sub_08004B68(void); ldrh Vu16 +0; Sub_08002158(6, Vu16)
 // Pools: none, widths ldrh Vu16 +0, lsls #16 lsrs #16 for val, bl numeric 0x08004B68(void)/0x08002158
@@ -547,9 +495,7 @@ void Race_Scene_Leaf_F554(void *a) {
 // where gas closes the Thumb code section with the `nop` filler 0x46c0.
 // 18/20, every instruction already byte-correct.
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _08001F554(void *a) __attribute__((alias("Race_Scene_Leaf_F554")));
-#endif
 
 // _08002124C: same shape and the SAME two callees as _08001F554 (verified by
 // decoding both BLs at +2 and +10 out of baserom.gba: both resolve to
@@ -567,10 +513,8 @@ void Race_Scene_Leaf_2124C(void *a) {
     _08002158(6, (int)v);
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void sub_08002124C(void *a) __attribute__((alias("Race_Scene_Leaf_2124C")));
 void _08002124C(void *a) __attribute__((alias("Race_Scene_Leaf_2124C")));
-#endif
 
 // _08001E338: ldrh Vu16 +182; if ==1 then sub_08007B18(a,7,8,112,5,1,1,0)
 // Pools: none, widths ldrh Vu16 +182, cmp #1 bne, stack 5/1/1/0, regs 7/8/112, bl sub_08007B18
@@ -580,10 +524,8 @@ void Race_Scene_Leaf_E338(void *a) {
     if (v != 1) return;
     sub_08007B18(a, 7, 8, 112, 5, 1, 1, 0);
 }
-#ifndef __APPLE__
 void _08001E338(void *a) __attribute__((alias("Race_Scene_Leaf_E338")));
 void sub_08001E338(void *a) __attribute__((alias("Race_Scene_Leaf_E338")));
-#endif
 
 // _08001E364: ldrh Vu16 +184; if ==1 then sub_08007B18(a,11,8,128,5,1,1,0)
 // Pools: none, widths ldrh Vu16 +184, cmp #1 bne, stack 5/1/1/0, regs 11/8/128, bl sub_08007B18
@@ -592,10 +534,8 @@ void Race_Scene_Leaf_E364(void *a) {
     if (v != 1) return;
     sub_08007B18(a, 11, 8, 128, 5, 1, 1, 0);
 }
-#ifndef __APPLE__
 void _08001E364(void *a) __attribute__((alias("Race_Scene_Leaf_E364")));
 void sub_08001E364(void *a) __attribute__((alias("Race_Scene_Leaf_E364")));
-#endif
 
 // _08001E390: ldrh Vu16 +184; if ==1 then sub_08007B18(a,14,8,128,5,1,1,0)
 // Pools: none, widths ldrh Vu16 +184, cmp #1 bne, stack 5/1/1/0, regs 14/8/128, bl sub_08007B18
@@ -604,18 +544,12 @@ void Race_Scene_Leaf_E390(void *a) {
     if (v != 1) return;
     sub_08007B18(a, 14, 8, 128, 5, 1, 1, 0);
 }
-#ifndef __APPLE__
 void _08001E390(void *a) __attribute__((alias("Race_Scene_Leaf_E390")));
 void sub_08001E390(void *a) __attribute__((alias("Race_Scene_Leaf_E390")));
-#endif
 
 
 // ROM entry alias.
-#ifndef __APPLE__
 void _0801986C(void) __attribute__((alias("Race_Scene_Dispatch_19_86C")));
-#endif
 
 // ROM entry alias.
-#ifndef __APPLE__
 void RaceScene_Frame_B024(void) __attribute__((alias("Race_Scene_Leaf_1B024")));
-#endif

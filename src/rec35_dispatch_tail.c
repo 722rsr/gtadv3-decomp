@@ -58,11 +58,7 @@
 // Callees (HOST_STUB = weak decl on Apple host builds, extern on ARM; strong
 // bodies win on the ARM link).
 // ----------------------------------------------------------------------------
-#ifdef __APPLE__
-#define HOST_STUB(sig) __attribute__((weak)) sig
-#else
 #define HOST_STUB(sig) extern sig
-#endif
 
 HOST_STUB(int _0802D978(int a, int b));                                 // swi Div (quotient)
 HOST_STUB(int _0802D97C(int a, int b));                                 // swi DivRem (remainder)
@@ -100,20 +96,14 @@ void Rec35_Gate_186A8(void *rec) {
     // collapses into one pool word 0x03002858 (measured). Same lever as
     // src/ai_award_leaves.c (Ai_SetOwnedFlag); the `.globl` definition goes
     // INSIDE the function because agbcc folds a file-scope one away.
-#ifndef __APPLE__
     extern u8 Rec35Wa2[] __asm__("Rec35Wa2");
     volatile u8 *wa = (volatile u8 *)(uintptr_t)Rec35Wa2;
     __asm__(".globl Rec35Wa2\nRec35Wa2 = 0x03001780\n");
-#else
-    volatile u8 *wa = (volatile u8 *)(uintptr_t)0x03001780u;
-#endif
     u32 x = *(volatile u32 *)(wa + 0x10D8);
     if (_0802D978(_0802D97C((int)x, 48), 24) != 0)
         _08007B18((void *)((volatile u8 *)rec + 28), 13, 88, 112, 0, 0, 0, 0);
 }
-#ifndef __APPLE__
 void _0800186A8(void *rec) __attribute__((alias("Rec35_Gate_186A8")));
-#endif
 
 // _0800186F0: 12-way table dispatcher on ev-1 (table 0x08018708; bhi ->
 // default). ev1->183D8, ev5->18420, ev6->18540(u16 a,b), ev7->186A8,
@@ -129,10 +119,8 @@ void Rec35_Dispatch_186F0(int ev, int a, int b, void *rec) {
     }
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _0800186F0(int ev, int a, int b, void *rec)
     __attribute__((alias("Rec35_Dispatch_186F0")));
-#endif
 
 // _08001876C: sub_08007664(0,0x08292B40,7); u32[ctx]=150; u32[ctx+4]=0.
 void Rec35_Setup_1876C(void *ctx) {
@@ -141,9 +129,7 @@ void Rec35_Setup_1876C(void *ctx) {
     *(volatile u32 *)(c + 0) = 150;
     *(volatile u32 *)(c + 4) = 0;
 }
-#ifndef __APPLE__
 void _08001876C(void *ctx) __attribute__((alias("Rec35_Setup_1876C")));
-#endif
 
 // _08001878C: s32 countdown + _08004EC0(1) latch (r0=1 at the ROM call).
 //
@@ -168,17 +154,13 @@ void Rec35_Countdown_1878C(void *ctx) {
 // section, and pads with the explicit `0` fill where gas would close a Thumb
 // code section with a `nop` (0x46c0).
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _08001878C(void *ctx) __attribute__((alias("Rec35_Countdown_1878C")));
-#endif
 
 // _0800187B0: bx lr stub (incoming rec/u16/u16 all dead).
 void Rec35_BxLr_187B0(void *a, int b, int c) { (void)a; (void)b; (void)c; }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _0800187B0(void *a, int b, int c) __attribute__((alias("Rec35_BxLr_187B0")));
 void sub_0800187B0(void *a, int b, int c) __attribute__((alias("Rec35_BxLr_187B0")));
-#endif
 
 // _0800187B4: v=(u8[WA+0x10C0]!=0 ? (clear,1) : 2); u16[base+84]=v.
 //
@@ -189,13 +171,9 @@ void sub_0800187B0(void *a, int b, int c) __attribute__((alias("Rec35_BxLr_187B0
 //    so the offset is a shifted value in its own local, not the literal
 //    0x10C0 (same idiom as src/ai_award_leaves.c Ai_SetOwnedFlag).
 void Rec35_Leaf_187B4(void *rec, void *base, int c) {
-#ifndef __APPLE__
     extern u8 Rec35Wa187B4[] __asm__("Rec35Wa187B4");
     volatile u8 *wa = (volatile u8 *)(uintptr_t)Rec35Wa187B4;
     __asm__(".globl Rec35Wa187B4\nRec35Wa187B4 = 0x03001780\n");
-#else
-    volatile u8 *wa = (volatile u8 *)(uintptr_t)0x03001780u;
-#endif
     u32 off = 134;
     off = off << 5;
     volatile u8 *p = wa + off;
@@ -208,9 +186,7 @@ void Rec35_Leaf_187B4(void *rec, void *base, int c) {
         *(volatile u16 *)(b + 84) = 2;
     }
 }
-#ifndef __APPLE__
 void _0800187B4(void *a, void *b, int c) __attribute__((alias("Rec35_Leaf_187B4")));
-#endif
 
 // _0800187D8: cmp-chain dispatcher (2->7B4, 1->76C, 5->78C, 6->7B0).
 // ev is u32: agbcc then picks the ROM's unsigned `bhi` for the switch's
@@ -224,10 +200,8 @@ void Rec35_Dispatch_187D8(u32 ev, int a, int b, void *rec) {
         default: break;
     }
 }
-#ifndef __APPLE__
 void _0800187D8(u32 ev, int a, int b, void *rec)
     __attribute__((alias("Rec35_Dispatch_187D8")));
-#endif
 
 // _08001881C: sub_08007664(0,0x08292B40,10); u32[ctx]=150; u32[ctx+4]=0.
 void Rec35_Setup_1881C(void *ctx) {
@@ -236,9 +210,7 @@ void Rec35_Setup_1881C(void *ctx) {
     *(volatile u32 *)(c + 0) = 150;
     *(volatile u32 *)(c + 4) = 0;
 }
-#ifndef __APPLE__
 void _08001881C(void *ctx) __attribute__((alias("Rec35_Setup_1881C")));
-#endif
 
 // _08001883C: countdown twin of _08001878C — same 36-byte ROM span, same
 // parameter-derived shape (see the note above it).
@@ -252,26 +224,20 @@ void Rec35_Countdown_1883C(void *ctx) {
     }
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _08001883C(void *ctx) __attribute__((alias("Rec35_Countdown_1883C")));
-#endif
 
 // _080018860: bx lr stub (incoming rec/u16/u16 all dead).
 void Rec35_BxLr_18860(void *a, int b, int c) { (void)a; (void)b; (void)c; }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _080018860(void *a, int b, int c) __attribute__((alias("Rec35_BxLr_18860")));
 void sub_080018860(void *a, int b, int c) __attribute__((alias("Rec35_BxLr_18860")));
-#endif
 
 // _080018864: interior BL entry — u16[base+84]=1 (r0/c dead).
 void Rec35_Leaf_18864(void *rec, void *base, int c) {
     (void)rec; (void)c;
     *(volatile u16 *)((volatile u8 *)base + 84) = 1;
 }
-#ifndef __APPLE__
 void _080018864(void *a, void *b, int c) __attribute__((alias("Rec35_Leaf_18864")));
-#endif
 
 // _08001886C: cmp-chain dispatcher twin (2->864, 1->81C, 5->83C, 6->860).
 // u32 ev -> `bhi` range test, matching the ROM and its 187D8 twin.
@@ -284,10 +250,8 @@ void Rec35_Dispatch_1886C(u32 ev, int a, int b, void *rec) {
         default: break;
     }
 }
-#ifndef __APPLE__
 void _08001886C(u32 ev, int a, int b, void *rec)
     __attribute__((alias("Rec35_Dispatch_1886C")));
-#endif
 
 // _0800188B0: menu record-type switch over s16[rec]. sp frame 32 B (r5=rec).
 void Rec35_RecordSwitch_188B0(void *rec) {
@@ -352,13 +316,9 @@ void Rec35_RecordSwitch_188B0(void *rec) {
     }
     _08002E0A4((void *)(wa + 0x10FC), rec, 56);
 }
-#ifndef __APPLE__
 void _0800188B0(void *rec) __attribute__((alias("Rec35_RecordSwitch_188B0")));
-#endif
 
 // ROM entry alias.
-#ifndef __APPLE__
 void UiPacket_Consume(void *rec) __attribute__((alias("Rec35_RecordSwitch_188B0")));
 void _080188B0(void *rec) __attribute__((alias("Rec35_RecordSwitch_188B0")));
 void sub_080188B0(void *rec) __attribute__((alias("Rec35_RecordSwitch_188B0")));
-#endif

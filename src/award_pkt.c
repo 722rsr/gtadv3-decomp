@@ -42,7 +42,5 @@ void Award_BuildTierPacket(void) {
     UiPacket_Consume(pkt);
 }
 
-#ifndef __APPLE__
 void _0800B0BC(void) __attribute__((alias("Award_BuildTierPacket")));
 void Sub_0800B0BC(void) __attribute__((alias("Award_BuildTierPacket")));
-#endif

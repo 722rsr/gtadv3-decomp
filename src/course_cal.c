@@ -70,7 +70,6 @@ s16 Course_GetParam(int idx) {
 }
 
 // Legacy aliases so existing BLs resolve (ARM only; alias unsupported on Darwin host)
-#ifndef __APPLE__
 s16 _080258B8(int idx) __attribute__((alias("Course_GetCup")));
 s16 sub_080258B8(int idx) __attribute__((alias("Course_GetCup")));
 s16 _080258CC(int idx) __attribute__((alias("Course_GetSeqnum")));
@@ -78,10 +77,7 @@ s16 _080258E0(int idx) __attribute__((alias("Course_GetSong")));
 s16 _080258F4(int idx) __attribute__((alias("Course_GetCourseDefault")));
 s16 _08025908(int idx) __attribute__((alias("Course_GetCourseVariant")));
 s16 _0802591C(int idx) __attribute__((alias("Course_GetParam")));
-#endif
 
 // ROM entry alias.
-#ifndef __APPLE__
 s16 _0800258B8(int idx) __attribute__((alias("Course_GetCup")));
 s16 _0800258CC(int idx) __attribute__((alias("Course_GetSeqnum")));
-#endif

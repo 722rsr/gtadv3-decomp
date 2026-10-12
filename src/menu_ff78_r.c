@@ -10,25 +10,6 @@
 
 #include "gba/types.h"
 
-#ifdef __APPLE__
-__attribute__((weak)) void Sub_08007770(int a, void *b, int c, int d, u32 e, u32 f) { (void)a; (void)b; (void)c; (void)d; (void)e; (void)f; }
-__attribute__((weak)) void Sub_0800DAB8(void *a) { (void)a; }
-__attribute__((weak)) void Sub_080075E8(void *a, int b, int c) { (void)a; (void)b; (void)c; }
-__attribute__((weak)) void Sub_0800798C(void *a, void *b) { (void)a; (void)b; }
-__attribute__((weak)) void Sub_08007A58(void *a) { (void)a; }
-__attribute__((weak)) void Sub_08007ABC(u32 a, u32 b, u32 c) { (void)a; (void)b; (void)c; }
-__attribute__((weak)) void Sub_0800D77C(void *a, int b, int c) { (void)a; (void)b; (void)c; }
-__attribute__((weak)) int Sub_08002124(u32 v) { (void)v; return 0; }
-__attribute__((weak)) void Sub_08002B214(int v) { (void)v; }
-__attribute__((weak)) void Sub_080012E5C(int v) { (void)v; }
-__attribute__((weak)) int Sub_080012E74(int v) { (void)v; return 0; }
-__attribute__((weak)) void Sub_080012F98(void *a) { (void)a; }
-__attribute__((weak)) void Sub_080013024(void *a) { (void)a; }
-__attribute__((weak)) u32 Sub_0800572C(int v) { (void)v; return 0; }
-__attribute__((weak)) int Sub_08024C3C(int v) { return v; }
-__attribute__((weak)) int Sub_08024C58(int v) { return v; }
-__attribute__((weak)) void Sub_0800D9A4(void *a, int b, int c) { (void)a; (void)b; (void)c; }
-#else
 extern void Sub_08007770(int a, void *b, int c, int d, u32 e, u32 f);
 extern void _08007770(int a, void *b, int c, int d, u32 e, u32 f); // R2-faithful strong body
 extern void Sub_0800DAB8(void *a);
@@ -47,7 +28,6 @@ extern u32 Sub_0800572C(int v);
 extern int Sub_08024C3C(int v);
 extern int Sub_08024C58(int v);
 extern void Sub_0800D9A4(void *a, int b, int c);
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_080013108 — (rec):
@@ -157,8 +137,6 @@ void MenuFF78_13108(void *rec_) {
         }
     }
 }
-#ifndef __APPLE__
 void _080013108(void *a) __attribute__((alias("MenuFF78_13108")));
 void Sub_080013108(void *a) __attribute__((alias("MenuFF78_13108")));
 void sub_080013108(void *a) __attribute__((alias("MenuFF78_13108")));
-#endif

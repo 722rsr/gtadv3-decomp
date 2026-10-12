@@ -25,64 +25,6 @@
 // `Sub_08002C98` name is only the host stub over there.
 extern void sub_08002C98(void);
 
-#ifdef __APPLE__
-__attribute__((weak)) void  _080038A4(int a, int b, const void *c) { (void)a; (void)b; (void)c; }
-__attribute__((weak)) void  _08026A20(void *o, int x, int y) { (void)o; (void)x; (void)y; }
-__attribute__((weak)) void  _08003ADC(int a, int b) { (void)a; (void)b; }
-__attribute__((weak)) void  _0800CFE4(void *a) { (void)a; }
-__attribute__((weak)) void  _0800D048(void *a, u16 b, u16 c) { (void)a; (void)b; (void)c; }
-__attribute__((weak)) void  _08007770(int a, void *b, int c, int d, u32 e, u32 f) {
-    (void)a; (void)b; (void)c; (void)d; (void)e; (void)f;
-}
-__attribute__((weak)) void  Sub_08007770(int a, void *b, int c, int d, u32 e, u32 f) {
-    (void)a; (void)b; (void)c; (void)d; (void)e; (void)f;
-}
-__attribute__((weak)) u32   _080056DC(int a) { (void)a; return 0; }
-__attribute__((weak)) u32   _080056C4(int a) { (void)a; return 0; }
-__attribute__((weak)) void  _0802C548(u32 ch) { (void)ch; }
-__attribute__((weak)) void  _0802C614(u32 ch) { (void)ch; }
-__attribute__((weak)) int   _08001CB4(void) { return 0; }
-__attribute__((weak)) int   _08001E14(void) { return 0; }
-__attribute__((weak)) void *_08006C10(void *s, int d) { (void)s; (void)d; return 0; }
-__attribute__((weak)) int   _08006C94(void *s, void *p) { (void)s; (void)p; return 0; }
-__attribute__((weak)) void  _08005BA8(void *a, int b) { (void)a; (void)b; }
-__attribute__((weak)) void  _08005DA4(void *a, void *b) { (void)a; (void)b; }
-__attribute__((weak)) int   _08005E14(void *a, void *b, void *c) { (void)a; (void)b; (void)c; return 0; }
-__attribute__((weak)) void *_08007498(void *x, int i) { (void)x; (void)i; return 0; }
-__attribute__((weak)) void *_0800748C(void *x) { (void)x; return 0; }
-__attribute__((weak)) void  _0802D988(const void *s, void *d) { (void)s; (void)d; }
-__attribute__((weak)) void  _0802D970(const void *s, void *d, u32 c) { (void)s; (void)d; (void)c; }
-__attribute__((weak)) void  _0802D974(const void *s, void *d, u32 c) { (void)s; (void)d; (void)c; }
-__attribute__((weak)) s16   _080261B0(int a) { (void)a; return 0; }
-__attribute__((weak)) s16   _080261F8(int a) { (void)a; return 0; }
-__attribute__((weak)) void  _0800798C(void *a, void *b) { (void)a; (void)b; }
-__attribute__((weak)) void  _08007ABC(void *a, int b, int c) { (void)a; (void)b; (void)c; }
-__attribute__((weak)) void  _080075E8(void *a, int b, int c) { (void)a; (void)b; (void)c; }
-__attribute__((weak)) void  _08007CD0(void *a, int b, int c, int d, int e, int f, int g) {
-    (void)a; (void)b; (void)c; (void)d; (void)e; (void)f; (void)g;
-}
-__attribute__((weak)) void  _08007BFC(void *a, int b, int c, int d, int e, int f, int g, int h, int i) {
-    (void)a; (void)b; (void)c; (void)d; (void)e; (void)f; (void)g; (void)h; (void)i;
-}
-__attribute__((weak)) void  _080056FC(void) {}
-__attribute__((weak)) void  _080056B8(int a) { (void)a; }
-// Apple-only no-op counterparts of the closure-spelling callees below. The ARM
-// build calls sub_08003104 / sub_08002B50 / sub_08002BB4 (the names asm/ defines);
-// the host build keeps the old no-op behaviour through these stubs.
-__attribute__((weak)) void  _08003104(void *a) { (void)a; }
-__attribute__((weak)) void  _080032E0(void *a) { (void)a; }
-__attribute__((weak)) void  _08002B50(void) {}
-__attribute__((weak)) void  _08002BB4(void) {}
-__attribute__((weak)) void  _08002B44(void) {}
-__attribute__((weak)) void  _0800D97C(void *a, int b) { (void)a; (void)b; }
-__attribute__((weak)) void  _080023AE4(void *a, int b, int c) { (void)a; (void)b; (void)c; }
-__attribute__((weak)) void  _080023B60(void *a, int b, int c) { (void)a; (void)b; (void)c; }
-__attribute__((weak)) void  _0800DBE8(void *a) { (void)a; }
-__attribute__((weak)) void  _08022D44(void *a, void *b, int c) { (void)a; (void)b; (void)c; }
-__attribute__((weak)) void  _08023E78(void *a) { (void)a; }
-__attribute__((weak)) void  _08002E0A4(void *d, const void *s, u32 n) { (void)d; (void)s; (void)n; }
-__attribute__((weak)) void  _08003940(int a, u32 b) { (void)a; (void)b; }
-#else
 extern void  _080038A4(int a, int b, const void *c);
 extern void  _08026A20(void *o, int x, int y);
 extern void  _08003ADC(int a, int b);
@@ -124,15 +66,10 @@ extern void  _08002E0A4(void *d, const void *s, u32 n);
 extern void  _08003940(int a, u32 b);
 extern void  _080056B8(int a);                            // 0x080056B8
 extern void  sub_08003104(void *a);                      // 0x08003104 closure spelling
-#ifndef __APPLE__
 extern void  sub_080032E0(void *a);                      // 0x080032E0, the closure spelling
-#else
-extern void  _080032E0(void *a);                         // host weak no-op above
-#endif
 extern void  sub_08002B50(void);                         // 0x08002B50 closure spelling
 extern void  sub_08002BB4(void);                         // 0x08002BB4 closure spelling
 extern void  _08002B44(void);                            // 0x08002B44
-#endif
 
 // ============================================================================
 // menu_e650.s — bx lr stubs
@@ -142,10 +79,8 @@ void _0800E7A0(void) { }
 __asm__(".align 2, 0");
 void _0800E7A4(void) { }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void sub_0800E7A0(void) __attribute__((alias("_0800E7A0")));
 void sub_0800E7A4(void) __attribute__((alias("_0800E7A4")));
-#endif
 
 // ============================================================================
 // menu_d13c.s — renderer + 4-way event dispatcher
@@ -167,9 +102,7 @@ void _0800D13C(void *rec)
     _08003ADC(50, (int)*(const s16 *)(rc + 8));
     _08003ADC(60, 97);
 }
-#ifndef __APPLE__
 void sub_0800D13C(void *a) __attribute__((alias("_0800D13C")));
-#endif
 
 void _0800D17C(int ev, int a1, int a2, void *rec)
 {
@@ -192,9 +125,7 @@ void _0800D17C(int ev, int a1, int a2, void *rec)
 // `.size`, still inside the body's own section, and pads with the explicit `0`
 // fill instead -- the same one-liner `_0800D1EC` uses in src/menu_d1b4.c.
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void sub_0800D17C(int a, int b, int c, void *d) __attribute__((alias("_0800D17C")));
-#endif
 
 // ============================================================================
 // menu_c454.s — tilemap fill helpers over resource 0x08292B40
@@ -253,9 +184,7 @@ void _0800C454(void)
         row = next;
     } while (row <= 31);
 }
-#ifndef __APPLE__
 void sub_0800C454(void) __attribute__((alias("_0800C454")));
-#endif
 
 void _0800C4AC(void)
 {
@@ -264,9 +193,7 @@ void _0800C4AC(void)
     extern u32 _08007770(int a, void *b, int c, int d, u32 e, u32 f);
     _08007770(1, (void *)(uintptr_t)0x08292B40u, 12, 0, 0u, 1u);
 }
-#ifndef __APPLE__
 void sub_0800C4AC(void) __attribute__((alias("_0800C4AC")));
-#endif
 
 // 0x0800C4CC — a real 2-byte leaf (`bx lr`), not alignment filler: the two
 void _0800C4CC(void) { }
@@ -281,9 +208,7 @@ void _0802B64C(u32 ch)
     _0802C548((u16)ch);
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void sub_0802B64C(u32 c) __attribute__((alias("_0802B64C")));
-#endif
 
 void _0802B65C(u32 ch)
 {
@@ -294,9 +219,7 @@ void _0802B65C(u32 ch)
 // this body's `.size`, still inside its own section, so it pads with the `0`
 // fill argument instead. No instruction changes.
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void sub_0802B65C(u32 c) __attribute__((alias("_0802B65C")));
-#endif
 
 // ============================================================================
 // code_2254.s — thin wrappers over idle getters
@@ -307,19 +230,15 @@ int _080022CC(void)
     return _08001CB4();
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 int sub_080022CC(void) __attribute__((alias("_080022CC")));
 int Sub_080022CC(void) __attribute__((alias("_080022CC")));
-#endif
 
 int _080022D8(void)
 {
     return _08001E14();
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 int sub_080022D8(void) __attribute__((alias("_080022D8")));
-#endif
 
 // ============================================================================
 // course_proximity_more.s — identity return + proximity search
@@ -332,9 +251,7 @@ void *_08007484(void *x)
     return x;
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void *sub_08007484(void *x) __attribute__((alias("_08007484")));
-#endif
 
 // 0x08007368 — proximity hit test (exact control flow from asm)
 int _08007368(void *state, void *pos, u32 heading_u16, void *out)
@@ -385,9 +302,7 @@ int _08007368(void *state, void *pos, u32 heading_u16, void *out)
     }
     return 0;
 }
-#ifndef __APPLE__
 int sub_08007368(void *a, void *b, u32 c, void *d) __attribute__((alias("_08007368")));
-#endif
 
 // ============================================================================
 // course_stream_tail_more.s — movement predicates
@@ -450,9 +365,7 @@ int _08006D9C(void *state, void *vec)
     }
     return 0;
 }
-#ifndef __APPLE__
 int sub_08006D9C(void *a, void *b) __attribute__((alias("_08006D9C")));
-#endif
 
 void *_08006E1C(void *state, void *pos)
 {
@@ -473,9 +386,7 @@ ret_cur:
     return cur;
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void *sub_08006E1C(void *a, void *b) __attribute__((alias("_08006E1C")));
-#endif
 
 // ============================================================================
 // wrapper_pair.s — resource wrap A/B
@@ -523,9 +434,7 @@ void *_08026230(int idx, void *ptr)
     mgrEnd[1] = accum;
     return (void *)slot;
 }
-#ifndef __APPLE__
 void *sub_08026230(int a, void *b) __attribute__((alias("_08026230")));
-#endif
 
 void _080262A4(void *rec, int sel)
 {
@@ -642,9 +551,7 @@ void _080262A4(void *rec, int sel)
         i++;
     } while (i <= 255);
 }
-#ifndef __APPLE__
 void sub_080262A4(void *a, int b) __attribute__((alias("_080262A4")));
-#endif
 
 // ============================================================================
 // sound_da20.s — IRQ/timer arm + disarm
@@ -667,9 +574,7 @@ void _0802DA58(volatile u16 *src)
     *(volatile u16 **)(uintptr_t)0x03001770u = tm;
     *(volatile u16 *)0x04000208u = 1;
 }
-#ifndef __APPLE__
 void sub_0802DA58(volatile u16 *a) __attribute__((alias("_0802DA58")));
-#endif
 
 void _0802DAE0(void)
 {
@@ -699,9 +604,7 @@ void _0802DAE0(void)
     *ie &= (u16)~(8u << sel);
     *ime = *(volatile u16 *)0x03001774u;
 }
-#ifndef __APPLE__
 void sub_0802DAE0(void) __attribute__((alias("_0802DAE0")));
-#endif
 
 // ============================================================================
 // code_279c.s — BG/affine reset + title paint
@@ -734,9 +637,7 @@ void _08002844(void)
     dma[2] = 0x84000100;
     (void)dma[2];
 }
-#ifndef __APPLE__
 void sub_08002844(void) __attribute__((alias("_08002844")));
-#endif
 
 void _08002924(void)
 {
@@ -745,9 +646,7 @@ void _08002924(void)
     _08003940(90, pair[0]);
     _08003ADC(110, (int)pair[1]);
 }
-#ifndef __APPLE__
 void sub_08002924(void) __attribute__((alias("_08002924")));
-#endif
 
 // 0x080032E0 is now spelled `sub_080032E0`, the closure's spelling. It was a
 // real call all along -- asm/code_279c.s:174 is the matching `bl 0x080032E0` and
@@ -768,38 +667,21 @@ void _080028CC(void)
     *(volatile u16 *)(0x80u << 19) = disp;
     _080056FC();
     _080056B8(0);
-#ifndef __APPLE__
     sub_08003104((void *)0x030035D8u);
-#else
-    _08003104((void *)0x030035D8u);
-#endif
     args = *(const Runtime28CCArgs *)0x0802E1E4u;
-#ifndef __APPLE__
     sub_080032E0((void *)&args);   // the closure spelling; see the note above
-#else
-    _080032E0((void *)&args);      // host weak no-op
-#endif
 }
-#ifndef __APPLE__
 void sub_080028CC(void) __attribute__((alias("_080028CC")));
-#endif
 
 // 0x08002910 — `push {lr} / bl x3 / pop {r0} / bx r0` plus a 2-byte `movs r0,r0`
 void _08002910(void)
 {
-#ifndef __APPLE__
     sub_08002B50();
     sub_08002BB4();
-#else
-    _08002B50();
-    _08002BB4();
-#endif
     _08002B44();
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void sub_08002910(void) __attribute__((alias("_08002910")));
-#endif
 
 
 // 2950 — thin wrapper: `push {lr} / bl ObjFlush_02C98 / pop {r0} / bx r0`,
@@ -811,10 +693,8 @@ void Code2950_ObjFlush(void)
     sub_08002C98();
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _08002950(void) __attribute__((alias("Code2950_ObjFlush")));
 void sub_08002950(void) __attribute__((alias("Code2950_ObjFlush")));
-#endif
 
 // ============================================================================
 // code_24e54.s — table scan + IWRAM wipe
@@ -841,19 +721,15 @@ int _080024E7C(u16 key)
     }
     return -1;
 }
-#ifndef __APPLE__
 int sub_080024E7C(u16 k) __attribute__((alias("_080024E7C")));
 int Sub_080024E7C(u16 k) __attribute__((alias("_080024E7C")));
-#endif
 
 void _080024EFC(void)
 {
     u32 zero = 0;
     _0802D974(&zero, (void *)(uintptr_t)0x030015D8u, 0x05000003u);
 }
-#ifndef __APPLE__
 void sub_080024EFC(void) __attribute__((alias("_080024EFC")));
-#endif
 
 // ============================================================================
 // code_26068.s — award-table placement + OBJ wipe
@@ -883,9 +759,7 @@ void _080026088(int a, int b, int row)
                   (int)(s16)ent[1], (int)v5, 0, 0, 0);
     }
 }
-#ifndef __APPLE__
 void sub_080026088(int a, int b, int c) __attribute__((alias("_080026088")));
-#endif
 
 void _08002612C(void)
 {
@@ -893,9 +767,7 @@ void _08002612C(void)
     _0802D974(&zero, (void *)(uintptr_t)0x030015F0u, 0x05000020u);
     _080056FC();
 }
-#ifndef __APPLE__
 void sub_08002612C(void) __attribute__((alias("_08002612C")));
-#endif
 
 // ============================================================================
 // code_23bd4.s — race presentation tick + BG bind
@@ -917,10 +789,8 @@ void _080023BD4(void *rec)
     }
     _08023E78(rec);
 }
-#ifndef __APPLE__
 void sub_080023BD4(void *a) __attribute__((alias("_080023BD4")));
 void _08023BD4(void *a) __attribute__((alias("_080023BD4")));
-#endif
 
 void _080023C54(void *rec, int mode)
 {
@@ -952,13 +822,9 @@ void _080023C54(void *rec, int mode)
     *gate = (u32)mode;
     *flag = 1;
 }
-#ifndef __APPLE__
 void sub_080023C54(void *a, int b) __attribute__((alias("_080023C54")));
 void _08023C54(void *a, int b) __attribute__((alias("_080023C54")));
-#endif
 
 // ROM entry alias.
-#ifndef __APPLE__
 void _08026088(int a, int b, int row) __attribute__((alias("_080026088")));
 void _0802612C(void) __attribute__((alias("_08002612C")));
-#endif

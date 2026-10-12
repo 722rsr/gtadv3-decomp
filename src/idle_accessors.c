@@ -19,15 +19,9 @@
 // a ROM veneer.
 // `_08001724`, `sub_0802D974` and `_0800295C` are aliases that exist only in
 // the ARM build; the host build keeps calling the real bodies by name.
-#ifndef __APPLE__
 extern void _08001724(u16 mode);                      // StateA_SetReqMode
 extern void sub_0802D974(const void *src, void *dst, u32 ctrl); // CpuSet (swi 0x0B)
 extern void _0800295C(u32 a, u32 b);                   // Warn (foundation_boot.c)
-#else
-extern void StateA_SetReqMode(u16 mode);               // 0x08001724
-extern void CpuSet_2D974(const void *a, void *b, unsigned c);
-extern void Warn(u32 a, u32 b);                        // 0x0800295c
-#endif
 extern int  _08001FE0(int m);                         // 0x08001FE0 (runtime_accessors.c)
 extern void _08001F80(u32 v);                          // Idle_SetRecordCount (below)
 extern void _08001F08(u32 a);                          // Idle_SetupMode3 (idle_dispatch.c)
@@ -179,10 +173,6 @@ void *Idle_GetRecordPtr(int idx) {
 // unmodified tail call, exactly like the promoted 0x080022C0 forwarder. `int`
 // return (not bool) so agbcc does not insert a narrowing sequence after the
 // call; the callee already leaves 0/1 in r0 and the tail call forwards it.
-#ifdef __APPLE__
-int Idle_Wrap_1F24(void) { return Idle_IsMode1(); }
-int Idle_Wrap_1F30(void) { return Idle_IsMode1(); }
-#else
 bool _08001F3C(void);
 int Idle_Wrap_1F24(void) { return _08001F3C(); }
 // Each 10-byte body ends in a 12-byte span whose last halfword the ROM holds
@@ -191,7 +181,6 @@ int Idle_Wrap_1F24(void) { return _08001F3C(); }
 __asm__(".align 2, 0");
 int Idle_Wrap_1F30(void) { return _08001F3C(); }
 __asm__(".align 2, 0");
-#endif
 
 // _08001CB4 -> u32 — raw word at st+0xD0 (asm/idle.s:455).
 u32 Idle_GetD0Word(void) {
@@ -210,21 +199,13 @@ s32 Idle_GetD0WordHalved(void) {
 // Twin of Idle_RequestMode10 below; the ROM pair is byte-identical apart from
 // the immediate (`movs r0,#6` / `str r4,[r0,#0x24]` vs `#10` / `#0x28`).
 void Idle_RequestMode6(u32 arg) {
-#ifndef __APPLE__
     _08001724(6);
-#else
-    StateA_SetReqMode(6);
-#endif
     *st_u32(0x24) = arg;
 }
 
 // _08001FB4(arg) — request mode 10 then latch arg at st+0x28 (asm/idle.s:930).
 void Idle_RequestMode10(u32 arg) {
-#ifndef __APPLE__
     _08001724(10);
-#else
-    StateA_SetReqMode(10);
-#endif
     *st_u32(0x28) = arg;
 }
 
@@ -246,11 +227,7 @@ void Idle_ArenaRegister(void *handle, void *region, int len) {
     int n = len;
     if (n < 0) n += 3;
     u32 ctrl = 0x05000000u | (((u32)n << 9) >> 11);
-#ifndef __APPLE__
     sub_0802D974(&zero, region, ctrl);
-#else
-    CpuSet_2D974(&zero, region, ctrl);
-#endif
     ((u32 *)handle)[0] = (u32)(uintptr_t)region;
     ((u32 *)handle)[1] = (u32)len;
 }
@@ -278,19 +255,13 @@ void *ArenaConsume(void *handle, u32 amt) {
     u32 have;
     if (amt == 0) return 0;
     have = h[1];
-#ifndef __APPLE__
     if ((s32)have < (s32)amt) _0800295C(0x0802E1DCu, amt - have);
-#else
-    if ((s32)have < (s32)amt) Warn(0x0802E1DCu, amt - have);
-#endif
     h[0] = h[0] + amt;
     h[1] = h[1] - amt;
     return (void *)(uintptr_t)old;
 }
-#ifndef __APPLE__
 void *_080020B0(void *a, u32 b) __attribute__((alias("ArenaConsume")));
 void *sub_080020B0(void *a, u32 b) __attribute__((alias("ArenaConsume")));
-#endif
 
 // _08001F80(v) / _08001F8C — record count +0x0A
 //
@@ -340,16 +311,8 @@ void Idle_SetFlag2(u8 v) { Idle_SetFlag2W(v); }
 // src/menu_d280.c:21, and make the body unscorable.
 u32 Idle_GetRecordFiltered(int idx) {
     // ROM (16 B): push {lr} / bl _080015F4 / lsls r0,#16 / lsrs r0,#16 /
-#ifndef __APPLE__
     extern u32 _080015F4(int idx);
-#else
-    extern u16 StateA_GetRecordHalfword(int idx);
-#endif
-#ifndef __APPLE__
     return (u16)_080015F4(idx);
-#else
-    return (u16)StateA_GetRecordHalfword(idx);
-#endif
 }
 // 16-byte body in a 16-byte span: gas closes the section with the 2-byte nop
 // (0x46c0) where the ROM holds `00 00` at 0x0800207A. Emitted after the body's
@@ -357,7 +320,6 @@ u32 Idle_GetRecordFiltered(int idx) {
 __asm__(".align 2, 0");
 
 // Aliases
-#ifndef __APPLE__
 void _08001E48(int a, u32 b) __attribute__((alias("Idle_WriteEvent")));
 u16 _08001E5C(int a, int b) __attribute__((alias("Idle_GetRecordHalfword")));
 u16 _08001E8C(int a, int b) __attribute__((alias("Idle_GetDirectHalfword")));
@@ -382,21 +344,15 @@ u16 _08002050(void) __attribute__((alias("Idle_GetD8Word")));
 void _08002060(u32 v) __attribute__((alias("Idle_SetFlag2W")));
 void Sub_08002060(u32 v) __attribute__((alias("Idle_SetFlag2W")));
 u32 _0800206C(int a) __attribute__((alias("Idle_GetRecordFiltered")));
-#endif
 
 // 0x080022C0 — 4B forwarder: `bl 0x08001F3C; bx lr` (pop {r1}; bx r1 tail).
 // All call sites read it as `mode == 1`.
-#ifndef __APPLE__
 int Idle_22C0_IsMode1(void) { return _08001F3C(); }
-#else
-int Idle_22C0_IsMode1(void) { return Idle_IsMode1(); }
-#endif
 __asm__(".align 2, 0");
 
 // 0x08002298 — 20B: `B = *(u32*)0x030000F4; u8[B+1] = 1; r0 = s16[B+8];
 // _08001F80(r0); _08001F08(rec)` ((consolidated/elsewhere): state-block-B arm — mark
 // flag 1, forward s16[B+8] to the setter, run the record's setup arm).
-#ifndef __APPLE__
 __attribute__((naked)) void Idle_2298_ReloadCurrent(void *rec) {
     __asm__ volatile (
         ".syntax unified\n"
@@ -421,9 +377,6 @@ __attribute__((naked)) void Idle_2298_ReloadCurrent(void *rec) {
         ".syntax divided\n"
     );
 }
-#else
-void Idle_2298_ReloadCurrent(void *rec) { (void)rec; }
-#endif
 
 // 0x08002340 — 8B..0x68: linear search `for (i = 0; i <= 98; i++)
 // if (s16[Ai_IdMap(i)] == v) return i; return -1` over the car-id map
@@ -434,16 +387,10 @@ void Idle_2298_ReloadCurrent(void *rec) { (void)rec; }
 int Idle_IdSearch(int v) {
     s16 want = (s16)v;
     int i;
-#ifndef __APPLE__
     extern int _080022E4(int a);  // closure spelling of Ai_IdMap
-#endif
     for (i = 0; i <= 98; i++) {
         s16 id = (s16)i;
-#ifndef __APPLE__
         if ((s16)_080022E4(id) == want) return id;
-#else
-        if ((s16)Ai_IdMap(id) == want) return id;
-#endif
     }
     return -1;
 }
@@ -477,7 +424,6 @@ __attribute__((naked)) void Idle_Stub_2384(void) {
     );
 }
 
-#ifndef __APPLE__
 int   _08002340(int v) __attribute__((alias("Idle_IdSearch")));
 int   sub_08002340(int v) __attribute__((alias("Idle_IdSearch")));
 void *_08002370(s16 v) __attribute__((alias("Idle_ModeRow")));
@@ -490,4 +436,3 @@ void  Sub_08002298(void *a) __attribute__((alias("Idle_2298_ReloadCurrent")));
 int   _080022C0(void) __attribute__((alias("Idle_22C0_IsMode1")));
 int   sub_080022C0(void) __attribute__((alias("Idle_22C0_IsMode1")));
 int   Sub_080022C0(void) __attribute__((alias("Idle_22C0_IsMode1")));
-#endif

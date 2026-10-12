@@ -21,15 +21,10 @@ extern void _0800210C(void);
 
 // _08002158's callee. The closure spells 0x08001E48 that way, and that exact
 // name is DEFINED in src/idle_accessors.c (alias of Idle_WriteEvent), so the
-// call binds the real C body. Split two-sided: the host build has no VMA-named
-// symbols, so the Apple half must keep the friendly name -- otherwise the
-// host side calls an undefined symbol rather than the writer.
-// tools/apple_decls.py is the only gate that sees an unguarded call half.
-#ifndef __APPLE__
+// call binds the real C body.
 // Word-width payload: the ROM never narrows r1, so the u16 form added an
 // lsls/lsrs pair the body could not match (see src/idle_accessors.c).
 extern void _08001E48(int id, u32 payload);
-#endif
 
 
 // Provide strong aliases for the idle helpers once they exist:
@@ -126,14 +121,9 @@ s32 BlockB_GetMatchOrZero(void) {
 void BlockB_ForwardEvent(int id, u16 payload) {
     volatile BlockB *b = BlockB_Get();
     if (b->ack != 0) return;
-#ifndef __APPLE__
     _08001E48(id, payload);
-#else
-    Idle_WriteEvent(id, payload);
-#endif
 }
 
-#ifndef __APPLE__
 __attribute__((naked)) u16 BlockB_DispatchIfLess(int x) {
     __asm__ volatile (
         ".syntax unified\n"
@@ -160,9 +150,6 @@ __attribute__((naked)) u16 BlockB_DispatchIfLess(int x) {
         ".syntax divided\n"
     );
 }
-#else
-u16 BlockB_DispatchIfLess(int x) { (void)x; return 0; }
-#endif
 
 // _080021A0 — refresh matcher: if +0x0C == expected, scan first +0x0C
 // records via _0800206C and count those equal to param (+0x06), else 0.
@@ -214,7 +201,6 @@ check_ack:
         ((BlockB *)(uintptr_t)*(volatile u32 *)BLOCK_B_SLOT_ADDR)->ack = 0;
 }
 
-#ifndef __APPLE__
 __attribute__((naked)) u16 BlockB_DispatchIfLess2(int x) {
     __asm__ volatile (
         ".syntax unified\n"
@@ -241,12 +227,8 @@ __attribute__((naked)) u16 BlockB_DispatchIfLess2(int x) {
         ".syntax divided\n"
     );
 }
-#else
-u16 BlockB_DispatchIfLess2(int x) { (void)x; return 0; }
-#endif
 
 // Original symbol aliases
-#ifndef __APPLE__
 void _080020E8(u16 v) __attribute__((alias("BlockB_SetExpected")));
 void StateB_InitLink(u16 v) __attribute__((alias("BlockB_SetExpected")));
 void _080020F4(void) __attribute__((alias("BlockB_Register")));
@@ -269,4 +251,3 @@ void StateB_EventCheck(void) __attribute__((alias("BlockB_Frame")));
 u16 _0800222C(int x) __attribute__((alias("BlockB_DispatchIfLess2")));
 void Sub_08002158(int a, u16 b) __attribute__((alias("BlockB_ForwardEvent")));
 u16 Sub_08002178(int x) __attribute__((alias("BlockB_DispatchIfLess")));
-#endif

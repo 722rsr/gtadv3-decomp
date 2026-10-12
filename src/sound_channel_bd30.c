@@ -19,16 +19,7 @@
 //     18/20. (The 17/20 variant drops the `base` pin as well and lets agbcc
 //     fall back to `adds r2,r1,r2`, which reuses r2 for the address node.)
 //   * `base` is itself pinned, and typed as `volatile u8 *` rather than u32:
-//     a u32 round-trip through `(u32)(ptr)` / `(volatile u32*)(u32)` matches
-//     the ROM equally well but emits two pointer-to-int warnings under the
-//     host `tools/apple_decls.py` clang pass. The pointer spelling is exact on
-//     ARM and warning-free on the host.
-//
-// Both compilers for this file were checked directly: `arm-none-eabi-gcc`
-// with `-Wall -Wextra -Werror` (clean), and the host
-// `clang -D__APPLE__ -fsyntax-only... -Werror=implicit-function-declaration`
-// sweep (clean). `register... asm("rN")` is a valid ARM declaration; on the
-// host `-fsyntax-only` accepts it, so the pins need no `__APPLE__` guard.
+//     the pointer spelling is exact on ARM and avoids int-to-pointer casts.
 
 void SoundBD30_Rewind(void *dummy, void *chan){
     register u32 idx asm("r2");
@@ -43,7 +34,5 @@ void SoundBD30_Rewind(void *dummy, void *chan){
     idx = *(volatile u32*)(base + 68);
     *(volatile u32*)(c + 64) = idx;
 }
-#ifndef __APPLE__
 void _0802BD30(void *a, void *b) __attribute__((alias("SoundBD30_Rewind")));
 void sub_0802BD30(void *a, void *b) __attribute__((alias("SoundBD30_Rewind")));
-#endif

@@ -19,11 +19,7 @@
 
 #include "gba/types.h"
 
-#ifdef __APPLE__
-#define HOST_STUB(sig) __attribute__((weak)) sig
-#else
 #define HOST_STUB(sig) extern sig
-#endif
 
 // ---- no-op stubs ----------------------------------------------------------
 void _080012574(volatile void *rec) { (void)rec; }
@@ -47,7 +43,6 @@ __asm__(".align 2, 0");
 void _080015CB0(void) { }
 __asm__(".align 2, 0");
 
-#ifndef __APPLE__
 void sub_080012574(volatile void *rec) __attribute__((alias("_080012574")));
 void sub_080012850(void) __attribute__((alias("_080012850")));
 void sub_080012F14(void) __attribute__((alias("_080012F14")));
@@ -68,7 +63,6 @@ void Sub_0800141A8(void) __attribute__((alias("_0800141A8")));
 void Sub_080014BCC(void) __attribute__((alias("_080014BCC")));
 void Sub_080014C84(void) __attribute__((alias("_080014C84")));
 void Sub_080015CB0(void) __attribute__((alias("_080015CB0")));
-#endif
 
 // ---- sub_080010F3C: cursor-move handler ----------------------------------
 extern int  _08025A8C(int i);            // code_25930.c GetEntry
@@ -157,10 +151,8 @@ void MenuFF78_10F3C(void *rec_, int a1, int a2) {
 _end:
     ;
 }
-#ifndef __APPLE__
 void _080010F3C(void *a, int b, int c) __attribute__((alias("MenuFF78_10F3C")));
 void sub_080010F3C(void *a, int b, int c) __attribute__((alias("MenuFF78_10F3C")));
-#endif
 
 // ============================================================================
 // sub_0800110A0 — cursor-move handler w/ _0802584C (vs 0x10F3C's _08025A8C)
@@ -227,10 +219,8 @@ void MenuFF78_110A0(void *rec_, int a1, int a2) {
 _end:
     ;
 }
-#ifndef __APPLE__
 void _0800110A0(void *a, int b, int c) __attribute__((alias("MenuFF78_110A0")));
 void sub_0800110A0(void *a, int b, int c) __attribute__((alias("MenuFF78_110A0")));
-#endif
 
 // ============================================================================
 // sub_080011484 — cursor-move handler w/ _0802581C (Ai_LineFindCourse) for
@@ -300,10 +290,8 @@ _rebind:
     WR32(rec, 244, (u32)(u16)(u32)RDS16(rec, 172));   // u32[rec+0xF4]
     _080026F50(RD32(rec, 240), (u32)(u16)(u32)RDS16(rec, 172), 7, 0);
 }
-#ifndef __APPLE__
 void _080011484(void *a, int b, int c) __attribute__((alias("MenuFF78_11484")));
 void sub_080011484(void *a, int b, int c) __attribute__((alias("MenuFF78_11484")));
-#endif
 
 // ============================================================================
 // sub_0800115E0 — list-cursor handler w/ u16[rec+190] cursor over the record
@@ -358,10 +346,8 @@ _end:
         WR16(rec, 212, (u16)r0);                          // u16[rec+0xD4]
     }
 }
-#ifndef __APPLE__
 void _0800115E0(void *a, int b, int c) __attribute__((alias("MenuFF78_115E0")));
 void sub_0800115E0(void *a, int b, int c) __attribute__((alias("MenuFF78_115E0")));
-#endif
 
 // ============================================================================
 // sub_0800116DC — small cursor handler w/ u16[rec+192] (clamped 0..2, 99→0),
@@ -398,7 +384,5 @@ void MenuFF78_116DC(void *rec_, int a1, int a2) {
 _end:
     WR16(rec, 212, RD16(rec, 192));                       // u16[rec+0xD4]
 }
-#ifndef __APPLE__
 void _0800116DC(void *a, int b, int c) __attribute__((alias("MenuFF78_116DC")));
 void sub_0800116DC(void *a, int b, int c) __attribute__((alias("MenuFF78_116DC")));
-#endif

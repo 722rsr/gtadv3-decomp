@@ -63,9 +63,7 @@ void EWRAM_Handler_BlobA(void){
     }
     SESS->latch9 = 1;
 }
-#ifndef __APPLE__
 void _08000AF4(void) __attribute__((alias("EWRAM_Handler_BlobA")));
-#endif
 
 // Blob B — _08000E80 (SIO-normal polling, 0x0203F150 state)
 typedef struct { vu8 f00; vu8 _01[3]; vu32 p04; vu32 _08; vu32 cnt08; vu32 _0C; } EwramF150;
@@ -100,9 +98,7 @@ void EWRAM_Handler_BlobB(void){
         }
     }
 }
-#ifndef __APPLE__
 void _08000E80(void) __attribute__((alias("EWRAM_Handler_BlobB")));
-#endif
 
 void InstallEWRAMHandlers(int checksumMode, u32 inputBase){
     volatile u16 *ime = (volatile u16 *)(uintptr_t)0x04000208;
@@ -139,7 +135,5 @@ void InstallEWRAMHandlers(int checksumMode, u32 inputBase){
         *siocnt = 0x1001;
     }
 }
-#ifndef __APPLE__
 void _08000BF0(int checksumMode, u32 inputBase)
     __attribute__((alias("InstallEWRAMHandlers")));
-#endif

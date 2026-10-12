@@ -66,7 +66,5 @@ void SoundB66C_Applier(u32 id, u32 selmask, u32 w_pan, u32 w_vol, u32 w_x){
         sub_0802D584(state, sel_u16, (u32)sx32);
     }
 }
-#ifndef __APPLE__
 void _0802B66C(u32 a, u32 b, u32 c, u32 d, u32 e) __attribute__((alias("SoundB66C_Applier")));
 void sub_0802B66C(u32 a, u32 b, u32 c, u32 d, u32 e) __attribute__((alias("SoundB66C_Applier")));
-#endif

@@ -11,16 +11,6 @@
 
 #include "gba/types.h"
 
-#ifdef __APPLE__
-__attribute__((weak)) void sub_08000F48(void *p) { (void)p; }
-__attribute__((weak)) void _080023AC(int slot, void *h) { (void)slot; (void)h; }
-__attribute__((weak)) void _08007ABC(void *a, int b, int c) { (void)a; (void)b; (void)c; }
-__attribute__((weak)) void _08007538(void *a, int b, void *c) { (void)a; (void)b; (void)c; }
-__attribute__((weak)) void _08007614(void *a, int b, int c, int d) { (void)a; (void)b; (void)c; (void)d; }
-__attribute__((weak)) int _08002D978(int a, int b) { (void)a; return 0; }
-__attribute__((weak)) int _08002D97C(int a, int b) { (void)a; return 0; }
-__attribute__((weak)) int _08002DE04(int a, int b) { (void)a; return 0; }
-#endif
 
 extern void sub_08000F48(void *p);              // 0x08000F48 (raw asm route)
 extern void _080023AC(int slot, void *h);       // 0x080023AC (src/code_22e4.c)
@@ -36,15 +26,9 @@ extern int _08002DE04(int a, int b);            // signed __aeabi_idiv quotient 
 // (asm/sound_aeabi_idiv.s `sub_0802DE04`, asm/course_resource_leaf.s
 // `sub_08007ABC`), and the promotion screen blocks the body on a rename
 // otherwise (see src/race_scene_d1.c for the same split).
-#ifndef __APPLE__
 extern int sub_0802DE04(int a, int b);
 extern void sub_08007ABC(void *a, int b, int c);
-#endif
-#ifndef __APPLE__
 #define RA_CALLEE(friendly, closure) closure
-#else
-#define RA_CALLEE(friendly, closure) friendly
-#endif
 
 // ============================================================================
 // idle.s — mode-range predicates
@@ -131,10 +115,8 @@ __attribute__((naked)) void _0802D994(void)
         "2: .word 0x03007F00\n"
     );
 }
-#ifndef __APPLE__
 void sub_0802D98C(void) __attribute__((alias("_0802D98C")));
 void sub_0802D994(void) __attribute__((alias("_0802D994")));
-#endif
 
 // ============================================================================
 // code_fa0.s — serial RC gate + wait leaf
@@ -176,9 +158,7 @@ __asm__(".align 2, 0");
 // Rule 6: asm/code_fa0.s:515-517 defines BOTH `sub_08001370:` and
 // `_08001370:` on this span, and :334/:362/:488/:758 still `bl sub_08001370`.
 // The splice can only export a spelling agbcc wrote, so C must define both.
-#ifndef __APPLE__
 int sub_08001370(void *ctx, u16 v) __attribute__((alias("_08001370")));
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x080015A0 _080015A0(delay) — mode-clocked wait:
@@ -206,9 +186,7 @@ __attribute__((naked)) void _080015A0(int delay)
         ".syntax divided\n"
     );
 }
-#ifndef __APPLE__
 void sub_080015A0(int delay) __attribute__((alias("_080015A0")));
-#endif
 
 // ============================================================================
 // course_records_7bfc.s — course-id handler + timed reset
@@ -323,17 +301,10 @@ void _0800821C(void)
 // Independent symbol bases keep all four pools instead of deriving one MMIO
 // address from another. The control word is loaded into r3 then copied to r0;
 // the empty constraint prevents constant rematerialization across that copy.
-#ifndef __APPLE__
 extern u8 SerialResetMode[], SerialMultiCtl[], SerialModeCtl[], SerialSend[];
-#endif
 void RecReset_0F48(void *rec) {
-#ifndef __APPLE__
     register u8 *b __asm__("r2") = (u8 *)rec;
     register u32 v __asm__("r3");
-#else
-    u8 *b = (u8 *)rec;
-    u32 v;
-#endif
     u32 z = 0;
     u8 *t;
     u8 *tail;
@@ -349,40 +320,21 @@ void RecReset_0F48(void *rec) {
     tail += 72;
     *tail = (u8)z;
     *(u16 *)(b + 22) = (u16)z;
-#ifndef __APPLE__
     __asm__(".globl SerialMultiCtl\nSerialMultiCtl = 0x04000134\n"
             ".globl SerialModeCtl\nSerialModeCtl = 0x04000128\n"
             ".globl SerialSend\nSerialSend = 0x0400012A\n");
     single = (volatile u16 *)SerialMultiCtl;
-#else
-    single = (volatile u16 *)0x04000134u;
-#endif
     *single = (u16)z;
-#ifndef __APPLE__
     port = (volatile u16 *)SerialModeCtl;
     __asm__(".globl SerialResetMode\nSerialResetMode = 0x2003\n");
     v = (uintptr_t)SerialResetMode;
-#else
-    port = (volatile u16 *)0x04000128u;
-    v = 0x2003u;
-#endif
     __asm__("" : "+r"(v));
     {
-#ifndef __APPLE__
         register u32 output __asm__("r0") = v;
-#else
-        u32 output = v;
-#endif
         *port = (u16)output;
     }
-#ifndef __APPLE__
     single = (volatile u16 *)SerialSend;
-#else
-    single = (volatile u16 *)0x0400012Au;
-#endif
     *single = (u16)z;
 }
-#ifndef __APPLE__
 void _08000F48(void *p) __attribute__((alias("RecReset_0F48")));
 void sub_08000F48(void *p) __attribute__((alias("RecReset_0F48")));
-#endif

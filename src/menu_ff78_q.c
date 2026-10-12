@@ -10,15 +10,9 @@
 
 #include "gba/types.h"
 
-#ifdef __APPLE__
-__attribute__((weak)) void Sub_08002B368(u32 v) { (void)v; }
-__attribute__((weak)) void Sub_08007ABC(u32 a, u32 b, u32 c) { (void)a; (void)b; (void)c; }
-__attribute__((weak)) void Sub_080013F94(void *a) { (void)a; }
-#else
 extern void Sub_08002B368(u32 v);
 extern void Sub_08007ABC(u32 a, u32 b, u32 c);
 extern void Sub_080013F94(void *a);
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_080014488 — (rec, u16 a1, u16 ev):
@@ -116,8 +110,6 @@ void MenuFF78_14488(void *rec_, u32 a1_, u32 ev_) {
                      *(volatile u32 *)(uintptr_t)(rec + 176 + r2off));
     }
 }
-#ifndef __APPLE__
 void _080014488(void *a, u32 b, u32 c) __attribute__((alias("MenuFF78_14488")));
 void Sub_080014488(void *a, u32 b, u32 c) __attribute__((alias("MenuFF78_14488")));
 void sub_080014488(void *a, u32 b, u32 c) __attribute__((alias("MenuFF78_14488")));
-#endif

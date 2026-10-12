@@ -166,8 +166,6 @@ data-check: all code-objects
 fast-check:
 	@test -f build/era-corpus/ready-report.json -a -f build-code/code.o || { \
 	    echo "fast-check: missing corpus report or symbol closure; run make toolchain && make matching-ready first" >&2; exit 1; }
-	@python3 tools/apple_decls.py --self-test
-	@python3 tools/apple_decls.py
 	@python3 tools/promotion_screen.py --self-test
 	@python3 tools/match_c_slice.py --self-test
 	@python3 tools/corpus_match_probe.py --self-test
@@ -323,7 +321,6 @@ distclean:
 # Cheap, ROM-free hosted CI. Full byte verification remains a local gate.
 .PHONY: ci-check progress progress-check update-progress
 ci-check: progress-check
-	@python3 tools/apple_decls.py --self-test
 	@python3 tools/export_audit.py --self-test
 	@python3 tools/call_audit.py --self-test
 	@python3 tools/agbcc_c89_transform.py --self-test

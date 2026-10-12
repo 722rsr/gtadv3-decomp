@@ -19,18 +19,8 @@
 #include "gba/types.h"
 
 // ---- extern callees --------------------------------------------------------
-#ifdef __APPLE__
-__attribute__((weak)) int DivSI(int num, int den) { return den ? num / den : 0; }
-__attribute__((weak)) void _08005BA8(void *p, int angle) { (void)p; (void)angle; }
-// 0x0802DE04 is the signed EABI idiv, at asm/sound_aeabi_idiv.s / src/sound_extra.c
-__attribute__((weak)) int  sub_0802DE04(int n, int d) { return d ? n / d : 0; }
-__attribute__((weak)) void sub_08005DA4(void *a, void *b) { (void)a; (void)b; }
-__attribute__((weak)) int  sub_08005E14(void *a, void *b, void *c)
-                                       { (void)a; (void)b; (void)c; return 0; }
-#else
 extern int  DivSI(int num, int den);          // sound_support.c (zero-guard == _08002DE98 no-op)
 extern int  sub_0802DE04(int n, int d);       // 0x0802DE04 signed EABI divide (asm/sound_aeabi_idiv.s)
-#endif
 
 // ROM sin/cos tables (byte-exact pool words in the listing):
 #define C5B3C_COS_TBL  ((volatile s16 *)(uintptr_t)0x0805BAF0)   // _08005BE4/_08005C30
@@ -46,10 +36,8 @@ s16 TimerFiredCount_05B3C(void) {
     u8 *q = *(u8 *volatile *)0x030003D4u;
     return *(s16 *)(q + 34);
 }
-#ifndef __APPLE__
 s16 _08005B3C(void) __attribute__((alias("TimerFiredCount_05B3C")));
 s16 sub_08005B3C(void) __attribute__((alias("TimerFiredCount_05B3C")));
-#endif
 
 // 0x08005B4C — 16B (body 10 + pool 4): u16[queue + 18 + i*4] = payload
 u16 TimerPayload_05B4C(u32 i) {
@@ -57,10 +45,8 @@ u16 TimerPayload_05B4C(u32 i) {
     u8 *e = q + i * 4;
     return *(u16 *)(e + 18);
 }
-#ifndef __APPLE__
 u16 _08005B4C(u32 i) __attribute__((alias("TimerPayload_05B4C")));
 u16 sub_08005B4C(u32 i) __attribute__((alias("TimerPayload_05B4C")));
-#endif
 
 // 0x08005B64 — 22 B body + 2 B inter-function align pad = 24 B span
 // (cmp #0; bge; movs #1; negs; b; cmp #0; bgt; movs #0; b; movs #1; bx lr),
@@ -75,10 +61,8 @@ int TimerSign_05B64(int v) {
     return 0;
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 int _08005B64(int v) __attribute__((alias("TimerSign_05B64")));
 int sub_08005B64(int v) __attribute__((alias("TimerSign_05B64")));
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x08005B7C — 16 B s16 abs leaf, 4-byte aligned between the two align pads.
@@ -89,10 +73,8 @@ int sub_08005B64(int v) __attribute__((alias("TimerSign_05B64")));
 int MathAbs_05B7C(s16 v) {
     return v < 0 ? (s16)-v : v;
 }
-#ifndef __APPLE__
 int _08005B7C(s16 v) __attribute__((alias("MathAbs_05B7C")));
 int sub_08005B7C(s16 v) __attribute__((alias("MathAbs_05B7C")));
-#endif
 
 // 0x08005B8C — 28 B s16 sign leaf: -1 / 0 / +1 over a sign-extended short.
 //   ROM: `lsls/asrs #16; cmp #0; bge L; movs #1; negs; b end;`
@@ -108,10 +90,8 @@ int MathSign_05B8C(s16 v) {
 // The 28-byte span ends with the 2-byte inter-function align pad the ROM holds
 // as `00 00`; `as` would close the section with the Thumb nop `46 c0`.
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 int _08005B8C(s16 v) __attribute__((alias("MathSign_05B8C")));
 int sub_08005B8C(s16 v) __attribute__((alias("MathSign_05B8C")));
-#endif
 
 // 0x08005BF0 — rotate a pair of signed halfwords in place by the ROM angle.
 void MathRotate16_05BF0(void *p, int angle) {
@@ -139,10 +119,8 @@ void MathRotate16_05BF0(void *p, int angle) {
     *((s16 *)p + 1) = ny;
     *(s16 *)p = nx;
 }
-#ifndef __APPLE__
 void _08005BF0(void *a, int b) __attribute__((alias("MathRotate16_05BF0")));
 void sub_08005BF0(void *a, int b) __attribute__((alias("MathRotate16_05BF0")));
-#endif
 
 // 0x08005C3C — copy the first vector, then store the second vector minus it.
 void MathDiff_05C3C(void *out, const void *a, const void *b) {
@@ -156,10 +134,8 @@ void MathDiff_05C3C(void *out, const void *a, const void *b) {
     dst[2] = second[0] - x;
     dst[3] = second[1] - y;
 }
-#ifndef __APPLE__
 void _08005C3C(void *a, const void *b, const void *c) __attribute__((alias("MathDiff_05C3C")));
 void sub_08005C3C(void *a, const void *b, const void *c) __attribute__((alias("MathDiff_05C3C")));
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x08005B5C — abs leaf. (cmp r0,#0; bge; negs r0; bx lr)
@@ -168,10 +144,8 @@ void sub_08005C3C(void *a, const void *b, const void *c) __attribute__((alias("M
 int MathLeaf_05B5C(int v) {
     return v < 0 ? -v : v;
 }
-#ifndef __APPLE__
 int _08005B5C(int v) __attribute__((alias("MathLeaf_05B5C")));
 int sub_08005B5C(int v) __attribute__((alias("MathLeaf_05B5C")));
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x08005D74 — vector constructor + rotate (matches sub_08005BA8 math):
@@ -193,11 +167,7 @@ int sub_08005B5C(int v) __attribute__((alias("MathLeaf_05B5C")));
 // file: section size 0x18, last word 0x46c0). No C body can make `as` emit
 // `00 00` there, so 22 is the ceiling. It is still promotable: 22 + 2 == 24
 // and the ROM tail is `00 00`.
-#ifndef __APPLE__
 extern void sub_08005BA8(void *a, int b);   // closure spelling, 0x08005BA8
-#else
-extern void _08005BA8(void *a, int b);     // host weak stub in runtime_record_helpers.c
-#endif
 void MathLeaf_05D74(void *p, int y, int angle) {
     volatile s32 *r = (volatile s32 *)p;
     r[0] = 0;
@@ -211,18 +181,12 @@ void MathLeaf_05D74(void *p, int y, int angle) {
     // -Wimplicit-function-declaration is an error under `-Werror`.
     // The closure spells 0x08005BA8 both ways; `sub_` is preferred because the
     // `_` form is a local `t` symbol no separate C object can resolve.
-#ifndef __APPLE__
     sub_08005BA8(p, a);
-#else
-    _08005BA8(p, a);
-#endif
 }
 __asm__(".align 2, 0");
 
-#ifndef __APPLE__
 void _08005D74(void *a, int b, int c) __attribute__((alias("MathLeaf_05D74")));
 void sub_08005D74(void *a, int b, int c) __attribute__((alias("MathLeaf_05D74")));
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x08005D8C — vec2 difference: out = c - b (both 2 x s32).
@@ -233,10 +197,8 @@ void MathLeaf_05D8C(void *out, void *b, void *c) {
     *(volatile s32 *)(o + 0) = *(volatile s32 *)(vc + 0) - *(volatile s32 *)(vb + 0);
     *(volatile s32 *)(o + 4) = *(volatile s32 *)(vc + 4) - *(volatile s32 *)(vb + 4);
 }
-#ifndef __APPLE__
 void _08005D8C(void *a, void *b, void *c) __attribute__((alias("MathLeaf_05D8C")));
 void sub_08005D8C(void *a, void *b, void *c) __attribute__((alias("MathLeaf_05D8C")));
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x08005DA4 — perpendicular projection of v=(b0,b1):
@@ -256,10 +218,8 @@ void MathLeaf_05DA4(void *out, void *b) {
     o[2] = v[0] * a + v[1] * c;
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _08005DA4(void *a, void *b) __attribute__((alias("MathLeaf_05DA4")));
 void sub_08005DA4(void *a, void *b) __attribute__((alias("MathLeaf_05DA4")));
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x08005DC4 — cross-projected perpendicular:
@@ -281,10 +241,8 @@ void MathLeaf_05DC4(void *out, void *b, void *c) {
     o[1] = y;
     o[2] = p[0] * x + y * p[1];
 }
-#ifndef __APPLE__
 void _08005DC4(void *a, void *b, void *c) __attribute__((alias("MathLeaf_05DC4")));
 void sub_08005DC4(void *a, void *b, void *c) __attribute__((alias("MathLeaf_05DC4")));
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x08005DE4 — s16 variant of 05D8C:
@@ -308,10 +266,8 @@ void MathLeaf_05DE4(void *out, void *b, void *c) {
     o[1] = d1;
     o[2] = vb[0] * d0 + vb[1] * d1;
 }
-#ifndef __APPLE__
 void _08005DE4(void *a, void *b, void *c) __attribute__((alias("MathLeaf_05DE4")));
 void sub_08005DE4(void *a, void *b, void *c) __attribute__((alias("MathLeaf_05DE4")));
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x08005E14 — 2-D line intersection.
@@ -341,10 +297,8 @@ int MathLeaf_05E14(void *out, void *b, void *c) {
     }
     return 1;
 }
-#ifndef __APPLE__
 int _08005E14(void *a, void *b, void *c) __attribute__((alias("MathLeaf_05E14")));
 int sub_08005E14(void *a, void *b, void *c) __attribute__((alias("MathLeaf_05E14")));
-#endif
 
 int MathLeaf_05E7C(void *out, void *a, void *b) {
     volatile s32 *o = (volatile s32 *)out;
@@ -375,10 +329,8 @@ int MathLeaf_05E7C(void *out, void *a, void *b) {
     }
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 int _08005E7C(void *a, void *b, void *c) __attribute__((alias("MathLeaf_05E7C")));
 int sub_08005E7C(void *a, void *b, void *c) __attribute__((alias("MathLeaf_05E7C")));
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x08005EDC — parallel test / intersection gate.
@@ -386,13 +338,8 @@ int sub_08005E7C(void *a, void *b, void *c) __attribute__((alias("MathLeaf_05E7C
 // 5DA4(r5, sp); frameB = {b[0], b[1], b[0], b[1]} via r1-hold pattern;
 // r4=sp+16 (b dies); 5DA4(r4, sp); gate = 5E14(out, r5, r4); return (s8)gate.
 int MathLeaf_05EDC(void *out, void *a, void *b) {
-#ifndef __APPLE__
     register void *o __asm__("r6") = out;
     register s32 *bb __asm__("r4") = (s32 *)b;
-#else
-    void *o = out;
-    s32 *bb = (s32 *)b;
-#endif
     s32 *aa = (s32 *)a;
     s32 w[4];
     s32 ob[3];
@@ -402,13 +349,8 @@ int MathLeaf_05EDC(void *out, void *a, void *b) {
     w[2] = bb[1];
     w[3] = -bb[0];
     {
-#ifndef __APPLE__
         register s32 *r5 __asm__("r5");
         register s32 *r4b __asm__("r4");
-#else
-        s32 *r5;
-        s32 *r4b;
-#endif
         r5 = oa;
         MathLeaf_05DA4(r5, w);
         {
@@ -427,7 +369,5 @@ int MathLeaf_05EDC(void *out, void *a, void *b) {
         }
     }
 }
-#ifndef __APPLE__
 int _08005EDC(void *a, void *b, void *c) __attribute__((alias("MathLeaf_05EDC")));
 int sub_08005EDC(void *a, void *b, void *c) __attribute__((alias("MathLeaf_05EDC")));
-#endif

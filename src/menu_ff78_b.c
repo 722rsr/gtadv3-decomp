@@ -18,11 +18,7 @@
 
 #include "gba/types.h"
 
-#ifdef __APPLE__
-#define HOST_STUB(sig) __attribute__((weak)) sig
-#else
 #define HOST_STUB(sig) extern sig
-#endif
 
 HOST_STUB(void _08007ABC(void *rec, int id, int lane));     // 0x08007ABC resource bind
 
@@ -149,10 +145,8 @@ void MenuFF78_10CB8(void *rec_, int a1, int a2) {
     }
     _0800F810(rec_);
 }
-#ifndef __APPLE__
 void _080010CB8(void *a, int b, int c) __attribute__((alias("MenuFF78_10CB8")));
 void sub_080010CB8(void *a, int b, int c) __attribute__((alias("MenuFF78_10CB8")));
-#endif
 
 // ============================================================================
 // sub_080011214 — cursor-move handler (keymask 0x20 = down, 0x10 = up).
@@ -208,10 +202,8 @@ void MenuFF78_11214(void *rec_, int a1, int a2) {
     }
     WR16(rec, 182, RD16(rec, 172));          // u16[rec+0xB6] = u16[rec+0xAC]
 }
-#ifndef __APPLE__
 void _080011214(void *a, int b, int c) __attribute__((alias("MenuFF78_11214")));
 void sub_080011214(void *a, int b, int c) __attribute__((alias("MenuFF78_11214")));
-#endif
 
 // ============================================================================
 // sub_0800113A0 — apply-current-selection handler (0x109D4 tail; r1/r2 dead).
@@ -241,7 +233,5 @@ void MenuFF78_113A0(void *rec_, int a1, int a2) {
         WR16(rec, 182, RD16(rec, 172));      // u16[rec+0xB6] = u16[rec+0xAC]
     }
 }
-#ifndef __APPLE__
 void _0800113A0(void *a, int b, int c) __attribute__((alias("MenuFF78_113A0")));
 void sub_0800113A0(void *a, int b, int c) __attribute__((alias("MenuFF78_113A0")));
-#endif

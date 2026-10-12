@@ -14,10 +14,8 @@ void CourseLeaves_095F0(void) {
     s16 off = *(s16 *)(rec + 12);
     sub_08007570(base, 0, (int)f50, (int)off * 4, 4);
 }
-#ifndef __APPLE__
 void _080095F0(void) __attribute__((alias("CourseLeaves_095F0")));
 void sub_080095F0(void) __attribute__((alias("CourseLeaves_095F0")));
-#endif
 
 void CourseLeaves_0961C(void) {
     // _0800961C: same shape, r2=u16[rec+48], r3=(s16[rec+8])*4
@@ -27,10 +25,8 @@ void CourseLeaves_0961C(void) {
     s16 off = *(s16 *)(rec + 8);
     sub_08007570(base, 0, (int)f48, (int)off * 4, 4);
 }
-#ifndef __APPLE__
 void _0800961C(void) __attribute__((alias("CourseLeaves_0961C")));
 void sub_0800961C(void) __attribute__((alias("CourseLeaves_0961C")));
-#endif
 
 void CourseLeaves_09648(void) {
     if (*(volatile u8 *)(*(volatile u8 *volatile *)0x030003E0u + 77) != 0)
@@ -38,10 +34,8 @@ void CourseLeaves_09648(void) {
     if (*(volatile u8 *)(*(volatile u8 *volatile *)0x030003E0u + 76) != 0)
         CourseLeaves_0961C();
 }
-#ifndef __APPLE__
 void _08009648(void) __attribute__((alias("CourseLeaves_09648")));
 void sub_08009648(void) __attribute__((alias("CourseLeaves_09648")));
-#endif
 
 void Course_Leaves_096A4(void *arg) {
     // _080096A4: push {r4,r5,lr} sub sp#4, ldr r4,=0x030003E4; str r1,[r4]; movs r0,#0 str [sp]; ldr r2,=0x0500000B; mov r0,sp; bl 02D974 (CpuSet 44B) — CpuSet/argument translation is only partial (stack 44B via 0x0500000B, template 0x0805F604 lane writes at +24 etc. not proven), tail calls to 0798C (template 0x0805F604) and 261B0/F8 at +14/+16/+18 are blocked on s16 table at 0x03001780+0x10C6 (need watch ldrh +12 s16 vs Vu32)
@@ -119,10 +113,8 @@ void CourseLeaves_09748(u16 a, u16 sel) {
         break;
     }
 }
-#ifndef __APPLE__
 void _08009748(u16 a, u16 b) __attribute__((alias("CourseLeaves_09748")));
 void sub_08009748(u16 a, u16 b) __attribute__((alias("CourseLeaves_09748")));
-#endif
 
 int _080097E8(u16 a, u16 sel) {
     // _080097E8: VMA 0x080097E8 116 B pure Thumb, smallest remaining leaf with no external BL.
@@ -159,10 +151,8 @@ int _080097E8(u16 a, u16 sel) {
     }
     return r3; // adds r0,r3
 }
-#ifndef __APPLE__
 int CourseLeaves_097E8(u16 a, u16 b) __attribute__((alias("_080097E8")));
 int sub_080097E8(u16 a, u16 b) __attribute__((alias("_080097E8")));
-#endif
 
 int CourseLeaves_098C8(u16 a, u16 sel) {
     // _080098C8: VMA 0x080098C8 40 B pure Thumb dispatcher.
@@ -194,10 +184,8 @@ int CourseLeaves_098C8(u16 a, u16 sel) {
     }
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 int _080098C8(u16 a, u16 b) __attribute__((alias("CourseLeaves_098C8")));
 int sub_080098C8(u16 a, u16 b) __attribute__((alias("CourseLeaves_098C8")));
-#endif
 
 void CourseLeaves_09B28(void) {
     extern void sub_08009900(void);
@@ -220,10 +208,8 @@ void CourseLeaves_09B28(void) {
     }
 }
 __asm__(".space 2, 0");
-#ifndef __APPLE__
 void _08009B28(void) __attribute__((alias("CourseLeaves_09B28")));
 void sub_08009B28(void) __attribute__((alias("CourseLeaves_09B28")));
-#endif
 
 u16 CourseLeaves_09B50(void) {
     // _08009B50: push {lr} bl _08002494 lsls r0,#16 lsrs r0,#16 pop {r1} bx r1
@@ -232,8 +218,6 @@ u16 CourseLeaves_09B50(void) {
     return (u16)v;
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 u16 _08009B50(void) __attribute__((alias("CourseLeaves_09B50")));
 u16 sub_08009B50(void) __attribute__((alias("CourseLeaves_09B50")));
 void Sub_08009B28(void) __attribute__((alias("CourseLeaves_09B28")));
-#endif

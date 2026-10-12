@@ -31,16 +31,6 @@
 #include "gba/types.h"
 
 // ---- extern callees --------------------------------------------------------
-#ifdef __APPLE__
-__attribute__((weak)) int  _08025CF4(int a, int b, int c) { (void)a; (void)b; (void)c; return 0; }
-__attribute__((weak)) int  _08025D64(int a, int b) { (void)a; return 0; }
-__attribute__((weak)) int  _08025D90(int a) { (void)a; return 0; }
-__attribute__((weak)) int  _08026004(int a) { (void)a; return 0; }
-__attribute__((weak)) int  _0800572C(int n) { (void)n; return 0; }
-__attribute__((weak)) int  sub_0800572C(int n) { (void)n; return 0; }
-__attribute__((weak)) void _0802E0A4(void *dst, const void *src, u32 n) { (void)dst; (void)src; (void)n; }
-__attribute__((weak)) int  _0802D97C(int a, int b) { (void)b; return a; }
-#else
 extern int  _08025CF4(int a, int b, int c);   // 0x08025CF4 zone-grid get (ai_grid_leaves.c)
 extern int  _08025D64(int a, int b);          // 0x08025D64 column count (ai_grid_leaves.c)
 extern int  _08025D90(int a);                 // 0x08025D90 rows-full test (ai_grid_leaves.c)
@@ -51,7 +41,6 @@ extern int  sub_0800572C(int n);              // 0x0800572C, closure spelling
 // The earlier (src, dst) declaration reversed every call in this file.
 extern void _0802E0A4(void *dst, const void *src, u32 n); // 0x0802E0A4 runtime memcpy (foundation_runtime.c)
 extern int  _0802D97C(int a, int b);          // 0x0802D97C DivRem (bios_wrappers.c)
-#endif
 
 #define GTADV_GRID_BASE ((volatile u8 *)(uintptr_t)0x03001780u)
 extern volatile u8 C25GridBase[];
@@ -76,22 +65,14 @@ extern int C25_GridOut[];
 extern const u8 C25_Zones[];
 extern const u16 C25_ZoneIds[];
 extern int C25_CountOut[];
-#ifndef __APPLE__
 /* Absolute definitions live inside Code25930_BuildGrid's body: the splicer
    retains only the function's section, so a file-scope asm definition is
    omitted from the independent link (see docs/matching_workflow.md). */
-#else
-static int C25_GridOut[32];
-static const u8 C25_Zones[1024];
-static const u16 C25_ZoneIds[32];
-static int C25_CountOut[1];
-#endif
 
 // ----------------------------------------------------------------------------
 // Head at 0x080025930 (no separate.type in the listing; the function begins
 // right after the 0x080258xx cluster tail). 32-row scan.
 void Code25930_BuildGrid(void) {
-#ifndef __APPLE__
     extern int C25_GridOut[];
     extern const u8 C25_Zones[];
     extern const u16 C25_ZoneIds[];
@@ -100,7 +81,6 @@ void Code25930_BuildGrid(void) {
     __asm__(".globl C25_Zones\nC25_Zones = 0x0805FCAC\n");
     __asm__(".globl C25_ZoneIds\nC25_ZoneIds = 0x080600CC\n");
     __asm__(".globl C25_CountOut\nC25_CountOut = 0x0203FA40\n");
-#endif
     int count = 0;
     register int latch __asm__("sl") = 0;
     {
@@ -203,42 +183,32 @@ void Code25930_BuildGrid(void) {
         }
     }
 }
-#ifndef __APPLE__
 void _080025930(void) __attribute__((alias("Code25930_BuildGrid")));
 void sub_080025930(void) __attribute__((alias("Code25930_BuildGrid")));
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x08025A80 — *0x0203FA40 as s16 (first word).
 int Code25930_GetCount(void) {
     return *(const s16 *)0x0203FA40u;
 }
-#ifndef __APPLE__
 int _080025A80(void) __attribute__((alias("Code25930_GetCount")));
 int sub_080025A80(void) __attribute__((alias("Code25930_GetCount")));
 int _08025A80(void) __attribute__((alias("Code25930_GetCount")));
 int sub_08025A80(void) __attribute__((alias("Code25930_GetCount")));
 int _080025A84(void) __attribute__((alias("Code25930_GetCount")));
 int sub_080025A84(void) __attribute__((alias("Code25930_GetCount")));
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x08025A8C — word-array reader: s16[0x0203F9B0 + i*4].
 extern const s16 C25_EntryTbl[];
 int Code25930_GetEntry(int i) {
-#ifndef __APPLE__
     __asm__(".globl C25_EntryTbl\nC25_EntryTbl = 0x0203F9B0\n");
     const s16 *base = C25_EntryTbl;
-#else
-    const s16 *base = (const s16 *)0x0203F9B0u;
-#endif
     return *(const s16 *)((const u8 *)base + ((u32)i << 2));
 }
-#ifndef __APPLE__
 int _080025A8C(int a) __attribute__((alias("Code25930_GetEntry")));
 int sub_080025A8C(int a) __attribute__((alias("Code25930_GetEntry")));
 int sub_08025A8C(int a) __attribute__((alias("Code25930_GetEntry")));
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x080025A9C — array index finder: first i where word[i]==val (s16 result).
@@ -253,10 +223,8 @@ int Code25930_FindEntry(int val) {
     }
     return 0;
 }
-#ifndef __APPLE__
 int _080025A9C(int a) __attribute__((alias("Code25930_FindEntry")));
 int sub_080025A9C(int a) __attribute__((alias("Code25930_FindEntry")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_080025AC0 — 2-entry presence scan building 0x0203FA30.
@@ -277,10 +245,8 @@ void Code25930_BuildSpecial(void) {
     }
     *C25_SPECIAL_CNT = r6 - 1;
 }
-#ifndef __APPLE__
 void _080025AC0(void) __attribute__((alias("Code25930_BuildSpecial")));
 void sub_080025AC0(void) __attribute__((alias("Code25930_BuildSpecial")));
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x080025AF8-region leaves — *0x0203FA3C reader / indexed 0x0203FA30 /
@@ -288,25 +254,17 @@ void sub_080025AC0(void) __attribute__((alias("Code25930_BuildSpecial")));
 int Code25930_GetSpecialCount(void) {
     return *(const s16 *)0x0203FA3Cu;
 }
-#ifndef __APPLE__
 int _080025AFC(void) __attribute__((alias("Code25930_GetSpecialCount")));
 int sub_080025AFC(void) __attribute__((alias("Code25930_GetSpecialCount")));
-#endif
 
 extern const s16 C25_SpecialTbl[];
 int Code25930_GetSpecial(int i) {
-#ifndef __APPLE__
     __asm__(".globl C25_SpecialTbl\nC25_SpecialTbl = 0x0203FA30\n");
     const s16 *base = C25_SpecialTbl;
-#else
-    const s16 *base = (const s16 *)0x0203FA30u;
-#endif
     return *(const s16 *)((const u8 *)base + ((u32)i << 2));
 }
-#ifndef __APPLE__
 int _080025B08(int a) __attribute__((alias("Code25930_GetSpecial")));
 int sub_080025B08(int a) __attribute__((alias("Code25930_GetSpecial")));
-#endif
 
 int Code25930_FindSpecial(int val) {
     int i = 0;
@@ -319,10 +277,8 @@ int Code25930_FindSpecial(int val) {
     }
     return 0;
 }
-#ifndef __APPLE__
 int _080025B18(int a) __attribute__((alias("Code25930_FindSpecial")));
 int sub_080025B18(int a) __attribute__((alias("Code25930_FindSpecial")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_080025B3C — template copy: 31 x 72 B from 0x08060370 to
@@ -349,10 +305,8 @@ void Code25930_CopyTemplate370(void) {
         r6 += 72;
     }
 }
-#ifndef __APPLE__
 void _080025B3C(void) __attribute__((alias("Code25930_CopyTemplate370")));
 void sub_080025B3C(void) __attribute__((alias("Code25930_CopyTemplate370")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_080025B88 — 216-B header + 2 x 72 B template copy from 0x08060C70 to
@@ -378,21 +332,15 @@ void Code25930_CopyTemplateC70(void) {
         r6 += 72;
     }
 }
-#ifndef __APPLE__
 void _080025B88(void) __attribute__((alias("Code25930_CopyTemplateC70")));
 void sub_080025B88(void) __attribute__((alias("Code25930_CopyTemplateC70")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_080025BC8 — allocate 84 B, store handle at [out+0], s16 id at [out+4].
 extern const u8 C25RecTbl_BC8[];
 void Code25930_Alloc84(void *out, int id) {
     volatile u32 *o = (volatile u32 *)out;
-#ifndef __APPLE__
     int h = sub_0800572C(84);
-#else
-    int h = _0800572C(84);
-#endif
     const u8 *base;
     u32 off;
     __asm__(".globl C25RecTbl_BC8\nC25RecTbl_BC8 = 0x080CD830\n");
@@ -402,14 +350,12 @@ void Code25930_Alloc84(void *out, int id) {
     off <<= 2;
     o[1] = (u32)*(const s16 *)(const void *)(base + off);
 }
-#ifndef __APPLE__
 void _080025BC8(void *a, int b) __attribute__((alias("Code25930_Alloc84")));
 void Sub_080025BC8(void *a, int b) __attribute__((alias("Code25930_Alloc84")));
 void sub_080025BC8(void *a, int b) __attribute__((alias("Code25930_Alloc84")));
 void _08025BC8(void *a, int b) __attribute__((alias("Code25930_Alloc84")));
 void Sub_08025BC8(void *a, int b) __attribute__((alias("Code25930_Alloc84")));
 void sub_08025BC8(void *a, int b) __attribute__((alias("Code25930_Alloc84")));
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x080025BF4-region leaf — [out+4] = s16[0x080CD830 + id*20] (no alloc).
@@ -426,7 +372,6 @@ void Code25930_StoreId(void *out, int id) {
     k = 0;
     o[1] = (u32)((const s16 *)(const void *)(base + off))[k];
 }
-#ifndef __APPLE__
 void _080025BF0(void *a, int b) __attribute__((alias("Code25930_StoreId")));
 void sub_080025BF0(void *a, int b) __attribute__((alias("Code25930_StoreId")));
 void _080025BF4(void *a, int b) __attribute__((alias("Code25930_StoreId")));
@@ -434,7 +379,6 @@ void sub_080025BF4(void *a, int b) __attribute__((alias("Code25930_StoreId")));
 void EventPost(void *a, int b) __attribute__((alias("Code25930_StoreId")));
 void Event_0x08025BF0(void *a, int b) __attribute__((alias("Code25930_StoreId")));
 void Sub_08025BF0(void *a, int b) __attribute__((alias("Code25930_StoreId")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_080025C0C — allocate 182 B, store handle at [out+0], s16 id at [out+4].
@@ -447,10 +391,8 @@ void Code25930_Alloc182(void *out, int id) {
     volatile s16 *p = (volatile s16 *)(uintptr_t)(C25_REC_TBL + off);
     o[1] = (u32)*(volatile s16 *)p;
 }
-#ifndef __APPLE__
 void _080025C0C(void *a, int b) __attribute__((alias("Code25930_Alloc182")));
 void sub_080025C0C(void *a, int b) __attribute__((alias("Code25930_Alloc182")));
-#endif
 
 //   pin the base with `register u32 base __asm__("r1")`   32/40 prefix 14
 //   same pin to r2 instead (control on which register)    32/40 prefix 14
@@ -496,11 +438,7 @@ void sub_080025C0C(void *a, int b) __attribute__((alias("Code25930_Alloc182")));
 extern const u8 C25RecTbl[];
 void Code25930_Alloc182At(void *out, int id) {
     volatile u32 *o = (volatile u32 *)out;
-#ifndef __APPLE__
     int h = sub_0800572C(182);
-#else
-    int h = _0800572C(182);
-#endif
     const u8 *base;
     u32 off;
     __asm__(".globl C25RecTbl\nC25RecTbl = 0x080CD830\n");
@@ -510,10 +448,8 @@ void Code25930_Alloc182At(void *out, int id) {
     off <<= 2;
     o[1] = (u32)*(const s16 *)(const void *)(base + off);   // ROM reads it with `ldrsh`
 }
-#ifndef __APPLE__
 void _08025C08(void *a, int b) __attribute__((alias("Code25930_Alloc182At")));
 void sub_08025C08(void *a, int b) __attribute__((alias("Code25930_Alloc182At")));
-#endif
 
 typedef struct { u32 w0, w1, w2, w3, w4; } C25Body20;
 extern const u8 C25RecTbl_C30[];
@@ -522,11 +458,7 @@ extern const u8 C25RecTbl_C30[];
 // then copy 20 B body (ldmia/stmia pattern).
 void Code25930_Alloc182Body(void *rec, int id) {
     volatile u32 *o = (volatile u32 *)rec;
-#ifndef __APPLE__
     int h = sub_0800572C(182);
-#else
-    int h = _0800572C(182);
-#endif
     const u8 *base;
     u32 off;
     const u8 *row;
@@ -539,10 +471,8 @@ void Code25930_Alloc182Body(void *rec, int id) {
     o[6] = (u32)(s32)((const s16 *)(const void *)row)[0];
     *(C25Body20 *)o = *(const C25Body20 *)(const void *)row;
 }
-#ifndef __APPLE__
 void _08025C30(void *a, int b) __attribute__((alias("Code25930_Alloc182Body")));
 void sub_08025C30(void *a, int b) __attribute__((alias("Code25930_Alloc182Body")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_080025C64 — body copy without allocation (dst = r0):
@@ -556,10 +486,8 @@ void Code25930_CopyBody(void *dst_, int id) {
     o[7] = p[0]; o[8] = p[1]; o[9] = p[2];
     o[10] = p[3]; o[11] = p[4];
 }
-#ifndef __APPLE__
 void _080025C64(void *a, int b) __attribute__((alias("Code25930_CopyBody")));
 void sub_080025C64(void *a, int b) __attribute__((alias("Code25930_CopyBody")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_080025C84(layer, row, col, value) — packed 2-bit grid write
@@ -594,13 +522,10 @@ void Code25930_GridSet(int layer, int row, int col, int value) {
     sh = _0802D97C(index, 4) * 2;         // ROM: second DivRem, then <<1
     *p = (u8)(((u8)(value << sh)) | (oldv = *p));
 }
-#ifndef __APPLE__
 void _080025C84(int a, int b, int c, int d) __attribute__((alias("Code25930_GridSet")));
 void sub_080025C84(int a, int b, int c, int d) __attribute__((alias("Code25930_GridSet")));
-#endif
 
 // ROM entry alias.
-#ifndef __APPLE__
 void Sub_08025C84(int layer, int row, int col, int value) __attribute__((alias("Code25930_GridSet")));
 int _08025A8C(int i) __attribute__((alias("Code25930_GetEntry")));
 int _08025A9C(int val) __attribute__((alias("Code25930_FindEntry")));
@@ -611,4 +536,3 @@ void _08025B3C(void) __attribute__((alias("Code25930_CopyTemplate370")));
 void _08025B88(void) __attribute__((alias("Code25930_CopyTemplateC70")));
 void _08025C84(int layer, int row, int col, int value) __attribute__((alias("Code25930_GridSet")));
 void sub_08025C84(int layer, int row, int col, int value) __attribute__((alias("Code25930_GridSet")));
-#endif

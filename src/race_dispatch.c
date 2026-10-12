@@ -202,7 +202,6 @@ finish: /* 0x0800B478 */
     _080188B0(pkt);
 }
 
-#ifndef __APPLE__
 void _0800B190(void) __attribute__((alias("Race_Dispatch")));
 // The closure spells this address ONLY `sub_0800B190` (asm/race_dispatch.s),
 // and promotion_screen wants a call site to use the spelling the closure uses.
@@ -212,4 +211,3 @@ void _0800B190(void) __attribute__((alias("Race_Dispatch")));
 // spelling is left undefined at link time with every other gate green.
 // src/foundation_subsys.c:548-551 is the precedent for this exact shape.
 void sub_0800B190(void) __attribute__((alias("Race_Dispatch")));
-#endif

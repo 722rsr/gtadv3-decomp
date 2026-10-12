@@ -26,10 +26,8 @@ u32 MixerVeneer_2B888(u32 a0, u32 a1){
         (void)*(volatile u32 *)(uintptr_t)(a0 - (a0 << 4));
     return (u32)(((uint64_t)(u32)a0 * (uint64_t)(u32)a1) >> 32);
 }
-#ifndef __APPLE__
 u32 _0802B888(u32 a,u32 b) __attribute__((alias("MixerVeneer_2B888")));
 u32 sub_0802B888(u32 a,u32 b) __attribute__((alias("MixerVeneer_2B888")));
-#endif
 
 // Thumb entry 0x02B898-0x02B8AA: Smsh guard. root = *0x03007FF0; if
 // *root != Smsh return; *root = Smsh+1 and fall into the setup.
@@ -75,10 +73,8 @@ void MixerThumb_2B898(void){
     // voice setup + the ARM mix kernels + IWRAM code. That region
     // (0x02B8E0-0x02BC28) is asm-owned; see the header notes.
 }
-#ifndef __APPLE__
 void _0802B898(void) __attribute__((alias("MixerThumb_2B898")));
 void sub_0802B898(void) __attribute__((alias("MixerThumb_2B898")));
-#endif
 
 // Blocked subregions (asm-owned, no alias here):
 // - Thumb voice dispatch 0x02B968-0x02BA8C: 0x50-stride voice envelope

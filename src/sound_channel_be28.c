@@ -13,7 +13,6 @@ u32 SoundBCE8_Test(void *dummy, void *chan){
     return v;
 }
 
-#ifndef __APPLE__
 void _0802BE28(void *a, void *b) __attribute__((alias("SoundBE28_Store")));
 void sub_0802BE28(void *a, void *b) __attribute__((alias("SoundBE28_Store")));
 __attribute__((naked)) void SoundBE28_Store(void *a, void *chan) {
@@ -27,6 +26,3 @@ __attribute__((naked)) void SoundBE28_Store(void *a, void *chan) {
         ".syntax divided\n"
     );
 }
-#else
-void SoundBE28_Store(void *a, void *b) { (void)a; (void)b; }
-#endif

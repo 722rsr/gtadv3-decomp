@@ -60,9 +60,7 @@ void MenuDisplaySetup_050E8(void *record_, int write_display)
     _0802E0A4((void *)(uintptr_t)0x03000260u, (const void *)record, 68);
 }
 
-#ifndef __APPLE__
 void _080050E8(void *record, int write_display)
     __attribute__((alias("MenuDisplaySetup_050E8")));
 void sub_080050E8(void *record, int write_display)
     __attribute__((alias("MenuDisplaySetup_050E8")));
-#endif

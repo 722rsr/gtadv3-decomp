@@ -186,7 +186,6 @@ void *Ghost_SampleBufPtr(int idx) {
 }
 
 // Aliases
-#ifndef __APPLE__
 void  _0802407C(void *a, void *b, int n) __attribute__((alias("Ghost_BindSampleBuffers")));
 void  sub_0802407C(void *a, void *b, int n) __attribute__((alias("Ghost_BindSampleBuffers")));
 void *_08002674(int idx) __attribute__((alias("Ghost_SampleBufPtr")));
@@ -219,7 +218,6 @@ void sub_08024150(void *p) __attribute__((alias("Ghost_Invalidate")));
 void _08024158(void) __attribute__((alias("Ghost_Commit")));
 void _0802417C(void) __attribute__((alias("Ghost_Snapshot")));
 void sub_0802417C(void) __attribute__((alias("Ghost_Snapshot")));
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x08024068 — 12B record-kind probe (asm/code_24048.s, pool 0x030005B0):
@@ -236,8 +234,6 @@ int Ghost_Kind_24068(void) {
     (void)b;
     return (int)a;
 }
-#ifndef __APPLE__
 int _08024068(void) __attribute__((alias("Ghost_Kind_24068")));
 int sub_08024068(void) __attribute__((alias("Ghost_Kind_24068")));
 int Sub_08024068(void) __attribute__((alias("Ghost_Kind_24068")));
-#endif

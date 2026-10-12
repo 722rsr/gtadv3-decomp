@@ -11,20 +11,6 @@
 
 #include "gba/types.h"
 
-#ifdef __APPLE__
-__attribute__((weak)) void Sub_08002B368(u32 v) { (void)v; }
-__attribute__((weak)) void Sub_080015230(void *a, void *b) { (void)a; (void)b; }
-__attribute__((weak)) void Sub_0800D854(void *a) { (void)a; }
-__attribute__((weak)) void Sub_0800D8E4(void *a) { (void)a; }
-__attribute__((weak)) void Sub_080015B54(void *a) { (void)a; }
-__attribute__((weak)) void Sub_0800154E0(void *a, u32 b, u32 c) { (void)a; (void)b; (void)c; }
-__attribute__((weak)) void Sub_080015620(void *a, u32 b, u32 c) { (void)a; (void)b; (void)c; }
-__attribute__((weak)) void Sub_08001573C(void *a, u32 b, u32 c) { (void)a; (void)b; (void)c; }
-__attribute__((weak)) void Sub_080015A0C(void *a) { (void)a; }
-__attribute__((weak)) void Sub_080015AB0(void *a) { (void)a; }
-__attribute__((weak)) void Sub_080015304(void *a) { (void)a; }
-__attribute__((weak)) void Sub_08001529C(void) { }
-#else
 extern void Sub_08002B368(u32 v);
 extern void Sub_080015230(void *a, void *b);
 extern void Sub_0800D854(void *a);
@@ -37,7 +23,6 @@ extern void Sub_080015A0C(void *a);
 extern void Sub_080015AB0(void *a);
 extern void Sub_080015304(void *a);
 extern void Sub_08001529C(void); // 0-arg ABI (asm/menu_ff78.s:10450 reads no input)
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_080013850 — (rec, dead, ev):
@@ -96,11 +81,9 @@ void MenuFF78_13850(void *rec_, u32 dead, u32 ev_) {
             *(volatile s16 *)(uintptr_t)(rec + 178) = 1;
     }
 }
-#ifndef __APPLE__
 void _080013850(void *a, u32 b, u32 c) __attribute__((alias("MenuFF78_13850")));
 void Sub_080013850(void *a, u32 b, u32 c) __attribute__((alias("MenuFF78_13850")));
 void sub_080013850(void *a, u32 b, u32 c) __attribute__((alias("MenuFF78_13850")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_080015BA0 — (ev, a1, a2, rec): ev-1 indexes a 12-entry table.
@@ -152,7 +135,5 @@ void MenuFF78_15BA0(int ev, u32 a1, u32 a2, void *rec_) {
         break;
     }
 }
-#ifndef __APPLE__
 void _080015BA0(int a, u32 b, u32 c, void *d) __attribute__((alias("MenuFF78_15BA0")));
 void sub_080015BA0(int a, u32 b, u32 c, void *d) __attribute__((alias("MenuFF78_15BA0")));
-#endif

@@ -25,51 +25,6 @@
 
 #include "gba/types.h"
 
-#ifdef __APPLE__
-__attribute__((weak)) void Sub_08007B18(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h) { (void)a; (void)b; (void)c; (void)d; (void)e; (void)f; (void)g; (void)h; }
-__attribute__((weak)) void Sub_08007BFC(void *a, int b, int c, int d, int e, int f, int g, int h, int i) { (void)a; (void)b; (void)c; (void)d; (void)e; (void)f; (void)g; (void)h; (void)i; }
-__attribute__((weak)) void *Sub_08004B68(void) { return 0; }
-__attribute__((weak)) void *sub_08004B68(void) { return 0; }
-// `_08002140`/`_08004D4C` are the CLOSURE's spellings for these two callees:
-// 0x08002140 is a promoted entry whose `export` carries only `_08002140`, and
-// the asm for 0x08004D4C defines `_08004D4C`/`sub_08004D4C`. A body that calls
-// the `Sub_` twin would be refused by promotion_screen (and would fail the
-// spliced link), so the weak host stubs and the calls below use the same two
-// spellings the slice resolves.
-__attribute__((weak)) int _08002140(void) { return 0; }
-__attribute__((weak)) void _08004D4C(int a, int b, int c) { (void)a; (void)b; (void)c; }
-__attribute__((weak)) void Sub_08002B368(u32 v) { (void)v; }
-__attribute__((weak)) void Sub_08002B384(u32 v) { (void)v; }
-// 0x0802b368 is a PROMOTED entry whose manifest `export` is exactly
-// ['sub_0802B368'], so a body that splices against it must call the lowercase
-// spelling -- `Sub_08002B368` would not survive the splice.
-__attribute__((weak)) void sub_0802B368(u32 v) { (void)v; }
-__attribute__((weak)) void Sub_08002B214(int v) { (void)v; }
-__attribute__((weak)) void sub_0802B214(int v) { (void)v; }
-__attribute__((weak)) void Sub_08002B3A4(void) {}
-__attribute__((weak)) void sub_0802B3A4(void) {}
-// 0x0802b3a4's manifest entry has NO `export` list, so the spliced section
-// publishes only its c_name `_0802B3A4`; calling `sub_0802B3A4` leaves the
-// slice link with an undefined reference.
-__attribute__((weak)) void _0802B3A4(void) {}
-__attribute__((weak)) void Sub_08002B234(void) {}
-__attribute__((weak)) void sub_0802B234(void) {}
-__attribute__((weak)) void Sub_08002618(u32 a, u32 b) { (void)a; (void)b; }
-// 0x08002618 is a PROMOTED entry whose manifest `export` is exactly
-// ['_08002618', 'sub_08002618']; src/event_dma_queue.c defines both as
-// `#ifndef __APPLE__` aliases of ScenePost_2618. A spliced body must call one
-// of the exported spellings, not the friendly `Sub_` name.
-__attribute__((weak)) void sub_08002618(u32 a, u32 b) { (void)a; (void)b; }
-__attribute__((weak)) void Sub_080056F4(void *a, int b, int c) { (void)a; (void)b; (void)c; }
-// 0x080056f4 is a PROMOTED entry whose manifest export is exactly
-// ['_080056F4'], so a spliced body must call that spelling.
-__attribute__((weak)) void _080056F4(void *a, int b, int c) { (void)a; (void)b; (void)c; }
-__attribute__((weak)) int Sub_08024068(void) { return 0; }
-__attribute__((weak)) void Sub_0800D97C(void *a, int b) { (void)a; (void)b; }
-__attribute__((weak)) void sub_0800D97C(void *a, int b) { (void)a; (void)b; }
-__attribute__((weak)) void Sub_08002E0A4(void *d, const void *s, u32 n) { (void)d; (void)s; (void)n; }
-__attribute__((weak)) void Sub_08007770(int a, void *b, int c, int d, u32 e, u32 f) { (void)a; (void)b; (void)c; (void)d; (void)e; (void)f; }
-#else
 extern void Sub_08007B18(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h);
 extern void Sub_08007BFC(void *a, int b, int c, int d, int e, int f, int g, int h, int i);
 // Closure spellings of the two 7Bxx helpers. These are NOT aliases of the
@@ -104,7 +59,6 @@ extern void Sub_08002E0A4(void *d, const void *s, u32 n);
 extern void sub_0802E0A4(void *d, const void *s, u32 n);  // 8 digits: the real symbol
 extern void Sub_08007770(int a, void *b, int c, int d, u32 e, u32 f);
 extern void _08007770(int a, void *b, int c, int d, u32 e, u32 f); // R2-faithful strong body
-#endif
 
 // Call-site split for promoted bodies. `promotion_screen.py` accepts a promoted
 // body only when every call target is spelled the way the assembly closure
@@ -112,11 +66,7 @@ extern void _08007770(int a, void *b, int c, int d, u32 e, u32 f); // R2-faithfu
 // host stubs above, which do not exist on the ROM build. Same split as
 // MS_CALLEE in menu_stage.c; spelled separately per file to keep each
 // translation unit self-contained.
-#ifndef __APPLE__
 #define FF_CALLEE(friendly, closure) closure
-#else
-#define FF_CALLEE(friendly, closure) friendly
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_080012E74 — copy 22 bytes ROM 0x0805F9A8 -> stack, return s16[idx].
@@ -130,11 +80,9 @@ s16 MenuFF78_12E74(int idx) {
     FF_CALLEE(Sub_08002E0A4, sub_0802E0A4)(buf, (const void *)(uintptr_t)0x0805F9A8u, 22);
     return buf[idx];
 }
-#ifndef __APPLE__
 s16 _080012E74(int a) __attribute__((alias("MenuFF78_12E74")));
 s16 Sub_080012E74(int a) __attribute__((alias("MenuFF78_12E74")));
 s16 sub_080012E74(int a) __attribute__((alias("MenuFF78_12E74")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_080013E64 — countdown tick at rec+0x26C (155*4).
@@ -157,11 +105,9 @@ void MenuFF78_13E64(volatile u8 *rec) {
         *(volatile u32 *)(uintptr_t)(rec + 0x26C) = 0;
     }
 }
-#ifndef __APPLE__
 void _080013E64(volatile u8 *a) __attribute__((alias("MenuFF78_13E64")));
 void Sub_080013E64(volatile u8 *a) __attribute__((alias("MenuFF78_13E64")));
 void sub_080013E64(volatile u8 *a) __attribute__((alias("MenuFF78_13E64")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_080015B54 — countdown tick at rec+172.
@@ -173,13 +119,9 @@ void MenuFF78_15B54(void *rec_) {
     // 0x08015B58..0x08015B5E`), and the `== 2` reset block is OUT OF LINE
     // after the pool (0x08015B90), reached by `beq @ 0x08015B6A`. The counter
     // is a plain (non-volatile) local: `volatile u32 v` spills to the stack.
-#ifndef __APPLE__
     extern u8 MenuWaBaseF[] __asm__("MenuWaBaseF");
     __asm__(".globl MenuWaBaseF\nMenuWaBaseF = 0x03001780\n");
     uintptr_t base = (uintptr_t)MenuWaBaseF;
-#else
-    uintptr_t base = (uintptr_t)(0x03001780u);
-#endif
     if (*(volatile u16 *)(uintptr_t)(base + 0xFBCu) == 3) {
         if (_08002140() == 2) goto reset;
         u32 v = *(volatile u32 *)(uintptr_t)((volatile u8 *)rec_ + 172);
@@ -197,11 +139,9 @@ reset:
 // The ROM pads the body's last two bytes with 0x0000 (0x08015B9E..0x08015B9F);
 // agbcc emits a one-instruction `nop` (0xC046) there instead.
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _080015B54(void *a) __attribute__((alias("MenuFF78_15B54")));
 void Sub_080015B54(void *a) __attribute__((alias("MenuFF78_15B54")));
 void sub_080015B54(void *a) __attribute__((alias("MenuFF78_15B54")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_08001549C — init leaf.
@@ -241,7 +181,6 @@ void MenuFF78_1549C(void *rec_) {
 set5:
     *(volatile s16 *)(uintptr_t)((volatile u8 *)rec_ + 24) = 5;
 wa:
-#ifndef __APPLE__
     {
         // The WA write is a two-pool-word add (`ldr r0,=0x03001780;
         // ldr r1,=0x107C; adds @ 0x080154C8`). Naming the base absolutely in
@@ -251,16 +190,11 @@ wa:
         uintptr_t base = (uintptr_t)MenuWaBaseF;
         *(volatile u16 *)(uintptr_t)(base + 0x107Cu) = 1;
     }
-#else
-    *(volatile u16 *)(uintptr_t)(0x03001780u + 0x107Cu) = 1;
-#endif
     return;
 }
-#ifndef __APPLE__
 void _08001549C(void *a) __attribute__((alias("MenuFF78_1549C")));
 void Sub_08001549C(void *a) __attribute__((alias("MenuFF78_1549C")));
 void sub_08001549C(void *a) __attribute__((alias("MenuFF78_1549C")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_0800152A8 — u8[WA+0x10C3]-gated setup leaf.
@@ -274,20 +208,12 @@ void MenuFF78_152A8(void *rec_) {
     // 5th argument — it lives in a callee-saved register (r4) across both
     // calls and lands at `sp,#0`. The `!= 0` arm is the fall-through
     // (`bne @ 0x080152B8` jumps forward to 0x080152EC).
-#ifndef __APPLE__
     extern u8 MenuWaBaseF[] __asm__("MenuWaBaseF");
     uintptr_t base = (uintptr_t)MenuWaBaseF;
-#else
-    uintptr_t base = (uintptr_t)(0x03001780u);
-#endif
-#ifndef __APPLE__
     // The ROM loads the gate byte straight into r4
     // (`ldrb r4,[r0] @ 0x080152B4`), so the local is pinned to r4; unpinned,
     // agbcc loads via r0 and adds a copy.
     register u32 gate __asm__("r4") = *(volatile u8 *)(uintptr_t)(base + 0x10C3u);
-#else
-    u32 gate = *(volatile u8 *)(uintptr_t)(base + 0x10C3u);
-#endif
     if (gate == 0) {
         sub_08002618(1, 1);
         *(volatile s16 *)(uintptr_t)((volatile u8 *)rec_ + 136) = 1;
@@ -299,11 +225,9 @@ void MenuFF78_152A8(void *rec_) {
         *(volatile s16 *)(uintptr_t)((volatile u8 *)rec_ + 136) = 0;
     }
 }
-#ifndef __APPLE__
 void _0800152A8(void *a) __attribute__((alias("MenuFF78_152A8")));
 void Sub_0800152A8(void *a) __attribute__((alias("MenuFF78_152A8")));
 void sub_0800152A8(void *a) __attribute__((alias("MenuFF78_152A8")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_080015230 — (base, rec): s16[base+136]=0; if u16[WA+0xFBC]==3 and
@@ -349,11 +273,9 @@ void MenuFF78_15230(void *base_, void *rec_) {
         break;
     }
 }
-#ifndef __APPLE__
 void _080015230(void *a, void *b) __attribute__((alias("MenuFF78_15230")));
 void Sub_080015230(void *a, void *b) __attribute__((alias("MenuFF78_15230")));
 void sub_080015230(void *a, void *b) __attribute__((alias("MenuFF78_15230")));
-#endif
 // 106-byte body, two short of the section's 4-byte alignment: gas pads with
 // `nop` (0x46c0) where the ROM holds `00 00`.
 __asm__(".align 2, 0");
@@ -366,10 +288,8 @@ void MenuFF78_15C9C(int dead, void *rec_) {
     sub_08004B68();
     *(volatile s16 *)(uintptr_t)(rec + 84) = 6;
 }
-#ifndef __APPLE__
 void _080015C9C(int a, void *b) __attribute__((alias("MenuFF78_15C9C")));
 void sub_080015C9C(int a, void *b) __attribute__((alias("MenuFF78_15C9C")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_0800152A8 alias block is above; 1411C below.
@@ -404,11 +324,9 @@ void MenuFF78_1411C(int dead, void *rec_) {
 // closes a Thumb code section with `nop` (0x46c0) where the ROM holds
 // `00 00`. Same file-scope pad as MenuFF78_11CBC in menu_ff78_d.c.
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _08001411C(int a, void *b) __attribute__((alias("MenuFF78_1411C")));
 void Sub_08001411C(int a, void *b) __attribute__((alias("MenuFF78_1411C")));
 void sub_08001411C(int a, void *b) __attribute__((alias("MenuFF78_1411C")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_080014E3C — (rec, dead, ev): cell = s16[rec+136].
@@ -458,11 +376,9 @@ void MenuFF78_14E3C(void *rec_, int dead, u32 ev_) {
     if (entry != c)
         FF_CALLEE(Sub_08002B384, sub_0802B384)(3);
 }
-#ifndef __APPLE__
 void _080014E3C(void *a, int b, u32 c) __attribute__((alias("MenuFF78_14E3C")));
 void Sub_080014E3C(void *a, int b, u32 c) __attribute__((alias("MenuFF78_14E3C")));
 void sub_080014E3C(void *a, int b, u32 c) __attribute__((alias("MenuFF78_14E3C")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_080014EA0 — (rec, dead, ev): cell = s16[rec+138].
@@ -512,11 +428,9 @@ void MenuFF78_14EA0(void *rec_, int dead, u32 ev_) {
     if (entry != *(s16 *)(uintptr_t)(rec + 138))
         FF_CALLEE(Sub_08002B384, sub_0802B384)(3);
 }
-#ifndef __APPLE__
 void _080014EA0(void *a, int b, u32 c) __attribute__((alias("MenuFF78_14EA0")));
 void Sub_080014EA0(void *a, int b, u32 c) __attribute__((alias("MenuFF78_14EA0")));
 void sub_080014EA0(void *a, int b, u32 c) __attribute__((alias("MenuFF78_14EA0")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_080014F14 — (rec, dead, ev): cell = s16[WA+0x5E0].
@@ -559,11 +473,9 @@ void MenuFF78_14F14(void *rec_, int dead, u32 ev_) {
     if (*(s16 *)(uintptr_t)(wa + 0x5E0u) != entry)
         FF_CALLEE(Sub_08002B384, sub_0802B384)(1);
 }
-#ifndef __APPLE__
 void _080014F14(void *a, int b, u32 c) __attribute__((alias("MenuFF78_14F14")));
 void Sub_080014F14(void *a, int b, u32 c) __attribute__((alias("MenuFF78_14F14")));
 void sub_080014F14(void *a, int b, u32 c) __attribute__((alias("MenuFF78_14F14")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_080014D94 — (rec, dead, ev): cell = s16[rec+134].
@@ -623,11 +535,9 @@ void MenuFF78_14D94(void *rec_, int dead, u32 ev_) {
             FF_CALLEE(Sub_08002B234, sub_0802B234)();
     }
 }
-#ifndef __APPLE__
 void _080014D94(void *a, int b, u32 c) __attribute__((alias("MenuFF78_14D94")));
 void Sub_080014D94(void *a, int b, u32 c) __attribute__((alias("MenuFF78_14D94")));
 void sub_080014D94(void *a, int b, u32 c) __attribute__((alias("MenuFF78_14D94")));
-#endif
 // 166-byte body, two short of the section's 4-byte alignment: gas pads with
 // `nop` (0x46c0) where the ROM holds `00 00`.
 __asm__(".align 2, 0");
@@ -656,11 +566,9 @@ void MenuFF78_13AA8(void *rec_) {
     r3 = *(volatile u32 *)(uintptr_t)(tbl4 + off);
     FF_CALLEE(Sub_08007B18, sub_08007B18)(rec_, 6, (int)r2, (int)r3, 4, 1, 1, 0);
 }
-#ifndef __APPLE__
 void _080013AA8(void *a) __attribute__((alias("MenuFF78_13AA8")));
 void Sub_080013AA8(void *a) __attribute__((alias("MenuFF78_13AA8")));
 void sub_080013AA8(void *a) __attribute__((alias("MenuFF78_13AA8")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_080013AF4 — gated 7B18 pair.
@@ -694,11 +602,9 @@ void MenuFF78_13AF4(void *rec_) {
     }
     }
 }
-#ifndef __APPLE__
 void _080013AF4(void *a) __attribute__((alias("MenuFF78_13AF4")));
 void Sub_080013AF4(void *a) __attribute__((alias("MenuFF78_13AF4")));
 void sub_080013AF4(void *a) __attribute__((alias("MenuFF78_13AF4")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_080011D48 — 7B18 + two 7BFC records.
@@ -725,7 +631,5 @@ void MenuFF78_11D48(void *rec_) {
         FF_CALLEE(Sub_08007BFC, sub_08007BFC)(dst, (int)r1, (int)r2, 152, 64, 3, 1, 1, 0);
     }
 }
-#ifndef __APPLE__
 void _080011D48(void *a) __attribute__((alias("MenuFF78_11D48")));
 void sub_080011D48(void *a) __attribute__((alias("MenuFF78_11D48")));
-#endif

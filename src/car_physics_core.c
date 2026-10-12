@@ -56,10 +56,8 @@ void GrantDelay_Tick(int carId, int delay){
     _08023FF8(28,0);
     *cntPtr = cnt + 1;
 }
-#ifndef __APPLE__
 void _0800B82C(int a0,int a1) __attribute__((alias("GrantDelay_Tick")));
 void sub_0800B82C(int a0,int a1) __attribute__((alias("GrantDelay_Tick")));
-#endif
 
 // ---- go_start : _0800B89C ----
 void GoStart_Tick(void){
@@ -95,10 +93,8 @@ void GoStart_Tick(void){
         }
     }
 }
-#ifndef __APPLE__
 void _0800B89C(void) __attribute__((alias("GoStart_Tick")));
 void sub_0800B89C(void) __attribute__((alias("GoStart_Tick")));
-#endif
 
 void CarPhysRacer_MarkScene(void *ctx, void *rec){
     (void)ctx;
@@ -106,15 +102,11 @@ void CarPhysRacer_MarkScene(void *ctx, void *rec){
     (void)sub_08004B68();
     *(volatile u16 *)((uintptr_t)rec + 0x54) = 1;
 }
-#ifndef __APPLE__
 void _0802135C(void *a, void *b) __attribute__((alias("CarPhysRacer_MarkScene")));
-#endif
 
 void CarPhysRacer_Nop(void){}
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _08021370(void) __attribute__((alias("CarPhysRacer_Nop")));
-#endif
 
 void CarPhysRacer_RaceStartLatch(void *ctx,int b,int c){
     // _08021828: r2=c, t = (u16)c -1; if <=1 then latch.
@@ -136,9 +128,7 @@ void CarPhysRacer_RaceStartLatch(void *ctx,int b,int c){
     *(volatile u16 *)((uintptr_t)ctx + 0x40) = 1;
     (void)b;
 }
-#ifndef __APPLE__
 void _08021828(void *a,int b,int c) __attribute__((alias("CarPhysRacer_RaceStartLatch")));
-#endif
 
 void CarPhysRacer_InitFrame(void *ctx){
     if (!ctx) return;
@@ -209,9 +199,7 @@ void CarPhysRacer_InitFrame(void *ctx){
         }
     }
 }
-#ifndef __APPLE__
 void _08021374(void *ctx) __attribute__((alias("CarPhysRacer_InitFrame")));
-#endif
 
 // Substantiated gap leaf sub_080021C94: ctx = r1, slot = _08004B68->+2
 // if *(s16*)(slot+2)==15||20 → *(u16*)(ctx+84)=5 else 6 (asm/carphys_racer_tail.s:7-21)
@@ -235,10 +223,8 @@ void Gap_021C94_Select(void *a, void *b){
     *dst = (u16)out;
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _080021C94(void *a, void *b) __attribute__((alias("Gap_021C94_Select")));
 void sub_080021C94(void *a, void *b) __attribute__((alias("Gap_021C94_Select")));
-#endif
 
 // Dispatcher _08021BF8 : 12-entry jump table (ev-1)
 void CarPhysRacer_Dispatcher(int ev,int b,int c,void *ctx){
@@ -263,9 +249,7 @@ void CarPhysRacer_Dispatcher(int ev,int b,int c,void *ctx){
     }
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _08021BF8(int ev,int b,int c,void *ctx) __attribute__((alias("CarPhysRacer_Dispatcher")));
-#endif
 
 // Remaining gap helpers (0x21CC4-0x22CB4, ~280 labels) — TODO pending BL target audit.
 // Only sub_080021C94 above is substantiated; rest stay as explicit TODO without alias.

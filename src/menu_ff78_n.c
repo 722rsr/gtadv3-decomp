@@ -11,18 +11,11 @@
 
 #include "gba/types.h"
 
-#ifdef __APPLE__
-__attribute__((weak)) void Sub_08007B18(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h) { (void)a; (void)b; (void)c; (void)d; (void)e; (void)f; (void)g; (void)h; }
-__attribute__((weak)) void Sub_08007BFC(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h, u32 i) { (void)a; (void)b; (void)c; (void)d; (void)e; (void)f; (void)g; (void)h; (void)i; }
-__attribute__((weak)) int Sub_08025CF4(int a, int b, int c) { (void)a; (void)b; (void)c; return 0; }
-__attribute__((weak)) int Sub_0802572C(int a, int b, int c) { (void)a; (void)b; (void)c; return 0; }
-#else
 extern void Sub_08007B18(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h);
 extern void Sub_08007BFC(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h, u32 i);
 extern int Sub_08025CF4(int a, int b, int c);
 extern int Sub_0802572C(int a, int b, int c); // host fallback
 extern s16 _0802572C(int a, int b);             // ROM call is the 2-arg wrapper
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_08001479C — (rec):
@@ -62,13 +55,8 @@ void MenuFF78_1479C(void *rec_) {
             (int)*(volatile s16 *)(uintptr_t)(wa + 0xFF2u),
             (int)*(volatile s16 *)(uintptr_t)0x03002776u, r4);
         int course;
-#ifdef __APPLE__
-        course = Sub_0802572C(
-            (int)*(volatile s16 *)(uintptr_t)0x03002776u, r4, 0);
-#else
         course = _0802572C(
             (int)*(volatile s16 *)(uintptr_t)0x03002776u, r4);
-#endif
         int r2 = (int)(s16)course;
         if (r2 < 0) r2 = 0;
         if (r2 > 4) r2 = 4;
@@ -91,11 +79,9 @@ void MenuFF78_1479C(void *rec_) {
         acc28 += 48;
     }
 }
-#ifndef __APPLE__
 void _08001479C(void *a) __attribute__((alias("MenuFF78_1479C")));
 void Sub_08001479C(void *a) __attribute__((alias("MenuFF78_1479C")));
 void sub_08001479C(void *a) __attribute__((alias("MenuFF78_1479C")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_0800148D8 — (rec):
@@ -142,8 +128,6 @@ void MenuFF78_148D8(void *rec_) {
         }
     }
 }
-#ifndef __APPLE__
 void _0800148D8(void *a) __attribute__((alias("MenuFF78_148D8")));
 void Sub_0800148D8(void *a) __attribute__((alias("MenuFF78_148D8")));
 void sub_0800148D8(void *a) __attribute__((alias("MenuFF78_148D8")));
-#endif

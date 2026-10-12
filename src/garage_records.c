@@ -8,11 +8,7 @@
 
 #include "gba/types.h"
 
-#ifdef __APPLE__
-#define HOST_STUB(sig) __attribute__((weak)) sig
-#else
 #define HOST_STUB(sig) extern sig
-#endif
 
 // The drive-model arms read the per-car parameter row from ROM 0x0806134C
 // and the record initializer reads the gear-group table at 0x08061354.
@@ -322,9 +318,7 @@ void _080028834(void *rec_) {
 // The spliced span for 0x08028834 starts at the asm label `sub_080028834`,
 // which the splice deletes while promoted C bodies still call it. agbcc writes
 // no `.thumb_set` for a spelling this TU does not alias (rule 6).
-#ifndef __APPLE__
 void sub_080028834(void *rec_) __attribute__((alias("_080028834")));
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x080288A0 — two-call wrapper. The ROM materialises an argument word for
@@ -348,9 +342,7 @@ void _080028948(void *rec_) {
 // The spliced span for 0x08028948 starts at the asm label `sub_080028948`,
 // which the splice deletes while promoted C bodies still call it. agbcc writes
 // no `.thumb_set` for a spelling this TU does not alias (rule 6).
-#ifndef __APPLE__
 void sub_080028948(void *rec_) __attribute__((alias("_080028948")));
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x08028964 — dual u16[4] fill via _08001E5C + 05AA4 gate.
@@ -409,11 +401,9 @@ void _0800289D0(const u16 *vals) {
 // open where the declaration sits, so one declared far from its body lands in
 // a different section and the per-body splice never carries it. Guarded
 // because clang rejects aliases outright on the darwin host build.
-#ifndef __APPLE__
 void sub_0800289D0(const u16 *vals) __attribute__((alias("_0800289D0")));
 void sub_080028A00(void *rec_, u32 dummy, u32 mask_) __attribute__((alias("_080028A00")));
 void sub_080028B88(void *rec) __attribute__((alias("_080028B88")));
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x08028A00 — bit-gated event pair (mask=r2 u16; r1 dead).
@@ -476,9 +466,7 @@ void _080028A54(void *rec_) {
 
 // Rule 6: the splice for 0x08028A54 deletes the asm `sub_080028A54` spelling,
 // which promoted C bodies still call, so C must define the twin.
-#ifndef __APPLE__
 void sub_080028A54(void *rec_) __attribute__((alias("_080028A54")));
-#endif
 
 // Same rule-6 reason as _080028BB8: this body is 106 bytes, so its
 // `-ffunction-sections` section is padded to 108, and gas would close a Thumb
@@ -511,9 +499,7 @@ void _080028AC0(int cmd, int x, int y, void *ctx) {
 
 // Rule 6: the splice for 0x08028AC0 deletes the asm `sub_080028AC0` spelling,
 // which promoted C bodies still call, so C must define the twin.
-#ifndef __APPLE__
 void sub_080028AC0(int cmd, int x, int y, void *ctx) __attribute__((alias("_080028AC0")));
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x08028B88 — 4-lane painter (tmpl 0x08061344).
@@ -544,11 +530,9 @@ __asm__(".align 2, 0");
 // Same rule-6 reason as _080028948 above: the splice deletes the span's
 // `sub_…`/interior labels, and `_080028BCE`/`_080028BDC` are branched to from
 // assembly that the splice does not touch.
-#ifndef __APPLE__
 void sub_080028BB8(void *rec, u16 x, u16 flags) __attribute__((alias("_080028BB8")));
 void _080028BCE(void *rec, u16 x, u16 flags) __attribute__((alias("_080028BB8")));
 void _080028BDC(void *rec, u16 x, u16 flags) __attribute__((alias("_080028BB8")));
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x08028BE4 — 9-command dispatcher.
@@ -572,15 +556,12 @@ void _080028BE4(int cmd, int x, int y, void *ctx) {
 
 // Rule 6: the splice for 0x08028BE4 deletes the asm `sub_080028BE4` spelling,
 // which promoted C bodies still call, so C must define the twin.
-#ifndef __APPLE__
 void sub_080028BE4(int cmd, int x, int y, void *ctx) __attribute__((alias("_080028BE4")));
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x08028C54 — 12x CpuFastSet lane copy + palette CpuSet.
 // ----------------------------------------------------------------------------
 void _080028C54(int slot, int sel) {
-#ifndef __APPLE__
     /* ROM keeps the masked selector in r1, copies it to r0, then shifts r1. */
     register u32 k __asm__("r1") = (u32)sel & 0xFFFu;
     __asm__ volatile(".code 16\n\tadd r0, r1, #0\n\tasr r1, r0, #4" : "+r"(k) : : "r0", "cc");
@@ -598,13 +579,6 @@ void _080028C54(int slot, int sel) {
     register u32 firstSource __asm__("r0") = base + firstSourceOffset;
     __asm__ volatile(".code 16\n\tlsl r5, r5, #12"
                      : "+r"(lane) : "r"(firstSource) : "cc");
-#else
-    u32 k = ((u32)sel & 0xFFFu) >> 4;
-    u32 b = *(volatile u8 *)(uintptr_t)(0x02038000u + k);
-    u32 base = ((b << 3) + b) << 8;
-    u32 lane = (u32)slot << 12;
-    u32 firstSource = base + 0x02038100u;
-#endif
     // The 12 lanes are UNROLLED, not tabled. The ROM emits one pool load and one
     // `adds` per operand at each of the 12 call sites (0x8028C78, 0x8028C86, ...
     // 0x8028D0E), so the source values are literals in the code; a `static const
@@ -626,13 +600,9 @@ void _080028C54(int slot, int sel) {
     _0802D970((const void *)(uintptr_t)(base + 0x02038880u), (void *)(uintptr_t)(lane + 0x06010D20u), 48u);
     _0802D970((const void *)(uintptr_t)(base + 0x02038940u), (void *)(uintptr_t)(lane + 0x06010E20u), 48u);
     _0802D974((const void *)0x0203C900u, (void *)0x05000200u, 0x04000008u);
-#ifndef __APPLE__
     __asm__ volatile("" : : "r"(base));
-#endif
 }
-#ifndef __APPLE__
 void sub_080028C54(int slot, int sel) __attribute__((alias("_080028C54")));
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x08028D9C — scene setup.
@@ -702,11 +672,9 @@ void _080028D9C(void *ctx) {
               (u32)(uintptr_t)(c + 0x1AACu));
 }
 
-#ifndef __APPLE__
 // Keep the closure spelling next to this body so its thumb_set glue lands in
 // the function section replaced by the 0x08028D9C splice.
 void sub_080028D9C(void *ctx) __attribute__((alias("_080028D9C")));
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x08028EB0 — per-slot C54 loop + OAM flush + DMA3 kick.
@@ -722,11 +690,7 @@ void _080028EB0(void *ctx) {
         s32 d = (s32)((u32)*(volatile u32 *)(p + 8) - (u32)*(volatile u32 *)(c + 8));
         _080028C54(i, d);
     }
-#ifndef __APPLE__
     sub_08002C98();
-#else
-    _08002C98();
-#endif
     volatile vu32 *dma = (volatile vu32 *)0x040000D4u;
     *(volatile vu16 *)0x040000DEu = 0u;
     dma[0] = 0x03004268u;
@@ -734,7 +698,6 @@ void _080028EB0(void *ctx) {
     dma[2] = 0xA2600008u;
 }
 
-#ifndef __APPLE__
 // Adjacent to its body on purpose: agbcc emits an alias's.globl/.thumb_set
 // glue into whichever section is open where the DECLARATION sits, and the
 // per-body splice reads only the promoted body's own section. The manifest
@@ -743,7 +706,6 @@ void _080028EB0(void *ctx) {
 // undefined reference minutes later -- which is the whole class trap 7 and
 // trap 5 describe.
 void sub_080028EB0(void *ctx) __attribute__((alias("_080028EB0")));
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x08028F18 — word cell state step on [rec+20].
@@ -770,9 +732,7 @@ __asm__(".align 2, 0");
 // must define both spellings or the independent link reports an undefined
 // reference. ARM only: clang rejects `alias` attributes outright on darwin
 // ("aliases are not supported on darwin"), which breaks the host build.
-#ifndef __APPLE__
 void sub_080028F18(void *rec) __attribute__((alias("_080028F18")));
-#endif
 
 
 // ----------------------------------------------------------------------------
@@ -881,14 +841,12 @@ void _0800291F4(void) {
     sub_08002B44();
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 // Rule 6: the splice deletes `sub_0800291F4`, and `asm/garage_26f50.s:4403`
 // still branches to it. The splice can only export a spelling agbcc wrote, so
 // the C must declare it — otherwise the reference at 0x080029302 is undefined
 // and the independent link fails.
 void sub_0800291F4(void) __attribute__((alias("_0800291F4")));
 void _080291F4(void) __attribute__((alias("_0800291F4")));
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x08029230 — video/DMA reset + 024AC.
@@ -1037,11 +995,7 @@ s32 _0800293D8(s32 a, s32 b) {
 s16 _080029400(u32 a, u32 b, u32 step) {
     u32 bv = (u16)b;
     u32 shifted = a << 16;
-#ifndef __APPLE__
     register u32 value __asm__("r0");
-#else
-    u32 value;
-#endif
     u32 backup;
     int st;
     int sb;
@@ -1052,11 +1006,7 @@ s16 _080029400(u32 a, u32 b, u32 step) {
     if (st > 0) {
         value = (s32)shifted >> 16;
         sb = (s16)bv;
-#ifndef __APPLE__
         q = sub_0802DE04((s16)((s32)value - sb), st);
-#else
-        q = _08002DE04((s16)((s32)value - sb), st);
-#endif
         q = (s16)q;
         aq = q;
         if (q < 0) aq = -q;
@@ -1074,15 +1024,10 @@ void _0800295F4(void *rec);
 void _080029E30(void *rec, s16 d);
 
 int _08002944C(void *rec) {
-#ifndef __APPLE__
     // The ROM keeps the record base in r2 through the slot-address calculation.
     register u8 *r __asm__("r2") = (u8 *)rec;
-#else
-    u8 *r = (u8 *)rec;
-#endif
     // Ordinary record RAM: the plain sub-word load emits directly into r3.
     u16 r3 = *(u16 *)(r + 140);
-#ifndef __APPLE__
     // The ROM loads idx into r0, scales it into r1, then reuses r0 for
     // record+76. These barriers keep agbcc from folding the address stages.
     register u32 idx __asm__("r0") = *(volatile u8 *)(r + 156);
@@ -1093,12 +1038,7 @@ int _08002944C(void *rec) {
     __asm__ volatile ("" : "+r" (slot_base));
     slot_base += 76;
     const s16 *slot = (const s16 *)(slot_base + slot_off);
-#else
-    u8 idx = *(volatile u8 *)(r + 156);
-    const s16 *slot = (const s16 *)(r + 76 + ((u32)idx << 1));
-#endif
     if (*slot > 0) {
-#ifndef __APPLE__
         // Keep the ROM's signed indexed load: copy the record base to r0,
         // advance by 104 bytes, then load with r2=0.
         register const s16 *num_base __asm__("r0") = (const s16 *)r;
@@ -1106,9 +1046,6 @@ int _08002944C(void *rec) {
         num_base += 52;
         register u32 num_index __asm__("r2") = 0;
         int num = num_base[num_index];
-#else
-        int num = *(const s16 *)(r + 104);
-#endif
         int den = *slot;
         r3 = (u16)sub_0802DE04(num, den);
     }
@@ -1122,7 +1059,6 @@ __asm__(".align 2, 0");
 // 0x08029488 — multiply leaf (mul only if slot s16 > 0).
 // ----------------------------------------------------------------------------
 int _080029488(void *rec) {
-#ifndef __APPLE__
     register u8 *r __asm__("r2") = (u8 *)rec;
     register u16 result __asm__("r3") = *(u16 *)(r + 104);
     register u32 idx __asm__("r0") = *(volatile u8 *)(r + 156);
@@ -1146,19 +1082,6 @@ int _080029488(void *rec) {
                          : "=r"(result) : "r"(product) : "r0", "cc");
     }
     return (s16)result;
-#else
-    u8 *r = (u8 *)rec;
-    u16 result = *(u16 *)(r + 104);
-    u8 idx = *(volatile u8 *)(r + 156);
-    u32 slotOffset = (u32)idx << 1;
-    volatile u8 *slot = r + 76 + slotOffset;
-    u16 uv = *(volatile u16 *)slot;
-    if (*(s16 *)slot > 0) {
-        u16 b = *(volatile u16 *)(r + 140);
-        result = (u16)(uv * b);
-    }
-    return (s16)result;
-#endif
 }
 
 // ----------------------------------------------------------------------------
@@ -1183,9 +1106,7 @@ int _0800294C0(void *p0, void *p1, int d) {
 // Rule 6: the splice for 0x080294C0 deletes the asm `sub_0800294C0` spelling,
 // which promoted C bodies still call, so C must define the twin. The body is
 // value-returning, so the twin returns `int`.
-#ifndef __APPLE__
 int sub_0800294C0(void *p0, void *p1, int d) __attribute__((alias("_0800294C0")));
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x080294FC — accumulate s16[row+6] to limit, then heading (as 294C0).
@@ -1218,9 +1139,7 @@ int _0800294FC(void *p0, void *p1, int limit) {
 
 // Rule 6: the splice for 0x080294FC deletes the asm `sub_0800294FC` spelling,
 // which promoted C bodies still call, so C must define the twin.
-#ifndef __APPLE__
 int sub_0800294FC(void *p0, void *p1, int limit) __attribute__((alias("_0800294FC")));
-#endif
 
 void _08002955C(void *rec) {
     u8 *r = (u8 *)rec;
@@ -2208,13 +2127,9 @@ void _08002A86C(void *rec, u32 bits, u32 flag) {
         *(u16 *)(R + 142) = (u16)q;
     }
 }
-#ifndef __APPLE__
 // Third spelling: race_scene.c reaches this VMA as Sub_08002A86C with a raw-word
 // first parameter, so the alias carries the same pointer-first shape.
 void Sub_08002A86C(void *rec, u32 bits, u32 flag) __attribute__((alias("_08002A86C")));
-#else
-void Sub_08002A86C(void *rec, u32 bits, u32 flag) { _08002A86C(rec, bits, flag); }
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x0802A8F8 — pair accumulator leaf (no prologue/pools; no.type in asm).
@@ -2325,22 +2240,15 @@ void _08002AACC(void *rec, void *arg, void *u1, void *u2) {
     s32 n = (u8)_08006050(arg, pair);
     (void)u1; (void)u2;
     if (n > 0) {
-#ifndef __APPLE__
         *(u32 *)(R + 68) -= (u32)sub_0802DE04((int)(pair[0] << 3), (int)n);
         *(u32 *)(R + 72) -= (u32)sub_0802DE04((int)(pair[1] << 3), (int)n);
-#else
-        *(u32 *)(R + 68) -= (u32)_08002DE04((int)(pair[0] << 3), (int)n);
-        *(u32 *)(R + 72) -= (u32)_08002DE04((int)(pair[1] << 3), (int)n);
-#endif
         _080029E30(rec, 100);
         *F |= 0x100u;
     } else {
         *F &= 0xFFFFFEFFu;
     }
 }
-#ifndef __APPLE__
 void sub_08002AACC(void *a, void *b, void *c, void *d) __attribute__((alias("_08002AACC")));
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x0802AB28 — key bitmap remap (bits 0/1/5/4/8/9 -> 0..5).
@@ -2426,12 +2334,8 @@ int _08002AB98(u32 idx, u16 *tab, u32 *ctr) {
     register u32 slotId __asm__("r1");
     register u32 markerNew __asm__("r2");
     register u32 generation __asm__("r3");
-#ifndef __APPLE__
     /* A fresh 0xFFFF slot skips the ROM's result write and returns incoming r5. */
     __asm__ volatile("" : "=r"(result));
-#else
-    result = 1;
-#endif
 
     if (current == 255u) {
         register u32 freshValue __asm__("r0") = id;
@@ -2500,9 +2404,7 @@ exhausted:
 finish:
     return result;
 }
-#ifndef __APPLE__
 __asm__(".align 2, 0");
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x0802AC2C — slot probe (always writes *out; rc 2/3).
@@ -2543,9 +2445,7 @@ int _08002AC2C(u8 *out, u16 *tab, u32 *ctr, u16 *aux) {
 
 // Rule 6: the splice for 0x0802AC2C deletes the asm `sub_08002AC2C` spelling,
 // which promoted C bodies still call, so C must define the twin.
-#ifndef __APPLE__
 int sub_08002AC2C(u8 *out, u16 *tab, u32 *ctr, u16 *aux) __attribute__((alias("_08002AC2C")));
-#endif
 
 // Same rule-6 reason as _080028BB8 above: this body is 86 bytes, so its
 // `-ffunction-sections` section is padded to 88, and gas would close a Thumb
@@ -2685,8 +2585,6 @@ void RecordSetter_2B80C(void *a, u32 b, u32 c, u32 d) {
     p[0] = b; p[1] = c; p[2] = d;
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _0802B80C(void *a, u32 b, u32 c, u32 d) __attribute__((alias("RecordSetter_2B80C")));
 void sub_0802B80C(void *a, u32 b, u32 c, u32 d) __attribute__((alias("RecordSetter_2B80C")));
 void _08002B80C(void *a, u32 b, u32 c, u32 d) __attribute__((alias("RecordSetter_2B80C")));
-#endif

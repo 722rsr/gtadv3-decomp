@@ -25,9 +25,7 @@
 
 // ---- external callees (C lifts or asm trampolines) -------------------------
 extern void *_08004B68(void);                       // car-record base getter
-#ifndef __APPLE__
 extern void *sub_08004B68(void);                     // closure spelling of _08004B68
-#endif
 extern void _0802B214(u32 vol);                     // sound master vol cond
 extern void _0802B368(u16 vol);                     // sound deferred vol
 extern void _08007770(int a, void *b, int c, int d, u32 e, u32 f);
@@ -55,15 +53,11 @@ extern void Gap_021C94_Select(void *ctx, void *rec);
 // bound -- calling `_0800572C` here passes every per-function probe and then
 // fails with `undefined reference`. The host build keeps the weak
 // `_0800572C` stub below, so the split is mandatory.
-#ifndef __APPLE__
 #define PV_CALLEE(friendly, closure) closure
 extern int sub_0800572C(int n);
 extern void sub_080021C94(void *ctx, void *rec);
 extern void sub_080021DC0(void *rec, int r1, u32 v);
 extern void sub_08002205C(void *rec);
-#else
-#define PV_CALLEE(friendly, closure) friendly
-#endif
 extern void _08007664(void *a, void *b, int c);     // course resource setup
 extern u8 RaceVM_WA[];
 
@@ -99,9 +93,7 @@ void RaceVM_022920(void *rec);
 void RaceVM_022A14(void *rec, int r1, u32 v);
 void RaceVM_022ACC(void *rec, int r1, u32 v);
 void RaceVM_022B48(void *rec, int x, int y);
-#ifndef __APPLE__
 void sub_080022B48(void *rec, int x, int y);
-#endif
 void RaceVM_022BBC(void *rec);
 void RaceVM_022C18(u32 ev, u32 p1, u32 p2, void *p3);
 int  RaceVM_026068(int i);
@@ -111,19 +103,15 @@ int  RaceVM_026068(int i);
 int RaceVM_026068(int i) {
     return *(volatile u8 *)(0x03001780u + 0x057Cu + (u32)i) == 1;
 }
-#ifndef __APPLE__
 int _08026068(int a) __attribute__((alias("RaceVM_026068")));
 int sub_08026068(int a) __attribute__((alias("RaceVM_026068")));
-#endif
 
 // ============================================================================
 // sub_080021CC0 (0x080021CC0, 2 B) — `bx lr` no-op leaf (dispatcher slot 6).
 void RaceVM_021CC0(void *rec) { (void)rec; }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _080021CC0(void *rec) __attribute__((alias("RaceVM_021CC0")));
 void sub_080021CC0(void *rec) __attribute__((alias("RaceVM_021CC0")));
-#endif
 
 // ============================================================================
 // sub_080021CC4 (0x080021CC4, 0xE8 B) — results constructor #1 (template
@@ -173,10 +161,8 @@ void RaceVM_021CC4(void *rec) {
     // the u16 read has to stay in its own statement.
     *(volatile u16 *)(r7 + 158) = (u16)_08025D90(ff2);
 }
-#ifndef __APPLE__
 void _080021CC4(void *a) __attribute__((alias("RaceVM_021CC4")));
 void sub_080021CC4(void *a) __attribute__((alias("RaceVM_021CC4")));
-#endif
 
 // ============================================================================
 // sub_080021DC0 (0x080021DC0, 0x154 B) — results event handler (v = phase
@@ -261,10 +247,8 @@ void RaceVM_021DC0(void *rec, int r1, u32 v) {
         }
     }
 }
-#ifndef __APPLE__
 void _080021DC0(void *a, int b, u32 c) __attribute__((alias("RaceVM_021DC0")));
 void sub_080021DC0(void *a, int b, u32 c) __attribute__((alias("RaceVM_021DC0")));
-#endif
 
 // ============================================================================
 // sub_080021F14 (0x080021F14, 0x6C B) — results page: place one row via
@@ -278,10 +262,8 @@ void RaceVM_021F14(void *rec, int x, int y) {
     u32 a4 = (mode == 1 || mode == 3) ? 4u : 3u;
     _08007B18(rec, (int)x, y, 0, a4, 1u, 0u, 0u);
 }
-#ifndef __APPLE__
 void _080021F14(void *a, int b, int c) __attribute__((alias("RaceVM_021F14")));
 void sub_080021F14(void *a, int b, int c) __attribute__((alias("RaceVM_021F14")));
-#endif
 
 // ============================================================================
 // sub_080021F88 (0x080021F88, 0xD0 B) — results rows: for r6 in 0..3:
@@ -317,10 +299,8 @@ void RaceVM_021F88(void *rec) {
         }
     }
 }
-#ifndef __APPLE__
 void _080021F88(void *a) __attribute__((alias("RaceVM_021F88")));
 void sub_080021F88(void *a) __attribute__((alias("RaceVM_021F88")));
-#endif
 
 // ============================================================================
 // sub_08002205C (0x08002205C, 0x148 B) — results report refresh: dec
@@ -362,10 +342,8 @@ void RaceVM_02205C(void *rec) {
     RaceVM_021F88(rec);
     _0800DBE8((void *)(r7 + 8));
 }
-#ifndef __APPLE__
 void _08002205C(void *a) __attribute__((alias("RaceVM_02205C")));
 void sub_08002205C(void *a) __attribute__((alias("RaceVM_02205C")));
-#endif
 
 // ============================================================================
 // sub_080022240 (0x080022240, 0x3C B) — countdown leaf (BL target from the
@@ -397,19 +375,15 @@ void RaceVM_022240(void *ctx) {
     }
     *(volatile u16 *)(r1 + 8) = phase;
 }
-#ifndef __APPLE__
 void _080022240(void *a) __attribute__((alias("RaceVM_022240")));
 void sub_080022240(void *a) __attribute__((alias("RaceVM_022240")));
-#endif
 
 // ============================================================================
 // sub_08002227C (0x08002227C, 2 B) — `bx lr` no-op leaf (dispatcher slot 2).
 void RaceVM_02227C(void *a, int b) {}
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _08002227C(void *a, int b) __attribute__((alias("RaceVM_02227C")));
 void sub_08002227C(void *a, int b) __attribute__((alias("RaceVM_02227C")));
-#endif
 
 // ============================================================================
 // sub_080022280 (0x080022280, 0x94 B) — trophy constructor (template
@@ -449,20 +423,16 @@ void RaceVM_022280(void *rec) {
 // file-scope `.align` lands after the body's `.size` -- still inside its own
 // section -- so it pads with the `0` fill argument. No body byte changes.
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _080022280(void *a) __attribute__((alias("RaceVM_022280")));
 void sub_080022280(void *a) __attribute__((alias("RaceVM_022280")));
-#endif
 
 // ============================================================================
 // sub_08002231C (0x08002231C, 2 B) — `bx lr` no-op leaf (dispatcher slot 5,
 // first half).
 void RaceVM_02231C(void *a) {}
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _08002231C(void *a) __attribute__((alias("RaceVM_02231C")));
 void sub_08002231C(void *a) __attribute__((alias("RaceVM_02231C")));
-#endif
 
 // ============================================================================
 // sub_080022320 (0x080022320, 0x28 B) — mode commit gate: tag = u16[car+2];
@@ -470,11 +440,7 @@ void sub_08002231C(void *a) __attribute__((alias("RaceVM_02231C")));
 void RaceVM_022320(void *ctx, int r1, u32 v) {
     (void)ctx; (void)r1;
     u16 trunc = (u16)v;                  // lsls/lsrs issued *before* the call
-#ifndef __APPLE__
     (void)sub_08004B68();                // closure spelling; car-record base read, unused
-#else
-    (void)_08004B68();                   // car-record base read; result unused
-#endif
     u16 tag = trunc - 1;                 // subs/lsls/lsrs
     if (tag <= 1) {
         _08004BFC(14);
@@ -482,20 +448,16 @@ void RaceVM_022320(void *ctx, int r1, u32 v) {
     }
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _080022320(void *a, int b, u32 c) __attribute__((alias("RaceVM_022320")));
 void sub_080022320(void *a, int b, u32 c) __attribute__((alias("RaceVM_022320")));
-#endif
 
 // ============================================================================
 // sub_080022348 (0x080022348, 4 B) — `bx lr` no-op leaf sitting at the head
 // of the dispatcher below (BL target of its slot-7 arm).
 void RaceVM_022348(void *a) {}
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _080022348(void *a) __attribute__((alias("RaceVM_022348")));
 void sub_080022348(void *a) __attribute__((alias("RaceVM_022348")));
-#endif
 
 // ============================================================================
 // sub_08002234C (0x08002234C, 0x70 B) — 7-way event dispatcher (1-based
@@ -509,35 +471,21 @@ void RaceVM_02234C(u32 ev, u32 p1, u32 p2, void *p3) {
         // match that layout, it is what fixes every table entry address.
         case 2: RaceVM_02227C(p3, (int)p1); break;
         case 1:
-#ifndef __APPLE__
             _080022280(p3);             // closure spelling
-#else
-            RaceVM_022280(p3);
-#endif
             break;
         case 5:
             RaceVM_02231C(p3);
-#ifndef __APPLE__
             _080022240(p3);             // closure spelling
-#else
-            RaceVM_022240(p3);
-#endif
             break;
         case 7: RaceVM_022348(p3); break;
         case 6:
-#ifndef __APPLE__
             _080022320(p3, (int)(u16)p1, (u16)p2);   // closure spelling
-#else
-            RaceVM_022320(p3, (int)(u16)p1, (u16)p2);
-#endif
             break;
         default: break;
     }
 }
-#ifndef __APPLE__
 void _08002234C(u32 a, u32 b, u32 c, void *d) __attribute__((alias("RaceVM_02234C")));
 void sub_08002234C(u32 a, u32 b, u32 c, void *d) __attribute__((alias("RaceVM_02234C")));
-#endif
 
 // ============================================================================
 // sub_0800223C0 (0x0800223C0, 0x30 B) — stack template u16[3] from ROM
@@ -550,10 +498,8 @@ u32 RaceVM_0223C0(int n) {
     if (r4 <= 0) r4 = 0;
     return ((volatile u16 *)tmp)[r4];
 }
-#ifndef __APPLE__
 u32 _0800223C0(int a) __attribute__((alias("RaceVM_0223C0")));
 u32 sub_0800223C0(int a) __attribute__((alias("RaceVM_0223C0")));
-#endif
 
 // ============================================================================
 // sub_0800223F0 (0x0800223F0, 0x34 B) — results row collection: rows
@@ -585,10 +531,8 @@ void RaceVM_0223F0(void *rec) {
 // section -- so it pads with the `0` fill argument instead. No body byte
 // changes; only the two filler halfwords.
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _0800223F0(void *a) __attribute__((alias("RaceVM_0223F0")));
 void sub_0800223F0(void *a) __attribute__((alias("RaceVM_0223F0")));
-#endif
 
 // ============================================================================
 // sub_08002242C (0x08002242C, 0x0C B) — leaf sitting between _0800223F0 and
@@ -609,10 +553,8 @@ s16 RaceVM_02242C(void *rec, int i) {
     u8 *base = (u8 *)rec + 186;
     return *(s16 *)(base + off);
 }
-#ifndef __APPLE__
 s16 _08002242C(void *rec, int i) __attribute__((alias("RaceVM_02242C")));
 s16 sub_08002242C(void *rec, int i) __attribute__((alias("RaceVM_02242C")));
-#endif
 
 // ============================================================================
 // sub_080022438 (0x080022438, 0x1C B incl. the `00 00` align filler) — BL
@@ -646,10 +588,8 @@ int RaceVM_022438(int x) {
 // `00 00` where gas would fill a Thumb code section with `46 c0`. Same
 // file-scope zero-fill trick as RaceVM_0223F0 above.
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 int _080022438(int a) __attribute__((alias("RaceVM_022438")));
 int sub_080022438(int a) __attribute__((alias("RaceVM_022438")));
-#endif
 
 // ============================================================================
 // sub_080022454 (0x080022454, 0x20 B) — place setter: u16[rec+84] =
@@ -663,19 +603,15 @@ void RaceVM_022454(void *ctx, void *rec) {
     else
         *(volatile u16 *)(r4 + 84) = 6;
 }
-#ifndef __APPLE__
 void _080022454(void *a, void *b) __attribute__((alias("RaceVM_022454")));
 void sub_080022454(void *a, void *b) __attribute__((alias("RaceVM_022454")));
-#endif
 
 // ============================================================================
 // sub_080022478 (0x080022478, 2 B) — `bx lr` no-op leaf (dispatcher slot 12).
 void RaceVM_022478(void *a) {}
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _080022478(void *a) __attribute__((alias("RaceVM_022478")));
 void sub_080022478(void *a) __attribute__((alias("RaceVM_022478")));
-#endif
 
 // ============================================================================
 // sub_08002247C (0x08002247C, 0x158 B) — results constructor #2 (template
@@ -747,10 +683,8 @@ void RaceVM_02247C(void *rec) {
         }
     }
 }
-#ifndef __APPLE__
 void _08002247C(void *a) __attribute__((alias("RaceVM_02247C")));
 void sub_08002247C(void *a) __attribute__((alias("RaceVM_02247C")));
-#endif
 
 // ============================================================================
 // sub_080022624 (0x080022624, 0xAC B) — results event handler #2 (v = phase
@@ -845,13 +779,9 @@ void RaceVM_022624(void *rec, int r1, u32 v) {
                      : : "r"(saved), "r"(current)
                      : "r0", "r1", "r3", "lr", "cc");
 }
-#ifndef __APPLE__
 void _080022624(void *a, int b, u32 c) __attribute__((alias("RaceVM_022624")));
 void sub_080022624(void *a, int b, u32 c) __attribute__((alias("RaceVM_022624")));
-#endif
-#ifndef __APPLE__
 __asm__(".short 0\n");
-#endif
 
 // ============================================================================
 // sub_0800226D4 (0x0800226D4, 0x7C B) — rows 0..29 builder: id 2 → a4=4,
@@ -882,10 +812,8 @@ void RaceVM_0226D4(void *rec_, int r1_, u32 v) {
         if (r9 < 0) break;
     }
 }
-#ifndef __APPLE__
 void _0800226D4(void *a, int b, u32 c) __attribute__((alias("RaceVM_0226D4")));
 void sub_0800226D4(void *a, int b, u32 c) __attribute__((alias("RaceVM_0226D4")));
-#endif
 
 // ============================================================================
 // sub_080022750 (0x080022750, 0x6C B) — results page twin of 0x021F14:
@@ -898,10 +826,8 @@ void RaceVM_022750(void *rec, int x, int y) {
     u32 a4 = (mode == 1 || mode == 3) ? 5u : 4u;
     _08007B18(rec, (int)x, y, 0, a4, 1u, 0u, 0u);
 }
-#ifndef __APPLE__
 void _080022750(void *a, int b, int c) __attribute__((alias("RaceVM_022750")));
 void sub_080022750(void *a, int b, int c) __attribute__((alias("RaceVM_022750")));
-#endif
 
 // ============================================================================
 // sub_0800227C0 (0x0800227C0, 0x94 B) — paint: dec s16[rec+128] (reload 15);
@@ -923,10 +849,8 @@ void RaceVM_0227C0(void *rec) {
     RaceVM_022750(rec, (int)w1, (int)w3);
     _0800DBE8((void *)(r5 + 8));
 }
-#ifndef __APPLE__
 void _0800227C0(void *a) __attribute__((alias("RaceVM_0227C0")));
 void sub_0800227C0(void *a) __attribute__((alias("RaceVM_0227C0")));
-#endif
 
 // ============================================================================
 // _0800221A4 — parallel 12-way phase dispatcher (1-based table): 1->021CC4,
@@ -952,9 +876,7 @@ void RaceVM_021A4(u32 ev, u32 p1, u32 p2, void *p3) {
 // agbcc's function section uses 0x46C0 by default, so preserve the literal
 // Thumb alignment halfword in this section.
 __asm__(".pushsection .text.RaceVM_021A4,\"ax\",%progbits\n\t.align 2, 0\n\t.popsection");
-#ifndef __APPLE__
 void _0800221A4(u32 ev, u32 p1, u32 p2, void *p3) __attribute__((alias("RaceVM_021A4")));
-#endif
 
 // ============================================================================
 // sub_08002285C (0x08002285C, 0x98 B) — 12-way event dispatcher (1-based
@@ -967,45 +889,27 @@ void RaceVM_02285C(u32 ev, u32 p1, u32 p2, void *p3) {
         // armcc emitted the case bodies in source order 2, 5, 7, 6, 1, 12 —
         // that layout is what fixes every jump-table entry address.
         case 2:
-#ifndef __APPLE__
             _080022454((void *)p3, (void *)(uintptr_t)p1);    // closure spelling
-#else
-            RaceVM_022454((void *)p3, (void *)(uintptr_t)p1);
-#endif
             break;
         case 5: _0800D854((u8 *)p3 + 8); _0800D8E4((u8 *)p3 + 112); break;
         case 7:
-#ifndef __APPLE__
             _0800227C0(p3);             // closure spelling
-#else
-            RaceVM_0227C0(p3);
-#endif
             break;
         case 6:
             if (*(volatile u16 *)((u8 *)p3 + 12) != 0) {
-#ifndef __APPLE__
                 _080022624(p3, (int)(u16)p1, (u16)p2);       // closure spelling
-#else
-                RaceVM_022624(p3, (int)(u16)p1, (u16)p2);
-#endif
             }
             break;
         case 1:
-#ifndef __APPLE__
             _08002247C(p3);             // closure spelling
-#else
-            RaceVM_02247C(p3);
-#endif
             break;
         case 12: RaceVM_022478(p3); break;
         default: break;
     }
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _08002285C(u32 a, u32 b, u32 c, void *d) __attribute__((alias("RaceVM_02285C")));
 void sub_08002285C(u32 a, u32 b, u32 c, void *d) __attribute__((alias("RaceVM_02285C")));
-#endif
 
 // ============================================================================
 // sub_0800228F8 (0x0800228F8, 0x20 B) — place setter twin: u16[rec+84] =
@@ -1019,19 +923,15 @@ void RaceVM_0228F8(void *ctx, void *rec) {
     else
         *(volatile u16 *)(r4 + 84) = 6;
 }
-#ifndef __APPLE__
 void _0800228F8(void *a, void *b) __attribute__((alias("RaceVM_0228F8")));
 void sub_0800228F8(void *a, void *b) __attribute__((alias("RaceVM_0228F8")));
-#endif
 
 // ============================================================================
 // sub_08002291C (0x08002291C, 2 B) — `bx lr` no-op leaf (tail slot 12).
 void RaceVM_02291C(void *rec) { (void)rec; }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _08002291C(void *rec) __attribute__((alias("RaceVM_02291C")));
 void sub_08002291C(void *rec) __attribute__((alias("RaceVM_02291C")));
-#endif
 
 // ============================================================================
 // sub_080022920 (0x080022920, 0xE4 B) — results constructor #3 (template
@@ -1074,10 +974,8 @@ void RaceVM_022920(void *rec) {
         *(volatile u16 *)(r7 + 132) = 0;
     }
 }
-#ifndef __APPLE__
 void _080022920(void *a) __attribute__((alias("RaceVM_022920")));
 void sub_080022920(void *a) __attribute__((alias("RaceVM_022920")));
-#endif
 
 // ============================================================================
 // sub_080022A14 (0x080022A14, 0xB4 B) — variant event handler (v = phase
@@ -1124,10 +1022,8 @@ void RaceVM_022A14(void *rec, int r1, u32 v) {
         _0802B368(2);
     }
 }
-#ifndef __APPLE__
 void _080022A14(void *a, int b, u32 c) __attribute__((alias("RaceVM_022A14")));
 void sub_080022A14(void *a, int b, u32 c) __attribute__((alias("RaceVM_022A14")));
-#endif
 
 // ============================================================================
 // sub_080022ACC (0x080022ACC, 0x7C B) — rows 0..29 builder twin of 0x0226D4:
@@ -1159,10 +1055,8 @@ void RaceVM_022ACC(void *rec_, int r1_, u32 v) {
         if (r9 < 0) break;
     }
 }
-#ifndef __APPLE__
 void _080022ACC(void *a, int b, u32 c) __attribute__((alias("RaceVM_022ACC")));
 void sub_080022ACC(void *a, int b, u32 c) __attribute__((alias("RaceVM_022ACC")));
-#endif
 
 // ============================================================================
 // sub_080022B48 (0x080022B48, 0x6C B) — page twin: sel = s16[rec+132],
@@ -1175,10 +1069,8 @@ void RaceVM_022B48(void *rec, int x, int y) {
     u32 a4 = (mode == 1 || mode == 3) ? 5u : 4u;
     _08007B18(rec, (int)x, y, 0, a4, 1u, 0u, 0u);
 }
-#ifndef __APPLE__
 void _080022B48(void *a, int b, int c) __attribute__((alias("RaceVM_022B48")));
 void sub_080022B48(void *a, int b, int c) __attribute__((alias("RaceVM_022B48")));
-#endif
 
 // ============================================================================
 // sub_080022BBC (0x080022BBC, 0x5C B) — paint twin: dec s16[rec+128]
@@ -1208,18 +1100,12 @@ void RaceVM_022BBC(void *rec) {
     r1 = r5[0];
     index += (u32)(uintptr_t)r8;
     mode = *(const u32 *)(uintptr_t)index;
-#ifndef __APPLE__
     sub_080022B48((void *)r4, (int)r1, (int)mode);
-#else
-    RaceVM_022B48((void *)r4, (int)r1, (int)mode);
-#endif
     r4 += 8;
     _0800DBE8((void *)r4);
 }
-#ifndef __APPLE__
 void _080022BBC(void *a) __attribute__((alias("RaceVM_022BBC")));
 void sub_080022BBC(void *a) __attribute__((alias("RaceVM_022BBC")));
-#endif
 
 // ============================================================================
 // _080022C18 (0x080022C18, 0x9C B) — tail dispatcher (12-way
@@ -1246,38 +1132,9 @@ void RaceVM_022C18(u32 ev, u32 p1, u32 p2, void *p3) {
 }
 // Match the ROM's zero Thumb alignment halfword after the return.
 __asm__(".pushsection .text.RaceVM_022C18,\"ax\",%progbits\n\t.align 2, 0\n\t.popsection");
-#ifndef __APPLE__
 void _080022C18(u32 a, u32 b, u32 c, void *d) __attribute__((alias("RaceVM_022C18")));
-#endif
 
 // ============================================================================
 // Host-test weak stubs (menu_stage.c already provides _08004EA8/EC0/BFC/
 // ED8/2140/2178/3F18) — the ARM build uses C-lifted aliases / trampolines.
 // ============================================================================
-#ifdef __APPLE__
-__attribute__((weak)) void *_08004B68(void) { return 0; }
-__attribute__((weak)) void _0802B214(u32 v) { (void)v; }
-__attribute__((weak)) void _0802B368(u16 v) { (void)v; }
-__attribute__((weak)) void _08007770(int a, void *b, int c, int d, u32 e, u32 f) {
-    (void)a; (void)b; (void)c; (void)d; (void)e; (void)f;
-}
-__attribute__((weak)) void _0800DAB8(void *p) { (void)p; }
-__attribute__((weak)) void _08007614(void *a, int b, int c, int d) {
-    (void)a; (void)b; (void)c; (void)d;
-}
-__attribute__((weak)) void _080075E8(void *a, int b, int c) { (void)a; (void)b; (void)c; }
-__attribute__((weak)) void _0800D77C(void *a, int b, int c) { (void)a; (void)b; (void)c; }
-__attribute__((weak)) int _08025D90(int a) { (void)a; return 0; }
-__attribute__((weak)) void _08007B18(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h) {
-    (void)a; (void)b; (void)c; (void)d; (void)e; (void)f; (void)g; (void)h;
-}
-__attribute__((weak)) void _0800D97C(void *a, int b) { (void)a; (void)b; }
-__attribute__((weak)) void _0800D854(void *a) { (void)a; }
-__attribute__((weak)) void _0800D8E4(void *a) { (void)a; }
-__attribute__((weak)) void _0800DBE8(void *a) { (void)a; }
-__attribute__((weak)) void _0802E0A4(void *a, const void *b, u32 c) {
-    (void)a; (void)b; (void)c;
-}
-__attribute__((weak)) int _0800572C(int a) { (void)a; return 0; }
-__attribute__((weak)) void _08007664(void *a, void *b, int c) { (void)a; (void)b; (void)c; }
-#endif

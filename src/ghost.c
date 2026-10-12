@@ -26,25 +26,18 @@ void Ghost_SetRaceCtxU16_74(u32 v) {
     *(volatile u16 *)(RaceCtx() + 0x74) = v;
 }
 
-#ifndef __APPLE__
 // The alias is defined at the bottom of this TU; declare it here so
 // `Ghost_RaiseFlag2` can call the `_08018AA8` spelling that asm/ghost.s
 // actually defines at 0x08018AA8 (the friendly `Ghost_FlagOp` name carries
 // no VMA, so the screen could not resolve it).
 void _08018AA8(u32 m, int s);
-#endif
 void Ghost_RaiseFlag2(void) {
-#ifndef __APPLE__
     // The `_08018AA8` alias is ARM-only (declared above under the same
     // guard); the host build calls the real body by its friendly name.
     _08018AA8(2, 1);
-#else
-    Ghost_FlagOp(2, 1);
-#endif
 }
 __asm__(".align 2, 0");
 
-#ifndef __APPLE__
 __attribute__((naked)) void Ghost_FlagOp(u32 mask, int set) {
     __asm__ volatile (
         ".syntax unified\n"
@@ -71,21 +64,12 @@ __attribute__((naked)) void Ghost_FlagOp(u32 mask, int set) {
         ".syntax divided\n"
     );
 }
-#else
-void Ghost_FlagOp(u32 mask, int set) {
-    volatile u32 ctx = RaceCtx();
-    volatile u32 *flags = (volatile u32 *)(ctx + 60);
-    if (set) *flags |= mask;
-    else     *flags &= ~mask;
-}
-#endif
 
 u32 Ghost_FlagTest(u32 mask) {
     return *(volatile u32 *)(RaceCtx() + 60) & mask;
 }
 
 // Aliases for original BL targets
-#ifndef __APPLE__
 void *_08018A50(int idx) __attribute__((alias("Ghost_RacerAt")));
 u8   _08018A6C(s16 idx) __attribute__((alias("Ghost_CarRecordField6")));
 u8   sub_08018A6C(s16 idx) __attribute__((alias("Ghost_CarRecordField6")));
@@ -93,4 +77,3 @@ void _08018A88(u32 v) __attribute__((alias("Ghost_SetRaceCtxU16_74")));
 void _08018A98(void) __attribute__((alias("Ghost_RaiseFlag2")));
 void _08018AA8(u32 m, int s) __attribute__((alias("Ghost_FlagOp")));
 u32  _08018ACC(u32 m) __attribute__((alias("Ghost_FlagTest")));
-#endif

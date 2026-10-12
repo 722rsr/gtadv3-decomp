@@ -10,7 +10,6 @@
 // Caller ABI: channel in r1 (nonstandard r1), r0 ignored, r2/r3 temps. Proven via ROM table at 0x061520 (0x0802BDEC thumb entry at file 0x061520: EC BD 02 08) within 0x061520 8-entry table, dispatched via r1 channel.
 // Do not guess voice layout beyond +20 (u8) / +0 (u8) directly via strb/ldrb/orrs, proven via objdump.
 
-#ifndef __APPLE__
 void _0802BDEC(void *a, void *b) __attribute__((alias("SoundBDEC_Store")));
 void sub_0802BDEC(void *a, void *b) __attribute__((alias("SoundBDEC_Store")));
 __attribute__((naked)) void SoundBDEC_Store(void *a, void *chan) {
@@ -28,6 +27,3 @@ __attribute__((naked)) void SoundBDEC_Store(void *a, void *chan) {
         ".syntax divided\n"
     );
 }
-#else
-void SoundBDEC_Store(void *a, void *b) { (void)a; (void)b; }
-#endif

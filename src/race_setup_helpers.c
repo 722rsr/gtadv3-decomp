@@ -10,43 +10,6 @@
 
 #include "gba/types.h"
 
-#ifdef __APPLE__
-__attribute__((weak)) u32  _08018ACC(u32 mask) { (void)mask; return 0; }
-__attribute__((weak)) void _08018AA8(u32 mask, int set) { (void)mask; (void)set; }
-__attribute__((weak)) void _080018EC0(void) { }
-__attribute__((weak)) void _080018F14(void *a) { (void)a; }
-__attribute__((weak)) int  _080044C4(int a, int b, volatile u32 *c) { (void)a; (void)b; (void)c; return 0; }
-__attribute__((weak)) int  _08004508(volatile u32 *a) { (void)a; return 0; }
-__attribute__((weak)) int  _0802D97C(int a, int b) { (void)a; return 0; }
-__attribute__((weak)) void _0802B500(u16 a, u16 b, s16 c) { (void)a; (void)b; (void)c; }
-__attribute__((weak)) int  _0802D978(int a, int b) { (void)a; return 0; }
-__attribute__((weak)) int  _0802DE04(int a, int b) { (void)a; return 0; }
-__attribute__((weak)) void *_0802E0A4(void *dst, const void *src, u32 n) { (void)src; (void)n; return dst; }
-__attribute__((weak)) int  _08002BE8(void) { return 0; }
-__attribute__((weak)) void _08002C48(int a, u16 b) { (void)a; (void)b; }
-__attribute__((weak)) int  _08002BD8(u32 a, u32 b) { (void)a; return 0; }
-__attribute__((weak)) void _08006B20(void) { }
-__attribute__((weak)) void *_08005F98(void) { return (void *)0; }
-__attribute__((weak)) void _08007538(void *a, s16 b, s16 c) { (void)a; (void)b; (void)c; }
-__attribute__((weak)) void _080075E8(void *a, s16 b, int c) { (void)a; (void)b; (void)c; }
-__attribute__((weak)) void _08002BFC(int a) { (void)a; }
-__attribute__((weak)) void _08004330(void *a) { (void)a; }
-__attribute__((weak)) int  _08008164(int a) { (void)a; return a; }
-__attribute__((weak)) void _08008208(void) { }
-__attribute__((weak)) void _080081F8(u16 a) { (void)a; }
-__attribute__((weak)) void _0800821C(void) { }
-__attribute__((weak)) void _08008284(u16 a) { (void)a; }
-__attribute__((weak)) void _08026550(void *a, int b, void *c, int d) { (void)a; (void)b; (void)c; (void)d; }
-__attribute__((weak)) void _08027234(u32 a, u32 b, s16 c, void *d) { (void)a; (void)b; (void)c; (void)d; }
-__attribute__((weak)) void _0802A8F0(void *a, int v) { (void)a; (void)v; }
-__attribute__((weak)) void _0801B498(void) { }
-__attribute__((weak)) void _08019D0C(void) { }
-__attribute__((weak)) void _08019D40(void) { }
-__attribute__((weak)) void _08019E1C(void) { }
-__attribute__((weak)) void _08019F1D(void) { }
-__attribute__((weak)) void _08019EC9(void) { }
-__attribute__((weak)) void _080023AC(int slot, void *handler) { (void)slot; (void)handler; }
-#else
 extern u32  _08018ACC(u32 mask);        // Ghost_FlagTest (src/ghost.c)
 extern void _08018AA8(u32 mask, int set); // Ghost_FlagOp
 extern void _080018EC0(void);           // (src/race_setup.c)
@@ -90,7 +53,6 @@ extern void _08019EC9(void);            // raw asm continuation
 extern int  _08019200(void *a, void *b);   // Race_Setup_19200 (src/race_setup.c)
 extern int  _080019250(void *a, void *b);  // Race_Setup_19250 (src/race_setup.c)
 extern void _080023AC(int slot, void *handler); // src/code_22e4.c
-#endif
 
 // ----------------------------------------------------------------------------
 // _080019C9C / _080019DBC — VCOUNT gate + IRQ-slot install.
@@ -192,9 +154,7 @@ finish:
         }
     }
 }
-#ifndef __APPLE__
 void _080018F94(void) __attribute__((alias("sub_080018F94")));
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x080019318 sub_080019318 — ghost ghost-car record updater:
@@ -745,10 +705,8 @@ void sub_08019F70(void)
 // Pinning the locals with `register... __asm__("rN")` does reach 31/152, but
 // this file has no other register pin and the technique does not belong in a
 // C89 translation unit, so the readable form is kept and the gap is recorded.
-#ifndef __APPLE__
 void _080019F70(void) __attribute__((alias("sub_08019F70")));
 void _08019F70(void) __attribute__((alias("sub_08019F70")));
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x0800199B0 — 20 B flag leaf (asm/race_setup_18adc.s; the award path in
@@ -785,11 +743,7 @@ void sub_080019A84(void)
     // decrement, though, stays a *separate* temp (`subs r0,r2,#1` before the
     // in-place `subs r2,#1` a pinned subtraction would give), so it goes
     // through its own u32 local.
-#ifndef __APPLE__
     register u32 rword __asm__("r2");
-#else
-    u32 rword;
-#endif
     u32 nv;
     s16 lane;
     rword = *p4A;
@@ -814,7 +768,6 @@ void sub_080019A84(void)
 }
 
 // ROM entry alias.
-#ifndef __APPLE__
 void _080199B0(void) __attribute__((alias("sub_0800199B0")));
 void sub_080199B0(void) __attribute__((alias("sub_0800199B0")));
 void _08019A84(void) __attribute__((alias("sub_080019A84")));
@@ -831,4 +784,3 @@ void _08019AEC(int mode) __attribute__((alias("sub_080019AEC")));
 // exact aliases beside the shorter C-facing names above.
 void _0800199B0(void) __attribute__((alias("sub_0800199B0")));
 void _0800199CC(void) __attribute__((alias("sub_0800199CC")));
-#endif

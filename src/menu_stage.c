@@ -35,22 +35,6 @@
 extern void _0800D4EC(void *rec);   // menus.c MenuD4EC_0800D4EC
 extern void _0800D7C4(void *rec);   // menus.c MenuD7C4_0800D7C4 (*rec = 11)
 
-#ifdef __APPLE__
-__attribute__((weak)) void _0800D4EC(void *rec) { (void)rec; }
-__attribute__((weak)) void _0800D7C4(void *rec) { *(volatile u32 *)rec = 11; }
-__attribute__((weak)) void _0800226C(void *a, int b) { (void)a; (void)b; }
-__attribute__((weak)) void _08002298(void *a) { (void)a; }
-__attribute__((weak)) int  _080022C0(void) { return 0; }
-__attribute__((weak)) int  _080022CC(void) { return 1; }
-__attribute__((weak)) int  _080022D8(int slot) { (void)slot; return 0; }
-__attribute__((weak)) void _08004EA8(int v) { (void)v; }
-__attribute__((weak)) void _08004EC0(int v) { (void)v; }
-__attribute__((weak)) void _08004BFC(int v) { (void)v; }
-__attribute__((weak)) void _08004ED8(int v) { (void)v; }
-__attribute__((weak)) u32  _08002140(void) { return 0; }
-__attribute__((weak)) u16  _08002178(int x, int y) { (void)x; (void)y; return 0; }
-__attribute__((weak)) void _08003F18(u32 a, u32 b, const volatile u8 *c, int d) { (void)a; (void)b; (void)c; (void)d; }
-#else
 // Strong callees on ARM: aliases from (block_b.c / course_resource.c /
 // runtime_hud.c / menus.c) or the exact bodies.
 extern int  _080022C0(void);
@@ -68,7 +52,6 @@ extern void _08003978(int a, u32 b, int c);
 extern void _08003940(int a, u32 b);
 extern void _08003F18(u32 a, u32 b, const volatile u8 *c, int d);
 extern void _08007664(void *a, void *b, int c);
-#endif
 
 // ----------------------------------------------------------------------------
 // menu_d4ea.s sub_0800D544 (VMA 0x0800D544, 0x58 B) — pause-lane tick.
@@ -104,20 +87,16 @@ void MenuStage_0800D544(void *rec) {
     }
     *(volatile u16 *)(r4 + 0) = (u16)(*(volatile u16 *)(r4 + 0) + 1);
 }
-#ifndef __APPLE__
 void _0800D544(void *a) __attribute__((alias("MenuStage_0800D544")));
 void sub_0800D544(void *a) __attribute__((alias("MenuStage_0800D544")));
-#endif
 
 // ----------------------------------------------------------------------------
 // menu_d4ea.s sub_0800D59C (VMA 0x0800D59C, 8 B) — push{lr}/bl D544/pop tail
 // veneer.
 void MenuStage_0800D59C(void *rec) { _0800D544(rec); }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _0800D59C(void *a) __attribute__((alias("MenuStage_0800D59C")));
 void sub_0800D59C(void *a) __attribute__((alias("MenuStage_0800D59C")));
-#endif
 
 // ----------------------------------------------------------------------------
 // menu_d4ea.s sub_0800D5A8 (VMA 0x0800D5A8, 0x3A B) — stage intro banner.
@@ -147,10 +126,8 @@ void MenuStage_0800D5A8(void *rec) {
     _08003F18(50u, 30u, (const volatile u8 *)(uintptr_t)0x0805F938u, (int)_08002140());
     (void)rec;
 }
-#ifndef __APPLE__
 void _0800D5A8(void *a) __attribute__((alias("MenuStage_0800D5A8")));
 void sub_0800D5A8(void *a) __attribute__((alias("MenuStage_0800D5A8")));
-#endif
 
 // ----------------------------------------------------------------------------
 // menu_d4ea.s sub_0800D5E4 (VMA 0x0800D5E4, 0x68 B) — input poll.
@@ -193,29 +170,23 @@ void MenuStage_0800D5E4(void *rec) {
 // file-scope `.align 2, 0` lands after the body's `.size` -- still inside the
 // body's own section -- and pads with the explicit `0` fill.
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _0800D5E4(void *a) __attribute__((alias("MenuStage_0800D5E4")));
 void sub_0800D5E4(void *a) __attribute__((alias("MenuStage_0800D5E4")));
-#endif
 
 // ----------------------------------------------------------------------------
 // menu_d4ea.s sub_0800D64C (VMA 0x0800D64C, 4 B) — `bx lr` no-op leaf
 // (dispatcher slot; args pass through unused).
 void MenuStage_0800D64C(void *a, u16 b, u16 c) { (void)a; (void)b; (void)c; }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _0800D64C(void *a, u16 b, u16 c) __attribute__((alias("MenuStage_0800D64C")));
 void sub_0800D64C(void *a, u16 b, u16 c) __attribute__((alias("MenuStage_0800D64C")));
-#endif
 
 // ----------------------------------------------------------------------------
 // menu_d4ea.s sub_0800D650 (VMA 0x0800D650, 8 B) — `movs r0,#1; bl 0x08004ED8`
 // wrapper (r0 = 1 set but unused by callee ABI).
 void MenuStage_0800D650(void) { _08004ED8(1); }
-#ifndef __APPLE__
 void _0800D650(void) __attribute__((alias("MenuStage_0800D650")));
 void sub_0800D650(void) __attribute__((alias("MenuStage_0800D650")));
-#endif
 
 // ----------------------------------------------------------------------------
 // menu_d4ea.s sub_0800D65C (VMA 0x0800D65C, 8 B) — `adds r1,#88; movs r0,#0;
@@ -225,10 +196,8 @@ void sub_0800D650(void) __attribute__((alias("MenuStage_0800D650")));
 // the second parameter, not a fresh register — a one-parameter form allocates
 // the address to r0 and the constant to r1 (reversed).
 void MenuStage_0800D65C(void *rec, void *ctx) { *(volatile u8 *)((u8 *)ctx + 88) = 0; }
-#ifndef __APPLE__
 void _0800D65C(void *a, void *b) __attribute__((alias("MenuStage_0800D65C")));
 void sub_0800D65C(void *a, void *b) __attribute__((alias("MenuStage_0800D65C")));
-#endif
 
 // ----------------------------------------------------------------------------
 // menu_d4ea.s sub_0800D664 (VMA 0x0800D664, 0x7A B) — 11-entry event
@@ -241,35 +210,19 @@ void sub_0800D65C(void *a, void *b) __attribute__((alias("MenuStage_0800D65C")))
 void MenuStage_0800D664(u32 id, void *param1, u32 p2, void *rec) {
     switch (id) {
     case 2:
-#ifndef __APPLE__
         _0800D65C(rec, param1);
-#else
-        MenuStage_0800D65C(rec, param1);
-#endif
         break;
     case 1:
         _0800D4EC(rec);
         break;
     case 6:
-#ifndef __APPLE__
         _0800D64C(rec, (u16)(uintptr_t)param1, (u16)p2);
-#else
-        MenuStage_0800D64C(rec, (u16)(uintptr_t)param1, (u16)p2);
-#endif
         break;
     case 5:
-#ifndef __APPLE__
         _0800D59C(rec);
-#else
-        MenuStage_0800D59C(rec);
-#endif
         break;
     case 7:
-#ifndef __APPLE__
         _0800D5A8(rec);
-#else
-        MenuStage_0800D5A8(rec);
-#endif
         break;
     case 11:
         break;
@@ -278,10 +231,8 @@ void MenuStage_0800D664(u32 id, void *param1, u32 p2, void *rec) {
     }
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _0800D664(u32 a, void *b, u32 c, void *d) __attribute__((alias("MenuStage_0800D664")));
 void sub_0800D664(u32 a, void *b, u32 c, void *d) __attribute__((alias("MenuStage_0800D664")));
-#endif
 
 // ----------------------------------------------------------------------------
 // menu_d4ea.s sub_0800D6E0 (VMA 0x0800D6E0, 0x24 B) — resource init:
@@ -291,10 +242,8 @@ void MenuStage_0800D6E0(void *rec) {
     *(volatile u32 *)rec = 150 * 2;
     *((volatile u32 *)rec + 1) = 0;
 }
-#ifndef __APPLE__
 void _0800D6E0(void *a) __attribute__((alias("MenuStage_0800D6E0")));
 void sub_0800D6E0(void *a) __attribute__((alias("MenuStage_0800D6E0")));
-#endif
 
 // ----------------------------------------------------------------------------
 // menu_d4ea.s sub_0800D704 (VMA 0x0800D704, 0x24 B) — wait-timer tick:
@@ -319,18 +268,14 @@ void MenuStage_0800D704(void *rec) {
 // as MenuStage_0800D5E4 above: it lands after the body's `.size`, inside the
 // body's own section, and pads with the explicit `0` fill.
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _0800D704(void *a) __attribute__((alias("MenuStage_0800D704")));
 void sub_0800D704(void *a) __attribute__((alias("MenuStage_0800D704")));
-#endif
 
 // menu_d4ea.s sub_0800D728 (VMA 0x0800D728, 4 B) — `bx lr` no-op leaf.
 void MenuStage_0800D728(void *a, u32 b, u32 c) { (void)a; (void)b; (void)c; }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _0800D728(void *a, u32 b, u32 c) __attribute__((alias("MenuStage_0800D728")));
 void sub_0800D728(void *a, u32 b, u32 c) __attribute__((alias("MenuStage_0800D728")));
-#endif
 
 // ----------------------------------------------------------------------------
 // menu_d4ea.s sub_0800D72C (VMA 0x0800D72C, 8 B) — `adds r1,#84; movs r0,#1;
@@ -339,10 +284,8 @@ void sub_0800D728(void *a, u32 b, u32 c) __attribute__((alias("MenuStage_0800D72
 // 0x0800D74E does `adds r0,r3; bl` and leaves r1 = the dispatcher's param1,
 // so the callee is (rec, ctx) and u16[ctx+84] = 1.
 void MenuStage_0800D72C(void *rec, void *ctx) { *(volatile u16 *)((u8 *)ctx + 84) = 1; }
-#ifndef __APPLE__
 void _0800D72C(void *a, void *b) __attribute__((alias("MenuStage_0800D72C")));
 void sub_0800D72C(void *a, void *b) __attribute__((alias("MenuStage_0800D72C")));
-#endif
 
 // ----------------------------------------------------------------------------
 // menu_d4ea.s sub_0800D734 (VMA 0x0800D734, 0x48 B) — event dispatcher
@@ -374,10 +317,8 @@ void MenuStage_0800D734(u32 id, void *param1, u32 p2, void *rec) {
     default: break;
     }
 }
-#ifndef __APPLE__
 void _0800D734(u32 a, void *b, u32 c, void *d) __attribute__((alias("MenuStage_0800D734")));
 void sub_0800D734(u32 a, void *b, u32 c, void *d) __attribute__((alias("MenuStage_0800D734")));
-#endif
 
 // ----------------------------------------------------------------------------
 // menu_d4ea.s sub_0800D77C (VMA 0x0800D77C, 0xC B) — pair store leaf
@@ -388,11 +329,9 @@ void MenuStage_0800D77C(void *rec, u32 a, u32 b) {
     *((volatile u32 *)rec + 1) = b;
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _0800D77C(void *a, u32 b, u32 c) __attribute__((alias("MenuStage_0800D77C")));
 void Sub_0800D77C(void *a, u32 b, u32 c) __attribute__((alias("MenuStage_0800D77C")));
 void sub_0800D77C(void *a, u32 b, u32 c) __attribute__((alias("MenuStage_0800D77C")));
-#endif
 
 // ----------------------------------------------------------------------------
 // menu_d4ea.s sub_0800D784 (VMA 0x0800D784, 0x10 B) — state setter:
@@ -402,10 +341,8 @@ void MenuStage_0800D784(void *rec) {
     *(volatile u32 *)rec = 1;
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _0800D784(void *a) __attribute__((alias("MenuStage_0800D784")));
 void sub_0800D784(void *a) __attribute__((alias("MenuStage_0800D784")));
-#endif
 
 // ----------------------------------------------------------------------------
 // menu_d4ea.s sub_0800D790 (VMA 0x0800D790, 0x24 B) — slide-up tick:
@@ -427,10 +364,8 @@ void MenuStage_0800D790(void *rec) {
         *(volatile s32 *)r2 = 2;
     }
 }
-#ifndef __APPLE__
 void _0800D790(void *a) __attribute__((alias("MenuStage_0800D790")));
 void sub_0800D790(void *a) __attribute__((alias("MenuStage_0800D790")));
-#endif
 
 // menu_d4ea.s sub_0800D7B4 (VMA 0x0800D7B4, 0x10 B) — u16[rec+4]=1,
 // u32[rec+0]=3.
@@ -439,18 +374,14 @@ void MenuStage_0800D7B4(void *rec) {
     *(volatile u32 *)rec = 3;
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _0800D7B4(void *a) __attribute__((alias("MenuStage_0800D7B4")));
 void sub_0800D7B4(void *a) __attribute__((alias("MenuStage_0800D7B4")));
-#endif
 
 // menu_d4ea.s sub_0800D7C0 (VMA 0x0800D7C0, 4 B) — `bx lr` no-op leaf.
 void MenuStage_0800D7C0(void) { }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _0800D7C0(void) __attribute__((alias("MenuStage_0800D7C0")));
 void sub_0800D7C0(void) __attribute__((alias("MenuStage_0800D7C0")));
-#endif
 
 // (sub_0800D7C4 already lifted in src/menus.c: *(u32*)rec = 11)
 
@@ -482,10 +413,8 @@ void MenuStage_0800D7CC(void *rec) {
         break;
     }
 }
-#ifndef __APPLE__
 void _0800D7CC(void *a) __attribute__((alias("MenuStage_0800D7CC")));
 void sub_0800D7CC(void *a) __attribute__((alias("MenuStage_0800D7CC")));
-#endif
 
 // ----------------------------------------------------------------------------
 // menu_d4ea.s sub_0800D800 (VMA 0x0800D800, 0x24 B) — slide-down tick:
@@ -503,10 +432,8 @@ void MenuStage_0800D800(void *rec) {
     }
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _0800D800(void *a) __attribute__((alias("MenuStage_0800D800")));
 void sub_0800D800(void *a) __attribute__((alias("MenuStage_0800D800")));
-#endif
 
 // ----------------------------------------------------------------------------
 // menu_d4ea.s sub_0800D828 (VMA 0x0800D828, 0x2C B) — mode-14 commit:
@@ -528,20 +455,14 @@ void MenuStage_0800D828(void *rec) {
     }
     *(volatile s32 *)r4 = 14;
 }
-#ifndef __APPLE__
 void _0800D828(void *a) __attribute__((alias("MenuStage_0800D828")));
 void sub_0800D828(void *a) __attribute__((alias("MenuStage_0800D828")));
-#endif
 
 // Call-site split for promoted bodies. `promotion_screen.py` only accepts a
 // promoted body whose call targets the assembly closure defines, and the closure
 // spells these `sub_0800D7xx`. On the host build the aliases do not exist
 // (clang rejects `__attribute__((alias))`), so the friendly name is used there.
-#ifndef __APPLE__
 #define MS_CALLEE(friendly, closure) closure
-#else
-#define MS_CALLEE(friendly, closure) friendly
-#endif
 
 // ----------------------------------------------------------------------------
 // menu_d4ea.s sub_0800D854 (VMA 0x0800D854, 0x8A B) — 15-entry state
@@ -567,12 +488,10 @@ void MenuStage_0800D854(void *rec) {
     }
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _0800D854(void *a) __attribute__((alias("MenuStage_0800D854")));
 void Sub_0800D854(void *a) __attribute__((alias("MenuStage_0800D854")));
 void sub_0800D854(void *a) __attribute__((alias("MenuStage_0800D854")));
 void Menu_D854(void *a) __attribute__((alias("MenuStage_0800D854"))); // rec35_runtime.c spelling
-#endif
 
 // ============================================================================
 // menu_d8e4.s (VMA 0x0800D8E4–0x0800D9A4) — menu stage transition family.
@@ -652,12 +571,10 @@ void MenuStage_0800D8E4(void *rec_) {
         break;
     }
 }
-#ifndef __APPLE__
 void _0800D8E4(void *a) __attribute__((alias("MenuStage_0800D8E4")));
 void Sub_0800D8E4(void *a) __attribute__((alias("MenuStage_0800D8E4")));
 void sub_0800D8E4(void *a) __attribute__((alias("MenuStage_0800D8E4")));
 void Menu_D8E4(void *a) __attribute__((alias("MenuStage_0800D8E4"))); // rec35_runtime.c spelling
-#endif
 
 // ----------------------------------------------------------------------------
 // menu_d8e4.s sub_0800D95C (VMA 0x0800D95C, 0x16 B) — byte-copy leaf
@@ -671,19 +588,15 @@ void memcpy_0800D95C(u8 *dst, const u8 *src, int n) {
     } while (--n != 0);
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _0800D95C(void *a, const void *b, int c) __attribute__((alias("memcpy_0800D95C")));
 void sub_0800D95C(void *a, const void *b, int c) __attribute__((alias("memcpy_0800D95C")));
-#endif
 
 // ----------------------------------------------------------------------------
 // menu_d8e4.s sub_0800D974 (VMA 0x0800D974, 8 B) — u16[rec+0] = 0 leaf.
 void MenuStage_0800D974(void *rec) { *(volatile u16 *)rec = 0; }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _0800D974(void *a) __attribute__((alias("MenuStage_0800D974")));
 void sub_0800D974(void *a) __attribute__((alias("MenuStage_0800D974")));
-#endif
 
 // ----------------------------------------------------------------------------
 // menu_d8e4.s sub_0800D97C (VMA 0x0800D97C, 0x26 B) — rec+0--; when the u16
@@ -714,8 +627,6 @@ void MenuStage_0800D97C(void *rec, int reload) {
     }
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _0800D97C(void *a, int b) __attribute__((alias("MenuStage_0800D97C")));
 void Sub_0800D97C(void *a, int b) __attribute__((alias("MenuStage_0800D97C")));
 void sub_0800D97C(void *a, int b) __attribute__((alias("MenuStage_0800D97C")));
-#endif

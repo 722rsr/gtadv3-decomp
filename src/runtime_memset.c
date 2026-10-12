@@ -3,7 +3,6 @@
 #include "gba/regs.h"
 #include "gba/bios.h"
 
-#ifndef __APPLE__
 void *RuntimeMemcpy(void *dst, const void *src, u32 n) {
     register u8 *original asm("r5") = (u8 *)dst;
     register u8 *d asm("r4") = original;
@@ -57,18 +56,8 @@ void *RuntimeMemcpy(void *dst, const void *src, u32 n) {
     }
     return original;
 }
-#else
-void *RuntimeMemcpy(void *dst, const void *src, u32 n) {
-    u8 *d = (u8 *)dst;
-    const u8 *s = (const u8 *)src;
-    while (n--) *d++ = *s++;
-    return dst;
-}
-#endif
 
-#ifndef __APPLE__
 __asm__(".align 2, 0");
-#endif
 
 void *RuntimeMemset(void *dst, int c, u32 n) {
     // The ROM returns dst in r0 and fills aligned words with a four-store
@@ -104,7 +93,6 @@ void *RuntimeMemset(void *dst, int c, u32 n) {
     return dst;
 }
 
-#ifndef __APPLE__
 void *_08002E0A4(void *a, const void *b, u32 c) __attribute__((alias("RuntimeMemcpy")));
 void *Sub_08002E0A4(void *a, const void *b, u32 c) __attribute__((alias("RuntimeMemcpy")));
 void *_0802E0A4(void *a, const void *b, u32 c) __attribute__((alias("RuntimeMemcpy")));
@@ -115,4 +103,3 @@ void *_0802E104(void *a, int b, u32 c) __attribute__((alias("RuntimeMemset")));
 // This TU uses the ROM's non-interworking return sequence. Its body is 82
 // bytes; the span ends with a zero halfword rather than gas's Thumb nop fill.
 __asm__(".align 2, 0");
-#endif

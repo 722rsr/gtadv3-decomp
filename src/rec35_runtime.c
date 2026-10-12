@@ -46,19 +46,18 @@ extern void *Sub_08005758(int v);
 //   _0800D854  menu_stage.c     MenuStage_0800D854
 //   _0800D8E4  menu_stage.c     MenuStage_0800D8E4
 // so each one links to its real C body rather than to a ROM veneer.
-//
-// The split is two-sided on purpose: the alias attributes live inside
-// `#ifndef __APPLE__`, so an unguarded `_0800...` call would be an implicit
-// declaration in the host build. tools/apple_decls.py is the gate that sees it.
-// The macro MUST sit at file scope, outside the split, for the same reason
-// (see src/race_scene_d1.c:28-59).
-#ifndef __APPLE__
 #define REC35_CALLEE(friendly, closure) closure
 extern void _0800D854(void *rec);   // 0x0800D854 menu_stage.c MenuStage_0800D854
 extern void _0800D8E4(void *rec);   // 0x0800D8E4 menu_stage.c MenuStage_0800D8E4
-#else
-#define REC35_CALLEE(friendly, closure) friendly
-#endif
+// 0x08016F28's six callees: the screen resolves a call by VMA or by an
+// already-promoted export, so the closure spellings are required (the friendly
+// Sound_/Event_ names below are neither).
+extern void _08007ABC(void *a, u32 b, u32 c); // 0x08007ABC (same shape as line ~780)
+extern void _08025BF0(void *a, int b);       // 0x08025BF0
+extern void _08024C0C(int v);                // 0x08024C0C (asm body is `bx lr`)
+extern int  _0802B3B8(int v);                // 0x0802B3B8
+extern void _080016944(void *rec);           // 0x08016944 (promoted in this cluster)
+extern void _080016A20(void *rec);           // 0x08016A20 (promoted in this cluster)
 
 // _0800164D4(void *a, void *ctx) — record flag at ctx+84, course ids 21/27/30
 //
@@ -123,18 +122,14 @@ void Rec35_RecordFlagSetter(void *a, void *ctx) {
     *p = out;
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _0800164D4(void *a, void *b) __attribute__((alias("Rec35_RecordFlagSetter")));
-#endif
 
 // _080016508 — bx lr stub. Takes the record because _08001681C slot 11 does
 // `adds r0, r4, #0` before the bl; the stub ignores it.
 void Rec35_BxLrStub(void *a) { (void)a; }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _080016508(void *a) __attribute__((alias("Rec35_BxLrStub")));
 void sub_080016508(void *a) __attribute__((alias("Rec35_BxLrStub")));
-#endif
 
 // _08001650C — record-49 constructor, 32-byte frame, WA pools 0x0FF8 etc.
 // Caller trace: called from rec35 init path after course header check.
@@ -176,9 +171,7 @@ void Rec35_Record49Constructor(void *ctx) {
     *(volatile s16 *)(r7 + 18) = 5;
     // prove 2 at [r2] where r2 = sp[20] etc. — isolated
 }
-#ifndef __APPLE__
 void _08001650C(void *c) __attribute__((alias("Rec35_Record49Constructor")));
-#endif
 
 // _0800166E8 — flag gate at WA+0x1074, call 0x0802B368 etc. pools 0xFFFF0000 etc.
 extern void Sub_0802B368(int v);
@@ -204,13 +197,9 @@ void Rec35_Leaf_166E8(void *ctx, int r1, int flag) {
     // ROM: ldr 0x03001780 / ldr 0x1074 / adds / movs r1,#0 / ldrsh r0,[r0,r1].
     // Two pool words plus the add needs the non-foldable base; the
     // `movs r1,#0` register index is agbcc's form for the constant-0 element.
-#ifndef __APPLE__
     extern u8 Rec35Wa3[] __asm__("Rec35Wa3");
     volatile u8 *wa = (volatile u8 *)(uintptr_t)Rec35Wa3;
     __asm__(".globl Rec35Wa3\nRec35Wa3 = 0x03001780\n");
-#else
-    volatile u8 *wa = (volatile u8 *)(uintptr_t)0x03001780u;
-#endif
     // ROM loads the cell with a REGISTER index (`movs r1,#0 / ldrsh r0,[r0,r1]`)
     // and no separate widen pair. That is the NON-VOLATILE `s16 *` load form:
     // a `volatile s16 *` lvalue makes agbcc emit `ldrh [r0,#0]` plus
@@ -221,9 +210,7 @@ void Rec35_Leaf_166E8(void *ctx, int r1, int flag) {
     if (g == 1) *(volatile s16 *)(c + 16) = 1;
     *(volatile u32 *)(c + 36) = z;
 }
-#ifndef __APPLE__
 void _0800166E8(void *a,int b,int c) __attribute__((alias("Rec35_Leaf_166E8")));
-#endif
 
 // _080016734 — per-asm (rec35_runtime.s): NOT a phase dispatcher. It is the
 // stream-placement tick: counter IWRAM 0x0300058C--, on wrap (<=0) increments
@@ -238,51 +225,31 @@ void _0800166E8(void *a,int b,int c) __attribute__((alias("Rec35_Leaf_166E8")));
 extern void sub_08007570(void *base, int idx, int b, int c, int e);
 extern void sub_08002ED0(void *a, int b, int c, int d, int e, int f, int g, int h, int i, int j);
 void Rec35_PlacementTick_16734(void *ctx, int a, int b, int c) {
-#ifndef __APPLE__
     register int index __asm__("r1") = b;
     __asm__ volatile("" : "+r"(index));
     register volatile u32 *cnt __asm__("r2") = (volatile u32 *)0x0300058C;
     __asm__ volatile("" : "+r"(cnt));
-#else
-    int index = b;
-    volatile u32 *cnt = (volatile u32 *)0x0300058C;
-#endif
     int v = (int)(*cnt) - 1;
     *cnt = (u32)v;
-#ifndef __APPLE__
     register s16 *cur __asm__("r5") = (s16 *)0x0203F8E8;
     __asm__ volatile("" : "+r"(cur));
-#else
-    s16 *cur = (s16 *)0x0203F8E8;
-#endif
     if (v <= 0) {
         *cur = (u16)(*cur + 1);
         *cnt = 5;
     }
-#ifndef __APPLE__
     register s16 *cur0 __asm__("r2") = cur;
     __asm__ volatile("" : "+r"(cur0));
-#else
-    s16 *cur0 = cur;
-#endif
     if (*cur0 > 15) *cur0 = 0;
-#ifndef __APPLE__
     register void *base __asm__("r0") = (void *)0x08306B54;
     __asm__ volatile("" : "+r"(base));
     register const s16 *table __asm__("r2") = (const s16 *)0x080CB8AC;
     __asm__ volatile("" : "+r"(table));
-#else
-    void *base = (void *)0x08306B54;
-    const s16 *table = (const s16 *)0x080CB8AC;
-#endif
     int s16val = table[index];
     sub_08007570(base, s16val, (int)cur[1], (int)cur[0] << 6, 64);
     sub_08002ED0(ctx, a, (int)cur[1], c, 1, 3, 1, 0, 0, 1);
 }
-#ifndef __APPLE__
 void _080016734(void *c,int a,int b,int d) __attribute__((alias("Rec35_PlacementTick_16734")));
 void sub_080016734(void *c,int a,int b,int d) __attribute__((alias("Rec35_PlacementTick_16734")));
-#endif
 
 void Rec35_Leaf_167C4(void *ctx) {
     u8 *rec = (u8 *)ctx;
@@ -296,9 +263,7 @@ void Rec35_Leaf_167C4(void *ctx) {
     _0800DBE8((void *)(rec + 8));
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _0800167C4(void *c) __attribute__((alias("Rec35_Leaf_167C4")));
-#endif
 
 // _08001681C — 12-way switch on the FIRST argument minus 1, via the inline
 // table at 0x08016838. The selector is r0: the prologue's third instruction
@@ -358,9 +323,7 @@ void Rec35_Dispatch_1681C(void *sel, int arg1, int arg2, int arg3) {
     }
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _08001681C(void *c, int a, int b, int d) __attribute__((alias("Rec35_Dispatch_1681C")));
-#endif
 
 // _080016AD4: setter at ctx+346 =180, plus _08002060(0) (pools none beyond +346)
 // Width: ldrh/strh via adds #346 (173<<1)
@@ -377,19 +340,15 @@ void Rec35_Leaf_16AD4(void *ctx) {
 // section -- so it pads with the `0` fill argument instead. No body byte
 // changes; only the two filler halfwords.
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _080016AD4(void *c) __attribute__((alias("Rec35_Leaf_16AD4")));
-#endif
 
 // _080016940: bx lr stub
 // Takes (and ignores) a record pointer: the only caller in the ROM
 // (_080017DAC case 11) sets r0 before the call.
 void Rec35_BxLr_16940(void *a) { (void)a; }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _080016940(void *a) __attribute__((alias("Rec35_BxLr_16940")));
 void sub_080016940(void *a) __attribute__((alias("Rec35_BxLr_16940")));
-#endif
 
 // _0800168B8: flag leaf at WA+0x10C3, calls _0802B368 with low halfword width.
 // The ROM DUPLICATES the `adds r0,r1,#0 / bl sub_0802B368` pair in both arms of
@@ -400,13 +359,9 @@ void Rec35_Leaf_168B8(u32 a0) {
     u16 v = (u16)(a0 & 0xFFFFu); // lsls r0,#16 / lsrs r1,r0,#16 -- value in r1
     // ROM reaches WA+0x10C3 as TWO pool words plus `adds r0,r0,r2`, so the base
     // must stay a SYMBOL_REF (see src/ai_award_leaves.c Ai_SetOwnedFlag).
-#ifndef __APPLE__
     extern u8 Rec35Wa4[] __asm__("Rec35Wa4");
     volatile u8 *wa = (volatile u8 *)(uintptr_t)Rec35Wa4;
     __asm__(".globl Rec35Wa4\nRec35Wa4 = 0x03001780\n");
-#else
-    volatile u8 *wa = (volatile u8 *)(uintptr_t)0x03001780u;
-#endif
     u8 f = *(volatile u8 *)(wa + 0x10C3u);
     if (f == 1) sub_0802B368(v);
     else sub_0802B368(v);
@@ -416,9 +371,7 @@ void Rec35_Leaf_168B8(u32 a0) {
 // `.align 2, 0` lands after the body's `.size`, still inside its own section,
 // so it pads with the explicit zero. Same idiom as Rec35_Leaf_16AD4 below.
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _0800168B8(u32 a0) __attribute__((alias("Rec35_Leaf_168B8")));
-#endif
 
 // _080016DC0 lifted exactly in src/rec35_mid_region.c; duplicate removed.
 // _0800173E8: small setup at ctx+192/56/60/88/84 etc., flags via _08002618 and _0802B368
@@ -436,10 +389,8 @@ void Rec35_Leaf_173E8(void *ctx) {
     *(volatile u32 *)(c + 88) = 10;
     *(volatile u32 *)(c + 84) = 1;
 }
-#ifndef __APPLE__
 void _0800173E8(void *c) __attribute__((alias("Rec35_Leaf_173E8")));
 void sub_0800173E8(void *c) __attribute__((alias("Rec35_Leaf_173E8")));
-#endif
 
 // _080017414: twin of 173E8 with +192=0 and flag 4
 void Rec35_Leaf_17414(void *ctx) {
@@ -460,57 +411,86 @@ void Rec35_Leaf_17414(void *ctx) {
     *(volatile u32 *)(c + 84) = z;
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _080017414(void *c) __attribute__((alias("Rec35_Leaf_17414")));
 // The closure spells this VMA `sub_080017414` and the entry exports it, so the
 // owning TU must define that exact name. One hop to the real body -- an
 // alias-of-an-alias would not be in the slice link.
 void sub_080017414(void *c) __attribute__((alias("Rec35_Leaf_17414")));
-#endif
 
-// _080016F28: 5-way dispatcher at ctx+200 via table 0x08016F44 (lsl #2/mov pc, s16 width)
-// Pools: 0x08016F44 table (5 entries), widths ldrsh, helper ABI Sub_0802B3B8/Sub_08024C0C etc. proven
+// _080016F28: 5-way dispatcher at ctx+200 via table 0x08016F44 (lsl #2/mov pc).
+//
+// The TABLE decides the phase→body map (asm/rec35_runtime.s:1279-1285):
+//   [0] 0x08016FC0  [1] 0x08016F58  [2] 0x08016FC8  [3] 0x08016FBA  [4] 0x08016FB4
+// so phase 3 runs 0x080173E8 and *falls through* into phase 0's `[+200]=2`
+// (0xFBA → 0xFC0), and phase 4 is the `[+60]=1` arm — the previous body had the
+// arms shifted by one (the 0xF58 arm labelled 0, `[+60]=1` labelled 2, ...).
+// \`cmp r0,#4 / bhi\` is the UNSIGNED range test, and `movs r1,#0 / ldrsh`
+// is a plain (non-volatile) s16 read: `*(volatile s16 *)` lowers to ldrh plus
+// an explicit zero-extend pair, which is what made this probe OVERSIZED.
+// agbcc emits case bodies in SOURCE order, so they are written 1, 4, 3, 0.
 extern int Sub_0802B3B8(int v);
-extern void Sub_08024C0C(void);
+extern void Sub_08024C0C(int v);
 void Rec35_Dispatch_16F28(void *ctx) {
-    volatile u8 *c8 = (volatile u8 *)ctx;
-    s16 ph = *(volatile s16 *)(c8 + 200);
-    if (ph < 0 || ph > 4) return;
+    u8 *c8 = (u8 *)ctx;
+    s16 ph = *(s16 *)(c8 + 200);
+    // No explicit range guard: the ROM's single `cmp r0,#4 / bhi` IS agbcc's
+    // own out-of-range test for this 5-case table, and a hand-written
+    // `if ((u16)ph > 4u) return;` emits it twice.
     switch (ph) {
-        case 0: {
-            // _080016F58: 0x0802B3B8(3) != 0 (<<24 test) → exit; else switch
-            // s16[ctx+182]: 1 → 0x08024C0C(0), 2 → 0x08024C0C(1); then leaves
-            // 0x080016944 + 0x080016A20, set [ctx+200]=4, event 10 @ ctx+240,
-            // bind via [ctx+44]/[[ctx+484]] → 0x08007ABC (asm evidence).
+        case 1: { // 0x08016F58
+            // 0x0802B3B8(3) != 0 (<<24 test) → exit; else s16[ctx+182]:
+            // 1 → 0x08024C0C(0), 2 → 0x08024C0C(1); then 0x08016944 +
+            // 0x08016A20, [ctx+200]=4, event 10 @ ctx+240, and the
+            // [ctx+44]/[[ctx+484]] bind → 0x08007ABC (asm evidence).
             extern int Sound_0x0802B3B8(int v);
-            if ((Sound_0x0802B3B8(3) << 24) != 0) break;
-            s16 v182 = *(volatile s16 *)(c8 + 182);
-            if (v182 == 1 || v182 == 2) {
-                extern void Sound_0x08024C0C(void); // 0x08024C0C (asm body is `bx lr`)
-                Sound_0x08024C0C();
-                extern void Rec35_Leaf_16944(void *c); // 0x08016944
-                Rec35_Leaf_16944(ctx);
-                extern void Rec35_Leaf_16A20(void *c); // 0x08016A20
-                Rec35_Leaf_16A20(ctx);
-                *(volatile s16 *)(c8 + 200) = 4;
-                extern void Event_0x08025BF0(void *list, int id); // 0x08025BF0 (ROM shape (P,S))
-                Event_0x08025BF0((void *)(c8 + 480), 10);
-                extern void EventBind_0x08007ABC(void *a, int b, int c2); // 0x08007ABC (ROM shape (P,S,S),)
-                EventBind_0x08007ABC(*(void **)(c8 + 44),
-                                     (int)(uintptr_t)*(void **)(c8 + 484), 0);
+            extern void Sound_0x08024C0C(int v); // 0x08024C0C (asm body is `bx lr`)
+            if ((REC35_CALLEE(Sound_0x0802B3B8, _0802B3B8)(3) << 24) != 0) break;
+            // The selection joins BEFORE the call: the ROM writes 0/1 into r0
+            // in two out-of-line arms that both fall into one shared `bl`. A
+            // call inside each arm duplicates the `bl` (+2 bytes each).
+            s16 v182 = *(s16 *)(c8 + 182);
+            int sel;
+            {
+                // A switch, not an if/else-if chain: the ROM emits BOTH tests
+                // first and keeps the two `movs r0,#0/#1` arms out of line
+                // (0x4E/0x52), which the if-chain's inline-then layout misses.
+                switch (v182) {
+                case 1: sel = 0; break;
+                case 2: sel = 1; break;
+                default: goto no_sel;
+                }
             }
+            REC35_CALLEE(Sound_0x08024C0C, _08024C0C)(sel);
+            extern void Rec35_Leaf_16944(void *c); // 0x08016944
+            extern void Rec35_Leaf_16A20(void *c); // 0x08016A20
+            extern void Event_0x08025BF0(void *list, int id); // 0x08025BF0 (ROM shape (P,S))
+            extern void EventBind_0x08007ABC(void *a, int b, int c2); // 0x08007ABC (ROM shape (P,S,S))
+            REC35_CALLEE(Rec35_Leaf_16944, _080016944)(c8);
+            REC35_CALLEE(Rec35_Leaf_16A20, _080016A20)(c8);
+            *(s16 *)(c8 + 200) = 4;
+            {
+                // The `ctx+480` cell is live across both binds and gets its own
+                // callee-saved register (the ROM's r4). It is computed AFTER the
+                // [+200]=4 store, not at the top of the arm.
+                u8 *ev = c8 + 480;
+                REC35_CALLEE(Event_0x08025BF0, _08025BF0)((void *)ev, 10);
+                REC35_CALLEE(EventBind_0x08007ABC, _08007ABC)((void *)(uintptr_t)*(u32 *)(c8 + 44),
+                                                              *(u32 *)(c8 + 484),
+                                                              *(u32 *)ev);
+            }
+        no_sel:
             break;
         }
-        case 1: Rec35_Leaf_173E8(ctx); *(volatile s16 *)(c8 + 200) = 2; break;
-        case 2: *(volatile s16 *)(c8 + 60) = 1; break; // _080016FB4 (asm evidence)
-        case 3: *(volatile s16 *)(c8 + 200) = 2; break;
-        case 4: break; // _080016FC8 exit
+        case 4: *(s16 *)(c8 + 60) = 1; break; // 0x08016FB4
+        case 3:                                // 0x08016FBA
+            Rec35_Leaf_173E8(c8);
+            /* falls through */
+        case 0: *(s16 *)(c8 + 200) = 2; break; // 0x08016FC0
+        case 2:                                // 0x08016FC8 (exit)
         default: break;
     }
 }
-#ifndef __APPLE__
 void _080016F28(void *c) __attribute__((alias("Rec35_Dispatch_16F28")));
-#endif
 
 // bx lr stubs (size 5, no pools, proven via single bx lr, no helper ABI)
 // `Rec35_BxLr_17D50` ignores its argument, but the three paint callers all
@@ -520,28 +500,20 @@ void _080016F28(void *c) __attribute__((alias("Rec35_Dispatch_16F28")));
 // addend into r4 itself instead of copying then adding.
 void Rec35_BxLr_17D50(void *rec) { (void)rec; }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _080017D50(void *rec) __attribute__((alias("Rec35_BxLr_17D50")));
 void sub_080017D50(void *rec) __attribute__((alias("Rec35_BxLr_17D50")));
-#endif
 void Rec35_BxLr_17F00(void) {}
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _080017F00(void) __attribute__((alias("Rec35_BxLr_17F00")));
 void sub_080017F00(void) __attribute__((alias("Rec35_BxLr_17F00")));
-#endif
 void Rec35_BxLr_18418(void) {}
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _080018418(void) __attribute__((alias("Rec35_BxLr_18418")));
 void sub_080018418(void) __attribute__((alias("Rec35_BxLr_18418")));
-#endif
 void Rec35_BxLr_1841C(void *hdr, void *a) { (void)hdr; (void)a; }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _08001841C(void *hdr, void *a) __attribute__((alias("Rec35_BxLr_1841C")));
 void sub_08001841C(void *hdr, void *a) __attribute__((alias("Rec35_BxLr_1841C")));
-#endif
 
 // _08001774C lifted in src/rec35_mid_region.c  with the exact
 // (void *rec) 1-arg form the ROM body uses (r1/r2 dead); old copy removed.
@@ -553,10 +525,8 @@ void Rec35_Leaf_18420(void *a) {
     void *hdr = sub_08004B68();
     sub_08001841C(hdr, a);
 }
-#ifndef __APPLE__
 void _080018420(void *a) __attribute__((alias("Rec35_Leaf_18420")));
 void sub_080018420(void *a) __attribute__((alias("Rec35_Leaf_18420")));
-#endif
 
 // _080018260: push {lr}; strb Vu8 1 at s+89; _080056F4(s,1,1) Vu8
 // Pools: none, widths strb Vu8 +89, helper strb +20, pure Thumb
@@ -578,11 +548,7 @@ void sub_080018420(void *a) __attribute__((alias("Rec35_Leaf_18420")));
 // Split two-sided: the host build has no VMA-named symbols, and the Apple half
 // keeps `Sub_`, which the host already resolves to the weak no-op at
 // src/menu_ff78_f.c:41 that those siblings call unconditionally.
-#ifndef __APPLE__
 extern void _080056F4(void *s, int idx, u8 val);   // 0x080056F4 (event_dma_queue.c)
-#else
-extern void Sub_080056F4(void *s, int idx, int val);
-#endif
 void Rec35_Leaf_18260(void *a, void *s) {
     volatile u8 *p;
     int one;
@@ -590,16 +556,10 @@ void Rec35_Leaf_18260(void *a, void *s) {
     p = (volatile u8 *)s + 89;
     one = 1;
     *p = (u8)one;
-#ifndef __APPLE__
     _080056F4(s, one, 1);
-#else
-    Sub_080056F4(s, one, 1);
-#endif
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _080018260(void *a, void *b) __attribute__((alias("Rec35_Leaf_18260")));
-#endif
 
 // _080018344: push {r4,lr}; sub_08007664(0,0x08292B40,9) Vu32 pools; str Vu32 150 at +0, 0 at +4
 // Pools: 0x08292B40 Vu32 ROM, helper sub_08007664 ABI proven via 0x08007498 record resolvers
@@ -609,9 +569,7 @@ void Rec35_Leaf_18344(void *a) {
     *(volatile u32 *)a = 150;
     *(volatile u32 *)((volatile u8 *)a + 4) = 0;
 }
-#ifndef __APPLE__
 void _080018344(void *a) __attribute__((alias("Rec35_Leaf_18344")));
-#endif
 
 // _08001876C — canonical body: rec35_dispatch_tail.c `Rec35_Setup_1876C`
 // (`sub_08007664(0, 0x08292B40, 7)`, then u32[ctx] = 150 / u32[ctx+4] = 0).
@@ -629,10 +587,8 @@ void Rec35_Leaf_184F0(void) {
     _08026020(1);
     _08026020(2);
 }
-#ifndef __APPLE__
 void _0800184F0(void) __attribute__((alias("Rec35_Leaf_184F0")));
 void sub_0800184F0(void) __attribute__((alias("Rec35_Leaf_184F0")));
-#endif
 
 // _08001881C — canonical body: rec35_dispatch_tail.c `Rec35_Setup_1881C`
 // (identical to 0x08001876C except `sub_08007664(..., 10)`). Duplicate body
@@ -660,9 +616,7 @@ void Rec35_Leaf_18364(void *a) {
 }
 // Body is 34 bytes; the last two bytes of the span are the ROM's `00 00` pad.
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _080018364(void *a) __attribute__((alias("Rec35_Leaf_18364")));
-#endif
 // _08001878C / _08001883C are the same countdown shape and are lifted in
 
 // _0800182D8: push {lr}; lsls Vu16 r2, adds Vu32 0xFFFF0000, lsrs Vu16; bhi Vu16 >1; bl 0x0802B368 Vu32 1; bl 0x08004EA8 Vu32 1
@@ -677,10 +631,8 @@ void Rec35_Leaf_182D8(int a, int b, int c) {
     _0802B368(1);
     _08004EA8(1);
 }
-#ifndef __APPLE__
 void _0800182D8(int a, int b, int c) __attribute__((alias("Rec35_Leaf_182D8")));
 void sub_0800182D8(int a, int b, int c) __attribute__((alias("Rec35_Leaf_182D8")));
-#endif
 
 // _080018210: push {r4,r5,lr}; Sub_08025C60(b,c) Vu32 pool 0x08025C80 Vu32 0x080CD830 table +20 stride, ldr Vu32 +4/+24/+20, Sub_08007ABC Vu32
 extern void sub_080025C60(void *s, int idx);
@@ -693,9 +645,7 @@ void Rec35_Leaf_18210(void *a, void *b, int c) {
     sub_08007ABC((u32)(uintptr_t)pa4, (u32)v24, (u32)v20);
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _080018210(void *a, void *b, int c) __attribute__((alias("Rec35_Leaf_18210")));
-#endif
 
 // _080018434: push {r4,lr}; loop r4=1..98 skip 54/94/95/96; Sub_08025F78(r4) Vu32 0x03001780 pool 0x03001780 etc.
 // Pools: none (movs #1 Vu32 etc.), helper Sub_08025F78 Vu32 bitset at 0x030017A0 + 0x080CD9D4 pool proven via ai_award_bitset.s
@@ -710,9 +660,7 @@ void Rec35_Leaf_18434(void) {
     }
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _080018434(void) __attribute__((alias("Rec35_Leaf_18434")));
-#endif
 
 // ---- : rec35_runtime.s 0x08018230-0x080183D8 dispatcher family (8 VMAs) ----
 // Evidence: instruction-for-instruction from asm/rec35_runtime.s; pool words
@@ -756,9 +704,7 @@ void Rec35_Leaf_18230(void *a, void *b, int c) {
 // section -- so it pads with the `0` fill argument instead. No body byte
 // changes; only the two filler halfwords.
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _080018230(void *a, void *b, int c) __attribute__((alias("Rec35_Leaf_18230")));
-#endif
 
 // _080018278: push {r4,r5,lr}; sub sp,#8; r4=r0; _08007770(0,0x0832EBF0,0,0
 // +stack{0,1}); _0800798C(0x082B7410,r4); _080075E8(0x082B7410,0,3);
@@ -774,27 +720,21 @@ void Rec35_Leaf_18278(void *ctx) {
               *(volatile u32 *)(c + 48), *(volatile u32 *)(c + 44));
     _080018210(ctx, (void *)(c + 24), 19);
 }
-#ifndef __APPLE__
 void _080018278(void *c) __attribute__((alias("Rec35_Leaf_18278")));
 void sub_080018278(void *c) __attribute__((alias("Rec35_Leaf_18278")));
-#endif
 
 // _0800182FC: single.hword 0x4770 (bx lr) + pad; BL target of _080018300 case 7,
 // which passes rec in r0 (0x0801833A: adds r0,r3,#0; bl _0800182FC) — unused.
 void Rec35_BxLr_182FC(void *rec) { (void)rec; }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _0800182FC(void *rec) __attribute__((alias("Rec35_BxLr_182FC")));
-#endif
 
 // _080018388: bx lr stub (2 B + pad; code continues at interior entry _08001838C).
 // Called with (rec, u16 b, u16 c) — all ignored.
 void Rec35_BxLr_18388(void *a, int b, int c) { (void)a; (void)b; (void)c; }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _080018388(void *a, int b, int c) __attribute__((alias("Rec35_BxLr_18388")));
 void sub_080018388(void *a, int b, int c) __attribute__((alias("Rec35_BxLr_18388")));
-#endif
 
 // _08001838C: interior BL entry (no.type; reached via bl from _080018394):
 // adds r1,#84; movs r0,#1; strh r0,[r1] → *(u16*)(base+84)=1. r0/c dead.
@@ -802,9 +742,7 @@ void Rec35_Leaf_1838C(void *rec, void *base, int c) {
     (void)rec; (void)c;
     *(volatile u16 *)((volatile u8 *)base + 84) = 1;
 }
-#ifndef __APPLE__
 void _08001838C(void *a, void *b, int c) __attribute__((alias("Rec35_Leaf_1838C")));
-#endif
 
 // _080018300: cmp-chain dispatcher on ev (r0), rec in r3:
 // 2→_080018260(rec,b), 1→_080018278(rec), 6→_0800182D8(rec,b16,c16),
@@ -818,9 +756,7 @@ void Rec35_Dispatch_18300(u32 ev, int b, int c, void *rec) {
         default: break;
     }
 }
-#ifndef __APPLE__
 void _080018300(u32 a, int b, int c, void *d) __attribute__((alias("Rec35_Dispatch_18300")));
-#endif
 
 // _080018394: cmp-chain dispatcher on ev (r0), rec in r3:
 // 2→_08001838C(rec,b,c), 1→_080018344(rec), 5→_080018364(rec),
@@ -834,9 +770,7 @@ void Rec35_Dispatch_18394(u32 ev, int b, int c, void *rec) {
         default: break;
     }
 }
-#ifndef __APPLE__
 void _080018394(u32 a, int b, int c, void *d) __attribute__((alias("Rec35_Dispatch_18394")));
-#endif
 
 // _0800183D8: push {r4,r5,lr}; r4=r0; *(r4+8)=0; _08002B214(48);
 // sub_08007664(0,0x08292B40,2); r4+=28; _0800798C(0x08292B40,r4);
@@ -851,16 +785,12 @@ void Rec35_Leaf_183D8(void *ctx) {
     _08007A58((void *)(c + 28));
     _080075E8((void *)(uintptr_t)0x08292B40u, 1, 0);
 }
-#ifndef __APPLE__
 void _0800183D8(void *c) __attribute__((alias("Rec35_Leaf_183D8")));
 void sub_0800183D8(void *c) __attribute__((alias("Rec35_Leaf_183D8")));
-#endif
 
 
 // ROM entry alias.
-#ifndef __APPLE__
 void Rec35_Leaf_16508(void *a) __attribute__((alias("Rec35_BxLrStub")));
-#endif
 
 // 0x08025C60 — 0x94B record fill from the per-slot template table
 //
@@ -876,20 +806,14 @@ void Rec35_Leaf_16508(void *a) __attribute__((alias("Rec35_BxLrStub")));
 //    s16 lvalue gives `ldrh` + a narrow pair instead.
 typedef struct { u32 f0, f1, f2, f3, f4; } Rec35_Row20;
 void Rec35_RecordFill_25C60(void *dst, int idx) {
-#ifndef __APPLE__
     extern u8 Rec35RowTbl25C60[] __asm__("Rec35RowTbl25C60");
     __asm__(".globl Rec35RowTbl25C60\nRec35RowTbl25C60 = 0x080CD830\n");
     const u8 *base = (const u8 *)(uintptr_t)Rec35RowTbl25C60;
-#else
-    const u8 *base = (const u8 *)(uintptr_t)0x080CD830u;
-#endif
     const u8 *row = base + (u32)idx * 20u;
     *(volatile u32 *)((u8 *)dst + 24) = (u32)(s32)((const s16 *)row)[0];
     *(Rec35_Row20 *)dst = *(const Rec35_Row20 *)row;
 }
-#ifndef __APPLE__
 void Sub_08025C60(void *a, int b) __attribute__((alias("Rec35_RecordFill_25C60")));
 void _08025C60(void *a, int b) __attribute__((alias("Rec35_RecordFill_25C60")));
 void sub_08025C60(void *a, int b) __attribute__((alias("Rec35_RecordFill_25C60")));
 void sub_080025C60(void *a, int b) __attribute__((alias("Rec35_RecordFill_25C60")));
-#endif

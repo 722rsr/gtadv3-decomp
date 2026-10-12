@@ -19,13 +19,8 @@
 #include "gba/types.h"
 
 // ---- extern callees --------------------------------------------------------
-#ifdef __APPLE__
-__attribute__((weak)) u32 _0802DDC8(void *a) { (void)a; return 0; }
-__attribute__((weak)) void  _0802D974(const void *a, void *b, u32 c) { (void)a; (void)b; (void)c; }
-#else
 extern u32 _0802DDC8(void *a);                   // 0x0802DDC8 handshake probe (asm): r0=F150, returns probe word
 extern void _0802D974(const void *a, void *b, u32 c); // CpuSet (bios_wrappers.c)
-#endif
 
 // Hardware registers (byte-exact pool words):
 #define AG_IMEM   ((volatile u16 *)(uintptr_t)0x04000208)  // IME
@@ -74,11 +69,9 @@ void SessionPump_080006A4(void) {
         r1[6] = (u8)(mask | r1[6]);
     }
 }
-#ifndef __APPLE__
 void _080006A4(void) __attribute__((alias("SessionPump_080006A4")));
 void sub_080006A4(void) __attribute__((alias("SessionPump_080006A4")));
 void SessionPump(void) __attribute__((alias("SessionPump_080006A4")));
-#endif
 
 // ----------------------------------------------------------------------------
 // _080006BC — session-exit teardown:
@@ -103,10 +96,8 @@ void SessionExit_080006BC(void) {
         b[6] = m;
     }
 }
-#ifndef __APPLE__
 void _080006BC(void) __attribute__((alias("SessionExit_080006BC")));
 void sub_080006BC(void) __attribute__((alias("SessionExit_080006BC")));
-#endif
 
 // ----------------------------------------------------------------------------
 // _0800070C(buf) -> u16 — session-word reader (per-frame tick).
@@ -175,11 +166,9 @@ u16 SessionRead_0800070C(void *buf) {
         status |= 0x2000u;
     return (u16)status;
 }
-#ifndef __APPLE__
 u16 _0800070C(void *a) __attribute__((alias("SessionRead_0800070C")));
 u16 SessionReadWord(void *a) __attribute__((alias("SessionRead_0800070C")));
 u16 sub_0800070C(void *a) __attribute__((alias("SessionRead_0800070C")));
-#endif
 
 // ----------------------------------------------------------------------------
 // _08000848(payload, flag) — packet builder.
@@ -246,11 +235,9 @@ void PacketBuild_08000848(void *payload, u32 flag) {
     *(volatile u16 *)(p5 + 2) = ck;
     r4->bytes[4] = 1;
 }
-#ifndef __APPLE__
 void _08000848(void *a, u32 b) __attribute__((alias("PacketBuild_08000848")));
 void sub_08000848(void *a, u32 b) __attribute__((alias("PacketBuild_08000848")));
 void PacketBuild(void *a, u32 b) __attribute__((alias("PacketBuild_08000848")));
-#endif
 
 // ----------------------------------------------------------------------------
 // _080008F4(buf) — verify/receive side. For records 3..0 at [EF90+0x2C]
@@ -349,7 +336,5 @@ int SessionVerify_080008F4(void *buf) {
         return b[3];
     }
 }
-#ifndef __APPLE__
 int _080008F4(void *a) __attribute__((alias("SessionVerify_080008F4")));
 int sub_080008F4(void *a) __attribute__((alias("SessionVerify_080008F4")));
-#endif

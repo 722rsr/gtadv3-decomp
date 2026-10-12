@@ -24,10 +24,8 @@ void SoundD6F4_Fetch(void *state){
     (void)target;
     // Preserve indirect call ABI: bl 0x0802DDD0 with r0=state, r1=seq, r2=target — not inventing struct fields beyond u32
 }
-#ifndef __APPLE__
 void _0802D82C_command(void *s) __attribute__((alias("SoundD6F4_Fetch")));
 void sub_0802D82C_command(void *s) __attribute__((alias("SoundD6F4_Fetch")));
-#endif
 
 // Direct fetch+dispatch at 0x02D84C: ldr r2,[r1+64] u32 +64 seq cursor,
 // ldrb r3,[r2] u8 op, adds r2,1 str [r1+64] u32, ldr r2,=0x08061788 pool
@@ -35,7 +33,6 @@ void sub_0802D82C_command(void *s) __attribute__((alias("SoundD6F4_Fetch")));
 // Pure Thumb. r0 is untouched passthrough (state), r1 is seq, r2 carries
 // the table target into the bx-r2 veneer — same two-arg + target shape as
 // SoundD6F4_VecCall below, which is why the veneer call takes all three.
-// (The veneer decl lives up here so both wrappers see it under __APPLE__.)
 extern void _0802DDD0(void *r0, void *r1, void *target); // 0x0802DDD0 bx r2 veneer
 void SoundD6F4_DirectFetch(void *a, void *seq){
     register u32 base __asm__("r2");
@@ -50,10 +47,8 @@ void SoundD6F4_DirectFetch(void *a, void *seq){
         _0802DDD0(a, seq, (void *)(uintptr_t)tgt); // bl veneer, (r0,r1,r2)
     }
 }
-#ifndef __APPLE__
 void _0802D84C_command(void *a, void *s) __attribute__((alias("SoundD6F4_DirectFetch")));
 void sub_0802D84C_command(void *a, void *s) __attribute__((alias("SoundD6F4_DirectFetch")));
-#endif
 
 // ============================================================================
 // Tail leaves 0x0802D86C–0x0802D974 (asm/sound_d6f4.s) — dispatched via the
@@ -92,10 +87,8 @@ void SoundD6F4_VecCall(void *state, void *seq) {
     u32 fn = *(const volatile u32 *)0x0203EBB0u;
     _0802DDD0(state, seq, (void *)(uintptr_t)fn);
 }
-#ifndef __APPLE__
 void _0802D86C(void *s, void *q) __attribute__((alias("SoundD6F4_VecCall")));
 void sub_0802D86C(void *s, void *q) __attribute__((alias("SoundD6F4_VecCall")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_0802D880 (0x0802D880, 72 B) — 32-bit tagged load: merge the caller's
@@ -109,7 +102,6 @@ void sub_0802D86C(void *s, void *q) __attribute__((alias("SoundD6F4_VecCall")));
 // wrong registers (PARTIAL 10/72). The body is therefore a naked
 // transcription; the pool order and the `movs r0,r0` pad at +0x36 match the
 // ROM so the section is 72 B ending at 0x0802D8C8.
-#ifndef __APPLE__
 __attribute__((naked)) void SoundD6F4_LoadWord(void *r4state, void *seq) {
     (void)r4state; (void)seq;
     __asm__ volatile (
@@ -149,26 +141,8 @@ __attribute__((naked)) void SoundD6F4_LoadWord(void *r4state, void *seq) {
         ".syntax divided\n"
     );
 }
-#else
-void SoundD6F4_LoadWord(void *r4state, void *seq) {
-    volatile u32 *cur = (volatile u32 *)((u8 *)seq + 64);
-    volatile u8 *p = (volatile u8 *)(uintptr_t)*cur;
-    u32 r4 = (u32)(uintptr_t)r4state & 0xFFFFFF00u;
-    r4 |= p[0];
-    r4 &= 0xFFFF00FFu;
-    r4 |= (u32)p[1] << 8;
-    r4 &= 0xFF00FFFFu;
-    r4 |= (u32)p[2] << 16;
-    r4 &= 0x00FFFFFFu;
-    r4 |= (u32)p[3] << 24;
-    *(volatile u32 *)((u8 *)seq + 40) = r4;
-    *cur = *cur + 4;
-}
-#endif
-#ifndef __APPLE__
 void _0802D880(void *a, void *s) __attribute__((alias("SoundD6F4_LoadWord")));
 void sub_0802D880(void *a, void *s) __attribute__((alias("SoundD6F4_LoadWord")));
-#endif
 
 // ---- one-byte field leaves: fetch *cursor -> field, cursor++ ----------------
 // The sequence state r1 points at is a byte record whose byte cursor is the
@@ -266,7 +240,6 @@ void SoundD6F4_Byte39(void *a, void *seq) {
     s->cursor = s->cursor + 1;
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _0802D8C8(void *a, void *s) __attribute__((alias("SoundD6F4_Byte36")));
 void sub_0802D8C8(void *a, void *s) __attribute__((alias("SoundD6F4_Byte36")));
 void _0802D8DC(void *a, void *s) __attribute__((alias("SoundD6F4_Byte44")));
@@ -285,16 +258,13 @@ void _0802D92C(void *a, void *s) __attribute__((alias("SoundD6F4_Byte30")));
 void sub_0802D92C(void *a, void *s) __attribute__((alias("SoundD6F4_Byte30")));
 void _0802D938(void *a, void *s) __attribute__((alias("SoundD6F4_Byte31")));
 void sub_0802D938(void *a, void *s) __attribute__((alias("SoundD6F4_Byte31")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_0802D96C (0x0802D96C, 4 B) — `bx lr` no-op leaf.
 void SoundD6F4_Nop(void) { }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _0802D96C(void) __attribute__((alias("SoundD6F4_Nop")));
 void sub_0802D96C(void) __attribute__((alias("SoundD6F4_Nop")));
-#endif
 
 // (sub_0802D970 = swi 0x0C CpuFastSet already lifted in src/bios_wrappers.c
 //  as aliases _0802D970/sub_0802D970 -> CpuFastSet.)

@@ -8,7 +8,6 @@
 // Mixed-ISA mixer_2b888.s stays raw unless copy contract proven.
 
 
-
 // 0x0802D9B8 — the real entry: u16 normalise prologue (lsls/lsrs) that falls
 // through into the 0xD9BC selector body. xref shows no direct callers of
 // 0xD9BC (only two bl to 0xD9B8 from 0x080057F8/0x08005802), so the D9BC
@@ -17,7 +16,6 @@
 // end pool and frames the body, so plain C cannot place the constants. Naked
 // hardware-contract transcription (promoted naked bodies e.g. SoundBCB4_Copy
 // establish the precedent). Span for promotion: 0xD9B8..0xD9FC (68 bytes).
-#ifndef __APPLE__
 int _0802D9B8(u32 s) __attribute__((alias("SoundD9BC_SelectorU16")));
 int sub_0802D9B8(u32 s) __attribute__((alias("SoundD9BC_SelectorU16")));
 int _0802D9BC(u32 s) __attribute__((alias("SoundD9BC_SelectorU16")));
@@ -67,19 +65,6 @@ __attribute__((naked)) int SoundD9BC_SelectorU16(u32 sel) {
     );
 }
 // D9BC spellings alias the entry: no caller references 0xD9BC directly.
-#else
-int SoundD9BC_SelectorU16(u32 sel) {
-    sel &= 0xFFFFu;
-    if (sel == 4) return 0;
-    if (sel == 64) return 0;
-    return 1;
-}
-int SoundD9BC_Selector(u32 sel) {
-    if (sel == 4) return 0;
-    if (sel == 64) return 0;
-    return 1;
-}
-#endif
 
 // --- sound_da20.s 0x02DA20 ---
 // ROM (asm/sound_da20.s:5-30): int-returning (0 ok / 1 dev>3). dev narrowed
@@ -97,10 +82,8 @@ int SoundDA20_Setup(u32 dev, void *state){
     *(volatile u32 *)st = 0x0802D9FDu;
     return 0;
 }
-#ifndef __APPLE__
 int _0802DA20(u32 d, void *s) __attribute__((alias("SoundDA20_Setup")));
 int sub_0802DA20(u32 d, void *s) __attribute__((alias("SoundDA20_Setup")));
-#endif
 
 // --- sound_db24/dba4/dc54/dd30/dd88 sector helpers ---
 // Preserve hardware register accesses: REG_DMA3 etc., widths u16/s16, sentinel Smsh check via 0x0203FD54+4 gate
@@ -120,12 +103,8 @@ void SoundDB24_Setup(u32 sad, u32 dad, u16 cnt){
     }
     {
         volatile u16 *mode = (volatile u16 *)0x04000204u;
-#ifndef __APPLE__
         register u32 m __asm__("r4") = *mode;
         __asm__ volatile ("" : "+r" (m));
-#else
-        u32 m = *mode;
-#endif
         m &= 0xF8FFu;
         m |= *(volatile u16 *)(*(volatile u32 *)0x0203FD54u + 6);
         *mode = (u16)m;
@@ -133,7 +112,6 @@ void SoundDB24_Setup(u32 sad, u32 dad, u16 cnt){
         *(volatile u32 *)0x040000D8u = dad;
     }
     {
-#ifndef __APPLE__
         register volatile u32 *cc __asm__("r1") = (volatile u32 *)0x040000DCu;
         *cc = (u32)cnt | 0x80000000u;
         __asm__ volatile ("" : "+r" (cc));
@@ -154,19 +132,11 @@ void SoundDB24_Setup(u32 sad, u32 dad, u16 cnt){
                 while ((b2 & *st) != 0) { }
             }
         }
-#else
-        *(volatile u32 *)0x040000DCu = (u32)cnt | 0x80000000u;
-        if ((*(volatile u16 *)0x040000DEu & 0x8000u) != 0) {
-            while ((*(volatile u16 *)0x040000DEu & 0x8000u) != 0) { }
-        }
-#endif
     }
     *(volatile u16 *)0x04000208u = saved;
 }
-#ifndef __APPLE__
 void _0802DB24(u32 s, u32 d, u16 c) __attribute__((alias("SoundDB24_Setup")));
 void sub_0802DB24(u32 s, u32 d, u16 c) __attribute__((alias("SoundDB24_Setup")));
-#endif
 
 // DBA4 sector reader. ROM (asm/sound_dba4.s, 176 B): int-returning
 // (0x80FF gate-fail / 0 ok). Sector narrowed to u16 (into r3); gate
@@ -190,19 +160,12 @@ void sub_0802DB24(u32 s, u32 d, u16 c) __attribute__((alias("SoundDB24_Setup")))
 //  - row increment must be the asm form: when spelled as C, loop.c hoists
 //    the `+1` to the loop head and the row tail loses the add.
 int SoundDBA4_Read(u32 sector, void *dst){
-#ifndef __APPLE__
     register volatile u16 *d __asm__("r5") = (volatile u16 *)dst;
     register u32 sec __asm__("r3") = (u16)sector;
     register u32 *g0 __asm__("r0") = (u32 *)0x0203FD54u;
-#else
-    volatile u16 *d = (volatile u16 *)dst;
-    u32 sec = (u16)sector;
-    u32 *g0 = (u32 *)0x0203FD54u;
-#endif
     if (sec >= *(volatile u16 *)((volatile u8 *)*g0 + 4)) return 0x80FF;
     {
         u16 buf[68];
-#ifndef __APPLE__
         register u32 *descp __asm__("r6");
         register volatile u16 *p __asm__("r2");
         register u32 *t __asm__("r0");
@@ -213,28 +176,12 @@ int SoundDBA4_Read(u32 sector, void *dst){
         register u32 tr __asm__("r0");
         register u32 i __asm__("r4");
         register u32 n __asm__("r1");
-#else
-        u32 *descp;
-        volatile u16 *p;
-        u32 *t;
-        u32 na;
-        u32 ba;
-        u32 ti;
-        u32 tb;
-        u32 tr;
-        u32 i;
-        u32 n;
-#endif
         t = (u32 *)0x0203FD54u;
         descp = t;
         n = ((volatile u8 *)*t)[8];
-#ifndef __APPLE__
         na = (u32)n * 2u;
         ba = (u32)(uintptr_t)buf;
         __asm__("add\t%0, %1, %2\n\tadd\t%0, #2" : "=r"(p) : "r"(na), "r"(ba));
-#else
-        p = (volatile u16 *)((volatile u8 *)buf + (u32)n * 2u + 2u);
-#endif
         i = 0;
         if (i < n) {
             do {
@@ -258,17 +205,10 @@ int SoundDBA4_Read(u32 sector, void *dst){
         __asm__("add\t%0, sp, #8" : "=r"(p));
         __asm__("add\t%0, %0, #6" : "+r"(d));
         {
-#ifndef __APPLE__
             register u32 row __asm__("r4");
             register u32 acc __asm__("r1");
             register u32 bit __asm__("r3");
             register u32 one __asm__("r6");
-#else
-            u32 row;
-            u32 acc;
-            u32 bit;
-            u32 one;
-#endif
             row = 0;
             one = 1;
             do {
@@ -282,28 +222,19 @@ int SoundDBA4_Read(u32 sector, void *dst){
                 } while (bit <= 15);
                 *d = (u16)acc;
                 d--;
-#ifndef __APPLE__
                 __asm__("add\t%0, %1, #1" : "=r"(tr) : "r"(row));
                 row = (u8)tr;
-#else
-                tr = row + 1u;
-                row = (u8)tr;
-#endif
             } while (row <= 3);
         }
     }
     return 0;
 }
-#ifndef __APPLE__
 int _0802DBA4(u32 s, void *d) __attribute__((alias("SoundDBA4_Read")));
 int sub_0802DBA4(u32 s, void *d) __attribute__((alias("SoundDBA4_Read")));
-#endif
 
 int SoundDC54_Write(u32 sector, void *src){ (void)sector;(void)src; return 0; }
-#ifndef __APPLE__
 int _0802DC54(u32 s, void *d) __attribute__((alias("SoundDC54_Write")));
 int sub_0802DC54(u32 s, void *d) __attribute__((alias("SoundDC54_Write")));
-#endif
 
 // dd30 compare helper. ROM (asm/sound_dd30.s): sector narrowed to u16
 // (lsls/lsrs into r1); gate: sector < *(u16*)(desc+4) else return 0x80FF;
@@ -311,24 +242,14 @@ int sub_0802DC54(u32 s, void *d) __attribute__((alias("SoundDC54_Write")));
 // buf[i] vs stack[i] with a u8 counter (bhi #3 exit); first mismatch sets
 // r5 = 0x8000 (movs 128; lsls 8), full match returns 0.
 int SoundDD30_Compare(u32 sector, void *buf){
-#ifndef __APPLE__
     register void *b __asm__("r4") = buf;
     register u32 sec __asm__("r1") = (u16)sector;
     register u32 rc __asm__("r5") = 0;
-#else
-    void *b = buf;
-    u32 sec = (u16)sector;
-    u32 rc = 0;
-#endif
     volatile u16 *gate = (volatile u16 *)(*(volatile u32 *)0x0203FD54u + 4);
     if (sec >= *gate) return 0x80FF;
     {
         u16 tmp[4];
-#ifndef __APPLE__
         sub_0802DBA4(sec, tmp);
-#else
-        SoundDBA4_Read(sec, tmp);
-#endif
         volatile u16 *p = (volatile u16 *)b;
         volatile u16 *q = (volatile u16 *)tmp;
         u8 i = 0;
@@ -347,14 +268,10 @@ body:
     }
     return (int)rc;
 }
-#ifndef __APPLE__
 // ROM span ends in `00 00`; file-scope align pads the section tail with 0.
 __asm__(".align 2, 0");
-#endif
-#ifndef __APPLE__
 int _0802DD30(u32 s, void *b) __attribute__((alias("SoundDD30_Compare")));
 int sub_0802DD30(u32 s, void *b) __attribute__((alias("SoundDD30_Compare")));
-#endif
 
 // dd88 retry wrapper. ROM shape (asm/sound_dd88.s): sector narrowed to u16
 // (lsls/lsrs into r4); u8 counter r6 looping while <=2 (three tries); each
@@ -363,58 +280,35 @@ int sub_0802DD30(u32 s, void *b) __attribute__((alias("SoundDD30_Compare")));
 // (0 on success, nonzero after 3 failures — not -1). Register pins are the
 // ROM's own allocation: buf r5, sector r4, counter r6.
 int SoundDD88_Retry(u32 sector, void *buf){
-#ifndef __APPLE__
     register void *b __asm__("r5") = buf;
     register u32 sec __asm__("r4") = (u16)sector;
     register u32 i __asm__("r6") = 0;
-#else
-    void *b = buf;
-    u32 sec = (u16)sector;
-    u32 i = 0;
-#endif
     u16 r;
     goto test;
     do {
-#ifndef __APPLE__
         register u32 next __asm__("r0") = i + 1u;
         __asm__ volatile ("" : "+r" (next));
         i = (next << 24) >> 24;
-#else
-        i = (u32)(u8)(i + 1u);
-#endif
 test:
         if (i > 2) break;
-#ifndef __APPLE__
         r = (u16)sub_0802DC54(sec, b);
-#else
-        r = (u16)SoundDC54_Write(sec, b);
-#endif
         if (r != 0) continue;
-#ifndef __APPLE__
         r = (u16)sub_0802DD30(sec, b);
-#else
-        r = (u16)SoundDD30_Compare(sec, b);
-#endif
         if (r != 0) continue;
         break;
     } while (1);
     return (int)r;
 }
-#ifndef __APPLE__
 // ROM span ends in `00 00`; file-scope align pads the section tail with 0
 // instead of gas's `46c0` Thumb-section-close nop.
 __asm__(".align 2, 0");
-#endif
-#ifndef __APPLE__
 int _0802DD88(u32 s, void *b) __attribute__((alias("SoundDD88_Retry")));
 int sub_0802DD88(u32 s, void *b) __attribute__((alias("SoundDD88_Retry")));
-#endif
 
 // --- sound_mixer_tail.s 0x02BC28 ---
 // Thumb continuation after the ARM loop. This is entered with the mixer stack
 // frame and callee-saved register image already active; it must branch back to
 // the ARM loop or restore that image and return through its saved PC.
-#ifndef __APPLE__
 __attribute__((naked)) void SoundMixerTailEpilogue(void *state) {
     (void)state;
     __asm__ volatile (
@@ -441,17 +335,8 @@ __attribute__((naked)) void SoundMixerTailEpilogue(void *state) {
         ".syntax divided\n"
     );
 }
-#else
-void SoundMixerTailEpilogue(void *state){
-    volatile u32 *s=(volatile u32*)state;
-    if (s[1] > 0) return; // +4 countdown
-    s[0]= SOUND_MAGIC; // +0 restore
-}
-#endif
-#ifndef __APPLE__
 void _0802BC28(void *s) __attribute__((alias("SoundMixerTailEpilogue")));
 void sub_0802BC28(void *s) __attribute__((alias("SoundMixerTailEpilogue")));
-#endif
 
 // --- sound_more/followon/fade/init/state subset ---
 // Preserve Smsh guard (u32 +52), stride 0x50 not guessed beyond, u16 +36/38 fade widths
@@ -494,10 +379,8 @@ void SoundMoreHelper(void *id){
     if (*e0 == *(volatile u32 *)hdr)
         _0802CD18((void *)(uintptr_t)e0);
 }
-#ifndef __APPLE__
 void _0802C614(void *c) __attribute__((alias("SoundMoreHelper")));
 void sub_0802C614(void *c) __attribute__((alias("SoundMoreHelper")));
-#endif
 
 // 0x0802C548 — LIFTED from asm/sound_start.s-adjacent listing (36 B body, 2-word
 // pool). Same index walk as SoundMoreHelper (0x0802C614) but WITHOUT the
@@ -532,10 +415,8 @@ void SoundFollowOnCopy(u32 ch){
     e0 = (volatile u32 *)(uintptr_t)*(volatile u32 *)entry;
     _0802CC34((void *)(uintptr_t)e0, (void *)(uintptr_t)*(volatile u32 *)hdr);
 }
-#ifndef __APPLE__
 void _0802C548(u32 c) __attribute__((alias("SoundFollowOnCopy")));
 void sub_0802C548(u32 c) __attribute__((alias("SoundFollowOnCopy")));
-#endif
 
 // TODO: remaining large PSG/voice/seq full interpreters stay asm/:
 // - sound_d034.s PSG 0x02D034 540L (REG_SOUND*, timer, envelope — opaque 28B struct at sp+4 needs bit-exact proof)

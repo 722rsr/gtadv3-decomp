@@ -37,11 +37,9 @@ void Rec35_GridFill_1845C(void) {
 // lands after the body's `.size`, still inside its own function section, so it
 // pads with the 0 fill argument instead. No body byte changes.
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _08001845C(void) __attribute__((alias("Rec35_GridFill_1845C")));
 // asm/rec35_runtime.s:4116 branches here by the `sub_08001845C` spelling.
 void sub_08001845C(void) __attribute__((alias("Rec35_GridFill_1845C")));
-#endif
 
 // ---------------------------------------------------------------------------
 // _0800184A8: const fills via 25EC0: (0..2,3),(3..7,1).
@@ -64,9 +62,7 @@ void Rec35_ConstFill_184A8(void) {
 // section -- so it pads with the `0` fill argument instead. No body byte
 // changes; only the two filler halfwords.
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _0800184A8(void) __attribute__((alias("Rec35_ConstFill_184A8")));
-#endif
 
 // ---------------------------------------------------------------------------
 // _080018508: rows 0..3 x cols 0..10: 25C84(0,row,col,3);
@@ -96,9 +92,7 @@ void Rec35_GridFill3_18508(void) {
     // byte-free alias case is.
     __asm__(".globl Rec35_WA18\nRec35_WA18 = 0x03001780\n");
 }
-#ifndef __APPLE__
 void _080018508(void) __attribute__((alias("Rec35_GridFill3_18508")));
-#endif
 
 // ---------------------------------------------------------------------------
 // _080018540: conditional cascade on (u16 r1 & 0x3FF) with bit tests on
@@ -180,6 +174,4 @@ void Rec35_Cascade_18540(void *ctx, int a, int b) {
         Sub_08004EC0(1);
     }
 }
-#ifndef __APPLE__
 void _080018540(void *c, int a, int b) __attribute__((alias("Rec35_Cascade_18540")));
-#endif

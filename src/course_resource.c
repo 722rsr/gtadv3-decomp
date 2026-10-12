@@ -9,11 +9,7 @@
 // HOST_STUB = weak on Apple host builds, extern on ARM. A host link with
 // -undefined dynamic_lookup binds lazily, so a bare extern would leave
 // the symbol silently undefined.
-#ifdef __APPLE__
-#define HOST_STUB(sig) __attribute__((weak)) sig
-#else
 #define HOST_STUB(sig) extern sig
-#endif
 
 // Helpers that map inline data after offset table: core seek arithmetic
 void *Course_ArrBase(void *X) {
@@ -67,9 +63,7 @@ void Course_ClearSlot_074AC(void *X, void *Y) {
     void *ret = _08007484(X); // bl 07484 with r0=X
     *(volatile void**)((volatile u8*)Y + 4) = ret; // str r0,[r4+4] where r4=Y (original r1)
 }
-#ifndef __APPLE__
 void _080074AC(void *a,void *b) __attribute__((alias("Course_ClearSlot_074AC")));
-#endif
 
 // _080074D4: loop over count via _08007488, per matching record call _08007538 then 0748C lane
 // _080074D4: count = 07488(u32[rec+4]); alloc = 0572C(0); u16[rec] = alloc;
@@ -113,9 +107,7 @@ void Course_SetupRecords_074D4(void *rec) {
         alloc += *(volatile u8 *)((u8 *)lane + 7);
     }
 }
-#ifndef __APPLE__
 void _080074D4(void *a) __attribute__((alias("Course_SetupRecords_074D4")));
-#endif
 
 // _08007538: Seek twice + ArrBase + 05614 from VRAM 0x06010000 + c*32
 void Course_EmitLane_07538(void *a,int b,void *c) {
@@ -125,9 +117,7 @@ void Course_EmitLane_07538(void *a,int b,void *c) {
     uintptr_t vram = 0x06010000u + ((uintptr_t)c << 5); // r4=r2<<5 + 0x06010000
     _08005614(arr, (void*)vram, (int)_080074A8(seek2)); // len = _080074A8(seek2)
 }
-#ifndef __APPLE__
 void _08007538(void *a,int b,void *c) __attribute__((alias("Course_EmitLane_07538")));
-#endif
 
 // _08007570: 5-arg — the 5th arg is the transfer length in 32-byte units
 void Course_EmitLane_07570(void *a,int b,int c,int d,int units) {
@@ -138,10 +128,8 @@ void Course_EmitLane_07570(void *a,int b,int c,int d,int units) {
     uintptr_t src = 0x06010000u + ((uintptr_t)c << 5);          // r4 = r2<<5 + pool
     _08005614((void*)dst, (void*)src, (int)((uintptr_t)units << 5));
 }
-#ifndef __APPLE__
 void _08007570(void *a,int b,int c,int d,int units) __attribute__((alias("Course_EmitLane_07570")));
 void Sub_08007570(void *a,int b,int c,int d,int units) __attribute__((alias("Course_EmitLane_07570")));
-#endif
 
 // _080075A4: high-reg, r0-r3 + 2 caller stack words (frame 36 B, so the body
 void Course_EmitLane_075A4(void *a, void *b, void *c, void *d, void *e, void *f) {
@@ -187,9 +175,7 @@ void Course_EmitLane_075A4(void *a, void *b, void *c, void *d, void *e, void *f)
 // section -- so it pads with the `0` fill argument instead. No body byte
 // changes; only the two filler halfwords.
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _080075A4(void *a, void *b, void *c, void *d, void *e, void *f) __attribute__((alias("Course_EmitLane_075A4")));
-#endif
 
 void Course_EmitLane_075E8(void *a,int b,int c) {
     // Same resident-value rule as _08007614: the ROM's second `bl 07498` at
@@ -204,11 +190,9 @@ void Course_EmitLane_075E8(void *a,int b,int c) {
     u32 len = 32;
     _08005614(arr, dst, (int)len);
 }
-#ifndef __APPLE__
 void _080075E8(void *a,int b,int c) __attribute__((alias("Course_EmitLane_075E8")));
 void Sub_080075E8(void *a,int b,int c) __attribute__((alias("Course_EmitLane_075E8")));
 void sub_080075E8(void *a,int b,int c) __attribute__((alias("Course_EmitLane_075E8")));
-#endif
 // Friendly-name wrapper used by rec35_init.c.
 void Course_0x080075E8(void *a,int b,int c) { Course_EmitLane_075E8(a,b,c); }
 
@@ -229,11 +213,9 @@ void Course_EmitLane_07614(void *a,int b,int c,int d) {
     u32 len = 32;
     _08005614(src, dst, (int)len);
 }
-#ifndef __APPLE__
 void _08007614(void *a,int b,int c,int d) __attribute__((alias("Course_EmitLane_07614")));
 void Sub_08007614(void *a,int b,int c,int d) __attribute__((alias("Course_EmitLane_07614")));
 void sub_08007614(void *a,int b,int c,int d) __attribute__((alias("Course_EmitLane_07614")));
-#endif
 // Friendly-name wrapper used by rec35_init.c.
 void Course_0x08007614(void *a,int b,int c,int d) { Course_EmitLane_07614(a,b,c,d); }
 
@@ -246,10 +228,8 @@ void *Course_Leaf_07644(void *X, int i) {
     void *b = _08007498(a, 0);
     return _0800748C(b);
 }
-#ifndef __APPLE__
 void *_08007644(void *X, int i) __attribute__((alias("Course_Leaf_07644")));
 void *sub_08007644(void *X, int i) __attribute__((alias("Course_Leaf_07644")));
-#endif
 
 // _08007658: bl 074A8 then lsrs #5 — the result is r0 and is LIVE: every ROM
 // caller feeds it straight into _080050D0's second argument (`bl 07658;
@@ -258,14 +238,9 @@ void *sub_08007644(void *X, int i) __attribute__((alias("Course_Leaf_07644")));
 u32 Course_Leaf_07658(void *a) {
     return _080074A8(a) >> 5;
 }
-#ifndef __APPLE__
 u32 _08007658(void *a) __attribute__((alias("Course_Leaf_07658")));
 // Third spelling used by scene_record_dispatch.c, same 1-arg u32 shape.
 u32 RomLeaf7658(void *a) __attribute__((alias("Course_Leaf_07658")));
-#else
-u32 _08007658(void *a) { return Course_Leaf_07658(a); }
-u32 RomLeaf7658(void *a) { return Course_Leaf_07658(a); }
-#endif
 
 void Course_ResourceSetup(void *ctx, void *X, int idx) {
     // _08007664 — transcribed from asm/course_resource_init.s:1-122 (VMA
@@ -518,10 +493,8 @@ u32 Course_07488(void *p) {
     // No null guard in asm: ldr + bx only, slot not used here; C matches unconditional deref.
     return *(volatile u32 *)((volatile u8 *)p + 8);
 }
-#ifndef __APPLE__
 u32 _08007488(void *p) __attribute__((alias("Course_07488")));
 u32 sub_08007488(void *p) __attribute__((alias("Course_07488")));
-#endif
 
 // 0x08007978 direct leaf — pure Thumb, 3 calls, no pool, proven via asm
 void *Course_07978(void *X, int i) {
@@ -529,13 +502,10 @@ void *Course_07978(void *X, int i) {
     void *b = _08007498(a, 0); // movs r1,#0 / bl 07498 with r0=a
     return _0800748C(b); // bl 0748C — the closure spelling of Course_ArrBase
 }
-#ifndef __APPLE__
 void *_08007978(void *X, int i) __attribute__((alias("Course_07978")));
 void *sub_08007978(void *X, int i) __attribute__((alias("Course_07978")));
-#endif
 
 // Aliases (ARM only) — surface leaves proven via s16/u16/u8 widths, DMA pools 0x06004000/0x040000D4/0x80000040 and live VRAM 0x06004000/0x06010000 (ramwatch 5000 frames)
-#ifndef __APPLE__
 void *_0800748C(void *x) __attribute__((alias("Course_ArrBase")));
 void *_08007498(void *x,int i) __attribute__((alias("Course_Seek")));
 // asm/course_resource_access.s:17 defines `sub_08007498:` on this span, and
@@ -561,12 +531,9 @@ void EventBind(void *a, int b, int c) __attribute__((alias("Course_ResourceLeaf_
 void EventBind_0x08007ABC(void *a, int b, int c) __attribute__((alias("Course_ResourceLeaf_07ABC")));
 void sub_08007570(void *a,int b,int c,int d,int units) __attribute__((alias("Course_EmitLane_07570")));
 void sub_08007664(void *a,void *b,int c) __attribute__((alias("Course_ResourceSetup")));
-#endif
 
 // ROM entry alias.
-#ifndef __APPLE__
 void sub_08007538(void *a,int b,void *c) __attribute__((alias("Course_EmitLane_07538")));
-#endif
 
 // ----------------------------------------------------------------------------
 // Round-seven transcription — the VRAM DMA3 emitter pair
@@ -590,13 +557,9 @@ void VramEmit_05260(void *bank, void *src, int off, int len) {
     int n;
     dma[0] = (u32)(uintptr_t)src;
     register u32 base __asm__("r1");
-#ifndef __APPLE__
     { extern u8 VramEmit_05260Rows[];
       __asm__(".globl VramEmit_05260Rows\nVramEmit_05260Rows = 0x03000260\n");
       base = (u32)(uintptr_t)VramEmit_05260Rows; }
-#else
-    base = (u32)0x03000260u;
-#endif
     u32 addr = ((u32)(uintptr_t)bank << 4) + base;
     sel = *(volatile u8 *)(addr + 5);
 
@@ -608,10 +571,8 @@ void VramEmit_05260(void *bank, void *src, int off, int len) {
     dma[2] = ret;
     (void)dma[2];
 }
-#ifndef __APPLE__
 void _08005260(void *a, void *b, int c, int d) __attribute__((alias("VramEmit_05260")));
 void sub_08005260(void *a, void *b, int c, int d) __attribute__((alias("VramEmit_05260")));
-#endif
 
 // 0x080052F0(bank, src, off, len, tw, th) — 0xCCB tile blit, 6-arg:
 void VramBlit_052F0(int bank, int src, int off, int len, int tw, int th) {
@@ -629,7 +590,5 @@ void VramBlit_052F0(int bank, int src, int off, int len, int tw, int th) {
         (void)tw; (void)src;
     }
 }
-#ifndef __APPLE__
 void _080052F0(int a, int b, int c, int d, int e, int f) __attribute__((alias("VramBlit_052F0")));
 void sub_080052F0(int a, int b, int c, int d, int e, int f) __attribute__((alias("VramBlit_052F0")));
-#endif

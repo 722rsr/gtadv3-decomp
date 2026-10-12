@@ -326,8 +326,7 @@ def hoist_extern_at(text: str, index: int) -> tuple[str, bool]:
         cleaned = cleaned[:m.start()] + cleaned[m.end():]
     lines[index] = cleaned
     code = strip_noncode(text).splitlines()
-    # Put declarations after includes but before the first conditional, so an
-    # `extern` from an ARM function cannot accidentally land in `#ifdef __APPLE__`.
+    # Put declarations after includes but before the first conditional.
     # Preserve all other source text, including calls sharing the same line.
     insert_at = 0
     for i, cl in enumerate(code):

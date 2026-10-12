@@ -24,10 +24,8 @@ void SaveSlotConfig(int v){
     }
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _080057D0(int a) __attribute__((alias("SaveSlotConfig")));
 void sub_080057D0(int a) __attribute__((alias("SaveSlotConfig")));
-#endif
 
 // code_5988 — 0x08005988: EEPROM slot verify wrapper — owner is save.c (SaveSlotLoad)
 // Duplicate alias removed; use save.c's SaveSlotLoad via extern.
@@ -38,11 +36,7 @@ extern int SaveSlotLoad(u32 a, void *b);
 // ROM: computed-goto jump table (mov pc) over id-1 in 0..7 with three arms.
 void LateDispatch_C668(int base, int id) {
     extern void _08004EF0(void *);
-#ifndef __APPLE__
     register u32 off __asm__("r1");
-#else
-    u32 off;
-#endif
     switch (id) {
     case 1:
     case 2:
@@ -54,11 +48,7 @@ void LateDispatch_C668(int base, int id) {
         goto do_it;
 do_it:
         {
-#ifndef __APPLE__
             register u32 addr __asm__("r0") = (u32)base + off;
-#else
-            u32 addr = (u32)base + off;
-#endif
             _08004EF0(*(void **)(uintptr_t)addr);
         }
         break;
@@ -72,20 +62,14 @@ do_it:
         return;
     }
 }
-#ifndef __APPLE__
 void _0800C668(int a,int b) __attribute__((alias("LateDispatch_C668")));
 void sub_0800C668(int a,int b) __attribute__((alias("LateDispatch_C668")));
-#endif
 
 // code_c6cc — 0x0800C6CC: byte-identical twin of C668 at a different VMA
 // (bl/pool relocs resolve per-VMA; same source matches both spans).
 void LateDispatch_C6CC(int base, int id) {
     extern void _08004EF0(void *);
-#ifndef __APPLE__
     register u32 off __asm__("r1");
-#else
-    u32 off;
-#endif
     switch (id) {
     case 1:
     case 2:
@@ -97,11 +81,7 @@ void LateDispatch_C6CC(int base, int id) {
         goto do_it;
 do_it:
         {
-#ifndef __APPLE__
             register u32 addr __asm__("r0") = (u32)base + off;
-#else
-            u32 addr = (u32)base + off;
-#endif
             _08004EF0(*(void **)(uintptr_t)addr);
         }
         break;
@@ -115,15 +95,11 @@ do_it:
         return;
     }
 }
-#ifndef __APPLE__
 void _0800C6CC(int a,int b) __attribute__((alias("LateDispatch_C6CC")));
 void sub_0800C6CC(int a,int b) __attribute__((alias("LateDispatch_C6CC")));
-#endif
 void LateFlagCheck(void *a, u16 unused){ if(*(vu8*)((u8*)a+96)==0) { extern void _08004ED8(int); _08004ED8(1); } (void)unused; }
-#ifndef __APPLE__
 void _0800C730(void *a, u16 unused) __attribute__((alias("LateFlagCheck")));
 void sub_0800C730(void *a, u16 unused) __attribute__((alias("LateFlagCheck")));
-#endif
 
 void LateDispatch_CE2C(int id, int a,int b, void *ctx){
     switch((unsigned)id){
@@ -134,9 +110,7 @@ void LateDispatch_CE2C(int id, int a,int b, void *ctx){
         default: break;
     }
 }
-#ifndef __APPLE__
 void _0800CE2C(int a,int b,int c,void *d) __attribute__((alias("LateDispatch_CE2C")));
-#endif
 
 // code_4e6c tail — manager alloc (skipped, TODO) — provide alias guards only
 // 5b3c / fa0 lifted elsewhere; no stubs here.

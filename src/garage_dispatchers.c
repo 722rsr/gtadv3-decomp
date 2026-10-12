@@ -48,10 +48,8 @@ void GarageDispatch_28188(u32 selector, u32 value, u32 unused, void *rec) {
 // The ROM uses a zero halfword before the next 4-byte entry.
 __asm__(".align 2, 0");
 
-#ifndef __APPLE__
 void _08028188(u32 selector, u32 value, u32 unused, void *rec)
     __attribute__((alias("GarageDispatch_28188")));
-#endif
 
 void GarageDispatch_2832C(u32 selector, u32 value, u32 unused, void *rec) {
     (void)unused;
@@ -66,10 +64,8 @@ void GarageDispatch_2832C(u32 selector, u32 value, u32 unused, void *rec) {
     }
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _0802832C(u32 selector, u32 value, u32 unused, void *rec)
     __attribute__((alias("GarageDispatch_2832C")));
-#endif
 
 void GarageDispatch_288BC(u32 event, u32 p1, u32 p2, void *rec) {
     switch (event) {
@@ -85,10 +81,8 @@ void GarageDispatch_288BC(u32 event, u32 p1, u32 p2, void *rec) {
     }
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _080288BC(u32 event, u32 p1, u32 p2, void *rec)
     __attribute__((alias("GarageDispatch_288BC")));
-#endif
 
 void GarageDispatch_29284(u32 event, u32 p1, u32 p2) {
     register u32 saved_p1 asm("r3") = p1;
@@ -110,7 +104,5 @@ void GarageDispatch_29284(u32 event, u32 p1, u32 p2) {
     }
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _08029284(u32 event, u32 p1, u32 p2)
     __attribute__((alias("GarageDispatch_29284")));
-#endif

@@ -27,10 +27,8 @@ void Course_Build_Emit8A(void *out, int w) { // _0800861C: 8-record emitter 0x5A
         // lsls #1, adds, orrs
     }
 }
-#ifndef __APPLE__
 void _0800861C(void *a, int b) __attribute__((alias("Course_Build_Emit8A")));
 void sub_0800861C(void *a, int b) __attribute__((alias("Course_Build_Emit8A")));
-#endif
 
 void Course_Build_Emit8B(void *out, int w) { // _08008768: base 0x8000, types 56/64/70/77/85/91/98/106
     volatile u8 *dst = (volatile u8 *)out;
@@ -41,10 +39,8 @@ void Course_Build_Emit8B(void *out, int w) { // _08008768: base 0x8000, types 56
         // packed via 0x0000803C pool etc.
     }
 }
-#ifndef __APPLE__
 void _08008768(void *a, int b) __attribute__((alias("Course_Build_Emit8B")));
 void sub_08008768(void *a, int b) __attribute__((alias("Course_Build_Emit8B")));
-#endif
 
 void Course_Build_Emit8C(void *out, int w) { // _080088B0: base 0x808F, same types as 08768
     volatile u8 *dst = (volatile u8 *)out;
@@ -54,25 +50,19 @@ void Course_Build_Emit8C(void *out, int w) { // _080088B0: base 0x808F, same typ
         *(volatile u16*)(dst + i*8 + 2) = (u16)(56 + i*8 + (i>=3?1:0));
     }
 }
-#ifndef __APPLE__
 void _080088B0(void *a, int b) __attribute__((alias("Course_Build_Emit8C")));
 void sub_080088B0(void *a, int b) __attribute__((alias("Course_Build_Emit8C")));
-#endif
 
 void Course_Build_Tail_089FC(void *out) { // _080089FC: 3-record tail with s16 at +22 vs u16 tables 0x080CB110/32
     volatile u8 *dst = (volatile u8 *)out;
     (void)dst;
     // Exact: ldrh [slot+22] s16, table 0x080CB110 u16 * s16, etc., widths s16/u16
 }
-#ifndef __APPLE__
 void _080089FC(void *a) __attribute__((alias("Course_Build_Tail_089FC")));
 void sub_080089FC(void *a) __attribute__((alias("Course_Build_Tail_089FC")));
-#endif
 
 // ROM entry alias.
-#ifndef __APPLE__
 void RomEmit861C(void *out, int w) __attribute__((alias("Course_Build_Emit8A")));
 void RomEmit8768(void *out, int w) __attribute__((alias("Course_Build_Emit8B")));
 void RomEmit88B0(void *out, int w) __attribute__((alias("Course_Build_Emit8C")));
 void RomEmit89FC(void *out) __attribute__((alias("Course_Build_Tail_089FC")));
-#endif

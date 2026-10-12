@@ -97,7 +97,6 @@ void *StateA_GetRecordPtrInverted(void) {
     return (void *)((uintptr_t)st + 0x70 + off);
 }
 
-#ifndef __APPLE__
 u16 _080015F4(int idx) __attribute__((alias("StateA_GetRecordHalfword")));
 u16 _08001620(int a, int b) __attribute__((alias("StateA_GetRecordHalfwordOffset")));
 u16 _08001650(void) __attribute__((alias("StateA_GetFirstHalfword")));
@@ -108,7 +107,6 @@ u16 _08001698(int idx) __attribute__((alias("StateA_GetIndexedHalfwordInverted")
 void *_080016B8(void) __attribute__((alias("StateA_GetRecordPtrInverted")));
 void _080016D0(u32 v) __attribute__((alias("StateA_SetPendingParam")));
 void _080016DC(void) __attribute__((alias("StateA_ClearPendingAndScratch")));
-#endif
 
 // _080016D0(v) — write pending param
 //
@@ -146,26 +144,16 @@ void StateA_ClearPendingAndScratch(void) {
 // (`movs r0,#1; ldr r1,[st+0x24]; bl sub_08000BF0`) and the callee's prologue
 // moves both (r0→r5, r1→r7) — so its C ABI here is (int flag, u32 arg).
 __attribute__((weak)) void SessionEnterHook(int arg) {
-#ifdef __APPLE__
-    (void)arg;
-#else
     extern void _080005C0(int);
     _080005C0(arg);
-#endif
 }
 __attribute__((weak)) void SessionExitHook(void) {
-#ifndef __APPLE__
     extern void _080006BC(void);
     _080006BC();
-#endif
 }
 __attribute__((weak)) void SessionMode8Hook(u32 arg, int flag) {
-#ifdef __APPLE__
-    (void)arg; (void)flag;
-#else
     extern void _08000BF0(int, u32);
     _08000BF0(flag, arg);
-#endif
 }
 
 // _08001704 — helper: CpuSet fill of block A (src = stack zero word, dst =
@@ -174,27 +162,19 @@ void StateA_Fill1754(void) {
     u32 zero = 0;
     CpuSet(&zero, (void *)STATE_BLOCK_A_ADDR, 0x05000037);
 }
-#ifndef __APPLE__
 void _08001704(void) __attribute__((alias("StateA_Fill1754")));
-#endif
 
 // _080016EC — register block A: slot <- 0x03000008 then 220-byte fill
 // (asm: str slot; bl _08001704)
 void StateA_Register(void) {
     *(volatile u32 *)STATE_BLOCK_A_SLOT_ADDR = STATE_BLOCK_A_ADDR;
-#ifndef __APPLE__
     // The slice links no C object, so a promoted body may only call a
     // spelling the assembly closure defines. The host build has no
     // VMA-named symbol, so it keeps the friendly name.
     extern void _08001704(void);
     _08001704();
-#else
-    StateA_Fill1754();
-#endif
 }
-#ifndef __APPLE__
 void _080016EC(void) __attribute__((alias("StateA_Register")));
-#endif
 
 // _08001724(mode) — set requested mode (also called from 0x8001F9E/0x8001FBA)
 // `mode` is u32: the ROM body (12 B) has no lsls/lsrs zero-extend prologue.
@@ -205,9 +185,7 @@ void StateA_SetReqMode(u32 mode) {
     volatile StateBlockA *st = stateA();
     *(volatile u16 *)((volatile u8 *)st + 0x12) = mode;
 }
-#ifndef __APPLE__
 void _08001724(u32 mode) __attribute__((alias("StateA_SetReqMode")));
-#endif
 
 // _08001730(mode) -> bool game-driven {1..7,10}
 //
@@ -253,9 +231,7 @@ __attribute__((naked)) bool StateA_IsGameMode(int mode) {
         ".syntax divided\n"
     );
 }
-#ifndef __APPLE__
 bool _08001730(int mode) __attribute__((alias("StateA_IsGameMode")));
-#endif
 
 // _08001744(mode) -> bool special {8,11}
 //
@@ -274,9 +250,7 @@ bool _08001730(int mode) __attribute__((alias("StateA_IsGameMode")));
 bool StateA_IsSpecialMode(u32 mode) {
     return mode == 8 || mode == 11;
 }
-#ifndef __APPLE__
 bool _08001744(u32 mode) __attribute__((alias("StateA_IsSpecialMode")));
-#endif
 
 // _08001758 — mode-change processor
 // Pseudocode documented in asm/blocka.s header and asm/blocka.s
@@ -314,14 +288,12 @@ void StateA_CommitMode(void) {
 
     st->curMode = req;
 }
-#ifndef __APPLE__
 //. The caller above names `_08001758`, the one spelling
 // asm/blocka.s declares. Adding a `sub_08001758` twin would NOT help: the
 // closure has no such label, so the screen would then report the mirror-image
 // `sub_08001758: closure defines _08001758 at 0x08001758 (rename)`. The fix is
 // to name the closure's spelling, not to invent a second one.
 void _08001758(void) __attribute__((alias("StateA_CommitMode")));
-#endif
 
 // _08001818 / _08001824 — requested-mode wrappers (set 1 / set 0)
 void StateA_RequestMode1(void) {
@@ -330,10 +302,8 @@ void StateA_RequestMode1(void) {
 void StateA_RequestMode0(void) {
     StateA_SetReqMode(0);
 }
-#ifndef __APPLE__
 void _08001818(void) __attribute__((alias("StateA_RequestMode1")));
 void _08001824(void) __attribute__((alias("StateA_RequestMode0")));
-#endif
 
 // _08001754 / _08001830 — empty bx lr stubs (no BL callers found in ROM;
 // exported so the cluster's VMA census is complete)
@@ -341,10 +311,8 @@ void StateA_Nop_1754(void) {}
 __asm__(".align 2, 0");   // trap 6, same as _08001830 below
 void StateA_Nop_1830(void) {}
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _08001754(void) __attribute__((alias("StateA_Nop_1754")));
 void _08001830(void) __attribute__((alias("StateA_Nop_1830")));
-#endif
 
 // _08001830: empty stub
 void StateA_SyncPerFrame(void) {
@@ -359,15 +327,9 @@ void StateA_SyncPerFrame(void) {
     // name has to be replaced by the asm one, and the two are the same routine
     // at the same address, so the scored bytes do not move. Note this is the
     // OPPOSITE of 0x08005988, where the closure declares BOTH spellings.
-#ifndef __APPLE__
     _08001758();
-#else
-    StateA_CommitMode();
-#endif
 }
-#ifndef __APPLE__
 void _08001834(void) __attribute__((alias("StateA_SyncPerFrame")));
-#endif
 
 // Forward declarations for cross-module helpers (defined in idle / bios)
 void Idle_WriteEvent(int id, u32 val); // _08001E48 (word-width: the ROM never narrows it)
@@ -483,6 +445,4 @@ void StateA_UpdateClockAndRecords(void) {
         if (res < 0) *dst = 0;
     }
 }
-#ifndef __APPLE__
 void _08001854(void) __attribute__((alias("StateA_UpdateClockAndRecords")));
-#endif

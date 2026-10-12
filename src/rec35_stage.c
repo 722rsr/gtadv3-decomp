@@ -10,15 +10,10 @@ extern void GuardedFullSave(void); // 0x08024B70
 extern void ScenePost(int a,int b); // 0x08002618
 extern void EventPost(void *list, int id); // 0x08025BF0 (ROM shape (P,S): [list+4] = s16[0x080CD830 + id*20])
 extern void EventBind(void *a, int b, int c); // 0x08007ABC (ROM shape: 3 reg args (void*,int,int),)
-#ifndef __APPLE__
 extern void sub_08025BF0(void *list, int id);
 extern void sub_08007ABC(void *a, int b, int c);
 #define REC35_POST sub_08025BF0
 #define REC35_BIND sub_08007ABC
-#else
-#define REC35_POST EventPost
-#define REC35_BIND EventBind
-#endif
 
 // The phase is an ordinary IWRAM halfword (ldrsh). EventBind receives the
 // posted node stored at ctx+0xA0, not the address of that pointer cell.
@@ -85,9 +80,7 @@ void Rec35_StageB(void *ctx){
     }
 }
 
-#ifndef __APPLE__
 void _08015ED0(void *c) __attribute__((alias("Rec35_StageA")));
 void _08015F68(void *c) __attribute__((alias("Rec35_StageB")));
 void _08015E28(void *c) __attribute__((alias("Rec35_HelperA")));
 void _08015E7C(void *c) __attribute__((alias("Rec35_HelperB")));
-#endif

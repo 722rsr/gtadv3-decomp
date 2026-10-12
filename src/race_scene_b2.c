@@ -16,11 +16,7 @@
 
 #include "gba/types.h"
 
-#ifdef __APPLE__
-#define HOST_STUB(sig) __attribute__((weak)) sig
-#else
 #define HOST_STUB(sig) extern sig
-#endif
 
 HOST_STUB(void  _08002E0A4(void *d, const void *s, u32 n));        // 0x08002E0A4 memcpy
 HOST_STUB(void  _0802DDD0(void *a, void *b, void *c));            // 0x0802DDD0 bx-r2 veneer

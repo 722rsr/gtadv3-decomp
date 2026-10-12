@@ -10,11 +10,7 @@
 
 #include "gba/types.h"
 
-#ifdef __APPLE__
-#define HOST_STUB(sig) __attribute__((weak)) sig
-#else
 #define HOST_STUB(sig) extern sig
-#endif
 
 // External callees (strong lifts or trampolines).
 HOST_STUB(void  _08002D974(const void *src, void *dst, u32 ctrl)); // 0x08002D974 CpuSet
@@ -59,13 +55,8 @@ HOST_STUB(int   _08002DE04(int n, int d));                         // 0x08002DE0
 HOST_STUB(void  _08002B500(int a, int b, int c));                  // 0x08002B500
 HOST_STUB(int   _08002D9AC(u32 v));                                // 0x08002D9AC sqrt
 // 0x0802D9AC (Sqrt) is spelled `sub_0802D9AC` by the promotion closure, and
-// bios_wrappers.c already aliases that spelling to the real Sqrt body (one
-//.thumb_set hop, zero bytes). Declared here so the call sites can use it;
-// those sites are #ifndef __APPLE__-split because the alias does not exist on
-// the host, where the HOST_STUB spelling above stays in force.
-#ifndef __APPLE__
+// bios_wrappers.c already aliases that spelling to the real Sqrt body.
 int sub_0802D9AC(u32 v);
-#endif
 HOST_STUB(void *_08006C10(void *a, int b));                        // 0x08006C10
 HOST_STUB(void  _0800199B0(void));                                 // 0x0800199B0
 HOST_STUB(void  _0800199CC(void));                                 // 0x0800199CC
@@ -614,11 +605,7 @@ void _08001C27C(void *a0, void *b0, void *c0) {
     register u32 d1 __asm__("r6");
     xy[0] = (int)(*(volatile u32 *)(b + 4) - *(volatile u32 *)(a + 0)) >> 8;
     xy[1] = (int)(*(volatile u32 *)(b + 8) - *(volatile u32 *)(a + 4)) >> 8;
-#ifndef __APPLE__
     dist = (int)(u16)sub_0802D9AC((u32)xy[0] * (u32)xy[0] + (u32)xy[1] * (u32)xy[1]);
-#else
-    dist = (int)(u16)_08002D9AC((u32)xy[0] * (u32)xy[0] + (u32)xy[1] * (u32)xy[1]);
-#endif
     p = (s16)(u16)_08005CB4(xy);
     q = (s16)(u16)_08005CB4((void *)(uintptr_t)(b + 12));
     // The y1 load is in a NESTED block so it stays textually after the x1
@@ -632,11 +619,7 @@ void _08001C27C(void *a0, void *b0, void *c0) {
         u32 sq = x1 * x1;
         {
             u32 y1 = *(volatile u32 *)(b + 16);
-#ifndef __APPLE__
             d1 = (u32)sub_0802D9AC(sq + y1 * y1);
-#else
-            d1 = (u32)_08002D9AC(sq + y1 * y1);
-#endif
         }
     }
     t = _08005F44((int)(s16)(p - q));
@@ -733,15 +716,9 @@ int _08001C340(void *p0) {
 
 int _08001C3AC(void *a0, void *b0) {
     static const u16 kSet = 0xFFFFu;
-#ifndef __APPLE__
     register u8 *b __asm__("r2") = (u8 *)b0;
     register int r __asm__("r1") = 1;
     register u16 keep __asm__("r4");
-#else
-    u8 *b = (u8 *)b0;
-    int r = 1;
-    u16 keep;
-#endif
     if (a0 == 0) {
         int v;
         int nx;
@@ -757,11 +734,7 @@ int _08001C3AC(void *a0, void *b0) {
         c = kSet;
         *(u16 *)(b + 8) = c;
     } else {
-#ifndef __APPLE__
         register u16 f __asm__("r3") = *(u16 *)((u8 *)a0 + 8);
-#else
-        u16 f = *(u16 *)((u8 *)a0 + 8);
-#endif
         keep = *(u16 *)(b + 8);
         if (f == keep)
             r = 0;
@@ -771,11 +744,9 @@ int _08001C3AC(void *a0, void *b0) {
 }
 
 // ROM entry alias.
-#ifndef __APPLE__
 void RaceScene_Init_AAA0(void) __attribute__((alias("_08001AAA0")));
 // The spliced span for 0x08001BFBC starts at the asm label `sub_08001BFBC`,
 // which the splice deletes, and other promoted C bodies call it under that
 // spelling. agbcc only writes the `.thumb_set` for a spelling this TU
 // aliases, so declare it here (rule 6).
 void sub_08001BFBC(int flags) __attribute__((alias("_08001BFBC")));
-#endif

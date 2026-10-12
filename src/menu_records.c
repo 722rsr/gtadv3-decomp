@@ -38,22 +38,6 @@ typedef struct { u8 crh_kp_pad[12]; u16 crh_kp_w12; } CRH_Keypad;
 #define WA_CURSOR_CELL (*(volatile u16 *)((uintptr_t)0x03001780 + 0x574))
 #define KEYPAD_W12     (((volatile CRH_Keypad *)(uintptr_t)0x030035C0)->crh_kp_w12)
 
-#ifdef __APPLE__
-__attribute__((weak)) void *_08026948(int a) { (void)a; return (void *)0; }
-__attribute__((weak)) void *_080269AC(int a) { (void)a; return (void *)0; }
-__attribute__((weak)) void  _08026A4C(void *obj, int slot, int attr) { (void)obj; (void)slot; (void)attr; }
-__attribute__((weak)) void  _08026A58(void *obj, int v) { (void)obj; (void)v; }
-__attribute__((weak)) void  _08026A60(void *obj, int v) { (void)obj; (void)v; }
-__attribute__((weak)) void  _080026A20(void *obj, int x, int y) { (void)obj; (void)x; (void)y; }
-__attribute__((weak)) void  _08026938(void *obj, int slot) { (void)obj; (void)slot; }
-__attribute__((weak)) int   _080022E4(int id) { return id >= 0 && id <= 97 ? 23 : -1; }
-__attribute__((weak)) void  _080038A4(int a, int b, void *c) { (void)a; (void)b; (void)c; }
-__attribute__((weak)) void  _08003978(int a, u32 b, int c) { (void)a; (void)b; (void)c; }
-__attribute__((weak)) void *_08004B68(void) { return (void *)0; }
-__attribute__((weak)) int   _08004CA8(int v) { (void)v; return 0; }
-__attribute__((weak)) void  _08004EA8(int v) { (void)v; }
-__attribute__((weak)) void  _0800CE70(void *rec) { (void)rec; }
-#else
 extern void *_08026948(int a);                          // 0x08026948
 extern void *_080269AC(int a);                          // 0x080269AC
 extern void  _08026A4C(void *obj, int slot, int attr);  // 0x08026A4C
@@ -67,7 +51,6 @@ extern void  _08003978(int a, u32 b, int c);            // 0x08003978 (runtime_h
 extern void *_08004B68(void);                           // 0x08004B68
 extern int   _08004CA8(int v);                          // 0x08004CA8
 extern void  _08004EA8(int v);                          // 0x08004EA8
-#endif
 
 // ============================================================================
 // menu_ce78.s (VMA 0x0800CE78–0x0800CFE4)
@@ -106,10 +89,8 @@ void MenuRec_0800CE78(void *rec) {
     _08026A60(m->obj, 0);
     _080026938(m->obj, (int)(s16)m->cursor);
 }
-#ifndef __APPLE__
 void _0800CE78(void *a) __attribute__((alias("MenuRec_0800CE78")));
 void sub_0800CE78(void *a) __attribute__((alias("MenuRec_0800CE78")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_0800CED4 — key input on the cursor slot.
@@ -176,10 +157,8 @@ void MenuRec_0800CED4(void *rec, int a1, int a2) {
         _08026938(obj2, cur2);
     }
 }
-#ifndef __APPLE__
 void _0800CED4(void *a, int b, int c) __attribute__((alias("MenuRec_0800CED4")));
 void sub_0800CED4(void *a, int b, int c) __attribute__((alias("MenuRec_0800CED4")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_0800CF60 — paint/measure lane.
@@ -221,10 +200,8 @@ void MenuRec_0800CF60(void *rec) {
     void *obj = (void *)(uintptr_t)(*(volatile u32 *)(r4 + 0x1018));
     _080026A20(obj, 120, 100);
 }
-#ifndef __APPLE__
 void _0800CF60(void *a) __attribute__((alias("MenuRec_0800CF60")));
 void sub_0800CF60(void *a) __attribute__((alias("MenuRec_0800CF60")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_0800CFA0 — event dispatcher (r0 = ev, r3 = record):
@@ -233,12 +210,10 @@ void sub_0800CF60(void *a) __attribute__((alias("MenuRec_0800CF60")));
 //   ev 6 -> _0800CED4(r3, u16(r1), u16(r2))
 //   ev 7 -> _0800CF60(r3)
 //   default: return (ev 0, 3, 4, 5, >7)
-#ifndef __APPLE__
 extern void _0800CE70(void *rec);   // 0x0800CE70 (menus.c MenuCE70_0800CE70)
 // 0x0800CED4 is NOT a promoted span, so the assembled closure keeps its asm
 // labels: the call must use `_0800CED4`/`sub_0800CED4`, not the C name.
 extern void _0800CED4(void *rec, int a1, int a2);
-#endif
 // The span is byte-identical to 0x0800CE2C (src/foundation_late.c,
 // LateDispatch_CE2C) apart from the four `bl` immediates, so the promoted
 // recipe's shape is used wholesale: `switch ((unsigned)ev)` gives the
@@ -249,21 +224,15 @@ void MenuRec_0800CFA0(int ev, int a1, int a2, void *rec) {
         case 2: { _0800CE70(rec); break; }
         case 7: { MenuRec_0800CF60(rec); break; }
         case 6: {
-#ifdef __APPLE__
-            MenuRec_0800CED4(rec, (int)(u16)a1, (int)(u16)a2);
-#else
             _0800CED4(rec, (int)(u16)a1, (int)(u16)a2);
-#endif
             break;
         }
         case 1: { MenuRec_0800CE78(rec); break; }
         default: break;
     }
 }
-#ifndef __APPLE__
 void _0800CFA0(int a, int b, int c, void *d) __attribute__((alias("MenuRec_0800CFA0")));
 void sub_0800CFA0(int a, int b, int c, void *d) __attribute__((alias("MenuRec_0800CFA0")));
-#endif
 
 // ============================================================================
 // menu_d9a4.s (VMA 0x0800D9A4–0x0800DAB8)
@@ -295,11 +264,7 @@ void MenuRec_0800D9A4(void *rec, int a1, int a2) {
     volatile u8 *r5 = (volatile u8 *)rec;
     u16 id = (u16)a1;
     u16 attr = (u16)a2;
-#ifndef __APPLE__
     *(volatile u32 *)(r5 + 0) = (u32)(uintptr_t)_080026948();
-#else
-    *(volatile u32 *)(r5 + 0) = (u32)(uintptr_t)_08026948(0);
-#endif
     int r4 = (int)(s16)(u16)id;
     r4 = _080022E4(r4);
     if (r4 == -1) {
@@ -314,11 +279,9 @@ void MenuRec_0800D9A4(void *rec, int a1, int a2) {
     // the spliced section drops, so the reference stays undefined at link.
     MENUREC_REDRAW(*(void **)(r5 + 0), r4);
 }
-#ifndef __APPLE__
 void _0800D9A4(void *a, int b, int c) __attribute__((alias("MenuRec_0800D9A4")));
 void Sub_0800D9A4(void *a, int b, int c) __attribute__((alias("MenuRec_0800D9A4")));
 void sub_0800D9A4(void *a, int b, int c) __attribute__((alias("MenuRec_0800D9A4")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_0800D9F8 — same as D9A4 but allocates via the 0x1400-byte pool variant
@@ -347,10 +310,8 @@ void MenuRec_0800D9F8(void *rec, int a1, int a2) {
     _08026A60(*(void **)(r5 + 0), 0);
     MENUREC_REDRAW(*(void **)(r5 + 0), r4);
 }
-#ifndef __APPLE__
 void _0800D9F8(void *a, int b, int c) __attribute__((alias("MenuRec_0800D9F8")));
 void sub_0800D9F8(void *a, int b, int c) __attribute__((alias("MenuRec_0800D9F8")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_0800DA50 — set attr on the existing obj handle at [rec+0] (no enable).
@@ -370,11 +331,9 @@ void MenuRec_0800DA50(void *rec, int a1, int a2) {
     _08026A4C(*(void **)(r6 + 0), r4, (int)(s16)(u16)attr);
     MENUREC_REDRAW(*(void **)(r6 + 0), r4);
 }
-#ifndef __APPLE__
 void _0800DA50(void *a, int b, int c) __attribute__((alias("MenuRec_0800DA50")));
 void Sub_0800DA50(void *a, int b, int c) __attribute__((alias("MenuRec_0800DA50")));
 void sub_0800DA50(void *a, int b, int c) __attribute__((alias("MenuRec_0800DA50")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_0800DA88 — attr-only setter; the record pointer itself is the obj arg
@@ -395,7 +354,5 @@ void MenuRec_0800DA88(void *rec, int a1, int a2) {
 // i.e. still inside the body's own section, and pads with the explicit `0`
 // fill instead.
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _0800DA88(void *a, int b, int c) __attribute__((alias("MenuRec_0800DA88")));
 void sub_0800DA88(void *a, int b, int c) __attribute__((alias("MenuRec_0800DA88")));
-#endif

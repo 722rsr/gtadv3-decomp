@@ -14,9 +14,7 @@ void IntrMain_Dispatch(void *ctx, int r1){
     // interior (see header note); the cluster's VMAs are covered per coverage.
     (void)ctx; (void)r1;
 }
-#ifndef __APPLE__
 void _08000FA0(void *a,int b) __attribute__((alias("IntrMain_Dispatch")));
-#endif
 
 int Helper_014A4(void *p){
     // 0x014A4: ldrb r0,[r0,#24] cmp #233 -> 1:0
@@ -36,9 +34,7 @@ int Helper_014A4(void *p){
 // (0x46c0) where the ROM holds `00 00` at 0x080014B2. Emitted after the body's
 // `.size`, still inside its own section, so it pads with the explicit `0` fill.
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 int _080014A4(void *a) __attribute__((alias("Helper_014A4")));
-#endif
 void Helper_014B4(void *p){
     // 0x014B4: 224/232 range check, 0x04000126 table loop, high-reg r4-r6 spill
     u8 v = *(volatile u8*)((u8*)p+24);
@@ -62,9 +58,7 @@ void Helper_014B4(void *p){
     // fallback
     (void)p;
 }
-#ifndef __APPLE__
 void _080014B4(void *a) __attribute__((alias("Helper_014B4")));
-#endif
 void Helper_013BC(void *p){
     extern void _08000F48(void*);
     u8 v = *(volatile u8*)((u8*)p+24);
@@ -77,9 +71,7 @@ void Helper_013BC(void *p){
     }
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _080013BC(void *a) __attribute__((alias("Helper_013BC")));
-#endif
 void Helper_013E0(void *a, void *b, u32 c, u32 d, u32 stack20){
     // 0x013E0: push r4-r7, r5=a, r6=b, stack20, ldrb [a,#24] gate, 0x0003FF00 mask, call 0x00F48
     u8 v24 = *(volatile u8*)((u8*)a+24);
@@ -103,9 +95,7 @@ void Helper_013E0(void *a, void *b, u32 c, u32 d, u32 stack20){
     // tail: lsls r2,c #24, movs r2 128<<19, etc. — preserve volatile widths
     (void)b; (void)c; (void)d; (void)stack20;
 }
-#ifndef __APPLE__
 void _080013E0(void *a,void *b,u32 c,u32 d,u32 e) __attribute__((alias("Helper_013E0")));
-#endif
 // 0x080015B8: r2=cnt=0; r3=0x04000128; if ((*r3 & 128)==0) skip loop.
 // Loop (r5=lim 0x795C pool, r4=bit 128): cnt++; signed bgt exit;
 // reload *r3, mask copy r4->r0, loop while bit set. Tail: r0 = 150<<2
@@ -116,11 +106,7 @@ void Helper_015B8(void *p){
     volatile u16 *reg = (volatile u16 *)0x04000128u;
     extern void _080015A0(u32);
     if ((*reg & 128u) != 0) {
-#ifndef __APPLE__
         register u32 lim __asm__("r5") = 0x795Cu;
-#else
-        u32 lim = 0x795Cu;
-#endif
         u32 bit = 128u;
         do {
             cnt++;
@@ -129,9 +115,7 @@ void Helper_015B8(void *p){
     }
     _080015A0(600u);
 }
-#ifndef __APPLE__
 void _080015B8(void *a) __attribute__((alias("Helper_015B8")));
-#endif
 // 0x0800104E is an interior case arm of the fa0 dispatch (entered via
 // beq from _08001032 with caller-held r4/r5/r6/r7 context: r5=14, r4=3,
 // r6=ctx; asm/code_fa0.s:99-139), not a function entry — so it carries no
@@ -145,9 +129,7 @@ void TimerHelper_01168(void *ctx){
     volatile u8 *c73 = (volatile u8*)((u8*)ctx+73);
     (void)t120; (void)c73;
 }
-#ifndef __APPLE__
 void _08001168(void *a) __attribute__((alias("TimerHelper_01168")));
-#endif
 void TimerHelper_011B4(void *ctx){
     // 0x011B4: movs r5,#1, movs r4,#3, adds r7,r6,#73, ldr r1,_08001218 (0x03000000), mov r8,r1 etc., lsls/lsrs timer halfwords
     (void)ctx;
@@ -156,6 +138,4 @@ void TimerHelper_011B4(void *ctx){
     (void)base; (void)t120;
     // preserve pools 0x03000000 / 0x04000120, high-reg r8/r9/sl spill, vu16 widths
 }
-#ifndef __APPLE__
 void _080011B4(void *a) __attribute__((alias("TimerHelper_011B4")));
-#endif

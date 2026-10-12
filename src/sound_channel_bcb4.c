@@ -5,7 +5,6 @@
 // VMA 0x0802BCB4–0x0802BCCC (24 B) in asm/sound_channel_cluster.s:0x02BC84–0x02BE78.
 // Pure-Thumb, mov ip,lr / bl _0802BCCE / bx ip.
 
-#ifndef __APPLE__
 void _0802BCB4(void *a) __attribute__((alias("SoundBCB4_Copy")));
 void sub_0802BCB4(void *a) __attribute__((alias("SoundBCB4_Copy")));
 __attribute__((naked)) void SoundBCB4_Copy(void *dst) {
@@ -26,6 +25,3 @@ __attribute__((naked)) void SoundBCB4_Copy(void *dst) {
         ".syntax divided\n"
     );
 }
-#else
-void SoundBCB4_Copy(void *dst) { (void)dst; }
-#endif

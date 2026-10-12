@@ -34,36 +34,28 @@ bool SoundBankGateIs3(u32 idx){
     if(idx>=4) return false;
     return songDir[idx].gate == 3; // u16 width via ldrh at dir+4, preserve u16
 }
-#ifndef __APPLE__
 bool _0802B500_gate(u32 i) __attribute__((alias("SoundBankGateIs3")));
 bool sub_0802B500_gate(u32 i) __attribute__((alias("SoundBankGateIs3")));
-#endif
 
 // sound_bank.s _0802B718 walker dispatch — uses bankDescs stride 12 via lsl #3? Actually idx*12 via lsl #2*3
 void *SoundBankGetChArray(u32 idx){
     if(idx>=4) return 0;
     return (void*)(uintptr_t)bankDescs[idx].chArray; // u32 width via ldr [r0] at 0x08061F74
 }
-#ifndef __APPLE__
 void *_0802B718_ch(u32 i) __attribute__((alias("SoundBankGetChArray")));
-#endif
 
 // sound_d034 PSG hardware leaf — REG_SOUND1CNT 0x04000060 u16, REG_TM0CNT 0x04000090 u16 etc.
 // Pools 0x04000060/62/63 etc. are u16/u8 via strh/strb, preserve widths
 void SoundD034_TimerWrite(u16 val){
     *(volatile u16*)0x04000090u = val; // REG_TM? actually SOUND timer, u16 width via strh
 }
-#ifndef __APPLE__
 void _0802D034_tim(u16 v) __attribute__((alias("SoundD034_TimerWrite")));
-#endif
 
 // sound_seq.s walker count — nch from bankDescs[idx].nch (u32 via ldr [r0+8])
 u32 SoundSeqNch(u32 idx){
     if(idx>=4) return 0;
     return bankDescs[idx].nch; // u32 width via ldr [r0+8] at 0x08061F74+8
 }
-#ifndef __APPLE__
 u32 _0802B66C_nch(u32 i) __attribute__((alias("SoundSeqNch")));
-#endif
 
 // No mixer copy-site, EWRAM vector, or opaque 28 B voice beyond u8 widths claimed — isolated.

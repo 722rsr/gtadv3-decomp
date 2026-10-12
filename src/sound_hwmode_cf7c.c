@@ -33,7 +33,5 @@ void SoundHWMode_CF7C(u32 mode){
 }
 // Match the zero halfword after bx lr, rather than gas's Thumb nop fill.
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _0802CF7C(u32 m) __attribute__((alias("SoundHWMode_CF7C")));
 void sub_0802CF7C(u32 m) __attribute__((alias("SoundHWMode_CF7C")));
-#endif

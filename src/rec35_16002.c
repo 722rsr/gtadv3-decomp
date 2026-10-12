@@ -16,21 +16,11 @@
 // sub_0800DBE8 binds the menus.c strong lift; sub_0800D97C binds the strong
 // lift below. Host weak no-ops mirror the usual override model.
 // ----------------------------------------------------------------------------
-#ifdef __APPLE__
-__attribute__((weak)) void _0802B368(int v) { (void)v; }
-__attribute__((weak)) void _08002618(int a, int b) { (void)a; (void)b; }
-__attribute__((weak)) void sub_08007B18(void *a, int b, int c, int d, int e, int f, int g, int h)
-    { (void)a; (void)b; (void)c; (void)d; (void)e; (void)f; (void)g; (void)h; }
-__attribute__((weak)) void sub_08007C68(void *a, u32 b, u32 c, int d, int e, int f, int g, int h, int i)
-    { (void)a; (void)b; (void)c; (void)d; (void)e; (void)f; (void)g; (void)h; (void)i; }
-__attribute__((weak)) void sub_0800DBE8(void *a) { (void)a; }
-#else
 extern void _0802B368(int v);                    // 0x0802B368 sound (asm)
 extern void _08002618(int a, int b);             // 0x08002618 (asm)
 extern void sub_08007B18(void *a, int b, int c, int d, int e, int f, int g, int h); // 0x08007B18 (asm)
 extern void sub_08007C68(void *a, u32 b, u32 c, int d, int e, int f, int g, int h, int i); // 0x08007C68 (asm)
 extern void sub_0800DBE8(void *a);               // 0x0800DBE8 (menus.c)
-#endif
 
 #define WA_1084 (*(volatile u16 *)((uintptr_t)0x03001780 + 0x1084))
 
@@ -40,13 +30,9 @@ extern void sub_0800DBE8(void *a);               // 0x0800DBE8 (menus.c)
 // simplify_rtx folds the folded form into a single pool word at expand time
 // and the whole `ldr/adds` pair disappears. Same lever as src/ai_award_leaves.c
 // (Ai_SetOwnedFlag) and src/car_tick_helpers.c (CarTickWa).
-#ifndef __APPLE__
 extern u8 Rec35Wa[] __asm__("Rec35Wa");
 #define REC35_WA_BASE ((volatile u8 *)(uintptr_t)Rec35Wa)
 // The `.globl` DEFINITION is emitted inside Rec35_RecordClear2 -- see there.
-#else
-#define REC35_WA_BASE ((volatile u8 *)(uintptr_t)0x03001780u)
-#endif
 
 void Rec35_Noop(void *rec); // fwd (defined below, called by Rec35_Record49Tail)
 
@@ -68,9 +54,7 @@ void Rec35_CountdownDec(void *rec, int reload) {
         }
     }
 }
-#ifndef __APPLE__
 /* VMA exports intentionally omitted — see the ownership note above. */
-#endif
 
 // ============================================================================
 // sub_080016004 (0x08016004, 0xC0 B) — event handler (twin A) on
@@ -123,10 +107,8 @@ void Rec35_EventA(void *rec, int unused, int mode) {
     if ((s16)*p140 > 1) *p140 = 1;
     if (*p140 != r7) _0802B368(2);
 }
-#ifndef __APPLE__
 void _080016004(void *a, int b, int c) __attribute__((alias("Rec35_EventA")));
 void sub_080016004(void *a, int b, int c) __attribute__((alias("Rec35_EventA")));
-#endif
 
 // ============================================================================
 // sub_0800160C4 (0x080160C4, 0xA0 B) — twin B of 0x16004. Differences:
@@ -170,10 +152,8 @@ void Rec35_EventB(void *rec, int unused, int mode) {
     if ((s16)*p140 > 1) *p140 = 1;
     if (*p140 != r7) _0802B368(2);
 }
-#ifndef __APPLE__
 void _0800160C4(void *a, int b, int c) __attribute__((alias("Rec35_EventB")));
 void sub_0800160C4(void *a, int b, int c) __attribute__((alias("Rec35_EventB")));
-#endif
 
 // ============================================================================
 // sub_080016164 (0x08016164, 0x3C B) — sound-driven record clear.
@@ -210,10 +190,8 @@ void Rec35_RecordClear(void *rec, int unused, int mode) {
     *(volatile u32 *)((u8 *)r5 + 48) = 10;
     *(volatile u32 *)((u8 *)r5 + 44) = z;
 }
-#ifndef __APPLE__
 void _080016164(void *a, int b, int c) __attribute__((alias("Rec35_RecordClear")));
 void sub_080016164(void *a, int b, int c) __attribute__((alias("Rec35_RecordClear")));
-#endif
 
 // ============================================================================
 // sub_0800161A0 (0x080161A0, 0x50 B) — twin of 0x16164, plus:
@@ -248,10 +226,8 @@ void Rec35_RecordClear2(void *rec, int unused, int mode) {
     __asm__(".globl Rec35Wa\nRec35Wa = 0x03001780\n");
     *(volatile u16 *)(wa + 0x1084u) = one;
 }
-#ifndef __APPLE__
 void _0800161A0(void *a, int b, int c) __attribute__((alias("Rec35_RecordClear2")));
 void sub_0800161A0(void *a, int b, int c) __attribute__((alias("Rec35_RecordClear2")));
-#endif
 
 // ============================================================================
 // sub_0800161F0 (0x080161F0, 0x7C B) — 30-iteration course-record placement:
@@ -293,10 +269,8 @@ void Rec35_PlaceRecords(void *rec, int arg1, int mode) {
         off += 8;
     }
 }
-#ifndef __APPLE__
 void _0800161F0(void *a, int b, int c) __attribute__((alias("Rec35_PlaceRecords")));
 void sub_0800161F0(void *a, int b, int c) __attribute__((alias("Rec35_PlaceRecords")));
-#endif
 
 // ============================================================================
 // sub_08001626C (0x0801626C, 0x74 B) — table-driven emitter dispatch.
@@ -305,21 +279,13 @@ void sub_0800161F0(void *a, int b, int c) __attribute__((alias("Rec35_PlaceRecor
 //   m==0 or m==2: 07B18(rec, t, arg1, arg2, 4, 1, 1, 0)
 // ============================================================================
 void Rec35_PlaceByTable(void *rec, int arg1, int arg2) {
-#ifndef __APPLE__
     // Keep the entry pointer in r0 for the first field access; r3 holds its call copy.
     register void *index_base __asm__("r0") = rec;
     __asm__ volatile ("" : "+r" (index_base));
-#endif
     u16 *tbase = (u16 *)0x080CB89Cu;
-#ifndef __APPLE__
     // Load the ROM table literal into r1 before the index arithmetic; r2 is the ldrsh offset.
     __asm__ volatile ("" : "+r" (tbase));
-#endif
-#ifdef __APPLE__
-    s16 idx = *(s16 *)((u8 *)rec + 140);
-#else
     s16 idx = *(s16 *)((u8 *)index_base + 140);
-#endif
     u16 t = tbase[idx];
     int m = *(int *)((u8 *)rec + 152);
     switch (m) {
@@ -333,14 +299,10 @@ void Rec35_PlaceByTable(void *rec, int arg1, int arg2) {
         break;
     }
 }
-#ifndef __APPLE__
 // The ROM span ends with a zero-filled alignment halfword.
 __asm__(".align 2, 0");
-#endif
-#ifndef __APPLE__
 void _08001626C(void *a, int b, int c) __attribute__((alias("Rec35_PlaceByTable")));
 void sub_08001626C(void *a, int b, int c) __attribute__((alias("Rec35_PlaceByTable")));
-#endif
 
 // ============================================================================
 // sub_0800162E0 (0x080162E0, 0xD4 B) — record-49 tail driver.
@@ -383,10 +345,8 @@ void Rec35_Record49Tail(void *rec) {
     sub_0800DBE8(r7 + 16);
     Rec35_Noop(r7);
 }
-#ifndef __APPLE__
 void _0800162E0(void *a) __attribute__((alias("Rec35_Record49Tail")));
 void sub_0800162E0(void *a) __attribute__((alias("Rec35_Record49Tail")));
-#endif
 
 // ============================================================================
 // sub_0800163B4 (0x080163B4, 0x4 B) — `bx lr` no-op stub.
@@ -397,7 +357,5 @@ void Rec35_Noop(void *rec) { (void)rec; }
 // (0x46c0), so the file-scope `.align 2, 0` below pads with the ROM's zeros
 // instead. No instruction changes.
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _0800163B4(void *a) __attribute__((alias("Rec35_Noop")));
 void sub_0800163B4(void *a) __attribute__((alias("Rec35_Noop")));
-#endif

@@ -26,7 +26,6 @@ extern void  _080026868(u8 *a, int b);       // 0x08026868 palette upload
 // 0x08018E28 — initialize one racer record from the live race context. The
 // index is sign-extended from its low halfword; the record stride is 284 bytes.
 void Race_Setup_18E28(u32 index_arg) {
-#ifndef __APPLE__
     register s32 index __asm__("r0") = (s16)index_arg;
     register s32 scaled __asm__("r1");
     register volatile u8 *record __asm__("r4");
@@ -36,17 +35,6 @@ void Race_Setup_18E28(u32 index_arg) {
     register s32 field __asm__("r0");
     register u32 zero __asm__("r3");
     register volatile s32 *score __asm__("r1");
-#else
-    s32 index = (s16)index_arg;
-    s32 scaled;
-    volatile u8 *record;
-    volatile u32 *inner;
-    volatile u32 *field_dest;
-    volatile u8 *volatile *context_cell;
-    s32 field;
-    u32 zero;
-    volatile s32 *score;
-#endif
     volatile u8 *context;
     volatile u8 *lookup;
     volatile s32 *random_dest;
@@ -56,33 +44,23 @@ void Race_Setup_18E28(u32 index_arg) {
     scaled <<= 2;
     record = (volatile u8 *)(uintptr_t)(0x03004E80u + scaled);
     field_dest = (volatile u32 *)(record + 224);
-#ifndef __APPLE__
     __asm__ volatile("" : "+r"(field_dest) : : "memory");
-#endif
     context_cell = (volatile u8 *volatile *)(uintptr_t)0x03004E20u;
     context = *context_cell;
     index <<= 1;
-#ifndef __APPLE__
     __asm__ volatile("" : "+r"(index) : : "memory");
-#endif
     lookup = context + 132;
     lookup += index;
     zero = 0;
-#ifndef __APPLE__
     __asm__ volatile("ldrsh %0, [%1, %2]"
                      : "=r"(field) : "r"(lookup), "r"(zero) : "memory");
-#else
-    field = *(volatile s16 *)lookup;
-#endif
     *field_dest = field;
     *(volatile u32 *)(record + 228) = 160 << 7;
     {
         u32 first = *(volatile u32 *)(record + 0);
         u32 second = *(volatile u32 *)(record + 4);
         inner = (volatile u32 *)(record + 200);
-#ifndef __APPLE__
         __asm__ volatile("" : "+r"(inner) : : "memory");
-#endif
         if (_080044C4(first, second, inner) == 0)
             return;
     }
@@ -92,18 +70,14 @@ void Race_Setup_18E28(u32 index_arg) {
     {
         s32 raw_random = _08002BE8();
         random_dest = (volatile s32 *)(record + 220);
-#ifndef __APPLE__
         __asm__ volatile("" : "+r"(random_dest) : : "memory");
-#endif
         s32 random = (s16)raw_random;
         *random_dest = random;
         _08002C48(random, *(volatile u16 *)((volatile u8 *)random_dest - 4));
     }
     {
         score = (volatile s32 *)(record + 208);
-#ifndef __APPLE__
         __asm__ volatile("" : "+r"(score) : : "memory");
-#endif
         s32 value = *score;
         if (value < 0) value += 15;
         *score = value >> 4;
@@ -116,20 +90,14 @@ void Race_Setup_18E28(u32 index_arg) {
         _080026550(source, position - origin, inner);
     }
 }
-#ifndef __APPLE__
 void _080018E28(u32 index) __attribute__((alias("Race_Setup_18E28")));
-#endif
 
 // 0x08019BF8 — configure three display halfwords and install the scanline
 // callback used by the adjacent VCOUNT handlers.
 void Race_Setup_19BF8(void) {
-#ifndef __APPLE__
     register volatile u16 *display __asm__("r1") =
         (volatile u16 *)(uintptr_t)0x04000008u;
     __asm__ volatile("" : "+r"(display) : : "memory");
-#else
-    volatile u16 *display = (volatile u16 *)(uintptr_t)0x04000008u;
-#endif
     *display = 0x1C4B;
     display += 2;
     *display = 0xE8C2;
@@ -137,28 +105,20 @@ void Race_Setup_19BF8(void) {
     *display = 0x1741;
     _080023AC(3, (void *)(uintptr_t)0x08019C35u);
 }
-#ifndef __APPLE__
 void _080019BF8(void) __attribute__((alias("Race_Setup_19BF8")));
-#endif
 
 // 0x08019C34 — on the second VCOUNT phase, configure the display scroll
 // registers from the active race context and install the next scanline handler.
 void Race_Setup_19C34(void) {
     volatile u8 *context;
     u32 position;
-#ifndef __APPLE__
     register volatile u16 *scroll __asm__("r2");
-#else
-    volatile u16 *scroll;
-#endif
     if (*(volatile u8 *)(uintptr_t)0x04000006u <= 159)
         return;
     *(volatile u16 *)(uintptr_t)0x04000000u = 0x1341;
     *(volatile u16 *)(uintptr_t)0x0400000Au = 0x5E49;
     scroll = (volatile u16 *)(uintptr_t)0x04000014u;
-#ifndef __APPLE__
     __asm__ volatile("" : "+r"(scroll) : : "memory");
-#endif
     context = *(volatile u8 *volatile *)(uintptr_t)0x03004E20u;
     position = *(volatile u32 *)(context + 8);
     *scroll = (u16)(position >> 2);
@@ -168,14 +128,11 @@ void Race_Setup_19C34(void) {
     *(volatile u16 *)(uintptr_t)0x04000012u = 0;
     _080023AC(3, (void *)(uintptr_t)0x08019C9Du);
 }
-#ifndef __APPLE__
 void _080019C34(void) __attribute__((alias("Race_Setup_19C34")));
-#endif
 
 // 0x08019CBC — compare VCOUNT with the signed threshold at 0x0300576A,
 // acknowledge the display interrupt, and install the following scanline hook.
 void _080019CBC(void) {
-#ifndef __APPLE__
     register volatile u8 *vcount_cell __asm__("r0") =
         (volatile u8 *)(uintptr_t)0x04000006u;
     register s32 limit __asm__("r1") = 0x03005760;
@@ -187,10 +144,6 @@ void _080019CBC(void) {
     __asm__ volatile("ldrsh %0, [%0, %1]"
                      : "+r"(limit) : "r"(offset) : "memory");
     vcount = *vcount_cell;
-#else
-    u8 vcount = *(volatile u8 *)(uintptr_t)0x04000006u;
-    s32 limit = *(volatile s16 *)(uintptr_t)0x0300576Au;
-#endif
     if (vcount < limit)
         return;
     *(volatile u16 *)(uintptr_t)0x04000000u = 0x1641;
@@ -199,7 +152,6 @@ void _080019CBC(void) {
 
 // 0x08019DDC — second VCOUNT phase with its own display value and hook.
 void _080019DDC(void) {
-#ifndef __APPLE__
     register volatile u8 *vcount_cell __asm__("r0") =
         (volatile u8 *)(uintptr_t)0x04000006u;
     register s32 limit __asm__("r1") = 0x03005760;
@@ -211,10 +163,6 @@ void _080019DDC(void) {
     __asm__ volatile("ldrsh %0, [%0, %1]"
                      : "+r"(limit) : "r"(offset) : "memory");
     vcount = *vcount_cell;
-#else
-    u8 vcount = *(volatile u8 *)(uintptr_t)0x04000006u;
-    s32 limit = *(volatile s16 *)(uintptr_t)0x0300576Au;
-#endif
     if (vcount < limit)
         return;
     *(volatile u16 *)(uintptr_t)0x04000000u = 0x1741;
@@ -223,16 +171,10 @@ void _080019DDC(void) {
 
 // 0x08019D30 — install the next VCOUNT callback and select its display mode.
 void _080019D30(void) {
-#ifndef __APPLE__
     register volatile u16 *display __asm__("r1");
-#else
-    volatile u16 *display;
-#endif
     _080023AC(3, (void *)(uintptr_t)0x08019D6Du);
     display = (volatile u16 *)(uintptr_t)0x04000008u;
-#ifndef __APPLE__
     __asm__ volatile("" : "+r"(display) : : "memory");
-#endif
     *display = 0x1C49;
     display += 2;
     *display = 0xE8C3;
@@ -242,16 +184,10 @@ void _080019D30(void) {
 
 // 0x08019E80 — alternate display mode before returning to the racing hook.
 void _080019E80(void) {
-#ifndef __APPLE__
     register volatile u16 *display __asm__("r1");
-#else
-    volatile u16 *display;
-#endif
     _080023AC(3, (void *)(uintptr_t)0x08019EC9u);
     display = (volatile u16 *)(uintptr_t)0x04000008u;
-#ifndef __APPLE__
     __asm__ volatile("" : "+r"(display) : : "memory");
-#endif
     *display = 0x1CC8;
     display++;
     *display = 0x1E49;
@@ -277,17 +213,10 @@ void _080019CF4(void) {
 // 0x08019E14 — reset the display state and derive both scroll coordinates
 // from the packed mode word at 0x0300285C.
 void _080019E14(void) {
-#ifndef __APPLE__
     register volatile u16 *scroll __asm__("r3");
     register volatile u8 *mode_base __asm__("r0");
     register u32 offset __asm__("r1");
     register u32 packed __asm__("r2");
-#else
-    volatile u16 *scroll;
-    volatile u8 *mode_base;
-    u32 offset;
-    u32 packed;
-#endif
     u32 component_a;
     u32 component_b;
     if (*(volatile u8 *)(uintptr_t)0x04000006u <= 79)
@@ -298,11 +227,9 @@ void _080019E14(void) {
     scroll = (volatile u16 *)(uintptr_t)0x04000010u;
     mode_base = (volatile u8 *)(uintptr_t)0x03001780u;
     offset = 0x10DC;
-#ifndef __APPLE__
     __asm__ volatile("" : "+r"(scroll) : : "memory");
     __asm__ volatile("" : "+r"(mode_base) : : "memory");
     __asm__ volatile("" : "+r"(offset) : : "memory");
-#endif
     mode_base += offset;
     packed = *(volatile u32 *)mode_base;
     component_a = packed & 31;
@@ -317,13 +244,8 @@ void _080019E14(void) {
 
 // 0x08019F1C — set the blend registers from the current race phase.
 void _080019F1C(void) {
-#ifndef __APPLE__
     register volatile u16 *blend __asm__("r3");
     register u16 phase __asm__("r2");
-#else
-    volatile u16 *blend;
-    u16 phase;
-#endif
     volatile u8 *context;
     if (*(volatile u8 *)(uintptr_t)0x04000006u > 56)
         return;
@@ -372,9 +294,7 @@ void Race_Setup_18ADC(void) {
     // transcribed — recorded as a body residual.
 }
 
-#ifndef __APPLE__
 void _080018ADC(void) __attribute__((alias("Race_Setup_18ADC")));
-#endif
 
 // _0800191BC: s16[racectx+90] setter gated by table 0x080CBB30 (u32 entries)
 // Pools: _0800191D8=0x03004E20, _0800191FC=0x080CBB30; widths: ldrsh/strh, flag table compare
@@ -409,9 +329,7 @@ void Race_Setup_191BC(u32 a0) {
     if (tv >= tc) return;
     *p90 = (s16)v16;
 }
-#ifndef __APPLE__
 void _0800191BC(u32 a0) __attribute__((alias("Race_Setup_191BC")));
-#endif
 
 // _0800195B8: flag 0x40000 (128<<11) at racectx+92, increment or zero, threshold 19 -> _0801B498(3)
 extern void sub_08001B498(int sel); // 0x0801B498 closure entry
@@ -428,9 +346,7 @@ void Race_Setup_195B8(void) {
         *(volatile u16 *)(racectx + 92) = (u16)t;
     }
 }
-#ifndef __APPLE__
 void _0800195B8(void) __attribute__((alias("Race_Setup_195B8")));
-#endif
 
 // _0800195F8: dual-flag handler at racectx+94 (flags 0x2000 and 0x40000)
 // Pools: _080019620/_0800196D8=0x03004E20, widths: ldrh/ldrsh/strh, flag tests
@@ -470,17 +386,13 @@ void Race_Setup_195F8(void) {
     }
     // Scaled _0802DE04 / _08008284 path is open-bus data (>64KB racectx), left TODO
 }
-#ifndef __APPLE__
 void _0800195F8(void) __attribute__((alias("Race_Setup_195F8")));
-#endif
 
 // _080019860: direct wrapper for _08027FCC (no pool, bl only)
 extern void _080027FCC(void);   // slice-closure spelling; body + `Sub_` alias in src/garage.c
 void Race_Setup_19860(void) { _080027FCC(); }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _080019860(void) __attribute__((alias("Race_Setup_19860")));
-#endif
 
 // _080018EC0: zero-loop at 0x03000598, WA+0x10CA s16 count, 0x03005E48 and racectx+70
 // Pools: 0x03001780+0x10CA s16, 0x03005E48, 0x03004E20+70, 0x03000598 array, 0x00FFFFFF
@@ -496,9 +408,7 @@ void Race_Setup_18EC0(void) {
     volatile u8 *racectx = *(volatile u8 *volatile *)0x03004E20;
     *(volatile u16 *)(racectx + 70) = 1; // movs #1 strh
 }
-#ifndef __APPLE__
 void _080018EC0(void) __attribute__((alias("Race_Setup_18EC0")));
-#endif
 
 // _080019200: pure compare of two racer structs via +28 pointer and +18/+20/+22 s16 fields.
 // d = (s16)[a->28 + 18] - (s16)[b->28 + 18]; d>0 -> 1, d<0 -> 0;
@@ -542,9 +452,7 @@ int Race_Setup_19200(void *a, void *b) {
     if (res > 0) return 0;
     return 1;
 }
-#ifndef __APPLE__
 int _080019200(void *a, void *b) __attribute__((alias("Race_Setup_19200")));
-#endif
 
 // _080019250: delta-angle helper with WA+0x1111 s8 flag and racectx+130 byte, calls 0x0802A8F0
 // Pools: 0x03001780+0x1111, 0x03004E20+130, helper 0x0802A8F0 (s16*8 clamp)
@@ -575,9 +483,7 @@ int Race_Setup_19250(void *a, void *b) {
     // For bounded pure, return 0 where tie and flag 0
     return 0;
 }
-#ifndef __APPLE__
 int _080019250(void *a, void *b) __attribute__((alias("Race_Setup_19250")));
-#endif
 
 // _080018F14: sorted insert at 0x03000598 by word at +204 vs 0x03005E48 head
 // Pools: 0x03005E48 Vu32 gv, 0x03000598 Vu32 arr[3], widths ldr/str Vu32, ble/bge signed
@@ -651,26 +557,20 @@ tail:
         }
     }
 }
-#ifndef __APPLE__
 __asm__(".pushsection .text.Race_Setup_18F14,\"ax\",%progbits\n\t.short 0\n\t.popsection");
-#endif
-#ifndef __APPLE__
 void _080018F14(void *a) __attribute__((alias("Race_Setup_18F14")));
 void sub_080018F14(void *a) __attribute__((alias("Race_Setup_18F14")));
-#endif
 
 // All seven formerly unowned typed entries in race_setup_18adc.s now have
 // substantive C bodies above: 0x080019CBC, 0x080019CF4, 0x080019D30,
 // 0x080019DDC, 0x080019E14, 0x080019E80, and 0x080019F1C.
 
 // ROM entry alias.
-#ifndef __APPLE__
 void RaceScene_Leaf_5B8(void) __attribute__((alias("Race_Setup_195B8")));
 void RaceScene_Leaf_6E8(void) __attribute__((alias("Race_Setup_195F8")));
 void _08018ADC(void) __attribute__((alias("Race_Setup_18ADC")));
 void _080191BC(u32 a0) __attribute__((alias("Race_Setup_191BC")));
 int _08019200(void *a, void *b) __attribute__((alias("Race_Setup_19200")));
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x0802A8F0 — 4B draft/proximity trim setter (asm/garage_26f50.s, tucked
@@ -680,8 +580,6 @@ int RaceDraftTrim_2A8F0(void *rec, int v) {
     *(volatile u16 *)((volatile u8 *)rec + 148) = (u16)v;
     return 0;
 }
-#ifndef __APPLE__
 int _0802A8F0(void *a, int v) __attribute__((alias("RaceDraftTrim_2A8F0")));
 int sub_0802A8F0(void *a, int v) __attribute__((alias("RaceDraftTrim_2A8F0")));
 int Sub_0802A8F0(void *a, int v) __attribute__((alias("RaceDraftTrim_2A8F0")));
-#endif

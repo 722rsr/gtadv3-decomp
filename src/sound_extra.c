@@ -7,7 +7,6 @@
 // VMA refs per asm/sound_*.s + asm/sound_api.s.
 
 // 0x0802DE98 — 2-byte no-op leaf `mov pc, lr` (zero-divisor route; ROM returns
-#ifndef __APPLE__
 __attribute__((naked)) void SoundDivNoop_2DE98(void) {
     __asm__ volatile (
         "mov pc, lr\n"
@@ -18,9 +17,6 @@ void _0802DE98(void) __attribute__((alias("SoundDivNoop_2DE98")));
 void sub_0802DE98(void) __attribute__((alias("SoundDivNoop_2DE98")));
 void Sub_0802DE98(void) __attribute__((alias("SoundDivNoop_2DE98")));
 void _08002DE98(void) __attribute__((alias("SoundDivNoop_2DE98")));  // 9-digit corpus spelling
-#else
-void SoundDivNoop_2DE98(void) {}
-#endif
 
 // --- Signed EABI div (sound_aeabi_idiv.s 0x02DE04) ---
 // s32 __aeabi_idiv(s32 num, s32 den) — shift/subtract quotient core, handles sign via ip.
@@ -37,11 +33,9 @@ s32 SoundSignedDiv(s32 num, s32 den){
     s32 res = (s32)q;
     return neg ? -res : res;
 }
-#ifndef __APPLE__
 s32 _0802DE04(s32 a, s32 b) __attribute__((alias("SoundSignedDiv")));
 s32 sub_0802DE04(s32 a, s32 b) __attribute__((alias("SoundSignedDiv")));
 s32 __aeabi_idiv(s32 a, s32 b) __attribute__((alias("SoundSignedDiv")));
-#endif
 
 
 // --- Stream allocation helper (sound_alloc.s 0x02CBBC) ---
@@ -101,10 +95,8 @@ void SoundStreamAlloc(void *state, void *chArray, u32 count){
     root[0] = SOUND_MAGIC;
     ((volatile u32 *)state)[13] = SOUND_MAGIC;               // +52
 }
-#ifndef __APPLE__
 void _0802CBBC(void *a, void *b, u32 c) __attribute__((alias("SoundStreamAlloc")));
 void sub_0802CBBC(void *a, void *b, u32 c) __attribute__((alias("SoundStreamAlloc")));
-#endif
 
 // --- Bank claim layer (sound_bank.s 0x02B488) —
 // Only the vol/pan helper part is substantiated here; full claim arbitration is TODO beyond gate==3.
@@ -119,16 +111,13 @@ void SoundBankVolPan(u32 id, u32 vol, u32 mode){
     (void)scaled; (void)pan;
     // walkers would be _0802B718/_0802B74C via 0x03001764 +0x0D — not inventing descriptor table here
 }
-#ifndef __APPLE__
 void _0802B488(u32 a, u32 b, u32 c) __attribute__((alias("SoundBankVolPan")));
 void sub_0802B488(u32 a, u32 b, u32 c) __attribute__((alias("SoundBankVolPan")));
-#endif
 
 // --- Channel cluster fetch primitives (sound_channel_cluster.s) —
 // Provide minimal fetch byte / BE32 / loop-stack stubs preserving u8/u32 widths.
 // Full 328-line walker is TODO; these primitives are leaves with clear widths.
 u8 SoundFetchByte(void *stream){ return *(volatile u8*)((uintptr_t)stream); }
-#ifndef __APPLE__
 // BCE8 is a two-byte entry prefix. It loads the cursor and falls through into
 // BCEA's shared fetch tail, which advances the cursor and returns via BCCE.
 __attribute__((naked)) u32 SoundBCE8_CursorFetch(void *dummy, void *seq) {
@@ -140,13 +129,6 @@ __attribute__((naked)) u32 SoundBCE8_CursorFetch(void *dummy, void *seq) {
 }
 u32 _0802BCE8(void *dummy, void *s) __attribute__((alias("SoundBCE8_CursorFetch")));
 u32 sub_0802BCE8(void *dummy, void *s) __attribute__((alias("SoundBCE8_CursorFetch")));
-#else
-u32 SoundBCE8_CursorFetch(void *dummy, void *seq) {
-    (void)dummy;
-    (void)seq;
-    return 0;
-}
-#endif
 
 
 // --- Premix leaves (sound_premix.s 0x02B7B4–0x02B888) — accessor/pitch stubs ---
@@ -156,9 +138,7 @@ u32 SoundBCE8_CursorFetch(void *dummy, void *seq) {
 // reading as a padding miss when it is a semantic one: the two differ in what
 // the caller receives, not only in the instruction.
 void *SoundPremixGetPtr(void *obj){ return *(void **)((uintptr_t)obj+8); }
-#ifndef __APPLE__
 void *_0802B7B4(void *o) __attribute__((alias("SoundPremixGetPtr")));
-#endif
 void *SoundPremixPitch(void *obj, u32 *freq){
     volatile u32 *p = *(volatile u32 **)((uintptr_t)obj+8);
     p[0] = (freq[0] << 13) + 0x20000;
@@ -166,33 +146,21 @@ void *SoundPremixPitch(void *obj, u32 *freq){
     p[3] = freq[0];
     return obj;
 }
-#ifndef __APPLE__
 void *_0802B7B8(void *o, u32 *f) __attribute__((alias("SoundPremixPitch")));
-#endif
 
 // --- Mixer tail (sound_mixer_tail.s) — termination stub, pure Thumb ---
 void SoundMixerTail(void *state){ (void)state; }
-#ifndef __APPLE__
 void _0802BC4C_tail(void *s) __attribute__((alias("SoundMixerTail"))); // distinct from _0802BC4C leaf
-#endif
 
 
 // ROM entry alias.
-#ifndef __APPLE__
 void _08002B488(u32 id, u32 vol, u32 mode) __attribute__((alias("SoundBankVolPan")));
-#endif
 
 // ROM entry alias.
-#ifndef __APPLE__
 void * _08002B7B4(void *obj) __attribute__((alias("SoundPremixGetPtr")));
-#endif
 
 // ROM entry alias.
-#ifndef __APPLE__
 void *_08002B7B8(void *obj, u32 *freq) __attribute__((alias("SoundPremixPitch")));
-#endif
 
 // ROM entry alias.
-#ifndef __APPLE__
 s32 _08002DE04(s32 num, s32 den) __attribute__((alias("SoundSignedDiv")));
-#endif

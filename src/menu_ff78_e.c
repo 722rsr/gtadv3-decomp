@@ -25,11 +25,7 @@
 #include "gba/types.h"
 #include "gtadv/ram_blocks.h"
 
-#ifdef __APPLE__
-#define HOST_STUB(sig) __attribute__((weak)) sig
-#else
 #define HOST_STUB(sig) extern sig
-#endif
 
 // ---- 7 menu-item record builder bodies ------------------------------------
 // All call: 4-5 of the fillers (sub_080011784/0E10/0CFC/0B48/0FF0/0CBC/0D48)
@@ -63,11 +59,7 @@ HOST_STUB(void *sub_08004B68(void));
 // VMA-shaped spelling the assembly closure defines (a zero-byte `.thumb_set`
 // alias of the real body, so no bytes change); the host build has no alias
 // attribute, so it calls the friendly weak stub below instead.
-#ifdef __APPLE__
-__attribute__((weak)) void Sub_080012574(volatile void *a) { (void)a; }
-#else
 extern void _080012574(volatile void *a);
-#endif
 
 // ---- sub_080012034 — menu-item record builder A ---------------------------
 // ROM (asm/menu_ff78.s:4158-4202), in order:
@@ -117,16 +109,10 @@ void MenuFF78_12034(void *rec_) {
     _080011CBC(rec_);
     _0800D97C((void *)(uintptr_t)((volatile u8 *)rec_ + 224), 15);
     _0800DBE8((void *)(uintptr_t)((volatile u8 *)rec_ + 64));
-#ifndef __APPLE__
     _080012574((volatile void *)rec_);
-#else
-    Sub_080012574((volatile void *)rec_);
-#endif
 }
-#ifndef __APPLE__
 void _080012034(void *a) __attribute__((alias("MenuFF78_12034")));
 void sub_080012034(void *a) __attribute__((alias("MenuFF78_12034")));
-#endif
 
 // ---- sub_0800120A8 — menu-item record builder B ---------------------------
 // sub_080011784/0E10/0D48/0B48/0FF0 fillers; then 3 sub_0800F778 calls with
@@ -150,10 +136,8 @@ void MenuFF78_120A8(void *rec_) {
     (void)0;                   // remaining tail stub calls
     (void)rec_;
 }
-#ifndef __APPLE__
 void _0800120A8(void *a) __attribute__((alias("MenuFF78_120A8")));
 void sub_0800120A8(void *a) __attribute__((alias("MenuFF78_120A8")));
-#endif
 
 // ============================================================================
 // Phase dispatchers (12-entry jump tables; `subs r0,#1; cmp #11`).
@@ -184,10 +168,8 @@ void MenuFF78_12578(volatile u8 *rec) {
         *(volatile u32 *)(rec + 0x1CC) = 0;
     }
 }
-#ifndef __APPLE__
 void _080012578(volatile u8 *a) __attribute__((alias("MenuFF78_12578")));
 void sub_080012578(volatile u8 *a) __attribute__((alias("MenuFF78_12578")));
-#endif
 
 // sub_0800125C4 — 12-way phase dispatcher (offsets 0x80 to 0x8B0 in table).
 // We model it as a no-op since the cases are leaf stubs that don't run in
@@ -195,19 +177,15 @@ void sub_080012578(volatile u8 *a) __attribute__((alias("MenuFF78_12578")));
 void MenuFF78_125C4(void *rec_, int a1, int a2, int a3) {
     (void)rec_; (void)a1; (void)a2; (void)a3;
 }
-#ifndef __APPLE__
 void _0800125C4(void *a, int b, int c, int d) __attribute__((alias("MenuFF78_125C4")));
 void sub_0800125C4(void *a, int b, int c, int d) __attribute__((alias("MenuFF78_125C4")));
-#endif
 
 // sub_080012DA0 — same pattern: 12-way phase dispatcher.
 void MenuFF78_12DA0(void *rec_, int a1, int a2, int a3) {
     (void)rec_; (void)a1; (void)a2; (void)a3;
 }
-#ifndef __APPLE__
 void _080012DA0(void *a, int b, int c, int d) __attribute__((alias("MenuFF78_12DA0")));
 void sub_080012DA0(void *a, int b, int c, int d) __attribute__((alias("MenuFF78_12DA0")));
-#endif
 
 // ============================================================================
 // sub_080012F18 — strh leaf with sentinel walk.
@@ -234,11 +212,9 @@ void MenuFF78_12F18(void *rec_) {
     *(s16 *)(rec + 184) = (s16)(r5 - 1);
     *(u32 *)(rec + 188 + r5 * 4) = 0xFFFFFFFFu;
 }
-#ifndef __APPLE__
 void _080012F18(void *a) __attribute__((alias("MenuFF78_12F18")));
 void Sub_080012F18(void *a) __attribute__((alias("MenuFF78_12F18")));
 void sub_080012F18(void *a) __attribute__((alias("MenuFF78_12F18")));
-#endif
 
 // ============================================================================
 // sub_0800127F4 — flag setter based on car id + WA gate.
@@ -251,12 +227,8 @@ void sub_080012F18(void *a) __attribute__((alias("MenuFF78_12F18")));
 extern void *_08004B68(void);
 void MenuFF78_127F4(int unused_, void *rec_) {
     (void)unused_;
-#ifndef __APPLE__
     extern u8 MenuFF78E_Wa[] __asm__("MenuFF78E_Wa");
     uintptr_t base = (uintptr_t)MenuFF78E_Wa;
-#else
-    uintptr_t base = (uintptr_t)(0x03001780u);
-#endif
     if (*(volatile u16 *)(uintptr_t)(base + 0xFBCu) == 3) {
         *(volatile u8 *)(uintptr_t)((volatile u8 *)rec_ + 88) = 0;
     }
@@ -294,10 +266,8 @@ set6:
 store:
     return;
 }
-#ifndef __APPLE__
 void _0800127F4(int a, void *b) __attribute__((alias("MenuFF78_127F4")));
 void sub_0800127F4(int a, void *b) __attribute__((alias("MenuFF78_127F4")));
-#endif
 
 // ============================================================================
 // sub_080012E9C — small leaf: if u32[rec+144]==0, sub_0800D77C(rec+156,0,88);
@@ -328,11 +298,9 @@ void MenuFF78_12E9C(void *rec_) {
     }
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _080012E9C(void *a) __attribute__((alias("MenuFF78_12E9C")));
 void Sub_080012E9C(void *a) __attribute__((alias("MenuFF78_12E9C")));
 void sub_080012E9C(void *a) __attribute__((alias("MenuFF78_12E9C")));
-#endif
 
 // ============================================================================
 // sub_080012ED0 — car-id -> flag mapper (two-way: 35 -> 5, else -> 6).
@@ -346,13 +314,9 @@ void sub_080012E9C(void *a) __attribute__((alias("MenuFF78_12E9C")));
 // ============================================================================
 void MenuFF78_12ED0(int unused_, void *rec_) {
     (void)unused_;
-#ifndef __APPLE__
     extern u8 MenuFF78E_Wa[] __asm__("MenuFF78E_Wa");
     __asm__(".globl MenuFF78E_Wa\nMenuFF78E_Wa = 0x03001780\n");
     uintptr_t base = (uintptr_t)MenuFF78E_Wa;
-#else
-    uintptr_t base = (uintptr_t)(0x03001780u);
-#endif
     if (*(volatile u16 *)(uintptr_t)(base + 0xFBCu) == 3) {
         *(volatile u8 *)(uintptr_t)((volatile u8 *)rec_ + 88) = 0;
     }
@@ -367,11 +331,9 @@ void MenuFF78_12ED0(int unused_, void *rec_) {
 // after `bx r0`; agbcc emits a one-instruction `nop` (0xC046) there. The
 // explicit `0` fill selects the ROM's bytes.
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _080012ED0(int a, void *b) __attribute__((alias("MenuFF78_12ED0")));
 void Sub_080012ED0(int a, void *b) __attribute__((alias("MenuFF78_12ED0")));
 void sub_080012ED0(int a, void *b) __attribute__((alias("MenuFF78_12ED0")));
-#endif
 
 // ============================================================================
 // sub_080012F6C — small leaf: u32[rec+188] = s16[WA+0xFC2]; u32[rec+192] = -1;
@@ -380,19 +342,11 @@ void sub_080012ED0(int a, void *b) __attribute__((alias("MenuFF78_12ED0")));
 void MenuFF78_12F6C(void *rec_) {
     volatile u8 *rec = (volatile u8 *)rec_;
     u32 *q;
-#ifndef __APPLE__
     extern u8 MenuFF78E_Wa[] __asm__("MenuFF78E_Wa");
     __asm__(".globl MenuFF78E_Wa\nMenuFF78E_Wa = 0x03001780\n");
     uintptr_t base = (uintptr_t)MenuFF78E_Wa;
-#else
-    uintptr_t base = (uintptr_t)(0x03001780u);
-#endif
     q = (u32 *)(uintptr_t)(rec + 188);
-#ifndef __APPLE__
     register u32 idx __asm__("r3") = 0;
-#else
-    u32 idx = 0;
-#endif
     s16 v = ((s16 *)(uintptr_t)(base + 0xFC2u))[idx];
     *(volatile u32 *)q = (u32)(s32)v;
     {
@@ -401,10 +355,8 @@ void MenuFF78_12F6C(void *rec_) {
         *(volatile u16 *)(uintptr_t)((u8 *)q2 - 8) = 0;
     }
 }
-#ifndef __APPLE__
 void _080012F6C(void *a) __attribute__((alias("MenuFF78_12F6C")));
 void sub_080012F6C(void *a) __attribute__((alias("MenuFF78_12F6C")));
-#endif
 
 // ============================================================================
 // sub_080012F98 — screen init: sub_080012F6C + u16[rec+174]=u16[WA+0xFC2];
@@ -468,8 +420,6 @@ void MenuFF78_12F98(void *rec_) {
     *(volatile u16 *)(uintptr_t)(rec + 186) = 0;
     _0800D77C((void *)(uintptr_t)(rec + 156), 0, -32);
 }
-#ifndef __APPLE__
 void _080012F98(void *a) __attribute__((alias("MenuFF78_12F98")));
 void Sub_080012F98(void *a) __attribute__((alias("MenuFF78_12F98")));
 void sub_080012F98(void *a) __attribute__((alias("MenuFF78_12F98")));
-#endif

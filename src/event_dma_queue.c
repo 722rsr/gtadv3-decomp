@@ -68,10 +68,8 @@ int _08004F24(void) {
     int one = 1;
     return one & p[4];
 }
-#ifndef __APPLE__
 int Event_ListEnabled(void) __attribute__((alias("_08004F24")));
 int sub_08004F24(void) __attribute__((alias("_08004F24")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_08004F34 (0x08004F34, 0x30 B) — broadcast 0: walk first..; for each node
@@ -91,10 +89,8 @@ void Event_Broadcast0(void *arg) {
         n = *(volatile u8 * volatile *)(n + 4);
     }
 }
-#ifndef __APPLE__
 void _08004F34(void *a) __attribute__((alias("Event_Broadcast0")));
 void sub_08004F34(void *a) __attribute__((alias("Event_Broadcast0")));
-#endif
 
 // ----------------------------------------------------------------------------
 // _08004F68 (0x48 B) — broadcast 2: cb2 = obj->field4, called with
@@ -109,11 +105,9 @@ void Event_Broadcast2(void *arg, u16 a, u16 b) {
         n = *(volatile u8 * volatile *)(n + 4);
     }
 }
-#ifndef __APPLE__
 void _08004F6C(void *a, u16 b, u16 c) __attribute__((alias("Event_Broadcast2")));
 void sub_08004F6C(void *a, u16 b, u16 c) __attribute__((alias("Event_Broadcast2")));
 void _08004F68(void *a, u16 b, u16 c) __attribute__((alias("Event_Broadcast2")));
-#endif
 
 // ----------------------------------------------------------------------------
 // _08004FB0 (0x34 B) — broadcast 3: cb3 = obj->field8, (arg, node) via
@@ -128,11 +122,9 @@ void Event_Broadcast3(void *arg) {
         n = *(volatile u8 * volatile *)(n + 4);
     }
 }
-#ifndef __APPLE__
 void _08004FA4(void *a) __attribute__((alias("Event_Broadcast3")));
 void sub_08004FA4(void *a) __attribute__((alias("Event_Broadcast3")));
 void _08004FB0(void *a) __attribute__((alias("Event_Broadcast3")));
-#endif
 
 // ----------------------------------------------------------------------------
 // _08004FE4 (0x34 B) — broadcast 4: cb4 = obj->field12.
@@ -146,20 +138,16 @@ void Event_Broadcast4(void *arg) {
         n = *(volatile u8 * volatile *)(n + 4);
     }
 }
-#ifndef __APPLE__
 void _08004FEC(void *a) __attribute__((alias("Event_Broadcast4")));
 void sub_08004FEC(void *a) __attribute__((alias("Event_Broadcast4")));
 void _08004FE4(void *a) __attribute__((alias("Event_Broadcast4")));
-#endif
 
 // 0x08005018 — ROM's standalone return leaf, `bx lr; movs r0,r0`.
 void EventQueueReturn_05018(void) __attribute__((naked));
 void EventQueueReturn_05018(void) {
     __asm__ volatile("bx lr\n\t.hword 0x0000");
 }
-#ifndef __APPLE__
 void _08005018(void) __attribute__((alias("EventQueueReturn_05018")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_0800503C (0x0800503C, 0x20 B) — append node to the event list:
@@ -179,10 +167,8 @@ void Event_ListAppend(void *node, u32 obj) {
     }
     head[1] = (u32)(uintptr_t)n;
 }
-#ifndef __APPLE__
 void _0800503C(void *a, u32 b) __attribute__((alias("Event_ListAppend")));
 void sub_0800503C(void *a, u32 b) __attribute__((alias("Event_ListAppend")));
-#endif
 
 // 0x0800505C — head->flags |= 1.
 void Event_ListEnable(void) {
@@ -195,10 +181,8 @@ void Event_ListEnable(void) {
     flags |= *(volatile u16 *)(base + 8);
     *(volatile u16 *)(base + 8) = flags;
 }
-#ifndef __APPLE__
 void _0800505C(void) __attribute__((alias("Event_ListEnable")));
 void sub_0800505C(void) __attribute__((alias("Event_ListEnable")));
-#endif
 
 // 0x0800506C — head->flags &= 0xFFFE.
 void Event_ListDisable(void) {
@@ -211,10 +195,8 @@ void Event_ListDisable(void) {
     flags &= *(volatile u16 *)(base + 8);
     *(volatile u16 *)(base + 8) = flags;
 }
-#ifndef __APPLE__
 void _0800506C(void) __attribute__((alias("Event_ListDisable")));
 void sub_0800506C(void) __attribute__((alias("Event_ListDisable")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_08005080 (0x08005080, 0x24 B) — arena node pair (asm/code_4e6c.s tail,
@@ -231,10 +213,8 @@ void *NodePair_05080(void *arena, const void *src) {
     return (void *)(uintptr_t)n;
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void *_08005080(void *a, const void *b) __attribute__((alias("NodePair_05080")));
 void *sub_08005080(void *a, const void *b) __attribute__((alias("NodePair_05080")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_080050A4 (0x080050A4, 0x14 B) — OBJ attr write:
@@ -269,10 +249,8 @@ void OAMSlotAttrSet(int slot, u32 v) {
     idx += (int)(uintptr_t)c;
     *(volatile u16 *)(uintptr_t)idx = v;
 }
-#ifndef __APPLE__
 void _080050A4(int a, u32 b) __attribute__((alias("OAMSlotAttrSet")));
 void sub_080050A4(int a, u32 b) __attribute__((alias("OAMSlotAttrSet")));
-#endif
 
 // sub_080050B4 (0x080050B4, 12 B) — tail wrapper of 0x080050A4: forwards both
 // arguments and returns nothing. Declared void on purpose — the ROM epilogue
@@ -283,10 +261,8 @@ void OAMSlotAttrSetWrap(int slot, u32 v) { OAMSlotAttrSet(slot, v); }
 // closes a `-ffunction-sections` Thumb section with `46c0` instead, so restate
 // the alignment with an explicit zero fill while still inside this section.
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _080050B4(int a, u32 b) __attribute__((alias("OAMSlotAttrSetWrap")));
 void sub_080050B4(int a, u32 b) __attribute__((alias("OAMSlotAttrSetWrap")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_080050C0 (0x080050C0, 16 B of its own) — param word write:
@@ -318,10 +294,8 @@ void OAMSlotParamSet(int slot, u32 v) {
     idx += (int)(uintptr_t)c;
     *(volatile u32 *)(uintptr_t)idx = v;
 }
-#ifndef __APPLE__
 void _080050C0(int a, u32 b) __attribute__((alias("OAMSlotParamSet")));
 void sub_080050C0(int a, u32 b) __attribute__((alias("OAMSlotParamSet")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_080050E4 (0x080050E4, 0x1A B) — OBJ attr add: old = u16[+84+slot*2];
@@ -332,10 +306,8 @@ u16 OAMSlotAttrAdd(int slot, u16 add) {
     *p = (u16)(old + add);
     return old;
 }
-#ifndef __APPLE__
 u16 _080050E4(int a, u16 b) __attribute__((alias("OAMSlotAttrAdd")));
 u16 sub_080050E4(int a, u16 b) __attribute__((alias("OAMSlotAttrAdd")));
-#endif
 
 void BG2Matrix_Update(const volatile u8 *rec, u32 mode) {
     u8 tmpl12[12], tmpl8A[8], tmpl8B[8], tmpl8C[8];
@@ -378,10 +350,8 @@ void BG2Matrix_Update(const volatile u8 *rec, u32 mode) {
     }
     RuntimeMemcpy((void *)SLOT_BASE, (const void *)rec, 68);
 }
-#ifndef __APPLE__
 void _080050E8(const volatile u8 *a, u32 b) __attribute__((alias("BG2Matrix_Update")));
 void sub_080050E8(const volatile u8 *a, u32 b) __attribute__((alias("BG2Matrix_Update")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_0800529C (0x0800529C, 0x64 B) — per-row DMA3 tile copy:
@@ -426,10 +396,8 @@ void DMA3_Tiles(int slot, u32 src, int x, int y, int width, int count) {
         } while (--remaining != 0);
     }
 }
-#ifndef __APPLE__
 void _0800529C(int a, u32 b, int c, int d, int e, int f) __attribute__((alias("DMA3_Tiles")));
 void sub_0800529C(int a, u32 b, int c, int d, int e, int f) __attribute__((alias("DMA3_Tiles")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_080052F0 (0x080052F0, 0xEC B) — tilemap recolor via EWRAM staging:
@@ -550,12 +518,10 @@ void DMA3_RecolorRows(int slot, u32 src, int x, int y, volatile int width, volat
         } while (--row != 0);
     }
 }
-#ifndef __APPLE__
 void _080052F0(int a, u32 b, int c, int d, int e, int f, int g, int h)
     __attribute__((alias("DMA3_RecolorRows")));
 void sub_080052F0(int a, u32 b, int c, int d, int e, int f, int g, int h)
     __attribute__((alias("DMA3_RecolorRows")));
-#endif
 
 // The two horizontal destinations are tracked as `colTerm` and `hi` and
 // advance by two for each cell. When x is inside the grid but y is beyond
@@ -663,12 +629,10 @@ void OAMGrid_Build(volatile int tableIdx, const volatile u8 *src,
         } while (row < temp7);
     }
 }
-#ifndef __APPLE__
 void _080053DC(volatile int a, const volatile u8 *b, int c, int d, int e, int f, int g, int h)
     __attribute__((alias("OAMGrid_Build")));
 void sub_080053DC(volatile int a, const volatile u8 *b, int c, int d, int e, int f, int g, int h)
     __attribute__((alias("OAMGrid_Build")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_080054A4 (0x080054A4, 0x5C B) — DMA3 row copy driven by the slot params:
@@ -721,10 +685,8 @@ void DMA3_ParamRows(int slot, int offset, int row, int bytes, int count) {
         } while (--remaining != 0);
     }
 }
-#ifndef __APPLE__
 void _080054A4(int a, int b, int c, int d, int e) __attribute__((alias("DMA3_ParamRows")));
 void sub_080054A4(int a, int b, int c, int d, int e) __attribute__((alias("DMA3_ParamRows")));
-#endif
 
 // ============================================================================
 // DMA3 queue family (record at 0x030002C0 / 0x03000260+96):
@@ -739,10 +701,8 @@ void ObjQueueReset(volatile u8 *rec, u32 buf, u32 v) {
     *(volatile u16 *)(rec + 0) = (u16)v;
     *(volatile u32 *)(rec + 12) = buf;
 }
-#ifndef __APPLE__
 void _08005500(volatile u8 *a, u32 b, u32 c) __attribute__((alias("ObjQueueReset")));
 void sub_08005500(volatile u8 *a, u32 b, u32 c) __attribute__((alias("ObjQueueReset")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_0800552C (0x0800552C, 0x2A B) — queue push: if (s16[rec+2] < s16[rec+0]):
@@ -770,10 +730,8 @@ void ObjQueuePush(volatile u8 *rec, u32 a, u32 b, u32 c) {
         *(volatile u16 *)(rec + 2) = (u16)(*(volatile u16 *)(rec + 2) + 1);
     }
 }
-#ifndef __APPLE__
 void _0800552C(volatile u8 *a, u32 b, u32 c, u32 d) __attribute__((alias("ObjQueuePush")));
 void sub_0800552C(volatile u8 *a, u32 b, u32 c, u32 d) __attribute__((alias("ObjQueuePush")));
-#endif
 
 void ObjQueueFlush(volatile u8 *rec) {
     register volatile u8 *q __asm__("r5");
@@ -816,10 +774,8 @@ reset:
     *(volatile u32 *)(q + 12) = *(volatile u32 *)(q + 8);
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _0800555C(volatile u8 *a) __attribute__((alias("ObjQueueFlush")));
 void sub_0800555C(volatile u8 *a) __attribute__((alias("ObjQueueFlush")));
-#endif
 
 // sub_080055CC (interior of 0x0800555C's file, label 0x080055CC, 0xC B) —
 // soft reset: u16[rec+2] = 0; rec->12 = rec->8.
@@ -828,10 +784,8 @@ void ObjQueueSoftReset(volatile u8 *rec) {
     *(volatile u32 *)(rec + 12) = *(volatile u32 *)(rec + 8);
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _080055CC(volatile u8 *a) __attribute__((alias("ObjQueueSoftReset")));
 void sub_080055CC(volatile u8 *a) __attribute__((alias("ObjQueueSoftReset")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_080055D8 (0x080055D8, 0x1A B) — queue init: ObjQueueReset(0x030002C0,
@@ -845,10 +799,8 @@ void ObjQueueInit(u32 buf, u32 cap) {
     ObjQueueReset((volatile u8 *)0x030002C0, buf, cap);
     _080056B8(0);
 }
-#ifndef __APPLE__
 void _080055D8(u32 a, u32 b) __attribute__((alias("ObjQueueInit")));
 void sub_080055D8(u32 a, u32 b) __attribute__((alias("ObjQueueInit")));
-#endif
 
 
 // sub_08005604 (0x08005604, 0xE B) — _0800555C(0x030002C0).
@@ -856,18 +808,12 @@ void sub_080055D8(u32 a, u32 b) __attribute__((alias("ObjQueueInit")));
 // `_0800555C:`; both are aliased onto ObjQueueFlush above (line 516). The
 // friendly name carries no VMA, so call the closure spelling instead.
 void ObjQueueFlushMain(void) {
-#ifndef __APPLE__
     // `_0800555C` is the alias defined above; it exists only in the ARM
     // build, so the host build calls the real body by its friendly name.
     _0800555C((volatile u8 *)0x030002C0);
-#else
-    ObjQueueFlush((volatile u8 *)0x030002C0);
-#endif
 }
-#ifndef __APPLE__
 void _08005604(void) __attribute__((alias("ObjQueueFlushMain")));
 void sub_08005604(void) __attribute__((alias("ObjQueueFlushMain")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_08005614 (0x08005614, 0x4C B) — DMA3 submit (src, dst, bytes):
@@ -898,10 +844,8 @@ void ObjQueueSubmit(u32 a, u32 b, int c) {
     }
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _08005614(u32 a, u32 b, int c) __attribute__((alias("ObjQueueSubmit")));
 void sub_08005614(u32 a, u32 b, int c) __attribute__((alias("ObjQueueSubmit")));
-#endif
 
 void ObjQueueSubmitZero(u32 a, int b) {
     u8 *c;
@@ -922,27 +866,19 @@ void ObjQueueSubmitZero(u32 a, int b) {
         ObjQueuePush((volatile u8 *)(t + 96), 0, a, b);
     }
 }
-#ifndef __APPLE__
 void _08005664(u32 a, int b) __attribute__((alias("ObjQueueSubmitZero")));
 void sub_08005664(u32 a, int b) __attribute__((alias("ObjQueueSubmitZero")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_080056B8 (0x080056B8, 0xE B) — gate: s16[0x03000260+100] = v.
 extern u8 SlotBase_56B8[];
 void ObjQueueGate(int v) {
-#ifndef __APPLE__
     __asm__(".globl SlotBase_56B8\nSlotBase_56B8 = 0x03000260\n");
     volatile u8 *base = SlotBase_56B8;
-#else
-    volatile u8 *base = (volatile u8 *)0x03000260u;
-#endif
     *(volatile u16 *)(base + 100) = v;
 }
-#ifndef __APPLE__
 void _080056B8(int v) __attribute__((alias("ObjQueueGate")));
 void sub_080056B8(int v) __attribute__((alias("ObjQueueGate")));
-#endif
 
 // ----------------------------------------------------------------------------
 // Unlabeled tail leaves (pool-adjacent, dispatched by BL within the family).
@@ -966,10 +902,8 @@ u32 SlotCharBase(int slot) {
     b = (u32)*(volatile u8 *)(uintptr_t)(idx + 5);
     return 0x06000000u + (b << 14);
 }
-#ifndef __APPLE__
 u32 _080056C4(int a) __attribute__((alias("SlotCharBase")));
 u32 sub_080056C4(int a) __attribute__((alias("SlotCharBase")));
-#endif
 
 // 0x080056DC — screen base of slot: 0x06000000 + (byte[slot*16+6] << 11).
 u32 SlotScreenBase(int slot) {
@@ -985,10 +919,8 @@ u32 SlotScreenBase(int slot) {
     b = (u32)*(volatile u8 *)(uintptr_t)(idx + 6);
     return 0x06000000u + (b << 11);
 }
-#ifndef __APPLE__
 u32 _080056DC(int a) __attribute__((alias("SlotScreenBase")));
 u32 sub_080056DC(int a) __attribute__((alias("SlotScreenBase")));
-#endif
 
 void ObjManagerInit(void) {
     u32 zero = 0;
@@ -1000,10 +932,8 @@ void ObjManagerInit(void) {
     p += 34;
     p[0] = 16;
 }
-#ifndef __APPLE__
 void _080056FC(void) __attribute__((alias("ObjManagerInit")));
 void sub_080056FC(void) __attribute__((alias("ObjManagerInit")));
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x080050D0 — 16B counter-add leaf ((consolidated/elsewhere); pool 0x03000260):
@@ -1039,20 +969,16 @@ int CounterAdd_050D0(int a, int b) {
 // 2-byte nop `46c0`. It lands after the body's `.size`, inside the body's own
 // section, so it is inert until the section needs the pad -- which it now does.
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 int _080050D0(int a, int b) __attribute__((alias("CounterAdd_050D0")));
 int sub_080050D0(int a, int b) __attribute__((alias("CounterAdd_050D0")));
-#endif
 
 void SlotLaneSet_56F4(u8 *base, int idx, int v) {
     base += idx * 16;
     base[4] = (u8)v;
 }
-#ifndef __APPLE__
 void _080056F4(void *a, int b, int c) __attribute__((alias("SlotLaneSet_56F4")));
 void sub_080056F4(void *a, int b, int c) __attribute__((alias("SlotLaneSet_56F4")));
 void Sub_080056F4(void *a, int b, int c) __attribute__((alias("SlotLaneSet_56F4")));
-#endif
 
 void ScenePost_2618(int a, int b) {
     volatile u16 *p = (volatile u16 *)0x04000000u;
@@ -1087,9 +1013,7 @@ void ScenePost_2618(int a, int b) {
     }
     *p = v;
 }
-#ifndef __APPLE__
 void _08002618(int a, int b) __attribute__((alias("ScenePost_2618")));
 void sub_08002618(int a, int b) __attribute__((alias("ScenePost_2618")));
 void Sub_08002618(int a, int b) __attribute__((alias("ScenePost_2618")));
 void ScenePost(int a, int b) __attribute__((alias("ScenePost_2618")));
-#endif

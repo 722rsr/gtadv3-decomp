@@ -20,16 +20,6 @@
 #include "gba/types.h"
 
 // ---- extern callees --------------------------------------------------------
-#ifdef __APPLE__
-__attribute__((weak)) void *_08007498(void *x, int i) { (void)x; (void)i; return 0; }
-__attribute__((weak)) void *_0800748C(void *x) { (void)x; return 0; }
-__attribute__((weak)) u32  _080074A8(void *x) { (void)x; return 0; }
-__attribute__((weak)) u32 _08007658(void *x) { (void)x; return 0; }
-__attribute__((weak)) int  _080050D0(int a, int b) { (void)a; return 0; }
-__attribute__((weak)) void _08005260(void *a, void *b, int c, int d) { (void)a; (void)b; (void)c; (void)d; }
-__attribute__((weak)) void _080053DC(int a, const volatile u8 *b, int c, int d, int e, int f, int g, int h) { (void)a;(void)b;(void)c;(void)d;(void)e;(void)f;(void)g;(void)h; }
-__attribute__((weak)) void _080054A4(int a, int b, int c, int d, int e) { (void)a;(void)b;(void)c;(void)d;(void)e; }
-#else
 extern void *_08007498(void *x, int i);       // 0x08007498 (course_resource.c)
 extern void *_0800748C(void *x);              // 0x0800748C (course_resource.c)
 extern u32  _080074A8(void *x);               // 0x080074A8 (course_resource.c)
@@ -38,7 +28,6 @@ extern int  _080050D0(int a, int b);          // 0x080050D0 (event_dma_queue.c)
 extern void _08005260(void *a, void *b, int c, int d); // 0x08005260 4-arg (event_dma_queue.c)
 extern void _080053DC(int a, const volatile u8 *b, int c, int d, int e, int f, int g, int h); // 0x080053DC
 extern void _080054A4(int a, int b, int c, int d, int e);                       // 0x080054A4
-#endif
 
 // DMA3 channel register base (byte-exact pools _08007858/_080078E8/_08007920/_08007974):
 #define CRH_DMA3 ((volatile u32 *)(uintptr_t)0x040000D4)
@@ -74,10 +63,8 @@ u32 Course_0x08007770(int ctx, void *X, int r2in, int r3in, u32 s0, u32 s1) {
     _080054A4((int)(uintptr_t)ctx, r3in, (int)s0, stk0, stk1);
     return (u32)r9;
 }
-#ifndef __APPLE__
 u32 _08007770(int a, void *b, int c, int d, u32 e, u32 f) __attribute__((alias("Course_0x08007770")));
 u32 sub_08007770(int a, void *b, int c, int d, u32 e, u32 f) __attribute__((alias("Course_0x08007770")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_0800785C — 4-arg DMA variant with sl = ctx (r0..r3 args):
@@ -105,10 +92,8 @@ int Course_0x0800785C(void *ctx, void *X, int rec_arg, int lane) {
     (void)dma[2];
     return r9;
 }
-#ifndef __APPLE__
 int _0800785C(void *a, void *b, int c, int d) __attribute__((alias("Course_0x0800785C")));
 int sub_0800785C(void *a, void *b, int c, int d) __attribute__((alias("Course_0x0800785C")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_080078EC — 3-word DMA descriptor write:
@@ -124,19 +109,15 @@ void Course_0x080078EC(void *X, void *rec_arg, int lane) {
     dma[2] = (cnt >> 2) | 0x84000000u;
     (void)dma[2];
 }
-#ifndef __APPLE__
 void _080078EC(void *a, void *b, int c) __attribute__((alias("Course_0x080078EC")));
 void sub_080078EC(void *a, void *b, int c) __attribute__((alias("Course_0x080078EC")));
-#endif
 
 void *Course_0x08007924(void *X, int y) {
     void *r = _08007498(X, y);
     return _0800748C(_08007498(r, 2));
 }
-#ifndef __APPLE__
 void *_08007924(void *a, int b) __attribute__((alias("Course_0x08007924")));
 void *sub_08007924(void *a, int b) __attribute__((alias("Course_0x08007924")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_08007938 — 3-word DMA descriptor write (lane variant):
@@ -153,12 +134,8 @@ void Course_0x08007938(void *X, void *rec_arg, int lane) {
     dma[2] = (cnt >> 2) | 0x84000000u;
     (void)dma[2];
 }
-#ifndef __APPLE__
 void _08007938(void *a, void *b, int c) __attribute__((alias("Course_0x08007938")));
 void sub_08007938(void *a, void *b, int c) __attribute__((alias("Course_0x08007938")));
-#endif
 
 // ROM entry alias.
-#ifndef __APPLE__
 u32 Sub_08007770(int ctx, void *X, int r2in, int r3in, u32 s0, u32 s1) __attribute__((alias("Course_0x08007770")));
-#endif

@@ -52,11 +52,9 @@ void Ai_AwardSetBit(int id){
     dv += (int)(uintptr_t)r3;
     *r2 |= *(u8 *)(uintptr_t)dv;
 }
-#ifndef __APPLE__
 void _08025F78(int id) __attribute__((alias("Ai_AwardSetBit")));
 void sub_08025F78(int id) __attribute__((alias("Ai_AwardSetBit")));
 void Sub_08025F78(int id) __attribute__((alias("Ai_AwardSetBit")));
-#endif
 
 // _08025FAC — owned? test
 //
@@ -96,10 +94,8 @@ int Ai_OwnedTest(int id){
     out = (unsigned)orv >> 31;
     return (int)out;
 }
-#ifndef __APPLE__
 int _08025FAC(int id) __attribute__((alias("Ai_OwnedTest")));
 int sub_08025FAC(int id) __attribute__((alias("Ai_OwnedTest")));
-#endif
 
 // Friendly-name wrappers used by car_award.c (u8 car id).
 // VMA sub_08025FAC (presence test) and sub_08025F78 (grant = set bit).
@@ -126,11 +122,9 @@ void Ai_SetOwnedFlag(int slot){
     p = base + slot;
     *p = 1;
 }
-#ifndef __APPLE__
 void _08025FF0(int a) __attribute__((alias("Ai_SetOwnedFlag")));
 void sub_08025FF0(int a) __attribute__((alias("Ai_SetOwnedFlag")));
 void Sub_08025FF0(int a) __attribute__((alias("Ai_SetOwnedFlag")));
-#endif
 
 // _08026004 — get flag
 //
@@ -163,10 +157,8 @@ int Ai_GetOwnedFlag(int slot){
     if (v == 1) res = 1;
     return res;
 }
-#ifndef __APPLE__
 int _08026004(int a) __attribute__((alias("Ai_GetOwnedFlag")));
 int sub_08026004(int a) __attribute__((alias("Ai_GetOwnedFlag")));
-#endif
 
 // _08026020 — clamp slot 0..2, set its byte, then hand the packed table word
 // to _08025F78. 72 B, pools 0x08060D4C (source table), 0x03001780 and 0x57C
@@ -185,12 +177,8 @@ int sub_08026004(int a) __attribute__((alias("Ai_GetOwnedFlag")));
 // (rename)". Same shape as RM_CALLEE in src/runtime_hud.c and CO_CALLEE in
 // src/course_orch.c. Note the discriminator is promoted-vs-unpromoted, not
 // friendly-vs-closure: a promoted export resolves even when absent from nm.
-#ifndef __APPLE__
 #define AA_CALLEE(friendly, closure) closure
 extern void sub_08025F78(int id);
-#else
-#define AA_CALLEE(friendly, closure) friendly
-#endif
 void Ai_ClaimSlotAndSetBit(int slot){
     u8 buf[8];
     _0802E0A4(buf, (const void *)(uintptr_t)0x08060D4Cu, 6u);
@@ -199,16 +187,11 @@ void Ai_ClaimSlotAndSetBit(int slot){
     if(r4 <= 0) r4 = 0;
     if(r4 > 1) r4 = 2;
     uintptr_t base_v, slot_off;
-#ifndef __APPLE__
     { extern u8 AiColFlagBase[], AiColFlagOff[];
       __asm__(".globl AiColFlagBase\nAiColFlagBase = 0x03001780\n");
       __asm__(".globl AiColFlagOff\nAiColFlagOff = 0x57C\n");
       base_v = (uintptr_t)AiColFlagBase;
       slot_off = (uintptr_t)AiColFlagOff; }
-#else
-    base_v = (uintptr_t)AI_COLLECTION_BM_BASE;
-    slot_off = 0x57C;
-#endif
     // r4 on the LEFT of the final add: the ROM emits `adds r0, r4, r0`, and C's
     // left-associative `+` would give `adds r0, r0, r4` (0x1900 vs 0x1820).
     volatile u8 *flag = (volatile u8 *)((uintptr_t)r4 + (base_v + slot_off));
@@ -218,14 +201,12 @@ void Ai_ClaimSlotAndSetBit(int slot){
     int half = *(s16*)(buf + (r4<<1));
     AA_CALLEE(Ai_AwardSetBit, sub_08025F78)(half);
 }
-#ifndef __APPLE__
 void _08026020(int a) __attribute__((alias("Ai_ClaimSlotAndSetBit")));
 // The closure binds `sub_08026020` (lowercase). A capital-`Sub_` spelling is a
 // different symbol to a case-sensitive linker and matched no closure label
 // here, so it could never have bound; the manifest's export list needs the
 // lowercase twin, and an exported `sub_` twin must itself be defined in C.
 void sub_08026020(int a) __attribute__((alias("Ai_ClaimSlotAndSetBit")));
-#endif
 
 
 // _08026150(idx, a, b) — resolve leaf via 0x0800572C, store the pair, read
@@ -254,13 +235,9 @@ s16 Ai_AwardLeafSetRet(int idx, int a, int b){
     s32 iw;
     volatile u16 *p;
     ret = sub_0800572C(r0);
-#ifndef __APPLE__
     { extern u8 AiAwardRecBase[];
       __asm__(".globl AiAwardRecBase\nAiAwardRecBase = 0x030015F0\n");
       base = (uintptr_t)AiAwardRecBase; }
-#else
-    base = (uintptr_t)AI_AWARD_REC_BASE;
-#endif
     iw = (s32)r4;
     off = (u32)((iw << 16) >> 13);
     p = (volatile u16 *)(uintptr_t)(off + base);
@@ -268,10 +245,8 @@ s16 Ai_AwardLeafSetRet(int idx, int a, int b){
     p[1] = (u16)r5;
     return *(s16 *)p;
 }
-#ifndef __APPLE__
 s16 _08026150(int a, int b, int c) __attribute__((alias("Ai_AwardLeafSetRet")));
 s16 sub_08026150(int a, int b, int c) __attribute__((alias("Ai_AwardLeafSetRet")));
-#endif
 // The header's historical spelling returns void; the ROM returns r0 (the
 // sign-extended halfword it just stored) and 10 asm call sites consume it, so
 // the void wrapper keeps the declared prototype honest for existing C callers.
@@ -284,36 +259,24 @@ void Ai_AwardLeafSet(int idx, int a, int b){
 // Dropping `volatile` here is the load-form choice the workflow records; a
 // `volatile s16 *` produces `ldrh` + `lsls/asrs` instead of one `ldrsh`.
 s16 Ai_AwardLeafGet(int idx){
-#ifndef __APPLE__
     extern u8 AiAwardRecBase[];
     __asm__(".globl AiAwardRecBase\nAiAwardRecBase = 0x030015F0\n");
     uintptr_t base = (uintptr_t)AiAwardRecBase;
-#else
-    uintptr_t base = (uintptr_t)AI_AWARD_REC_BASE;
-#endif
     int off = (idx << 16) >> 13;
     return *(s16 *)(uintptr_t)(off + base);
 }
-#ifndef __APPLE__
 s16 _080261B0(int a) __attribute__((alias("Ai_AwardLeafGet")));
 s16 sub_080261B0(int a) __attribute__((alias("Ai_AwardLeafGet")));
-#endif
 
 // _080261C4(idx, val) — strh to +0. Same leaf shape as 261B0 with a store:
 // `off + base` in that order keeps the pool load first, matching the ROM.
 void Ai_AwardLeafPut(int idx, int v){
-#ifndef __APPLE__
     extern u8 AiAwardRecBase[];
     __asm__(".globl AiAwardRecBase\nAiAwardRecBase = 0x030015F0\n");
     uintptr_t base = (uintptr_t)AiAwardRecBase;
-#else
-    uintptr_t base = (uintptr_t)AI_AWARD_REC_BASE;
-#endif
     int off = (idx << 16) >> 13;
     volatile u16 *p = (volatile u16 *)(uintptr_t)(off + base);
     p[0] = (u16)v;
 }
-#ifndef __APPLE__
 void _080261C4(int a, int b) __attribute__((alias("Ai_AwardLeafPut")));
 void sub_080261C4(int a, int b) __attribute__((alias("Ai_AwardLeafPut")));
-#endif

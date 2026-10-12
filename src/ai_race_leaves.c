@@ -8,9 +8,7 @@ void Ai_RingReset(void){
     base[1]=0xFFFFFFFFu; // -1
     base[2]=0;
 }
-#ifndef __APPLE__
 void _08023FE4(void) __attribute__((alias("Ai_RingReset")));
-#endif
 
 void Ai_RingPush(int ev, int arg) {
     register int i __asm__("r4") = 0;
@@ -43,10 +41,8 @@ void Ai_RingPush(int ev, int arg) {
         *(int *)((uintptr_t)next_off + (uintptr_t)base_arg) = 0;
     }
 }
-#ifndef __APPLE__
 void _08023FF8(int a,int b) __attribute__((alias("Ai_RingPush")));
 void Scene_PostEvent(int a,int b) __attribute__((alias("Ai_RingPush")));
-#endif
 
 // _08023958 — 121B phase pump, 6 BL sites, tier gate wa+0x10C3
 void _08023958(void *ctx, int a, int b) {
@@ -274,11 +270,7 @@ s16 Ai_B4A8_GetLimit(void){
 }
 
 // ROM entry alias.
-#ifndef __APPLE__
 void _080023FE4(void) __attribute__((alias("Ai_RingReset")));
-#endif
 
 // ROM entry alias.
-#ifndef __APPLE__
 void _080023FF8(int ev,int arg) __attribute__((alias("Ai_RingPush")));
-#endif

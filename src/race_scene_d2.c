@@ -12,22 +12,14 @@
 
 #include "gba/types.h"
 
-#ifdef __APPLE__
-#define HOST_STUB(sig) __attribute__((weak)) sig
-#else
 #define HOST_STUB(sig) extern sig
-#endif
 
-#ifndef __APPLE__
 #define D2_CALLEE(friendly, closure) closure
 extern void *sub_08004B68(void);
 extern void sub_08007770(int a, void *b, int c, int d, u32 e, u32 f);
 extern void sub_0802B214(int v);
 extern int sub_0800572C(int v);
 extern s16 sub_080258A8(int idx);
-#else
-#define D2_CALLEE(friendly, closure) friendly
-#endif
 
 HOST_STUB(void _08002B368(u16 v));                                              // 0x08002B368 sound cue
 HOST_STUB(void _08002B214(int v));                                              // 0x08002B214 sound wake
@@ -295,9 +287,7 @@ void _08001FA64(void *dst0, int b, const u8 *tbl0, int d) {
 // 12289 call it as `bl sub_08001FA64`. A promoted entry's export must
 // therefore carry both spellings; the `sub_` twin is a direct alias of the
 // C body with the same signature (same pattern as _08001F918).
-#ifndef __APPLE__
 void sub_08001FA64(void *dst0, int b, const u8 *tbl0, int d) __attribute__((alias("_08001FA64")));
-#endif
 
 void _08001FADC(void *dst0, int b, const u8 *tbl0, int n, int mode) {
     const u8 *tbl = (const u8 *)tbl0;

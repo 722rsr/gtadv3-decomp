@@ -13,15 +13,6 @@
 
 #include "gba/types.h"
 
-#ifdef __APPLE__
-__attribute__((weak)) void _0802D974(const void *a, void *b, u32 c) { (void)a; (void)b; (void)c; }
-__attribute__((weak)) int   _08007484(void *rec) { (void)rec; return 0; }
-__attribute__((weak)) int   _08007488(void *rec) { (void)rec; return 0; }
-__attribute__((weak)) void *_08007498(void *base, int i) { (void)base; (void)i; return 0; }
-__attribute__((weak)) void *_0800748C(void *rec) { (void)rec; return 0; }
-__attribute__((weak)) void  _08007ABC(void *base, int i, int v) { (void)base; (void)i; (void)v; }
-__attribute__((weak)) void *sub_0800572C(u32 s) { (void)s; return 0; }
-#endif
 
 // asm callees — all already exact; bound via extern decl + VMA hint.
 extern void  _0802D974(const void *src, void *dst, u32 ctrl); // CpuSet (bios_wrappers.c)
@@ -56,11 +47,9 @@ void _0800798C(void *rec, void *out)
     _0802D974(&zero, out, (u32)0x05000002u);
     *(int *)((uintptr_t)out + 4) = _08007484(rec);
 }
-#ifndef __APPLE__
 void Course_0x0800798C(void *a, void *b) __attribute__((alias("_0800798C"))); /* trampoline elimination: friendly-name spelling used by rec35_init.c */
 void sub_0800798C(void *a, void *b) __attribute__((alias("_0800798C")));
 void Sub_0800798C(void *a, void *b) __attribute__((alias("_0800798C")));
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x080079B4 sub_080079B4(rec, cursor)
@@ -137,12 +126,10 @@ void _08007A04(void *rec, u32 value)
         }
     }
 }
-#ifndef __APPLE__
 // The closure spells this VMA `sub_08007A04` and the screen exports it, so the
 // owning TU has to define that exact spelling. One hop to the real body: an
 // alias-of-an-alias would not be in the slice link.
 void sub_08007A04(void *rec, u32 value) __attribute__((alias("_08007A04")));
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x08007A58 sub_08007A58(rec)
@@ -179,8 +166,6 @@ void _08007A58(void *rec)
         }
     }
 }
-#ifndef __APPLE__
 void Course_0x08007A58(void *p) __attribute__((alias("_08007A58"))); /* trampoline elimination: friendly-name spelling used by rec35_init.c */
 void sub_08007A58(void *p) __attribute__((alias("_08007A58")));
 void Sub_08007A58(void *p) __attribute__((alias("_08007A58")));
-#endif

@@ -24,9 +24,6 @@ extern void _08003838(int a, u32 b, const volatile u8 *c);  /* slice-closure spe
 __asm__(".set TblDC20, 0x080CBB9C");
 extern s16 TblDC20;
 
-#ifdef __APPLE__
-#define HOST_STUB(sig) __attribute__((weak)) sig
-#else
 #define HOST_STUB(sig) extern sig
 // Closure spelling for 0x08007770. A HOST_STUB is NOT a call-site binding: it
 // expands to `extern` on the ROM build, so `Sub_08007770` there names a symbol
@@ -36,17 +33,8 @@ extern s16 TblDC20;
 // with an undefined reference the moment this body is staged. The digit count
 // is load-bearing: 7 hex digits, as nm reports them.
 extern void sub_08007770(int a, void *b, int c, int d, u32 e, u32 f);
-#endif
 
-// This macro MUST sit at file scope, outside the __APPLE__ split above. Defined
-// inside a branch it is undefined on the other build, and tools/apple_decls.py
-// reports "call to undeclared 'RSB_CALLEE' under __APPLE__" -- same idiom and
-// same reason as D1_CALLEE in src/race_scene_d1.c.
-#ifndef __APPLE__
 #define RSB_CALLEE(friendly, closure) closure
-#else
-#define RSB_CALLEE(friendly, closure) friendly
-#endif
 
 // External callees (strong lifts or trampolines).
 HOST_STUB(void _08001BB14(void));                                              // 0x08001BB14 race setup
@@ -125,15 +113,11 @@ extern u8 WABaseB1;
 // with "undefined reference to `WABaseB1'". `_0802D9FC`'s `B16FlagVMA` in
 // src/runtime_state_dispatch.c links for exactly this reason. Absolute assignments emit no
 // bytes, so the measured EXACT scores are unchanged.
-#ifndef __APPLE__
 #define WA_SPLIT_DECL \
     __asm__(".globl WABaseB1\nWABaseB1 = 0x03001780\n" \
             ".globl WAOff10F8\nWAOff10F8 = 0x000010F8\n" \
             ".globl WAOffFBC\nWAOffFBC = 0x00000FBC\n" \
             ".globl WAOff10C3\nWAOff10C3 = 0x000010C3\n")
-#else
-#define WA_SPLIT_DECL
-#endif
 
 #define WA_SPLIT(o) ((uintptr_t)o + (uintptr_t)&WABaseB1)
 
@@ -557,10 +541,8 @@ void _08001D910(int a0, int a1, u32 a2, int a3, int a4) {
 // which the splice deletes while other assembly still branches to it. agbcc
 // only writes the `.thumb_set` for a spelling this TU aliases (rule 6), so the
 // manifest entry's `export` list is only satisfiable with this declaration.
-#ifndef __APPLE__
 void sub_08001D910(int a0, int a1, u32 a2, int a3, int a4)
     __attribute__((alias("_08001D910")));
-#endif
 
 // ----------------------------------------------------------------------------
 // ---- 0x08001D950 — text-lane twin (stack-gated) ----
@@ -592,7 +574,6 @@ __asm__(".align 2, 0");
 // ----------------------------------------------------------------------------
 void _08001D974(void *a_, void *b_) {
     WA_SPLIT_DECL;
-#ifndef __APPLE__
     register volatile u8 *pa __asm__("r5") = (volatile u8 *)a_;
     register volatile u8 *pb __asm__("r4") = (volatile u8 *)b_;
     register uintptr_t waBase __asm__("r2");
@@ -622,19 +603,6 @@ void _08001D974(void *a_, void *b_) {
     }
     register volatile u8 *p84 __asm__("r1") = pb + 84u;
     *(volatile u16 *)p84 = 1;
-#else
-    volatile u8 *pa = (volatile u8 *)a_;
-    volatile u8 *pb = (volatile u8 *)b_;
-    *(volatile u16 *)(pa + 160u) = 0;
-    if (*(volatile u16 *)WA_SPLIT((uintptr_t)&WAOffFBC) == 3u) {
-        *(pb + 88u) = 0;
-        if (*(volatile u8 *)WA_SPLIT((uintptr_t)&WAOff10C3) == 0u) {
-            _080056F4((void *)(uintptr_t)pb, 1, 1);
-            *(volatile u16 *)(pa + 160u) = 1;
-        }
-    }
-    *(volatile u16 *)(pb + 84u) = 1;
-#endif
 }
 
 // ----------------------------------------------------------------------------
@@ -644,22 +612,15 @@ void _08001D974(void *a_, void *b_) {
 // over (tab[i], (s16)slot, 0, stack 16).
 // ----------------------------------------------------------------------------
 void _08001D9CC(void) {
-#ifndef __APPLE__
     // ROM keeps the ascending two-iteration counter in r6.
     register int i __asm__("r6") = 0;
     // Keep the unadjusted literal in r0: ROM loads 0x0203F8F0 then adds 2.
     register volatile s16 *slotBase __asm__("r0") =
         (volatile s16 *)(uintptr_t)0x0203F8F0u;
     register volatile s16 *slot __asm__("r4");
-#else
-    int i = 0;
-    volatile s16 *slot = (volatile s16 *)(uintptr_t)0x0203F8F0u + 1;
-#endif
     volatile u16 *tab;
-#ifndef __APPLE__
     __asm__ volatile("" : "+r"(slotBase));
     slot = slotBase + 1;
-#endif
     tab = (volatile u16 *)(uintptr_t)0x080CBBA2u;
     do {
         *slot = (s16)_08005758(16);
@@ -684,24 +645,15 @@ void _08001DA10(int v) {
     w[0] = sub_0802DE9C(q, 10);
     w[1] = sub_0802DE9C(v, 10);
     int i = 0;
-#ifndef __APPLE__
     register u8 *table __asm__("r6") = (u8 *)(uintptr_t)0x080CBBA2u;
     register u8 *base __asm__("r5") = (u8 *)(uintptr_t)0x0203F8F0u;
     __asm__ volatile("" : "+r"(table), "+r"(base));
-#else
-    u8 *table = (u8 *)(uintptr_t)0x080CBBA2u;
-    u8 *base = (u8 *)(uintptr_t)0x0203F8F0u;
-#endif
     for (; i < 2; i++) {
         u16 t = *(volatile u16 *)(uintptr_t)(table + (u32)(w[i] * 2));
-#ifndef __APPLE__
         register s32 laneOffset __asm__("r0") = 2;
         register s32 laneValue __asm__("r2");
         __asm__ volatile(".code 16\n\tldrsh r2, [r5, r0]"
                          : "=r"(laneValue) : "r"(base), "r"(laneOffset) : "cc");
-#else
-        s32 laneValue = *(volatile s16 *)(base + 2);
-#endif
         _08007570((void *)(uintptr_t)0x08336CA0u, t,
                   laneValue, 0, 16);
         base += 8;
@@ -718,27 +670,15 @@ void _08001DA10(int v) {
 // Stack words are (1,2,1,0,0,1) in both paths.
 void _08001DA70(int a0, int a1, u32 a2, int a3) {
     if ((s32)a2 <= 9) {
-#ifndef __APPLE__
         register int cur __asm__("r8") = a0 - 16;
         __asm__ volatile("" : "+r"(cur));
-#else
-        int cur = a0 - 16;
-#endif
         u32 base = 0x0203F8F0u;
         __asm__ volatile("" : "+r"(base));
-#ifndef __APPLE__
         register int one __asm__("r4") = 1;
         __asm__ volatile("" : "+r"(one));
-#else
-        int one = 1;
-#endif
         u32 lane = base + 8u;
-#ifndef __APPLE__
         register int zero __asm__("r7") = 0;
         __asm__ volatile("" : "+r"(zero));
-#else
-        int zero = 0;
-#endif
         int i;
         for (i = 0; i >= 0; i--) {
             _08002ED0((void *)(uintptr_t)(u32)cur, a1,
@@ -748,20 +688,12 @@ void _08001DA70(int a0, int a1, u32 a2, int a3) {
             lane += 8u;
         }
     } else {
-#ifndef __APPLE__
         register int one __asm__("r6") = 1;
         __asm__ volatile("" : "+r"(one));
-#else
-        int one = 1;
-#endif
         u32 lane = 0x0203F8F0u;
         int cur = a0 - 32;
-#ifndef __APPLE__
         register int zero __asm__("r8") = 0;
         __asm__ volatile("" : "+r"(zero));
-#else
-        int zero = 0;
-#endif
         int i;
         for (i = 1; i >= 0; i--) {
             _08002ED0((void *)(uintptr_t)(u32)cur, a1,
@@ -855,14 +787,12 @@ void _08001DBC0(void *rec_, int v) {
             *prev = 0;
     }
 }
-#ifndef __APPLE__
 // The closure spells this VMA `sub_08001DBC0` (asm/race_scene.s) and the entry
 // exports it, so the owning TU must define that exact name. One hop to the real
 // body. `asm/race_scene.s` is not in the closure that `asm/code.s` roots, so no
 // assembly can supply it -- and the link failure is loud, which is the good
 // outcome; the alternative is a ROM veneer the byte oracle cannot see.
 void sub_08001DBC0(void *rec_, int v) __attribute__((alias("_08001DBC0")));
-#endif
 
 // ----------------------------------------------------------------------------
 // ---- 0x08001DC20 — index clamp + lane bind ----
@@ -877,14 +807,8 @@ void _08001DC20(void *rec_, int sel_) {
     s16 w;
     s16 w2;
     register volatile u32 *dst __asm__("r2");
-#ifndef __APPLE__
     __asm__(".globl TblDC20\nTblDC20 = 0x080CBB9C\n");
-#endif
-#ifndef __APPLE__
     _0802E0A4(slots, (const void *)(uintptr_t)0x0805FC26u, 6u);
-#else
-    _08002E0A4(slots, (const void *)(uintptr_t)0x0805FC26u, 6u);
-#endif
     if ((s16)v <= 0)
         v = 0;
     if ((s16)v > 1)
@@ -904,7 +828,6 @@ void _08001DC20(void *rec_, int sel_) {
 }
 
 // ROM entry alias.
-#ifndef __APPLE__
 void RaceScene_Event_1D224(void) __attribute__((alias("_08001D224")));
 // The spliced span for 0x0801D224 starts at the asm label `sub_08001D224`,
 // so the C must define that spelling for the splice's own glue to re-emit it.
@@ -919,4 +842,3 @@ void sub_08001DA70(int a0, int a1, u32 a2, int a3) __attribute__((alias("_08001D
 int sub_08001D750(int mode) __attribute__((alias("_08001D750")));
 unsigned long long sub_08001D7B8(void *out, int mode, int center, int extra) __attribute__((alias("_08001D7B8")));
 void sub_08001DC20(void *rec, int sel) __attribute__((alias("_08001DC20")));
-#endif

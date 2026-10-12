@@ -7,32 +7,6 @@ void sub_080026F50(u32 a, u32 b, u32 c, void *d);
 // Garage lane — honest C lifting, leaves first.
 // Only the primary placement veneer is substantiated via course helpers.
 // The remaining 0x08026F50–0x0802B04C bytes stay in asm/garage_26f50.s until audited.
-#ifdef __APPLE__
-// Host-only link shims. These MUST NOT be ARM-live: garage.c itself calls
-// sub_08007538/075E8, and a live weak def here would bind those calls to the
-// no-op at compile time (the -21 self-shadow class). On ARM the
-// strong aliases in course_resource.c / bios_wrappers.c / ai_award_leaves.c win.
-__attribute__((weak)) void sub_08007538(void *a, u32 b, u32 c) { (void)a;(void)b;(void)c; }
-__attribute__((weak)) void sub_080075E8(void *a, u32 b, u32 c) { (void)a;(void)b;(void)c; }
-__attribute__((weak)) void sub_0802D974(const void *s, void *d, u32 m) { CpuFastSet(s,d,m); }
-__attribute__((weak)) u32 sub_080261B0(u32 v) { return v; }
-__attribute__((weak)) u32 sub_080261F8(u32 v) { return v; }
-// HUD-gauge commit pair and friends (0x0802804C.. 0x08002823C). Weak HOST
-// definitions, not bare `extern`: a declaration-only twin is a weak *declaration*
-// and the host link binds it lazily, so the suite reads green with the call
-// unbound. The ARM names are the ones the closure and the promoted entries use.
-__attribute__((weak)) void *sub_08004B68(void) { return 0; }
-__attribute__((weak)) void  sub_08004B90(void *mgr) { (void)mgr; }
-__attribute__((weak)) void  sub_08004B80(void) { }
-__attribute__((weak)) void  Garage_B80(void *m) { (void)m; }
-__attribute__((weak)) void  _08004BAC(void) { }
-__attribute__((weak)) void  Garage_BAC(void *m) { (void)m; }
-__attribute__((weak)) void  sub_08004E78(int a) { (void)a; }
-__attribute__((weak)) void  sub_0802B30C(int a) { (void)a; }
-__attribute__((weak)) u16   sub_0802B330(void) { return 0; }
-__attribute__((weak)) u32   sub_0802DF6C(u32 a, u32 b) { (void)a; return b ? a / b : 0; }
-__attribute__((weak)) void sub_08004D4C(u32 a, u32 b, u32 c) { (void)a;(void)b;(void)c; }
-#else
 // ARM: the real bodies (course_resource.c Course_EmitLane_07538/075E8 etc.).
 extern void sub_08007538(void *a, int b, void *c);
 extern void sub_080075E8(void *a, int b, int c);
@@ -50,7 +24,6 @@ extern void  sub_08004E78(int a);
 extern void  sub_0802B30C(int a);
 extern u16   sub_0802B330(void);
 extern void  sub_08004D4C(u32 a, u32 b, u32 c);
-#endif
 
 // Substantiated: sub_080026F50 (alias sub_08026F50) — 5-arg placement wrapper over tables.
 // Verified via asm/garage_26f50.s header: lsls r1,#2 + tbl 0x080CDB78 -> entry, template 0x083A4374.
@@ -73,12 +46,10 @@ void Garage_PlaceRecord(u32 a, u32 b, u32 c, void *dst) {
     sub_080075E8((void *)tmpl, 1, (int)c);
     (void)dst;
 }
-#ifndef __APPLE__
 void sub_080026F50(u32 a, u32 b, u32 c, void *d) __attribute__((alias("Garage_PlaceRecord")));
 void sub_08026F50(u32 a, u32 b, u32 c, void *d) __attribute__((alias("Garage_PlaceRecord")));
 void _080026F50(u32 a, u32 b, u32 c, void *d) __attribute__((alias("Garage_PlaceRecord")));
 void _08026F50(u32 a, u32 b, u32 c, void *d) __attribute__((alias("Garage_PlaceRecord")));
-#endif
 
 // sub_080026F80 (asm/garage_26f50.s:33-61): 6-arg (r0-r3, s0, s1),
 // dispatch on (s8)(u8)s1: nonzero -> 02F68(a1, a2, a0, a3, s0, 3, 1),
@@ -95,11 +66,9 @@ void Garage_F80(int a0, int a1, int a2, int a3, int s0, int s1) {
     if (sel != 0) sub_08002F68(a1, a2, a0, a3, s0, 3, 1);
     else          sub_08002DB8((void *)(uintptr_t)a1, a2, a0, a3, s0, 3, 1);
 }
-#ifndef __APPLE__
 void sub_080026F80(int a0, int a1, int a2, int a3, int e, int f) __attribute__((alias("Garage_F80")));
 void _080026F80(int a0, int a1, int a2, int a3, int e, int f) __attribute__((alias("Garage_F80")));
 void _08026F80(int a0, int a1, int a2, int a3, int e, int f) __attribute__((alias("Garage_F80")));
-#endif
 
 extern void sub_08002ED0(void *a, int b, int c, int d, int e, int f, int g, int h, int i, int j);
 // sub_080026FC4: disp 40, so its own args are r0..r3 + caller words 0/1 (e/f).
@@ -113,11 +82,9 @@ void Garage_FC4(int a0, void *a1, int a2, int a3, int a4, int a5) {
     sub_08002ED0(a1, a2, a0, a3, a4, 3, 1, a5, 0, 1);
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void sub_080026FC4(int a0, void *a1, int a2, int a3, int a4, int a5) __attribute__((alias("Garage_FC4")));
 void _080026FC4(int a0, void *a1, int a2, int a3, int a4, int a5) __attribute__((alias("Garage_FC4")));
 void _08026FC4(int a0, void *a1, int a2, int a3, int a4, int a5) __attribute__((alias("Garage_FC4")));
-#endif
 
 void Garage_ByteStore_27104(void *idx, uint32_t val);
 // Substantiated: sub_080026FF4 (0x26FF4) — garage/course record init, high-reg spill, 0x03001678 pool
@@ -159,10 +126,8 @@ void Garage_InitRecord(void *rec, u32 a1, u32 count, u32 flagByte) {
     uint16_t v12 = *(volatile uint16_t*)((uintptr_t)base+12);
     sub_080026F50(v10, v12, a1, NULL);
 }
-#ifndef __APPLE__
 void sub_080026FF4(void *a, u32 b, u32 c, u32 d) __attribute__((alias("Garage_InitRecord")));
 void _080026FF4(void *a, u32 b, u32 c, u32 d) __attribute__((alias("Garage_InitRecord")));
-#endif
 
 // Substantiated: _080027104 (0x27104) — byte store at [*(0x03001678)+ r0*8 +24] = r1 (u8)
 // Preserves ldr r2,[0x03001678], lsls r0#3, adds r2,r0, strb r1,[r2+24] (width u8)
@@ -171,12 +136,10 @@ void Garage_ByteStore_27104(void *idx, uint32_t val){
     uintptr_t addr = base + ((uintptr_t)idx * 8) + 24;
     *(volatile uint8_t*)addr = (uint8_t)val;
 }
-#ifndef __APPLE__
 void _080027104(void *a, uint32_t b) __attribute__((alias("Garage_ByteStore_27104")));
 void sub_080027104(void *a, uint32_t b) __attribute__((alias("Garage_ByteStore_27104")));
 void _08027104(void *a, uint32_t b) __attribute__((alias("Garage_ByteStore_27104")));
 void sub_08027104(void *a, uint32_t b) __attribute__((alias("Garage_ByteStore_27104")));
-#endif
 
 // Bounded single-pool no-ops (0 literal pools, tail call) — substantiated via
 // objdump. All six are the same 4 bytes: `70 47 00 00` = `bx lr` + 2 pad
@@ -197,7 +160,6 @@ __attribute__((naked)) void Garage_Stub_28730(void) { __asm__ volatile ("bx lr\n
 __attribute__((naked)) void Garage_Stub_28740(void) { __asm__ volatile ("bx lr\n .hword 0x0000\n"); }
 __attribute__((naked)) void Garage_Stub_28780(void) { __asm__ volatile ("bx lr\n .hword 0x0000\n"); }
 __attribute__((naked)) void Garage_Stub_28F14(void) { __asm__ volatile ("bx lr\n .hword 0x0000\n"); }
-#ifndef __APPLE__
 void sub_08002869C(void) __attribute__((alias("Garage_Stub_2869C")));
 void _08002869C(void) __attribute__((alias("Garage_Stub_2869C")));
 void sub_0800286A0(void) __attribute__((alias("Garage_Stub_286A0")));
@@ -210,7 +172,6 @@ void sub_080028780(void) __attribute__((alias("Garage_Stub_28780")));
 void _080028780(void) __attribute__((alias("Garage_Stub_28780")));
 void sub_080028F14(void) __attribute__((alias("Garage_Stub_28F14")));
 void _080028F14(void) __attribute__((alias("Garage_Stub_28F14")));
-#endif
 
 // Bounded streaming helper _08002711C (0x2711C–0x27164, push r4-r7,sl/r9/r8, sub sp #12, pools 0x02715C/0x03001678+17)
 // Preserves ldr r0,[0x03001678], ldrsb +17 s8, high-reg spill, 0x08002ED0 stride-8 calls are width-exact but remain external
@@ -219,10 +180,8 @@ void Garage_2711C(void) {
     volatile int8_t v = *(volatile int8_t*)(base + 17);
     (void)v;
 }
-#ifndef __APPLE__
 void _08002711C(void) __attribute__((alias("Garage_2711C")));
 void sub_08002711C(void) __attribute__((alias("Garage_2711C")));
-#endif
 
 // Mechanically translated bounded helpers from 0x0275B8 onward — opaque volatile byte pointers, exact widths
 // _0800275B8 (ROM 0x080275B8-0x080276E2, transcribed from the raw image):
@@ -281,10 +240,8 @@ void Garage_275B8(void *a0, int a1, int a2, void *a3, int a4) {
     n[6] = 0;
     _08002C34((int)gap, n);
 }
-#ifndef __APPLE__
 void _0800275B8(void *a0,int a1,int a2,void *a3,int a4) __attribute__((alias("Garage_275B8")));
 void sub_0800275B8(void *a0,int a1,int a2,void *a3,int a4) __attribute__((alias("Garage_275B8")));
-#endif
 
 // _0800276F0/2773C/27788 (ROM 0x080276F0-0x0802772E / 0x0802773C-0x0802777A /
 // 0x08027788-0x080277C6, transcribed from the raw image): identical 76-byte
@@ -315,22 +272,16 @@ void sub_0800275B8(void *a0,int a1,int a2,void *a3,int a4) __attribute__((alias(
     } while (0)
 
 void Garage_276F0(int a0, int a1, int a2) { GARAGE_DISP_EXCHANGE(a0, a1, a2, 32); }
-#ifndef __APPLE__
 void _0800276F0(int a0,int a1,int a2) __attribute__((alias("Garage_276F0")));
 void sub_0800276F0(int a0,int a1,int a2) __attribute__((alias("Garage_276F0")));
-#endif
 
 // _08002773C / _080027788 / _0800277D4 — course helpers with same pools, s16 widths via asrs #15
 void Garage_2773C(int a0, int a1, int a2){ GARAGE_DISP_EXCHANGE(a0, a1, a2, 16); }
-#ifndef __APPLE__
 void _08002773C(int a0,int a1,int a2) __attribute__((alias("Garage_2773C")));
 void sub_08002773C(int a0,int a1,int a2) __attribute__((alias("Garage_2773C")));
-#endif
 void Garage_27788(int a0, int a1, int a2){ GARAGE_DISP_EXCHANGE(a0, a1, a2, 0); }
-#ifndef __APPLE__
 void _080027788(int a0,int a1,int a2) __attribute__((alias("Garage_27788")));
 void sub_080027788(int a0,int a1,int a2) __attribute__((alias("Garage_27788")));
-#endif
 // _0800277D4 (ROM 0x0800277D4-0x080027828, 84 B) -- the two-emitter course pass.
 // Both args are truncated to s16 ONCE and kept in r4/r5 across the pair of
 // calls: 0x08027788 first with a2=0, then 0x08002773C with a2=1. The lane is
@@ -366,9 +317,7 @@ void Garage_277D4(int a0, int a1) {
     n = ((s16 *)(state + i1))[0];
     sub_080075E8((void *)tmpl, v, n);
 }
-#ifndef __APPLE__
 void _0800277D4(int a0,int a1) __attribute__((alias("Garage_277D4")));
-#endif
 
 // Mechanically translated bounded direct leaves from 0x0279D8 onward — opaque volatile pointers, exact widths
 void Garage_279D8(void *a0,int a1,int a2,int a3){
@@ -376,10 +325,8 @@ void Garage_279D8(void *a0,int a1,int a2,int a3){
     volatile u8 *base = (volatile u8*)a0;
     (void)base; (void)a1; (void)a2; (void)a3;
 }
-#ifndef __APPLE__
 void _0800279D8(void *a0,int a1,int a2,int a3) __attribute__((alias("Garage_279D8")));
 void sub_0800279D8(void *a0,int a1,int a2,int a3) __attribute__((alias("Garage_279D8")));
-#endif
 
 // 0x080027B94 — 332 B (0x08027B94..0x08027CE0): per-record progression follow-up.
 // `rec` is a 12-byte slot; `*(u32 *)(rec+4)` is the "info" record whose s16[0] is
@@ -391,7 +338,6 @@ void sub_0800279D8(void *a0,int a1,int a2,int a3) __attribute__((alias("Garage_2
 // `ObjCenter_*` prototypes are runtime_hud.c's; use the surviving `sub_`
 // VMA aliases at these call sites because those are the names the selected
 // C sections export into the independent slice.
-#ifndef __APPLE__
 extern void sub_08003A88(int a, u32 b, const volatile u8 *c);
 extern void sub_08003AA8(int a, u32 b, const volatile u8 *c);
 extern void _08018A88(u32 v);
@@ -402,18 +348,6 @@ extern u32 sub_0802DFE4(u32 n, u32 d);
 #define Garage_Call_18A88 _08018A88
 #define Garage_Call_07BFC _08007BFC
 #define Garage_Call_02DFE4 sub_0802DFE4
-#else
-extern void ObjCenter_03A88(int a, u32 b, const volatile u8 *c);
-extern void ObjCenter_03AA8(int a, u32 b, const volatile u8 *c);
-extern void Ghost_SetRaceCtxU16_74(u32 v);
-extern void Course_Iter_07BFC(void *a, int b, int c, int d, int e, int f, int g, int h, int i);
-extern u32 DivRemU_02DFE4(u32 num, u32 den);
-#define Garage_Call_03A88 ObjCenter_03A88
-#define Garage_Call_03AA8 ObjCenter_03AA8
-#define Garage_Call_18A88 Ghost_SetRaceCtxU16_74
-#define Garage_Call_07BFC Course_Iter_07BFC
-#define Garage_Call_02DFE4 DivRemU_02DFE4
-#endif
 //
 // Two constraints the byte match depends on:
 //   * WA+0x10D8 is reached through an ASSEMBLER-RESOLVED symbol: the ROM emits
@@ -485,10 +419,8 @@ void Garage_27B94(void *a0) {
     }
     }
 }
-#ifndef __APPLE__
 void _080027B94(void *a0) __attribute__((alias("Garage_27B94")));
 void sub_080027B94(void *a0) __attribute__((alias("Garage_27B94")));
-#endif
 
 void Garage_27D30(void){
     // _080027D30 (ROM 0x080027D30-0x080027D84, 84 B). 0x080027D08 walks the
@@ -549,19 +481,15 @@ OUT:
     return;
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _080027D30(void) __attribute__((alias("Garage_27D30")));
 void sub_080027D30(void) __attribute__((alias("Garage_27D30")));
-#endif
 
 void Garage_27D84(int a0){
     // _080027D84: push {r4-r7,sl/r9/r8} lsls #16/asrs #16 s16, switch r0 1..3 → r5=3/4/5/2, pools 0x03001760/0x03001680/0x05000038
     (void)a0;
 }
-#ifndef __APPLE__
 void _080027D84(int a0) __attribute__((alias("Garage_27D84")));
 void sub_080027D84(int a0) __attribute__((alias("Garage_27D84")));
-#endif
 
 // Remaining bounded direct leaves from 0x027F60 onward — mechanically translated, opaque volatile pointers
 // Each preserves push {r4,lr} prologue, ldr rN,[pc,#imm] pools (0x03001760 etc.), direct offsets +4/+6/+8 etc., widths u8/s16/u32 via ldrb/ldrh/ldr/strb/strh, branches beq/bgt/ble on s16 cmp, table arithmetic lsls #1*1 etc., helper ABI bl 0x0802DF6C/0x08002ED0 with r0=X etc., no guessed course/garage stride
@@ -665,10 +593,8 @@ out:
 // 108-body span: 2-byte tail pad at 0x080027FCA is `00 00`, not gas's Thumb
 // `nop` filler. Same idiom as Garage_27FCC / Garage_28B54.
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _080027F60(void) __attribute__((alias("Garage_27F60")));
 void sub_080027F60(void) __attribute__((alias("Garage_27F60")));
-#endif
 // 0x080027FCC — garage-record follow-up sweep (0x08027FCC..0x0802802C, 96 B).
 // Full ROM characterisation from objdump --start-address=0x27fcc:
 //
@@ -713,21 +639,13 @@ void sub_080027F60(void) __attribute__((alias("Garage_27F60")));
 //
 // Callee spellings. All three bodies are in this file, but the spliced slice
 // resolves the VMA alias (the friendly name is a C-only symbol the slice does
-// not link), and the host build has no alias at all -- a bare `_080027B94`
-// call would be an implicit declaration there. Same split as
-// src/ai_catalog.c `Call_FlatIndex`; see tools/apple_decls.py.
-#ifndef __APPLE__
+// not link).
 extern void _080027F60(void);
 extern void _080027B94(void *rec);
 extern void _080027D30(void);
 #define Garage_Call_27F60 _080027F60
 #define Garage_Call_27B94 _080027B94
 #define Garage_Call_27D30 _080027D30
-#else
-#define Garage_Call_27F60 Garage_27F60
-#define Garage_Call_27B94 Garage_27B94
-#define Garage_Call_27D30 Garage_27D30
-#endif
 void Garage_27FCC(void) {
     u8 *rec;
     // The ROM reaches the slot only AFTER the call: `push {r4,r5,lr}` /
@@ -806,7 +724,6 @@ void Garage_2802C(int unused, int bits) {
             rec[16] = 1;
     }
 }
-#ifndef __APPLE__
 void _0802802C(int a, int b) __attribute__((alias("Garage_2802C")));
 void sub_0802802C(int a, int b) __attribute__((alias("Garage_2802C")));
 void _08002802C(void) __attribute__((alias("Garage_2802C")));
@@ -814,7 +731,6 @@ void sub_08002802C(void) __attribute__((alias("Garage_2802C")));
 void _080027FCC(void) __attribute__((alias("Garage_27FCC")));
 void sub_080027FCC(void) __attribute__((alias("Garage_27FCC")));
 void Sub_080027FCC(void) __attribute__((alias("Garage_27FCC")));
-#endif
 // ---- 0x0802804C.. 0x08002823C: the HUD-gauge command family ----
 //
 // LIFTED. All six were `(void)p;`-style stubs, i.e. 4-byte `bx lr` bodies
@@ -843,10 +759,8 @@ void Garage_2804C(void *a,int b){
         *(volatile u16 *)0x04000050u = 0x0F9F;
     *(volatile u16 *)0x04000054u = 31;
 }
-#ifndef __APPLE__
 void _08002804C(void *a,int b) __attribute__((alias("Garage_2804C")));
 void sub_08002804C(void *a,int b) __attribute__((alias("Garage_2804C")));
-#endif
 // 0x08028090 — the same commit pair behind a `SoundFadeOut(5)`, and `rec` is
 // live across that call, which is what the `push {r4,lr}` / `adds r4,r0,#0`
 // prologue is.
@@ -856,10 +770,8 @@ void Garage_28090(void *a){
     *p = 32;
     sub_08004B90(sub_08004B68());
 }
-#ifndef __APPLE__
 void _080028090(void *a) __attribute__((alias("Garage_28090")));
 void sub_080028090(void *a) __attribute__((alias("Garage_28090")));
-#endif
 // 0x080280D4 — the level-0 arm clears the gauge to 0x0F1F and skips the fill
 // store entirely (`b` to the epilogue), so the two stores are in separate arms
 // and NOT after a join. The clamp is `cmp r2,#31; ble`, i.e. SIGNED.
@@ -881,10 +793,8 @@ void Garage_280D4(void *a,int b){
         *(volatile u16 *)0x04000054u = (u16)c;
     }
 }
-#ifndef __APPLE__
 void _0800280D4(void *a,int b) __attribute__((alias("Garage_280D4")));
 void sub_0800280D4(void *a,int b) __attribute__((alias("Garage_280D4")));
-#endif
 // 0x08028134 — the level-0 arm asks _0802B330 and only commits when the
 // answer is zero AFTER a 16-bit truncation (`lsls r0,#16; cmp r0,#0`).
 // The non-zero arm clamps the other way: `31 - v`, floored at 0.
@@ -906,10 +816,8 @@ void Garage_28134(void *a,int b){
         *(volatile u16 *)0x04000054u = (u16)c;
     }
 }
-#ifndef __APPLE__
 void _080028134(void *a,int b) __attribute__((alias("Garage_28134")));
 void sub_080028134(void *a,int b) __attribute__((alias("Garage_28134")));
-#endif
 // 0x080281F8 — Garage_2804C with K=6 and the test against 3 instead of 1.
 void Garage_281F8(void *a,int b){
     volatile u32 *p=(volatile u32*)((u8*)a+4);
@@ -921,10 +829,8 @@ void Garage_281F8(void *a,int b){
         *(volatile u16 *)0x04000050u = 0x0F9F;
     *(volatile u16 *)0x04000054u = 31;
 }
-#ifndef __APPLE__
 void _0800281F8(void *a,int b) __attribute__((alias("Garage_281F8")));
 void sub_0800281F8(void *a,int b) __attribute__((alias("Garage_281F8")));
-#endif
 // 0x0802823C — just the commit pair at K=6; no gauge store at all.
 void Garage_2823C(void *a){
     volatile u32 *p=(volatile u32*)((u8*)a+4);
@@ -932,10 +838,8 @@ void Garage_2823C(void *a){
     sub_08004B90(sub_08004B68());
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _08002823C(void *a) __attribute__((alias("Garage_2823C")));
 void sub_08002823C(void *a) __attribute__((alias("Garage_2823C")));
-#endif
 // 0x08028260 — the gauge family again, but the non-zero arm divides first:
 // `lsls r0,#5; movs r1,#6; bl 0x0802DF6C` is `sub_0802DF6C(v * 32, 6)`, the
 // hand-written __aeabi_uidiv the closure names `sub_0802DF6C`. It is a
@@ -958,10 +862,8 @@ void Garage_28260(void *a,int b){
         *(volatile u16*)0x04000054u = (u16)q;
     }
 }
-#ifndef __APPLE__
 void _080028260(void *a,int b) __attribute__((alias("Garage_28260")));
 void sub_080028260(void *a,int b) __attribute__((alias("Garage_28260")));
-#endif
 // 0x080282D0 — the gauge family with a fill-from-the-top: the ROM RELOADS
 // `*(u32 *)(a+4)` after the level-0 arm (`ldr r0,[r4,#4]` appears twice), so
 // the C re-reads the field rather than caching it, and the level is
@@ -982,10 +884,8 @@ void Garage_282D0(void *a,int b){
         *(volatile u16*)0x04000050u = 0x0F9F;
     *(volatile u16*)0x04000054u = (u16)q;
 }
-#ifndef __APPLE__
 void _0800282D0(void *a,int b) __attribute__((alias("Garage_282D0")));
 void sub_0800282D0(void *a,int b) __attribute__((alias("Garage_282D0")));
-#endif
 // 0x0802839C — the gauge family, but a LAYOUT selector rather than a level.
 // The `b` value picks one of two window presets (b in {6,8} or {5,7}) and any
 // other value skips the 0x04000012 store entirely: the ROM's fourth compare is
@@ -1030,10 +930,8 @@ tail:
     rec[1] = 1920;
     sub_08004B90(sub_08004B68());
 }
-#ifndef __APPLE__
 void _08002839C(void *a,int b) __attribute__((alias("Garage_2839C")));
 void sub_08002839C(void *a,int b) __attribute__((alias("Garage_2839C")));
-#endif
 // 0x0802841C — gauge family with a fade kick. `subs r0,r4,#7; cmp r0,#1; bhi`
 // is the unsigned two-value range test over {7,8}, i.e. the decomp.wiki
 // `if ((u32)(var - min) <= 1)` shape. The window-clearing block is guarded by
@@ -1059,10 +957,8 @@ void Garage_2841C(void *a,int b){
     rec[1] = 1920;
     sub_08004B90(sub_08004B68());
 }
-#ifndef __APPLE__
 void _08002841C(void *a,int b) __attribute__((alias("Garage_2841C")));
 void sub_08002841C(void *a,int b) __attribute__((alias("Garage_2841C")));
-#endif
 // 0x0802847C — the window-shrink path. Two presets, {6,8} shrinking from the
 // left and {5,7} from the right, and the shared tail that mirrors rec[3] into
 // the HUD map at 0x030035C0+12. Any other `b` skips the tail entirely
@@ -1110,10 +1006,8 @@ void Garage_2847C(void *a, int b) {
     }
     m[6] = (u16)(h[4] - h[6]);   /* rec[+8] and rec[+12] as halfwords */
 }
-#ifndef __APPLE__
 void _08002847C(void *a,int b) __attribute__((alias("Garage_2847C")));
 void sub_08002847C(void *a,int b) __attribute__((alias("Garage_2847C")));
-#endif
 // 0x080284FC — 144 B (0x080284FC..0x0802858C): the grow-side sibling of
 // Garage_2847C, dispatched by _0800286A4 case 16 (`_0800284FC(rec, arg)`).
 //   {6,8}: w = rec[+16] + 192; rec[+16] = w; if (w > 2399) rec[+16] = 2400;
@@ -1167,10 +1061,8 @@ void Garage_284FC(void *a,int b) {
         m[6] = (u16)(*(u16 *)(p + 8) - *(u16 *)(p + 12));
     }
 }
-#ifndef __APPLE__
 void _0800284FC(void *a,int b) __attribute__((alias("Garage_284FC")));
 void sub_0800284FC(void *a,int b) __attribute__((alias("Garage_284FC")));
-#endif
 // 0x08002858C — 96 B (0x08002858C..0x0800285EA, tail 2-byte pad at 0x5E2).
 // The DISPCNT-window sibling of Garage_2839C, but the selector is a LAYOUT
 // guard on rec[1] rather than a preset. Full ROM transcription:
@@ -1222,10 +1114,8 @@ commit:
     *(volatile u16*)0x04000010u = (u16)(((s32)rec[2] - (s32)rec[3]) >> 3);
     *(volatile u16*)0x04000012u = 0;
 }
-#ifndef __APPLE__
 void _08002858C(void *a,int b) __attribute__((alias("Garage_2858C")));
 void sub_08002858C(void *a,int b) __attribute__((alias("Garage_2858C")));
-#endif
 // 0x0800285EC — 176 B (0x0800285EC..0x0802869C). Garage_2858C plus the
 // per-layout commit call and the 0xFF10 reset. Full ROM transcription:
 //
@@ -1288,20 +1178,16 @@ commit:
     *(volatile u16*)0x04000010u = (u16)(((s32)rec[2] - (s32)rec[3]) >> 3);
     *(volatile u16*)0x04000012u = 0;
 }
-#ifndef __APPLE__
 void _0800285EC(void *a,int b) __attribute__((alias("Garage_285EC")));
 void sub_0800285EC(void *a,int b) __attribute__((alias("Garage_285EC")));
-#endif
 
 void Garage_28734(void){
     extern void _08001818(void);
     _08001818();
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _080028734(void) __attribute__((alias("Garage_28734")));
 void sub_080028734(void) __attribute__((alias("Garage_28734")));
-#endif
 
 // Lifted: sub_080028744 — 52B Thumb body plus two pool words (02030000/06004000).
 // The return values from 07978 and 07924 pass directly in r0 to 2D984.
@@ -1319,10 +1205,8 @@ void Garage_28744(void){
     sub_0802D984(res, (void *)0x06004000u);
     sub_08007938(p, 0, 0);
 }
-#ifndef __APPLE__
 void _080028744(void) __attribute__((alias("Garage_28744")));
 void sub_080028744(void) __attribute__((alias("Garage_28744")));
-#endif
 
 // Lifted: sub_080028828 — 8B wrapper over dispatcher 028784, pure Thumb, no pools, exact boundary push {lr} bl 028784 pop {r0} bx r0
 // Proven via objdump: 0x08028828: b500 push {lr}; f7ff fffe bl 0x080028784; bc08 pop {r0}; 4700 bx r0; 1c00 pad
@@ -1331,10 +1215,8 @@ void Garage_28828(void){
     _080028784();
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _080028828(void) __attribute__((alias("Garage_28828")));
 void sub_080028828(void) __attribute__((alias("Garage_28828")));
-#endif
 
 // Lifted: sub_0800289C0 — 16B bounded field helper, pure Thumb, no pools (besides numeric bl), exact boundary push {lr} ldrh [r0,#16] (u16 via ldrh) movs r0,#0 bl _08001E48 pop {r0} bx r0
 // Proven via objdump: 0x080289C0: b500 push {lr}; 8890 ldrh r1,[r0,#16]; 2000 movs r0,#0; f7ff fffe bl 0x08001E48; bc08 pop {r0}; 4700 bx r0
@@ -1344,10 +1226,8 @@ void Garage_289C0(void *rec){
     _08001E48(0, v);
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _0800289C0(void *a) __attribute__((alias("Garage_289C0")));
 void sub_0800289C0(void *a) __attribute__((alias("Garage_289C0")));
-#endif
 
 // Lifted: sub_080028B40 — 20B bounded wrapper, pure Thumb, pool 0000138B, exact boundary push {lr} ldr 138B bl 016D0 bl 01818 pop bx
 // Proven via objdump: 0x08028B40: b500 push {lr}; 4801 ldr r0,=0000138B; f7ff fffe bl 0x080016D0; f7ff fffe bl 0x08001818; bc08 pop {r0}; 4700 bx r0; pool 0000138B at 0x28B50
@@ -1357,10 +1237,8 @@ void Garage_28B40(void){
     _080016D0(0x138B);
     _08001818();
 }
-#ifndef __APPLE__
 void _080028B40(void) __attribute__((alias("Garage_28B40")));
 void sub_080028B40(void) __attribute__((alias("Garage_28B40")));
-#endif
 
 // Lifted: sub_080029218 — 12B bounded wrapper, pure Thumb, no pools (besides numeric bl), exact boundary push {lr} bl 04BD8 pop {r0} bx r0
 // Proven via objdump: 0x08029218: b500 push {lr}; f7ff fffe bl 0x08004BD8; bc08 pop {r0}; 4700 bx r0; 1c00 pad
@@ -1369,10 +1247,8 @@ void Garage_29218(void){
     _08004BD8();
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _080029218(void) __attribute__((alias("Garage_29218")));
 void sub_080029218(void) __attribute__((alias("Garage_29218")));
-#endif
 
 // Lifted: sub_080029224 — 12B bounded wrapper, pure Thumb, no pools (besides numeric bl), exact boundary push {lr} movs #1 bl 02060 pop {r0} bx r0
 // Proven via objdump: 0x08029224: b500 push {lr}; 2001 movs r0,#1; f7ff fffe bl 0x08002060; bc08 pop {r0}; 4700 bx r0; 1c00 pad
@@ -1380,10 +1256,8 @@ void Garage_29224(void){
     extern void _08002060(int);
     _08002060(1);
 }
-#ifndef __APPLE__
 void _080029224(void) __attribute__((alias("Garage_29224")));
 void sub_080029224(void) __attribute__((alias("Garage_29224")));
-#endif
 
 // Lifted: sub_080029208 — 12B bounded wrapper, pure Thumb, no pools (besides numeric bl), exact boundary push {lr} movs #213 lsls #5 adds r0 bl 04EF0 pop {r0} bx r0
 // Proven via objdump: 0x08029208: b500 push {lr}; 21d5 movs r1,#213; 0289 lsls r1,#5; 1840 adds r0,r0,r1; f7ff fffe bl 0x08004EF0; bc08 pop {r0}; 4700 bx r0
@@ -1391,10 +1265,8 @@ void Garage_29208(void *rec){
     extern void _08004EF0(void*);
     _08004EF0((u8*)rec + (213u<<5)); // r0=rec+0x1AA0 via movs #213 lsls #5
 }
-#ifndef __APPLE__
 void _080029208(void *a) __attribute__((alias("Garage_29208")));
 void sub_080029208(void *a) __attribute__((alias("Garage_29208")));
-#endif
 
 // Lifted: sub_080028B74 — 20B bounded wrapper, pure Thumb, pool 0000014D, exact boundary push {lr} ldr 14D movs #0 bl 01E48 pop {r0} bx r0
 // Proven via objdump: 0x08028B74: b500 push {lr}; 4901 ldr r1,=0000014D (pool at 0x28B84); 2000 movs r0,#0; f7ff fffe bl 0x08001E48; bc08 pop {r0}; 4700 bx r0; pool 0000014D
@@ -1402,10 +1274,8 @@ void Garage_28B74(void){
     extern void _08001E48(int,int);
     _08001E48(0, 0x14D);
 }
-#ifndef __APPLE__
 void _080028B74(void) __attribute__((alias("Garage_28B74")));
 void sub_080028B74(void) __attribute__((alias("Garage_28B74")));
-#endif
 
 // Lifted: sub_080028B54 — 32B bounded loop, pure Thumb, no pools (besides numeric bl), exact boundary push {r4,r5,lr} movs r5 #0 adds r4,r0 loop bl 01E5C strh [r4,#0] (r4+2, r5+1, cmp #3 ble)
 // Proven via objdump: 0x08028B54: b530 push {r4,r5,lr}; 1c04 adds r4,r0; 2005 movs r5,#0; _B5A: 1c28 adds r0,r5; 2100 movs r1,#0; f7ff fffe bl 0x08001E5C; 8004 strh r0,[r4,#0]; 3402 adds r4,#2; 3501 adds r5,#1; 2d03 cmp r5,#3; ddf9 ble _B5A; bc30 pop {r4,r5}; bc08 pop {r0}; 4700 bx r0
@@ -1421,10 +1291,8 @@ void Garage_28B54(void *rec_){
 // 30 bytes of body; the section's 4-byte pad must be `00 00`, not gas's Thumb
 // `nop` filler (0x46c0). Same idiom as garage_records.c 0x080286A4.
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _080028B54(void *a) __attribute__((alias("Garage_28B54")));
 void sub_080028B54(void *a) __attribute__((alias("Garage_28B54")));
-#endif
 
 // Lifted: sub_080028888 — 24B bounded wrapper, pure Thumb, no pools (besides numeric bl), exact boundary push {lr} lsls r2 #16 lsrs #16 movs #1 ands cmp beq bl 04EC0 pop {r0} bx r0
 // Proven via objdump: 0x08028888: b500 push {lr}; 0b12 lsls r2,#16; 0b1a lsrs r2,#16; 2001 movs r0,#1; 4010 ands r2,r0; 2800 cmp r2,#0; d001 beq 02889A; f7ff fffe bl 0x08004EC0; bc08 pop {r0}; 4700 bx r0
@@ -1437,17 +1305,12 @@ void Garage_28888(int a, int b, int flag){
     }
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _080028888(int a,int b,int c) __attribute__((alias("Garage_28888")));
 void sub_080028888(int a,int b,int c) __attribute__((alias("Garage_28888")));
-#endif
-
 
 
 // ROM entry alias.
-#ifndef __APPLE__
 void Sub_0800279D8(void *a0,int a1,int a2,int a3) __attribute__((alias("Garage_279D8")));
-#endif
 
 // 0x08027210 — 36B mode-flag store over the garage record slot 0x03001678
 // ((consolidated/elsewhere); both pools are that slot):
@@ -1464,10 +1327,8 @@ void Garage_ModeFlag_27210(s8 v) {
     else
         (*(volatile u8 *volatile *)0x03001678u)[18] = x;
 }
-#ifndef __APPLE__
 void _08027210(s8 v) __attribute__((alias("Garage_ModeFlag_27210")));
 void sub_08027210(s8 v) __attribute__((alias("Garage_ModeFlag_27210")));
-#endif
 
 // 0x080270D8 — display row XY store (asm pool 0x03001678 = the garage
 // display slot): n = s8[rec+16] (row count); if (c < n) row = rec + c*8;
@@ -1482,20 +1343,16 @@ void Garage_DispXY_270D8(u32 x, u32 y, int c) {
         *(u16 *)(row + 22) = (u16)(((s32)y >> 13) - 4);
     }
 }
-#ifndef __APPLE__
 void _080270D8(u32 a, u32 b, int c) __attribute__((alias("Garage_DispXY_270D8")));
 void sub_080270D8(u32 a, u32 b, int c) __attribute__((alias("Garage_DispXY_270D8")));
-#endif
 
 // 0x08027114 — 8B selection leaf: u8[*(u32*)0x03001678 + 17] = v.
 void Garage_DispSel_27114(int v) {
     volatile u8 *rec = *(volatile u8 *volatile *)0x03001678u;
     rec[17] = (u8)v;
 }
-#ifndef __APPLE__
 void _08027114(int v) __attribute__((alias("Garage_DispSel_27114")));
 void sub_08027114(int v) __attribute__((alias("Garage_DispSel_27114")));
-#endif
 
 // ------------------ garage-display cluster (raw-ROM transcriptions) ------------------
 // Shared frame records: P0 = *(u32**)0x03001678 (u16[0]=base screen x, u16[2]=base
@@ -1542,9 +1399,7 @@ void Garage_CarPos_27120(void)
               (int)*(volatile s16 *)(P0 + 2), (int)*(volatile s16 *)(P0 + 12),
               (int)(s8)*(volatile u8 *)(P0 + 18), 1);
 }
-#ifndef __APPLE__
 void _08027120(void) __attribute__((alias("Garage_CarPos_27120")));
-#endif
 
 // 0x08027234 (ROM 0x08027234-0x08027306, transcribed from the raw image):
 // the racer-placement sprite builder. a3 = record (u32[+4]/[+8] = pos x/y —
@@ -1590,10 +1445,8 @@ void Garage_Place_27234(u32 a, u32 b, s16 c, void *d)
                  | ((u32)*(volatile u16 *)(P1 + 18) << 12));
     n[6] = 0;
 }
-#ifndef __APPLE__
 void _08027234(u32 a, u32 b, s16 c, void *d) __attribute__((alias("Garage_Place_27234")));
 void sub_08027234(u32 a, u32 b, s16 c, void *d) __attribute__((alias("Garage_Place_27234")));
-#endif
 
 // 0x08027828 (ROM 0x08027828-0x080278D6, transcribed from the raw image):
 // a = the P1 record pointer (ROM caller r0 = 0x03005DF0; also forwarded as
@@ -1628,9 +1481,7 @@ void Garage_ListWalk_27828(void *a)
     *(volatile u16 *)(P1 + 10) =
         (*(volatile s16 *)(P1 + 10) == 0) ? 1u : 0u;
 }
-#ifndef __APPLE__
 void _08027828(void *a) __attribute__((alias("Garage_ListWalk_27828")));
-#endif
 
 // 0x080278F0 (ROM 0x080278F0-0x080279CE, transcribed from the raw image):
 // clears the [P1+0x90] list head, ticks six 24B-strided (do-while from 5)
@@ -1684,9 +1535,7 @@ void Garage_Ticker_278F0(void)
     }
     *(volatile u16 *)(m + 6) = 0;
 }
-#ifndef __APPLE__
 void _080278F0(void) __attribute__((alias("Garage_Ticker_278F0")));
-#endif
 
 
 // Pool: 0x0805CAF0 / 0x000007FF / 0x0805BAF0 / 0xFFFFE000 (the Q8 bias, loaded
@@ -1744,10 +1593,8 @@ void Garage_27308(int a0, int a1, void *rec)
     node[2] = (u16)((((u32)w[9]) << 12) | (u32)(w[6] + 16));
     node[6] = 0;
 }
-#ifndef __APPLE__
 void _08027308(int a0, int a1, void *rec) __attribute__((alias("Garage_27308")));
 void sub_08027308(int a0, int a1, void *rec) __attribute__((alias("Garage_27308")));
-#endif
 
 // Pool: 0x0300167C (the global record slot) / 0x05000025 (16-bit CpuSet fill,
 // 37 halfwords = the 16-byte frame plus slack) / 0x0203FB50 / 0x0203FA50 /
@@ -1768,9 +1615,6 @@ void Garage_27460(void *a0)
     extern void sub_0802D974(const void *s, void *d, u32 m); // file scope
     extern void _08005BA8(void *p, int v);
     extern s16 _080258B8(int idx);
-    // sub_080261B0 / sub_080261F8 / sub_08007538 / sub_080075E8 are already
-    // declared at file scope with the __APPLE__ / ARM split; re-declaring
-    // them here is a hard "conflicting types" error on the host build.
     volatile u32 *slot = (volatile u32 *)(uintptr_t)0x0300167Cu;
     volatile u8 *rec;
     volatile u32 *d0;
@@ -1817,7 +1661,5 @@ void Garage_27460(void *a0)
                          (void *)(int)(*(volatile s16 *)(rec + 12) + 16));
     }
 }
-#ifndef __APPLE__
 void _08027460(void *a) __attribute__((alias("Garage_27460")));
 void sub_08027460(void *a) __attribute__((alias("Garage_27460")));
-#endif

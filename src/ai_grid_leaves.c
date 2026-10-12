@@ -15,28 +15,10 @@ static inline void bios_unpack(const void *src, void *dst, u32 n){ _0802E0A4(dst
 // which owns the _08025CF4/sub_08025CF4 aliases); this entry point re-exports
 // it so the derived leaves below share one implementation instead of the
 // earlier hand-approximation that lived here.
-#ifdef __APPLE__
-// Host-only fallback: the standalone host test does not link runtime_state_dispatch.c,
-// so keep a self-contained (equivalent) body here. Must stay bit-exact with
-// AiGridGet_25CF4 — including the final `>> (idx & 3) * 2` field extract
-// (objdump 0x08025D14–0x08025D18: `ands r0,r1` then `lsls r1,r2,#1`/`asrs`).
-int Ai_GridGet(int type,int row,int col){
-    if (col > 10 || col < 0) return 0;
-    u8 tmp[4];
-    bios_unpack((const void*)(uintptr_t)AI_GRID_MASK_TBL, tmp, 4u);
-    int idx = 44*type + 11*row + col;
-    int rem = packed_shift(idx, 4);
-    volatile u8 *base = (volatile u8*)(uintptr_t)AI_GRID_BASE;
-    int off = (idx < 0) ? ((idx + 3) >> 2) : (idx >> 2);
-    u8 v = base[off];
-    return (int)(u8)((u8)(v & tmp[rem]) >> (rem * 2));
-}
-#else
 extern int AiGridGet_25CF4(int type, int row, int col);
 int Ai_GridGet(int type,int row,int col){
     return AiGridGet_25CF4(type, row, col);
 }
-#endif
 
 // _08025D64(type,row) — count consecutive set cells in column? Actually asm counts col 0..10 where GridGet !=0
 //
@@ -51,7 +33,6 @@ int Ai_GridCountCol(int type,int row){
     int v;
 col_loop:
     if(col > 10) goto col_done;
-#ifndef __APPLE__
     // The slice links no C object, so a promoted body may only call a spelling
     // the closure defines. `Ai_GridGet` is a friendly name with no VMA and no
     // alias declaration of its own, so the screen reads it as "no VMA and not a
@@ -61,9 +42,6 @@ col_loop:
     // unchanged. The host build has no VMA-named symbol: it keeps the name.
     extern int _08025CF4(int type, int row, int col);
     v = _08025CF4(type,row,col);
-#else
-    v = Ai_GridGet(type,row,col);
-#endif
     if((v<<24)==0) goto col_done;
     cnt++;
     col++;
@@ -71,10 +49,8 @@ col_loop:
 col_done: ;
     return cnt;
 }
-#ifndef __APPLE__
 int _08025D64(int a,int b) __attribute__((alias("Ai_GridCountCol")));
 int Sub_08025D64(int a,int b) __attribute__((alias("Ai_GridCountCol")));
-#endif
 
 // _08025D90(type) — rows fully occupied clamped ≤3
 //
@@ -98,7 +74,6 @@ int Ai_GridRowsFull(int type){
     int c;
 row_loop:
     if(row > 3) goto row_done;
-#ifndef __APPLE__
     // Same rule as the callee above. `Ai_GridCountCol` does resolve to VMA
     // 0x08025D64 through its own alias declaration, but the closure spells that
     // address `_08025D64`, so the screen reports "closure defines
@@ -106,9 +81,6 @@ row_loop:
     // `_08025D64` is a C-owned alias of the function called here (line 67), so
     // the `bl` target and its encoding are unchanged. Host keeps the name.
     c = _08025D64(type,row);
-#else
-    c = Ai_GridCountCol(type,row);
-#endif
     if(c != 11) goto row_done;
     full++;
     row++;
@@ -117,9 +89,7 @@ row_done: ;
     if(full>3) full=3;
     return full;
 }
-#ifndef __APPLE__
 int _08025D90(int a) __attribute__((alias("Ai_GridRowsFull")));
-#endif
 
 void Ai_GridSetPacked(int type, int val){
     u8 tmp[4];
@@ -138,22 +108,16 @@ void Ai_GridSetPacked(int type, int val){
     register volatile u8 *mp __asm__("r0") = t + sh;
     register u32 cur __asm__("r1") = *cell;
     register u32 mask __asm__("r0") = *mp;
-#ifndef __APPLE__
     __asm__("bic %0, %1\n\tadd %1, %0, #0" : "+r"(cur), "+r"(mask));
     *cell = mask;
-#else
-    *cell = cur & ~mask;
-#endif
     int sh2 = packed_shift(type, 4);
     v <<= (sh2 << 1);
     v |= *cell;
     *cell = v;
 }
-#ifndef __APPLE__
 void _08025DBC(int a,int b) __attribute__((alias("Ai_GridSetPacked")));
 void sub_08025DBC(int a,int b) __attribute__((alias("Ai_GridSetPacked")));
 void Sub_08025DBC(int a,int b) __attribute__((alias("Ai_GridSetPacked")));
-#endif
 
 // _08025E1C(type) -> 0..3.  Byte-exact (84/84, whole body + pool).
 //
@@ -203,12 +167,9 @@ int Ai_GridGetPacked(int type){
     u8 mask = *mp;
     return (u8)((v & mask) >> (sh2 << 1));
 }
-#ifndef __APPLE__
 int _08025E1C(int a) __attribute__((alias("Ai_GridGetPacked")));
 int Sub_08025E1C(int a) __attribute__((alias("Ai_GridGetPacked")));
-#endif
 
-#ifndef __APPLE__
 __attribute__((naked)) void Ai_GridWriteRecord(u32 a,int b,int c, u32 val){
     __asm__ volatile (
         ".syntax unified\n"
@@ -235,18 +196,8 @@ __attribute__((naked)) void Ai_GridWriteRecord(u32 a,int b,int c, u32 val){
         ".syntax divided\n"
     );
 }
-#else
-void Ai_GridWriteRecord(u32 a,int b,int c, u32 val){
-    volatile u8 *base = (volatile u8*)(uintptr_t)AI_GRID_BASE;
-    u32 off = 1408 + (u32)(a*48) + (u32)((b*3 + c)*4);
-    *(volatile u32*)(base + off) = val;
-}
-#endif
-#ifndef __APPLE__
 void _08025E70(u32 a,int b,int c, u32 d) __attribute__((alias("Ai_GridWriteRecord")));
-#endif
 
-#ifndef __APPLE__
 __attribute__((naked)) u32 Ai_GridReadRecord(u32 a,int b,int c){
     __asm__ volatile (
         ".syntax unified\n"
@@ -273,16 +224,7 @@ __attribute__((naked)) u32 Ai_GridReadRecord(u32 a,int b,int c){
         ".syntax divided\n"
     );
 }
-#else
-u32 Ai_GridReadRecord(u32 a,int b,int c){
-    volatile u8 *base = (volatile u8*)(uintptr_t)AI_GRID_BASE;
-    u32 off = 1408 + (u32)(a*48) + (u32)((b*3 + c)*4);
-    return *(volatile u32*)(base+off);
-}
-#endif
-#ifndef __APPLE__
 u32 _08025E98(u32 a,int b,int c) __attribute__((alias("Ai_GridReadRecord")));
-#endif
 
 
 // _08025EC0(id,val) halfword packed
@@ -297,15 +239,11 @@ void Ai_GridHalfwordSet(int id, int val){
     register uintptr_t base __asm__("r1");
     register u32 off __asm__("r3");
     register int i4 __asm__("r0");
-#ifndef __APPLE__
     /* Absolute definition in-body: the splicer retains only the function's
        section, so a file-scope asm definition is omitted from the link. */
     extern u8 AiGridHalfBase[];
     __asm__(".globl AiGridHalfBase\nAiGridHalfBase = 0x03001780\n");
     base = (uintptr_t)AiGridHalfBase;
-#else
-    base = (uintptr_t)0x03001780;
-#endif
     i4 = (masked / 4) << 1;
     off = 174;
     off = off << 3;
@@ -315,22 +253,16 @@ void Ai_GridHalfwordSet(int id, int val){
     register volatile u8 *mp __asm__("r0") = t + sh;
     register u32 cur __asm__("r3") = *cell;
     register u32 mask __asm__("r0") = *mp;
-#ifndef __APPLE__
     __asm__("bic %0, %1\n\tadd %1, %0, #0" : "+r"(cur), "+r"(mask));
     *cell = mask;
-#else
-    *cell = cur & ~mask;
-#endif
     int sh2 = packed_shift(masked, 4);
     v <<= (sh2 << 1);
     v |= *cell;
     *cell = v;
 }
-#ifndef __APPLE__
 void _08025EC0(int a,int b) __attribute__((alias("Ai_GridHalfwordSet")));
 void sub_08025EC0(int a,int b) __attribute__((alias("Ai_GridHalfwordSet")));
 void Sub_08025EC0(int a,int b) __attribute__((alias("Ai_GridHalfwordSet")));
-#endif
 
 // _08025F20(id) -> s16>>shift & mask.  Byte-exact (88/88, whole body + pool).
 //
@@ -373,18 +305,12 @@ int Ai_GridHalfwordGet(int id){
     base += off;
     return (*(s16 *)(i4 + base) & tmp[sh]) >> (sh2 << 1);
 }
-#ifndef __APPLE__
 int _08025F20(int a) __attribute__((alias("Ai_GridHalfwordGet")));
-#endif
 
-#ifndef __APPLE__
 int _080025E1C(int id) __attribute__((alias("Sub_08025E1C")));
-#endif
 
 // ROM entry alias.
-#ifndef __APPLE__
 void _080025DBC(int type,int val) __attribute__((alias("Ai_GridSetPacked")));
 void _080025E70(u32 a,int b,int c, u32 val) __attribute__((alias("Ai_GridWriteRecord")));
 u32 _080025E98(u32 a,int b,int c) __attribute__((alias("Ai_GridReadRecord")));
 int _080025F20(int id) __attribute__((alias("Ai_GridHalfwordGet")));
-#endif

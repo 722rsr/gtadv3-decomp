@@ -1,14 +1,13 @@
 #include "gtadv/foundation.h"
 #include "gtadv/memory.h"
 #include "gba/regs.h"
-#include "gba/bios.h"   // Div/DivRem on the host __APPLE__ fallbacks below
+#include "gba/bios.h"
 void _080038A4(int a, u32 b, const volatile u8 *c);  /* alias of ObjLane_038A4, below */
 extern void _08002C34(int a, void *b);   // foundation_runtime.c free-list push
 extern int _08005790(u32 a);             // save.c allocator (returns the new cursor)
 extern int _08005758(u32 a);   // save.c allocator (returns the new cursor)
 extern void _08007538(void *a, int b, void *c);   // course_resource.c
 extern void _08007614(void *a, int b, int c, int d);  // course_resource.c
-#ifndef __APPLE__
 // Closure spellings for the two measured helpers called below. The `_` twins
 // are what the ROM closure defines at 0x08003CB4 / 0x0800295C; the friendly
 // names exist only on the host, hence the split at each call site.
@@ -16,7 +15,6 @@ extern int sub_08003CB4(int val, volatile u8 *buf, int width);
 // NOT `_08003CB4`: it is also a closure label, but nothing in src/ defines
 // it, so a call under that name bypasses the C body.
 extern void _0800295C(u32 a0, u32 a1);
-#endif
 
 // Forward declarations for the slice-closure `_` spellings; each is defined
 // below as an alias of the same body as its `sub_` twin (promotion rule 1).
@@ -55,13 +53,8 @@ extern int sub_08003E34(int a, volatile u8 *b);  /* defined below, alias of Time
 // HOST_STUB = weak on Apple host builds, extern on ARM. A host link with
 // -undefined dynamic_lookup binds lazily, so a bare extern would leave
 // the symbol silently undefined.
-#ifdef __APPLE__
-#define HOST_STUB(sig) __attribute__((weak)) sig
-#else
 #define HOST_STUB(sig) extern sig
-#endif
 
-#ifndef __APPLE__
 extern int Div(int a, int b);            // sub_0802D978 (bios_wrappers.c)
 extern int DivRem(int a, int b);         // sub_0802D97C
 extern int MathAbs(int v);               // 0x08005B5C (foundation_math.c)
@@ -71,7 +64,6 @@ extern void sub_08005BA8(void *p, int angle);
 extern void CpuFastSet(const void *src, void *dst, u32 mode); // bios_wrappers.c (swi 0x0C)
 extern int TimeStr_03D4C(int val, volatile u8 *buf);  // defined below in this file
 extern int TimeStr_03E34(int val, volatile u8 *buf);
-#endif
 
 extern void *_08002BFC(int a);   // 16-byte object alloc (foundation_runtime.c)
 void _08003838(int a, u32 b, const volatile u8 *c);  // ObjLane_03838, aliased below
@@ -256,12 +248,10 @@ void _080031D4(volatile u8 *req)
 }
 __asm__(".align 2, 0");
 
-#ifndef __APPLE__
 void sub_0800315C(volatile u8 *a) __attribute__((alias("_0800315C")));
 void sub_08003194(volatile u8 *a) __attribute__((alias("_08003194")));
 void sub_080031D4(volatile u8 *a) __attribute__((alias("_080031D4")));
 void sub_08003210(volatile u8 *a) __attribute__((alias("_08003210")));
-#endif
 
 // 0x08003148 — strlen (byte loop). Shared label with the bx-r0 entry above.
 u32 strlength_03148(const volatile u8 *s)
@@ -274,9 +264,7 @@ u32 strlength_03148(const volatile u8 *s)
     }
     return n;
 }
-#ifndef __APPLE__
 u32 sub_08003148(const volatile u8 *s) __attribute__((alias("strlength_03148")));
-#endif
 
 // ----------------------------------------------------------------------------
 // Lane emitters 0x08003248/270/298 — _08007538(0x087ACF70, k, a) then
@@ -297,11 +285,9 @@ void LaneEmit_0298(int a, int b) { lane_emit(a, b, 2); }
 // pointed the closure's spelling at the wrong body and denied the real owner
 // the export its manifest entry needs. The `sub_` spellings are declared next
 // to their true owners instead.
-#ifndef __APPLE__
 void _08000248(int a, int b) __attribute__((alias("LaneEmit_0248")));
 void _08000270(int a, int b) __attribute__((alias("LaneEmit_0270")));
 void _08000298(int a, int b) __attribute__((alias("LaneEmit_0298")));
-#endif
 
 // 0x080032C0 — _08007614(0x087ACF70, 3, u16[0x03000160] + a, b)
 void LaneEmit_02C0(int a, int b)
@@ -311,9 +297,7 @@ void LaneEmit_02C0(int a, int b)
     a += off;
     _08007614(tbl, 3, b, a);
 }
-#ifndef __APPLE__
 void sub_080032C0(int a, int b) __attribute__((alias("LaneEmit_02C0")));
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x080032E0 — lane driver. For lane 0..3 over 4-byte records at arg:
@@ -342,10 +326,8 @@ void LaneDriver_02E0(volatile u8 *rec)
             LaneEmit_0298(a, b);
     }
 }
-#ifndef __APPLE__
 void sub_080032E0(volatile u8 *p) __attribute__((alias("LaneDriver_02E0")));
 void _080032E0(volatile u8 *p) __attribute__((alias("LaneDriver_02E0")));
-#endif
 
 // ----------------------------------------------------------------------------
 // Object-list builders 0x08003350/03400/034B0/03560/03FD4 — per-glyph loop.
@@ -410,13 +392,9 @@ void ObjList_03350(int sel, u32 x, u32 a2, u32 a3, const volatile u8 *str, u32 w
     register int adv __asm__("r1");
     uintptr_t base;
     hdr = *(const tmpl_tbl *)(uintptr_t)0x0802E210u;
-#ifndef __APPLE__
     { extern u8 HudLaneTbl[];
       __asm__(".globl HudLaneTbl\nHudLaneTbl = 0x080C4BA0\n");
       base = (uintptr_t)HudLaneTbl; }
-#else
-    base = (uintptr_t)0x080C4BA0u;
-#endif
     lane = *(volatile u32 *)(uintptr_t)(base + (u32)sel * 4);
     fnv = (u32)(uintptr_t)hdr.w[sel];
     req[4] = (u32)sel * 4 + ({ register u32 tbl_base __asm__("r1") = 0x03000160u; __asm__("" : "+r" (tbl_base)); tbl_base; });
@@ -475,13 +453,9 @@ void ObjList_03400(int sel, u32 x, u32 a2, u32 a3, const volatile u8 *str, u32 w
     // unused sixth parameter and inflates the frame to 44 (`sub sp,#44`), which
     // is the FIRST difference (+0x0A) against the ROM's `sub sp,#40`.
     hdr = *(const tmpl_tbl *)(uintptr_t)0x0802E220u;
-#ifndef __APPLE__
     { extern u8 HudLaneTbl[];
       __asm__(".globl HudLaneTbl\nHudLaneTbl = 0x080C4BA0\n");
       base = (uintptr_t)HudLaneTbl; }
-#else
-    base = (uintptr_t)0x080C4BA0u;
-#endif
     lane = *(volatile u32 *)(uintptr_t)(base + (u32)sel * 4);
     fnv = (u32)(uintptr_t)hdr.w[sel];
     req[4] = (u32)sel * 4 + ({ register u32 tbl_base __asm__("r1") = 0x03000160u; __asm__("" : "+r" (tbl_base)); tbl_base; });
@@ -531,13 +505,9 @@ void _080034B0(int sel, u32 x, u32 a2, u32 a3, const volatile u8 *str, u32 w5, u
     uintptr_t base;
     (void)w6;
     hdr = *(const tmpl_tbl *)(uintptr_t)0x0802E230u;
-#ifndef __APPLE__
     { extern u8 HudLaneTbl[];
       __asm__(".globl HudLaneTbl\nHudLaneTbl = 0x080C4BA0\n");
       base = (uintptr_t)HudLaneTbl; }
-#else
-    base = (uintptr_t)0x080C4BA0u;
-#endif
     lane = *(volatile u32 *)(uintptr_t)(base + (u32)sel * 4);
     fnv = (u32)(uintptr_t)hdr.w[sel];
     req[4] = (u32)sel * 4 + ({ register u32 tbl_base __asm__("r1") = 0x03000160u; __asm__("" : "+r" (tbl_base)); tbl_base; });
@@ -616,13 +586,9 @@ void ObjList_03560(int sel, u32 x, u32 a2, u32 a3, const volatile u8 *str)
 // naming the base absolutely buys: a folded literal makes agbcc emit the load
 // after the shift. Same guard and symbol spelling as the four neighbours above
 // ( recipe).
-#ifndef __APPLE__
     { extern u8 HudLaneTbl[];
       __asm__(".globl HudLaneTbl\nHudLaneTbl = 0x080C4BA0\n");
       base = (uintptr_t)HudLaneTbl; }
-#else
-    base = (uintptr_t)0x080C4BA0u;
-#endif
     lane = *(volatile u32 *)(uintptr_t)(base + (u32)sel * 4);
     fnv = (u32)(uintptr_t)hdr.w[sel];
     req[4] = (u32)sel * 4 + ({ register u32 tbl_base __asm__("r1") = 0x03000160u; __asm__("" : "+r" (tbl_base)); tbl_base; });
@@ -684,7 +650,6 @@ void ObjList_03FD4(int sel, u32 x, u32 a2, u32 a3, const volatile u8 *str,
         x += lane;
     }
 }
-#ifndef __APPLE__
 void _08003350(int a, u32 b, u32 c, u32 d, const volatile u8 *e, u16 f)
     __attribute__((alias("ObjList_03350")));
 void sub_08003350(int a, u32 b, u32 c, u32 d, const volatile u8 *e, u32 f) __attribute__((alias("ObjList_03350")));
@@ -692,7 +657,6 @@ void sub_08003400(int a, u32 b, u32 c, u32 d, const volatile u8 *e, u32 f, u32 g
 void sub_080034B0(int a, u32 b, u32 c, u32 d, const volatile u8 *e, u32 f, u32 g) __attribute__((alias("_080034B0")));
 void sub_08003560(int a, u32 b, u32 c, u32 d, const volatile u8 *e) __attribute__((alias("ObjList_03560")));
 void sub_08003FD4(int a, u32 b, u32 c, u32 d, const volatile u8 *e, u16 f, u32 g, u8 h) __attribute__((alias("ObjList_03FD4")));
-#endif
 
 // ----------------------------------------------------------------------------
 // Centering wrappers (x adjusted by per-char width, then delegated).
@@ -733,13 +697,9 @@ void ObjCenter_0364C(int sel, u32 x, u32 a2, u32 a3, const volatile u8 *str)
     const volatile u8 *p = str;
     uintptr_t base;
     u32 step;
-#ifndef __APPLE__
     { extern u8 HudLaneTbl[];
       __asm__(".globl HudLaneTbl\nHudLaneTbl = 0x080C4BA0\n");
       base = (uintptr_t)HudLaneTbl; }
-#else
-    base = (uintptr_t)0x080C4BA0u;
-#endif
     step = (u32)((s32)*(volatile u32 *)(uintptr_t)(base + (u32)sel * 4) / 2);
     while (*p) { p++; x -= step; }
     sub_08003350(sel, x, a2, a3, str, 1);
@@ -749,13 +709,9 @@ void ObjCenter_03698(int sel, u32 x, u32 a2, u32 a3, const volatile u8 *str)
     const volatile u8 *p = str;
     uintptr_t base;
     u32 step;
-#ifndef __APPLE__
     { extern u8 HudLaneTbl[];
       __asm__(".globl HudLaneTbl\nHudLaneTbl = 0x080C4BA0\n");
       base = (uintptr_t)HudLaneTbl; }
-#else
-    base = (uintptr_t)0x080C4BA0u;
-#endif
     step = (u32)((s32)*(volatile u32 *)(uintptr_t)(base + (u32)sel * 4) / 2);
     while (*p) { p++; x -= step; }
     sub_08003560(sel, x, a2, a3, str);
@@ -765,13 +721,9 @@ void ObjCenter_036E0(int sel, u32 x, u32 a2, u32 a3, const volatile u8 *str)
     const volatile u8 *p = str;
     uintptr_t base;
     u32 step;
-#ifndef __APPLE__
     { extern u8 HudLaneTbl[];
       __asm__(".globl HudLaneTbl\nHudLaneTbl = 0x080C4BA0\n");
       base = (uintptr_t)HudLaneTbl; }
-#else
-    base = (uintptr_t)0x080C4BA0u;
-#endif
     step = *(volatile u32 *)(uintptr_t)(base + (u32)sel * 4);
     while (*p) { p++; x -= step; }
     sub_08003350(sel, x, a2, a3, str, 1);
@@ -781,24 +733,18 @@ void ObjCenter_03728(int sel, u32 x, u32 a2, u32 a3, const volatile u8 *str)
     const volatile u8 *p = str;
     uintptr_t base;
     u32 step;
-#ifndef __APPLE__
     { extern u8 HudLaneTbl[];
       __asm__(".globl HudLaneTbl\nHudLaneTbl = 0x080C4BA0\n");
       base = (uintptr_t)HudLaneTbl; }
-#else
-    base = (uintptr_t)0x080C4BA0u;
-#endif
     step = *(volatile u32 *)(uintptr_t)(base + (u32)sel * 4);
     while (*p) { p++; x -= step; }
     sub_08003560(sel, x, a2, a3, str);
 }
-#ifndef __APPLE__
 void sub_08003604(int a, u32 b, u32 c, const volatile u8 *d) __attribute__((alias("ObjCenter_03604")));
 void sub_0800364C(int a, u32 b, u32 c, u32 d, const volatile u8 *e) __attribute__((alias("ObjCenter_0364C")));
 void sub_08003698(int a, u32 b, u32 c, u32 d, const volatile u8 *e) __attribute__((alias("ObjCenter_03698")));
 void sub_080036E0(int a, u32 b, u32 c, u32 d, const volatile u8 *e) __attribute__((alias("ObjCenter_036E0")));
 void sub_08003728(int a, u32 b, u32 c, u32 d, const volatile u8 *e) __attribute__((alias("ObjCenter_03728")));
-#endif
 
 // ----------------------------------------------------------------------------
 // Measured emitters 0x0800376C/37BC — itoa (0x03CB4, 16-byte buffer) then
@@ -813,14 +759,10 @@ extern int Measure_03CB4(int val, volatile u8 *buf, int width);
 // that agbcc does NOT inline, so it emitted a real `bl table_at` and the probe
 // reported UNRESOLVED_RELOCATION. Writing the pool load out, exactly as
 // ObjCenter_0364C/03698/036E0/03728 above already do, resolves it.
-#ifndef __APPLE__
 #define RM_CALLEE(friendly, closure) closure
 extern int sub_08003CB4(int val, volatile u8 *buf, int width);
 extern void sub_08003350(int a, u32 b, u32 c, u32 d, const volatile u8 *e, u32 f);
 extern void sub_08003400(int a, u32 b, u32 c, u32 d, const volatile u8 *e, u32 f, u32 g);
-#else
-#define RM_CALLEE(friendly, closure) friendly
-#endif
 void ObjMeasure_0376C(int sel, u32 x, u32 a2, u32 a3, int value, u32 a5)
 {
     volatile u8 buf[16];
@@ -828,13 +770,9 @@ void ObjMeasure_0376C(int sel, u32 x, u32 a2, u32 a3, int value, u32 a5)
     u32 step;
     int digits;
     digits = RM_CALLEE(Measure_03CB4, sub_08003CB4)(value, buf, 16);
-#ifndef __APPLE__
     { extern u8 HudLaneTbl[];
       __asm__(".globl HudLaneTbl\nHudLaneTbl = 0x080C4BA0\n");
       base = (uintptr_t)HudLaneTbl; }
-#else
-    base = (uintptr_t)0x080C4BA0u;
-#endif
     step = *(volatile u32 *)(uintptr_t)(base + (u32)sel * 4);
     x -= (u32)(digits * (int)step);
     RM_CALLEE(ObjList_03350, sub_08003350)(sel, x, a2, a3, buf, a5);
@@ -846,21 +784,15 @@ void ObjMeasure_037BC(int sel, u32 x, u32 a2, u32 a3, int value, u32 a5)
     u32 step;
     int digits;
     digits = RM_CALLEE(Measure_03CB4, sub_08003CB4)(value, buf, 16);
-#ifndef __APPLE__
     { extern u8 HudLaneTbl[];
       __asm__(".globl HudLaneTbl\nHudLaneTbl = 0x080C4BA0\n");
       base = (uintptr_t)HudLaneTbl; }
-#else
-    base = (uintptr_t)0x080C4BA0u;
-#endif
     step = *(volatile u32 *)(uintptr_t)(base + (u32)sel * 4);
     x -= (u32)(digits * (int)step);
     RM_CALLEE(ObjList_03400, sub_08003400)(sel, x, a2, a3, buf, 1, a5);
 }
-#ifndef __APPLE__
 void sub_0800376C(int a, u32 b, u32 c, u32 d, int e, u32 f) __attribute__((alias("ObjMeasure_0376C")));
 void sub_080037BC(int a, u32 b, u32 c, u32 d, int e, u32 f) __attribute__((alias("ObjMeasure_037BC")));
-#endif
 
 // 0x08003810 — itoa(arg3) to a 16-byte buffer, then 0x03604(sel, x, a2, buf).
 void ObjTwo_03810(int sel, u32 x, u32 a2, int value)
@@ -872,25 +804,12 @@ void ObjTwo_03810(int sel, u32 x, u32 a2, int value)
     // reaches C. A bare `extern int _08003CB4(...)` with no definition
     // anywhere silently reaches the ROM body instead of C -- it lands on the
     // same address, so the byte oracle cannot see it and only the
-    // export/call audits catch it. Unguarded this would be a
-    // C89 implicit declaration on Apple, hence the call-site split.
-#ifndef __APPLE__
     sub_08003CB4(value, buf, 16);
-#else
-    Measure_03CB4(value, buf, 16);
-#endif
     // ROM `bl 0x08003604` (asm/runtime_2aac.s). The closure spelling is the
-    // only one the slice can resolve; unguarded it is a silent C89 implicit
-    // declaration on Apple, so the call site carries the __APPLE__ split.
-#ifndef __APPLE__
+    // only one the slice can resolve.
     sub_08003604(sel, x, a2, buf);
-#else
-    ObjCenter_03604(sel, x, a2, buf);
-#endif
 }
-#ifndef __APPLE__
 void sub_08003810(int a, u32 b, u32 c, int d) __attribute__((alias("ObjTwo_03810")));
-#endif
 
 // These spans end at a 4-byte-aligned ROM address. The ROM's final halfword is
 // 00 00; gas otherwise fills the section boundary with the Thumb nop c0 46.
@@ -902,11 +821,7 @@ void ObjLane_0385C(int a, u32 b, const volatile u8 *c)
     // defined unconditionally here. An unguarded alias call is a silent C89
     // implicit declaration on Apple, and a host link with
     // `-undefined dynamic_lookup` binds lazily, so nothing reports it.
-#ifndef __APPLE__
     sub_08003400(0, a, b, 0, c, 1, 1);
-#else
-    ObjList_03400(0, a, b, 0, c, 1, 1);
-#endif
 }
 __asm__(".align 2, 0");
 void _08003880(int a, u32 b, const volatile u8 *c, u32 d)
@@ -924,7 +839,6 @@ void ObjLane_038EC(int a, u32 b, const volatile u8 *c)   { sub_08003560(2, a, b,
 __asm__(".align 2, 0");
 void ObjLane_0390C(int a, u32 b, const volatile u8 *c)   { sub_08003560(3, a, b, 0, c); }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void sub_08003838(int a, u32 b, const volatile u8 *c) __attribute__((alias("ObjLane_03838")));
 void sub_0800385C(int a, u32 b, const volatile u8 *c) __attribute__((alias("ObjLane_0385C")));
 void sub_08003880(int a, u32 b, const volatile u8 *c, u32 d) __attribute__((alias("_08003880")));
@@ -933,7 +847,6 @@ void sub_080038A4(int a, u32 b, const volatile u8 *c) __attribute__((alias("ObjL
 void sub_080038C8(int a, u32 b, const volatile u8 *c) __attribute__((alias("ObjLane_038C8")));
 void sub_080038EC(int a, u32 b, const volatile u8 *c) __attribute__((alias("ObjLane_038EC")));
 void sub_0800390C(int a, u32 b, const volatile u8 *c) __attribute__((alias("ObjLane_0390C")));
-#endif
 
 // 0x0800392C/3940 — 0x03604(sel=0/2, a, 0, b). The register shuffle in the
 // ROM is `adds r2,r0; adds r3,r1; movs r0,#sel; adds r1,r2; movs r2,#0`
@@ -943,21 +856,12 @@ void sub_0800390C(int a, u32 b, const volatile u8 *c) __attribute__((alias("ObjL
 // two, so every call read its string from address 0.
 void ObjCenter_0392C(int a, u32 b)
 {
-#ifndef __APPLE__
     sub_08003604(0, a, 0, (const volatile u8 *)(uintptr_t)b);
-#else
-    ObjCenter_03604(0, a, 0, (const volatile u8 *)(uintptr_t)b);
-#endif
 }
 void ObjCenter_03940(int a, u32 b)
 {
-#ifndef __APPLE__
     sub_08003604(2, a, 0, (const volatile u8 *)(uintptr_t)b);
-#else
-    ObjCenter_03604(2, a, 0, (const volatile u8 *)(uintptr_t)b);
-#endif
 }
-#ifndef __APPLE__
 void sub_0800392C(int a, u32 b) __attribute__((alias("ObjCenter_0392C")));
 void sub_08003940(int a, u32 b) __attribute__((alias("ObjCenter_03940")));
 // Declared HERE as well as in the alias block below: agbcc emits an
@@ -965,7 +869,6 @@ void sub_08003940(int a, u32 b) __attribute__((alias("ObjCenter_03940")));
 // the declaration sits, so an alias 1000 lines from its body lands in a
 // different section and the per-body splice never carries it.
 void _08003940(int a, u32 b) __attribute__((alias("ObjCenter_03940")));
-#endif
 
 // 0x08003954–0x080039E4 — measured delegates (slots exactly as in asm).
 void ObjMeasure_03954(int a, u32 b, int c) { sub_0800376C(0, a, b, 0, c, 1); }
@@ -978,7 +881,6 @@ void ObjMeasure_039C0(int a, u32 b, int c) { sub_0800376C(3, a, b, 0, c, 1); }
 __asm__(".align 2, 0");
 void ObjMeasure_039E4(int a, u32 b, int c) { sub_0800376C(2, a, b, 0, c, 0); }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void sub_08003954(int a, u32 b, int c) __attribute__((alias("ObjMeasure_03954")));
 // NOTE: the `_08003954` spelling is already defined further down this file. Do
 // NOT add a second alias here — a duplicate makes agbcc reject the whole TU
@@ -988,7 +890,6 @@ void sub_08003978(int a, u32 b, int c) __attribute__((alias("ObjMeasure_03978"))
 void sub_0800399C(int a, u32 b, int c) __attribute__((alias("ObjMeasure_0399C")));
 void sub_080039C0(int a, u32 b, int c) __attribute__((alias("ObjMeasure_039C0")));
 void sub_080039E4(int a, u32 b, int c) __attribute__((alias("ObjMeasure_039E4")));
-#endif
 
 // 0x08003A08–0x08003AA8 — centering delegates.
 void ObjCenter_03A08(int a, u32 b, const volatile u8 *c) { sub_0800364C(0, a, b, 0, c); }
@@ -1003,37 +904,25 @@ void ObjCenter_03A88(int a, u32 b, const volatile u8 *c) { sub_080036E0(3, a, b,
 __asm__(".align 2, 0");
 void ObjCenter_03AA8(int a, u32 b, const volatile u8 *c) { sub_08003728(3, a, b, 0, c); }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void sub_08003A08(int a, u32 b, const volatile u8 *c) __attribute__((alias("ObjCenter_03A08")));
 void sub_08003A28(int a, u32 b, const volatile u8 *c) __attribute__((alias("ObjCenter_03A28")));
 void sub_08003A48(int a, u32 b, const volatile u8 *c) __attribute__((alias("ObjCenter_03A48")));
 void sub_08003A68(int a, u32 b, const volatile u8 *c) __attribute__((alias("ObjCenter_03A68")));
 void sub_08003A88(int a, u32 b, const volatile u8 *c) __attribute__((alias("ObjCenter_03A88")));
 void sub_08003AA8(int a, u32 b, const volatile u8 *c) __attribute__((alias("ObjCenter_03AA8")));
-#endif
 
 // 0x08003AC8/ADC — 0x03810(sel=0/2, a, 0, b)
 void ObjTwo_03AC8(int a, int b)
 {
-#ifndef __APPLE__
     sub_08003810(0, a, 0, b);
-#else
-    ObjTwo_03810(0, a, 0, b);
-#endif
 }
 void ObjTwo_03ADC(int a, int b)
 {
-#ifndef __APPLE__
     sub_08003810(2, a, 0, b);
-#else
-    ObjTwo_03810(2, a, 0, b);
-#endif
 }
-#ifndef __APPLE__
 void sub_08003AC8(int a, int b) __attribute__((alias("ObjTwo_03AC8")));
 void sub_08003ADC(int a, int b) __attribute__((alias("ObjTwo_03ADC")));
 void _08003ADC(int a, int b) __attribute__((alias("ObjTwo_03ADC")));
-#endif
 
 // 0x08003AF0 — request block from src: sel=src[8], x=s16[src+12], a2=s16[src+14],
 // a3=src[10], str=*(const u8**)src, w5=1.
@@ -1051,9 +940,7 @@ void ObjReq_03AF0(u8 *src)
 }
 // Trap 6: content length 2 (mod 4); pad this function's section with `00 00`.
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void sub_08003AF0(volatile u8 *a) __attribute__((alias("ObjReq_03AF0")));
-#endif
 
 // 0x08003B18 — advance: s16[0x080C49A0 + a*2] - 1. Plain s16 read: the
 // ROM uses `ldrsh` (trap 5: volatile would expand to ldrh+sign-extension).
@@ -1093,12 +980,10 @@ int GlyphIndex_03B34(int a)
     }
     return 0;
 }
-#ifndef __APPLE__
 int sub_08003B18(int a) __attribute__((alias("GlyphAdvance_03B18")));
 int _08003B2C(int a) __attribute__((alias("GlyphIndex_03B2C")));
 int sub_08003B2C(int a) __attribute__((alias("GlyphIndex_03B2C")));
 int sub_08003B34(int a) __attribute__((alias("GlyphIndex_03B34")));
-#endif
 
 void ObjDigits_03B54(int a0, u32 a1, int val) { volatile u8 b[16]; sub_08003D4C(val, b); _080038A4(a0, a1, b); }
 __asm__(".align 2, 0");
@@ -1114,7 +999,6 @@ __asm__(".align 2, 0");
 // its 4 bytes. Same convention as ObjDigits_03B9C above (`sub_08003E34`).
 void ObjDigits_03BE4(int a0, u32 a1, int val, u32 a3) { volatile u8 b[16]; _08003E34(val, b); _08003880(a0, a1, b, a3); }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void sub_08003B54(int a, u32 b, int c) __attribute__((alias("ObjDigits_03B54")));
 void sub_08003B78(int a, u32 b, u32 c) __attribute__((alias("ObjDigits_03B78")));
 void _08003B78(int a, u32 b, u32 c) __attribute__((alias("ObjDigits_03B78")));
@@ -1122,7 +1006,6 @@ void sub_08003B9C(int a, u32 b, u32 c) __attribute__((alias("ObjDigits_03B9C")))
 void _08003B9C(int a, u32 b, u32 c) __attribute__((alias("ObjDigits_03B9C")));
 void sub_08003BC0(int a, u32 b, int c) __attribute__((alias("ObjDigits_03BC0")));
 void sub_08003BE4(int a, u32 b, int c, u32 d) __attribute__((alias("ObjDigits_03BE4")));
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x08003C0C — right-aligned decimal.
@@ -1143,19 +1026,13 @@ void ObjDigitsRight_03C0C(int a0, u32 a1, int val)
     uintptr_t tbl;
     int digits;
     digits = TimeStr_03D18(val, buf);
-#ifndef __APPLE__
     { extern u8 HudLaneTbl[];
       __asm__(".globl HudLaneTbl\nHudLaneTbl = 0x080C4BA0\n");
       tbl = (uintptr_t)HudLaneTbl; }
-#else
-    tbl = (uintptr_t)0x080C4BA0u;
-#endif
     a0 -= (int)(*(volatile u32 *)(uintptr_t)(tbl + 8) * digits);
     sub_08003350(2, (u32)a0, a1, 0, buf + 15 - digits, 1);
 }
-#ifndef __APPLE__
 void sub_08003C0C(int a, u32 b, int c) __attribute__((alias("ObjDigitsRight_03C0C")));
-#endif
 
 void ObjFixed_03C58(int a0, u32 a1)
 {
@@ -1178,11 +1055,9 @@ void ObjDigit_03C48(int a0, u32 a1, int digit)
     a0 -= (int)table[2];
     ObjList_03350(2, (u32)a0, a1, 0, buf, 1);
 }
-#ifndef __APPLE__
 void sub_08003C58(int a, u32 b) __attribute__((alias("ObjFixed_03C58")));
 void sub_08003C48(int a, u32 b, int digit) __attribute__((alias("ObjDigit_03C48")));
 void _08003C48(int a, u32 b, int digit) __attribute__((alias("ObjDigit_03C48")));
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x08003C80 — writer: NUL at end+n, then n nibbles right-to-left, value
@@ -1234,9 +1109,7 @@ void HexWrite_03C80(int val, volatile u8 *end, int n)
     }
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void sub_08003C80(int a, volatile u8 *b, int c) __attribute__((alias("HexWrite_03C80")));
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x08003CB4 — decimal itoa: '-' + negated value for negatives; digits
@@ -1272,9 +1145,7 @@ int Measure_03CB4(int val, volatile u8 *buf, int width)
     *p = 0;
     return (int)digits;
 }
-#ifndef __APPLE__
 int sub_08003CB4(int a, volatile u8 *b, int c) __attribute__((alias("Measure_03CB4")));
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x08003D18 — zero-padded itoa writing right-to-left ending at buf[15]
@@ -1302,10 +1173,8 @@ int TimeStr_03D18(int val, volatile u8 *buf)
 // `.align 2, 0` lands after the body's `.size`, i.e. still inside the body's
 // own section, and pads with the explicit `0` fill instead. 50/52 -> EXACT.
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 int sub_08003D18(int a, volatile u8 *b) __attribute__((alias("TimeStr_03D18")));
 int _08003D18(int a, volatile u8 *b) __attribute__((alias("TimeStr_03D18")));
-#endif
 
 // ----------------------------------------------------------------------------
 // Time formatters 0x08003D4C (232 B) / 0x08003E34 (228 B) — INLINED per body.
@@ -1411,63 +1280,36 @@ int _08003E34(int val, volatile u8 *buf)
       *p = end;
       return (int)end; }
 }
-#ifndef __APPLE__
 int sub_08003D4C(int a, volatile u8 *b) __attribute__((alias("TimeStr_03D4C")));
 int sub_08003E34(int a, volatile u8 *b) __attribute__((alias("_08003E34")));
 int TimeStr_03E34(int a, volatile u8 *b) __attribute__((alias("_08003E34")));
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x08003F18 — indexed pair: len = strlen(str); emit str at (2, x); itoa(idx)
 // into a 16-byte buffer; emit buf at (2, x + len*8).
 void ObjIndexed_03F18(u32 x, u32 a1, const volatile u8 *str, int idx)
 {
-#ifndef __APPLE__
     register const volatile u8 *str8 __asm__("r8") = str;
     register int idx6 __asm__("r6") = idx;
     __asm__ volatile("" : "+r"(str8), "+r"(idx6));
-#else
-    const volatile u8 *str8 = str;
-    int idx6 = idx;
-#endif
     u32 len = strlength_03148(str8);
     volatile u8 buf[16];
-#ifndef __APPLE__
     sub_08003CB4(idx6, buf, 16);
-#else
-    Measure_03CB4(idx6, buf, 16);
-#endif
-#ifndef __APPLE__
     sub_080038A4((int)x, a1, str8);
-#else
-    ObjLane_038A4((int)x, a1, str8);
-#endif
-#ifndef __APPLE__
     sub_080038A4((int)(x + len * 8), a1, buf);
-#else
-    ObjLane_038A4((int)(x + len * 8), a1, buf);
-#endif
 }
-#ifndef __APPLE__
 void sub_08003F18(u32 a, u32 b, const volatile u8 *c, int d) __attribute__((alias("ObjIndexed_03F18")));
 void _08003F18(u32 a, u32 b, const volatile u8 *c, int d) __attribute__((alias("ObjIndexed_03F18")));
-#endif
 __asm__(".align 2, 0");
 
 // 0x08003F64 — hex: HexWrite(val, buf, n) then emit at (2, x).
 void ObjHex_03F64(int a0, u32 a1, int val, int n)
 {
     volatile u8 buf[16];
-#ifndef __APPLE__
     sub_08003C80(val, buf, n);
-#else
-    HexWrite_03C80(val, buf, n);
-#endif
     ObjLane_038A4(a0, a1, buf);
 }
-#ifndef __APPLE__
 void sub_08003F64(int a, u32 b, int c, int d) __attribute__((alias("ObjHex_03F64")));
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x08003F88 — request-block entry writer with selectable tag:
@@ -1515,9 +1357,7 @@ void ObjAttr_03F88(volatile u8 *req, int a1, u32 sel)
 }
 // Span tail pad: see the note above (trap 6 lever).
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void sub_08003F88(volatile u8 *a, int b, u32 c) __attribute__((alias("ObjAttr_03F88")));
-#endif
 
 // ----------------------------------------------------------------------------
 // Sprite manager — 0x03000178 {base, count}, 16-byte slots {s16 id, u16 used,
@@ -1539,25 +1379,15 @@ volatile u8 *SpriteFind_040BC(void)
 }
 // 0x080040E4 — set {base, count} then 0x040F8.
 void SpriteUpdate_040F8(void);
-#ifndef __APPLE__
 // The slice links no C object, so a promoted body may only call a spelling
 // the assembly closure defines. The alias that defines it sits below.
 void sub_080040F8(void);
-#endif
 void SpriteInit_040E4(u32 base, u32 count)
 {
     volatile u32 *t = (volatile u32 *)(uintptr_t)0x03000178;
     t[0] = base;
     t[1] = count;
-#ifndef __APPLE__
     sub_080040F8();
-#else
-    // The alias that defines `sub_080040F8` is ARM-only, so the host build
-    // calls the friendly name. An undeclared call is a silent C89 implicit
-    // declaration and a host link with `-undefined dynamic_lookup` binds lazily,
-    // so nothing would report it.
-    SpriteUpdate_040F8();
-#endif
 }
 // 0x080040F8 — CpuSet one zero word to base (t[0]), ctrl
 // ((count*4) & 0x1FFFFF) | (160<<19 = 0x05000000).
@@ -1577,16 +1407,13 @@ void SpriteUpdate_040F8(void)
     u32 mode = ((t[1] << 2) & 0x001FFFFFu) | 0x05000000u;
     CpuSet(&zero, dst, mode);
 }
-#ifndef __APPLE__
 volatile u8 *sub_080040BC(void) __attribute__((alias("SpriteFind_040BC")));
 void sub_080040E4(u32 a, u32 b) __attribute__((alias("SpriteInit_040E4")));
 void sub_080040F8(void) __attribute__((alias("SpriteUpdate_040F8")));
-#endif
 
 // 0x08004128 — clear the used halfword for every slot whose signed id matches.
 void SpriteHideAll_04128(u32 id)
 {
-#ifndef __APPLE__
     register u32 key __asm__("r4") = (u16)id;
     register s32 key_shift __asm__("r0");
     register volatile u32 *state __asm__("r3") =
@@ -1594,34 +1421,19 @@ void SpriteHideAll_04128(u32 id)
     register volatile u8 *slot __asm__("r1");
     register s32 i __asm__("r2");
     register u16 zero __asm__("r5");
-#else
-    u32 key = (u16)id;
-    volatile u32 *state = (volatile u32 *)(uintptr_t)0x03000178u;
-    volatile u8 *slot;
-    s32 i;
-    u16 zero;
-#endif
     s32 count;
     slot = (volatile u8 *)(uintptr_t)state[0];
     i = 0;
     count = (s32)state[1];
     if (i >= count)
         return;
-#ifndef __APPLE__
     __asm__ volatile("lsl %0, %1, #16\n\tasr %1, %0, #16"
                      : "=r"(key_shift), "+r"(key) : : "cc");
-#else
-    key = (s16)key;
-#endif
     zero = 0;
     do {
         s32 current;
-#ifndef __APPLE__
         __asm__ volatile("movs r6, #0\n\tldrsh %0, [%1, r6]"
                          : "=r"(current) : "r"(slot) : "r6", "memory");
-#else
-        current = *(volatile s16 *)slot;
-#endif
         if (current == (s32)key)
             *(volatile u16 *)(slot + 2) = zero;
         i++;
@@ -1629,56 +1441,41 @@ void SpriteHideAll_04128(u32 id)
         count = (s32)state[1];
     } while (i < count);
 }
-#ifndef __APPLE__
 void sub_08004128(u32 a) __attribute__((alias("SpriteHideAll_04128")));
 void _08004128(u32 a) __attribute__((alias("SpriteHideAll_04128")));
-#endif
 
 // 0x08004160 — allocate the first free sprite slot and store all three fields.
 void SpriteAlloc_04160(u16 id, u32 a1, u32 a2)
 {
-#ifndef __APPLE__
     extern volatile u8 *sub_080040BC(void);
     volatile u8 *p = sub_080040BC();
-#else
-    volatile u8 *p = SpriteFind_040BC();
-#endif
     *(volatile u16 *)(p + 2) = 1;
     *(volatile u16 *)p = id;
     *(volatile u32 *)(p + 4) = a1;
     *(volatile u32 *)(p + 8) = a2;
 }
-#ifndef __APPLE__
 void sub_08004160(u16 a, u32 b, u32 c) __attribute__((alias("SpriteAlloc_04160")));
 void _08004160(u16 a, u32 b, u32 c) __attribute__((alias("SpriteAlloc_04160")));
-#endif
 
 // 0x08004560 — intentional empty hook retained as a typed ROM entry.
 void HudHook_04560(void)
 {
 }
-#ifndef __APPLE__
 void sub_08004560(void) __attribute__((alias("HudHook_04560")));
 void _08004560(void) __attribute__((alias("HudHook_04560")));
-#endif
 __asm__(".align 2, 0");
 
 // 0x08004180 — free id: for each used slot with matching id, tail-dispatch via
 // 0x0802DDCC (bx r1) with r0 = slot.b and r1 = slot.a.
 void SpriteFree_04180(u16 id)
 {
-#ifndef __APPLE__
     // ROM keeps the state pointer in r0 and reloads it after each indirect call.
     register volatile s32 *t __asm__("r0") =
         (volatile s32 *)(uintptr_t)0x03000178;
-#else
-    volatile s32 *t = (volatile s32 *)(uintptr_t)0x03000178;
-#endif
     volatile u8 *p = (volatile u8 *)(uintptr_t)t[0];
     for (s32 i = 0; i < t[1]; i++, p += 16,
                    t = (volatile s32 *)(uintptr_t)0x03000178) {
         if (*(volatile u16 *)(p + 2) != 0) {
-#ifndef __APPLE__
             // ROM compares with movs r1,#0; ldrsh r0,[r4,r1].
             register s32 zero __asm__("r1") = 0;
             register s32 slotId __asm__("r0");
@@ -1686,9 +1483,6 @@ void SpriteFree_04180(u16 id)
             __asm__ volatile (".code 16\n\tldrsh %0, [%1, %2]"
                               : "=r"(slotId) : "r"(p), "r"(zero));
             if (slotId == (s16)id) {
-#else
-            if (*(volatile s16 *)p == (s16)id) {
-#endif
                 typedef void (*rel_fn)(u32);
                 ((rel_fn)(uintptr_t)*(volatile u32 *)(p + 4))
                     (*(volatile u32 *)(p + 8));
@@ -1696,9 +1490,7 @@ void SpriteFree_04180(u16 id)
         }
     }
 }
-#ifndef __APPLE__
 void sub_08004180(u16 a) __attribute__((alias("SpriteFree_04180")));
-#endif
 
 // ----------------------------------------------------------------------------
 // Camera family.
@@ -1713,7 +1505,6 @@ void CamCopy_041C4(volatile u32 *dst)
 s32 CamAngle_041D4(void)
 {
     volatile s16 *angle = (volatile s16 *)(uintptr_t)0x0203F728;
-#ifndef __APPLE__
     // ROM uses r1=0 for ldrsh [r0,r1], rather than an immediate halfword load.
     register s32 zero __asm__("r1") = 0;
     __asm__ volatile ("" : "+r"(zero));
@@ -1721,10 +1512,6 @@ s32 CamAngle_041D4(void)
     __asm__ volatile (".code 16\n\tldrsh %0, [%1, %2]"
                       : "=r"(value) : "r"(angle), "r"(zero));
     return value;
-#else
-    s32 zero = 0;
-    return *(volatile s16 *)((volatile u8 *)angle + zero);
-#endif
 }
 // 0x080041E0 — s16(120 - (a0 * 200) / a1)
 s16 CamY_041E0(int a0, int a1)
@@ -1748,14 +1535,9 @@ __asm__(".align 2, 0");
 // 0x0800424C — s16((a0 * 200) / a1)
 s16 CamY_0424C(int a0, int a1)
 {
-#ifndef __APPLE__
     return (s16)sub_0802DE04(a0 * 200, a1);
-#else
-    return (s16)Div(a0 * 200, a1);
-#endif
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _080041C4(volatile u32 *a) __attribute__((alias("CamCopy_041C4")));
 void sub_080041C4(volatile u32 *a) __attribute__((alias("CamCopy_041C4")));
 s32 _080041D4(void) __attribute__((alias("CamAngle_041D4")));
@@ -1763,7 +1545,6 @@ s32 sub_080041D4(void) __attribute__((alias("CamAngle_041D4")));
 s16 sub_080041E0(int a, int b) __attribute__((alias("CamY_041E0")));
 int sub_080041F8(int a, int b, volatile u32 *c) __attribute__((alias("CamProject_041F8")));
 s16 sub_0800424C(int a, int b) __attribute__((alias("CamY_0424C")));
-#endif
 
 // 0x08004260 — init: 0x0203F6C0 = {20,32,-20,32}; rotate both pairs by arg2;
 // cam = {arg0, arg1}; u16 0x0203F728 = (0x800 - (s16)arg2) & 0xFFF.
@@ -1773,13 +1554,9 @@ void CamInit_04260(int a0, int a1, int ang)
     // (a1) in the ROM -- r6 low and pushed, r8 saved through r6 -- while `a`
     // (live across both calls too) takes r5 and the table pointer r4. Pinning
     // the two argument copies reproduces that; r5 and r4 then fall out.
-#ifndef __APPLE__
     register int ra0 __asm__("r6");
     register int ra1 __asm__("r8");
     register int ra __asm__("r5");
-#else
-    int ra0, ra1, ra;
-#endif
     volatile u32 *tbl;
     volatile u32 *cam;
     ra0 = a0;
@@ -1808,10 +1585,8 @@ void CamInit_04260(int a0, int a1, int ang)
     cam[1] = (u32)ra1;
     *(volatile u16 *)(uintptr_t)0x0203F728 = (u16)((0x800 - ra) & 0xFFF);
 }
-#ifndef __APPLE__
 void sub_08004260(int a, int b, int c) __attribute__((alias("CamInit_04260")));
 void _08004260(int a, int b, int c) __attribute__((alias("CamInit_04260")));
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x080042C4 — in-sector test: out = {dx, dy} where d = arg - cam; |dx|,
@@ -1837,9 +1612,7 @@ int CamSector_042C4(int a0, int a1, volatile u32 *out)
         return 0;
     return 1;
 }
-#ifndef __APPLE__
 int sub_080042C4(int a, int b, volatile u32 *c) __attribute__((alias("CamSector_042C4")));
-#endif
 
 // 0x08004324 — *(u32*)0x03000180 = a0. A 4-byte leaf: `ldr r1,[pc,#4];
 // str r0,[r1]`, pool word 0x03000180 at 0x0800432C, then `bx lr` + 2 pad.
@@ -1849,10 +1622,8 @@ int sub_080042C4(int a, int b, volatile u32 *c) __attribute__((alias("CamSector_
 // A 4-byte entry with no prologue is a legitimate tiny leaf, not evidence of a
 // tail. "No push" and "not a function" are different claims.
 void CamSet_04324(int a0) { *(volatile u32 *)(uintptr_t)0x03000180 = (u32)a0; }
-#ifndef __APPLE__
 void sub_08004324(int a) __attribute__((alias("CamSet_04324")));
 void _08004324(int a) __attribute__((alias("CamSet_04324")));
-#endif
 
 // ----------------------------------------------------------------------------
 // Track-strip projections 0x08004344/3B8/440/4C4/508/4760/4818 — shared gate
@@ -2122,7 +1893,6 @@ int TrackProj_04818(volatile u32 *out, volatile u32 *src)
 {
     return track_proj(out, (s32)src[0], (s32)src[1], (s32)src[2], 0x080C5FE4);
 }
-#ifndef __APPLE__
 int sub_080043B8(volatile u32 *a) __attribute__((alias("TrackDigit_043B8")));
 int _080043B8(volatile u32 *a) __attribute__((alias("TrackDigit_043B8")));
 int sub_08004440(volatile u32 *a) __attribute__((alias("TrackDigit_04440")));
@@ -2135,7 +1905,6 @@ int _08004758(volatile u8 *obj) __attribute__((alias("TrackProjectObject_04758")
 int sub_08004758(volatile u8 *obj) __attribute__((alias("TrackProjectObject_04758")));
 int sub_08004760(volatile u32 *a, int b, int c, int d) __attribute__((alias("TrackProj_04760")));
 int sub_08004818(volatile u32 *a, volatile u32 *b) __attribute__((alias("TrackProj_04818")));
-#endif
 
 // ----------------------------------------------------------------------------
 // BG rotation writers 0x08004564/45B8/4610/4670 — 107-entry 12-byte records
@@ -2306,7 +2075,6 @@ void BgRot_04670(void)
         n--;
     } while (n >= 0);
 }
-#ifndef __APPLE__
 void sub_08004564(void) __attribute__((alias("BgRot_04564")));
 void sub_080045B8(void) __attribute__((alias("BgRot_045B8")));
 void sub_08004610(void) __attribute__((alias("BgRot_04610")));
@@ -2323,7 +2091,6 @@ void _08004564(void) __attribute__((alias("BgRot_04564")));
 void _080045B8(void) __attribute__((alias("BgRot_045B8")));
 void _08004610(void) __attribute__((alias("BgRot_04610")));
 void _08004670(void) __attribute__((alias("BgRot_04670")));
-#endif
 
 // 0x080046D0 — strh 52 at [cam+10]; dispatch on (s16[cam+8]>>10)&3; then
 // zero halfwords from 0x0203F700+34 down to 0x0203F700 and 0x0203F724 = 0.
@@ -2353,27 +2120,15 @@ void BgRotDispatch_046D0(void)
     angle = *(volatile s16 *)(src + 8);
     register s32 mid __asm__("r0") = (s32)angle << 16;
     switch ((mid >> 26) & 3) {
-#ifndef __APPLE__
     // Promotion rule 6, the shape this file already uses at the top: the
     // closure spells these four addresses `_08004564`/`sub_08004564` etc
     // (asm/runtime_2aac.s:3547-3549, 3637-3639, 3686-3688), so a promoted body
     // must CALL that spelling -- the splice can only export a name agbcc
-    // wrote, and the friendly `BgRot_*` name is one it does not write, giving
-    // "undefined reference to `BgRot_04564'" at link. Under __APPLE__ the
-    // `_` aliases do not exist, so the host build calls the friendly name.
-    // The split has to be here at the CALL site, not only at the declaration:
-    // an unguarded call to an `__APPLE__`-absent alias is a host-build hole
-    // that neither the agbcc probe nor the byte oracle can see.
+    // wrote, and the friendly `BgRot_*` name is one it does not write.
     case 0: _08004564(); break;
     case 1: _080045B8(); break;
     case 2: _08004610(); break;
     case 3: _08004670(); break;
-#else
-    case 0: BgRot_04564(); break;
-    case 1: BgRot_045B8(); break;
-    case 2: BgRot_04610(); break;
-    case 3: BgRot_04670(); break;
-#endif
     }
     {
     // `hi` is declared BEFORE `lo`, and that ORDER is load-bearing: it decides
@@ -2407,10 +2162,8 @@ void BgRotDispatch_046D0(void)
     *(volatile u16 *)(uintptr_t)hi = 0;
     }
 }
-#ifndef __APPLE__
 void sub_080046D0(void) __attribute__((alias("BgRotDispatch_046D0")));
 void _080046D0(void) __attribute__((alias("BgRotDispatch_046D0")));
-#endif
 
 // ----------------------------------------------------------------------------
 // Palette fade 0x080048D8 — pair over s16[0x03000188+8]: scaleB = 0x08005F44,
@@ -2443,9 +2196,7 @@ void PaletteFade_048D8(void)
     u32 zero = 0;
     CpuFastSet(&zero, (void *)(uintptr_t)(ctrl[3] + (159 << 4)), 0x05000004);
 }
-#ifndef __APPLE__
 void sub_080048D8(void) __attribute__((alias("PaletteFade_048D8")));
-#endif
 
 // ----------------------------------------------------------------------------
 // 0x080049C4 — subsystem-tail bump alloc (0x03000198+136 cursor/+144 free):
@@ -2477,10 +2228,8 @@ void HeapSnap_04A10(void)
     *(volatile u32 *)(base + 136) = *(volatile u32 *)(base + 132);
     *(volatile u32 *)(base + 144) = *(volatile u32 *)(base + 140);
 }
-#ifndef __APPLE__
 void *sub_080049C4(u32 n) __attribute__((alias("HeapBump_049C4")));
 void sub_08004A10(void) __attribute__((alias("HeapSnap_04A10")));
-#endif
 
 // ----------------------------------------------------------------------------
 // Stragglers — final runtime_2aac.s gaps (byte-verified against baserom).
@@ -2510,21 +2259,13 @@ void *ObjAlloc_02BFC(int a)
         *cnt = c - 1;
         *cur = ret + 16;
     } else {
-        // ROM `bl 0x0800295C` (asm/code_295c.s). Closure spelling on ARM, the
-        // friendly name on the host — unguarded it is a silent C89 implicit
-        // declaration on Apple, so the call site carries the __APPLE__ split.
-#ifndef __APPLE__
+        // ROM `bl 0x0800295C` (asm/code_295c.s).
         _0800295C((u32)(uintptr_t)0x0802E204, 0);
-#else
-        Foundation_InitCommon((u32)(uintptr_t)0x0802E204, 0);
-#endif
     }
     return (void *)(uintptr_t)ret;
 }
 void *sub_08002BFC(int a) __attribute__((alias("ObjAlloc_02BFC")));
-#ifndef __APPLE__
 void *_08002BFC(int a) __attribute__((alias("ObjAlloc_02BFC")));
-#endif
 
 // 0x08002C98 — OAM flush: for each of *(0x03000144) entries, walk the linked
 void ObjFlush_02C98(void)
@@ -2559,9 +2300,7 @@ void ObjFlush_02C98(void)
                (224u << 19) | (128u << 1) | 1u);
 }
 void sub_08002C98(void) __attribute__((alias("ObjFlush_02C98")));
-#ifndef __APPLE__
 void _08002C98(void) __attribute__((alias("ObjFlush_02C98")));
-#endif
 
 extern void _08002B00(void *p, int n);
 extern void _08002B1C(void *p, int n);
@@ -2576,9 +2315,7 @@ void TailDispatch_03104(void *handler)
     _08002B30(handler, 128);
 }
 void sub_08003104(void *handler) __attribute__((alias("TailDispatch_03104")));
-#ifndef __APPLE__
 void _08003104(void *handler) __attribute__((alias("TailDispatch_03104")));
-#endif
 
 // 0x08004090 — centered-text wrapper: 5 args; e = flags byte (stack arg 5).
 // Calls 0x08003FD4(sel=3, x=a, y=b, 0, str=c, 1, d, flags).
@@ -2587,23 +2324,17 @@ void _08003104(void *handler) __attribute__((alias("TailDispatch_03104")));
 // linker binds nothing for the friendly name. The closure spelling
 // `sub_08003FD4` is what asm/runtime_2aac.s exports at that address, so the
 // target build must call THAT or the promoted body fails to link.
-#ifndef __APPLE__
 #define HUD_CALLEE(friendly, closure) closure
 extern void sub_08003FD4(int sel, u32 x, u32 a2, u32 a3,
                          const volatile u8 *str, u16 w5, u32 w6, u8 w7);
-#else
-#define HUD_CALLEE(friendly, closure) friendly
-#endif
 void TextCenter_04090(int a, int b, const volatile u8 *c, u32 d, u8 e)
 {
     HUD_CALLEE(ObjList_03FD4, sub_08003FD4)(3, (u32)a, (u32)b, 0, c, 1, d, e);
 }
 void sub_08004090(int a, int b, const volatile u8 *c, u32 d, u8 e)
     __attribute__((alias("TextCenter_04090")));
-#ifndef __APPLE__
 void _08004090(int a, int b, const volatile u8 *c, u32 d, u8 e)
     __attribute__((alias("TextCenter_04090")));
-#endif
 
 void CamAux_0473C(u32 v)
 {
@@ -2632,7 +2363,6 @@ void _08004748(u32 a, u32 b, u32 c) __attribute__((alias("CamSet_04748")));
 // Signatures repeat the owners' exactly (declaration type agreement is
 // enforced by -Werror=attribute-alias).
 // ----------------------------------------------------------------------------
-#ifndef __APPLE__
 void _08003838(int a, u32 b, const volatile u8 *c) __attribute__((alias("ObjLane_03838")));
 void _080038A4(int a, u32 b, const volatile u8 *c) __attribute__((alias("ObjLane_038A4")));
 void _080038C8(int a, u32 b, const volatile u8 *c) __attribute__((alias("ObjLane_038C8")));
@@ -2643,4 +2373,3 @@ void _08003978(int a, u32 b, int c) __attribute__((alias("ObjMeasure_03978")));
 void Sub_08003978(int a, u32 b, int c) __attribute__((alias("ObjMeasure_03978")));
 void _080039C0(int a, u32 b, int c) __attribute__((alias("ObjMeasure_039C0")));
 void _0800392C(int a, u32 b) __attribute__((alias("ObjCenter_0392C")));
-#endif

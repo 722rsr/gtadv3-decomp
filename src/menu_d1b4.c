@@ -23,13 +23,8 @@
 #include "gba/types.h"
 
 // ---- extern callees --------------------------------------------------------
-#ifdef __APPLE__
-__attribute__((weak)) void _080038A4(int a, int b, void *c) { (void)a; (void)b; (void)c; }
-__attribute__((weak)) void _08004EA8(int v) { (void)v; }
-#else
 extern void _080038A4(int a, int b, void *c);   // 0x080038A4 (frame draw)
 extern void _08004EA8(int v);                   // 0x08004EA8 (manager store+step)
-#endif
 
 // ROM frame templates (byte-exact pool words in the listing):
 #define D1B4_FRAME_60   ((void *)(uintptr_t)0x0805F8A4)   // _0800D1E4
@@ -43,10 +38,8 @@ void MenuD1B4_Reset(void *rec) {
     *(volatile u16 *)(r + 6) = 60;
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _0800D1B4(void *a) __attribute__((alias("MenuD1B4_Reset")));
 void sub_0800D1B4(void *a) __attribute__((alias("MenuD1B4_Reset")));
-#endif
 
 static inline s16 *slot_d1c0(volatile u8 *p, s16 off) {
     return (s16 *)(p + off);
@@ -58,10 +51,8 @@ void MenuD1B4_Draw(void *rec) {
     s16 y = *slot_d1c0(r4, 6);
     _080038A4(x, y, D1B4_FRAME_MOVE);
 }
-#ifndef __APPLE__
 void _0800D1C0(void *a) __attribute__((alias("MenuD1B4_Draw")));
 void sub_0800D1C0(void *a) __attribute__((alias("MenuD1B4_Draw")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_0800D1EC — dpad delta mover (ev7).
@@ -123,10 +114,8 @@ void MenuD1B4_Move(void *rec, int keys, int keys2) {
 // alone leaves the sum in r1 (78/84, first diff +0x34); swapping the add's
 // operands instead of pinning the sum does not help (78/84).
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _0800D1EC(void *a, int b, int c) __attribute__((alias("MenuD1B4_Move")));
 void sub_0800D1EC(void *a, int b, int c) __attribute__((alias("MenuD1B4_Move")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_0800D240 — no-op stub (ev2).
@@ -134,10 +123,8 @@ void MenuD1B4_Noop(void *rec) {
     (void)rec;
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _0800D240(void *a) __attribute__((alias("MenuD1B4_Noop")));
 void sub_0800D240(void *a) __attribute__((alias("MenuD1B4_Noop")));
-#endif
 
 void MenuD1B4_Dispatch(int ev, int a1, int a2, void *rec) {
     switch ((u32)ev) {
@@ -155,7 +142,5 @@ void MenuD1B4_Dispatch(int ev, int a1, int a2, void *rec) {
         break;
     }
 }
-#ifndef __APPLE__
 void _0800D244(int a, int b, int c, void *d) __attribute__((alias("MenuD1B4_Dispatch")));
 void sub_0800D244(int a, int b, int c, void *d) __attribute__((alias("MenuD1B4_Dispatch")));
-#endif

@@ -16,10 +16,8 @@ void Course_Dispatch_08AAC(void *rec) { // _08008AAC: 2-record emit, s16 idx at 
     (void)r1; (void)r2;
     // 2× strh packed records at rec+? with u16 via strh, s16 via ldrsh
 }
-#ifndef __APPLE__
 void _08008AAC(void *a) __attribute__((alias("Course_Dispatch_08AAC")));
 void sub_08008AAC(void *a) __attribute__((alias("Course_Dispatch_08AAC")));
-#endif
 
 void Course_Dispatch_08BB8(void *rec) { // _08008BB8: 3-record variant, same tables 0x080CB110/32, lsls #1, direct branch
     volatile s16 idx = *(volatile s16*)((volatile u8*)rec + 22);
@@ -27,22 +25,16 @@ void Course_Dispatch_08BB8(void *rec) { // _08008BB8: 3-record variant, same tab
     int r1 = sub_08002BE8();
     (void)r1;
 }
-#ifndef __APPLE__
 void _08008BB8(void *a) __attribute__((alias("Course_Dispatch_08BB8")));
 void sub_08008BB8(void *a) __attribute__((alias("Course_Dispatch_08BB8")));
-#endif
 
 void Course_Dispatch_08CA0(void *rec) { // _08008CA0: phase dispatcher — 9-entry table at 0x08008EB4 vs audit 21, blocked on indirect MovPc
     // lsls #2; ldr r0,[r1,r0]; mov pc,r0 — indirect table target not proven, leave blocked
     (void)rec;
     // Exact VMA 0x08008CA0, pool 0x08008EB4 u32 table 9×4, but dispatch index via s16 at +0x10FC not proven via ramwatch
 }
-#ifndef __APPLE__
 // No alias for 08CA0 — indirect MovPc 21 vs 9 remains blocked, not guessed
-#endif
 
 // ROM entry alias.
-#ifndef __APPLE__
 void RomEmit8AAC(void *rec) __attribute__((alias("Course_Dispatch_08AAC")));
 void RomEmit8BB8(void *rec) __attribute__((alias("Course_Dispatch_08BB8")));
-#endif

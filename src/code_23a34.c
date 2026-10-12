@@ -12,12 +12,6 @@
 
 #include "gba/types.h"
 
-#ifdef __APPLE__
-__attribute__((weak)) void _08002158(int a, int b) { (void)a; (void)b; }
-__attribute__((weak)) u16  _08002178(int a) { (void)a; return 0; }
-__attribute__((weak)) void _08002618(int a, int b) { (void)a; (void)b; }
-__attribute__((weak)) void _08007B18(void *a, int b, int c, int d, int e, int f, int g, int h) { (void)a; (void)b; (void)c; (void)d; (void)e; (void)f; (void)g; (void)h; }
-#endif
 
 extern void _08002158(int a, int b);   // 0x08002158 block-B packet emit
 extern u16  _08002178(int a);          // 0x08002178 block-B read (1-arg)
@@ -124,15 +118,11 @@ void _080023AE4(void *rec, int a, int b)
 // ----------------------------------------------------------------------------
 void _080023B60(void *rec, int a, int b)
 {
-#ifndef __APPLE__
     // Preserve the ROM's lookup setup: table base in r1, rec still in r0.
     register u32 table_base __asm__("r1") = 0x080CC190u;
     register u32 record_base __asm__("r0") = (u32)(uintptr_t)rec;
     __asm__ volatile ("" : "+r" (table_base), "+r" (record_base));
     u16 w = *(u16 *)(uintptr_t)(table_base + ((int)(s16) * (u16 *)(uintptr_t)(record_base + 140)) * 2);
-#else
-    u16 w = *(u16 *)(uintptr_t)(0x080CC190u + ((int)(s16) * (u16 *)((uintptr_t)rec + 140)) * 2);
-#endif
     int sel = *(int *)((uintptr_t)rec + 168);
 
     switch (sel) {
@@ -148,18 +138,12 @@ void _080023B60(void *rec, int a, int b)
         break;
     }
 }
-#ifndef __APPLE__
 // The ROM span ends with 00 00; use zero fill instead of gas's Thumb nop.
 __asm__(".align 2, 0");
-#endif
 
 // ROM entry alias.
-#ifndef __APPLE__
 void _08023A34(void *rec, u16 a, u16 b) __attribute__((alias("_080023A34")));
-#endif
 
 // ROM entry alias.
-#ifndef __APPLE__
 void _08023AE4(void *rec, int a, int b) __attribute__((alias("_080023AE4")));
 void _08023B60(void *rec, int a, int b) __attribute__((alias("_080023B60")));
-#endif

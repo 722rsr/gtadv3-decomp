@@ -67,8 +67,7 @@ def main() -> int:
     for src in files:
         pre = WORK / (src.stem + ".i")
         with pre.open("w", encoding="utf-8") as h:
-            p = run(["clang", "-E", "-nostdinc", "-undef", *inc,
-                     "-D__APPLE__=0", str(src)], stdout=h)
+            p = run(["clang", "-E", "-nostdinc", "-undef", *inc, str(src)], stdout=h)
         if p.returncode:
             # preprocessing itself failed (missing include, etc.)
             barriers.setdefault("preprocess", []).append(src.name)

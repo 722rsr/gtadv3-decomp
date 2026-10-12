@@ -21,10 +21,8 @@ void SoundD480_VolScale(void *state, u16 vol){
     scaled = (v * base) >> 8; /* muls + asrs #8 (signed: ROM shifts arithmetically) */
     ((volatile u16 *)s)[16] = (u16)scaled; /* +32 */
 }
-#ifndef __APPLE__
 void _0802D480(void *s, u16 v) __attribute__((alias("SoundD480_VolScale")));
 void sub_0802D480(void *s, u16 v) __attribute__((alias("SoundD480_VolScale")));
-#endif
 
 void SoundVoiceClamp(void *voice){
     register volatile u8 *p __asm__("r1");
@@ -87,10 +85,8 @@ tail:
     r0v &= ashi;
     p[27] = (u8)r0v;
 }
-#ifndef __APPLE__
 void _0802CFCC(void *v) __attribute__((alias("SoundVoiceClamp")));
 void sub_0802CFCC(void *v) __attribute__((alias("SoundVoiceClamp")));
-#endif
 
 // --- sound_voice_follow.s _0802C390 note-off helper — blocked, exact in src/sound_voice_commands.c as _0802C390
 // No duplicate alias here.
@@ -129,14 +125,9 @@ void SoundVoiceFollowA(void *a, void *b){
 // `.align 2, 0` is emitted after the body's `.size`, i.e. still inside the
 // body's own section, and pads with the explicit `0` fill instead.
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 void _0802C3D0(void *a, void *b) __attribute__((alias("SoundVoiceFollowA")));
 void sub_0802C3D0(void *a, void *b) __attribute__((alias("SoundVoiceFollowA")));
-#endif
 
-#ifdef __APPLE__
-s32 SoundMixerVeneer(s32 a, s32 b){ (void)a; return 0; }
-#else
 __attribute__((naked)) s32 SoundMixerVeneer(s32 a, s32 b){
     __asm__ volatile(
         ".arm\n"
@@ -147,20 +138,15 @@ __attribute__((naked)) s32 SoundMixerVeneer(s32 a, s32 b){
         ".thumb\n"
     );
 }
-#endif
 // Alias preserves bx-mode transition width via naked ARM (VMA 0x0802B88C) — ARM only, host stub needs no alias
-#ifndef __APPLE__
 s32 _0802B88C(s32 a, s32 b) __attribute__((alias("SoundMixerVeneer")));
 s32 sub_0802B88C(s32 a, s32 b) __attribute__((alias("SoundMixerVeneer")));
-#endif
 
 // --- sound_seq.s sequence interpreter branch 0x02D718 dispatch already via sound_core; extend with one handler ---
 // Handler at 0x02D728 etc. is pure Thumb with u8 op widths — minimal handler preserves u8 fetch
 void SoundSeqHandler0(void *state, void *cursor){ (void)state; (void)cursor; }
-#ifndef __APPLE__
 void _0802D728(void *s, void *c) __attribute__((alias("SoundSeqHandler0")));
 void sub_0802D728(void *s, void *c) __attribute__((alias("SoundSeqHandler0")));
-#endif
 
 // Explicit TODO for remaining interiors where pool/prologue not exact:
 // - mixer_2b888.s Thumb 0x02B898–0x02BA88 + ARM 0x02BA8C–0x02BC28 loop beyond veneer (IWRAM bx r3 0x03007001 pool 0x02B90C copy-site unproven)

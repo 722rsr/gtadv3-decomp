@@ -16,28 +16,20 @@ struct LineRec {
 // agbcc sinks the load to just before the `adds` (0x80254f2 ldr r0,[pc,#8]) and
 // the body scores 12/24 with prefix 0.
 s8 Ai_LineGet0(int id){ const s8 *t=(const s8*)(uintptr_t)0x080CCEECu; int v=(s16)id; return t[v*20]+t[0]-t[0]; }
-#ifndef __APPLE__
 s8 _080254E8(int a) __attribute__((alias("Ai_LineGet0")));
 s8 Sub_080254E8(int a) __attribute__((alias("Ai_LineGet0")));
-#endif
 s8 Ai_LineGet1(int id){ const struct LineRec *t=(const struct LineRec *)(uintptr_t)0x080CCEECu; int v=(s16)id; return t[v].b[14]+t->b[0]-t->b[0]; }
-#ifndef __APPLE__
 s8 _08025500(int a) __attribute__((alias("Ai_LineGet1")));
 s8 Sub_08025500(int a) __attribute__((alias("Ai_LineGet1")));
 s8 sub_08025500(int a) __attribute__((alias("Ai_LineGet1")));
-#endif
 s8 Ai_LineGet2(int id){ const struct LineRec *t=(const struct LineRec *)(uintptr_t)0x080CCEECu; int v=(s16)id; return t[v].b[13]+t->b[0]-t->b[0]; }
-#ifndef __APPLE__
 s8 _08025518(int a) __attribute__((alias("Ai_LineGet2")));
 s8 Sub_08025518(int a) __attribute__((alias("Ai_LineGet2")));
 s8 sub_08025518(int a) __attribute__((alias("Ai_LineGet2")));
-#endif
 s8 Ai_LineGet3(int id){ const struct LineRec *t=(const struct LineRec *)(uintptr_t)0x080CCEECu; int v=(s16)id; return t[v].b[12]+t->b[0]-t->b[0]; }
-#ifndef __APPLE__
 s8 _08025530(int a) __attribute__((alias("Ai_LineGet3")));
 s8 Sub_08025530(int a) __attribute__((alias("Ai_LineGet3")));
 s8 sub_08025530(int a) __attribute__((alias("Ai_LineGet3")));
-#endif
 
 // _08025214 — 52 B bit probe: `id` -> byte `id>>3` of the collection bitfield at
 // 0x030015E8 AND byte `id&7` of the mask table at 0x080C4768, as 0/1.
@@ -90,9 +82,7 @@ int Ai_LineProbe(int id){
     if (*bm & *mt) return 1;
     return 0;
 }
-#ifndef __APPLE__
 int _08025214(int a) __attribute__((alias("Ai_LineProbe")));
-#endif
 
 // _08025248 write via 0x0802D974
 void Ai_LineWrite(int id){
@@ -100,7 +90,6 @@ void Ai_LineWrite(int id){
     extern void sub_0802D974(const void*,void*,u32);
     sub_0802D974(&v, (void*)(uintptr_t)id, 0x05000006u);
 }
-#ifndef __APPLE__
 void _08025248(int a) __attribute__((alias("Ai_LineWrite")));
 // `sub_08025248` is the spelling the closure labels at 0x08025248
 // (asm/ai_line_write.s:7, plus the `.type` line above it in passthrough.inc:530),
@@ -109,7 +98,6 @@ void _08025248(int a) __attribute__((alias("Ai_LineWrite")));
 // body: an alias chain through a second alias is two `.thumb_set` hops and the
 // intermediate is not in the slice link.
 void sub_08025248(int a) __attribute__((alias("Ai_LineWrite")));
-#endif
 
 // _08024FE8 helper
 s16 Ai_LineHelperLoad(int a, int b, int c) {
@@ -122,12 +110,10 @@ s16 Ai_LineHelperLoad(int a, int b, int c) {
     c += (u32)base;
     return ((const s16 *)c)[1];
 }
-#ifndef __APPLE__
 s16 _080024FE8(int a, int b, int c) __attribute__((alias("Ai_LineHelperLoad")));
 s16 sub_080024FE8(int a, int b, int c) __attribute__((alias("Ai_LineHelperLoad")));
 s16 _08024FE8(int a, int b, int c) __attribute__((alias("Ai_LineHelperLoad")));
 s16 sub_08024FE8(int a, int b, int c) __attribute__((alias("Ai_LineHelperLoad")));
-#endif
 
 // _0802500C find slot < = id? actually >?
 int Ai_LineFindSlot(int id, const void *baseVoid){
@@ -144,12 +130,10 @@ int Ai_LineFindSlot(int id, const void *baseVoid){
     return 5;
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 int _08002500C(int a, const void *b) __attribute__((alias("Ai_LineFindSlot")));
 int sub_08002500C(int a, const void *b) __attribute__((alias("Ai_LineFindSlot")));
 int _0802500C(int a, const void *b) __attribute__((alias("Ai_LineFindSlot")));
 int sub_0802500C(int a, const void *b) __attribute__((alias("Ai_LineFindSlot")));
-#endif
 
 // _08025084 variant with <= ?
 int Ai_LineFindSlot2(int id, const void *baseVoid){
@@ -170,12 +154,10 @@ int Ai_LineFindSlot2(int id, const void *baseVoid){
     return 5;
 }
 __asm__(".align 2, 0");
-#ifndef __APPLE__
 int _080025084(int a, const void *b) __attribute__((alias("Ai_LineFindSlot2")));
 int sub_080025084(int a, const void *b) __attribute__((alias("Ai_LineFindSlot2")));
 int _08025084(int a, const void *b) __attribute__((alias("Ai_LineFindSlot2")));
 int sub_08025084(int a, const void *b) __attribute__((alias("Ai_LineFindSlot2")));
-#endif
 
 // _080250FC equality of 12-byte records (id + halfword + masked word)
 //
@@ -201,9 +183,7 @@ int Ai_LineEqual(const void *a,const void *b){
     if( ha != ((u16*)pb)[2]) return 0;
     return 1;
 }
-#ifndef __APPLE__
 int _080250FC(const void *a,const void *b) __attribute__((alias("Ai_LineEqual")));
-#endif
 
 struct LineEntry {
     u32 w[3];
@@ -222,10 +202,8 @@ void Ai_LineCopyInsert(void *dst, const void *src){
     }
     d[pos] = *s;
 }
-#ifndef __APPLE__
 void _08025028(void *a,const void *b) __attribute__((alias("Ai_LineCopyInsert")));
 void sub_08025028(void *a,const void *b) __attribute__((alias("Ai_LineCopyInsert")));
-#endif
 
 // _080250A0 variant uses slot2 logic? same but with <=
 void Ai_LineCmpInsert(void *dst, const void *src){
@@ -240,10 +218,8 @@ void Ai_LineCmpInsert(void *dst, const void *src){
     }
     d[pos] = *s;
 }
-#ifndef __APPLE__
 void _080250A0(void *a,const void *b) __attribute__((alias("Ai_LineCmpInsert")));
 void sub_080250A0(void *a,const void *b) __attribute__((alias("Ai_LineCmpInsert")));
-#endif
 
 // _080251FC timing helper
 // The ROM body is `push {lr}; ldr r1,=0x030015E8; ldr r2,=0x04000002; bl
@@ -260,9 +236,7 @@ void Ai_LineTimingHelper(const void *src){
     extern void _0802D974(const void*,void*,u32);
     _0802D974(src, (void*)(uintptr_t)0x030015E8u, (u32)0x04000002u);
 }
-#ifndef __APPLE__
 void _080251FC(const void *src) __attribute__((alias("Ai_LineTimingHelper")));
-#endif
 
 // _08025198 — 100B, no pool, high-reg r8, stack slot for r2 preservation
 // Mechanically translated: outer r6=0..4, inner r5=0..4, compare src+r5*12 (3 words, 12 B) vs dst+r6*12 via _080250FC (returns 0/1 via lsls #24), if equal store 0 at src+r5*12 (u32 via str) and leave the inner loop, then 5× _080250A0(dst, src+i*12) walking a u8* forward.
@@ -274,11 +248,7 @@ void _08025198(void *a, void *b){
     volatile u8 *dst = (volatile u8*)a;
     volatile u8 *src = (volatile u8*)b;
     extern int _080250FC(const void*,const void*);
-#ifndef __APPLE__
     extern void sub_080250A0(void*,const void*);   // 0x080250A0, the closure spelling
-#else
-    extern void _080250A0(void*,const void*);      // host wrapper
-#endif
     for(int r6=0; r6<=4; ++r6){
         for(int r5=0; r5<=4; ++r5){
             volatile u8 *pSrc = src + (r5*3)*4;
@@ -293,11 +263,7 @@ void _08025198(void *a, void *b){
     {
         volatile u8 *p = src;
         for(int n=4; n>=0; --n){
-#ifndef __APPLE__
             sub_080250A0((void*)dst, (const void*)p);
-#else
-            _080250A0((void*)dst, (const void*)p);
-#endif
             p += 12;
         }
     }
@@ -308,11 +274,7 @@ void _08025130(void *a, void *b){
     volatile u8 *dst = (volatile u8*)a;
     volatile u8 *src = (volatile u8*)b;
     extern int _080250FC(const void*,const void*);
-#ifndef __APPLE__
     extern void sub_08025028(void*,const void*);   // 0x08025028, the closure spelling
-#else
-    extern void _08025028(void*,const void*);      // host wrapper
-#endif
     for(int r6=0; r6<=4; ++r6){
         for(int r5=0; r5<=4; ++r5){
             volatile u8 *pSrc = src + (r5*3)*4;
@@ -327,11 +289,7 @@ void _08025130(void *a, void *b){
     {
         volatile u8 *p = src;
         for(int n=4; n>=0; --n){
-#ifndef __APPLE__
             sub_08025028((void*)dst, (const void*)p);
-#else
-            _08025028((void*)dst, (const void*)p);
-#endif
             p += 12;
         }
     }
@@ -341,26 +299,18 @@ void _08025130(void *a, void *b){
 // score sums over 0x080CD6A8 table
 int Ai_LineScoreSum(const void *rec){
     const s8 *r = (const s8 *)rec;
-#ifndef __APPLE__
     /* Absolute definition in-body: the splicer retains only the function's
        section, so a file-scope asm definition is omitted from the link. */
     extern const u8 LineScoreTable[];
     __asm__(".globl LineScoreTable\nLineScoreTable = 0x080CD6A8\n");
     const u8 *tbl = LineScoreTable;
-#else
-    const u8 *tbl = (const u8 *)(uintptr_t)0x080CD6A8u;
-#endif
     const u8 *p2 = tbl + r[2] * 8;
     const u8 *p6 = tbl + r[6] * 8 + 34;
     register int v2 __asm__("r1") = p2[2];
     __asm__("" : "+r"(v2));
     register int v6 __asm__("r0") = *p6;
     register int sum __asm__("r0");
-#ifndef __APPLE__
     __asm__("add %0, %1, %2" : "=r"(sum) : "r"(v2), "r"(v6));
-#else
-    sum = v2 + v6;
-#endif
     sum += (tbl + r[4] * 8)[66];
     sum += (tbl + r[7] * 8)[98];
     sum += (tbl + r[5] * 8)[130];
@@ -369,11 +319,9 @@ int Ai_LineScoreSum(const void *rec){
     sum += (tbl + r[8] * 8)[226];
     return (s8)sum;
 }
-#ifndef __APPLE__
 __asm__(".align 2, 0");
 int _08025548(const void *a) __attribute__((alias("Ai_LineScoreSum")));
 int Sub_08025548(const void *a) __attribute__((alias("Ai_LineScoreSum")));
-#endif
 
 
 // _080256BC family: 8-byte record at 0x0805FCAC — each reads a different halfword.
@@ -390,7 +338,6 @@ int Ai_CatalogFieldTmpA(int a,int b,int c){ const u8 *t=(const u8*)(uintptr_t)0x
 int Ai_CatalogFieldTmpB(int a,int b,int c){ const u8 *t=(const u8*)(uintptr_t)0x0805FCACu; int b3=b*3; int a33=a*33; const s16 *p=(const s16*)(t+(a33+b3)*8); return p[0]+(int)t[0]-(int)t[0]; }  // byte offset +0
 int Ai_CatalogFieldTmpC(int a,int b,int c){ const u8 *t=(const u8*)(uintptr_t)0x0805FCACu; int b3=b*3; int a33=a*33; const s16 *p=(const s16*)(t+(a33+b3)*8); return p[2]+(int)t[0]-(int)t[0]; }  // byte offset +4
 int Ai_CatalogFieldTmpD(int a,int b,int c){ const u8 *t=(const u8*)(uintptr_t)0x0805FCACu; int b3=b*3; int a33=a*33; const s16 *p=(const s16*)(t+(a33+b3)*8); return p[1]+(int)t[0]-(int)t[0]; }  // byte offset +2
-#ifndef __APPLE__
 int _080256BC(int a,int b,int c) __attribute__((alias("Ai_CatalogFieldTmpA")));
 int sub_080256BC(int a,int b,int c) __attribute__((alias("Ai_CatalogFieldTmpA")));
 int _080256D8(int a,int b,int c) __attribute__((alias("Ai_CatalogFieldTmpB")));
@@ -399,4 +346,3 @@ int _080256F4(int a,int b,int c) __attribute__((alias("Ai_CatalogFieldTmpC")));
 int sub_080256F4(int a,int b,int c) __attribute__((alias("Ai_CatalogFieldTmpC")));
 int _08025710(int a,int b,int c) __attribute__((alias("Ai_CatalogFieldTmpD")));
 int sub_08025710(int a,int b,int c) __attribute__((alias("Ai_CatalogFieldTmpD")));
-#endif

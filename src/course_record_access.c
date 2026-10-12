@@ -14,22 +14,6 @@
 #include "gba/types.h"
 
 // ---- extern callees --------------------------------------------------------
-#ifdef __APPLE__
-__attribute__((weak)) void  _0802D974(const void *a, void *b, u32 c) { (void)a; (void)b; (void)c; }
-__attribute__((weak)) s16   _080261B0(int a) { (void)a; return 0; }
-__attribute__((weak)) s16   _080261F8(int a) { (void)a; return 0; }
-__attribute__((weak)) void  _08007A04(void *a, int b) { (void)a; (void)b; }
-__attribute__((weak)) void  _08007614(void *a, int b, int c, int d) { (void)a; (void)b; (void)c; (void)d; }
-__attribute__((weak)) void  _0802E0A4(void *dst, const void *src, u32 n) { (void)dst; (void)src; (void)n; }
-__attribute__((weak)) void  _08007B18(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h) { (void)a; (void)b; (void)c; (void)d; (void)e; (void)f; (void)g; (void)h; }
-__attribute__((weak)) void  _080038C8(int a, u32 b, const void *c) { (void)a; (void)b; (void)c; }
-__attribute__((weak)) void  _080039C0(int a, u32 b, int c) { (void)a; (void)b; (void)c; }
-__attribute__((weak)) s8    _08025500(int a) { (void)a; return 0; }
-__attribute__((weak)) s8    _08025518(int a) { (void)a; return 0; }
-__attribute__((weak)) s8    _08025530(int a) { (void)a; return 0; }
-__attribute__((weak)) int   _080097E8(u16 a, u16 b) { (void)a; return 0; }
-__attribute__((weak)) void  _08009748(u16 a, u16 b) { (void)a; (void)b; }
-#else
 extern void _0802D974(const void *a, void *b, u32 c);   // CpuSet
 extern s16  _080261B0(int a);                            // 0x080261B0 Ai_AwardLeafGet
 extern s16  _080261F8(int a);                            // 0x080261F8 award s16 read
@@ -45,7 +29,6 @@ extern s8   _08025518(int a);                            // 0x08025518 Ai_LineGe
 extern s8   _08025530(int a);                            // 0x08025530 Ai_LineGet3
 extern int  _080097E8(u16 a, u16 b);                     // 0x080097E8 (course_leaves.c)
 extern void _08009748(u16 a, u16 b);                     // 0x08009748 (course_leaves.c)
-#endif
 
 // Anchors (byte-exact pools):
 #define CL_SLOT   ((volatile u32 *)(uintptr_t)0x030003E4)
@@ -117,10 +100,8 @@ void CourseLeaves_096A4(void *rec) {
     *(volatile u16 *)((u8 *)rec + 22) = *(volatile u16 *)(CL_WA + 0x10C6);
     *(volatile u16 *)((u8 *)rec + 24) = *(volatile u16 *)(CL_WA + 0x10C8);
 }
-#ifndef __APPLE__
 void _080096A4(void *a) __attribute__((alias("CourseLeaves_096A4")));
 void sub_080096A4(void *a) __attribute__((alias("CourseLeaves_096A4")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_08009830 — key/step handler (r0 = step, r1 = sel):
@@ -185,10 +166,8 @@ int CourseLeaves_09830(u16 step, u16 sel) {
     }
     return (int)r3;
 }
-#ifndef __APPLE__
 int _08009830(u16 a, u16 b) __attribute__((alias("CourseLeaves_09830")));
 int sub_08009830(u16 a, u16 b) __attribute__((alias("CourseLeaves_09830")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_08009900 — lap-label HUD builder (labels at 0x0805F6A4/0x0805F6AA,
@@ -231,10 +210,8 @@ void CourseLeaves_09900(void) {
             break;
     }
 }
-#ifndef __APPLE__
 void _08009900(void) __attribute__((alias("CourseLeaves_09900")));
 void sub_08009900(void) __attribute__((alias("CourseLeaves_09900")));
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_080099D0 — results HUD builder: positions from blk[4]*16+16,
@@ -274,7 +251,5 @@ void CourseLeaves_099D0(void) {
     s16 lv = *last;
     (void)lv;
 }
-#ifndef __APPLE__
 void _080099D0(void) __attribute__((alias("CourseLeaves_099D0")));
 void sub_080099D0(void) __attribute__((alias("CourseLeaves_099D0")));
-#endif

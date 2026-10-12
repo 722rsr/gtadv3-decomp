@@ -10,7 +10,6 @@
 // Caller ABI: channel in r1 (nonstandard r1), state in r0 (standard r0), r2/r3 temps. Proven via ROM table at 0x061504 (0x0802BD81 thumb entry at file 0x061504: 81 BD 02 08) within 0x061504 table (4 entries 0x0802BD75/0x0802BD81/0x0802BD95/0x0802BDA9), dispatched via r1 channel.
 // Do not guess voice layout beyond +28 (u16) / +30 (u16) / +32 (u16) directly via strh/ldrh, proven via objdump.
 
-#ifndef __APPLE__
 void _0802BD80(void *a, void *b) __attribute__((alias("SoundBD80_Scale")));
 void sub_0802BD80(void *a, void *b) __attribute__((alias("SoundBD80_Scale")));
 __attribute__((naked)) void SoundBD80_Scale(void *state, void *chan) {
@@ -28,6 +27,3 @@ __attribute__((naked)) void SoundBD80_Scale(void *state, void *chan) {
         ".syntax divided\n"
     );
 }
-#else
-void SoundBD80_Scale(void *a, void *b) { (void)a; (void)b; }
-#endif

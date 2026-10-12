@@ -21,7 +21,6 @@ Outputs belong under ignored `build/` or `assets/`.
 | `independent_slice.py` | Verify reconstructed assembly for the complete executable region without ROM-backed code. |
 | `data_regions.py` | Extract private editable palette fields, generate registered data inputs, and verify the assembled data tail. See [data integration](../docs/data-integration.md). |
 | `ownership_map.py` | Inventory source/data ownership and check the independent-link boundary. |
-| `apple_decls.py` | Check host declarations separately from ARM aliases. |
 | `call_audit.py` | Audit C callees against the assembled symbol closure. |
 | `export_audit.py` | Check aliases and external references affected by section replacement. |
 | `label_census.py` | Compare VMA-shaped label names with assembled addresses. |

@@ -10,24 +10,6 @@
 
 #include "gba/types.h"
 
-#ifdef __APPLE__
-__attribute__((weak)) void Sub_08007B18(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h) { (void)a; (void)b; (void)c; (void)d; (void)e; (void)f; (void)g; (void)h; }
-__attribute__((weak)) void Sub_08007BFC(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h, u32 i) { (void)a; (void)b; (void)c; (void)d; (void)e; (void)f; (void)g; (void)h; (void)i; }
-__attribute__((weak)) void Sub_0800D97C(void *a, int b) { (void)a; (void)b; }
-__attribute__((weak)) void Sub_0800DBE8(void *a) { (void)a; }
-__attribute__((weak)) void Sub_0800139F0(void *a, u32 b) { (void)a; (void)b; }
-__attribute__((weak)) void Sub_080013AF4(void *a) { (void)a; }
-__attribute__((weak)) void Sub_080013AA8(void *a) { (void)a; }
-__attribute__((weak)) void Sub_080013E60(void *a) { (void)a; }
-__attribute__((weak)) void Sub_080013950(void *a, void *b, u32 c, u32 d) { (void)a; (void)b; (void)c; (void)d; }
-__attribute__((weak)) void Sub_080026A2C(void *a, int b, int c) { (void)a; (void)b; (void)c; }
-__attribute__((weak)) int Sub_08025500(int v) { return v; }
-__attribute__((weak)) int Sub_08025518(int v) { return v; }
-__attribute__((weak)) int Sub_08025530(int v) { return v; }
-__attribute__((weak)) int Sub_08025548(const void *v) { (void)v; return 0; }
-__attribute__((weak)) int Sub_080255C4(const void *v) { (void)v; return 0; }
-__attribute__((weak)) int Sub_08025640(const void *v) { (void)v; return 0; }
-#else
 extern void Sub_08007B18(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h);
 extern void Sub_08007BFC(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h, u32 i);
 extern void Sub_0800D97C(void *a, int b);
@@ -44,7 +26,6 @@ extern int Sub_08025530(int v);
 extern int Sub_08025548(const void *v); // 12-byte record ptr
 extern int Sub_080255C4(const void *v); // 12-byte record ptr
 extern int Sub_08025640(const void *v); // 12-byte record ptr
-#endif
 
 // ----------------------------------------------------------------------------
 // sub_080013B68 — (rec):
@@ -122,13 +103,22 @@ void MenuFF78_13B68(void *rec_) {
         extern u8 J13B68_E[];
         __asm__(".globl J13B68_E\nJ13B68_E = 0x080CB6AC\n");
         u32 i = 0;
-        while ((int)i < (int)((s8 *)(uintptr_t)base)[(u32)(s32)*(s16 *)(uintptr_t)(rec + 174) * 20]) {
-            Sub_08007B18((void *)rec,
-                         (int)*(s16 *)(uintptr_t)((u8 *)J13B68_E + i * 2),
-                         (int)*(u32 *)(uintptr_t)(0x080CB6E0u + i * 8),
-                         (int)*(u32 *)(uintptr_t)(0x080CB6E0u + 4 + i * 8),
-                         4, 1, 1, 0);
-            i++;
+        if ((int)i < (int)((s8 *)(uintptr_t)base)[(u32)(s32)*(s16 *)(uintptr_t)(rec + 174) * 20]) {
+            /* agbcc keeps the loop's copy of `base` in r8, one block late:
+               the ROM has `mov r8,r9` in the preheader (before the hoisted
+               `ldr r4`), this form emits it as the loop's first insn.  */
+            for (;;) {
+                register u8 *lp __asm__("r8") = base;
+                __asm__ volatile("" : "+r"(lp));
+                Sub_08007B18((void *)rec,
+                             (int)*(s16 *)(uintptr_t)((u8 *)J13B68_E + i * 2),
+                             (int)*(u32 *)(uintptr_t)(0x080CB6E0u + i * 8),
+                             (int)*(u32 *)(uintptr_t)(0x080CB6E0u + 4 + i * 8),
+                             4, 1, 1, 0);
+                i++;
+                if (!((int)i < (int)((s8 *)(uintptr_t)lp)[(u32)(s32)*(s16 *)(uintptr_t)(rec + 174) * 20]))
+                    break;
+            }
         }
     }
     Sub_080013AA8((void *)rec);
@@ -136,8 +126,6 @@ void MenuFF78_13B68(void *rec_) {
     Sub_080013E60((void *)rec);
     }
 }
-#ifndef __APPLE__
 void _080013B68(void *a) __attribute__((alias("MenuFF78_13B68")));
 void Sub_080013B68(void *a) __attribute__((alias("MenuFF78_13B68")));
 void sub_080013B68(void *a) __attribute__((alias("MenuFF78_13B68")));
-#endif

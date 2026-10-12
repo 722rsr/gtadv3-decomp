@@ -398,6 +398,47 @@ r4 across the body, with the `+0xFC2` read as `ldr r1,=0xFC2 / adds r0,r4,r1`:
   (`include/gtadv/ram_blocks.h`, first used this way in `src/save.c`) is not a
   foldable constant, so the base stays in r4 and the offset is really added.
 
+## A loop's `mov r8,r9` in the preheader cannot be spelled in C
+
+`_080013B68` (`src/menu_ff78_s.c`) is PARKED at **731/740** with the ROM's
+exact allocation; the missing 2 bytes are *where the copy lives*, not which
+register it uses:
+
+```
+ROM                              candidate
+cmp r5,r0 / bge .L5              cmp r5,r0 / bge .L5
+mov r8,r9        <- preheader    ldr r4,=0x080CB6E0     <- preheader
+ldr r4,=0x080CB6E0               .L6:
+.L6:  ldr r1,=0x080CB6AC         mov r8,r9            <- loop header
+      lsls r0,r5,#1              lsls r0,r5,#1
+      adds r0,r0,r1              ldr r1,=0x080CB6AC
+      adds r0,r0,r1
+```
+
+* A `register u8 *lp __asm__("r8") = base;` pin placed as the loop body's
+  first statement is a `reg/v` **user variable** in the RTL
+  (`(set (reg/v:SI 8 r8) (reg/v:SI 28))`). `loop.c` will not hoist it, so it
+  emits as the loop's first instruction -- the register is right, the block is
+  not. Pinning `base` itself to `r9` as well is what keeps the *guard* on r9
+  (`add r0,r0,r9`) instead of letting `lp` coalesce into `r8` from the start.
+* Hoisting it by hand (`if (guard) { pin; do { ... } while (cond with lp); }`)
+  does put the copy in the preheader, immediately before the hoisted `ldr r4`,
+  with the guard still on `r9` -- but the pin's live range now starts before
+  the loop, so global-alloc can no longer cache `rec+174` in `r8` (it moves to
+  `sl`, +4 prologue bytes) and `rec+32` is spilled. 744 B and a different
+  prologue.
+* The ROM's version is the **allocator's** copy: `rec+174` sits in `r8` for the
+  guard, the loop's base copy kills it there, and the loop *rematerialises*
+  `rec+174` (`adds r0,r6,#0` / `adds r0,#174`) rather than keeping it live.
+  A `u8 *lp = base;` local (no pin) inside the loop is copy-propagated away
+  entirely (736 B, no copy at all), and the same local before the loop makes
+  `loop.c` hoist a copy of the *index* (`mov r7,r8`) instead of the base.
+* Debugging lever: `old_agbcc -O2 -mthumb-interwork -ffunction-sections -dL
+  <pre>.i -o out.s` writes `loop.c`'s decisions to `<pre>.i.loop` -- the
+  movable list with `savings N not desirable` per insn, the bivs/givs and the
+  preheader initialisations. That is how the `ldr r4` in the preheader was
+  identified as the strength-reduced table pointer rather than a hoisted load.
+
 ## Related traps found the same way
 
 * Two pins aimed at the same register collapse: the second is silently ignored.

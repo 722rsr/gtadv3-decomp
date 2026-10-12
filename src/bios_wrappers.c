@@ -69,7 +69,6 @@ __attribute__((naked)) void VBlankIntrWaitR2(void) {
         ".short 0\n"
     );
 }
-#ifndef __APPLE__
 void _0802D974(const void *a, void *b, u32 c) __attribute__((alias("CpuSet")));
 void sub_0802D974(const void *a, void *b, u32 c) __attribute__((alias("CpuSet")));
 int _0802D978(int a, int b) __attribute__((alias("Div")));
@@ -101,4 +100,3 @@ int  _08002D978(int a, int b) __attribute__((alias("Div")));
 int  _08002D97C(int a, int b) __attribute__((alias("DivRem")));
 void _08002D970(const void *a, void *b, u32 c) __attribute__((alias("CpuFastSet")));
 int  _08002D9AC(u32 a) __attribute__((alias("Sqrt")));
-#endif
