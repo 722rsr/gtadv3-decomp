@@ -39,3 +39,4 @@ _0802CD4E:
 	pop {r0}
 	bx r0
 _0802CD54: .word 0x68736D53
+sound_stop_all_end:

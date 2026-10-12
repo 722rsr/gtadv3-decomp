@@ -2615,3 +2615,6 @@ _080019F8C:
 _080019FFC: .4byte 0x03004E20
 _08001A000: .4byte 0x080CB954
 _08001A004: .4byte 0x0832F654
+@ Zero-byte end anchor so the promotion screen can close the
+@ 0x08019F70-0x0801A008 span without falling off the end of the file.
+race_setup_18adc_end:

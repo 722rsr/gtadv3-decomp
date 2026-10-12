@@ -21,6 +21,10 @@ __attribute__((weak)) void _0800D778(void) { }                        // rec10 r
 __attribute__((weak)) void _08001F80(u16 v) { (void)v; }              // mode-request setter
 __attribute__((weak)) void _0802D974(const void *a, void *b, u32 c) { (void)a; (void)b; (void)c; }
 __attribute__((weak)) void _0800B190(void) { }                        // engine cmd dispatcher
+// The `#ifdef __APPLE__` twin of this one sits BELOW the `#else` (in the
+// agbcc branch), so it is dead code and the three calls further down had no
+// Apple-side declaration at all. Define it here where the host build sees it.
+__attribute__((weak)) void CarTickDispatch_R0(int arg) { (void)arg; _0800B190(); }
 __attribute__((weak)) void _08023FF8(int a, int b) { (void)a; (void)b; } // ring event
 __attribute__((weak)) int  _08009B60(void *ctx) { (void)ctx; return 0; } // rec13 packet (raw asm)
 __attribute__((weak)) int  CarTick_Shared(void) { return 0; }         // _0800AA20 twin

@@ -93,3 +93,7 @@ _0801A284: .word 0x03001780     @ save/state region base
 _0801A288: .word 0x00001106     @ offset -> course selector 0x03002886
 _0801A28C: .word 0x030039D0     @ orchestrator out struct
 _0801A290: .word 0x000010FE     @ offset -> event index 0x0300287E
+
+@ Zero-byte end anchor so the promotion screen can close the _0801A204 span
+@ (0x0801A204-0x0801A294) without falling off the end of the file.
+course_load_end:

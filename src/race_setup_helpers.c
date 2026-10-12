@@ -18,7 +18,7 @@ __attribute__((weak)) void _080018F14(void *a) { (void)a; }
 __attribute__((weak)) int  _080044C4(int a, int b, volatile u32 *c) { (void)a; (void)b; (void)c; return 0; }
 __attribute__((weak)) int  _08004508(volatile u32 *a) { (void)a; return 0; }
 __attribute__((weak)) int  _0802D97C(int a, int b) { (void)a; return 0; }
-__attribute__((weak)) void _0802B500(u16 a, u16 b, s16 c, s16 d) { (void)a; (void)b; (void)c; (void)d; }
+__attribute__((weak)) void _0802B500(u16 a, u16 b, s16 c) { (void)a; (void)b; (void)c; }
 __attribute__((weak)) int  _0802D978(int a, int b) { (void)a; return 0; }
 __attribute__((weak)) int  _0802DE04(int a, int b) { (void)a; return 0; }
 __attribute__((weak)) void *_0802E0A4(void *dst, const void *src, u32 n) { (void)src; (void)n; return dst; }
@@ -54,7 +54,7 @@ extern void _080018F14(void *a);        // (src/race_setup.c)
 extern int  _080044C4(int a, int b, volatile u32 *c); // TrackArrow_044C4
 extern int  _08004508(volatile u32 *a); // TrackDigit_04508 (1-arg in ROM; body ignores dead r1/r2)
 extern int  _0802D97C(int a, int b);    // DivRem (bios_wrappers.c)
-extern void _0802B500(u16 a, u16 b, s16 c, s16 d);    // song-bank volume (asm/sound_bank.s)
+extern void _0802B500(u16 a, u16 b, s16 c);           // song-bank volume (asm/sound_bank.s)
 extern int  _0802D978(int a, int b);    // Div
 extern int  _0802DE04(int a, int b);    // signed EABI idiv
 extern void *_0802E0A4(void *dst, const void *src, u32 n);  // memcpy, r0=dst r1=src r2=n (returns dst)
@@ -441,30 +441,43 @@ void sub_0800196E8(void)
 //   if [racectx+48] > [racectx+52]:
 //     [racectx+52] = [racectx+48]; _080081F8([racectx+48])
 // ----------------------------------------------------------------------------
+//   The ROM never keeps the context base in a register across the body: the
+//   prologue is only `push {r4, lr}` and every use re-loads *0x03004E20 (the
+//   address itself lives in r4 and is rematerialised from the pool for the
+//   tail). Caching the base in a local instead forces `push {r4, r5, r6, lr}`
+//   and a callee-saved pointer. So each use is spelled as the full
+//   `*(volatile u32 *)(*(volatile u32 *)(uintptr_t)0x03004E20u + off)` load.
 void sub_08001992C(void)
 {
-    volatile u8 *racectx = *(volatile u8 *volatile *)(uintptr_t)0x03004E20u;
-    volatile u32 *p48 = (volatile u32 *)(racectx + 48);
-    int v = (int)*p48 + 1;
     int r;
 
-    if (v > 99) v = 99;
-    *p48 = (u32)v;
+    {
+        volatile u32 *p = (volatile u32 *)(*(volatile u32 *)(uintptr_t)0x03004E20u + 48);
+        int v = (int)(*p) + 1;
+        *p = (u32)v;
+        if (v > 99) *p = 99;
+    }
 
-    _08008164(v);
+    _08008164((int)*(volatile u32 *)(*(volatile u32 *)(uintptr_t)0x03004E20u + 48));
     _08008208();
 
-    r = _0802D97C(v, 5);
-    if (r != 0)
-        _0802B500(22, 255, (s16)((v - 5) * 150), 0);
-    else
-        _0802B500(23, 255, (s16)((v - 5) * 150), 0);
+    r = _0802D97C((int)*(volatile u32 *)(*(volatile u32 *)(uintptr_t)0x03004E20u + 48), 5);
+    if (r != 0) {
+        int d = (int)*(volatile u32 *)(*(volatile u32 *)(uintptr_t)0x03004E20u + 48) - 5;
+        _0802B500(22, 255, (s16)(d * 150));
+    } else {
+        int d = (int)*(volatile u32 *)(*(volatile u32 *)(uintptr_t)0x03004E20u + 48) - 5;
+        _0802B500(23, 255, (s16)(d * 150));
+    }
 
     {
-        volatile u32 *p52 = (volatile u32 *)(racectx + 52);
-        if (*p48 > *p52) {
-            *p52 = *p48;
-            _080081F8((u16)*p48);
+        // Signed fields and a single read of [48]: the ROM's compare is `ble`
+        // (signed) and the value is stored and passed on without a reload.
+        volatile s32 *b = (volatile s32 *)*(volatile u32 *)(uintptr_t)0x03004E20u;
+        s32 a = b[12];
+        if (a > b[13]) {
+            b[13] = a;
+            _080081F8((u32)a);
         }
     }
 }
@@ -688,23 +701,33 @@ void sub_080019EC8(void)
 
 void sub_08019F70(void)
 {
-    volatile u8 *rec = *(volatile u8 *volatile *)_08005F98();
+    u8 *rec = *(u8 *volatile *)_08005F98();
     volatile u32 *cfg;
-    u32 *rc;
+    // The ROM dereferences cfg in place (r0 = *cfg) and keeps the context in
+    // r0 for both store addresses and the later +0x8C lane read.
+    register u32 *rc __asm__("r0");
     s16 *pa;
     s16 *pb;
-    u8 a;
-    u8 b;
+    // `ldrb` loads (so the bytes are zero-extended) but the ROM clamps with
+    // `cmp #13 / ble` (signed): widest-int locals reproduce both.
+    int a;
+    // The ROM keeps the second clamped lane in r3 (`ldrb r3,[r0,#15]`,
+    // `lsls r5,r3,#1`), so pin it there.
+    register int b __asm__("r3");
     a = rec[14];
-    if (a > 13) a = 0;
     b = rec[15];
+    if (a > 13) a = 0;
     if (b > 13) b = 0;
     cfg = (volatile u32 *)(uintptr_t)0x03004E20u;
     rc = (u32 *)*cfg;
-    pa = (s16 *)(uintptr_t)(0x080CB954u + a * 24);
-    pb = (s16 *)(uintptr_t)(0x080CB954u + b * 24);
-    rc[292] = (u32)pa;   // +0x490
-    rc[293] = (u32)pb;   // +0x494
+    // The pointer value is bound inside the store expression: the ROM computes
+    // the store address first (`movs r4,#146` / `lsls r4,r4,#3` /
+    // `adds r2,r0,r4`) and only then the `a*24 + 0x080CB954` chain, and it
+    // reuses that 0x490 offset with `adds r4,#4` for the second lane. Keeping
+    // the assignments as separate statements makes agbcc emit the pointer
+    // chains before the addresses and materialise 0x494 from the pool.
+    rc[292] = (u32)(uintptr_t)(pa = (s16 *)(uintptr_t)(0x080CB954u + a * 24));
+    rc[293] = (u32)(uintptr_t)(pb = (s16 *)(uintptr_t)(0x080CB954u + b * 24));
     _08007538((void *)(uintptr_t)0x0832F654u, pa[0],
               *(s16 *)((u8 *)rc + 0x8C));
     _08007538((void *)(uintptr_t)0x0832F654u, pb[0],
@@ -747,25 +770,46 @@ __asm__(".align 2, 0");
 //   u16[rc+0x4A] = n - 1;
 //   switch (s16[rc+0x48]): case 0 → 0x04000054 = Div(s16[rc+0x4A], 2);
 //                          case 1 → 0x04000054 = 16 - Div(s16[rc+0x4A], 2);
+// The reads are NOT volatile: a volatile s16 lvalue lowers to `ldrh` plus an
+// explicit sign extension, while the ROM's `movs r4,#0 / ldrsh r0,[r1,r4]` is
+// what a plain signed halfword read emits (same rule as s8). The unsigned
+// `ldrh r2,[r1,#0]` for the decrement and the signed `ldrsh` for the test are
+// two separate reads of rc+0x4A in the ROM, so keep the value in a u16 local.
 void sub_080019A84(void)
 {
-    volatile u8 *rc = *(volatile u8 *volatile *)(uintptr_t)0x03004E20u;
+    u8 *rc = *(u8 **)(uintptr_t)0x03004E20u;
     volatile u16 *p4A = (volatile u16 *)(rc + 0x4A);
-    u16 word = *p4A;
-    if ((s16)word <= 0) {
-        _08018AA8(64u, 0);
-        return;
-    }
-    *p4A = (u16)(word - 1);
-    {
-        s16 lane = *(volatile s16 *)(rc + 0x48);
+    // The halfword is pinned: unpinned, agbcc lands the load in a fresh temp
+    // and copies it home (`ldrh r0,[r1]` / `adds r2,r0,#0`) -- that copy alone
+    // is the candidate's 2-byte overshoot. The ROM loads straight into r2. The
+    // decrement, though, stays a *separate* temp (`subs r0,r2,#1` before the
+    // in-place `subs r2,#1` a pinned subtraction would give), so it goes
+    // through its own u32 local.
+#ifndef __APPLE__
+    register u32 rword __asm__("r2");
+#else
+    u32 rword;
+#endif
+    u32 nv;
+    s16 lane;
+    rword = *p4A;
+    if (*(s16 *)(rc + 0x4A) > 0) {
+        nv = rword - 1u;
+        // Keep rword live through the subtraction: without it agbcc reuses the
+        // pinned r2 as the destination (`subs r2,#1`), where the ROM computes
+        // into a fresh temp (`subs r0,r2,#1`). Empty asm only.
+        __asm__("" : : "r"(rword));
+        *p4A = (u16)nv;
+        lane = *(s16 *)(rc + 0x48);
         if (lane == 0) {
             *(volatile u16 *)(uintptr_t)0x04000054u =
-                (u16)_0802D978((int)*(volatile s16 *)(rc + 0x4A), 2);
+                (u16)_0802D978((int)*(s16 *)(rc + 0x4A), 2);
         } else if (lane == 1) {
             *(volatile u16 *)(uintptr_t)0x04000054u =
-                (u16)(16 - _0802D978((int)*(volatile s16 *)(rc + 0x4A), 2));
+                (u16)(16 - _0802D978((int)*(s16 *)(rc + 0x4A), 2));
         }
+    } else {
+        _08018AA8(64u, 0);
     }
 }
 

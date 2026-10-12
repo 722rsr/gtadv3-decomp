@@ -153,28 +153,50 @@ void sub_0802B780(u32 a, u32 b, u32 c) __attribute__((alias("SoundSeq_ThirdWalke
 // --- _0802C4C4 — driver-wide reset/init, pools 0x0802B91D/0x03007000/0x040000E0/0x0203E230/0x0203EC40/0x0093F800/4/0x08061F74/0x0203EE00 ---
 // Exact: push {r4-r6,lr}; ldr r0,[pc+#80]=0x0802B91D & -2 =>0x0802B91C; ldr r1=0x03007000; ldr r2=0x040000E0; bl D974; ldr r0=0x0203E230 bl C8C4; ldr r0=0x0203EC40 bl C780; ldr r0=0x0093F800 bl CA34; ldr r0=4 count; ldr r5=0x08061F74 tab; loop 12 B rec: ldr dst/src, ldrb size, bl CBBC, ldrh [rec+10] strb [dst+11], ldr 0x0203EE00 str [dst+24]
 void SoundReset_DriverInit(void){
-    const void *srcA = (const void*)0x0802B91Cu; // ldr [pc] 0x0802B91D ands -2 => 0x0802B91C
-    void *dstI = (void*)0x03007000u; // ldr [pc] 0x03007000 pool at 0x02C51C
-    u32 ctrl = 0x040000E0u; // ldr [pc] 0x040000E0 via ldr [pc+#76] at 0x02C520, u32 mode
-    sub_0802D974((const void*)(uintptr_t)srcA, dstI, ctrl);
+    // The ROM keeps the *tagged* pointer 0x0802B91D in the pool and clears bit
+    // 0 at runtime (`movs r1,#2` / `negs r1,r1` / `ands r0,r1`), so the source
+    // value cannot be a folded C constant. Same for the 4-entry count: it is
+    // materialised from the pool, narrowed with `lsls #16` / `lsrs #16`, and
+    // still tested with a runtime `cmp #0`. Assembler-resolved absolutes keep
+    // both loads alive (see docs/findings/track_car_26180_pool_order.md).
+    u32 srcA;
+    u16 cnt;
+#ifndef __APPLE__
+    extern u8 SoundResetSrcA[];
+    extern u8 SoundResetTabCount[];
+    __asm__(".globl SoundResetSrcA\nSoundResetSrcA = 0x0802B91D\n");
+    __asm__(".globl SoundResetTabCount\nSoundResetTabCount = 4\n");
+    srcA = (u32)(uintptr_t)SoundResetSrcA;
+#else
+    srcA = 0x0802B91Du;
+#endif
+    sub_0802D974((const void*)(uintptr_t)(srcA & ~1u), (void*)0x03007000u, 0x040000E0u);
     sub_0802C8C4((void*)0x0203E230u);
     sub_0802C780((void*)0x0203EC40u);
     sub_0802CA34((void*)0x0093F800u);
-    volatile u32 *cntp = (volatile u32*)0x08061F74u; // tab base pool at 0x02C534, not cnt; cnt at 0x02C530 =4
-    (void)cntp;
-    u32 cnt = 4u; // ldr [pc] 0x02C530 lsls #16/lsrs #16 => 4, cmp #0 beq, u16 width via lsls/lsrs
-    if(cnt==0) return;
-    volatile u8 *tab = (volatile u8*)0x08061F74u; // ldr [pc] 0x02C534
-    const u32 stampAddr = 0x0203EE00u; // ldr [pc] 0x02C538 => 0x0203EE00u str [r4+24]
-    for(u32 i=0;i<cnt;i++){
-        volatile u8 *rec = tab + i*12u; // adds r5,#12
-        void *dst = *(void**)rec; // ldr [r5] u32 dst
-        void *src = *(void**)(rec+4); // ldr [r5+4] u32 src
-        u32 sz = *(volatile u8*)(rec+8); // ldrb [r5+8] u8 size
-        sub_0802CBBC(dst, src, sz);
-        u16 hw = *(volatile u16*)(rec+10); // ldrh [r5+10] u16 hw
-        *(volatile u8*)((volatile u8*)dst + 11) = (u8)hw; // strb [r4+11] low byte of halfword, preserve hw>>8? exact is strb r0,[r4+11] where r0=ldrh
-        *(volatile u32*)((volatile u8*)dst + 24) = stampAddr; // ldr [pc] 0x0203EE00 str [r4+24] u32
+    // Loaded here, not at the top: the ROM materialises the count only after
+    // the four init calls (`ldr r0,[pc,#68]` at +0x24).
+#ifndef __APPLE__
+    cnt = (u16)(uintptr_t)SoundResetTabCount;
+#else
+    cnt = 4u;
+#endif
+    if (cnt == 0)
+        return;
+    {
+        // ROM shape: the table base is the walking pointer (r5) and the count
+        // is the down counter (r6) - `adds r5,#12` / `subs r6,#1` / `bne`.
+        // The counter is a full-width copy of the u16 (`adds r6,r0,#0`);
+        // decrementing the u16 itself would re-issue the narrowing pair.
+        volatile u8 *rec = (volatile u8*)0x08061F74u;
+        int n = cnt;
+        do {
+            void *dst = *(void**)rec; // ldr [r5] u32 dst
+            sub_0802CBBC(dst, *(void**)(rec + 4), *(volatile u8*)(rec + 8));
+            *(volatile u8*)((u8*)dst + 11) = *(volatile u16*)(rec + 10);
+            *(volatile u32*)((u8*)dst + 24) = 0x0203EE00u;
+            rec += 12;
+        } while (--n);
     }
 }
 #ifndef __APPLE__

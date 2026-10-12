@@ -369,21 +369,33 @@ void sub_08022DA8(void *a) __attribute__((alias("Code22DA8_Permute")));
 
 // ----------------------------------------------------------------------------
 // sub_08023148 — CpuSet copy of the 35-row record grid
-//   0x03001DA0 -> 0x03001D64 direction A (rows of 12 B, ctrl 0x04000003,
-//   4 inner + 1 tail per row; row base offset = row*9*8 = row*72).
+//   0x03001D64 (5 sub-blocks) + 0x03001DA0 (1 sub-block) -> arg, ctrl
+//   0x04000003, 6 x 12 B per row; row base offset = row*9*8 = row*72.
+// The source base is a live pointer (r9) and `row*8` (r3) stays live across
+// the inner CpuSet calls, so it is spilled; declaring off separately from the
+// tail's re-derived expression is what reproduces that shape.
 void Code23148_CopyOut(void *arg) {
-    (void)arg;
-    const volatile u8 *src = C22D_CAR_BASE;
-    for (u32 row = 0; row <= 34; row++) {
-        u32 off = (row * 8 + row) * 8;   // = row * 72 (byte-exact asm math)
-        for (int n = 0; n < 4; n++) {
-            _0802D974((const void *)(uintptr_t)src, (void *)(uintptr_t)(C22D_CAR_MIRROR + off), C22D_CPUSET_CTRL);
+    u8 *dst = (u8 *)arg;
+    int row = 0;
+    u8 *base = C22D_CAR_BASE;
+    do {
+        u32 r8v = row * 8;             // = row * 72 offset, kept live across the calls
+        int nxt = row + 1;
+        u32 off = (r8v + row) * 8;
+        int n;
+        u8 *src;
+        n = 4;
+        src = base + off;
+        for (; n >= 0; n--) {
+            _0802D974((const void *)(uintptr_t)src, (void *)(uintptr_t)dst, C22D_CPUSET_CTRL);
+            dst += 12;
             src += 12;
-            off += 12;
         }
-        _0802D974((const void *)(uintptr_t)src, (void *)(uintptr_t)(C22D_CAR_MIRROR + off), C22D_CPUSET_CTRL);
-        src += 12;
-    }
+        _0802D974((const void *)(uintptr_t)(C22D_CAR_MIRROR + (r8v + row) * 8),
+                  (void *)(uintptr_t)dst, C22D_CPUSET_CTRL);
+        dst += 12;
+        row = nxt;
+    } while (row <= 34);
 }
 #ifndef __APPLE__
 void _08023148(void *a) __attribute__((alias("Code23148_CopyOut")));
@@ -391,20 +403,30 @@ void sub_08023148(void *a) __attribute__((alias("Code23148_CopyOut")));
 #endif
 
 // ----------------------------------------------------------------------------
-// sub_080231B4 — inverse CpuSet copy 0x03001D64 <- 0x03001DA0 (same layout).
+// sub_080231B4 — inverse CpuSet copy: arg -> 0x03001D64 (5 sub-blocks) +
+// 0x03001DA0 (1 sub-block) (same row layout and register shape as 0x08023148).
 void Code231B4_CopyBack(void *arg) {
-    (void)arg;
-    volatile u8 *dst = C22D_CAR_BASE;
-    for (u32 row = 0; row <= 34; row++) {
-        u32 off = (row * 8 + row) * 8;
-        for (int n = 0; n < 4; n++) {
-            _0802D974((void *)(uintptr_t)(C22D_CAR_MIRROR + off), (void *)dst, C22D_CPUSET_CTRL);
+    u8 *src = (u8 *)arg;
+    int row = 0;
+    u8 *base = C22D_CAR_BASE;
+    do {
+        u32 r8v = row * 8;
+        int nxt = row + 1;
+        u32 off = (r8v + row) * 8;
+        int n;
+        u8 *dst;
+        n = 4;
+        dst = base + off;
+        for (; n >= 0; n--) {
+            _0802D974((const void *)(uintptr_t)src, (void *)(uintptr_t)dst, C22D_CPUSET_CTRL);
+            src += 12;
             dst += 12;
-            off += 12;
         }
-        _0802D974((void *)(uintptr_t)(C22D_CAR_MIRROR + off), (void *)dst, C22D_CPUSET_CTRL);
-        dst += 12;
-    }
+        _0802D974((const void *)(uintptr_t)src,
+                  (void *)(uintptr_t)(C22D_CAR_MIRROR + (r8v + row) * 8), C22D_CPUSET_CTRL);
+        src += 12;
+        row = nxt;
+    } while (row <= 34);
 }
 #ifndef __APPLE__
 void _080231B4(void *a) __attribute__((alias("Code231B4_CopyBack")));
@@ -425,21 +447,43 @@ void sub_080231B4(void *a) __attribute__((alias("Code231B4_CopyBack")));
 //   u16[self+156] = 1
 void Code23220_Constructor(void *self) {
     u8 *s = (u8 *)self;
-    u16 raw = *(u16 *)(s + 156);
-    if ((s16)raw != 0)
+    // The ROM sign-extends the gate (`ldrsh`, not `ldrh`): the value loaded
+    // here is also the one the else-arm stores back into +144.
+    int v = *(s16 *)(s + 156);
+    if (v != 0)
         return;
-    s16 v = (s16)raw;
     _08007770(1, C22D_ROM_FRAME, 3, 0, 0, 3);
     Code22D24_UpdateCell(self, (void *)(s + 176), 5);
-    if (C22D_GATE_BYTE == 0) {
-        _08002618(1, 1);
-        *(u16 *)(s + 144) = 1;
-    } else {
-        _08002618(1, 0);
-        *(u16 *)(s + 144) = (u16)v;   // stores r5 (=0 here)
+    // The ROM materialises the WA gate as two pool words (0x03001780 and
+    // 0x10C3) plus a runtime `adds`; adding through a named base pointer keeps
+    // the fold from collapsing them into one 0x03002843 literal.
+    {
+        volatile u8 *wabase;
+#ifndef __APPLE__
+        extern u8 C22DWaBase[];
+        extern u8 C22DWaGateOff[];
+        __asm__(".globl C22DWaBase\nC22DWaBase = 0x03001780\n");
+        __asm__(".globl C22DWaGateOff\nC22DWaGateOff = 0x10C3\n");
+        wabase = (volatile u8 *)((uintptr_t)C22DWaBase
+                                 + (uintptr_t)C22DWaGateOff);
+#else
+        wabase = (volatile u8 *)(uintptr_t)0x03002843u;
+#endif
+        if (*wabase == 0) {
+            _08002618(1, 1);
+            *(u16 *)(s + 144) = 1;
+        } else {
+            _08002618(1, 0);
+            *(s16 *)(s + 144) = v;   // stores r5 (=0 here)
+        }
     }
     *(u16 *)(s + 156) = 1;
 }
+// The body is 118 bytes in a 4-aligned section: gas closes it with a `c0 46`
+// code nop where the ROM holds `00 00`. This zero-fill `.align` lands after the
+// body's `.size`, still inside its own function section, so it pads with the 0
+// fill argument. No body byte changes.
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _08023220(void *a) __attribute__((alias("Code23220_Constructor")));
 void sub_08023220(void *a) __attribute__((alias("Code23220_Constructor")));

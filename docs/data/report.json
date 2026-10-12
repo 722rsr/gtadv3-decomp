@@ -1,12 +1,12 @@
 {
   "measures": {
-    "complete_code": "73392",
-    "complete_code_percent": 38.88111888111888,
+    "complete_code": "81984",
+    "complete_code_percent": 43.43293070565798,
     "complete_data": "7873388",
     "complete_data_percent": 96.01870668822154,
-    "fuzzy_match_percent": 38.88111888111888,
-    "matched_code": "73392",
-    "matched_code_percent": 38.88111888111888,
+    "fuzzy_match_percent": 43.43293070565798,
+    "matched_code": "81984",
+    "matched_code_percent": 43.43293070565798,
     "matched_data": "7873388",
     "matched_data_percent": 96.01870668822154,
     "total_code": "188760",
@@ -2108,11 +2108,11 @@
           "size": "44"
         },
         {
-          "fuzzy_match_percent": 0.0,
+          "fuzzy_match_percent": 100.0,
           "metadata": {
             "virtual_address": "134259024"
           },
-          "name": "Unselected range 0x0800A150-0x0800A1A4",
+          "name": "_0800A150",
           "size": "84"
         },
         {
@@ -2232,8 +2232,24 @@
           "metadata": {
             "virtual_address": "134259284"
           },
-          "name": "Unselected range 0x0800A254-0x0800A62C",
-          "size": "984"
+          "name": "Unselected range 0x0800A254-0x0800A44C",
+          "size": "504"
+        },
+        {
+          "fuzzy_match_percent": 100.0,
+          "metadata": {
+            "virtual_address": "134259788"
+          },
+          "name": "_0800A44C",
+          "size": "204"
+        },
+        {
+          "fuzzy_match_percent": 0.0,
+          "metadata": {
+            "virtual_address": "134259992"
+          },
+          "name": "Unselected range 0x0800A518-0x0800A62C",
+          "size": "276"
         },
         {
           "fuzzy_match_percent": 100.0,
@@ -2317,13 +2333,13 @@
         }
       ],
       "measures": {
-        "complete_code": "848",
-        "complete_code_percent": 22.91891891891892,
+        "complete_code": "1136",
+        "complete_code_percent": 30.7027027027027,
         "complete_data": "0",
         "complete_data_percent": 0.0,
-        "fuzzy_match_percent": 22.91891891891892,
-        "matched_code": "848",
-        "matched_code_percent": 22.91891891891892,
+        "fuzzy_match_percent": 30.7027027027027,
+        "matched_code": "1136",
+        "matched_code_percent": 30.7027027027027,
         "matched_data": "0",
         "matched_data_percent": 0.0,
         "total_code": "3700",
@@ -2474,12 +2490,36 @@
           "size": "4"
         },
         {
-          "fuzzy_match_percent": 0.0,
+          "fuzzy_match_percent": 100.0,
           "metadata": {
             "virtual_address": "134361416"
           },
-          "name": "Unselected range 0x08023148-0x080235F0",
-          "size": "1192"
+          "name": "_08023148",
+          "size": "108"
+        },
+        {
+          "fuzzy_match_percent": 100.0,
+          "metadata": {
+            "virtual_address": "134361524"
+          },
+          "name": "_080231B4",
+          "size": "108"
+        },
+        {
+          "fuzzy_match_percent": 100.0,
+          "metadata": {
+            "virtual_address": "134361632"
+          },
+          "name": "_08023220",
+          "size": "120"
+        },
+        {
+          "fuzzy_match_percent": 0.0,
+          "metadata": {
+            "virtual_address": "134361752"
+          },
+          "name": "Unselected range 0x08023298-0x080235F0",
+          "size": "856"
         },
         {
           "fuzzy_match_percent": 100.0,
@@ -2491,13 +2531,13 @@
         }
       ],
       "measures": {
-        "complete_code": "144",
-        "complete_code_percent": 6.371681415929204,
+        "complete_code": "480",
+        "complete_code_percent": 21.238938053097346,
         "complete_data": "0",
         "complete_data_percent": 0.0,
-        "fuzzy_match_percent": 6.371681415929204,
-        "matched_code": "144",
-        "matched_code_percent": 6.371681415929204,
+        "fuzzy_match_percent": 21.238938053097346,
+        "matched_code": "480",
+        "matched_code_percent": 21.238938053097346,
         "matched_data": "0",
         "matched_data_percent": 0.0,
         "total_code": "2260",
@@ -5368,12 +5408,20 @@
           "size": "28"
         },
         {
-          "fuzzy_match_percent": 0.0,
+          "fuzzy_match_percent": 100.0,
           "metadata": {
             "virtual_address": "134241368"
           },
-          "name": "Unselected range 0x08005C58-0x08005D74",
-          "size": "284"
+          "name": "_08005C58",
+          "size": "92"
+        },
+        {
+          "fuzzy_match_percent": 0.0,
+          "metadata": {
+            "virtual_address": "134241460"
+          },
+          "name": "Unselected range 0x08005CB4-0x08005D74",
+          "size": "192"
         },
         {
           "fuzzy_match_percent": 100.0,
@@ -5441,13 +5489,13 @@
         }
       ],
       "measures": {
-        "complete_code": "724",
-        "complete_code_percent": 71.82539682539682,
+        "complete_code": "816",
+        "complete_code_percent": 80.95238095238095,
         "complete_data": "0",
         "complete_data_percent": 0.0,
-        "fuzzy_match_percent": 71.82539682539682,
-        "matched_code": "724",
-        "matched_code_percent": 71.82539682539682,
+        "fuzzy_match_percent": 80.95238095238095,
+        "matched_code": "816",
+        "matched_code_percent": 80.95238095238095,
         "matched_data": "0",
         "matched_data_percent": 0.0,
         "total_code": "1008",
@@ -5616,12 +5664,20 @@
     {
       "functions": [
         {
-          "fuzzy_match_percent": 0.0,
+          "fuzzy_match_percent": 100.0,
           "metadata": {
             "virtual_address": "134251152"
           },
-          "name": "Unselected range 0x08008290-0x080083B8",
-          "size": "296"
+          "name": "_08008290",
+          "size": "112"
+        },
+        {
+          "fuzzy_match_percent": 0.0,
+          "metadata": {
+            "virtual_address": "134251264"
+          },
+          "name": "Unselected range 0x08008300-0x080083B8",
+          "size": "184"
         },
         {
           "fuzzy_match_percent": 100.0,
@@ -5641,13 +5697,13 @@
         }
       ],
       "measures": {
-        "complete_code": "200",
-        "complete_code_percent": 9.633911368015415,
+        "complete_code": "312",
+        "complete_code_percent": 15.028901734104046,
         "complete_data": "0",
         "complete_data_percent": 0.0,
-        "fuzzy_match_percent": 9.633911368015415,
-        "matched_code": "200",
-        "matched_code_percent": 9.633911368015415,
+        "fuzzy_match_percent": 15.028901734104046,
+        "matched_code": "312",
+        "matched_code_percent": 15.028901734104046,
         "matched_data": "0",
         "matched_data_percent": 0.0,
         "total_code": "2076",
@@ -5992,22 +6048,22 @@
     {
       "functions": [
         {
-          "fuzzy_match_percent": 0.0,
+          "fuzzy_match_percent": 100.0,
           "metadata": {
             "virtual_address": "134324740"
           },
-          "name": "Unselected range 0x0801A204-0x0801A294",
+          "name": "_0801A204",
           "size": "144"
         }
       ],
       "measures": {
-        "complete_code": "0",
-        "complete_code_percent": 0.0,
+        "complete_code": "144",
+        "complete_code_percent": 100.0,
         "complete_data": "0",
         "complete_data_percent": 0.0,
-        "fuzzy_match_percent": 0.0,
-        "matched_code": "0",
-        "matched_code_percent": 0.0,
+        "fuzzy_match_percent": 100.0,
+        "matched_code": "144",
+        "matched_code_percent": 100.0,
         "matched_data": "0",
         "matched_data_percent": 0.0,
         "total_code": "144",
@@ -6054,8 +6110,16 @@
           "metadata": {
             "virtual_address": "134242744"
           },
-          "name": "Unselected range 0x080061B8-0x080064EC",
-          "size": "820"
+          "name": "Unselected range 0x080061B8-0x08006468",
+          "size": "688"
+        },
+        {
+          "fuzzy_match_percent": 100.0,
+          "metadata": {
+            "virtual_address": "134243432"
+          },
+          "name": "_08006468",
+          "size": "132"
         },
         {
           "fuzzy_match_percent": 100.0,
@@ -6091,13 +6155,13 @@
         }
       ],
       "measures": {
-        "complete_code": "424",
-        "complete_code_percent": 30.72463768115942,
+        "complete_code": "556",
+        "complete_code_percent": 40.289855072463766,
         "complete_data": "0",
         "complete_data_percent": 0.0,
-        "fuzzy_match_percent": 30.72463768115942,
-        "matched_code": "424",
-        "matched_code_percent": 30.72463768115942,
+        "fuzzy_match_percent": 40.289855072463766,
+        "matched_code": "556",
+        "matched_code_percent": 40.289855072463766,
         "matched_data": "0",
         "matched_data_percent": 0.0,
         "total_code": "1380",
@@ -7744,8 +7808,16 @@
           "metadata": {
             "virtual_address": "134389572"
           },
-          "name": "Unselected range 0x08029F44-0x0802A740",
-          "size": "2044"
+          "name": "Unselected range 0x08029F44-0x0802A5D4",
+          "size": "1680"
+        },
+        {
+          "fuzzy_match_percent": 100.0,
+          "metadata": {
+            "virtual_address": "134391252"
+          },
+          "name": "_08002A5D4",
+          "size": "364"
         },
         {
           "fuzzy_match_percent": 100.0,
@@ -7800,8 +7872,16 @@
           "metadata": {
             "virtual_address": "134392076"
           },
-          "name": "Unselected range 0x0802A90C-0x0802AACC",
-          "size": "448"
+          "name": "Unselected range 0x0802A90C-0x0802AA30",
+          "size": "292"
+        },
+        {
+          "fuzzy_match_percent": 100.0,
+          "metadata": {
+            "virtual_address": "134392368"
+          },
+          "name": "_08002AA30",
+          "size": "156"
         },
         {
           "fuzzy_match_percent": 100.0,
@@ -7812,11 +7892,11 @@
           "size": "92"
         },
         {
-          "fuzzy_match_percent": 0.0,
+          "fuzzy_match_percent": 100.0,
           "metadata": {
             "virtual_address": "134392616"
           },
-          "name": "Unselected range 0x0802AB28-0x0802AB90",
+          "name": "_08002AB28",
           "size": "104"
         },
         {
@@ -7828,11 +7908,11 @@
           "size": "8"
         },
         {
-          "fuzzy_match_percent": 0.0,
+          "fuzzy_match_percent": 100.0,
           "metadata": {
             "virtual_address": "134392728"
           },
-          "name": "Unselected range 0x0802AB98-0x0802AC2C",
+          "name": "_08002AB98",
           "size": "148"
         },
         {
@@ -7853,13 +7933,13 @@
         }
       ],
       "measures": {
-        "complete_code": "6492",
-        "complete_code_percent": 39.023803798990144,
+        "complete_code": "7264",
+        "complete_code_percent": 43.66434238999759,
         "complete_data": "0",
         "complete_data_percent": 0.0,
-        "fuzzy_match_percent": 39.023803798990144,
-        "matched_code": "6492",
-        "matched_code_percent": 39.023803798990144,
+        "fuzzy_match_percent": 43.66434238999759,
+        "matched_code": "7264",
+        "matched_code_percent": 43.66434238999759,
         "matched_data": "0",
         "matched_data_percent": 0.0,
         "total_code": "16636",
@@ -8586,11 +8666,11 @@
     {
       "functions": [
         {
-          "fuzzy_match_percent": 0.0,
+          "fuzzy_match_percent": 100.0,
           "metadata": {
             "virtual_address": "134267988"
           },
-          "name": "Unselected range 0x0800C454-0x0800C4AC",
+          "name": "sub_0800C454",
           "size": "88"
         },
         {
@@ -8611,13 +8691,13 @@
         }
       ],
       "measures": {
-        "complete_code": "36",
-        "complete_code_percent": 29.032258064516128,
+        "complete_code": "124",
+        "complete_code_percent": 100.0,
         "complete_data": "0",
         "complete_data_percent": 0.0,
-        "fuzzy_match_percent": 29.032258064516128,
-        "matched_code": "36",
-        "matched_code_percent": 29.032258064516128,
+        "fuzzy_match_percent": 100.0,
+        "matched_code": "124",
+        "matched_code_percent": 100.0,
         "matched_data": "0",
         "matched_data_percent": 0.0,
         "total_code": "124",
@@ -8976,22 +9056,22 @@
     {
       "functions": [
         {
-          "fuzzy_match_percent": 0.0,
+          "fuzzy_match_percent": 100.0,
           "metadata": {
             "virtual_address": "134270948"
           },
-          "name": "Unselected range 0x0800CFE4-0x0800D048",
+          "name": "_0800CFE4",
           "size": "100"
         }
       ],
       "measures": {
-        "complete_code": "0",
-        "complete_code_percent": 0.0,
+        "complete_code": "100",
+        "complete_code_percent": 100.0,
         "complete_data": "0",
         "complete_data_percent": 0.0,
-        "fuzzy_match_percent": 0.0,
-        "matched_code": "0",
-        "matched_code_percent": 0.0,
+        "fuzzy_match_percent": 100.0,
+        "matched_code": "100",
+        "matched_code_percent": 100.0,
         "matched_data": "0",
         "matched_data_percent": 0.0,
         "total_code": "100",
@@ -9790,11 +9870,11 @@
     {
       "functions": [
         {
-          "fuzzy_match_percent": 0.0,
+          "fuzzy_match_percent": 100.0,
           "metadata": {
             "virtual_address": "134276688"
           },
-          "name": "Unselected range 0x0800E650-0x0800E7A0",
+          "name": "_0800E650",
           "size": "336"
         },
         {
@@ -9831,13 +9911,13 @@
         }
       ],
       "measures": {
-        "complete_code": "44",
-        "complete_code_percent": 3.1073446327683616,
+        "complete_code": "380",
+        "complete_code_percent": 26.836158192090394,
         "complete_data": "0",
         "complete_data_percent": 0.0,
-        "fuzzy_match_percent": 3.1073446327683616,
-        "matched_code": "44",
-        "matched_code_percent": 3.1073446327683616,
+        "fuzzy_match_percent": 26.836158192090394,
+        "matched_code": "380",
+        "matched_code_percent": 26.836158192090394,
         "matched_data": "0",
         "matched_data_percent": 0.0,
         "total_code": "1416",
@@ -10242,12 +10322,20 @@
           "size": "44"
         },
         {
-          "fuzzy_match_percent": 0.0,
+          "fuzzy_match_percent": 100.0,
           "metadata": {
             "virtual_address": "134285676"
           },
-          "name": "Unselected range 0x0801096C-0x08011784",
-          "size": "3608"
+          "name": "_08001096C",
+          "size": "104"
+        },
+        {
+          "fuzzy_match_percent": 0.0,
+          "metadata": {
+            "virtual_address": "134285780"
+          },
+          "name": "Unselected range 0x080109D4-0x08011784",
+          "size": "3504"
         },
         {
           "fuzzy_match_percent": 100.0,
@@ -10939,13 +11027,13 @@
         }
       ],
       "measures": {
-        "complete_code": "7352",
-        "complete_code_percent": 30.80274844980727,
+        "complete_code": "7456",
+        "complete_code_percent": 31.23847829730183,
         "complete_data": "0",
         "complete_data_percent": 0.0,
-        "fuzzy_match_percent": 30.80274844980727,
-        "matched_code": "7352",
-        "matched_code_percent": 30.80274844980727,
+        "fuzzy_match_percent": 31.23847829730183,
+        "matched_code": "7456",
+        "matched_code_percent": 31.23847829730183,
         "matched_data": "0",
         "matched_data_percent": 0.0,
         "total_code": "23868",
@@ -11164,12 +11252,20 @@
     {
       "functions": [
         {
-          "fuzzy_match_percent": 0.0,
+          "fuzzy_match_percent": 100.0,
           "metadata": {
             "virtual_address": "134324232"
           },
-          "name": "Unselected range 0x0801A008-0x0801A0BC",
-          "size": "180"
+          "name": "_0801A008",
+          "size": "104"
+        },
+        {
+          "fuzzy_match_percent": 100.0,
+          "metadata": {
+            "virtual_address": "134324336"
+          },
+          "name": "_0801A070",
+          "size": "76"
         },
         {
           "fuzzy_match_percent": 100.0,
@@ -11197,13 +11293,13 @@
         }
       ],
       "measures": {
-        "complete_code": "112",
-        "complete_code_percent": 22.04724409448819,
+        "complete_code": "292",
+        "complete_code_percent": 57.48031496062992,
         "complete_data": "0",
         "complete_data_percent": 0.0,
-        "fuzzy_match_percent": 22.04724409448819,
-        "matched_code": "112",
-        "matched_code_percent": 22.04724409448819,
+        "fuzzy_match_percent": 57.48031496062992,
+        "matched_code": "292",
+        "matched_code_percent": 57.48031496062992,
         "matched_data": "0",
         "matched_data_percent": 0.0,
         "total_code": "508",
@@ -11826,11 +11922,11 @@
           "size": "76"
         },
         {
-          "fuzzy_match_percent": 0.0,
+          "fuzzy_match_percent": 100.0,
           "metadata": {
             "virtual_address": "134346164"
           },
-          "name": "Unselected range 0x0801F5B4-0x0801F668",
+          "name": "_08001F5B4",
           "size": "180"
         },
         {
@@ -11962,11 +12058,11 @@
           "size": "60"
         },
         {
-          "fuzzy_match_percent": 0.0,
+          "fuzzy_match_percent": 100.0,
           "metadata": {
             "virtual_address": "134347796"
           },
-          "name": "Unselected range 0x0801FC14-0x0801FE24",
+          "name": "_08001FC14",
           "size": "528"
         },
         {
@@ -11998,8 +12094,16 @@
           "metadata": {
             "virtual_address": "134348756"
           },
-          "name": "Unselected range 0x0801FFD4-0x080203E8",
-          "size": "1044"
+          "name": "Unselected range 0x0801FFD4-0x08020198",
+          "size": "452"
+        },
+        {
+          "fuzzy_match_percent": 100.0,
+          "metadata": {
+            "virtual_address": "134349208"
+          },
+          "name": "_080020198",
+          "size": "592"
         },
         {
           "fuzzy_match_percent": 100.0,
@@ -12131,13 +12235,13 @@
         }
       ],
       "measures": {
-        "complete_code": "7416",
-        "complete_code_percent": 25.6857855361596,
+        "complete_code": "8716",
+        "complete_code_percent": 30.18841784427819,
         "complete_data": "0",
         "complete_data_percent": 0.0,
-        "fuzzy_match_percent": 25.6857855361596,
-        "matched_code": "7416",
-        "matched_code_percent": 25.6857855361596,
+        "fuzzy_match_percent": 30.18841784427819,
+        "matched_code": "8716",
+        "matched_code_percent": 30.18841784427819,
         "matched_data": "0",
         "matched_data_percent": 0.0,
         "total_code": "28872",
@@ -12240,8 +12344,16 @@
           "metadata": {
             "virtual_address": "134322284"
           },
-          "name": "Unselected range 0x0801986C-0x080199B0",
-          "size": "324"
+          "name": "Unselected range 0x0801986C-0x0801992C",
+          "size": "192"
+        },
+        {
+          "fuzzy_match_percent": 100.0,
+          "metadata": {
+            "virtual_address": "134322476"
+          },
+          "name": "_0801992C",
+          "size": "132"
         },
         {
           "fuzzy_match_percent": 100.0,
@@ -12252,11 +12364,11 @@
           "size": "28"
         },
         {
-          "fuzzy_match_percent": 0.0,
+          "fuzzy_match_percent": 100.0,
           "metadata": {
             "virtual_address": "134322636"
           },
-          "name": "Unselected range 0x080199CC-0x08019A2C",
+          "name": "_080199CC",
           "size": "96"
         },
         {
@@ -12268,12 +12380,20 @@
           "size": "88"
         },
         {
-          "fuzzy_match_percent": 0.0,
+          "fuzzy_match_percent": 100.0,
           "metadata": {
             "virtual_address": "134322820"
           },
-          "name": "Unselected range 0x08019A84-0x08019BF8",
-          "size": "372"
+          "name": "_08019A84",
+          "size": "104"
+        },
+        {
+          "fuzzy_match_percent": 0.0,
+          "metadata": {
+            "virtual_address": "134322924"
+          },
+          "name": "Unselected range 0x08019AEC-0x08019BF8",
+          "size": "268"
         },
         {
           "fuzzy_match_percent": 100.0,
@@ -12380,22 +12500,22 @@
           "size": "84"
         },
         {
-          "fuzzy_match_percent": 0.0,
+          "fuzzy_match_percent": 100.0,
           "metadata": {
             "virtual_address": "134324080"
           },
-          "name": "Unselected range 0x08019F70-0x0801A008",
+          "name": "_080019F70",
           "size": "152"
         }
       ],
       "measures": {
-        "complete_code": "1552",
-        "complete_code_percent": 28.634686346863468,
+        "complete_code": "2036",
+        "complete_code_percent": 37.564575645756456,
         "complete_data": "0",
         "complete_data_percent": 0.0,
-        "fuzzy_match_percent": 28.634686346863468,
-        "matched_code": "1552",
-        "matched_code_percent": 28.634686346863468,
+        "fuzzy_match_percent": 37.564575645756456,
+        "matched_code": "2036",
+        "matched_code_percent": 37.564575645756456,
         "matched_data": "0",
         "matched_data_percent": 0.0,
         "total_code": "5420",
@@ -12630,11 +12750,11 @@
           "size": "48"
         },
         {
-          "fuzzy_match_percent": 0.0,
+          "fuzzy_match_percent": 100.0,
           "metadata": {
             "virtual_address": "134310120"
           },
-          "name": "Unselected range 0x080168E8-0x08016940",
+          "name": "_0800168E8",
           "size": "88"
         },
         {
@@ -12646,12 +12766,20 @@
           "size": "4"
         },
         {
-          "fuzzy_match_percent": 0.0,
+          "fuzzy_match_percent": 100.0,
           "metadata": {
             "virtual_address": "134310212"
           },
-          "name": "Unselected range 0x08016944-0x08016AD4",
-          "size": "400"
+          "name": "_080016944",
+          "size": "220"
+        },
+        {
+          "fuzzy_match_percent": 0.0,
+          "metadata": {
+            "virtual_address": "134310432"
+          },
+          "name": "Unselected range 0x08016A20-0x08016AD4",
+          "size": "180"
         },
         {
           "fuzzy_match_percent": 100.0,
@@ -12662,12 +12790,20 @@
           "size": "28"
         },
         {
-          "fuzzy_match_percent": 0.0,
+          "fuzzy_match_percent": 100.0,
           "metadata": {
             "virtual_address": "134310640"
           },
-          "name": "Unselected range 0x08016AF0-0x08016DC0",
-          "size": "720"
+          "name": "_080016AF0",
+          "size": "204"
+        },
+        {
+          "fuzzy_match_percent": 100.0,
+          "metadata": {
+            "virtual_address": "134310844"
+          },
+          "name": "_080016BBC",
+          "size": "516"
         },
         {
           "fuzzy_match_percent": 100.0,
@@ -12678,12 +12814,20 @@
           "size": "36"
         },
         {
-          "fuzzy_match_percent": 0.0,
+          "fuzzy_match_percent": 100.0,
           "metadata": {
             "virtual_address": "134311396"
           },
-          "name": "Unselected range 0x08016DE4-0x080173E8",
-          "size": "1540"
+          "name": "_080016DE4",
+          "size": "324"
+        },
+        {
+          "fuzzy_match_percent": 0.0,
+          "metadata": {
+            "virtual_address": "134311720"
+          },
+          "name": "Unselected range 0x08016F28-0x080173E8",
+          "size": "1216"
         },
         {
           "fuzzy_match_percent": 100.0,
@@ -12702,12 +12846,28 @@
           "size": "44"
         },
         {
-          "fuzzy_match_percent": 0.0,
+          "fuzzy_match_percent": 100.0,
           "metadata": {
             "virtual_address": "134313024"
           },
-          "name": "Unselected range 0x08017440-0x0801774C",
-          "size": "780"
+          "name": "_080017440",
+          "size": "232"
+        },
+        {
+          "fuzzy_match_percent": 100.0,
+          "metadata": {
+            "virtual_address": "134313256"
+          },
+          "name": "_080017528",
+          "size": "148"
+        },
+        {
+          "fuzzy_match_percent": 0.0,
+          "metadata": {
+            "virtual_address": "134313404"
+          },
+          "name": "Unselected range 0x080175BC-0x0801774C",
+          "size": "400"
         },
         {
           "fuzzy_match_percent": 100.0,
@@ -12734,11 +12894,11 @@
           "size": "56"
         },
         {
-          "fuzzy_match_percent": 0.0,
+          "fuzzy_match_percent": 100.0,
           "metadata": {
             "virtual_address": "134314372"
           },
-          "name": "Unselected range 0x08017984-0x080179F0",
+          "name": "_080017984",
           "size": "108"
         },
         {
@@ -12750,12 +12910,20 @@
           "size": "48"
         },
         {
-          "fuzzy_match_percent": 0.0,
+          "fuzzy_match_percent": 100.0,
           "metadata": {
             "virtual_address": "134314528"
           },
-          "name": "Unselected range 0x08017A20-0x08017B84",
-          "size": "356"
+          "name": "_080017A20",
+          "size": "224"
+        },
+        {
+          "fuzzy_match_percent": 100.0,
+          "metadata": {
+            "virtual_address": "134314752"
+          },
+          "name": "_080017B00",
+          "size": "132"
         },
         {
           "fuzzy_match_percent": 100.0,
@@ -12766,11 +12934,11 @@
           "size": "52"
         },
         {
-          "fuzzy_match_percent": 0.0,
+          "fuzzy_match_percent": 100.0,
           "metadata": {
             "virtual_address": "134314936"
           },
-          "name": "Unselected range 0x08017BB8-0x08017C34",
+          "name": "_080017BB8",
           "size": "124"
         },
         {
@@ -12782,11 +12950,11 @@
           "size": "68"
         },
         {
-          "fuzzy_match_percent": 0.0,
+          "fuzzy_match_percent": 100.0,
           "metadata": {
             "virtual_address": "134315128"
           },
-          "name": "Unselected range 0x08017C78-0x08017D50",
+          "name": "_080017C78",
           "size": "216"
         },
         {
@@ -12798,12 +12966,20 @@
           "size": "4"
         },
         {
-          "fuzzy_match_percent": 0.0,
+          "fuzzy_match_percent": 100.0,
           "metadata": {
             "virtual_address": "134315348"
           },
-          "name": "Unselected range 0x08017D54-0x08017ECC",
-          "size": "376"
+          "name": "_080017D54",
+          "size": "88"
+        },
+        {
+          "fuzzy_match_percent": 100.0,
+          "metadata": {
+            "virtual_address": "134315436"
+          },
+          "name": "_080017DAC",
+          "size": "288"
         },
         {
           "fuzzy_match_percent": 100.0,
@@ -12838,11 +13014,11 @@
           "size": "52"
         },
         {
-          "fuzzy_match_percent": 0.0,
+          "fuzzy_match_percent": 100.0,
           "metadata": {
             "virtual_address": "134316184"
           },
-          "name": "Unselected range 0x08018098-0x08018128",
+          "name": "_080018098",
           "size": "144"
         },
         {
@@ -12998,11 +13174,11 @@
           "size": "40"
         },
         {
-          "fuzzy_match_percent": 0.0,
+          "fuzzy_match_percent": 100.0,
           "metadata": {
             "virtual_address": "134317148"
           },
-          "name": "Unselected range 0x0801845C-0x080184A8",
+          "name": "_08001845C",
           "size": "76"
         },
         {
@@ -13143,13 +13319,13 @@
         }
       ],
       "measures": {
-        "complete_code": "2612",
-        "complete_code_percent": 27.219674864526887,
+        "complete_code": "5744",
+        "complete_code_percent": 59.8582742809504,
         "complete_data": "0",
         "complete_data_percent": 0.0,
-        "fuzzy_match_percent": 27.219674864526887,
-        "matched_code": "2612",
-        "matched_code_percent": 27.219674864526887,
+        "fuzzy_match_percent": 59.8582742809504,
+        "matched_code": "5744",
+        "matched_code_percent": 59.8582742809504,
         "matched_data": "0",
         "matched_data_percent": 0.0,
         "total_code": "9596",
@@ -13344,8 +13520,16 @@
           "metadata": {
             "virtual_address": "134229144"
           },
-          "name": "Unselected range 0x08002C98-0x08002D98",
-          "size": "256"
+          "name": "Unselected range 0x08002C98-0x08002D3C",
+          "size": "164"
+        },
+        {
+          "fuzzy_match_percent": 100.0,
+          "metadata": {
+            "virtual_address": "134229308"
+          },
+          "name": "_08002D3C",
+          "size": "92"
         },
         {
           "fuzzy_match_percent": 100.0,
@@ -13532,11 +13716,11 @@
           "size": "164"
         },
         {
-          "fuzzy_match_percent": 0.0,
+          "fuzzy_match_percent": 100.0,
           "metadata": {
             "virtual_address": "134231556"
           },
-          "name": "Unselected range 0x08003604-0x0800364C",
+          "name": "_08003604",
           "size": "72"
         },
         {
@@ -13964,12 +14148,28 @@
           "size": "32"
         },
         {
-          "fuzzy_match_percent": 0.0,
+          "fuzzy_match_percent": 100.0,
           "metadata": {
             "virtual_address": "134234496"
           },
-          "name": "Unselected range 0x08004180-0x080041E0",
-          "size": "96"
+          "name": "sub_08004180",
+          "size": "68"
+        },
+        {
+          "fuzzy_match_percent": 100.0,
+          "metadata": {
+            "virtual_address": "134234564"
+          },
+          "name": "_080041C4",
+          "size": "16"
+        },
+        {
+          "fuzzy_match_percent": 100.0,
+          "metadata": {
+            "virtual_address": "134234580"
+          },
+          "name": "_080041D4",
+          "size": "12"
         },
         {
           "fuzzy_match_percent": 100.0,
@@ -13996,12 +14196,20 @@
           "size": "20"
         },
         {
-          "fuzzy_match_percent": 0.0,
+          "fuzzy_match_percent": 100.0,
           "metadata": {
             "virtual_address": "134234720"
           },
-          "name": "Unselected range 0x08004260-0x08004324",
-          "size": "196"
+          "name": "sub_08004260",
+          "size": "100"
+        },
+        {
+          "fuzzy_match_percent": 0.0,
+          "metadata": {
+            "virtual_address": "134234820"
+          },
+          "name": "Unselected range 0x080042C4-0x08004324",
+          "size": "96"
         },
         {
           "fuzzy_match_percent": 100.0,
@@ -14149,13 +14357,13 @@
         }
       ],
       "measures": {
-        "complete_code": "5688",
-        "complete_code_percent": 70.53571428571429,
+        "complete_code": "6048",
+        "complete_code_percent": 75.0,
         "complete_data": "0",
         "complete_data_percent": 0.0,
-        "fuzzy_match_percent": 70.53571428571429,
-        "matched_code": "5688",
-        "matched_code_percent": 70.53571428571429,
+        "fuzzy_match_percent": 75.0,
+        "matched_code": "6048",
+        "matched_code_percent": 75.0,
         "matched_data": "0",
         "matched_data_percent": 0.0,
         "total_code": "8064",
@@ -14166,11 +14374,11 @@
     {
       "functions": [
         {
-          "fuzzy_match_percent": 0.0,
+          "fuzzy_match_percent": 100.0,
           "metadata": {
             "virtual_address": "134406308"
           },
-          "name": "Unselected range 0x0802E0A4-0x0802E104",
+          "name": "_08002E0A4",
           "size": "96"
         },
         {
@@ -14183,13 +14391,13 @@
         }
       ],
       "measures": {
-        "complete_code": "84",
-        "complete_code_percent": 46.666666666666664,
+        "complete_code": "180",
+        "complete_code_percent": 100.0,
         "complete_data": "0",
         "complete_data_percent": 0.0,
-        "fuzzy_match_percent": 46.666666666666664,
-        "matched_code": "84",
-        "matched_code_percent": 46.666666666666664,
+        "fuzzy_match_percent": 100.0,
+        "matched_code": "180",
+        "matched_code_percent": 100.0,
         "matched_data": "0",
         "matched_data_percent": 0.0,
         "total_code": "180",
@@ -14840,22 +15048,22 @@
     {
       "functions": [
         {
-          "fuzzy_match_percent": 0.0,
+          "fuzzy_match_percent": 100.0,
           "metadata": {
             "virtual_address": "134400956"
           },
-          "name": "Unselected range 0x0802CBBC-0x0802CC34",
+          "name": "_0802CBBC",
           "size": "120"
         }
       ],
       "measures": {
-        "complete_code": "0",
-        "complete_code_percent": 0.0,
+        "complete_code": "120",
+        "complete_code_percent": 100.0,
         "complete_data": "0",
         "complete_data_percent": 0.0,
-        "fuzzy_match_percent": 0.0,
-        "matched_code": "0",
-        "matched_code_percent": 0.0,
+        "fuzzy_match_percent": 100.0,
+        "matched_code": "120",
+        "matched_code_percent": 100.0,
         "matched_data": "0",
         "matched_data_percent": 0.0,
         "total_code": "120",
@@ -15892,22 +16100,22 @@
     {
       "functions": [
         {
-          "fuzzy_match_percent": 0.0,
+          "fuzzy_match_percent": 100.0,
           "metadata": {
             "virtual_address": "134405028"
           },
-          "name": "Unselected range 0x0802DBA4-0x0802DC54",
+          "name": "_0802DBA4",
           "size": "176"
         }
       ],
       "measures": {
-        "complete_code": "0",
-        "complete_code_percent": 0.0,
+        "complete_code": "176",
+        "complete_code_percent": 100.0,
         "complete_data": "0",
         "complete_data_percent": 0.0,
-        "fuzzy_match_percent": 0.0,
-        "matched_code": "0",
-        "matched_code_percent": 0.0,
+        "fuzzy_match_percent": 100.0,
+        "matched_code": "176",
+        "matched_code_percent": 100.0,
         "matched_data": "0",
         "matched_data_percent": 0.0,
         "total_code": "176",
@@ -16486,22 +16694,22 @@
     {
       "functions": [
         {
-          "fuzzy_match_percent": 0.0,
+          "fuzzy_match_percent": 100.0,
           "metadata": {
             "virtual_address": "134399172"
           },
-          "name": "Unselected range 0x0802C4C4-0x0802C53C",
+          "name": "_0802C4C4",
           "size": "120"
         }
       ],
       "measures": {
-        "complete_code": "0",
-        "complete_code_percent": 0.0,
+        "complete_code": "120",
+        "complete_code_percent": 100.0,
         "complete_data": "0",
         "complete_data_percent": 0.0,
-        "fuzzy_match_percent": 0.0,
-        "matched_code": "0",
-        "matched_code_percent": 0.0,
+        "fuzzy_match_percent": 100.0,
+        "matched_code": "120",
+        "matched_code_percent": 100.0,
         "matched_data": "0",
         "matched_data_percent": 0.0,
         "total_code": "120",
@@ -16674,22 +16882,22 @@
     {
       "functions": [
         {
-          "fuzzy_match_percent": 0.0,
+          "fuzzy_match_percent": 100.0,
           "metadata": {
             "virtual_address": "134401304"
           },
-          "name": "Unselected range 0x0802CD18-0x0802CD58",
+          "name": "_0802CD18",
           "size": "64"
         }
       ],
       "measures": {
-        "complete_code": "0",
-        "complete_code_percent": 0.0,
+        "complete_code": "64",
+        "complete_code_percent": 100.0,
         "complete_data": "0",
         "complete_data_percent": 0.0,
-        "fuzzy_match_percent": 0.0,
-        "matched_code": "0",
-        "matched_code_percent": 0.0,
+        "fuzzy_match_percent": 100.0,
+        "matched_code": "64",
+        "matched_code_percent": 100.0,
         "matched_data": "0",
         "matched_data_percent": 0.0,
         "total_code": "64",
@@ -17150,22 +17358,22 @@
           "size": "28"
         },
         {
-          "fuzzy_match_percent": 0.0,
+          "fuzzy_match_percent": 100.0,
           "metadata": {
             "virtual_address": "134242328"
           },
-          "name": "Unselected range 0x08006018-0x08006050",
+          "name": "_08006018",
           "size": "56"
         }
       ],
       "measures": {
-        "complete_code": "140",
-        "complete_code_percent": 71.42857142857143,
+        "complete_code": "196",
+        "complete_code_percent": 100.0,
         "complete_data": "0",
         "complete_data_percent": 0.0,
-        "fuzzy_match_percent": 71.42857142857143,
-        "matched_code": "140",
-        "matched_code_percent": 71.42857142857143,
+        "fuzzy_match_percent": 100.0,
+        "matched_code": "196",
+        "matched_code_percent": 100.0,
         "matched_data": "0",
         "matched_data_percent": 0.0,
         "total_code": "196",

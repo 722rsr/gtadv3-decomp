@@ -23,6 +23,7 @@
 // ============================================================================
 
 #include "gba/types.h"
+#include "gtadv/ram_blocks.h"
 
 #ifdef __APPLE__
 #define HOST_STUB(sig) __attribute__((weak)) sig
@@ -49,7 +50,7 @@ extern void _0800DBE8(void *a);
 extern int  _0802581C(int a);
 extern int  _08025750(int a, int b, int c);
 extern int  _08025E98(int a, int b, int c);
-extern s16  _08024D4C(s16 a);   // strh leaf caller
+extern void *_08024D4C(int a);  // 0x08024D4C group pointer lookup (ai_catalog.c)
 HOST_STUB(s16  _080258A8(int));  // 0x080CD7D0 lookup (numeric_leaves.c)
 // 0x08004b68 is a PROMOTED entry (one hop to MgrGet80) whose manifest `export`
 // is exactly `sub_08004B68`, so the spliced body must call the lowercase
@@ -217,20 +218,21 @@ void sub_080012DA0(void *a, int b, int c, int d) __attribute__((alias("MenuFF78_
 // ============================================================================
 extern int _08025FAC(u32 v);
 void MenuFF78_12F18(void *rec_) {
-    volatile u8 *rec = (volatile u8 *)rec_;
-    s16 s = *(volatile s16 *)(uintptr_t)(rec + 176);
-    u32 r4 = (u32)_08024D4C(s);
+    u8 *rec = (u8 *)rec_;
+    // Non-volatile s16/u32 reads so the halfword load lowers to `ldrsh` and
+    // the array read stays a plain `ldr`; the ROM reloads `[r4]` after the
+    // call instead of keeping the value live across it.
+    u32 *r4 = (u32 *)_08024D4C(*(s16 *)(rec + 176));
     int r5 = 0;
-    while (*(volatile u32 *)(uintptr_t)r4 != 0xFFFFFFFFu) {
-        u32 v = *(volatile u32 *)(uintptr_t)r4;
-        if (_08025FAC(v) != 0) {
-            *(volatile u32 *)(uintptr_t)(rec + 188 + r5 * 4) = v;
+    while (*r4 != 0xFFFFFFFFu) {
+        if (_08025FAC(*r4) != 0) {
+            *(u32 *)(rec + 188 + r5 * 4) = *r4;
             r5++;
         }
-        r4 += 4;
+        r4++;
     }
-    *(volatile s16 *)(uintptr_t)(rec + 184) = (s16)(r5 - 1);
-    *(volatile u32 *)(uintptr_t)(rec + 188 + r5 * 4) = 0xFFFFFFFFu;
+    *(s16 *)(rec + 184) = (s16)(r5 - 1);
+    *(u32 *)(rec + 188 + r5 * 4) = 0xFFFFFFFFu;
 }
 #ifndef __APPLE__
 void _080012F18(void *a) __attribute__((alias("MenuFF78_12F18")));
@@ -409,24 +411,59 @@ void sub_080012F6C(void *a) __attribute__((alias("MenuFF78_12F6C")));
 // u16[rec+176]=10; u16[rec+136]=0; then _080022E4(s16[rec+174])->u16[rec+180];
 // read byte at WA + (s16*3*4+49) -> s16[rec+172]; s8 at +48 -> s16[rec+178];
 // u32[rec+144]=2; u16[rec+186]=0; sub_0800D77C(rec+156,0,-32).
+//
+// PARKED at 52/140 (144-byte candidate). Three measured levers got it from
+// 11/140: the work-area base must be the SYMBOL form (RAM_DEF/RAM_SYM_03001780
+// -- a numeric constant is rematerialised at each of the three uses, +8 bytes),
+// the [rec+174] field is re-read per use instead of cached in a local, and the
+// WA+0xFC2 value goes through a local so the store's address computation does
+// not hoist above the load. What is left: (1) `movs r5,#0` (the shared zero)
+// sits before the first `strh` in the ROM and just before its first use here;
+// (2) the +49 byte read is `ldrsb` in the ROM and `ldrb` + `lsls #24/asrs #24`
+// here, while the +48 read is the other way round -- flipping the volatile
+// qualifier and using a plain `u8 *` base both leave the pair on the same
+// side, so this is the ldrsb-vs-ldrb pattern pick, not the source spelling;
+// (3) the 4 extra bytes that come from it shift the literal pool.
 // ============================================================================
 extern int _080022E4(int a);
 void MenuFF78_12F98(void *rec_) {
+    // The ROM keeps the work-area base live in r4 (`ldr r4,=0x03001780`) and
+    // folds nothing: the +0xFC2 read is `ldr r1,=0xFC2 / adds r0,r4,r1`. Two
+    // spellings failed before this one: the numeric `0x03001780u + 0xFC2u`
+    // folds to a single 0x03002742 pool word (no add at all), and a plain
+    // `volatile u8 *wa = (0x03001780u)` local still lets agbcc rematerialise
+    // the constant at each of the three uses (`ldr r0,[pc,..]` x3, +8 bytes)
+    // instead of keeping it live. The SYMBOL form (RAM_DEF/RAM_SYM_03001780,
+    // the same lever src/save.c documents) is not a foldable constant, so the
+    // base stays in r4 across the whole body.
     volatile u8 *rec = (volatile u8 *)rec_;
+    volatile u8 *wa;
+    u16 h;
+    RAM_DEF_03001780;
     MenuFF78_12F6C(rec_);
-    u16 fcc2 = *(volatile u16 *)(uintptr_t)(0x03001780u + 0xFC2u);
-    *(volatile u16 *)(uintptr_t)(rec + 174) = fcc2;
+    wa = RAM_SYM_03001780;
+    // The work-area read goes into a local first: inline, agbcc hoists the
+    // store's address computation (rec+174) above the load.
+    h = *(volatile u16 *)(uintptr_t)(wa + 0xFC2u);
+    // The field is volatile, so each of the three later uses re-reads it rather
+    // than reusing a local (`ldrsh r0,[r7,r1]` with the address kept in r7).
+    *(volatile u16 *)(uintptr_t)(rec + 174) = h;
     *(volatile u16 *)(uintptr_t)(rec + 176) = 10;
     *(volatile u16 *)(uintptr_t)(rec + 136) = 0;
-    int v = _080022E4((int)(s16)fcc2);
-    *(volatile u16 *)(uintptr_t)(rec + 180) = (u16)v;
-    int idx = (int)(s16)fcc2;
-    volatile u8 *p = (volatile u8 *)(uintptr_t)(0x03001780u + (idx * 3) * 4 + 49);
-    s8 sb = (s8)*p;
-    *(volatile s16 *)(uintptr_t)(rec + 172) = (s16)sb;
-    volatile u8 *p2 = (volatile u8 *)(uintptr_t)(0x03001780u + (idx * 3) * 4 + 48);
-    s8 sb2 = (s8)*p2;
-    *(volatile s16 *)(uintptr_t)(rec + 178) = (s16)sb2;
+    *(volatile u16 *)(uintptr_t)(rec + 180) =
+        (u16)_080022E4((int)*(s16 *)(uintptr_t)(rec + 174));
+    {
+        // The two byte reads are spelled differently on purpose: the ROM's
+        // +49 read is `ldrsb` and the +48 one `ldrb` + explicit sign
+        // extension, and which of the two agbcc picks flips with the
+        // *qualifier of the pointer the address is built from* (a plain `u8 *`
+        // local vs arithmetic on the volatile base).
+        u8 *base = (u8 *)wa;
+        s8 b1 = *(volatile s8 *)(base + ((int)*(s16 *)(uintptr_t)(rec + 174) * 3) * 4 + 49);
+        *(volatile s16 *)(uintptr_t)(rec + 172) = (s16)b1;
+        s8 b2 = *(s8 *)(base + ((int)*(s16 *)(uintptr_t)(rec + 174) * 3) * 4 + 48);
+        *(volatile s16 *)(uintptr_t)(rec + 178) = (s16)b2;
+    }
     *(volatile u32 *)(uintptr_t)(rec + 144) = 2;
     *(volatile u16 *)(uintptr_t)(rec + 186) = 0;
     _0800D77C((void *)(uintptr_t)(rec + 156), 0, -32);

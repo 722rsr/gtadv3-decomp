@@ -1769,19 +1769,44 @@ s16 sub_0800424C(int a, int b) __attribute__((alias("CamY_0424C")));
 // cam = {arg0, arg1}; u16 0x0203F728 = (0x800 - (s16)arg2) & 0xFFF.
 void CamInit_04260(int a0, int a1, int ang)
 {
-    volatile u32 *tbl = (volatile u32 *)(uintptr_t)0x0203F6C0;
+    // The two arguments that outlive the MathRot calls sit in r6 (a0) and r8
+    // (a1) in the ROM -- r6 low and pushed, r8 saved through r6 -- while `a`
+    // (live across both calls too) takes r5 and the table pointer r4. Pinning
+    // the two argument copies reproduces that; r5 and r4 then fall out.
+#ifndef __APPLE__
+    register int ra0 __asm__("r6");
+    register int ra1 __asm__("r8");
+    register int ra __asm__("r5");
+#else
+    int ra0, ra1, ra;
+#endif
+    volatile u32 *tbl;
+    volatile u32 *cam;
+    ra0 = a0;
+    ra1 = a1;
+    tbl = (volatile u32 *)(uintptr_t)0x0203F6C0;
     tbl[0] = 20;
     tbl[1] = 32;
     tbl[2] = (u32)-20;
     tbl[3] = 32;
-    s16 a = (s16)ang;
-    MathRot((void *)tbl, a);
-    MathRot((void *)(tbl + 2), a);
-    volatile u32 *cam = (volatile u32 *)(uintptr_t)0x0203F6B0;
-    cam[0] = (u32)a0;
-    cam[1] = (u32)a1;
-    *(volatile u16 *)(uintptr_t)0x0203F728 =
-        (u16)(((0x800 - (u32)(u16)a) & 0xFFF) & 0xFFFF);
+    // The narrowing is an explicit shift pair here, after the table stores:
+    // `(s16)` would go through thumb.md's extendhisi2 *expander*, which emits
+    // `lsl TEMP,src,#16 / asr DST,TEMP,#16` with TEMP a fresh pseudo -- agbcc
+    // allocates TEMP the source's own register (lsls r2,r2,#16), not the
+    // destination's as the ROM has it. Writing the two shifts separately gives
+    // `lsls r5,r2,#16 / asrs r5,r5,#16` directly, and combine does not fold
+    // them back into a sign_extend.
+    ra = ang << 16;
+    ra = ra >> 16;
+    // Call through the closure spelling: `MathRot` is a friendly alias of
+    // MathHelper_05BA8 in src/foundation_math.c, and the promotion screen only
+    // resolves names the closure files define or the manifest exports.
+    RM_CALLEE(MathRot, sub_08005BA8)((void *)tbl, ra);
+    RM_CALLEE(MathRot, sub_08005BA8)((void *)(tbl + 2), ra);
+    cam = (volatile u32 *)(uintptr_t)0x0203F6B0;
+    cam[0] = (u32)ra0;
+    cam[1] = (u32)ra1;
+    *(volatile u16 *)(uintptr_t)0x0203F728 = (u16)((0x800 - ra) & 0xFFF);
 }
 #ifndef __APPLE__
 void sub_08004260(int a, int b, int c) __attribute__((alias("CamInit_04260")));

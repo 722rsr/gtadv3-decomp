@@ -58,26 +58,44 @@ void _08005BA8(void *a,int b) __attribute__((alias("MathHelper_05BA8")));
 void sub_08005BA8(void *a,int b) __attribute__((alias("MathHelper_05BA8")));
 #endif
 
+// _08005C58 (asm/code_5b3c.s:184): modular interpolation over 12-bit angles.
+//   r6 = a & 0xFFF; r4 = b & 0xFFF; r5 = r6; t = |r5 - r4| (_08005B5C).
+//   t > 0x800: off = (r4-r5)+0x1000 for r5>r4 (sign +1), else (r5-r4)+0x1000
+//              (sign -1)
+//   t <= 0x800: off = t, sign -1 when r5 > r4 else +1
+//   result = (r6 + (sign<<1)*off) & 0xFFF, with `lsls r0,r0,#1` before the muls.
+extern int _08005B5C(int v);
 int MathHelper_05C58(int a,int b){
-    int r6 = a & 0xFFF;
-    int r4 = b & 0xFFF;
-    int r5 = r6;
-    int d = r5 - r4;
-    extern int MathAbs(int);
-    int t = MathAbs(d);
-    int cmp = 0x800; // 128<<4
-    if(t > cmp){
-        if(r5 > r4){
-            int off = r4 - r5 + 0x1000; // 128<<5 =0x1000
-            return (1 <<1) * (off & 0xFFF) + r6; // simplified: (r6 + 2*off) &0xFFF
+    // ROM home registers: a&0xFFF in r6, b&0xFFF in r4, the accumulator in r5.
+    // The allocator otherwise keeps them in r4/r5/r6 with different roles,
+    // which cascades through the branch arms.
+    register int a12 __asm__("r6") = a;
+    register int b12 __asm__("r4") = b;
+    __asm__("" : "+r"(a12), "+r"(b12));
+    int mask = 0xFFF;
+    register int acc __asm__("r5");
+    a12 &= mask;
+    acc = a12;
+    b12 &= mask;
+    // The ROM keeps `off` in r1 for every arm (`adds r1,r0,r2` from the
+    // 0x1000 add, and `off = t` reuses the r1 copy of the call result), which
+    // in turn leaves r0 for the wrap difference and r2 for the 0x1000
+    // materialisation (`movs r2,#128` / `lsls r2,r2,#5`).
+    register int off __asm__("r1");
+    int sign;
+    {
+        register int d __asm__("r0");
+        int t = _08005B5C(acc - b12);
+        if (t > 0x800) {
+            if (acc > b12) { d = b12 - acc; off = d + 0x1000; sign = 1; }
+            else           { d = acc - b12; off = d + 0x1000; sign = -1; }
         } else {
-            int off = r5 - r4 + 0x1000;
-            return ( -2 * (off & 0xFFF) + r6) & 0xFFF;
+            off = t;
+            if (acc > b12) sign = -1;
+            else           sign = 1;
         }
-    } else {
-        if(r5 > r4) return (-2*1 + r6) & 0xFFF;
-        else return (1<<1)*1 + r6; // placeholder preserves ands 0xFFF
     }
+    return (a12 + (sign << 1) * off) & 0xFFF;
 }
 #ifndef __APPLE__
 int _08005C58(int a,int b) __attribute__((alias("MathHelper_05C58")));

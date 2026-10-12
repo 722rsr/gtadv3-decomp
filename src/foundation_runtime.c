@@ -210,35 +210,129 @@ void RecordSetter_03004(int base,int v1,int z,int y,int idx,int row,int a6,int a
     //   else: attr0 = (h0 | v1&0xFF) | 0x100
     //   attr2 = h2 | base&0x1FF | r9<<9; attr4 = y<<12 | z; attr12 = 0
     //   _08002C34(idx, obj)
-    volatile u8 *tbl=(volatile u8*)(uintptr_t)(0x080C4940u + ((u32)row<<3));
-    extern int _08002BE8(int);
-    int r9=(s16)_08002BE8((int)(uintptr_t)0x080C4940);
-    u16 h0=*(volatile u16*)(tbl+0);
-    u16 h2=*(volatile u16*)(tbl+2);
-    extern void _08002C60(int, u32, u32);
-    _08002C60(r9, (u16)a6, (u16)a7);
-    extern void *_08002BFC(int);
-    volatile u8 *obj=(volatile u8*)_08002BFC(0);
+    //
+    // The ROM's allocation is `mov r8, r0` / `adds r6, r1, #0` / `mov sl, r3`
+    // for the three register-homed parameters, i.e. base=r8, v1=r6, y=sl, and
+    // r9 holds the counter result -- all four are callee-saved here, so the
+    // high-register prologue above spills them. Pinning each of them (the
+    // parameter copy is what the pin is honoured for) reproduces that; the
+    // table pointer lands in r7 and the allocator result in r2 for free.
+    //
+    // Entry order (reachable? no): the ROM interleaves the parameter copies as
+    // `mov r8,r0 / adds r6,r1,#0 / str r2,[sp,#0] / mov sl,r3 / ldr r1,[sp,#40]`
+    // while this body gets `str r2,[sp,#0] / ldr r2,[sp,#40] / mov r8,r0 / ...`
+    // -- i.e. agbcc reuses r2 for the row load as soon as z is spilled, where
+    // the ROM keeps r2 live and loads row into r1. One basic block, no
+    // scheduler, so this is allocation pressure, not statement order.
+    // h0=r5 and h2=r4 are the ROM's own allocation too, and both attribute
+    // words update IN PLACE (`orrs r5,r6` / `orrs r4,r3`), so h0|v1, h0|mode,
+    // h2|mask and h2|r9<<9 are each spelled as their own statement; a single
+    // combined expression makes agbcc compute into a temp and copy back.
+    //
+    // PARKED at 122/200 (200-byte candidate, first diff +0xC). The mode bits
+    // are now right: ORing a *constant literal* into the attribute inside each
+    // arm (`h0 = (u16)(h0 | 0x300u);`) makes agbcc materialise the constant in
+    // a scratch pseudo and copy it into the OR's operand register --
+    // `movs r1,#192 / lsls r1,r1,#2 / add r0,r1,#0 / orr r5,r5,r0` -- which is
+    // the ROM's sequence. agbcc puts the copy ONCE, at the join, while the ROM
+    // has one per arm with a different scratch (r1 then-arm, r3 else-arm), i.e.
+    // the two arms' constant pseudos got different registers there. The same
+    // lever fixes the 0x1FF mask in a minimal function (single statement,
+    // literal mask: `ldr r1,=511 / add r0,r1,#0 / and r2,r2,r0 / orr r4,r4,r2`
+    // with base in a low register), but not in this body: here the AND comes
+    // out `ldr r0,=511 / mov r1,r8 / and r0,r1`, i.e. the constant is the AND
+    // destination (op0=op1) instead of the copied base.
+    //
+    // What is left is a register-choice family, not a spelling family. The ROM
+    // uses r3 as its scratch throughout the tail (base copy at 0x90, sl copy
+    // at 0xA0, z load at 0xA4, else-arm mode const at 0x82) where agbcc picks
+    // r1/r4, and it uses r1 where agbcc picks r0 (mask const at 0x8C, attr12
+    // zero at 0x9C). r3 is never allocated at all in the candidate, which
+    // suggests r0/r1 are live differently: the ROM's choices look like
+    // "everything shifted one register up" for the r0/r1 pairs. Also still
+    // open: the then-arm copy placement, the `adds r0,r1,#0` missing there,
+    // the attr12 zero (`movs r1,#0` materialised a statement early and reused,
+    // agbcc emits `movs r0,#0` at the store), the rev' argument loads, and the
+    // entry reorder (z spill and the row load land above the three parameter
+    // copies where the ROM has copies first). Non-exact by construction; keep
+    // the improved body for whoever revisits it.
+#ifndef __APPLE__
+    register int rbase __asm__("r8");
+    register int rv1 __asm__("r6");
+    register int ry __asm__("sl");
+    register int r9 __asm__("r9");
+    volatile u8 *tbl;
+    u16 orval;
+    register u16 h0 __asm__("r5");
+    register u16 h2 __asm__("r4");
+    register volatile u8 *obj __asm__("r2");
+#else
+    int rbase, rv1, ry, r9;
+    volatile u8 *tbl;
+    u16 h0, h2;
+    u16 orval;
+    volatile u8 *obj;
+#endif
+    rbase = base;
+    rv1 = v1;
+    ry = y;
+    tbl = (volatile u8*)(uintptr_t)(0x080C4940u + ((u32)row<<3));
+    {
+        extern int _08002BE8(int);
+        r9 = (s16)_08002BE8((int)(uintptr_t)0x080C4940);
+    }
+    h0 = *(volatile u16*)(tbl+0);
+    h2 = *(volatile u16*)(tbl+2);
+
+    {
+        extern void _08002C60(int, u32, u32);
+        _08002C60(r9, (u16)a6, (u16)a7);
+    }
+#ifndef __APPLE__
+    // The allocator takes no argument in the ROM: a no-parameter
+    // declaration keeps `bl _08002BFC` free of an argument setup.
+    {
+        extern void *EmitAlloc_03004(void) __asm__("_08002BFC");
+        obj = (volatile u8*)EmitAlloc_03004();
+    }
+#else
+    {
+        extern void *_08002BFC(int);
+        obj = (volatile u8*)_08002BFC(0);
+    }
+#endif
+    // Non-volatile s8 loads: a volatile signed byte lvalue lowers to
+    // `ldrb` plus an explicit sign extension, while the ROM's plain
+    // `ldrsb` is what a non-volatile signed byte read emits. The halving is
+    // C `/2` (truncating): the ROM emits the `lsrs #31; adds; asrs #1`
+    // idiom, not `asrs #31; adds; asrs #1` for a hand-written floor shift.
     if (a6 <= 255 || a7 <= 255) {
-        int b6=(s8)*(volatile s8*)(tbl+6);
-        b6=(b6 + (b6>>31)) >> 1;
-        base-=b6;
-        int b7=(s8)*(volatile s8*)(tbl+7);
-        b7=(b7 + (b7>>31)) >> 1;
-        v1-=b7;
-        v1&=0xFF;
-        h0=(u16)((h0 | (u16)v1) | 0x300u);
+        int b6=*(s8*)(tbl+6);
+        rbase-=b6/2;
+        int b7=*(s8*)(tbl+7);
+        rv1-=b7/2;
+        rv1&=0xFF;
+        h0=(u16)(h0 | (u16)rv1);
+        h0=(u16)(h0 | 0x300u);
     } else {
-        v1&=0xFF;
-        h0=(u16)((h0 | (u16)v1) | 0x100u);
+        rv1&=0xFF;
+        h0=(u16)(h0 | (u16)rv1);
+        h0=(u16)(h0 | 0x100u);
     }
     *(volatile u16*)(obj+0)=h0;
-    h2=(u16)((h2 | (u16)(base & 0x1FF)) | (u16)(r9<<9));
+    // A low-register copy of the base (`register u32 rb2 __asm__("r3");
+    // rb2 = rbase; h2 |= rb2 & 0x1FFu;`) does NOT fix this: rb2's single use is
+    // copy-propagated back to rbase, the pinned copy disappears, and the AND
+    // stays `ldr r0,=511 / mov r1,r8 / and r0,r1`.
+    h2=(u16)(h2 | (u16)(rbase & 0x1FF));
+    h2=(u16)(h2 | (u16)(r9<<9));
     *(volatile u16*)(obj+2)=h2;
-    *(volatile u16*)(obj+4)=(u16)(((u32)y<<12) | (u32)z);
+    *(volatile u16*)(obj+4)=(u16)(((u32)ry<<12) | (u32)z);
     *(volatile u16*)(obj+12)=0;
-    extern void _08002C34(int, void*);
-    _08002C34(idx, (void*)obj);
+    {
+        extern void _08002C34(int, void*);
+        _08002C34(idx, (void*)obj);
+    }
 }
 // 0x080030CC: inits u16 buf[4] = {160,0,0,0} on stack (mov r2,sp first),
 // then 32 CpuSet calls _08002D974(buf, key, 0x04000002) with key = r5 =
@@ -556,19 +650,73 @@ void Store_0313C(u32 val){
 void _0800313C(u32 a) __attribute__((alias("Store_0313C")));
 #endif
 
-// _08002D3C: block copy 0x03000140->0x03000138 then VRAM fill via _0802D970
+// _08002D3C: block copy 0x03000140->0x03000138 then OAM fill via _0802D970.
+// ROM (asm/runtime_2aac.s:329-378): push {r4-r6,lr}; tbl=*0x03000140 (r4,
+// ldmia r4!,{r1}); dst=*0x03000138 (r2, +=8); idx r3=0; cntPtr=0x03000144
+// (r5, count reloaded each outer iter); oamCell=0x03000134 (r6, src for
+// final CpuFastSet to 0x07000000 len 256). Outer: if (idx<count) do {
+// entry=*tbl++; idx++; if (entry) do { *(u32*)dst=*entry;
+// *(u16*)(dst+4)=*(u16*)(entry+4); dst+=8; entry=*(entry+8); } while(entry);
+// } while(idx<count). Tail: CpuFastSet(*oamCell, 224<<19, 128<<1).
 void Wrap_02D3C(void){
-    volatile u32 *p140 = (volatile u32*)(uintptr_t)0x03000140;
-    volatile u32 *p138 = (volatile u32*)(uintptr_t)0x03000138;
-    volatile u32 *p144 = (volatile u32*)(uintptr_t)0x03000144;
-    volatile u32 *p134 = (volatile u32*)(uintptr_t)0x03000134;
-    u32 v140 = *p140; u32 v144 = *p144;
-    (void)v140; (void)v144; (void)p140; (void)p138; (void)p134;
-    extern void _0802D970(const void*,void*,u32);
-    _0802D970((const void*)(uintptr_t)0x04000120u, (void*)0, 0);
+    // Interleaved pool-load/deref order to match the ROM's
+    // ldr r0,=140 / ldr r4,[r0] / ldr r0,=138 / ldr r2,[r0] /
+    // movs r3,#0 / ldr r1,=144 / ldr r0,[r1] / ldr r6,=134 sequence.
+    // Grouping pool loads lets agbcc keep the table in r5 and the
+    // destination in r1 instead of r4/r2, and declaring idx after the
+    // 134-cell pin groups both remaining pools before the movs.
+    volatile u32 *p140 = (volatile u32 *)(uintptr_t)0x03000140u;
+    u32 *tbl = (u32 *)(uintptr_t)*p140;
+    // Prevent folding 0x03000138 to `subs r0,#8` from the 0x03000140 pool
+    // address above (candidate ldmia path then loses a pool and both data
+    // registers swap). Same r0-clobber lever as Wrap_02B50: with r0's value
+    // unknown the compiler must pool-load the next IWRAM cell address.
+    __asm__("" : : "r"(tbl) : "r0");
+    volatile u32 *p138 = (volatile u32 *)(uintptr_t)0x03000138u;
+    u8 *dst = (u8 *)(uintptr_t)*p138;
+    int idx = 0;
+    volatile u32 *cntPtr = (volatile u32 *)(uintptr_t)0x03000144u;
+    // Load the count value for the entry check first (ROM ldr r0,[r1];
+    // cmp r3,r0; bge skip), then save the pointer itself for the
+    // per-iteration reloads (ROM adds r5,r1 after the check). Spelling the
+    // entry check directly as `idx < *cntPtr` lets agbcc keep the pointer
+    // in r4 from the start and emit a bare `b' to the bottom test instead.
+    // idx/cnt are SIGNED: the ROM's entry/exit tests are bge/blt, not
+    // bcs/bcc, so u32 here costs exactly those two branch opcodes.
+    int cnt = (int)*cntPtr;
+    // Pin the OAM cell pointer to r6: the ROM pool-loads 0x03000134 after
+    // the count deref and keeps it in r6 for the tail CpuFastSet, which is
+    // what forces push {r4,r5,r6,lr}. Declared earlier its pool groups
+    // before the movs above.
+    register volatile u32 *oamCell __asm__("r6") = (volatile u32 *)(uintptr_t)0x03000134u;
+    extern void _0802D970(const void *, void *, u32);
+    if (idx < cnt) {
+        volatile int *cntSaved = (volatile int *)(uintptr_t)0x03000144u;
+        do {
+            u8 *entry = *(u8 **)tbl;
+            tbl++;
+            idx++;
+            if (entry != (u8 *)0) {
+                do {
+                    *(volatile u32 *)dst = *(volatile u32 *)entry;
+                    *(volatile u16 *)(dst + 4) = *(volatile u16 *)(entry + 4);
+                    dst += 8;
+                    entry = *(u8 **)(entry + 8);
+                } while (entry != (u8 *)0);
+            }
+        } while (idx < *cntSaved);
+    }
+    // Load the OAM source before synthesising the immediates: the ROM does
+    // ldr r0,[r6] / movs r1,#224 / lsls / movs r2,#128 / lsls, while passing
+    // *oamCell directly lets agbcc emit the two movs/lsls first.
+    u32 oamSrc = *oamCell;
+    _0802D970((const void *)(uintptr_t)oamSrc,
+              (void *)(uintptr_t)((u32)224 << 19), (u32)((u32)128 << 1));
 }
 #ifndef __APPLE__
 void _08002D3C(void) __attribute__((alias("Wrap_02D3C")));
+// Both entry spellings are branch/entry labels in the reference span.
+void sub_08002D3C(void) __attribute__((alias("Wrap_02D3C")));
 #endif
 
 // _08002D98: 4× strh at 0x03000134+r0+6/14/22/30 with *32 stride
@@ -649,14 +797,43 @@ void Wrap_032E6(int id, void *buf){
 void _080032E6(int a,void *b) __attribute__((alias("Wrap_032E6")));
 #endif
 
-// _08003604: 8B muls s16 *4 vs *1
+// _08003604: counted string scan then 6-arg emit via _08003350.
+// ROM (asm/runtime_2aac.s:1140-1185): push {r4-r7,lr}+sub sp,#8; save
+// a/b/c in r5/r6/r7; r4 = *(int*)(0x080C4BA0 + a*4)/2 signed (ldr /
+// lsrs #31 / adds / asrs #1, i.e. C `/2` not `>>1`); scan d (r3) with
+// r2=d, r1=120: if (*d) do { d++; r1-=r4; } while(*d); then stack
+// [sp]=d (original), [sp+4]=1 and bl _08003350(a, r1, b, c, d, 1).
 void Wrap_03604(int a,int b,int c,void *d){
-    volatile s16 *tbl = (volatile s16*)(uintptr_t)0x080C4BA0;
-    s16 v = tbl[(a*2)&0x3FF];
-    (void)v; (void)b; (void)c; (void)d;
+    volatile u8 *orig = (volatile u8 *)d;
+    // The ROM loads the table base before shifting the index
+    // (`ldr r1,=0x080C4BA0` / `lsls r0,r5,#2` / `adds r0,r0,r1`). A plain
+    // `base + (a<<2)` lets agbcc scale the index first, which loses the
+    // pool load's position and both registers' roles. Two levers close it:
+    // the `r1` pin plus `+r` barrier materialize the constant into r1 up
+    // front, and the `r0`-pinned `addr` with `addr += base` accumulates the
+    // add into r0 (`adds r0,r0,r1`) instead of r1.
+    register u32 base __asm__("r1") = 0x080C4BA0u;
+    __asm__("" : "+r"(base));
+    register u32 addr __asm__("r0") = (u32)a << 2;
+    addr += base;
+    int v = *(volatile int *)(uintptr_t)addr;
+    int step = v / 2;
+    volatile u8 *p = orig;
+    int x = 120;
+    extern void _08003350(int, int, int, int, const void *, int);
+    if (*p != 0) {
+        do {
+            p++;
+            x -= step;
+        } while (*p != 0);
+    }
+    _08003350(a, x, b, c, (const void *)orig, 1);
 }
 #ifndef __APPLE__
 void _08003604(int a,int b,int c,void *d) __attribute__((alias("Wrap_03604")));
+// runtime_2aac.s branches here by the `sub_08003604` spelling; without this
+// alias the independent link would resolve that call with a ROM veneer.
+void sub_08003604(int a,int b,int c,void *d) __attribute__((alias("Wrap_03604")));
 void Sub_08002B50(void) __attribute__((alias("Wrap_02B50")));
 void sub_08002B50(void) __attribute__((alias("Wrap_02B50")));
 void Sub_08002B44(void) __attribute__((alias("Store_02B44")));

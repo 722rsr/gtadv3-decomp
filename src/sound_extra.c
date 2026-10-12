@@ -47,30 +47,59 @@ s32 __aeabi_idiv(s32 a, s32 b) __attribute__((alias("SoundSignedDiv")));
 // --- Stream allocation helper (sound_alloc.s 0x02CBBC) ---
 // u32 sub_0802CBBC(state, channels, count) — validates count<=16, Smsh lock at *0x03007FF0==0x68736D53
 void SoundStreamAlloc(void *state, void *chArray, u32 count){
-    u32 c = count & 0xFF;
-    if (c==0) return;
-    if (c>16) c=16;
-    volatile u32 *cell = (volatile u32 *)SOUND_ROOT_PTR_CELL;
-    volatile u32 *root = (volatile u32 *)(uintptr_t)*cell;
-    if (root[0] != SOUND_MAGIC) return;
-    // minimal: publish ptrs, clear stride 0x50 array as in asm (80 bytes per channel)
-    // preserve u8/u32 widths: state+0x2C, +8, +4, +56/+60/next ptrs
-    volatile u32 *s = (volatile u32 *)state;
-    s[11]= (u32)(uintptr_t)chArray; // +0x2C
-    ((volatile u8*)s)[8]= (u8)c;
-    s[1]= 0x80000000u; // +0x04
-    // zero channels
-    volatile u8 *ch = (volatile u8*)chArray;
-    for(u32 i=0;i<c;i++) ch[i*80]=0;
-    // link into active list (root+32/36) simplified, preserve stride
-    if (root[8]!=0){
-        s[14]= root[8]; // +56
-        s[15]= root[9]; // +60
-        root[8]=0;
+    // Frame-exact transcription of asm/sound_alloc.s. Widths matter:
+    //  * the count is narrowed to `u8` (`lsls #24 / lsrs #24`) and re-narrowed
+    //    after each decrement -- `count & 0xFF` gives `movs #255 / ands`
+    //    instead, which is a different 4 bytes;
+    //  * `bl 0x0802C8B0` takes the state pointer in r0;
+    //  * the driver's lock word is bumped to MAGIC+1 before that call, and the
+    //    tail link fixes root[8]=0x0802BEB5 (the driver's next-tick entry),
+    //    root[0]=MAGIC and state[13]=MAGIC sharing one constant in r0.
+    // The two pointer parameters are used DIRECTLY (casts at the use sites)
+    // rather than copied into locals: agbcc then homes the parameter pseudos
+    // themselves, which is what puts state in r7 and chArray in r6 like the
+    // ROM -- with separate locals it swaps them (state->r6, chArray->r7) and
+    // the whole body comes out in the wrong registers.
+    u8 c;
+    u32 lock;
+    volatile u32 *cell;
+    volatile u32 *root;
+    c = (u8)count;
+    if (c == 0) return;
+    if (c > 16) c = 16;
+    cell = (volatile u32 *)SOUND_ROOT_PTR_CELL;
+    root = (volatile u32 *)(uintptr_t)*cell;
+    // Read the lock once: the ROM bumps the register it compared, it does not
+    // re-load root[0].
+    lock = root[0];
+    if (lock != SOUND_MAGIC) return;
+    root[0] = lock + 1;
+    {
+        extern void _0802C8B0(void *self);
+        _0802C8B0(state);
     }
-    root[9]= (u32)(uintptr_t)state; // +36
-    root[8]= SOUND_MAGIC; // +32
-    s[13]= SOUND_MAGIC; // +52
+    ((volatile u32 *)state)[11] = (u32)(uintptr_t)chArray;   // +0x2C
+    ((volatile u8 *)state)[8] = c;
+    ((volatile u32 *)state)[1] = 0x80000000u;                // +0x04
+    while (c != 0) {
+        *(volatile u8 *)chArray = 0;
+        c = (u8)(c - 1);
+        chArray = (void *)((u8 *)chArray + 80);
+    }
+    {
+        // Tested through a local: the ROM stores the very value it compared
+        // (`str r0,[r7,#56]` with root[8] still in r0), not a fresh load.
+        u32 nxt = root[8];
+        if (nxt != 0) {
+            ((volatile u32 *)state)[14] = nxt;               // +56
+            ((volatile u32 *)state)[15] = root[9];           // +60
+            root[8] = 0;
+        }
+    }
+    root[9] = (u32)(uintptr_t)state;   // +36
+    root[8] = 0x0802BEB5u;             // +32  driver next-tick entry
+    root[0] = SOUND_MAGIC;
+    ((volatile u32 *)state)[13] = SOUND_MAGIC;               // +52
 }
 #ifndef __APPLE__
 void _0802CBBC(void *a, void *b, u32 c) __attribute__((alias("SoundStreamAlloc")));

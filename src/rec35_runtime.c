@@ -382,11 +382,13 @@ void _080016AD4(void *c) __attribute__((alias("Rec35_Leaf_16AD4")));
 #endif
 
 // _080016940: bx lr stub
-void Rec35_BxLr_16940(void) {}
+// Takes (and ignores) a record pointer: the only caller in the ROM
+// (_080017DAC case 11) sets r0 before the call.
+void Rec35_BxLr_16940(void *a) { (void)a; }
 __asm__(".align 2, 0");
 #ifndef __APPLE__
-void _080016940(void) __attribute__((alias("Rec35_BxLr_16940")));
-void sub_080016940(void) __attribute__((alias("Rec35_BxLr_16940")));
+void _080016940(void *a) __attribute__((alias("Rec35_BxLr_16940")));
+void sub_080016940(void *a) __attribute__((alias("Rec35_BxLr_16940")));
 #endif
 
 // _0800168B8: flag leaf at WA+0x10C3, calls _0802B368 with low halfword width.
