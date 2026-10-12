@@ -442,12 +442,17 @@ __asm__(".align 2, 0");
 // ----------------------------------------------------------------------------
 void _08001E92C(void *rec_) {
     volatile u8 *rec = (volatile u8 *)rec_;
-    if (*(volatile s8 *)(uintptr_t)(WA + 0x10E4) != 0)
-        Sub_08007BFC((void *)(rec + 8),
+    extern u8 RaceSceneCWa1E92C[];
+    __asm__(".globl RaceSceneCWa1E92C\nRaceSceneCWa1E92C = 0x03001780");
+    const volatile u8 *wa = RaceSceneCWa1E92C;
+    s32 gate = *(volatile s8 *)(wa + 0x10E4);
+    __asm__ volatile("" : "+r"(gate));
+    if (gate != 0)
+        sub_08007BFC((void *)(rec + 8),
                      *(volatile u32 *)(rec + 228), *(volatile u32 *)(rec + 232),
                      160, 32, 8, 1, 1, 0);
     _08001E454(rec_);
-    if (*(volatile s16 *)(rec + 160) == 1)
+    if (*(s16 *)(rec + 160) == 1)
         _08007C68((void *)(rec + 24),
                      (int)*(volatile u32 *)(rec + 216), (int)*(volatile u32 *)(rec + 220),
                      20, 112, 9, 1, 0, 0); // R1-proven C body (was Sub_ ROM veneer)
@@ -562,6 +567,8 @@ void _08001EA28(int ev, u32 b, u32 c, void *rec_) {
         break;
     }
 }
+// Match the ROM's two zero pad bytes instead of GAS's Thumb `46 c0` fill.
+__asm__(".align 2, 0");
 
 // ----------------------------------------------------------------------------
 // ---- 0x08001EB48 — scene-header car-class writer ----

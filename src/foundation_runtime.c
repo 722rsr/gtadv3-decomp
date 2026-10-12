@@ -150,27 +150,50 @@ void RecordSetter_02F68(int x,int id,int y,int z,int idx,int row,int count){
     // per iteration: obj = _08002BFC; attr2 = (x & 0x1FF) | h2;
     // attr4 = (z << 12) | y; attr12 = 0; _08002C34(idx, obj);
     // x += (s16)(s8)tbl[6]; y += (s16)u16[tbl+4]; count guarded at entry.
-    volatile u8 *tbl=(volatile u8*)(uintptr_t)(0x080C4940u + ((u32)row<<3));
-    if(count==0) return;
-    u16 h0=*(volatile u16*)(tbl+0);
-    u16 h2=*(volatile u16*)(tbl+2);
-    u16 attr0=(u16)(h0 | 0x400u | ((u32)id & 0xFFu));
-    s16 dx=(s16)*(volatile u16*)(tbl+6);   // s8 zero-extended to u16
-    s16 dy=(s16)*(volatile u16*)(tbl+4);
-    int rx=x;
-    int ry=y;
-    while(count-- != 0){
-        extern void *_08002BFC(int);
-        volatile u8 *place=(volatile u8*)_08002BFC(0);
-        *(volatile u16*)(place+0)=attr0;
-        *(volatile u16*)(place+2)=(u16)(((u32)rx & 0x1FFu) | h2);
-        *(volatile u16*)(place+4)=(u16)(((u32)z<<12) | (u32)ry);
-        *(volatile u16*)(place+12)=0;
-        extern void _08002C34(int, void*);
-        _08002C34(idx, (void*)place);
-        rx+=dx;
-        ry+=dy;
-    }
+    //
+    // Register plan recovered from the ROM (32/160 bytes so far; the two known
+    // residuals are documented below): r8=x, r6=id, r7=y, r4=count, sl=dx,
+    // r9=dy, r5=attr0 (`mov r7,sl / mov r6,r9 / mov r5,r8 / push {r5,r6,r7}`
+    // plus `sub sp,#8` = the ROM's frame exactly).
+    //   * Residual 1: agbcc hoists the loop-invariant `z << 12` into [sp,#4]
+    //     where the ROM reloads `ldr r2,[sp,#0]` + `lsls` every iteration.
+    //     Taking z's address (`int *zp=&z; *zp`) suppresses the hoist but costs
+    //     4 bytes elsewhere (measured 15/164).
+    //   * Residual 2: the table base is transient in the ROM (row<<3 -> r0,
+    //     pool -> r1, reads through r0) but agbcc keeps it in r3 here; pinning
+    //     the base to r0 measured 24/160.
+    // Verified: `movs r1,#128 / lsls 3` (0x400) then h0 first inside attr0.
+    extern void *_08002BFC(int);
+    extern void _08002C34(int, void *);
+    volatile u8 *tbl;
+    u16 h0, h2;
+    register int rx __asm__("r8") = x;
+    register int rid __asm__("r6") = id;
+    register int ry __asm__("r7") = y;
+    register int cnt __asm__("r4");
+    register u16 dx __asm__("sl");
+    register u16 dy __asm__("r9");
+    register u16 attr0 __asm__("r5");
+    __asm__ volatile("" : : "r"(rx), "r"(rid), "r"(ry));
+    tbl = (volatile u8 *)(uintptr_t)(0x080C4940u + ((u32)row << 3));
+    h0 = *(volatile u16 *)(tbl + 0);
+    h2 = *(volatile u16 *)(tbl + 2);
+    dx = (u16)(s8)*(volatile s8 *)(tbl + 6);
+    dy = *(volatile u16 *)(tbl + 4);
+    cnt = count;
+    if (cnt == 0) return;
+    attr0 = (u16)(h0 | 0x400u | ((u32)rid & 0xFFu));
+    do {
+        volatile u8 *place = (volatile u8 *)(uintptr_t)_08002BFC(0);
+        *(volatile u16 *)(place + 0) = attr0;
+        *(volatile u16 *)(place + 2) = (u16)(((u32)rx & 0x1FFu) | h2);
+        *(volatile u16 *)(place + 4) = (u16)(((u32)z << 12) | (u32)ry);
+        *(volatile u16 *)(place + 12) = 0;
+        _08002C34(idx, (void *)place);
+        rx += (s16)dx;
+        ry += (s16)dy;
+        cnt--;
+    } while (cnt != 0);
 }
 void RecordSetter_03004(int base,int v1,int z,int y,int idx,int row,int a6,int a7);
 void _08003004(int a,int b,int c,int d,int e,int f,int g,int h)
@@ -235,7 +258,7 @@ void RecordSetter_03004(int base,int v1,int z,int y,int idx,int row,int a6,int a
     register int rv1 __asm__("r6");
     register int ry __asm__("sl");
     register int r9 __asm__("r9");
-    volatile u8 *tbl;
+    const u8 *tbl;
     u16 orval;
     register u16 h0 __asm__("r5");
     register u16 h2 __asm__("r4");
@@ -243,13 +266,13 @@ void RecordSetter_03004(int base,int v1,int z,int y,int idx,int row,int a6,int a
     rbase = base;
     rv1 = v1;
     ry = y;
-    tbl = (volatile u8*)(uintptr_t)(0x080C4940u + ((u32)row<<3));
+    tbl = (const u8*)(uintptr_t)(0x080C4940u + ((u32)row<<3));
     {
         extern int _08002BE8(int);
         r9 = (s16)_08002BE8((int)(uintptr_t)0x080C4940);
     }
-    h0 = *(volatile u16*)(tbl+0);
-    h2 = *(volatile u16*)(tbl+2);
+    h0 = *(const u16*)(tbl+0);
+    h2 = *(const u16*)(tbl+2);
 
     {
         extern void _08002C60(int, u32, u32);
@@ -267,9 +290,9 @@ void RecordSetter_03004(int base,int v1,int z,int y,int idx,int row,int a6,int a
     // C `/2` (truncating): the ROM emits the `lsrs #31; adds; asrs #1`
     // idiom, not `asrs #31; adds; asrs #1` for a hand-written floor shift.
     if (a6 <= 255 || a7 <= 255) {
-        int b6=*(s8*)(tbl+6);
+        int b6=*(const s8*)(tbl+6);
         rbase-=b6/2;
-        int b7=*(s8*)(tbl+7);
+        int b7=*(const s8*)(tbl+7);
         rv1-=b7/2;
         rv1&=0xFF;
         h0=(u16)(h0 | (u16)rv1);
@@ -452,10 +475,8 @@ void _08002E3C(void *a,int b,int c,int d,int e,int f,int g,u32 h)
 void sub_08002E3C(void *a,int b,int c,int d,int e,int f,int g,u32 h)
     __attribute__((alias("Helper_02E3C")));
 
-// span-tail init — _080048D8 is scene-tail reset (writes 0x03000198+? per findings §6)
-// Implemented as heap cursor reset via 0x03000198+0x88/0x90 alias to _08004A0C
+// Temporary scene-tail helper; the earlier _080048D8 VMA guess was incorrect.
 void RuntimeTailInit(void){ extern void HeapReset(void); HeapReset(); }
-void _080048D8(void) __attribute__((alias("RuntimeTailInit")));
 
 // ---- Mechanical translation of remaining bounded runtime leaves (opaque IWRAM) ----
 // Each uses exact VMA, pool at original.4byte offset, and volatile u8/u16/s16/u32 widths.

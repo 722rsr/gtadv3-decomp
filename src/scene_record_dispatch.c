@@ -174,43 +174,65 @@ HOST_STUB(u32   _080074A8(void *x));
 // the huge-quotient corners match the ROM bit-for-bit. Differential-tested
 // on host against an independent Python transcription of the asm.
 // ============================================================================
-static u32 ror32(u32 v, u32 n) {
-    n &= 31u;
-    return n ? (v >> n) | (v << ((32u - n) & 31u)) : v;
-}
+// NOT PROMOTABLE (ARMCC runtime, same class as _0802C390): the three bodies in
+// the EABI division block (this pair plus _0802DE04 / _0802DF6C) return with
+// `mov pc, lr` / `pop {pc}` and wrap their only callee in a lazy single-register
+// frame (`push {r4}` / `push {r0}` after the early exits), while agbcc always
+// saves lr in a packed `push {r4, lr}` at entry and returns `pop {r0}; bx r0`.
+// Empirically 0 of 1396 promoted bodies carry the marker (build/scan_armcc.py);
+// the block is byte-exact via asm (asm/sound_aeabi_idiv_core.s,
+// asm/sound_divmod.s) and stays asm-owned.
+//
+// The core is a MACRO, not a static helper: the ROM has no callee for it --
+// both division bodies carry their own inline copy
+// (asm/sound_aeabi_idiv_core.s 0x0802DED6..0x0802DF54, asm/sound_divmod.s
+// 0x08002E014..0x08002E096) -- so a static helper would emit a `bl` that the
+// independent slice cannot resolve (STATIC_HELPER defect class).
+#define ROR32(V, N) (((V) >> (N)) | ((V) << ((32u - (N)) & 31u)))
 
-// Unsigned remainder core shared by both functions (mirrors 2E014..2E060).
-static u32 divrem_core(u32 r0, u32 r1) {
-    u32 r2, r3 = 1u, r4, ip;
-    u32 r4s = 1u << 28;
-    while (!(r1 >= r4s || r1 >= r0)) { r1 <<= 4; r3 <<= 4; }
-    while (!(r1 >= r4s || r1 >= r0)) { r1 <<= 1; r3 <<= 1; }
-    for (;;) {
-        r2 = 0u;
-        if (r0 >= r1) r0 -= r1;
-        r4 = r1 >> 1; if (r0 >= r4) { r0 -= r4; r2 |= ror32(r3, 1); }
-        r4 = r1 >> 2; if (r0 >= r4) { r0 -= r4; r2 |= ror32(r3, 2); }
-        r4 = r1 >> 3; if (r0 >= r4) { r0 -= r4; r2 |= ror32(r3, 3); }
-        ip = r3;
-        if (r0 == 0u) break;
-        r3 >>= 4; if (r3 == 0u) break;
-        r1 >>= 4;
-        (void)ip;
-    }
-    if ((r2 & 0xE0000000u) == 0u) return r0;
-    r3 = ip;
-    if (r2 & ror32(r3, 3)) r0 += r1 >> 3;
-    if (r2 & ror32(r3, 2)) r0 += r1 >> 2;
-    if (r2 & ror32(r3, 1)) r0 += r1 >> 1;
-    return r0;
-}
+// DIVREM_CORE(R0V, R1V): unsigned shift/subtract core that consumes the
+// magnitudes in place; the remainder is left in R0V. The quotient bits
+// accumulate in _dc2 via word rotates, exactly as the ROM's
+// `mov ip,r3 / movs r4,#N / rors r3,r4 / orrs r2,r3 / mov r3,ip`.
+#define DIVREM_CORE(R0V, R1V)                                                 \
+    do {                                                                      \
+        u32 _dc2, _dc3 = 1u, _dc4, _dcip;                                     \
+        u32 _dc4s = 1u << 28;                                                 \
+        while (!((R1V) >= _dc4s || (R1V) >= (R0V))) {                         \
+            (R1V) <<= 4; _dc3 <<= 4;                                          \
+        }                                                                     \
+        while (!((R1V) >= _dc4s || (R1V) >= (R0V))) {                         \
+            (R1V) <<= 1; _dc3 <<= 1;                                          \
+        }                                                                     \
+        for (;;) {                                                            \
+            _dc2 = 0u;                                                        \
+            if ((R0V) >= (R1V)) (R0V) -= (R1V);                               \
+            _dc4 = (R1V) >> 1;                                                \
+            if ((R0V) >= _dc4) { (R0V) -= _dc4; _dc2 |= ROR32(_dc3, 1); }     \
+            _dc4 = (R1V) >> 2;                                                \
+            if ((R0V) >= _dc4) { (R0V) -= _dc4; _dc2 |= ROR32(_dc3, 2); }     \
+            _dc4 = (R1V) >> 3;                                                \
+            if ((R0V) >= _dc4) { (R0V) -= _dc4; _dc2 |= ROR32(_dc3, 3); }     \
+            _dcip = _dc3;                                                     \
+            if ((R0V) == 0u) break;                                           \
+            _dc3 >>= 4; if (_dc3 == 0u) break;                                \
+            (R1V) >>= 4;                                                      \
+        }                                                                     \
+        if ((_dc2 & 0xE0000000u) != 0u) {                                     \
+            _dc3 = _dcip;                                                     \
+            if (_dc2 & ROR32(_dc3, 3)) (R0V) += (R1V) >> 3;                   \
+            if (_dc2 & ROR32(_dc3, 2)) (R0V) += (R1V) >> 2;                   \
+            if (_dc2 & ROR32(_dc3, 1)) (R0V) += (R1V) >> 1;                   \
+        }                                                                     \
+    } while (0)
 
 // _08002DFE4: unsigned remainder. den==0 routes through the _08002DE98
 // no-op leaf then returns 0; num<den early-returns num (mov pc,lr).
 u32 DivRemU_02DFE4(u32 num, u32 den) {
     if (den == 0u) { _08002DE98(); return 0u; }
     if (num < den) return num;
-    return divrem_core(num, den);
+    DIVREM_CORE(num, den);
+    return num;
 }
 u32 _08002DFE4(u32 n, u32 d) __attribute__((alias("DivRemU_02DFE4")));
 u32 sub_08002DFE4(u32 n, u32 d) __attribute__((alias("DivRemU_02DFE4")));
@@ -218,15 +240,16 @@ u32 sub_08002DFE4(u32 n, u32 d) __attribute__((alias("DivRemU_02DFE4")));
 // _08002DE9C: signed remainder. den==0 -> DE98 then 0; magnitudes through
 // the core; negate iff the original num was negative (bpl/negs).
 s32 DivRemS_02DE9C(s32 num, s32 den) {
-    u32 r0 = (u32)num, r1 = (u32)den;
+    u32 r0 = (u32)num, r1 = (u32)den, saved;
     if ((s32)r1 == 0) { _08002DE98(); return 0; }
     if ((s32)r1 < 0) r1 = 0u - r1;
-    u32 saved = r0;
+    saved = r0;
     if ((s32)r0 < 0) r0 = 0u - r0;
-    if (r0 >= r1) r0 = divrem_core(r0, r1);
+    if (r0 >= r1) DIVREM_CORE(r0, r1);
     if ((s32)saved < 0) r0 = 0u - r0;
     return (s32)r0;
 }
+
 s32 _08002DE9C(s32 a, s32 b) __attribute__((alias("DivRemS_02DE9C")));
 s32 sub_08002DE9C(s32 a, s32 b) __attribute__((alias("DivRemS_02DE9C")));
 

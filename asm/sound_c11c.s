@@ -43,3 +43,5 @@ _0802C154:
 	bx r0
 	.short 0
 _0802C15C: .word 0x03007FF0
+@ End marker for the C-owned splice; it emits no bytes.
+sound_c11c_end:

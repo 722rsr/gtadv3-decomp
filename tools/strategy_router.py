@@ -383,7 +383,7 @@ def route(state: TargetState) -> Decision:
         return Decision(
             MANUAL,
             _fallback_reason(state.band, state),
-            ("python3 tools/match_context.py " + state.name),
+            ("python3 tools/match_context.py " + state.name,),
             declined=declined,
         )
 

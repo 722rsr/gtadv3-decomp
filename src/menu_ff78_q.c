@@ -36,23 +36,27 @@ extern void Sub_080013F94(void *a);
 //     7ABC(u32[rec+4], s16val, u32[rec+176+(d+1)*12]).
 void MenuFF78_14488(void *rec_, u32 a1_, u32 ev_) {
     volatile u8 *rec = (volatile u8 *)rec_;
-    u16 a1 = (u16)a1_;
+    register u32 a1 __asm__("r9") = (u16)a1_;
     u16 ev = (u16)ev_;
-    u16 entry = *(volatile u16 *)(uintptr_t)(rec + 156);
-    u16 entry2 = *(volatile u16 *)(uintptr_t)(rec + 160);
-    if (ev == 2) {
+    u16 entry2;
+    register u32 entry __asm__("sl");
+    entry = *(volatile u16 *)(uintptr_t)(rec + 156);
+    entry2 = *(volatile u16 *)(uintptr_t)(rec + 160);
+    switch (ev) {
+    case 2:
         Sub_08002B368(4);
         *(volatile u32 *)(uintptr_t)(rec + 32) = 10;
         *(volatile s16 *)(uintptr_t)(rec + 36) = 0;
         *(volatile u32 *)(uintptr_t)(rec + 64) = 10;
         *(volatile u32 *)(uintptr_t)(rec + 60) = 0;
-    }
-    if (ev == 1) {
+        break;
+    case 1:
         Sub_08002B368(1);
         *(volatile s16 *)(uintptr_t)(rec + 36) = 0;
         *(volatile s16 *)(uintptr_t)(rec + 140) = (s16)ev;
         *(volatile u16 *)(uintptr_t)(0x03001780u + 0x103Au) =
             *(volatile u16 *)(uintptr_t)(rec + 156);
+        break;
     }
     if (*(volatile s16 *)(uintptr_t)(rec + 166) == 5) {
         if ((a1 & 32) != 0 && *(volatile s16 *)(uintptr_t)(rec + 162) <= 0) {

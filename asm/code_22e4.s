@@ -4,6 +4,7 @@
 @ baserom.gba; byte-exact (make SHA gate). Unconverted targets keep numeric
 @ `bl 0x0800XXXX` form. Pools at original offsets.
 
+	.type _080022E4, %function
 _080022E4:
 	lsls	r0, r0, #16
 	asrs	r1, r0, #16
@@ -25,6 +26,12 @@ _080022FC:
 _08002306:
 	bx	lr
 _08002308: .4byte 0x080C43EC
+@ Interior entry: two literal words in the ROM hold 0x0800230C as a function
+@ pointer and the body has its own `bx lr`, so this is a second function in the
+@ span rather than the tail of _080022E4.  Typing it splits the span and lets
+@ each body be scored independently.
+	.type _0800230C, %function
+_0800230C:
 	lsls	r0, r0, #16
 	asrs	r2, r0, #16
 	ldr r1, _08002338

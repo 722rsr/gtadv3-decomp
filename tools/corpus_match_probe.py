@@ -353,6 +353,26 @@ def load_code_symbols() -> dict[str, int]:
     return syms
 
 
+@lru_cache(maxsize=128)
+def absolute_object_symbols(obj_path: Path) -> dict[str, int]:
+    """Read absolute symbols defined in one candidate object.
+
+    Inline assembler may define a data address with `.set`/`NAME = VALUE`.
+    Those values are already final in the object and must be used when
+    resolving that object's ABS32 literal-pool relocations.
+    """
+    out = run(["arm-none-eabi-nm", str(obj_path)]).stdout or ""
+    result: dict[str, int] = {}
+    for line in out.splitlines():
+        parts = line.split()
+        if len(parts) >= 3 and parts[1] in ("A", "a"):
+            try:
+                result[parts[2]] = int(parts[0], 16)
+            except ValueError:
+                pass
+    return result
+
+
 class SymbolResolver:
     """Resolves any symbol name (cross-TU, alias, runtime, hint) to its ROM VMA."""
 
@@ -1757,6 +1777,9 @@ def main() -> int:
         sections, all_relocs = fast_parse_elf(obj)
         if sections is None:
             sections = section_map(obj)
+        local_code_syms = dict(code_syms)
+        local_code_syms.update(absolute_object_symbols(obj))
+        local_resolver = SymbolResolver(local_code_syms, alias_target, decl_hints)
         source_text = path.read_text(encoding="utf-8", errors="replace")
         local_alias = {m.group(1): m.group(2) for m in ALIAS_DEF.finditer(source_text)}
         for name, vma, body, weak in tu_items:
@@ -1776,7 +1799,8 @@ def main() -> int:
                         relocs = all_relocs.get(key, [])
                     else:
                         relocs = relocations(obj, key)
-                    blob, calls, pools = link_function(sections[key], vma, relocs, key, resolver)
+                    blob, calls, pools = link_function(sections[key], vma, relocs, key,
+                                                       local_resolver)
                     break
             sizes = symbol_sizes(obj)
             if blob is None:

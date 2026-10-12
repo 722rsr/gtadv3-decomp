@@ -845,6 +845,14 @@
       }
     },
     {
+      "name": "ai_catalog/_0800230C",
+      "target_path": "build/objdiff/0800230c/target.o",
+      "base_path": "build/objdiff/0800230c/candidate.o",
+      "metadata": {
+        "source_path": "src/ai_catalog.c"
+      }
+    },
+    {
       "name": "idle_accessors/_08002340",
       "target_path": "build/objdiff/08002340/target.o",
       "base_path": "build/objdiff/08002340/candidate.o",
@@ -2141,7 +2149,7 @@
       }
     },
     {
-      "name": "runtime_hud/sub_080048D8",
+      "name": "runtime_hud/_080048D8",
       "target_path": "build/objdiff/080048d8/target.o",
       "base_path": "build/objdiff/080048d8/candidate.o",
       "metadata": {
@@ -12285,11 +12293,11 @@
       }
     },
     {
-      "name": "sound_extra/_0802BC4C_tail",
+      "name": "sound_support/_0802BC4C",
       "target_path": "build/objdiff/0802bc4c/target.o",
       "base_path": "build/objdiff/0802bc4c/candidate.o",
       "metadata": {
-        "source_path": "src/sound_extra.c"
+        "source_path": "src/sound_support.c"
       }
     },
     {

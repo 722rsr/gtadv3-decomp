@@ -276,7 +276,7 @@
       "asm/surface_access.s",
       "asm/wrapper_pair.s"
     ],
-    "source_closure_sha256": "c0902fa11f9b9eb8695de4e1a2d0050c4da2a21825f462f1ead5561793d8b642"
+    "source_closure_sha256": "3851c7c368a42ae16281ad32bbf0c270058d0933efe4d7c9ad742b33395f0175"
   },
   "raw_incbin_spans": [
     {
@@ -7367,8 +7367,8 @@
           "start": "0x0022E4"
         }
       ],
-      "sha256": "9c67696cebf0788780585a55f9c39a3d53a8c561b60fe3826e94a72ca4da4e83",
-      "size": 3188
+      "sha256": "a0cc48b924177b52faea68849d8bd4e747aafec4ab98f8889c17f59e71888840",
+      "size": 3527
     },
     {
       "path": "asm/code_235f4.s",
@@ -8291,8 +8291,8 @@
           "start": "0x007664"
         }
       ],
-      "sha256": "eebab48ef802b41b52af350d519ee3188dce2563da39f96406cebebed578766e",
-      "size": 2836
+      "sha256": "5cee3e61ae56df3db07fa1c7dd4db65ed663d9089141b95378dac94fa92e8cc3",
+      "size": 2952
     },
     {
       "path": "asm/course_resource_leaf.s",
@@ -9011,8 +9011,8 @@
           "start": "0x009B60"
         }
       ],
-      "sha256": "98aaf7d4a448882d274d53ea2e455acb0b5f5cd426f39510cbec3d5c89ece53e",
-      "size": 3220
+      "sha256": "f999658131196655028d4f6ae975b95745a669bca2fce98b973cf61ae836c8f2",
+      "size": 3234
     },
     {
       "path": "asm/menu_place.s",
@@ -9467,8 +9467,8 @@
           "start": "0x02C11C"
         }
       ],
-      "sha256": "802ab69180e49df59865da56f06138beadbb09427d22978b8b94d860e8f14a8e",
-      "size": 824
+      "sha256": "1129510c25684c33bbf15be7a3784ce3a725db3848d6092f769b49f96a08c6c5",
+      "size": 896
     },
     {
       "path": "asm/sound_channel_cluster.s",
@@ -9935,8 +9935,8 @@
           "start": "0x02C738"
         }
       ],
-      "sha256": "ce6097d057c0a89dc789c7329ea9d11943a9bb02277b7715b3e81cbb1239970a",
-      "size": 817
+      "sha256": "0c3cfd1635b2d91bb339edb2b68b719b3e43aa8b4e9de30b093b1e726d8109b2",
+      "size": 834
     },
     {
       "path": "asm/sound_uaeabi_uidiv.s",

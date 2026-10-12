@@ -15,7 +15,7 @@ void  Course_SetupRecords(void *rec);         // _080074D4 uses _0800572C alloca
 void  Course_EmitLane(void *a, int b, void *c, int d); // _08007538 etc. simplified
 
 // Resource init / orchestration
-void Course_ResourceSetup(void *ctx, void *X, int idx); // _08007664 full setup (DMA desc at 0x040000D4)
+u32 Course_ResourceSetup(void *ctx, void *X, int idx); // _08007664 returns _080050D0 result after DMA setup
 void *Course_GetResourcePtr(void *X, int idx); // helpers
 
 

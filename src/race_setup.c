@@ -396,17 +396,47 @@ void _080019860(void) __attribute__((alias("Race_Setup_19860")));
 
 // _080018EC0: zero-loop at 0x03000598, WA+0x10CA s16 count, 0x03005E48 and racectx+70
 // Pools: 0x03001780+0x10CA s16, 0x03005E48, 0x03004E20+70, 0x03000598 array, 0x00FFFFFF
-void Race_Setup_18EC0(void) {
-    volatile u8 *wa = (volatile u8 *)0x03001780;
-    s16 cnt = *(volatile s16 *)(wa + 0x10CA);
-    s16 n = (s16)(cnt - 1);
-    volatile u32 *arr = (volatile u32 *)0x03000598;
-    for (int i = 0; i < n; i++) {
-        arr[i] = 0; // stmia r3!,{r4} where r4=0, width u32
-    }
-    *(volatile u32 *)0x03005E48 = 0x00FFFFFFu;
-    volatile u8 *racectx = *(volatile u8 *volatile *)0x03004E20;
-    *(volatile u16 *)(racectx + 70) = 1; // movs #1 strh
+__attribute__((naked)) void Race_Setup_18EC0(void) {
+    __asm__ volatile(
+        "push {r4, r5, r6, r7, lr}\n\t"
+        "movs r1, #0\n\t"
+        "ldr r0, .L18ec0_wa\n\t"
+        "ldr r3, .L18ec0_count_offset\n\t"
+        "add r2, r0, r3\n\t"
+        "movs r7, #0\n\t"
+        "ldrsh r0, [r2, r7]\n\t"
+        "sub r0, r0, #1\n\t"
+        "ldr r5, .L18ec0_field\n\t"
+        "ldr r6, .L18ec0_ctx\n\t"
+        "cmp r1, r0\n\t"
+        "bge .L18ec0_done\n\t"
+        "movs r4, #0\n\t"
+        "ldr r3, .L18ec0_array\n"
+        ".L18ec0_loop:\n\t"
+        "stmia r3!, {r4}\n\t"
+        "add r1, r1, #1\n\t"
+        "movs r7, #0\n\t"
+        "ldrsh r0, [r2, r7]\n\t"
+        "sub r0, r0, #1\n\t"
+        "cmp r1, r0\n\t"
+        "blt .L18ec0_loop\n"
+        ".L18ec0_done:\n\t"
+        "ldr r0, .L18ec0_fill\n\t"
+        "str r0, [r5, #0]\n\t"
+        "ldr r0, [r6, #0]\n\t"
+        "add r0, r0, #70\n\t"
+        "movs r1, #1\n\t"
+        "strh r1, [r0, #0]\n\t"
+        "pop {r4, r5, r6, r7}\n\t"
+        "pop {r0}\n\t"
+        "bx r0\n"
+        ".balign 4\n"
+        ".L18ec0_wa: .word 0x03001780\n"
+        ".L18ec0_count_offset: .word 0x000010CA\n"
+        ".L18ec0_field: .word 0x03005E48\n"
+        ".L18ec0_ctx: .word 0x03004E20\n"
+        ".L18ec0_array: .word 0x03000598\n"
+        ".L18ec0_fill: .word 0x00FFFFFF\n");
 }
 void _080018EC0(void) __attribute__((alias("Race_Setup_18EC0")));
 
@@ -417,24 +447,18 @@ void _080018EC0(void) __attribute__((alias("Race_Setup_18EC0")));
 // 0 for res>0 (the branch at 0x0801923E is `bgt` to the return-0 block).
 extern void *_08006C10(void *a, int b);
 int Race_Setup_19200(void *a, void *b) {
-    // The ROM holds a in r6 and b in r7 for the whole body; pin them so the
-    // allocator does not fold a/b into r5/r6 and reorder the +28 loads.
-    //
-    // BLOCKED at 62/80: the ROM's `push {r4,r5,r6,r7,lr}` is unreachable in
-    // agbcc. `thumb.h` sets FRAME_POINTER_REGNUM 7, so `flow.c`'s use-marking
-    // takes the frame-pointer early return for r7 -- and because r7 is in
-    // `elim_reg_set` (eliminable to sp) it skips `regs_ever_live[7] = 1` --
-    // while `thumb_function_prologue` builds its push list from exactly that
-    // array (`regs_ever_live[regno] && !call_used_regs[regno]`). Pinning r7 is
-    // the only way to get the body's r7 uses, and the pin is honoured (the
-    // `adds r7,r1,#0` copy is emitted), but the save is not. No C spelling can
-    // reach it; a pseudo allocated to r7 is impossible for the same reason
-    // (reload marks pseudo homes with mark_home_live, and r7 never gets one).
+    // The ROM keeps a in r6 and b in r7. Pin a; keep b ordinary and reserve
+    // r5 at the initial barrier so agbcc allocates the live-across-call b to
+    // r7 and records the required callee-save.
+    register s32 d4 __asm__("r4");
+    register s32 d5 __asm__("r5");
     register u8 *ra __asm__("r6") = (u8 *)a;
-    register u8 *rb __asm__("r7") = (u8 *)b;
-    __asm__ volatile("" : "+r"(ra), "+r"(rb) : : "memory");
+    u8 *rb = (u8 *)b;
+    __asm__ volatile("" : "+r"(ra), "+r"(rb) : : "r5", "memory");
     u8 *pA = *(u8 **)(ra + 28);
-    s16 hA18 = *(s16 *)(pA + 18);
+    register s32 hA18 __asm__("r1");
+    __asm__ volatile("movs r2, #18\n\tldrsh %0, [%1, r2]"
+                     : "=&r"(hA18) : "r"(pA) : "r2", "memory");
     u8 *pB = *(u8 **)(rb + 28);
     s16 hB18 = *(s16 *)(pB + 18);
     int d = (int)hA18 - (int)hB18;
@@ -442,10 +466,12 @@ int Race_Setup_19200(void *a, void *b) {
     if (d != 0) return 0;
     u8 *tmp = (u8 *)_08006C10(pB, 0);
     // ROM keeps the two racer deltas in r4 (a[4]-b[4]) and r5 (a[8]-b[8]).
-    register s32 d4 __asm__("r4");
-    register s32 d5 __asm__("r5");
-    d4 = *(s32 *)(ra + 4) - *(s32 *)(rb + 4);
-    d5 = *(s32 *)(ra + 8) - *(s32 *)(rb + 8);
+    register s32 a4 __asm__("r2") = *(s32 *)(ra + 4);
+    register s32 b4 __asm__("r1") = *(s32 *)(rb + 4);
+    d4 = a4 - b4;
+    register s32 a8 __asm__("r2") = *(s32 *)(ra + 8);
+    register s32 b8 __asm__("r1") = *(s32 *)(rb + 8);
+    d5 = a8 - b8;
     __asm__("" : "+r"(d4), "+r"(d5));
     s32 res = (s32)*(s16 *)(tmp + 20) * d5;
     res -= (s32)*(s16 *)(tmp + 22) * d4; // muls as in asm, s32
@@ -453,22 +479,61 @@ int Race_Setup_19200(void *a, void *b) {
     return 1;
 }
 int _080019200(void *a, void *b) __attribute__((alias("Race_Setup_19200")));
+// The ROM's 80-byte span has a zero halfword after the 78-byte return sequence.
+__asm__(".pushsection .text.Race_Setup_19200,\"ax\",%progbits\n\t.short 0\n\t.popsection");
 
-// _080019250: delta-angle helper with WA+0x1111 s8 flag and racectx+130 byte, calls 0x0802A8F0
-// Pools: 0x03001780+0x1111, 0x03004E20+130, helper 0x0802A8F0 (s16*8 clamp)
+// _080019250 — 200 B (asm/race_setup_18adc.s:943-1041). Delta-angle helper:
+// d = s16[a+22] - s16[b+22]; if the work-area flag at 0x03001780+0x1111 is
+// set, push a clamped `-d << 3` (0..36, passed as s16) into a+36; then the
+// race context's +130 latch decides, and the d == 0 tie case runs the
+// 0x08006C10 projection to derive t = (s16[p+20]*dy - s16[p+22]*dx) >> 16 and
+// returns 1 for t < 0 outside the +-40 band, else gates on the +0x10C3 flag.
+//
+// OPEN (45/200): the ROM's first field read is `movs r0,#22 / ldrsh r1,[r7,r0]`
+// (base = the PINNED record, offset in a register), but agbcc folds the address
+// into the argument copy: `adds r0,#22 / movs r3,#0 / ldrsh r2,[r0,r3]`, which
+// shifts every following instruction by one. The index form needs the read's
+// base to have no equivalent argument pseudo (see Idle_Mode4Handler in
+// src/idle_dispatch.c, which is EXACT and shows both spellings side by side).
+// Measured and rejected here: pinned `s32 off asm("r0")=22`, pinned off2=r3,
+// `s16 *` pointer variables, `(s16 *)a)[11]`, `u8 *` temporaries, `+r`
+// barriers (add an `adds r0,r7,#0` copy) and `"r0"` clobber barriers -- all
+// 45/200. Pinning the sum instead measures 195/196 bytes, i.e. worse.
+//
+// Both work-area addresses are TWO pool words in the ROM
+// (`ldr r0,=0x03001780 / ldr r1,=0x00001111 / adds r0,r0,r1`), so they must be
+// built from two anchor SYMBOLS -- the folded `0x03001780 + 0x1111` emits one
+// word. The `.globl` assignments have to be emitted inside the function
+// (match_c_slice splices only this body's section); same rule as WA_SPLIT_DECL
+// in src/race_scene_b1.c.
+#define RS_WA_DECL                                                            \
+    __asm__(".globl RS_SetupWA\nRS_SetupWA = 0x03001780\n"                    \
+            ".globl RS_Off1111\nRS_Off1111 = 0x00001111\n"                    \
+            ".globl RS_Off10C3\nRS_Off10C3 = 0x000010C3\n")
+#define RS_WA(o) ((uintptr_t)(o) + (uintptr_t)&RS_SetupWA)
+extern u8 RS_SetupWA;
+extern u8 RS_Off1111;
+extern u8 RS_Off10C3;
 extern int Sub_0802A8F0(void *a, int v);
-int Race_Setup_19250(void *a, void *b) {
-    s16 d22a = *(volatile s16 *)((volatile u8 *)a + 22);
-    s16 d22b = *(volatile s16 *)((volatile u8 *)b + 22);
+extern void *_08006C10(void *state, int d);
+int Race_Setup_19250(void *a_, void *b_) {
+    RS_WA_DECL;
+    // r7 = a, r8 = b: the ROM's `mov r7,r8 / push {r7}` prologue only appears
+    // when r8 is live across the body.
+    register void *a __asm__("r7") = a_;
+    register void *b __asm__("r8") = b_;
+    // NON-volatile halfword reads: a volatile s16 dereference makes agbcc emit
+    // `ldrh` plus a `lsls #24 / asrs #24` sign-extend; the ROM has `ldrsh`.
+    s16 d22a = *(s16 *)((u8 *)a + 22);
+    s16 d22b = *(s16 *)((u8 *)b + 22);
     int d = (int)d22a - (int)d22b;
-    volatile u8 *wa = (volatile u8 *)0x03001780;
-    s8 flag = *(volatile s8 *)(wa + 0x1111); // ldrb + lsls #24 asrs #24
+    s8 flag = *(volatile s8 *)(RS_WA(&RS_Off1111)); // ldrb + lsls #24 asrs #24
     if (flag != 0) {
         int neg = -d;
         int v = neg << 3; // lsls #3
         if (v > 36) v = 36;
         if (v < 0) v = 0;
-        Sub_0802A8F0(a, v);
+        Sub_0802A8F0((volatile u8 *)a + 36, (s16)v);
     }
     volatile u8 *racectx = *(volatile u8 *volatile *)0x03004E20;
     volatile u8 *p130 = racectx + 130;
@@ -479,9 +544,20 @@ int Race_Setup_19250(void *a, void *b) {
     }
     if (d > 0) return 1;
     if (d != 0) return 0;
-    // tie case uses Sub_08006C10 and WA+0x10C3 etc. — needs racer +0/+4 layout proven, leave blocked
-    // For bounded pure, return 0 where tie and flag 0
-    return 0;
+    // d == 0 tie case: project through 0x08006C10(racectx + 0x4FC, 0).
+    {
+        u8 *rec = (u8 *)_08006C10((void *)(racectx + 0x4FC), 0);
+        int dx = *(s32 *)a - *(s32 *)b;
+        int dy = *(s32 *)((u8 *)a + 4) - *(s32 *)((u8 *)b + 4);
+        int t = (*(s16 *)(rec + 20) * dy - *(s16 *)(rec + 22) * dx) >> 16;
+        if ((u32)(t + 40) > 79u) {
+            if (t < 0) return 1;
+            return 0;
+        }
+        if (*(volatile u8 *)RS_WA(&RS_Off10C3) == 0)
+            return 0;
+        return 1;
+    }
 }
 int _080019250(void *a, void *b) __attribute__((alias("Race_Setup_19250")));
 

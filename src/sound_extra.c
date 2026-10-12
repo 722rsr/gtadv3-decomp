@@ -20,6 +20,9 @@ void _08002DE98(void) __attribute__((alias("SoundDivNoop_2DE98")));  // 9-digit 
 
 // --- Signed EABI div (sound_aeabi_idiv.s 0x02DE04) ---
 // s32 __aeabi_idiv(s32 num, s32 den) — shift/subtract quotient core, handles sign via ip.
+// 0x0802DE04 — __aeabi_idiv. NOT PROMOTABLE: ARMCC runtime (returns `mov pc, lr`,
+// lazy `push {r4}` frame), unlike every agbcc body. Byte-exact via
+// asm/sound_aeabi_idiv.s; see build/scan_armcc.py for the marker scan.
 s32 SoundSignedDiv(s32 num, s32 den){
     if (den==0){ SoundDivNoop_2DE98(); return 0; }
     bool neg = (num ^ den) < 0;
@@ -149,8 +152,10 @@ void *SoundPremixPitch(void *obj, u32 *freq){
 void *_0802B7B8(void *o, u32 *f) __attribute__((alias("SoundPremixPitch")));
 
 // --- Mixer tail (sound_mixer_tail.s) — termination stub, pure Thumb ---
-void SoundMixerTail(void *state){ (void)state; }
-void _0802BC4C_tail(void *s) __attribute__((alias("SoundMixerTail"))); // distinct from _0802BC4C leaf
+// Removed: the `_0802BC4C_tail` alias of a no-op stub claimed VMA 0x0802BC4C,
+// which is really the 64-byte clear owned by SoundClearVoiceArray
+// (src/sound_support.c). Two C bodies for one ROM entry made the probe score
+// the stub instead of the real body.
 
 
 // ROM entry alias.

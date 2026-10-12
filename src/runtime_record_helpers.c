@@ -256,28 +256,33 @@ void *sub_08007484(void *x) __attribute__((alias("_08007484")));
 // 0x08007368 — proximity hit test (exact control flow from asm)
 int _08007368(void *state, void *pos, u32 heading_u16, void *out)
 {
-    void *row = _08006C10(state, 0);
-    s32 dx0 = *(volatile s32 *)pos - *(volatile s32 *)((u8 *)row + 12);
-    s32 dy0 = *(volatile s32 *)((u8 *)pos + 4) - *(volatile s32 *)((u8 *)row + 16);
+    register volatile u8 *posp __asm__("r4") = (volatile u8 *)pos;
+    register volatile s32 *outp __asm__("r9") = (volatile s32 *)out;
+    __asm__ volatile("" : "+r" (outp));
+    register volatile u8 *row __asm__("r7") =
+        (volatile u8 *)_08006C10(state, 0);
+    s32 tmp[2];
+    s32 padding[2];
+    __asm__ volatile("" : "=m" (padding[0]), "=m" (padding[1]));
     s32 delta[2];
-    delta[0] = dx0;
-    delta[1] = dy0;
+    s32 box[2];
+    s32 hit[2];
+    delta[0] = *(volatile s32 *)posp - *(volatile s32 *)(row + 12);
+    delta[1] = *(volatile s32 *)(posp + 4) - *(volatile s32 *)(row + 16);
 
     for (int pass = 0; pass <= 1; pass++) {
-        s32 box[2];
         box[0] = (pass == 0) ? 32 : -32;
         box[1] = 64;
         _08005BA8(box, (s16)heading_u16);
-        s32 tmp[2];
         _08005DA4(tmp, delta);
 
+        register s32 *hitp __asm__("r8") = hit;
+        register s32 sl_off __asm__("sl") = 0;
         volatile u8 *slot = (volatile u8 *)row + 40;
-        s32 sl_off = 0;
-        for (int k = 0; k <= 1; k++) {
-            s32 hit[2];
-            if (_08005E14(hit, tmp, (void *)slot)) {
-                s32 hx = hit[0];
-                s32 hy = hit[1];
+        for (volatile int k = 0; k <= 1; k++) {
+            if (_08005E14(hitp, tmp, (void *)slot)) {
+                s32 hx = hitp[0];
+                s32 hy = hitp[1];
                 s32 ax = hx >> 8;
                 s32 ay = hy >> 8;
                 if (*(volatile s16 *)(slot + 12) <= ax &&
@@ -287,7 +292,7 @@ int _08007368(void *state, void *pos, u32 heading_u16, void *out)
                     s32 ddx = hx - delta[0];
                     s32 ddy = hy - delta[1];
                     if (ddx * ddx + ddy * ddy <= 25) {
-                        volatile s32 *o = (volatile s32 *)out;
+                        volatile s32 *o = outp;
                         o[0] = *(volatile s32 *)((u8 *)row + 12) + hx;
                         o[1] = *(volatile s32 *)((u8 *)row + 16) + hy;
                         o[2] = -*(volatile s32 *)((u8 *)row + 40 + (u32)sl_off);

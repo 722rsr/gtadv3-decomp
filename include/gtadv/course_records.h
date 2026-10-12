@@ -6,10 +6,10 @@
 // Iterators share: push high-reg, sub sp #24/#16, ldr [r0+4]→07498→0748C, ldrb cnt [+7] u8, loop 4B rows [+8] via ldrb u8[4], bl 02ED0 with 6 sp args (u8 via ldrb at +0..3, s8 via ldrsb at +6, s32 via lsls #10, u32 via ldr)
 void Course_Iter_07BFC(void *X, int a1, int a2, int a3, u32 s0, u32 s1, u32 s2, u32 s3, u32 s4); // _08007BFC: 9-arg (r0-r3 + sp+52/56/60/64/68); r1->r9, r2->seek idx, r3->r8
 void Course_Iter_07C68(void *X, u32 r1_add, u32 kind, u32 r3_add, u32 s0_yadd, u32 s1_p3, u32 s2_s0, u32 s3, u32 s4); // _08007C68: 9 args (r1=z_add, r2=seek kind, r3=x_add, s0=y_add, s1=02ED0 r3, s2=02ED0 s0, s3=02ED0 s3, s4=02ED0 s4)
-void Course_Iter_07CD0(void *X, u8 sl, u8 r9, u32 s56, u32 s60, u32 s64); // _08007CD0: sp+56 u32, sl via r1, r9 via r3, 240-ldrb+asrs s32
-void Course_Iter_07D4C(void *X, u8 sl, u8 r9, u32 s44, u32 s48, u32 s52, u32 s56); // _08007D4C: ldrh +2 u16, r8 via r9, 4B rows, bl 03004
-void Course_Iter_07DB4(void *X, u8 sl, u8 r7, u32 s40, u32 s44, u32 s48, u32 s52, u32 s56); // _08007DB4: s 0..cnt, ldrb +2 u8 +r7
-void Course_Iter_07E14(void *X, u8 sl, u8 r9, u32 s48, u32 s52, u32 s56, u32 s60); // _08007E14: ldrb +7 u8 cnt, loop +4 stride, bl 02F68/02DB8 via r12
+void Course_Iter_07CD0(void *X, int a1, int a2, int a3, u32 a4, u32 a5, u32 a6); // _08007CD0: 7 args, h=(240-arr[4])/2 seed, sub_08002ED0 emit
+void Course_Iter_07D4C(void *X, int a1, int a2, int a3, u32 a4, u32 a5, u32 a6, u32 a7); // _08007D4C: ldrh +2 seed, 4B rows, _08003004 emit
+void Course_Iter_07DB4(void *X, int a1, int a2, int a3, u32 a4, u32 a5, u32 a6, u32 a7, u32 a8); // _08007DB4: 9 machine args, row loop, _08003004 emit
+void Course_Iter_07E14(void *X, int a1, int a2, int a3, u32 a4, u32 a5, u32 a6, volatile u8 a7); // _08007E14: 8 args, 8-bit acc, _08002F68/_08002DB8 pair
 void Course_RecordsIterA(void *X); // legacy stub kept for hosts
 int  Course_DistanceSqrtUdiv(int a,int b); // legacy stub for _08007F08 family
 

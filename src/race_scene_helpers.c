@@ -74,53 +74,11 @@ int RaceSpriteReady_04330(void *record_)
     return 1;
 }
 
-// Shared OAM node writer called from the 0x19010 side-list walk. The original
-// routine at 0x27308 uses the mode-specific sine/cosine tables and Div SWI.
-static void RaceSpriteNode_27308(int x, int y, void *ctx_)
-{
-    volatile u8 *ctx = (volatile u8 *)ctx_;
-    volatile u8 *layout = (volatile u8 *)(uintptr_t)*(volatile u32 *)(ctx + 60);
-    u32 table_index = (((u32)*(volatile u32 *)(ctx + 40) << 3) & 0x7FFu) << 1;
-    int scale = *(volatile s16 *)(layout + 4);
-    s16 sin_x = *(volatile s16 *)(uintptr_t)(0x0805CAF0u + table_index);
-    s16 cos_x = *(volatile s16 *)(uintptr_t)(0x0805BAF0u + table_index);
-    u16 map_x = (u16)(((u32)((s32)sin_x * scale) << 4) >> 16);
-    u16 map_y = (u16)(((u32)((s32)cos_x * scale) << 4) >> 16);
-    int x_base = *(volatile s32 *)(ctx + 36);
-    int y_base = *(volatile s32 *)(ctx + 40);
-    int x_pos;
-    int y_pos;
-    int sprite_flag = 0x8000;
-
-    if (*(volatile u16 *)(layout + 6) == 0x0300u) {
-        x_pos = (int)(u16)(x_base + _0802D978(((s16)(u16)x >> 8) - 8192, scale) + 32);
-        y_pos = (int)(u16)(y_base + _0802D978(((s16)(u16)y >> 8) - 8192, scale) + 32);
-    } else {
-        x_pos = (int)(u16)(x_base + _0802D978(((s16)(u16)x >> 8) - 8192, scale) + 16);
-        y_pos = (int)(u16)(y_base + _0802D978(((s16)(u16)y >> 8) - 8192, scale) + 16);
-    }
-
-    int index = *(volatile s32 *)(ctx + 44);
-    index /= 4;
-    volatile u8 *node = (volatile u8 *)_08002BFC(0);
-    _08002C34(index, (void *)node);
-
-    s16 random = (s16)_08002BE8();
-    *(volatile s16 *)(ctx + 52) = random;
-    _08002D98((u32)(s32)random, (u32)(s32)(s16)map_y,
-              (u32)(s32)(-(s16)map_x), (u32)(s32)(s16)map_x,
-              (u32)(s32)(s16)map_y);
-
-    *(volatile u16 *)(node + 0) = (u16)(0x0100u | *(volatile u16 *)(layout + 6)
-                                         | ((u16)y_pos & 0x00FFu));
-    *(volatile u16 *)(node + 2) = (u16)(((u32)x_pos & 0x1FFu)
-                                         | (u32)sprite_flag
-                                         | ((u32)(u16)random << 9));
-    volatile u8 *obj_state = (volatile u8 *)(uintptr_t)*u32_at(0x0300167Cu);
-    *(volatile u16 *)(node + 4) = (u16)((*(volatile u16 *)(obj_state + 12) + 16u)
-                                         | ((u32)*(volatile u16 *)(obj_state + 18) << 12));
-    *(volatile u16 *)(node + 12) = 0;
-}
+// NOTE: do NOT re-derive 0x08027308 here. The side-list walk below calls the
+// real ROM routine (sub_08027308 / _08027308, defined in asm/garage_26f50.s and
+// lifted as Garage_27308 in src/garage.c). Inlining it as a `static` left an
+// unresolved `bl` in the candidate and duplicated 324 bytes of body.
+extern void _08027308(int a0, int a1, void *rec);
 
 // 0x08019010 — iterate course surface records, emit their primary sprite,
 // and emit the additional side-list nodes when race flag 0x02000000 is set.
@@ -174,14 +132,17 @@ void RaceScene_19010(void)
 
                 if (_08018ACC(0x02000000u) != 0) {
                     volatile u8 *list = (volatile u8 *)(uintptr_t)*(volatile u32 *)(context + 0x490u + car_id * 4u);
-                    int count = *(volatile s16 *)(list + 4);
-                    for (int j = 0; j < count; j++) {
+                    // The ROM re-reads the count halfword in the loop test
+                    // (ldrsh r0,[r4,#4] at the bottom of the loop).
+                    int j = 0;
+                    while (j < (int)*(volatile s16 *)(list + 4)) {
                         u8 phase = *(volatile u8 *)(uintptr_t)(0x03001780u + 0x10BCu);
                         if (((phase + (u32)j) & 1u) != 0) {
                             int sx = *(volatile s16 *)(list + 8 + j * 8);
                             int sy = *(volatile s16 *)(list + 12 + j * 8);
-                            RaceSpriteNode_27308(sx, sy, (void *)(uintptr_t)0x03005DF0u);
+                            _08027308(sx, sy, (void *)(uintptr_t)0x03005DF0u);
                         }
+                        j++;
                     }
                 }
                 (*(volatile u32 *)(locals + 8))++;
@@ -261,6 +222,9 @@ void _080021860(int a, int b, int course_row, int course_col, int mode);
 
 static void CarDisplay_21860(int a, int b, int course_row, int course_col, int mode)
 {
+    int r6_a = a;
+    register int r2_row __asm__("r2") = course_row;
+    register int r4_col __asm__("r4") = course_col;
     u32 *tick = (u32 *)(uintptr_t)0x030005A8u;
     s32 count = (s32)(*tick - 1u);
     *tick = (u32)count;
@@ -269,22 +233,43 @@ static void CarDisplay_21860(int a, int b, int course_row, int course_col, int m
         *cursor0 = (u16)(*cursor0 + 1u);
         *tick = 5;
     }
-    if (course_col <= 0 || course_col > 3)
+    if (r4_col == 0)
+        return;
+    if (r4_col < 0)
+        return;
+    if (r4_col > 3)
         return;
 
     {
-        u16 *cursor = (u16 *)(uintptr_t)0x0203F990u;
-        s16 c0 = *(s16 *)cursor;
-        s16 c1 = *(s16 *)(cursor + 1);
+        register s16 *cursor __asm__("r5") = (s16 *)(uintptr_t)0x0203F990u;
+        extern const u8 CarDisplayLaneBase[];
+        register uintptr_t r3_lane_table __asm__("r3");
+        register uintptr_t r0_sprite __asm__("r0");
+        register uintptr_t r1_lane_addr __asm__("r1");
+        register s32 c1 __asm__("r2");
+        s16 c0_initial;
+        s16 c0_for_emit;
         int lane;
-        if (c0 > 15) {
+        __asm__(".globl CarDisplayLaneBase\nCarDisplayLaneBase = 0x080CBFEC");
+        c0_initial = cursor[0];
+        if (c0_initial > 15) {
             cursor[0] = 0;
-            c0 = 0;
         }
-        lane = *(s16 *)(uintptr_t)(0x080CBFECu
-                    + (u32)course_row * 8u + (u32)course_col * 2u);
-        _08007570((void *)(uintptr_t)0x080C9754u, lane, c1, c0 << 4, 16);
-        _08002ED0((void *)(uintptr_t)a, b, c1, mode,
+        r0_sprite = (uintptr_t)0x08349754u;
+        r3_lane_table = (uintptr_t)CarDisplayLaneBase;
+        r1_lane_addr = (u32)r4_col * 2u;
+        r1_lane_addr += (u32)r2_row * 8u;
+        r1_lane_addr += (uintptr_t)r3_lane_table;
+        lane = *(s16 *)(uintptr_t)r1_lane_addr;
+        __asm__ volatile("" ::: "memory");
+        __asm__ volatile("movs r3, #2\n\tldrsh %0, [r5, r3]"
+                         : "=r"(c1) : : "r3", "memory");
+        __asm__ volatile("" ::: "memory");
+        c0_for_emit = cursor[0];
+        _08007570((void *)r0_sprite, lane, c1, c0_for_emit << 4, 16);
+        __asm__ volatile("movs r0, #2\n\tldrsh %0, [r5, r0]"
+                         : "=r"(c1) : : "r0", "memory");
+        _08002ED0((void *)(uintptr_t)r6_a, b, c1, mode,
                   1, 2, 1, 0, 0, 1);
     }
 }

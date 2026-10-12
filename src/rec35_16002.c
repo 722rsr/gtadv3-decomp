@@ -13,14 +13,15 @@
 // ----------------------------------------------------------------------------
 // Extern callees. All of them resolve to real bodies on ARM: _0802B368 and
 // _08002618 trampoline to asm; sub_08007B18/_08007C68 trampoline to asm;
-// sub_0800DBE8 binds the menus.c strong lift; sub_0800D97C binds the strong
-// lift below. Host weak no-ops mirror the usual override model.
+// sub_0800DBE8 binds the menus.c strong lift; sub_0800D97C binds the promoted
+// MenuStage lift. Host weak no-ops mirror the usual override model.
 // ----------------------------------------------------------------------------
 extern void _0802B368(int v);                    // 0x0802B368 sound (asm)
 extern void _08002618(int a, int b);             // 0x08002618 (asm)
 extern void sub_08007B18(void *a, int b, int c, int d, int e, int f, int g, int h); // 0x08007B18 (asm)
 extern void sub_08007C68(void *a, u32 b, u32 c, int d, int e, int f, int g, int h, int i); // 0x08007C68 (asm)
 extern void sub_0800DBE8(void *a);               // 0x0800DBE8 (menus.c)
+extern void sub_0800D97C(void *a, int b);          // 0x0800D97C (menu_stage.c)
 
 #define WA_1084 (*(volatile u16 *)((uintptr_t)0x03001780 + 0x1084))
 
@@ -79,7 +80,7 @@ void Rec35_EventA(void *rec, int unused, int mode) {
         *(volatile u32 *)(r5 + 16) = 10;
         *(volatile u16 *)(r5 + 20) = 0;
         *(volatile u32 *)(r5 + 48) = 10;
-        *(volatile u16 *)(r5 + 44) = 0;
+        *(volatile u32 *)(r5 + 44) = 0;
         WA_1084 = 0;
     }
     if (r6 == 1) {
@@ -93,7 +94,7 @@ void Rec35_EventA(void *rec, int unused, int mode) {
             *(volatile u32 *)(r5 + 16) = 10;
             *(volatile u16 *)(r5 + 20) = 0;
             *(volatile u32 *)(r5 + 48) = 10;
-            *(volatile u16 *)(r5 + 44) = 0;
+            *(volatile u32 *)(r5 + 44) = 0;
             WA_1084 = 0;
         }
     }
@@ -126,7 +127,7 @@ void Rec35_EventB(void *rec, int unused, int mode) {
         *(volatile u32 *)(r5 + 16) = 10;
         *(volatile u16 *)(r5 + 20) = 0;
         *(volatile u32 *)(r5 + 48) = 10;
-        *(volatile u16 *)(r5 + 44) = 0;
+        *(volatile u32 *)(r5 + 44) = 0;
     }
     if (r6 == 1) {
         int cur = (s16)*p140;
@@ -139,7 +140,7 @@ void Rec35_EventB(void *rec, int unused, int mode) {
             *(volatile u32 *)(r5 + 16) = 10;
             *(volatile u16 *)(r5 + 20) = 0;
             *(volatile u32 *)(r5 + 48) = 10;
-            *(volatile u16 *)(r5 + 44) = 0;
+            *(volatile u32 *)(r5 + 44) = 0;
         }
     }
     if (r6 == 64) {
@@ -320,21 +321,30 @@ void sub_08001626C(void *a, int b, int c) __attribute__((alias("Rec35_PlaceByTab
 // ============================================================================
 void Rec35_Record49Tail(void *rec) {
     u8 *r7 = (u8 *)rec;
-    Rec35_CountdownDec(r7 + 136, 15);
-    if ((s16)*(volatile u16 *)(r7 + 144) == 0) {
-        int sel = (s16)*(volatile u16 *)(r7 + 142);
-        if (sel == 0) {
-            sub_08007B18(r7, 5, 0, 32, 3, 1, 1, 0);
-        } else if (sel == 1) {
-            sub_08007B18(r7, 4, 0, 32, 3, 1, 1, 0);
+    sub_0800D97C(r7 + 136, 15);
+    {
+        u8 *status_addr = r7 + 144;
+        s16 status;
+        /* Thumb has no immediate LDRSH form; use the ROM's zero-register load. */
+        __asm__ volatile("movs r1, #0\n\tldrsh %0, [%1, r1]"
+                         : "=r"(status) : "r"(status_addr) : "r1", "memory");
+        if (status == 0) {
+            int sel = (s16)*(volatile u16 *)(r7 + 142);
+            if (sel != 0) {
+                if (sel == 1) {
+                    sub_08007B18(r7, 4, 0, 32, 3, 1, 1, 0);
+                }
+            } else {
+                sub_08007B18(r7, 5, 0, 32, 3, 1, 1, 0);
+            }
+            u32 base = 0x080CB88Cu + (u32)((s16)*(volatile u16 *)(r7 + 140)) * 8;
+            u32 r1a = *(volatile u32 *)(base + 4);
+            u32 r2a = *(volatile u32 *)(r7 + 152);
+            Rec35_PlaceRecords(r7, (int)r1a, (int)r2a);
+            u32 r1b = *(volatile u32 *)(base + 0);
+            u32 r2b = *(volatile u32 *)(base + 4);
+            Rec35_PlaceByTable(r7, (int)r1b, (int)r2b);
         }
-        u32 base = 0x080CB88Cu + (u32)((s16)*(volatile u16 *)(r7 + 140)) * 8;
-        u32 r1a = *(volatile u32 *)(base + 4);
-        u32 r2a = *(volatile u32 *)(r7 + 152);
-        Rec35_PlaceRecords(r7, (int)r1a, (int)r2a);
-        u32 r1b = *(volatile u32 *)(base + 0);
-        u32 r2b = *(volatile u32 *)(base + 4);
-        Rec35_PlaceByTable(r7, (int)r1b, (int)r2b);
     }
     if ((s16)*(volatile u16 *)(r7 + 144) == 1) {
         sub_08007C68(r7 + 8,

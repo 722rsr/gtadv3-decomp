@@ -261,7 +261,7 @@
     },
     {
       "path": "asm/code_22e4.s",
-      "sha256": "9c67696cebf0788780585a55f9c39a3d53a8c561b60fe3826e94a72ca4da4e83"
+      "sha256": "a0cc48b924177b52faea68849d8bd4e747aafec4ab98f8889c17f59e71888840"
     },
     {
       "path": "asm/code_235f4.s",
@@ -569,7 +569,7 @@
     },
     {
       "path": "asm/course_resource_init.s",
-      "sha256": "eebab48ef802b41b52af350d519ee3188dce2563da39f96406cebebed578766e"
+      "sha256": "5cee3e61ae56df3db07fa1c7dd4db65ed663d9089141b95378dac94fa92e8cc3"
     },
     {
       "path": "asm/course_resource_leaf.s",
@@ -805,7 +805,7 @@
     },
     {
       "path": "asm/menu_pkt.s",
-      "sha256": "98aaf7d4a448882d274d53ea2e455acb0b5f5cd426f39510cbec3d5c89ece53e"
+      "sha256": "f999658131196655028d4f6ae975b95745a669bca2fce98b973cf61ae836c8f2"
     },
     {
       "path": "asm/menu_place.s",
@@ -957,7 +957,7 @@
     },
     {
       "path": "asm/sound_c11c.s",
-      "sha256": "802ab69180e49df59865da56f06138beadbb09427d22978b8b94d860e8f14a8e"
+      "sha256": "1129510c25684c33bbf15be7a3784ce3a725db3848d6092f769b49f96a08c6c5"
     },
     {
       "path": "asm/sound_channel_cluster.s",
@@ -1113,7 +1113,7 @@
     },
     {
       "path": "asm/sound_tick.s",
-      "sha256": "ce6097d057c0a89dc789c7329ea9d11943a9bb02277b7715b3e81cbb1239970a"
+      "sha256": "0c3cfd1635b2d91bb339edb2b68b719b3e43aa8b4e9de30b093b1e726d8109b2"
     },
     {
       "path": "asm/sound_uaeabi_uidiv.s",

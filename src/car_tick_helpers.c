@@ -543,32 +543,49 @@ int _0800A94C(void *ctx)
 // 0x08009F5C Rec9F5C(ctx) — record 14 ROUTER (mode-select hub).
 // key = _08004C0C (the manager's +44 "current item"): 0 -> 31, 1..4 -> 15,
 // 5 -> 41, 6 -> 42, 7 -> 36, 8 -> 23, >8 -> stale r4.
+//
+// A dense SWITCH, not an if/else chain: the ROM is a 9-entry jump table
+// (`cmp r0,#8 / bhi exit / lsls r0,#2 / ldr r1,=<table> / adds / ldr r0,[r0] /
+// mov pc,r0`) whose entries are the interior case labels. The if/else spelling
+// measured 5/92; a switch with a `default:` arm measured 73/92 because the
+// default arm costs an instruction the ROM does not have. The ROM's `bhi`
+// jumps STRAIGHT to the shared exit, so the returned value is whatever the
+// caller left in r4 -- which is only expressible as a switch with NO default
+// over a never-assigned result local (`int r;`). That spelling measures 90/92
+// at the ROM's exact 92 bytes and allocates `r` to r4 on its own, opening
+// `push {r4,lr}` / `movs r4,#N` / `adds r0,r4,#0` exactly as the ROM has them;
+// pinning the register (`register int r __asm__("r4")`) or reading r4 through
+// STALE_REG first measure the same 90. STALE_REG is therefore not needed here.
+// The last 2 of the 92 bytes are the ROM's own span pad, not code: the body is
+// 90 bytes and the file-scope `.align 2, 0` below supplies the `00 00`.
 // ----------------------------------------------------------------------------
 int Rec9F5C(void *ctx)
 {
-    u32 r4in;
-    STALE_REG(r4in, r4);
     u32 key = (u32)(uintptr_t)_08004C0C();
-    int r4;
+    int r;
 
-    if (key > 8)
-        r4 = (int)r4in;
-    else if (key == 0)
-        r4 = 31;
-    else if (key <= 4)
-        r4 = 15;
-    else if (key == 5)
-        r4 = 41;
-    else if (key == 6)
-        r4 = 42;
-    else if (key == 7)
-        r4 = 36;
-    else
-        r4 = 23;                        // key == 8
+    switch (key) {
+    case 0:  r = 31; break;
+    case 1:
+    case 2:
+    case 3:
+    case 4:  r = 15; break;
+    case 5:  r = 41; break;
+    case 6:  r = 42; break;
+    case 7:  r = 36; break;
+    case 8:  r = 23; break;
+    }
     (void)ctx;
-    return r4;
+    return r;
 }
 int _08009F5C(void *c) __attribute__((alias("Rec9F5C")));
+// The body is 90 bytes, so its `-ffunction-sections` section is padded to 92.
+// gas closes a Thumb code section with the 2-byte `nop` filler (0x46c0), but the
+// ROM pads with `00 00` (asm/carphys_tick.s spans 0x08009F5C-0x08009FB8, and the
+// two bytes before 0x08009FB8 are zero). A file-scope `.align 2, 0` is emitted
+// after the body's `.size`, i.e. still inside the body's own section, and pads
+// with the explicit `0` fill.
+__asm__(".align 2, 0");
 
 // PROBE 11/36. The gap is the stale-register seam, not the branch tree: the
 // ROM keeps the caller's r4 alive in a callee-saved register and so opens

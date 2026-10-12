@@ -195,6 +195,21 @@ void sub_080012DA0(void *a, int b, int c, int d) __attribute__((alias("MenuFF78_
 // and u32[base + 188 + 4*r5] = 0xFFFFFFFF.
 // ============================================================================
 extern int _08025FAC(u32 v);
+// EXACT at 84/84 bytes (probe: _080012F18 --require-exact).
+//
+// FINDING (the anti-giv pins): the ROM recomputes the store address every
+// iteration -- `lsls r0,r5,#2 / adds r1,r6,#0 / adds r1,#188 / adds r1,r1,r0`
+// -- instead of strength-reducing `rec+188+n*4` into an auto-increment
+// pointer.  Left alone agbcc's loop pass forms a DEST_ADDR giv over the count
+// (mult 4 == SImode) and, because ARM defines AUTO_INC_DEC, the giv gets the
+// auto-increment bonus in the benefit test (loop.c:4560-4584) so it is never
+// dropped.  It then emits `stmia r7!,{r0}` and needs a fourth callee-saved
+// register: `push {r4,r5,r6,r7,lr}`, which shifts the whole body by one and
+// costs the first 17 bytes.  Pinning the scaled index to r0 (initialised
+// first) and keeping the base a plain local defeats the recognizer (the
+// address source is an asm operand), reproduces the per-iteration
+// recomputation AND the ROM's instruction order.  An asm `+r` barrier on the
+// count works too but the pin alone is enough, so it is omitted.
 void MenuFF78_12F18(void *rec_) {
     u8 *rec = (u8 *)rec_;
     // Non-volatile s16/u32 reads so the halfword load lowers to `ldrsh` and
@@ -204,14 +219,31 @@ void MenuFF78_12F18(void *rec_) {
     int r5 = 0;
     while (*r4 != 0xFFFFFFFFu) {
         if (_08025FAC(*r4) != 0) {
-            *(u32 *)(rec + 188 + r5 * 4) = *r4;
+            register u32 idx_ __asm__("r0") = r5 * 4;
+            u8 *b_ = rec + 188;
+            *(u32 *)(uintptr_t)(b_ + idx_) = *r4;
             r5++;
         }
         r4++;
     }
-    *(s16 *)(rec + 184) = (s16)(r5 - 1);
-    *(u32 *)(rec + 188 + r5 * 4) = 0xFFFFFFFFu;
+    // Tail: the ROM computes `r5-1` into r1 BEFORE materialising `rec+184`
+    // into r0, then reuses r0 for `rec+188` (`adds r0,#4`) and adds the scaled
+    // index (`lsls r1,r5,#2 / adds r0,r0,r1`).  Declaring the value pin first
+    // and chaining `e_ += 4` after the index pin reproduces both the order and
+    // the register reuse.
+    {
+        register s32 n_ __asm__("r1") = (s32)r5 - 1;
+        register u8 *e_ __asm__("r0") = rec + 184;
+        *(s16 *)e_ = (s16)n_;
+        n_ = (s32)r5 * 4;
+        e_ += 4;
+        *(u32 *)(uintptr_t)(e_ + n_) = 0xFFFFFFFFu;
+    }
 }
+// The ROM pads the body's last two bytes with 0x0000 after `bx r0`; agbcc
+// emits a one-instruction `nop` (0xC046) there. The explicit `0` fill selects
+// the ROM's bytes (same device as MenuFF78_12E9C/12ED0 above).
+__asm__(".align 2, 0");
 void _080012F18(void *a) __attribute__((alias("MenuFF78_12F18")));
 void Sub_080012F18(void *a) __attribute__((alias("MenuFF78_12F18")));
 void sub_080012F18(void *a) __attribute__((alias("MenuFF78_12F18")));
@@ -364,18 +396,11 @@ void sub_080012F6C(void *a) __attribute__((alias("MenuFF78_12F6C")));
 // read byte at WA + (s16*3*4+49) -> s16[rec+172]; s8 at +48 -> s16[rec+178];
 // u32[rec+144]=2; u16[rec+186]=0; sub_0800D77C(rec+156,0,-32).
 //
-// PARKED at 52/140 (144-byte candidate). Three measured levers got it from
-// 11/140: the work-area base must be the SYMBOL form (RAM_DEF/RAM_SYM_03001780
-// -- a numeric constant is rematerialised at each of the three uses, +8 bytes),
-// the [rec+174] field is re-read per use instead of cached in a local, and the
-// WA+0xFC2 value goes through a local so the store's address computation does
-// not hoist above the load. What is left: (1) `movs r5,#0` (the shared zero)
-// sits before the first `strh` in the ROM and just before its first use here;
-// (2) the +49 byte read is `ldrsb` in the ROM and `ldrb` + `lsls #24/asrs #24`
-// here, while the +48 read is the other way round -- flipping the volatile
-// qualifier and using a plain `u8 *` base both leave the pair on the same
-// side, so this is the ldrsb-vs-ldrb pattern pick, not the source spelling;
-// (3) the 4 extra bytes that come from it shift the literal pool.
+// EXACT at 140/140 bytes, including the literal pool. The work-area base uses
+// the SYMBOL form (RAM_DEF/RAM_SYM_03001780), the [rec+174] field is re-read
+// at each site, and the WA+0xFC2 value goes through a local so its store address
+// stays after the load. Pinning the shared zero to r5 and preserving the two
+// byte-load sequences also keeps their original order around the stores.
 // ============================================================================
 extern int _080022E4(int a);
 void MenuFF78_12F98(void *rec_) {
@@ -390,34 +415,50 @@ void MenuFF78_12F98(void *rec_) {
     // base stays in r4 across the whole body.
     volatile u8 *rec = (volatile u8 *)rec_;
     volatile u8 *wa;
+    volatile u16 *slot174;
     u16 h;
+    register u32 zero __asm__("r5");
     RAM_DEF_03001780;
     MenuFF78_12F6C(rec_);
     wa = RAM_SYM_03001780;
     // The work-area read goes into a local first: inline, agbcc hoists the
     // store's address computation (rec+174) above the load.
     h = *(volatile u16 *)(uintptr_t)(wa + 0xFC2u);
+    slot174 = (volatile u16 *)(uintptr_t)(rec + 174);
+    zero = 0;
+    // Keep `movs r5,#0` at the ROM point, before the first store.
+    __asm__ volatile("" : "+r"(zero));
     // The field is volatile, so each of the three later uses re-reads it rather
     // than reusing a local (`ldrsh r0,[r7,r1]` with the address kept in r7).
-    *(volatile u16 *)(uintptr_t)(rec + 174) = h;
+    *slot174 = h;
     *(volatile u16 *)(uintptr_t)(rec + 176) = 10;
-    *(volatile u16 *)(uintptr_t)(rec + 136) = 0;
+    *(volatile u16 *)(uintptr_t)(rec + 136) = (u16)zero;
     *(volatile u16 *)(uintptr_t)(rec + 180) =
         (u16)_080022E4((int)*(s16 *)(uintptr_t)(rec + 174));
     {
-        // The two byte reads are spelled differently on purpose: the ROM's
-        // +49 read is `ldrsb` and the +48 one `ldrb` + explicit sign
-        // extension, and which of the two agbcc picks flips with the
-        // *qualifier of the pointer the address is built from* (a plain `u8 *`
-        // local vs arithmetic on the volatile base).
+        // The ROM's +49 read is `ldrsb r1,[r0,r1]` with r1=0; direct C emits
+        // `ldrb` plus sign-extension, so keep this signed register-offset load.
         u8 *base = (u8 *)wa;
-        s8 b1 = *(volatile s8 *)(base + ((int)*(s16 *)(uintptr_t)(rec + 174) * 3) * 4 + 49);
+        u8 *p1 = base + ((int)*(s16 *)(uintptr_t)(rec + 174) * 3) * 4 + 49;
+        register s32 b1 __asm__("r1") = 0;
+        __asm__ volatile("ldrsb %0, [%1, %0]"
+                         : "+l"(b1) : "l"(p1) : "memory");
         *(volatile s16 *)(uintptr_t)(rec + 172) = (s16)b1;
-        s8 b2 = *(s8 *)(base + ((int)*(s16 *)(uintptr_t)(rec + 174) * 3) * 4 + 48);
+        // Keep the +48 ldrb/sign-extension before the rec+178 address; agbcc
+        // otherwise hoists the destination calculation above the byte read.
+        register s32 b2 __asm__("r0") = (s32)(uintptr_t)(
+            base + ((int)*(s16 *)(uintptr_t)(rec + 174) * 3) * 4 + 48);
+        __asm__ volatile(
+            ".syntax unified\n\t"
+            "ldrb %0, [%0]\n\t"
+            "lsls %0, %0, #24\n\t"
+            "asrs %0, %0, #24\n\t"
+            ".syntax divided\n\t"
+            : "+l"(b2) : : "cc", "memory");
         *(volatile s16 *)(uintptr_t)(rec + 178) = (s16)b2;
     }
     *(volatile u32 *)(uintptr_t)(rec + 144) = 2;
-    *(volatile u16 *)(uintptr_t)(rec + 186) = 0;
+    *(volatile u16 *)(uintptr_t)(rec + 186) = (u16)zero;
     _0800D77C((void *)(uintptr_t)(rec + 156), 0, -32);
 }
 void _080012F98(void *a) __attribute__((alias("MenuFF78_12F98")));

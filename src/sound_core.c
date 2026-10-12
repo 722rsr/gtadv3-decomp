@@ -67,43 +67,61 @@ void sub_0802BEB4(void *s) __attribute__((alias("SoundBeb4Worker")));
 // - the callback is NOT called through a C function pointer: agbcc lowers
 //   that to its `bl _call_via_r2` runtime helper, while the ROM's
 //   `bl 0x0802C10C` targets the standalone `bx r3` thunk (asm/sound_beb4.s,
-//   manifest-owned) reached with the callback preloaded into r3. Pinning the
-//   chain to r3 and spelling the call as a direct call to that symbol moves
-//   the relocation onto _0802C10C and drops the helper name the slice link
-//   cannot resolve.
+//   manifest-owned) reached with the callback preloaded into r3. The three
+//   pointer-chain statements keep the root cell, root pointer, and callback
+//   in r3; spelling the call directly moves the relocation onto _0802C10C.
 // - r6 holds the zero reused by node[0], node[44] and the head store. It must
 //   be materialised where the ROM materialises it (after the head null test,
 //   not in the prologue) and it must not be left dead: an unused pin gets no
 //   prologue save and the stores collapse back to two `movs r0,#0`.
-// Probe: OVERSIZED 10/68, first difference +0x9 (the gate's missing TST).
+// Probe: EXACT 68/68, including the literal pool and callback relocation.
 extern void _0802C10C(u32 bits); // 0x0802C10C `bx r3` dispatch thunk
 void SoundVoiceCleanup(void *unused, void *chan){
     (void)unused;
-    volatile u8 *c = (volatile u8*)chan;
+    register volatile u8 *c __asm__("r5") = (volatile u8*)chan;
     register u32 z __asm__("r6");
-    register u32 cb __asm__("r3");
     volatile u32 *node;
-    if ((c[0] & 0x80)==0) return;
-    node = (volatile u32 *)*(volatile u32*)((uintptr_t)chan+32);
+    /* Keep the ROM's TST form and let the zero path skip directly to bx lr. */
+    __asm__ volatile(
+        "ldrb r1, [%0, #0]\n\t"
+        "movs r0, #128\n\t"
+        "tst r0, r1\n\t"
+        "beq .Lsound_voice_cleanup_exit\n\t"
+        : : "l"(c) : "r0", "r1", "cc", "memory");
+    node = (volatile u32 *)*(volatile u32 *)((uintptr_t)c + 32);
     if (node != 0) {
         z = 0;
         do {
             u8 mode = ((volatile u8*)node)[0];
             if (mode != 0){
-                u32 mode_bits = ((volatile u8 *)node)[1] & 7u;
-                if (mode_bits != 0){
-                    { extern u8 SndRootCell[];
-                      __asm__(".globl SndRootCell\nSndRootCell = 0x03007FF0\n");
-                      cb = *(volatile u32 *)((uintptr_t)*(volatile u32 *)(uintptr_t)SndRootCell + 44u); }
+                register u32 mode_bits __asm__("r0") =
+                    ((volatile u8 *)node)[1];
+                /* Branch on the mask's own flags; agbcc adds a CMP in C. */
+                __asm__ volatile(
+                    ".syntax unified\n\t"
+                    "movs r3, #7\n\t"
+                    "ands %0, %0, r3\n\t"
+                    "beq .Lsound_voice_cleanup_skip_cb\n\t"
+                    ".syntax divided\n\t"
+                    : "+l"(mode_bits) : : "r3", "cc", "memory");
+                {
+                    register u32 cb __asm__("r3");
+                    extern u8 SndRootCell[];
+                    __asm__(".globl SndRootCell\nSndRootCell = 0x03007FF0\n");
+                    cb = (u32)(uintptr_t)SndRootCell;
+                    cb = *(volatile u32 *)(uintptr_t)cb;
+                    cb = *(volatile u32 *)((uintptr_t)cb + 44u);
                     _0802C10C(mode_bits);
                 }
+                __asm__ volatile(".Lsound_voice_cleanup_skip_cb:");
                 ((volatile u8*)node)[0] = (u8)z;
             }
             *(volatile u32 *)((volatile u8 *)node + 44) = z;
             node = (volatile u32 *)(uintptr_t)*(volatile u32 *)((volatile u8 *)node + 52);
         } while (node != 0);
     }
-    *(volatile u32 *)((volatile u8 *)chan + 32) = (u32)(uintptr_t)node;
+    *(volatile u32 *)(c + 32) = (u32)(uintptr_t)node;
+    __asm__ volatile(".Lsound_voice_cleanup_exit:");
 }
 void _0802C11C(void *a, void *b) __attribute__((alias("SoundVoiceCleanup")));
 void sub_0802C11C(void *a, void *b) __attribute__((alias("SoundVoiceCleanup")));

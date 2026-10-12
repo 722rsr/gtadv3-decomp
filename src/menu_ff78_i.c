@@ -14,8 +14,29 @@
 
 #include "gba/types.h"
 
+// Absolute anchors for the split WA base + offset below. `.set` emits no bytes;
+// the matching `.globl` assignment lives inside the function that uses it (see
+// docs/matching_workflow.md — match_c_slice splices only the promoted body).
+__asm__(".set MenuWaOff5E4, 0x000005E4");
+
 extern void sub_08007B18(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h);
 #define Sub_08007B18 sub_08007B18
+// The closure defines the UNDERSCORE spellings (and `sub_`), never `Sub_`.
+// Remap the ones this file calls so the relocations resolve; the `extern`
+// declarations below are rewritten by these macros in place, keeping the
+// correct prototypes. Same idiom as `#define Sub_08007B18 sub_08007B18` above.
+#define Sub_08007BFC _08007BFC
+#define Sub_08024BF0 _08024BF0
+#define Sub_0802581C _0802581C
+#define Sub_080011E10 _080011E10
+#define Sub_080011CFC _080011CFC
+#define Sub_080011B48 _080011B48
+#define Sub_080011E58 _080011E58
+#define Sub_080011CBC _080011CBC
+#define Sub_080012574 _080012574
+#define Sub_0800F778 _0800F778
+#define Sub_0800D97C _0800D97C
+#define Sub_0800DBE8 _0800DBE8
 extern void Sub_08007BFC(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h, u32 i);
 extern void Sub_08007C68(void *a, u32 b, u32 c, int d, u32 e, u32 f, u32 g, u32 h, u32 i);
 extern void _08007C68(void *a, u32 b, u32 c, u32 d, u32 e, u32 f, u32 g, u32 h, u32 i); // faithful strong body
@@ -33,7 +54,12 @@ extern void Sub_0800D97C(void *a, int b);
 extern void Sub_0800DBE8(void *a);
 extern void Sub_0800DC7C(void *a, int b);
 extern void Sub_080015930(void *a, u32 b, u32 c);
-extern void Sub_0800159AC(void *a, u32 b, u32 c, u32 d); // 4-arg: asm/menu_ff78.s body uses r0-r3 only
+// FIVE machine arguments: the asm body reads only r0-r3, but the ROM CALLER
+// stores `*(u32*)(rec+164)` into the outgoing-arg slot at [sp] (menu_ff78.s
+// 0x080015A68: `mov r4,r8 / ldr r0,[r4] / str r0,[sp]`), i.e. the source passed
+// it. Declaring four parameters drops that store and the whole body shortens
+// by 24 bytes (140 vs 164) at the first difference.
+extern void Sub_0800159AC(void *a, u32 b, u32 c, u32 d, u32 e);
 extern void Sub_080014C70(void *a, void *b);
 extern void Sub_0800D854(void *a);
 extern void Sub_0800D8E4(void *a);
@@ -54,27 +80,75 @@ extern void Sub_080014C84(void);
 //   D97C(rec+224,15); DBE8(rec+64); 12574(rec).
 void MenuFF78_121A8(void *rec_) {
     volatile u8 *rec = (volatile u8 *)rec_;
-    volatile u8 *p = (volatile u8 *)Sub_08024BF0();
-    Sub_080011784(rec_);
-    Sub_080011E10(rec_);
-    Sub_080011CFC(rec_);
-    Sub_080011B48(rec_);
-    Sub_080011E58(rec_, *(volatile u16 *)(uintptr_t)(rec + 180));
-    if (*(volatile u16 *)(uintptr_t)p != 0 &&
-        *(volatile u16 *)(uintptr_t)(p + 2) ==
-            *(volatile s16 *)(uintptr_t)(rec + 172)) {
+    __asm__(".globl MenuWa121A8\nMenuWa121A8 = 0x03001780\n"
+            ".globl MenuWaOff5E4\nMenuWaOff5E4 = 0x000005E4\n");
+    extern u8 MenuWa121A8;
+    extern u8 MenuWaOff5E4;
+    // Halfword pointer, not `u8 *` + cast: the ROM loads the second element
+    // straight into the pointer's own register (`ldrh r0,[r5,#0]` then
+    // `ldrh r5,[r5,#2]`), which only happens when `p[1]` is spelled on a
+    // `u16 *`. With a byte pointer the value lands in r1 and `cmp r1,r0`.
+    u16 *p = (u16 *)Sub_08024BF0();
+    // Every call below passes `rec`, never the `rec_` parameter: while both
+    // spellings are live agbcc allocates a SECOND callee-saved register for the
+    // record (`push {r4,r5,r6,lr}` + `adds r6,r4,#0`) where the ROM has
+    // `push {r4,r5,lr}` and passes r4 straight through.
+    Sub_080011784((void *)rec);
+    Sub_080011E10((void *)rec);
+    Sub_080011CFC((void *)rec);
+    Sub_080011B48((void *)rec);
+    Sub_080011E58((void *)rec, *(volatile u16 *)(uintptr_t)(rec + 180));
+    // Both sides are UNSIGNED, NON-volatile halfword loads in the ROM
+    // (`ldrh r5,[r5,#2]` -> `ldrh r0,[r0,#0]` -> `cmp r5,r0`):
+    //   * a `volatile s16`/`u16` access is lowered to `ldrh; lsls #16; asrs #16`
+    //     (the signed `ldrsh` spelling is only correct later, at 0x08012222);
+    //   * with a volatile access the allocator hands `p[1]` to r1, and only a
+    //     non-volatile access reuses the dying pointer register r5.
+    if (p[0] != 0 && p[1] == *(u16 *)(uintptr_t)(rec + 172)) {
+        // `dst` is computed BEFORE the two loads, exactly as the ROM does
+        // (`adds r0,r4,#0 / adds r0,#32` at 0x080121EA precedes the 444/448
+        // loads). Computing it last leaves r0 free as the load scratch, so the
+        // loads take r2/r0 instead of the ROM's r2/r3 and the block shifts.
+        void *dst = (void *)(uintptr_t)(rec + 32);
         u32 r1 = *(volatile u32 *)(uintptr_t)(rec + 444);
         u32 r2 = *(volatile u32 *)(uintptr_t)(rec + 448);
-        Sub_08007BFC((void *)(uintptr_t)(rec + 32), (int)r1, (int)r2,
+        Sub_08007BFC(dst, (int)r1, (int)r2,
                      208, 120, 5, 1, 1, 0);
     }
-    Sub_080011CBC(rec_);
+    Sub_080011CBC((void *)rec);
     {
-        s16 i = *(volatile s16 *)(uintptr_t)(rec + 172);
+        // NON-volatile `s16 *` read: agbcc lowers a `volatile s16` READ to
+        // `ldrh; lsls #16; asrs #16`, but the ROM has the single
+        // `movs r1,#0 / ldrsh r0,[r0,r1]` at 0x08012222.
+        s16 *signedp = (s16 *)(uintptr_t)(rec + 172);
+        s16 i = *signedp;
         s16 v = (s16)Sub_0802581C((int)i);
         u32 k = (u32)(s32)v;
+        // The base anchor is loaded BEFORE the shift chain (`ldr r2,[pc]` at
+        // 0x0801222C precedes `lsls r1,r0,#3`) and pinned to r2: pinning the
+        // SUM instead leaves the add encoded as `adds r2,r3,r2` (195/196).
+        register uintptr_t wbase __asm__("r2") = (uintptr_t)&MenuWa121A8;
         u32 off = ((k << 3) + k) << 3; // *72
-        u32 t = *(volatile u32 *)(uintptr_t)(0x03001780u + 0x5E4u + off);
+        // Pinned to r3: the ROM loads the second anchor into r3
+        // (`ldr r3,[pc,#48]` at 0x0801223C). Left free, agbcc picks r0 and the
+        // pair is 2 bytes wrong (194/196).
+        register uintptr_t woffs __asm__("r3") = (uintptr_t)&MenuWaOff5E4;
+        // Separate statement so the anchor sum targets the dying BASE register
+        // (`adds r2,r2,r3`); folded into the address expression agbcc instead
+        // writes the sum into the pinned r3 and the direction flips.
+        uintptr_t wsum = wbase + woffs;
+        // The ROM loads 0x03001780 and 0x000005E4 as TWO pool words
+        // (lit 0x08012264 / 0x08012268) and adds them at runtime:
+        //   ldr r2,[pc] / ldr r3,[pc] / adds r2,r2,r3 / adds r1,r1,r2
+        // A literal `0x03001780u + 0x5E4u` folds into one pool word
+        // (0x03001D64), so the offset must come from its own anchor SYMBOL --
+        // two symbol_refs are not folded at RTL level. Same recipe as
+        // WA_SPLIT in src/race_scene_b1.c.
+        // Outer sum spelled `off + wsum` so it accumulates into the dead offset
+        // register (`adds r1,r1,r2`). Plain `wbase + woffs + off` is
+        // left-associative the other way round and overwrites the base instead
+        // (170/196).
+        u32 t = *(volatile u32 *)(uintptr_t)(off + wsum);
         Sub_0800F778(168, 76, t);
     }
     Sub_0800D97C((void *)(uintptr_t)(rec + 224), 15);
@@ -95,38 +169,51 @@ void sub_0800121A8(void *a) __attribute__((alias("MenuFF78_121A8")));
 //     7C68(rec+8, u32[rec+152], u32[rec+156], 20, S0,5,1,0,0).
 // 15A0C: TBL=0x080CB818, TBL2=0x080CB840, tail=DC7C(...,1), S0=126.
 // 15AB0: TBL=0x080CB84C, TBL2=0x080CB874, tail=DBE8(...), S0=112.
-static void MenuFF78_15Ax(void *rec_, u32 tbl, u32 tbl2, int use_dc7c, u32 s0) {
-    volatile u8 *rec = (volatile u8 *)rec_;
-    s16 s = *(volatile s16 *)(uintptr_t)(rec + 144);
-    u32 off = ((u32)(s32)s) << 3;
-    Sub_080015930(rec_, *(volatile u32 *)(uintptr_t)(tbl + 4 + off),
-                  *(volatile u32 *)(uintptr_t)(rec + 164));
-    {
-        u32 r1 = *(volatile u32 *)(uintptr_t)(tbl + off);
-        u32 r2 = *(volatile u32 *)(uintptr_t)(tbl + 4 + off);
-        u32 r3 = *(volatile u16 *)(uintptr_t)(tbl2 + (((u32)(s32)s) << 1));
-        // u32[rec+164] is read by the CALLEE itself (switch at +164); the ROM
-        // caller stores one dead word at [sp] that the body never reads.
-        Sub_0800159AC(rec_, r1, r2, r3);
-    }
-    Sub_0800D97C((void *)(uintptr_t)(rec + 140), 15);
-    if (use_dc7c)
-        Sub_0800DC7C((void *)(uintptr_t)(rec + 16), 1);
-    else
-        Sub_0800DBE8((void *)(uintptr_t)(rec + 16));
-    if (*(volatile s16 *)(uintptr_t)(rec + 136) == 1) {
-        u32 r1 = *(volatile u32 *)(uintptr_t)(rec + 152);
-        u32 r2 = *(volatile u32 *)(uintptr_t)(rec + 156);
-        _08007C68((void *)(uintptr_t)(rec + 8), r1, r2, 20, s0, 5, 1, 0, 0); // R1 C body (was Sub_ veneer)
-    }
-}
+// MACRO, not a `static` helper: the ROM has this shape INLINED into both
+// 0x080015A0C and 0x080015AB0 (164 bytes each). A static function called twice
+// is NOT inlined by agbcc -O2, so each wrapper became a 32-byte call stub and
+// the call to the shared body could not be resolved to a ROM address at all
+// (the report read UNRESOLVED_RELOCATION with 1/164 matched).
+#define MENUFF78_15AX(rec_, tbl, tbl2, use_dc7c, s0) do { \
+    volatile u8 *rec = (volatile u8 *)(rec_);                      \
+    /* NON-volatile `s16 *` read: a `volatile s16` READ lowers to             \
+       `ldrh; lsls #16; asrs #16` where the ROM has one ldrsh               \
+       (src/menus.c:838 documents the same recipe). */                      \
+    s16 *sptr = (s16 *)(uintptr_t)(rec + 144);                     \
+    int s = *sptr;                                                 \
+    u32 off = ((u32)(s32)s) << 3;                                  \
+    Sub_080015930((rec_), *(volatile u32 *)(uintptr_t)((tbl) + 4 + off), \
+                  *(volatile u32 *)(uintptr_t)(rec + 164));        \
+    {                                                              \
+        u32 r1 = *(volatile u32 *)(uintptr_t)((tbl) + off);        \
+        u32 r2 = *(volatile u32 *)(uintptr_t)((tbl) + 4 + off);    \
+        u32 r3 = *(volatile u16 *)(uintptr_t)((tbl2) + (((u32)(s32)s) << 1)); \
+        /* FIFTH machine argument: the callee reads only r0-r3, but the ROM  \
+           caller stores `*(u32*)(rec+164)` into the outgoing-arg slot at     \
+           [sp] (0x080015A68) and keeps that ADDRESS in a callee-saved        \
+           register across the first call. A four-parameter declaration drops \
+           the store and the body measures 140 bytes. */                      \
+        Sub_0800159AC((rec_), r1, r2, r3,                          \
+                      *(volatile u32 *)(uintptr_t)(rec + 164));    \
+    }                                                              \
+    Sub_0800D97C((void *)(uintptr_t)(rec + 140), 15);              \
+    if (use_dc7c)                                                  \
+        Sub_0800DC7C((void *)(uintptr_t)(rec + 16), 1);            \
+    else                                                           \
+        Sub_0800DBE8((void *)(uintptr_t)(rec + 16));               \
+    if (*(volatile s16 *)(uintptr_t)(rec + 136) == 1) {            \
+        u32 r1 = *(volatile u32 *)(uintptr_t)(rec + 152);          \
+        u32 r2 = *(volatile u32 *)(uintptr_t)(rec + 156);          \
+        _08007C68((void *)(uintptr_t)(rec + 8), r1, r2, 20, (s0), 5, 1, 0, 0); \
+    }                                                              \
+} while (0)
 
-void MenuFF78_15A0C(void *rec_) { MenuFF78_15Ax(rec_, 0x080CB818u, 0x080CB840u, 1, 126); }
+void MenuFF78_15A0C(void *rec_) { MENUFF78_15AX(rec_, 0x080CB818u, 0x080CB840u, 1, 126); }
 void _080015A0C(void *a) __attribute__((alias("MenuFF78_15A0C")));
 void Sub_080015A0C(void *a) __attribute__((alias("MenuFF78_15A0C")));
 void sub_080015A0C(void *a) __attribute__((alias("MenuFF78_15A0C")));
 
-void MenuFF78_15AB0(void *rec_) { MenuFF78_15Ax(rec_, 0x080CB84Cu, 0x080CB874u, 0, 112); }
+void MenuFF78_15AB0(void *rec_) { MENUFF78_15AX(rec_, 0x080CB84Cu, 0x080CB874u, 0, 112); }
 void _080015AB0(void *a) __attribute__((alias("MenuFF78_15AB0")));
 void Sub_080015AB0(void *a) __attribute__((alias("MenuFF78_15AB0")));
 void sub_080015AB0(void *a) __attribute__((alias("MenuFF78_15AB0")));

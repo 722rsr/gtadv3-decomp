@@ -11,6 +11,9 @@
 // call sites passed `rec`, which the bodies never read.
 extern void sub_0802D974(const void *s, void *d, u32 m);
 extern int  sub_08008014(void);
+// The ROM's 0x080188B0 is a raw region; the closure names it sub_0800188B0
+// (asm/rec35_runtime.s). The 8-digit spelling does not resolve at link time.
+#define sub_080188B0 sub_0800188B0
 extern void sub_080188B0(void *pkt);
 extern u32  sub_08002140(void);
 extern int  _08002140(void);    // 0x08002140, the spelling the slice links
@@ -59,21 +62,93 @@ extern void _08004C84(u32 idx, u16 value);
 // Substantiated leaf: menu_pkt.s  _08009B60 (VMA 0x08009B60–0x08009BCC)
 // Packet layout verified in asm/menu_pkt.s header and asm/carphys_tick.s
 // Preserves field widths: u16@+0, s16 floor32+16@+2, u16@+24 cursor, u8@+29 field[1], u8@+20 lo(0x5E0).
+//
+// PROBE 87/108 at the ROM's own 108 bytes; the three residuals are all one
+// instruction of ORDER and none of them changes the body's instructions:
+//   * 0x04-0x07: the ROM has `mov r1,sp` BEFORE its `movs r4,#0`, agbcc emits
+//     the zero local first. Declaring the zero later in the source is what
+//     produces that here -- as a statement after the pkt[0] store the frame
+//     base still comes first but the diff moves to 0x0A (85/108), and
+//     `(z = 0)` at the store site drops `push {r4}` altogether (104 bytes).
+//   * 0x10-0x22: the ROM keeps the call's result in r1 and the packet base in
+//     r2 with `mov r2,sp` hoisted above the `cmp r1,#0`; agbcc does the mirror
+//     (result in r2, base reloaded into r1 at the store). Pinning either of the
+//     two with a register variable reallocates the whole body.
+//   * 0x2A-0x2D: `mov r3,sp` before the two literal-pool loads vs after.
+// Naming the frame with a `u16 *pk` pointer instead of an array does NOT fix
+// the hoists: it makes pk live across the call, which costs a second
+// callee-saved push and measures 100 bytes / 16 matched.
 void MenuPkt_08009B60(void *ctx) {
     (void)ctx;
-    u8 pkt[56] = {0};
-    *(u16 *)(pkt+0) = 9;
-    int v = sub_08008014();
-    int floored = (v < 0 ? (v+31)>>5<<5 : v>>5<<5);
-    *(u16 *)(pkt+2) = (u16)(v - floored + 16);
-    *(u16 *)(pkt+8) = 0; *(u16 *)(pkt+10)=0;
-    s16 idx = *(volatile s16 *)(MENU_WA_BASE + 0x574);
-    *(u16 *)(pkt+24) = (u16)idx;
-    volatile u8 *rec = (volatile u8 *)(MENU_WA_BASE + idx*12);
-    pkt[29] = rec[0x31];
-    pkt[20] = (u8)(*(volatile u16 *)(MENU_WA_BASE + 0x5E0) & 0xFF);
-    sub_080188B0(pkt);
+    // The WA base must stay a POOL WORD, not a folded offset: the ROM loads
+    // 0x03001780 and 0x574 separately (asm/menu_pkt.s lit_08009BC4/lit_08009BC8)
+    // and adds them at runtime, and it reuses that one base register for the
+    // +0x574 cursor word and the +idx*12 garage record. The `MENU_WA_BASE + K`
+    // spelling pools 0x03001CF4 instead.
+    __asm__(".globl MenuWaB60\nMenuWaB60 = 0x03001780\n");
+    extern u8 MenuWaB60;
+    // NOT `= {0}`: the ROM never zeroes the 56-byte frame. It writes pkt[0],
+    // pkt[+2], pkt[+8], pkt[+10], pkt[+20], pkt[+24] and pkt[+29] and leaves
+    // the rest as garbage, so an aggregate initialiser only adds a `bl memset`
+    // (an agbcc intrinsic with no ROM counterpart -> UNRESOLVED_RELOCATION)
+    // and 8 extra bytes.
+    u8 pkt[56];
+    // Materialised once and live ACROSS the `bl`, so it lands in r4 and the
+    // prologue is `push {r4,lr}` as the ROM has it.
+    // Base of the FIRST store pinned to r1, and declared BEFORE `zero`: the
+    // ROM's opening pair is `mov r1,sp / movs r4,#0 / movs r0,#9 /
+    // strh r0,[r1,#0]`, so the pointer materialises first and the zero
+    // constant (live across the `bl`) second. (r1 is free again by the `bl`,
+    // where the return value is pinned back onto r1.)
+    register u16 *pkt0 __asm__("r1") = (u16 *)pkt;
+    u16 zero = 0;
+    pkt0[0] = 9;
+    // Pinned to r1: the ROM copies the return value into r1 (`adds r1,r0,#0`
+    // at 0x08009B70) and keeps the packet pointer in r2 (`mov r2,sp`), so the
+    // index compare is `cmp r1,#0`. Left free, agbcc hands `v` r2 and the
+    // packet pointer r1 (87/108).
+    register int v __asm__("r1") = sub_08008014();
+    // Bias-then-shift, not the `? :` over two shifts: the ROM's `cmp r1,#0 /
+    // bge` skips only `adds r0,#31` and BOTH paths share the `asrs r0,r0,#5`
+    // at 0x08009B7A. The conditional-shift spelling duplicates the shift and
+    // costs a branch.
+    // Packet base in r2 from here on: the ROM's `mov r2,sp` sits between the
+    // value copy and the `cmp r1,#0` (0x08009B72) and the store is
+    // `strh r0,[r2,#2]`, i.e. the pointer is the BASE, not base+2.
+    register u16 *pkt2 __asm__("r2") = (u16 *)pkt;
+    int bias = (v < 0) ? v + 31 : v;
+    // The floored value is pinned to r0 so the final chain is
+    // `subs r0,r1,r0 / adds r0,#16 / strh r0,[r2,#2]`. Left as a named plain
+    // local the extra pseudo changes which register agbcc hands to `v`
+    // (87/108); left as an inline expression the chain accumulates into r1.
+    register int floored __asm__("r0") = (bias >> 5) << 5;
+    pkt2[1] = (u16)(v - floored + 16);
+    *(u16 *)(pkt+8) = zero; *(u16 *)(pkt+10) = zero;
+    // The base is loaded AFTER the `bl` (ROM 0x08009B8C), so it must not be a
+    // function-wide variable -- live across the call it costs a callee-saved
+    // register and the prologue becomes `push {r4,r5,lr}`.
+    {
+        // Same lever once more: the ROM materialises the +24 destination
+        // (`mov r3,sp` at 0x08009B8A) BEFORE loading the WA base.
+        register u16 *pkt24 __asm__("r3") = (u16 *)pkt;
+        volatile u8 *wa = (volatile u8 *)((uintptr_t)&MenuWaB60);
+        s16 *idxp;
+        // Two SEPARATE reads of the same halfword: the ROM loads it with
+        // `ldrh` for the packet field and again with `ldrsh` for the index.
+        pkt24[12] = *(volatile u16 *)(wa + 0x574);
+        // NON-volatile `s16 *` read: agbcc lowers a `volatile s16` READ to
+        // `ldrh; lsls #16; asrs #16`, but the ROM has one
+        // `movs r0,#0 / ldrsh r1,[r1,r0]` (the MenuEcac_0800ECAC recipe
+        // above). `int` rather than `s16` forces the extension at the capture
+        // site instead of a bare `ldrh`.
+        idxp = (s16 *)(wa + 0x574);
+        int idx = *idxp;
+        pkt[29] = wa[0x31 + idx*12];
+        pkt[20] = (u8)(*(volatile u16 *)(wa + 0x5E0) & 0xFF);
+        sub_080188B0(pkt);
+    }
 }
+
 void _08009B60(void *c) __attribute__((alias("MenuPkt_08009B60")));
 void sub_08009B60(void *c) __attribute__((alias("MenuPkt_08009B60")));
 

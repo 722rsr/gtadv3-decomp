@@ -89,3 +89,4 @@ lit_08009BC8:
 	.word 0x00000574		@ garage-record cursor u16[wa+0x574]
 
 @ end of pocket: next VMA 0x08009BCC = menu tick pocket
+menu_pkt_end:

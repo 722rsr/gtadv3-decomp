@@ -1,14 +1,40 @@
 #include "gtadv/ai_catalog.h"
 #include "gba/types.h"
 
+// 0x080022E4 — id -> catalog id via s16 table 0x080C43EC. The ROM validates
+// with `(u16)(id-1) > 97` (agbcc folds it to `(id<<16) + 0xFFFF0000 >> 16`)
+// and indexes the table with the SIGNED halfword, so 1..98 is the legal range.
+// The previous body returned the identity and never touched the table.
 int Ai_IdMap(int id){
-    int v = (s16)id;
-    if(v>97) return -1;
-    if(v<0) return -1;
-    return v;
+    extern s16 L_IdTable[];
+    __asm__(".globl L_IdTable\nL_IdTable = 0x080C43EC\n");
+    s16 v = (s16)id;
+    if ((u16)(v - 1) <= 97)
+        return L_IdTable[v];
+    return -1;
 }
 int _080022E4(int a) __attribute__((alias("Ai_IdMap")));
 int Sub_080022E4(int a) __attribute__((alias("Ai_IdMap")));
+
+// 0x0800230C — second entry in the same ROM span (typed out of _080022E4 in
+// asm/code_22e4.s; two literal words hold it as a function pointer). Same
+// 0x080C43EC table, but the -1 sentinel maps to 23 and the out-of-range path
+// returns the `(u16)(id-1)` the range check already computed.
+int Ai_IdRemap(int id){
+    extern s16 L_IdTable[];
+    __asm__(".globl L_IdTable\nL_IdTable = 0x080C43EC\n");
+    s16 v = (s16)id;
+    u16 n = (u16)(v - 1);
+    if (n <= 97) {
+        s16 t = L_IdTable[v];
+        if (t == -1)
+            t = 23;
+        return t;
+    }
+    return n;
+}
+int _0800230C(int a) __attribute__((alias("Ai_IdRemap")));
+int Sub_0800230C(int a) __attribute__((alias("Ai_IdRemap")));
 
 /* The catalog accessors narrow both the input and mapped index to signed
  * halfwords. The ROM deliberately indexes -1 when the mapper rejects an id.
