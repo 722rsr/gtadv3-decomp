@@ -96,3 +96,4 @@ sub_0802DBA4:
 	.short 0
 .L_dc50:
 	.word 0x0203FD54
+sound_dba4_end:

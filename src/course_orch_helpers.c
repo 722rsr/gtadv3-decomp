@@ -260,29 +260,66 @@ void sub_0800628C(void *a, int b, void *c) __attribute__((alias("CourseOrch_0800
 //   g2[c] LZ77 -> VRAM 0x06000000; g4[c] DMA3 -> pal 0x05000000 (160 hw);
 //   g3[c] raw ROM ptr kept at out+0x24.
 void CourseOrch_08006468(void *out, int idx, void *base) {
-    volatile u8 *o = (volatile u8 *)out;
-    volatile u8 *payload = (volatile u8 *)(uintptr_t)*(volatile u32 *)o;
-    u32 c = payload[1];
+    // Same two levers as the sibling 0x080064EC directly above, plus one:
+    // - the parameter spills are pinned IN DECLARATION ORDER (r6 <- out,
+    //   r5 <- base) because agbcc otherwise copies r2 first, and `c` is
+    //   pinned to r4 so `payload[1]` lands in the tier register directly
+    //   (`ldrb r4,[r0,#1]`) instead of loading r0 and copying.
+    // - the 0x0300287C tier cell is WORK_AREA+0x10FC from TWO pool words
+    //   (`ldr r0,=0x03001780` / `ldr r1,=0x10FC` / `adds`): the folded
+    //   constant pools as the single word 0x0300287C and loses the adds.
+    //   Both operands are assembler absolute symbols, as in
+    //   src/course_orch_helpers.c's other absolute-symbol users.
+    // - the seeker's result stays in r0 for the whole body: agbcc's local
+    //   alloc otherwise parks it in r2 (`adds r2,r0,#0` at +0x40) and lets
+    //   the DMA3 pool load claim r0, which pushes the SAD store from r0/r1
+    //   to r2/r0, costing the +0x54..+0x58 pair.
+    extern u8 CoWaBase[], CoWaOff10FC[];
+    register volatile u8 *o __asm__("r6");
+    register volatile u8 *b __asm__("r5");
+    register u32 c __asm__("r4");
+    register u32 wabase __asm__("r0");
+    register void *src __asm__("r0");
+    volatile u8 *payload;
+    __asm__(".globl CoWaBase\nCoWaBase = 0x03001780\n");
+    __asm__(".globl CoWaOff10FC\nCoWaOff10FC = 0x10FC\n");
+    o = (volatile u8 *)out;
+    b = (volatile u8 *)base;
+    payload = (volatile u8 *)(uintptr_t)*(volatile u32 *)o;
+    c = payload[1];
 
-    if (*(volatile u16 *)(uintptr_t)(CO_WA + 0x10FC) == 10) {
+    // The base must pool into r0 and the offset into r1, and the two tier
+    // rewrites are two INDEPENDENT ifs, not an else-if chain: the ROM's
+    // second arm falls through from `movs r4,#5` (`cmp r4,#2 / bne +2 /
+    // movs r4,#5 / cmp r4,#3`), while an else-if emits an extra `b` over
+    // the first body. The rewrite is equivalent here (c is 5, never 3,
+    // when the second test runs).
+    wabase = (u32)(uintptr_t)CoWaBase;
+    if (*(volatile u16 *)(uintptr_t)(wabase + (u32)(uintptr_t)CoWaOff10FC) == 10) {
         c = 7;
     } else if (*(volatile u16 *)(uintptr_t)CO_VAR == 2) {
         if (c == 2)
             c = 5;
-        else if (c == 3)
+        if (c == 3)
             c = 6;
     }
 
-    void *src = _08006590(base, 2, (int)c);
+    src = _08006590((void *)(uintptr_t)b, 2, (int)c);
     sub_0802D984(src, (void *)(uintptr_t)0x06000000u);
 
-    src = _08006590(base, 4, (int)c);
-    CO_DMA3[0] = (u32)(uintptr_t)src;
-    CO_DMA3[1] = 0x05000000u;
-    CO_DMA3[2] = 0x800000A0u;
-    (void)CO_DMA3[2];
+    src = _08006590((void *)(uintptr_t)b, 4, (int)c);
+    // One shared base pseudo: through the CO_DMA3 macro each indexed store
+    // recomputes a fresh address constant, and agbcc emits `adds r1,#4`
+    // before the second store instead of the ROM's [r1,#4] / [r1,#8].
+    {
+        volatile u32 *dma = CO_DMA3;
+        dma[0] = (u32)(uintptr_t)src;
+        dma[1] = 0x05000000u;
+        dma[2] = 0x800000A0u;
+        (void)dma[2];
+    }
 
-    src = _08006590(base, 3, (int)c);
+    src = _08006590((void *)(uintptr_t)b, 3, (int)c);
     *(volatile u32 *)(o + 0x24) = (u32)(uintptr_t)src;
 }
 #ifndef __APPLE__

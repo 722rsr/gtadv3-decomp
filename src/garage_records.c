@@ -2278,30 +2278,41 @@ void _08002A90C(void *acc, void *pos, void *extra, void *unused) {
 // ----------------------------------------------------------------------------
 // 0x0802AA30 — collision resolve (06FD4 args swapped: r1/r2 exchanged;
 // s8-sign test; 140>200 -> 29E30(rec,100)).
+// The second slot pair is stored through the same pointers that the 05EDC
+// call takes (`pa`=sp+16 -- live as r1 from the store to the call -- and
+// `pb`=sp+24, which stays live across the call as r5 because the y term is
+// read back through it), and the two `-=` expressions are single expressions
+// so agbcc interleaves load/shift/load rather than hoisting both loads.
+// The else arm clears bit 7 (`&= ~128`, materialised as `movs #129; negs`),
+// not bits 0+7 as `~129` did.
 // ----------------------------------------------------------------------------
 void _08002AA30(void *rec, void *a1, void *a2, void *unused) {
     (void)unused;
     u8 *R = (u8 *)rec;
     u32 sp[8];
-    if ((s8)_08006FD4(R + 36, a2, a1, sp) <= 0) {
-        *(u32 *)(R + 92) &= ~(u32)129;
-        return;
+    u32 *pa;
+    u32 *pb;
+    if ((s8)_08006FD4(R + 36, a2, a1, sp) > 0) {
+        u32 v24;
+        *(u32 *)((u8 *)sp + 16) = *(u32 *)(R + 20);
+        v24 = *(u32 *)(R + 24);
+        pa = sp + 4;
+        pa[1] = v24;
+        pb = sp + 6;
+        if (_08005EDC((u8 *)pb, (u8 *)pa, (u8 *)sp + 8) > 0) {
+            *(u32 *)(R + 68) -= (sp[6] << 2) + sp[2] * 3u;
+            *(u32 *)(R + 72) -= (pb[1] << 2) + sp[3] * 3u;
+        }
+        if ((s16)*(u16 *)(R + 140) > 200)
+            _080029E30(rec, 100);
+        *(u16 *)(R + 134) = 0;
+        *(u16 *)(R + 150) = 0;
+        *(u32 *)(R + 92) |= 0x80u;
+        *(u32 *)(R + 4) = sp[0];
+        *(u32 *)(R + 8) = sp[1];
+    } else {
+        *(u32 *)(R + 92) &= ~(u32)128;
     }
-    *(u32 *)((u8 *)sp + 16) = *(u32 *)(R + 20);
-    *(u32 *)((u8 *)sp + 20) = *(u32 *)(R + 24);
-    if (_08005EDC((u8 *)sp + 24, (u8 *)sp + 16, (u8 *)sp + 8) > 0) {
-        u32 x = sp[6], yx = sp[2];
-        *(u32 *)(R + 68) -= (x << 2) + yx * 3u;
-        u32 y = sp[7], yy = sp[3];
-        *(u32 *)(R + 72) -= (y << 2) + yy * 3u;
-    }
-    if ((s16)*(u16 *)(R + 140) > 200)
-        _080029E30(rec, 100);
-    *(u16 *)(R + 134) = 0;
-    *(u16 *)(R + 150) = 0;
-    *(u32 *)(R + 92) |= 0x80u;
-    *(u32 *)(R + 4) = sp[0];
-    *(u32 *)(R + 8) = sp[1];
 }
 
 // ----------------------------------------------------------------------------

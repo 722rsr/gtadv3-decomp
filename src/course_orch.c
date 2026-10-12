@@ -231,24 +231,99 @@ void Course_LoadEntry(void) { // _0801A204: push {r4-r6,lr}, sub #28, pools 0x08
     u32 tmpl[5];    // sp+0..sp+19; tmpl+2 == sp+8 is the second template copy
     u16 variant[4]; // sp+20..sp+27: the cell CpuSet fills, then the two
                     // selectors strh into variant[1] and variant[0]
+    // Four pins, each a register the ROM holds live across a region agbcc
+    // would otherwise re-derive or re-allocate:
+    //   t2  = sp+8   (r6; the reason the prologue saves r6 at all, and the
+    //                 pointer the ROM advances in place: `adds r6,r6,r0`)
+    //   vr  = sp+20  (r5; CpuSet destination and both strh targets)
+    //   wbase = 0x03001780 (r4; one pool word reused for the two 0x1104/0x1106
+    //                 selector reads AND the +0x10FE event read, where the ROM
+    //                 destroys it: `adds r4,r4,r1`)
+    //   selv  = 0x1106 (r1; the ROM edits it in place -- `subs r1,#2` -- rather
+    //                 than forming a second constant)
+    // Unpinned, agbcc recomputes `add r0,sp,#8` inline (losing r6), parks the
+    // cell in r4, loads LSel before the base (swapping both pool words) and
+    // folds the second selector offset into `subs r0,#2`. All four selectors
+    // stay INLINE in their index expressions as well: as separate `s16`
+    // locals agbcc forms both 0x03002884/86 addresses before either read.
+#ifdef __APPLE__
+    u16 *t2;
+    u16 *vr;
+    u32 wbase;
+    u32 selv;
+#else
+    register u16 *t2 __asm__("r6");
+    register u16 *vr __asm__("r5");
+    register u32 wbase __asm__("r4");
+    register u32 selv __asm__("r1");
+#endif
     extern void _0802E0A4(void*,void*,int); // CpuSet 6
     extern void _0802D974(const void*,void*,u32);
     _0802E0A4(tmpl, LE_T, 6);
-    _0802E0A4(tmpl + 2, LE_T, 6);
+    t2 = (u16 *)(uintptr_t)(tmpl + 2);
+    _0802E0A4(t2, LE_T, 6);
     tmpl[4] = 0;                              // movs r0,#0; str r0,[sp,#16]
-    _0802D974(&tmpl[4], variant, 0x05000002); // 32-bit fill, count 2 -> sp+20
-    s16 courseSel = *(s16 *)(LE_WA + LE_SEL);
-    variant[1] = ((u16 *)tmpl)[courseSel];   // lsls #1; add r0,sp; ldrh
-    s16 timeSel = *(s16 *)(LE_WA + (LE_SEL - 2u)); // subs r1,#2; adds r0,r4,r1
-    variant[0] = ((u16 *)(tmpl + 2))[timeSel];
+    {   // `add r0,sp,#16` precedes `add r5,sp,#20` in the ROM, so the fill
+        // source's address must be its own named value; an inline &tmpl[4]
+        // lets agbcc schedule the cell pointer first.
+        u32 *zsrc = &tmpl[4];
+        vr = variant;
+        _0802D974(zsrc, vr, 0x05000002);      // 32-bit fill, count 2 -> sp+20
+    }
+    wbase = LE_WA;
+    selv  = LE_SEL;
+    {   // Both selector addresses are formed in r0 (`adds r0,r4,r1`) and each
+        // ldrsh overwrites the address register; the zero index lands in r2 in
+        // both reads.
+        //
+        // Neither shape is pinnable: `register u32 saddr __asm__("r0")` emits
+        // IDENTICAL code (verified by direct experiment), because local-alloc
+        // never consults such a pin -- it walks the instruction's own
+        // suggestion set first and only then the lowest free register. For the
+        // second read, where `selv` holds its last value, that walk lands on r1:
+        // the add's suggestion set is {wbase=r4, selv=r1}, r4 is live and r1
+        // dies in the instruction, so r1 wins and the load reads [r1,r2] --
+        // 2 bytes off the ROM's [r0,r2]. (The zero index is decided the same
+        // way, and r1 being free there is also why it is materialised in r1.)
+        //
+        // The fix is to keep r1 live across the second address computation with
+        // a zero-instruction asm use of `selv`: the suggestion pass then fails
+        // and the fallback picks r0 for the address, and the zero is pushed to
+        // r2 in both reads. Same lever as the `x-y` guards elsewhere, but this
+        // one is placed after the load so it changes no instruction. Full
+        // write-up: docs/findings/local_alloc_register_choice.md.
+        u32 saddr;
+        u32 zi;
+        saddr = wbase + selv;
+        zi = 0;
+        vr[1] = ((u16 *)tmpl)[*(s16 *)(uintptr_t)(saddr + zi)]; // lsls #1; add r0,sp; ldrh
+        selv  = selv - 2u;                        // subs r1,#2
+        saddr = wbase + selv;
+        zi = 0;
+        t2 = t2 + *(s16 *)(uintptr_t)(saddr + zi);
+        __asm__("" : : "r"(selv));                // keeps r1 live to here
+    }
+    vr[0] = *t2;                              // ldrh [r6]; strh [r5]
     Course_VariantZero();                              // bl 0x08006114
-    CO_CALLEE(Course_VariantCopy, _080060EC)(variant); // bl 0x080060EC, r0 = r5
-    s16 rawIdx = *(s16 *)(LE_WA + LE_RAW);
-    CO_CALLEE(Course_Orchestrator, _08006138)((void*)0x030039D0, rawIdx, NULL);
+    CO_CALLEE(Course_VariantCopy, _080060EC)(vr);      // bl 0x080060EC, r0 = r5
+    {
+        void *orc = (void *)0x030039D0;       // ldr r0,=0x030039D0
+        s16 rawIdx;
+        selv = LE_RAW;                        // ldr r1,=0x10FE
+        wbase = wbase + selv;                 // adds r4,r4,r1
+        rawIdx = *(s16 *)(uintptr_t)wbase;
+        CO_CALLEE(Course_Orchestrator, _08006138)(orc, rawIdx, NULL);
+    }
     extern void _08006618(void); // StreamInit
-    extern void _08008290(void *a);
+    // The ROM sets up NO argument for this call: 0x08008290 overwrites r0
+    // from its own pool before any use (`ldr r4,[pc,#88]` / `ldr r2,[pc,#92]`
+    // / `adds r0,r4,#0` at 0x08008294-98), so it reads no incoming r0 and
+    // takes no parameter -- its C body is `(void)rec` for the same reason.
+    // Passing the 0x030039D0 constant anyway costs the `adds r0,r4,#0` that
+    // the ROM does not have.
+    extern void _08008290(void);
     _08006618();
-    _08008290((void*)0x030039D0); // sprite/OAM setup, pool 0x030039D0
+    _08008290(); // sprite/OAM setup
 #undef LE_T
 #undef LE_WA
 #undef LE_SEL

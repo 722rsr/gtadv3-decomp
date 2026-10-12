@@ -6,27 +6,34 @@
 // Each preserves direct branches (cmp #128 bcs etc.) where compare, field offset (+5/+64/+32 etc.), and both targets are proven.
 // Mixed-ISA mixer_2b888.s not edited (sound_mixer.c untouched).
 
-// _0802C390 note-off: push {r4,r5}, ldr r2,[r1+64] u32, ldrb [r2] u8 vs 128, strb +5, walk +32 list via ldr [r1+32] u32
-void SoundVoiceFollow_NoteOff(void *chan, void *seq){
+// _0802C390 note-off: push {r4,r5}, ldr r2,[r1+64] u32, ldrb [r2] u8 vs 128, strb +5, walk +32 list via ldr [r1+32] u32.
+// The body works on the SECOND parameter (r1): the first is unused. The cursor
+// byte either becomes the searched id (advancing the +64 cursor) or, when it is
+// >= 128, the id is taken from c[5]; the ROM's two-arm `bcs` keeps that shape.
+void SoundVoiceFollow_NoteOff(void *unused, void *chan){
     volatile u8 *c = (volatile u8*)chan;
-    volatile u8 *s = (volatile u8*)seq;
-    (void)s;
+    (void)unused;
     volatile u32 *cursor = (volatile u32*)(c + 64);
-    volatile u8 *curPtr = (volatile u8*)(uintptr_t)*cursor;
+    u8 *curPtr = (u8 *)(uintptr_t)*cursor;
     u8 v = *curPtr;
-    if(v < 128){
+    if (v < 128) {
         c[5] = v;
-        (*cursor)++;
+        *cursor = *cursor + 1;
+    } else {
+        v = c[5];
     }
-    volatile u32 *head = (volatile u32*)(c + 32);
-    volatile u32 *node = (volatile u32*)*head;
-    while(node){
-        u8 fl = ((volatile u8*)node)[0];
-        if((fl & 131)==0 || (fl & 64)!=0){ node = (volatile u32*)node[13]; continue; }
-        u8 id = ((volatile u8*)node)[17];
-        if(id != v) { node = (volatile u32*)node[13]; continue; }
-        ((volatile u8*)node)[0] |= 64;
-        break;
+    u8 *node = *(u8 **)(c + 32);
+    if (node != 0) {
+        do {
+            u8 fl = node[0];
+            if ((fl & 131u) != 0u && (fl & 64u) == 0u) {
+                if (node[17] == v) {
+                    node[0] = (u8)(fl | 64u);
+                    break;
+                }
+            }
+            node = *(u8 **)(node + 52);
+        } while (node != 0);
     }
 }
 #ifndef __APPLE__

@@ -206,20 +206,52 @@ void _0800C454(void)
     // and ROM 07770 exits with r0 = r9 = _080050D0(ctx,...) (return ruling
     // : the strong body returns it, so this calls C-to-C).
     extern u32 _08007770(int a, void *b, int c, int d, u32 e, u32 f);
-    u32 zero = 0;
-    u32 fill = (u16)_08007770(0, (void *)(uintptr_t)0x08292B40u, 8, 0, zero, zero);
-    void *base = (void *)(uintptr_t)_080056DC(0);
+    // The ROM keeps the fill value word-width in r4 and lets `strh` truncate;
+    // a `(u16)` cast here adds a narrowing `lsls/lsrs` pair. The three
+    // loop-long values sit in r4/r5/r6 so the row/col/pointer temps land in
+    // r0..r3 exactly as the ROM's allocation does (r0 row/offset/base walk,
+    // r1 hi walk, r2 col, r3 row+1).
+    register u32 fill __asm__("r4");
+    register u16 *base __asm__("r5");
+    register u16 *hi __asm__("r6");
+    register u32 hoff __asm__("r1");
+    int row;
+    void *tbl = (void *)(uintptr_t)0x08292B40u;
+    fill = _08007770(0, tbl, 8, 0, 0u, 0u);
+    base = (u16 *)(uintptr_t)_080056DC(0);
     (void)_080056C4(0);
-    volatile u16 *lo = (volatile u16 *)base;
-    volatile u16 *hi = (volatile u16 *)((u8 *)base + 0x800);
-    for (int row = 0; row <= 31; row++) {
-        volatile u16 *a = lo + (row << 5);
-        volatile u16 *b = hi + (row << 5);
-        for (int col = 31; col >= 0; col--) {
-            *a++ = fill;
-            *b++ = fill;
+    // The ROM's for-init (`movs r0,#0`) is followed by the 0x800
+    // materialization in r1 and then by `hi = base + 0x800`: keeping that
+    // byte offset in a pinned r1 leaves r0 free for the row/offset/base
+    // register chain the ROM uses. With these four pins bytes 0x00..0x2A
+    // (frame, both calls, both inits, preheader) are byte-identical.
+    // The ROM keeps `row` in r0 and chains r0 row -> r0 `row<<6` offset ->
+    // r0 base walk, keeping the inner loop in r0..r3 and never touching a
+    // callee-saved reg. agbcc parks `row` in r7 only when `row` stays live
+    // across the inner loop (`row++` at loop end); hoisting `next = row + 1`
+    // above the pointer maths makes `row` dead before the loop, so it stays
+    // in r0 and r7 is never touched. The offset-first `(row*64) + ptr` form
+    // reproduces the ROM's `adds r1, r0, r6` / `adds r0, r0, r5` operand
+    // order, and the store/store/inc-b/inc-a inner loop matches its
+    // scheduling. Literal `0u` stack args (not a shared `zero` local) make
+    // agbcc pool-load the 0x08292B40 arg before materialising r0. EXACT 88/88.
+    row = 0;
+    hoff = 0x800u;
+    __asm__("" : "+r"(hoff));
+    hi = (u16 *)((u8 *)base + hoff);
+    do {
+        int next = row + 1;
+        u16 *b = (u16 *)((uintptr_t)(row * 64) + (uintptr_t)hi);
+        u16 *a = (u16 *)((uintptr_t)(row * 64) + (uintptr_t)base);
+        int col;
+        for (col = 31; col >= 0; col--) {
+            *a = (u16)fill;
+            *b = (u16)fill;
+            b++;
+            a++;
         }
-    }
+        row = next;
+    } while (row <= 31);
 }
 #ifndef __APPLE__
 void sub_0800C454(void) __attribute__((alias("_0800C454")));

@@ -541,11 +541,11 @@
     },
     {
       "path": "asm/course_load.s",
-      "sha256": "1b55635c3e27b0f7dbbd4abb46cd770cc9a8b15ca5428cecb928b25cb39abfe0"
+      "sha256": "06b9618ccdffed7d620301e4e6c63e55db1f0e3d81e008dbf4f85e65567ae7ab"
     },
     {
       "path": "asm/course_orch.s",
-      "sha256": "74189172789dd83c3042cd7e3fab8f17426b6691e14aa7e83788d8b215964f7b"
+      "sha256": "8008c6b22cc3b05509ba30fdb95e2c9748c6f720248733dffabf283d763d3a8a"
     },
     {
       "path": "asm/course_proximity.s",
@@ -853,7 +853,7 @@
     },
     {
       "path": "asm/race_setup_18adc.s",
-      "sha256": "262c1accdaea13faaa901e47651deb60c79edaebb063711cc9deed142de936e4"
+      "sha256": "201805b43319e0ea8bf90db8aa9ad7f7f4c0c8e46baba9150831acc74b895a88"
     },
     {
       "path": "asm/rec35_16002.s",
@@ -941,7 +941,7 @@
     },
     {
       "path": "asm/sound_alloc.s",
-      "sha256": "2cc6013f5a22e8e593d429e91822b61949c48c68afae1c378306a0ee9c0430e7"
+      "sha256": "834c97934d75d2f3eafe5f177afc18c81f7ffa8f3e04dd2a68b2f190e38a6bad"
     },
     {
       "path": "asm/sound_api.s",
@@ -1013,7 +1013,7 @@
     },
     {
       "path": "asm/sound_dba4.s",
-      "sha256": "3e3ce5cb16aebc1b1b57df85ec9ae90bc2c3f149085f492082442a250bd6a3b1"
+      "sha256": "27a1b1bfd847449b13e0df21a7801383ecf98f779ccef24e679e8b5ea278ff3d"
     },
     {
       "path": "asm/sound_dc54.s",
@@ -1081,7 +1081,7 @@
     },
     {
       "path": "asm/sound_reset.s",
-      "sha256": "74e7c1d1ee8f3a73a42695eab01e0f9284ba03f5df3c71b059f1d5826a41d49f"
+      "sha256": "26c79d9f75e6b85084bf5fc3ace83a8dbd56c830807dc119c7ab85ce31466780"
     },
     {
       "path": "asm/sound_reset_more.s",
@@ -1105,7 +1105,7 @@
     },
     {
       "path": "asm/sound_stop_all.s",
-      "sha256": "61362b306851535de06b122607a44aee2b47db0614f90fda5bf380748a8062e9"
+      "sha256": "501b0ef3aa693512ee72f4e081bb06587300b327c5eb5b3fc92091b745725d27"
     },
     {
       "path": "asm/sound_thunk.s",
@@ -1145,7 +1145,7 @@
     },
     {
       "path": "asm/surface_access.s",
-      "sha256": "14b21f935ab100bc2361666de96bd69781d8cae3f4bff6152eb19c09e1387c30"
+      "sha256": "5b4675f4acdccb54f53b33d36db28e3f4857f08cb6eae1c3a4861b0852dc7aba"
     },
     {
       "path": "asm/wrapper_pair.s",

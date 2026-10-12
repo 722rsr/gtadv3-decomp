@@ -170,39 +170,79 @@ void sub_0802DB24(u32 s, u32 d, u16 c) __attribute__((alias("SoundDB24_Setup")))
 
 // DBA4 sector reader. ROM (asm/sound_dba4.s, 176 B): int-returning
 // (0x80FF gate-fail / 0 ok). Sector narrowed to u16 (into r3); gate
-// sector < *(u16*)(desc+4) else return 0x80FF. Desc pointer kept in r6
-// only across the seed loop (scoped); bit loop reuses r6 for `one`.
+// sector < *(u16*)(desc+4) else return 0x80FF. Desc base 0x0203FD54 stays
+// in r6 only across the seed loop (scoped); bit loop reuses r6 for `one`.
 // Seed: p=r2 from sp+n*2+2, i=r4; start bits; DB24(208<<20, sp,
 // byte8+3) then DB24(same, sp, 0x44); bit loop row=r4, acc=r1,
 // bit=r3, q=r2, w=r5. Desc+8 reloads are volatile byte reads each time.
+//
+// Byte-exact levers (each verified by single-function probe):
+//  - gate: the pool word must reach r0 (not r6) while the body loads it
+//    again for r6, so the base lives in a pinned r0 for the gate and in a
+//    pinned r6 (`descp`) for the loop reloads; `t` (r0) forces ldr/mov/ldr.
+//  - buf address: ROM adds `adds r2, r0, r4` (n*2 first, frame in r4). The
+//    pointer form `(u8*)buf + n*2 + 2` normalises the pointer to operand 1,
+//    so the sum is spelled in asm with na=r0 (n*2) and ba=r4.
+//  - the three counters are u32 whose `(u8)` narrowing is a separate step;
+//    an r0-pinned temp (`ti`/`tb`/`tr`) reproduces agbcc's
+//    adds r0,rX,#1 / lsls r0,#24 / lsrs rX,r0,#24 shape (a plain u32
+//    narrowing narrows in place; a u8 variable narrows into r0 instead).
+//  - row increment must be the asm form: when spelled as C, loop.c hoists
+//    the `+1` to the loop head and the row tail loses the add.
 int SoundDBA4_Read(u32 sector, void *dst){
 #ifndef __APPLE__
-    register void *d __asm__("r5") = dst;
+    register volatile u16 *d __asm__("r5") = (volatile u16 *)dst;
     register u32 sec __asm__("r3") = (u16)sector;
+    register u32 *g0 __asm__("r0") = (u32 *)0x0203FD54u;
 #else
-    void *d = dst;
+    volatile u16 *d = (volatile u16 *)dst;
     u32 sec = (u16)sector;
+    u32 *g0 = (u32 *)0x0203FD54u;
 #endif
-    if (sec >= *(volatile u16 *)(*(volatile u32 *)0x0203FD54u + 4)) return 0x80FF;
+    if (sec >= *(volatile u16 *)((volatile u8 *)*g0 + 4)) return 0x80FF;
     {
         u16 buf[68];
 #ifndef __APPLE__
-        register u32 *descp __asm__("r6") = (u32 *)0x0203FD54u;
-        __asm__ volatile ("" : "+r" (descp));
-        register u8 i __asm__("r4") = 0;
-        __asm__ volatile ("" : "+r" (i));
+        register u32 *descp __asm__("r6");
+        register volatile u16 *p __asm__("r2");
+        register u32 *t __asm__("r0");
+        register u32 na __asm__("r0");
+        register u32 ba __asm__("r4");
+        register u32 ti __asm__("r0");
+        register u32 tb __asm__("r0");
+        register u32 tr __asm__("r0");
+        register u32 i __asm__("r4");
+        register u32 n __asm__("r1");
 #else
-        u32 *descp = (u32 *)0x0203FD54u;
-        u8 i = 0;
+        u32 *descp;
+        volatile u16 *p;
+        u32 *t;
+        u32 na;
+        u32 ba;
+        u32 ti;
+        u32 tb;
+        u32 tr;
+        u32 i;
+        u32 n;
 #endif
-        u8 n = ((volatile u8 *)*descp)[8];
-        volatile u16 *p = (volatile u16 *)((volatile u8 *)buf + (u32)n * 2u + 2u);
+        t = (u32 *)0x0203FD54u;
+        descp = t;
+        n = ((volatile u8 *)*t)[8];
+#ifndef __APPLE__
+        na = (u32)n * 2u;
+        ba = (u32)(uintptr_t)buf;
+        __asm__("add\t%0, %1, %2\n\tadd\t%0, #2" : "=r"(p) : "r"(na), "r"(ba));
+#else
+        p = (volatile u16 *)((volatile u8 *)buf + (u32)n * 2u + 2u);
+#endif
+        i = 0;
         if (i < n) {
             do {
                 *p = (u16)sec;
                 p--;
                 sec >>= 1;
-                i = (u8)(i + 1);
+                ti = i + 1u;
+                i = (u8)ti;
                 n = ((volatile u8 *)*descp)[8];
             } while (i < n);
         }
@@ -210,43 +250,45 @@ int SoundDBA4_Read(u32 sector, void *dst){
         p--;
         *p = 1;
         {
-            u8 m = ((volatile u8 *)*(volatile u32 *)0x0203FD54u)[8];
             u32 base = (u32)208 << 20;
-            SoundDB24_Setup(base, (u32)(uintptr_t)buf, (u16)((u32)m + 3u));
+            u8 m = ((volatile u8 *)*(volatile u32 *)0x0203FD54u)[8];
+            SoundDB24_Setup((u32)(uintptr_t)buf, base, (u16)((u32)m + 3u));
             SoundDB24_Setup(base, (u32)(uintptr_t)buf, 0x44u);
         }
-#ifndef __APPLE__
-        __asm__ volatile ("" ::: "memory");
-#endif
+        __asm__("add\t%0, sp, #8" : "=r"(p));
+        __asm__("add\t%0, %0, #6" : "+r"(d));
         {
 #ifndef __APPLE__
-            register volatile u16 *q __asm__("r2");
-            register volatile u16 *w __asm__("r5");
-            register u8 row __asm__("r4") = 0;
-            register u32 acc __asm__("r1") = 0;
-            register u8 bit __asm__("r3") = 0;
-            register u32 one __asm__("r6") = 1;
+            register u32 row __asm__("r4");
+            register u32 acc __asm__("r1");
+            register u32 bit __asm__("r3");
+            register u32 one __asm__("r6");
 #else
-            volatile u16 *q;
-            volatile u16 *w;
-            u8 row = 0;
-            u32 acc = 0;
-            u8 bit = 0;
-            u32 one = 1;
+            u32 row;
+            u32 acc;
+            u32 bit;
+            u32 one;
 #endif
-            q = (volatile u16 *)((volatile u8 *)buf + 8);
-            w = (volatile u16 *)((volatile u8 *)d + 6);
+            row = 0;
+            one = 1;
             do {
                 acc = 0;
                 bit = 0;
                 do {
-                    acc = (u16)(((acc << 17) >> 16) | (*q & one));
-                    q++;
-                    bit = (u8)(bit + 1);
+                    acc = (u16)(((acc << 17) >> 16) | (*p & one));
+                    p++;
+                    tb = bit + 1u;
+                    bit = (u8)tb;
                 } while (bit <= 15);
-                *w = (u16)acc;
-                w--;
-                row = (u8)(row + 1);
+                *d = (u16)acc;
+                d--;
+#ifndef __APPLE__
+                __asm__("add\t%0, %1, #1" : "=r"(tr) : "r"(row));
+                row = (u8)tr;
+#else
+                tr = row + 1u;
+                row = (u8)tr;
+#endif
             } while (row <= 3);
         }
     }

@@ -67,3 +67,4 @@ _0802CC20:
 _0802CC28: .word 0x03007FF0
 _0802CC2C: .word 0x68736D53
 _0802CC30: .word 0x0802BEB5
+sound_alloc_end:

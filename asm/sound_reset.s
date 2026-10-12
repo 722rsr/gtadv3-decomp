@@ -72,3 +72,6 @@ sub_0802C4C4:
 	.word	0x00000004			@ 0x02C530: record count (4)
 	.word	0x08061F74			@ 0x02C534: template table base (4 x 12 B)
 	.word	0x0203EE00			@ 0x02C538: stamp stored to [dst+24]
+@ Zero-byte end anchor so the promotion screen can close the span
+@ (0x0802C4C4-0x0802C53C) without falling off the end of the file.
+sound_reset_end:

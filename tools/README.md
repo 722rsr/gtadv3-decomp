@@ -30,6 +30,8 @@ Outputs belong under ignored `build/` or `assets/`.
 | `arity_audit.py` | Compare ROM argument use with C call sites. |
 | `offset_audit.py` | Check work-area offsets against ROM evidence and known bounds. |
 | `coverage.py` | Inventory known assembly function entries and their C owners. |
+| `decomp_report.py` | Generate and verify decomp.dev objdiff v2 progress snapshot. |
+| `update_progress.py` | Automate progress updates: ownership, slice, objdiff, decomp.dev report, treemap, and README. |
 
 ```sh
 make toolchain

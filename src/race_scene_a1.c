@@ -276,31 +276,132 @@ void _08001A768(void *a_, int b, int c) {
 // r0=a: nonzero → flag-4 set path (096A4 over [ctx]+860, u16[[ctx]+122]=5);
 // zero → flag-4 clear path (026FF4 over ctx+0x41C, 284-stride 270D8 walk,
 // 27210 select on u16[WA+0x10FC]==5).
+//
+// Four constraints, each carried by a distinct lever:
+// - then-path: the ROM holds the CTX *address* (pool word 0x03004E20) in r4
+//   from its pool load through both reloads, so the `ldr r0,[r4]` / `adds`
+//   pair re-reads the cell rather than the memoised value. Left unpinned,
+//   agbcc dereferences into r4 and keeps the pooled address in r0, which
+//   also moves the u16 store's constant from r1 to r0 and its address off
+//   r0 (4 instructions). Pin the cell to r4; re-dereference before +122.
+// - else-path: WORK_AREA is reached as base+offset from TWO pool words
+//   (`ldr r2,=0x03001780` / `ldr r3,=0x10FE` / `adds r1,r2,r3`), once per
+//   offset, with the base live in r2 across the 026FF4/270D8 calls. A
+//   folded `WORK_AREA + 0x10FE` pools as the single word 0x0300277E and
+//   loses both the adds and the shared base. Each operand is therefore its
+//   own assembler absolute symbol (docs/findings/track_car_26180_pool_order.md).
+// - the two halfwords are NON-volatile s16 loads: agbcc lowers a volatile
+//   signed halfword to ldrh+lsls+asrs, and a plain one to `movs rX,#0` +
+//   `ldrsh rD,[rB,rX]`, which is the ROM's shape at +0x4A and +0x7C.
+// - the walk re-reads its bound from *pca in the condition (guard via r4
+//   before the body repurposes r4 as the 03004E80 runner, back-edge via the
+//   r6 copy the allocator makes), so the bound must stay a memory read, not
+//   a cached `s16 n` local. The r6 copy itself needs the source split into
+//   `s16 *cnt = pca;` -- with the loop reading `*pca` directly agbcc shares
+//   ONE test (entry `b` + back-edge `blt`) instead of the ROM's duplicated
+//   guard+back-edge pair, which is 4 instructions of layout.
+//
+// Probe: PARTIAL 183/200, first difference +0x4A. The whole then-path
+// (0x00-0x2C) and the whole walk (0x5C-0x86 on) are byte-identical; what is
+// left is a 5-halfword reorder in the two-argument pair: the ROM emits
+// `ldrsh r1,[r1,r3]` (a2) BEFORE `ldr r3,=0x10CA` / `adds r4,r2,r3` (pca),
+// while agbcc emits `ldr r3,=0x10CA` / `adds r4,r2,r3` (pca) BEFORE the a2
+// load and then has to give that load's zero index r2 instead of r3 (r3
+// holds the pca offset by then).
+//
+// WHERE the reorder happens is verified, and it is NOT expansion: an `-dr`
+// RTL dump of this TU (build/era-corpus/ready-work/race_scene_a1.i.rtl, the
+// pre-reload dump) has the statements in exact source order --
+//   insn 96 (set reg40 (zero_extend (mem:HI (reg39))))   @ a2 read
+//   insn 98 (set reg33 reg40)
+//   insn 101 (set r3 (mem/u *.LC3))                      @ off = WaOffCA
+//   insn 103 (set reg32 (plus r2 r3))                    @ pca
+//   insn 106 (set reg41 (zero_extend (mem:HI (reg32))))  @ a3 read
+// so the a2 LOAD really does sink past the pca group, later in the pipeline
+// (reload is the only pass left that can place it; `-fno-regmove`,
+// `-fno-optimize-register-move`, `-fno-caller-saves`,
+// `-fno-expensive-optimizations`, `-fno-inline` and `-fno-defer-pop` all
+// leave the emitted order unchanged, so it is not any of those). The index
+// register is the tell: the ROM reuses the dying r3 for BOTH loads' zero
+// index, the candidate is only offered r2 at the a2 load because pca's
+// `adds r4,r2,r3` has already killed wb. pret/agbcc carries no insn
+// scheduler (`flag_schedule_insns` does not exist in its tree), so nothing
+// at the C level can move an insn back -- an empty `asm` on the value only
+// changes the load width (ldrh) or drops the guard.
 // ----------------------------------------------------------------------------
 void _08001B068(int a) {
-    volatile u8 *wa = (volatile u8 *)WORK_AREA;
     if (a != 0) {
-        u32 ctxval;
         _08018AA8(4u, 1);
-        ctxval = *(volatile u32 *)(uintptr_t)CTX;
-        _080096A4((void *)(uintptr_t)(ctxval + 860u));
-        *(volatile u16 *)(uintptr_t)(ctxval + 122u) = 5;
+#ifdef __APPLE__
+        _080096A4((void *)(uintptr_t)(*(volatile u32 *)(uintptr_t)CTX + 860u));
+        *(volatile u16 *)(uintptr_t)(*(volatile u32 *)(uintptr_t)CTX + 122u) = 5;
+#else
+        {
+            register u32 cell __asm__("r4");
+            cell = CTX;
+            _080096A4((void *)(uintptr_t)(*(volatile u32 *)(uintptr_t)cell + 860u));
+            *(volatile u16 *)(uintptr_t)(*(volatile u32 *)(uintptr_t)cell + 122u) = 5;
+        }
+#endif
         _08002B460();
         _08002B25C();
     } else {
-        u32 ctxval = *(volatile u32 *)(uintptr_t)CTX;
-        s16 n;
+        extern u8 WaBase[], WaOffFE[], WaOffCA[], WaOffFC[];
+        u32 rec;
+        s16 *pca;
+        s16 a2, a3;
+#ifndef __APPLE__
+        register u8 *wb __asm__("r2");
+        register u32 off __asm__("r3");
+        register int i __asm__("r5");
+#else
+        u8 *wb;
+        u32 off;
+        int i;
+#endif
+        __asm__(".globl WaBase\nWaBase = 0x03001780\n");
+        __asm__(".globl WaOffFE\nWaOffFE = 0x10FE\n");
+        __asm__(".globl WaOffCA\nWaOffCA = 0x10CA\n");
+        __asm__(".globl WaOffFC\nWaOffFC = 0x10FC\n");
         _08018AA8(4u, 0);
-        _080026FF4((void *)(uintptr_t)(ctxval + 0x41Cu),
-                   (int)*(volatile s16 *)(wa + 0x10FE),
-                   (int)*(volatile s16 *)(wa + 0x10CA), 0);
-        n = *(volatile s16 *)(wa + 0x10CA);
-        for (int i = 0; i < (int)n; i++) {
-            u32 q = 0x03004E80u + (u32)i * 284u;
-            _080270D8(*(volatile u32 *)(uintptr_t)q,
-                      *(volatile u32 *)(uintptr_t)(q + 4u), i);
+        /* Argument order is also instruction order here: the ROM builds
+         * r0 = [CTX]+0x41C before it pools the WORK_AREA base, so the
+         * caller's first argument must be evaluated first. */
+        /* The record offset must be a SYMBOL, not the literal 0x41C: a
+         * pinned `off = 0x41C` is copy-propagated away and the pool load
+         * lands in r2 (the ROM's r3 is only reachable while `off` still has
+         * a live range). */
+        { extern u8 RecOff41C[];
+          __asm__(".globl RecOff41C\nRecOff41C = 0x41C\n");
+          rec = *(volatile u32 *)(uintptr_t)CTX;
+          off = (u32)(uintptr_t)RecOff41C;
+          rec = rec + off; }
+        wb = (u8 *)(uintptr_t)WaBase;
+        off = (u32)(uintptr_t)WaOffFE;
+        a2 = *(s16 *)(uintptr_t)((uintptr_t)wb + off);
+        off = (u32)(uintptr_t)WaOffCA;
+        pca = (s16 *)(uintptr_t)((uintptr_t)wb + off);
+        a3 = *pca;
+        _080026FF4((void *)(uintptr_t)rec, (int)a2, (int)a3, 0);
+        /* Written as the rotated form the ROM carries EXACTLY: the entry
+         * guard reads the bound through r4 (the register the bound pointer
+         * holds from its pool add), then the 03004E80 runner claims r4 for
+         * the body and the allocator copies the bound pointer to r6 at the
+         * loop entry (`adds r6,r4,#0`), which is what the back-edge test
+         * reads. A plain `for` here makes agbcc share one test instead of
+         * duplicating it (entry `b` + back-edge `blt`) and the guard read
+         * ends up in the same register as the tail. */
+        i = 0;
+        if (i < (int)*pca) {
+            s16 *cnt = pca;
+            u32 *q = (u32 *)0x03004E80u;
+            do {
+                _080270D8(q[0], q[1], i);
+                q = (u32 *)(uintptr_t)((u8 *)q + 284u);
+                i++;
+            } while (i < (int)*cnt);
         }
-        if (*(volatile u16 *)(wa + 0x10FC) == 5)
+        if (*(volatile u16 *)(uintptr_t)((uintptr_t)WaBase + (uintptr_t)WaOffFC) == 5)
             _08027210(0);
         else
             _08027210(1);

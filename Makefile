@@ -321,12 +321,13 @@ distclean:
 	rm -rf $(BUILD) $(AUX_BUILD_DIRS)
 
 # Cheap, ROM-free hosted CI. Full byte verification remains a local gate.
-.PHONY: ci-check progress progress-check
+.PHONY: ci-check progress progress-check update-progress
 ci-check: progress-check
 	@python3 tools/apple_decls.py --self-test
 	@python3 tools/export_audit.py --self-test
 	@python3 tools/call_audit.py --self-test
 	@python3 tools/agbcc_c89_transform.py --self-test
+	@python3 tools/update_progress.py --self-test
 	@python3 tools/test_matching_assist.py
 	@python3 tools/test_decomp_report.py
 	@python3 tools/test_data_regions.py
@@ -338,3 +339,7 @@ progress-check:
 # Never stamp a snapshot from an unchecked manifest or a stale build.
 progress:
 	@python3 tools/decomp_report.py --refresh
+
+# Comprehensive progress automation: ownership, slice, objdiff, decomp.dev, treemap, and README.
+update-progress:
+	@python3 tools/update_progress.py

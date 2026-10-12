@@ -500,30 +500,47 @@ void Race_Setup_18EC0(void) {
 void _080018EC0(void) __attribute__((alias("Race_Setup_18EC0")));
 #endif
 
-// _080019200: pure compare of two racer structs via +28 pointer and +18/+20/+22 s16 fields
-// Returns 1 if d>0 or tie-break via mul, else 0; helper 0x08006C10
-extern void *Sub_08006C10(void *a);
+// _080019200: pure compare of two racer structs via +28 pointer and +18/+20/+22 s16 fields.
+// d = (s16)[a->28 + 18] - (s16)[b->28 + 18]; d>0 -> 1, d<0 -> 0;
+// on a tie: tmp = 06C10(b->28, 0), d4 = a[4]-b[4], d5 = a[8]-b[8],
+// res = (s16)tmp[20]*d5 - (s16)tmp[22]*d4; the ROM returns 1 for res<=0 and
+// 0 for res>0 (the branch at 0x0801923E is `bgt` to the return-0 block).
+extern void *_08006C10(void *a, int b);
 int Race_Setup_19200(void *a, void *b) {
-    void *pA = *(void *volatile *)((volatile u8 *)a + 28);
-    void *pB = *(void *volatile *)((volatile u8 *)b + 28);
-    s16 hA18 = *(volatile s16 *)((volatile u8 *)pA + 18);
-    s16 hB18 = *(volatile s16 *)((volatile u8 *)pB + 18);
+    // The ROM holds a in r6 and b in r7 for the whole body; pin them so the
+    // allocator does not fold a/b into r5/r6 and reorder the +28 loads.
+    //
+    // BLOCKED at 62/80: the ROM's `push {r4,r5,r6,r7,lr}` is unreachable in
+    // agbcc. `thumb.h` sets FRAME_POINTER_REGNUM 7, so `flow.c`'s use-marking
+    // takes the frame-pointer early return for r7 -- and because r7 is in
+    // `elim_reg_set` (eliminable to sp) it skips `regs_ever_live[7] = 1` --
+    // while `thumb_function_prologue` builds its push list from exactly that
+    // array (`regs_ever_live[regno] && !call_used_regs[regno]`). Pinning r7 is
+    // the only way to get the body's r7 uses, and the pin is honoured (the
+    // `adds r7,r1,#0` copy is emitted), but the save is not. No C spelling can
+    // reach it; a pseudo allocated to r7 is impossible for the same reason
+    // (reload marks pseudo homes with mark_home_live, and r7 never gets one).
+    register u8 *ra __asm__("r6") = (u8 *)a;
+    register u8 *rb __asm__("r7") = (u8 *)b;
+    __asm__ volatile("" : "+r"(ra), "+r"(rb) : : "memory");
+    u8 *pA = *(u8 **)(ra + 28);
+    s16 hA18 = *(s16 *)(pA + 18);
+    u8 *pB = *(u8 **)(rb + 28);
+    s16 hB18 = *(s16 *)(pB + 18);
     int d = (int)hA18 - (int)hB18;
     if (d > 0) return 1;
     if (d != 0) return 0;
-    void *tmp = Sub_08006C10(pB); // bl with r0=pB, r1=0 in asm
-    s32 t20 = (s32)*(volatile s16 *)((volatile u8 *)tmp + 20);
-    s32 t22 = (s32)*(volatile s16 *)((volatile u8 *)tmp + 22);
-    // Second tie-break uses racer deltas at +4/+8 (u32)
-    u32 a4 = *(volatile u32 *)((volatile u8 *)a + 4);
-    u32 b4 = *(volatile u32 *)((volatile u8 *)b + 4);
-    u32 a8 = *(volatile u32 *)((volatile u8 *)a + 8);
-    u32 b8 = *(volatile u32 *)((volatile u8 *)b + 8);
-    s32 d4 = (s32)(a4 - b4);
-    s32 d5 = (s32)(a8 - b8);
-    s32 res = t20 * d5 - t22 * d4; // muls as in asm, s32
-    if (res > 0) return 1;
-    return 0;
+    u8 *tmp = (u8 *)_08006C10(pB, 0);
+    // ROM keeps the two racer deltas in r4 (a[4]-b[4]) and r5 (a[8]-b[8]).
+    register s32 d4 __asm__("r4");
+    register s32 d5 __asm__("r5");
+    d4 = *(s32 *)(ra + 4) - *(s32 *)(rb + 4);
+    d5 = *(s32 *)(ra + 8) - *(s32 *)(rb + 8);
+    __asm__("" : "+r"(d4), "+r"(d5));
+    s32 res = (s32)*(s16 *)(tmp + 20) * d5;
+    res -= (s32)*(s16 *)(tmp + 22) * d4; // muls as in asm, s32
+    if (res > 0) return 0;
+    return 1;
 }
 #ifndef __APPLE__
 int _080019200(void *a, void *b) __attribute__((alias("Race_Setup_19200")));

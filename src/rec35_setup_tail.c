@@ -14,22 +14,33 @@
 // (Award-grid zone fill; called from the 18540-cascade 0x212 arm.)
 extern void Sub_08025C84(int a, int b, int c, int d); // 0x08025C84
 extern void sub_08025C84(int a, int b, int c, int d);
-extern void Sub_08025FF0(int a); // 0x08025FF0
-extern void Sub_08025DBC(int a, int b); // 0x08025DBC
+extern void sub_08025FF0(int a); // 0x08025FF0
+extern void sub_08025DBC(int a, int b); // 0x08025DBC
 void Rec35_GridFill_1845C(void) {
+    // The ROM materializes the constant 1 once (`movs r7,#1`) and passes it
+    // via `adds r3,r7,#0` / `adds r1,r7,#0` at both use sites; a shared named
+    // local keeps it in the callee-saved r7 instead of re-issuing `movs`.
+    int one = 1;
     int r5, r4;
     for (r5 = 0; r5 <= 3; r5++) {
         for (r4 = 0; r4 <= 10; r4++)
-            sub_08025C84(0, r5, r4, 1);
+            sub_08025C84(0, r5, r4, one);
     }
-    Sub_08025FF0(0);
-    Sub_08025FF0(1);
-    Sub_08025FF0(2);
+    sub_08025FF0(0);
+    sub_08025FF0(1);
+    sub_08025FF0(2);
     for (r4 = 0; r4 <= 31; r4++)
-        Sub_08025DBC(r4, 1);
+        sub_08025DBC(r4, one);
 }
+// The body is 74 bytes (2 mod 4); gas would close the section with a `c0 46`
+// code nop while the ROM holds `00 00`. This file-scope zero-fill `.align`
+// lands after the body's `.size`, still inside its own function section, so it
+// pads with the 0 fill argument instead. No body byte changes.
+__asm__(".align 2, 0");
 #ifndef __APPLE__
 void _08001845C(void) __attribute__((alias("Rec35_GridFill_1845C")));
+// asm/rec35_runtime.s:4116 branches here by the `sub_08001845C` spelling.
+void sub_08001845C(void) __attribute__((alias("Rec35_GridFill_1845C")));
 #endif
 
 // ---------------------------------------------------------------------------

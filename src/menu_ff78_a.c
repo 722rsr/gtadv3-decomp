@@ -280,28 +280,42 @@ void sub_0800107CC(void *a) __attribute__((alias("MenuFF78_107CC")));
 // ============================================================================
 // sub_08001096C — input handler: mode 0/3 start/select toggles, clamp 4.
 // ============================================================================
+// The s16 slot at rec+0xA8 is read with NON-volatile lvalues: a volatile s16
+// read lowers to `ldrh` plus an explicit sign extension, while the ROM's
+// `movs r1,#0 / ldrsh r0,[r5,r1]` is a plain signed halfword read. The ROM keeps
+// rec+0xA8 in r5 for the reads/writes inside the two branches but recomputes it
+// in the tail, so the tail uses a fresh expression rather than the pointer.
 void MenuFF78_1096C(void *rec_, int a1, int a2) {
     (void)a1;
-    volatile u8 *rec = (volatile u8 *)rec_;
+    u8 *rec = (u8 *)rec_;
     u16 r4 = (u16)a2;
-    s16 v = RDS16(rec, 168);
-    if (v == 0) {
+    u16 *p = (u16 *)(rec + 168);
+    s16 v = *(s16 *)p;
+    // A `switch` over the two sparse cases, not `if/else if`: the ROM's
+    // dispatch is `cmp r0,#0 / beq case0 / cmp r0,#3 / beq case3 / b tail`
+    // with both case bodies laid out after it, which is gcc's comparison-chain
+    // expansion. `if (v == 0) {...} else if (v == 3) {...}` instead lays case 0
+    // inline after `bne`.
+    switch (v) {
+    case 0:
         if (r4 == 2) _0800108D4(rec_);
         if (r4 == 1) {
-            WR16(rec, 168, 3);
+            *p = 3;
             _0802B368(1);
         }
-    } else if (v == 3) {
+        break;
+    case 3:
         if (r4 == 2) {
-            WR16(rec, 168, 0);
+            *p = 0;
             _0802B368(4);
         }
         if (r4 == 1) {
             _0800108F0(rec_);
-            WR16(rec, 220, r4);
+            *(u16 *)(rec + 220) = r4;
         }
+        break;
     }
-    if (RDS16(rec, 168) > 4) WR16(rec, 168, 4);
+    if (*(s16 *)(rec + 168) > 4) *(u16 *)(rec + 168) = 4;
 }
 #ifndef __APPLE__
 void _08001096C(void *a, int b, int c) __attribute__((alias("MenuFF78_1096C")));

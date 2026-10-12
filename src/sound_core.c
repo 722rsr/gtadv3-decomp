@@ -44,29 +44,77 @@ void _0802BEB4(void *s) __attribute__((alias("SoundBeb4Worker")));
 void sub_0802BEB4(void *s) __attribute__((alias("SoundBeb4Worker")));
 #endif
 
-// --- _0802C11C voice-list cleanup (45 B, pool 0x03007FF0 at 0x02C15C) ---
+// --- _0802C11C voice-list cleanup (62 B + private pool 0x03007FF0 at 0x02C15C) ---
+// Instruction shape is reproduced, byte-exactness is NOT reachable: the ROM
+// tests bit 7 with `tst r0, r1` and takes the second mask branch straight off
+// the AND's flags (`ands r0, r3` / `beq`), and pret/agbcc cannot emit either
+// idiom. thumb.md has a single TST-named pattern (`tstsi`, line 818) whose
+// template is `cmp\t%0, #0`, it has no two-register TST at all, and
+// `*andsi3_insn` sets only the register, never (cc0) -- so agbcc always
+// follows an `and` with an explicit `cmp`. Both sites therefore cost 2 bytes
+// more than the ROM, which shifts everything after them. Verified against
+// both toolchain builds (`old_agbcc` and the `agbcc` baseline) with the
+// minimal gate alone: 4 instructions in, `and r0,r0,r2` + `cmp r0,#0` out.
+// No C spelling of `(c[0] & 0x80) == 0` or `(node[1] & 7) != 0` reaches TST,
+// and the ROM's 8-byte groups above are only 5 instructions wide, so the
+// 2-byte deficit cannot be paid back elsewhere in the same group.
+//
+// What the body does get right, and what a future compiler swap needs:
+// - the root-ptr cell is reached by a PRIVATE POOL word equal to 0x03007FF0
+//   itself (`ldr r3,[pc,#28]`), so the cell is spelled as an assembler
+//   absolute symbol declared *inside* the body -- promotion's splice keeps
+//   only the brace-matched function text, and a CONST holding a SYMBOL_REF is
+//   the one shape agbcc sends through the literal pool (cf. SoundVoiceInit's
+//   `.set` block in this file).
+// - the callback is NOT called through a C function pointer: agbcc lowers
+//   that to its `bl _call_via_r2` runtime helper, while the ROM's
+//   `bl 0x0802C10C` targets the standalone `bx r3` thunk (asm/sound_beb4.s,
+//   manifest-owned) reached with the callback preloaded into r3. Pinning the
+//   chain to r3 and spelling the call as a direct call to that symbol moves
+//   the relocation onto _0802C10C and drops the helper name the slice link
+//   cannot resolve.
+// - r6 holds the zero reused by node[0], node[44] and the head store. It must
+//   be materialised where the ROM materialises it (after the head null test,
+//   not in the prologue) and it must not be left dead: an unused pin gets no
+//   prologue save and the stores collapse back to two `movs r0,#0`.
+// Probe: OVERSIZED 10/68, first difference +0x9 (the gate's missing TST).
+extern void _0802C10C(u32 bits); // 0x0802C10C `bx r3` dispatch thunk
 void SoundVoiceCleanup(void *unused, void *chan){
     (void)unused;
     volatile u8 *c = (volatile u8*)chan;
+#ifdef __APPLE__
+    u32 z;
+    u32 cb;
+#else
+    register u32 z __asm__("r6");
+    register u32 cb __asm__("r3");
+#endif
+    volatile u32 *node;
     if ((c[0] & 0x80)==0) return;
-    volatile u32 *ch = (volatile u32*)((uintptr_t)chan+32);
-    volatile u32 *node = (volatile u32*)*ch;
-    while(node){
-        u8 mode = ((volatile u8*)node)[0];
-        if (mode!=0){
-            u8 mode_bits = ((volatile u8 *)node)[1] & 7u;
-            if (mode_bits != 0){
-                volatile u32 *cell = (volatile u32*)SOUND_ROOT_PTR_CELL;
-                volatile u8 *root = (volatile u8 *)(uintptr_t)*cell;
-                u32 callback = *(volatile u32 *)(root + 44);
-                ((void (*)(u32, void *))(uintptr_t)callback)(mode_bits, chan);
+    node = (volatile u32 *)*(volatile u32*)((uintptr_t)chan+32);
+    if (node != 0) {
+        z = 0;
+        do {
+            u8 mode = ((volatile u8*)node)[0];
+            if (mode != 0){
+                u32 mode_bits = ((volatile u8 *)node)[1] & 7u;
+                if (mode_bits != 0){
+#ifndef __APPLE__
+                    { extern u8 SndRootCell[];
+                      __asm__(".globl SndRootCell\nSndRootCell = 0x03007FF0\n");
+                      cb = *(volatile u32 *)((uintptr_t)*(volatile u32 *)(uintptr_t)SndRootCell + 44u); }
+#else
+                    cb = *(volatile u32 *)((uintptr_t)*(volatile u32 *)SOUND_ROOT_PTR_CELL + 44u);
+#endif
+                    _0802C10C(mode_bits);
+                }
+                ((volatile u8*)node)[0] = (u8)z;
             }
-            ((volatile u8*)node)[0]=0;
-        }
-        *(volatile u32 *)((volatile u8 *)node + 44)=0;
-        node = (volatile u32 *)(uintptr_t)*(volatile u32 *)((volatile u8 *)node + 52);
+            *(volatile u32 *)((volatile u8 *)node + 44) = z;
+            node = (volatile u32 *)(uintptr_t)*(volatile u32 *)((volatile u8 *)node + 52);
+        } while (node != 0);
     }
-    *(volatile u32 *)((volatile u8 *)chan + 32)=0;
+    *(volatile u32 *)((volatile u8 *)chan + 32) = (u32)(uintptr_t)node;
 }
 #ifndef __APPLE__
 void _0802C11C(void *a, void *b) __attribute__((alias("SoundVoiceCleanup")));

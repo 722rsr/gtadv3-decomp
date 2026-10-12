@@ -1092,21 +1092,23 @@ void sub_0802CC34(void *a, void *b) __attribute__((alias("SoundStart_2CC34")));
 // state |= 0x80000000; per-channel _0802C11C cleanup loop; magic restored).
 // ============================================================================
 void SoundStopAll_2CD18(void *rec) {
-    volatile u8 *r6 = (volatile u8 *)rec;
-    u32 magic = *(volatile u32 *)(r6 + 52);
-    if (magic != 0x68736D53u) return;
-    *(volatile u32 *)(r6 + 52) = magic + 1;
-    u32 v = *(volatile u32 *)(r6 + 4) | 0x80000000u;
-    *(volatile u32 *)(r6 + 4) = v;
-    u8 n = r6[8];
-    volatile u8 *r5 = (volatile u8 *)(uintptr_t)*(volatile u32 *)(r6 + 44);
-    if (n != 0) {
-        for (u8 i = n; i != 0; i--) {
-            _0802C11C((void *)rec, (void *)r5);
-            r5 += 80;
-        }
+    u8 *s = (u8 *)rec;
+    // ROM: load the magic once, compare, store magic+1, and re-materialize the
+    // constant for the final restore. The loop count is a plain int so the
+    // decrement stays `subs r4,#1` (`bgt`), not the `u8` narrowing sequence,
+    // and `rec` is passed through unchanged (`adds r0,r6,#0`).
+    u32 m = *(volatile u32 *)(s + 52);
+    if (m != 0x68736D53u) return;
+    *(volatile u32 *)(s + 52) = m + 1;
+    *(volatile u32 *)(s + 4) |= 0x80000000u;
+    int n = s[8];
+    u8 *ch = (u8 *)(uintptr_t)*(volatile u32 *)(s + 44);
+    while (n > 0) {
+        _0802C11C(s, ch);
+        n--;
+        ch += 80;
     }
-    *(volatile u32 *)(r6 + 52) = magic;
+    *(volatile u32 *)(s + 52) = 0x68736D53u;
 }
 #ifndef __APPLE__
 void _0802CD18(void *a) __attribute__((alias("SoundStopAll_2CD18")));

@@ -385,13 +385,34 @@ void *Surface_GetRecord12(void) { // _08005FD4: push lr; bl 05F98; ldr r0,[r0]; 
     void *root = Surface_GetRoot();
     return *(void**)root;
 }
-void Surface_ScatterInit(void *root) {
-    // _08006018: DMA scatter 128 entries from root+28 etc to VRAM
-    (void)root;
+void Surface_ScatterInit(void *unused) {
+    // _08006018: ignore the passed pointer, re-fetch the root via _08005F98,
+    // then issue 128 halfword-DMA transfers (ctrl 0x80000040 = 64 halfwords)
+    // to VRAM 0x06004000. Source = u32[root+28], advanced by the u16 stride at
+    // u16[*(u32*)root + 8]; destination advances 128 bytes per transfer; the
+    // ROM re-reads DMACNT (the poll) each iteration.
+    (void)unused;
+    void *root = Surface_GetRoot();
+    // Declaration order follows the ROM's materialization order: the VRAM
+    // destination constant first, then the two root fields, then the DMACNT
+    // control word (kept in a named local, as the ROM holds it in r6), then
+    // the counter. The field loads are non-volatile so the halfword load lands
+    // directly in its home register.
+    u32 dst = 0x06004000;
+    u16 stride = *(u16 *)((u8 *)(*(void **)root) + 8);
     volatile u32 *dma = (volatile u32 *)0x040000D4;
-    dma[0] = 0x06004000;
-    dma[1] = 0;
-    dma[2] = 0x80000040;
+    u32 cnt = 0x80000040;
+    u32 src = *(u32 *)((u8 *)root + 28);
+    int i = 127;
+    do {
+        dma[0] = src;
+        dma[1] = dst;
+        dma[2] = cnt;
+        (void)dma[2];
+        dst += 128;
+        src += stride;
+        i--;
+    } while (i >= 0);
 }
 
 // Helpers for resource_more / leaf family — evidence-backed skeletons with exact widths
@@ -532,6 +553,7 @@ void *_08005FE0(int a) __attribute__((alias("Surface_IndexRecord")));
 int _08005FF8(void) __attribute__((alias("Surface_Nop0")));
 int _08005FFC(int a, int b, int c) __attribute__((alias("Surface_Adjust")));
 void _08006018(void *a) __attribute__((alias("Surface_ScatterInit")));
+void sub_08006018(void *a) __attribute__((alias("Surface_ScatterInit")));
 void _08007ABC(void *a, int b, int c) __attribute__((alias("Course_ResourceLeaf_07ABC")));
 void sub_08007ABC(void *a, int b, int c) __attribute__((alias("Course_ResourceLeaf_07ABC")));
 void Sub_08007ABC(void *a, int b, int c) __attribute__((alias("Course_ResourceLeaf_07ABC")));
