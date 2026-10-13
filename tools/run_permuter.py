@@ -93,6 +93,11 @@ def declaration_bounds(masked: str, lo: int) -> tuple[int, int]:
 def function_ranges(source: str):
     """Top-level definitions, using balanced delimiters rather than line regexes."""
     masked = strip_noncode(plain_context(source))
+    # Directives can contain parentheses and braces that are not C declarations.
+    # Preserve offsets so callers still splice the original translation unit.
+    masked = re.sub(r"^[ \t]*#(?:[^\n]*\\\n)*[^\n]*(?:\n|$)",
+                    lambda m: re.sub(r"[^\n]", " ", m[0]), masked,
+                    flags=re.MULTILINE)
     start = pos = 0
     while pos < len(masked):
         if masked[pos] == ";":
@@ -117,13 +122,28 @@ def prepare_source(source: str, name: str) -> tuple[str, str, str]:
         raise ValueError(f"expected one definition of {name}, found {len(selected)}")
     _, start, opening, end = selected[0]
     body = source[start:end]
-    # The fork's C parser cannot represent register asm declarators or
-    # statement expressions, and cannot parse attributed definitions. Do not
-    # silently discard constraints: opaque the offending construct as a
-    # b64literal pragma (restored verbatim at render time) or reject it.
+    # The parser sees an opaque, zero-argument call for each outermost GNU
+    # statement expression. The compiler adapter restores the exact expression;
+    # candidates deleting, duplicating or changing a placeholder are refused.
+    expressions = {}
     masked = strip_noncode(body)
-    if re.search(r"\(\s*\{", masked):
-        raise ValueError("unsupported target: GNU statement expression")
+    if '__gtadv_opaque_expr_' in masked:
+        raise ValueError('reserved opaque-expression identifier in original source')
+    spans = []
+    covered = -1
+    for match in re.finditer(r'\(\s*\{', masked):
+        if match.start() < covered:
+            continue
+        expression_end = matching_delimiter(masked, match.start(), '(', ')')
+        if expression_end is None:
+            raise ValueError('unbalanced GNU statement expression')
+        token = f'__gtadv_opaque_expr_{len(spans)}'
+        expressions[token] = body[match.start():expression_end+1]
+        spans.append((match.start(), expression_end+1, token))
+        covered = expression_end + 1
+    for lo, hi, token in reversed(spans):
+        body = body[:lo] + token + '()' + body[hi:]
+    masked = strip_noncode(body)
     pins = []
     for lo, hi in reversed(list(extension_spans(body))):
         if "attribute" in body[lo:hi] or lo < opening - start:
@@ -157,10 +177,37 @@ def prepare_source(source: str, name: str) -> tuple[str, str, str]:
     if pins:
         # After the preamble: the pin types may use its typedefs.
         context = context + "".join(pin + "\n" for pin in reversed(pins))
+    # Pretend types are parser hints only, never declarations compiled into the TU.
+    context += ''.join(f'\nint {token}(void);' for token in expressions)
     # PERM_PRETEND supplies types to the randomizer, but never to the compiler.
     # The real declarations remain in before.c/after.c, including GNU attributes.
-    base = f"PERM_PRETEND(\n{context}\n)\n{body}\n"
+    expression_metadata = ''.join(
+        f'\n#pragma _permuter opaque_expression {token} {base64.b64encode(expr.encode()).decode()}\n'
+        for token, expr in expressions.items())
+    base = f"PERM_PRETEND(\n{context}\n)\n{body}\n" + expression_metadata
     return base, source[:start], source[end:]
+
+
+def opaque_expressions(base: str) -> dict:
+    return {name: base64.b64decode(encoded, validate=True).decode()
+            for name, encoded in re.findall(
+                r'^#pragma _permuter opaque_expression (\w+) (\S+)$', base, re.M)}
+
+
+def restore_expressions(source: str, expressions: dict) -> str:
+    masked = strip_noncode(source)
+    present = re.findall(r'\b__gtadv_opaque_expr_\w+\b', masked)
+    if set(present) != set(expressions) or any(present.count(name) != 1 for name in expressions):
+        raise ValueError('candidate deleted, duplicated or changed an opaque expression')
+    spans = []
+    for name, expression in expressions.items():
+        match = re.search(r'\b' + re.escape(name) + r'\s*\(\s*\)', masked)
+        if match is None:
+            raise ValueError('candidate changed opaque expression arguments')
+        spans.append((match.start(), match.end(), expression))
+    for lo, hi, expression in sorted(spans, reverse=True):
+        source = source[:lo] + expression + source[hi:]
+    return source
 
 
 def mappings(obj: Path, section: str, start: int, size: int):
@@ -220,7 +267,8 @@ def compile_candidate(work: Path, source: Path, output: Path):
     with tempfile.TemporaryDirectory(prefix="compile-", dir=work / "scratch") as tmp:
         directory = Path(tmp)
         tu, asm, obj = [directory / name for name in ("unit.i", "unit.s", "unit.o")]
-        tu.write_text((work / "before.c").read_text() + source.read_text()
+        candidate_source = restore_expressions(source.read_text(), meta.get('opaque_expressions', {}))
+        tu.write_text((work / "before.c").read_text() + candidate_source
                       + (work / "after.c").read_text())
         run([probe.AGBCC, *meta["flags"], tu, "-o", asm], capture_output=True)
         run(["arm-none-eabi-as", "-mcpu=arm7tdmi", asm, "-o", obj], capture_output=True)
@@ -280,6 +328,7 @@ def prepare(function: str, work: Path):
     (work / "after.c").write_text(after)
     vma, size = int(record["vma"], 16), record["rom_bytes"]
     meta = {"function": function, "body_name": name, "source": record["source"],
+            "opaque_expressions": opaque_expressions(base),
             "vma": vma, "rom_bytes": size, "flags": FLAGS,
             "source_sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
             "preprocessed_sha256": hashlib.sha256(preprocessed.encode()).hexdigest(),

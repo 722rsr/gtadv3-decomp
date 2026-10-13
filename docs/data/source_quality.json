@@ -3655,6 +3655,15 @@
    "name": "_0800A62C",
    "size": 60
   },
+  "0x0800a668": {
+   "class": "c_fakematch",
+   "detail": {
+    "directive": 1
+   },
+   "file": "src/car_tick_dispatch.c",
+   "name": "CarTick_Dispatcher",
+   "size": 660
+  },
   "0x0800a8fc": {
    "class": "c",
    "file": "src/car_tick_helpers.c",
@@ -4674,6 +4683,19 @@
    "name": "MenuFF78_118DC",
    "size": 124
   },
+  "0x08011958": {
+   "class": "partial",
+   "detail": {
+    "barrier": 16,
+    "directive": 2,
+    "insn": 4,
+    "insn_lines": 4,
+    "pin": 20
+   },
+   "file": "src/menu_ff78_l.c",
+   "name": "MenuFF78_11958",
+   "size": 496
+  },
   "0x08011cbc": {
    "class": "c",
    "file": "src/menu_ff78_d.c",
@@ -4982,6 +5004,17 @@
    "name": "MenuFF78_13AF4",
    "size": 116
   },
+  "0x08013b68": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 3,
+    "directive": 2,
+    "pin": 3
+   },
+   "file": "src/menu_ff78_s.c",
+   "name": "MenuFF78_13B68",
+   "size": 740
+  },
   "0x08013e4c": {
    "class": "c",
    "file": "src/menus.c",
@@ -5280,6 +5313,17 @@
    "file": "src/rec35_16002.c",
    "name": "Rec35_PlaceByTable",
    "size": 116
+  },
+  "0x080162e0": {
+   "class": "partial",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 2,
+    "pin": 7
+   },
+   "file": "src/rec35_16002.c",
+   "name": "Rec35_Record49Tail",
+   "size": 212
   },
   "0x080163b4": {
    "class": "c",
@@ -6189,6 +6233,19 @@
    "name": "_08001B27C",
    "size": 232
   },
+  "0x0801b410": {
+   "class": "partial",
+   "detail": {
+    "barrier": 2,
+    "directive": 1,
+    "insn": 2,
+    "insn_lines": 4,
+    "pin": 10
+   },
+   "file": "src/race_scene.c",
+   "name": "Race_Scene_BHandler_1B410",
+   "size": 136
+  },
   "0x0801b730": {
    "class": "c_fakematch",
    "detail": {
@@ -6824,6 +6881,18 @@
    "file": "src/race_scene_e.c",
    "name": "_080020F50",
    "size": 200
+  },
+  "0x08021018": {
+   "class": "partial",
+   "detail": {
+    "barrier": 3,
+    "insn": 1,
+    "insn_lines": 10,
+    "pin": 12
+   },
+   "file": "src/race_scene_e.c",
+   "name": "_080021018",
+   "size": 164
   },
   "0x08021248": {
    "class": "c",
@@ -8418,6 +8487,15 @@
    "file": "src/runtime_state_dispatch.c",
    "name": "ResourceWrapper_263C4",
    "size": 26
+  },
+  "0x080263e0": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 2
+   },
+   "file": "src/sprite_obj_263e0.c",
+   "name": "Sprite_BlitTiles",
+   "size": 248
   },
   "0x080264d8": {
    "class": "c_fakematch",
@@ -10673,12 +10751,12 @@
    "functions": 838
   },
   "c_fakematch": {
-   "bytes": 36174,
-   "functions": 404
+   "bytes": 37822,
+   "functions": 407
   },
   "partial": {
-   "bytes": 10136,
-   "functions": 69
+   "bytes": 11144,
+   "functions": 73
   }
  },
  "version": 1

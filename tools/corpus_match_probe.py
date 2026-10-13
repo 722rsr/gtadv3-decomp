@@ -754,16 +754,8 @@ def analyze(blob: bytes, vma: int) -> dict:
 
 
 def classify(rom_ins: str, cand_ins: str) -> str:
-    """Name *how* a candidate differs, from objdump mnemonic sequences."""
-    def mnemonics(text: str) -> list[str]:
-        return [ln.split("\t")[2].strip() for ln in text.splitlines()
-                if ln.count("\t") >= 3 and ":" in ln]
-    r, c = mnemonics(rom_ins), mnemonics(cand_ins)
-    if r == c:
-        return "identical mnemonics (register/operand choice)"
-    if sorted(r) == sorted(c):
-        return "instruction order"
-    return "instruction selection"
+    from instruction_diff import classify_text
+    return classify_text(rom_ins, cand_ins)
 
 
 _ELF_CACHE: dict[Path, tuple[dict[str, bytes], dict[str, list[tuple[int, str, str, int]]]]] = {}
@@ -1177,7 +1169,9 @@ def compare_function(rom: bytes, vma: int, name: str, blob: bytes, spans: dict[i
 
     rom_text = objdump_text(ref, vma, f"{name}_rom")
     blob_text = objdump_text(blob, vma, f"{name}_cand")
-    rec["class"] = classify(rom_text, blob_text)
+    from instruction_diff import analyze as instruction_diff
+    rec["instruction_diff"] = instruction_diff(ref, blob, vma, rom_text, blob_text)
+    rec["class"] = rec["instruction_diff"]["class"]
     return rec
 
 

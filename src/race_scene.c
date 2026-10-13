@@ -215,7 +215,9 @@ tail: {
 }
 void _08001A4AC(void) __attribute__((alias("Race_Scene_Dispatch_1A4AC")));
 
-extern void Sub_08002A86C(void *rec, u32 bits, u32 flag);
+extern void sub_08002A86C(void *rec, u32 bits, u32 flag);
+extern s16 _080258E0(int idx);
+extern void _0802B1E4(u32 vol);
 // The ROM never keeps the work-area base in a register: every WA-relative
 // access is rebuilt as two pool words (`ldr r0,=0x03001780 / ldr r2,=0x10CA /
 // adds r1,r0,r2`). A folded `WORK_AREA_BASE + off` collapses to one word and
@@ -234,32 +236,60 @@ void Race_Scene_BHandler_1B410(void) {
             ".globl RS1B410_O10CA\nRS1B410_O10CA = 0x000010CA\n"
             ".globl RS1B410_O1110\nRS1B410_O1110 = 0x00001110\n"
             ".globl RS1B410_O10FE\nRS1B410_O10FE = 0x000010FE\n");
-    // Loop shape (measured 2026-10-13): the ROM keeps BOTH an index counter
-    // (r4: 0,1,2...) and a byte-offset accumulator (r5: 0,284,568...) and
-    // reloads the bound with plain indexed `ldrsh r0,[r1/r6,rN]` (rN=0), so
-    // the bound pointer is plain `s16 *` (volatile emits `ldrh+lsl+asr`) and
-    // the call address is `base + off` with an explicit `off += 284`
-    // accumulator (an `i * 284` product strength-reduces to a running base
-    // pointer instead, -4 bytes). Length-exact at 136 B; remaining delta is
-    // register permutation only (countp r1->r6 copy vs direct callee-saved).
-    s16 *countp = (s16 *)((uintptr_t)&RS1B410_WA
-                                            + (uintptr_t)&RS1B410_O10CA);
+    // Exact isolated body and pool: 136/136 bytes. In the loop, `i` starts in
+    // r4 before the work-area address is built in r0/r2/r1; the initial bound
+    // test uses that r1 pointer, then the guarded loop copies it to r6 and
+    // initializes its byte offset in r5. Keep `i` and `off` separate, reload
+    // the plain-s16 bound on each iteration, and advance `off` before `i`.
+    // The call-base local is pinned to r0 and the empty read/write constraint
+    // keeps agbcc from folding it back to the r1 literal form. The sound tail
+    // keeps the work-area base/offset in r1/r2; explicit extension of the
+    // signed byte is needed because the optimizer can otherwise reduce its
+    // nonzero test to an unsigned byte test. The signed halfword load is
+    // spelled explicitly to preserve the ROM's `mov r1,#0 / ldrsh r0,[r0,r1]`.
+    register u32 workbase __asm__("r0");
+    register u32 countoff __asm__("r2");
+    register s16 *countp __asm__("r1");
     int i;
-    u32 off = 0u;
-    for (i = 0; i < (int)*countp; i++, off += 284u) {
-        Sub_08002A86C((void *)(uintptr_t)(0x03004EA4u + off),
-                      1, 0);
+    i = 0;
+    workbase = (u32)(uintptr_t)&RS1B410_WA;
+    countoff = (u32)(uintptr_t)&RS1B410_O10CA;
+    countp = (s16 *)(uintptr_t)(workbase + countoff);
+    if (i < (int)*countp) {
+        register s16 *bound __asm__("r6") = countp;
+        register u32 off __asm__("r5") = 0u;
+        do {
+            register u32 callbase __asm__("r0");
+            callbase = 0x03004EA4u;
+            __asm__ volatile("" : "+r"(callbase));
+            RS_CALLEE(Sub_08002A86C, sub_08002A86C)(
+                (void *)(uintptr_t)(off + callbase), 1, 0);
+            off += 284u;
+            i++;
+        } while (i < (int)*bound);
     }
-    if (Ghost_FlagTest(32u) == 0u) {
-        s8 v = *(volatile s8 *)((uintptr_t)&RS1B410_WA + (uintptr_t)&RS1B410_O1110);
+    if (RS_CALLEE(Ghost_FlagTest, _08018ACC)(32u) == 0u) {
+        register u32 workbase2 __asm__("r1") = (u32)(uintptr_t)&RS1B410_WA;
+        register u32 offset2 __asm__("r2") = (u32)(uintptr_t)&RS1B410_O1110;
+        int v = (int)*(volatile u8 *)(uintptr_t)(workbase2 + offset2);
+        // Sign extension is behaviorally required for an s8 value, although
+        // a plain `v != 0` lets the compiler optimize it away.
+        __asm__ volatile("lsl %0, %0, #24\n\tasr %0, %0, #24" : "+l"(v));
         if (v != 0) {
-            s16 c = *(volatile s16 *)((uintptr_t)&RS1B410_WA + (uintptr_t)&RS1B410_O1110 - 18u);
-            u16 song = (u16)Course_GetSong((int)c);
-            SoundSetMasterVol((u32)song);
+            offset2 -= 18u;
+            register u32 countaddr __asm__("r0") = workbase2 + offset2;
+            __asm__ volatile("" : "+r"(countaddr));
+            register int c __asm__("r0");
+            // Load the signed halfword into the address register, as the ROM
+            // does; this is equivalent to `*(s16 *)countaddr`.
+            __asm__ volatile("mov r1, #0\n\tldrsh r0, [r0, r1]"
+                             : "=r"(c) : "0"(countaddr) : "r1");
+            u16 song = (u16)RS_CALLEE(Course_GetSong, _080258E0)(c);
+            RS_CALLEE(SoundSetMasterVol, _0802B1E4)((u32)song);
         }
     }
-    Ghost_FlagOp(128u, 1);
-    Ghost_FlagOp(0x10000u, 1);
+    RS_CALLEE(Ghost_FlagOp, _08018AA8)(128u, 1);
+    RS_CALLEE(Ghost_FlagOp, _08018AA8)(0x10000u, 1);
 }
 void _08001B410(void) __attribute__((alias("Race_Scene_BHandler_1B410")));
 

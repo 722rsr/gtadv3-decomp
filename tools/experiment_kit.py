@@ -434,6 +434,7 @@ class CompileResult:
     #: Name of the emitted `.text.*` section, needed to resolve relocations.
     section: str = ""
     error: str | None = None
+    symbol_size: int | None = None
 
 
 class CandidateAdapter:
@@ -453,12 +454,15 @@ class CandidateAdapter:
     rather than a plausible-looking stale hit.
     """
 
-    def __init__(self, work: Path, *, cache_dir: Path | None = None, meter: BudgetMeter | None = None):
+    def __init__(self, work: Path, *, cache_dir: Path | None = None, meter: BudgetMeter | None = None,
+                 flags: tuple[str, ...] | None = None, include_dirs: tuple[Path, ...] = ()):
         self.work = Path(work)
         self.work.mkdir(parents=True, exist_ok=True)
         self.cache_dir = Path(cache_dir) if cache_dir else self.work / "cache"
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.meter = meter
+        self.flags = flags or AGBCC_FLAGS
+        self.include_dirs = include_dirs
         self.rom = probe.ROM.read_bytes()
         self.rom_sha256 = digest_bytes(self.rom)
         code_symbols = probe.load_code_symbols()
@@ -488,7 +492,7 @@ class CandidateAdapter:
             "tool_version": TOOL_VERSION,
             "compiler": str(probe.AGBCC.relative_to(ROOT)),
             "compiler_sha256": digest_path(probe.AGBCC),
-            "flags": list(AGBCC_FLAGS),
+            "flags": list(self.flags),
             "rom": str(probe.ROM.relative_to(ROOT)),
             "rom_sha256": self.rom_sha256,
             "symbols_sha256": self._symbol_key,
@@ -525,7 +529,7 @@ class CandidateAdapter:
         parts = [
             normalized, str(self.rom_sha256),
             digest_path(probe.AGBCC) or "no-agbcc",
-            "|".join(AGBCC_FLAGS), self._symbol_key, str(TOOL_VERSION),
+            "|".join(self.flags), self._symbol_key, str(TOOL_VERSION),
         ]
         return hashlib.sha256("\x00".join(parts).encode()).hexdigest()[:32]
 
@@ -557,7 +561,8 @@ class CandidateAdapter:
         i_file = directory / f"{tag}.i"
         with i_file.open("w", encoding="utf-8") as handle:
             preprocess = subprocess.run(
-                ["clang", "-E", "-nostdinc", "-undef", *probe.inc_flags(), str(compile_input)],
+                ["clang", "-E", "-nostdinc", "-undef", *probe.inc_flags(),
+                 *("-I" + str(p) for p in self.include_dirs), str(compile_input)],
                 text=True, stdout=handle, stderr=subprocess.PIPE)
         if preprocess.returncode:
             return None, f"preprocess: {preprocess.stderr.strip()[:1500]}"
@@ -574,7 +579,7 @@ class CandidateAdapter:
         if self.meter is not None:
             self.meter.spend()
         s_file = directory / f"{tag}.s"
-        built = subprocess.run([str(probe.AGBCC), *AGBCC_FLAGS, str(i_file), "-o", str(s_file)],
+        built = subprocess.run([str(probe.AGBCC), *self.flags, str(i_file), "-o", str(s_file)],
                                text=True, capture_output=True)
         if built.returncode:
             return None, f"agbcc: {(built.stderr or built.stdout).strip()[:1500]}"
@@ -615,7 +620,8 @@ class CandidateAdapter:
                 f"no section {key_name}; compiler emitted: {available}"))
         relocs = probe.relocations(o_file, key_name)
         blob, calls, pools = probe.link_function(sections[key_name], vma, relocs, key_name, self._resolver)
-        return CompileResult(ok=True, blob=blob, calls=calls, pools=pools, section=key_name)
+        return CompileResult(ok=True, blob=blob, calls=calls, pools=pools, section=key_name,
+                             symbol_size=probe.symbol_sizes(o_file).get(function))
 
     # -- scoring ---------------------------------------------------------
 
@@ -627,7 +633,8 @@ class CandidateAdapter:
         probe.WORK = self.work / "score"
         try:
             record = probe.compare_function(self.rom, contract.vma, contract.name, compiled.blob,
-                                            contract.span, compiled.calls, compiled.pools)
+                                            contract.span, compiled.calls, compiled.pools,
+                                            sym_size=compiled.symbol_size)
         finally:
             probe.WORK = previous
         if record is None:
