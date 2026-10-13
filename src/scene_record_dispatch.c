@@ -315,7 +315,7 @@ done:;
 // 7BFC variant: x=b2+r3-in, y=b3+caller-sp+0, z=b0+r1-in(kind),
 // 2ED0 r3=caller-sp+4, stack=(caller-sp+8, b1, 1, caller-sp+12,
 // caller-sp+16, 1).
-static void CourseIter7BFC_Static(void *rec, int kind, int dx3,
+static inline void CourseIter7BFC_Static(void *rec, int kind, int dx3,
                                   u32 s0, u32 s1, u32 s2, u32 s3, u32 s4) {
     u8 *r4 = (u8 *)rec;
     void *arr = _0800748C(_08007498(*(void **)(r4 + 4), kind));
@@ -1450,13 +1450,13 @@ extern void *RomEmit861C(void *r7, int w);   // 0x0800861C
 extern void *RomEmit89FC(void *r7);          // 0x080089FC
 extern u32 RomLeaf7658(void *a);             // 0x08007658
 
-static u8 *phase_case148(u8 *r7);
-static u8 *phase_case3(u8 *r7);
-static u8 *phase_case5(u8 *r7);
+static inline u8 *phase_case148(u8 *r7);
+static inline u8 *phase_case3(u8 *r7);
+static inline u8 *phase_case5(u8 *r7);
 
 // Case 5 short burst + random/award blocks, flowing into the shared
 // [32]/[28]/[80]/[24] tail (941E) which no other case reaches.
-static u8 *phase_case5(u8 *r7) {
+static inline u8 *phase_case5(u8 *r7) {
     u8 *cc = *(u8 **)(uintptr_t)0x030003E0u;
     *(u16 *)(r7 + 0) = 2u;
     *(u16 *)(r7 + 2) = 0x40CDu;
@@ -1597,6 +1597,111 @@ static u8 *phase_case5(u8 *r7) {
     return r7;
 }
 
+// Case 1/4/8 record burst + counter gate (8ED8). Returns tail cursor.
+// NOTE: all three phase_case helpers plus CourseIter7BFC_Static are
+// `static inline` with definitions preceding CoursePhaseMachine_08CA0:
+// agbcc only inlines helpers defined before use, and a non-inlined helper
+// emits a `bl` with no ROM VMA (UNRESOLVED_RELOCATION). Measured 2026-10-13:
+// `inline` alone moved _08008CA0 612 -> 1488 B, moving 148/3 ahead as well
+// cleared the class (PARTIAL 140/2384, 2316-B candidate, all calls resolve).
+static inline u8 *phase_case148(u8 *r7) {
+    u8 *cc = *(u8 **)(uintptr_t)0x030003E0u;
+    r7 = (u8 *)RomEmit8768(r7, (int)*(u32 *)(cc + 64));
+    r7 = (u8 *)RomEmit88B0(r7, (int)*(u32 *)(cc + 68));
+    *(u16 *)(r7 + 0) = 2u;
+    *(u16 *)(r7 + 2) = 0x40A7u;
+    *(u16 *)(r7 + 4) = (u16)(((u32)(u16)(*(u16 *)(cc + 38)) << 12)
+                             | (u32)(u16)(*(u16 *)(cc + 50)));
+    r7 += 8;
+    *(u16 *)(r7 + 0) = 2u;
+    *(u16 *)(r7 + 2) = 0x40CDu;
+    *(u16 *)(r7 + 4) = (u16)(((u32)(u16)(*(u16 *)(cc + 38)) << 12)
+                             | (u32)(u16)(*(u16 *)(cc + 48)));
+    r7 += 8;
+    *(u16 *)(r7 + 0) = 0x8000u;
+    *(u16 *)(r7 + 2) = 220u;
+    *(u16 *)(r7 + 4) = (u16)(((u32)(u16)((u16)(*(u16 *)(cc + 52)) + 24u))
+                             | ((u32)(u16)(*(u16 *)(cc + 54)) << 12));
+    r7 += 8;
+    *(u16 *)(r7 + 0) = 0x8000u;
+    *(u16 *)(r7 + 2) = 227u;
+    *(u16 *)(r7 + 4) = (u16)(((u32)(u16)((u16)(*(u16 *)(cc + 52))
+                             + (u16)((u16)(*(u16 *)(cc + 10)) * 2u)))
+                             | ((u32)(u16)(*(u16 *)(cc + 54)) << 12));
+    r7 += 8;
+    u16 lane = *(u16 *)(cc + 38);
+    CourseEmit7B18(cc + 88, 12, 0, 0, lane, 1u, 0u, 0u);
+    CourseEmit7B18(cc + 88, 15, 64, 4, lane, 1u, 0u, 0u);
+    CourseEmit7B18(cc + 88, 15, 80, 4, lane, 1u, 0u, 0u);
+    CourseEmit7B18(cc + 88, 15, 96, 4, lane, 1u, 0u, 0u);
+    CourseEmit7B18(cc + 88, 16, 104, 4, lane, 1u, 0u, 0u);
+    CourseEmit7B18(cc + 88, 13, 120, 0, lane, 1u, 0u, 0u);
+    CourseEmit7B18(cc + 88, 16, 168, 4, lane, 1u, 0u, 0u);
+    CourseEmit7B18(cc + 88, 14, 184, 0, lane, 1u, 0u, 0u);
+    CourseEmit7B18(cc + 88, 15, 208, 4, lane, 1u, 0u, 0u);
+    CourseEmit7B18(cc + 88, 16, 224, 4, lane, 1u, 0u, 0u);
+    u16 c4 = *(u16 *)(cc + 4);
+    if ((int)(s16)c4 <= 0) return r7;
+    u16 c4n = (u16)(c4 - 1u);
+    *(u16 *)(cc + 4) = c4n;
+    if ((s32)(s16)c4n > 63
+        && _08002D97C(_08002D978((int)(s16)c4n, 8), 2) == 0)
+        return r7;
+    return (u8 *)RomEmit861C(r7, (int)*(u32 *)(cc + 72));
+}
+
+// Case 3 variant (90A4): conditional head emits, 8-burst, same counter gate.
+static inline u8 *phase_case3(u8 *r7) {
+    u8 *wa = (u8 *)(uintptr_t)0x03001780u;
+    u8 *cc = *(u8 **)(uintptr_t)0x030003E0u;
+    if (*(cc + 78) == 0u
+        || _08002D97C(_08002D978((int)*(u32 *)(wa + 0x10D8), 3), 2) != 0)
+        r7 = (u8 *)RomEmit8768(r7, (int)*(u32 *)(cc + 64));
+    u16 c34 = *(u16 *)(cc + 34);
+    if (c34 != 0u) {
+        u16 n34 = (u16)(c34 - 1u);
+        *(u16 *)(cc + 34) = n34;
+        if (_08002D97C(_08002D978((int)(s16)n34, 3), 2) != 0)
+            r7 = (u8 *)RomEmit88B0(r7, (int)*(u32 *)(cc + 72));
+    } else {
+        r7 = (u8 *)RomEmit88B0(r7, (int)*(u32 *)(cc + 68));
+    }
+    *(u16 *)(r7 + 0) = 2u;
+    *(u16 *)(r7 + 2) = 0x40CDu;
+    *(u16 *)(r7 + 4) = (u16)(((u32)(u16)(*(u16 *)(cc + 38)) << 12)
+                             | (u32)(u16)(*(u16 *)(cc + 48)));
+    r7 += 8;
+    *(u16 *)(r7 + 0) = 0x8000u;
+    *(u16 *)(r7 + 2) = 220u;
+    *(u16 *)(r7 + 4) = (u16)(((u32)(u16)((u16)(*(u16 *)(cc + 52)) + 24u))
+                             | ((u32)(u16)(*(u16 *)(cc + 54)) << 12));
+    r7 += 8;
+    *(u16 *)(r7 + 0) = 0x8000u;
+    *(u16 *)(r7 + 2) = 227u;
+    *(u16 *)(r7 + 4) = (u16)(((u32)(u16)((u16)(*(u16 *)(cc + 52))
+                             + (u16)((u16)(*(u16 *)(cc + 10)) * 2u)))
+                             | ((u32)(u16)(*(u16 *)(cc + 54)) << 12));
+    r7 += 8;
+    u16 lane = *(u16 *)(cc + 38);
+    CourseEmit7B18(cc + 88, 12, 0, 0, lane, 1u, 0u, 0u);
+    CourseEmit7B18(cc + 88, 15, 64, 4, lane, 1u, 0u, 0u);
+    CourseEmit7B18(cc + 88, 15, 80, 4, lane, 1u, 0u, 0u);
+    CourseEmit7B18(cc + 88, 15, 96, 4, lane, 1u, 0u, 0u);
+    CourseEmit7B18(cc + 88, 16, 104, 4, lane, 1u, 0u, 0u);
+    CourseEmit7B18(cc + 88, 14, 184, 0, lane, 1u, 0u, 0u);
+    CourseEmit7B18(cc + 88, 15, 208, 4, lane, 1u, 0u, 0u);
+    CourseEmit7B18(cc + 88, 16, 224, 4, lane, 1u, 0u, 0u);
+    u16 c4 = *(u16 *)(cc + 4);
+    if ((int)(s16)c4 <= 0) return r7;
+    u16 c4n = (u16)(c4 - 1u);
+    *(u16 *)(cc + 4) = c4n;
+    if ((s32)(s16)c4n > 63
+        && _08002D97C(_08002D978((int)(s16)c4n, 8), 2) == 0)
+        return r7;
+    return (u8 *)RomEmit861C(r7, (int)*(u32 *)(cc + 72));
+}
+
+
 void CoursePhaseMachine_08CA0(void) {
     u8 tmp[80];
     u8 *wa = (u8 *)(uintptr_t)0x03001780u;
@@ -1706,104 +1811,6 @@ void CoursePhaseMachine_08CA0(void) {
 }
 void _08008CA0(void) __attribute__((alias("CoursePhaseMachine_08CA0")));
 void sub_08008CA0(void) __attribute__((alias("CoursePhaseMachine_08CA0")));
-
-// Case 1/4/8 record burst + counter gate (8ED8). Returns tail cursor.
-static u8 *phase_case148(u8 *r7) {
-    u8 *cc = *(u8 **)(uintptr_t)0x030003E0u;
-    r7 = (u8 *)RomEmit8768(r7, (int)*(u32 *)(cc + 64));
-    r7 = (u8 *)RomEmit88B0(r7, (int)*(u32 *)(cc + 68));
-    *(u16 *)(r7 + 0) = 2u;
-    *(u16 *)(r7 + 2) = 0x40A7u;
-    *(u16 *)(r7 + 4) = (u16)(((u32)(u16)(*(u16 *)(cc + 38)) << 12)
-                             | (u32)(u16)(*(u16 *)(cc + 50)));
-    r7 += 8;
-    *(u16 *)(r7 + 0) = 2u;
-    *(u16 *)(r7 + 2) = 0x40CDu;
-    *(u16 *)(r7 + 4) = (u16)(((u32)(u16)(*(u16 *)(cc + 38)) << 12)
-                             | (u32)(u16)(*(u16 *)(cc + 48)));
-    r7 += 8;
-    *(u16 *)(r7 + 0) = 0x8000u;
-    *(u16 *)(r7 + 2) = 220u;
-    *(u16 *)(r7 + 4) = (u16)(((u32)(u16)((u16)(*(u16 *)(cc + 52)) + 24u))
-                             | ((u32)(u16)(*(u16 *)(cc + 54)) << 12));
-    r7 += 8;
-    *(u16 *)(r7 + 0) = 0x8000u;
-    *(u16 *)(r7 + 2) = 227u;
-    *(u16 *)(r7 + 4) = (u16)(((u32)(u16)((u16)(*(u16 *)(cc + 52))
-                             + (u16)((u16)(*(u16 *)(cc + 10)) * 2u)))
-                             | ((u32)(u16)(*(u16 *)(cc + 54)) << 12));
-    r7 += 8;
-    u16 lane = *(u16 *)(cc + 38);
-    CourseEmit7B18(cc + 88, 12, 0, 0, lane, 1u, 0u, 0u);
-    CourseEmit7B18(cc + 88, 15, 64, 4, lane, 1u, 0u, 0u);
-    CourseEmit7B18(cc + 88, 15, 80, 4, lane, 1u, 0u, 0u);
-    CourseEmit7B18(cc + 88, 15, 96, 4, lane, 1u, 0u, 0u);
-    CourseEmit7B18(cc + 88, 16, 104, 4, lane, 1u, 0u, 0u);
-    CourseEmit7B18(cc + 88, 13, 120, 0, lane, 1u, 0u, 0u);
-    CourseEmit7B18(cc + 88, 16, 168, 4, lane, 1u, 0u, 0u);
-    CourseEmit7B18(cc + 88, 14, 184, 0, lane, 1u, 0u, 0u);
-    CourseEmit7B18(cc + 88, 15, 208, 4, lane, 1u, 0u, 0u);
-    CourseEmit7B18(cc + 88, 16, 224, 4, lane, 1u, 0u, 0u);
-    u16 c4 = *(u16 *)(cc + 4);
-    if ((int)(s16)c4 <= 0) return r7;
-    u16 c4n = (u16)(c4 - 1u);
-    *(u16 *)(cc + 4) = c4n;
-    if ((s32)(s16)c4n > 63
-        && _08002D97C(_08002D978((int)(s16)c4n, 8), 2) == 0)
-        return r7;
-    return (u8 *)RomEmit861C(r7, (int)*(u32 *)(cc + 72));
-}
-
-// Case 3 variant (90A4): conditional head emits, 8-burst, same counter gate.
-static u8 *phase_case3(u8 *r7) {
-    u8 *wa = (u8 *)(uintptr_t)0x03001780u;
-    u8 *cc = *(u8 **)(uintptr_t)0x030003E0u;
-    if (*(cc + 78) == 0u
-        || _08002D97C(_08002D978((int)*(u32 *)(wa + 0x10D8), 3), 2) != 0)
-        r7 = (u8 *)RomEmit8768(r7, (int)*(u32 *)(cc + 64));
-    u16 c34 = *(u16 *)(cc + 34);
-    if (c34 != 0u) {
-        u16 n34 = (u16)(c34 - 1u);
-        *(u16 *)(cc + 34) = n34;
-        if (_08002D97C(_08002D978((int)(s16)n34, 3), 2) != 0)
-            r7 = (u8 *)RomEmit88B0(r7, (int)*(u32 *)(cc + 72));
-    } else {
-        r7 = (u8 *)RomEmit88B0(r7, (int)*(u32 *)(cc + 68));
-    }
-    *(u16 *)(r7 + 0) = 2u;
-    *(u16 *)(r7 + 2) = 0x40CDu;
-    *(u16 *)(r7 + 4) = (u16)(((u32)(u16)(*(u16 *)(cc + 38)) << 12)
-                             | (u32)(u16)(*(u16 *)(cc + 48)));
-    r7 += 8;
-    *(u16 *)(r7 + 0) = 0x8000u;
-    *(u16 *)(r7 + 2) = 220u;
-    *(u16 *)(r7 + 4) = (u16)(((u32)(u16)((u16)(*(u16 *)(cc + 52)) + 24u))
-                             | ((u32)(u16)(*(u16 *)(cc + 54)) << 12));
-    r7 += 8;
-    *(u16 *)(r7 + 0) = 0x8000u;
-    *(u16 *)(r7 + 2) = 227u;
-    *(u16 *)(r7 + 4) = (u16)(((u32)(u16)((u16)(*(u16 *)(cc + 52))
-                             + (u16)((u16)(*(u16 *)(cc + 10)) * 2u)))
-                             | ((u32)(u16)(*(u16 *)(cc + 54)) << 12));
-    r7 += 8;
-    u16 lane = *(u16 *)(cc + 38);
-    CourseEmit7B18(cc + 88, 12, 0, 0, lane, 1u, 0u, 0u);
-    CourseEmit7B18(cc + 88, 15, 64, 4, lane, 1u, 0u, 0u);
-    CourseEmit7B18(cc + 88, 15, 80, 4, lane, 1u, 0u, 0u);
-    CourseEmit7B18(cc + 88, 15, 96, 4, lane, 1u, 0u, 0u);
-    CourseEmit7B18(cc + 88, 16, 104, 4, lane, 1u, 0u, 0u);
-    CourseEmit7B18(cc + 88, 14, 184, 0, lane, 1u, 0u, 0u);
-    CourseEmit7B18(cc + 88, 15, 208, 4, lane, 1u, 0u, 0u);
-    CourseEmit7B18(cc + 88, 16, 224, 4, lane, 1u, 0u, 0u);
-    u16 c4 = *(u16 *)(cc + 4);
-    if ((int)(s16)c4 <= 0) return r7;
-    u16 c4n = (u16)(c4 - 1u);
-    *(u16 *)(cc + 4) = c4n;
-    if ((s32)(s16)c4n > 63
-        && _08002D97C(_08002D978((int)(s16)c4n, 8), 2) == 0)
-        return r7;
-    return (u8 *)RomEmit861C(r7, (int)*(u32 *)(cc + 72));
-}
 
 // __APPEND_MARKER__
 

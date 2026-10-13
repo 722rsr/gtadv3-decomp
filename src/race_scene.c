@@ -234,11 +234,20 @@ void Race_Scene_BHandler_1B410(void) {
             ".globl RS1B410_O10CA\nRS1B410_O10CA = 0x000010CA\n"
             ".globl RS1B410_O1110\nRS1B410_O1110 = 0x00001110\n"
             ".globl RS1B410_O10FE\nRS1B410_O10FE = 0x000010FE\n");
-    volatile s16 *countp = (volatile s16 *)((uintptr_t)&RS1B410_WA
+    // Loop shape (measured 2026-10-13): the ROM keeps BOTH an index counter
+    // (r4: 0,1,2...) and a byte-offset accumulator (r5: 0,284,568...) and
+    // reloads the bound with plain indexed `ldrsh r0,[r1/r6,rN]` (rN=0), so
+    // the bound pointer is plain `s16 *` (volatile emits `ldrh+lsl+asr`) and
+    // the call address is `base + off` with an explicit `off += 284`
+    // accumulator (an `i * 284` product strength-reduces to a running base
+    // pointer instead, -4 bytes). Length-exact at 136 B; remaining delta is
+    // register permutation only (countp r1->r6 copy vs direct callee-saved).
+    s16 *countp = (s16 *)((uintptr_t)&RS1B410_WA
                                             + (uintptr_t)&RS1B410_O10CA);
     int i;
-    for (i = 0; i < (int)*countp; i++) {
-        Sub_08002A86C((void *)(uintptr_t)(0x03004EA4u + (u32)i * 284u),
+    u32 off = 0u;
+    for (i = 0; i < (int)*countp; i++, off += 284u) {
+        Sub_08002A86C((void *)(uintptr_t)(0x03004EA4u + off),
                       1, 0);
     }
     if (Ghost_FlagTest(32u) == 0u) {
