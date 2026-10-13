@@ -318,39 +318,81 @@ void sub_08001626C(void *a, int b, int c) __attribute__((alias("Rec35_PlaceByTab
 //   if (s16[rec+144] == 1):
 //     sub_08007C68(rec+8, u32[rec+160], u32[rec+164], 48, 64, 6, 1, 0, 0)
 //   sub_0800DBE8(rec+16); sub_0800163B4(rec)
+//
+// RESIDUAL (210/212 B): everything matches except the frame masks
+// (`push/pop {r4-r7}` vs `{r4-r6}`): the ROM saves dead incoming r7 (never
+// read before its overwrite), which has no honest reproduction. Banked
+// levers, each measured: rec pinned r7; status address into r0 with an int
+// (not s16) asm-loaded value into r2; rec+142 derived via subs; plain
+// indexed select; proven-value EMIT args spelled out (a pin on the value
+// blocks the substitution and costs the reuse); table/cell/table+4 pinned
+// r4/r5/r6 (which also grows the frame toward the ROM's); index as plain
+// s16 with the multiply as << 3; addr3 into its own pinned home (a plain
+// spelling folds back into dead t4); status re-read the same way with an
+// int (not s16) value so the call arg needs no extends. The `idx8 + t4`
+// operand orders are layout-sensitive (+4 measured, mechanism unclear);
+// do not associative-reorder them.
 // ============================================================================
 void Rec35_Record49Tail(void *rec) {
-    u8 *r7 = (u8 *)rec;
+    // r7 = rec, pinned: the whole body addresses through it, and it must
+    // survive the calls below.
+    register u8 *r7 __asm__("r7") = (u8 *)rec;
     sub_0800D97C(r7 + 136, 15);
-    {
-        u8 *status_addr = r7 + 144;
-        s16 status;
-        /* Thumb has no immediate LDRSH form; use the ROM's zero-register load. */
-        __asm__ volatile("movs r1, #0\n\tldrsh %0, [%1, r1]"
-                         : "=r"(status) : "r"(status_addr) : "r1", "memory");
-        if (status == 0) {
-            int sel = (s16)*(volatile u16 *)(r7 + 142);
+    // Status address into r0 (copy + adds-imm8, since 144 exceeds adds-imm3).
+    // int, not s16: an s16 asm output gets a defensive lsls/asrs pair the
+    // ROM does not have. Unpinned: a pin blocks the branch-proven reuse of
+    // the value below (the EMIT arms' zero arg), and the load dest then
+    // floats to the same home anyway.
+    register u8 *saddr __asm__("r0") = r7 + 144;
+    int status;
+    /* Thumb has no immediate LDRSH form; use the ROM's zero-register load. */
+    __asm__ volatile("movs r1, #0\n\tldrsh %0, [%1, r1]"
+                     : "=r"(status) : "r"(saddr) : "r1", "memory");
+    if (status == 0) {
+        // rec+142 derives from the status address (subs, no new pool), and
+        // the select load is a plain indexed ldrsh.
+        {
+            u8 *seladdr = saddr - 2;
+            s16 sel = ((s16 *)seladdr)[0];
             if (sel != 0) {
                 if (sel == 1) {
-                    sub_08007B18(r7, 4, 0, 32, 3, 1, 1, 0);
+                    sub_08007B18(r7, 4, 0, 32, 3, sel, sel, status);
                 }
             } else {
                 sub_08007B18(r7, 5, 0, 32, 3, 1, 1, 0);
             }
-            u32 base = 0x080CB88Cu + (u32)((s16)*(volatile u16 *)(r7 + 140)) * 8;
-            u32 r1a = *(volatile u32 *)(base + 4);
-            u32 r2a = *(volatile u32 *)(r7 + 152);
+            // Table anchor in r4, cell pointer in r5, table+4 in r6: all three
+            // survive the PlaceRecords call below (callee-saved), the way the
+            // ROM keeps them for the second pair. Index loads are plain
+            // indexed ldrsh (volatile would be ldrh+extends, never indexed).
+            register u32 tbl __asm__("r4") = 0x080CB88Cu;
+            register u8 *c140 __asm__("r5") = r7 + 140;
+            s16 idx = ((s16 *)c140)[0];
+            int idx8 = idx << 3;
+            register u32 t4 __asm__("r6") = tbl + 4;
+            u32 r1a = *(u32 *)(idx8 + t4);
+            u32 r2a = *(u32 *)(r7 + 152);
             Rec35_PlaceRecords(r7, (int)r1a, (int)r2a);
-            u32 r1b = *(volatile u32 *)(base + 0);
-            u32 r2b = *(volatile u32 *)(base + 4);
+            s16 idx2 = ((s16 *)c140)[0];
+            int idx82 = idx2 << 3;
+            u32 r1b = *(u32 *)(idx82 + tbl);
+            // addr3 into its own pinned home: t4 dies here, so spelling it
+            // plain lets the add fold back into t4 (`adds r6,r6,r0`).
+            register u32 ad3 __asm__("r0") = idx82 + t4;
+            u32 r2b = *(u32 *)ad3;
             Rec35_PlaceByTable(r7, (int)r1b, (int)r2b);
         }
     }
-    if ((s16)*(volatile u16 *)(r7 + 144) == 1) {
-        sub_08007C68(r7 + 8,
+    // Status re-read into r4 (plain indexed ldrsh); rec+8 derives from its
+    // address (subs, no new pool); the 7th call arg reuses the proven-one
+    // status instead of a rematerialised literal.
+    register u8 *sa __asm__("r0") = r7 + 144;
+    register int st __asm__("r4") = ((s16 *)sa)[0];
+    if (st == 1) {
+        sub_08007C68(sa - 136,
                      *(volatile u32 *)(r7 + 160),
                      *(volatile u32 *)(r7 + 164),
-                     48, 64, 6, 1, 0, 0);
+                     48, 64, 6, st, 0, 0);
     }
     sub_0800DBE8(r7 + 16);
     Rec35_Noop(r7);
