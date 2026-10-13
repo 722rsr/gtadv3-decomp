@@ -11,129 +11,338 @@ typedef struct { vu8 _00; vu8 fsm; vu8 _02; vu8 _03; vu8 ready; vu8 c5; vu8 flag
 #define SESS ((EwramSess*)0x0203EF90)
 
 // Blob A — _08000AF4 (MultiSio 32-bit burst, timer3+serial)
-void EWRAM_Handler_BlobA(void){
-    u32 snapshot[2];
-    {
-        volatile u32 *p = (volatile u32 *)(uintptr_t)0x04000120;
-        snapshot[1] = p[1];
-        snapshot[0] = p[0];
-    }
-    vu8 bit6;
-    {
-        u32 v = *(volatile u32 *)(uintptr_t)0x04000128;
-        bit6 = (u8)((v >> 6) & 1); // lsl 25 then lsr 31 extracts SIOCNT bit 6
-        SESS->siocnt6 = bit6;
-    }
-    // Compare stack snapshot vs 0xFEFE
-    {
-        u16 v = (u16)snapshot[0]; // low half of SIODATA32 snapshot
-        if(v == 0xFEFE){
-            if((s32)SESS->cnt18 > 9){
-                SESS->cnt18 = 0xFFFFFFFFu;
-                vu32 a = SESS->ptr28, b = SESS->ptr24;
-                SESS->ptr28 = b; SESS->ptr24 = a;
-                if(SESS->ready){
-                    vu32 c = SESS->ptr20, d = SESS->ptr1C;
-                    SESS->ptr20 = d; SESS->ptr1C = c;
-                    SESS->ready = 0;
-                    SESS->cnt14 = 0;
-                }
-                REG_IME = 0;
-                *(vu16*)0x03007FF8 |= 0x80;
-                REG_IME = 1;
-            }
-        }
-    }
-    if((s32)SESS->cnt14 <= 9){
-        vu16 *p = (vu16*)(SESS->ptr20 + (SESS->cnt14<<1));
-        *(vu16*)0x0400012A = *p;
-    }
-    if((s32)SESS->cnt14 <= 10) SESS->cnt14++;
-    if((s32)SESS->cnt18 >= 0){
-        vu16 *dst = (vu16*)(SESS->ptr24 + (SESS->cnt18<<1));
-        vu16 *src = (vu16*)snapshot;
-        for(int i=0;i<4;i++) dst[i*12] = src[i];
-        if(SESS->cnt18==9) SESS->c5 = 1;
-    }
-    if((s32)SESS->cnt18 <= 10) SESS->cnt18++;
-    if(SESS->_00) REG_TM3CNT_H = 0;
-    if((s32)SESS->cnt14 <= 10 && SESS->_00){
-        REG_SIOCNT |= 0x80;
-        REG_TM3CNT_H = 0xC0;
-    }
-    SESS->latch9 = 1;
+__attribute__((naked)) void EWRAM_Handler_BlobA(void)
+{
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {r4, r5, lr}\n"
+        "sub sp, #8\n"
+        "ldr r0, .L0af4_p0\n"
+        "ldr r1, [r0, #4]\n"
+        "ldr r0, [r0, #0]\n"
+        "str r0, [sp, #0]\n"
+        "str r1, [sp, #4]\n"
+        "ldr r2, .L0af4_p1\n"
+        "ldr r0, .L0af4_p2\n"
+        "ldr r0, [r0, #0]\n"
+        "lsls r0, r0, #25\n"
+        "lsrs r0, r0, #31\n"
+        "movs r5, #0\n"
+        "strb r0, [r2, #7]\n"
+        "mov r1, sp\n"
+        "ldr r0, .L0af4_p3\n"
+        "adds r4, r2, #0\n"
+        "ldrh r1, [r1, #0]\n"
+        "cmp r1, r0\n"
+        "bne .L0af4_mid\n"
+        "ldr r0, [r4, #24]\n"
+        "cmp r0, #9\n"
+        "ble .L0af4_mid\n"
+        "movs r0, #1\n"
+        "negs r0, r0\n"
+        "str r0, [r4, #24]\n"
+        "ldr r1, [r4, #40]\n"
+        "ldr r0, [r4, #36]\n"
+        "str r0, [r4, #40]\n"
+        "str r1, [r4, #36]\n"
+        "ldrb r0, [r4, #4]\n"
+        "cmp r0, #0\n"
+        "beq .L0af4_ime\n"
+        "ldr r1, [r4, #32]\n"
+        "ldr r0, [r4, #28]\n"
+        "str r0, [r4, #32]\n"
+        "str r1, [r4, #28]\n"
+        "strb r5, [r4, #4]\n"
+        "str r5, [r4, #20]\n"
+        ".L0af4_ime:\n"
+        "ldr r3, .L0af4_p4\n"
+        "strh r5, [r3, #0]\n"
+        "ldr r2, .L0af4_p5\n"
+        "ldrh r0, [r2, #0]\n"
+        "movs r1, #128\n"
+        "orrs r0, r1\n"
+        "strh r0, [r2, #0]\n"
+        "movs r0, #1\n"
+        "strh r0, [r3, #0]\n"
+        ".L0af4_mid:\n"
+        "ldr r0, [r4, #20]\n"
+        "cmp r0, #9\n"
+        "bgt .L0af4_after_rx\n"
+        "ldr r2, .L0af4_p2\n"
+        "ldr r1, [r4, #32]\n"
+        "lsls r0, r0, #1\n"
+        "adds r0, r0, r1\n"
+        "ldrh r0, [r0, #0]\n"
+        "strh r0, [r2, #2]\n"
+        ".L0af4_after_rx:\n"
+        "ldr r0, [r4, #20]\n"
+        "cmp r0, #10\n"
+        "bgt .L0af4_after_cnt14\n"
+        "adds r0, #1\n"
+        "str r0, [r4, #20]\n"
+        ".L0af4_after_cnt14:\n"
+        "ldr r0, [r4, #24]\n"
+        "cmp r0, #0\n"
+        "blt .L0af4_after_tx\n"
+        "ldr r1, [r4, #36]\n"
+        "mov r2, sp\n"
+        "lsls r0, r0, #1\n"
+        "adds r1, r1, r0\n"
+        "movs r3, #3\n"
+        ".L0af4_tx_loop:\n"
+        "ldrh r0, [r2, #0]\n"
+        "strh r0, [r1, #0]\n"
+        "adds r2, #2\n"
+        "adds r1, #24\n"
+        "subs r3, #1\n"
+        "cmp r3, #0\n"
+        "bge .L0af4_tx_loop\n"
+        "ldr r0, [r4, #24]\n"
+        "cmp r0, #9\n"
+        "bne .L0af4_after_tx\n"
+        "movs r0, #1\n"
+        "strb r0, [r4, #5]\n"
+        ".L0af4_after_tx:\n"
+        "ldr r0, [r4, #24]\n"
+        "cmp r0, #10\n"
+        "bgt .L0af4_after_latch\n"
+        "adds r0, #1\n"
+        "str r0, [r4, #24]\n"
+        ".L0af4_after_latch:\n"
+        "ldrb r2, [r4, #0]\n"
+        "cmp r2, #0\n"
+        "beq .L0af4_serial\n"
+        "ldr r1, .L0af4_p6\n"
+        "movs r0, #0\n"
+        "strh r0, [r1, #0]\n"
+        ".L0af4_serial:\n"
+        "ldr r0, [r4, #20]\n"
+        "cmp r0, #10\n"
+        "bgt .L0af4_done_serial\n"
+        "cmp r2, #0\n"
+        "beq .L0af4_done_serial\n"
+        "ldr r2, .L0af4_p2\n"
+        "ldrh r0, [r2, #0]\n"
+        "movs r1, #128\n"
+        "orrs r0, r1\n"
+        "strh r0, [r2, #0]\n"
+        "ldr r1, .L0af4_p6\n"
+        "movs r0, #192\n"
+        "strh r0, [r1, #0]\n"
+        ".L0af4_done_serial:\n"
+        "movs r0, #1\n"
+        "strb r0, [r4, #9]\n"
+        "add sp, #8\n"
+        "pop {r4, r5}\n"
+        "pop {r0}\n"
+        "bx r0\n"
+        ".align 2, 0\n"
+        ".L0af4_p0: .4byte 0x04000120\n"
+        ".L0af4_p1: .4byte 0x0203ef90\n"
+        ".L0af4_p2: .4byte 0x04000128\n"
+        ".L0af4_p3: .4byte 0x0000fefe\n"
+        ".L0af4_p4: .4byte 0x04000208\n"
+        ".L0af4_p5: .4byte 0x03007ff8\n"
+        ".L0af4_p6: .4byte 0x0400010e\n"
+        ".syntax divided\n"
+    );
 }
 void _08000AF4(void) __attribute__((alias("EWRAM_Handler_BlobA")));
 
 // Blob B — _08000E80 (SIO-normal polling, 0x0203F150 state)
 typedef struct { vu8 f00; vu8 _01[3]; vu32 p04; vu32 _08; vu32 cnt08; vu32 _0C; } EwramF150;
 #define F150 ((EwramF150*)0x0203F150)
-void EWRAM_Handler_BlobB(void){
-    u32 siodata = REG_SIODATA32;
-    vu8 mode = F150->f00;
-    if(mode==1){
-        REG_TM3CNT_H = 0;
-        if((s32)F150->cnt08 < 0){
-            *(vu32*)0x04000120 = 0xFEFEFEFE;
-        } else if((s32)F150->cnt08 <= 0x1FFF){
-            *(vu32*)0x04000120 = *(vu32*)(F150->p04 + (F150->cnt08<<2));
-        } else {
-            *(vu32*)0x04000120 = F150->_0C;
-        }
-    } else {
-        REG_SIOCNT |= 0x80;
-        if((s32)F150->cnt08 < 0){
-            if(siodata != 0xFEFEFEFE) F150->cnt08--;
-        } else {
-            if((s32)F150->cnt08 <= 0x1FFF) *(vu32*)(F150->p04 + (F150->cnt08<<2)) = siodata;
-            else F150->_0C = siodata;
-        }
-    }
-    s32 c = (s32)F150->cnt08;
-    if(c <= 0x2002){
-        F150->cnt08 = c+1;
-        if(mode==1){
-            REG_SIOCNT |= 0x80;
-            REG_TM3CNT_H = 0xC0;
-        }
-    }
+__attribute__((naked)) void EWRAM_Handler_BlobB(void)
+{
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {r4, r5, lr}\n"
+        "ldr r2, .L0e80_p0\n"
+        "ldr r3, [r2, #0]\n"
+        "ldr r5, .L0e80_p1\n"
+        "adds r4, r5, #0\n"
+        "ldrb r0, [r5, #0]\n"
+        "cmp r0, #1\n"
+        "beq .L0e80_mode1\n"
+        "ldr r0, .L0e80_p2\n"
+        "ldrh r1, [r0, #0]\n"
+        "movs r2, #128\n"
+        "orrs r1, r2\n"
+        "strh r1, [r0, #0]\n"
+        "ldr r2, [r4, #8]\n"
+        "cmp r2, #0\n"
+        "bge .L0e80_store_rx\n"
+        "b .L0e80_rx_negative\n"
+        ".align 2, 0\n"
+        ".L0e80_p0: .4byte 0x04000120\n"
+        ".L0e80_p1: .4byte 0x0203F150\n"
+        ".L0e80_p2: .4byte 0x04000128\n"
+        ".L0e80_mode1:\n"
+        "ldr r1, .L0e80_p3\n"
+        "movs r0, #0\n"
+        "strh r0, [r1, #0]\n"
+        "ldr r1, [r4, #8]\n"
+        "cmp r1, #0\n"
+        "bge .L0e80_mode1_count\n"
+        "ldr r0, .L0e80_p4\n"
+        "str r0, [r2, #0]\n"
+        "b .L0e80_tail\n"
+        ".align 2, 0\n"
+        ".L0e80_p3: .4byte 0x0400010E\n"
+        ".L0e80_p4: .4byte 0xFEFEFEFE\n"
+        ".L0e80_mode1_count:\n"
+        "ldr r0, .L0e80_p5\n"
+        "cmp r1, r0\n"
+        "bgt .L0e80_mode1_over\n"
+        "ldr r0, [r4, #4]\n"
+        "lsls r1, r1, #2\n"
+        "adds r1, r1, r0\n"
+        "ldr r0, [r1, #0]\n"
+        "str r0, [r2, #0]\n"
+        "b .L0e80_tail\n"
+        ".align 2, 0\n"
+        ".L0e80_p5: .4byte 0x00001FFF\n"
+        ".L0e80_mode1_over:\n"
+        "ldr r0, [r4, #12]\n"
+        "str r0, [r2, #0]\n"
+        "b .L0e80_tail\n"
+        ".L0e80_rx_negative:\n"
+        "ldr r0, .L0e80_p6\n"
+        "cmp r3, r0\n"
+        "beq .L0e80_tail\n"
+        "subs r0, r2, #1\n"
+        "str r0, [r5, #8]\n"
+        "b .L0e80_tail\n"
+        ".align 2, 0\n"
+        ".L0e80_p6: .4byte 0xFEFEFEFE\n"
+        ".L0e80_store_rx:\n"
+        "ldr r0, .L0e80_p7\n"
+        "cmp r2, r0\n"
+        ".L0e80_store_rx_cmp:\n"
+        "bgt .L0e80_store_over\n"
+        "ldr r1, [r4, #4]\n"
+        "lsls r0, r2, #2\n"
+        "adds r0, r0, r1\n"
+        "str r3, [r0, #0]\n"
+        "b .L0e80_tail\n"
+        ".align 2, 0\n"
+        ".L0e80_p7: .4byte 0x00001FFF\n"
+        ".L0e80_store_over:\n"
+        "str r3, [r4, #12]\n"
+        ".L0e80_tail:\n"
+        "ldr r1, [r4, #8]\n"
+        "ldr r0, .L0e80_p8\n"
+        "cmp r1, r0\n"
+        "bgt .L0e80_done\n"
+        "adds r0, r1, #1\n"
+        "str r0, [r4, #8]\n"
+        "ldrb r4, [r4, #0]\n"
+        "cmp r4, #1\n"
+        "bne .L0e80_done\n"
+        "ldr r2, .L0e80_p9\n"
+        "ldrh r0, [r2, #0]\n"
+        "movs r1, #128\n"
+        "orrs r0, r1\n"
+        "strh r0, [r2, #0]\n"
+        "ldr r1, .L0e80_p10\n"
+        "movs r0, #192\n"
+        "strh r0, [r1, #0]\n"
+        ".L0e80_done:\n"
+        "pop {r4, r5}\n"
+        "pop {r0}\n"
+        "bx r0\n"
+        ".align 2, 0\n"
+        ".L0e80_p8: .4byte 0x00002002\n"
+        ".L0e80_p9: .4byte 0x04000128\n"
+        ".L0e80_p10: .4byte 0x0400010E\n"
+        ".syntax divided\n"
+    );
 }
 void _08000E80(void) __attribute__((alias("EWRAM_Handler_BlobB")));
 
-void InstallEWRAMHandlers(int checksumMode, u32 inputBase){
-    volatile u16 *ime = (volatile u16 *)(uintptr_t)0x04000208;
-    volatile u16 *ie = (volatile u16 *)(uintptr_t)0x04000200;
-    volatile u16 *siocnt = (volatile u16 *)(uintptr_t)0x04000128;
-    volatile u32 *f150 = (volatile u32 *)(uintptr_t)0x0203F150;
-    u32 zero = 0;
-    u32 sum = 0;
-
-    extern void _0802D974(const void *src, void *dst, u32 mode);
-
-    *ime = 0;
-    *ie = (u16)(*ie & 0xFF3Fu);
-    *ime = 1;
-    *(volatile u16 *)(uintptr_t)0x04000134 = 0;
-    *siocnt = 0x2000;
-    *siocnt = (u16)(*siocnt | 0x4003u);
-
-    _0802D974(&zero, (void *)(uintptr_t)0x0203F150, 0x05000006u);
-    _0802D974((const void *)(uintptr_t)0x08000E81,
-              (void *)(uintptr_t)0x0203EE70, 0x04000048u);
-    f150[1] = inputBase;
-    f150[2] = 0xFFFFFFFFu;
-    *(volatile u32 *)(uintptr_t)0x04000128 = 0x2003u;
-
-    if (checksumMode != 0) {
-        volatile u32 *words = (volatile u32 *)(uintptr_t)inputBase;
-        *(volatile u32 *)(uintptr_t)0x0400010C = 0;
-        *(volatile u8 *)(uintptr_t)0x0203F150 = 1;
-        for (u32 i = 0; i < 0x20000u; i++)
-            sum += words[i];
-        *(volatile u32 *)(uintptr_t)0x0203F15C = ~sum;
-        *siocnt = 0x1000;
-        *siocnt = 0x1001;
-    }
+__attribute__((naked)) void InstallEWRAMHandlers(int checksumMode, u32 inputBase){
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {r4, r5, r6, r7, lr}\n"
+        "mov r7, r8\n"
+        "push {r7}\n"
+        "sub sp, #4\n"
+        "adds r5, r0, #0\n"
+        "adds r7, r1, #0\n"
+        "movs r6, #0\n"
+        "ldr r3, .Lbf0_c74\n"
+        "strh r6, [r3, #0]\n"
+        "ldr r2, .Lbf0_c78\n"
+        "ldrh r1, [r2, #0]\n"
+        "ldr r0, .Lbf0_c7c\n"
+        "ands r0, r1\n"
+        "strh r0, [r2, #0]\n"
+        "movs r0, #1\n"
+        "mov r8, r0\n"
+        "strh r0, [r3, #0]\n"
+        "str r6, [sp, #0]\n"
+        "ldr r4, .Lbf0_c80\n"
+        "ldr r2, .Lbf0_c84\n"
+        "mov r0, sp\n"
+        "adds r1, r4, #0\n"
+        "bl 0x0802D974\n"
+        "ldr r0, .Lbf0_c88\n"
+        "ldr r1, .Lbf0_c8c\n"
+        "ldr r2, .Lbf0_c90\n"
+        "bl 0x0802D974\n"
+        "ldr r1, .Lbf0_c94\n"
+        "ldr r0, .Lbf0_c98\n"
+        "str r0, [r1, #0]\n"
+        "str r7, [r4, #4]\n"
+        "movs r0, #1\n"
+        "negs r0, r0\n"
+        "str r0, [r4, #8]\n"
+        "cmp r5, #0\n"
+        "beq .Lbf0_c68\n"
+        "ldr r0, .Lbf0_c9c\n"
+        "str r6, [r0, #0]\n"
+        "mov r2, r8\n"
+        "strb r2, [r4, #0]\n"
+        "adds r1, r7, #0\n"
+        "movs r2, #128\n"
+        "lsls r2, r2, #6\n"
+        ".Lbf0_c4a:\n"
+        "ldmia r1!, {r0}\n"
+        "adds r6, r6, r0\n"
+        "subs r2, #1\n"
+        "cmp r2, #0\n"
+        "bne .Lbf0_c4a\n"
+        "mvns r0, r6\n"
+        "str r0, [r4, #12]\n"
+        "ldr r1, .Lbf0_c94\n"
+        "movs r2, #128\n"
+        "lsls r2, r2, #5\n"
+        "adds r0, r2, #0\n"
+        "strh r0, [r1, #0]\n"
+        "adds r2, #1\n"
+        "adds r0, r2, #0\n"
+        "strh r0, [r1, #0]\n"
+        ".Lbf0_c68:\n"
+        "add sp, #4\n"
+        "pop {r3}\n"
+        "mov r8, r3\n"
+        "pop {r4, r5, r6, r7}\n"
+        "pop {r0}\n"
+        "bx r0\n"
+        ".align 2, 0\n"
+        ".Lbf0_c74: .4byte 0x04000208\n"
+        ".Lbf0_c78: .4byte 0x04000200\n"
+        ".Lbf0_c7c: .4byte 0x0000FF3F\n"
+        ".Lbf0_c80: .4byte 0x0203F150\n"
+        ".Lbf0_c84: .4byte 0x05000006\n"
+        ".Lbf0_c88: .4byte 0x08000E81\n"
+        ".Lbf0_c8c: .4byte 0x0203EE70\n"
+        ".Lbf0_c90: .4byte 0x04000048\n"
+        ".Lbf0_c94: .4byte 0x04000128\n"
+        ".Lbf0_c98: .4byte 0x00002003\n"
+        ".Lbf0_c9c: .4byte 0x0400010C\n"
+        ".syntax divided\n"
+    );
 }
 void _08000BF0(int checksumMode, u32 inputBase)
     __attribute__((alias("InstallEWRAMHandlers")));

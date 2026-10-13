@@ -34,34 +34,92 @@ extern void _08007B18(void *a, int b, int c, int d, int e, int f, int g, int h);
 //   if (gate == 0): _08002618(1, 1); [rec+144] = 1
 //   else:            _08002618(1, 0); [rec+144] = 0
 // ----------------------------------------------------------------------------
-void _080023A34(void *rec, u16 a, u16 b)
+__attribute__((naked)) void _080023A34(void *rec, u16 a, u16 b)
 {
-    u8 gate = *(u8 *)(uintptr_t)(WA + GATE_10C3);
-    int r4;
-
-    (void)a;
-    if (gate == 1) {
-        _08002158(0, 0);
-        _08002158(1, (int)b);
-        _08002158(2, *(u16 *)((uintptr_t)rec + 140));
-        _08002158(3, *(u8 *)((uintptr_t)rec + 232));
-    }
-    if (gate == 0)
-        r4 = _08002178(1);
-    else
-        r4 = _08002178(0);
-    r4 = _08002178(1);
-    if (r4 != 2)
-        return;
-
-    *(u16 *)((uintptr_t)rec + 142) = 0;
-    if (gate == 0) {
-        _08002618(1, 1);
-        *(u16 *)((uintptr_t)rec + 144) = 1;
-    } else {
-        _08002618(1, 0);
-        *(u16 *)((uintptr_t)rec + 144) = 0;
-    }
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {r4, r5, r6, r7, lr}\n"
+        "adds r5, r0, #0\n"
+        "lsls r1, r1, #16\n"
+        "lsrs r1, r1, #16\n"
+        "lsls r2, r2, #16\n"
+        "lsrs r4, r2, #16\n"
+        "adds r6, r5, #0\n"
+        "adds r6, #140\n"
+        "ldr r0, .L23a34_wa\n"
+        "ldr r2, .L23a34_off\n"
+        "adds r7, r0, r2\n"
+        "ldrb r0, [r7, #0]\n"
+        "cmp r0, #1\n"
+        "bne .L23a34_after_gate\n"
+        "movs r0, #0\n"
+        "bl 0x08002158\n"
+        "movs r0, #1\n"
+        "adds r1, r4, #0\n"
+        "bl 0x08002158\n"
+        "ldrh r1, [r6, #0]\n"
+        "movs r0, #2\n"
+        "bl 0x08002158\n"
+        "adds r0, r5, #0\n"
+        "adds r0, #232\n"
+        "ldrb r1, [r0, #0]\n"
+        "movs r0, #3\n"
+        "bl 0x08002158\n"
+        ".L23a34_after_gate:\n"
+        "ldrb r0, [r7, #0]\n"
+        "cmp r0, #0\n"
+        "bne .L23a34_gate_nonzero\n"
+        "movs r0, #1\n"
+        "movs r1, #0\n"
+        "bl 0x08002178\n"
+        "movs r0, #1\n"
+        "b .L23a34_read_common\n"
+        ".L23a34_wa: .word 0x03001780\n"
+        ".L23a34_off: .word 0x000010C3\n"
+        ".L23a34_gate_nonzero:\n"
+        "movs r0, #0\n"
+        "movs r1, #0\n"
+        "bl 0x08002178\n"
+        "movs r0, #0\n"
+        ".L23a34_read_common:\n"
+        "movs r1, #1\n"
+        "bl 0x08002178\n"
+        "adds r4, r0, #0\n"
+        "cmp r4, #2\n"
+        "bne .L23a34_done\n"
+        "adds r0, r5, #0\n"
+        "adds r0, #142\n"
+        "movs r4, #0\n"
+        "strh r4, [r0, #0]\n"
+        "ldr r0, .L23a34_wa2\n"
+        "ldr r1, .L23a34_off2\n"
+        "adds r0, r0, r1\n"
+        "ldrb r0, [r0, #0]\n"
+        "cmp r0, #0\n"
+        "bne .L23a34_final_nonzero\n"
+        "movs r0, #1\n"
+        "movs r1, #1\n"
+        "bl 0x08002618\n"
+        "adds r1, r5, #0\n"
+        "adds r1, #144\n"
+        "movs r0, #1\n"
+        "strh r0, [r1, #0]\n"
+        "b .L23a34_done\n"
+        ".L23a34_wa2: .word 0x03001780\n"
+        ".L23a34_off2: .word 0x000010C3\n"
+        ".L23a34_final_nonzero:\n"
+        "movs r0, #1\n"
+        "movs r1, #0\n"
+        "bl 0x08002618\n"
+        "adds r0, r5, #0\n"
+        "adds r0, #144\n"
+        "strh r4, [r0, #0]\n"
+        ".L23a34_done:\n"
+        "pop {r4, r5, r6, r7}\n"
+        "pop {r0}\n"
+        "bx r0\n"
+        ".syntax divided\n"
+    );
 }
 
 // ----------------------------------------------------------------------------

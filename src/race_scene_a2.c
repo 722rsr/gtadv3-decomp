@@ -87,143 +87,604 @@ HOST_STUB(void  _0800199CC(void));                                 // 0x0800199C
 // lane offsets 0x10CA/0x10C8/0x1114/0x1DD4/0x1119/0x1DE4/0x10BD/0x1100/0x10FE/
 // 0x1124/0x1DD6/0x1DE6/0x1129, IME bounce at tail}. Incoming regs dead.
 // ----------------------------------------------------------------------------
-void _08001AAA0(void) {
-    volatile u8 *wa = (volatile u8 *)WA;
-    volatile u8 *rc = (volatile u8 *)(uintptr_t)0x03005880u;
-    u32 stk0 = 0, stk1 = 0, stk2 = 0;
-    int idx;
-    *(volatile u32 *)(uintptr_t)RC_SLOT = 0x03005880u;
-    _08002D974(&stk0, (void *)0x03005880u, 0x0500015Au);
-    WA_U8(0x10BE) = 0;
-    *(volatile u16 *)(uintptr_t)0x04000000u = 0;
-    _080024AC();
-    _080055D8((u32)(uintptr_t)(rc + 172), 32);
-    _08002D974(&stk1, (void *)0x0600E000u, 0x05000200u);
-    _08002D974(&stk2, (void *)0x0600F000u, 0x05000400u);
-    _08002B00(0x030035D0u, 512u);
-    _08002B1C(0x03003A20u, 128u);
-    _08002B30(0x03003C20u, 128u);
-    _08001A204();
-    WA_U8(0x10C2) = (*(volatile u16 *)(wa + 0x1104) == 2) ? 1 : 0;
-    if (*(volatile u16 *)(wa + 0x10FC) == 10) {
-        WA_U8(0x10BC) = 1;
-        _080023AC(3, (void *)0x08019E81u);
-    } else if (*(volatile u16 *)(wa + 0x1106) == 2) {
-        WA_U8(0x10BC) = 1;
-        _080023AC(3, (void *)0x08019D31u);
-    } else {
-        WA_U8(0x10BC) = 0;
-        _080023AC(3, (void *)0x08019BF9u);
-    }
-    *(volatile u16 *)(uintptr_t)0x04000200u |= 2u;
-    *(volatile u16 *)(uintptr_t)0x04000004u |= 16u;
-    _08019A2C(0);
-    *(volatile u32 *)(uintptr_t)(0x03005760u + 12) = 0x03004420u;
-    _08004324(0x03005760);
-    idx = (int)(s16)(*(volatile u16 *)(wa + 0x10FC) - 1);
-    if (idx < 0 || idx > 9) {
-        WA_U16(0x10CA) = 1; // default arm _08001AF90 (shared with cases 6,7)
-        WA_U16(0x10C8) = 3;
-        WA_U16(0x1DD4) = WA_U16(0x1114);
-        WA_S16(0x1DE4) = WA_S8(0x1119);
-        WA_U8(0x10BD) = 0;
-    } else switch (idx + 1) { // table 0x0801AC28
-    case 1: // _08001AC50
-        WA_U16(0x10CA) = 8;
-        WA_U16(0x10C8) = 3;
-        if (WA_S8(0x1112) != 0)
-            _08025264(3);
-        else
-            _08025264((int)WA_S16(0x1100)); // 136<<5
-        WA_U16(0x1DD4) = WA_U16(0x1114);
-        WA_S16(0x1DE4) = WA_S8(0x1119);
-        WA_U8(0x10BD) = 1;
-        break;
-    case 2: // _08001AE84
-        WA_U16(0x10CA) = 1;
-        WA_U16(0x10C8) = 1;
-        WA_U16(0x1DD4) = WA_U16(0x1114);
-        WA_S16(0x1DE4) = WA_S8(0x1119);
-        WA_U8(0x10BD) = 0; // via _08001AFC2 (r3=0)
-        break;
-    case 3: { // _08001ACD4 (record-conditional 16 B copy)
-        void *p;
-        WA_U16(0x10CA) = 1;
-        WA_U16(0x10C8) = 3;
-        WA_U16(0x1DD4) = WA_U16(0x1114);
-        WA_S16(0x1DE4) = WA_S8(0x1119);
-        p = _080240D0();
-        if (*(volatile u16 *)p != 0 &&
-            *(volatile u16 *)((volatile u8 *)p + 2) == WA_U16(0x10FE)) {
-            volatile u8 *d = wa + 0x1124;
-            volatile u8 *s = (volatile u8 *)p + 16;
-            *(volatile u32 *)(d + 0) = *(volatile u32 *)(s + 0);
-            *(volatile u32 *)(d + 4) = *(volatile u32 *)(s + 4);
-            *(volatile u32 *)(d + 8) = *(volatile u32 *)(s + 8);
-            *(volatile u32 *)(d + 12) = *(volatile u32 *)(s + 12);
-            WA_U16(0x1DD6) = *(volatile u16 *)((volatile u8 *)p + 16);
-            WA_S16(0x1DE6) = *(volatile s8 *)((volatile u8 *)p + 21);
-            WA_U16(0x10CA) = 2;
-        }
-        WA_U8(0x10BD) = 0;
-        break;
-    }
-    case 4: // _08001AD78
-        WA_U16(0x10CA) = 8;
-        WA_U16(0x10C8) = 3;
-        _08025264((int)WA_S16(0x1100));
-        WA_U16(0x1DD4) = WA_U16(0x1114);
-        WA_S16(0x1DE4) = WA_S8(0x1119);
-        WA_U8(0x10BD) = 0; // via _08001AF0E (r5=0)
-        break;
-    case 5: // _08001AE48
-        WA_U16(0x10CA) = 1;
-        WA_U16(0x10C8) = 3;
-        WA_U16(0x1DD4) = WA_U16(0x1114);
-        WA_S16(0x1DE4) = WA_S8(0x1119); // via _08001AFB2
-        WA_U8(0x10BD) = 0;              // via _08001AFC2 (r3=0)
-        break;
-    case 6: // _08001AF90 (falls into _08001AFB2 with r6=0x10C8+81)
-    case 7:
-    default:
-        WA_U16(0x10CA) = 1;
-        WA_U16(0x10C8) = 3;
-        WA_U16(0x1DD4) = WA_U16(0x1114);
-        WA_S16(0x1DE4) = WA_S8(0x1119);
-        WA_U8(0x10BD) = 0;
-        break;
-    case 8: // _08001ADD8 (extended copy +0x1124/0x1129)
-        WA_U16(0x10CA) = 2;
-        WA_U16(0x10C8) = 3;
-        WA_U16(0x1DD4) = WA_U16(0x1114);
-        WA_S16(0x1DE4) = WA_S8(0x1119);
-        WA_U16(0x1DD6) = WA_U16(0x1124);
-        WA_S16(0x1DE6) = WA_S8(0x1129);
-        WA_U8(0x10BD) = 0; // via _08001AFC2 (r3=0)
-        break;
-    case 9: // _08001AED4 (flag op 512,1)
-        WA_U16(0x10CA) = 1;
-        WA_U16(0x10C8) = 5;
-        WA_U16(0x1DD4) = WA_U16(0x1114);
-        WA_S16(0x1DE4) = WA_S8(0x1119);
-        _08018AA8(512, 1); // 128<<2
-        WA_U8(0x10BD) = 0; // via _08001AF0E (r5=0)
-        break;
-    case 10: // _08001AF30 (flag op 512,1)
-        WA_U16(0x10CA) = 1;
-        WA_U16(0x10C8) = 10;
-        WA_U16(0x1DD4) = WA_U16(0x1114);
-        WA_S16(0x1DE4) = WA_S8(0x1119);
-        _08018AA8(512, 1); // 128<<2
-        WA_U8(0x10BD) = 0;
-        break;
-    }
-    if (WA_U16(0x10FC) != 8) { // _08001AFC4 tail
-        *(volatile u16 *)(uintptr_t)0x04000208u = 0;    // IME = 0
-        *(volatile u16 *)(uintptr_t)0x04000200u &= 0xFF7Fu; // IE &= ~0x80
-        *(volatile u16 *)(uintptr_t)0x04000200u &= 0xFFBFu; // IE &= ~0x40
-        *(volatile u16 *)(uintptr_t)0x04000208u = 1;    // IME = 1
-    }
+__attribute__((naked)) void _08001AAA0(void) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push	{r4, r5, r6, r7, lr}\n"
+        "sub	sp, #12\n"
+        "ldr r5, .Lrsa1aa_b1c\n"
+        "ldr r1, .Lrsa1aa_b20\n"
+        "str	r1, [r5, #0]\n"
+        "movs	r4, #0\n"
+        "str	r4, [sp, #0]\n"
+        "ldr r2, .Lrsa1aa_b24\n"
+        "mov	r0, sp\n"
+        "bl 0x0802D974\n"
+        "ldr r6, .Lrsa1aa_b28\n"
+        "ldr r1, .Lrsa1aa_b2c\n"
+        "adds	r0, r6, r1\n"
+        "strb	r4, [r0, #0]\n"
+        "movs	r0, #128\n"
+        "lsls	r0, r0, #19\n"
+        "strh	r4, [r0, #0]\n"
+        "bl 0x080024AC\n"
+        "ldr	r0, [r5, #0]\n"
+        "adds	r0, #172\n"
+        "movs	r1, #32\n"
+        "bl 0x080055D8\n"
+        "str	r4, [sp, #4]\n"
+        "add	r0, sp, #4\n"
+        "ldr r1, .Lrsa1aa_b30\n"
+        "ldr r2, .Lrsa1aa_b34\n"
+        "bl 0x0802D974\n"
+        "str	r4, [sp, #8]\n"
+        "add	r0, sp, #8\n"
+        "ldr r1, .Lrsa1aa_b38\n"
+        "ldr r2, .Lrsa1aa_b3c\n"
+        "bl 0x0802D974\n"
+        "ldr r0, .Lrsa1aa_b40\n"
+        "movs	r1, #128\n"
+        "lsls	r1, r1, #2\n"
+        "bl 0x08002B00\n"
+        "ldr r0, .Lrsa1aa_b44\n"
+        "movs	r1, #128\n"
+        "bl 0x08002B1C\n"
+        "ldr r0, .Lrsa1aa_b48\n"
+        "movs	r1, #128\n"
+        "bl 0x08002B30\n"
+        "bl 0x0801A204\n"
+        "ldr r2, .Lrsa1aa_b4c\n"
+        "adds	r0, r6, r2\n"
+        "ldrh	r0, [r0, #0]\n"
+        "cmp	r0, #2\n"
+        "bne .Lrsa1aa_b54\n"
+        "ldr r3, .Lrsa1aa_b50\n"
+        "adds	r1, r6, r3\n"
+        "movs	r0, #1\n"
+        "b .Lrsa1aa_b5a\n"
+        "movs	r0, r0\n"
+        ".Lrsa1aa_b1c: .word 0x03004E20\n"
+        ".Lrsa1aa_b20: .word 0x03005880\n"
+        ".Lrsa1aa_b24: .word 0x0500015A\n"
+        ".Lrsa1aa_b28: .word 0x03001780\n"
+        ".Lrsa1aa_b2c: .word 0x000010BE\n"
+        ".Lrsa1aa_b30: .word 0x0600E000\n"
+        ".Lrsa1aa_b34: .word 0x05000200\n"
+        ".Lrsa1aa_b38: .word 0x0600F000\n"
+        ".Lrsa1aa_b3c: .word 0x05000400\n"
+        ".Lrsa1aa_b40: .word 0x030035D0\n"
+        ".Lrsa1aa_b44: .word 0x03003A20\n"
+        ".Lrsa1aa_b48: .word 0x03003C20\n"
+        ".Lrsa1aa_b4c: .word 0x00001104\n"
+        ".Lrsa1aa_b50: .word 0x000010C2\n"
+        ".Lrsa1aa_b54:\n"
+        "ldr r4, .Lrsa1aa_b74\n"
+        "adds	r1, r6, r4\n"
+        "movs	r0, #0\n"
+        ".Lrsa1aa_b5a:\n"
+        "strb	r0, [r1, #0]\n"
+        "ldr r1, .Lrsa1aa_b78\n"
+        "ldr r6, .Lrsa1aa_b7c\n"
+        "adds	r0, r1, r6\n"
+        "ldrh	r0, [r0, #0]\n"
+        "cmp	r0, #10\n"
+        "bne .Lrsa1aa_b88\n"
+        "ldr r7, .Lrsa1aa_b80\n"
+        "adds	r0, r1, r7\n"
+        "movs	r1, #1\n"
+        "strb	r1, [r0, #0]\n"
+        "ldr r1, .Lrsa1aa_b84\n"
+        "b .Lrsa1aa_b9c\n"
+        ".Lrsa1aa_b74: .word 0x000010C2\n"
+        ".Lrsa1aa_b78: .word 0x03001780\n"
+        ".Lrsa1aa_b7c: .word 0x000010FC\n"
+        ".Lrsa1aa_b80: .word 0x000010BC\n"
+        ".Lrsa1aa_b84: .word 0x08019E81\n"
+        ".Lrsa1aa_b88:\n"
+        "ldr r2, .Lrsa1aa_ba4\n"
+        "adds	r0, r1, r2\n"
+        "ldrh	r0, [r0, #0]\n"
+        "cmp	r0, #2\n"
+        "bne .Lrsa1aa_bb0\n"
+        "ldr r3, .Lrsa1aa_ba8\n"
+        "adds	r0, r1, r3\n"
+        "movs	r1, #1\n"
+        "strb	r1, [r0, #0]\n"
+        "ldr r1, .Lrsa1aa_bac\n"
+        ".Lrsa1aa_b9c:\n"
+        "movs	r0, #3\n"
+        "bl 0x080023AC\n"
+        "b .Lrsa1aa_bc0\n"
+        ".Lrsa1aa_ba4: .word 0x00001106\n"
+        ".Lrsa1aa_ba8: .word 0x000010BC\n"
+        ".Lrsa1aa_bac: .word 0x08019D31\n"
+        ".Lrsa1aa_bb0:\n"
+        "ldr r4, .Lrsa1aa_c04\n"
+        "adds	r0, r1, r4\n"
+        "movs	r1, #0\n"
+        "strb	r1, [r0, #0]\n"
+        "ldr r1, .Lrsa1aa_c08\n"
+        "movs	r0, #3\n"
+        "bl 0x080023AC\n"
+        ".Lrsa1aa_bc0:\n"
+        "ldr r2, .Lrsa1aa_c0c\n"
+        "ldrh	r0, [r2, #0]\n"
+        "movs	r1, #2\n"
+        "orrs	r0, r1\n"
+        "strh	r0, [r2, #0]\n"
+        "ldr r2, .Lrsa1aa_c10\n"
+        "ldrh	r0, [r2, #0]\n"
+        "movs	r1, #16\n"
+        "orrs	r0, r1\n"
+        "strh	r0, [r2, #0]\n"
+        "movs	r0, #0\n"
+        "bl 0x08019A2C\n"
+        "ldr r0, .Lrsa1aa_c14\n"
+        "ldr r1, .Lrsa1aa_c18\n"
+        "str	r1, [r0, #12]\n"
+        "bl 0x08004324\n"
+        "ldr r0, .Lrsa1aa_c1c\n"
+        "ldr r6, .Lrsa1aa_c20\n"
+        "adds	r0, r0, r6\n"
+        "ldrh	r0, [r0, #0]\n"
+        "subs	r0, #1\n"
+        "lsls	r0, r0, #16\n"
+        "asrs	r0, r0, #16\n"
+        "cmp	r0, #9\n"
+        "bls .Lrsa1aa_bf8\n"
+        "b .Lrsa1aa_f90\n"
+        ".Lrsa1aa_bf8:\n"
+        "lsls	r0, r0, #2\n"
+        "ldr r1, .Lrsa1aa_c24\n"
+        "adds	r0, r0, r1\n"
+        "ldr	r0, [r0, #0]\n"
+        "mov	pc, r0\n"
+        "movs	r0, r0\n"
+        ".Lrsa1aa_c04: .word 0x000010BC\n"
+        ".Lrsa1aa_c08: .word 0x08019BF9\n"
+        ".Lrsa1aa_c0c: .word 0x04000200\n"
+        ".Lrsa1aa_c10: .word 0x04000004\n"
+        ".Lrsa1aa_c14: .word 0x03005760\n"
+        ".Lrsa1aa_c18: .word 0x03004420\n"
+        ".Lrsa1aa_c1c: .word 0x03001780\n"
+        ".Lrsa1aa_c20: .word 0x000010FC\n"
+        ".Lrsa1aa_c24: .word 0x0801AC28\n"
+        ".Lrsa1aa_c28: .word 0x0801AC50\n"
+        ".Lrsa1aa_c2c: .word 0x0801AE84\n"
+        ".Lrsa1aa_c30: .word 0x0801ACD4\n"
+        ".Lrsa1aa_c34: .word 0x0801AD78\n"
+        ".Lrsa1aa_c38: .word 0x0801AE48\n"
+        ".Lrsa1aa_c3c: .word 0x0801AF90\n"
+        ".Lrsa1aa_c40: .word 0x0801AF90\n"
+        ".Lrsa1aa_c44: .word 0x0801ADD8\n"
+        ".Lrsa1aa_c48: .word 0x0801AED4\n"
+        ".Lrsa1aa_c4c: .word 0x0801AF30\n"
+        ".Lrsa1aa_c50:\n"
+        "ldr r2, .Lrsa1aa_c78\n"
+        "ldr r7, .Lrsa1aa_c7c\n"
+        "adds	r1, r2, r7\n"
+        "movs	r0, #8\n"
+        "strh	r0, [r1, #0]\n"
+        "ldr r0, .Lrsa1aa_c80\n"
+        "adds	r1, r2, r0\n"
+        "movs	r0, #3\n"
+        "strh	r0, [r1, #0]\n"
+        "ldr r1, .Lrsa1aa_c84\n"
+        "adds	r0, r2, r1\n"
+        "ldrb	r0, [r0, #0]\n"
+        "lsls	r0, r0, #24\n"
+        "asrs	r0, r0, #24\n"
+        "cmp	r0, #0\n"
+        "beq .Lrsa1aa_c88\n"
+        "movs	r0, #3\n"
+        "bl 0x08025264\n"
+        "b .Lrsa1aa_c96\n"
+        ".Lrsa1aa_c78: .word 0x03001780\n"
+        ".Lrsa1aa_c7c: .word 0x000010CA\n"
+        ".Lrsa1aa_c80: .word 0x000010C8\n"
+        ".Lrsa1aa_c84: .word 0x00001112\n"
+        ".Lrsa1aa_c88:\n"
+        "movs	r3, #136\n"
+        "lsls	r3, r3, #5\n"
+        "adds	r0, r2, r3\n"
+        "movs	r4, #0\n"
+        "ldrsh	r0, [r0, r4]\n"
+        "bl 0x08025264\n"
+        ".Lrsa1aa_c96:\n"
+        "ldr r0, .Lrsa1aa_cbc\n"
+        "ldr r6, .Lrsa1aa_cc0\n"
+        "adds	r1, r0, r6\n"
+        "ldrh	r2, [r1, #0]\n"
+        "ldr r7, .Lrsa1aa_cc4\n"
+        "adds	r1, r0, r7\n"
+        "strh	r2, [r1, #0]\n"
+        "ldr r2, .Lrsa1aa_cc8\n"
+        "adds	r1, r0, r2\n"
+        "movs	r2, #0\n"
+        "ldrsb	r2, [r1, r2]\n"
+        "ldr r3, .Lrsa1aa_ccc\n"
+        "adds	r1, r0, r3\n"
+        "strh	r2, [r1, #0]\n"
+        "ldr r4, .Lrsa1aa_cd0\n"
+        "adds	r0, r0, r4\n"
+        "movs	r1, #1\n"
+        "strb	r1, [r0, #0]\n"
+        "b .Lrsa1aa_fc4\n"
+        ".Lrsa1aa_cbc: .word 0x03001780\n"
+        ".Lrsa1aa_cc0: .word 0x00001114\n"
+        ".Lrsa1aa_cc4: .word 0x00001DD4\n"
+        ".Lrsa1aa_cc8: .word 0x00001119\n"
+        ".Lrsa1aa_ccc: .word 0x00001DE4\n"
+        ".Lrsa1aa_cd0: .word 0x000010BD\n"
+        ".Lrsa1aa_cd4:\n"
+        "ldr r4, .Lrsa1aa_d4c\n"
+        "ldr r6, .Lrsa1aa_d50\n"
+        "adds	r5, r4, r6\n"
+        "movs	r0, #1\n"
+        "strh	r0, [r5, #0]\n"
+        "ldr r7, .Lrsa1aa_d54\n"
+        "adds	r1, r4, r7\n"
+        "movs	r0, #3\n"
+        "strh	r0, [r1, #0]\n"
+        "ldr r1, .Lrsa1aa_d58\n"
+        "adds	r0, r4, r1\n"
+        "ldrh	r1, [r0, #0]\n"
+        "ldr r2, .Lrsa1aa_d5c\n"
+        "adds	r0, r4, r2\n"
+        "strh	r1, [r0, #0]\n"
+        "ldr r3, .Lrsa1aa_d60\n"
+        "adds	r0, r4, r3\n"
+        "movs	r1, #0\n"
+        "ldrsb	r1, [r0, r1]\n"
+        "ldr r6, .Lrsa1aa_d64\n"
+        "adds	r0, r4, r6\n"
+        "strh	r1, [r0, #0]\n"
+        "bl 0x080240D0\n"
+        "adds	r2, r0, #0\n"
+        "ldrh	r0, [r2, #0]\n"
+        "cmp	r0, #0\n"
+        "beq .Lrsa1aa_d3e\n"
+        "adds	r7, #54\n"
+        "adds	r0, r4, r7\n"
+        "ldrh	r1, [r2, #2]\n"
+        "ldrh	r0, [r0, #0]\n"
+        "cmp	r1, r0\n"
+        "bne .Lrsa1aa_d3e\n"
+        "ldr r3, .Lrsa1aa_d68\n"
+        "adds	r1, r4, r3\n"
+        "adds	r0, r2, #0\n"
+        "adds	r0, #16\n"
+        "ldmia	r0!, {r3, r6, r7}\n"
+        "stmia	r1!, {r3, r6, r7}\n"
+        "ldr	r0, [r0, #0]\n"
+        "str	r0, [r1, #0]\n"
+        "ldrh	r1, [r2, #16]\n"
+        "ldr r6, .Lrsa1aa_d6c\n"
+        "adds	r0, r4, r6\n"
+        "strh	r1, [r0, #0]\n"
+        "movs	r1, #21\n"
+        "ldrsb	r1, [r2, r1]\n"
+        "ldr r7, .Lrsa1aa_d70\n"
+        "adds	r0, r4, r7\n"
+        "strh	r1, [r0, #0]\n"
+        "movs	r0, #2\n"
+        "strh	r0, [r5, #0]\n"
+        ".Lrsa1aa_d3e:\n"
+        "ldr r0, .Lrsa1aa_d4c\n"
+        "ldr r1, .Lrsa1aa_d74\n"
+        "adds	r0, r0, r1\n"
+        "movs	r1, #0\n"
+        "strb	r1, [r0, #0]\n"
+        "b .Lrsa1aa_fc4\n"
+        "movs	r0, r0\n"
+        ".Lrsa1aa_d4c: .word 0x03001780\n"
+        ".Lrsa1aa_d50: .word 0x000010CA\n"
+        ".Lrsa1aa_d54: .word 0x000010C8\n"
+        ".Lrsa1aa_d58: .word 0x00001114\n"
+        ".Lrsa1aa_d5c: .word 0x00001DD4\n"
+        ".Lrsa1aa_d60: .word 0x00001119\n"
+        ".Lrsa1aa_d64: .word 0x00001DE4\n"
+        ".Lrsa1aa_d68: .word 0x00001124\n"
+        ".Lrsa1aa_d6c: .word 0x00001DD6\n"
+        ".Lrsa1aa_d70: .word 0x00001DE6\n"
+        ".Lrsa1aa_d74: .word 0x000010BD\n"
+        ".Lrsa1aa_d78:\n"
+        "ldr r4, .Lrsa1aa_db8\n"
+        "ldr r2, .Lrsa1aa_dbc\n"
+        "adds	r1, r4, r2\n"
+        "movs	r5, #0\n"
+        "movs	r0, #8\n"
+        "strh	r0, [r1, #0]\n"
+        "ldr r3, .Lrsa1aa_dc0\n"
+        "adds	r1, r4, r3\n"
+        "movs	r0, #3\n"
+        "strh	r0, [r1, #0]\n"
+        "movs	r6, #136\n"
+        "lsls	r6, r6, #5\n"
+        "adds	r0, r4, r6\n"
+        "movs	r7, #0\n"
+        "ldrsh	r0, [r0, r7]\n"
+        "bl 0x08025264\n"
+        "ldr r1, .Lrsa1aa_dc4\n"
+        "adds	r0, r4, r1\n"
+        "ldrh	r1, [r0, #0]\n"
+        "ldr r2, .Lrsa1aa_dc8\n"
+        "adds	r0, r4, r2\n"
+        "strh	r1, [r0, #0]\n"
+        "ldr r3, .Lrsa1aa_dcc\n"
+        "adds	r0, r4, r3\n"
+        "movs	r1, #0\n"
+        "ldrsb	r1, [r0, r1]\n"
+        "ldr r6, .Lrsa1aa_dd0\n"
+        "adds	r0, r4, r6\n"
+        "strh	r1, [r0, #0]\n"
+        "ldr r7, .Lrsa1aa_dd4\n"
+        "b .Lrsa1aa_f0e\n"
+        ".Lrsa1aa_db8: .word 0x03001780\n"
+        ".Lrsa1aa_dbc: .word 0x000010CA\n"
+        ".Lrsa1aa_dc0: .word 0x000010C8\n"
+        ".Lrsa1aa_dc4: .word 0x00001114\n"
+        ".Lrsa1aa_dc8: .word 0x00001DD4\n"
+        ".Lrsa1aa_dcc: .word 0x00001119\n"
+        ".Lrsa1aa_dd0: .word 0x00001DE4\n"
+        ".Lrsa1aa_dd4: .word 0x000010BD\n"
+        ".Lrsa1aa_dd8:\n"
+        "ldr r1, .Lrsa1aa_e28\n"
+        "ldr r0, .Lrsa1aa_e2c\n"
+        "adds	r2, r1, r0\n"
+        "movs	r3, #0\n"
+        "movs	r0, #2\n"
+        "strh	r0, [r2, #0]\n"
+        "ldr r4, .Lrsa1aa_e30\n"
+        "adds	r2, r1, r4\n"
+        "movs	r0, #3\n"
+        "strh	r0, [r2, #0]\n"
+        "ldr r6, .Lrsa1aa_e34\n"
+        "adds	r0, r1, r6\n"
+        "ldrh	r2, [r0, #0]\n"
+        "ldr r7, .Lrsa1aa_e38\n"
+        "adds	r0, r1, r7\n"
+        "strh	r2, [r0, #0]\n"
+        "ldr r2, .Lrsa1aa_e3c\n"
+        "adds	r0, r1, r2\n"
+        "movs	r2, #0\n"
+        "ldrsb	r2, [r0, r2]\n"
+        "ldr r4, .Lrsa1aa_e40\n"
+        "adds	r0, r1, r4\n"
+        "strh	r2, [r0, #0]\n"
+        "adds	r6, #16\n"
+        "adds	r0, r1, r6\n"
+        "ldrh	r2, [r0, #0]\n"
+        "adds	r7, #2\n"
+        "adds	r0, r1, r7\n"
+        "strh	r2, [r0, #0]\n"
+        "ldr r2, .Lrsa1aa_e44\n"
+        "adds	r0, r1, r2\n"
+        "movs	r2, #0\n"
+        "ldrsb	r2, [r0, r2]\n"
+        "adds	r4, #2\n"
+        "adds	r0, r1, r4\n"
+        "strh	r2, [r0, #0]\n"
+        "subs	r6, #103\n"
+        "adds	r1, r1, r6\n"
+        "b .Lrsa1aa_fc2\n"
+        "movs	r0, r0\n"
+        ".Lrsa1aa_e28: .word 0x03001780\n"
+        ".Lrsa1aa_e2c: .word 0x000010CA\n"
+        ".Lrsa1aa_e30: .word 0x000010C8\n"
+        ".Lrsa1aa_e34: .word 0x00001114\n"
+        ".Lrsa1aa_e38: .word 0x00001DD4\n"
+        ".Lrsa1aa_e3c: .word 0x00001119\n"
+        ".Lrsa1aa_e40: .word 0x00001DE4\n"
+        ".Lrsa1aa_e44: .word 0x00001129\n"
+        ".Lrsa1aa_e48:\n"
+        "ldr r1, .Lrsa1aa_e6c\n"
+        "ldr r7, .Lrsa1aa_e70\n"
+        "adds	r2, r1, r7\n"
+        "movs	r3, #0\n"
+        "movs	r0, #1\n"
+        "strh	r0, [r2, #0]\n"
+        "ldr r0, .Lrsa1aa_e74\n"
+        "adds	r2, r1, r0\n"
+        "movs	r0, #3\n"
+        "strh	r0, [r2, #0]\n"
+        "ldr r2, .Lrsa1aa_e78\n"
+        "adds	r0, r1, r2\n"
+        "ldrh	r2, [r0, #0]\n"
+        "ldr r4, .Lrsa1aa_e7c\n"
+        "adds	r0, r1, r4\n"
+        "strh	r2, [r0, #0]\n"
+        "ldr r6, .Lrsa1aa_e80\n"
+        "b .Lrsa1aa_fb2\n"
+        ".Lrsa1aa_e6c: .word 0x03001780\n"
+        ".Lrsa1aa_e70: .word 0x000010CA\n"
+        ".Lrsa1aa_e74: .word 0x000010C8\n"
+        ".Lrsa1aa_e78: .word 0x00001114\n"
+        ".Lrsa1aa_e7c: .word 0x00001DD4\n"
+        ".Lrsa1aa_e80: .word 0x00001119\n"
+        ".Lrsa1aa_e84:\n"
+        "ldr r1, .Lrsa1aa_eb8\n"
+        "ldr r2, .Lrsa1aa_ebc\n"
+        "adds	r0, r1, r2\n"
+        "movs	r3, #0\n"
+        "movs	r2, #1\n"
+        "strh	r2, [r0, #0]\n"
+        "ldr r4, .Lrsa1aa_ec0\n"
+        "adds	r0, r1, r4\n"
+        "strh	r2, [r0, #0]\n"
+        "ldr r6, .Lrsa1aa_ec4\n"
+        "adds	r0, r1, r6\n"
+        "ldrh	r2, [r0, #0]\n"
+        "ldr r7, .Lrsa1aa_ec8\n"
+        "adds	r0, r1, r7\n"
+        "strh	r2, [r0, #0]\n"
+        "ldr r2, .Lrsa1aa_ecc\n"
+        "adds	r0, r1, r2\n"
+        "movs	r2, #0\n"
+        "ldrsb	r2, [r0, r2]\n"
+        "ldr r4, .Lrsa1aa_ed0\n"
+        "adds	r0, r1, r4\n"
+        "strh	r2, [r0, #0]\n"
+        "subs	r6, #87\n"
+        "adds	r1, r1, r6\n"
+        "b .Lrsa1aa_fc2\n"
+        "movs	r0, r0\n"
+        ".Lrsa1aa_eb8: .word 0x03001780\n"
+        ".Lrsa1aa_ebc: .word 0x000010CA\n"
+        ".Lrsa1aa_ec0: .word 0x000010C8\n"
+        ".Lrsa1aa_ec4: .word 0x00001114\n"
+        ".Lrsa1aa_ec8: .word 0x00001DD4\n"
+        ".Lrsa1aa_ecc: .word 0x00001119\n"
+        ".Lrsa1aa_ed0: .word 0x00001DE4\n"
+        ".Lrsa1aa_ed4:\n"
+        "ldr r4, .Lrsa1aa_f14\n"
+        "ldr r7, .Lrsa1aa_f18\n"
+        "adds	r1, r4, r7\n"
+        "movs	r5, #0\n"
+        "movs	r0, #1\n"
+        "strh	r0, [r1, #0]\n"
+        "ldr r0, .Lrsa1aa_f1c\n"
+        "adds	r1, r4, r0\n"
+        "movs	r0, #5\n"
+        "strh	r0, [r1, #0]\n"
+        "ldr r1, .Lrsa1aa_f20\n"
+        "adds	r0, r4, r1\n"
+        "ldrh	r1, [r0, #0]\n"
+        "ldr r2, .Lrsa1aa_f24\n"
+        "adds	r0, r4, r2\n"
+        "strh	r1, [r0, #0]\n"
+        "ldr r3, .Lrsa1aa_f28\n"
+        "adds	r0, r4, r3\n"
+        "movs	r1, #0\n"
+        "ldrsb	r1, [r0, r1]\n"
+        "ldr r6, .Lrsa1aa_f2c\n"
+        "adds	r0, r4, r6\n"
+        "strh	r1, [r0, #0]\n"
+        "movs	r0, #128\n"
+        "lsls	r0, r0, #2\n"
+        "movs	r1, #1\n"
+        "bl 0x08018AA8\n"
+        "subs	r7, #13\n"
+        ".Lrsa1aa_f0e:\n"
+        "adds	r4, r4, r7\n"
+        "strb	r5, [r4, #0]\n"
+        "b .Lrsa1aa_fc4\n"
+        ".Lrsa1aa_f14: .word 0x03001780\n"
+        ".Lrsa1aa_f18: .word 0x000010CA\n"
+        ".Lrsa1aa_f1c: .word 0x000010C8\n"
+        ".Lrsa1aa_f20: .word 0x00001114\n"
+        ".Lrsa1aa_f24: .word 0x00001DD4\n"
+        ".Lrsa1aa_f28: .word 0x00001119\n"
+        ".Lrsa1aa_f2c: .word 0x00001DE4\n"
+        ".Lrsa1aa_f30:\n"
+        "ldr r4, .Lrsa1aa_f70\n"
+        "ldr r0, .Lrsa1aa_f74\n"
+        "adds	r1, r4, r0\n"
+        "movs	r5, #0\n"
+        "movs	r0, #1\n"
+        "strh	r0, [r1, #0]\n"
+        "ldr r2, .Lrsa1aa_f78\n"
+        "adds	r1, r4, r2\n"
+        "movs	r0, #10\n"
+        "strh	r0, [r1, #0]\n"
+        "ldr r3, .Lrsa1aa_f7c\n"
+        "adds	r0, r4, r3\n"
+        "ldrh	r1, [r0, #0]\n"
+        "ldr r6, .Lrsa1aa_f80\n"
+        "adds	r0, r4, r6\n"
+        "strh	r1, [r0, #0]\n"
+        "ldr r7, .Lrsa1aa_f84\n"
+        "adds	r0, r4, r7\n"
+        "movs	r1, #0\n"
+        "ldrsb	r1, [r0, r1]\n"
+        "ldr r2, .Lrsa1aa_f88\n"
+        "adds	r0, r4, r2\n"
+        "strh	r1, [r0, #0]\n"
+        "movs	r0, #128\n"
+        "lsls	r0, r0, #2\n"
+        "movs	r1, #1\n"
+        "bl 0x08018AA8\n"
+        "ldr r3, .Lrsa1aa_f8c\n"
+        "adds	r4, r4, r3\n"
+        "strb	r5, [r4, #0]\n"
+        "b .Lrsa1aa_fc4\n"
+        ".Lrsa1aa_f70: .word 0x03001780\n"
+        ".Lrsa1aa_f74: .word 0x000010CA\n"
+        ".Lrsa1aa_f78: .word 0x000010C8\n"
+        ".Lrsa1aa_f7c: .word 0x00001114\n"
+        ".Lrsa1aa_f80: .word 0x00001DD4\n"
+        ".Lrsa1aa_f84: .word 0x00001119\n"
+        ".Lrsa1aa_f88: .word 0x00001DE4\n"
+        ".Lrsa1aa_f8c: .word 0x000010BD\n"
+        ".Lrsa1aa_f90:\n"
+        "ldr r1, .Lrsa1aa_ff4\n"
+        "ldr r4, .Lrsa1aa_ff8\n"
+        "adds	r2, r1, r4\n"
+        "movs	r3, #0\n"
+        "movs	r0, #1\n"
+        "strh	r0, [r2, #0]\n"
+        "ldr r6, .Lrsa1aa_ffc\n"
+        "adds	r2, r1, r6\n"
+        "movs	r0, #3\n"
+        "strh	r0, [r2, #0]\n"
+        "ldr r7, .Lrsa1aa_000\n"
+        "adds	r0, r1, r7\n"
+        "ldrh	r2, [r0, #0]\n"
+        "ldr r4, .Lrsa1aa_004\n"
+        "adds	r0, r1, r4\n"
+        "strh	r2, [r0, #0]\n"
+        "adds	r6, #81\n"
+        ".Lrsa1aa_fb2:\n"
+        "adds	r0, r1, r6\n"
+        "movs	r2, #0\n"
+        "ldrsb	r2, [r0, r2]\n"
+        "ldr r7, .Lrsa1aa_008\n"
+        "adds	r0, r1, r7\n"
+        "strh	r2, [r0, #0]\n"
+        "ldr r0, .Lrsa1aa_00c\n"
+        "adds	r1, r1, r0\n"
+        ".Lrsa1aa_fc2:\n"
+        "strb	r3, [r1, #0]\n"
+        ".Lrsa1aa_fc4:\n"
+        "ldr r0, .Lrsa1aa_ff4\n"
+        "ldr r1, .Lrsa1aa_010\n"
+        "adds	r0, r0, r1\n"
+        "ldrh	r0, [r0, #0]\n"
+        "cmp	r0, #8\n"
+        "beq .Lrsa1aa_fec\n"
+        "ldr r3, .Lrsa1aa_014\n"
+        "movs	r0, #0\n"
+        "strh	r0, [r3, #0]\n"
+        "ldr r1, .Lrsa1aa_018\n"
+        "ldrh	r2, [r1, #0]\n"
+        "ldr r0, .Lrsa1aa_01c\n"
+        "ands	r0, r2\n"
+        "strh	r0, [r1, #0]\n"
+        "ldrh	r2, [r1, #0]\n"
+        "ldr r0, .Lrsa1aa_020\n"
+        "ands	r0, r2\n"
+        "strh	r0, [r1, #0]\n"
+        "movs	r0, #1\n"
+        "strh	r0, [r3, #0]\n"
+        ".Lrsa1aa_fec:\n"
+        "add	sp, #12\n"
+        "pop	{r4, r5, r6, r7}\n"
+        "pop	{r0}\n"
+        "bx	r0\n"
+        ".Lrsa1aa_ff4: .word 0x03001780\n"
+        ".Lrsa1aa_ff8: .word 0x000010CA\n"
+        ".Lrsa1aa_ffc: .word 0x000010C8\n"
+        ".Lrsa1aa_000: .word 0x00001114\n"
+        ".Lrsa1aa_004: .word 0x00001DD4\n"
+        ".Lrsa1aa_008: .word 0x00001DE4\n"
+        ".Lrsa1aa_00c: .word 0x000010BD\n"
+        ".Lrsa1aa_010: .word 0x000010FC\n"
+        ".Lrsa1aa_014: .word 0x04000208\n"
+        ".Lrsa1aa_018: .word 0x04000200\n"
+        ".Lrsa1aa_01c: .word 0x0000FF7F\n"
+        ".Lrsa1aa_020: .word 0x0000FFBF\n"
+        ".syntax divided\n"
+    );
 }
 
 // ----------------------------------------------------------------------------
@@ -233,222 +694,548 @@ void _08001AAA0(void) {
 // Pools: {0x03004E20, WA+0x10FC/0x10C3/0x10C8/0x1114/0x1118/0x111A/0x1110/
 // 0x10BD, 0x04000050/0x04000052, 0x04000000}.
 // ----------------------------------------------------------------------------
-void _08001BB14(void) {
-    volatile u8 *rc = RC();
-    int s = (int)*(volatile s16 *)(rc + 66);
-    if (s < 0 || s > 9) { // _08001BF9C default
-        void *p = _08004B68();
-        _08004BB8(p);
-        return;
-    }
-    switch (s) { // table 0x0801BB3C
-    case 0: { // _08001BB64 (sound/init/course chain)
-        int a, b;
-        _08002B190();
-        _080056B8(1);
-        a = (int)_08018ACC(512);   // 128<<2
-        b = (int)_08018ACC(0x8000); // 128<<8
-        _08001A768((void *)(uintptr_t)rc, a, b);
-        _08001A294();
-        _08002B1B8();
-        if (WA_U16(0x10FC) == 8) {
-            _08018AA8(0x800, 1); // 128<<4
-            _08002124(0x138F);
-        } else {
-            _08002254();
-        }
-        rc = RC(); // _08001BF8A tail
-        *(volatile u16 *)(rc + 66) = (u16)(*(volatile u16 *)(rc + 66) + 1);
-        return;
-    }
-    case 1: { // _08001BBCA (flag-gated +68 select, then scene pair)
-        if (*(volatile u16 *)((volatile u8 *)WA + 0x10FC) == 8 &&
-            _08018ACC(2) != 0) {
-            if (WA_U8(0x10C3) != 0) {
-                rc[124] = 1;
-                if (rc[125] == 0)
-                    return; // _08001BFA4 (no phase++)
-                *(volatile u16 *)(rc + 68) = 30; // _08001BC02
-            } else {
-                if (rc[124] == 0)
-                    return; // _08001BFA4
-                rc[125] = 1; // _08001BC2C
-                *(volatile u16 *)(rc + 68) = 31; // via _08001BC48
-            }
-        } else {
-            *(volatile u16 *)(rc + 68) = 30; // _08001BC40
-        }
-        { // _08001BC4A
-            void *p = _08004B68();
-            _08004B80(p);
-        }
-        rc = RC();
-        rc[129] = 1;
-        *(volatile u16 *)(rc + 66) = (u16)(*(volatile u16 *)(rc + 66) + 1); // _08001BF8E
-        return;
-    }
-    case 2: { // _08001BC64 (countdown lane, then cue/select)
-        u16 u = *(volatile u16 *)(rc + 68);
-        if ((s16)u > 0) {
-            *(volatile u16 *)(rc + 68) = (u16)(u - 1);
-            return; // _08001BFA4
-        }
-        if (WA_U16(0x10FC) == 10) {
-            _08002B1E4(60);
-            _08018AA8(0x40000, 1); // 128<<9
-        } else {
-            int lane = 0;
-            if (WA_S8(0x111C) > 0) // (s8)[WA+0x1118+4]
-                lane = 1;
-            if (WA_S8(0x111A) > 1) // (s8)[WA+0x1118+2]
-                lane = 2;
-            _08002B418((int)(s16)(u16)(WA_U16(0x1114) - 1u), lane);
-            if (_08018ACC(32) != 0 && WA_S8(0x1110) != 0)
-                _08002B1E4(58);
-        }
-        if (WA_U8(0x10BD) != 0) { // _08001BCE8
-            volatile u8 *q = RC();
-            *(volatile u16 *)(q + 100) = 0;
-            *(volatile u32 *)(q + 20) = 0x600u; // 192<<3
-            _08018AA8(0x80000, 1);  // 128<<12
-            _08018AA8(0x800000, 1); // 128<<19
-            rc = RC(); // _08001BF8A tail
-            *(volatile u16 *)(rc + 66) = (u16)(*(volatile u16 *)(rc + 66) + 1);
-            return;
-        }
-        _08019A2C(0); // _08001BD34
-        rc = RC();
-        *(volatile u16 *)(rc + 66) = (u16)(*(volatile u16 *)(rc + 66) + 1);
-        return;
-    }
-    case 3: { // _08001BD3C (flag gates, BLDCNT/DISP select, +76/+68 lanes)
-        if (_08018ACC(2) == 0 && _08018ACC(0x80000) != 0) // 128<<12
-            return; // _08001BFA4
-        if (_08018ACC(64) == 0)
-            return; // _08001BFA4
-        if (WA_U16(0x10FC) == 10) {
-            *(volatile u16 *)(uintptr_t)0x04000000u = 0x1741u; // DISPCNT
-            _08018AA8(0x4000000, 1); // 128<<23
-        } else {
-            *(volatile u16 *)(uintptr_t)0x04000050u = 0x740u; // BLDCNT (232<<3)
-            *(volatile u16 *)(uintptr_t)0x04000052u = 0x40Cu; // BLDALPHA
-        }
-        { // _08001BDA2 on (s16)[WA+0x10FC]
-            int k = (int)WA_S16(0x10FC);
-            if (k == 10) {
-                volatile u8 *q = RC();
-                *(volatile u16 *)(q + 76) = 0;
-                *(volatile u16 *)(q + 68) = 2;
-            } else if (k == 9) {
-                volatile u8 *q = RC();
-                *(volatile u16 *)(q + 76) = 1;
-                *(volatile u16 *)(q + 68) = 0;
-            } else {
-                *(volatile u16 *)(RC() + 76) = 5;
-            }
-            rc = RC(); // _08001BE04
-        }
-        *(volatile u16 *)(rc + 66) = (u16)(*(volatile u16 *)(rc + 66) + 1); // _08001BF8E
-        return;
-    }
-    case 4: { // _08001BE0C (limited-lane countdown / helper-gated engine path)
-        int is10 = (WA_U16(0x10FC) == 10);
-        if (is10) {
-            u16 u = *(volatile u16 *)(rc + 114);
-            if ((s16)u <= 7) {
-                u16 v = *(volatile u16 *)(rc + 68);
-                if ((s16)v > 0) {
-                    *(volatile u16 *)(rc + 68) = (u16)(v - 1); // _08001BEF0
-                    return;
-                }
-                *(volatile u16 *)(rc + 114) = (u16)(u + 1); // _08001BF02
-                *(volatile u16 *)(rc + 68) = 2;
-                return;
-            }
-        } else {
-            if (_08001B9AC() == 0 && _08018ACC(2) == 0) // _08001BE40
-                return; // _08001BFA4
-        }
-        // _08001BE54:
-        if (_08018ACC(32) == 0)
-            _08018AA8(8, 1);
-        if (_08018ACC(2) != 0)
-            goto bump4;
-        if (_08018ACC(32) != 0)
-            goto bump4;
-        _08027114(2); // _08001BE7E
-bump4:;
-        rc = RC(); // _08001BF8A tail
-        *(volatile u16 *)(rc + 66) = (u16)(*(volatile u16 *)(rc + 66) + 1);
-        return;
-    }
-    case 5: // _08001BE86 (sound stop/start + scene pair)
-        if (_08018ACC(2) == 0)
-            return; // _08001BFA4
-        _08018AA8(8, 0);
-        _08027210(0);
-        _08002B3A4();
-        _08002B44C();
-        if (_08018ACC(32) != 0)
-            _08002B30C(3);
-        else
-            _08002B234();
-        { // _08001BEBE
-            void *p = _08004B68();
-            _08004B90(p);
-        }
-        rc = RC();
-        *(volatile u16 *)(rc + 66) = (u16)(*(volatile u16 *)(rc + 66) + 1);
-        return;
-    case 6: { // _08001BEC8 (mirror countdown / DISPCNT reset path)
-        if (WA_U16(0x10FC) == 10) {
-            u16 u = *(volatile u16 *)(rc + 114);
-            if ((s16)u > 0) {
-                u16 v = *(volatile u16 *)(rc + 68);
-                if ((s16)v > 0) {
-                    *(volatile u16 *)(rc + 68) = (u16)(v - 1); // _08001BEF0
-                    return;
-                }
-                *(volatile u16 *)(rc + 114) = (u16)(u - 1); // _08001BF00
-                *(volatile u16 *)(rc + 68) = 2;             // _08001BF02
-                return;
-            }
-            _08018AA8(0x4000000, 0); // _08001BF0A (128<<23)
-            *(volatile u16 *)(uintptr_t)0x04000000u = 0x141u; // DISPCNT
-        }
-        _08019A2C(1); // _08001BF1E
-        rc = RC();
-        *(volatile u16 *)(rc + 66) = (u16)(*(volatile u16 *)(rc + 66) + 1);
-        return;
-    }
-    case 7: // _08001BF2C (gate 64, clear +129)
-        if (_08018ACC(64) != 0)
-            return; // _08001BFA4
-        rc[129] = 0;
-        *(volatile u16 *)(rc + 66) = (u16)(*(volatile u16 *)(rc + 66) + 1); // _08001BF8E
-        return;
-    case 8: // _08001BF48 (gates 16/512/0x8000, ghost commit path)
-        if (_08018ACC(16) == 0 && _08018ACC(512) == 0) { // 128<<2
-            if (_08018ACC(0x8000) == 0) { // 128<<8, _08001BF70
-                rc = RC(); // _08001BF8A tail
-                *(volatile u16 *)(rc + 66) = (u16)(*(volatile u16 *)(rc + 66) + 1);
-                return;
-            }
-            _08024158();
-            rc = RC();
-            *(volatile u16 *)(rc + 66) = (u16)(*(volatile u16 *)(rc + 66) + 1);
-            return;
-        }
-        *(volatile u16 *)(RC() + 66) = 0; // _08001BF5E
-        return;
-    case 9: { // _08001BF82 (scene pair + phase++)
-        void *p = _08004B68();
-        _08004BB8(p);
-        rc = RC();
-        *(volatile u16 *)(rc + 66) = (u16)(*(volatile u16 *)(rc + 66) + 1);
-        return;
-    }
-    }
+__attribute__((naked)) void _08001BB14(void) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push	{r4, r5, lr}\n"
+        "ldr r1, .Lrsa1bb_b34\n"
+        "ldr	r0, [r1, #0]\n"
+        "adds	r0, #66\n"
+        "movs	r2, #0\n"
+        "ldrsh	r0, [r0, r2]\n"
+        "adds	r3, r1, #0\n"
+        "cmp	r0, #9\n"
+        "bls .Lrsa1bb_b28\n"
+        "b .Lrsa1bb_f9c\n"
+        ".Lrsa1bb_b28:\n"
+        "lsls	r0, r0, #2\n"
+        "ldr r1, .Lrsa1bb_b38\n"
+        "adds	r0, r0, r1\n"
+        "ldr	r0, [r0, #0]\n"
+        "mov	pc, r0\n"
+        "movs	r0, r0\n"
+        ".Lrsa1bb_b34: .word 0x03004E20\n"
+        ".Lrsa1bb_b38: .word 0x0801BB3C\n"
+        ".Lrsa1bb_b3c: .word 0x0801BB64\n"
+        ".Lrsa1bb_b40: .word 0x0801BBCA\n"
+        ".Lrsa1bb_b44: .word 0x0801BC64\n"
+        ".Lrsa1bb_b48: .word 0x0801BD3C\n"
+        ".Lrsa1bb_b4c: .word 0x0801BE0C\n"
+        ".Lrsa1bb_b50: .word 0x0801BE86\n"
+        ".Lrsa1bb_b54: .word 0x0801BEC8\n"
+        ".Lrsa1bb_b58: .word 0x0801BF2C\n"
+        ".Lrsa1bb_b5c: .word 0x0801BF48\n"
+        ".Lrsa1bb_b60: .word 0x0801BF82\n"
+        ".Lrsa1bb_b64:\n"
+        "bl 0x0802B190\n"
+        "movs	r0, #1\n"
+        "bl 0x080056B8\n"
+        "ldr r0, .Lrsa1bb_bb4\n"
+        "ldr	r5, [r0, #0]\n"
+        "movs	r0, #128\n"
+        "lsls	r0, r0, #2\n"
+        "bl 0x08018ACC\n"
+        "adds	r4, r0, #0\n"
+        "movs	r0, #128\n"
+        "lsls	r0, r0, #8\n"
+        "bl 0x08018ACC\n"
+        "adds	r2, r0, #0\n"
+        "adds	r0, r5, #0\n"
+        "adds	r1, r4, #0\n"
+        "bl sub_08001A768\n"
+        "bl sub_08001A294\n"
+        "bl 0x0802B1B8\n"
+        "ldr r0, .Lrsa1bb_bb8\n"
+        "ldr r3, .Lrsa1bb_bbc\n"
+        "adds	r0, r0, r3\n"
+        "ldrh	r0, [r0, #0]\n"
+        "cmp	r0, #8\n"
+        "bne .Lrsa1bb_bc4\n"
+        "movs	r0, #128\n"
+        "lsls	r0, r0, #4\n"
+        "movs	r1, #1\n"
+        "bl 0x08018AA8\n"
+        "ldr r0, .Lrsa1bb_bc0\n"
+        "bl 0x08002124\n"
+        "b .Lrsa1bb_f8a\n"
+        ".Lrsa1bb_bb4: .word 0x03004E20\n"
+        ".Lrsa1bb_bb8: .word 0x03001780\n"
+        ".Lrsa1bb_bbc: .word 0x000010FC\n"
+        ".Lrsa1bb_bc0: .word 0x0000138F\n"
+        ".Lrsa1bb_bc4:\n"
+        "bl 0x08002254\n"
+        "b .Lrsa1bb_f8a\n"
+        ".Lrsa1bb_bca:\n"
+        "ldr r4, .Lrsa1bb_c0c\n"
+        "ldr r5, .Lrsa1bb_c10\n"
+        "adds	r0, r4, r5\n"
+        "ldrh	r0, [r0, #0]\n"
+        "cmp	r0, #8\n"
+        "bne .Lrsa1bb_c40\n"
+        "movs	r0, #2\n"
+        "bl 0x08018ACC\n"
+        "cmp	r0, #0\n"
+        "bne .Lrsa1bb_c40\n"
+        "ldr r1, .Lrsa1bb_c14\n"
+        "adds	r0, r4, r1\n"
+        "ldrb	r0, [r0, #0]\n"
+        "cmp	r0, #0\n"
+        "beq .Lrsa1bb_c1c\n"
+        "ldr r2, .Lrsa1bb_c18\n"
+        "ldr	r0, [r2, #0]\n"
+        "adds	r0, #124\n"
+        "movs	r1, #1\n"
+        "strb	r1, [r0, #0]\n"
+        "ldr	r1, [r2, #0]\n"
+        "adds	r0, r1, #0\n"
+        "adds	r0, #125\n"
+        "ldrb	r0, [r0, #0]\n"
+        "cmp	r0, #0\n"
+        "bne .Lrsa1bb_c02\n"
+        "b .Lrsa1bb_fa4\n"
+        ".Lrsa1bb_c02:\n"
+        "adds	r1, #68\n"
+        "movs	r0, #30\n"
+        "strh	r0, [r1, #0]\n"
+        "b .Lrsa1bb_c4a\n"
+        "movs	r0, r0\n"
+        ".Lrsa1bb_c0c: .word 0x03001780\n"
+        ".Lrsa1bb_c10: .word 0x000010FC\n"
+        ".Lrsa1bb_c14: .word 0x000010C3\n"
+        ".Lrsa1bb_c18: .word 0x03004E20\n"
+        ".Lrsa1bb_c1c:\n"
+        "ldr r2, .Lrsa1bb_c3c\n"
+        "ldr	r1, [r2, #0]\n"
+        "adds	r0, r1, #0\n"
+        "adds	r0, #124\n"
+        "ldrb	r0, [r0, #0]\n"
+        "cmp	r0, #0\n"
+        "bne .Lrsa1bb_c2c\n"
+        "b .Lrsa1bb_fa4\n"
+        ".Lrsa1bb_c2c:\n"
+        "adds	r1, #125\n"
+        "movs	r0, #1\n"
+        "strb	r0, [r1, #0]\n"
+        "ldr	r0, [r2, #0]\n"
+        "adds	r0, #68\n"
+        "movs	r1, #31\n"
+        "b .Lrsa1bb_c48\n"
+        "movs	r0, r0\n"
+        ".Lrsa1bb_c3c: .word 0x03004E20\n"
+        ".Lrsa1bb_c40:\n"
+        "ldr r0, .Lrsa1bb_c60\n"
+        "ldr	r0, [r0, #0]\n"
+        "adds	r0, #68\n"
+        "movs	r1, #30\n"
+        ".Lrsa1bb_c48:\n"
+        "strh	r1, [r0, #0]\n"
+        ".Lrsa1bb_c4a:\n"
+        "bl 0x08004B68\n"
+        "bl 0x08004B80\n"
+        "ldr r2, .Lrsa1bb_c60\n"
+        "ldr	r0, [r2, #0]\n"
+        "adds	r0, #129\n"
+        "movs	r1, #1\n"
+        "strb	r1, [r0, #0]\n"
+        "ldr	r0, [r2, #0]\n"
+        "b .Lrsa1bb_f8e\n"
+        ".Lrsa1bb_c60: .word 0x03004E20\n"
+        ".Lrsa1bb_c64:\n"
+        "ldr	r0, [r3, #0]\n"
+        "adds	r1, r0, #0\n"
+        "adds	r1, #68\n"
+        "ldrh	r2, [r1, #0]\n"
+        "movs	r3, #0\n"
+        "ldrsh	r0, [r1, r3]\n"
+        "cmp	r0, #0\n"
+        "ble .Lrsa1bb_c7a\n"
+        "subs	r0, r2, #1\n"
+        "strh	r0, [r1, #0]\n"
+        "b .Lrsa1bb_fa4\n"
+        ".Lrsa1bb_c7a:\n"
+        "ldr r4, .Lrsa1bb_c98\n"
+        "ldr r5, .Lrsa1bb_c9c\n"
+        "adds	r0, r4, r5\n"
+        "ldrh	r0, [r0, #0]\n"
+        "cmp	r0, #10\n"
+        "bne .Lrsa1bb_ca0\n"
+        "movs	r0, #60\n"
+        "bl 0x0802B1E4\n"
+        "movs	r0, #128\n"
+        "lsls	r0, r0, #9\n"
+        "movs	r1, #1\n"
+        "bl 0x08018AA8\n"
+        "b .Lrsa1bb_ce8\n"
+        ".Lrsa1bb_c98: .word 0x03001780\n"
+        ".Lrsa1bb_c9c: .word 0x000010FC\n"
+        ".Lrsa1bb_ca0:\n"
+        "movs	r1, #0\n"
+        "ldr r0, .Lrsa1bb_d1c\n"
+        "adds	r2, r4, r0\n"
+        "movs	r0, #4\n"
+        "ldrsb	r0, [r2, r0]\n"
+        "cmp	r0, #0\n"
+        "ble .Lrsa1bb_cb0\n"
+        "movs	r1, #1\n"
+        ".Lrsa1bb_cb0:\n"
+        "movs	r0, #2\n"
+        "ldrsb	r0, [r2, r0]\n"
+        "cmp	r0, #1\n"
+        "ble .Lrsa1bb_cba\n"
+        "movs	r1, #2\n"
+        ".Lrsa1bb_cba:\n"
+        "ldr r2, .Lrsa1bb_d20\n"
+        "adds	r0, r4, r2\n"
+        "ldrh	r0, [r0, #0]\n"
+        "subs	r0, #1\n"
+        "lsls	r0, r0, #16\n"
+        "asrs	r0, r0, #16\n"
+        "bl 0x0802B418\n"
+        "movs	r0, #32\n"
+        "bl 0x08018ACC\n"
+        "cmp	r0, #0\n"
+        "beq .Lrsa1bb_ce8\n"
+        "ldr r3, .Lrsa1bb_d24\n"
+        "adds	r0, r4, r3\n"
+        "ldrb	r0, [r0, #0]\n"
+        "lsls	r0, r0, #24\n"
+        "asrs	r0, r0, #24\n"
+        "cmp	r0, #0\n"
+        "beq .Lrsa1bb_ce8\n"
+        "movs	r0, #58\n"
+        "bl 0x0802B1E4\n"
+        ".Lrsa1bb_ce8:\n"
+        "ldr r0, .Lrsa1bb_d28\n"
+        "ldr r5, .Lrsa1bb_d2c\n"
+        "adds	r0, r0, r5\n"
+        "ldrb	r0, [r0, #0]\n"
+        "cmp	r0, #0\n"
+        "beq .Lrsa1bb_d34\n"
+        "ldr r0, .Lrsa1bb_d30\n"
+        "ldr	r2, [r0, #0]\n"
+        "adds	r1, r2, #0\n"
+        "adds	r1, #100\n"
+        "movs	r0, #0\n"
+        "strh	r0, [r1, #0]\n"
+        "movs	r0, #192\n"
+        "lsls	r0, r0, #3\n"
+        "str	r0, [r2, #20]\n"
+        "movs	r0, #128\n"
+        "lsls	r0, r0, #12\n"
+        "movs	r1, #1\n"
+        "bl 0x08018AA8\n"
+        "movs	r0, #128\n"
+        "lsls	r0, r0, #19\n"
+        "movs	r1, #1\n"
+        "bl 0x08018AA8\n"
+        "b .Lrsa1bb_f8a\n"
+        ".Lrsa1bb_d1c: .word 0x00001118\n"
+        ".Lrsa1bb_d20: .word 0x00001114\n"
+        ".Lrsa1bb_d24: .word 0x00001110\n"
+        ".Lrsa1bb_d28: .word 0x03001780\n"
+        ".Lrsa1bb_d2c: .word 0x000010BD\n"
+        ".Lrsa1bb_d30: .word 0x03004E20\n"
+        ".Lrsa1bb_d34:\n"
+        "movs	r0, #0\n"
+        "bl 0x08019A2C\n"
+        "b .Lrsa1bb_f8a\n"
+        ".Lrsa1bb_d3c:\n"
+        "movs	r0, #2\n"
+        "bl 0x08018ACC\n"
+        "cmp	r0, #0\n"
+        "bne .Lrsa1bb_d54\n"
+        "movs	r0, #128\n"
+        "lsls	r0, r0, #12\n"
+        "bl 0x08018ACC\n"
+        "cmp	r0, #0\n"
+        "beq .Lrsa1bb_d54\n"
+        "b .Lrsa1bb_fa4\n"
+        ".Lrsa1bb_d54:\n"
+        "movs	r0, #64\n"
+        "bl 0x08018ACC\n"
+        "cmp	r0, #0\n"
+        "beq .Lrsa1bb_d60\n"
+        "b .Lrsa1bb_fa4\n"
+        ".Lrsa1bb_d60:\n"
+        "ldr r0, .Lrsa1bb_d84\n"
+        "ldr r1, .Lrsa1bb_d88\n"
+        "adds	r0, r0, r1\n"
+        "ldrh	r0, [r0, #0]\n"
+        "cmp	r0, #10\n"
+        "bne .Lrsa1bb_d90\n"
+        "movs	r0, #128\n"
+        "lsls	r0, r0, #19\n"
+        "ldr r2, .Lrsa1bb_d8c\n"
+        "adds	r1, r2, #0\n"
+        "strh	r1, [r0, #0]\n"
+        "movs	r0, #128\n"
+        "lsls	r0, r0, #23\n"
+        "movs	r1, #1\n"
+        "bl 0x08018AA8\n"
+        "b .Lrsa1bb_da2\n"
+        "movs	r0, r0\n"
+        ".Lrsa1bb_d84: .word 0x03001780\n"
+        ".Lrsa1bb_d88: .word 0x000010FC\n"
+        ".Lrsa1bb_d8c: .word 0x00001741\n"
+        ".Lrsa1bb_d90:\n"
+        "ldr r1, .Lrsa1bb_dc4\n"
+        "movs	r3, #232\n"
+        "lsls	r3, r3, #3\n"
+        "adds	r0, r3, #0\n"
+        "strh	r0, [r1, #0]\n"
+        "adds	r1, #2\n"
+        "ldr r5, .Lrsa1bb_dc8\n"
+        "adds	r0, r5, #0\n"
+        "strh	r0, [r1, #0]\n"
+        ".Lrsa1bb_da2:\n"
+        "ldr r0, .Lrsa1bb_dcc\n"
+        "ldr r1, .Lrsa1bb_dd0\n"
+        "adds	r0, r0, r1\n"
+        "movs	r2, #0\n"
+        "ldrsh	r0, [r0, r2]\n"
+        "cmp	r0, #10\n"
+        "bne .Lrsa1bb_dd8\n"
+        "ldr r3, .Lrsa1bb_dd4\n"
+        "ldr	r1, [r3, #0]\n"
+        "adds	r2, r1, #0\n"
+        "adds	r2, #76\n"
+        "movs	r0, #0\n"
+        "strh	r0, [r2, #0]\n"
+        "adds	r1, #68\n"
+        "movs	r0, #2\n"
+        "strh	r0, [r1, #0]\n"
+        "b .Lrsa1bb_e04\n"
+        ".Lrsa1bb_dc4: .word 0x04000050\n"
+        ".Lrsa1bb_dc8: .word 0x0000040C\n"
+        ".Lrsa1bb_dcc: .word 0x03001780\n"
+        ".Lrsa1bb_dd0: .word 0x000010FC\n"
+        ".Lrsa1bb_dd4: .word 0x03004E20\n"
+        ".Lrsa1bb_dd8:\n"
+        "cmp	r0, #9\n"
+        "bne .Lrsa1bb_df8\n"
+        "ldr r4, .Lrsa1bb_df4\n"
+        "ldr	r1, [r4, #0]\n"
+        "adds	r2, r1, #0\n"
+        "adds	r2, #76\n"
+        "movs	r3, #0\n"
+        "movs	r0, #1\n"
+        "strh	r0, [r2, #0]\n"
+        "adds	r1, #68\n"
+        "strh	r3, [r1, #0]\n"
+        "adds	r3, r4, #0\n"
+        "b .Lrsa1bb_e04\n"
+        "movs	r0, r0\n"
+        ".Lrsa1bb_df4: .word 0x03004E20\n"
+        ".Lrsa1bb_df8:\n"
+        "ldr r0, .Lrsa1bb_e08\n"
+        "ldr	r1, [r0, #0]\n"
+        "adds	r1, #76\n"
+        "movs	r2, #5\n"
+        "strh	r2, [r1, #0]\n"
+        "adds	r3, r0, #0\n"
+        ".Lrsa1bb_e04:\n"
+        "ldr	r0, [r3, #0]\n"
+        "b .Lrsa1bb_f8e\n"
+        ".Lrsa1bb_e08: .word 0x03004E20\n"
+        ".Lrsa1bb_e0c:\n"
+        "ldr r0, .Lrsa1bb_e38\n"
+        "ldr r5, .Lrsa1bb_e3c\n"
+        "adds	r0, r0, r5\n"
+        "ldrh	r0, [r0, #0]\n"
+        "cmp	r0, #10\n"
+        "bne .Lrsa1bb_e40\n"
+        "ldr	r1, [r3, #0]\n"
+        "adds	r2, r1, #0\n"
+        "adds	r2, #114\n"
+        "ldrh	r4, [r2, #0]\n"
+        "movs	r3, #0\n"
+        "ldrsh	r0, [r2, r3]\n"
+        "cmp	r0, #7\n"
+        "bgt .Lrsa1bb_e54\n"
+        "adds	r1, #68\n"
+        "ldrh	r3, [r1, #0]\n"
+        "movs	r5, #0\n"
+        "ldrsh	r0, [r1, r5]\n"
+        "cmp	r0, #0\n"
+        "bgt .Lrsa1bb_ef0\n"
+        "adds	r0, r4, #1\n"
+        "b .Lrsa1bb_f02\n"
+        ".Lrsa1bb_e38: .word 0x03001780\n"
+        ".Lrsa1bb_e3c: .word 0x000010FC\n"
+        ".Lrsa1bb_e40:\n"
+        "bl sub_08001B9AC\n"
+        "cmp	r0, #0\n"
+        "bne .Lrsa1bb_e54\n"
+        "movs	r0, #2\n"
+        "bl 0x08018ACC\n"
+        "cmp	r0, #0\n"
+        "bne .Lrsa1bb_e54\n"
+        "b .Lrsa1bb_fa4\n"
+        ".Lrsa1bb_e54:\n"
+        "movs	r0, #32\n"
+        "bl 0x08018ACC\n"
+        "cmp	r0, #0\n"
+        "bne .Lrsa1bb_e66\n"
+        "movs	r0, #8\n"
+        "movs	r1, #1\n"
+        "bl 0x08018AA8\n"
+        ".Lrsa1bb_e66:\n"
+        "movs	r0, #2\n"
+        "bl 0x08018ACC\n"
+        "cmp	r0, #0\n"
+        "beq .Lrsa1bb_e72\n"
+        "b .Lrsa1bb_f8a\n"
+        ".Lrsa1bb_e72:\n"
+        "movs	r0, #32\n"
+        "bl 0x08018ACC\n"
+        "cmp	r0, #0\n"
+        "beq .Lrsa1bb_e7e\n"
+        "b .Lrsa1bb_f8a\n"
+        ".Lrsa1bb_e7e:\n"
+        "movs	r0, #2\n"
+        "bl 0x08027114\n"
+        "b .Lrsa1bb_f8a\n"
+        ".Lrsa1bb_e86:\n"
+        "movs	r0, #2\n"
+        "bl 0x08018ACC\n"
+        "cmp	r0, #0\n"
+        "bne .Lrsa1bb_e92\n"
+        "b .Lrsa1bb_fa4\n"
+        ".Lrsa1bb_e92:\n"
+        "movs	r0, #8\n"
+        "movs	r1, #0\n"
+        "bl 0x08018AA8\n"
+        "movs	r0, #0\n"
+        "bl sub_08027210\n"
+        "bl 0x0802B3A4\n"
+        "bl 0x0802B44C\n"
+        "movs	r0, #32\n"
+        "bl 0x08018ACC\n"
+        "cmp	r0, #0\n"
+        "beq .Lrsa1bb_eba\n"
+        "movs	r0, #3\n"
+        "bl 0x0802B30C\n"
+        "b .Lrsa1bb_ebe\n"
+        ".Lrsa1bb_eba:\n"
+        "bl 0x0802B234\n"
+        ".Lrsa1bb_ebe:\n"
+        "bl 0x08004B68\n"
+        "bl 0x08004B90\n"
+        "b .Lrsa1bb_f8a\n"
+        ".Lrsa1bb_ec8:\n"
+        "ldr r0, .Lrsa1bb_ef8\n"
+        "ldr r1, .Lrsa1bb_efc\n"
+        "adds	r0, r0, r1\n"
+        "ldrh	r0, [r0, #0]\n"
+        "cmp	r0, #10\n"
+        "bne .Lrsa1bb_f1e\n"
+        "ldr	r1, [r3, #0]\n"
+        "adds	r2, r1, #0\n"
+        "adds	r2, #114\n"
+        "ldrh	r4, [r2, #0]\n"
+        "movs	r3, #0\n"
+        "ldrsh	r0, [r2, r3]\n"
+        "cmp	r0, #0\n"
+        "ble .Lrsa1bb_f0a\n"
+        "adds	r1, #68\n"
+        "ldrh	r3, [r1, #0]\n"
+        "movs	r5, #0\n"
+        "ldrsh	r0, [r1, r5]\n"
+        "cmp	r0, #0\n"
+        "ble .Lrsa1bb_f00\n"
+        ".Lrsa1bb_ef0:\n"
+        "subs	r0, r3, #1\n"
+        "strh	r0, [r1, #0]\n"
+        "b .Lrsa1bb_fa4\n"
+        "movs	r0, r0\n"
+        ".Lrsa1bb_ef8: .word 0x03001780\n"
+        ".Lrsa1bb_efc: .word 0x000010FC\n"
+        ".Lrsa1bb_f00:\n"
+        "subs	r0, r4, #1\n"
+        ".Lrsa1bb_f02:\n"
+        "strh	r0, [r2, #0]\n"
+        "movs	r0, #2\n"
+        "strh	r0, [r1, #0]\n"
+        "b .Lrsa1bb_fa4\n"
+        ".Lrsa1bb_f0a:\n"
+        "movs	r0, #128\n"
+        "lsls	r0, r0, #23\n"
+        "movs	r1, #0\n"
+        "bl 0x08018AA8\n"
+        "movs	r1, #128\n"
+        "lsls	r1, r1, #19\n"
+        "ldr r2, .Lrsa1bb_f28\n"
+        "adds	r0, r2, #0\n"
+        "strh	r0, [r1, #0]\n"
+        ".Lrsa1bb_f1e:\n"
+        "movs	r0, #1\n"
+        "bl 0x08019A2C\n"
+        "b .Lrsa1bb_f8a\n"
+        "movs	r0, r0\n"
+        ".Lrsa1bb_f28: .word 0x00000141\n"
+        ".Lrsa1bb_f2c:\n"
+        "movs	r0, #64\n"
+        "bl 0x08018ACC\n"
+        "adds	r2, r0, #0\n"
+        "cmp	r2, #0\n"
+        "bne .Lrsa1bb_fa4\n"
+        "ldr r1, .Lrsa1bb_f44\n"
+        "ldr	r0, [r1, #0]\n"
+        "adds	r0, #129\n"
+        "strb	r2, [r0, #0]\n"
+        "ldr	r0, [r1, #0]\n"
+        "b .Lrsa1bb_f8e\n"
+        ".Lrsa1bb_f44: .word 0x03004E20\n"
+        ".Lrsa1bb_f48:\n"
+        "movs	r0, #16\n"
+        "bl 0x08018ACC\n"
+        "cmp	r0, #0\n"
+        "bne .Lrsa1bb_f5e\n"
+        "movs	r0, #128\n"
+        "lsls	r0, r0, #2\n"
+        "bl 0x08018ACC\n"
+        "cmp	r0, #0\n"
+        "beq .Lrsa1bb_f70\n"
+        ".Lrsa1bb_f5e:\n"
+        "ldr r0, .Lrsa1bb_f6c\n"
+        "ldr	r0, [r0, #0]\n"
+        "adds	r0, #66\n"
+        "movs	r1, #0\n"
+        "strh	r1, [r0, #0]\n"
+        "b .Lrsa1bb_fa4\n"
+        "movs	r0, r0\n"
+        ".Lrsa1bb_f6c: .word 0x03004E20\n"
+        ".Lrsa1bb_f70:\n"
+        "movs	r0, #128\n"
+        "lsls	r0, r0, #8\n"
+        "bl 0x08018ACC\n"
+        "cmp	r0, #0\n"
+        "beq .Lrsa1bb_f8a\n"
+        "bl 0x08024158\n"
+        "b .Lrsa1bb_f8a\n"
+        ".Lrsa1bb_f82:\n"
+        "bl 0x08004B68\n"
+        "bl 0x08004BB8\n"
+        ".Lrsa1bb_f8a:\n"
+        "ldr r0, .Lrsa1bb_f98\n"
+        "ldr	r0, [r0, #0]\n"
+        ".Lrsa1bb_f8e:\n"
+        "adds	r0, #66\n"
+        "ldrh	r1, [r0, #0]\n"
+        "adds	r1, #1\n"
+        "strh	r1, [r0, #0]\n"
+        "b .Lrsa1bb_fa4\n"
+        ".Lrsa1bb_f98: .word 0x03004E20\n"
+        ".Lrsa1bb_f9c:\n"
+        "bl 0x08004B68\n"
+        "bl 0x08004BB8\n"
+        ".Lrsa1bb_fa4:\n"
+        "pop	{r4, r5}\n"
+        "pop	{r0}\n"
+        "bx	r0\n"
+        "movs	r0, r0\n"
+        ".syntax divided\n"
+    );
 }
 
 // ----------------------------------------------------------------------------
@@ -523,61 +1310,207 @@ void _08001C0CC(int a, int b, int c) {
 // ---- Loop i=1..n-1 (n re-read each pass); best = nearest record with
 // ---- |dx|,|dy|<=64 by (u16)sqrt; tail solves the _08002B500(21,.,.) pair.
 // ----------------------------------------------------------------------------
-void _08001C0E0(void) {
-    volatile u8 *wa = (volatile u8 *)WA;
-    volatile u8 *base = (volatile u8 *)(uintptr_t)0x03004E80u;
-    int xy[2];
-    void *best = NULL;
-    u32 bestd = 256;
-    int i;
-    for (i = 1; ; i++) {
-        s16 n = *(volatile s16 *)(wa + 0x10CA);
-        volatile u8 *rec;
-        int dx, dy;
-        u32 d;
-        if (i >= n)
-            break;
-        rec = base + (u32)i * 284u;
-        dx = (int)(*(volatile u32 *)(base + 0) - *(volatile u32 *)(rec + 0)) >> 8;
-        if (_08005B5C(dx) > 64)
-            continue;
-        dy = (int)(*(volatile u32 *)(base + 4) - *(volatile u32 *)(rec + 4)) >> 8;
-        if (_08005B5C(dy) > 64)
-            continue;
-        d = (u32)_08002D9AC((u32)dx * (u32)dx + (u32)dy * (u32)dy) & 0xFFFFu;
-        if ((int)d >= (int)bestd)
-            continue;
-        xy[0] = dx;
-        xy[1] = dy;
-        bestd = d;
-        best = (void *)(uintptr_t)rec;
-    }
-    if (!best)
-        return; // _08001C260
-    {
-        volatile u8 *brec = (volatile u8 *)best;
-        int a = (int)(u16)_08005CB4(xy);
-        int b = (int)(u16)_08005CB4((void *)(uintptr_t)(base + 272)); // 136<<1
-        int c = (int)(u16)_08005CB4((void *)(uintptr_t)(brec + 272));
-        u32 x0 = *(volatile u32 *)(base + 272);
-        u32 y0 = *(volatile u32 *)(base + 276); // 138<<1
-        u32 d0 = (u32)_08002D9AC(x0 * x0 + y0 * y0);
-        int t1 = _08005F44((int)(s16)((s16)a - (s16)b));
-        u32 p = (((u32)(u16)d0 * (u32)t1) << 4) >> 16; // LSRS form
-        u32 x1 = *(volatile u32 *)(brec + 272);
-        u32 y1 = *(volatile u32 *)(brec + 276);
-        u32 d1 = (u32)_08002D9AC(x1 * x1 + y1 * y1);
-        int t2 = _08005F44((int)(s16)((s16)a - (s16)c));
-        int q = (int)(((u32)(u16)d1 * (u32)t2) << 4) >> 17; // ASRS form
-        int v = (q - (int)(s16)p) >> 1;
-        int w4 = v + 2000; // 250<<3
-        int k = _08002DE04((int)(bestd * 192u), 92);
-        int s = 192 - k;
-        u32 w = (u32)(u16)s;
-        if ((s16)s < 0)
-            w = 0;
-        _08002B500(21, (int)(s16)w, (int)(s16)w4);
-    }
+__attribute__((naked)) void _08001C0E0(void) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push	{r4, r5, r6, r7, lr}\n"
+        "mov	r7, sl\n"
+        "mov	r6, r9\n"
+        "mov	r5, r8\n"
+        "push	{r5, r6, r7}\n"
+        "sub	sp, #16\n"
+        "movs	r0, #0\n"
+        "str	r0, [sp, #8]\n"
+        "movs	r1, #128\n"
+        "lsls	r1, r1, #1\n"
+        "str	r1, [sp, #12]\n"
+        "movs	r7, #1\n"
+        "ldr r0, .Lrsa1c_270\n"
+        "ldr r2, .Lrsa1c_274\n"
+        "adds	r1, r0, r2\n"
+        "movs	r2, #0\n"
+        "ldrsh	r0, [r1, r2]\n"
+        "cmp	r7, r0\n"
+        "bge .Lrsa1c_16e\n"
+        "mov	r9, r1\n"
+        "movs	r0, #142\n"
+        "lsls	r0, r0, #1\n"
+        "mov	r8, r0\n"
+        ".Lrsa1c_10e:\n"
+        "ldr r0, .Lrsa1c_278\n"
+        "mov	r1, r8\n"
+        "adds	r6, r1, r0\n"
+        "adds	r2, r0, #0\n"
+        "ldr	r0, [r2, #0]\n"
+        "ldr	r1, [r6, #0]\n"
+        "subs	r0, r0, r1\n"
+        "asrs	r0, r0, #8\n"
+        "adds	r4, r0, #0\n"
+        "bl 0x08005B5C\n"
+        "cmp	r0, #64\n"
+        "bgt .Lrsa1c_15c\n"
+        "ldr r1, .Lrsa1c_278\n"
+        "ldr	r0, [r1, #4]\n"
+        "ldr	r1, [r6, #4]\n"
+        "subs	r0, r0, r1\n"
+        "asrs	r0, r0, #8\n"
+        "adds	r5, r0, #0\n"
+        "bl 0x08005B5C\n"
+        "cmp	r0, #64\n"
+        "bgt .Lrsa1c_15c\n"
+        "adds	r0, r4, #0\n"
+        "muls	r0, r4\n"
+        "adds	r1, r5, #0\n"
+        "muls	r1, r5\n"
+        "adds	r0, r0, r1\n"
+        "bl 0x0802D9AC\n"
+        "lsls	r0, r0, #16\n"
+        "lsrs	r0, r0, #16\n"
+        "ldr	r2, [sp, #12]\n"
+        "cmp	r0, r2\n"
+        "bge .Lrsa1c_15c\n"
+        "str	r4, [sp, #0]\n"
+        "str	r5, [sp, #4]\n"
+        "str	r0, [sp, #12]\n"
+        "str	r6, [sp, #8]\n"
+        ".Lrsa1c_15c:\n"
+        "movs	r0, #142\n"
+        "lsls	r0, r0, #1\n"
+        "add	r8, r0\n"
+        "adds	r7, #1\n"
+        "mov	r1, r9\n"
+        "movs	r2, #0\n"
+        "ldrsh	r0, [r1, r2]\n"
+        "cmp	r7, r0\n"
+        "blt .Lrsa1c_10e\n"
+        ".Lrsa1c_16e:\n"
+        "ldr	r0, [sp, #8]\n"
+        "cmp	r0, #0\n"
+        "beq .Lrsa1c_260\n"
+        "mov	r0, sp\n"
+        "bl 0x08005CB4\n"
+        "adds	r5, r0, #0\n"
+        "lsls	r5, r5, #16\n"
+        "lsrs	r5, r5, #16\n"
+        "movs	r1, #136\n"
+        "lsls	r1, r1, #1\n"
+        "mov	sl, r1\n"
+        "ldr r6, .Lrsa1c_278\n"
+        "add	r6, sl\n"
+        "adds	r0, r6, #0\n"
+        "bl 0x08005CB4\n"
+        "adds	r4, r0, #0\n"
+        "lsls	r4, r4, #16\n"
+        "lsrs	r4, r4, #16\n"
+        "ldr	r2, [sp, #8]\n"
+        "add	sl, r2\n"
+        "mov	r0, sl\n"
+        "bl 0x08005CB4\n"
+        "mov	r8, r0\n"
+        "mov	r0, r8\n"
+        "lsls	r0, r0, #16\n"
+        "lsrs	r0, r0, #16\n"
+        "mov	r8, r0\n"
+        "ldr	r0, [r6, #0]\n"
+        "adds	r1, r0, #0\n"
+        "muls	r1, r0\n"
+        "adds	r0, r1, #0\n"
+        "movs	r2, #138\n"
+        "lsls	r2, r2, #1\n"
+        "mov	r9, r2\n"
+        "ldr r1, .Lrsa1c_278\n"
+        "add	r1, r9\n"
+        "ldr	r1, [r1, #0]\n"
+        "adds	r2, r1, #0\n"
+        "muls	r2, r1\n"
+        "adds	r1, r2, #0\n"
+        "adds	r0, r0, r1\n"
+        "bl 0x0802D9AC\n"
+        "adds	r6, r0, #0\n"
+        "lsls	r5, r5, #16\n"
+        "asrs	r5, r5, #16\n"
+        "lsls	r4, r4, #16\n"
+        "asrs	r4, r4, #16\n"
+        "subs	r4, r5, r4\n"
+        "lsls	r4, r4, #16\n"
+        "asrs	r4, r4, #16\n"
+        "adds	r0, r4, #0\n"
+        "bl sub_08005F44\n"
+        "lsls	r6, r6, #16\n"
+        "lsrs	r6, r6, #16\n"
+        "adds	r4, r6, #0\n"
+        "muls	r4, r0\n"
+        "lsls	r4, r4, #4\n"
+        "lsrs	r4, r4, #16\n"
+        "mov	r1, sl\n"
+        "ldr	r0, [r1, #0]\n"
+        "adds	r2, r0, #0\n"
+        "muls	r2, r0\n"
+        "adds	r0, r2, #0\n"
+        "ldr	r1, [sp, #8]\n"
+        "add	r9, r1\n"
+        "mov	r2, r9\n"
+        "ldr	r1, [r2, #0]\n"
+        "adds	r2, r1, #0\n"
+        "muls	r2, r1\n"
+        "adds	r1, r2, #0\n"
+        "adds	r0, r0, r1\n"
+        "bl 0x0802D9AC\n"
+        "adds	r6, r0, #0\n"
+        "mov	r0, r8\n"
+        "lsls	r0, r0, #16\n"
+        "asrs	r0, r0, #16\n"
+        "subs	r5, r5, r0\n"
+        "lsls	r5, r5, #16\n"
+        "asrs	r5, r5, #16\n"
+        "adds	r0, r5, #0\n"
+        "bl sub_08005F44\n"
+        "lsls	r6, r6, #16\n"
+        "lsrs	r6, r6, #16\n"
+        "muls	r0, r6\n"
+        "lsls	r0, r0, #4\n"
+        "asrs	r0, r0, #16\n"
+        "lsls	r4, r4, #16\n"
+        "asrs	r4, r4, #16\n"
+        "subs	r0, r0, r4\n"
+        "asrs	r0, r0, #1\n"
+        "movs	r1, #250\n"
+        "lsls	r1, r1, #3\n"
+        "adds	r4, r0, r1\n"
+        "ldr	r2, [sp, #12]\n"
+        "lsls	r0, r2, #1\n"
+        "adds	r0, r0, r2\n"
+        "lsls	r0, r0, #6\n"
+        "movs	r1, #92\n"
+        "bl 0x0802DE04\n"
+        "movs	r1, #192\n"
+        "subs	r1, r1, r0\n"
+        "lsls	r1, r1, #16\n"
+        "lsrs	r0, r1, #16\n"
+        "cmp	r1, #0\n"
+        "bge .Lrsa1c_252\n"
+        "movs	r0, #0\n"
+        ".Lrsa1c_252:\n"
+        "lsls	r1, r0, #16\n"
+        "asrs	r1, r1, #16\n"
+        "lsls	r2, r4, #16\n"
+        "asrs	r2, r2, #16\n"
+        "movs	r0, #21\n"
+        "bl 0x0802B500\n"
+        ".Lrsa1c_260:\n"
+        "add	sp, #16\n"
+        "pop	{r3, r4, r5}\n"
+        "mov	r8, r3\n"
+        "mov	r9, r4\n"
+        "mov	sl, r5\n"
+        "pop	{r4, r5, r6, r7}\n"
+        "pop	{r0}\n"
+        "bx	r0\n"
+        ".Lrsa1c_270: .word 0x03001780\n"
+        ".Lrsa1c_274: .word 0x000010CA\n"
+        ".Lrsa1c_278: .word 0x03004E80\n"
+        ".syntax divided\n"
+    );
 }
 
 // ----------------------------------------------------------------------------

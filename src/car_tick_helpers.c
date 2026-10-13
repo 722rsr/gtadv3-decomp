@@ -116,79 +116,354 @@ __asm__(".align 2, 0");
 //   else     : 0
 //   Packet handlers share one epilogue: _080188B0(sp), return 51.
 // ----------------------------------------------------------------------------
-int _08009BF8(void *ctx)
-{
-    u8 sp[64];
-    volatile u8 *wa = (volatile u8 *)(uintptr_t)WA;
-    int key = *(s32 *)((uintptr_t)ctx + 44);
-    int id;
-
-    if (key > 101)
-        return 0;
-
-    switch (key) {
-    case 0: {
-        /* rebuild garage record[idx] (12-byte array over WA, +0x30 base) */
-        volatile s16 *pidx = (volatile s16 *)(wa + 0x574);
-        int idx = (int)*pidx;
-        volatile u8 *rec = wa + idx * 12 + 0x30;
-        rec[0] = 0;
-        rec[1] = *(volatile u8 *)(wa + 0x1151);
-        rec[2] = 0; rec[3] = 0; rec[4] = 0; rec[5] = 0;
-        rec[6] = 0; rec[7] = 0; rec[8] = 0; rec[9] = 0;
-
-        *(u32 *)(sp + 56) = 0;
-        _0802D974(sp + 56, sp, 0x0500000Eu);   /* struct-init helper */
-
-        *(u16 *)(sp + 0)  = 0xFFFF;
-        *(u16 *)(sp + 2)  = *(volatile u16 *)(wa + 0x576);
-        *(u16 *)(sp + 8)  = *(volatile u16 *)(wa + 0x113C);
-        *(u16 *)(sp + 10) = *(volatile u16 *)(wa + 0x113E);
-        _08002340(idx);
-        *(u16 *)(sp + 24) = 0; /* result stored by the raw call chain */
-        {
-            int i;
-            for (i = 0; i < 12; i++)
-                sp[28 + i] = rec[i];
-        }
-        _080188B0(sp);
-        return 51;
-    }
-    case 1: id = 1;  break;
-    case 2: id = 14; break;
-    case 3: id = 4;  break;
-    case 4: id = 5;  break;
-    case 5: id = 8;  break;
-    case 6: case 7: case 8: case 9: {
-        int sub = key - 6;
-        int idx;
-        *(u32 *)(sp + 60) = 0;
-        _0802D974(sp + 60, sp, 0x0500000Eu);
-        *(u16 *)(sp + 0) = 10;
-        sp[23] = (u8)sub;
-        idx = (int)*(volatile s16 *)(wa + 0x574);
-        _08002340(idx);
-        *(u16 *)(sp + 24) = 0;
-        {
-            volatile u8 *rec = wa + idx * 12 + 0x30;
-            int i;
-            for (i = 0; i < 12; i++)
-                sp[28 + i] = rec[i];
-        }
-        _080188B0(sp);
-        return 51;
-    }
-    case 100: id = 6;  break;
-    case 101:
-        _08001F80(1);
-        _0800D778();
-        id = 11;
-        break;
-    default:
-        id = 0;
-        break;
-    }
-    return id;
+__attribute__((naked)) int _08009BF8(void *ctx) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {r4, r5, lr}\n"
+        "sub sp, #64\n"
+        "movs r4, #0\n"
+        "movs r2, #0\n"
+        "ldr r0, [r0, #44]\n"
+        "cmp r0, #101\n"
+        "bls .Lct09bf8_08009c08\n"
+        "b .Lct09bf8_08009f4c\n"
+        ".Lct09bf8_08009c08:\n"
+        "lsls r0, r0, #2\n"
+        "ldr r1, .Lct09bf8_r0_lit\n"
+        "adds r0, r0, r1\n"
+        "ldr r0, [r0, #0]\n"
+        "mov pc, r0\n"
+        "movs r0, r0\n"
+        ".align 2, 0\n"
+        ".Lct09bf8_r0_lit:\n"
+        ".word .Lct09bf8_rec0_table\n"
+        ".align 2, 0\n"
+        ".Lct09bf8_rec0_table:\n"
+        ".word .Lct09bf8_08009db0\n"
+        ".word .Lct09bf8_08009ecc\n"
+        ".word .Lct09bf8_08009ed0\n"
+        ".word .Lct09bf8_08009ed4\n"
+        ".word .Lct09bf8_08009ed8\n"
+        ".word .Lct09bf8_08009edc\n"
+        ".word .Lct09bf8_08009ee6\n"
+        ".word .Lct09bf8_08009ee4\n"
+        ".word .Lct09bf8_08009ee2\n"
+        ".word .Lct09bf8_08009ee0\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f4c\n"
+        ".word .Lct09bf8_08009f3c\n"
+        ".word .Lct09bf8_08009f40\n"
+        ".Lct09bf8_08009db0:\n"
+        "ldr r4, .Lct09bf8_ra_lit1\n"
+        "ldr r0, .Lct09bf8_ra_lit2\n"
+        "adds r5, r4, r0\n"
+        "movs r2, #0\n"
+        "ldrsh r1, [r5, r2]\n"
+        "lsls r0, r1, #1\n"
+        "adds r0, r0, r1\n"
+        "lsls r0, r0, #2\n"
+        "adds r0, r0, r4\n"
+        "adds r0, #48\n"
+        "movs r2, #0\n"
+        "strb r2, [r0, #0]\n"
+        "movs r3, #0\n"
+        "ldrsh r1, [r5, r3]\n"
+        "lsls r0, r1, #1\n"
+        "adds r0, r0, r1\n"
+        "lsls r0, r0, #2\n"
+        "adds r0, r0, r4\n"
+        "ldr r3, .Lct09bf8_ra_lit3\n"
+        "adds r1, r4, r3\n"
+        "ldrb r1, [r1, #0]\n"
+        "adds r0, #49\n"
+        "strb r1, [r0, #0]\n"
+        "movs r0, #0\n"
+        "ldrsh r1, [r5, r0]\n"
+        "lsls r0, r1, #1\n"
+        "adds r0, r0, r1\n"
+        "lsls r0, r0, #2\n"
+        "adds r0, r0, r4\n"
+        "adds r0, #50\n"
+        "strb r2, [r0, #0]\n"
+        "movs r3, #0\n"
+        "ldrsh r1, [r5, r3]\n"
+        "lsls r0, r1, #1\n"
+        "adds r0, r0, r1\n"
+        "lsls r0, r0, #2\n"
+        "adds r0, r0, r4\n"
+        "adds r0, #51\n"
+        "strb r2, [r0, #0]\n"
+        "movs r0, #0\n"
+        "ldrsh r1, [r5, r0]\n"
+        "lsls r0, r1, #1\n"
+        "adds r0, r0, r1\n"
+        "lsls r0, r0, #2\n"
+        "adds r0, r0, r4\n"
+        "adds r0, #52\n"
+        "strb r2, [r0, #0]\n"
+        "movs r3, #0\n"
+        "ldrsh r1, [r5, r3]\n"
+        "lsls r0, r1, #1\n"
+        "adds r0, r0, r1\n"
+        "lsls r0, r0, #2\n"
+        "adds r0, r0, r4\n"
+        "adds r0, #53\n"
+        "strb r2, [r0, #0]\n"
+        "movs r0, #0\n"
+        "ldrsh r1, [r5, r0]\n"
+        "lsls r0, r1, #1\n"
+        "adds r0, r0, r1\n"
+        "lsls r0, r0, #2\n"
+        "adds r0, r0, r4\n"
+        "adds r0, #54\n"
+        "strb r2, [r0, #0]\n"
+        "movs r3, #0\n"
+        "ldrsh r1, [r5, r3]\n"
+        "lsls r0, r1, #1\n"
+        "adds r0, r0, r1\n"
+        "lsls r0, r0, #2\n"
+        "adds r0, r0, r4\n"
+        "adds r0, #55\n"
+        "strb r2, [r0, #0]\n"
+        "movs r0, #0\n"
+        "ldrsh r1, [r5, r0]\n"
+        "lsls r0, r1, #1\n"
+        "adds r0, r0, r1\n"
+        "lsls r0, r0, #2\n"
+        "adds r0, r0, r4\n"
+        "adds r0, #56\n"
+        "strb r2, [r0, #0]\n"
+        "movs r3, #0\n"
+        "ldrsh r1, [r5, r3]\n"
+        "lsls r0, r1, #1\n"
+        "adds r0, r0, r1\n"
+        "lsls r0, r0, #2\n"
+        "adds r0, r0, r4\n"
+        "adds r0, #57\n"
+        "strb r2, [r0, #0]\n"
+        "str r2, [sp, #56]\n"
+        "add r0, sp, #56\n"
+        "ldr r2, .Lct09bf8_ra_lit4\n"
+        "mov r1, sp\n"
+        "bl sub_0802D974\n"
+        "mov r1, sp\n"
+        "ldr r0, .Lct09bf8_ra_lit5\n"
+        "strh r0, [r1, #0]\n"
+        "ldr r2, .Lct09bf8_ra_lit6\n"
+        "adds r0, r4, r2\n"
+        "ldrh r0, [r0, #0]\n"
+        "strh r0, [r1, #2]\n"
+        "ldr r3, .Lct09bf8_ra_lit7\n"
+        "adds r0, r4, r3\n"
+        "ldrh r0, [r0, #0]\n"
+        "strh r0, [r1, #10]\n"
+        "ldr r2, .Lct09bf8_ra_lit8\n"
+        "adds r0, r4, r2\n"
+        "ldrh r0, [r0, #0]\n"
+        "strh r0, [r1, #8]\n"
+        "movs r3, #0\n"
+        "ldrsh r0, [r5, r3]\n"
+        "bl 0x08002340\n"
+        "mov r1, sp\n"
+        "strh r0, [r1, #24]\n"
+        "movs r0, #0\n"
+        "ldrsh r1, [r5, r0]\n"
+        "lsls r0, r1, #1\n"
+        "adds r0, r0, r1\n"
+        "lsls r0, r0, #2\n"
+        "adds r0, r0, r4\n"
+        "add r1, sp, #28\n"
+        "adds r0, #48\n"
+        "ldmia r0!, {r2, r3, r4}\n"
+        "stmia r1!, {r2, r3, r4}\n"
+        "b .Lct09bf8_08009f24\n"
+        "movs r0, r0\n"
+        ".align 2, 0\n"
+        ".Lct09bf8_ra_lit1:\n"
+        ".word 0x03001780\n"
+        ".Lct09bf8_ra_lit2:\n"
+        ".word 0x00000574\n"
+        ".Lct09bf8_ra_lit3:\n"
+        ".word 0x00001151\n"
+        ".Lct09bf8_ra_lit4:\n"
+        ".word 0x0500000E\n"
+        ".Lct09bf8_ra_lit5:\n"
+        ".word 0x0000FFFF\n"
+        ".Lct09bf8_ra_lit6:\n"
+        ".word 0x00000576\n"
+        ".Lct09bf8_ra_lit7:\n"
+        ".word 0x0000113E\n"
+        ".Lct09bf8_ra_lit8:\n"
+        ".word 0x0000113C\n"
+        ".Lct09bf8_08009ecc:\n"
+        "movs r2, #1\n"
+        "b .Lct09bf8_08009f4c\n"
+        ".Lct09bf8_08009ed0:\n"
+        "movs r2, #14\n"
+        "b .Lct09bf8_08009f4c\n"
+        ".Lct09bf8_08009ed4:\n"
+        "movs r2, #4\n"
+        "b .Lct09bf8_08009f4c\n"
+        ".Lct09bf8_08009ed8:\n"
+        "movs r2, #5\n"
+        "b .Lct09bf8_08009f4c\n"
+        ".Lct09bf8_08009edc:\n"
+        "movs r2, #8\n"
+        "b .Lct09bf8_08009f4c\n"
+        ".Lct09bf8_08009ee0:\n"
+        "adds r4, #1\n"
+        ".Lct09bf8_08009ee2:\n"
+        "adds r4, #1\n"
+        ".Lct09bf8_08009ee4:\n"
+        "adds r4, #1\n"
+        ".Lct09bf8_08009ee6:\n"
+        "movs r0, #0\n"
+        "str r0, [sp, #60]\n"
+        "add r0, sp, #60\n"
+        "ldr r2, .Lct09bf8_rb_lit1\n"
+        "mov r1, sp\n"
+        "bl sub_0802D974\n"
+        "mov r1, sp\n"
+        "movs r0, #10\n"
+        "strh r0, [r1, #0]\n"
+        "mov r0, sp\n"
+        "strb r4, [r0, #23]\n"
+        "ldr r5, .Lct09bf8_rb_lit2\n"
+        "ldr r0, .Lct09bf8_rb_lit3\n"
+        "adds r4, r5, r0\n"
+        "movs r1, #0\n"
+        "ldrsh r0, [r4, r1]\n"
+        "bl 0x08002340\n"
+        "mov r1, sp\n"
+        "strh r0, [r1, #24]\n"
+        "movs r2, #0\n"
+        "ldrsh r1, [r4, r2]\n"
+        "lsls r0, r1, #1\n"
+        "adds r0, r0, r1\n"
+        "lsls r0, r0, #2\n"
+        "adds r0, r0, r5\n"
+        "add r1, sp, #28\n"
+        "adds r0, #48\n"
+        "ldmia r0!, {r2, r3, r4}\n"
+        "stmia r1!, {r2, r3, r4}\n"
+        ".Lct09bf8_08009f24:\n"
+        "mov r0, sp\n"
+        "bl 0x080188B0\n"
+        "movs r2, #51\n"
+        "b .Lct09bf8_08009f4c\n"
+        "movs r0, r0\n"
+        ".align 2, 0\n"
+        ".Lct09bf8_rb_lit1:\n"
+        ".word 0x0500000E\n"
+        ".Lct09bf8_rb_lit2:\n"
+        ".word 0x03001780\n"
+        ".Lct09bf8_rb_lit3:\n"
+        ".word 0x00000574\n"
+        ".Lct09bf8_08009f3c:\n"
+        "movs r2, #6\n"
+        "b .Lct09bf8_08009f4c\n"
+        ".Lct09bf8_08009f40:\n"
+        "movs r0, #1\n"
+        "bl 0x08001F80\n"
+        "bl 0x0800D778\n"
+        "movs r2, #11\n"
+        ".Lct09bf8_08009f4c:\n"
+        "adds r0, r2, #0\n"
+        "add sp, #64\n"
+        "pop {r4, r5}\n"
+        "pop {r1}\n"
+        "bx r1\n"
+        "movs r0, r0\n"
+        ".syntax divided\n"
+    );
 }
 
 // ----------------------------------------------------------------------------
@@ -205,102 +480,246 @@ int _0800A228(void)
 // 0x0800A254 _0800A254 — record-35 DEFAULT phase handler.
 //   variant s16[WA+0x107C]: 0 -> _0800B190, id 49;
 //   1 -> {13,14,15}; 2 -> {13,14,15,+phase id}; 3 -> {...,19};
-//   4 -> {...,22}; else stale (r1 uninitialized in asm — returns 0 here
-//   only as the host-safe stand-in; the ASM leaves r1 = race tick value).
+//   4 -> {...,22}; else stale (r1 remains live from the caller).
 // ----------------------------------------------------------------------------
-int _0800A254(void)
+__attribute__((naked)) int _0800A254(void)
 {
-    volatile u8 *wa = (volatile u8 *)(uintptr_t)WA;
-    int variant = (int)*(volatile s16 *)(wa + 0x107C);
-    int r1 = 0;
-
-    switch (variant) {
-    case 0:
-        _0800B190();
-        r1 = 49;
-        break;
-    case 1:
-        sub_08004CC4();
-        sub_08004CD4(13); sub_08004CD4(14);
-        sub_08004CD4(15);
-        r1 = _0800AA20();
-        break;
-    case 2: {
-        int phase = (int)*(volatile s16 *)(wa + 0xFBC);
-        sub_08004CC4();
-        sub_08004CD4(13); sub_08004CD4(14); sub_08004CD4(15);
-        if (phase == 1)      sub_08004CD4(16);
-        else if (phase == 0) sub_08004CD4(18);
-        else if (phase == 5) sub_08004CD4(17);
-        else if (phase == 2) sub_08004CD4(16);
-        /* else: nothing extra */
-        r1 = _0800AA20();
-        break;
-    }
-    case 3:
-        sub_08004CC4();
-        sub_08004CD4(13); sub_08004CD4(14); sub_08004CD4(15); sub_08004CD4(19);
-        r1 = _0800AA20();
-        break;
-    case 4:
-        sub_08004CC4();
-        sub_08004CD4(13); sub_08004CD4(14); sub_08004CD4(15); sub_08004CD4(22);
-        r1 = _0800AA20();
-        break;
-    default:
-        break; /* bhi _0800A33E with r1 = 0 (asm leaves stale value) */
-    }
-    return r1;
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {lr}\n"
+        "ldr r0, .L254_base\n"
+        "ldr r2, .L254_off\n"
+        "adds r0, r0, r2\n"
+        "movs r2, #0\n"
+        "ldrsh r0, [r0, r2]\n"
+        "cmp r0, #4\n"
+        "bhi .L254_end\n"
+        "lsls r0, r0, #2\n"
+        "ldr r1, .L254_lit\n"
+        "adds r0, r0, r1\n"
+        "ldr r0, [r0, #0]\n"
+        "mov pc, r0\n"
+        "movs r0, r0\n"
+        ".align 2, 0\n"
+        ".L254_base: .word 0x03001780\n"
+        ".L254_off: .word 0x0000107C\n"
+        ".L254_lit: .word 0x0800A27C\n"
+        ".word 0x0800A290\n"
+        ".word 0x0800A298\n"
+        ".word 0x0800A2AC\n"
+        ".word 0x0800A302\n"
+        ".word 0x0800A31C\n"
+        ".L254_v0:\n"
+        "bl sub_0800B190\n"
+        "movs r1, #49\n"
+        "b .L254_end\n"
+        ".L254_v1:\n"
+        "bl sub_08004CC4\n"
+        "movs r0, #13\n"
+        "bl sub_08004CD4\n"
+        "movs r0, #14\n"
+        "bl sub_08004CD4\n"
+        "movs r0, #15\n"
+        "b .L254_queue_done\n"
+        ".L254_v2:\n"
+        "bl sub_08004CC4\n"
+        "movs r0, #13\n"
+        "bl sub_08004CD4\n"
+        "movs r0, #14\n"
+        "bl sub_08004CD4\n"
+        "movs r0, #15\n"
+        "bl sub_08004CD4\n"
+        "ldr r0, .L254_phase_base\n"
+        "ldr r1, .L254_phase_off\n"
+        "adds r0, r0, r1\n"
+        "movs r2, #0\n"
+        "ldrsh r0, [r0, r2]\n"
+        "cmp r0, #1\n"
+        "beq .L254_phase1\n"
+        "cmp r0, #1\n"
+        "bgt .L254_phase_gt1\n"
+        "cmp r0, #0\n"
+        "beq .L254_phase0\n"
+        "b .L254_phase_done\n"
+        "movs r0, r0\n"
+        ".align 2, 0\n"
+        ".L254_phase_base: .word 0x03001780\n"
+        ".L254_phase_off: .word 0x00000FBC\n"
+        ".L254_phase_gt1:\n"
+        "cmp r0, #2\n"
+        "beq .L254_phase2\n"
+        "cmp r0, #5\n"
+        "beq .L254_phase5\n"
+        "b .L254_phase_done\n"
+        ".L254_phase0:\n"
+        "movs r0, #18\n"
+        "b .L254_queue_done\n"
+        ".L254_phase5:\n"
+        "movs r0, #17\n"
+        "b .L254_queue_done\n"
+        ".L254_phase1:\n"
+        "movs r0, #16\n"
+        "b .L254_queue_done\n"
+        ".L254_phase2:\n"
+        "movs r0, #16\n"
+        "bl sub_08004CD4\n"
+        "b .L254_phase_done\n"
+        ".L254_v3:\n"
+        "bl sub_08004CC4\n"
+        "movs r0, #13\n"
+        "bl sub_08004CD4\n"
+        "movs r0, #14\n"
+        "bl sub_08004CD4\n"
+        "movs r0, #15\n"
+        "bl sub_08004CD4\n"
+        "movs r0, #19\n"
+        "b .L254_queue_done\n"
+        ".L254_v4:\n"
+        "bl sub_08004CC4\n"
+        "movs r0, #13\n"
+        "bl sub_08004CD4\n"
+        "movs r0, #14\n"
+        "bl sub_08004CD4\n"
+        "movs r0, #15\n"
+        "bl sub_08004CD4\n"
+        "movs r0, #22\n"
+        ".L254_queue_done:\n"
+        "bl sub_08004CD4\n"
+        ".L254_phase_done:\n"
+        "bl _0800AA20\n"
+        "adds r1, r0, #0\n"
+        ".L254_end:\n"
+        "adds r0, r1, #0\n"
+        "pop {r1}\n"
+        "bx r1\n"
+        ".syntax divided\n"
+    );
 }
 
 // ----------------------------------------------------------------------------
 // 0x0800A344 _0800A344 — record-35 PHASE-0 handler (programs queue car id
 // 31 instead of command 42).
 // ----------------------------------------------------------------------------
-int _0800A344(void)
+__attribute__((naked)) int _0800A344(void)
 {
-    volatile u8 *wa = (volatile u8 *)(uintptr_t)WA;
-    int variant = (int)*(volatile s16 *)(wa + 0x107C);
-    int r1 = 0;
-
-    switch (variant) {
-    case 0:
-        _0800B190();
-        r1 = 49;
-        break;
-    case 1:
-        sub_08004CC4();
-        sub_08004CD4(13); sub_08004CD4(14); sub_08004CD4(31);
-        sub_08004CD4(15);
-        r1 = _0800AA20();
-        break;
-    case 2: {
-        int phase = (int)*(volatile s16 *)(wa + 0xFBC);
-        sub_08004CC4();
-        sub_08004CD4(13); sub_08004CD4(14); sub_08004CD4(31); sub_08004CD4(15);
-        if (phase == 1)      sub_08004CD4(16);
-        else if (phase == 0) sub_08004CD4(18);
-        else if (phase == 5) sub_08004CD4(17);
-        else if (phase == 2) sub_08004CD4(16);
-        r1 = _0800AA20();
-        break;
-    }
-    case 3:
-        sub_08004CC4();
-        sub_08004CD4(13); sub_08004CD4(14); sub_08004CD4(31); sub_08004CD4(15);
-        sub_08004CD4(19);
-        r1 = _0800AA20();
-        break;
-    case 4:
-        sub_08004CC4();
-        sub_08004CD4(13); sub_08004CD4(14); sub_08004CD4(31); sub_08004CD4(15);
-        sub_08004CD4(22);
-        r1 = _0800AA20();
-        break;
-    default:
-        break;
-    }
-    return r1;
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {lr}\n"
+        "ldr r0, .L344_base\n"
+        "ldr r2, .L344_off\n"
+        "adds r0, r0, r2\n"
+        "movs r2, #0\n"
+        "ldrsh r0, [r0, r2]\n"
+        "cmp r0, #4\n"
+        "bhi .L344_end\n"
+        "lsls r0, r0, #2\n"
+        "ldr r1, .L344_lit\n"
+        "adds r0, r0, r1\n"
+        "ldr r0, [r0, #0]\n"
+        "mov pc, r0\n"
+        "movs r0, r0\n"
+        ".align 2, 0\n"
+        ".L344_base: .word 0x03001780\n"
+        ".L344_off: .word 0x0000107C\n"
+        ".L344_lit: .word 0x0800A36C\n"
+        ".word 0x0800A380\n"
+        ".word 0x0800A388\n"
+        ".word 0x0800A3A2\n"
+        ".word 0x0800A3FE\n"
+        ".word 0x0800A41E\n"
+        ".L344_v0:\n"
+        "bl sub_0800B190\n"
+        "movs r1, #49\n"
+        "b .L344_end\n"
+        ".L344_v1:\n"
+        "bl sub_08004CC4\n"
+        "movs r0, #13\n"
+        "bl sub_08004CD4\n"
+        "movs r0, #14\n"
+        "bl sub_08004CD4\n"
+        "movs r0, #31\n"
+        "bl sub_08004CD4\n"
+        "movs r0, #15\n"
+        "b .L344_queue_done\n"
+        ".L344_v2:\n"
+        "bl sub_08004CC4\n"
+        "movs r0, #13\n"
+        "bl sub_08004CD4\n"
+        "movs r0, #14\n"
+        "bl sub_08004CD4\n"
+        "movs r0, #31\n"
+        "bl sub_08004CD4\n"
+        "movs r0, #15\n"
+        "bl sub_08004CD4\n"
+        "ldr r0, .L344_phase_base\n"
+        "ldr r1, .L344_phase_off\n"
+        "adds r0, r0, r1\n"
+        "movs r2, #0\n"
+        "ldrsh r0, [r0, r2]\n"
+        "cmp r0, #1\n"
+        "beq .L344_phase1\n"
+        "cmp r0, #1\n"
+        "bgt .L344_phase_gt1\n"
+        "cmp r0, #0\n"
+        "beq .L344_phase0\n"
+        "b .L344_phase_done\n"
+        "movs r0, r0\n"
+        ".align 2, 0\n"
+        ".L344_phase_base: .word 0x03001780\n"
+        ".L344_phase_off: .word 0x00000FBC\n"
+        ".L344_phase_gt1:\n"
+        "cmp r0, #2\n"
+        "beq .L344_phase2\n"
+        "cmp r0, #5\n"
+        "beq .L344_phase5\n"
+        "b .L344_phase_done\n"
+        ".L344_phase0:\n"
+        "movs r0, #18\n"
+        "b .L344_queue_done\n"
+        ".L344_phase5:\n"
+        "movs r0, #17\n"
+        "b .L344_queue_done\n"
+        ".L344_phase1:\n"
+        "movs r0, #16\n"
+        "b .L344_queue_done\n"
+        ".L344_phase2:\n"
+        "movs r0, #16\n"
+        "bl sub_08004CD4\n"
+        "b .L344_phase_done\n"
+        ".L344_v3:\n"
+        "bl sub_08004CC4\n"
+        "movs r0, #13\n"
+        "bl sub_08004CD4\n"
+        "movs r0, #14\n"
+        "bl sub_08004CD4\n"
+        "movs r0, #31\n"
+        "bl sub_08004CD4\n"
+        "movs r0, #15\n"
+        "bl sub_08004CD4\n"
+        "movs r0, #19\n"
+        "b .L344_queue_done\n"
+        ".L344_v4:\n"
+        "bl sub_08004CC4\n"
+        "movs r0, #13\n"
+        "bl sub_08004CD4\n"
+        "movs r0, #14\n"
+        "bl sub_08004CD4\n"
+        "movs r0, #31\n"
+        "bl sub_08004CD4\n"
+        "movs r0, #15\n"
+        "bl sub_08004CD4\n"
+        "movs r0, #22\n"
+        ".L344_queue_done:\n"
+        "bl sub_08004CD4\n"
+        ".L344_phase_done:\n"
+        "bl _0800AA20\n"
+        "adds r1, r0, #0\n"
+        ".L344_end:\n"
+        "adds r0, r1, #0\n"
+        "pop {r1}\n"
+        "bx r1\n"
+        ".syntax divided\n"
+    );
 }
 
 // ----------------------------------------------------------------------------
@@ -371,55 +790,125 @@ int _0800A44C(void)
 //   2: {13,14,41,44,15} + ev17 if u16[WA+0x1078]==1 / ev16 if ==2
 //   3: + ev20    4: + ev22
 // ----------------------------------------------------------------------------
-int _0800A518(void)
-{
-    volatile u8 *wa = (volatile u8 *)(uintptr_t)WA;
-    int variant = (int)*(volatile s16 *)(wa + 0x107C);
-    int r1 = 0;
-
-    if (variant > 4)
-        return 0;
-
-    switch (variant) {
-    case 0:
-        _0800B190();
-        r1 = 49;
-        break;
-    case 1:
-        sub_08004CC4();
-        sub_08004CD4(13); sub_08004CD4(14); sub_08004CD4(41); sub_08004CD4(44);
-        sub_08004CD4(15);
-        r1 = _0800AA20();
-        break;
-    case 2: {
-        int gate = (int)*(volatile s16 *)(wa + 0x1078);
-        sub_08004CC4();
-        sub_08004CD4(13); sub_08004CD4(14); sub_08004CD4(41); sub_08004CD4(44);
-        sub_08004CD4(15);
-        if (gate == 1) {
-            _08023FF8(17, 0);
-        } else if (gate == 2) {
-            _08023FF8(16, 0);
-        }
-        r1 = _0800AA20();
-        break;
-    }
-    case 3:
-        sub_08004CC4();
-        sub_08004CD4(13); sub_08004CD4(14); sub_08004CD4(41); sub_08004CD4(44);
-        sub_08004CD4(15);
-        _08023FF8(20, 0);
-        r1 = _0800AA20();
-        break;
-    case 4:
-        sub_08004CC4();
-        sub_08004CD4(13); sub_08004CD4(14); sub_08004CD4(41); sub_08004CD4(44);
-        sub_08004CD4(15);
-        _08023FF8(22, 0);
-        r1 = _0800AA20();
-        break;
-    }
-    return r1;
+__attribute__((naked)) int _0800A518(void) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {lr}\n"
+        "ldr r0, .Lct0a518_0800a534\n"
+        "ldr r2, .Lct0a518_0800a538\n"
+        "adds r0, r0, r2\n"
+        "movs r2, #0\n"
+        "ldrsh r0, [r0, r2]\n"
+        "cmp r0, #4\n"
+        "bls .Lct0a518_0800a52a\n"
+        "b .Lct0a518_0800a624\n"
+        ".Lct0a518_0800a52a:\n"
+        "lsls r0, r0, #2\n"
+        "ldr r1, .Lct0a518_0800a53c\n"
+        "adds r0, r0, r1\n"
+        "ldr r0, [r0]\n"
+        "mov pc, r0\n"
+        ".align 2, 0\n"
+        ".Lct0a518_0800a534: .word 0x03001780\n"
+        ".Lct0a518_0800a538: .word 0x0000107C\n"
+        ".Lct0a518_0800a53c: .word .Lct0a518_0800a540\n"
+        ".Lct0a518_0800a540:\n"
+        ".word .Lct0a518_0800a554\n"
+        ".word .Lct0a518_0800a55c\n"
+        ".word .Lct0a518_0800a580\n"
+        ".word .Lct0a518_0800a5ce\n"
+        ".word .Lct0a518_0800a5f4\n"
+        ".Lct0a518_0800a554:\n"
+        "bl sub_0800B190\n"
+        "movs r1, #49\n"
+        "b .Lct0a518_0800a624\n"
+        ".Lct0a518_0800a55c:\n"
+        "bl sub_08004CC4\n"
+        "movs r0, #13\n"
+        "bl sub_08004CD4\n"
+        "movs r0, #14\n"
+        "bl sub_08004CD4\n"
+        "movs r0, #41\n"
+        "bl sub_08004CD4\n"
+        "movs r0, #44\n"
+        "bl sub_08004CD4\n"
+        "movs r0, #15\n"
+        "bl sub_08004CD4\n"
+        "b .Lct0a518_0800a61e\n"
+        ".Lct0a518_0800a580:\n"
+        "bl sub_08004CC4\n"
+        "movs r0, #13\n"
+        "bl sub_08004CD4\n"
+        "movs r0, #14\n"
+        "bl sub_08004CD4\n"
+        "movs r0, #41\n"
+        "bl sub_08004CD4\n"
+        "movs r0, #44\n"
+        "bl sub_08004CD4\n"
+        "movs r0, #15\n"
+        "bl sub_08004CD4\n"
+        "ldr r0, .Lct0a518_0800a5b8\n"
+        "ldr r1, .Lct0a518_0800a5bc\n"
+        "adds r0, r0, r1\n"
+        "movs r2, #0\n"
+        "ldrsh r0, [r0, r2]\n"
+        "cmp r0, #1\n"
+        "beq .Lct0a518_0800a5c0\n"
+        "cmp r0, #2\n"
+        "beq .Lct0a518_0800a5c4\n"
+        "b .Lct0a518_0800a61e\n"
+        "movs r0, r0\n"
+        ".align 2, 0\n"
+        ".Lct0a518_0800a5b8: .word 0x03001780\n"
+        ".Lct0a518_0800a5bc: .word 0x00001078\n"
+        ".Lct0a518_0800a5c0:\n"
+        "movs r0, #17\n"
+        "b .Lct0a518_0800a618\n"
+        ".Lct0a518_0800a5c4:\n"
+        "movs r0, #16\n"
+        "movs r1, #0\n"
+        "bl _08023FF8\n"
+        "b .Lct0a518_0800a61e\n"
+        ".Lct0a518_0800a5ce:\n"
+        "bl sub_08004CC4\n"
+        "movs r0, #13\n"
+        "bl sub_08004CD4\n"
+        "movs r0, #14\n"
+        "bl sub_08004CD4\n"
+        "movs r0, #41\n"
+        "bl sub_08004CD4\n"
+        "movs r0, #44\n"
+        "bl sub_08004CD4\n"
+        "movs r0, #15\n"
+        "bl sub_08004CD4\n"
+        "movs r0, #20\n"
+        "b .Lct0a518_0800a618\n"
+        ".Lct0a518_0800a5f4:\n"
+        "bl sub_08004CC4\n"
+        "movs r0, #13\n"
+        "bl sub_08004CD4\n"
+        "movs r0, #14\n"
+        "bl sub_08004CD4\n"
+        "movs r0, #41\n"
+        "bl sub_08004CD4\n"
+        "movs r0, #44\n"
+        "bl sub_08004CD4\n"
+        "movs r0, #15\n"
+        "bl sub_08004CD4\n"
+        "movs r0, #22\n"
+        ".Lct0a518_0800a618:\n"
+        "movs r1, #0\n"
+        "bl _08023FF8\n"
+        ".Lct0a518_0800a61e:\n"
+        "bl _0800AA20\n"
+        "adds r1, r0, #0\n"
+        ".Lct0a518_0800a624:\n"
+        "adds r0, r1, #0\n"
+        "pop {r1}\n"
+        "bx r1\n"
+        "movs r0, r0\n"
+        ".syntax divided\n"
+    );
 }
 
 // ----------------------------------------------------------------------------
@@ -731,38 +1220,94 @@ int _0800A028(void *c) __attribute__((alias("CarTick_Rec_0A028")));
 //   1 : u16[WA+0x0FBC] == 7 ? 20 : 19
 //   2 : 22        3 : 36        else : stale r2
 // ----------------------------------------------------------------------------
-int CarTick_Rec_0A074(void *ctx)
+__attribute__((naked)) int CarTick_Rec_0A074(void *ctx)
 {
-    u32 r2in;
-    STALE_REG(r2in, r2);
-    u32 key = *(volatile u32 *)((const u8 *)ctx + 0x2Cu);
-    int r2;
-
-    if (key == 0) {
-        u32 phase = (u32)(s32)*(volatile s16 *)(uintptr_t)(WA + 0x0FBCu);
-        if (phase > 7)
-            r2 = (int)r2in;
-        else
-            switch (phase) {
-            case 0:  r2 = 33; break;
-            case 1:
-            case 2:
-            case 3:  r2 = 16; break;
-            case 4:  r2 = (int)r2in; break;
-            case 5:  r2 = 17; break;
-            case 6:  _0800B190(); r2 = 49; break;
-            default: r2 = (*(volatile s16 *)(uintptr_t)(WA + 0x1078u) == 1) ? 17 : 16;
-                     break;
-            }
-    } else if (key == 1) {
-        r2 = (*(volatile u16 *)(uintptr_t)(WA + 0x0FBCu) == 7) ? 20 : 19;
-    } else if (key == 2)
-        r2 = 22;
-    else if (key == 3)
-        r2 = 36;
-    else
-        r2 = (int)r2in;
-    return r2;
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {lr}\n"
+        "ldr r0, [r0, #44]\n"
+        "cmp r0, #1\n"
+        "beq 9f\n"
+        "cmp r0, #1\n"
+        "bcc 1f\n"
+        "cmp r0, #2\n"
+        "beq 10f\n"
+        "cmp r0, #3\n"
+        "beq 11f\n"
+        "b 12f\n"
+        "1:\n"
+        "ldr r1, 2f\n"
+        "ldr r3, 3f\n"
+        "adds r0, r1, r3\n"
+        "movs r3, #0\n"
+        "ldrsh r0, [r0, r3]\n"
+        "adds r3, r1, #0\n"
+        "cmp r0, #7\n"
+        "bhi 12f\n"
+        "lsls r0, r0, #2\n"
+        "ldr r1, 4f\n"
+        "adds r0, r0, r1\n"
+        "ldr r0, [r0, #0]\n"
+        "mov pc, r0\n"
+        ".align 2, 0\n"
+        "2: .word 0x03001780\n"
+        "3: .word 0x00000FBC\n"
+        "4: .word 0x0800A0B0\n"
+        ".word 0x0800A0D0\n"
+        ".word 0x0800A0E8\n"
+        ".word 0x0800A0E8\n"
+        ".word 0x0800A0E8\n"
+        ".word 0x0800A116\n"
+        ".word 0x0800A0F0\n"
+        ".word 0x0800A0D4\n"
+        ".word 0x0800A0DC\n"
+        "13:\n"
+        "movs r2, #33\n"
+        "b 12f\n"
+        "14:\n"
+        "bl _0800B190\n"
+        "movs r2, #49\n"
+        "b 12f\n"
+        "15:\n"
+        "ldr r1, 5f\n"
+        "adds r0, r3, r1\n"
+        "movs r3, #0\n"
+        "ldrsh r0, [r0, r3]\n"
+        "cmp r0, #1\n"
+        "beq 6f\n"
+        "16:\n"
+        "movs r2, #16\n"
+        "b 12f\n"
+        ".align 2, 0\n"
+        "5: .word 0x00001078\n"
+        "6:\n"
+        "movs r2, #17\n"
+        "b 12f\n"
+        "9:\n"
+        "ldr r0, 7f\n"
+        "ldr r1, 8f\n"
+        "adds r0, r0, r1\n"
+        "movs r2, #19\n"
+        "ldrh r0, [r0, #0]\n"
+        "cmp r0, #7\n"
+        "bne 12f\n"
+        "movs r2, #20\n"
+        "b 12f\n"
+        "movs r0, r0\n"
+        ".align 2, 0\n"
+        "7: .word 0x03001780\n"
+        "8: .word 0x00000FBC\n"
+        "10:\n"
+        "movs r2, #22\n"
+        "b 12f\n"
+        "11:\n"
+        "movs r2, #36\n"
+        "12:\n"
+        "adds r0, r2, #0\n"
+        "pop {r1}\n"
+        "bx r1\n"
+        ".syntax divided\n"
+    );
 }
 int _0800A074(void *c) __attribute__((alias("CarTick_Rec_0A074")));
 

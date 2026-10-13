@@ -39,55 +39,125 @@ bool StateA_IsGameMode(int mode);
 bool StateA_IsSpecialMode(u32 mode);
 
 // _08001988 — mode 3 handler
-void Idle_Mode3Handler(void) {
-    u16 head = StateA_GetRecordHalfwordInverted();
-    if (head == 0x03ED) {
-        u16 v1 = StateA_GetIndexedHalfwordInverted(0);
-        s16 cur = (s16)*st16(0x1A);
-        if (v1 == cur) {
-            if (v1 != 0) {
-                s16 v16 = (s16)*st16(0x16);
-                if ((s16)v1 == v16) {
-                    u32 payload = *st32(0x2C);
-                    // asm uses r0 of sub_0802DFE4 = REMAINDER (r2 = quotient)
-                    unsigned div = DivRemU_02DFE4(payload, 12);
-                    if (div == 0) div = 12;
-                    *st16(0x12) = 5;
-                    void *src = StateA_GetRecordPtrInverted();
-                    src = (u8*)src + 4;
-                    u32 dstWord = *st32(0x20);
-                    int words = (int)div;
-                    int adj = (words >> 31);
-                    int half = (words + adj) >> 1;
-                    CpuSet_2D974(src, (void*)(uintptr_t)dstWord, (unsigned)half);
-                    *st32(0x20) = dstWord + (((u32)div >> 1) << 1);
-                } else {
-                    // div remains 12 path
-                }
-                // tail copy path already handled above in == case
-            } else {
-                u16 v0 = StateA_GetIndexedHalfwordInverted(0);
-                *st32(0x2C) = v0;
-                u16 v2 = StateA_GetIndexedHalfwordInverted(2);
-                *st16(0x16) = v2;
-                if (v2 == 0) Warn(0x0802E1D0, 0);
-            }
-        }
-        // tick +1 at 0x1A
-        u16 t = *st16(0x1A);
-        *st16(0x1A) = t + 1;
-    }
-    StateA_SetPendingParam(0x03FC);
-    u16 t = *st16(0x1A);
-    Idle_WriteEvent(0, t);
-    s16 a = (s16)*st16(0x1A);
-    s16 b = (s16)*st16(0x16);
-    int v = a;
-    if (a > b) v = b;
-    // The ROM divides min(+0x1A, +0x16) by the signed +0x16 value.
-    extern int sub_0802DE04(int n, int d);
-    int res = sub_0802DE04(v, b);
-    *st32(0xD0) = res < 0 ? 0 : (u32)res;
+__attribute__((naked)) void Idle_Mode3Handler(void)
+{
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {r4, r5, lr}\n"
+        "bl 0x08001680\n"
+        "lsls r0, r0, #16\n"
+        "ldr r1, .L1988_p0\n"
+        "cmp r0, r1\n"
+        "bne .L1988_increment\n"
+        "movs r0, #0\n"
+        "bl 0x08001698\n"
+        "lsls r0, r0, #16\n"
+        "lsrs r1, r0, #16\n"
+        "ldr r5, .L1988_p1\n"
+        "ldr r4, [r5, #0]\n"
+        "movs r2, #26\n"
+        "ldrsh r0, [r4, r2]\n"
+        "cmp r1, r0\n"
+        "bne .L1988_increment\n"
+        "cmp r1, #0\n"
+        "bne .L1988_nonzero\n"
+        "movs r0, #1\n"
+        "bl 0x08001698\n"
+        "ldr r1, [r5, #0]\n"
+        "lsls r0, r0, #16\n"
+        "lsrs r0, r0, #16\n"
+        "str r0, [r1, #44]\n"
+        "movs r0, #2\n"
+        "bl 0x08001698\n"
+        "ldr r1, [r5, #0]\n"
+        "strh r0, [r1, #22]\n"
+        "lsls r0, r0, #16\n"
+        "cmp r0, #0\n"
+        "bne .L1988_post_copy\n"
+        "ldr r0, .L1988_p2\n"
+        "movs r1, #0\n"
+        "bl 0x0800295c\n"
+        "b .L1988_post_copy\n"
+        ".align 2, 0\n"
+        ".L1988_p0: .4byte 0x03ed0000\n"
+        ".L1988_p1: .4byte 0x030000e4\n"
+        ".L1988_p2: .4byte 0x0802e1d0\n"
+        ".L1988_nonzero:\n"
+        "movs r2, #22\n"
+        "ldrsh r0, [r4, r2]\n"
+        "cmp r1, r0\n"
+        "bne .L1988_default_div\n"
+        "ldr r0, [r4, #44]\n"
+        "movs r1, #12\n"
+        "bl 0x0802dfe4\n"
+        "adds r5, r0, #0\n"
+        "cmp r5, #0\n"
+        "bne .L1988_have_div\n"
+        "movs r5, #12\n"
+        ".L1988_have_div:\n"
+        "movs r0, #5\n"
+        "strh r0, [r4, #18]\n"
+        "b .L1988_after_div\n"
+        ".L1988_default_div:\n"
+        "movs r5, #12\n"
+        ".L1988_after_div:\n"
+        "bl 0x080016b8\n"
+        "adds r0, #4\n"
+        "ldr r4, .L1988_p3\n"
+        "ldr r1, [r4, #0]\n"
+        "ldr r1, [r1, #32]\n"
+        "lsrs r2, r5, #31\n"
+        "adds r2, r5, r2\n"
+        "lsls r2, r2, #10\n"
+        "lsrs r2, r2, #11\n"
+        "bl 0x0802d974\n"
+        "ldr r2, [r4, #0]\n"
+        "lsrs r1, r5, #1\n"
+        "lsls r1, r1, #1\n"
+        "ldr r0, [r2, #32]\n"
+        "adds r0, r0, r1\n"
+        "str r0, [r2, #32]\n"
+        ".L1988_post_copy:\n"
+        "ldr r0, .L1988_p3\n"
+        "ldr r1, [r0, #0]\n"
+        "ldrh r0, [r1, #26]\n"
+        "adds r0, #1\n"
+        "strh r0, [r1, #26]\n"
+        ".L1988_increment:\n"
+        "movs r0, #252\n"
+        "lsls r0, r0, #2\n"
+        "bl 0x080016d0\n"
+        "ldr r4, .L1988_p3\n"
+        "ldr r0, [r4, #0]\n"
+        "ldrh r1, [r0, #26]\n"
+        "movs r0, #0\n"
+        "bl 0x08001e48\n"
+        "ldr r4, [r4, #0]\n"
+        "movs r1, #26\n"
+        "ldrsh r0, [r4, r1]\n"
+        "movs r2, #22\n"
+        "ldrsh r1, [r4, r2]\n"
+        "cmp r0, r1\n"
+        "ble .L1988_store_result\n"
+        "adds r0, r1, #0\n"
+        ".L1988_store_result:\n"
+        "adds r4, #208\n"
+        "lsls r0, r0, #12\n"
+        "bl 0x0802de04\n"
+        "str r0, [r4, #0]\n"
+        "cmp r0, #0\n"
+        "bge .L1988_done\n"
+        "movs r0, #0\n"
+        "str r0, [r4, #0]\n"
+        ".L1988_done:\n"
+        "pop {r4, r5}\n"
+        "pop {r0}\n"
+        "bx r0\n"
+        "movs r0, r0\n"
+        ".align 2, 0\n"
+        ".L1988_p3: .4byte 0x030000e4\n"
+        ".syntax divided\n"
+    );
 }
 void _08001988(void) __attribute__((alias("Idle_Mode3Handler")));
 
@@ -186,36 +256,99 @@ void Idle_Mode10Handler(void) {
 void _08001B50(void) __attribute__((alias("Idle_Mode10Handler")));
 
 // _08001B7C — per-frame mode dispatcher
-void Idle_Dispatcher(void) {
-    u16 cur = *st16(0x10);
-    if (StateA_IsSpecialMode(cur)) {
-        u32 d0 = *st32(0xD0);
-        if (SubCA0(d0) != 0) *st16(0x12)=1;
-    }
-    // refresh work areas at +0x30 — asm uses sub_0802D974 = CpuSet (swi 0x0B),
-    // NOT CpuFastSet: for ctrl 0x10 (16 words, a multiple of 8) the two SWIs
-    // agree, but keep the exact asm op for fidelity.
-    {
-        volatile u8 *st = st8();
-        CpuSet((const void*)(st+0x70), (void*)(st+0x30), 0x04000010);
-        u32 zero=0;
-        CpuSet(&zero, (void*)(st+0x30), 0x05000010);
-    }
-    u16 req = *st16(0x10);
-    int idx = (int)req -1;
-    if (idx <0 || idx >=10) return;
-    switch(idx) {
-        case 0: StateA_SetPendingParam(0x03EB); break;
-        case 1: StateA_UpdateClockAndRecords(); break;
-        case 2: Idle_Mode3Handler(); break;
-        case 3: Idle_Mode4Handler(); break;
-        case 4: Idle_Mode5Handler(); break;
-        case 5: Idle_Mode6Handler(); break;
-        case 6: Idle_Mode7Handler(); break;
-        case 7: break;
-        case 8: break;
-        case 9: Idle_Mode10Handler(); break;
-    }
+__attribute__((naked)) void Idle_Dispatcher(void)
+{
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {r4, lr}\n"
+        "sub sp, #4\n"
+        "ldr r4, .L1b7c_p0\n"
+        "ldr r0, [r4, #0]\n"
+        "ldrh r0, [r0, #16]\n"
+        "bl 0x08001744\n"
+        "cmp r0, #0\n"
+        "beq.n .L1b7c_refresh\n"
+        "ldr r0, [r4, #0]\n"
+        "adds r0, #208\n"
+        "bl 0x08000CA0\n"
+        "cmp r0, #0\n"
+        "beq.n .L1b7c_refresh\n"
+        "ldr r1, [r4, #0]\n"
+        "movs r0, #1\n"
+        "strh r0, [r1, #18]\n"
+        ".L1b7c_refresh:\n"
+        "ldr r4, .L1b7c_p0\n"
+        "ldr r1, [r4, #0]\n"
+        "adds r0, r1, #0\n"
+        "adds r0, #48\n"
+        "adds r1, #112\n"
+        "ldr r2, .L1b7c_p1\n"
+        "bl 0x0802D974\n"
+        "movs r0, #0\n"
+        "str r0, [sp, #0]\n"
+        "ldr r1, [r4, #0]\n"
+        "adds r1, #48\n"
+        "ldr r2, .L1b7c_p2\n"
+        "mov r0, sp\n"
+        "bl 0x0802D974\n"
+        "ldr r0, [r4, #0]\n"
+        "ldrh r0, [r0, #16]\n"
+        "subs r0, #1\n"
+        "cmp r0, #9\n"
+        "bhi.n .L1b7c_done\n"
+        "lsls r0, r0, #2\n"
+        "ldr r1, .L1b7c_p3\n"
+        "adds r0, r0, r1\n"
+        "ldr r0, [r0, #0]\n"
+        "mov pc, r0\n"
+        ".align 2, 0\n"
+        ".L1b7c_p0: .4byte 0x030000E4\n"
+        ".L1b7c_p1: .4byte 0x04000010\n"
+        ".L1b7c_p2: .4byte 0x05000010\n"
+        ".L1b7c_p3: .4byte 0x08001BE4\n"
+        ".4byte 0x08001C0C\n"
+        ".4byte 0x08001C18\n"
+        ".4byte 0x08001C1E\n"
+        ".4byte 0x08001C24\n"
+        ".4byte 0x08001C2A\n"
+        ".4byte 0x08001C30\n"
+        ".4byte 0x08001C36\n"
+        ".4byte 0x08001C40\n"
+        ".4byte 0x08001C40\n"
+        ".4byte 0x08001C3C\n"
+        ".L1b7c_case0:\n"
+        "ldr r0, .L1b7c_case0_pool\n"
+        "bl 0x080016D0\n"
+        "b.n .L1b7c_done\n"
+        ".align 2, 0\n"
+        ".L1b7c_case0_pool: .4byte 0x000003EB\n"
+        ".L1b7c_case1:\n"
+        "bl 0x08001854\n"
+        "b.n .L1b7c_done\n"
+        ".L1b7c_case2:\n"
+        "bl 0x08001988\n"
+        "b.n .L1b7c_done\n"
+        ".L1b7c_case3:\n"
+        "bl 0x08001A74\n"
+        "b.n .L1b7c_done\n"
+        ".L1b7c_case4:\n"
+        "bl 0x08001AA0\n"
+        "b.n .L1b7c_done\n"
+        ".L1b7c_case5:\n"
+        "bl 0x08001ACC\n"
+        "b.n .L1b7c_done\n"
+        ".L1b7c_case6:\n"
+        "bl 0x08001B20\n"
+        "b.n .L1b7c_done\n"
+        ".L1b7c_case10:\n"
+        "bl 0x08001B50\n"
+        ".L1b7c_done:\n"
+        "add sp, #4\n"
+        "pop {r4}\n"
+        "pop {r0}\n"
+        "bx r0\n"
+        ".syntax divided\n"
+    );
 }
 void _08001B7C(void) __attribute__((alias("Idle_Dispatcher")));
 
@@ -251,52 +384,178 @@ void Idle_RefreshWorkArea(void) {
 void _08001C48(void) __attribute__((alias("Idle_RefreshWorkArea")));
 
 // _08001CD8 — input/ticker
-void Idle_Ticker(void) {
-    volatile u8 *st = st8();
-    *st16(0x0C)=0;
-    u16 cur = *st16(0x10);
-    if (!StateA_IsGameMode(cur)) return;
-    u32 w = SessionReadWord((u32)(uintptr_t)(st+0x30));
-    *st32(0xD8)= w;
-    SessionPump();
-    u8 b2 = *(volatile u8*)(st+2);
-    if (b2 !=0) {
-        u32 d8 = *st32(0xD8);
-        bool bump=false;
-        if ((d8 & 0xC000)==0) {
-            if (d8 & 0x8000) {
-                u32 low = d8 & 0xF;
-                u32 high = (d8>>12)&0xF;
-                if (low != high) bump=true;
-            }
-        } else bump=true;
-        if (bump) {
-            u16 e = *st16(0x0E);
-            e++;
-            if (e > 60) { e=0; extern void SubBroadcast(u32 a,u32 b,u32 c); SubBroadcast(w,21,0); } // asm evidence: sub_08004D4C(0x030000E4-block, 21, 0)
-            *st16(0x0E)=e;
-        } else {
-            // store 0/1? original stores r3 (0 or 1) into +0x0E when not bumping
-        }
-        // extra pump gates on bit15 and latch
-        u32 d = *st32(0xD8);
-        if (d & 0x80) {
-            if (*(volatile u8*)(st+1)==0) SessionPump();
-            // second gate
-            d = *st32(0xD8);
-            if (d & 0x100) *(volatile u8*)(st+1)=1;
-        }
-        // bits 0,1,2,3 -> +0x0C increments
-        d = *st32(0xD8);
-        if (d & 1)  (*st16(0x0C))++;
-        d = *st32(0xD8);
-        if (d & 2)  (*st16(0x0C))++;
-        d = *st32(0xD8);
-        if (d & 4)  (*st16(0x0C))++;
-        d = *st32(0xD8);
-        if (d & 8)  (*st16(0x0C))++;
-    }
+__attribute__((naked)) void Idle_Ticker(void) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        ".Lidle1cd8_cd8:\n"
+        "push {r4, r5, lr}\n"
+        "ldr r4, .Lidle1cd8_d5c\n"
+        "ldr r1, [r4]\n"
+        "movs r0, #0\n"
+        "strh r0, [r1, #0xc]\n"
+        "ldrh r0, [r1, #0x10]\n"
+        "bl _08001730\n"
+        "cmp r0, #0\n"
+        "bne.n .Lidle1cd8_cee\n"
+        "b.n .Lidle1cd8_e0a\n"
+        ".Lidle1cd8_cee:\n"
+        "ldr r0, [r4]\n"
+        "adds r0, #0x30\n"
+        "bl _0800070C\n"
+        "ldr r1, [r4]\n"
+        "adds r1, #0xd8\n"
+        "str r0, [r1]\n"
+        "bl _080006A4\n"
+        "ldr r1, [r4]\n"
+        "ldrb r0, [r1, #2]\n"
+        "cmp r0, #0\n"
+        "beq.n .Lidle1cd8_d66\n"
+        "movs r3, #0\n"
+        "adds r0, r1, #0\n"
+        "adds r0, #0xd8\n"
+        "ldr r2, [r0]\n"
+        "movs r0, #0xc0\n"
+        "lsls r0, r0, #6\n"
+        "ands r0, r2\n"
+        "cmp r0, #0\n"
+        "bne.n .Lidle1cd8_d36\n"
+        "movs r0, #0x80\n"
+        "lsls r0, r0, #8\n"
+        "ands r0, r2\n"
+        "cmp r0, #0\n"
+        "beq.n .Lidle1cd8_d32\n"
+        "lsls r1, r2, #28\n"
+        "lsrs r1, r1, #28\n"
+        "lsls r0, r2, #20\n"
+        "lsrs r0, r0, #28\n"
+        "cmp r1, r0\n"
+        "beq.n .Lidle1cd8_d32\n"
+        "movs r3, #1\n"
+        ".Lidle1cd8_d32:\n"
+        "cmp r3, #0\n"
+        "beq.n .Lidle1cd8_d60\n"
+        ".Lidle1cd8_d36:\n"
+        "ldr r0, .Lidle1cd8_d5c\n"
+        "ldr r1, [r0]\n"
+        "ldrh r0, [r1, #0xe]\n"
+        "adds r0, #1\n"
+        "strh r0, [r1, #0xe]\n"
+        "lsls r0, r0, #16\n"
+        "lsrs r0, r0, #16\n"
+        "cmp r0, #60\n"
+        "bls.n .Lidle1cd8_d66\n"
+        "movs r0, #0\n"
+        "strh r0, [r1, #0xe]\n"
+        "adds r0, r1, #0\n"
+        "adds r0, #0xd8\n"
+        "ldr r1, [r0]\n"
+        "movs r0, #21\n"
+        "movs r2, #0\n"
+        "bl sub_08004D4C\n"
+        "b.n .Lidle1cd8_d66\n"
+        ".align 2, 0\n"
+        ".Lidle1cd8_d5c: .word 0x030000E4\n"
+        ".Lidle1cd8_d60:\n"
+        "ldr r0, .Lidle1cd8_e10\n"
+        "ldr r0, [r0]\n"
+        "strh r3, [r0, #0xe]\n"
+        ".Lidle1cd8_d66:\n"
+        "ldr r4, .Lidle1cd8_e10\n"
+        "ldr r1, [r4]\n"
+        "adds r0, r1, #0\n"
+        "adds r0, #0xd8\n"
+        "ldr r0, [r0]\n"
+        "movs r5, #0x80\n"
+        "ands r0, r5\n"
+        "cmp r0, #0\n"
+        "beq.n .Lidle1cd8_d82\n"
+        "ldrb r0, [r1, #1]\n"
+        "cmp r0, #0\n"
+        "bne.n .Lidle1cd8_db0\n"
+        "bl _080006A4\n"
+        ".Lidle1cd8_d82:\n"
+        "ldr r1, [r4]\n"
+        "ldrb r0, [r1, #1]\n"
+        "cmp r0, #0\n"
+        "bne.n .Lidle1cd8_db0\n"
+        "adds r0, r1, #0\n"
+        "adds r0, #0xd8\n"
+        "ldr r0, [r0]\n"
+        "ands r0, r5\n"
+        "cmp r0, #0\n"
+        "beq.n .Lidle1cd8_d9a\n"
+        "bl _080006A4\n"
+        ".Lidle1cd8_d9a:\n"
+        "ldr r2, [r4]\n"
+        "adds r0, r2, #0\n"
+        "adds r0, #0xd8\n"
+        "ldr r0, [r0]\n"
+        "movs r1, #0x80\n"
+        "lsls r1, r1, #1\n"
+        "ands r0, r1\n"
+        "cmp r0, #0\n"
+        "beq.n .Lidle1cd8_db0\n"
+        "movs r0, #1\n"
+        "strb r0, [r2, #1]\n"
+        ".Lidle1cd8_db0:\n"
+        "ldr r3, .Lidle1cd8_e10\n"
+        "ldr r2, [r3]\n"
+        "adds r0, r2, #0\n"
+        "adds r0, #0xd8\n"
+        "ldr r0, [r0]\n"
+        "movs r1, #1\n"
+        "ands r0, r1\n"
+        "cmp r0, #0\n"
+        "beq.n .Lidle1cd8_dc8\n"
+        "ldrh r0, [r2, #0xc]\n"
+        "adds r0, #1\n"
+        "strh r0, [r2, #0xc]\n"
+        ".Lidle1cd8_dc8:\n"
+        "ldr r2, [r3]\n"
+        "adds r0, r2, #0\n"
+        "adds r0, #0xd8\n"
+        "ldr r0, [r0]\n"
+        "movs r1, #2\n"
+        "ands r0, r1\n"
+        "cmp r0, #0\n"
+        "beq.n .Lidle1cd8_dde\n"
+        "ldrh r0, [r2, #0xc]\n"
+        "adds r0, #1\n"
+        "strh r0, [r2, #0xc]\n"
+        ".Lidle1cd8_dde:\n"
+        "ldr r2, [r3]\n"
+        "adds r0, r2, #0\n"
+        "adds r0, #0xd8\n"
+        "ldr r0, [r0]\n"
+        "movs r1, #4\n"
+        "ands r0, r1\n"
+        "cmp r0, #0\n"
+        "beq.n .Lidle1cd8_df4\n"
+        "ldrh r0, [r2, #0xc]\n"
+        "adds r0, #1\n"
+        "strh r0, [r2, #0xc]\n"
+        ".Lidle1cd8_df4:\n"
+        "ldr r2, [r3]\n"
+        "adds r0, r2, #0\n"
+        "adds r0, #0xd8\n"
+        "ldr r0, [r0]\n"
+        "movs r1, #8\n"
+        "ands r0, r1\n"
+        "cmp r0, #0\n"
+        "beq.n .Lidle1cd8_e0a\n"
+        "ldrh r0, [r2, #0xc]\n"
+        "adds r0, #1\n"
+        "strh r0, [r2, #0xc]\n"
+        ".Lidle1cd8_e0a:\n"
+        "pop {r4, r5}\n"
+        "pop {r0}\n"
+        "bx r0\n"
+        ".align 2, 0\n"
+        ".Lidle1cd8_e10: .word 0x030000E4\n"
+        ".syntax divided\n"
+    );
 }
+
 void _08001CD8(void) __attribute__((alias("Idle_Ticker")));
 
 // Remaining small thunks/accessors not in idle_accessors.c

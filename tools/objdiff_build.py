@@ -97,6 +97,29 @@ def configured_unit(path: str) -> dict:
     raise ValueError(f"object is not a configured unit: {path}; run make objdiff-config")
 
 
+def probe_function(function: str, work: Path, report: Path) -> None:
+    """Score one function in-process, with the same entry point and flags.
+
+    The old `[sys.executable, tools/corpus_match_probe.py, ...]` subprocess paid
+    a full interpreter start and re-derived the corpus scan, closure symbols,
+    aliases and decl hints -- then this process derived the same tables again
+    for `resolved_body`. `corpus_match_probe.main()` is import-safe and already
+    imported here; `match_c_slice.run_probe` established the in-process
+    pattern. Output still reaches the console as before, and a non-zero status
+    still raises the same `CalledProcessError` the subprocess wrapper raised.
+    """
+    argv = ["corpus_match_probe.py", "--function", function, "--c89", "--require-all",
+            "--work-dir", str(work), "--json", str(report)]
+    saved_argv = sys.argv
+    try:
+        sys.argv = argv
+        returncode = probe.main()
+    finally:
+        sys.argv = saved_argv
+    if returncode:
+        raise subprocess.CalledProcessError(returncode, argv)
+
+
 def build(unit: dict):
     target, candidate = (ROOT / unit[key] for key in ("target_path", "base_path"))
     directory = target.parent
@@ -116,8 +139,7 @@ def build(unit: dict):
     with tempfile.TemporaryDirectory(prefix="work-", dir=directory) as tmp:
         work = Path(tmp)
         report = work / "probe.json"
-        run([sys.executable, ROOT / "tools/corpus_match_probe.py", "--function", function,
-             "--c89", "--require-all", "--work-dir", work / "probe", "--json", report], cwd=ROOT)
+        probe_function(function, work / "probe", report)
         records = json.loads(report.read_text())["results"]
         if len(records) != 1 or int(records[0]["vma"], 16) != vma:
             raise ValueError("function inventory changed; run make objdiff-config")

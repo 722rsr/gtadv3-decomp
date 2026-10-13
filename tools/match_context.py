@@ -8,9 +8,10 @@ Everything is written under ignored build/; no ROM bytes enter tracked files.
 from __future__ import annotations
 
 import argparse
+import contextlib
+import io
 import json
 import re
-import subprocess
 import sys
 from pathlib import Path
 
@@ -18,6 +19,29 @@ import corpus_match_probe as probe
 from agbcc_c89_transform import matching_delimiter, strip_noncode
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def run_probe(function: str, work_dir: Path, report_path: Path) -> tuple[int, str]:
+    """Score one function in this process; `(status, combined output)`.
+
+    The packet ran `corpus_match_probe.py` as a subprocess and only surfaced
+    its stdout/stderr on failure. `main()` is import-safe and the probe is
+    already imported as a library (`linked_candidate` calls into it), so the
+    subprocess bought a full interpreter start and then threw the process away
+    -- `match_c_slice.run_probe` established the in-process pattern for exactly
+    this reason. Output is still captured and still only printed on failure.
+    """
+    argv = ["corpus_match_probe.py", "--function", function, "--c89", "--require-all",
+            "--work-dir", str(work_dir), "--json", str(report_path)]
+    saved_argv = sys.argv
+    captured = io.StringIO()
+    try:
+        sys.argv = argv
+        with contextlib.redirect_stdout(captured), contextlib.redirect_stderr(captured):
+            returncode = probe.main()
+    finally:
+        sys.argv = saved_argv
+    return returncode, captured.getvalue()
 
 
 def display_path(path: Path) -> str:
@@ -85,13 +109,10 @@ def main() -> int:
     out_dir.mkdir(parents=True, exist_ok=True)
     report_path = out_dir / "report.json"
     work_dir = out_dir / "work"
-    result = subprocess.run([sys.executable, str(ROOT / "tools/corpus_match_probe.py"),
-                             "--function", args.function, "--c89", "--require-all",
-                             "--work-dir", str(work_dir), "--json", str(report_path)],
-                            cwd=ROOT, capture_output=True, text=True)
-    if result.returncode:
-        print(result.stdout + result.stderr, file=sys.stderr)
-        return result.returncode
+    result = run_probe(args.function, work_dir, report_path)
+    if result[0]:
+        print(result[1], file=sys.stderr)
+        return result[0]
     report = json.loads(report_path.read_text(encoding="utf-8"))
     if len(report["results"]) != 1:
         print(f"expected one function, got {len(report['results'])}", file=sys.stderr)

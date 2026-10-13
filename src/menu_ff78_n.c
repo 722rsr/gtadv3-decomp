@@ -34,50 +34,169 @@ extern s16 _0802572C(int a, int b);             // ROM call is the 2-arg wrapper
 //       r1 = s16[0x080CB776 + (sl-1)*2];
 //       7B18(rec+16, 11, r1, base+iter*48, 11,1,0,0)
 //       with iter*48 from -24 (sp28).
-void MenuFF78_1479C(void *rec_) {
-    volatile u8 *rec = (volatile u8 *)rec_;
-    volatile u8 *wa = (volatile u8 *)(uintptr_t)0x03001780u;
-    int base = 0;
-    {
-        s16 m = *(volatile s16 *)(uintptr_t)(rec + 166);
-        if (m >= 0 && m <= 3)
-            base = (int)*(volatile s16 *)(uintptr_t)(rec + 164);
-    }
-    int acc32 = -48, acc28 = -24;
-    for (int r9 = -1; r9 <= 4; r9++) {
-        int r4 = (int)*(volatile s16 *)(uintptr_t)(rec + 160) + r9;
-        if (r4 < 0) r4 = 0;
-        {
-            int hi = (int)*(volatile s16 *)(uintptr_t)(rec + 158);
-            if (r4 > hi) r4 = hi;
-        }
-        int sl = Sub_08025CF4(
-            (int)*(volatile s16 *)(uintptr_t)(wa + 0xFF2u),
-            (int)*(volatile s16 *)(uintptr_t)0x03002776u, r4);
-        int course;
-        course = _0802572C(
-            (int)*(volatile s16 *)(uintptr_t)0x03002776u, r4);
-        int r2 = (int)(s16)course;
-        if (r2 < 0) r2 = 0;
-        if (r2 > 4) r2 = 4;
-        int skip = (*(volatile u16 *)(uintptr_t)(rec + 36) == 0 &&
-                    (r9 == -1 || r9 == 4));
-        if (!skip) {
-            int r1 = (int)*(volatile s16 *)(uintptr_t)(0x080CB76Cu +
-                                                       (u32)r2 * 2);
-            Sub_08007B18((void *)(uintptr_t)(rec + 16), 10, r1,
-                         base + 24 + acc32, 10, 1, 0, 0);
-            int s = sl - 1;
-            if ((u32)s <= 2) {
-                int t = (int)*(volatile s16 *)(uintptr_t)(0x080CB776u +
-                                                          (u32)s * 2);
-                Sub_08007B18((void *)(uintptr_t)(rec + 16), 11, t,
-                             base + 24 + acc28, 11, 1, 0, 0);
-            }
-        }
-        acc32 += 48;
-        acc28 += 48;
-    }
+__attribute__((naked)) void MenuFF78_1479C(void *rec_) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {r4, r5, r6, r7, lr}\n"
+        "mov r7, sl\n"
+        "mov r6, r9\n"
+        "mov r5, r8\n"
+        "push {r5, r6, r7}\n"
+        "sub sp, #36\n"
+        "mov r8, r0\n"
+        "movs r0, #0\n"
+        "str r0, [sp, #16]\n"
+        "mov r0, r8\n"
+        "adds r0, #166\n"
+        "movs r1, #0\n"
+        "ldrsh r0, [r0, r1]\n"
+        "cmp r0, #0\n"
+        "blt .L1479c_7c8\n"
+        "cmp r0, #3\n"
+        "bgt .L1479c_7c8\n"
+        "mov r0, r8\n"
+        "adds r0, #164\n"
+        "movs r3, #0\n"
+        "ldrsh r2, [r0, r3]\n"
+        "str r2, [sp, #16]\n"
+        ".L1479c_7c8:\n"
+        "movs r0, #1\n"
+        "negs r0, r0\n"
+        "mov r9, r0\n"
+        "mov r1, r8\n"
+        "adds r1, #160\n"
+        "str r1, [sp, #24]\n"
+        "mov r2, r8\n"
+        "adds r2, #158\n"
+        "str r2, [sp, #20]\n"
+        "movs r3, #24\n"
+        "negs r3, r3\n"
+        "str r3, [sp, #28]\n"
+        "subs r0, #47\n"
+        "str r0, [sp, #32]\n"
+        ".L1479c_7e4:\n"
+        "ldr r1, [sp, #24]\n"
+        "movs r2, #0\n"
+        "ldrsh r0, [r1, r2]\n"
+        "mov r3, r9\n"
+        "adds r4, r0, r3\n"
+        "cmp r4, #0\n"
+        "bge .L1479c_7f4\n"
+        "movs r4, #0\n"
+        ".L1479c_7f4:\n"
+        "ldr r1, [sp, #20]\n"
+        "movs r2, #0\n"
+        "ldrsh r0, [r1, r2]\n"
+        "cmp r4, r0\n"
+        "ble .L1479c_800\n"
+        "adds r4, r0, #0\n"
+        ".L1479c_800:\n"
+        "ldr r3, .L1479c_8c4\n"
+        "ldr r1, .L1479c_8c8\n"
+        "adds r0, r3, r1\n"
+        "movs r2, #0\n"
+        "ldrsh r0, [r0, r2]\n"
+        "ldr r3, .L1479c_8cc\n"
+        "movs r2, #0\n"
+        "ldrsh r1, [r3, r2]\n"
+        "adds r2, r4, #0\n"
+        "bl sub_08025CF4\n"
+        "mov sl, r0\n"
+        "ldr r3, .L1479c_8cc\n"
+        "movs r1, #0\n"
+        "ldrsh r0, [r3, r1]\n"
+        "adds r1, r4, #0\n"
+        "bl Sub_0802572C\n"
+        "lsls r0, r0, #16\n"
+        "asrs r2, r0, #16\n"
+        "cmp r2, #0\n"
+        "bge .L1479c_82e\n"
+        "movs r2, #0\n"
+        ".L1479c_82e:\n"
+        "cmp r2, #4\n"
+        "ble .L1479c_834\n"
+        "movs r2, #4\n"
+        ".L1479c_834:\n"
+        "mov r3, r8\n"
+        "ldrh r0, [r3, #36]\n"
+        "cmp r0, #0\n"
+        "bne .L1479c_84a\n"
+        "movs r0, #1\n"
+        "negs r0, r0\n"
+        "cmp r9, r0\n"
+        "beq .L1479c_89e\n"
+        "mov r0, r9\n"
+        "cmp r0, #4\n"
+        "beq .L1479c_89e\n"
+        ".L1479c_84a:\n"
+        "mov r6, r8\n"
+        "adds r6, #16\n"
+        "ldr r1, .L1479c_8d0\n"
+        "lsls r0, r2, #1\n"
+        "adds r0, r0, r1\n"
+        "movs r2, #0\n"
+        "ldrsh r1, [r0, r2]\n"
+        "ldr r5, [sp, #16]\n"
+        "adds r5, #24\n"
+        "ldr r3, [sp, #32]\n"
+        "adds r2, r3, r5\n"
+        "movs r0, #10\n"
+        "str r0, [sp, #0]\n"
+        "movs r7, #1\n"
+        "str r7, [sp, #4]\n"
+        "movs r4, #0\n"
+        "str r4, [sp, #8]\n"
+        "str r4, [sp, #12]\n"
+        "adds r0, r6, #0\n"
+        "movs r3, #64\n"
+        "bl sub_08007B18\n"
+        "mov r0, sl\n"
+        "subs r0, #1\n"
+        "cmp r0, #2\n"
+        "bhi .L1479c_89e\n"
+        "ldr r1, .L1479c_8d4\n"
+        "lsls r0, r0, #1\n"
+        "adds r0, r0, r1\n"
+        "movs r2, #0\n"
+        "ldrsh r1, [r0, r2]\n"
+        "ldr r3, [sp, #28]\n"
+        "adds r2, r3, r5\n"
+        "movs r0, #11\n"
+        "str r0, [sp, #0]\n"
+        "str r7, [sp, #4]\n"
+        "str r4, [sp, #8]\n"
+        "str r4, [sp, #12]\n"
+        "adds r0, r6, #0\n"
+        "movs r3, #64\n"
+        "bl sub_08007B18\n"
+        ".L1479c_89e:\n"
+        "ldr r0, [sp, #28]\n"
+        "adds r0, #48\n"
+        "str r0, [sp, #28]\n"
+        "ldr r1, [sp, #32]\n"
+        "adds r1, #48\n"
+        "str r1, [sp, #32]\n"
+        "movs r2, #1\n"
+        "add r9, r2\n"
+        "mov r3, r9\n"
+        "cmp r3, #4\n"
+        "ble .L1479c_7e4\n"
+        "add sp, #36\n"
+        "pop {r3, r4, r5}\n"
+        "mov r8, r3\n"
+        "mov r9, r4\n"
+        "mov sl, r5\n"
+        "pop {r4, r5, r6, r7}\n"
+        "pop {r0}\n"
+        "bx r0\n"
+        ".align 2, 0\n"
+        ".L1479c_8c4: .4byte 0x03001780\n"
+        ".L1479c_8c8: .4byte 0x00000FF2\n"
+        ".L1479c_8cc: .4byte 0x03002776\n"
+        ".L1479c_8d0: .4byte 0x080CB76C\n"
+        ".L1479c_8d4: .4byte 0x080CB776\n"
+        ".syntax divided\n"
+    );
 }
 void _08001479C(void *a) __attribute__((alias("MenuFF78_1479C")));
 void Sub_08001479C(void *a) __attribute__((alias("MenuFF78_1479C")));
@@ -96,38 +215,174 @@ void sub_08001479C(void *a) __attribute__((alias("MenuFF78_1479C")));
 //       r1 = clamp(r1, 0, 10); pick same pair;
 //       r1 <= 2: 7BFC(rec, w1, w2, r5*48+base+24, 48,6,1,0,0).
 //       else (3..10): 7BFC(rec, w1, w2, r5*48+base+24, 48,7,1,0,0).
-void MenuFF78_148D8(void *rec_) {
-    volatile u8 *rec = (volatile u8 *)rec_;
-    int base = 0;
-    {
-        s16 m = *(volatile s16 *)(uintptr_t)(rec + 166);
-        if (m >= 0 && m <= 3)
-            base = (int)*(volatile s16 *)(uintptr_t)(rec + 164);
-    }
-    for (int r5 = -1; r5 <= 4; r5++) {
-        int r4 = r5 + 1;
-        int r1 = (int)*(volatile s16 *)(uintptr_t)(rec + 160) + r5;
-        if (*(volatile u16 *)(uintptr_t)(rec + 36) == 0 &&
-            (r5 == -1 || r5 == 4))
-            continue;
-        u32 r2off = (u32)r4 * 12;
-        u32 w1 = *(volatile u32 *)(uintptr_t)(rec + 176 + r2off);
-        u32 w2 = *(volatile u32 *)(uintptr_t)(rec + 180 + r2off);
-        int r3 = r5 * 48 + base + 24;
-        if (r1 == (int)*(volatile s16 *)(uintptr_t)(rec + 156)) {
-            if (r1 < 0) r1 = 0;
-            Sub_08007BFC(rec_, (int)w1, (int)w2, r3, 48, 8, 1, 0, 0);
-        } else {
-            if (r1 < 0) r1 = 0;
-            if (r1 > 9) r1 = 10;
-            if (r1 <= 2) {
-                Sub_08007BFC(rec_, (int)w1, (int)w2, r3, 48, 6, 1, 0, 0);
-            } else {
-                Sub_08007BFC(rec_, (int)w1, (int)w2, r3, 48, 7, 1, 0, 0);
-            }
-        }
-    }
+__attribute__((naked)) void MenuFF78_148D8(void *rec_) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        ".L148d8_0800148D8:\n"
+        "	push	{r4, r5, r6, r7, lr}\n"
+        "	mov	r7, r9\n"
+        "	mov	r6, r8\n"
+        "	push	{r6, r7}\n"
+        "	sub	sp, #20\n"
+        "	adds	r6, r0, #0\n"
+        "	movs	r0, #0\n"
+        "	mov	r8, r0\n"
+        "	adds	r0, r6, #0\n"
+        "	adds	r0, #166\n"
+        "	movs	r1, #0\n"
+        "	ldrsh	r0, [r0, r1]\n"
+        "	cmp	r0, #0\n"
+        "	blt .L148d8_080014902\n"
+        "	cmp	r0, #3\n"
+        "	bgt .L148d8_080014902\n"
+        "	adds	r0, r6, #0\n"
+        "	adds	r0, #164\n"
+        "	movs	r1, #0\n"
+        "	ldrsh	r2, [r0, r1]\n"
+        "	mov	r8, r2\n"
+        ".L148d8_080014902:\n"
+        "	movs	r5, #1\n"
+        "	negs	r5, r5\n"
+        "	movs	r2, #160\n"
+        "	adds	r2, r2, r6\n"
+        "	mov	r9, r2\n"
+        "	movs	r7, #0\n"
+        ".L148d8_08001490E:\n"
+        "	mov	r1, r9\n"
+        "	movs	r2, #0\n"
+        "	ldrsh	r0, [r1, r2]\n"
+        "	adds	r1, r0, r5\n"
+        "	ldrh	r0, [r6, #36]\n"
+        "	cmp	r0, #0\n"
+        "	bne .L148d8_08001492A\n"
+        "	movs	r0, #1\n"
+        "	negs	r0, r0\n"
+        "	adds	r4, r5, #1\n"
+        "	cmp	r5, r0\n"
+        "	beq .L148d8_0800149F4\n"
+        "	cmp	r5, #4\n"
+        "	beq .L148d8_0800149F4\n"
+        ".L148d8_08001492A:\n"
+        "	adds	r0, r6, #0\n"
+        "	adds	r0, #156\n"
+        "	movs	r2, #0\n"
+        "	ldrsh	r0, [r0, r2]\n"
+        "	cmp	r1, r0\n"
+        "	bne .L148d8_080014968\n"
+        "	cmp	r1, #0\n"
+        "	bge .L148d8_08001493C\n"
+        "	movs	r1, #0\n"
+        ".L148d8_08001493C:\n"
+        "	adds	r4, r5, #1\n"
+        "	lsls	r2, r4, #1\n"
+        "	adds	r2, r2, r4\n"
+        "	lsls	r2, r2, #2\n"
+        "	adds	r0, r6, #0\n"
+        "	adds	r0, #176\n"
+        "	adds	r0, r0, r2\n"
+        "	ldr	r1, [r0, #0]\n"
+        "	adds	r0, r6, #0\n"
+        "	adds	r0, #180\n"
+        "	adds	r0, r0, r2\n"
+        "	ldr	r2, [r0, #0]\n"
+        "	lsls	r3, r5, #1\n"
+        "	adds	r3, r3, r5\n"
+        "	lsls	r3, r3, #4\n"
+        "	mov	r0, r8\n"
+        "	adds	r0, #24\n"
+        "	adds	r3, r3, r0\n"
+        "	movs	r0, #48\n"
+        "	str	r0, [sp, #0]\n"
+        "	movs	r0, #8\n"
+        "	b .L148d8_0800149A2\n"
+        ".L148d8_080014968:\n"
+        "	cmp	r1, #0\n"
+        "	bge .L148d8_08001496E\n"
+        "	movs	r1, #0\n"
+        ".L148d8_08001496E:\n"
+        "	cmp	r1, #9\n"
+        "	ble .L148d8_080014974\n"
+        "	movs	r1, #10\n"
+        ".L148d8_080014974:\n"
+        "	cmp	r1, #2\n"
+        "	bgt .L148d8_0800149B4\n"
+        "	adds	r4, r5, #1\n"
+        "	lsls	r2, r4, #1\n"
+        "	adds	r2, r2, r4\n"
+        "	lsls	r2, r2, #2\n"
+        "	adds	r0, r6, #0\n"
+        "	adds	r0, #176\n"
+        "	adds	r0, r0, r2\n"
+        "	ldr	r1, [r0, #0]\n"
+        "	adds	r0, r6, #0\n"
+        "	adds	r0, #180\n"
+        "	adds	r0, r0, r2\n"
+        "	ldr	r2, [r0, #0]\n"
+        "	lsls	r3, r5, #1\n"
+        "	adds	r3, r3, r5\n"
+        "	lsls	r3, r3, #4\n"
+        "	mov	r0, r8\n"
+        "	adds	r0, #24\n"
+        "	adds	r3, r3, r0\n"
+        "	movs	r0, #48\n"
+        "	str	r0, [sp, #0]\n"
+        "	movs	r0, #6\n"
+        ".L148d8_0800149A2:\n"
+        "	str	r0, [sp, #4]\n"
+        "	movs	r0, #1\n"
+        "	str	r0, [sp, #8]\n"
+        "	str	r7, [sp, #12]\n"
+        "	str	r7, [sp, #16]\n"
+        "	adds	r0, r6, #0\n"
+        "	bl sub_08007BFC\n"
+        "	b .L148d8_0800149F4\n"
+        ".L148d8_0800149B4:\n"
+        "	subs	r0, r1, #3\n"
+        "	adds	r4, r5, #1\n"
+        "	cmp	r0, #7\n"
+        "	bhi .L148d8_0800149F4\n"
+        "	lsls	r2, r4, #1\n"
+        "	adds	r2, r2, r4\n"
+        "	lsls	r2, r2, #2\n"
+        "	adds	r0, r6, #0\n"
+        "	adds	r0, #176\n"
+        "	adds	r0, r0, r2\n"
+        "	ldr	r1, [r0, #0]\n"
+        "	adds	r0, r6, #0\n"
+        "	adds	r0, #180\n"
+        "	adds	r0, r0, r2\n"
+        "	ldr	r2, [r0, #0]\n"
+        "	lsls	r3, r5, #1\n"
+        "	adds	r3, r3, r5\n"
+        "	lsls	r3, r3, #4\n"
+        "	mov	r0, r8\n"
+        "	adds	r0, #24\n"
+        "	adds	r3, r3, r0\n"
+        "	movs	r0, #48\n"
+        "	str	r0, [sp, #0]\n"
+        "	movs	r0, #7\n"
+        "	str	r0, [sp, #4]\n"
+        "	movs	r0, #1\n"
+        "	str	r0, [sp, #8]\n"
+        "	str	r7, [sp, #12]\n"
+        "	str	r7, [sp, #16]\n"
+        "	adds	r0, r6, #0\n"
+        "	bl sub_08007BFC\n"
+        ".L148d8_0800149F4:\n"
+        "	adds	r5, r4, #0\n"
+        "	cmp	r5, #4\n"
+        "	ble .L148d8_08001490E\n"
+        "	add	sp, #20\n"
+        "	pop	{r3, r4}\n"
+        "	mov	r8, r3\n"
+        "	mov	r9, r4\n"
+        "	pop	{r4, r5, r6, r7}\n"
+        "	pop	{r0}\n"
+        "	bx	r0\n"
+        ".syntax divided\n"
+    );
 }
+
 void _0800148D8(void *a) __attribute__((alias("MenuFF78_148D8")));
 void Sub_0800148D8(void *a) __attribute__((alias("MenuFF78_148D8")));
 void sub_0800148D8(void *a) __attribute__((alias("MenuFF78_148D8")));

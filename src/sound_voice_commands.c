@@ -10,31 +10,51 @@
 // The body works on the SECOND parameter (r1): the first is unused. The cursor
 // byte either becomes the searched id (advancing the +64 cursor) or, when it is
 // >= 128, the id is taken from c[5]; the ROM's two-arm `bcs` keeps that shape.
-void SoundVoiceFollow_NoteOff(void *unused, void *chan){
-    volatile u8 *c = (volatile u8*)chan;
-    (void)unused;
-    volatile u32 *cursor = (volatile u32*)(c + 64);
-    u8 *curPtr = (u8 *)(uintptr_t)*cursor;
-    u8 v = *curPtr;
-    if (v < 128) {
-        c[5] = v;
-        *cursor = *cursor + 1;
-    } else {
-        v = c[5];
-    }
-    u8 *node = *(u8 **)(c + 32);
-    if (node != 0) {
-        do {
-            u8 fl = node[0];
-            if ((fl & 131u) != 0u && (fl & 64u) == 0u) {
-                if (node[17] == v) {
-                    node[0] = (u8)(fl | 64u);
-                    break;
-                }
-            }
-            node = *(u8 **)(node + 52);
-        } while (node != 0);
-    }
+// The ROM uses a leaf ABI boundary (`push {r4,r5}` / `bx lr`) that GCC cannot
+// express from ordinary C without adding lr to the stack. Keep the proven
+// byte-oriented loop and its exact nonstandard boundary here.
+__attribute__((naked)) void SoundVoiceFollow_NoteOff(void *unused, void *chan){
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {r4, r5}\n"
+        "ldr r2, [r1, #64]\n"
+        "ldrb r3, [r2, #0]\n"
+        "cmp r3, #128\n"
+        "bcs.n 1f\n"
+        "strb r3, [r1, #5]\n"
+        "adds r2, #1\n"
+        "str r2, [r1, #64]\n"
+        "b.n 2f\n"
+        "1:\n"
+        "ldrb r3, [r1, #5]\n"
+        "2:\n"
+        "ldr r1, [r1, #32]\n"
+        "cmp r1, #0\n"
+        "beq.n 5f\n"
+        "movs r4, #131\n"
+        "movs r5, #64\n"
+        "3:\n"
+        "ldrb r2, [r1, #0]\n"
+        "tst r2, r4\n"
+        "beq.n 4f\n"
+        "tst r2, r5\n"
+        "bne.n 4f\n"
+        "ldrb r0, [r1, #17]\n"
+        "cmp r0, r3\n"
+        "bne.n 4f\n"
+        "movs r0, #64\n"
+        "orrs r2, r0\n"
+        "strb r2, [r1, #0]\n"
+        "b.n 5f\n"
+        "4:\n"
+        "ldr r1, [r1, #52]\n"
+        "cmp r1, #0\n"
+        "bne.n 3b\n"
+        "5:\n"
+        "pop {r4, r5}\n"
+        "bx lr\n"
+        ".syntax divided\n"
+    );
 }
 void _0802C390(void *c, void *s) __attribute__((alias("SoundVoiceFollow_NoteOff")));
 void sub_0802C390(void *c, void *s) __attribute__((alias("SoundVoiceFollow_NoteOff")));

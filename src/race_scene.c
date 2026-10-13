@@ -14,17 +14,94 @@ extern void RaceScene_Leaf_318(void);  // 0x08019318 (bl sub_080019318 @0x080199
 extern void RaceScene_Leaf_5B8(void);  // 0x080195B8 (@0x0801990E)
 extern void RaceScene_Leaf_6E8(void);  // 0x080195F8 (@0x08019914)
 extern void RaceScene_Leaf_860(void);  // 0x080196E8 (@0x0801991A)
-void Race_Scene_Dispatch_19_86C(void) {
-    volatile u8 *wa = (volatile u8 *)WORK_AREA_BASE;
-    s16 idx = *(volatile s16 *)(wa + 0x10DC);
-    if (idx <0 || idx>9) return;
-    switch(idx){
-        case 0: case 1: case 3: case 4: RaceScene_Leaf_318(); break;
-        case 2: RaceScene_Leaf_5B8(); break;
-        case 5: RaceScene_Leaf_6E8(); break;
-        case 6: RaceScene_Leaf_860(); break;
-        default: break;
-    }
+__attribute__((naked)) void Race_Scene_Dispatch_19_86C(void) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {r4, r5, r6, lr}\n"
+        "ldr r2, .L1986C_wa\n"
+        "ldr r1, .L1986C_flag_off\n"
+        "adds r0, r2, r1\n"
+        "ldr r0, [r0, #0]\n"
+        "movs r1, #1\n"
+        "ands r0, r1\n"
+        "cmp r0, #0\n"
+        "beq .L1986C_dispatch\n"
+        "movs r5, #0\n"
+        "ldr r0, .L1986C_count_off\n"
+        "adds r1, r2, r0\n"
+        "movs r2, #0\n"
+        "ldrsh r0, [r1, r2]\n"
+        "cmp r5, r0\n"
+        "bge .L1986C_dispatch\n"
+        "adds r6, r1, #0\n"
+        "ldr r4, .L1986C_records\n"
+        ".L1986C_loop:\n"
+        "ldr r0, [r4, #0]\n"
+        "ldr r1, [r4, #4]\n"
+        "adds r2, r5, #0\n"
+        "bl 0x080270D8\n"
+        "movs r0, #142\n"
+        "lsls r0, r0, #1\n"
+        "adds r4, r4, r0\n"
+        "adds r5, #1\n"
+        "movs r1, #0\n"
+        "ldrsh r0, [r6, r1]\n"
+        "cmp r5, r0\n"
+        "blt .L1986C_loop\n"
+        ".L1986C_dispatch:\n"
+        "ldr r0, .L1986C_wa\n"
+        "ldr r2, .L1986C_mode_off\n"
+        "adds r0, r0, r2\n"
+        "ldrh r0, [r0, #0]\n"
+        "subs r0, #1\n"
+        "lsls r0, r0, #16\n"
+        "asrs r0, r0, #16\n"
+        "cmp r0, #9\n"
+        "bhi .L1986C_return\n"
+        "lsls r0, r0, #2\n"
+        "ldr r1, .L1986C_jump_base\n"
+        "adds r0, r0, r1\n"
+        "ldr r0, [r0, #0]\n"
+        "mov pc, r0\n"
+        "movs r0, r0\n"
+        ".align 2, 0\n"
+        ".L1986C_wa: .word 0x03001780\n"
+        ".L1986C_flag_off: .word 0x000010DC\n"
+        ".L1986C_count_off: .word 0x000010CA\n"
+        ".L1986C_records: .word 0x03004E80\n"
+        ".L1986C_mode_off: .word 0x000010FC\n"
+        ".L1986C_jump_base: .word 0x080198E0\n"
+        ".word 0x08019908\n"
+        ".word 0x0801990E\n"
+        ".word 0x08019908\n"
+        ".word 0x08019908\n"
+        ".word 0x08019914\n"
+        ".word 0x08019924\n"
+        ".word 0x08019924\n"
+        ".word 0x0801991A\n"
+        ".word 0x08019924\n"
+        ".word 0x08019920\n"
+        ".L1986C_case0:\n"
+        "bl 0x08019318\n"
+        "b .L1986C_return\n"
+        ".L1986C_case1:\n"
+        "bl 0x080195B8\n"
+        "b .L1986C_return\n"
+        ".L1986C_case2:\n"
+        "bl 0x080195F8\n"
+        "b .L1986C_return\n"
+        ".L1986C_case3:\n"
+        "bl 0x080196E8\n"
+        "b .L1986C_return\n"
+        ".L1986C_case4:\n"
+        "bl 0x08019860\n"
+        ".L1986C_return:\n"
+        "pop {r4, r5, r6}\n"
+        "pop {r0}\n"
+        "bx r0\n"
+        "movs r0, r0\n"
+        ".syntax divided\n"
+    );
 }
 void _08001986C(void) __attribute__((alias("Race_Scene_Dispatch_19_86C")));
 
@@ -95,15 +172,191 @@ void _08001D6D4(int a, int b, int c) __attribute__((alias("Race_Scene_EventDispa
 // then WA 0x03001780+0x10CA-family init, records 15/14 via 0x080261C4/080261E8.
 extern void RaceScene_Dispatch_A12C(void);  // 0x0801A12C (race_cluster.s)
 extern void RaceScene_Leaf_A204(void);      // 0x0801A204 (course_load.s)
-void Race_Scene_Init_1A294(void) {
-    volatile u32 *dma0 = (volatile u32*)0x040000D4;
-    volatile u32 *dma1 = (volatile u32*)0x040000DE;
-    *dma0 = 0; *dma1 = 0; // strh [r2,#0] zero as in asm
-    extern void CpuSet_2D974(void *dst,void *src,int len);
-    CpuSet_2D974((void*)0x05002000,(void*)0x06010000,0);
-    RaceScene_Dispatch_A12C();
-    RaceScene_Leaf_A204();
+__attribute__((naked)) void Race_Scene_Init_1A294(void) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        ".Lrsa1a294_294:\n"
+        "push\t{r4, r5, lr}\n"
+        "sub\tsp, #24\n"
+        "ldr r1, .Lrsa1a294_344\n"
+        "ldr r2, .Lrsa1a294_348\n"
+        "movs\tr0, #0\n"
+        "strh\tr0, [r2, #0]\n"
+        "movs\tr0, #0\n"
+        "str\tr0, [r1, #0]\n"
+        "str\tr0, [r1, #4]\n"
+        "str\tr0, [r1, #8]\n"
+        "str\tr0, [sp, #4]\n"
+        "ldr r1, .Lrsa1a294_34c\n"
+        "ldr r2, .Lrsa1a294_350\n"
+        "add\tr0, sp, #4\n"
+        "bl 0x0802D974\n"
+        "bl 0x0801A12C\n"
+        "bl 0x0801A204\n"
+        ".Lrsa1a294_2bc: .word 0x1C20AC02\n"
+        "movs\tr1, #0\n"
+        "movs\tr2, #16\n"
+        "bl 0x0802E104\n"
+        "movs\tr0, #1\n"
+        "strb\tr0, [r4, #12]\n"
+        "strb\tr0, [r4, #13]\n"
+        "adds\tr0, r4, #0\n"
+        "bl 0x080032E0\n"
+        "ldr r4, .Lrsa1a294_354\n"
+        "movs\tr0, #15\n"
+        "adds\tr1, r4, #0\n"
+        "bl 0x080261C4\n"
+        "movs\tr0, #15\n"
+        "movs\tr1, #14\n"
+        "bl 0x080261E8\n"
+        "ldr r5, .Lrsa1a294_358\n"
+        ".Lrsa1a294_2e8: .word 0x90002014\n"
+        "adds\tr0, r5, #0\n"
+        "movs\tr1, #1\n"
+        "adds\tr2, r4, #0\n"
+        "movs\tr3, #0\n"
+        "bl sub_08007570\n"
+        "adds\tr2, r4, #0\n"
+        "adds\tr2, #20\n"
+        "movs\tr0, #4\n"
+        "str\tr0, [sp, #0]\n"
+        "adds\tr0, r5, #0\n"
+        "movs\tr1, #1\n"
+        ".Lrsa1a294_304: .word 0xF7ED235A\n"
+        ".hword 0xF933\n"
+        "adds\tr4, #24\n"
+        "movs\tr0, #2\n"
+        "str\tr0, [sp, #0]\n"
+        "adds\tr0, r5, #0\n"
+        "movs\tr1, #1\n"
+        "adds\tr2, r4, #0\n"
+        "movs\tr3, #80\n"
+        "bl sub_08007570\n"
+        "adds\tr0, r5, #0\n"
+        "movs\tr1, #4\n"
+        "movs\tr2, #14\n"
+        "bl sub_080075E8\n"
+        "movs\tr0, #32\n"
+        "bl 0x08018ACC\n"
+        "cmp\tr0, #0\n"
+        "beq .Lrsa1a294_360\n"
+        "ldr r0, .Lrsa1a294_35c\n"
+        "ldr\tr0, [r0, #0]\n"
+        "movs\tr1, #174\n"
+        "lsls\tr1, r1, #2\n"
+        "adds\tr0, r0, r1\n"
+        "movs\tr1, #1\n"
+        "bl sub_08008480\n"
+        "b .Lrsa1a294_394\n"
+        "movs\tr0, r0\n"
+        ".Lrsa1a294_344: .word 0x040000D4\n"
+        ".Lrsa1a294_348: .word 0x040000DE\n"
+        ".Lrsa1a294_34c: .word 0x06010000\n"
+        ".Lrsa1a294_350: .word 0x05002000\n"
+        ".Lrsa1a294_354: .word 0x000003E6\n"
+        ".Lrsa1a294_358: .word 0x087ACF70\n"
+        ".Lrsa1a294_35c: .word 0x03004E20\n"
+        ".Lrsa1a294_360:\n"
+        "ldr r0, .Lrsa1a294_3d4\n"
+        "ldr\tr0, [r0, #0]\n"
+        "movs\tr2, #174\n"
+        "lsls\tr2, r2, #2\n"
+        "adds\tr0, r0, r2\n"
+        "movs\tr1, #0\n"
+        "bl sub_08008480\n"
+        "ldr r4, .Lrsa1a294_3d8\n"
+        "ldr r3, .Lrsa1a294_3dc\n"
+        "adds\tr0, r4, r3\n"
+        "movs\tr1, #0\n"
+        "ldrsh\tr0, [r0, r1]\n"
+        "bl sub_08008098\n"
+        "ldr r2, .Lrsa1a294_3e0\n"
+        "adds\tr4, r4, r2\n"
+        "ldrh\tr4, [r4, #0]\n"
+        "cmp\tr4, #5\n"
+        "bne .Lrsa1a294_394\n"
+        "movs\tr0, #0\n"
+        "bl sub_08008164\n"
+        "movs\tr0, #0\n"
+        "bl sub_080081F8\n"
+        ".Lrsa1a294_394:\n"
+        "ldr r4, .Lrsa1a294_3d4\n"
+        "ldr\tr0, [r4, #0]\n"
+        "movs\tr3, #226\n"
+        "lsls\tr3, r3, #2\n"
+        "adds\tr0, r0, r3\n"
+        "bl 0x08027460\n"
+        "ldr\tr0, [r4, #0]\n"
+        "ldr r1, .Lrsa1a294_3e4\n"
+        "adds\tr0, r0, r1\n"
+        "ldr r4, .Lrsa1a294_3d8\n"
+        "ldr r2, .Lrsa1a294_3e8\n"
+        "adds\tr1, r4, r2\n"
+        "movs\tr3, #0\n"
+        "ldrsh\tr1, [r1, r3]\n"
+        "ldr r3, .Lrsa1a294_3ec\n"
+        "adds\tr2, r4, r3\n"
+        "movs\tr3, #0\n"
+        "ldrsh\tr2, [r2, r3]\n"
+        "movs\tr3, #1\n"
+        "bl sub_080026FF4\n"
+        "ldr r0, .Lrsa1a294_3e0\n"
+        "adds\tr4, r4, r0\n"
+        "ldrh\tr4, [r4, #0]\n"
+        "cmp\tr4, #5\n"
+        "bne .Lrsa1a294_3f0\n"
+        "movs\tr0, #0\n"
+        "bl sub_08027210\n"
+        "b .Lrsa1a294_3f6\n"
+        "movs\tr0, r0\n"
+        ".Lrsa1a294_3d4: .word 0x03004E20\n"
+        ".Lrsa1a294_3d8: .word 0x03001780\n"
+        ".Lrsa1a294_3dc: .word 0x000010C8\n"
+        ".Lrsa1a294_3e0: .word 0x000010FC\n"
+        ".Lrsa1a294_3e4: .word 0x0000041C\n"
+        ".Lrsa1a294_3e8: .word 0x000010FE\n"
+        ".Lrsa1a294_3ec: .word 0x000010CA\n"
+        ".Lrsa1a294_3f0:\n"
+        "movs\tr0, #1\n"
+        "bl sub_08027210\n"
+        ".Lrsa1a294_3f6:\n"
+        "ldr r0, .Lrsa1a294_438\n"
+        "ldr\tr0, [r0, #0]\n"
+        "movs\tr1, #200\n"
+        ".Lrsa1a294_3fc: .word 0x18400089\n"
+        "bl 0x08026B30\n"
+        "bl 0x08019F70\n"
+        "bl 0x08026880\n"
+        "ldr r1, .Lrsa1a294_43c\n"
+        "movs\tr2, #8\n"
+        "bl 0x0802D970\n"
+        "ldr r1, .Lrsa1a294_440\n"
+        "ldr r2, .Lrsa1a294_444\n"
+        "adds\tr0, r1, r2\n"
+        "ldrh\tr0, [r0, #0]\n"
+        "cmp\tr0, #10\n"
+        "bne .Lrsa1a294_42e\n"
+        "ldr r3, .Lrsa1a294_448\n"
+        "adds\tr0, r1, r3\n"
+        "ldrb\tr0, [r0, #0]\n"
+        "lsls\tr0, r0, #24\n"
+        "asrs\tr0, r0, #24\n"
+        "bl sub_080027D84\n"
+        ".Lrsa1a294_42e:\n"
+        "add\tsp, #24\n"
+        "pop\t{r4, r5}\n"
+        "pop\t{r0}\n"
+        "bx\tr0\n"
+        "movs\tr0, r0\n"
+        ".Lrsa1a294_438: .word 0x03004E20\n"
+        ".Lrsa1a294_43c: .word 0x05000240\n"
+        ".Lrsa1a294_440: .word 0x03001780\n"
+        ".Lrsa1a294_444: .word 0x000010FC\n"
+        ".Lrsa1a294_448: .word 0x00001113\n"
+        ".syntax divided\n"
+    );
 }
+
 void _08001A294(void) __attribute__((alias("Race_Scene_Init_1A294")));
 
 // _08001A4AC — the race seeder (asm/race_scene.s 0x08001A4AC–0x08001A740).
@@ -129,90 +382,339 @@ extern s8    _08025518(int id);                              // catalog +13
 extern s8    _08025530(int id);                              // catalog +12
 extern int   _080022E4(int a);                               // car-id map (ai_catalog.c)
 extern void  _08002A5D4(void *dst, void *spec);              // record ctor (garage_records.c)
-void Race_Scene_Dispatch_1A4AC(void) {
-    u32 W[8];                                   // frame sp+24..+56 (case words)
-    s16 mode = *(volatile s16 *)(0x03001780u + 0x10FCu);
-    int slot = mode - 1;                        // sxth
-    if ((u32)slot > 9u) {
-        W[0] = 1;                               // 0x0801A55E default arm
-        goto tail;
-    }
-    switch (*(const volatile u32 *)(0x0801A4E4u + (u32)slot * 4u)) {
-    case 0x0801A516u:                           // slots 0 and 3 (QUICK RACE)
-        W[0] = 1; W[1] = 256; W[2] = 257; W[3] = 258;
-        W[4] = 259; W[5] = 260; W[6] = 261; W[7] = 262;
-        break;
-    case 0x0801A50Cu:                           // slot 2
-        W[0] = 4; W[1] = 3;
-        break;
-    case 0x0801A53Au: {                         // slot 7
-        if (*(volatile u8 *)0x03002843u != 0) { W[0] = 1; W[1] = 2; }
-        else                                  { W[0] = 2; W[1] = 1; }
-        break;
-    }
-    default:                                    // 0x0801A55E
-        W[0] = 1;
-        break;
-    }
-tail: {
-    int count = *(volatile s16 *)(0x03001780u + 0x10CAu);
-    u8 spec[24];                                // frame sp[0..23]
-    {   // CpuSet dst=sp, src=0x05000006, ctrl=0x05000006: 6-halfword fixed fill
-        u16 fill = *(volatile u16 *)0x05000006u;
-        for (int k = 0; k < 6; k++) ((u16 *)spec)[k] = fill;
-    }
-    u32 r8 = 0;                                 // record-pool byte cursor
-    u32 off = 0;                                // frame sp+60 (2 per iteration)
-    for (int i = 0; i < count; i++) {
-        u32 w = W[i];                           // [sp+24+4i] (A516 defines all 8)
-        *(u32 *)(spec + 0) = w;
-        u16 id6 = *(volatile s16 *)(0x03003554u + off);   // r6 walk (base+2i)
-        *(u16 *)(spec + 16) = 1;
-        *(u16 *)(spec + 18) = id6;
-        int id;
-        if (w == 3) {                           // 0x0801A648 ghost-record arm
-            *(u16 *)(spec + 16) = 17;
-            u8 *P = (u8 *)_080240D0();
-            *(u32 *)(spec + 12) = (u32)(uintptr_t)P + 32u;
-            *(u16 *)(spec + 20) = (*(volatile s16 *)(P + 18) != 0) ? 1 : 0;
-            _08001A44C(spec + 4, P + 20);
-            *(volatile u8 *)(0x03004E80u + r8 + 32u) = 1;
-            id = (s16)id6;
-        } else if (w == 4 || w == 1 || w == 2) {// 0x0801A5C4 player arm
-            u16 t = (u16)(*(volatile u16 *)0x0300287Cu - 9u);
-            if (t <= 1u) {
-                *(u16 *)(spec + 16) = 4;
-                *(u16 *)(spec + 20) = 0;
-            } else {
-                u16 acc = *(u16 *)(spec + 16);
-                acc = (u16)(_08018ACC(32) ? (acc | 16) : (acc | 8));
-                *(u16 *)(spec + 16) = acc;
-                u8 *Q = (u8 *)_080240C4();
-                *(u32 *)(spec + 12) = (u32)(uintptr_t)Q + 32u;
-                *(u16 *)(spec + 20) = (*(volatile s16 *)0x03002896u != 0) ? 1 : 0;
-            }
-            _08001A44C(spec + 4, (const void *)0x03002898u);
-            id = *(volatile s16 *)(0x03003554u + off);    // r4 = 0x03003554+sp60
-        } else {                                // 0x0801A69C AI arm
-            *(u16 *)(spec + 20) = *(volatile u16 *)(0x03001780u + 0x10C6u);
-            id = *(volatile s16 *)(0x03003554u + 2u * (u32)(count - 1));
-        }
-        *(u8 *)(spec + 8)  = (u8)_08025500(id);
-        *(u8 *)(spec + 9)  = (u8)_08025518(id);
-        *(u8 *)(spec + 10) = (u8)_08025530(id);
-        u8 *entry = (u8 *)(0x03004EA4u + r8);
-        _08002A5D4(entry, spec);                // vtable word 0x080CBB24
-        u8 *E = entry - 36;
-        *(u16 *)(E + 12) = (u16)i;
-        *(u8 *)(E + 28) = 1;
-        *(u16 *)(E + 16) = id6;
-        *(u16 *)(E + 18) = *(volatile u16 *)(0x03001780u + 0x1DE4u + off);
-        *(u16 *)(E + 26) = (u16)_080022E4((int)(s16)*(volatile u16 *)(E + 16));
-        r8 += 284;
-        off += 2;
-    }
+__attribute__((naked)) void Race_Scene_Dispatch_1A4AC(void) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        ".Lrsa1a4_4ac:\n"
+        "push\t{r4, r5, r6, r7, lr}\n"
+        "mov\tr7, sl\n"
+        "mov\tr6, r9\n"
+        "mov\tr5, r8\n"
+        "push\t{r5, r6, r7}\n"
+        "sub\tsp, #64\n"
+        "ldr r1, .Lrsa1a4_4d8\n"
+        "ldr r2, .Lrsa1a4_4dc\n"
+        "adds\tr0, r1, r2\n"
+        "ldrh\tr0, [r0, #0]\n"
+        "subs\tr0, #1\n"
+        "lsls\tr0, r0, #16\n"
+        "asrs\tr0, r0, #16\n"
+        "adds\tr2, r1, #0\n"
+        "cmp\tr0, #9\n"
+        "bhi .Lrsa1a4_55e\n"
+        "lsls\tr0, r0, #2\n"
+        "ldr r1, .Lrsa1a4_4e0\n"
+        "adds\tr0, r0, r1\n"
+        "ldr\tr0, [r0, #0]\n"
+        "mov\tpc, r0\n"
+        "movs\tr0, r0\n"
+        ".Lrsa1a4_4d8: .word 0x03001780\n"
+        ".Lrsa1a4_4dc: .word 0x000010FC\n"
+        ".Lrsa1a4_4e0: .word 0x0801A4E4\n"
+        ".Lrsa1a4_4e4: .word 0x0801A516\n"
+        ".Lrsa1a4_4e8: .word 0x0801A55E\n"
+        ".Lrsa1a4_4ec: .word 0x0801A50C\n"
+        ".Lrsa1a4_4f0: .word 0x0801A516\n"
+        ".Lrsa1a4_4f4: .word 0x0801A55E\n"
+        ".Lrsa1a4_4f8: .word 0x0801A55E\n"
+        ".Lrsa1a4_4fc: .word 0x0801A55E\n"
+        ".Lrsa1a4_500: .word 0x0801A53A\n"
+        ".Lrsa1a4_504: .word 0x0801A55E\n"
+        ".Lrsa1a4_508: .word 0x0801A55E\n"
+        ".Lrsa1a4_50c:\n"
+        "movs\tr0, #4\n"
+        "str\tr0, [sp, #24]\n"
+        "movs\tr0, #3\n"
+        "str\tr0, [sp, #28]\n"
+        "b .Lrsa1a4_562\n"
+        ".Lrsa1a4_516:\n"
+        "add\tr1, sp, #24\n"
+        "movs\tr0, #1\n"
+        "str\tr0, [sp, #24]\n"
+        "adds\tr0, #255\n"
+        "str\tr0, [r1, #4]\n"
+        "adds\tr0, #1\n"
+        "str\tr0, [r1, #8]\n"
+        "adds\tr0, #1\n"
+        "str\tr0, [r1, #12]\n"
+        "adds\tr0, #1\n"
+        "str\tr0, [r1, #16]\n"
+        "adds\tr0, #1\n"
+        "str\tr0, [r1, #20]\n"
+        "adds\tr0, #1\n"
+        "str\tr0, [r1, #24]\n"
+        "adds\tr0, #1\n"
+        "str\tr0, [r1, #28]\n"
+        "b .Lrsa1a4_562\n"
+        ".Lrsa1a4_53a:\n"
+        "ldr r3, .Lrsa1a4_550\n"
+        "adds\tr0, r2, r3\n"
+        "ldrb\tr0, [r0, #0]\n"
+        "cmp\tr0, #0\n"
+        "beq .Lrsa1a4_554\n"
+        "movs\tr0, #1\n"
+        "str\tr0, [sp, #24]\n"
+        "movs\tr0, #2\n"
+        "str\tr0, [sp, #28]\n"
+        "b .Lrsa1a4_562\n"
+        "movs\tr0, r0\n"
+        ".Lrsa1a4_550: .word 0x000010C3\n"
+        ".Lrsa1a4_554:\n"
+        "movs\tr0, #2\n"
+        "str\tr0, [sp, #24]\n"
+        "movs\tr0, #1\n"
+        "str\tr0, [sp, #28]\n"
+        "b .Lrsa1a4_562\n"
+        ".Lrsa1a4_55e:\n"
+        "movs\tr0, #1\n"
+        "str\tr0, [sp, #24]\n"
+        ".Lrsa1a4_562:\n"
+        "movs\tr7, #0\n"
+        "ldr r0, .Lrsa1a4_5b4\n"
+        "adds\tr1, r2, r0\n"
+        "movs\tr3, #0\n"
+        "ldrsh\tr0, [r1, r3]\n"
+        "cmp\tr7, r0\n"
+        "blt .Lrsa1a4_572\n"
+        "b .Lrsa1a4_740\n"
+        ".Lrsa1a4_572:\n"
+        "mov\tr5, sp\n"
+        "movs\tr0, #1\n"
+        "mov\tr9, r0\n"
+        "movs\tr2, #0\n"
+        "str\tr2, [sp, #60]\n"
+        "mov\tr8, r2\n"
+        "ldr r6, .Lrsa1a4_5b8\n"
+        "mov\tsl, r1\n"
+        ".Lrsa1a4_582:\n"
+        "movs\tr3, #0\n"
+        "str\tr3, [sp, #56]\n"
+        "add\tr0, sp, #56\n"
+        "mov\tr1, sp\n"
+        "ldr r2, .Lrsa1a4_5bc\n"
+        "bl 0x0802D974\n"
+        "add\tr1, sp, #24\n"
+        "lsls\tr0, r7, #2\n"
+        "adds\tr1, r1, r0\n"
+        "ldr\tr0, [r1, #0]\n"
+        "str\tr0, [sp, #0]\n"
+        "ldrh\tr0, [r6, #0]\n"
+        "strh\tr0, [r5, #18]\n"
+        "mov\tr0, r9\n"
+        "strh\tr0, [r5, #16]\n"
+        "ldr\tr1, [r1, #0]\n"
+        "cmp\tr1, #3\n"
+        "beq .Lrsa1a4_648\n"
+        "cmp\tr1, #3\n"
+        "bgt .Lrsa1a4_5c0\n"
+        "cmp\tr1, #1\n"
+        "blt .Lrsa1a4_69c\n"
+        "b .Lrsa1a4_5c4\n"
+        "movs\tr0, r0\n"
+        ".Lrsa1a4_5b4: .word 0x000010CA\n"
+        ".Lrsa1a4_5b8: .word 0x03003554\n"
+        ".Lrsa1a4_5bc: .word 0x05000006\n"
+        ".Lrsa1a4_5c0:\n"
+        "cmp\tr1, #4\n"
+        "bne .Lrsa1a4_69c\n"
+        ".Lrsa1a4_5c4:\n"
+        "ldr r1, .Lrsa1a4_5dc\n"
+        "ldrh\tr0, [r1, #0]\n"
+        "subs\tr0, #9\n"
+        "lsls\tr0, r0, #16\n"
+        "lsrs\tr0, r0, #16\n"
+        "cmp\tr0, #1\n"
+        "bhi .Lrsa1a4_5e0\n"
+        "movs\tr0, #4\n"
+        "strh\tr0, [r5, #16]\n"
+        "movs\tr2, #0\n"
+        "strh\tr2, [r5, #20]\n"
+        "b .Lrsa1a4_610\n"
+        ".Lrsa1a4_5dc: .word 0x0300287C\n"
+        ".Lrsa1a4_5e0:\n"
+        "movs\tr0, #32\n"
+        "bl 0x08018ACC\n"
+        "cmp\tr0, #0\n"
+        "beq .Lrsa1a4_5f2\n"
+        "movs\tr0, #16\n"
+        "ldrh\tr3, [r5, #16]\n"
+        "orrs\tr0, r3\n"
+        "b .Lrsa1a4_5f8\n"
+        ".Lrsa1a4_5f2:\n"
+        "movs\tr0, #8\n"
+        "ldrh\tr1, [r5, #16]\n"
+        "orrs\tr0, r1\n"
+        ".Lrsa1a4_5f8:\n"
+        "strh\tr0, [r5, #16]\n"
+        "bl 0x080240C4\n"
+        "adds\tr0, #32\n"
+        "str\tr0, [sp, #12]\n"
+        "ldr r2, .Lrsa1a4_63c\n"
+        "movs\tr3, #0\n"
+        "ldrsh\tr0, [r2, r3]\n"
+        "cmp\tr0, #0\n"
+        "beq .Lrsa1a4_60e\n"
+        "mov\tr0, r9\n"
+        ".Lrsa1a4_60e:\n"
+        "strh\tr0, [r5, #20]\n"
+        ".Lrsa1a4_610:\n"
+        "ldr r4, .Lrsa1a4_640\n"
+        "add\tr0, sp, #4\n"
+        "adds\tr1, r4, #0\n"
+        "bl _08001A44C\n"
+        "ldr r1, .Lrsa1a4_644\n"
+        "adds\tr4, r4, r1\n"
+        "ldr\tr2, [sp, #60]\n"
+        "adds\tr4, r2, r4\n"
+        "movs\tr3, #0\n"
+        "ldrsh\tr0, [r4, r3]\n"
+        "bl 0x08025500\n"
+        "strb\tr0, [r5, #8]\n"
+        "movs\tr1, #0\n"
+        "ldrsh\tr0, [r4, r1]\n"
+        "bl 0x08025518\n"
+        "strb\tr0, [r5, #9]\n"
+        "movs\tr2, #0\n"
+        "ldrsh\tr0, [r4, r2]\n"
+        "b .Lrsa1a4_6e8\n"
+        ".Lrsa1a4_63c: .word 0x03002896\n"
+        ".Lrsa1a4_640: .word 0x03002898\n"
+        ".Lrsa1a4_644: .word 0x00000CBC\n"
+        ".Lrsa1a4_648:\n"
+        "movs\tr0, #17\n"
+        "strh\tr0, [r5, #16]\n"
+        "bl 0x080240D0\n"
+        "adds\tr0, #32\n"
+        "str\tr0, [sp, #12]\n"
+        "bl 0x080240D0\n"
+        "movs\tr3, #18\n"
+        "ldrsh\tr0, [r0, r3]\n"
+        "cmp\tr0, #0\n"
+        "beq .Lrsa1a4_662\n"
+        "mov\tr0, r9\n"
+        ".Lrsa1a4_662:\n"
+        "strh\tr0, [r5, #20]\n"
+        "add\tr4, sp, #4\n"
+        "bl 0x080240D0\n"
+        "adds\tr1, r0, #0\n"
+        "adds\tr1, #20\n"
+        "adds\tr0, r4, #0\n"
+        "bl _08001A44C\n"
+        "ldr r0, .Lrsa1a4_698\n"
+        "add\tr0, r8\n"
+        "adds\tr0, #32\n"
+        "mov\tr1, r9\n"
+        "strb\tr1, [r0, #0]\n"
+        "movs\tr2, #0\n"
+        "ldrsh\tr0, [r6, r2]\n"
+        "bl 0x08025500\n"
+        "strb\tr0, [r5, #8]\n"
+        "movs\tr3, #0\n"
+        "ldrsh\tr0, [r6, r3]\n"
+        "bl 0x08025518\n"
+        "strb\tr0, [r5, #9]\n"
+        "movs\tr1, #0\n"
+        "ldrsh\tr0, [r6, r1]\n"
+        "b .Lrsa1a4_6e8\n"
+        ".Lrsa1a4_698: .word 0x03004E80\n"
+        ".Lrsa1a4_69c:\n"
+        "ldr r2, .Lrsa1a4_750\n"
+        "ldr r3, .Lrsa1a4_754\n"
+        "adds\tr0, r2, r3\n"
+        "ldrh\tr0, [r0, #0]\n"
+        "strh\tr0, [r5, #20]\n"
+        "mov\tr1, sl\n"
+        "movs\tr2, #0\n"
+        "ldrsh\tr0, [r1, r2]\n"
+        "subs\tr0, #1\n"
+        "lsls\tr0, r0, #1\n"
+        "ldr r3, .Lrsa1a4_758\n"
+        "adds\tr0, r0, r3\n"
+        "movs\tr1, #0\n"
+        "ldrsh\tr0, [r0, r1]\n"
+        "bl 0x08025500\n"
+        "strb\tr0, [r5, #8]\n"
+        "mov\tr2, sl\n"
+        "movs\tr3, #0\n"
+        "ldrsh\tr0, [r2, r3]\n"
+        "subs\tr0, #1\n"
+        "lsls\tr0, r0, #1\n"
+        "ldr r1, .Lrsa1a4_758\n"
+        "adds\tr0, r0, r1\n"
+        "movs\tr2, #0\n"
+        "ldrsh\tr0, [r0, r2]\n"
+        "bl 0x08025518\n"
+        "strb\tr0, [r5, #9]\n"
+        "mov\tr3, sl\n"
+        "movs\tr1, #0\n"
+        "ldrsh\tr0, [r3, r1]\n"
+        "subs\tr0, #1\n"
+        "lsls\tr0, r0, #1\n"
+        "ldr r2, .Lrsa1a4_758\n"
+        "adds\tr0, r0, r2\n"
+        "movs\tr3, #0\n"
+        "ldrsh\tr0, [r0, r3]\n"
+        ".Lrsa1a4_6e8:\n"
+        "bl 0x08025530\n"
+        "strb\tr0, [r5, #10]\n"
+        "ldr r1, .Lrsa1a4_75c\n"
+        "ldr r4, .Lrsa1a4_760\n"
+        "mov\tr2, r8\n"
+        "adds\tr0, r2, r4\n"
+        "ldr\tr2, [r1, #0]\n"
+        "mov\tr1, sp\n"
+        "bl 0x0802DDD0\n"
+        "subs\tr4, #36\n"
+        "add\tr4, r8\n"
+        "strh\tr7, [r4, #12]\n"
+        "mov\tr3, r9\n"
+        "strb\tr3, [r4, #28]\n"
+        "ldrh\tr0, [r6, #0]\n"
+        "strh\tr0, [r4, #16]\n"
+        "ldr r1, .Lrsa1a4_750\n"
+        "ldr r2, .Lrsa1a4_764\n"
+        "adds\tr0, r1, r2\n"
+        "ldr\tr3, [sp, #60]\n"
+        "adds\tr0, r3, r0\n"
+        "ldrh\tr0, [r0, #0]\n"
+        "strh\tr0, [r4, #18]\n"
+        "movs\tr1, #16\n"
+        "ldrsh\tr0, [r4, r1]\n"
+        "bl 0x080022E4\n"
+        "strh\tr0, [r4, #26]\n"
+        "ldr\tr2, [sp, #60]\n"
+        "adds\tr2, #2\n"
+        "str\tr2, [sp, #60]\n"
+        "movs\tr3, #142\n"
+        "lsls\tr3, r3, #1\n"
+        "add\tr8, r3\n"
+        "adds\tr6, #2\n"
+        "adds\tr7, #1\n"
+        "mov\tr1, sl\n"
+        "movs\tr2, #0\n"
+        "ldrsh\tr0, [r1, r2]\n"
+        "cmp\tr7, r0\n"
+        "bge .Lrsa1a4_740\n"
+        "b .Lrsa1a4_582\n"
+        ".Lrsa1a4_740:\n"
+        "add\tsp, #64\n"
+        "pop\t{r3, r4, r5}\n"
+        "mov\tr8, r3\n"
+        "mov\tr9, r4\n"
+        "mov\tsl, r5\n"
+        "pop\t{r4, r5, r6, r7}\n"
+        "pop\t{r0}\n"
+        "bx\tr0\n"
+        ".Lrsa1a4_750: .word 0x03001780\n"
+        ".Lrsa1a4_754: .word 0x000010C6\n"
+        ".Lrsa1a4_758: .word 0x03003554\n"
+        ".Lrsa1a4_75c: .word 0x080CBB24\n"
+        ".Lrsa1a4_760: .word 0x03004EA4\n"
+        ".Lrsa1a4_764: .word 0x00001DE4\n"
+        ".syntax divided\n"
+    );
 }
-}
+
 void _08001A4AC(void) __attribute__((alias("Race_Scene_Dispatch_1A4AC")));
 
 extern void sub_08002A86C(void *rec, u32 bits, u32 flag);
@@ -366,23 +868,65 @@ extern void Sub_08009674(void);
 extern int Sub_0800968C(int v);
 extern void Sub_08001B498(int v);
 extern void Sub_08019AEC(int v);
-void Race_Scene_Leaf_1B130(int a0) {
-    int r4 = a0;
-    Ghost_FlagOp(0x200000u, 0); // 128<<14 = 0x200000
-    if (r4 == 1) {
-        (void)Sub_0800968C(1);
-        volatile u8 *wa = (volatile u8 *)WORK_AREA_BASE;
-        (void)wa;
-        Ghost_FlagOp(2, 1);
-        Ghost_FlagOp(16, 1);
-        *(volatile u8 *)(wa + 0x10BD) = 0;
-    } else if (r4 == 2) {
-        (void)Sub_0800968C(1);
-        Sub_08019AEC(-1);
-        Ghost_FlagOp(2, 1);
-    } else if (r4 == 0) {
-        Ghost_FlagOp(0x100000u, 0); // 128<<13 = 0x100000
-    }
+__attribute__((naked)) void Race_Scene_Leaf_1B130(int a0) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {r4, lr}\n"
+        "adds r4, r0, #0\n"
+        "movs r0, #128\n"
+        "lsls r0, r0, #14\n"
+        "movs r1, #0\n"
+        "bl _08018AA8\n"
+        "cmp r4, #1\n"
+        "beq.n .Lrs1b130_case1\n"
+        "cmp r4, #1\n"
+        "bgt.n .Lrs1b130_gt1\n"
+        "cmp r4, #0\n"
+        "beq.n .Lrs1b130_case0\n"
+        "b.n .Lrs1b130_done\n"
+        ".Lrs1b130_gt1:\n"
+        "cmp r4, #2\n"
+        "beq.n .Lrs1b130_case2\n"
+        "b.n .Lrs1b130_done\n"
+        ".Lrs1b130_case0:\n"
+        "movs r0, #128\n"
+        "lsls r0, r0, #13\n"
+        "movs r1, #0\n"
+        "bl _08018AA8\n"
+        "b.n .Lrs1b130_done\n"
+        ".Lrs1b130_case1:\n"
+        "movs r0, #1\n"
+        "bl _0802B368\n"
+        "movs r0, #16\n"
+        "movs r1, #1\n"
+        "bl _08018AA8\n"
+        "movs r0, #2\n"
+        "movs r1, #1\n"
+        "bl _08018AA8\n"
+        "ldr r0, 1f\n"
+        "ldr r1, 2f\n"
+        "adds r0, r0, r1\n"
+        "movs r1, #0\n"
+        "strb r1, [r0, #0]\n"
+        "b.n .Lrs1b130_done\n"
+        ".align 2\n"
+        "1: .word 0x03001780\n"
+        "2: .word 0x000010BD\n"
+        ".Lrs1b130_case2:\n"
+        "movs r0, #1\n"
+        "bl _0802B368\n"
+        "movs r0, #1\n"
+        "negs r0, r0\n"
+        "bl Sub_08019AEC\n"
+        "movs r0, #2\n"
+        "movs r1, #1\n"
+        "bl _08018AA8\n"
+        ".Lrs1b130_done:\n"
+        "pop {r4}\n"
+        "pop {r0}\n"
+        "bx r0\n"
+        ".syntax divided\n"
+    );
 }
 void _08001B130(int a0) __attribute__((alias("Race_Scene_Leaf_1B130")));
 

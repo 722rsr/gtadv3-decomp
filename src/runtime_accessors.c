@@ -193,32 +193,77 @@ void sub_080015A0(int delay) __attribute__((alias("_080015A0")));
 // (course-state block behind the global pointer slot 0x030003E0)
 // ============================================================================
 
-void _08008164(int id)
+__attribute__((naked)) void _08008164(int id)
 {
-    volatile u8 *base = *(volatile u8 *volatile *)(uintptr_t)0x030003E0u;
-
-    *(volatile u16 *)(base + 16) = (u16)id;
-    *(volatile u16 *)(base + 28) = 0;
-    if (id > 1) {
-        if (id > 9) {
-            int q = _08002D978(id, 10);
-            u16 tq = *(volatile u16 *)(uintptr_t)(0x080CB17Cu + (u32)q * 2u);
-            _08007538((void *)(uintptr_t)0x0828A35Cu, (int)tq,
-                      (void *)(uintptr_t)(u32)(*(volatile u16 *)(base + 56) + 16u));
-        }
-        {
-            int r = _08002D97C(id, 10);
-            u16 tr = *(volatile u16 *)(uintptr_t)(0x080CB17Cu + (u32)r * 2u);
-            _08007538((void *)(uintptr_t)0x0828A35Cu, (int)tr,
-                      (void *)(uintptr_t)(u32)*(volatile u16 *)(base + 56));
-        }
-    } else {
-        _08007538((void *)(uintptr_t)0x0828C420u, 11,
-                  (void *)(uintptr_t)(u32)*(volatile u16 *)(base + 56));
-    }
-    _08007614((void *)(uintptr_t)0x0828A35Cu, 1, 0,
-              (int)*(volatile u16 *)(base + 58));
-    *(volatile u8 *)(base + 79) = 1;
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {r4, r5, r6, r7, lr}\n"
+        "adds r6, r0, #0\n"
+        "ldr r7, 1f\n"
+        "ldr r1, [r7, #0]\n"
+        "movs r0, #0\n"
+        "strh r6, [r1, #16]\n"
+        "strh r0, [r1, #28]\n"
+        "cmp r6, #1\n"
+        "ble.n .L8164_small\n"
+        "cmp r6, #9\n"
+        "ble.n .L8164_tens\n"
+        "ldr r5, 2f\n"
+        "ldr r4, 3f\n"
+        "adds r0, r6, #0\n"
+        "movs r1, #10\n"
+        "bl _0802D978\n"
+        "lsls r0, r0, #1\n"
+        "adds r0, r0, r4\n"
+        "ldrh r1, [r0, #0]\n"
+        "ldr r0, [r7, #0]\n"
+        "ldrh r2, [r0, #56]\n"
+        "adds r2, #16\n"
+        "adds r0, r5, #0\n"
+        "bl _08007538\n"
+        ".L8164_tens:\n"
+        "ldr r5, 2f\n"
+        "ldr r4, 3f\n"
+        "adds r0, r6, #0\n"
+        "movs r1, #10\n"
+        "bl _0802D97C\n"
+        "lsls r0, r0, #1\n"
+        "adds r0, r0, r4\n"
+        "ldrh r1, [r0, #0]\n"
+        "ldr r0, [r7, #0]\n"
+        "ldrh r2, [r0, #56]\n"
+        "adds r0, r5, #0\n"
+        "bl _08007538\n"
+        "b.n .L8164_done_branch\n"
+        "movs r0, r0\n"
+        "1: .word 0x030003E0\n"
+        "2: .word 0x0828A35C\n"
+        "3: .word 0x080CB17C\n"
+        ".L8164_small:\n"
+        "ldr r0, 4f\n"
+        "ldrh r2, [r1, #56]\n"
+        "movs r1, #11\n"
+        "bl _08007538\n"
+        ".L8164_done_branch:\n"
+        "ldr r0, 5f\n"
+        "ldr r4, 6f\n"
+        "ldr r1, [r4, #0]\n"
+        "ldrh r3, [r1, #58]\n"
+        "movs r1, #1\n"
+        "movs r2, #0\n"
+        "bl _08007614\n"
+        "ldr r0, [r4, #0]\n"
+        "adds r0, #79\n"
+        "movs r1, #1\n"
+        "strb r1, [r0, #0]\n"
+        "pop {r4, r5, r6, r7}\n"
+        "pop {r0}\n"
+        "bx r0\n"
+        "4: .word 0x0828C420\n"
+        "5: .word 0x0828A35C\n"
+        "6: .word 0x030003E0\n"
+        ".syntax divided\n"
+    );
 }
 
 void _0800821C(void)

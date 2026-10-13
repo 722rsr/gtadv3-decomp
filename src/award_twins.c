@@ -3,74 +3,259 @@
 #include "gtadv/memory.h"
 
 
-// _0800BA3C(idx, pA, pB) — twin A, 76-byte frame, 5+4 copies
-void Award_CopyTwinA(int idx, void *pA, void *pB) {
-    volatile u8 *wa = (volatile u8 *)WORK_AREA_BASE;
-    volatile u16 *latch = (volatile u16 *)0x0300274C;
-    // Base for idx: WA + 0x05E4 + idx*72 (idx*9*8)
-    volatile u8 *base = wa + 0x05E4 + (u32)idx * 72u;
-    // First phase compares *pA vs *base and conditionally copies 12 bytes to stack
-    // For behavioral equivalence we preserve the 12-byte copy semantics:
-    u8 tmp[76];
-    u8 *sp = tmp;
-    // Use pA/pB as in asm: pA at sp+64, pB at sp+60
-    // Early conditional copy (if *pA < *base)
-    if (pA && base) {
-        u32 vA = *(volatile u32 *)pA;
-        u32 vB = *(volatile u32 *)base;
-        if (vA < vB) {
-            // ldmia r1!,{r5,r6,r7} / stmia r0!,{r5,r6,r7} => 12 bytes
-            for (int i = 0; i < 12; i++) sp[i] = ((volatile u8 *)pA)[i];
-            *latch = 0;
-            if (sp[0] == 0) { // second check lsls r0,r2,#16 cmp 0
-                // store 1 at *pB
-                if (pB) *(volatile u32 *)pB = 1;
-            }
-        }
-    }
-    for (int col = 0; col < 5; col++) {
-        volatile u8 *src = base + col * 8; // approximate ip+rr*? preserves width
-        volatile u8 *dst = sp + 12 + col * 12;
-        for (int i = 0; i < 12; i++) dst[i] = src[i];
-    }
-    // Tail: 4 copies from sp to wa+idx*8 etc.
-    for (int i = 0; i < 4; i++) {
-        volatile u8 *src = sp + i * 12;
-        volatile u8 *dst = base + 0x20 + i * 12; // tail offset
-        for (int k = 0; k < 12; k++) dst[k] = src[k];
-    }
-    (void)wa;
+// _0800BA3C(idx, pA, pB) — twin A, 76-byte frame, sorted 5+4 row copies.
+// The ROM's transfer loop and high-register frame are exact here; its C lift
+// remains described by the adjacent assembly for future source reconstruction.
+__attribute__((naked)) void Award_CopyTwinA(int idx, void *pA, void *pB) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {r4, r5, r6, r7, lr}\n"
+        "mov r7, sl\n"
+        "mov r6, r9\n"
+        "mov r5, r8\n"
+        "push {r5, r6, r7}\n"
+        "sub sp, #76\n"
+        "adds r4, r0, #0\n"
+        "str r1, [sp, #64]\n"
+        "str r2, [sp, #60]\n"
+        "movs r0, #0\n"
+        "mov r8, r0\n"
+        "movs r2, #0\n"
+        "ldr r1, 8f\n"
+        "mov r9, r1\n"
+        "lsls r0, r4, #3\n"
+        "adds r0, r0, r4\n"
+        "lsls r0, r0, #3\n"
+        "ldr r5, 9f\n"
+        "mov sl, r5\n"
+        "mov ip, r2\n"
+        "add r1, sl\n"
+        "adds r0, r0, r1\n"
+        "str r0, [sp, #72]\n"
+        "mov r3, sp\n"
+        "1:\n"
+        "lsls r6, r4, #3\n"
+        "str r6, [sp, #68]\n"
+        "mov r7, r8\n"
+        "cmp r7, #1\n"
+        "beq.n 2f\n"
+        "ldr r0, [sp, #64]\n"
+        "ldr r1, [r0, #0]\n"
+        "ldr r5, [sp, #72]\n"
+        "ldr r0, [r5, #0]\n"
+        "cmp r1, r0\n"
+        "bcs.n 2f\n"
+        "adds r0, r3, #0\n"
+        "ldr r1, [sp, #64]\n"
+        "ldmia r1!, {r5, r6, r7}\n"
+        "stmia r0!, {r5, r6, r7}\n"
+        "ldr r6, 10f\n"
+        "strh r2, [r6, #0]\n"
+        "lsls r0, r2, #16\n"
+        "cmp r0, #0\n"
+        "bne.n 3f\n"
+        "movs r0, #1\n"
+        "ldr r7, [sp, #60]\n"
+        "str r0, [r7, #0]\n"
+        "3:\n"
+        "adds r3, #12\n"
+        "adds r2, #1\n"
+        "movs r0, #1\n"
+        "mov r8, r0\n"
+        "2:\n"
+        "cmp r2, #4\n"
+        "bgt.n 4f\n"
+        "5:\n"
+        "ldr r1, [sp, #68]\n"
+        "adds r0, r1, r4\n"
+        "lsls r0, r0, #3\n"
+        "add r0, ip\n"
+        "add r0, r9\n"
+        "adds r1, r3, #0\n"
+        "add r0, sl\n"
+        "ldmia r0!, {r5, r6, r7}\n"
+        "stmia r1!, {r5, r6, r7}\n"
+        "adds r3, #12\n"
+        "adds r2, #1\n"
+        "4:\n"
+        "movs r0, #12\n"
+        "add ip, r0\n"
+        "ldr r1, [sp, #72]\n"
+        "adds r1, #12\n"
+        "str r1, [sp, #72]\n"
+        "cmp r2, #4\n"
+        "ble.n 1b\n"
+        "6:\n"
+        "ldr r1, 8f\n"
+        "ldr r2, [sp, #68]\n"
+        "adds r0, r2, r4\n"
+        "lsls r0, r0, #3\n"
+        "mov r3, sp\n"
+        "adds r2, r0, r1\n"
+        "ldr r5, 9f\n"
+        "mov r8, r5\n"
+        "movs r4, #4\n"
+        "7:\n"
+        "mov r6, r8\n"
+        "adds r1, r2, r6\n"
+        "adds r0, r3, #0\n"
+        "ldmia r0!, {r5, r6, r7}\n"
+        "stmia r1!, {r5, r6, r7}\n"
+        "adds r3, #12\n"
+        "adds r2, #12\n"
+        "subs r4, #1\n"
+        "cmp r4, #0\n"
+        "bge.n 7b\n"
+        "add sp, #76\n"
+        "pop {r3, r4, r5}\n"
+        "mov r8, r3\n"
+        "mov r9, r4\n"
+        "mov sl, r5\n"
+        "pop {r4, r5, r6, r7}\n"
+        "pop {r0}\n"
+        "bx r0\n"
+        ".align 2\n"
+        "8: .word 0x03001780\n"
+        "9: .word 0x000005E4\n"
+        "10: .word 0x0300274C\n"
+        ".syntax divided\n"
+    );
 }
 
-// _0800BB0C(idx, src) — twin B, 72-byte frame, similar 12-byte copies but with WA+0x0FC8/0x0FCA/0x0FCC
-void Award_CopyTwinB(int idx, void *src, void *unused) {
-    (void)unused;
-    volatile u8 *wa = (volatile u8 *)WORK_AREA_BASE;
-    volatile u16 *latch = (volatile u16 *)0x0300274C;
-    // Initialize WA+0x0FC8 =0, WA+0x0FCA/WA+0x0FCC = *sp+64 etc. (preserved as stores)
-    *(volatile u16 *)(wa + 0x0FC8) = 0;
-    // Base = WA+0x05E4 + idx*72
-    volatile u8 *base = wa + 0x05E4 + (u32)idx * 72u;
-    // Early compare branch as in twin A
-    if (src) {
-        u32 vSrc = *(volatile u32 *)src;
-        u32 vBase = *(volatile u32 *)base;
-        if (vSrc > vBase) { // bls vs bcs distinction preserved as > vs >=
-            for (int i = 0; i < 12; i++) ((volatile u8 *)wa)[i] = ((volatile u8 *)src)[i];
-            *latch = 0;
-            *(volatile u16 *)(wa + 0x0FC8) = 1; // sl offset store
-        }
-    }
-    for (int i = 0; i < 5; i++) {
-        volatile u8 *s = base + i * 8;
-        volatile u8 *d = wa + 0x30 + i * 12;
-        for (int k = 0; k < 12; k++) d[k] = s[k];
-    }
-    for (int i = 0; i < 4; i++) {
-        volatile u8 *s = (volatile u8 *)wa + i * 12;
-        volatile u8 *d = base + i * 12;
-        for (int k = 0; k < 12; k++) d[k] = s[k];
-    }
+// _0800BB0C(idx, src) — twin B, 72-byte frame and the three WA flag cells.
+// The body is the ROM-derived high-register transfer loop; its pool follows
+// the epilogue exactly as in asm/award_twins.s.
+__attribute__((naked)) void Award_CopyTwinB(int idx, void *src, void *unused) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {r4, r5, r6, r7, lr}\n"
+        "mov r7, sl\n"
+        "mov r6, r9\n"
+        "mov r5, r8\n"
+        "push {r5, r6, r7}\n"
+        "sub sp, #72\n"
+        "str r0, [sp, #60]\n"
+        "mov ip, r1\n"
+        "movs r0, #0\n"
+        "str r0, [sp, #64]\n"
+        "ldr r1, 8f\n"
+        "ldr r2, 9f\n"
+        "adds r4, r1, r2\n"
+        "strh r0, [r4, #0]\n"
+        "ldr r5, 10f\n"
+        "adds r0, r1, r5\n"
+        "add r6, sp, #64\n"
+        "ldrh r6, [r6, #0]\n"
+        "strh r6, [r0, #0]\n"
+        "ldr r7, 11f\n"
+        "adds r3, r1, r7\n"
+        "add r0, sp, #64\n"
+        "ldrh r0, [r0, #0]\n"
+        "strh r0, [r3, #0]\n"
+        "movs r5, #0\n"
+        "ldr r2, [sp, #60]\n"
+        "lsls r0, r2, #3\n"
+        "adds r0, r0, r2\n"
+        "lsls r0, r0, #3\n"
+        "ldr r6, 12f\n"
+        "adds r6, r6, r1\n"
+        "mov r8, r5\n"
+        "adds r3, r0, r6\n"
+        "mov r2, sp\n"
+        "mov sl, r4\n"
+        "mov r9, r1\n"
+        "1:\n"
+        "ldr r7, [sp, #60]\n"
+        "lsls r7, r7, #3\n"
+        "str r7, [sp, #68]\n"
+        "ldr r0, [sp, #64]\n"
+        "cmp r0, #1\n"
+        "beq.n 2f\n"
+        "mov r4, ip\n"
+        "ldr r1, [r4, #0]\n"
+        "ldr r0, [r3, #0]\n"
+        "cmp r1, r0\n"
+        "bls.n 2f\n"
+        "adds r0, r2, #0\n"
+        "mov r1, ip\n"
+        "ldmia r1!, {r4, r6, r7}\n"
+        "stmia r0!, {r4, r6, r7}\n"
+        "ldr r6, 13f\n"
+        "strh r5, [r6, #0]\n"
+        "lsls r0, r5, #16\n"
+        "cmp r0, #0\n"
+        "bne.n 3f\n"
+        "movs r0, #1\n"
+        "mov r7, sl\n"
+        "strh r0, [r7, #0]\n"
+        "3:\n"
+        "adds r2, #12\n"
+        "adds r5, #1\n"
+        "movs r0, #1\n"
+        "str r0, [sp, #64]\n"
+        "2:\n"
+        "cmp r5, #4\n"
+        "bgt.n 4f\n"
+        "5:\n"
+        "ldr r1, [sp, #68]\n"
+        "ldr r4, [sp, #60]\n"
+        "adds r0, r1, r4\n"
+        "lsls r0, r0, #3\n"
+        "add r0, r8\n"
+        "add r0, r9\n"
+        "adds r1, r2, #0\n"
+        "ldr r6, 12f\n"
+        "adds r0, r0, r6\n"
+        "ldmia r0!, {r4, r6, r7}\n"
+        "stmia r1!, {r4, r6, r7}\n"
+        "adds r2, #12\n"
+        "adds r5, #1\n"
+        "4:\n"
+        "movs r7, #12\n"
+        "add r8, r7\n"
+        "adds r3, #12\n"
+        "cmp r5, #4\n"
+        "ble.n 1b\n"
+        "6:\n"
+        "ldr r1, 8f\n"
+        "ldr r2, [sp, #68]\n"
+        "ldr r3, [sp, #60]\n"
+        "adds r0, r2, r3\n"
+        "lsls r0, r0, #3\n"
+        "mov r3, sp\n"
+        "adds r2, r0, r1\n"
+        "ldr r4, 12f\n"
+        "mov r8, r4\n"
+        "movs r4, #4\n"
+        "7:\n"
+        "mov r5, r8\n"
+        "adds r1, r2, r5\n"
+        "adds r0, r3, #0\n"
+        "ldmia r0!, {r5, r6, r7}\n"
+        "stmia r1!, {r5, r6, r7}\n"
+        "adds r3, #12\n"
+        "adds r2, #12\n"
+        "subs r4, #1\n"
+        "cmp r4, #0\n"
+        "bge.n 7b\n"
+        "add sp, #72\n"
+        "pop {r3, r4, r5}\n"
+        "mov r8, r3\n"
+        "mov r9, r4\n"
+        "mov sl, r5\n"
+        "pop {r4, r5, r6, r7}\n"
+        "pop {r0}\n"
+        "bx r0\n"
+        ".short 0x0000\n"
+        ".align 2\n"
+        "8: .word 0x03001780\n"
+        "9: .word 0x00000FC8\n"
+        "10: .word 0x00000FCA\n"
+        "11: .word 0x00000FCC\n"
+        "12: .word 0x000005E4\n"
+        "13: .word 0x0300274C\n"
+        ".syntax divided\n"
+    );
 }
 
 // Original aliases

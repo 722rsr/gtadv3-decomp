@@ -23,10 +23,14 @@ import sys
 import tempfile
 from pathlib import Path
 
-from elftools.elf.elffile import ELFFile
-
 import corpus_match_probe as probe
 from agbcc_c89_transform import matching_delimiter, strip_noncode
+
+# `elftools` is deliberately NOT imported at module level: the permuter invokes
+# this file once per candidate through `compile.sh --compile`, and
+# `elftools.elf.elffile` alone measured 39 ms of the ~58 ms import cost, while
+# the `--compile` path only needs it in the fallback branches of `mappings` and
+# `resolved_body` (the primary reader is `probe.elf_record`).
 
 ROOT = probe.ROOT
 PERMUTER_DIR = ROOT / "build/toolchains/decomp-permuter-agbcc"
@@ -211,12 +215,26 @@ def restore_expressions(source: str, expressions: dict) -> str:
 
 
 def mappings(obj: Path, section: str, start: int, size: int):
-    with obj.open("rb") as stream:
-        elf = ELFFile(stream)
-        index = elf.get_section_index(section)
-        symbols = elf.get_section_by_name(".symtab")
-        rows = sorted((s["st_value"], s.name[:2]) for s in symbols.iter_symbols()
-                      if s["st_shndx"] == index and s.name[:2] in ("$t", "$a", "$d"))
+    """Mapping-symbol rows for one section, off the shared in-process parse.
+
+    `corpus_match_probe.elf_record` reads `.symtab` with `struct`, which is
+    36x faster than pyelftools' `iter_symbols` on a large object (measured 6 ms
+    vs 221 ms for `build-code/code.o`); pyelftools remains the fallback only if
+    the fast parse cannot read the object at all.
+    """
+    record = probe.elf_record(obj)
+    index = record.section_indices.get(section) if record is not None else None
+    if record is not None and index is not None:
+        rows = sorted((value, name[:2]) for value, shndx, name, _size in record.symbols
+                      if shndx == index and name[:2] in ("$t", "$a", "$d"))
+    else:
+        from elftools.elf.elffile import ELFFile
+        with obj.open("rb") as stream:
+            elf = ELFFile(stream)
+            index = elf.get_section_index(section)
+            symbols = elf.get_section_by_name(".symtab")
+            rows = sorted((s["st_value"], s.name[:2]) for s in symbols.iter_symbols()
+                          if s["st_shndx"] == index and s.name[:2] in ("$t", "$a", "$d"))
     prior = [kind for offset, kind in rows if offset <= start]
     if not prior:
         raise ValueError(f"missing ARM mapping symbol at {section}+{start:#x}")
@@ -244,11 +262,18 @@ def resolved_body(obj: Path, meta: dict):
         raise ValueError(f"missing candidate section {section}")
     # Include absolute definitions emitted by function-local asm.
     symbols = dict(meta["symbols"])
-    with obj.open("rb") as stream:
-        elf = ELFFile(stream)
-        for sym in elf.get_section_by_name(".symtab").iter_symbols():
-            if sym["st_shndx"] == "SHN_ABS":
-                symbols[sym.name] = sym["st_value"]
+    record = probe.elf_record(obj)
+    if record is not None:
+        for value, shndx, name, _size in record.symbols:
+            if shndx == 0xFFF1:  # SHN_ABS
+                symbols[name] = value
+    else:
+        from elftools.elf.elffile import ELFFile
+        with obj.open("rb") as stream:
+            elf = ELFFile(stream)
+            for sym in elf.get_section_by_name(".symtab").iter_symbols():
+                if sym["st_shndx"] == "SHN_ABS":
+                    symbols[sym.name] = sym["st_value"]
     resolver = probe.SymbolResolver(symbols, meta["aliases"], meta["hints"])
     if any(sym.startswith(".text") and sym != section
            for _, _, sym, _ in relocs.get(section, [])):

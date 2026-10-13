@@ -94,6 +94,11 @@ def export_palette_png(colors: List[Tuple[int, int, int]], out_path: Path, swatc
     img.save(out_path)
 
 
+# Low nibble then high nibble, precomputed for every byte value: the 4bpp
+# decode below concatenates these instead of shifting each byte twice.
+_4BPP_NIBBLES = [bytes((i & 0x0F, i >> 4)) for i in range(256)]
+
+
 def decode_4bpp_tiles(tile_data: bytes, width_in_tiles: int = 16,
                       palette_rgb: Optional[List[Tuple[int, int, int]]] = None) -> Optional["Image.Image"]:
     """Decode raw GBA 4bpp tile data into a PIL Image."""
@@ -106,29 +111,34 @@ def decode_4bpp_tiles(tile_data: bytes, width_in_tiles: int = 16,
     # Calculate dimensions
     actual_width_tiles = min(num_tiles, width_in_tiles)
     height_in_tiles = (num_tiles + actual_width_tiles - 1) // actual_width_tiles
-
-    img = Image.new("RGB", (actual_width_tiles * 8, height_in_tiles * 8), color=(0, 0, 0))
-    pixels = img.load()
+    width, height = actual_width_tiles * 8, height_in_tiles * 8
 
     # Default 16-color grayscale palette if none provided
     if not palette_rgb or len(palette_rgb) < 16:
         palette_rgb = [(int(i * 255 / 15), int(i * 255 / 15), int(i * 255 / 15)) for i in range(16)]
 
+    # Build the row-major index plane once and let PIL expand the palette:
+    # one `__setitem__` per pixel used to cost 4.8 s of the 7.0 s full run.
+    # Slot 16 is the filler for a partly-filled last tile row -- the old RGB
+    # image left those pixels at its black background, and palette index 0
+    # must not stand in for them (it carries a real colour).
+    indices = bytearray([16]) * (width * height)
     for tile_idx in range(num_tiles):
         tile_x = (tile_idx % actual_width_tiles) * 8
         tile_y = (tile_idx // actual_width_tiles) * 8
         tile_bytes = tile_data[tile_idx * 32 : (tile_idx + 1) * 32]
 
         for y in range(8):
-            row_bytes = tile_bytes[y * 4 : (y + 1) * 4]
-            for x in range(4):
-                b = row_bytes[x]
-                p0 = b & 0x0F
-                p1 = (b >> 4) & 0x0F
-                pixels[tile_x + x * 2, tile_y + y] = palette_rgb[p0]
-                pixels[tile_x + x * 2 + 1, tile_y + y] = palette_rgb[p1]
+            row = tile_bytes[y * 4 : (y + 1) * 4]
+            off = (tile_y + y) * width + tile_x
+            indices[off : off + 8] = b"".join(_4BPP_NIBBLES[b] for b in row)
 
-    return img
+    img = Image.frombytes("P", (width, height), bytes(indices))
+    palette = bytearray(768)
+    for i, (r, g, b) in enumerate(palette_rgb[:16]):
+        palette[i * 3 : i * 3 + 3] = bytes((r, g, b))
+    img.putpalette(bytes(palette))        # slot 16 stays black, by construction
+    return img.convert("RGB")
 
 
 def decode_8bpp_tiles(tile_data: bytes, width_in_tiles: int = 16,
@@ -183,12 +193,19 @@ def surface_byte_to_rgb(b: int) -> Tuple[int, int, int]:
         return (100 + (b * 5) % 150, 60 + (b * 3) % 150, 180)
 
 
+# Memoised lookup table for `render_surface_map_png`: one byte is this
+# function's whole input domain, and the renderer called it 65,536 times per
+# map (measured 1.1 s of the 7.0 s full run).
+_SURFACE_RGB = [surface_byte_to_rgb(b) for b in range(256)]
+
+
 def render_surface_map_png(surf_data: bytes, out_path: Path, width: int = 256, height: int = 256):
     """Render a 256x256 course surface grid to a color-coded PNG image."""
     if not HAS_PIL or len(surf_data) < width * height:
         return
     img = Image.new("RGB", (width, height))
-    grid = [surface_byte_to_rgb(surf_data[y * width + x]) for y in range(height) for x in range(width)]
+    lut = _SURFACE_RGB
+    grid = [lut[surf_data[y * width + x]] for y in range(height) for x in range(width)]
     img.putdata(grid)
     img.save(out_path)
 

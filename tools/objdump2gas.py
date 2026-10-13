@@ -53,12 +53,29 @@ ROM_DEFAULT = "baserom.gba"
 ASM_DIR_DEFAULT = "asm"
 
 
+# Candidate-position prefilters for the two ROM-wide halfword scans. A Thumb
+# BL's first halfword has its high byte in F0-F7; an `ldr rN,[pc,#imm]` has
+# its high byte in 48-4F (hw & 0xF800 == 0x4800). Matching those bytes with a
+# C-level byte-class regex and unpacking only the hits replaced a Python loop
+# over 4.2M halfwords with ~130k struct reads: `ldr_pc_targets` measured
+# 371 ms per fixpoint round and `thumb_bl_targets` 364 ms per call, both
+# dominated by the Python-level loop, not by the decode.
+_BL_HIGH = re.compile(rb"[\xf0-\xf7]")
+_LDR_HIGH = re.compile(rb"[\x48-\x4f]")
+
+
 def thumb_bl_targets(rom):
     """Yield (site_off, target_off) for every decodable Thumb BL pair.
     Same decoder as tools/xref.py (verified against objdump)."""
     n = len(rom)
-    for off in range(0, n - 2, 2):
-        h1 = rom[off] | (rom[off + 1] << 8)
+    for match in _BL_HIGH.finditer(rom):
+        hi_byte = match.start()
+        if not hi_byte & 1:          # the high byte sits at offset+1 (even site)
+            continue
+        off = hi_byte - 1
+        if off + 4 > n:
+            continue
+        h1 = rom[off] | (rom[hi_byte] << 8)
         if (h1 & 0xF800) != 0xF000:
             continue
         h2 = rom[off + 2] | (rom[off + 3] << 8)
@@ -108,15 +125,21 @@ def ldr_pc_targets(data, exclude_sources):
     """ldr rN,[pc,#imm] targets in the whole ROM, skipping sources in
     exclude_sources (data regions). Returns {target: [sources]}."""
     out = {}
-    for off in range(0, len(data) - 3, 2):
+    limit = len(data) - 3
+    for match in _LDR_HIGH.finditer(data):
+        hi_byte = match.start()
+        if not hi_byte & 1:
+            continue
+        off = hi_byte - 1
+        if off >= limit:
+            continue
         if off in exclude_sources:
             continue
-        hw = data[off] | (data[off + 1] << 8)
-        if (hw & 0xF800) == 0x4800:
-            imm = (hw & 0xFF) * 4
-            pc = ((off + 4) & ~3)
-            tgt = pc + imm
-            out.setdefault(tgt, []).append(off)
+        hw = data[off] | (data[hi_byte] << 8)
+        imm = (hw & 0xFF) * 4
+        pc = ((off + 4) & ~3)
+        tgt = pc + imm
+        out.setdefault(tgt, []).append(off)
     return out
 
 

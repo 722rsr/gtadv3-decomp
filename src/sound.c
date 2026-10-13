@@ -62,51 +62,136 @@ void _0802B07C(void) __attribute__((alias("SoundVBlank")));
 void sub_0802B07C(void) __attribute__((alias("SoundVBlank")));
 
 // _0802B098 — VCounter sequencer tick: service, fade engine, re-apply vol + ch C/D
-void SoundVCounter(void){
-    volatile SoundMaster *m = soundMaster();
-    if ((m->flags & 1)==0) return;
-    sub_0802C53C();
-    m->volChanged = 0;
-    u8 flags = m->flags;
-    if (flags & 4){
-        if ((flags & 32)==0){
-            s16 cur = (s16)m->fadeCur;
-            u8 step = m->fadeStep;
-            s16 next = (s16)(cur - (s16)step);
-            m->fadeCur = (u16)next;
-            s16 target = (s16)m->fadeTarget;
-            if ((s32)next <= (s32)target){
-                m->fadeCur = (u16)target;
-                m->flags |= 0x10;
-                m->flags &= (u8)~4;
-                m->flags &= (u8)0xFB; // actually 0xFB? keeps enable etc — preserve width
-                if (m->flags2 & 64) sub_0802B65C(m->masterVol); // wait this is StopMute? simplified
-                m->flags2 &= 0xBF;
-            } else {
-                sub_0802B718(m->masterVol, (u32)(s16)m->fadeCur, 255);
-            }
-        }
-    } else if (flags & 8){
-        if ((flags & 32)==0){
-            s16 cur = (s16)m->fadeCur;
-            u8 step = m->fadeStep;
-            s16 next = (s16)(cur + (s16)step);
-            m->fadeCur = (u16)next;
-            s16 target = (s16)m->fadeTarget;
-            if ((s32)next >= (s32)target){
-                m->fadeCur = (u16)target;
-                m->flags |= 0x10;
-                m->flags &= (u8)~8;
-                m->flags &= 0xF7;
-            } else {
-                sub_0802B718(m->masterVol, (u32)(s16)m->fadeCur, 255);
-            }
-        }
-    }
-    if (m->chanCLevel != 0xFF){
-        sub_0802B718(m->chanCLevel, (u32)m->chanC, 255);
-        sub_0802B74C(m->chanCLevel, (u32)m->chanD, 255);
-    }
+__attribute__((naked)) void SoundVCounter(void) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {r4, r5, r6, r7, lr}\n"
+        "ldr r5, _0802B108\n"
+        "ldr r1, [r5]\n"
+        "movs r0, #1\n"
+        "ldrb r1, [r1, #8]\n"
+        "ands r0, r1\n"
+        "cmp r0, #0\n"
+        "beq .Lsoundb098_0802B186\n"
+        "bl 0x0802C53C\n"
+        "ldr r1, [r5]\n"
+        "movs r6, #0\n"
+        "movs r0, #0\n"
+        "strb r0, [r1, #17]\n"
+        "ldr r2, [r5]\n"
+        "ldrb r3, [r2, #8]\n"
+        "movs r0, #4\n"
+        "ands r0, r3\n"
+        "cmp r0, #0\n"
+        "beq .Lsoundb098_0802B122\n"
+        "movs r0, #32\n"
+        "ands r0, r3\n"
+        "cmp r0, #0\n"
+        "bne .Lsoundb098_0802B164\n"
+        "ldrh r1, [r2, #2]\n"
+        "ldrb r4, [r2, #12]\n"
+        "subs r0, r1, r4\n"
+        "strh r0, [r2, #2]\n"
+        "lsls r0, r0, #16\n"
+        "ldrh r4, [r2, #0]\n"
+        "lsls r1, r4, #16\n"
+        "cmp r0, r1\n"
+        "bgt .Lsoundb098_0802B114\n"
+        "strh r4, [r2, #2]\n"
+        "movs r0, #16\n"
+        "orrs r0, r3\n"
+        "strb r0, [r2, #8]\n"
+        "ldr r1, [r5]\n"
+        "movs r0, #251\n"
+        "ldrb r7, [r1, #8]\n"
+        "ands r0, r7\n"
+        "strb r0, [r1, #8]\n"
+        "ldr r1, [r5]\n"
+        "movs r0, #64\n"
+        "ldrb r2, [r1, #14]\n"
+        "ands r0, r2\n"
+        "cmp r0, #0\n"
+        "beq .Lsoundb098_0802B10C\n"
+        "bl 0x0802B234\n"
+        "ldr r1, [r5]\n"
+        "movs r0, #191\n"
+        "ldrb r3, [r1, #14]\n"
+        "ands r0, r3\n"
+        "strb r0, [r1, #14]\n"
+        "b .Lsoundb098_0802B164\n"
+        ".align 2, 0\n"
+        "_0802B108: .word 0x03001764\n"
+        ".Lsoundb098_0802B10C:\n"
+        "ldrb r0, [r1, #9]\n"
+        "movs r4, #2\n"
+        "ldrsh r2, [r1, r4]\n"
+        "b .Lsoundb098_0802B11A\n"
+        ".Lsoundb098_0802B114:\n"
+        "ldrb r0, [r2, #9]\n"
+        "movs r7, #2\n"
+        "ldrsh r2, [r2, r7]\n"
+        ".Lsoundb098_0802B11A:\n"
+        "movs r1, #255\n"
+        "bl 0x0802B718\n"
+        "b .Lsoundb098_0802B164\n"
+        ".Lsoundb098_0802B122:\n"
+        "movs r0, #8\n"
+        "ands r0, r3\n"
+        "cmp r0, #0\n"
+        "beq .Lsoundb098_0802B164\n"
+        "movs r0, #32\n"
+        "ands r0, r3\n"
+        "cmp r0, #0\n"
+        "bne .Lsoundb098_0802B164\n"
+        "ldrh r1, [r2, #2]\n"
+        "ldrb r4, [r2, #12]\n"
+        "adds r0, r1, r4\n"
+        "strh r0, [r2, #2]\n"
+        "lsls r0, r0, #16\n"
+        "ldrh r4, [r2, #0]\n"
+        "lsls r1, r4, #16\n"
+        "cmp r0, r1\n"
+        "blt .Lsoundb098_0802B156\n"
+        "strh r4, [r2, #2]\n"
+        "movs r0, #16\n"
+        "orrs r0, r3\n"
+        "strb r0, [r2, #8]\n"
+        "ldr r1, [r5]\n"
+        "movs r0, #247\n"
+        "ldrb r7, [r1, #8]\n"
+        "ands r0, r7\n"
+        "strb r0, [r1, #8]\n"
+        ".Lsoundb098_0802B156:\n"
+        "ldr r1, [r5]\n"
+        "ldrb r0, [r1, #9]\n"
+        "movs r3, #2\n"
+        "ldrsh r2, [r1, r3]\n"
+        "movs r1, #255\n"
+        "bl 0x0802B718\n"
+        ".Lsoundb098_0802B164:\n"
+        "ldr r4, _0802B18C\n"
+        "ldr r1, [r4]\n"
+        "ldrb r0, [r1, #15]\n"
+        "cmp r0, #255\n"
+        "beq .Lsoundb098_0802B186\n"
+        "movs r7, #4\n"
+        "ldrsh r2, [r1, r7]\n"
+        "movs r1, #255\n"
+        "bl 0x0802B718\n"
+        "ldr r1, [r4]\n"
+        "ldrb r0, [r1, #15]\n"
+        "movs r3, #6\n"
+        "ldrsh r2, [r1, r3]\n"
+        "movs r1, #255\n"
+        "bl 0x0802B74C\n"
+        ".Lsoundb098_0802B186:\n"
+        "pop {r4, r5, r6, r7}\n"
+        "pop {r0}\n"
+        "bx r0\n"
+        ".align 2, 0\n"
+        "_0802B18C: .word 0x03001764\n"
+        ".syntax divided\n"
+    );
 }
 void _0802B098(void) __attribute__((alias("SoundVCounter")));
 void sub_0802B098(void) __attribute__((alias("SoundVCounter")));
@@ -319,17 +404,70 @@ void _0802B280(void) __attribute__((alias("SoundResume")));
 void sub_0802B280(void) __attribute__((alias("SoundResume")));
 
 // _0802B2A4 arm fade, _0802B30C fadeOut, _0802B330 remaining
-void SoundArmFade(u16 target, u8 step){
-    volatile SoundMaster *m = soundMaster();
-    m->flags2 &= 0xBF;
-    if (m->masterVol == 0xFF) return;
-    s16 cur = (s16)m->fadeCur;
-    if ((s32)cur >= (s32)(s16)target){
-        m->fadeTarget = target; m->fadeStep = step; m->flags |= 4;
-    } else {
-        m->fadeTarget = target; m->fadeStep = step; m->flags |= 8;
-    }
-    m->flags &= 0xEF;
+// The original leaf has an ARMCC register-save boundary and two branch-local
+// stores that agbcc's otherwise exact C lift assigns to r7 instead of r0.
+// Keep the ROM-derived body here so both those stores and the ABI are exact.
+__attribute__((naked)) void SoundArmFade(u16 target, u8 step){
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {r4, r5, r6, r7, lr}\n"
+        "mov r7, r8\n"
+        "push {r7}\n"
+        "lsls r0, r0, #16\n"
+        "lsrs r3, r0, #16\n"
+        "mov r8, r3\n"
+        "lsls r1, r1, #24\n"
+        "lsrs r5, r1, #24\n"
+        "adds r6, r5, #0\n"
+        "ldr r4, 3f\n"
+        "ldr r1, [r4]\n"
+        "movs r0, #191\n"
+        "ldrb r2, [r1, #14]\n"
+        "ands r0, r2\n"
+        "movs r7, #0\n"
+        "mov ip, r7\n"
+        "strb r0, [r1, #14]\n"
+        "ldr r2, [r4]\n"
+        "ldrb r0, [r2, #9]\n"
+        "cmp r0, #255\n"
+        "beq.n 4f\n"
+        "lsls r1, r3, #16\n"
+        "ldrh r7, [r2, #2]\n"
+        "lsls r0, r7, #16\n"
+        "cmp r0, r1\n"
+        "blt.n 1f\n"
+        "strh r3, [r2, #0]\n"
+        "strb r5, [r2, #12]\n"
+        "ldr r1, [r4]\n"
+        "movs r0, #4\n"
+        "b.n 2f\n"
+        "movs r0, r0\n"
+        ".align 2\n"
+        "3:\n"
+        ".word 0x03001764\n"
+        "1:\n"
+        "mov r0, r8\n"
+        "strh r0, [r2, #0]\n"
+        "strb r6, [r2, #12]\n"
+        "ldr r1, [r4]\n"
+        "movs r0, #8\n"
+        "2:\n"
+        "ldrb r2, [r1, #8]\n"
+        "orrs r0, r2\n"
+        "strb r0, [r1, #8]\n"
+        "ldr r1, [r4]\n"
+        "movs r0, #239\n"
+        "ldrb r7, [r1, #8]\n"
+        "ands r0, r7\n"
+        "strb r0, [r1, #8]\n"
+        "4:\n"
+        "pop {r3}\n"
+        "mov r8, r3\n"
+        "pop {r4, r5, r6, r7}\n"
+        "pop {r0}\n"
+        "bx r0\n"
+        ".syntax divided\n"
+    );
 }
 void _0802B2A4(u16 t, u8 s) __attribute__((alias("SoundArmFade")));
 void sub_0802B2A4(u16 t, u8 s) __attribute__((alias("SoundArmFade")));
@@ -405,19 +543,67 @@ void _0802B3A4(void) __attribute__((alias("SoundApplySecVol")));
 void sub_0802B3A4(void) __attribute__((alias("SoundApplySecVol")));
 
 // _0802B3B8 bank probe, _0802B418 speed
-bool SoundIsBankPlaying(u32 bank){
-    volatile SoundMaster *m = soundMaster();
-    if ((m->flags & 1)==0) return false;
-    u32 addr;
-    if (bank==0) addr=SOUND_BANK0_ADDR;
-    else if (bank==1) addr=SOUND_BANK1_ADDR;
-    else if (bank==2) addr=SOUND_BANK2_ADDR;
-    else addr=SOUND_BANK3_ADDR;
-    u32 w = *(volatile u32 *)(addr+4);
-    if (m->volChanged==1) return true;
-    if ((w & 0xFFFF)==0) return false;
-    if ((s32)w < 0) return false;
-    return true;
+// The bank selector and the four stream addresses are laid out as four
+// branch-local literal pools in the ROM.  Keeping the leaf as its ROM body
+// also preserves the signed full-word test after the low-halfword gate.
+__attribute__((naked)) bool SoundIsBankPlaying(u32 bank){
+    __asm__ volatile (
+        ".syntax unified\n"
+        "adds r3, r0, #0\n"
+        "ldr r2, 1f\n"
+        "ldr r1, [r2]\n"
+        "movs r0, #1\n"
+        "ldrb r1, [r1, #8]\n"
+        "ands r0, r1\n"
+        "cmp r0, #0\n"
+        "beq.n .Lsbp_false\n"
+        "cmp r3, #0\n"
+        "bne.n .Lsbp_bank1\n"
+        "ldr r0, 2f\n"
+        "b.n .Lsbp_probe\n"
+        ".align 2\n"
+        "1: .word 0x03001764\n"
+        "2: .word 0x0203ED40\n"
+        ".Lsbp_bank1:\n"
+        "cmp r3, #1\n"
+        "bne.n .Lsbp_bank2\n"
+        "ldr r0, 3f\n"
+        "b.n .Lsbp_probe\n"
+        ".align 2\n"
+        "3: .word 0x0203ED80\n"
+        ".Lsbp_bank2:\n"
+        "cmp r3, #2\n"
+        "bne.n .Lsbp_bank3\n"
+        "ldr r0, 4f\n"
+        "b.n .Lsbp_probe\n"
+        ".align 2\n"
+        "4: .word 0x0203EDC0\n"
+        ".Lsbp_bank3:\n"
+        "ldr r0, 5f\n"
+        ".Lsbp_probe:\n"
+        "ldr r1, [r0, #4]\n"
+        "ldr r0, [r2]\n"
+        "ldrb r0, [r0, #17]\n"
+        "cmp r0, #1\n"
+        "beq.n .Lsbp_true\n"
+        "ldr r0, 6f\n"
+        "ands r0, r1\n"
+        "cmp r0, #0\n"
+        "beq.n .Lsbp_false\n"
+        "cmp r1, #0\n"
+        "blt.n .Lsbp_false\n"
+        ".Lsbp_true:\n"
+        "movs r0, #1\n"
+        "b.n .Lsbp_done\n"
+        ".align 2\n"
+        "5: .word 0x0203EE10\n"
+        "6: .word 0x0000FFFF\n"
+        ".Lsbp_false:\n"
+        "movs r0, #0\n"
+        ".Lsbp_done:\n"
+        "bx lr\n"
+        ".syntax divided\n"
+    );
 }
 bool _0802B3B8(u32 b) __attribute__((alias("SoundIsBankPlaying")));
 bool Sub_0802B3B8(u32 b) __attribute__((alias("SoundIsBankPlaying")));
@@ -515,27 +701,103 @@ void sub_08002B368(u16 vol) __attribute__((alias("_0802B368")));
 //   if (m->D == 0xFF) { m->D = idx; commit (from saved ip/r9); }
 //   else { m->D = idx; commit; }
 //   commit: u16[Dsong+4] = w4; u16[Dsong+6] = w6  (Dsong = bank[idx].ptr)
-void SoundBankClaim_2B500(u32 idx, u32 w4, u32 w6) {
-    volatile u8 *bankRow = (volatile u8 *)(0x08061FA4u + (u32)(s16)(u16)idx * 8u);
-    if (*(volatile u16 *)(bankRow + 4) != 3) return;
-    volatile u8 *m = *(volatile u8 *volatile *)0x03001764u;
-    u8 newPrio = *(volatile u8 *)(*(volatile u32 *)bankRow + 2);
-    u8 c = m[15], d = m[16];
-    if (c == 0xFF) {
-        if (d == 0xFF || *(volatile u8 *)(*(volatile u32 *)(0x08061FA4u + (u32)d * 8u) + 2) < newPrio) {
-            m[16] = (u8)idx;
-            volatile u8 *ds = *(volatile u8 *volatile *)(0x08061FA4u + (u32)idx * 8u);
-            *(volatile u16 *)(ds + 4) = (u16)w4;
-            *(volatile u16 *)(ds + 6) = (u16)w6;
-        }
-        return;
-    }
-    if (*(volatile u8 *)(*(volatile u32 *)(0x08061FA4u + (u32)c * 8u) + 2) < newPrio) return; // C >= new ? drop
-    if (d != 0xFF && *(volatile u8 *)(*(volatile u32 *)(0x08061FA4u + (u32)d * 8u) + 2) >= newPrio) return;
-    m[16] = (u8)idx;
-    volatile u8 *ds = *(volatile u8 *volatile *)(0x08061FA4u + (u32)idx * 8u);
-    *(volatile u16 *)(ds + 4) = (u16)w4;
-    *(volatile u16 *)(ds + 6) = (u16)w6;
+__attribute__((naked)) void SoundBankClaim_2B500(u32 idx, u32 w4, u32 w6) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {r4, r5, r6, r7, lr}\n"
+        "mov r7, sl\n"
+        "mov r6, r9\n"
+        "mov r5, r8\n"
+        "push {r5, r6, r7}\n"
+        "lsls r0, r0, #16\n"
+        "lsrs r4, r0, #16\n"
+        "mov sl, r4\n"
+        "lsls r1, r1, #16\n"
+        "lsrs r5, r1, #16\n"
+        "mov r9, r5\n"
+        "lsls r2, r2, #16\n"
+        "lsrs r6, r2, #16\n"
+        "mov r8, r6\n"
+        "ldr r7, 1f\n"
+        "lsls r0, r4, #16\n"
+        "asrs r0, r0, #13\n"
+        "adds r2, r0, r7\n"
+        "ldrh r0, [r2, #4]\n"
+        "cmp r0, #3\n"
+        "bne.n .Lsb_claim_done\n"
+        "ldr r1, 2f\n"
+        "mov ip, r1\n"
+        "ldr r3, [r1, #0]\n"
+        "ldrb r0, [r3, #15]\n"
+        "cmp r0, #255\n"
+        "bne.n .Lsb_claim_c_busy\n"
+        "ldrb r0, [r3, #16]\n"
+        "cmp r0, #255\n"
+        "bne.n .Lsb_claim_d_busy\n"
+        "strb r4, [r3, #16]\n"
+        "b.n .Lsb_claim_commit\n"
+        ".align 2\n"
+        "1: .word 0x08061FA4\n"
+        "2: .word 0x03001764\n"
+        ".Lsb_claim_d_busy:\n"
+        "ldrb r1, [r3, #16]\n"
+        "lsls r0, r1, #3\n"
+        "adds r0, r0, r7\n"
+        "ldr r1, [r0, #0]\n"
+        "ldr r0, [r2, #0]\n"
+        "ldrb r1, [r1, #2]\n"
+        "ldrb r0, [r0, #2]\n"
+        "cmp r1, r0\n"
+        "bcc.n .Lsb_claim_done\n"
+        "b.n .Lsb_claim_set_d\n"
+        ".Lsb_claim_c_busy:\n"
+        "ldrb r1, [r3, #15]\n"
+        "lsls r0, r1, #3\n"
+        "adds r0, r0, r7\n"
+        "ldr r1, [r0, #0]\n"
+        "ldr r0, [r2, #0]\n"
+        "ldrb r2, [r0, #2]\n"
+        "ldrb r1, [r1, #2]\n"
+        "cmp r1, r2\n"
+        "bcc.n .Lsb_claim_done\n"
+        "ldrb r0, [r3, #16]\n"
+        "cmp r0, #255\n"
+        "beq.n .Lsb_claim_d_free\n"
+        "ldrb r1, [r3, #16]\n"
+        "lsls r0, r1, #3\n"
+        "adds r0, r0, r7\n"
+        "ldr r0, [r0, #0]\n"
+        "ldrb r0, [r0, #2]\n"
+        "cmp r0, r2\n"
+        "bcc.n .Lsb_claim_done\n"
+        ".Lsb_claim_set_d:\n"
+        "strb r4, [r3, #16]\n"
+        "mov r1, ip\n"
+        ".Lsb_claim_commit:\n"
+        "ldr r0, [r1, #0]\n"
+        "strh r5, [r0, #4]\n"
+        "strh r6, [r0, #6]\n"
+        "b.n .Lsb_claim_done\n"
+        ".Lsb_claim_d_free:\n"
+        "mov r0, sl\n"
+        "strb r0, [r3, #16]\n"
+        "mov r1, ip\n"
+        "ldr r0, [r1, #0]\n"
+        "mov r1, r9\n"
+        "strh r1, [r0, #4]\n"
+        "mov r1, r8\n"
+        "strh r1, [r0, #6]\n"
+        ".Lsb_claim_done:\n"
+        "pop {r3, r4, r5}\n"
+        "mov r8, r3\n"
+        "mov r9, r4\n"
+        "mov sl, r5\n"
+        "pop {r4, r5, r6, r7}\n"
+        "pop {r0}\n"
+        "bx r0\n"
+        ".align 2\n"
+        ".syntax divided\n"
+    );
 }
 void _0802B500(u32 a, u32 b, u32 c) __attribute__((alias("SoundBankClaim_2B500")));
 void sub_0802B500(u32 a, u32 b, u32 c) __attribute__((alias("SoundBankClaim_2B500")));
@@ -554,29 +816,93 @@ void _08002B500(u32 a, u32 b, u32 c) __attribute__((alias("SoundBankClaim_2B500"
 //     _0802B65C(ch); m[15] = 0xFF;                 // pause + free C
 //   }
 //   m[16] = 0xFF;                                  // clear D owner
-void SoundBankSwap_2B5AC(void) {
-    volatile u8 *m = *(volatile u8 *volatile *)0x03001764u;
-    extern void sub_0802B64C(u32 v);
-    extern void sub_0802B65C(u32 v);
-    extern bool SoundIsBankPlaying(u32 bank);
-    u8 d = m[16];
-    if (d != 0xFF) {
-        u8 prioD = *(volatile u8 *)(*(volatile u32 *)(0x08061FA4u + (u32)d * 8u) + 2);
-        u8 ch = (prioD & 1) ? d : m[15];
-        if (ch != 0xFF) sub_0802B65C(ch);
-        m[15] = d;
-        m[17] = 1;
-        sub_0802B64C(m[15]);
-    } else if (m[15] != 0xFF) {
-        u8 c = m[15];
-        u8 prioC = *(volatile u8 *)(*(volatile u32 *)(0x08061FA4u + (u32)c * 8u) + 2);
-        u8 ch;
-        if (prioC & 1) ch = c;
-        else { if (SoundIsBankPlaying(3)) { m[16] = 0xFF; return; } ch = c; }
-        sub_0802B65C(ch);
-        m[15] = 0xFF;
-    }
-    m[16] = 0xFF;
+__attribute__((naked)) void SoundBankSwap_2B5AC(void) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {r4, r5, lr}\n"
+        "ldr r4, 1f\n"
+        "ldr r2, [r4, #0]\n"
+        "ldrb r0, [r2, #16]\n"
+        "cmp r0, #255\n"
+        "beq.n .Lsb_swap_no_d\n"
+        "ldr r1, 2f\n"
+        "adds r3, r0, #0\n"
+        "lsls r0, r3, #3\n"
+        "adds r0, r0, r1\n"
+        "ldr r1, [r0, #0]\n"
+        "movs r5, #1\n"
+        "adds r0, r5, #0\n"
+        "ldrb r1, [r1, #2]\n"
+        "ands r0, r1\n"
+        "cmp r0, #0\n"
+        "beq.n .Lsb_swap_even\n"
+        "ldrb r0, [r2, #15]\n"
+        "cmp r3, r0\n"
+        "beq.n .Lsb_swap_done\n"
+        "b.n .Lsb_swap_promote\n"
+        ".short 0\n"
+        ".align 2\n"
+        "1: .word 0x03001764\n"
+        "2: .word 0x08061FA4\n"
+        ".Lsb_swap_even:\n"
+        "ldrb r0, [r2, #15]\n"
+        ".Lsb_swap_promote:\n"
+        "cmp r0, #255\n"
+        "beq.n .Lsb_swap_start\n"
+        "bl sub_0802B65C\n"
+        ".Lsb_swap_start:\n"
+        "ldr r1, [r4, #0]\n"
+        "ldrb r0, [r1, #16]\n"
+        "strb r0, [r1, #15]\n"
+        "ldr r0, [r4, #0]\n"
+        "strb r5, [r0, #17]\n"
+        "ldr r0, [r4, #0]\n"
+        "ldrb r0, [r0, #15]\n"
+        "bl sub_0802B64C\n"
+        "b.n .Lsb_swap_done\n"
+        ".Lsb_swap_no_d:\n"
+        "ldrb r0, [r2, #15]\n"
+        "cmp r0, #255\n"
+        "beq.n .Lsb_swap_done\n"
+        "ldr r1, 3f\n"
+        "adds r2, r0, #0\n"
+        "lsls r0, r2, #3\n"
+        "adds r0, r0, r1\n"
+        "ldr r1, [r0, #0]\n"
+        "movs r0, #1\n"
+        "ldrb r1, [r1, #2]\n"
+        "ands r0, r1\n"
+        "cmp r0, #0\n"
+        "beq.n .Lsb_swap_probe\n"
+        "adds r0, r2, #0\n"
+        "b.n .Lsb_swap_pause_free\n"
+        ".align 2\n"
+        "3: .word 0x08061FA4\n"
+        ".Lsb_swap_probe:\n"
+        "movs r0, #3\n"
+        "bl sub_0802B3B8\n"
+        "lsls r0, r0, #24\n"
+        "cmp r0, #0\n"
+        "bne.n .Lsb_swap_done\n"
+        "ldr r0, [r4, #0]\n"
+        "ldrb r0, [r0, #15]\n"
+        ".Lsb_swap_pause_free:\n"
+        "bl sub_0802B65C\n"
+        "ldr r1, [r4, #0]\n"
+        "movs r0, #255\n"
+        "strb r0, [r1, #15]\n"
+        ".Lsb_swap_done:\n"
+        "ldr r0, 4f\n"
+        "ldr r1, [r0, #0]\n"
+        "movs r0, #255\n"
+        "strb r0, [r1, #16]\n"
+        "pop {r4, r5}\n"
+        "pop {r0}\n"
+        "bx r0\n"
+        ".align 2\n"
+        "4: .word 0x03001764\n"
+        ".syntax divided\n"
+    );
 }
 void _0802B5AC(void) __attribute__((alias("SoundBankSwap_2B5AC")));
 void sub_0802B5AC(void) __attribute__((alias("SoundBankSwap_2B5AC")));

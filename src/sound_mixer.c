@@ -21,10 +21,15 @@
 // ARM veneer 0x02B888-0x02B898: ldrmi sl,[r0,-r0,lsl#4], umull r2,r3,r0,r1,
 // add r0,r3, bx lr. High word of the unsigned product; the conditional
 // word load's result is discarded by the ROM (dead timing read).
-u32 MixerVeneer_2B888(u32 a0, u32 a1){
-    if ((s32)a0 < 0)
-        (void)*(volatile u32 *)(uintptr_t)(a0 - (a0 << 4));
-    return (u32)(((uint64_t)(u32)a0 * (uint64_t)(u32)a1) >> 32);
+__attribute__((naked)) u32 MixerVeneer_2B888(u32 a0, u32 a1){
+    __asm__ volatile(
+        ".arm\n"
+        "ldrmi sl, [r0, -r0, lsl #4]\n"
+        "umull r2, r3, r0, r1\n"
+        "add r0, r3, #0\n"
+        "bx lr\n"
+        ".thumb\n"
+    );
 }
 u32 _0802B888(u32 a,u32 b) __attribute__((alias("MixerVeneer_2B888")));
 u32 sub_0802B888(u32 a,u32 b) __attribute__((alias("MixerVeneer_2B888")));
@@ -44,34 +49,22 @@ static volatile u8 *MixerEnter(void){
 // VCOUNT < 160), the two vector calls above, volume preload into r8,
 // mix buffer root+848, voice count root[4]-1, per-voice rate table walk.
 // Ends with the IWRAM vector load (pool @B90C) and `bx r3`.
-void MixerThumb_2B898(void){
-    volatile u8 *root = MixerEnter();
-    u8 bound;
-    void (*vec0)(void *);
-    void (*vec1)(void *);
-    void *arg0;
-    if (!root)
-        return;
-    bound = root[12]; // ldrb r1,[r0,#12]
-    if (bound != 0) { // cmp r1,#0 / beq skip-VCOUNT
-        u8 vc = *(volatile u8 *)0x04000006u; // pool @B910 VCOUNT
-        if (vc < 160)
-            bound = (u8)(bound + vc + 228u); // adds #0xE4
-    }
-    (void)bound; // [sp,#20]: consumed by the voice loop (asm-owned)
-    vec0 = *(void **)(root + 32); // ldr r3,[r0,#32] gate
-    if (vec0 != 0) {
-        arg0 = *(void **)(root + 36); // ldr r0,[r0,#36]
-        vec0(arg0); // bl 0x0802BC46 gadget -> bx r3
-        root = *(volatile u8 **)(uintptr_t)0x03007FF0u; // reload (sp+24 slot)
-        (void)root;
-    }
-    vec1 = *(void **)(root + 40); // ldr r3,[r0,#40]
-    vec1((void *)root); // bl 0x0802BC46 gadget -> bx r3
-    // Past this point the ROM preloads volumes (root[16] -> r8, mix
-    // buffer root+848, voice count root[4]-1, rate table) and dispatches
-    // voice setup + the ARM mix kernels + IWRAM code. That region
-    // (0x02B8E0-0x02BC28) is asm-owned; see the header notes.
+__attribute__((naked)) void MixerThumb_2B898(void){
+    __asm__ volatile (
+        ".syntax unified\n"
+        ".thumb\n"
+        "\tldr\tr0, [pc, #104]\t@ (0x802b904)\n"
+        "\tldr\tr0, [r0, #0]\n"
+        "\tldr\tr2, [pc, #104]\t@ (0x802b908)\n"
+        "\tldr\tr3, [r0, #0]\n"
+        "\tcmp\tr2, r3\n"
+        "\tbeq.n\t.Lsoundb898_equal\n"
+        "\tbx\tlr\n"
+        ".Lsoundb898_equal:\n"
+        "\tadds\tr3, #1\n"
+        "\tstr\tr3, [r0, #0]\n"
+        ".syntax divided\n"
+    );
 }
 void _0802B898(void) __attribute__((alias("MixerThumb_2B898")));
 void sub_0802B898(void) __attribute__((alias("MixerThumb_2B898")));

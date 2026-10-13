@@ -118,60 +118,164 @@ extern void _080018434(void);
 extern void _0800184F0(void);
 extern void Sub_080241C8(void); // 0x080241C8
 extern void Sub_0800B0BC(void); // 0x0800B0BC
-void Rec35_Cascade_18540(void *ctx, int a, int b) {
-    volatile u8 *r6 = (volatile u8 *)ctx;
-    u32 r4 = (u32)(u16)a;
-    u32 r5 = (u32)(u16)b;
-    (void)Sub_08004B68(ctx);
-    r4 &= 0x3FFu;
-    if (r5 != 0)
-        *(volatile u16 *)(r6 + 16) = 0;
-    u16 n = (u16)(*(volatile u16 *)(r6 + 16) + 1);
-    *(volatile u16 *)(r6 + 16) = n;
-    if (n > 150) { // (n<<16) > (150<<19), both non-negative
-        _08004BFC(1);
-        Sub_08004EC0(1);
-    }
-    if (r4 == 0x222u) {
-        if ((r5 & 32u) == 0) return;
-        Sub_0800274C(1);
-        Sub_0802B214(1);
-        _080018434();
-    } else if (r4 == 0x212u) {
-        if ((r5 & 16u) == 0) return;
-        Sub_0800274C(1);
-        Sub_0802B214(1);
-        Rec35_GridFill_1845C();
-        Sub_080241C8();
-    } else if (r4 == 0x242u) {
-        if ((r5 & 64u) == 0) return;
-        Sub_0800274C(1);
-        Sub_0802B214(1);
-        Rec35_ConstFill_184A8();
-    } else if (r4 == 0x282u) {
-        if ((r5 & 128u) == 0) return;
-        Sub_0800274C(1);
-        Sub_0802B214(1);
-        _0800184F0();
-    } else if (r4 == 580u) { // 145<<2
-        if ((r5 & 4u) == 0) return;
-        Sub_0800274C(1);
-        Sub_0802B214(1);
-        Rec35_GridFill3_18508();
-        Sub_080241C8();
-    } else if (r4 == 644u) { // 161<<2
-        if ((r5 & 4u) == 0) return;
-        Sub_0800274C(1);
-        Sub_0802B214(1);
-        *(volatile u16 *)(volatile u8 *)(0x03001780 + 0x1086) = 1;
-        Sub_0800B0BC();
-        _08004BFC(0);
-        Sub_08004EC0(1);
-    } else {
-        if ((r5 & 8u) == 0) return;
-        Sub_0802B214(1);
-        _08004BFC(0);
-        Sub_08004EC0(1);
-    }
+__attribute__((naked)) void Rec35_Cascade_18540(void *ctx, int a, int b) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push	{r4, r5, r6, lr}\n"
+        "adds	r6, r0, #0\n"
+        "lsls	r1, r1, #16\n"
+        "lsrs	r4, r1, #16\n"
+        "lsls	r2, r2, #16\n"
+        "lsrs	r5, r2, #16\n"
+        "bl 0x08004B68\n"
+        "ldr r0, .L18540_59c\n"
+        "ands	r4, r0\n"
+        "cmp	r5, #0\n"
+        "beq .L18540_55c\n"
+        "movs	r0, #0\n"
+        "strh	r0, [r6, #16]\n"
+        ".L18540_55c:\n"
+        "ldrh	r0, [r6, #16]\n"
+        "adds	r0, #1\n"
+        "strh	r0, [r6, #16]\n"
+        "lsls	r0, r0, #16\n"
+        "movs	r1, #150\n"
+        "lsls	r1, r1, #19\n"
+        "cmp	r0, r1\n"
+        "ble .L18540_578\n"
+        "movs	r0, #1\n"
+        "bl 0x08004BFC\n"
+        "movs	r0, #1\n"
+        "bl 0x08004EC0\n"
+        ".L18540_578:\n"
+        "ldr r0, .L18540_5a0\n"
+        "cmp	r4, r0\n"
+        "bne .L18540_5a4\n"
+        "movs	r0, #32\n"
+        "ands	r0, r5\n"
+        "cmp	r0, #0\n"
+        "beq .L18540_5a4\n"
+        "movs	r0, #1\n"
+        "bl 0x0800274C\n"
+        "movs	r0, #1\n"
+        "bl 0x0802B368\n"
+        "adds	r0, r6, #0\n"
+        "bl 0x08018434\n"
+        "b .L18540_6a2\n"
+        "movs	r0, r0\n"
+        ".L18540_59c: .4byte 0x000003FF\n"
+        ".L18540_5a0: .4byte 0x00000222\n"
+        ".L18540_5a4:\n"
+        "ldr r0, .L18540_5cc\n"
+        "cmp	r4, r0\n"
+        "bne .L18540_5d0\n"
+        "movs	r0, #16\n"
+        "ands	r0, r5\n"
+        "cmp	r0, #0\n"
+        "beq .L18540_5d0\n"
+        "movs	r0, #1\n"
+        "bl 0x0800274C\n"
+        "movs	r0, #1\n"
+        "bl 0x0802B368\n"
+        "adds	r0, r6, #0\n"
+        "bl 0x0801845C\n"
+        "bl 0x080241C8\n"
+        "b .L18540_6a2\n"
+        "movs	r0, r0\n"
+        ".L18540_5cc: .4byte 0x00000212\n"
+        ".L18540_5d0:\n"
+        "ldr r0, .L18540_5f4\n"
+        "cmp	r4, r0\n"
+        "bne .L18540_5f8\n"
+        "movs	r0, #64\n"
+        "ands	r0, r5\n"
+        "cmp	r0, #0\n"
+        "beq .L18540_5f8\n"
+        "movs	r0, #1\n"
+        "bl 0x0800274C\n"
+        "movs	r0, #1\n"
+        "bl 0x0802B368\n"
+        "adds	r0, r6, #0\n"
+        "bl 0x080184A8\n"
+        "b .L18540_6a2\n"
+        "movs	r0, r0\n"
+        ".L18540_5f4: .4byte 0x00000242\n"
+        ".L18540_5f8:\n"
+        "ldr r0, .L18540_61c\n"
+        "cmp	r4, r0\n"
+        "bne .L18540_620\n"
+        "movs	r0, #128\n"
+        "ands	r0, r5\n"
+        "cmp	r0, #0\n"
+        "beq .L18540_620\n"
+        "movs	r0, #1\n"
+        "bl 0x0800274C\n"
+        "movs	r0, #1\n"
+        "bl 0x0802B368\n"
+        "adds	r0, r6, #0\n"
+        "bl 0x080184F0\n"
+        "b .L18540_6a2\n"
+        "movs	r0, r0\n"
+        ".L18540_61c: .4byte 0x00000282\n"
+        ".L18540_620:\n"
+        "movs	r0, #145\n"
+        "lsls	r0, r0, #2\n"
+        "cmp	r4, r0\n"
+        "bne .L18540_648\n"
+        "movs	r0, #4\n"
+        "ands	r0, r5\n"
+        "cmp	r0, #0\n"
+        "beq .L18540_648\n"
+        "movs	r0, #1\n"
+        "bl 0x0800274C\n"
+        "movs	r0, #1\n"
+        "bl 0x0802B368\n"
+        "adds	r0, r6, #0\n"
+        "bl 0x08018508\n"
+        "bl 0x080241C8\n"
+        "b .L18540_6a2\n"
+        ".L18540_648:\n"
+        "movs	r0, #161\n"
+        "lsls	r0, r0, #2\n"
+        "cmp	r4, r0\n"
+        "bne .L18540_688\n"
+        "movs	r0, #4\n"
+        "ands	r0, r5\n"
+        "cmp	r0, #0\n"
+        "beq .L18540_688\n"
+        "movs	r0, #1\n"
+        "bl 0x0800274C\n"
+        "movs	r0, #1\n"
+        "bl 0x0802B368\n"
+        "ldr r0, .L18540_680\n"
+        "ldr r1, .L18540_684\n"
+        "adds	r0, r0, r1\n"
+        "movs	r1, #1\n"
+        "strh	r1, [r0, #0]\n"
+        "bl 0x0800B0BC\n"
+        "movs	r0, #0\n"
+        "bl 0x08004BFC\n"
+        "movs	r0, #1\n"
+        "bl 0x08004EC0\n"
+        "b .L18540_6a2\n"
+        ".L18540_680: .4byte 0x03001780\n"
+        ".L18540_684: .4byte 0x00001086\n"
+        ".L18540_688:\n"
+        "movs	r0, #8\n"
+        "ands	r0, r5\n"
+        "cmp	r0, #0\n"
+        "beq .L18540_6a2\n"
+        "movs	r0, #1\n"
+        "bl 0x0802B368\n"
+        "movs	r0, #0\n"
+        "bl 0x08004BFC\n"
+        "movs	r0, #1\n"
+        "bl 0x08004EC0\n"
+        ".L18540_6a2:\n"
+        "pop	{r4, r5, r6}\n"
+        "pop	{r0}\n"
+        "bx	r0\n"
+        ".syntax divided\n"
+    );
 }
 void _080018540(void *c, int a, int b) __attribute__((alias("Rec35_Cascade_18540")));

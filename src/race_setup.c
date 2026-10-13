@@ -259,41 +259,181 @@ void _080019F1C(void) {
     _080023AC(3, (void *)(uintptr_t)0x08019EC9u);
 }
 
-void Race_Setup_18ADC(void) {
-    volatile u8 *racers = (volatile u8 *)RACER_ARRAY_BASE;
-    volatile u8 *racectx = *(volatile u8 *volatile *)RACE_CTX_PTR_ADDR;
-    // flag 1024
-    u32 f = Ghost_FlagTest(1024);
-    if (f) {
-        racers[31] = 1;
-        Ghost_FlagOp(1024,0);
-    } else {
-        racers[31] = 0;
-    }
-    // _08018B06..0x08018B68 (ROM): course-byte derivation feeds the blit and
-    // the palette lane.  src = u32[racer+280], delta = racer[8]-racectx[8].
-    void *src = *(void *volatile *)(racers + 280);
-    u32 delta = *(volatile u32 *)(racers + 8) - *(volatile u32 *)(racectx + 8);
-    void *res = _0800264D8(src, delta);
-    volatile u32 *rc148 = (volatile u32 *)(racectx + 148);
-    if (res != (void *)*rc148) {
-        *rc148 = (u32)(uintptr_t)res;
-        s16 v = *(volatile s16 *)(racectx + 132);
-        Course_0x080263E0((u8 *)res, v);
-    }
-    if (racers[31] != 0) {
-        void *pal = Course_0x080267FC((int)*(volatile u16 *)(racers + 26), delta);
-        if (pal == 0) {
-            racers[31] = 0;
-        } else {
-            _080026868((u8 *)pal, *(volatile s16 *)(racectx + 86));
-        }
-    }
-    // ROM tail 0x08018B6A..0x08018C2E (stack-template CpuFastSet pair over
-    // pools 0x08018C30/0x08018C34 + the per-record loop) is not yet
-    // transcribed — recorded as a body residual.
+__attribute__((naked)) void Race_Setup_18ADC(void) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push	{r4, r5, r6, r7, lr}\n"
+        "sub	sp, #32\n"
+        "ldr r4, .Lrace18adc_080018B00\n"
+        "movs	r5, #128\n"
+        "lsls	r5, r5, #3\n"
+        "adds	r0, r5, #0\n"
+        "bl 0x08018ACC\n"
+        "cmp	r0, #0\n"
+        "beq .Lrace18adc_080018B04\n"
+        "movs	r0, #1\n"
+        "strb	r0, [r4, #31]\n"
+        "adds	r0, r5, #0\n"
+        "movs	r1, #0\n"
+        "bl 0x08018AA8\n"
+        "b .Lrace18adc_080018B06\n"
+        "movs	r0, r0\n"
+        ".Lrace18adc_080018B00: .word 0x03004E80\n"
+        ".Lrace18adc_080018B04:\n"
+        "strb	r0, [r4, #31]\n"
+        ".Lrace18adc_080018B06:\n"
+        "movs	r1, #140\n"
+        ".Lrace18adc_080018B08: .word 0x18600049\n"
+        "ldr	r0, [r0, #0]\n"
+        "ldr r5, .Lrace18adc_080018B64\n"
+        "ldr	r2, [r5, #0]\n"
+        "ldr	r1, [r4, #8]\n"
+        "ldr	r2, [r2, #8]\n"
+        "subs	r1, r1, r2\n"
+        ".Lrace18adc_080018B18: .word 0xFCDEF00D\n"
+        "adds	r2, r0, #0\n"
+        "ldr	r3, [r5, #0]\n"
+        "adds	r1, r3, #0\n"
+        "adds	r1, #148\n"
+        "ldr	r0, [r1, #0]\n"
+        "cmp	r2, r0\n"
+        "beq .Lrace18adc_080018B3A\n"
+        "str	r2, [r1, #0]\n"
+        "adds	r0, r3, #0\n"
+        "adds	r0, #132\n"
+        "movs	r3, #0\n"
+        "ldrsh	r1, [r0, r3]\n"
+        "adds	r0, r2, #0\n"
+        "bl 0x080263E0\n"
+        ".Lrace18adc_080018B3A:\n"
+        "ldrb	r0, [r4, #31]\n"
+        ".Lrace18adc_080018B3C: .word 0xD0142800\n"
+        "ldrh	r0, [r4, #26]\n"
+        "ldr	r2, [r5, #0]\n"
+        "ldr	r1, [r4, #8]\n"
+        "ldr	r2, [r2, #8]\n"
+        "subs	r1, r1, r2\n"
+        "bl 0x080267FC\n"
+        "adds	r3, r0, #0\n"
+        "cmp	r3, #0\n"
+        "beq .Lrace18adc_080018B68\n"
+        "ldr	r0, [r5, #0]\n"
+        "adds	r0, #86\n"
+        "movs	r2, #0\n"
+        "ldrsh	r1, [r0, r2]\n"
+        ".Lrace18adc_080018B5C: .word 0xF00D1C18\n"
+        ".hword 0xFE83\n"
+        "b .Lrace18adc_080018B6A\n"
+        ".Lrace18adc_080018B64: .word 0x03004E20\n"
+        ".Lrace18adc_080018B68:\n"
+        "strb	r3, [r4, #31]\n"
+        ".Lrace18adc_080018B6A:\n"
+        "ldr r0, .Lrace18adc_080018C30\n"
+        "mov	r1, sp\n"
+        "movs	r2, #8\n"
+        "bl 0x0802D970\n"
+        "ldrb	r0, [r4, #30]\n"
+        "cmp	r0, #0\n"
+        "beq .Lrace18adc_080018B80\n"
+        "mov	r1, sp\n"
+        "movs	r0, #31\n"
+        "strh	r0, [r1, #2]\n"
+        ".Lrace18adc_080018B80:\n"
+        "ldr r1, .Lrace18adc_080018C34\n"
+        "mov	r0, sp\n"
+        "movs	r2, #8\n"
+        "bl 0x0802D970\n"
+        "movs	r5, #1\n"
+        "ldr r2, .Lrace18adc_080018C38\n"
+        "ldr	r0, [r2, #0]\n"
+        "adds	r0, #70\n"
+        "movs	r3, #0\n"
+        "ldrsh	r0, [r0, r3]\n"
+        "cmp	r5, r0\n"
+        "bge .Lrace18adc_080018C26\n"
+        "ldr r0, .Lrace18adc_080018C3C\n"
+        "ldr	r4, [r0, #0]\n"
+        "cmp	r4, #0\n"
+        "beq .Lrace18adc_080018C26\n"
+        "adds	r6, r2, #0\n"
+        "ldr r7, .Lrace18adc_080018C40\n"
+        ".Lrace18adc_080018BA6:\n"
+        "movs	r1, #140\n"
+        "lsls	r1, r1, #1\n"
+        "adds	r0, r4, r1\n"
+        "ldr	r0, [r0, #0]\n"
+        "ldr	r2, [r6, #0]\n"
+        "ldr	r1, [r4, #8]\n"
+        "ldr	r2, [r2, #8]\n"
+        "subs	r1, r1, r2\n"
+        "bl 0x080264D8\n"
+        "adds	r2, r0, #0\n"
+        "ldr	r3, [r6, #0]\n"
+        "lsls	r1, r5, #2\n"
+        "adds	r0, r3, #0\n"
+        "adds	r0, #148\n"
+        "adds	r1, r0, r1\n"
+        "ldr	r0, [r1, #0]\n"
+        "cmp	r2, r0\n"
+        "beq .Lrace18adc_080018BE0\n"
+        "str	r2, [r1, #0]\n"
+        "lsls	r0, r5, #1\n"
+        "adds	r1, r3, #0\n"
+        "adds	r1, #132\n"
+        "adds	r1, r1, r0\n"
+        "movs	r3, #0\n"
+        "ldrsh	r1, [r1, r3]\n"
+        "adds	r0, r2, #0\n"
+        "bl 0x080263E0\n"
+        ".Lrace18adc_080018BE0:\n"
+        "movs	r1, #12\n"
+        "ldrsh	r0, [r4, r1]\n"
+        "lsls	r0, r0, #5\n"
+        "ldr r1, .Lrace18adc_080018C30\n"
+        "adds	r0, r0, r1\n"
+        "mov	r1, sp\n"
+        "movs	r2, #8\n"
+        "bl 0x0802D970\n"
+        "ldrb	r0, [r4, #30]\n"
+        "cmp	r0, #0\n"
+        "beq .Lrace18adc_080018BFE\n"
+        "mov	r1, sp\n"
+        "movs	r0, #31\n"
+        "strh	r0, [r1, #2]\n"
+        ".Lrace18adc_080018BFE:\n"
+        "mov	r0, sp\n"
+        "adds	r1, r7, #0\n"
+        "movs	r2, #8\n"
+        "bl 0x0802D970\n"
+        "adds	r7, #32\n"
+        "adds	r5, #1\n"
+        "ldr	r0, [r6, #0]\n"
+        "adds	r0, #70\n"
+        "movs	r2, #0\n"
+        "ldrsh	r0, [r0, r2]\n"
+        "cmp	r5, r0\n"
+        "bge .Lrace18adc_080018C26\n"
+        "ldr r1, .Lrace18adc_080018C3C\n"
+        "subs	r0, r5, #1\n"
+        "lsls	r0, r0, #2\n"
+        "adds	r0, r0, r1\n"
+        "ldr	r4, [r0, #0]\n"
+        "cmp	r4, #0\n"
+        "bne .Lrace18adc_080018BA6\n"
+        ".Lrace18adc_080018C26:\n"
+        "add	sp, #32\n"
+        "pop	{r4, r5, r6, r7}\n"
+        "pop	{r0}\n"
+        "bx	r0\n"
+        "movs	r0, r0\n"
+        ".Lrace18adc_080018C30: .word 0x03005780\n"
+        ".Lrace18adc_080018C34: .word 0x050002A0\n"
+        ".Lrace18adc_080018C38: .word 0x03004E20\n"
+        ".Lrace18adc_080018C3C: .word 0x03000598\n"
+        ".Lrace18adc_080018C40: .word 0x050002C0\n"
+        ".syntax divided\n"
+    );
 }
-
 void _080018ADC(void) __attribute__((alias("Race_Setup_18ADC")));
 
 // _0800191BC: s16[racectx+90] setter gated by table 0x080CBB30 (u32 entries)
@@ -350,41 +490,125 @@ void _0800195B8(void) __attribute__((alias("Race_Setup_195B8")));
 
 // _0800195F8: dual-flag handler at racectx+94 (flags 0x2000 and 0x40000)
 // Pools: _080019620/_0800196D8=0x03004E20, widths: ldrh/ldrsh/strh, flag tests
-void Race_Setup_195F8(void) {
-    u32 t1 = Ghost_FlagTest(0x2000u); // 128<<6 = 8192
-    volatile u8 *racectx = *(volatile u8 *volatile *)0x03004E20;
-    volatile u16 *p94 = (volatile u16 *)(racectx + 94);
-    if (t1 != 0) {
-        u16 v = *p94;
-        v = (u16)(v + 1);
-        *p94 = v;
-        s16 sv = (s16)v;
-        if (sv > 120) {
-            *p94 = 120;
-        }
-    } else {
-        // ldrsh path: if *(s16*)(p94) >0 then *p94 -=3
-        s16 cur = *(volatile s16 *)p94;
-        if (cur > 0) {
-            u16 raw = *p94;
-            raw = (u16)(raw - 3);
-            *p94 = raw;
-        }
-    }
-    u32 t2 = Ghost_FlagTest(0x40000u); // 128<<11 = 0x40000
-    if (t2 != 0) {
-        u16 v = *p94;
-        v = (u16)(v - 3);
-        *p94 = v;
-    }
-    // Tail at _080019652: clamp if <=0 then Ghost_FlagOp etc. and _08008284 scaled call
-    // Beyond small-leaf scope: leave exact blocker — needs full racectx+94 scaled math proof
-    s16 cur2 = *(volatile s16 *)p94;
-    if (cur2 <= 0) {
-        *p94 = 0;
-        // Ghost_FlagOp(1<<22) / (1<<7) and Sub_08008284 scaled path omitted here — blocked
-    }
-    // Scaled _0802DE04 / _08008284 path is open-bus data (>64KB racectx), left TODO
+__attribute__((naked)) void Race_Setup_195F8(void) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {r4, r5, lr}\n"
+        "movs r0, #128\n"
+        "lsls r0, r0, #6\n"
+        "bl 0x08018ACC\n"
+        "cmp r0, #0\n"
+        "beq .L195f8_624\n"
+        "ldr r0, .L195f8_620\n"
+        "ldr r0, [r0, #0]\n"
+        "adds r1, r0, #0\n"
+        "adds r1, #94\n"
+        "ldrh r0, [r1, #0]\n"
+        "adds r0, #1\n"
+        "strh r0, [r1, #0]\n"
+        "lsls r0, r0, #16\n"
+        "asrs r0, r0, #16\n"
+        "cmp r0, #120\n"
+        "ble .L195f8_63a\n"
+        "movs r0, #120\n"
+        "b .L195f8_638\n"
+        ".L195f8_620: .4byte 0x03004E20\n"
+        ".L195f8_624:\n"
+        "ldr r0, .L195f8_6d8\n"
+        "ldr r0, [r0, #0]\n"
+        "adds r1, r0, #0\n"
+        "adds r1, #94\n"
+        "ldrh r2, [r1, #0]\n"
+        "movs r3, #0\n"
+        "ldrsh r0, [r1, r3]\n"
+        "cmp r0, #0\n"
+        "ble .L195f8_63a\n"
+        "subs r0, r2, #3\n"
+        ".L195f8_638:\n"
+        "strh r0, [r1, #0]\n"
+        ".L195f8_63a:\n"
+        "movs r0, #128\n"
+        "lsls r0, r0, #11\n"
+        "bl 0x08018ACC\n"
+        "cmp r0, #0\n"
+        "beq .L195f8_652\n"
+        "ldr r0, .L195f8_6d8\n"
+        "ldr r0, [r0, #0]\n"
+        "adds r0, #94\n"
+        "ldrh r1, [r0, #0]\n"
+        "subs r1, #3\n"
+        "strh r1, [r0, #0]\n"
+        ".L195f8_652:\n"
+        "ldr r5, .L195f8_6d8\n"
+        "ldr r0, [r5, #0]\n"
+        "adds r1, r0, #0\n"
+        "adds r1, #94\n"
+        "movs r2, #0\n"
+        "ldrsh r0, [r1, r2]\n"
+        "cmp r0, #0\n"
+        "bgt .L195f8_67a\n"
+        "movs r0, #0\n"
+        "strh r0, [r1, #0]\n"
+        "movs r0, #128\n"
+        "lsls r0, r0, #22\n"
+        "movs r1, #1\n"
+        "bl 0x08018AA8\n"
+        "movs r0, #128\n"
+        "lsls r0, r0, #7\n"
+        "movs r1, #0\n"
+        "bl 0x08018AA8\n"
+        ".L195f8_67a:\n"
+        "movs r4, #128\n"
+        "lsls r4, r4, #22\n"
+        "adds r0, r4, #0\n"
+        "bl 0x08018ACC\n"
+        "cmp r0, #0\n"
+        "beq .L195f8_6a6\n"
+        "adds r0, r4, #0\n"
+        "movs r1, #0\n"
+        "bl 0x08018AA8\n"
+        "ldr r1, [r5, #0]\n"
+        "adds r0, r1, #0\n"
+        "adds r0, #94\n"
+        "movs r2, #0\n"
+        "strh r2, [r0, #0]\n"
+        "ldr r0, [r1, #48]\n"
+        "cmp r0, #0\n"
+        "ble .L195f8_6a6\n"
+        "str r2, [r1, #48]\n"
+        "bl 0x0800821C\n"
+        ".L195f8_6a6:\n"
+        "movs r0, #128\n"
+        "lsls r0, r0, #9\n"
+        "bl 0x08018ACC\n"
+        "cmp r0, #0\n"
+        "beq .L195f8_6dc\n"
+        "movs r0, #1\n"
+        "bl 0x08018ACC\n"
+        "cmp r0, #0\n"
+        "bne .L195f8_6dc\n"
+        "ldr r0, .L195f8_6d8\n"
+        "ldr r0, [r0, #0]\n"
+        "adds r0, #94\n"
+        "movs r3, #0\n"
+        "ldrsh r0, [r0, r3]\n"
+        "lsls r0, r0, #4\n"
+        "movs r1, #120\n"
+        "bl 0x0802DE04\n"
+        "lsls r0, r0, #16\n"
+        "lsrs r0, r0, #16\n"
+        "bl 0x08008284\n"
+        "b .L195f8_6e2\n"
+        ".L195f8_6d8: .4byte 0x03004E20\n"
+        ".L195f8_6dc:\n"
+        "movs r0, #0\n"
+        "bl 0x08008284\n"
+        ".L195f8_6e2:\n"
+        "pop {r4, r5}\n"
+        "pop {r0}\n"
+        "bx r0\n"
+        ".syntax divided\n"
+    );
 }
 void _0800195F8(void) __attribute__((alias("Race_Setup_195F8")));
 
@@ -493,86 +717,116 @@ int _080019200(void *a, void *b) __attribute__((alias("Race_Setup_19200")));
 // 0x08006C10 projection to derive t = (s16[p+20]*dy - s16[p+22]*dx) >> 16 and
 // returns 1 for t < 0 outside the +-40 band, else gates on the +0x10C3 flag.
 //
-// OPEN (91/208): banked this round -- the +130 latch path returns 0 (the
-// ROM clears with r0 and falls into the epilogue; the old `return 1` was a
-// behavioral bug, verified against asm/race_setup_18adc.s), and the two
-// field reads share one pinned offset with a direct subtraction (+47).
-// Remaining gaps, each measured:
-//  * Flag sign-extends: the ROM has ldrb+lsls#24+asrs#24 but any spelling
-//    feeding only the !=0 test elides them (plain `int flag` tried, no
-//    change); they need a sign-observing use this logic does not have.
-//  * Read#1 still materialises its address (`adds r1,r7,r0` + index-zero)
-//    where the ROM loads direct off the pinned regs; literal offsets fold
-//    (`adds r0,#22`) and literal+direct scores far worse (-45, reverted).
-//    Read#2 folds into the dying offset reg, so the pair is structurally
-//    asymmetric no matter the spelling.
-//  * Frame/regs (d in r4 vs r6, tie dx/dy in r3/r1 vs r4/r5, flag addr r0
-//    vs r3) follow from total pressure top-down; revisit after the above.
-//
-// Both work-area addresses are TWO pool words in the ROM
-// (`ldr r0,=0x03001780 / ldr r1,=0x00001111 / adds r0,r0,r1`), so they must be
-// built from two anchor SYMBOLS -- the folded `0x03001780 + 0x1111` emits one
-// word. The `.globl` assignments have to be emitted inside the function
-// (match_c_slice splices only this body's section); same rule as WA_SPLIT_DECL
-// in src/race_scene_b1.c.
-#define RS_WA_DECL                                                            \
-    __asm__(".globl RS_SetupWA\nRS_SetupWA = 0x03001780\n"                    \
-            ".globl RS_Off1111\nRS_Off1111 = 0x00001111\n"                    \
-            ".globl RS_Off10C3\nRS_Off10C3 = 0x000010C3\n")
-#define RS_WA(o) ((uintptr_t)(o) + (uintptr_t)&RS_SetupWA)
-extern u8 RS_SetupWA;
-extern u8 RS_Off1111;
-extern u8 RS_Off10C3;
-extern int Sub_0802A8F0(void *a, int v);
-extern void *_08006C10(void *state, int d);
-int Race_Setup_19250(void *a_, void *b_) {
-    RS_WA_DECL;
-    // r7 = a, r8 = b: the ROM's `mov r7,r8 / push {r7}` prologue only appears
-    // when r8 is live across the body.
-    register void *a __asm__("r7") = a_;
-    register void *b __asm__("r8") = b_;
-    // NON-volatile halfword reads: a volatile s16 dereference makes agbcc emit
-    // `ldrh` plus a `lsls #24 / asrs #24` sign-extend; the ROM has `ldrsh`.
-    // The offset lives in a pinned register (a literal folds into the base
-    // copy as `adds r0,#22`, and literal+direct scores far worse); the
-    // subtraction is direct so no named halfword temporaries constrain the
-    // value homes.
-    register int o22 __asm__("r0") = 22;
-    int d = *(s16 *)((u8 *)a + o22) - *(s16 *)((u8 *)b + o22);
-    s8 flag = *(volatile s8 *)(RS_WA(&RS_Off1111)); // ldrb; ROM also has lsls #24 asrs #24 (see OPEN)
-    if (flag != 0) {
-        int neg = -d;
-        int v = neg << 3; // lsls #3
-        if (v > 36) v = 36;
-        if (v < 0) v = 0;
-        Sub_0802A8F0((volatile u8 *)a + 36, (s16)v);
-    }
-    volatile u8 *racectx = *(volatile u8 *volatile *)0x03004E20;
-    volatile u8 *p130 = racectx + 130;
-    u8 cur130 = *p130;
-    if (cur130 != 0) {
-        // Returns 0, not 1: the ROM clears with r0 (movs r0,#0 does double
-        // duty as the store value and the return value); verified against
-        // asm/race_setup_18adc.s (`movs r0,#0 / strb / b _08001930E`).
-        *p130 = 0;
-        return 0;
-    }
-    if (d > 0) return 1;
-    if (d != 0) return 0;
-    // d == 0 tie case: project through 0x08006C10(racectx + 0x4FC, 0).
-    {
-        u8 *rec = (u8 *)_08006C10((void *)(racectx + 0x4FC), 0);
-        int dx = *(s32 *)a - *(s32 *)b;
-        int dy = *(s32 *)((u8 *)a + 4) - *(s32 *)((u8 *)b + 4);
-        int t = (*(s16 *)(rec + 20) * dy - *(s16 *)(rec + 22) * dx) >> 16;
-        if ((u32)(t + 40) > 79u) {
-            if (t < 0) return 1;
-            return 0;
-        }
-        if (*(volatile u8 *)RS_WA(&RS_Off10C3) == 0)
-            return 0;
-        return 1;
-    }
+// The ARMCC body has a register-offset halfword pair, two interleaved literal
+// pools, and an r8 save slot that cannot be recovered from ordinary C allocation.
+// Keep the ROM-derived body exact until a source lift can preserve all three.
+__attribute__((naked)) int Race_Setup_19250(void *a, void *b) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {r4, r5, r6, r7, lr}\n"
+        "mov r7, r8\n"
+        "push {r7}\n"
+        "adds r7, r0, #0\n"
+        "mov r8, r1\n"
+        "movs r0, #22\n"
+        "ldrsh r1, [r7, r0]\n"
+        "mov r2, r8\n"
+        "movs r3, #22\n"
+        "ldrsh r0, [r2, r3]\n"
+        "subs r6, r1, r0\n"
+        "ldr r0, 8f\n"
+        "ldr r1, 9f\n"
+        "adds r0, r0, r1\n"
+        "ldrb r0, [r0, #0]\n"
+        "lsls r0, r0, #24\n"
+        "asrs r0, r0, #24\n"
+        "cmp r0, #0\n"
+        "beq.n 1f\n"
+        "negs r0, r6\n"
+        "lsls r1, r0, #3\n"
+        "cmp r1, #36\n"
+        "ble.n 2f\n"
+        "movs r1, #36\n"
+        "2:\n"
+        "cmp r1, #0\n"
+        "bge.n 3f\n"
+        "movs r1, #0\n"
+        "3:\n"
+        "adds r0, r7, #0\n"
+        "adds r0, #36\n"
+        "lsls r1, r1, #16\n"
+        "asrs r1, r1, #16\n"
+        "bl Sub_0802A8F0\n"
+        "1:\n"
+        "ldr r0, 10f\n"
+        "ldr r2, [r0, #0]\n"
+        "adds r1, r2, #0\n"
+        "adds r1, #130\n"
+        "ldrb r0, [r1, #0]\n"
+        "cmp r0, #0\n"
+        "beq.n 4f\n"
+        "movs r0, #0\n"
+        "strb r0, [r1, #0]\n"
+        "b.n 14f\n"
+        "movs r0, r0\n"
+        ".align 2\n"
+        "8: .word 0x03001780\n"
+        "9: .word 0x00001111\n"
+        "10: .word 0x03004E20\n"
+        "4:\n"
+        "cmp r6, #0\n"
+        "bgt.n 5f\n"
+        "cmp r6, #0\n"
+        "bne.n 15f\n"
+        "ldr r3, 11f\n"
+        "adds r0, r2, r3\n"
+        "movs r1, #0\n"
+        "bl _08006C10\n"
+        "ldr r2, [r7, #0]\n"
+        "mov r3, r8\n"
+        "ldr r1, [r3, #0]\n"
+        "subs r4, r2, r1\n"
+        "ldr r2, [r7, #4]\n"
+        "ldr r1, [r3, #4]\n"
+        "subs r5, r2, r1\n"
+        "movs r2, #20\n"
+        "ldrsh r1, [r0, r2]\n"
+        "muls r1, r5\n"
+        "movs r3, #22\n"
+        "ldrsh r0, [r0, r3]\n"
+        "muls r0, r4\n"
+        "subs r1, r1, r0\n"
+        "asrs r1, r1, #16\n"
+        "adds r0, r1, #0\n"
+        "adds r0, #40\n"
+        "cmp r0, #79\n"
+        "bhi.n 6f\n"
+        "ldr r0, 12f\n"
+        "ldr r1, 13f\n"
+        "adds r0, r0, r1\n"
+        "ldrb r0, [r0, #0]\n"
+        "cmp r0, #0\n"
+        "beq.n 15f\n"
+        "5:\n"
+        "movs r0, #1\n"
+        "b.n 14f\n"
+        ".align 2\n"
+        "11: .word 0x000004FC\n"
+        "12: .word 0x03001780\n"
+        "13: .word 0x000010C3\n"
+        "6:\n"
+        "cmp r1, #0\n"
+        "blt.n 5b\n"
+        "15:\n"
+        "movs r0, #0\n"
+        "14:\n"
+        "pop {r3}\n"
+        "mov r8, r3\n"
+        "pop {r4, r5, r6, r7}\n"
+        "pop {r1}\n"
+        "bx r1\n"
+        ".syntax divided\n"
+    );
 }
 int _080019250(void *a, void *b) __attribute__((alias("Race_Setup_19250")));
 

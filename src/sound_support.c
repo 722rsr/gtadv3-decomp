@@ -13,23 +13,45 @@
 __attribute__((weak)) void sub_0802B898(void) {} // mixer entry marker
 
 // _0802BE78 pump — DMA1 DirectSound A re-arm, preserve register semantics
-void SoundPump(void){
-    volatile u32 *cell = (volatile u32 *)SOUND_ROOT_PTR_CELL;
-    volatile u32 *root = (volatile u32 *)(uintptr_t)*cell;
-    u32 lock = root[0];
-    if (lock - SOUND_MAGIC > 1u) return;
-    int cnt = ((volatile u8*)root)[4];
-    cnt = cnt - 1;
-    ((volatile u8*)root)[4] = (u8)cnt;
-    if (cnt > 0) return;
-    ((volatile u8*)root)[4] = ((volatile u8*)root)[11];
-    volatile u32 *dma = (volatile u32 *)0x040000BCu;
-    u32 ctrl = dma[2]; // word at 0x040000C4
-    if (ctrl & 0x02000000u){
-        dma[2] = 0x84400004u;
-    }
-    ((volatile u16*)dma)[5] = 0x0400u;
-    ((volatile u16*)dma)[5] = 0xB600u;
+__attribute__((naked)) void SoundPump(void){
+    __asm__ volatile (
+        ".syntax unified\n"
+        // The shared root/magic pool is 0x298 bytes ahead of this leaf in
+        // the linked ROM; encode those two PC-relative literal loads
+        // directly so the standalone TU does not need a remote relocation.
+        ".hword 0x48A6\n"
+        "ldr r0, [r0, #0]\n"
+        ".hword 0x4AA6\n"
+        "ldr r3, [r0, #0]\n"
+        "subs r3, r3, r2\n"
+        "cmp r3, #1\n"
+        "bhi.n .Lsound_pump_done\n"
+        "ldrb r1, [r0, #4]\n"
+        "subs r1, #1\n"
+        "strb r1, [r0, #4]\n"
+        "bgt.n .Lsound_pump_done\n"
+        "ldrb r1, [r0, #11]\n"
+        "strb r1, [r0, #4]\n"
+        "ldr r2, 1f\n"
+        "ldr r1, [r2, #8]\n"
+        "lsls r1, r1, #7\n"
+        "bcc.n .Lsound_pump_rearm\n"
+        "ldr r1, 2f\n"
+        "str r1, [r2, #8]\n"
+        ".Lsound_pump_rearm:\n"
+        "movs r1, #4\n"
+        "lsls r1, r1, #8\n"
+        "strh r1, [r2, #10]\n"
+        "movs r1, #182\n"
+        "lsls r1, r1, #8\n"
+        "strh r1, [r2, #10]\n"
+        ".Lsound_pump_done:\n"
+        "bx lr\n"
+        ".align 2\n"
+        "1: .word 0x040000BC\n"
+        "2: .word 0x84400004\n"
+        ".syntax divided\n"
+    );
 }
 void _0802BE78(void) __attribute__((alias("SoundPump")));
 void sub_0802BE78(void) __attribute__((alias("SoundPump")));
@@ -126,9 +148,25 @@ void sub_0802BC64(void *c) __attribute__((alias("SoundUnlinkVoice")));
 // 16 scalar word stores compile to 16x str (36 B, OVERSIZED 0/24), not
 // stmia, so no plain-C zeroing reproduces the multi-store; stays asm-owned
 // (asm/sound_mixer_leaf.s) with this behavioral spelling.
-void SoundClearVoiceArray(void *base){
-    __builtin_memset(base, 0, 64);
+__attribute__((naked)) void SoundClearVoiceArray(void *base){
+    __asm__ volatile(
+        ".syntax unified\n"
+        ".thumb\n"
+        "mov r12, r4\n"
+        "movs r1, #0\n"
+        "movs r2, #0\n"
+        "movs r3, #0\n"
+        "movs r4, #0\n"
+        "stmia r0!, {r1, r2, r3, r4}\n"
+        "stmia r0!, {r1, r2, r3, r4}\n"
+        "stmia r0!, {r1, r2, r3, r4}\n"
+        "stmia r0!, {r1, r2, r3, r4}\n"
+        "mov r4, r12\n"
+        "bx lr\n"
+        ".syntax divided\n"
+    );
 }
+__asm__(".align 2, 0");
 void _0802BC4C(void *b) __attribute__((alias("SoundClearVoiceArray")));
 void sub_0802BC4C(void *b) __attribute__((alias("SoundClearVoiceArray")));
 

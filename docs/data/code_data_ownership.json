@@ -2,7 +2,7 @@
   "dependency_findings": [],
   "errors": [],
   "generator": "tools/ownership_map.py",
-  "generator_sha256": "a957ed5ea23fd2a9ff9704af62f5cb60caacb58136c892f1e44724f4282532d0",
+  "generator_sha256": "1e76f41440c22832d30b0fba1836cc4fb3e4617bd19dccbc6e79ce4f4f6c5667",
   "inputs": {
     "code_end": "0x02E158",
     "source_closure": [
@@ -276,7 +276,7 @@
       "asm/surface_access.s",
       "asm/wrapper_pair.s"
     ],
-    "source_closure_sha256": "6f77e4c84a0aac84cfe66599173d6eabd0b8a17a03889758f06028d4a6cc298b"
+    "source_closure_sha256": "6e39b4c9cfd7f5a9ef2d1a66aeba2b3bece3b3ce913a1f24c4ba2376a14dfda9"
   },
   "raw_incbin_spans": [
     {
@@ -9371,8 +9371,8 @@
           "start": "0x024568"
         }
       ],
-      "sha256": "c10579f6c69176b04af79f2978fc0035d62fb84e0abeee5736bd3308ca658e1f",
-      "size": 27426
+      "sha256": "776c37936b0ead46e87eb070c01b7f7ce3aa1690ce48060fecad681d91742856",
+      "size": 27538
     },
     {
       "path": "asm/softirq.s",

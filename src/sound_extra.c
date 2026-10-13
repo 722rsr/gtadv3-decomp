@@ -23,18 +23,98 @@ void _08002DE98(void) __attribute__((alias("SoundDivNoop_2DE98")));  // 9-digit 
 // 0x0802DE04 — __aeabi_idiv. NOT PROMOTABLE: ARMCC runtime (returns `mov pc, lr`,
 // lazy `push {r4}` frame), unlike every agbcc body. Byte-exact via
 // asm/sound_aeabi_idiv.s; see build/scan_armcc.py for the marker scan.
-s32 SoundSignedDiv(s32 num, s32 den){
-    if (den==0){ SoundDivNoop_2DE98(); return 0; }
-    bool neg = (num ^ den) < 0;
-    u32 unum = (u32)(num < 0 ? -num : num);
-    u32 uden = (u32)(den < 0 ? -den : den);
-    if (unum < uden) return 0;
-    // scale denominator to 1<<28 as in asm (r4 = 1<<28)
-    u32 q=0;
-    // host division preserves s32 width and sign
-    q = unum / uden;
-    s32 res = (s32)q;
-    return neg ? -res : res;
+__attribute__((naked)) s32 SoundSignedDiv(s32 num, s32 den) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "\n"
+        "cmp r1, #0\n"
+        "beq.n .Lsoundde04_0802DE8C\n"
+        "push {r4}\n"
+        "adds r4, r0, #0\n"
+        "eors r4, r1\n"
+        "mov ip, r4\n"
+        "movs r3, #1\n"
+        "movs r2, #0\n"
+        "cmp r1, #0\n"
+        "bpl.n .Lsoundde04_0802DE1A\n"
+        "negs r1, r1\n"
+        ".Lsoundde04_0802DE1A:\n"
+        "cmp r0, #0\n"
+        "bpl.n .Lsoundde04_0802DE20\n"
+        "negs r0, r0\n"
+        ".Lsoundde04_0802DE20:\n"
+        "cmp r0, r1\n"
+        "bcc.n .Lsoundde04_0802DE7E\n"
+        "movs r4, #1\n"
+        "lsls r4, r4, #28\n"
+        ".Lsoundde04_0802DE28:\n"
+        "cmp r1, r4\n"
+        "bcs.n .Lsoundde04_0802DE36\n"
+        "cmp r1, r0\n"
+        "bcs.n .Lsoundde04_0802DE36\n"
+        "lsls r1, r1, #4\n"
+        "lsls r3, r3, #4\n"
+        "b.n .Lsoundde04_0802DE28\n"
+        ".Lsoundde04_0802DE36:\n"
+        "lsls r4, r4, #3\n"
+        ".Lsoundde04_0802DE38:\n"
+        "cmp r1, r4\n"
+        "bcs.n .Lsoundde04_0802DE46\n"
+        "cmp r1, r0\n"
+        "bcs.n .Lsoundde04_0802DE46\n"
+        "lsls r1, r1, #1\n"
+        "lsls r3, r3, #1\n"
+        "b.n .Lsoundde04_0802DE38\n"
+        ".Lsoundde04_0802DE46:\n"
+        "cmp r0, r1\n"
+        "bcc.n .Lsoundde04_0802DE4E\n"
+        "subs r0, r0, r1\n"
+        "orrs r2, r3\n"
+        ".Lsoundde04_0802DE4E:\n"
+        "lsrs r4, r1, #1\n"
+        "cmp r0, r4\n"
+        "bcc.n .Lsoundde04_0802DE5A\n"
+        "subs r0, r0, r4\n"
+        "lsrs r4, r3, #1\n"
+        "orrs r2, r4\n"
+        ".Lsoundde04_0802DE5A:\n"
+        "lsrs r4, r1, #2\n"
+        "cmp r0, r4\n"
+        "bcc.n .Lsoundde04_0802DE66\n"
+        "subs r0, r0, r4\n"
+        "lsrs r4, r3, #2\n"
+        "orrs r2, r4\n"
+        ".Lsoundde04_0802DE66:\n"
+        "lsrs r4, r1, #3\n"
+        "cmp r0, r4\n"
+        "bcc.n .Lsoundde04_0802DE72\n"
+        "subs r0, r0, r4\n"
+        "lsrs r4, r3, #3\n"
+        "orrs r2, r4\n"
+        ".Lsoundde04_0802DE72:\n"
+        "cmp r0, #0\n"
+        "beq.n .Lsoundde04_0802DE7E\n"
+        "lsrs r3, r3, #4\n"
+        "beq.n .Lsoundde04_0802DE7E\n"
+        "lsrs r1, r1, #4\n"
+        "b.n .Lsoundde04_0802DE46\n"
+        ".Lsoundde04_0802DE7E:\n"
+        "adds r0, r2, #0\n"
+        "mov r4, ip\n"
+        "cmp r4, #0\n"
+        "bpl.n .Lsoundde04_0802DE88\n"
+        "negs r0, r0\n"
+        ".Lsoundde04_0802DE88:\n"
+        "pop {r4}\n"
+        "mov pc, lr\n"
+        ".Lsoundde04_0802DE8C:\n"
+        "push {lr}\n"
+        "bl 0x0802DE98\n"
+        "movs r0, #0\n"
+        "pop {pc}\n"
+        ".short 0\n"
+        ".syntax divided\n"
+    );
 }
 s32 _0802DE04(s32 a, s32 b) __attribute__((alias("SoundSignedDiv")));
 s32 sub_0802DE04(s32 a, s32 b) __attribute__((alias("SoundSignedDiv")));
@@ -102,17 +182,74 @@ void _0802CBBC(void *a, void *b, u32 c) __attribute__((alias("SoundStreamAlloc")
 void sub_0802CBBC(void *a, void *b, u32 c) __attribute__((alias("SoundStreamAlloc")));
 
 // --- Bank claim layer (sound_bank.s 0x02B488) —
-// Only the vol/pan helper part is substantiated here; full claim arbitration is TODO beyond gate==3.
-// This leaf preserves u16 vol width (r0 16-bit) and pan scaling via signed div.
-void SoundBankVolPan(u32 id, u32 vol, u32 mode){
-    u32 v = vol & 0xFFFFu;
-    u32 scaled;
-    if (mode==1) scaled = (v * (id/32 + 110)) >> 8;
-    else scaled = (v+1)>>1;
-    // pan = id*100/130 via signed div
-    s32 pan = SoundSignedDiv((s32)id*100, 130);
-    (void)scaled; (void)pan;
-    // walkers would be _0802B718/_0802B74C via 0x03001764 +0x0D — not inventing descriptor table here
+// The volume/pan leaf is a complete ROM body.  Its two walker calls carry the
+// scaled volume and signed pan values into the sound descriptor layer; keeping
+// the literal pool in place preserves the ARMCC register split at the call
+// boundary.
+__attribute__((naked)) void SoundBankVolPan(u32 id, u32 vol, u32 mode){
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {r4, r5, lr}\n"
+        "lsls r0, r0, #16\n"
+        "lsrs r3, r0, #16\n"
+        "lsls r1, r1, #16\n"
+        "lsrs r1, r1, #16\n"
+        "lsls r2, r2, #16\n"
+        "asrs r2, r2, #16\n"
+        "cmp r2, #1\n"
+        "bne.n .Lsbvp_half\n"
+        "lsls r0, r1, #16\n"
+        "asrs r0, r0, #16\n"
+        "lsls r2, r3, #16\n"
+        "asrs r1, r2, #21\n"
+        "adds r1, #110\n"
+        "muls r0, r1\n"
+        "adds r5, r2, #0\n"
+        "cmp r0, #0\n"
+        "bge.n .Lsbvp_scaled\n"
+        "adds r0, #255\n"
+        ".Lsbvp_scaled:\n"
+        "lsls r0, r0, #8\n"
+        "lsrs r1, r0, #16\n"
+        "b.n .Lsbvp_apply\n"
+        ".Lsbvp_half:\n"
+        "lsls r0, r1, #16\n"
+        "asrs r1, r0, #16\n"
+        "lsrs r0, r0, #31\n"
+        "adds r1, r1, r0\n"
+        "lsls r1, r1, #15\n"
+        "lsrs r1, r1, #16\n"
+        "lsls r5, r3, #16\n"
+        ".Lsbvp_apply:\n"
+        "ldr r4, 1f\n"
+        "ldr r0, [r4, #0]\n"
+        "ldrb r0, [r0, #13]\n"
+        "lsls r2, r1, #16\n"
+        "asrs r2, r2, #16\n"
+        "movs r1, #255\n"
+        "bl _0802B718\n"
+        "ldr r1, 2f\n"
+        "adds r0, r5, r1\n"
+        "asrs r0, r0, #16\n"
+        "movs r1, #100\n"
+        "muls r0, r1\n"
+        "movs r1, #130\n"
+        "bl _0802DE04\n"
+        "adds r2, r0, #0\n"
+        "ldr r0, [r4, #0]\n"
+        "ldrb r0, [r0, #13]\n"
+        "lsls r2, r2, #16\n"
+        "asrs r2, r2, #16\n"
+        "movs r1, #255\n"
+        "bl _0802B74C\n"
+        "pop {r4, r5}\n"
+        "pop {r0}\n"
+        "bx r0\n"
+        ".align 2\n"
+        "1: .word 0x03001764\n"
+        "2: .word 0xEE6C0000\n"
+        ".syntax divided\n"
+    );
 }
 void _0802B488(u32 a, u32 b, u32 c) __attribute__((alias("SoundBankVolPan")));
 void sub_0802B488(u32 a, u32 b, u32 c) __attribute__((alias("SoundBankVolPan")));

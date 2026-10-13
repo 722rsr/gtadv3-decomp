@@ -90,30 +90,119 @@ int MathHelper_05C58(int a,int b){
     return (a12 + (sign << 1) * off) & 0xFFF;
 }
 int _08005C58(int a,int b) __attribute__((alias("MathHelper_05C58")));
-int MathHelper_05CB4(void *p){
-    s32 x = *(s32*)p;
-    s32 y = *(s32*)((u8*)p+4);
-    if(x==0 && y==0) return 0;
-    int ax = x<0 ? -x : x;
-    int ay = y<0 ? -y : y;
-    if(ax > ay){
-        // ROM: `bl 0x0802DE04` -- the game's own signed divider, not libgcc's
-        // __aeabi_idiv (which has no VMA and never resolves in the probe).
-        extern int _08002DE04(int,int);
-        int q = _08002DE04(ay<<7, ax);
-        s16 e = *(volatile s16*)(0x0805DAF0 + (q<<1));
-        if(x<0) { if(y<0) e+=0xC00; else e = -e; }
-        else if(y<0) e = 0x400 - e;
-        return e;
-    } else {
-        if(ay==0) return 0;
-        extern int _08002DE04(int,int);
-        int q = _08002DE04(ax<<7, ay);
-        s16 e = *(volatile s16*)(0x0805DAF0 + (q<<1));
-        if(x<0) { if(y<0) e = 0x800 - e; else e += 0x400; }
-        else if(y>=0) e = 0x400 - e;
-        return e;
-    }
+__attribute__((naked)) int MathHelper_05CB4(void *p){
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {r4, r5, r6, lr}\n"
+        "adds r6, r0, #0\n"
+        "ldr r3, [r6, #0]\n"
+        "cmp r3, #0\n"
+        "bne .L5cb4_nonzero\n"
+        "ldr r0, [r6, #4]\n"
+        "cmp r0, #0\n"
+        "beq .L5cb4_zero\n"
+        ".L5cb4_nonzero:\n"
+        "cmp r3, #0\n"
+        "bge .L5cb4_x_positive\n"
+        "negs r1, r3\n"
+        "b .L5cb4_x_abs_done\n"
+        ".L5cb4_x_positive:\n"
+        "adds r1, r3, #0\n"
+        ".L5cb4_x_abs_done:\n"
+        "ldr r5, [r6, #4]\n"
+        "cmp r5, #0\n"
+        "bge .L5cb4_y_positive\n"
+        "negs r2, r5\n"
+        "b .L5cb4_y_abs_done\n"
+        ".L5cb4_y_positive:\n"
+        "adds r2, r5, #0\n"
+        ".L5cb4_y_abs_done:\n"
+        "cmp r1, r2\n"
+        "ble .L5cb4_y_major\n"
+        "cmp r1, #0\n"
+        "beq .L5cb4_zero\n"
+        "ldr r4, .L5cb4_tbl_x\n"
+        "lsls r0, r2, #7\n"
+        "bl 0x0802DE04\n"
+        "lsls r0, r0, #1\n"
+        "adds r0, r0, r4\n"
+        "movs r2, #0\n"
+        "ldrsh r1, [r0, r2]\n"
+        "ldr r0, [r6, #0]\n"
+        "cmp r0, #0\n"
+        "bge .L5cb4_x_nonnegative\n"
+        "cmp r5, #0\n"
+        "bge .L5cb4_xneg_ypos\n"
+        "movs r2, #192\n"
+        "lsls r2, r2, #4\n"
+        "adds r0, r1, r2\n"
+        "b .L5cb4_signed_done\n"
+        ".L5cb4_tbl_x: .word 0x0805DAF0\n"
+        ".L5cb4_xneg_ypos:\n"
+        "movs r2, #192\n"
+        "lsls r2, r2, #4\n"
+        "b .L5cb4_subtract\n"
+        ".L5cb4_x_nonnegative:\n"
+        "cmp r5, #0\n"
+        "bge .L5cb4_both_positive\n"
+        "movs r2, #128\n"
+        "lsls r2, r2, #3\n"
+        "b .L5cb4_subtract\n"
+        ".L5cb4_both_positive:\n"
+        "movs r2, #128\n"
+        "lsls r2, r2, #3\n"
+        "adds r0, r1, r2\n"
+        "b .L5cb4_signed_done\n"
+        ".L5cb4_y_major:\n"
+        "cmp r2, #0\n"
+        "beq .L5cb4_zero\n"
+        "ldr r4, .L5cb4_tbl_y\n"
+        "lsls r0, r1, #7\n"
+        "adds r1, r2, #0\n"
+        "bl 0x0802DE04\n"
+        "lsls r0, r0, #1\n"
+        "adds r0, r0, r4\n"
+        "movs r2, #0\n"
+        "ldrsh r1, [r0, r2]\n"
+        "ldr r0, [r6, #0]\n"
+        "cmp r0, #0\n"
+        "bge .L5cb4_y_x_nonnegative\n"
+        "cmp r5, #0\n"
+        "bge .L5cb4_yneg_xpos\n"
+        "movs r2, #128\n"
+        "lsls r2, r2, #5\n"
+        "b .L5cb4_subtract\n"
+        "movs r0, r0\n"
+        ".L5cb4_tbl_y: .word 0x0805DAF0\n"
+        ".L5cb4_yneg_xpos:\n"
+        "movs r2, #128\n"
+        "lsls r2, r2, #4\n"
+        "adds r0, r1, r2\n"
+        "b .L5cb4_signed_done\n"
+        ".L5cb4_y_x_nonnegative:\n"
+        "cmp r5, #0\n"
+        "bge .L5cb4_y_both_positive\n"
+        "adds r0, r1, #0\n"
+        "b .L5cb4_signed_return\n"
+        ".L5cb4_y_both_positive:\n"
+        "movs r2, #128\n"
+        "lsls r2, r2, #4\n"
+        ".L5cb4_subtract:\n"
+        "adds r0, r2, #0\n"
+        "subs r0, r0, r1\n"
+        ".L5cb4_signed_done:\n"
+        "lsls r0, r0, #16\n"
+        "asrs r0, r0, #16\n"
+        "b .L5cb4_signed_return\n"
+        ".L5cb4_zero:\n"
+        "movs r0, #0\n"
+        ".L5cb4_signed_return:\n"
+        "pop {r4, r5, r6}\n"
+        "pop {r1}\n"
+        "bx r1\n"
+        "movs r0, r0\n"
+        ".syntax divided\n"
+    );
 }
 int _08005CB4(void *a) __attribute__((alias("MathHelper_05CB4")));
 /*

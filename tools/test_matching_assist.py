@@ -104,13 +104,17 @@ class FamilyTests(unittest.TestCase):
                                                    ('PARTIAL', 0, False, False),
                                                    ('EXACT', 1, False, False),
                                                    ('EXACT', 0, True, False)]:
-                def run(command, **kwargs):
-                    report = Path(command[command.index('--json')+1])
+                # `verified_recipes` runs the probe in-process now; the seam is
+                # the probe runner, not `subprocess.run`. The runner still
+                # writes the report and mutates the source mid-probe so the
+                # acceptance rules stay pinned: only a fresh EXACT report for
+                # unchanged source may be accepted.
+                def probe_runner(name, work, report, status=status, mutate=mutate):
                     report.write_text(json.dumps({'results': [dict(rec, status=status, rom_bytes=4)]}))
                     if mutate:
                         source.write_text(source.read_text() + '\n/* changed during probe */')
-                    return SimpleNamespace(returncode=code, stdout='', stderr='')
-                with patch.object(families.subprocess, 'run', side_effect=run):
+                    return code, ''
+                with patch.object(families, '_run_probe_captured', side_effect=probe_runner):
                     families.verified_recipes(index, target, root, 1)
                 result = json.loads((root / 'recipe-verification.json').read_text())
                 self.assertEqual(result[0]['accepted'], accepted)

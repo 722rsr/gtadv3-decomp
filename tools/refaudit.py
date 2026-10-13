@@ -39,6 +39,7 @@ Usage:
   python3 tools/refaudit.py baserom.gba --calls-only 0x08001FB4
 """
 import argparse
+import re
 import struct
 import sys
 
@@ -48,10 +49,35 @@ def read_rom(path):
         return f.read()
 
 
+# Second byte of a Thumb BL's first halfword: `h1 & 0xF800 == 0xF000` means the
+# high byte is in F0-F7, so a C-level byte-class scan finds the ~1/32 of
+# positions worth unpacking. The old Python loop over 4.2M halfwords measured
+# 364 ms per run; the filtered scan plus ~130k struct reads is ~15 ms.
+_BL_HIGH = re.compile(rb"[\xf0-\xf7]")
+
+
+def find_words(rom, value):
+    """File offsets o (0 <= o < len(rom)-4) where the LE u32 at o equals value.
+
+    Byte-aligned, like the original `range(0, len(rom)-4)` list comprehension,
+    but the search itself is `bytes.find` (C level): the literal scans measured
+    875 ms per form over the 8 MiB ROM, ~2.4 s per audited address, where
+    `find` is ~7 ms. The upper bound keeps the original's off-by-one: a match
+    at `len(rom)-4` (exactly the final four bytes) was never reported.
+    """
+    needle = (value & 0xFFFFFFFF).to_bytes(4, "little")
+    out = []
+    limit = len(rom) - 4
+    i = rom.find(needle)
+    while i != -1 and i < limit:
+        out.append(i)
+        i = rom.find(needle, i + 1)
+    return out
+
+
 def parse_regions(asm_dir):
     """Return [(lo, hi, [file, ...])] from asm/passthrough.inc comments."""
     import os
-    import re
 
     empty = [(0, 0x2E158, [])]
     path = os.path.join(asm_dir, "passthrough.inc")
@@ -75,8 +101,15 @@ def parse_regions(asm_dir):
 
 def bl_targets(rom):
     """Yield (site_file_off, target_vma) for every decodable Thumb BL."""
-    for off in range(0, len(rom) - 4, 2):
-        h1 = rom[off] | (rom[off + 1] << 8)
+    n = len(rom)
+    for match in _BL_HIGH.finditer(rom):
+        hi_byte = match.start()
+        if not hi_byte & 1:
+            continue
+        off = hi_byte - 1
+        if off + 4 > n:
+            continue
+        h1 = rom[off] | (rom[hi_byte] << 8)
         if (h1 & 0xF800) != 0xF000:
             continue
         h2 = rom[off + 2] | (rom[off + 3] << 8)
@@ -214,8 +247,7 @@ def main():
             if not a.no_offset_form:
                 forms.append(("offset-form", addr - 0x08000000))
             for name, val in forms:
-                hits = [o for o in range(0, len(rom) - 4)
-                        if w32(rom, o) == val]
+                hits = find_words(rom, val)
                 print("  %s %#010x (%d):" % (name, val, len(hits)))
                 for o in hits:
                     print(fmt_site(rom, o, regions, a.code_end,

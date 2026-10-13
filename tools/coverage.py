@@ -312,12 +312,11 @@ def asm_vmas(asm_dir):
     typed = set()      # VMAs declared %function
     called = set()     # VMAs targeted by bl
     defined = {}       # vma -> file that defines the label
-    files = []
+    label_to_vma = {}  # label spelling -> vma (first occurrence wins)
     for path in sorted(glob.glob(os.path.join(asm_dir, "*.s"))) + sorted(glob.glob(os.path.join(asm_dir, "*.inc"))):
         name = os.path.basename(path)
         if name == "rom.s":
             continue
-        files.append((name, path))
         with open(path, "r", errors="replace") as f:
             text = f.read()
         lines = text.splitlines()
@@ -334,8 +333,9 @@ def asm_vmas(asm_dir):
                 v = norm_vma(m.group(1))
                 if v:
                     defined.setdefault(v, name)
-        for m in BL_RE.finditer(code):
-            pass  # bl targets resolved below via defined labels
+                    # Same scan feeds the symbolic bl resolution below; this
+                    # used to re-open and re-scan every file a second time.
+                    label_to_vma.setdefault(m.group(1), v)
         # map bl target labels to VMAs using the defined-label set
         for m in BL_RE.finditer(code):
             lab = m.group(1)
@@ -344,19 +344,9 @@ def asm_vmas(asm_dir):
             if v:
                 called.add(v)
                 continue
-            # symbolic: resolve later (second pass)
+            # symbolic: resolved against label_to_vma below
             sym_targets.setdefault(lab, name)
 
-    # second pass: resolve symbolic bl labels to the file/label they hit
-    label_to_vma = {}
-    for name, path in files:
-        with open(path, "r", errors="replace") as f:
-            for line in f:
-                m = LABEL_RE.match(line)
-                if m:
-                    v = norm_vma(m.group(1))
-                    if v:
-                        label_to_vma.setdefault(m.group(1), v)
     for lab in sym_targets:
         v = label_to_vma.get(lab)
         if v:

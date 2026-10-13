@@ -144,201 +144,500 @@ int sub_08022D74(void *a, void *b) __attribute__((alias("Code22D74_RecEq")));
 //       ascending for i<=31, descending otherwise),
 //   (3) write back 5 sorted rows into the IWRAM grid at
 //       0x03001780 + 0x5E4 + (i*8) and the best record to +0x77C.
-void Code22DA8_Permute(void *self) {
-    volatile u8 *S = (volatile u8 *)((uintptr_t)self);
-
-    u32 inA = *(volatile u32 *)(S + 152);   // [self+152]
-    u32 inB = *(volatile u32 *)(S + 148);   // [self+148]
-
-    // Emulated frame (word-aligned locals in the same order as the asm slots).
-    u32 fr[107];   // covers sp+0..sp+428
-    u32 *sp = fr;  // byte offset o == ((volatile u8*)fr)[o]
-
-    *(u32 *)((u8 *)sp + 340) = inA;
-    *(u32 *)((u8 *)sp + 344) = inB;
-    *(u32 *)((u8 *)sp + 336) = 0;
-    *(u32 *)((u8 *)sp + 380) = (u32)(uintptr_t)((u8 *)sp + 60);
-    *(u32 *)((u8 *)sp + 384) = (u32)(uintptr_t)((u8 *)sp + 120);
-    *(u32 *)((u8 *)sp + 388) = (u32)(uintptr_t)((u8 *)sp + 132);
-    *(u32 *)((u8 *)sp + 396) = (u32)(uintptr_t)((u8 *)sp + 156);
-    *(u32 *)((u8 *)sp + 376) = (u32)(uintptr_t)((u8 *)sp + 216);
-    *(u32 *)((u8 *)sp + 392) = (u32)(uintptr_t)((u8 *)sp + 144);
-
-    for (;;) {
-        u32 i = *(u32 *)((u8 *)sp + 336);
-        u32 j = i * 8;
-        *(u32 *)((u8 *)sp + 372) = j;
-        *(u32 *)((u8 *)sp + 404) = i + 1;
-
-        u8 *cursorA = (u8 *)(uintptr_t)*(u32 *)((u8 *)sp + 340);
-        u8 *cursorB = (u8 *)(uintptr_t)*(u32 *)((u8 *)sp + 344);
-        u8 *r60  = (u8 *)sp + 60;
-        u8 *r120 = (u8 *)sp + 120;
-        u8 *r132 = (u8 *)sp + 132;
-
-        // ---- Phase 1: interleave 4 iterations of (12B from A, 12B from B),
-        // then a 5th A row and a 5th B row (asm _080022DFC).
-        for (int n = 0; n < 4; n++) {
-            for (int w = 0; w < 3; w++) {
-                *(u32 *)(r60 + n * 12 + w * 4) = *(u32 *)cursorA;
-                cursorA += 4;
-            }
-            for (int w = 0; w < 3; w++) {
-                *(u32 *)(r120 + n * 12 + w * 4) = *(u32 *)cursorB;
-                cursorB += 4;
-            }
-            *(u32 *)((u8 *)sp + 340) += 12;
-            *(u32 *)((u8 *)sp + 344) += 12;
-        }
-        // 5th row: A -> r120 tail, B -> r132 (asm ldmia/stmia tail).
-        for (int w = 0; w < 3; w++) {
-            *(u32 *)(r120 + 48 + w * 4) = *(u32 *)cursorA;
-            cursorA += 4;
-        }
-        for (int w = 0; w < 3; w++) {
-            *(u32 *)(r132 + w * 4) = *(u32 *)cursorB;
-            cursorB += 4;
-        }
-        *(u32 *)((u8 *)sp + 340) += 12;
-        *(u32 *)((u8 *)sp + 344) += 12;
-
-        // ---- Phase 1b: re-copy the 4 work rows (asm _080022E48):
-        // sp+60 -> sp+216 (work rows), sp+120 -> sp+156 (key rows).
-        u8 *r216 = (u8 *)sp + 216;
-        u8 *r156 = (u8 *)sp + 156;
-        for (int n = 0; n < 4; n++) {
-            for (int w = 0; w < 3; w++) {
-                *(u32 *)(r156 + n * 12 + w * 4) = *(u32 *)(r60 + n * 12 + w * 4);
-            }
-            for (int w = 0; w < 3; w++) {
-                *(u32 *)(r216 + n * 12 + w * 4) = *(u32 *)(r120 + n * 12 + w * 4);
-            }
-        }
-
-        // ---- Phase 2 (i <= 31): ascending sort (asm _080022E70 block) -----
-        if (i <= 31) {
-            // Sort keys: bubble rows 0..4 by key with sentinel marking.
-            for (u32 k = 0; k < 5; k++) {
-                for (u32 c = 0; c < 5; c++) {
-                    u8 *row = (u8 *)(uintptr_t)*(u32 *)((u8 *)sp + 376);
-                    u8 *keys = (u8 *)(uintptr_t)*(u32 *)((u8 *)sp + 396);
-                    if (Code22D74_RecEq(row + (k * 2 + c) * 4, keys + (k * 2 + c) * 4)) {
-                        *(u32 *)row = C22D_SENTINEL_A;
-                    }
-                }
-            }
-            // Merge pass (_080022ECE): walk work rows, move sorted records
-            // into merge area, pad with mirror rows.
-            u32 r7 = 0, r5pass = 0;
-            u8 *workP = (u8 *)(uintptr_t)*(u32 *)((u8 *)sp + 376);
-            u8 *mergeP = (u8 *)sp + 276;
-            for (u32 k = 0; k < 5; k++) {
-                if (*(u32 *)(workP + k * 12) == C22D_SENTINEL_A) {
-                    // keep: copy mirror row
-                    for (int w = 0; w < 3; w++)
-                        *(u32 *)(mergeP + r7 * 12 + w * 4) =
-                            *(u32 *)((u8 *)sp + 144 + r7 * 12 + w * 4);
-                } else {
-                    for (u32 c = 0; c <= 4 && r5pass <= 4; c++) {
-                        u8 *keys = (u8 *)(uintptr_t)*(u32 *)((u8 *)sp + 396);
-                        u8 *kr = keys + (r5pass * 2 + c) * 4;
-                        u8 *wr = workP + (r5pass * 2 + c) * 4;
-                        if (*(u32 *)kr <= *(u32 *)workP + k * 12) {
-                            for (int w = 0; w < 3; w++)
-                                *(u32 *)(mergeP + r7 * 12 + w * 4) = *(u32 *)(wr + w * 4);
-                            r5pass++;
-                            r7++;
-                            if (r7 > 4)
-                                goto phase3_low;
-                        }
-                    }
-                }
-            }
-        phase3_low:;
-        } else {
-            // ---- Phase 2 (i > 31): descending sort (asm _080022F90 block) --
-            for (u32 k = 0; k < 5; k++) {
-                for (u32 c = 0; c < 5; c++) {
-                    u8 *row = (u8 *)(uintptr_t)*(u32 *)((u8 *)sp + 376);
-                    u8 *keys = (u8 *)(uintptr_t)*(u32 *)((u8 *)sp + 396);
-                    if (Code22D74_RecEq(row + (k * 2 + c) * 4, keys + (k * 2 + c) * 4)) {
-                        *(u32 *)row = C22D_SENTINEL_B;
-                    }
-                }
-            }
-            u32 r7 = 0, r5pass = 0;
-            u8 *workP = (u8 *)(uintptr_t)*(u32 *)((u8 *)sp + 376);
-            u8 *mergeP = (u8 *)sp + 276;
-            for (u32 k = 0; k < 5; k++) {
-                if (*(u32 *)(workP + k * 12) == C22D_SENTINEL_B) {
-                    for (int w = 0; w < 3; w++)
-                        *(u32 *)(mergeP + r7 * 12 + w * 4) =
-                            *(u32 *)((u8 *)sp + 144 + r7 * 12 + w * 4);
-                } else {
-                    for (u32 c = 0; c <= 4 && r5pass <= 4; c++) {
-                        u8 *keys = (u8 *)(uintptr_t)*(u32 *)((u8 *)sp + 396);
-                        u8 *kr = keys + (r5pass * 2 + c) * 4;
-                        u8 *wr = workP + (r5pass * 2 + c) * 4;
-                        if (*(u32 *)kr >= *(u32 *)(workP + k * 12)) {
-                            for (int w = 0; w < 3; w++)
-                                *(u32 *)(mergeP + r7 * 12 + w * 4) = *(u32 *)(wr + w * 4);
-                            r5pass++;
-                            r7++;
-                            if (r7 > 4)
-                                goto phase3_high;
-                        }
-                    }
-                }
-            }
-        phase3_high:;
-        }
-
-        // ---- Phase 3: best-record selection (_0800230A4) --------------------
-        // Compare [sp+120] snapshot vs [sp+132]; copy the winner into the
-        // mirror slot and the merge rows back into the key rows.
-        {
-            u32 snap = *(u32 *)((u8 *)sp + 120);
-            u32 best = *(u32 *)((u8 *)sp + 132);
-            u8 *dstMirror = (u8 *)sp + 144;
-            if (snap > best) {
-                for (int w = 0; w < 3; w++)
-                    *(u32 *)(dstMirror + w * 4) = *(u32 *)((u8 *)sp + 132 + w * 4);
-            } else {
-                for (int w = 0; w < 3; w++)
-                    *(u32 *)(dstMirror + w * 4) = *(u32 *)((u8 *)sp + 120 + w * 4);
-            }
-            // copy sp+276 rows -> sp+60 (5 rows)
-            for (int n = 0; n < 5; n++)
-                for (int w = 0; w < 3; w++)
-                    *(u32 *)((u8 *)sp + 60 + n * 12 + w * 4) =
-                        *(u32 *)((u8 *)sp + 276 + n * 12 + w * 4);
-            // copy sp+144 row -> sp+120
-            for (int w = 0; w < 3; w++)
-                *(u32 *)((u8 *)sp + 120 + w * 4) = *(u32 *)((u8 *)sp + 144 + w * 4);
-
-            // write back into the IWRAM grid at 0x03001780 + 0x5E4 + j
-            volatile u8 *cell = C22D_GRID_BASE + C22D_GRID_OFF + j;
-            for (int n = 0; n < 4; n++)
-                for (int w = 0; w < 3; w++)
-                    *(volatile u32 *)(cell + n * 12 + w * 4) =
-                        *(u32 *)((u8 *)sp + 60 + n * 12 + w * 4);
-            *(volatile u32 *)(cell + 0x198) =
-                *(u32 *)((u8 *)sp + 144 + 0 * 4);
-            *(volatile u32 *)(cell + 0x19C) =
-                *(u32 *)((u8 *)sp + 144 + 1 * 4);
-            *(volatile u32 *)(cell + 0x1A0) =
-                *(u32 *)((u8 *)sp + 144 + 2 * 4);
-
-            // advance
-            i = *(u32 *)((u8 *)sp + 404);
-            *(u32 *)((u8 *)sp + 336) = i;
-            if (i > 34)
-                break;
-        }
-    }
-
-    (void)S;
+__attribute__((naked)) void Code22DA8_Permute(void *self) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push\t{r4, r5, r6, r7, lr}\n"
+        "mov\tr7, sl\n"
+        "mov\tr6, r9\n"
+        "mov\tr5, r8\n"
+        "push\t{r5, r6, r7}\n"
+        "sub\tsp, #428\n"
+        "adds\tr1, r0, #0\n"
+        "adds\tr1, #152\n"
+        "ldr\tr1, [r1, #0]\n"
+        "str\tr1, [sp, #340]\n"
+        "adds\tr0, #148\n"
+        "ldr\tr0, [r0, #0]\n"
+        "str\tr0, [sp, #344]\n"
+        "movs\tr0, #0\n"
+        "str\tr0, [sp, #336]\n"
+        "mov\tr1, sp\n"
+        "adds\tr1, #60\n"
+        "str\tr1, [sp, #380]\n"
+        "mov\tr2, sp\n"
+        "adds\tr2, #120\n"
+        "str\tr2, [sp, #384]\n"
+        "mov\tr3, sp\n"
+        "adds\tr3, #132\n"
+        "str\tr3, [sp, #388]\n"
+        "mov\tr4, sp\n"
+        "adds\tr4, #156\n"
+        "str\tr4, [sp, #396]\n"
+        "mov\tr5, sp\n"
+        "adds\tr5, #216\n"
+        "str\tr5, [sp, #376]\n"
+        "mov\tr6, sp\n"
+        "adds\tr6, #144\n"
+        "str\tr6, [sp, #392]\n"
+        ".Lcode22da8_080022DEA:\n"
+        "ldr\tr7, [sp, #336]\n"
+        "lsls\tr7, r7, #3\n"
+        "str\tr7, [sp, #372]\n"
+        "ldr\tr0, [sp, #336]\n"
+        "adds\tr0, #1\n"
+        "str\tr0, [sp, #404]\n"
+        "ldr\tr3, [sp, #380]\n"
+        "mov\tr2, sp\n"
+        "movs\tr4, #4\n"
+        ".Lcode22da8_080022DFC:\n"
+        "adds\tr1, r2, #0\n"
+        "ldr\tr0, [sp, #340]\n"
+        "ldmia\tr0!, {r5, r6, r7}\n"
+        "stmia\tr1!, {r5, r6, r7}\n"
+        "adds\tr1, r3, #0\n"
+        "ldr\tr0, [sp, #344]\n"
+        "ldmia\tr0!, {r5, r6, r7}\n"
+        "stmia\tr1!, {r5, r6, r7}\n"
+        "ldr\tr0, [sp, #340]\n"
+        "adds\tr0, #12\n"
+        "str\tr0, [sp, #340]\n"
+        "ldr\tr1, [sp, #344]\n"
+        "adds\tr1, #12\n"
+        "str\tr1, [sp, #344]\n"
+        "adds\tr3, #12\n"
+        "adds\tr2, #12\n"
+        "subs\tr4, #1\n"
+        "cmp\tr4, #0\n"
+        "bge .Lcode22da8_080022DFC\n"
+        "ldr\tr1, [sp, #384]\n"
+        "ldmia\tr0!, {r2, r3, r4}\n"
+        "stmia\tr1!, {r2, r3, r4}\n"
+        "ldr\tr1, [sp, #388]\n"
+        "ldr\tr0, [sp, #344]\n"
+        "ldmia\tr0!, {r5, r6, r7}\n"
+        "stmia\tr1!, {r5, r6, r7}\n"
+        "ldr\tr0, [sp, #340]\n"
+        "adds\tr0, #12\n"
+        "str\tr0, [sp, #340]\n"
+        "ldr\tr1, [sp, #344]\n"
+        "adds\tr1, #12\n"
+        "str\tr1, [sp, #344]\n"
+        "mov\tr8, sp\n"
+        "ldr\tr2, [sp, #376]\n"
+        "mov\tr9, r2\n"
+        "ldr\tr3, [sp, #380]\n"
+        "ldr\tr2, [sp, #396]\n"
+        "movs\tr5, #4\n"
+        ".Lcode22da8_080022E48:\n"
+        "adds\tr1, r2, #0\n"
+        "adds\tr0, r3, #0\n"
+        "ldmia\tr0!, {r4, r6, r7}\n"
+        "stmia\tr1!, {r4, r6, r7}\n"
+        "mov\tr1, r9\n"
+        "mov\tr0, r8\n"
+        "ldmia\tr0!, {r4, r6, r7}\n"
+        "stmia\tr1!, {r4, r6, r7}\n"
+        "movs\tr0, #12\n"
+        "add\tr8, r0\n"
+        "add\tr9, r0\n"
+        "adds\tr3, #12\n"
+        "adds\tr2, #12\n"
+        "subs\tr5, #1\n"
+        "cmp\tr5, #0\n"
+        "bge .Lcode22da8_080022E48\n"
+        "ldr\tr1, [sp, #336]\n"
+        "cmp\tr1, #31\n"
+        "ble .Lcode22da8_080022E70\n"
+        "b .Lcode22da8_080022F90\n"
+        ".Lcode22da8_080022E70:\n"
+        "movs\tr2, #0\n"
+        "mov\tr8, r2\n"
+        ".Lcode22da8_080022E74:\n"
+        "mov\tr3, r8\n"
+        "lsls\tr0, r3, #1\n"
+        "mov\tr6, r8\n"
+        "adds\tr6, #1\n"
+        "add\tr0, r8\n"
+        "lsls\tr7, r0, #2\n"
+        "ldr\tr4, [sp, #376]\n"
+        "movs\tr5, #4\n"
+        ".Lcode22da8_080022E84:\n"
+        "ldr\tr1, [sp, #396]\n"
+        "adds\tr0, r1, r7\n"
+        "adds\tr1, r4, #0\n"
+        "bl 0x08022D74\n"
+        "lsls\tr0, r0, #24\n"
+        "cmp\tr0, #0\n"
+        "beq .Lcode22da8_080022E98\n"
+        "ldr r0, _080022F8C\n"
+        "str\tr0, [r4, #0]\n"
+        ".Lcode22da8_080022E98:\n"
+        "adds\tr4, #12\n"
+        "subs\tr5, #1\n"
+        "cmp\tr5, #0\n"
+        "bge .Lcode22da8_080022E84\n"
+        "mov\tr8, r6\n"
+        "cmp\tr6, #4\n"
+        "ble .Lcode22da8_080022E74\n"
+        "movs\tr7, #0\n"
+        "movs\tr2, #0\n"
+        "str\tr2, [sp, #348]\n"
+        "mov\tr8, r2\n"
+        "ldr\tr3, [sp, #120]\n"
+        "str\tr3, [sp, #400]\n"
+        "ldr\tr4, [sp, #376]\n"
+        "mov\tr9, r4\n"
+        "movs\tr5, #0\n"
+        "str\tr5, [sp, #420]\n"
+        "movs\tr6, #138\n"
+        "lsls\tr6, r6, #1\n"
+        "add\tr6, sp\n"
+        "str\tr6, [sp, #424]\n"
+        "str\tr4, [sp, #356]\n"
+        "movs\tr0, #138\n"
+        "lsls\tr0, r0, #1\n"
+        "add\tr0, sp\n"
+        "str\tr0, [sp, #416]\n"
+        "mov\tip, r5\n"
+        ".Lcode22da8_080022ECE:\n"
+        "mov\tr1, r9\n"
+        "ldr\tr0, [r1, #0]\n"
+        "ldr r2, _080022F8C\n"
+        "cmp\tr0, r2\n"
+        "beq .Lcode22da8_080022F48\n"
+        "ldr\tr5, [sp, #348]\n"
+        "cmp\tr5, #4\n"
+        "bgt .Lcode22da8_080022F28\n"
+        "ldr\tr3, [sp, #396]\n"
+        "str\tr3, [sp, #352]\n"
+        "ldr\tr4, [sp, #356]\n"
+        "ldr\tr6, [sp, #420]\n"
+        "adds\tr4, r4, r6\n"
+        "mov\tsl, r4\n"
+        "ldr\tr4, [sp, #416]\n"
+        "add\tr4, ip\n"
+        ".Lcode22da8_080022EEE:\n"
+        "lsls\tr0, r5, #1\n"
+        "adds\tr0, r0, r5\n"
+        "lsls\tr0, r0, #2\n"
+        "ldr\tr1, [sp, #352]\n"
+        "adds\tr2, r1, r0\n"
+        "ldr\tr1, [r2, #0]\n"
+        "mov\tr3, sl\n"
+        "ldr\tr0, [r3, #0]\n"
+        "adds\tr3, r5, #1\n"
+        "cmp\tr1, r0\n"
+        "bhi .Lcode22da8_080022F22\n"
+        "adds\tr1, r4, #0\n"
+        "adds\tr0, r2, #0\n"
+        "ldmia\tr0!, {r2, r5, r6}\n"
+        "stmia\tr1!, {r2, r5, r6}\n"
+        "adds\tr4, #12\n"
+        "ldr\tr5, [sp, #424]\n"
+        "adds\tr5, #12\n"
+        "str\tr5, [sp, #424]\n"
+        "movs\tr6, #12\n"
+        "add\tip, r6\n"
+        "adds\tr7, #1\n"
+        "str\tr3, [sp, #348]\n"
+        "cmp\tr7, #4\n"
+        "ble .Lcode22da8_080022F22\n"
+        "b .Lcode22da8_0800230A4\n"
+        ".Lcode22da8_080022F22:\n"
+        "adds\tr5, r3, #0\n"
+        "cmp\tr5, #4\n"
+        "ble .Lcode22da8_080022EEE\n"
+        ".Lcode22da8_080022F28:\n"
+        "cmp\tr7, #4\n"
+        "ble .Lcode22da8_080022F2E\n"
+        "b .Lcode22da8_0800230A4\n"
+        ".Lcode22da8_080022F2E:\n"
+        "ldr\tr1, [sp, #424]\n"
+        "mov\tr0, r9\n"
+        "ldmia\tr0!, {r2, r3, r4}\n"
+        "stmia\tr1!, {r2, r3, r4}\n"
+        "ldr\tr5, [sp, #424]\n"
+        "adds\tr5, #12\n"
+        "str\tr5, [sp, #424]\n"
+        "movs\tr6, #12\n"
+        "add\tip, r6\n"
+        "adds\tr7, #1\n"
+        "cmp\tr7, #4\n"
+        "ble .Lcode22da8_080022F48\n"
+        "b .Lcode22da8_0800230A4\n"
+        ".Lcode22da8_080022F48:\n"
+        "movs\tr0, #12\n"
+        "add\tr9, r0\n"
+        "ldr\tr1, [sp, #420]\n"
+        "adds\tr1, #12\n"
+        "str\tr1, [sp, #420]\n"
+        "movs\tr2, #1\n"
+        "add\tr8, r2\n"
+        "mov\tr3, r8\n"
+        "cmp\tr3, #4\n"
+        "ble .Lcode22da8_080022ECE\n"
+        "cmp\tr7, #4\n"
+        "ble .Lcode22da8_080022F62\n"
+        "b .Lcode22da8_0800230A4\n"
+        ".Lcode22da8_080022F62:\n"
+        "add\tr0, sp, #276\n"
+        "lsls\tr1, r7, #1\n"
+        "adds\tr1, r1, r7\n"
+        "lsls\tr1, r1, #2\n"
+        "adds\tr3, r0, r1\n"
+        "ldr\tr4, [sp, #348]\n"
+        "lsls\tr0, r4, #1\n"
+        "adds\tr0, r0, r4\n"
+        "lsls\tr0, r0, #2\n"
+        "ldr\tr5, [sp, #396]\n"
+        "adds\tr2, r0, r5\n"
+        ".Lcode22da8_080022F78:\n"
+        "adds\tr1, r3, #0\n"
+        "adds\tr0, r2, #0\n"
+        "ldmia\tr0!, {r4, r5, r6}\n"
+        "stmia\tr1!, {r4, r5, r6}\n"
+        "adds\tr2, #12\n"
+        "adds\tr3, #12\n"
+        "adds\tr7, #1\n"
+        "cmp\tr7, #4\n"
+        "ble .Lcode22da8_080022F78\n"
+        "b .Lcode22da8_0800230A4\n"
+        "_080022F8C: .word 0x001BA61D\n"
+        ".Lcode22da8_080022F90:\n"
+        "movs\tr6, #0\n"
+        "mov\tr8, r6\n"
+        ".Lcode22da8_080022F94:\n"
+        "mov\tr7, r8\n"
+        "lsls\tr0, r7, #1\n"
+        "mov\tr6, r8\n"
+        "adds\tr6, #1\n"
+        "add\tr0, r8\n"
+        "lsls\tr7, r0, #2\n"
+        "ldr\tr4, [sp, #376]\n"
+        "movs\tr5, #4\n"
+        ".Lcode22da8_080022FA4:\n"
+        "ldr\tr1, [sp, #396]\n"
+        "adds\tr0, r1, r7\n"
+        "adds\tr1, r4, #0\n"
+        "bl 0x08022D74\n"
+        "lsls\tr0, r0, #24\n"
+        "cmp\tr0, #0\n"
+        "beq .Lcode22da8_080022FB8\n"
+        "ldr r0, _0800230B8\n"
+        "str\tr0, [r4, #0]\n"
+        ".Lcode22da8_080022FB8:\n"
+        "adds\tr4, #12\n"
+        "subs\tr5, #1\n"
+        "cmp\tr5, #0\n"
+        "bge .Lcode22da8_080022FA4\n"
+        "mov\tr8, r6\n"
+        "cmp\tr6, #4\n"
+        "ble .Lcode22da8_080022F94\n"
+        "movs\tr7, #0\n"
+        "movs\tr2, #0\n"
+        "str\tr2, [sp, #360]\n"
+        "mov\tr8, r2\n"
+        "ldr\tr3, [sp, #120]\n"
+        "str\tr3, [sp, #400]\n"
+        "ldr\tr4, [sp, #376]\n"
+        "mov\tip, r4\n"
+        "movs\tr5, #0\n"
+        "str\tr5, [sp, #412]\n"
+        "movs\tr6, #138\n"
+        "lsls\tr6, r6, #1\n"
+        "add\tr6, sp\n"
+        "str\tr6, [sp, #424]\n"
+        "mov\tr0, ip\n"
+        "str\tr0, [sp, #368]\n"
+        "movs\tr1, #138\n"
+        "lsls\tr1, r1, #1\n"
+        "add\tr1, sp\n"
+        "str\tr1, [sp, #408]\n"
+        "mov\tr9, r5\n"
+        ".Lcode22da8_080022FF0:\n"
+        "mov\tr2, ip\n"
+        "ldr\tr0, [r2, #0]\n"
+        "ldr r3, _0800230B8\n"
+        "cmp\tr0, r3\n"
+        "beq .Lcode22da8_080023064\n"
+        "ldr\tr5, [sp, #360]\n"
+        "cmp\tr5, #4\n"
+        "bgt .Lcode22da8_080023048\n"
+        "ldr\tr4, [sp, #396]\n"
+        "str\tr4, [sp, #364]\n"
+        "ldr\tr6, [sp, #368]\n"
+        "ldr\tr0, [sp, #412]\n"
+        "adds\tr6, r6, r0\n"
+        "mov\tsl, r6\n"
+        "ldr\tr4, [sp, #408]\n"
+        "add\tr4, r9\n"
+        ".Lcode22da8_080023010:\n"
+        "lsls\tr0, r5, #1\n"
+        "adds\tr0, r0, r5\n"
+        "lsls\tr0, r0, #2\n"
+        "ldr\tr1, [sp, #364]\n"
+        "adds\tr2, r1, r0\n"
+        "ldr\tr1, [r2, #0]\n"
+        "mov\tr3, sl\n"
+        "ldr\tr0, [r3, #0]\n"
+        "adds\tr3, r5, #1\n"
+        "cmp\tr1, r0\n"
+        "bcc .Lcode22da8_080023042\n"
+        "adds\tr1, r4, #0\n"
+        "adds\tr0, r2, #0\n"
+        "ldmia\tr0!, {r2, r5, r6}\n"
+        "stmia\tr1!, {r2, r5, r6}\n"
+        "adds\tr4, #12\n"
+        "ldr\tr5, [sp, #424]\n"
+        "adds\tr5, #12\n"
+        "str\tr5, [sp, #424]\n"
+        "movs\tr6, #12\n"
+        "add\tr9, r6\n"
+        "adds\tr7, #1\n"
+        "str\tr3, [sp, #360]\n"
+        "cmp\tr7, #4\n"
+        "bgt .Lcode22da8_0800230A4\n"
+        ".Lcode22da8_080023042:\n"
+        "adds\tr5, r3, #0\n"
+        "cmp\tr5, #4\n"
+        "ble .Lcode22da8_080023010\n"
+        ".Lcode22da8_080023048:\n"
+        "cmp\tr7, #4\n"
+        "bgt .Lcode22da8_0800230A4\n"
+        "ldr\tr1, [sp, #424]\n"
+        "mov\tr0, ip\n"
+        "ldmia\tr0!, {r2, r3, r4}\n"
+        "stmia\tr1!, {r2, r3, r4}\n"
+        "ldr\tr5, [sp, #424]\n"
+        "adds\tr5, #12\n"
+        "str\tr5, [sp, #424]\n"
+        "movs\tr6, #12\n"
+        "add\tr9, r6\n"
+        "adds\tr7, #1\n"
+        "cmp\tr7, #4\n"
+        "bgt .Lcode22da8_0800230A4\n"
+        ".Lcode22da8_080023064:\n"
+        "movs\tr0, #12\n"
+        "add\tip, r0\n"
+        "ldr\tr1, [sp, #412]\n"
+        "adds\tr1, #12\n"
+        "str\tr1, [sp, #412]\n"
+        "movs\tr2, #1\n"
+        "add\tr8, r2\n"
+        "mov\tr3, r8\n"
+        "cmp\tr3, #4\n"
+        "ble .Lcode22da8_080022FF0\n"
+        "cmp\tr7, #4\n"
+        "bgt .Lcode22da8_0800230A4\n"
+        "add\tr0, sp, #276\n"
+        "lsls\tr1, r7, #1\n"
+        "adds\tr1, r1, r7\n"
+        "lsls\tr1, r1, #2\n"
+        "adds\tr3, r0, r1\n"
+        "ldr\tr4, [sp, #360]\n"
+        "lsls\tr0, r4, #1\n"
+        "adds\tr0, r0, r4\n"
+        "lsls\tr0, r0, #2\n"
+        "ldr\tr5, [sp, #396]\n"
+        "adds\tr2, r0, r5\n"
+        ".Lcode22da8_080023092:\n"
+        "adds\tr1, r3, #0\n"
+        "adds\tr0, r2, #0\n"
+        "ldmia\tr0!, {r4, r5, r6}\n"
+        "stmia\tr1!, {r4, r5, r6}\n"
+        "adds\tr2, #12\n"
+        "adds\tr3, #12\n"
+        "adds\tr7, #1\n"
+        "cmp\tr7, #4\n"
+        "ble .Lcode22da8_080023092\n"
+        ".Lcode22da8_0800230A4:\n"
+        "ldr\tr6, [sp, #388]\n"
+        "ldr\tr0, [r6, #0]\n"
+        "ldr\tr7, [sp, #400]\n"
+        "cmp\tr7, r0\n"
+        "bhi .Lcode22da8_0800230BC\n"
+        "ldr\tr1, [sp, #392]\n"
+        "ldr\tr0, [sp, #384]\n"
+        "ldmia\tr0!, {r2, r3, r4}\n"
+        "stmia\tr1!, {r2, r3, r4}\n"
+        "b .Lcode22da8_0800230C4\n"
+        "_0800230B8: .word 0x000003E7\n"
+        ".Lcode22da8_0800230BC:\n"
+        "ldr\tr1, [sp, #392]\n"
+        "ldr\tr0, [sp, #388]\n"
+        "ldmia\tr0!, {r5, r6, r7}\n"
+        "stmia\tr1!, {r5, r6, r7}\n"
+        ".Lcode22da8_0800230C4:\n"
+        "add\tr3, sp, #276\n"
+        "ldr\tr2, [sp, #380]\n"
+        "movs\tr5, #4\n"
+        ".Lcode22da8_0800230CA:\n"
+        "adds\tr1, r2, #0\n"
+        "adds\tr0, r3, #0\n"
+        "ldmia\tr0!, {r4, r6, r7}\n"
+        "stmia\tr1!, {r4, r6, r7}\n"
+        "adds\tr3, #12\n"
+        "adds\tr2, #12\n"
+        "subs\tr5, #1\n"
+        "cmp\tr5, #0\n"
+        "bge .Lcode22da8_0800230CA\n"
+        "ldr\tr1, [sp, #384]\n"
+        "ldr\tr0, [sp, #392]\n"
+        "ldmia\tr0!, {r2, r3, r4}\n"
+        "stmia\tr1!, {r2, r3, r4}\n"
+        "ldr r1, _08002313C\n"
+        "ldr\tr5, [sp, #372]\n"
+        "ldr\tr6, [sp, #336]\n"
+        "adds\tr0, r5, r6\n"
+        "lsls\tr0, r0, #3\n"
+        "adds\tr2, r0, r1\n"
+        "movs\tr3, #0\n"
+        "movs\tr4, #4\n"
+        ".Lcode22da8_0800230F4:\n"
+        "ldr r7, _080023140\n"
+        "adds\tr1, r2, r7\n"
+        "ldr\tr5, [sp, #380]\n"
+        "adds\tr0, r5, r3\n"
+        "ldmia\tr0!, {r5, r6, r7}\n"
+        "stmia\tr1!, {r5, r6, r7}\n"
+        "adds\tr2, #12\n"
+        "adds\tr3, #12\n"
+        "subs\tr4, #1\n"
+        "cmp\tr4, #0\n"
+        "bge .Lcode22da8_0800230F4\n"
+        "ldr\tr6, [sp, #372]\n"
+        "ldr\tr7, [sp, #336]\n"
+        "adds\tr1, r6, r7\n"
+        "lsls\tr1, r1, #3\n"
+        "ldr r0, _08002313C\n"
+        "adds\tr1, r1, r0\n"
+        "movs\tr2, #196\n"
+        "lsls\tr2, r2, #3\n"
+        "adds\tr1, r1, r2\n"
+        "ldr\tr0, [sp, #392]\n"
+        "ldmia\tr0!, {r3, r4, r5}\n"
+        "stmia\tr1!, {r3, r4, r5}\n"
+        "ldr\tr6, [sp, #404]\n"
+        "str\tr6, [sp, #336]\n"
+        "cmp\tr6, #34\n"
+        "bgt .Lcode22da8_08002312C\n"
+        "b .Lcode22da8_080022DEA\n"
+        ".Lcode22da8_08002312C:\n"
+        "add\tsp, #428\n"
+        "pop\t{r3, r4, r5}\n"
+        "mov\tr8, r3\n"
+        "mov\tr9, r4\n"
+        "mov\tsl, r5\n"
+        "pop\t{r4, r5, r6, r7}\n"
+        "pop\t{r0}\n"
+        "bx\tr0\n"
+        "_08002313C: .word 0x03001780\n"
+        "_080023140: .word 0x000005E4\n"
+        ".syntax divided\n"
+    );
 }
+
 void _08022DA8(void *a) __attribute__((alias("Code22DA8_Permute")));
 void sub_08022DA8(void *a) __attribute__((alias("Code22DA8_Permute")));
 
@@ -468,160 +767,422 @@ void sub_080235F0(void) __attribute__((alias("Code235F0_NoOp")));
 // sub_08023298 — s16[ctx+158] state machine (jump table 0x080232B8, 0-based;
 // states 0..14; state 0 falls into the state-1 body, per the table's slot 0
 // pointing at the same target as slot 1's fall-through).
-void Code23298_StateMachine(void *ctx) {
-    volatile u8 *r6 = (volatile u8 *)ctx;
-    s16 state = *(volatile s16 *)(r6 + 158);
-    if (state > 14)
-        return;
-    Code23220_Constructor(ctx);
-
-    switch (state) {
-    case 0:
-    case 1: {
-        _08007770(1, C22D_ROM_FRAME, 1, 0, 0, 3);
-        _08002618(1, 1);
-        *(volatile u16 *)(r6 + 144) = 1;
-        *(volatile u16 *)(r6 + 164) = 0;
-        *(volatile u16 *)(r6 + 166) = 0;
-        *(volatile u16 *)(r6 + 162) = 0;
-        Code22D24_UpdateCell(ctx, (void *)(r6 + 176), 8);
-        *(volatile u16 *)(r6 + 158) = 1;
-        if (state != 0)
-            break;
-        /* FALLTHRU to case 2 poll when state==0 */
-    }
-    /* FALLTHRU */
-    case 2: {
-        u16 v = _08002178(0);
-        if (v == 1) {
-            Code22D24_UpdateCell(ctx, (void *)(r6 + 176), 5);
-            *(volatile u16 *)(r6 + 158) = 2;
-        }
-        v = _08002178(0);
-        if (v == 2) {
-            Code22D24_UpdateCell(ctx, (void *)(r6 + 176), 5);
-            *(volatile u16 *)(r6 + 158) = v;
-        }
-        break;
-    }
-    case 3: {
-        if (C22D_GATE_BYTE == 0) {
-            u16 v = _08002178(1);
-            if (v == 3) {
-                *(volatile u16 *)(r6 + 158) = v;
-                Code22D24_UpdateCell(ctx, (void *)(r6 + 176), 16);
-            } else if (v == 4) {
-                *(volatile u16 *)(r6 + 158) = v;
-            }
-        } else {
-            u16 g = *(volatile u16 *)(r6 + 164);
-            if (g == 1) {
-                if (_08002178(1) == 1) {
-                    *(volatile u16 *)(r6 + 158) = 4;
-                }
-            } else if (g == 2) {
-                if (_08002178(1) == 2 ||
-                    (_08002178(1) == 1 && *(volatile u16 *)(r6 + 164) == 2 &&
-                     _08002178(1) == 1)) {
-                    *(volatile u16 *)(r6 + 158) = 3;
-                    Code22D24_UpdateCell(ctx, (void *)(r6 + 176), 16);
-                }
-            } else if (g == 1) {
-                if (_08002178(1) == 2) {
-                    *(volatile u16 *)(r6 + 158) = 3;
-                    Code22D24_UpdateCell(ctx, (void *)(r6 + 176), 16);
-                }
-            }
-        }
-        break;
-    }
-    case 4:
-        if (C22D_GATE_BYTE == 1) {
-            // asm _080023452: returns 0 through the shared tail
-            *(volatile u16 *)(r6 + 158) = 5;
-        } else {
-            // asm _0800235CC: returns 1 through the shared tail
-            *(volatile u16 *)(r6 + 158) = 6;
-        }
-        break;
-    case 5:
-    case 6: {
-        // asm _080023460/_080023478: gate-based branch to 0x08002358C/0x080023578
-        if (C22D_GATE_BYTE == 1) {
-            *(volatile u16 *)(r6 + 158) = 5;
-        } else {
-            *(volatile u16 *)(r6 + 158) = 6;
-        }
-        break;
-    }
-    case 7: {
-        *(volatile u32 *)(r6 + 240) = 0;
-        Code22D24_UpdateCell(ctx, (void *)(r6 + 176), 7);
-        void *p = (void *)(uintptr_t)*(volatile u32 *)(r6 + 148);
-        _0800226C(p, 0x9D8);
-        *(volatile u16 *)(r6 + 158) = 7;
-        break;
-    }
-    case 8: {
-        *(volatile u32 *)(r6 + 240) = 0;
-        Code22D24_UpdateCell(ctx, (void *)(r6 + 176), 6);
-        void *p = (void *)(uintptr_t)*(volatile u32 *)(r6 + 152);
-        _08002298(p);
-        *(volatile u16 *)(r6 + 158) = 8;
-        break;
-    }
-    case 9:
-    case 10: {
-        int gate = _080022C0();
-        if (gate != 1)
-            break;
-        *(volatile u32 *)(r6 + 240) = (u32)gate;
-        s16 w = *(volatile s16 *)(r6 + 240 - 94);
-        if (state == 9) {
-            if (w != 0)
-                *(volatile u16 *)(r6 + 158) = 10;
-            else
-                *(volatile u16 *)(r6 + 158) = 13;
-        } else {
-            if (w == 0) {
-                *(volatile u16 *)(r6 + 158) = 13;
-            } else {
-                *(volatile u16 *)(r6 + 158) = 10;
-                void *p = (void *)(uintptr_t)*(volatile u32 *)(r6 + 152);
-                Code231B4_CopyBack(p);
-            }
-        }
-        break;
-    }
-    case 11: {
-        if (C22D_GATE_BYTE == 1) {
-            Code22DA8_Permute(ctx);
-            void *p = (void *)(uintptr_t)*(volatile u32 *)(r6 + 148);
-            Code23148_CopyOut(p);
-        }
-        *(volatile u16 *)(r6 + 146) = 1;
-        *(volatile u16 *)(r6 + 158) = 14;
-        break;
-    }
-    case 12: {
-        Code22D24_UpdateCell(ctx, (void *)(r6 + 176), 10);
-        *(volatile u16 *)(r6 + 146) = 0;
-        *(volatile u16 *)(r6 + 158) = 11;
-        break;
-    }
-    case 13: {
-        int gate = (C22D_GATE_BYTE == 1) ? 0 : 1;
-        if (_08002178(gate) == 1) {
-            *(volatile u16 *)(r6 + 142) = 0;
-            *(volatile u16 *)(r6 + 156) = 0;
-        }
-        break;
-    }
-    case 14:
-    default:
-        break;
-    }
+__attribute__((naked)) void Code23298_StateMachine(void *ctx) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        ".Lcode23298_298:\n"
+        "push\t{r4, r5, r6, lr}\n"
+        "sub\tsp, #8\n"
+        "adds\tr6, r0, #0\n"
+        "adds\tr0, #158\n"
+        "movs\tr1, #0\n"
+        "ldrsh\tr0, [r0, r1]\n"
+        "cmp\tr0, #14\n"
+        "bls .Lcode23298_2aa\n"
+        "b .Lcode23298_5e8\n"
+        ".Lcode23298_2aa:\n"
+        "lsls\tr0, r0, #2\n"
+        "ldr r1, .Lcode23298_2b4\n"
+        "adds\tr0, r0, r1\n"
+        "ldr\tr0, [r0, #0]\n"
+        "mov\tpc, r0\n"
+        ".Lcode23298_2b4: .word 0x080232B8\n"
+        ".Lcode23298_2b8: .word 0x080232F4\n"
+        ".Lcode23298_2bc: .word 0x08023336\n"
+        ".Lcode23298_2c0: .word 0x08023384\n"
+        ".Lcode23298_2c4: .word 0x08023444\n"
+        ".Lcode23298_2c8: .word 0x08023460\n"
+        ".Lcode23298_2cc: .word 0x08023478\n"
+        ".Lcode23298_2d0: .word 0x080234A4\n"
+        ".Lcode23298_2d4: .word 0x080234CA\n"
+        ".Lcode23298_2d8: .word 0x080234F0\n"
+        ".Lcode23298_2dc: .word 0x080235E8\n"
+        ".Lcode23298_2e0: .word 0x08023596\n"
+        ".Lcode23298_2e4: .word 0x080235B2\n"
+        ".Lcode23298_2e8: .word 0x080235E8\n"
+        ".Lcode23298_2ec: .word 0x08023528\n"
+        ".Lcode23298_2f0: .word 0x0802355C\n"
+        ".Lcode23298_2f4:\n"
+        "ldr r1, .Lcode23298_380\n"
+        "movs\tr4, #0\n"
+        "str\tr4, [sp, #0]\n"
+        "movs\tr0, #3\n"
+        "str\tr0, [sp, #4]\n"
+        "movs\tr0, #1\n"
+        "movs\tr2, #1\n"
+        "movs\tr3, #0\n"
+        "bl 0x08007770\n"
+        "movs\tr0, #1\n"
+        "movs\tr1, #1\n"
+        "bl 0x08002618\n"
+        "adds\tr0, r6, #0\n"
+        "adds\tr0, #144\n"
+        "movs\tr5, #1\n"
+        "strh\tr5, [r0, #0]\n"
+        "adds\tr0, #20\n"
+        "strh\tr4, [r0, #0]\n"
+        "adds\tr0, #2\n"
+        "strh\tr4, [r0, #0]\n"
+        "subs\tr0, #4\n"
+        "strh\tr4, [r0, #0]\n"
+        "adds\tr1, r6, #0\n"
+        "adds\tr1, #176\n"
+        "adds\tr0, r6, #0\n"
+        "movs\tr2, #8\n"
+        "bl sub_080022D24\n"
+        "adds\tr0, r6, #0\n"
+        "adds\tr0, #158\n"
+        "strh\tr5, [r0, #0]\n"
+        ".Lcode23298_336:\n"
+        "movs\tr0, #0\n"
+        "movs\tr1, #5\n"
+        "bl 0x08002178\n"
+        "lsls\tr0, r0, #16\n"
+        "lsrs\tr0, r0, #16\n"
+        "cmp\tr0, #1\n"
+        "bne .Lcode23298_35a\n"
+        "adds\tr1, r6, #0\n"
+        "adds\tr1, #176\n"
+        "adds\tr0, r6, #0\n"
+        "movs\tr2, #5\n"
+        "bl sub_080022D24\n"
+        "adds\tr1, r6, #0\n"
+        "adds\tr1, #158\n"
+        "movs\tr0, #2\n"
+        "strh\tr0, [r1, #0]\n"
+        ".Lcode23298_35a:\n"
+        "movs\tr0, #0\n"
+        "movs\tr1, #5\n"
+        "bl 0x08002178\n"
+        "lsls\tr0, r0, #16\n"
+        "lsrs\tr4, r0, #16\n"
+        "cmp\tr4, #2\n"
+        "beq .Lcode23298_36c\n"
+        "b .Lcode23298_5e8\n"
+        ".Lcode23298_36c:\n"
+        "adds\tr1, r6, #0\n"
+        "adds\tr1, #176\n"
+        "adds\tr0, r6, #0\n"
+        "movs\tr2, #5\n"
+        "bl sub_080022D24\n"
+        "adds\tr0, r6, #0\n"
+        "adds\tr0, #158\n"
+        "strh\tr4, [r0, #0]\n"
+        "b .Lcode23298_5e8\n"
+        ".Lcode23298_380: .word 0x082B7410\n"
+        ".Lcode23298_384:\n"
+        "ldr r0, .Lcode23298_3b0\n"
+        "ldr r1, .Lcode23298_3b4\n"
+        "adds\tr0, r0, r1\n"
+        "ldrb\tr0, [r0, #0]\n"
+        "cmp\tr0, #0\n"
+        "bne .Lcode23298_3c4\n"
+        "movs\tr0, #1\n"
+        "movs\tr1, #4\n"
+        "bl 0x08002178\n"
+        "lsls\tr0, r0, #16\n"
+        "lsrs\tr2, r0, #16\n"
+        "cmp\tr2, #3\n"
+        "beq .Lcode23298_3b8\n"
+        "cmp\tr2, #4\n"
+        "beq .Lcode23298_3a6\n"
+        "b .Lcode23298_5e8\n"
+        ".Lcode23298_3a6:\n"
+        "adds\tr0, r6, #0\n"
+        "adds\tr0, #158\n"
+        "strh\tr2, [r0, #0]\n"
+        "b .Lcode23298_5e8\n"
+        "movs\tr0, r0\n"
+        ".Lcode23298_3b0: .word 0x03001780\n"
+        ".Lcode23298_3b4: .word 0x000010C3\n"
+        ".Lcode23298_3b8:\n"
+        "adds\tr0, r6, #0\n"
+        "adds\tr0, #158\n"
+        "strh\tr2, [r0, #0]\n"
+        "adds\tr1, r6, #0\n"
+        "adds\tr1, #176\n"
+        "b .Lcode23298_43a\n"
+        ".Lcode23298_3c4:\n"
+        "adds\tr0, r6, #0\n"
+        "adds\tr0, #164\n"
+        "adds\tr4, r0, #0\n"
+        "ldrh\tr0, [r4, #0]\n"
+        "cmp\tr0, #1\n"
+        "bne .Lcode23298_3ea\n"
+        "movs\tr0, #1\n"
+        "movs\tr1, #5\n"
+        "bl 0x08002178\n"
+        "lsls\tr0, r0, #16\n"
+        "lsrs\tr0, r0, #16\n"
+        "cmp\tr0, #1\n"
+        "bne .Lcode23298_3ea\n"
+        "adds\tr1, r6, #0\n"
+        "adds\tr1, #158\n"
+        "movs\tr0, #4\n"
+        "strh\tr0, [r1, #0]\n"
+        "b .Lcode23298_5e8\n"
+        ".Lcode23298_3ea:\n"
+        "ldrh\tr1, [r4, #0]\n"
+        "cmp\tr1, #2\n"
+        "bne .Lcode23298_416\n"
+        "movs\tr0, #1\n"
+        "movs\tr1, #5\n"
+        "bl 0x08002178\n"
+        "lsls\tr0, r0, #16\n"
+        "lsrs\tr0, r0, #16\n"
+        "cmp\tr0, #2\n"
+        "beq .Lcode23298_430\n"
+        "ldrh\tr0, [r4, #0]\n"
+        "cmp\tr0, #2\n"
+        "bne .Lcode23298_416\n"
+        "movs\tr0, #1\n"
+        "movs\tr1, #5\n"
+        "bl 0x08002178\n"
+        "lsls\tr0, r0, #16\n"
+        "lsrs\tr0, r0, #16\n"
+        "cmp\tr0, #1\n"
+        "beq .Lcode23298_430\n"
+        ".Lcode23298_416:\n"
+        "ldrh\tr4, [r4, #0]\n"
+        "cmp\tr4, #1\n"
+        "beq .Lcode23298_41e\n"
+        "b .Lcode23298_5e8\n"
+        ".Lcode23298_41e:\n"
+        "movs\tr0, #1\n"
+        "movs\tr1, #5\n"
+        "bl 0x08002178\n"
+        "lsls\tr0, r0, #16\n"
+        "lsrs\tr0, r0, #16\n"
+        "cmp\tr0, #2\n"
+        "beq .Lcode23298_430\n"
+        "b .Lcode23298_5e8\n"
+        ".Lcode23298_430:\n"
+        "adds\tr1, r6, #0\n"
+        "adds\tr1, #158\n"
+        "movs\tr0, #3\n"
+        "strh\tr0, [r1, #0]\n"
+        "adds\tr1, #18\n"
+        ".Lcode23298_43a:\n"
+        "adds\tr0, r6, #0\n"
+        "movs\tr2, #16\n"
+        "bl sub_080022D24\n"
+        "b .Lcode23298_5e8\n"
+        ".Lcode23298_444:\n"
+        "ldr r0, .Lcode23298_458\n"
+        "ldr r1, .Lcode23298_45c\n"
+        "adds\tr0, r0, r1\n"
+        "ldrb\tr0, [r0, #0]\n"
+        "cmp\tr0, #1\n"
+        "beq .Lcode23298_452\n"
+        "b .Lcode23298_5cc\n"
+        ".Lcode23298_452:\n"
+        "movs\tr0, #0\n"
+        "b .Lcode23298_5ce\n"
+        "movs\tr0, r0\n"
+        ".Lcode23298_458: .word 0x03001780\n"
+        ".Lcode23298_45c: .word 0x000010C3\n"
+        ".Lcode23298_460:\n"
+        "ldr r0, .Lcode23298_470\n"
+        "ldr r1, .Lcode23298_474\n"
+        "adds\tr0, r0, r1\n"
+        "ldrb\tr0, [r0, #0]\n"
+        "cmp\tr0, #1\n"
+        "bne .Lcode23298_46e\n"
+        "b .Lcode23298_58c\n"
+        ".Lcode23298_46e:\n"
+        "b .Lcode23298_578\n"
+        ".Lcode23298_470: .word 0x03001780\n"
+        ".Lcode23298_474: .word 0x000010C3\n"
+        ".Lcode23298_478:\n"
+        "adds\tr1, r6, #0\n"
+        "adds\tr1, #240\n"
+        "movs\tr0, #0\n"
+        "str\tr0, [r1, #0]\n"
+        "subs\tr1, #64\n"
+        "adds\tr0, r6, #0\n"
+        "movs\tr2, #7\n"
+        "bl sub_080022D24\n"
+        "adds\tr0, r6, #0\n"
+        "adds\tr0, #148\n"
+        "ldr\tr0, [r0, #0]\n"
+        "ldr r1, .Lcode23298_4a0\n"
+        "bl 0x0800226C\n"
+        "adds\tr1, r6, #0\n"
+        "adds\tr1, #158\n"
+        "movs\tr0, #7\n"
+        "strh\tr0, [r1, #0]\n"
+        "b .Lcode23298_5e8\n"
+        ".Lcode23298_4a0: .word 0x000009D8\n"
+        ".Lcode23298_4a4:\n"
+        "adds\tr1, r6, #0\n"
+        "adds\tr1, #240\n"
+        "movs\tr0, #0\n"
+        "str\tr0, [r1, #0]\n"
+        "subs\tr1, #64\n"
+        "adds\tr0, r6, #0\n"
+        "movs\tr2, #6\n"
+        "bl sub_080022D24\n"
+        "adds\tr0, r6, #0\n"
+        "adds\tr0, #152\n"
+        "ldr\tr0, [r0, #0]\n"
+        "bl 0x08002298\n"
+        "adds\tr1, r6, #0\n"
+        "adds\tr1, #158\n"
+        "movs\tr0, #8\n"
+        "strh\tr0, [r1, #0]\n"
+        "b .Lcode23298_5e8\n"
+        ".Lcode23298_4ca:\n"
+        "bl 0x080022C0\n"
+        "adds\tr1, r0, #0\n"
+        "cmp\tr1, #1\n"
+        "beq .Lcode23298_4d6\n"
+        "b .Lcode23298_5e8\n"
+        ".Lcode23298_4d6:\n"
+        "adds\tr0, r6, #0\n"
+        "adds\tr0, #240\n"
+        "str\tr1, [r0, #0]\n"
+        "subs\tr0, #94\n"
+        "movs\tr1, #0\n"
+        "ldrsh\tr0, [r0, r1]\n"
+        "cmp\tr0, #0\n"
+        "beq .Lcode23298_50a\n"
+        "adds\tr1, r6, #0\n"
+        "adds\tr1, #158\n"
+        "movs\tr0, #10\n"
+        "strh\tr0, [r1, #0]\n"
+        "b .Lcode23298_5e8\n"
+        ".Lcode23298_4f0:\n"
+        "bl 0x080022C0\n"
+        "adds\tr1, r0, #0\n"
+        "cmp\tr1, #1\n"
+        "bne .Lcode23298_5e8\n"
+        "adds\tr0, r6, #0\n"
+        "adds\tr0, #240\n"
+        "str\tr1, [r0, #0]\n"
+        "subs\tr0, #94\n"
+        "movs\tr1, #0\n"
+        "ldrsh\tr0, [r0, r1]\n"
+        "cmp\tr0, #0\n"
+        "bne .Lcode23298_514\n"
+        ".Lcode23298_50a:\n"
+        "adds\tr1, r6, #0\n"
+        "adds\tr1, #158\n"
+        "movs\tr0, #13\n"
+        "strh\tr0, [r1, #0]\n"
+        "b .Lcode23298_5e8\n"
+        ".Lcode23298_514:\n"
+        "adds\tr1, r6, #0\n"
+        "adds\tr1, #158\n"
+        "movs\tr0, #10\n"
+        "strh\tr0, [r1, #0]\n"
+        "adds\tr0, r6, #0\n"
+        "adds\tr0, #152\n"
+        "ldr\tr0, [r0, #0]\n"
+        "bl sub_0800231B4\n"
+        "b .Lcode23298_5e8\n"
+        ".Lcode23298_528:\n"
+        "ldr r0, .Lcode23298_554\n"
+        "ldr r1, .Lcode23298_558\n"
+        "adds\tr0, r0, r1\n"
+        "ldrb\tr0, [r0, #0]\n"
+        "cmp\tr0, #1\n"
+        "bne .Lcode23298_544\n"
+        "adds\tr0, r6, #0\n"
+        "bl sub_080022DA8\n"
+        "adds\tr0, r6, #0\n"
+        "adds\tr0, #148\n"
+        "ldr\tr0, [r0, #0]\n"
+        "bl sub_080023148\n"
+        ".Lcode23298_544:\n"
+        "adds\tr1, r6, #0\n"
+        "adds\tr1, #146\n"
+        "movs\tr0, #1\n"
+        "strh\tr0, [r1, #0]\n"
+        "adds\tr1, #12\n"
+        "movs\tr0, #14\n"
+        "strh\tr0, [r1, #0]\n"
+        "b .Lcode23298_5e8\n"
+        ".Lcode23298_554: .word 0x03001780\n"
+        ".Lcode23298_558: .word 0x000010C3\n"
+        ".Lcode23298_55c:\n"
+        "movs\tr0, #1\n"
+        "movs\tr1, #4\n"
+        "bl 0x08002178\n"
+        "lsls\tr0, r0, #16\n"
+        "lsrs\tr0, r0, #16\n"
+        "cmp\tr0, #14\n"
+        "bne .Lcode23298_5e8\n"
+        "ldr r0, .Lcode23298_584\n"
+        "ldr r1, .Lcode23298_588\n"
+        "adds\tr0, r0, r1\n"
+        "ldrb\tr0, [r0, #0]\n"
+        "cmp\tr0, #1\n"
+        "bne .Lcode23298_58c\n"
+        ".Lcode23298_578:\n"
+        "adds\tr1, r6, #0\n"
+        "adds\tr1, #158\n"
+        "movs\tr0, #5\n"
+        "strh\tr0, [r1, #0]\n"
+        "b .Lcode23298_5e8\n"
+        "movs\tr0, r0\n"
+        ".Lcode23298_584: .word 0x03001780\n"
+        ".Lcode23298_588: .word 0x000010C3\n"
+        ".Lcode23298_58c:\n"
+        "adds\tr1, r6, #0\n"
+        "adds\tr1, #158\n"
+        "movs\tr0, #6\n"
+        "strh\tr0, [r1, #0]\n"
+        "b .Lcode23298_5e8\n"
+        ".Lcode23298_596:\n"
+        "adds\tr1, r6, #0\n"
+        "adds\tr1, #176\n"
+        "adds\tr0, r6, #0\n"
+        "movs\tr2, #10\n"
+        "bl sub_080022D24\n"
+        "adds\tr1, r6, #0\n"
+        "adds\tr1, #146\n"
+        "movs\tr0, #0\n"
+        "strh\tr0, [r1, #0]\n"
+        "adds\tr1, #12\n"
+        "movs\tr0, #11\n"
+        "strh\tr0, [r1, #0]\n"
+        "b .Lcode23298_5e8\n"
+        ".Lcode23298_5b2:\n"
+        "ldr r0, .Lcode23298_5c4\n"
+        "ldr r1, .Lcode23298_5c8\n"
+        "adds\tr0, r0, r1\n"
+        "ldrb\tr0, [r0, #0]\n"
+        "cmp\tr0, #1\n"
+        "bne .Lcode23298_5cc\n"
+        "movs\tr0, #0\n"
+        "b .Lcode23298_5ce\n"
+        "movs\tr0, r0\n"
+        ".Lcode23298_5c4: .word 0x03001780\n"
+        ".Lcode23298_5c8: .word 0x000010C3\n"
+        ".Lcode23298_5cc:\n"
+        "movs\tr0, #1\n"
+        ".Lcode23298_5ce:\n"
+        "movs\tr1, #6\n"
+        "bl 0x08002178\n"
+        "lsls\tr0, r0, #16\n"
+        "lsrs\tr0, r0, #16\n"
+        "cmp\tr0, #1\n"
+        "bne .Lcode23298_5e8\n"
+        "adds\tr0, r6, #0\n"
+        "adds\tr0, #142\n"
+        "movs\tr1, #0\n"
+        "strh\tr1, [r0, #0]\n"
+        "adds\tr0, #14\n"
+        "strh\tr1, [r0, #0]\n"
+        ".Lcode23298_5e8:\n"
+        "add\tsp, #8\n"
+        "pop\t{r4, r5, r6}\n"
+        "pop\t{r0}\n"
+        "bx\tr0\n"
+        ".syntax divided\n"
+    );
 }
+
 void _08023298(void *a) __attribute__((alias("Code23298_StateMachine")));
 void sub_08023298(void *a) __attribute__((alias("Code23298_StateMachine")));
 void _080023298(void *a) __attribute__((alias("Code23298_StateMachine")));

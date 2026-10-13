@@ -19,6 +19,8 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from bisect import bisect_left
+from functools import lru_cache
 from pathlib import Path
 
 import corpus_match_probe as probe
@@ -30,6 +32,55 @@ MANIFEST = ROOT / "tools/matching_slice_functions.json"
 # document in a comment that their hole has no incbin left. Same pattern as
 # independent_slice.INCBIN_RE.
 INCBIN_RE = re.compile(r"^\s*\.incbin\b", re.M)
+
+# A `.section` directive naming a section. `asm_section` used to compile a
+# name-specific pattern and rescan the whole file per lookup; this generic form
+# lets one cached pass index every section in the file. `[^\s,]+` stops at the
+# same `,`/whitespace/EOL boundary the name-specific pattern required, so a
+# near-miss (`.text.Foo"bar"`) resolves to a different key and misses exactly
+# as the original failed to match.
+_SECTION_LINE_RE = re.compile(r"^\s*\.section\s+([^\s,]+)")
+_SECTION_NAME_PREFIX = ".text."
+
+# A `.thumb_set name, body` pair on one line. `_export_missing` used to build a
+# name-specific pattern and rescan every line per wanted name; capturing both
+# operands in one cached pass and testing membership gives each caller the same
+# answer without re-walking the section once per name.
+_THUMB_SET_LINE_RE = re.compile(
+    r"^\s*\.thumb_set\s+([A-Za-z_][A-Za-z_0-9]*)\s*,\s*([A-Za-z_][A-Za-z_0-9]*)\s*$")
+
+
+@lru_cache(maxsize=64)
+def _section_index(source: Path, mtime_ns: int, size: int
+                   ) -> tuple[list[str], dict[str, list[int]], list[int]]:
+    """One pass over a compiled TU's assembly: lines, section starts, all starts.
+
+    The splice phase looks the same few `*.s` files up once per promoted body
+    (1411 lookups over 56 files in the current manifest), and each lookup used
+    to re-read the file and re-scan every line. This keeps the scan at one per
+    file per process. Keyed on `(path, mtime_ns, size)` so a rewritten object
+    -- which is what each `tu_work` directory holds -- misses rather than
+    serving a previous run's text; within one `main()` the files are written
+    before the splice phase and never change mid-scan.
+    """
+    lines = source.read_text(encoding="utf-8").splitlines(keepends=True)
+    sections: dict[str, list[int]] = {}
+    all_starts: list[int] = []
+    for i, line in enumerate(lines):
+        match = _SECTION_LINE_RE.match(line)
+        if not match:
+            continue
+        name = match.group(1)
+        if name.startswith(_SECTION_NAME_PREFIX):
+            sections.setdefault(name[len(_SECTION_NAME_PREFIX):], []).append(i)
+        all_starts.append(i)
+    return lines, sections, all_starts
+
+
+def _section_source(source: Path) -> tuple[list[str], dict[str, list[int]], list[int]]:
+    """`_section_index` for the file's current on-disk identity (see its key)."""
+    stat = source.stat()
+    return _section_index(source, stat.st_mtime_ns, stat.st_size)
 
 
 def command(argv: list[str | Path]) -> None:
@@ -56,14 +107,18 @@ def asm_section(source: Path, names: list[str], owned: list[str] | None = None,
     spelling, which the scorer's chosen `name` may not be), so a later promoted
     body can call this VMA under the spelling it was written with.
     """
-    lines = source.read_text(encoding="utf-8").splitlines(keepends=True)
+    lines, section_starts, all_starts = _section_source(source)
     for name in names:
-        section_re = re.compile(r"^\s*\.section\s+\.text\." + re.escape(name) + r"(?:,|\s|$)")
-        starts = [i for i, line in enumerate(lines) if section_re.match(line)]
+        starts = section_starts.get(name, [])
         if len(starts) != 1:
             continue
         start = starts[0] + 1
-        end = next((i for i in range(start, len(lines)) if re.match(r"^\s*\.section\s+", lines[i])), len(lines))
+        # The next section directive at or after `start` bounds the body. One
+        # bisect against the cached full list replaces a per-line rescan; the
+        # section header itself sits at `start - 1`, so `bisect_left` lands on
+        # the following one.
+        pos = bisect_left(all_starts, start)
+        end = all_starts[pos] if pos < len(all_starts) else len(lines)
         body = lines[start:end]
         # Function-section alignment is an object-placement directive. In the
         # monolithic link the replacement starts at an already pinned VMA.
@@ -116,12 +171,25 @@ def _export_missing(text: str, lines: list[str], body: str, wanted: list[str],
     """
     defined = {m.group(1) for m in re.finditer(r"^\s*\.globl\s+([A-Za-z_][A-Za-z_0-9]*)", text, re.M)}
     defined |= {m.group(1) for m in re.finditer(r"^\s*\.thumb_set\s+([A-Za-z_][A-Za-z_0-9]*)", text, re.M)}
+    # Every `.thumb_set` pair in the section, collected once -- but only when
+    # some wanted name is not already defined. Most bodies land here with
+    # nothing pending, and the old name-specific scan still paid its
+    # line walk per name; this pays nothing when there is no question to ask.
+    # `".thumb_set" in line` is a C-level substring test and the regex only
+    # runs on lines that can possibly match.
+    pairs: set[tuple[str, str]] = set()
+    if any(name != body and name not in defined for name in wanted):
+        for line in lines:
+            if ".thumb_set" not in line:
+                continue
+            match = _THUMB_SET_LINE_RE.match(line)
+            if match:
+                pairs.add((match.group(1), match.group(2)))
     extra = []
     for name in wanted:
         if name == body or name in defined:
             continue
-        if any(re.match(r"^\s*\.thumb_set\s+" + re.escape(name) + r"\s*,\s*" + re.escape(body) + r"\s*$", l)
-               for l in lines):
+        if (name, body) in pairs:
             # The owning TU already aliases it; agbcc just put the pair in
             # another section. Re-emit the pair as-is -- this is the
             # evidence-based path and it needs no further check.
@@ -212,16 +280,18 @@ def _own_alias_glue(tail: list[str], body: str, names: list[str]) -> list[str]:
 
 
 def symbol_size(obj: Path, names: list[str]) -> int:
-    from elftools.elf.elffile import ELFFile
-    with obj.open("rb") as stream:
-        elf = ELFFile(stream)
-        symtab = elf.get_section_by_name(".symtab")
-        for name in names:
-            matches = symtab.get_symbol_by_name(name) or []
-            for sym in matches:
-                size = sym["st_size"]
-                if size:
-                    return size
+    """Body extent reported by the object, first spelling with a size wins.
+
+    Reads `corpus_match_probe.symbol_sizes`, which serves the shared
+    in-process ELF parse, rather than opening pyelftools' `get_symbol_by_name`
+    per body: that built the whole symbol-name map on every call, 1411 full
+    parses of the same 56 objects in `--all` (14 s of a 27 s run).
+    """
+    sizes = probe.symbol_sizes(obj)
+    for name in names:
+        size = sizes.get(name, 0)
+        if size:
+            return size
     raise RuntimeError(f"no sized function symbol for {names} in {obj}")
 
 
@@ -291,6 +361,84 @@ def splice_section(vma: int, body: str, span_size: int) -> str:
             "    .syntax unified\n")
 
 
+#: `\s` in a str pattern, as a predicate for the fast path. `str.isspace`
+#: matches the same characters Python's re considers whitespace (`\x1c`-`\x1f`,
+#: `\x85`, `\xa0`, ... all included), so the fast path accepts exactly the
+#: lines the pattern accepts.
+_WS = str.isspace
+
+
+def _marker_pattern(label: str) -> re.Pattern[str]:
+    """The reference marker pattern: `^\\s*LABEL\\s*(?:@.*)?$`, MULTILINE.
+
+    This is the exact pattern `locate_region` shipped before the fast path
+    (`\s` includes `\r`, so a CRLF-terminated label matches). It survives as
+    the readable definition and as the reference `self_test` checks
+    `_marker_positions` against.
+    """
+    return re.compile(r"^\s*" + re.escape(label) + r"\s*(?:@.*)?$", re.M)
+
+
+def _marker_positions(text: str, label: str) -> list[int]:
+    """Match-start offsets of `_marker_pattern(label)`, without compiling it.
+
+    The manifest has one distinct (start, end) marker pair per entry;
+    compiling a pattern per pair measured 89 us x 2788 calls, and the
+    MULTILINE scan another 0.47 ms per call, together 1.57 s of
+    `match_c_slice --all`'s 2.8 s. The label is found with `str.find` (C
+    level) and the anchor and tail are checked directly:
+
+    * the match start is the earliest line start reachable from the label
+      through whitespace only (`^\\s*` may span blank lines) -- walking back
+      over whitespace and then to the first `\\n` reproduces the leftmost
+      start `finditer` would report;
+    * `\\s*(?:@.*)?$` after the label holds in exactly three ways: the first
+      non-whitespace character at or after the label is `@` (the comment then
+      runs to the line end or EOF), the label ends the text, or the trailing
+      whitespace run contains a `\\n` for `$` to anchor to.
+
+    Overlapping label occurrences advance the scan the way `finditer` does
+    (a matched label resumes the search after itself), so counts and starts
+    agree on pathological inputs too. The reference pattern and this function
+    are compared on synthetic texts in `self_test`; `--all --spans` is the
+    whole manifest's check.
+    """
+    out: list[int] = []
+    n = len(text)
+    scan_from = 0
+    while True:
+        pos = text.find(label, scan_from)
+        if pos == -1:
+            return out
+        scan_from = pos + 1
+        tail = pos + len(label)
+        probe = tail
+        while probe < n and _WS(text[probe]):
+            probe += 1
+        if probe < n and text[probe] == "@":
+            accepted = True
+        elif probe == n:
+            accepted = True
+        else:
+            # The whitespace run must contain the line terminator `$` anchors to.
+            accepted = "\n" in text[tail:probe]
+        if not accepted:
+            continue
+        back = pos
+        while back > 0 and _WS(text[back - 1]):
+            back -= 1
+        if back == 0:
+            start = 0
+        else:
+            newline = text.find("\n", back, pos)
+            if newline == -1:
+                continue
+            start = newline + 1
+        out.append(start)
+        scan_from = tail
+
+
+
 def locate_region(original: str, start: str, end: str) -> tuple[int, int]:
     """The half-open text range `[start_at, end_at)` one splice replaces.
 
@@ -299,21 +447,19 @@ def locate_region(original: str, start: str, end: str) -> tuple[int, int]:
     geometry the splice performs. Both markers must resolve exactly once and
     in order, or the entry is refused before any text is touched.
     """
-    def marker(label: str) -> re.Pattern[str]:
-        # A label may carry a trailing `@` comment -- the converted regions do
-        # it constantly (`asm/carphys_tick.s:568` is
-        # `_0800A06C:\t\t\t@ record 33 -> 15`). Demanding a bare `LABEL` line
-        # made those bodies unspliceable even though the screen could find them,
-        # so the screen offered a body this function then refused at splice
-        # time. The `@`-only tail is deliberate: a DATA label
-        # (`_080003B0: .4byte 0x087B04C4`) must still fail to match, or a
-        # splice could bound itself on a constant-pool word.
-        return re.compile(r"^\s*" + re.escape(label) + r"\s*(?:@.*)?$", re.M)
-    starts = list(marker(start).finditer(original))
-    ends = list(marker(end).finditer(original))
-    if len(starts) != 1 or len(ends) != 1 or starts[0].start() >= ends[0].start():
+    # A label may carry a trailing `@` comment -- the converted regions do
+    # it constantly (`asm/carphys_tick.s:568` is
+    # `_0800A06C:\t\t\t@ record 33 -> 15`). Demanding a bare `LABEL` line
+    # made those bodies unspliceable even though the screen could find them,
+    # so the screen offered a body this function then refused at splice
+    # time. The `@`-only tail is deliberate: a DATA label
+    # (`_080003B0: .4byte 0x087B04C4`) must still fail to match, or a
+    # splice could bound itself on a constant-pool word.
+    starts = _marker_positions(original, start)
+    ends = _marker_positions(original, end)
+    if len(starts) != 1 or len(ends) != 1 or starts[0] >= ends[0]:
         raise RuntimeError(f"ambiguous source markers: {start} .. {end}")
-    return starts[0].start(), ends[0].start()
+    return starts[0], ends[0]
 
 
 def replace_body(original: str, start: str, end: str, replacement: str) -> str:
@@ -409,6 +555,35 @@ def self_test() -> int:
     spliced = replace_body(annotated, "_0800A06C:", "_0800A120:", "REPLACED")
     check("splices across labels carrying trailing @ comments",
           "REPLACED" in spliced and "movs r0, #15" not in spliced, True)
+    # The fast marker scan must agree with the pattern it replaces on every
+    # shape the asm uses, plus the shapes that break naive scans: blank lines
+    # before a label (`^\s*` spans them), `@` comment tails, a `\r\n` file, a
+    # duplicated label, a label that is a prefix of another, a marker spelled
+    # inside another's comment, and markers at EOF/out of order. Without this
+    # the splice geometry could drift silently -- the failure mode is a byte
+    # diff thousands of bytes from its cause.
+    marker_texts = [
+        "head\n_0800A06C:\n\tmovs r0,#1\n_0800A120:\n\tbx lr\n",
+        "head\n\n\n_0800A06C:      @ record 33 -> 15\n_0800A120:\t@ record 19\n",
+        "head\r\n_0800A06C:\r\n_0800A120:\r\n",
+        "_0800A06C:\n_0800A06C:\n_0800A120:\n",
+        "_080003B0: .4byte 0x087B04C4\nhead:\n_0800A120:\n",
+        "prefix_0800A120:\n_0800A120:\n_0800A120x:\n",
+        "_0800A06C: @ _0800A120:\n_0800A120:\n",
+        "_0800A06C:\n_0800A120:",
+        "_0800A120:\n_0800A06C:\n",
+        "_0800A06C:\n\n@ note\n_0800A120:\n",
+    ]
+    marker_ok = True
+    for text in marker_texts:
+        for label in ("_0800A06C:", "_0800A120:"):
+            want = [m.start() for m in _marker_pattern(label).finditer(text)]
+            got = _marker_positions(text, label)
+            if want != got:
+                marker_ok = False
+                print(f"FAIL marker scan {label!r} on {text!r}: got {got} want {want}",
+                      file=sys.stderr)
+    check("fast marker scan agrees with the pattern on every shape", marker_ok, True)
     # The start marker here MUST exist, or the splice raises on the START and
     # this case passes for a harness reason while never testing the data label
     # at all -- which is exactly what it did on first write, and exactly what an

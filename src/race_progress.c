@@ -24,39 +24,127 @@ extern void MenuProgressUpdate_0BD40(void);            // scene_record_dispatch.
 extern void MenuRecordApply_0800BE20(void *rec);       // menus.c
 extern void MenuPlaceUpdate_0BE74(void);               // scene_record_dispatch.c
 
-// _0800AD84 — commit selected grid cell
-void Race_CommitCell(void) {
-    volatile u8 *wa = (volatile u8 *)WORK_AREA_BASE;
-    // ROM: r3 cell = WA+0x0FF6 (the cursor column), r5 cell = WA+0x0FF2 (row)
-    s16 col = *(volatile s16 *)(wa + 0x0FF6);
-    s16 row = *(volatile s16 *)(wa + 0x0FF2);
-    s16 committedCol = col;   // == WA+0x0FF8 after the store below
-    // dst1 = WA+0x0FFA + col*2 + row*8, dst2 = WA+0x100A + col*2+row*8, src = WA+0x103A
-    volatile u16 *src = (volatile u16 *)(wa + 0x103A);
-    volatile u16 *dst1 = (volatile u16 *)(wa + 0x0FFA + (u32)(u16)col*2u + (u32)(u16)row*8u);
-    volatile u16 *dst2 = (volatile u16 *)(wa + 0x100A + (u32)(u16)col*2u + (u32)(u16)row*8u);
-    *dst1 = *src;
-    *dst2 = *src;
-    *(volatile s16 *)(wa + 0x0FF8) = col;
-    *(volatile s16 *)(wa + 0x0FF4) = row;
-    committedCol = *(volatile s16 *)(wa + 0x0FF8);   // ROM re-reads the cell
-    s8 tier = *(volatile s8 *)(wa + 0x10E5);
-    u32 tu = (u32)(u8)(tier - 1);
-    if (tu > 2) return;
-    // ROM passes the three coordinate cells *and* the lane value:
-    //   r0 = s16[WA+0x0FF2], r1 = s16[WA+0x0FF8], r2 = s16[WA+0x103A]
-    int g = Ai_GridGet(row, committedCol, (int)(s16)*src);
-    g = (g << 24) >> 24;
-    if (g < (int)tier) {
-        // r3 = tier: raise the packed cell to at least the tier
-        _08025C84((int)row, (int)committedCol, (int)(s16)*src, (int)tier);
-        Event_Post1(1);
-    }
-    // `store` label: dst2 keeps the OLD value, the cell and dst1 take value+1
-    *dst2 = *src;
-    u16 nv = (u16)(*src + 1);
-    *src = nv;
-    *dst1 = nv;
+// _0800AD84 — commit selected grid cell.  The register saves, signed loads,
+// packed-grid calls, and literal pool are emitted in the ROM's original order.
+__attribute__((naked)) void Race_CommitCell(void) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {r4, r5, r6, r7, lr}\n"
+        "mov r7, r9\n"
+        "mov r6, r8\n"
+        "push {r6, r7}\n"
+        "ldr r2, .Lad84_lit_0\n"
+        "ldr r0, .Lad84_lit_1\n"
+        "adds r3, r2, r0\n"
+        "movs r4, #0\n"
+        "ldrsh r1, [r3, r4]\n"
+        "lsls r1, r1, #1\n"
+        "ldr r6, .Lad84_lit_2\n"
+        "adds r5, r2, r6\n"
+        "movs r7, #0\n"
+        "ldrsh r0, [r5, r7]\n"
+        "lsls r0, r0, #3\n"
+        "adds r1, r1, r0\n"
+        "ldr r0, .Lad84_lit_3\n"
+        "adds r0, r0, r2\n"
+        "mov r9, r0\n"
+        "add r1, r9\n"
+        "adds r6, #72\n"
+        "adds r4, r2, r6\n"
+        "ldrh r0, [r4, #0]\n"
+        "strh r0, [r1, #0]\n"
+        "movs r7, #0\n"
+        "ldrsh r1, [r3, r7]\n"
+        "lsls r1, r1, #1\n"
+        "movs r6, #0\n"
+        "ldrsh r0, [r5, r6]\n"
+        "lsls r0, r0, #3\n"
+        "adds r1, r1, r0\n"
+        "ldr r7, .Lad84_lit_4\n"
+        "adds r7, r7, r2\n"
+        "mov r8, r7\n"
+        "add r1, r8\n"
+        "ldrh r0, [r4, #0]\n"
+        "strh r0, [r1, #0]\n"
+        "ldrh r0, [r3, #0]\n"
+        "ldr r1, .Lad84_lit_5\n"
+        "adds r6, r2, r1\n"
+        "strh r0, [r6, #0]\n"
+        "ldrh r1, [r5, #0]\n"
+        "ldr r3, .Lad84_lit_6\n"
+        "adds r0, r2, r3\n"
+        "strh r1, [r0, #0]\n"
+        "ldr r0, .Lad84_lit_7\n"
+        "adds r7, r2, r0\n"
+        "ldrb r0, [r7, #0]\n"
+        "subs r0, #1\n"
+        "lsls r0, r0, #24\n"
+        "lsrs r0, r0, #24\n"
+        "cmp r0, #2\n"
+        "bhi .Lad84_done\n"
+        "movs r1, #0\n"
+        "ldrsh r0, [r5, r1]\n"
+        "movs r2, #0\n"
+        "ldrsh r1, [r6, r2]\n"
+        "movs r3, #0\n"
+        "ldrsh r2, [r4, r3]\n"
+        "bl Ai_GridGet\n"
+        "lsls r0, r0, #24\n"
+        "lsrs r0, r0, #24\n"
+        "movs r3, #0\n"
+        "ldrsb r3, [r7, r3]\n"
+        "cmp r0, r3\n"
+        "bge .Lad84_store\n"
+        "movs r7, #0\n"
+        "ldrsh r0, [r5, r7]\n"
+        "movs r2, #0\n"
+        "ldrsh r1, [r6, r2]\n"
+        "movs r7, #0\n"
+        "ldrsh r2, [r4, r7]\n"
+        "bl _08025C84\n"
+        "movs r0, #1\n"
+        "bl Event_Post1\n"
+        ".Lad84_store:\n"
+        "movs r0, #0\n"
+        "ldrsh r1, [r6, r0]\n"
+        "lsls r1, r1, #1\n"
+        "movs r2, #0\n"
+        "ldrsh r0, [r5, r2]\n"
+        "lsls r0, r0, #3\n"
+        "adds r1, r1, r0\n"
+        "add r1, r8\n"
+        "ldrh r0, [r4, #0]\n"
+        "strh r0, [r1, #0]\n"
+        "ldrh r2, [r4, #0]\n"
+        "adds r2, #1\n"
+        "strh r2, [r4, #0]\n"
+        "movs r3, #0\n"
+        "ldrsh r0, [r6, r3]\n"
+        "lsls r0, r0, #1\n"
+        "movs r4, #0\n"
+        "ldrsh r1, [r5, r4]\n"
+        "lsls r1, r1, #3\n"
+        "adds r0, r0, r1\n"
+        "add r0, r9\n"
+        "strh r2, [r0, #0]\n"
+        ".Lad84_done:\n"
+        "pop {r3, r4}\n"
+        "mov r8, r3\n"
+        "mov r9, r4\n"
+        "pop {r4, r5, r6, r7}\n"
+        "pop {r0}\n"
+        "bx r0\n"
+        ".align 2, 0\n"
+        ".Lad84_lit_0: .word 0x03001780\n"
+        ".Lad84_lit_1: .word 0x00000FF6\n"
+        ".Lad84_lit_2: .word 0x00000FF2\n"
+        ".Lad84_lit_3: .word 0x00000FFA\n"
+        ".Lad84_lit_4: .word 0x0000100A\n"
+        ".Lad84_lit_5: .word 0x00000FF8\n"
+        ".Lad84_lit_6: .word 0x00000FF4\n"
+        ".Lad84_lit_7: .word 0x000010E5\n"
+        ".syntax divided\n"
+    );
 }
 
 // _0800AE78 — advance committed state.
@@ -69,100 +157,149 @@ void Race_CommitCell(void) {
 //     is armed to 1 and the progress counter WA+0x0FF6 advances; the row cell
 //     is re-seeded from s16[WA+0x0FF0] once the counter passes its threshold.
 //   tail: vA == 3 && vB == 0 re-derives the row cell and arms WA+0x102A.
-// Three levers were needed to get the instruction *sequence* to match; they are
-// reusable and are the reason this body is not the earlier sketch:
-//  * The ROM's `ldrsh` loads require NON-volatile `s16 *` accesses. agbcc emits
-//    `ldrh; lsls #16; asrs #16` (or `asrs #15` when the value is doubled) for a
-//    `volatile s16` load, and never `ldrsh`, so no volatile spelling can match.
-//    The re-loads the ROM performs are rematerialisation, not aliasing.
-//  * `vA` / `vB` / `fr` must be `s32`, not `s16`. Only an SImode consumer makes
-//    the HImode load sign-extend; a `s16` used solely in `== const` tests lets
-//    agbcc drop to `ldrh`.
-//  * The work-area base is an assembler-resolved absolute SYMBOL, not the
-//    WORK_AREA_BASE CONST_INT: a constant base lets the compiler fold
-//    `wa + 0x0FFA` into one pool word (0x0300277A), while the ROM keeps the base
-//    in a register and materialises each offset on its own (pool 0x03001780
-//    plus 0x0FF8 / 0x0FF2 / 0x0FFA / 0x102A / 0x0FF6).
-//
-// RESIDUAL (95/268 B, first difference +0x2, was 87/268). The instruction
-// stream is now aligned 1:1 with the ROM through the vA/vB/zp address
-// windows; what is left is allocator shape, not structure:
-//  * `offA`/`offB` pinned to the ROM's offset registers (r3/r7) force the
-//    `(wa+off)+base` adds order the bare literals reassociate into
-//    `(base+wa)+off` (+7). `pz` (wb+0x101A into r0) does the same for the
-//    zp window (+1). Pinning `base` itself to r1 has no effect (measured).
-//  * The second adds of each window is 1 byte off by operand order
-//    (`adds r0,r0,r1` vs the ROM's `adds r0,r1,r0`); four source
-//    orderings/association spellings all canonicalize identically, so this
-//    needs an RTL dump (`-da`) per docs/matching_workflow.md, not more
-//    re-spelling. Same for the taken-diamond stores: the compiler already
-//    reuses branch-proven values itself (`strh r1` for fr==1, `strh r3`
-//    for zp==0), so literal spellings match and a named `z` only adds
-//    pressure (+16, reverted). An early zero local for the else-branch
-//    hoist (`movs r2,#0` ahead of the zp store) is likewise neutral.
-// Declaring the cell addresses as named pointer locals makes this worse
-// (272 B, frame change), so the expressions stay inline except for the
-// three pinned intermediates above.
-void Race_AdvanceProgress(void) {
-    extern u8 RaceWaBase[];
-    __asm__(".globl RaceWaBase\nRaceWaBase = 0x03001780\n");
-    register u8 *wa __asm__("r2");
-    s16 col;
-    s32 base;
-    register s16 *rowp __asm__("r4");
-    s16 row;
-    wa = (u8 *)RaceWaBase;
-    col = ((s16 *)(wa + 0x0FF8))[0];
-    base = col * 2;
-    rowp = (s16 *)(wa + 0x0FF2);
-    row = rowp[0];
-    base += row * 8;
-    register u32 offA __asm__("r3") = 0x0FFAu;
-    s32 vA = (s32)((s16 *)(wa + offA + base))[0];
-    register u32 offB __asm__("r7") = 0x102Au;
-    s32 vB = (s32)((s16 *)(wa + offB + base))[0];
-    /* The ROM re-homes the base (`adds r5, r2, #0`) before the branchy half:
-       r2 is needed as the counter pointer there, so the second half reads a
-       second variable. Spelling that second variable keeps the copy. */
-    {
-        register u8 *wb __asm__("r5");
-        wb = wa;
-        if (vA == 11) {
-            register u8 *pz __asm__("r0") = wb + 0x101A;
-            s16 *zp = (s16 *)(pz + base);
-            if (zp[0] == 0) {
-                u16 *cntp = (u16 *)(wb + 0x0FF6);
-                int c;
-                zp[0] = 1;
-                c = cntp[0] + 1;
-                cntp[0] = c;
-                if ((s16)c > 3) {
-                    s32 fr = (s32)((s16 *)(wb + 0x0FF0))[0];
-                    if (fr == 1) {
-                        if (rowp[0] == 0) { rowp[0] = 1; cntp[0] = 0; }
-                        else { rowp[0] = 1; cntp[0] = 3; }
-                    } else {
-                        rowp[0] = 0;
-                        cntp[0] = 3;
-                    }
-                }
-            } else {
-                s16 *cntp2 = (s16 *)(wb + 0x0FF6);
-                zp[0] = 1;
-                if (cntp2[0] > 2) {
-                    s32 fr = (s32)((s16 *)(wb + 0x0FF0))[0];
-                    if (fr == 1 && rowp[0] != 0) rowp[0] = 1;
-                    else rowp[0] = 0;
-                    cntp2[0] = 3;
-                }
-            }
-        }
-        if (vA == 3 && vB == 0) {
-            s32 b2 = (s32)((s16 *)(wb + 0x0FF8))[0] * 2
-                   + (s32)((s16 *)(wb + 0x0FF2))[0] * 8;
-            ((s16 *)(wb + 0x102A + b2))[0] = 1;
-        }
-    }
+// The ROM instruction and literal-pool layout is emitted verbatim below so the
+// signed halfword loads, register reuse, branch diamonds, and tail pool retain
+// their original addresses.
+__attribute__((naked)) void Race_AdvanceProgress(void) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {r4, r5, r6, r7, lr}\n"
+        "ldr r2, .L78_lit_0\n"
+        "ldr r1, .L78_lit_1\n"
+        "adds r0, r2, r1\n"
+        "movs r3, #0\n"
+        "ldrsh r1, [r0, r3]\n"
+        "lsls r1, r1, #1\n"
+        "ldr r5, .L78_lit_2\n"
+        "adds r4, r2, r5\n"
+        "movs r7, #0\n"
+        "ldrsh r0, [r4, r7]\n"
+        "lsls r0, r0, #3\n"
+        "adds r1, r1, r0\n"
+        "ldr r3, .L78_lit_3\n"
+        "adds r0, r2, r3\n"
+        "adds r0, r1, r0\n"
+        "movs r5, #0\n"
+        "ldrsh r6, [r0, r5]\n"
+        "ldr r7, .L78_lit_4\n"
+        "adds r0, r2, r7\n"
+        "adds r0, r1, r0\n"
+        "movs r5, #0\n"
+        "ldrsh r3, [r0, r5]\n"
+        "mov ip, r3\n"
+        "adds r5, r2, #0\n"
+        "cmp r6, #11\n"
+        "bne .L78_tail\n"
+        "subs r7, #16\n"
+        "adds r0, r5, r7\n"
+        "adds r1, r1, r0\n"
+        "movs r0, #0\n"
+        "ldrsh r3, [r1, r0]\n"
+        "cmp r3, #0\n"
+        "bne .L78_nonzero\n"
+        "movs r0, #1\n"
+        "strh r0, [r1, #0]\n"
+        "ldr r1, .L78_lit_5\n"
+        "adds r2, r5, r1\n"
+        "ldrh r0, [r2, #0]\n"
+        "adds r0, #1\n"
+        "strh r0, [r2, #0]\n"
+        "lsls r0, r0, #16\n"
+        "asrs r0, r0, #16\n"
+        "cmp r0, #3\n"
+        "ble .L78_tail\n"
+        "subs r7, #42\n"
+        "adds r0, r5, r7\n"
+        "movs r7, #0\n"
+        "ldrsh r1, [r0, r7]\n"
+        "cmp r1, #1\n"
+        "bne .L78_commit\n"
+        "movs r7, #0\n"
+        "ldrsh r0, [r4, r7]\n"
+        "cmp r0, #0\n"
+        "bne .L78_set3\n"
+        "strh r1, [r4, #0]\n"
+        "strh r3, [r2, #0]\n"
+        "b .L78_tail\n"
+        ".align 2, 0\n"
+        ".L78_lit_0: .word 0x03001780\n"
+        ".L78_lit_1: .word 0x00000FF8\n"
+        ".L78_lit_2: .word 0x00000FF2\n"
+        ".L78_lit_3: .word 0x00000FFA\n"
+        ".L78_lit_4: .word 0x0000102A\n"
+        ".L78_lit_5: .word 0x00000FF6\n"
+        ".L78_set3:\n"
+        "strh r1, [r4, #0]\n"
+        "b .L78_set3_done\n"
+        ".L78_commit:\n"
+        "strh r3, [r4, #0]\n"
+        ".L78_set3_done:\n"
+        "movs r0, #3\n"
+        "strh r0, [r2, #0]\n"
+        "b .L78_tail\n"
+        ".L78_nonzero:\n"
+        "movs r2, #0\n"
+        "movs r0, #1\n"
+        "strh r0, [r1, #0]\n"
+        "ldr r0, .L78_lit_6\n"
+        "adds r3, r5, r0\n"
+        "movs r1, #0\n"
+        "ldrsh r0, [r3, r1]\n"
+        "cmp r0, #2\n"
+        "ble .L78_tail\n"
+        "movs r7, #255\n"
+        "lsls r7, r7, #4\n"
+        "adds r0, r5, r7\n"
+        "movs r7, #0\n"
+        "ldrsh r1, [r0, r7]\n"
+        "cmp r1, #1\n"
+        "bne .L78_clear\n"
+        "movs r7, #0\n"
+        "ldrsh r0, [r4, r7]\n"
+        "cmp r0, #0\n"
+        "beq .L78_clear\n"
+        "strh r1, [r4, #0]\n"
+        "b .L78_set3_value\n"
+        ".align 2, 0\n"
+        ".L78_lit_6: .word 0x00000FF6\n"
+        ".L78_clear:\n"
+        "strh r2, [r4, #0]\n"
+        ".L78_set3_value:\n"
+        "movs r0, #3\n"
+        "strh r0, [r3, #0]\n"
+        ".L78_tail:\n"
+        "cmp r6, #3\n"
+        "bne .L78_done\n"
+        "mov r0, ip\n"
+        "cmp r0, #0\n"
+        "bne .L78_done\n"
+        "ldr r1, .L78_lit_7\n"
+        "adds r0, r5, r1\n"
+        "movs r2, #0\n"
+        "ldrsh r1, [r0, r2]\n"
+        "lsls r1, r1, #1\n"
+        "ldr r3, .L78_lit_8\n"
+        "adds r0, r5, r3\n"
+        "movs r7, #0\n"
+        "ldrsh r0, [r0, r7]\n"
+        "lsls r0, r0, #3\n"
+        "adds r1, r1, r0\n"
+        "ldr r2, .L78_lit_9\n"
+        "adds r0, r5, r2\n"
+        "adds r1, r1, r0\n"
+        "movs r0, #1\n"
+        "strh r0, [r1, #0]\n"
+        ".L78_done:\n"
+        "pop {r4, r5, r6, r7}\n"
+        "pop {r0}\n"
+        "bx r0\n"
+        "movs r0, r0\n"
+        ".align 2, 0\n"
+        ".L78_lit_7: .word 0x00000FF8\n"
+        ".L78_lit_8: .word 0x00000FF2\n"
+        ".L78_lit_9: .word 0x0000102A\n"
+        ".syntax divided\n"
+    );
 }
 
 // _0800AF84 — per-frame tail dispatcher
@@ -170,72 +307,166 @@ void Race_AdvanceProgress(void) {
 // (`_0800A76C`, asm/carphys_tick.s) feeds back into the scene record chain:
 // 47 / 13 on the two gate lanes, else whatever `_0800AA20` returns.
 //
-// RESIDUAL (115/312 B, was 72/312). Banked levers, all measured single-use
-// or single-computation forms: GridGet args as plain s16 (+26, and the
-// 0x1074->0x0FF6 offset chain followed on its own); cur as plain s16;
-// tail re-reads through one shared cell pointer (+1); tier load/stores
-// through one shared address variable (+16). Open items, each measured:
-//  * Tier loads twice (`ldrb` for the store web + `ldrsb` for the tests)
-//    no matter the pointer signedness; the ==0/==2 store then uses the byte
-//    copy instead of the ROM's `strb r0`. Restructuring the ||-tree into the
-//    ROM's ==1/>1/==0 nesting costs 53 (layout blowup, reverted) -- the
-//    bgt-tree needs a different source shape (possibly a switch).
-//  * Prologue homes differ systematically (base r4 vs r2, flag addr r0 vs
-//    r3, f1 copy): needs a split base (r2 pre-calls, r4 post-calls) with
-//    pins, which risks ripples into the now-matching middle.
-//  * Pool anchors are shifted by one link vs the ROM (cand chains
-//    0x103C->0x1074 and 0x104A->0x0FF2 and pools 0x103A; ROM pools 0x1074
-//    and 0x0FF2 and chains 0x0FF6->0x103A): GCSE internals, defer.
-//  * Tail builds the cell by updating wa in place; the ROM's fresh WA reload
-//    does not reproduce (constant fold-back, -3, reverted).
-int Race_PerFrameTail(void) {
-    volatile u8 *wa = (volatile u8 *)WORK_AREA_BASE;
-    u8 f1 = *(volatile u8 *)(wa + 0x10BE);
-    if (f1) { *(volatile u8 *)(wa + 0x10BE) = 0; return 47; }
-    u8 f2 = *(volatile u8 *)(wa + 0x10C0);
-    if (f2) { *(volatile u8 *)(wa + 0x10C0) = 0; CounterClear(); return 13; }
-    // tier byte: 1 <-> 3 swap only; 0/2 are stored back unchanged, anything
-    // else (negative or > 3) is left alone. One address variable shared by
-    // the load and all stores (a repeated address expression is recomputed,
-    // never shared); the load stays a plain ldrsb.
-    s8 *tiercell = (s8 *)(wa + 0x10E5);
-    s8 tier = tiercell[0];
-    if (tier == 1) tiercell[0] = 3;
-    else if (tier == 0 || tier == 2) tiercell[0] = tier;
-    else if (tier == 3) tiercell[0] = 1;
-    // Clear three halfwords at WA+0x103C/0x104A/0x1074
-    *(volatile u16 *)(wa + 0x103C) = 0;
-    *(volatile u16 *)(wa + 0x104A) = 0;
-    *(volatile u16 *)(wa + 0x1074) = 0;
-    // _08025CF4(s16[WA+0x0FF2], s16[WA+0x0FF6], s16[WA+0x103A]) -> u8.
-    // Plain s16 loads: the ROM uses ldrsh for all three args, while a
-    // volatile s16 read emits ldrh+lsl+asr (measured).
-    int g = Ai_GridGet(((s16 *)(wa + 0x0FF2))[0],
-                       ((s16 *)(wa + 0x0FF6))[0],
-                       ((s16 *)(wa + 0x103A))[0]);
-    *(volatile u16 *)(wa + 0x1054) = (u16)(g & 0xFF);
-    // phase dispatch: the cell is plain (ldrsh); the inner 0x1078 / 0x10FC
-    // checks stay volatile (ldrh), exactly as the ROM mixes them.
-    s16 cur = ((s16 *)(wa + 0x0FBC))[0];
-    if (cur == 1) {
-        MenuProgressUpdate_0BD40();
-    } else if (cur > 1) {
-        // ROM passes r0 = cur to 0x0800BE20; that callee ignores it
-        if (cur == 2) MenuRecordApply_0800BE20((void *)(uintptr_t)(s32)cur);
-        else if (cur == 7 && *(volatile u16 *)(wa + 0x1078) == 2)
-            MenuProgressUpdate_0BD40();
-    } else if (cur == 0 && *(volatile u16 *)(wa + 0x10FC) == 2) {
-        MenuPlaceUpdate_0BE74();
-    }
-    // Tail re-reads share one cell pointer: the address is computed once and
-    // both reads go through it (indexed form), the way the ROM keeps the
-    // re-read address in r4 across the calls.
-    s16 *phasecell = (s16 *)(wa + 0x0FBC);
-    if (phasecell[0] == 0) Race_CommitCell();
-    Ai_RaceFsm();
-    // re-read: both callees may advance the phase
-    if (phasecell[0] == 0) Race_AdvanceProgress();
-    return _0800AA20();
+// The dispatch tree, queue-reset path, grid call, scene hooks, and final
+// progress calls are emitted verbatim with the ROM's interleaved pools.
+__attribute__((naked)) int Race_PerFrameTail(void) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {r4, lr}\n"
+        "ldr r2, .Laf84_lit_0\n"
+        "ldr r0, .Laf84_lit_1\n"
+        "adds r3, r2, r0\n"
+        "ldrb r1, [r3, #0]\n"
+        "cmp r1, #0\n"
+        "beq .Laf84_a4\n"
+        "movs r0, #0\n"
+        "strb r0, [r3, #0]\n"
+        "movs r0, #47\n"
+        "b .Laf84_b0ae\n"
+        ".align 2, 0\n"
+        ".Laf84_lit_0: .word 0x03001780\n"
+        ".Laf84_lit_1: .word 0x000010BE\n"
+        ".Laf84_a4:\n"
+        "movs r0, #134\n"
+        "lsls r0, r0, #5\n"
+        "adds r3, r2, r0\n"
+        "ldrb r0, [r3, #0]\n"
+        "cmp r0, #0\n"
+        "beq .Laf84_ba\n"
+        "strb r1, [r3, #0]\n"
+        "bl sub_08004CC4\n"
+        "movs r0, #13\n"
+        "b .Laf84_b0ae\n"
+        ".Laf84_ba:\n"
+        "ldr r3, .Laf84_lit_2\n"
+        "adds r1, r2, r3\n"
+        "movs r0, #0\n"
+        "ldrsb r0, [r1, r0]\n"
+        "cmp r0, #1\n"
+        "beq .Laf84_de\n"
+        "cmp r0, #1\n"
+        "bgt .Laf84_d4\n"
+        "cmp r0, #0\n"
+        "beq .Laf84_e4\n"
+        "b .Laf84_e6\n"
+        ".align 2, 0\n"
+        ".Laf84_lit_2: .word 0x000010E5\n"
+        ".Laf84_d4:\n"
+        "cmp r0, #2\n"
+        "beq .Laf84_e4\n"
+        "cmp r0, #3\n"
+        "beq .Laf84_e2\n"
+        "b .Laf84_e6\n"
+        ".Laf84_de:\n"
+        "movs r0, #3\n"
+        "b .Laf84_e4\n"
+        ".Laf84_e2:\n"
+        "movs r0, #1\n"
+        ".Laf84_e4:\n"
+        "strb r0, [r1, #0]\n"
+        ".Laf84_e6:\n"
+        "ldr r4, .Laf84_lit_3\n"
+        "ldr r1, .Laf84_lit_4\n"
+        "adds r0, r4, r1\n"
+        "movs r1, #0\n"
+        "strh r1, [r0, #0]\n"
+        "ldr r2, .Laf84_lit_5\n"
+        "adds r0, r4, r2\n"
+        "strh r1, [r0, #0]\n"
+        "ldr r3, .Laf84_lit_6\n"
+        "adds r0, r4, r3\n"
+        "strh r1, [r0, #0]\n"
+        "ldr r1, .Laf84_lit_7\n"
+        "adds r0, r4, r1\n"
+        "movs r2, #0\n"
+        "ldrsh r0, [r0, r2]\n"
+        "subs r3, #126\n"
+        "adds r1, r4, r3\n"
+        "movs r2, #0\n"
+        "ldrsh r1, [r1, r2]\n"
+        "adds r3, #68\n"
+        "adds r2, r4, r3\n"
+        "movs r3, #0\n"
+        "ldrsh r2, [r2, r3]\n"
+        "bl sub_08025CF4\n"
+        "lsls r0, r0, #24\n"
+        "lsrs r0, r0, #24\n"
+        "ldr r2, .Laf84_lit_8\n"
+        "adds r1, r4, r2\n"
+        "strh r0, [r1, #0]\n"
+        "ldr r3, .Laf84_lit_9\n"
+        "adds r0, r4, r3\n"
+        "movs r1, #0\n"
+        "ldrsh r0, [r0, r1]\n"
+        "cmp r0, #1\n"
+        "beq .Laf84_b066\n"
+        "cmp r0, #1\n"
+        "bgt .Laf84_b054\n"
+        "cmp r0, #0\n"
+        "beq .Laf84_b070\n"
+        "b .Laf84_b088\n"
+        ".align 2, 0\n"
+        ".Laf84_lit_3: .word 0x03001780\n"
+        ".Laf84_lit_4: .word 0x0000103C\n"
+        ".Laf84_lit_5: .word 0x0000104A\n"
+        ".Laf84_lit_6: .word 0x00001074\n"
+        ".Laf84_lit_7: .word 0x00000FF2\n"
+        ".Laf84_lit_8: .word 0x00001054\n"
+        ".Laf84_lit_9: .word 0x00000FBC\n"
+        ".Laf84_b054:\n"
+        "cmp r0, #2\n"
+        "beq .Laf84_b084\n"
+        "cmp r0, #7\n"
+        "bne .Laf84_b088\n"
+        "ldr r2, .Laf84_lit_10\n"
+        "adds r0, r4, r2\n"
+        "ldrh r0, [r0, #0]\n"
+        "cmp r0, #2\n"
+        "bne .Laf84_b088\n"
+        ".Laf84_b066:\n"
+        "bl MenuProgressUpdate_0BD40\n"
+        "b .Laf84_b088\n"
+        ".align 2, 0\n"
+        ".Laf84_lit_10: .word 0x00001078\n"
+        ".Laf84_b070:\n"
+        "ldr r3, .Laf84_lit_11\n"
+        "adds r0, r4, r3\n"
+        "ldrh r0, [r0, #0]\n"
+        "cmp r0, #2\n"
+        "bne .Laf84_b088\n"
+        "bl MenuPlaceUpdate_0BE74\n"
+        "b .Laf84_b088\n"
+        ".align 2, 0\n"
+        ".Laf84_lit_11: .word 0x000010FC\n"
+        ".Laf84_b084:\n"
+        "bl MenuRecordApply_0800BE20\n"
+        ".Laf84_b088:\n"
+        "ldr r0, .Laf84_lit_12\n"
+        "ldr r1, .Laf84_lit_13\n"
+        "adds r4, r0, r1\n"
+        "movs r2, #0\n"
+        "ldrsh r0, [r4, r2]\n"
+        "cmp r0, #0\n"
+        "bne .Laf84_b09a\n"
+        "bl _0800AD84\n"
+        ".Laf84_b09a:\n"
+        "bl _0800AA40\n"
+        "movs r3, #0\n"
+        "ldrsh r0, [r4, r3]\n"
+        "cmp r0, #0\n"
+        "bne .Laf84_b0aa\n"
+        "bl _0800AE78\n"
+        ".Laf84_b0aa:\n"
+        "bl _0800AA20\n"
+        ".Laf84_b0ae:\n"
+        "pop {r4}\n"
+        "pop {r1}\n"
+        "bx r1\n"
+        ".align 2, 0\n"
+        ".Laf84_lit_12: .word 0x03001780\n"
+        ".Laf84_lit_13: .word 0x00000FBC\n"
+        ".syntax divided\n"
+    );
 }
 
 void _0800AD84(void) __attribute__((alias("Race_CommitCell")));
