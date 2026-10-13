@@ -327,7 +327,7 @@
     "src/car_award.c": "cdc3ece9452e4c1551a116ffae977ad4502d4ebbaa3d90f62659a11b162fee0d",
     "src/car_physics_core.c": "9ff1a9775171fb45b075264a8a70db09fa4053c4d2eaa4c300e00a4222b2d433",
     "src/car_racer_constants.c": "6e1adc620e9689ffd6de4a57cec24a2ccca51930d5fdb376944bc04612fb5118",
-    "src/car_tick_dispatch.c": "6c74ca9133f0d6184ce9c846dd14c5e4eae75f3af5239c7e49f3103d4d987bcf",
+    "src/car_tick_dispatch.c": "711445f24a92713f855ff3621a4310fa8e3f33f93938f500720f02f451f54d62",
     "src/car_tick_helpers.c": "9f1207b34c2c12cdb0ae25f9d7540c700b8d69a505eb44f467a3c4c545eaa231",
     "src/code_22d20.c": "9d87bc5aecf2acdf6c5b8344ab0a6b005ae4da09999d548b45fa6922512705a8",
     "src/code_22e4.c": "b64268268b417bad07f5502cd54df894e7fb6c41e379f342bde712d74fbf6fb2",

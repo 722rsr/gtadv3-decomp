@@ -91,28 +91,28 @@ int CarTick_Dispatcher(void *ctx){
     int requeue = 0;
     int step;
     switch (*(s16 *)ctx){
-        case 0: step = _08009BF8(ctx); break;
-        case 2: step = _08009F58(ctx); break;
+        case 0: step = _08009BF8(ctx); goto do_push;
+        case 2: step = _08009F58(ctx); goto do_push;
         case 49: step = _0800AF84(ctx); break;
         case 51: step = _08009BCC(); break;
         case 45: step = 46; break;
         case 46: step = 12; break;
         case 12: step = 48; break;
         case 48: step = 13; break;
-        case 13: step = _0800A62C(ctx); break;
-        case 14: step = _08009F5C(ctx); break;
-        case 23: step = _08009FB8(ctx); break;
-        case 42: step = _08009FFC(ctx); break;
-        case 41: step = _0800A020(ctx); break;
-        case 44: step = _0800A024(ctx); break;
-        case 31: step = _0800A028(ctx); break;
+        case 13: step = _0800A62C(ctx); goto do_push;
+        case 14: step = _08009F5C(ctx); goto do_push;
+        case 23: step = _08009FB8(ctx); goto do_push;
+        case 42: step = _08009FFC(ctx); goto do_push;
+        case 41: step = _0800A020(ctx); goto do_push;
+        case 44: step = _0800A024(ctx); goto do_push;
+        case 31: step = _0800A028(ctx); goto do_push;
         case 32: step = _0800A06C(ctx); break;
-        case 33: step = _0800A070(ctx); break;
-        case 15: step = _0800A074(ctx); break;
-        case 22: step = _0800A11C(ctx); break;
-        case 19: step = _0800A120(ctx); break;
+        case 33: step = _0800A070(ctx); goto do_push;
+        case 15: step = _0800A074(ctx); goto do_push;
+        case 22: step = _0800A11C(ctx); goto do_push;
+        case 19: step = _0800A120(ctx); goto do_push;
         case 20: step = _0800A124(ctx); break;
-        case 16: step = _0800A150(ctx); break;
+        case 16: step = _0800A150(ctx); goto do_push;
         case 40: step = _0800A1A4(ctx); break;
         case 17: step = _0800A1B0(ctx); break;
         case 18: step = _0800A1BC(ctx); break;
@@ -127,7 +127,14 @@ int CarTick_Dispatcher(void *ctx){
         case 24: step = _0800A23C(ctx); break;
         case 25: step = _0800A248(ctx); break;
         case 35: {
-            s16 phase = *(s16 *)(0x03001780u + 0x0FBCu);
+            // Two pool words, not the folded 0x0300233C: base and offset in
+            // locals (proven recipe, cf. _08001F568 in race_scene_d1.c).
+            extern u8 CarTickWA[];
+            u8 *wa = CarTickWA;
+            u32 off = 0xFBCu;
+            s16 phase;
+            __asm__(".globl CarTickWA\nCarTickWA = 0x03001780");
+            phase = *(s16 *)(wa + off);
             switch (phase){
                 case 0: step = _0800A344(ctx); break;
                 case 7: step = _0800A518(ctx); break;
@@ -138,16 +145,37 @@ int CarTick_Dispatcher(void *ctx){
         }
         case 6: step = 9; break;
         case 9: step = 7; break;
-        case 7:
+        case 7: {
+            // `step = 10; if (v == 0) step = 8`: the ROM loads first, then
+            // `movs r4,#10 / cmp / bne-skip / movs r4,#8`. The equivalent
+            // ternary lays out `beq` instead (measured).
+            int v;
             requeue = 1;
-            step = (*(s32 *)((u8 *)ctx + 0x2C) != 0) ? 10 : 8;
+            v = *(s32 *)((u8 *)ctx + 0x2C);
+            step = 10;
+            if (v == 0) step = 8;
             break;
+        }
         case 10: _0800D778(); step = 11; break;
         default: step = sub_08004CF0(); break;
     }
-    if (requeue) sub_08004CD4(*(s16 *)ctx);
+    // Fourteen arms requeue unconditionally via a shared tail: they goto
+    // into the push body below (skipping the r4 latch, already done per-arm,
+    // and the r6 check). `break` arms with call results share the latch;
+    // constant arms jump straight to the check. This 3-way join is what the
+    // ROM shows (0x8EA / 0x8E4 / 0x8E6); an explicit push call per arm does
+    // NOT crossjump under agbcc (measured: it inlines), so the goto is the
+    // mechanism. Behavioural note: those fourteen records push the selector
+    // even when requeue==0; the previous `break`-only source under-pushed.
+    if (requeue) {
+do_push:
+        sub_08004CD4(*(s16 *)ctx);
+    }
     return step;
 }
+// Span ends in `00 00` pad after `bx lr`: gas fills with `46 c0` unless
+// aligned with zero fill (matching_workflow: spans ending in zero padding).
+__asm__(".align 2, 0");
 #if defined(__linux__) || defined(__ELF__)
 int _0800A668(void *c) __attribute__((alias("CarTick_Dispatcher")));
 #endif
