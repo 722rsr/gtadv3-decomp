@@ -45,6 +45,13 @@ checks round trips, span hashes, `build-code/data.o`, and the full ROM.
 credits them as `verified-generated-data`. Never commit `build/data/` or
 extracted bytes; `make clean` removes them.
 
+The round-trip claim is byte-level, not semantic asset completion. On a clean
+checkout, missing editable inputs are extracted from the user-supplied reference
+ROM into ignored `build/data/`; several compressed/raw payloads remain verbatim.
+The final 326,460 zero-padding bytes are also included from `baserom.gba` by the
+reference build. These bytes are excluded from data progress and prevent that
+build from serving as a fully independent ROM link.
+
 ## Adding a region
 
 Document format, consumer, bounds, and storage first. Add the registry entry,

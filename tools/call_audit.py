@@ -40,16 +40,19 @@ set.
     python3 tools/call_audit.py --self-test
 
 Known limits, in the spirit of `export_audit.py`: the linker remains the
-authority. This reads the source manifest and the compiled report, so it cannot
-see a spelling agbcc invents, and it treats an `export` name as provided
-without checking that agbcc actually wrote a `.thumb_set` for it -- the splicer
-refuses such a name loudly rather than inventing a binding, so the failure mode
-is still a link error and never a silent retarget.
+authority. This reads the source manifest and compiled report, so it cannot see
+every spelling agbcc invents. Synthetic numeric symbols are accepted only when
+their target VMA lies inside a selected C replacement span. It also treats an
+`export` name as provided without checking that agbcc actually wrote a
+`.thumb_set` for it -- the splicer refuses such a name loudly rather than
+inventing a binding, so the failure mode is still a link error and never a
+silent retarget.
 """
 
 from __future__ import annotations
 
 import argparse
+from bisect import bisect_right
 import json
 import re
 import sys
@@ -242,6 +245,9 @@ def audit(manifest: dict, report: dict) -> tuple[list[tuple], int]:
     order, files, pos = flatten(ROOT / "asm/code.s")
     spans = spans_of(manifest, order, pos)
     provided = provided_names(manifest, report, order, spans, files)
+    vma_spans = sorted((int(key, 16), int(entry["end_vma"], 16))
+                       for key, entry in manifest.items())
+    vma_starts = [start for start, _ in vma_spans]
     by_vma = {int(r["vma"], 16): r for r in report["results"]}
     bad: list[tuple] = []
     for key in sorted(manifest, key=lambda k: int(k, 16)):
@@ -250,9 +256,28 @@ def audit(manifest: dict, report: dict) -> tuple[list[tuple], int]:
             continue
         for call in rec.get("call_targets", ()):
             sym = call.get("symbol", "")
-            if sym and sym not in provided:
+            if sym and sym not in provided and not target_in_selected_span(
+                    call.get("target_vma"), vma_spans, vma_starts):
                 bad.append((key, rec["name"], sym))
     return bad, len(spans)
+
+
+def target_in_selected_span(target_vma, spans, starts) -> bool:
+    """Whether a numeric target is supplied by an exact C replacement span.
+
+    agbcc/ld can report a valid numeric target using a synthetic `*ABS*0x...`
+    spelling. The symbol text then differs from every source label even though
+    the selected C body occupies that address range. Check the address, but only
+    against manifest spans; arbitrary code addresses do not get a free pass.
+    """
+    if not target_vma:
+        return False
+    try:
+        target = int(target_vma, 16)
+    except (TypeError, ValueError):
+        return False
+    index = bisect_right(starts, target) - 1
+    return index >= 0 and target < spans[index][1]
 
 
 def self_test() -> int:
@@ -273,6 +298,17 @@ def self_test() -> int:
             ok += 1
         else:
             print(f"FAIL {name}: got {got!r} want {want!r}", file=sys.stderr)
+
+    selected_spans = [(0x08000000, 0x08000010), (0x08000020, 0x08000030)]
+    selected_starts = [start for start, _ in selected_spans]
+    check("numeric target inside a selected C span is provided",
+          target_in_selected_span("0x08000008", selected_spans, selected_starts), True)
+    check("target at selected C span end is not provided",
+          target_in_selected_span("0x08000010", selected_spans, selected_starts), False)
+    check("numeric target in an unselected gap is not provided",
+          target_in_selected_span("0x08000018", selected_spans, selected_starts), False)
+    check("malformed numeric target is not provided",
+          target_in_selected_span("*ABS*unknown", selected_spans, selected_starts), False)
 
     with tempfile.TemporaryDirectory() as tmp:
         d = Path(tmp)

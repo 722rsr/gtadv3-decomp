@@ -278,7 +278,7 @@
       "asm/surface_access.s",
       "asm/wrapper_pair.s"
     ],
-    "source_closure_sha256": "68a732dc97bcac2335b2795b755331d7ded989542c3b0c22ef9fecd7216f87b4"
+    "source_closure_sha256": "45f8f3b453bb2bfd0613d01a5e0b61f546fb9057d4a57a70add919e80b1de11c"
   },
   "raw_incbin_spans": [
     {
@@ -8384,8 +8384,8 @@
     {
       "path": "asm/data_tail.s",
       "ranges": [],
-      "sha256": "8d1eadcf375ef5a097ab7106fac99d897765b6d85f3a36d9930b971f74481e84",
-      "size": 5869
+      "sha256": "60041807337e7a61672288c3df68b086ab77b45df0a04305fb20d66743d3b80c",
+      "size": 5930
     },
     {
       "path": "asm/garage_26f50.s",
