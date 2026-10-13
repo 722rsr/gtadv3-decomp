@@ -417,7 +417,7 @@
     "src/race_scene_helpers.c": "c178c02f96daa98a90587d1a60369b5e03c5803e4edb339d9a4fb652bfcd7b2b",
     "src/race_setup.c": "90dbbeac219e1479812f7ca4a37ca30946f5fd7916efcfc4ca446c60d4a849a6",
     "src/race_setup_helpers.c": "0271b0b56949c0f2f5c153d1a1dd8bfd07ef0a465f1f8926807ffd2fa64fde36",
-    "src/rec35_16002.c": "2729be661f6d52006b974e630bdc713cf019891f2c54b07bc3f86e1a8fdd25db",
+    "src/rec35_16002.c": "836647110792d665601590aa710c295a1bf36affea1847a6ea341710506807b6",
     "src/rec35_dispatch_tail.c": "909ea941b0037ff512f5512cd022d17fb3e2eebf7edb267f4a95ad428bfb60b0",
     "src/rec35_driver.c": "4197f87e738315334ce9981f4c5e45a0dfd73143684a73d3c12cf858a34f3965",
     "src/rec35_helper.c": "0131db65c14e1664ceb78d07d23c5d469f9cc0506fb09eea5a99877ebee096c7",
