@@ -169,6 +169,25 @@ void Race_AdvanceProgress(void) {
 // _0800AF84 — the record-49 per-frame tail. Returns the *step id* the caller
 // (`_0800A76C`, asm/carphys_tick.s) feeds back into the scene record chain:
 // 47 / 13 on the two gate lanes, else whatever `_0800AA20` returns.
+//
+// RESIDUAL (115/312 B, was 72/312). Banked levers, all measured single-use
+// or single-computation forms: GridGet args as plain s16 (+26, and the
+// 0x1074->0x0FF6 offset chain followed on its own); cur as plain s16;
+// tail re-reads through one shared cell pointer (+1); tier load/stores
+// through one shared address variable (+16). Open items, each measured:
+//  * Tier loads twice (`ldrb` for the store web + `ldrsb` for the tests)
+//    no matter the pointer signedness; the ==0/==2 store then uses the byte
+//    copy instead of the ROM's `strb r0`. Restructuring the ||-tree into the
+//    ROM's ==1/>1/==0 nesting costs 53 (layout blowup, reverted) -- the
+//    bgt-tree needs a different source shape (possibly a switch).
+//  * Prologue homes differ systematically (base r4 vs r2, flag addr r0 vs
+//    r3, f1 copy): needs a split base (r2 pre-calls, r4 post-calls) with
+//    pins, which risks ripples into the now-matching middle.
+//  * Pool anchors are shifted by one link vs the ROM (cand chains
+//    0x103C->0x1074 and 0x104A->0x0FF2 and pools 0x103A; ROM pools 0x1074
+//    and 0x0FF2 and chains 0x0FF6->0x103A): GCSE internals, defer.
+//  * Tail builds the cell by updating wa in place; the ROM's fresh WA reload
+//    does not reproduce (constant fold-back, -3, reverted).
 int Race_PerFrameTail(void) {
     volatile u8 *wa = (volatile u8 *)WORK_AREA_BASE;
     u8 f1 = *(volatile u8 *)(wa + 0x10BE);
@@ -176,22 +195,28 @@ int Race_PerFrameTail(void) {
     u8 f2 = *(volatile u8 *)(wa + 0x10C0);
     if (f2) { *(volatile u8 *)(wa + 0x10C0) = 0; CounterClear(); return 13; }
     // tier byte: 1 <-> 3 swap only; 0/2 are stored back unchanged, anything
-    // else (negative or > 3) is left alone
-    s8 tier = *(volatile s8 *)(wa + 0x10E5);
-    if (tier == 1) *(volatile s8 *)(wa + 0x10E5) = 3;
-    else if (tier == 0 || tier == 2) *(volatile s8 *)(wa + 0x10E5) = tier;
-    else if (tier == 3) *(volatile s8 *)(wa + 0x10E5) = 1;
+    // else (negative or > 3) is left alone. One address variable shared by
+    // the load and all stores (a repeated address expression is recomputed,
+    // never shared); the load stays a plain ldrsb.
+    s8 *tiercell = (s8 *)(wa + 0x10E5);
+    s8 tier = tiercell[0];
+    if (tier == 1) tiercell[0] = 3;
+    else if (tier == 0 || tier == 2) tiercell[0] = tier;
+    else if (tier == 3) tiercell[0] = 1;
     // Clear three halfwords at WA+0x103C/0x104A/0x1074
     *(volatile u16 *)(wa + 0x103C) = 0;
     *(volatile u16 *)(wa + 0x104A) = 0;
     *(volatile u16 *)(wa + 0x1074) = 0;
-    // _08025CF4(s16[WA+0x0FF2], s16[WA+0x0FF6], s16[WA+0x103A]) -> u8
-    int g = Ai_GridGet(*(volatile s16 *)(wa + 0x0FF2),
-                       *(volatile s16 *)(wa + 0x0FF6),
-                       (int)(s16)*(volatile u16 *)(wa + 0x103A));
+    // _08025CF4(s16[WA+0x0FF2], s16[WA+0x0FF6], s16[WA+0x103A]) -> u8.
+    // Plain s16 loads: the ROM uses ldrsh for all three args, while a
+    // volatile s16 read emits ldrh+lsl+asr (measured).
+    int g = Ai_GridGet(((s16 *)(wa + 0x0FF2))[0],
+                       ((s16 *)(wa + 0x0FF6))[0],
+                       ((s16 *)(wa + 0x103A))[0]);
     *(volatile u16 *)(wa + 0x1054) = (u16)(g & 0xFF);
-    // phase dispatch
-    s16 cur = *(volatile s16 *)(wa + 0x0FBC);
+    // phase dispatch: the cell is plain (ldrsh); the inner 0x1078 / 0x10FC
+    // checks stay volatile (ldrh), exactly as the ROM mixes them.
+    s16 cur = ((s16 *)(wa + 0x0FBC))[0];
     if (cur == 1) {
         MenuProgressUpdate_0BD40();
     } else if (cur > 1) {
@@ -202,10 +227,14 @@ int Race_PerFrameTail(void) {
     } else if (cur == 0 && *(volatile u16 *)(wa + 0x10FC) == 2) {
         MenuPlaceUpdate_0BE74();
     }
-    if (*(volatile s16 *)(wa + 0x0FBC) == 0) Race_CommitCell();
+    // Tail re-reads share one cell pointer: the address is computed once and
+    // both reads go through it (indexed form), the way the ROM keeps the
+    // re-read address in r4 across the calls.
+    s16 *phasecell = (s16 *)(wa + 0x0FBC);
+    if (phasecell[0] == 0) Race_CommitCell();
     Ai_RaceFsm();
     // re-read: both callees may advance the phase
-    if (*(volatile s16 *)(wa + 0x0FBC) == 0) Race_AdvanceProgress();
+    if (phasecell[0] == 0) Race_AdvanceProgress();
     return _0800AA20();
 }
 

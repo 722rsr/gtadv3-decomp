@@ -403,7 +403,7 @@
     "src/race_control_leaves.c": "365b7bcdc88d0f015a053a32d1395874774b4f1ec78386297df820ae4072795d",
     "src/race_dispatch.c": "70e2313ab0b5c3b5865ecf530886ff6a80aa06fb713e3ed57c2ee0a3896a8c69",
     "src/race_phase_vms.c": "dc652fef9a220983c5073aa9ddcb71959c4359cf87367b31725aa1d1c495faab",
-    "src/race_progress.c": "2cd788fbe2541782bec3bcbc759bd2dec691b0c2257de29121aa227210a43163",
+    "src/race_progress.c": "e445109f8d138234b4c3c4ec4afd895b8dd2439a163dff921a55b8e027b183ea",
     "src/race_scene.c": "44556f361b33bd8573cc2862b47c7f74b0af7c6f14e9dcff4be3c0b82f5cbcdc",
     "src/race_scene_a1.c": "b353429045cc5cdacff90e28900d89e9b13db0b2680d64fa63b3d0d48961f1ae",
     "src/race_scene_a2.c": "766fb8451eeea0b3c246e02e9a4f34a0cdb9c9ec4b6238075c4bd48353bddef5",
