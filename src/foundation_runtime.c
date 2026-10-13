@@ -227,7 +227,14 @@ void RecordSetter_03004(int base,int v1,int z,int y,int idx,int row,int a6,int a
     // h2|mask and h2|r9<<9 are each spelled as their own statement; a single
     // combined expression makes agbcc compute into a temp and copy back.
     //
-    // PARKED at 122/200 (200-byte candidate, first diff +0xC). The mode bits
+    // PARKED at 134/200 (200-byte candidate, first diff +0x31). Entry is
+    // now exact: a named stack home for z (`zslot`, assigned between the
+    // rv1 and ry copies) anchors the spill third (`str r2,[sp,#0]` after
+    // `mov r8,r0 / adds r6,r1`), and pinning the row copy to r1 forces
+    // `ldr r1,[sp,#40]` (134, was 122 with first diff +0xC). Both measured:
+    // without zslot the spill floats first; without the row1 pin the row
+    // load reuses r2.
+    // The mode bits
     // are now right: ORing a *constant literal* into the attribute inside each
     // arm (`h0 = (u16)(h0 | 0x300u);`) makes agbcc materialise the constant in
     // a scratch pseudo and copy it into the OR's operand register --
@@ -263,10 +270,19 @@ void RecordSetter_03004(int base,int v1,int z,int y,int idx,int row,int a6,int a
     register u16 h0 __asm__("r5");
     register u16 h2 __asm__("r4");
     register volatile u8 *obj __asm__("r2");
+    int zslot;
+    register int row1 __asm__("r1");
     rbase = base;
     rv1 = v1;
+    // Named stack home for z: the ROM spills r2 third (`str r2,[sp,#0]`
+    // after the two register copies), while this body spills first. A named
+    // copy assigned here should anchor the store in source order.
+    zslot = z;
     ry = y;
-    tbl = (const u8*)(uintptr_t)(0x080C4940u + ((u32)row<<3));
+    // Row forced into r1: the ROM loads row into r1 (`ldr r1,[sp,#40]`),
+    // this body reuses r2 as soon as z is spilled.
+    row1 = row;
+    tbl = (const u8*)(uintptr_t)(0x080C4940u + ((u32)row1<<3));
     {
         extern int _08002BE8(int);
         r9 = (s16)_08002BE8((int)(uintptr_t)0x080C4940);
@@ -310,7 +326,7 @@ void RecordSetter_03004(int base,int v1,int z,int y,int idx,int row,int a6,int a
     h2=(u16)(h2 | (u16)(rbase & 0x1FF));
     h2=(u16)(h2 | (u16)(r9<<9));
     *(volatile u16*)(obj+2)=h2;
-    *(volatile u16*)(obj+4)=(u16)(((u32)ry<<12) | (u32)z);
+    *(volatile u16*)(obj+4)=(u16)(((u32)ry<<12) | (u32)zslot);
     *(volatile u16*)(obj+12)=0;
     {
         extern void _08002C34(int, void*);
