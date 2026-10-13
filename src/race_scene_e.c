@@ -1051,6 +1051,19 @@ void _080021018(void *rec0, int a, int b, int c) {
         // stack-arg constants to r0/r1, pinning the statement-expression temp to
         // r1 (76/164). The r0 pin in the first argument is load-bearing for the
         // rest of the frame; another 6 variants are in build/cases_21018c.py.
+        // Further negatives (all re-measured, layout byte-identical unless
+        // noted): dropping the inner fence (148, same order -- the fence is
+        // not the decider); fence with "memory" clobber (148, identical
+        // layout); explicit `register int one __asm__("r7")` (102/160,
+        // frame breaks at +0xA); non-volatile statement temp (102/160 --
+        // the temp's volatility is globally load-bearing, cf. V2's 75/164).
+        // Mechanism hypothesis: the r0 mov/adds chain (length 2, arg0
+        // expanded first so lowest UID) wins the scheduler's critical-path
+        // tie-break over the store chains (also length <= 2), so r0
+        // materialises before the stores and the stores take r1. Stores-first
+        // needs a longer store chain or stack-args-expanded-first expansion,
+        // neither reachable from equivalent C (all single-insn variants of
+        // the 9/0/one constants keep the tie).
         _08007B18((void *)(uintptr_t)(rec + 8), 5, a_slot + 8 * remaining,
                   breg, 9, (u32)odd, (u32)odd, 0);
     }
