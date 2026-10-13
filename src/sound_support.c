@@ -120,6 +120,12 @@ void _0802BC64(void *c) __attribute__((alias("SoundUnlinkVoice")));
 void sub_0802BC64(void *c) __attribute__((alias("SoundUnlinkVoice")));
 
 // _0802BC4C clear 64B array, _0802DFE4 divmod
+// ROM is a fully unrolled 16-word zero (movs r1-r4,#0 + 4x stmia r0! fenced
+// by mov ip,r4 / mov r4,ip, no push, no branches). __builtin_memset emits
+// bl memset (UNRESOLVED, closure has no such symbol). Measured 2026-10-13:
+// 16 scalar word stores compile to 16x str (36 B, OVERSIZED 0/24), not
+// stmia, so no plain-C zeroing reproduces the multi-store; stays asm-owned
+// (asm/sound_mixer_leaf.s) with this behavioral spelling.
 void SoundClearVoiceArray(void *base){
     __builtin_memset(base, 0, 64);
 }
