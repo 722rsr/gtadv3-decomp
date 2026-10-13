@@ -351,21 +351,96 @@ void SoundVoiceWalkerC(void *state, u32 chSel, u32 wid){
 void _0802D584(void *s, u32 c, u32 w) __attribute__((alias("SoundVoiceWalkerC")));
 void sub_0802D584(void *s, u32 c, u32 w) __attribute__((alias("SoundVoiceWalkerC")));
 
-// --- _0802D6F4 sequence interpreter (inline table 0x0802D724, 5 entries) ---
-void SoundSeqInterpreter(void *state, void *cursor){
-    volatile u8 *c=(volatile u8*)cursor;
-    u8 op = *c++; // +0
-    volatile u32 *s=(volatile u32*)state;
-    s[6]= s[6]+op; // +24 adds op byte (width u32)
-    c++; // skip arg byte
-    c++; // skip next byte
-    if(op<=17){
-        // dispatch via table 0x0802D724 — preserve indirect branch width
-        static void (*table[5])(void*,void*) = {0};
-        if(op < 5 && table[op]) table[op](state,cursor);
+// --- _0802D6F4 sequence interpreter (jump-table 0x0802D724, 18 entries) ---
+//
+// Machine state for the interpreter: r4 = seq (arg1), r6 = cursor object
+// (arg2), and the cursor's +0x40 word is the program counter. Each step:
+//
+//   op     = c8[pc];    pc = pc+1 (r5 = op)
+//   a      = c8[pc+1];  pc = pc+1
+//   b      = c8[pc+2];  pc = pc+1
+//   addr   = *(u32*)(seq+24)      -- data region base (mutated +a in prologue)
+//   dst    = (u8*)(seq[24] + b);
+//   instr  = op;      arg2 for the tail call = a.
+//   cmp op,17; bhi default;  word-jump tab[op] via `mov pc, r0`.
+//
+//   tab[0]  (0x0802D770): *dst = r2(=b)                ; goto done
+//   tab[1]  (D774):       *dst += r2(=b)               ; done
+//   tab[2]  (D77C):       *dst -= r2(=b)               ; done
+//   tab[3]  (D784):       *dst = u8[seq[24]+b]         ; done
+//   tab[4]  (D78E):       *dst += u8[seq[24]+b]        ; done
+//   tab[5]  (D79C):       *dst -= u8[seq[24]+b]        ; done
+//   tab[6]  (D7AA):       if (*dst == b) skipNext      ; done  (fall to D840)
+//   tab[7]  (D7B2):       if (*dst != b) skipNext      ; done
+//   tab[8]  (D7BA):       if (*dst > b) skipNext       ; done (bhi unsigned)
+//   tab[9]  (D7C2):       if (*dst >= b) skipNext      ; done (bcs unsigned)
+//   tab[10] (D7CA):       if (*dst <= b) skipNext      ; done (bls unsigned)
+//   tab[11] (D7D2):       if (*dst < b) skipNext       ; done (bcc unsigned)
+//   tab[12] (D7DA):       if (*dst == u8[seq24+b]) skipNext ; done
+//   tab[13] (D7E8):       if (*dst != u8[seq24+b]) skipNext ; done
+//   tab[14] (D7F6):       if (*dst >  u8[seq24+b]) skipNext ; done
+//   tab[15] (D804):       if (*dst >= u8[seq24+b]) skipNext ; done
+//   tab[16] (D812):       if (*dst <= u8[seq24+b]) skipNext ; done
+//   tab[17] (D820):       if (*dst <  u8[seq24+b]) skipNext ; done
+//   default:              c8[pc] += 4; (skip the whole 4-byte instr)
+//   done:                 pop {r4,r5,r6}, pop {r0}, bx r0.
+//
+// `skipNext` (0x0802D82C) calls _0802DDD0(seq, cursor, *(PTR_AT_0x0203EBB4)) --
+// a call-veneer dispatch (`bl` with target in r2); the tail-to-call target
+// comes from fixed EWRAM at 0x0203EBB4, which is the sequence handler pointer.
+// Any
+// skip-next TAIL CALLS into whatever function was set up at the WRAM slot;
+// it is a real call, not a stub.
+void SoundSeqInterpreter(void *state, void *cursor_){
+    volatile u32 *seq = (volatile u32 *)state;
+    volatile u8  *cur = (volatile u8  *)cursor_;
+    u32 pc = *(volatile u32 *)((uintptr_t)cur + 0x40);
+    volatile u8 *c = (volatile u8 *)((uintptr_t)cur + pc);
+    u32 op = *c;            c++;   // r5
+    u32 a  = *c;            c++;   // +1
+    u32 b  = *c;            c++;   // +2
+    *(volatile u32 *)((uintptr_t)cur + 0x40) = (u32)((uintptr_t)c - (uintptr_t)cur);
+    // (seq[6] += a) is the PROLOGUE's address mutation: r0 = seq[24]; r3 = r0+a; seq[24]=r3
+    u32 base = seq[6] + a;
+    seq[6] = base;
+    u8 *dst = (u8 *)(uintptr_t)(base + b);
+    u8 d;                              // dst[0] (ldrb r3,...)
+    switch (op) {
+    case 0: *dst = (u8)b; break;                                  // D770
+    case 1: d = *dst; *dst = (u8)(d + b); break;                  // D774
+    case 2: d = *dst; *dst = (u8)(d - b); break;                  // D77C
+    case 3: *dst = *(volatile u8 *)(uintptr_t)(base + b); break;   // D784
+    case 4: d = *dst; *dst = (u8)(d + *(volatile u8 *)(uintptr_t)(base+b)); break; // D78E
+    case 5: d = *dst; *dst = (u8)(d - *(volatile u8 *)(uintptr_t)(base+b)); break; // D79C
+    case 6:  if (*dst == b) goto skip;      break;                // D7AA
+    case 7:  if (*dst != b) goto skip;      break;                // D7B2
+    case 8:  if (*dst > b)  goto skip;      break;                // D7BA (bhi)
+    case 9:  if (*dst >= b) goto skip;      break;                // D7C2 (bcs)
+    case 10: if (*dst <= b) goto skip;      break;                // D7CA (bls)
+    case 11: if (*dst < b)  goto skip;      break;                // D7D2 (bcc)
+    case 12: if (*dst == *(volatile u8 *)(uintptr_t)(base+b)) goto skip; break; // D7DA
+    case 13: if (*dst != *(volatile u8 *)(uintptr_t)(base+b)) goto skip; break; // D7E8
+    case 14: if (*dst >  *(volatile u8 *)(uintptr_t)(base+b)) goto skip; break; // D7F6
+    case 15: if (*dst >= *(volatile u8 *)(uintptr_t)(base+b)) goto skip; break; // D804
+    case 16: if (*dst <= *(volatile u8 *)(uintptr_t)(base+b)) goto skip; break; // D812
+    case 17: if (*dst <  *(volatile u8 *)(uintptr_t)(base+b)) goto skip; break; // D820
+    default:
+        pc = *(volatile u32 *)((uintptr_t)cur + 0x40);
+        pc += 4;
+        *(volatile u32 *)((uintptr_t)cur + 0x40) = pc;
+        return;
     }
-    // Full interpreter (0x02D728–0x02D846) remains TODO; preserve dispatch width only
-    (void)state;
+    return;
+skip:
+    pc = *(volatile u32 *)((uintptr_t)cur + 0x40);
+    pc += 4;
+    *(volatile u32 *)((uintptr_t)cur + 0x40) = pc;
+    {
+        extern void _0802DDD0(void *a, void *b, void *t);
+        void *t = (void *)(uintptr_t)*(volatile u32 *)(uintptr_t)0x0203EBB4u;
+        _0802DDD0((void *)state, (void *)cursor_, t);
+    }
+    return;
 }
 void _0802D6F4(void *s, void *c) __attribute__((alias("SoundSeqInterpreter")));
 void sub_0802D6F4(void *s, void *c) __attribute__((alias("SoundSeqInterpreter")));

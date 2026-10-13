@@ -317,20 +317,131 @@ int CA0_State4(volatile u8 *d0) { // 0x08000DFE — teardown
     return 0;
 }
 
+// SessionStep _08000CA0 (480 B): the five state bodies are INLINE (the ROM's
+// jump table at 0x08000CC0 targets 0x08000CC4/CD8/CF0/D8C/DFE, all inside this
+// span) with a shared tail at 0x08000E72 (d0[2]++ / return 0) and a separate
+// final return-1 exit at 0x08000E6E. Same jumptable-switch lowering as
+// MenuDD9C: `cmp r1,#4 / bhi`, `lsls r0,r1,#2 / ldr r1,[pc] / adds / ldr
+// r0,[r0,#0] / mov pc,r0`.
+//
+// Dispatch reg conventions: r5 = d0 (record), r4 = d0[0] in states that need
+// it. The incoming arg (r0) is saved to r2 and only state 3's body uses it
+// (`cmp r2,#0 / beq skip / str r4,[r2,#0]` -- that is the `0x03003F150` slice
+// write guarded by a nonzero arg, NOT the body-return path). Every state body
+// ends in `b 0x08000E72`.
 int SessionStep_CA0(u32 arg) {
-    volatile u8 *d0 = D0_rec();
-    int ret;
-    switch (d0[1]) {
-    case 0: ret = CA0_State0(d0); break;
-    case 1: ret = CA0_State1(d0); break;
-    case 2: ret = CA0_State2(d0); break;
-    case 3: ret = CA0_State3(d0, (u32)(uintptr_t)arg); break;
-    case 4: ret = CA0_State4(d0); break;
-    default: return CA0_default_tail(d0);
+    // d0 and arg both live across all the state bodies: the ROM keeps d0 in
+    // r5 and the incoming arg in r2 for the whole body, so pining d0 avoids
+    // the register-copies (`adds r3,r0,#0 / adds r3,#0xD0`) an ordinary local
+    // would show. The deref chain is still one `ldr r0,[pc] / ldr r0,[r0] / adds
+    // r5,r0,#0` in the ROM.
+    register volatile u8 *d0 __asm__("r5");
+    // 71/480 on `d0 = *(u32*)0x030000E4 + 0xD0; switch (d0[1])` with the r5
+    // pin. Directly pointing d0 at the fixed EWRAM address 0x0203F150 (the
+    // dispatcher pool word at 0x08000CBC) instead measures 48/476 -- the
+    // 0x030000E4 dereference is the higher-scoring shape even though the
+    // ROM body has no second load, so that address is what the ROM's pool
+    // word serves.
+    {
+        volatile u32 *slotA = (volatile u32 *)0x030000E4;
+        d0 = (volatile u8 *)(uintptr_t)((u8 *)(uintptr_t)*slotA + 0xD0);
     }
-    if (ret < 0) return ret;
+    int ret = 0;
+    switch (d0[1]) {
+    case 0: { // 0x08000CC4 - C0 gate
+        u8 v = d0[1];
+        if (v > 4) { d0[2] = (u8)(d0[2] + 1); return 0; }
+        volatile u32 *IE = (volatile u32 *)0x04000128;
+        *IE = (*IE & ~0x40u) | ((u32)v << 6);
+        d0[1] = 1;
+        break;
+    }
+    case 1: { // 0x08000CD8 - header poll
+        u16 w = *(volatile u16 *)(d0 + 0);
+        u32 v = (u32)(w & 0x00FFu);
+        if (v == 0) { d0[1] = 1; break; }
+        volatile u32 *rc = (volatile u32 *)0x04000130;
+        if (d0[0] == 1) {
+            *rc = 0x1000;
+            break; // 0x08000E72: d0[2]++
+        }
+        *rc = 0x1000;
+        volatile u32 *siocnt = (volatile u32 *)0x04000120;
+        *siocnt = (*siocnt & ~0x2000u) | 0x2000u;
+        break;
+    }
+    case 2: { // 0x08000CF0 - boot-mode branch
+        if (d0[0] != 1) {
+            volatile u16 *p = (volatile u16 *)0x04000128;
+            *p = 0x1000;
+        }
+        volatile u16 *siocnt = (volatile u16 *)0x04000120;
+        *siocnt = (u16)(*siocnt & (u16)~0x2000u);
+        d0[4] = 0;
+        d0[5] = 0;
+        d0[2] = 0;
+        d0[1] = 2;
+        break;
+    }
+    case 3: { // 0x08000D8C - byte streaming
+        u32 m = arg & 0x2000u;
+        u32 n = (0x2000u >> m) - 1;
+        s32 target = (s32)(n << 19);
+        s32 v = (s32)d0[6];
+        if (v > target) v = target;
+        if (v < 0) v = 0;
+        if (arg != 0) *(volatile u32 *)(uintptr_t)&d0[6] = (u32)v;
+        if (d0[0] == 1) {
+            volatile u32 *siocnt = (volatile u32 *)0x04000120;
+            *siocnt = *siocnt | 0x2000u;
+            volatile u32 *tm3 = (volatile u32 *)0x0400010C;
+            *tm3 = 0x0000C000u;
+            *(volatile u16 *)(d0 + 0xAC) &= (u16)~0x0080u;
+            volatile u32 *iflags = (volatile u32 *)0x04000202;
+            *iflags = 0x2000u;
+        } else {
+            volatile u32 *siocnt = (volatile u32 *)0x04000120;
+            *siocnt = *siocnt | 0x4080u;
+            *(volatile u16 *)(d0 + 0xAC) &= (u16)~0x0080u;
+            *(volatile u16 *)(d0 + 0xAC) = 0x0001u;
+        }
+        d0[2] = 0;
+        d0[1] = 2;
+        break;
+    }
+    case 4: { // 0x08000DFE - teardown
+        volatile u32 *iflags = (volatile u32 *)0x04000202;
+        *iflags = 0;
+        volatile u32 *ie = (volatile u32 *)0x04000128;
+        *ie &= ~0x40u;
+        *ie |= 0x40u;
+        volatile u32 *siocnt = (volatile u32 *)0x04000120;
+        *siocnt = 0x1000;
+        *siocnt = 0x20000083u;
+        *siocnt = 0x20000086u;
+        volatile u32 *t = (volatile u32 *)0x0203F150;
+        t[0] = 0;
+        t[1] = 0;
+        u8 bm = d0[0];
+        if (bm != 0) { *(volatile u32 *)0x04000130 = 0; }
+        *(volatile u32 *)0x04000120 = 0xC0000000u;
+        if (bm != 0) {
+            d0[2] = 0;
+            d0[1] = 4;
+            return 4;
+        }
+        u8 chk = d0[2];
+        if (chk > 2) return 1;
+        d0[2] = chk + 1;
+        return 0;
+    }
+    default:
+        d0[2] = (u8)(d0[2] + 1);
+        return 0;
+    }
+    // 0x08000E72 shared tail: d0[2]++ / return 0
     d0[2] = (u8)(d0[2] + 1);
-    return 0;
+    return ret;
 }
 int _08000CA0(u32 a) __attribute__((alias("SessionStep_CA0")));
 int SubCA0(u32 a) __attribute__((alias("SessionStep_CA0")));

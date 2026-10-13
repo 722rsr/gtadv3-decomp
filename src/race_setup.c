@@ -478,9 +478,13 @@ int Race_Setup_19200(void *a, void *b) {
     if (res > 0) return 0;
     return 1;
 }
-int _080019200(void *a, void *b) __attribute__((alias("Race_Setup_19200")));
 // The ROM's 80-byte span has a zero halfword after the 78-byte return sequence.
+// NOTE: agbcc only emits this top-level asm when it sits BEFORE the alias
+// declarations -- placed after them it never reaches the .s, the section stays
+// 78 bytes and `as` pads it with a Thumb `nop` (0x46C0) instead of the ROM's
+// 00 00. Same ordering as Race_Setup_18F14 below.
 __asm__(".pushsection .text.Race_Setup_19200,\"ax\",%progbits\n\t.short 0\n\t.popsection");
+int _080019200(void *a, void *b) __attribute__((alias("Race_Setup_19200")));
 
 // _080019250 — 200 B (asm/race_setup_18adc.s:943-1041). Delta-angle helper:
 // d = s16[a+22] - s16[b+22]; if the work-area flag at 0x03001780+0x1111 is

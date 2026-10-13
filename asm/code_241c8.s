@@ -312,3 +312,9 @@ _08002445C: .4byte 0x03001780
 _080024460: .4byte 0x00000FF2
 _080024464: .4byte 0x00000FF6
 _080024468: .4byte 0x0000103A
+
+@ End-of-region anchor for the splicer. This file declares exactly one
+@ `@ Region:` (0x080241C8-0x0802446C) and has no `.include`; the promoted body at
+@ 0x08024338 ends on 0x0802446C, exactly that boundary. Unambiguous, so the anchor is
+@ safe. Without it the body is refused as 'no end marker'.
+code_241c8_end:

@@ -97,16 +97,18 @@ int MathHelper_05CB4(void *p){
     int ax = x<0 ? -x : x;
     int ay = y<0 ? -y : y;
     if(ax > ay){
-        extern int __aeabi_idiv(int,int);
-        int q = __aeabi_idiv(ay<<7, ax);
+        // ROM: `bl 0x0802DE04` -- the game's own signed divider, not libgcc's
+        // __aeabi_idiv (which has no VMA and never resolves in the probe).
+        extern int _08002DE04(int,int);
+        int q = _08002DE04(ay<<7, ax);
         s16 e = *(volatile s16*)(0x0805DAF0 + (q<<1));
         if(x<0) { if(y<0) e+=0xC00; else e = -e; }
         else if(y<0) e = 0x400 - e;
         return e;
     } else {
         if(ay==0) return 0;
-        extern int __aeabi_idiv(int,int);
-        int q = __aeabi_idiv(ax<<7, ay);
+        extern int _08002DE04(int,int);
+        int q = _08002DE04(ax<<7, ay);
         s16 e = *(volatile s16*)(0x0805DAF0 + (q<<1));
         if(x<0) { if(y<0) e = 0x800 - e; else e += 0x400; }
         else if(y>=0) e = 0x400 - e;

@@ -61,7 +61,20 @@ extern int _08025A80(void);
 
 // ---- shared anchors --------------------------------------------------------
 #define WA        0x03001780u
-#define WA_S16(o) (*(volatile s16 *)(uintptr_t)(WA + (o)))
+// NON-volatile s16 lvalue: agbcc emits the ROM's true indexed `ldrsh`
+// (`movs rN,#0 / ldrsh rM,[rBase,rN]`) only for a plain `*(s16 *)`. The
+// volatile spelling lowers to `ldrh + lsls + asrs`, which is what kept
+// _0800101FC (14 reads), _080010370, _0800104F0, _080010644, _0800107CC and
+// _0800109D4 OVERSIZED. Same rule as RD16 in src/race_scene_e.c.
+// WA_S16 folds the constant, which leaves _0800101FC length-exact. The ROM
+// instead keeps the base in one register and builds each address with a run-time
+// add (`ldr rN,[pc]` + `adds r6, r5, r0`) -- the WA_SPLIT recipe in
+// src/race_scene_b1.c. Measured on this body that split is a regression: a
+// second offset symbol gives 380 bytes / 37 matched, and three named pointer
+// locals make agbcc hoist all three sums ahead of the first store (384 / 29).
+// The pool split is an allocator detail here, not a value one -- do not re-try
+// it on this body.
+#define WA_S16(o) (*(s16 *)(uintptr_t)(WA + (o)))
 #define WA_U16(o) (*(volatile u16 *)(uintptr_t)(WA + (o)))
 #define WA_U8(o)  (*(volatile u8  *)(uintptr_t)(WA + (o)))
 #define CB55C     0x080CB55Cu   // u16 table (s16-indexed columns +0/+10/+20)

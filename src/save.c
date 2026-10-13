@@ -1147,19 +1147,42 @@ void sub_080241C8(void) __attribute__((alias("SaveUpdate_080241C8")));
 // Full zone/event rebuild — substantiated §10.2 (asm 0x24338, sole caller @0x2453E)
 // Sequence: _08025B3C, _08025B88, zero 2×4×11 via _08025C84, _08025D90, _08025D64→0x103A, _080241C8, event clears, 32×_08025DBC, etc.
 void SaveRebuild_08024338(void) {
-    extern void _08025B3C(void); extern void _08025B88(void);
+    // Callees must use the closure spellings the promotion gate resolves
+    // (_080025B3C / _080025B88 are the aliases defined in src/code_25930.c; the
+    // 8-digit `_08025B3C` form is undefined and reads as a foreign symbol).
+    extern void _080025B3C(void); extern void _080025B88(void);
     extern void _08025C84(int,int,int,int); extern int _08025D90(int); extern int _08025D64(int,int);
     extern void _08025F78(int); extern void _08025DBC(int,int); extern void _08025E70(int,int,int,int);
     extern void _08025FF0(int);
-    _08025B3C(); _08025B88();
-    for(int t=0;t<=1;t++) for(int r=0;r<=3;r++) for(int col=0;col<=10;col++) _08025C84(t,r,col,0);
+    _080025B3C(); _080025B88();
+    // ROM: the t = 0/1 pass is UNROLLED inside the (r, col) nest -- two
+    // `bl 0x08025C84` per iteration, `movs r0,#0` then `movs r0,#1`, with r1 = r
+    // (0..3) and r2 = col (0..10). The three-level `t` loop cannot produce that
+    // shape: it makes t the outer counter instead of an unrolled first argument.
+    for(int r=0;r<=3;r++)
+        for(int col=0;col<=10;col++){
+            _08025C84(0,r,col,0);
+            _08025C84(1,r,col,0);
+        }
     // s16 B[FF2] → _08025D90 → B[FF6]; then _08025D64(B[FF2],B[FF6])→B[103A] — width s16
-    volatile s16 *Bs = (volatile s16 *)GARAGE_BASE_ADDR;
+    // NON-volatile: the ROM's three reads are the indexed `movs rN,#0 /
+    // ldrsh rM,[rBase,rN]` form, which agbcc only emits for a plain `*(s16 *)`;
+    // the volatile spelling lowers to `ldrh + lsls + asrs` and adds 6 bytes.
+    // B[FF2] is read twice, before and after the _08025D90 call, and the call
+    // is enough of a memory barrier for agbcc to reload it -- same as the ROM.
+    s16 *Bs = (s16 *)GARAGE_BASE_ADDR;
     s16 ff2 = Bs[0xFF2/2]; int ff6 = _08025D90(ff2); Bs[0xFF6/2]=(s16)ff6;
     int v = _08025D64(Bs[0xFF2/2], Bs[0xFF6/2]); Bs[0x103A/2]=(s16)v;
-    SaveUpdate_080241C8();
-    int evs[]={1,3,6,7,8,10,15,16,24,25,32,34,35,41,57,63,65,67,68,72};
-    for(unsigned i=0;i<sizeof(evs)/sizeof(evs[0]);i++) _08025F78(evs[i]);
+    sub_080241C8();
+    // ROM: 20 separate `movs r0,#N / bl 0x08025F78` pairs, not a table walk. A
+    // local `int evs[] = {...}` initializer instead puts the list in .rodata,
+    // which is a relocation with no ROM VMA -- the probe reports it as
+    // UNRESOLVED_RELOCATION and the body also carries a loop the ROM lacks.
+    _08025F78(1);  _08025F78(3);  _08025F78(6);  _08025F78(7);
+    _08025F78(8);  _08025F78(10); _08025F78(15); _08025F78(16);
+    _08025F78(24); _08025F78(25); _08025F78(32); _08025F78(34);
+    _08025F78(35); _08025F78(41); _08025F78(57); _08025F78(63);
+    _08025F78(65); _08025F78(67); _08025F78(68); _08025F78(72);
     for(int i=0;i<32;i++) _08025DBC(i,0);
     for(int k=0;k<=1;k++) for(int g=0;g<=3;g++) for(int j=0;j<=2;j++) _08025E70(k,g,j,0);
     _08025FF0(0);

@@ -427,5 +427,299 @@ distinguish `EXACT_DRAFT`, `NO_EXACT_DRAFT`, and `UNSUPPORTED`.
 Exit 0 means the search completed, not that it matched. Recheck a draft in its
 actual translation unit and independent link before selecting it.
 
+## Unresolved-relocation misses (cheapest remaining bucket)
+
+The probe's `UNRESOLVED_RELOCATION` class is the cheapest class to clear: the
+body may already be byte-correct and only a symbol reference blocks it. Snapshot
+the whole corpus and read the class back:
+
+```sh
+python3 tools/corpus_match_probe.py --c89 --limit 0 --json build/lab/full-status.json
+python3 - <<'PY'
+import json
+d = json.load(open('build/lab/full-status.json'))
+for f in d['results']:
+    if f['status'] != 'UNRESOLVED_RELOCATION':
+        continue
+    syms = sorted({c['symbol'] for c in f['call_targets'] if not c['resolved']} |
+                  {p['symbol'] for p in f['pool_words'] if not p['resolved']})
+    print(f"{f['name']:20s} {f['vma']} {f['rom_bytes']:4d}B {f['source']:30s} {syms}")
+PY
+```
+
+Latest full snapshot (2026-10-12, second run): 1400 EXACT of 1668 selected
+bodies; classes `identical mnemonics` 1400, `instruction selection` 253,
+`unresolved relocation` 13, `instruction order` 2. The class counts move as
+bodies are repaired -- two of the original 15 unresolved relocations were
+cleared without changing the EXACT count (`_080011958`, `_08005CB4`; both are
+now scorable and carry a much higher matched-byte count). Compare two snapshots
+by name rather than by class totals:
+
+```sh
+python3 - <<'PY'
+import json
+a = {f['name']: f for f in json.load(open('build/lab/full-status.json'))['results']}
+b = {f['name']: f for f in json.load(open('build/lab/full-status2.json'))['results']}
+for n, fb in b.items():
+    fa = a.get(n)
+    if fa and (fa['status'], fa['matched_bytes'], fa['cand_bytes']) != \
+              (fb['status'], fb['matched_bytes'], fb['cand_bytes']):
+        print(n, fa['status'], fa['matched_bytes'], fa['cand_bytes'],
+              '->', fb['status'], fb['matched_bytes'], fb['cand_bytes'])
+PY
+```
+
+The unresolved relocations split into three fix directions:
+
+* **Libgcc name where the ROM has its own helper.** `src/foundation_math.c`
+  `MathHelper_05CB4` declared `extern int __aeabi_idiv(int,int)`, but the ROM's
+  two call sites are `bl 0x0802DE04` -- the game's own signed divider listed in
+the table above. Pointing the C at `_08002DE04` resolves both relocations;
+  the body is still `PARTIAL 13/192` because the ROM re-reads `p`'s two fields
+  from the record pointer (`ldr r3,[r6,#0]` then `ldr r5,[r6,#4]`) instead of
+  caching them in locals, so the pointer stays live in `r6`. Same class:
+  `_0802B888` (`__muldi3`; the ROM span is a 4-byte Thumb interworking veneer
+  `add r2,pc,#0 / bx r2` plus a 12-byte ARM `umull r2,r3,r0,r1 / add r0,r3,#0`
+  helper, not a libgcc call) and `_0802BC4C` (`memset`; the ROM unrolls four
+  `stmia r0!,{r1,r2,r3,r4}` after `mov ip,r4`, which no plain-C aggregate form
+  reproduced -- `__builtin_memset` emits a call, struct assignment emits
+  `stmia`+`str` triples).
+* **`static` helper the ROM inlined.** The body calls a file-local function that
+  is a real ROM span only as inlined code, so the symbol has no VMA:
+  `_080002C4` (`AgbMain_Run`), `_08000CA0` (`D0_rec` + `CA0_State0..4`),
+  `_08008CA0` (`phase_case*`, 2384 B), `_0800AA40` (`race_lap_tail`,
+  `race_progress_check`), `_08023628` (`CourseSetup7770_Static`), `_08001758`
+  (`SessionEnter*`/`Exit*`/`Mode8Hook`), `_0802B898` (`MixerEnter`). Either
+  inline the helper into the caller or accept the miss.
+* **TU-local constant where the ROM uses an absolute table.** The pool word is
+  a `.rodata`/`.data` section symbol with no ROM VMA: `_080011958`,
+  `_0800DD9C`, `_08024338`, `_080263E0`, `_0802D6F4`. Reference the table by its
+  absolute address the way `src/foundation_math.c` does for `0x0805DAF0`.
+  The most common source is an **aggregate initializer**: `u32 kinds[3] = {8,32,
+  56};` makes agbcc emit a `.rodata` copy, while storing the three elements one
+  by one emits plain immediates. That one change took `_080011958` from
+  `UNRESOLVED_RELOCATION 36/520` to `OVERSIZED 80/508` (the remaining 12 bytes
+  are the record pointer being re-read from `r6` instead of cached).
+
+`_0802B898` additionally has a **mis-split span**: the ROM's guard ends
+`str r3,[r0,#0]` with no `bx lr`, i.e. its success path falls through into the
+next function at 0x0802B8AA, while the manifest's `end_marker` cuts the span at
+18 bytes. The body cannot be reproduced until the `asm/sound_mixer.s` markers are
+corrected.
+
+Two near-misses keep the `instruction order` class alive and are documented in
+place rather than re-attempted: `_080013B68` (735/740; the loop preheader's
+`mov r8,r9` precedes the hoisted pool `ldr r4,[pc]` in the ROM -- agbcc's
+scheduler hoists the load regardless of C order, 11 variants measured) and
+`_080021018` (148/164; the loop-body call site materialises the outgoing stack
+constants in `r0` before `mov r0,r9 / adds r0,#8`, while the same C shape at the
+odd-branch site matches).
+
+## The volatile-s16 lever (instruction-selection class)
+
+A `volatile s16` lvalue lowers to `ldrh + lsls + asrs`; the ROM's indexed read is
+the true `movs rN,#0 / ldrsh rM,[rBase,rN]`, which agbcc only emits for a **plain**
+`*(s16 *)`. SW-`volatile` is also why a large work-area offset can never use the
+`ldrsh` immediate (it only reaches +62). Flipping one macro in
+`src/menu_ff78_a.c` (`WA_S16`) improved every body that reads through it and cost
+nothing:
+
+| VMA | before | after |
+|-----|--------|-------|
+| 0x080101FC | OVERSIZED 29/396 | PARTIAL 39/372 (length-exact) |
+| 0x08010370 | OVERSIZED 97/408 | OVERSIZED 97/404 |
+| 0x080104F0 | OVERSIZED 38/356 | OVERSIZED 50/352 |
+| 0x08010644 | OVERSIZED 35/396 | PARTIAL 41/392 (length-exact) |
+| 0x080107CC | OVERSIZED 18/276 | OVERSIZED 43/276 |
+| 0x080109D4 | PARTIAL 51/- | PARTIAL 51/672 |
+
+Executable to find the rest of this vein (it reads the per-function work bins, so
+rebuild a bin with `match_context.py` before trusting a hit):
+
+```sh
+python3 - <<'PY'
+import os, re, subprocess
+for d in sorted(os.listdir('build/match')):
+    w = os.path.join('build/match', d, 'work')
+    if not os.path.isdir(w): continue
+    refs = [f for f in os.listdir(w) if f.endswith('_context_ref.bin')]
+    if not refs: continue
+    stem = refs[0][:-len('_context_ref.bin')]
+    dis = lambda p: [re.match(r"\s*[0-9a-f]+:\t[0-9a-f ]+\t(.*)", l).group(1).strip()
+                     for l in subprocess.run(['arm-none-eabi-objdump', '-D', '-b', 'binary',
+                         '-m', 'arm', '-M', 'force-thumb', p], capture_output=True,
+                         text=True).stdout.splitlines()
+                     if re.match(r"\s*[0-9a-f]+:\t[0-9a-f ]+\t", l)]
+    a = dis(os.path.join(w, stem + '_context_ref.bin'))
+    b = dis(os.path.join(w, stem + '_context_cand.bin'))
+    nref = sum('ldrsh' in t for t in a); nc = sum('ldrsh' in t for t in b)
+    sig = sum(1 for i, t in enumerate(b) if t.startswith('ldrh') and i + 2 < len(b)
+              and b[i+1].startswith('lsls') and b[i+2].startswith('asrs'))
+    if nref > nc and sig: print(d, 'rom_ldrsh=%d cand_ldrsh=%d truncated=%d' % (nref, nc, sig))
+PY
+```
+
+Two counter-examples worth not repeating: the same flip is a **regression** in
+`src/race_dispatch.c` (`WA_S16`, `_0800B190`: 69 -> 67 matched) and
+`src/race_scene_a2.c` (`_08001AAA0`: 147 -> 134, `_08001BB14`: 90 -> 88); both are
+reverted, with the measurement left in a comment above the macro. The `WA_SPLIT`
+two-symbol anchor is likewise a regression on `_0800101FC` (see the comment above
+`WA_S16` in `src/menu_ff78_a.c`) even though it is right for `_08001B410` in
+`src/race_scene_b1.c`. Measure per body; do not generalise either recipe.
+
+## The jumptable switch lever
+
+A switch the ROM lowers with an `ldr r0,[r0] / mov pc,r0` jump table (the
+DD9C pattern: `cmp r0,#27 / bhi default`, `lsls r0,r0,#2`, `ldr r1,[pc]`,
+`adds r0,r0,r1`, `ldr r0,[r0,#0]`, `mov pc,r0`, then the table) is
+reproducible in plain C, but three details matter and each one was worth a
+step on `_0800DD9C` (0 -> 132 -> 176 EXACT):
+
+1. **Store in every arm, not a shared store after the switch.** The ROM
+   emits one full copy of the address expression and the store in each arm
+   (`adds r1,r4,#0 / adds r1,#84 / movs r0,#5 / b`, then again with
+   `movs r0,#1`). Assigning a `u16 out` in each arm and storing once after
+   the switch tail-merges both arms (174/176).
+2. **Sign-extension order on the index.** The ROM emits `subs #15` FIRST,
+   then `lsls/asrs`; writing the read directly as
+   `(int)(s16)((int)*(u16 *)ptr - 15)` matches that. `(s16)(u16 - x)
+   inverts the order and mis-scores.
+3. **The default arm's address lands where the case bodies do, so the
+   whole function length is right but the pool table is off by 4 bytes** if
+   a `u16 out` variable is left in scope. Removing it drops the extra
+   `movs r1,#5 / b / movs r1,#1` merge block and re-spaces the literal pool
+   to the ROM layout (174 -> 176).
+
+The tail-anchor idiom also applies to a jumptable function: a zero halfword
+at the ROM span end reproduces the literal pool padding the assembler would
+otherwise fill with `46 c0`. Same `.pushsection .short 0` form as
+`Race_Setup_19200`.
+
+## Two shape levers measured on `_080011958` (496 B)
+
+That body went from `UNRESOLVED_RELOCATION 36/520` to `OVERSIZED 306/500` in
+three steps, none of which changed behaviour:
+
+1. **Take the record pointer as the parameter, not as a local copy.**
+   `void f(void *rec_) { volatile u8 *rec = (volatile u8 *)rec_; ... }` costs two
+   register copies (`adds r6,r0,#0` then `adds r7,r6,#0`) where the ROM has one
+   (`adds r7,r0,#0`), and the extra live register then leaks into every `rec +
+   off` base in the body. `void f(volatile u8 *rec)` (update the alias
+   declarations to match) plus `(void *)rec` at the call sites: 80 -> 205
+   matched. Watch for the same double copy wherever a `void *` parameter is
+   immediately re-cast.
+2. **`switch` where the ROM has a fall-through `cmp/beq` chain.** An
+   `if / else if` compiles to `cmp #1 / bne else`, which also strands a second
+   `cmp / bne` inside the first arm. The ROM's `cmp r5,#1 / beq body1`,
+   `cmp r5,#2 / beq body2`, `b default` is the shape agbcc emits for a
+   `switch`. Converting the outer dispatch: 209 -> 276; converting the inner
+   `h` dispatch the same way: 276 -> 306.
+
+Everything after 0x76 is register permutation only (same operations, `r0/r2/r3`
+vs the ROM's `r3/r4/r1`), so the body is allocation-bound from there.
+
+## Promoting a body whose asm region has no end marker
+
+The screen refuses a body with `no end marker in <region>.s and no <region>_end:
+to fall back on`. The fix is the anchor label the other region files already
+carry, appended at the end of the region file -- but only when the file declares
+exactly one `@ Region:` and contains no `.include` (otherwise the boundary is
+ambiguous and the anchor is not safe):
+
+```asm
+@ End-of-region anchor for the splicer. ...
+code_241c8_end:
+```
+
+`asm/code_241c8.s` gained one this way for `0x08024338` (308 B), which then
+staged in one pass. Note the screen grades the **compiled** corpus report, not
+the working tree: refresh `build/era-corpus/ready-report.json` after *every*
+source change, and again after fixing a call-name spelling, or a correct fix
+reads as `BLOCKED` on stale data.
+
+## Unresolved-relocation triage order that works
+
+The class went 15 -> 7 bodies in one session with three different fix
+patterns, in the order that finds the cheapest first:
+
+1. **Wrong spelling for a real callee** (`_08023628`): the C wrapped the call
+   in a file-local static, but the ROM's `bl` lands on a real span (here
+   `0x08007770`). Check the ROM's `bl` targets FIRST -- any that match an
+   exported function need the closure spelling only, and the score may jump
+   straight to OVERSIZED/PARTIAL with no body rewrite.
+2. **Helper the ROM inlined** (`_0800AA40`, `_0800DD9C`, `_08000CA0`): if the
+   ROM span has no `bl` where the C calls a helper, the helper must become a
+   statement-LEVEL macro (`do { ... } while (0)` for void bodies) so the body
+   is textually replicated. Statement-expression macros with `goto` labels
+   also work but need declared variables that the case body uses.
+3. **Genuinely separate functions** (leave alone): when the ROM DOES have the
+   `bl` and the helper has a real span of its own, the C is already right and
+   the miss is elsewhere.
+
+**A tooling hazard:** in `src/scene_record_dispatch.c`, three
+static-helpers-turned-macros were attempted with a regex body-extraction
+script. The bodies' nested `if/else` flatten against the `\{(.*?)\n\}\n`
+match and the resulting TU does not compile ("`cc` undeclared here"). Only
+closing braces at column 0 matched, so the whole file had to be reverted by
+`git stash` and the surviving good edits re-applied with `str_replace`. Edit
+multi-case bodies with explicit text replacements, not pattern extraction.
+
+A per-function reminder: `build/match/*/work` bins are stale snapshots. Four
+bodies that looked unfixed there (`_080017984`, `_080017B00`, `_080016DE4`,
+`_08002AA30`) re-measure EXACT -- always re-run the probe before editing.
+
+## Full-inline into one ROM body (measured 2026-10-12)
+
+`_080002C4` (716 B, `foundation_agbmain.c`) sat in UNRESOLVED_RELOCATION
+because `static void AgbMain_Run` compiled to a real `bl` into its own
+section, and nothing in the fixture's 1669-symbol closure maps
+`AgbMain_Run` (the ROM's whole setup+loop is ONE body; only the next
+inventory start at 0x08000590 bounds the span). Introspective fact: the
+inventory has no known start between 0x080002C4 and 0x08000590 (verified
+directly against `rom_functions()`), so NO alias spelling can fix this --
+the loop must be inline, per the old rule at the top of this file (a ROM
+body whose helper-call sites branch locally).
+
+Recipe (measured with the kit's `CandidateAdapter.evaluate`): splice each
+static helper into braces at its call site, recursively (`AgbMain_Run` ->
+`AgbMain_PerFrameBody` -> `AgbMain_SceneStateDispatch(0x0F,0x10)` twice,
+`AgbMain_SoftReset`, `AgbMain_Teardown`), excise the five definitions,
+and spell the BIOS `VBlankIntrWait` as the closure's `sub_0802D9B0`
+(binding `VBlankIntrWait` fails -- the pocket leaf `_080003F4` is
+`VBlankIntrWait_Pocket`, a different symbol). Result: **UNRESOLVED →
+PARTIAL 73/716, zero unresolved relocations, class instruction-selection**;
+corpus-wide diff confirmed exactly one entry moved and `make matching-slice`
+kept both PASS lines. Remaining delta: the ROM stages `r7←sl, r6←r9,
+r5←r8` and pushes `{r6,r7}` where the candidate pushes `{r5,r6,r7}` -- a
+register-frame grind, same family as `_0800AA40`.
+
+## `_080021018` prepared battery re-measured (2026-10-12)
+
+The 13 prepared case variants (`build/cases_21018c.py`) were run through
+the kit (`transform_file` -> `evaluate`). All 12 compilable ones confirm
+the source comment: the statement-expression family stays at 148/164,
+the plain-`rec+8` family collapses the loop prologue to 74-76/164 (the
+r0 pin is load-bearing), none EXACT. X4 (`pin nine=r0`) fails the
+transform helper itself (`six` undeclared -- a `_x()` substitution bug
+in the prepared file, not a compiler verdict), so it remains unmeasured.
+The 8 missing bytes are the ROM's stack-arg stores using r0 as scratch
+BEFORE `mov r0,r9 / adds r0,#8`, with r1-scratch after -- the scheduler
+never inverts that order in the prepared shapes.
+
+## Tiny sound bodies (still unresolved, measured in work-dir)
+
+- `_0802BC4C` (24 B): ROM is a fully-inline 16-word zero
+  (`movs r1..r4,#0` + 4x `stmia r0!,{r1-r4}` fenced by `mov ip,r4` /
+  `mov r4,ip`); the C's `__builtin_memset` emits `bl memset`, which the
+  closure cannot bind. Byte search found NO other occurrence of that
+  shape in ROM, so there is no existing EXACT body to mirror -- needs a
+  hand-crafted idiom (struct-copy or asm-shaped leaf).
+- `_0802B888` (16 B): ROM is a thumb->ARM veneer (`add r2,pc,#0; bx r2`)
+  wrapping the 64-bit multiply; the C reaches for `bl __muldi3`.
+- `_0802B898` (18 B): ROM is `MixerThumb` wrapper; candidate reaches
+  `MixerEnter` (unresolved) + two `_call_via_r1` gadget calls.
+
+These three remain the documented mixed-ISA/veneer class.
+
 See the [tool index](../tools/README.md) for synthesis, disassembly, asset,
 and runtime comparison utilities.
