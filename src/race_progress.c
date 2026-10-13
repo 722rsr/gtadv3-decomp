@@ -84,20 +84,25 @@ void Race_CommitCell(void) {
 //    in a register and materialises each offset on its own (pool 0x03001780
 //    plus 0x0FF8 / 0x0FF2 / 0x0FFA / 0x102A / 0x0FF6).
 //
-// RESIDUAL (83/268 B, first difference +0x1A). The instruction stream is now
-// aligned 1:1 with the ROM; what is left is allocator shape, not structure:
-//  * agbcc reassociates `(wa + 0x0FFA) + base` into `(base + wa) + 0x0FFA`
-//    (same three instructions, different order), so the pool keeps one fewer
-//    word and the cell-B/ZP/CONST addresses are re-derived from `base + wa`.
-//  * It also derives 0x0FFA as `0x0FF2 + 8` and 0x0FF6 as `0x101A - 36`
-//    instead of loading them, where the ROM uses fresh words.
-//  * Two register-shape misses: the ROM's `adds r5, r2, #0` (WA copied out of
-//    r2 so r2 can hold the counter pointer) never appears, and the ROM reuses
-//    an existing hard zero for `rowp[0] = 0` where agbcc rematerialises one.
+// RESIDUAL (95/268 B, first difference +0x2, was 87/268). The instruction
+// stream is now aligned 1:1 with the ROM through the vA/vB/zp address
+// windows; what is left is allocator shape, not structure:
+//  * `offA`/`offB` pinned to the ROM's offset registers (r3/r7) force the
+//    `(wa+off)+base` adds order the bare literals reassociate into
+//    `(base+wa)+off` (+7). `pz` (wb+0x101A into r0) does the same for the
+//    zp window (+1). Pinning `base` itself to r1 has no effect (measured).
+//  * The second adds of each window is 1 byte off by operand order
+//    (`adds r0,r0,r1` vs the ROM's `adds r0,r1,r0`); four source
+//    orderings/association spellings all canonicalize identically, so this
+//    needs an RTL dump (`-da`) per docs/matching_workflow.md, not more
+//    re-spelling. Same for the taken-diamond stores: the compiler already
+//    reuses branch-proven values itself (`strh r1` for fr==1, `strh r3`
+//    for zp==0), so literal spellings match and a named `z` only adds
+//    pressure (+16, reverted). An early zero local for the else-branch
+//    hoist (`movs r2,#0` ahead of the zp store) is likewise neutral.
 // Declaring the cell addresses as named pointer locals makes this worse
-// (272 B, frame change), so the expressions stay inline. Next lever to try:
-// pin `base` (r1) and the counter pointer so the reassociation above cannot
-// happen, and re-check whether the WA copy falls out of a second WA pseudo.
+// (272 B, frame change), so the expressions stay inline except for the
+// three pinned intermediates above.
 void Race_AdvanceProgress(void) {
     extern u8 RaceWaBase[];
     __asm__(".globl RaceWaBase\nRaceWaBase = 0x03001780\n");
@@ -112,8 +117,10 @@ void Race_AdvanceProgress(void) {
     rowp = (s16 *)(wa + 0x0FF2);
     row = rowp[0];
     base += row * 8;
-    s32 vA = (s32)((s16 *)(wa + 0x0FFA + base))[0];
-    s32 vB = (s32)((s16 *)(wa + 0x102A + base))[0];
+    register u32 offA __asm__("r3") = 0x0FFAu;
+    s32 vA = (s32)((s16 *)(wa + offA + base))[0];
+    register u32 offB __asm__("r7") = 0x102Au;
+    s32 vB = (s32)((s16 *)(wa + offB + base))[0];
     /* The ROM re-homes the base (`adds r5, r2, #0`) before the branchy half:
        r2 is needed as the counter pointer there, so the second half reads a
        second variable. Spelling that second variable keeps the copy. */
@@ -121,7 +128,8 @@ void Race_AdvanceProgress(void) {
         register u8 *wb __asm__("r5");
         wb = wa;
         if (vA == 11) {
-            s16 *zp = (s16 *)(wb + 0x101A + base);
+            register u8 *pz __asm__("r0") = wb + 0x101A;
+            s16 *zp = (s16 *)(pz + base);
             if (zp[0] == 0) {
                 u16 *cntp = (u16 *)(wb + 0x0FF6);
                 int c;
