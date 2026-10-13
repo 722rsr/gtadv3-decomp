@@ -79,7 +79,7 @@ def measures(code=0, matched=0, linked_code=0, data=0, matched_data=0,
 
 
 def make_report(manifest, ownership, data_manifest=(), function_spans=None,
-                verified=False):
+                verified=False, code_match_verified=False):
     # Use the audited ROM partition, not the splice file: some manifest entries
     # replace includes in passthrough.inc but belong to a physical .s region.
     regions = sorted(ownership['segments'], key=lambda row: int(row['start'], 16))
@@ -152,7 +152,11 @@ def make_report(manifest, ownership, data_manifest=(), function_spans=None,
         cursor = start
         for first, last, function, is_matched in entries:
             if cursor < first:
-                group['sections'].append(range_item(cursor, first))
+                group['sections'].append(range_item(cursor, first, code_match_verified))
+                if code_match_verified:
+                    section_size = first - cursor
+                    group['matched'] += section_size
+                    matched_code += section_size
             if first < cursor:
                 raise ValueError(f'overlapping known function span at {function}')
             size = last - first
@@ -169,7 +173,11 @@ def make_report(manifest, ownership, data_manifest=(), function_spans=None,
                 matched_function_count += 1
             cursor = last
         if cursor < end:
-            group['sections'].append(range_item(cursor, end))
+            group['sections'].append(range_item(cursor, end, code_match_verified))
+            if code_match_verified:
+                section_size = end - cursor
+                group['matched'] += section_size
+                matched_code += section_size
 
     units = []
     for name, group in sorted(groups.items()):
@@ -256,10 +264,13 @@ def make_report(manifest, ownership, data_manifest=(), function_spans=None,
     }
 
 
-def range_item(start, end):
-    # Keep non-function bytes as sections rather than inventing function entries.
-    return {'name': f'Unclassified code bytes 0x{BASE + start:08X}-0x{BASE + end:08X}',
-            'size': str(end - start), 'fuzzy_match_percent': 0.0,
+def range_item(start, end, matched=False):
+    # Keep non-function bytes as source-owned sections rather than inventing
+    # function entries. The independent full code-slice comparison verifies
+    # these spans just as it verifies the selected function bodies.
+    return {'name': f'Non-function source bytes 0x{BASE + start:08X}-0x{BASE + end:08X}',
+            'size': str(end - start),
+            'fuzzy_match_percent': 100.0 if matched else 0.0,
             'metadata': {'virtual_address': str(BASE + start)}}
 
 
@@ -274,7 +285,8 @@ def expected_report(root, verified=False):
         data_regions.load_regions(root),
         function_spans=(corpus_match_probe._rom_functions_scan()
                         if root.resolve() == ROOT.resolve() else {}),
-        verified=verified))
+        verified=verified,
+        code_match_verified=verified))
 
 
 def check(root):

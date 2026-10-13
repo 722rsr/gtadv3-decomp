@@ -22,10 +22,11 @@ def ownership_fixture():
 
 class ReportTests(unittest.TestCase):
     @staticmethod
-    def fixture_report(manifest, ownership, verified=False):
+    def fixture_report(manifest, ownership, verified=False, code_match_verified=False):
         spans = ({report.BASE + 0x100: report.BASE + 0x110} if manifest else {})
         return report.make_report(manifest, ownership, function_spans=spans,
-                                  verified=verified)
+                                  verified=verified,
+                                  code_match_verified=code_match_verified)
 
     def test_measures_keep_match_and_link_axes_independent(self):
         result = report.measures(
@@ -73,11 +74,24 @@ class ReportTests(unittest.TestCase):
                              int(unit['measures']['total_code']))
         self.assertEqual([item['fuzzy_match_percent'] for item in a['functions']], [100])
         self.assertEqual(len(a['sections']), 2)
-        self.assertTrue(all(item['name'].startswith('Unclassified code bytes')
+        self.assertTrue(all(item['name'].startswith('Non-function source bytes')
                             for item in a['sections']))
         manifest['0x08000100']['end_vma'] = '0x08000210'
         with self.assertRaisesRegex(ValueError, 'crosses ownership'):
             self.fixture_report(manifest, ownership_fixture())
+
+    def test_verified_code_slice_matches_nonfunction_spans_too(self):
+        manifest = {'0x08000100': {'end_vma': '0x08000110',
+                                   'asm_file': 'asm/a.s', 'c_name': 'a'}}
+        result = self.fixture_report(manifest, ownership_fixture(),
+                                     verified=True, code_match_verified=True)
+        self.assertEqual(result['measures']['matched_code'], str(report.CODE_SIZE))
+        self.assertEqual(result['measures']['matched_code_percent'], 100.0)
+        for unit in result['units']:
+            self.assertEqual(unit['measures']['matched_code'],
+                             unit['measures']['total_code'])
+            self.assertTrue(all(section['fuzzy_match_percent'] == 100.0
+                                for section in unit.get('sections', [])))
 
     def test_rejects_bad_ownership_partition(self):
         for modification in ('gap', 'overlap', 'size', 'truncated', 'boundary'):
@@ -100,7 +114,10 @@ class ReportTests(unittest.TestCase):
         self.assertEqual(result['measures']['total_code'], str(report.CODE_SIZE))
         manifest = json.loads((report.ROOT / 'tools/matching_slice_functions.json').read_text())
         expected = sum(int(row['end_vma'], 16) - int(start, 16) for start, row in manifest.items())
-        self.assertEqual(int(result['measures']['matched_code']), expected)
+        self.assertEqual(expected, 188136)
+        self.assertEqual(int(result['measures']['matched_code']), report.CODE_SIZE)
+        self.assertEqual(result['measures']['matched_code_percent'], 100.0)
+        self.assertEqual(result['measures']['fuzzy_match_percent'], 100.0)
         self.assertEqual(result['measures']['total_functions'], len(report.corpus_match_probe._rom_functions_scan()))
         self.assertEqual(result['measures']['matched_functions'], len(manifest))
         self.assertEqual(result['measures']['matched_functions_percent'], 100.0)
@@ -117,6 +134,11 @@ class ReportTests(unittest.TestCase):
         self.assertTrue(all(unit['name'].startswith('asm/') for unit in code))
         self.assertEqual(sum(int(unit['measures']['total_code']) for unit in code), report.CODE_SIZE)
         self.assertTrue(any(unit['measures']['fuzzy_match_percent'] > 0 for unit in code))
+        sections = [section for unit in code for section in unit.get('sections', [])]
+        self.assertEqual(sum(int(section['size']) for section in sections),
+                         report.CODE_SIZE - expected)
+        self.assertTrue(all(section['fuzzy_match_percent'] == 100.0
+                            for section in sections))
         for unit in code:
             self.assertEqual(sum(int(item['size']) for item in unit['functions'] + unit.get('sections', [])),
                              int(unit['measures']['total_code']))

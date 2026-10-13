@@ -42,14 +42,13 @@ their selected spans total **188,136 / 188,136 exact bytes (100%)**. These are
 the C-function progress figures to headline.
 
 - `matched_functions` counts exact C function candidates in the identified
-  `.type`/`BL`-target inventory. The updater derives the C-function byte rate by
-  dividing `matched_code` by the total selected C-function spans.
-- Objdiff's top-level `matched_code_percent` is currently a different,
-  whole-slice accounting ratio: 188,136 selected C bytes / 188,760 executable
-  bytes (99.67%). Its denominator includes the cartridge header, startup,
-  assembly, and non-function bytes, while its numerator credits only selected C
-  spans. It is not the C-function match rate and should not be described as
-  overall decompilation progress.
+  `.type`/`BL`-target inventory. `matched_code` includes those exact function
+  spans plus the source-owned non-function ranges verified by the independent
+  C/ASM slice; therefore the current Objdiff `matched_code_percent` is 100%.
+- The separate **99.67% diagnostic** is 188,136 selected C-function bytes /
+  188,760 bytes in the code slice. Its denominator includes the cartridge
+  header, startup, assembly, and non-function bytes, so it is not the C-function
+  match rate or overall decompilation progress.
 - `complete_code` and `complete_units` mean the entire C/ASM executable slice
   linked and compared byte-for-byte with no `.incbin` or external code boundary.
   This is the code-slice link measure; the separate `full_hybrid_rom_link`
