@@ -98,3 +98,4 @@ _0800BCB4:
 	.short 0
 _0800BCCC: .word 0xFFFFF4EC
 _0800BCD0: .word 0x03002808
+menu_setup_end:

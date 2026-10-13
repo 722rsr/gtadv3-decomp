@@ -1,5 +1,5 @@
 @ GT Advance 3 - ARM EABI signed divide helper
-@ Region: file offset 0x02DE04-0x02DE96 (VMA 0x0802DE04-0x0802DE96).
+@ Region: file offset 0x02DE04-0x02DE98 (VMA 0x0802DE04-0x0802DE98).
 @ Pure Thumb; byte-exact transcription of __aeabi_idiv.
 
 .thumb
@@ -91,3 +91,5 @@ _0802DE8C:
 	bl sub_0802DE98
 	movs r0, #0
 	pop {pc}
+	.short 0
+sound_aeabi_idiv_end:

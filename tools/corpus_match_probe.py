@@ -83,10 +83,39 @@ EXPLICIT_SIZE_RE = re.compile(
 # expensive one. The key also folds in agbcc's own identity and the flag
 # string, so a toolchain change misses rather than serving old output.
 TU_CACHE = ROOT / "build/era-corpus/tu-cache"
+# Bump only when the commands/flags that produce cached TU objects change.
+# Scoring, relocation decoding, or diagnostics changes do not alter agbcc/as
+# output and should not force a redundant compile of every translation unit.
+TU_CACHE_SCHEMA = "preprocess-c89|agbcc-function-sections|as-arm7tdmi-v1"
 
 # The path field of a clang linemarker. Normalising it is what makes the key
 # work-dir independent; see _tu_cache_key.
 _LINEMARKER_PATH = re.compile(rb'(?m)^(# \d+ ")[^"]*(")')
+_ASM_INCLUDE_TEXT = re.compile(r'\.include\s+\\?"([^"]+?)\\?"')
+
+
+def _assembly_include_inputs(preprocessed: bytes) -> list[tuple[str, bytes | None]]:
+    """Return content-addressed literal assembler includes embedded in C strings."""
+    pending = [Path(name) for name in _ASM_INCLUDE_TEXT.findall(
+        preprocessed.decode("utf-8", errors="replace"))]
+    found: dict[str, bytes | None] = {}
+    while pending:
+        raw = pending.pop()
+        candidates = [raw] if raw.is_absolute() else [ROOT / raw, ROOT / "asm" / raw]
+        resolved = next((candidate.resolve() for candidate in candidates
+                         if candidate.is_file()), None)
+        display = (str(resolved.relative_to(ROOT)) if resolved and resolved.is_relative_to(ROOT)
+                   else str(resolved or raw))
+        if display in found:
+            continue
+        if resolved is None:
+            found[display] = None
+            continue
+        content = resolved.read_bytes()
+        found[display] = content
+        pending.extend(Path(name) for name in _ASM_INCLUDE_TEXT.findall(
+            content.decode("utf-8", errors="replace")))
+    return sorted(found.items())
 
 DEFAULT_AGBCC_OPTIONS = agbcc_options("default.c")
 
@@ -101,15 +130,33 @@ def _tu_cache_key(pre: Path, use_c89: bool,
     gives each body its own `--work-dir`, so every one of the 275 runs would
     otherwise get a different key from the same bytes. Line numbers are left
     alone -- agbcc consumes them, and they are part of the input. Header
-    *content* still lands in the key, so a header edit misses as it must.
+    *content* still lands in the key, so a header edit misses as it must. The
+    cache schema pins the compile pipeline; probe-only edits deliberately do
+    not invalidate byte-identical objects.
     """
     h = hashlib.sha256()
-    h.update(_LINEMARKER_PATH.sub(rb"\1<P>\2", pre.read_bytes()))
+    preprocessed = pre.read_bytes()
+    h.update(_LINEMARKER_PATH.sub(rb"\1<P>\2", preprocessed))
+    for include_name, include_content in _assembly_include_inputs(preprocessed):
+        h.update(b"\0asm-include=" + include_name.encode())
+        h.update(b"\0missing" if include_content is None else b"\0" + include_content)
     h.update(b"\0c89=" + str(use_c89).encode())
     h.update(b"\0opts=" + " ".join(options).encode())
-    for tool in (AGBCC, Path(__file__), ROOT / "tools/agbcc_c89_transform.py"):
+    h.update(b"\0schema=" + TU_CACHE_SCHEMA.encode())
+    tools = [AGBCC, ROOT / "tools/agbcc_c89_transform.py"]
+    for command_name in ("clang", "arm-none-eabi-as"):
+        command_path = shutil.which(command_name)
+        if command_path:
+            tools.append(Path(command_path))
+        else:
+            h.update(b"\0missing-tool=" + command_name.encode())
+    for tool in tools:
         h.update(b"\0" + str(tool.name).encode() + b"=")
-        h.update(str(tool.stat().st_mtime_ns if tool.exists() else 0).encode())
+        if tool.exists():
+            stat = tool.stat()
+            h.update(f"{stat.st_mtime_ns}:{stat.st_size}".encode())
+        else:
+            h.update(b"missing")
     return h.hexdigest()[:32]
 
 
@@ -731,6 +778,31 @@ def encode_thumb_b(insn_vma: int, target_vma: int) -> bytes:
     return (0xE000 | ((disp >> 1) & 0x7FF)).to_bytes(2, "little")
 
 
+def encode_thumb_b_cond(insn_vma: int, target_vma: int, instruction: int) -> bytes:
+    """Relocate a Thumb-1 conditional branch (R_ARM_THM_JUMP8)."""
+    if instruction & 0xF000 != 0xD000:
+        raise ValueError(f"not a Thumb conditional branch: {instruction:#06x}")
+    condition = (instruction >> 8) & 0xF
+    if condition >= 0xE:
+        raise ValueError(f"reserved Thumb branch condition {condition:#x}")
+    disp = target_vma - (insn_vma + 4)
+    if disp & 1 or not -256 <= disp <= 254:
+        raise ValueError(
+            f"conditional b target {target_vma:#x} out of range from {insn_vma:#x}")
+    return (0xD000 | (condition << 8) | ((disp >> 1) & 0xFF)).to_bytes(2, "little")
+
+
+def encode_arm_b(insn_vma: int, target_vma: int, instruction: int) -> bytes:
+    """Relocate an ARM-state B/BL instruction (R_ARM_JUMP24)."""
+    if instruction & 0x0E000000 != 0x0A000000:
+        raise ValueError(f"not an ARM branch: {instruction:#010x}")
+    disp = target_vma - (insn_vma + 8)
+    if insn_vma & 3 or target_vma & 3 or disp & 3 or not -(1 << 25) <= disp < (1 << 25):
+        raise ValueError(f"ARM branch target {target_vma:#x} out of range/alignment from {insn_vma:#x}")
+    relocated = (instruction & 0xFF000000) | ((disp >> 2) & 0x00FFFFFF)
+    return relocated.to_bytes(4, "little")
+
+
 def thumb_bl_target(halfwords: list[int], pc_index: int, base_vma: int = 0) -> int | None:
     """Decode a 32-bit Thumb-1 (ARMv4T) `bl` at halfword index `pc_index`."""
     if pc_index + 1 >= len(halfwords):
@@ -790,8 +862,10 @@ RELOC_TYPES = {
     1: "R_ARM_PC24",
     2: "R_ARM_ABS32",
     10: "R_ARM_THM_CALL",
+    29: "R_ARM_JUMP24",
     40: "R_ARM_V4BX",
     102: "R_ARM_THM_JUMP11",
+    103: "R_ARM_THM_JUMP8",
 }
 
 
@@ -986,6 +1060,103 @@ def relocations(obj: Path, section: str) -> list[tuple[int, str, str, int]]:
     return out
 
 
+def _assembly_section_body(asm_path: Path, section_name: str) -> list[str] | None:
+    """Return one function section's lines, without its object placement align."""
+    lines = asm_path.read_text(encoding="utf-8", errors="replace").splitlines(keepends=True)
+    start = None
+    section_re = re.compile(r"^\s*\.section\s+([^,\s]+)")
+    for i, line in enumerate(lines):
+        match = section_re.match(line)
+        if match and match.group(1).strip('"') == section_name:
+            start = i + 1
+            break
+    if start is None:
+        return None
+    end = next((i for i in range(start, len(lines))
+                if re.match(r"^\s*\.section\s+", lines[i])), len(lines))
+    body = lines[start:end]
+    while body and (not body[0].strip() or body[0].lstrip().startswith(".align")):
+        body.pop(0)
+    return _expand_assembly_includes(body, asm_path.parent)
+
+
+_ASM_INCLUDE = re.compile(r'^\s*\.include\s+"([^"]+)"\s*(?:[@#].*)?$')
+
+
+def _expand_assembly_includes(lines: list[str], relative_to: Path,
+                              stack: tuple[Path, ...] = ()) -> list[str]:
+    """Expand literal assembler includes for reliable mixed-mode inspection."""
+    expanded: list[str] = []
+    for line in lines:
+        match = _ASM_INCLUDE.match(line.rstrip("\r\n"))
+        if not match:
+            expanded.append(line)
+            continue
+        raw = Path(match.group(1))
+        candidates = [raw] if raw.is_absolute() else [ROOT / raw, relative_to / raw]
+        include = next((candidate.resolve() for candidate in candidates if candidate.is_file()), None)
+        if include is None:
+            # Keep the original directive so the assembler can produce its
+            # normal, useful missing-include diagnostic.
+            expanded.append(line)
+            continue
+        if include in stack:
+            chain = " -> ".join(str(item) for item in (*stack, include))
+            raise RuntimeError(f"recursive assembler include: {chain}")
+        nested = include.read_text(encoding="utf-8", errors="replace").splitlines(keepends=True)
+        expanded.extend(_expand_assembly_includes(nested, include.parent, (*stack, include)))
+    return expanded
+
+
+def _assemble_function_at_skew(asm_path: Path, section_name: str,
+                               body_name: str, skew: int
+                               ) -> tuple[bytes, list[tuple[int, str, str, int]], int]:
+    """Reassemble a section after `skew` bytes so mode changes use the real VMA alignment.
+
+    A compiler function section is word-aligned in its isolated object. When a
+    naked body switches between Thumb and ARM at a VMA ending in `...2`, that
+    object can acquire a spurious halfword at `.arm`; in the monolithic link
+    the body starts at its actual halfword-only VMA and the ARM island is
+    already word-aligned. Reassembling the same function body in `.text` after
+    the matching two-byte prefix models that placement exactly.
+    """
+    body = _assembly_section_body(asm_path, section_name)
+    if body is None:
+        raise RuntimeError(f"no assembly section {section_name} in {asm_path}")
+    WORK.mkdir(parents=True, exist_ok=True)
+    tag = re.sub(r"[^A-Za-z0-9_]", "_", f"{body_name}_{skew}")
+    source = WORK / f"{asm_path.stem}_{tag}_skew.s"
+    obj = WORK / f"{asm_path.stem}_{tag}_skew.o"
+    prefix = ".syntax unified\n.cpu arm7tdmi\n.text\n.thumb\n"
+    if skew:
+        prefix += f".space {skew}, 0\n"
+    source.write_text(prefix + "".join(body), encoding="utf-8")
+    assembled = run(["arm-none-eabi-as", "-mcpu=arm7tdmi", "-o", str(obj), str(source)])
+    if assembled.returncode:
+        raise RuntimeError(f"address-skew assembly failed for {body_name}: {assembled.stderr}")
+    record = elf_record(obj)
+    if record is None or ".text" not in record.sections:
+        raise RuntimeError(f"address-skew object for {body_name} has no .text section")
+    text_index = record.section_indices.get(".text")
+    symbol_rows = [row for row in record.symbols
+                   if row[1] == text_index and row[2] == body_name and row[3] > 0]
+    if len(symbol_rows) != 1:
+        raise RuntimeError(f"address-skew object has {len(symbol_rows)} sized {body_name} symbols")
+    offset, _shndx, _name, size = symbol_rows[0]
+    # ELF Thumb function symbols carry bit zero in st_value; it is an ISA tag,
+    # not part of the section byte offset.
+    offset &= ~1
+    data = record.sections[".text"]
+    if offset < 0 or offset + size > len(data):
+        raise RuntimeError(f"address-skew symbol {body_name} is outside .text")
+    body_relocs = [
+        (reloc_offset - offset, reloc_type, symbol, addend)
+        for reloc_offset, reloc_type, symbol, addend in record.relocs.get(".text", [])
+        if offset <= reloc_offset < offset + size
+    ]
+    return data[offset:offset + size], body_relocs, size
+
+
 def link_function(blob: bytes, vma: int, relocs: list[tuple[int, str, str, int]],
                   section_name: str, resolver: SymbolResolver) -> tuple[bytes, list[dict], list[dict]]:
     """Return `blob` with cross-TU calls and absolute pool relocations resolved at `vma`."""
@@ -1023,6 +1194,7 @@ def link_function(blob: bytes, vma: int, relocs: list[tuple[int, str, str, int]]
                     "symbol": sym_name,
                     "target_vma": f"{target_vma:#010x}",
                     "resolved": True,
+                    "branch": True,
                     "size": 2,
                 })
             else:
@@ -1031,8 +1203,61 @@ def link_function(blob: bytes, vma: int, relocs: list[tuple[int, str, str, int]]
                     "symbol": sym_name,
                     "target_vma": None,
                     "resolved": False,
+                    "branch": True,
                     "size": 2,
                 })
+        elif reloc_type == "R_ARM_THM_JUMP8":
+            target_vma = resolver.resolve(sym_name)
+            if target_vma is not None and 0 <= offset <= len(data) - 2:
+                insn_vma = vma + offset
+                instruction = int.from_bytes(data[offset:offset + 2], "little")
+                data[offset:offset + 2] = encode_thumb_b_cond(
+                    insn_vma, target_vma, instruction)
+                call_targets.append({
+                    "offset": offset,
+                    "symbol": sym_name,
+                    "target_vma": f"{target_vma:#010x}",
+                    "resolved": True,
+                    "branch": True,
+                    "size": 2,
+                })
+            else:
+                call_targets.append({
+                    "offset": offset,
+                    "symbol": sym_name,
+                    "target_vma": None,
+                    "resolved": False,
+                    "branch": True,
+                    "size": 2,
+                })
+        elif reloc_type == "R_ARM_JUMP24":
+            target_vma = resolver.resolve(sym_name)
+            if target_vma is not None and 0 <= offset <= len(data) - 4:
+                insn_vma = vma + offset
+                instruction = int.from_bytes(data[offset:offset + 4], "little")
+                data[offset:offset + 4] = encode_arm_b(
+                    insn_vma, target_vma, instruction)
+                call_targets.append({
+                    "offset": offset,
+                    "symbol": sym_name,
+                    "target_vma": f"{target_vma:#010x}",
+                    "resolved": True,
+                    "branch": True,
+                    "size": 4,
+                })
+            else:
+                call_targets.append({
+                    "offset": offset,
+                    "symbol": sym_name,
+                    "target_vma": None,
+                    "resolved": False,
+                    "branch": True,
+                    "size": 4,
+                })
+        elif reloc_type == "R_ARM_V4BX":
+            # ARM7TDMI supports BX natively; GNU ld leaves this marker's
+            # instruction unchanged in the project's pinned ARM7 link.
+            continue
         elif reloc_type == "R_ARM_ABS32":
             if 0 <= offset <= len(data) - 4:
                 raw_val = int.from_bytes(data[offset:offset + 4], "little")
@@ -1176,6 +1401,7 @@ def compare_function(rom: bytes, vma: int, name: str, blob: bytes, spans: dict[i
         "vma": f"{vma:#010x}",
         "rom_bytes": len(ref),
         "cand_bytes": len(blob),
+        "symbol_bytes": sym_size,
         "status": "?",
         "class": None,
         "call_targets": calls,
@@ -1343,6 +1569,19 @@ def self_test() -> int:
         out_of_range = True
     check("b rejects an out-of-range target", out_of_range)
 
+    check("conditional b 0x0802B8BC -> 0x0802B8CA matches ROM bytes",
+          encode_thumb_b_cond(0x0802B8BC, 0x0802B8CA, 0xD000)
+          == bytes.fromhex("05 d0"))
+    try:
+        encode_thumb_b_cond(0x08002000, 0x08002408, 0xD000)
+        cond_out_of_range = False
+    except ValueError:
+        cond_out_of_range = True
+    check("conditional b rejects an out-of-range target", cond_out_of_range)
+    check("ARM bgt 0x0802B95C -> 0x0802B938 matches ROM bytes",
+          encode_arm_b(0x0802B95C, 0x0802B938, 0xCAFFFFFE)
+          == bytes.fromhex("f5 ff ff ca"))
+
     # 3c. trim_section_fill: gas rounds the SECTION up to its 4-byte
     # alignment, so an isolated body whose content is 2 (mod 4) measures 2
     # bytes long with `c0 46` fill. The splice cuts at the body's `.size`, so
@@ -1393,6 +1632,28 @@ def self_test() -> int:
     check("resolver: runtime routine", resolver.resolve("_call_via_r2") == 0x0802DDD0)
     check("resolver: alias target", resolver.resolve("CpuSet") == 0x0802D974)
     check("resolver: decl hint", resolver.resolve("EventPost") == 0x08025BF0)
+    branch_resolver = SymbolResolver(
+        code_syms={"_08002008": 0x08002008, "_08002010": 0x08002010},
+        aliases={}, hints={})
+    cond_linked, cond_calls, cond_pools = link_function(
+        bytes.fromhex("00 d0"), 0x08002000,
+        [(0, "R_ARM_THM_JUMP8", "_08002008", 0)], ".text.cond", branch_resolver)
+    check("R_ARM_THM_JUMP8 relocation is resolved at the instruction VMA",
+          cond_linked == bytes.fromhex("02 d0") and len(cond_calls) == 1
+          and cond_calls[0]["resolved"] and cond_calls[0]["branch"]
+          and not cond_pools)
+    arm_linked, arm_calls, arm_pools = link_function(
+        bytes.fromhex("fe ff ff ca"), 0x08002000,
+        [(0, "R_ARM_JUMP24", "_08002010", 0)], ".text.arm", branch_resolver)
+    check("R_ARM_JUMP24 relocation preserves condition and is resolved",
+          arm_linked == bytes.fromhex("02 00 00 ca") and len(arm_calls) == 1
+          and arm_calls[0]["resolved"] and arm_calls[0]["branch"]
+          and not arm_pools)
+    _, bx_calls, bx_pools = link_function(
+        bytes.fromhex("10 ff 2f e1"), 0x08002000,
+        [(0, "R_ARM_V4BX", "*ABS*", 0)], ".text.bx", branch_resolver)
+    check("R_ARM_V4BX compatibility marker does not create a fake unresolved window",
+          not bx_calls and not bx_pools)
     check("VMA aliases with an extra zero normalize to one address",
           parse_vma_name("_080028250") == parse_vma_name("_08028250") == 0x08028250)
     check("VMA parser rejects a trailing hex digit", parse_vma_name("_080282500") is None)
@@ -1578,6 +1839,15 @@ def self_test() -> int:
             run(["clang", "-E", "-nostdinc", "-undef", "-I", str(tdp), str(body)], stdout=h)
         check("a header edit changes the TU cache key",
               _tu_cache_key(tdp / "a.i", True) != _tu_cache_key(tdp / "c.i", True))
+        asm_input = tdp / "inline_body.inc"
+        asm_input.write_text("nop\n", encoding="utf-8")
+        asm_pre = tdp / "asm.i"
+        asm_pre.write_text("__asm__(" + json.dumps(f'.include "{asm_input}"\n')
+                           + ");\n", encoding="utf-8")
+        asm_key_before = _tu_cache_key(asm_pre, True)
+        asm_input.write_text("mov r0, r0\n", encoding="utf-8")
+        check("an inline-assembly include edit changes the TU cache key",
+              _tu_cache_key(asm_pre, True) != asm_key_before)
         # Negative control: the key must NOT be the .c content alone, or the
         # case above would pass for the wrong reason.
         check("TU cache key is not just the source file bytes",
@@ -1882,25 +2152,55 @@ def main() -> int:
             blob = None
             calls = []
             pools = []
+            candidate_size = None
+            selected_section = None
+            selected_relocs = None
             for key in keys:
                 if key in sections:
                     if all_relocs is not None:
                         relocs = all_relocs.get(key, [])
                     else:
                         relocs = relocations(obj, key)
-                    blob, calls, pools = link_function(sections[key], vma, relocs, key,
-                                                       local_resolver)
+                    blob = sections[key]
+                    selected_relocs = relocs
+                    candidate_size = sizes.get(name) or sizes.get(target or "")
+                    selected_section = key
                     break
             if blob is None:
                 unsc.append({"name": name, "vma": f"{vma:#010x}",
                              "reason": "compiled function section missing"})
                 continue
+            # Reassemble mixed ARM/Thumb naked bodies at their actual
+            # halfword-only VMA. The standard isolated function section is
+            # word-aligned; a `.arm` transition can consequently gain a
+            # spurious 2-byte pad that is absent in the monolithic link.
+            skewed_mixed_mode = False
+            if vma & 2 and selected_section:
+                section_body = _assembly_section_body(src, selected_section)
+                if section_body and any(line.strip() == ".arm" for line in section_body):
+                    skewed_mixed_mode = True
+                    body_name = selected_section[len(".text."):]
+                    try:
+                        skew_blob, skew_relocs, candidate_size = _assemble_function_at_skew(
+                            src, selected_section, body_name, vma & 3)
+                    except RuntimeError as exc:
+                        unsc.append({"name": name, "vma": f"{vma:#010x}",
+                                     "reason": str(exc)})
+                        continue
+                    blob, calls, pools = skew_blob, [], []
+                    selected_relocs = skew_relocs
+            if not skewed_mixed_mode:
+                blob, calls, pools = link_function(blob, vma, selected_relocs or [],
+                                                   selected_section or "", local_resolver)
+            else:
+                blob, calls, pools = link_function(blob, vma, selected_relocs or [],
+                                                   ".text", local_resolver)
             if vma not in spans:
                 unsc.append({"name": name, "vma": f"{vma:#010x}",
                              "reason": "ROM function span not independently known"})
                 continue
             rec = compare_function(rom, vma, name, blob, spans, calls, pools,
-                                   sizes.get(name) or sizes.get(target or ""))
+                                   candidate_size)
             if rec:
                 rec["source"] = str(path.relative_to(ROOT))
                 rec["body_stmts"] = body

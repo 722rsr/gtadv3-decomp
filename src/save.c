@@ -1527,10 +1527,10 @@ void _08024B70(void) __attribute__((alias("SaveGuardedFull")));
 void SaveGuardedSaveOnly(void) { sub_0802B234(); sub_0802B190(); SAVE_CALL_BLOCK2_SAVE(); sub_0802B1B8(); }
 __asm__(".align 2, 0");
 void _08024BC0(void) __attribute__((alias("SaveGuardedSaveOnly")));
-// Friendly-name wrappers used by rec35_stage.c, which declares both of these
-// `extern void` (rec35_stage.c:8-9) — matching the ROM epilogues above.
-void GuardedSaveOnly(void) { SaveGuardedSaveOnly(); }
-void GuardedFullSave(void) { SaveGuardedFull(); }
+// Friendly ROM aliases used by rec35_stage.c. Keeping them bound to the
+// original bodies avoids an extra wrapper branch in the independent slice.
+void GuardedSaveOnly(void) __attribute__((alias("SaveGuardedSaveOnly")));
+void GuardedFullSave(void) __attribute__((alias("SaveGuardedFull")));
 void SaveGuardedLoadOnly(void) { sub_0802B234(); sub_0802B190(); SAVE_CALL_BLOCK2_LOAD(); sub_0802B1B8(); }
 __asm__(".align 2, 0");
 void _08024BD8(void) __attribute__((alias("SaveGuardedLoadOnly")));

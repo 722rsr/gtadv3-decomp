@@ -187,3 +187,4 @@ _0800C000: .word 0x03001780
 _0800C004: .word 0x00000FF2
 _0800C008: .word 0x0000103A
 _0800C00C: .word 0x000010E5
+menu_place_end:

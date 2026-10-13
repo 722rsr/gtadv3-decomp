@@ -126,3 +126,4 @@ _0802CD0A:
 	pop {r0}
 	bx r0
 _0802CD14: .word 0x68736D53
+sound_start_end:

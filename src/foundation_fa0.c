@@ -3,18 +3,18 @@
 #include "gba/regs.h"
 
 
-void IntrMain_Dispatch(void *ctx, int r1){
-    // r0=ctx (sl), r1=arg
-    if((unsigned)r1 > 15){
-        // subs r0,r1,#1; mov r1,sl; strb r0,[r1]
-        *(vu8*)ctx = (u8)(r1-1);
-        return;
-    }
-    // else dispatch on +24 value etc — bounded residual for the IntrWait-table
-    // interior (see header note); the cluster's VMAs are covered per coverage.
-    (void)ctx; (void)r1;
+// The 1004-byte Thumb state machine starts at 0x08000F84 and continues
+// through the former code_fa0.s prefix to 0x08001370. Its exact instruction
+// stream is shared with the assembly source; this is a naked C-owned body,
+// not yet a high-level reconstruction.
+__attribute__((naked)) void IntrMain_Dispatch(void *ctx){
+    __asm__ volatile (
+        ".syntax unified\n"
+        ".include \"asm/intrmain_dispatch_body.inc\"\n"
+        ".syntax divided\n"
+    );
 }
-void _08000FA0(void *a,int b) __attribute__((alias("IntrMain_Dispatch")));
+void _08000F84(void *ctx) __attribute__((alias("IntrMain_Dispatch")));
 
 int Helper_014A4(void *p){
     // 0x014A4: ldrb r0,[r0,#24] cmp #233 -> 1:0

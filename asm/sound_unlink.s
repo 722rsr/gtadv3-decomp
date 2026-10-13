@@ -14,7 +14,8 @@
 @ Boundary proof :
 @  - entry 0x0802BC64: handler-table pointer word 0x0802BC65 at ROM
 @    0x061568 (sequencer opcode dispatch table 0x06154C..0x06156C);
-@    preceding pad halfword 0000 at 0x02BC62 after _0802BC4C bx lr.
+@    preceding pad halfword 0000 at 0x02BC62, included after
+@    _0802BC4C bx lr in sound_mixer_leaf.s.
 @  - end: bx lr at 0x0802BC82; next fn _0802BC84 starts 0x02BC84
 @    (table ptr 0x0802BC85 x5 at 0x061540..0x061550).
 @  - callers: exactly one BL (at 0x0802BC9E inside raw _0802BC84

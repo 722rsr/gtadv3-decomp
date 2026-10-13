@@ -173,3 +173,4 @@ _080164CC:                      @ shared epilogue (armcc interworking return)
 	pop	{r0}
 	bx	r0
 .short	0x0000                  @ armcc pad halfword (@0x164D2)
+rec35_driver_end:

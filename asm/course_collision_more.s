@@ -164,3 +164,4 @@ _08007100:
         pop {r4, r5, r6, r7}
         pop {r1}
         bx r1
+course_collision_more_end:

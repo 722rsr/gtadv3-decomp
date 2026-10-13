@@ -617,3 +617,4 @@ _0800F03A:
   pop {r4, r5}
   pop {r0}
   bx r0
+menu_ebd8_end:

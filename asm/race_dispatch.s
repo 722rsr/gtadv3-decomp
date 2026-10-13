@@ -443,3 +443,4 @@ _0800B4A0:
 	.word 0x00000574
 _0800B4A4:
 	.word 0x00000FF2
+race_dispatch_end:

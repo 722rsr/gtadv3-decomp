@@ -89,7 +89,7 @@
   "source_closure": [
     {
       "path": "asm/agbmain.s",
-      "sha256": "f5e9c4e8d5c9d04823866fadc330607970293288b2ec3fa00114db23d16cd76a"
+      "sha256": "9f11cee09df0aab6b1ed08f97554b02301141285efd82892f437897b49f74678"
     },
     {
       "path": "asm/ai_award_bitset.s",
@@ -113,7 +113,7 @@
     },
     {
       "path": "asm/ai_collect.s",
-      "sha256": "bd455072830d51b1684608e13083b58f484f7733a63870e09a80e385c6578d34"
+      "sha256": "1e3e20e90fd7a7f06345501bfd910b8a1863b47b3fc6eed287f6a252d1ac9c16"
     },
     {
       "path": "asm/ai_grid.s",
@@ -201,7 +201,7 @@
     },
     {
       "path": "asm/ai_racefsm.s",
-      "sha256": "cd828efa787709d807b5f6f8ae36f8d9bdb980f133554e2f08948bc73e47bde6"
+      "sha256": "a1bd6ef4dad703552b4f2ae5edcfa579096c72720087563f2bbfc3404e2f6ee4"
     },
     {
       "path": "asm/award_grid.s",
@@ -209,7 +209,7 @@
     },
     {
       "path": "asm/award_pkt.s",
-      "sha256": "ef4d4eba1291442be83cb511f9fec492d03a4428bf259b9085d3db1e6f5bc0d3"
+      "sha256": "ebb1218c8814fc69bc644e7ecead3cb7dc26c4974fccba5fd48f449990a6e987"
     },
     {
       "path": "asm/award_twins.s",
@@ -217,7 +217,7 @@
     },
     {
       "path": "asm/blocka.s",
-      "sha256": "061d0b88ef0f7028200dfd4c87fce82f725f59c8ba526900e11a4eb1084962ee"
+      "sha256": "d6fc30791563de20798775f4431cbf165a1cbb1b12b32f95089db81128458a3c"
     },
     {
       "path": "asm/blockb.s",
@@ -269,11 +269,11 @@
     },
     {
       "path": "asm/code_23628.s",
-      "sha256": "d712631f9bff7fce3ae498c9effb0e4219c9cd5d50fd47218f030e7940d195f0"
+      "sha256": "3fc5c33818fa5952381e1465591f639d8240026bc35e636cb7d01b142f4587de"
     },
     {
       "path": "asm/code_2381c.s",
-      "sha256": "3d60c44e06426d8f139ce840e260eece7fbd24cf88a30589934ddf78cc7961d6"
+      "sha256": "bcc00df77cf411ba0d9ba812972d7492d95c85f8bd4710f53b65b362904cfbd1"
     },
     {
       "path": "asm/code_23a34.s",
@@ -281,11 +281,11 @@
     },
     {
       "path": "asm/code_23bd4.s",
-      "sha256": "3fb534e615c0dacd53bef23febb59081ce9fc7589744712d190ff45f524271d5"
+      "sha256": "cf051880c5c47f2b59b33fe9a06bb270d99352bee1675a3c188a323d11e0dcb7"
     },
     {
       "path": "asm/code_23d4c.s",
-      "sha256": "821e04d85b6eb6c1ccdb6d1372e010e8f88bb91337ac70158d1da64f5a6340ed"
+      "sha256": "6817b90cf9e453bf94d472be5e768447945994cfbc37b45e0af023885c3ac17a"
     },
     {
       "path": "asm/code_23e0c.s",
@@ -325,7 +325,7 @@
     },
     {
       "path": "asm/code_2446c.s",
-      "sha256": "d88bc29056fb4ea8336511d5abc782a92a1ad3ea679e9af1fd026d86245ca4e6"
+      "sha256": "f7233b3d094ef9631dd49fe846f464c37d578d31ddfdae2cb54c8a431749e015"
     },
     {
       "path": "asm/code_24ac.s",
@@ -357,7 +357,7 @@
     },
     {
       "path": "asm/code_25264.s",
-      "sha256": "ecf01950baa2d446cbda305ef72b8760b2a9bc6aaf860adf3d6cb63a3b4ba241"
+      "sha256": "8779120c36d19b56916cdd2639fa6e423c6ca8d54a832bfaacd5b31975a6d495"
     },
     {
       "path": "asm/code_258a8.s",
@@ -385,7 +385,7 @@
     },
     {
       "path": "asm/code_263e0.s",
-      "sha256": "329c767a3fc8f9072e8f81a3884297dadceee57ea5635f5109ad5427b561e6cd"
+      "sha256": "2c688b1d52167f3dea93733ddc859829f9d6c231258b0b3767e301faf20a04ff"
     },
     {
       "path": "asm/code_2694.s",
@@ -433,11 +433,7 @@
     },
     {
       "path": "asm/code_2de96.s",
-      "sha256": "b509cc4579264c1624482dc19282cfc847dd802a778488123ad6ac84433ab062"
-    },
-    {
-      "path": "asm/code_2df6a.s",
-      "sha256": "fcd71b23876b3daeb5f20ce37a681600e60d3cc7ae6a4b8b923f91a7e4f5b147"
+      "sha256": "aa1f73ef5b00d47e16e21dd64b3a132c103e36d386070efe1c2d7812493d61a4"
     },
     {
       "path": "asm/code_4a2c.s",
@@ -505,11 +501,11 @@
     },
     {
       "path": "asm/code_fa0.s",
-      "sha256": "10cb0ff6da15a5ac0ca851852a577ef8b450d900ba5651f27accfdb7a49a41c3"
+      "sha256": "30aff9286e4a72ca638a962bef4a3187e6d269b950e1838613a23a1f4418fd7e"
     },
     {
       "path": "asm/course_builders_8290.s",
-      "sha256": "58894e44894851e4e3f7731a598386e40fc7797a48a3c8be4b441462e3d2f04d"
+      "sha256": "ece2b444f4e1f342602224af8435b6a3d0a2a3fc97e28a6d15b40602270fa954"
     },
     {
       "path": "asm/course_cal.s",
@@ -517,15 +513,15 @@
     },
     {
       "path": "asm/course_collision.s",
-      "sha256": "f39610ca6f2d485bc93ae778e66f66f644f4216dd24f8fa87422cda2eb82e7ea"
+      "sha256": "0f2d0b4fae65de1fce78b6bb6f335fcc48650b9f6dfd47532f7e37fc44565583"
     },
     {
       "path": "asm/course_collision_loop.s",
-      "sha256": "d0611448b63c0a9f734bb83694ccf61a3fdab006b4ffb48dd5e76dbe939dc365"
+      "sha256": "839351f9d16676b9383a2e9212e68be4376e6883664f9bd982e52d3faa31322b"
     },
     {
       "path": "asm/course_collision_more.s",
-      "sha256": "ab51250b6b0b11f881f42c7c8ee89488e6e5bdbea9adb4e55023c58e5f4ef397"
+      "sha256": "c1ba7bd6e5d21aa16b94d869cfda54f95410f477f527064ddded69cc5004e218"
     },
     {
       "path": "asm/course_cursor_reset.s",
@@ -533,7 +529,7 @@
     },
     {
       "path": "asm/course_dispatch_8aac.s",
-      "sha256": "864598dabcc2a403d9b55e3a029e0629ddc94dabdc5651bf8d684647a32f7553"
+      "sha256": "77fcd8b61db42bbd6616ec1989dc39ae4a5b643c09351da76d1a50ab3e2713d1"
     },
     {
       "path": "asm/course_leaves_95f0.s",
@@ -549,7 +545,7 @@
     },
     {
       "path": "asm/course_proximity.s",
-      "sha256": "c7577e9271c72eac0a211c685560457e9d1512d7583f1b335cb80950ca9687e8"
+      "sha256": "bb88d2cf2aca254ff8d35c9ababda2d8bdfb0dba0df8047dc2bc39970e131b32"
     },
     {
       "path": "asm/course_proximity_more.s",
@@ -589,7 +585,7 @@
     },
     {
       "path": "asm/course_scan.s",
-      "sha256": "72897c9a41ab523fa09f0e0b269492d553a5d9c8c4f315355a3ea9f2255e1118"
+      "sha256": "dbbf6f787f528545d4396ca8a958012305ab743fb3127dffa36bf7d3e6217608"
     },
     {
       "path": "asm/course_stream.s",
@@ -597,7 +593,7 @@
     },
     {
       "path": "asm/course_stream_6650.s",
-      "sha256": "d58acf68a6d7f8d54c39ad6ce785e79dfc2e534fe15517d112dd93b0ec293320"
+      "sha256": "e41ac46be2bdb892a4dc02c9a6d5c510f5be4cf9ba2e1419c48fdc735fc9385d"
     },
     {
       "path": "asm/course_stream_more.s",
@@ -613,7 +609,7 @@
     },
     {
       "path": "asm/garage_26f50.s",
-      "sha256": "b59839c197302216b072353bf5f3809a2ac1ce53fe0d980674abad8317b88e67"
+      "sha256": "f0d317bf37441bf4a7a758078e2f480b37f01deb24e030079637b62ce780c20c"
     },
     {
       "path": "asm/ghost.s",
@@ -621,15 +617,15 @@
     },
     {
       "path": "asm/go_start.s",
-      "sha256": "4826bd86df49b41703bd2f9b563e8c1f33b4accfd7894d038687ba9ac5df2143"
+      "sha256": "4242a2f418b55c65e6b2176df9c060352d711d6ce178abc3664abcb8052c43fb"
     },
     {
       "path": "asm/grant_delay.s",
-      "sha256": "a01e0c69f630323cda4b8e5011edda76c3b402db6ce2aa780016d30d9bb55c32"
+      "sha256": "9084e3532fe275ebdadb5f2fbad38d271182e81acfae3fa9a1e8a8684778669e"
     },
     {
       "path": "asm/handlers.s",
-      "sha256": "11f205329c458fefd325ecc7b8108d5cf3f4008fa9023c8adec27bbcb6331df0"
+      "sha256": "ea17fd67062dcf7b854911ce1153c590f7514355c5f71f3933afcb51f218570b"
     },
     {
       "path": "asm/header.s",
@@ -638,6 +634,14 @@
     {
       "path": "asm/idle.s",
       "sha256": "4de5c3af06c216694de24fb75404dcc61ff5afd7fa732a9ed340f661f4345321"
+    },
+    {
+      "path": "asm/intrmain_dispatch.s",
+      "sha256": "c7a14649bcc0e5b918b9e1203f748b73fff7e496d2258f27eb4b24585d1acce5"
+    },
+    {
+      "path": "asm/intrmain_dispatch_body.inc",
+      "sha256": "ba29b6661869eaea35c46de4aa0691b300d0caa351f601906f63df1ae7c987e0"
     },
     {
       "path": "asm/keypad.s",
@@ -661,7 +665,7 @@
     },
     {
       "path": "asm/menu_c4d0.s",
-      "sha256": "fe23f7eb623c46a58686cd4f6720d0dd02e11be5ff6f96f0706fe767b63015ef"
+      "sha256": "ceb0b875351ba6f33691e43bae5f486b3a0814d5c710d57d00d71d7d9f3ada8b"
     },
     {
       "path": "asm/menu_c604.s",
@@ -677,11 +681,11 @@
     },
     {
       "path": "asm/menu_c884.s",
-      "sha256": "f5e09b06ffd1fabe40a742a6049a12f233241212a3c78c61662c3e84dd87113e"
+      "sha256": "7c417641d3b318148b81d5dbe114f6fa203551e36b9b2c92912bf081149193b1"
     },
     {
       "path": "asm/menu_cae4.s",
-      "sha256": "0a68b0b20a68b00f5340bc26fe5a87ce51658f8e7763e180bcf6b69fe6ddcadd"
+      "sha256": "fc32aea32f62f1b86bc4ef19ecabc0113bff8fc309df356138770495d0ac5f38"
     },
     {
       "path": "asm/menu_cc38.s",
@@ -713,7 +717,7 @@
     },
     {
       "path": "asm/menu_d048.s",
-      "sha256": "406d7f5aabf111d66d55968652b713b67535498655e5114a351f9e0354521925"
+      "sha256": "c7f007e4b513a462e53a1e43a31f022110299a6515595623e5a01e294fde6313"
     },
     {
       "path": "asm/menu_d13c.s",
@@ -761,11 +765,11 @@
     },
     {
       "path": "asm/menu_e650.s",
-      "sha256": "22931b66aeb411950d558f39bf9364122290312da8e002e7d5120c65bb84ae54"
+      "sha256": "bcd73423a9431f32bf89bc817bff50a212d33304690fc3985637654a6ce29fe3"
     },
     {
       "path": "asm/menu_ebd8.s",
-      "sha256": "4d151c8eae53f11327b832a0e133f72b886223f0f9579cb42a7c25343f99ffc2"
+      "sha256": "6bd675fed5592a52cbc5d4d72a8e02c7da4f031f35ea839e7e558056a0bf7106"
     },
     {
       "path": "asm/menu_f040.s",
@@ -797,7 +801,7 @@
     },
     {
       "path": "asm/menu_fa24.s",
-      "sha256": "13cffdd563340d444847ee36edea3394fb87925d6546ccafeaea9400d7a1bd2b"
+      "sha256": "dfa832b4814c5442986e083eb0a08c441471af79def71c4275c8f4ccb1264e09"
     },
     {
       "path": "asm/menu_ff78.s",
@@ -809,11 +813,11 @@
     },
     {
       "path": "asm/menu_place.s",
-      "sha256": "4a535c1b7ba9f890d17a5159b422246c8c39f2e93d2ccff9f18ad62c88e0a9b3"
+      "sha256": "f45afbfd50eb20ddb36f126a3050086178c411b97291aeeef4f99dfea70a606f"
     },
     {
       "path": "asm/menu_progress_update.s",
-      "sha256": "948ae86ec62168eed15092bd690d7e6596ee3d7c5b4a007ee5f2ef05f4292a5e"
+      "sha256": "e55e00915f828530a1fb0e272a5b94f512dcd80b27493d3c52e49990f4ae8f26"
     },
     {
       "path": "asm/menu_record_apply.s",
@@ -825,27 +829,31 @@
     },
     {
       "path": "asm/menu_setup.s",
-      "sha256": "c1093105b300c251c3743ecd24d3f5878a986c7e05726879d5e67197a7401978"
+      "sha256": "92e416cd7ec78640ac08b8adc9196f902d4324459cc2ddfb7ec9aa652d553c28"
     },
     {
       "path": "asm/mixer_2b888.s",
-      "sha256": "9fb4685c0a07ea14cf92fa11076fd158500e406a32bc9e57fa9774d0952ba71d"
+      "sha256": "ece9faafedc5ce10c67c5247ecc6d1c20144354c9f954cda681ad10e5e58da79"
+    },
+    {
+      "path": "asm/mixer_2b8aa_body.inc",
+      "sha256": "9a6fbee6f95407347dbe94d5c0054b480bcca948a26e01505b27f923b9e70845"
     },
     {
       "path": "asm/passthrough.inc",
-      "sha256": "9b07ffbc5f687096352d3930e17eaf368ba8ad51eacf3a738c707b41598513bf"
+      "sha256": "402fd3e773dc6cb55caceeae7423890ce04838f1bffcfbc17050198725dd1c49"
     },
     {
       "path": "asm/race_cluster.s",
-      "sha256": "da494172fa1e647ac727eba971c7c18e974666f83e696b108651f40f2345a26d"
+      "sha256": "7f91fa1f4ca75123f8b7dfc8fc964b9c2ac21cb8b8ecbd7497823347c4532d27"
     },
     {
       "path": "asm/race_dispatch.s",
-      "sha256": "a2bbc19c497046690d7f103e16625cdeede2afce7ec67e5464622b90948d0907"
+      "sha256": "d61d992cdef6985ba73786649bc9efc915952688d4ae310ec19e3b7f113a9698"
     },
     {
       "path": "asm/race_progress.s",
-      "sha256": "e33b27c69513a16d1bb64c86023b43cb27f2d8e44ce47b08a8d9e5267f572f8a"
+      "sha256": "ef544f7b476760157d1e69e66bfcd6525eb6e885bd123b0c8a04fb038f88cf55"
     },
     {
       "path": "asm/race_scene.s",
@@ -857,11 +865,11 @@
     },
     {
       "path": "asm/rec35_16002.s",
-      "sha256": "a729c8b8f0cfa4686ad2297ceab2e5c9abf648dd2811c7fe6dd02b5d12f90acf"
+      "sha256": "2e507a2e6d76a2ac94d8c75befff63334e07065e0f4f44cfdc55fac0da0b30e4"
     },
     {
       "path": "asm/rec35_driver.s",
-      "sha256": "183946ef69f609e60442ba76ec59addc421d0ee898a801a416bd0f3c28b811b6"
+      "sha256": "a3c8911b58fbe00323a454c7e00f35d6f770f19e5ae6c523db28d282527851b5"
     },
     {
       "path": "asm/rec35_helper.s",
@@ -869,15 +877,15 @@
     },
     {
       "path": "asm/rec35_init.s",
-      "sha256": "841639ed7f255a4bd8f72033c4b061fa5e798f2aaa51f95284b0905c4a1742e6"
+      "sha256": "1d3f8ff8b518d6ce0ca00abf1f96f1a648aa5139c4de0d04bd353f98184126a5"
     },
     {
       "path": "asm/rec35_runtime.s",
-      "sha256": "b3fba9e0988ed7bcf2c18bd320aa5bb309a7bb26583d49139d5fbc7ffe3ef133"
+      "sha256": "bb18b9d51d754d558bcd505bd0a8bf01345c69d9bf6b8463fd0815008dee5456"
     },
     {
       "path": "asm/rec35_stage.s",
-      "sha256": "67049a59473a0f1e361241f71c3c8f496f2e811faf45dff5e2e0a5c8ab75ddc1"
+      "sha256": "2187c20422f8f9936310e3d266fed20bc636856735dc34f8185dee17625f6a20"
     },
     {
       "path": "asm/resource_wrap.s",
@@ -933,11 +941,11 @@
     },
     {
       "path": "asm/sound_aeabi_idiv.s",
-      "sha256": "7ec8ebca429444a46e27c9fd1575d17682af58011291ad23b40252b0f517041b"
+      "sha256": "dfb9669f39f72e9b11c94b8b5181b565ff0ecaeb7f4cfcb90fc41a259eeb0a2c"
     },
     {
       "path": "asm/sound_aeabi_idiv_core.s",
-      "sha256": "d042be5359bd4c207fcdc08db984fd153a8e556e45c1902b8cdb807769d9e6a5"
+      "sha256": "1ebec79fd528b6ae9856fbcd6ac1e075600bfc1ab0a774cab1a29493ba7a0965"
     },
     {
       "path": "asm/sound_alloc.s",
@@ -969,11 +977,11 @@
     },
     {
       "path": "asm/sound_control.s",
-      "sha256": "8d3540898bbaf4bbefaff821e5780386fda55bec1b964ce6e82580ad89dcbbb8"
+      "sha256": "06ca6b3dd3921a185cc2ca1a75102ff3cb09e5eaa445626e6049ce6c3b67509c"
     },
     {
       "path": "asm/sound_d034.s",
-      "sha256": "3fc4fa33ae4d09bf47145984aaeaf2914a25a8122f6cf0da3af5de4d765ec3bf"
+      "sha256": "97f10c6f9f541d351362ef0576a1792ac17de6d0ec1f67f9df12258ac50b9f28"
     },
     {
       "path": "asm/sound_d480.s",
@@ -1017,7 +1025,7 @@
     },
     {
       "path": "asm/sound_dc54.s",
-      "sha256": "fbcdb534fb92386584be5957c3d32cc47b794fe2f694d1616a41b63f09d9ec88"
+      "sha256": "f5ba516000c5eec4dfa8f4339eff979bf9366730a30b30fc57e544a5f6513db4"
     },
     {
       "path": "asm/sound_dd30.s",
@@ -1029,11 +1037,11 @@
     },
     {
       "path": "asm/sound_divmod.s",
-      "sha256": "24473ed3f9960ee6b48bddf74e257c52e485d7d3441c7a6e71f3277251796698"
+      "sha256": "b79101e0ad0d827f497979344fe0f1299f927c7d1d23486ad0ccbb01946786f3"
     },
     {
       "path": "asm/sound_fade.s",
-      "sha256": "ad71c83182fd491369720b11a970eefe231bc13f6e2dc6900b8e7e128ba588fd"
+      "sha256": "5a318bcb629217a11c373df738194b2d2b0fafb6eb117f332152fcb342ecfb1e"
     },
     {
       "path": "asm/sound_followon.s",
@@ -1053,11 +1061,11 @@
     },
     {
       "path": "asm/sound_mixer_leaf.s",
-      "sha256": "020e68358b966908a3b1ad14b95bddcd018b72bab5571840a8fbad6b09da56f3"
+      "sha256": "cf9d264cdbc5722656bf60796e0dba24e200fbbe1ccbcddb6b1f5b89af7e593e"
     },
     {
       "path": "asm/sound_mixer_tail.s",
-      "sha256": "01f00dee0780aff5f7c968173ff909eb7dba1a7cad71c6086cea2feabf27f732"
+      "sha256": "f2bdb2d4cb71467b4160b73df0450a1c900cd450ab7737330efb16a56cae5960"
     },
     {
       "path": "asm/sound_more.s",
@@ -1065,7 +1073,7 @@
     },
     {
       "path": "asm/sound_note_on.s",
-      "sha256": "e334d43ef0a1de93d722e790a0d1322adc6d5aca1fffa1a7a557c8ad6024cd1e"
+      "sha256": "a3b8b6459a12c8bed41a95c1259955334e616d83fc19d0f2c45c8a026f04d072"
     },
     {
       "path": "asm/sound_pause.s",
@@ -1077,7 +1085,7 @@
     },
     {
       "path": "asm/sound_pump.s",
-      "sha256": "0c1b1a312fca18741f0761a7536e80d2f7cf7cc16e7465a4275d506f4c510abe"
+      "sha256": "15b49789042756e2b611d5ac4862e97ad73178408ee7cf787369e68f4c3ff8cb"
     },
     {
       "path": "asm/sound_reset.s",
@@ -1093,7 +1101,7 @@
     },
     {
       "path": "asm/sound_start.s",
-      "sha256": "bf1c78b5ae38ed0f73215970930a36cded31e2f3e13deba698220a9d9a52b4dd"
+      "sha256": "4a2043046a5768c154c413d06e1875eb4bc797e9c90086c4fac8c8cb1930a90e"
     },
     {
       "path": "asm/sound_state.s",
@@ -1117,11 +1125,11 @@
     },
     {
       "path": "asm/sound_uaeabi_uidiv.s",
-      "sha256": "71a1c371b3deae9737aeae8f8adc7c0dbf438e0f8a429711961c2c2f8d12d38a"
+      "sha256": "fbb64af1ef383a3db3de9575b6241803a7c9b63934361db26000152b2248f7a9"
     },
     {
       "path": "asm/sound_unlink.s",
-      "sha256": "b33a015b7f42119c3fcb6dc9f42fe322999531e480e59a8a1cb7b1900cae1208"
+      "sha256": "827433fda6dd320f0596927196775f84f5595111101995349b24260b63111cb6"
     },
     {
       "path": "asm/sound_veneer.s",
@@ -1141,7 +1149,7 @@
     },
     {
       "path": "asm/sound_voice_tick.s",
-      "sha256": "2892af6391824cf1812fa0ae270e889fe49cccb68231fbca8af4e1e9e46a7de2"
+      "sha256": "8cfa361e3a85e5a0995f195026e33bd13fc918ebb26a522b63c93bf3b05ea0a8"
     },
     {
       "path": "asm/surface_access.s",

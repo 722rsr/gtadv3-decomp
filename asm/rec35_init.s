@@ -177,3 +177,4 @@ _08015E18:
 	pop {r0}
 	bx r0
 	.short 0
+rec35_init_end:

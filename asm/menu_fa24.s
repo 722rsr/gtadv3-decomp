@@ -641,3 +641,4 @@ _0800FF54:
 	bx r0
 	.align 2, 0
 _0800FF74: .4byte 0x082D9EF8
+menu_fa24_end:

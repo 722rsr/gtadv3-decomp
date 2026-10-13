@@ -24,7 +24,7 @@ two copies that could drift apart.
 | Slice SHA-256 | `c1150ffd31756a56e25132baf780107de1ecad9a821db8b5901fb5b92484e028` |
 | `.incbin` in closure | `0` |
 | External boundary symbols | `0` |
-| Included source files | `266` |
+| Included source files | `268` |
 
 The build is: assemble `asm/code.s` (which includes only
 reconstructed sources), resolve its out-of-slice calls from the generated

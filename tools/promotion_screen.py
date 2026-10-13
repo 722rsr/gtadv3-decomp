@@ -228,6 +228,74 @@ def vma_of(name: str) -> int | None:
     return 0x08000000 | int(match.group(1), 16) if match else None
 
 
+def absolute_code_target(call: dict, function_starts: dict[int, int]) -> int | None:
+    """Resolve a numeric BL target only when the probe and ROM inventory agree.
+
+    GNU as represents a literal `bl 0x0802D974` relocation with an absolute
+    symbol spelling such as `*ABS*0x802d974`. This is already a fully resolved
+    address in the compiled body, so it does not need a closure export. The
+    spelling alone is not enough: require the probe's resolved VMA to agree and
+    require that VMA to be a known function start, which excludes data and
+    interior branch points.
+    """
+    if call.get("resolved") is not True:
+        return None
+    symbol = call.get("symbol", "")
+    match = re.fullmatch(r"\*ABS\*0x([0-9a-fA-F]+)", symbol)
+    if not match:
+        return None
+    raw_vma = int(match.group(1), 16)
+    vma = raw_vma if raw_vma >= ROM_BASE else ROM_BASE | raw_vma
+    try:
+        observed = int(call.get("target_vma", ""), 16)
+    except (TypeError, ValueError):
+        return None
+    if observed != vma or vma not in function_starts:
+        return None
+    return vma
+
+
+def absolute_closure_target(call: dict, closure_symbol_addresses: set[int]) -> int | None:
+    """Accept a numeric target when the closure defines a symbol at that address.
+
+    Some mixed-ISA bodies branch or BL to a private label inside a neighboring
+    assembly span. A numeric operand creates no symbolic relocation at splice
+    time, but requiring an exact closure symbol at the target still proves the
+    address is present in the independently assembled code.
+    """
+    if call.get("resolved") is not True:
+        return None
+    match = re.fullmatch(r"\*ABS\*0x([0-9a-fA-F]+)", call.get("symbol", ""))
+    if not match:
+        return None
+    raw_vma = int(match.group(1), 16)
+    vma = raw_vma if raw_vma >= ROM_BASE else ROM_BASE | raw_vma
+    try:
+        observed = int(call.get("target_vma", ""), 16)
+    except (TypeError, ValueError):
+        return None
+    return vma if observed == vma and vma in closure_symbol_addresses else None
+
+
+def local_branch_target(call: dict, entry_vma: int, end_vma: int,
+                        function_starts: dict[int, int]) -> bool:
+    """Is a resolved branch target a label inside this function body?
+
+    Numeric branch expressions become `*ABS*0x...` relocations just like
+    external calls. Interior labels are part of the scored byte span, not
+    closure dependencies. Preserve a target that is the known start of a
+    different function nested in that span; it remains a real dependency.
+    """
+    if call.get("branch") is not True or call.get("resolved") is not True:
+        return False
+    try:
+        target = int(call.get("target_vma", ""), 16)
+    except (TypeError, ValueError):
+        return False
+    return (entry_vma <= target < end_vma
+            and (target == entry_vma or target not in function_starts))
+
+
 def closure_files() -> set[Path]:
     """The slice's include closure, starting at `asm/code.s`."""
     seen: set[Path] = set()
@@ -657,6 +725,7 @@ class Screen:
         probe = _probe()
         spans = probe.rom_functions()
         rom = probe.ROM.read_bytes()
+        closure_symbol_addresses = set(getattr(self, "nm_addrs", {}).values())
         staged: list[dict] = []
         blocked: list[tuple[str, str]] = []
         counts = {"considered": 0, "promoted": 0, "not-promotable": 0}
@@ -674,8 +743,17 @@ class Screen:
                 blocked.append((rec["vma"], f"body {body} already owns "
                                              f"{self.bodies[body]:#010x}"))
                 continue
-            why = [self.resolve(c.get("symbol", ""))[1]
-                   for c in rec.get("call_targets", []) if not self.resolvable(c.get("symbol", ""))]
+            why = []
+            span_end = vma + int(rec.get("rom_bytes", 0))
+            for call in rec.get("call_targets", []):
+                symbol = call.get("symbol", "")
+                if local_branch_target(call, vma, span_end, spans):
+                    continue
+                if (self.resolvable(symbol)
+                        or absolute_code_target(call, spans) is not None
+                        or absolute_closure_target(call, closure_symbol_addresses) is not None):
+                    continue
+                why.append(self.resolve(symbol)[1])
             if why:
                 blocked.append((rec["vma"], "; ".join(sorted(set(why)))))
                 continue
@@ -858,6 +936,54 @@ def self_test() -> int:
     check("sub_ prefix", vma_of("sub_080021B38"), 0x08021B38)
     check("vma behind 0x", vma_of("Course_0x080075E8"), 0x080075E8)
     check("friendly name", vma_of("ObjList_03350"), None)
+    known_starts = {0x0802D974: 0x0802D978}
+    abs_call = {"symbol": "*ABS*0x802d974", "target_vma": "0x0802d974",
+                "resolved": True}
+    check("resolved absolute BL to an inventoried function is accepted",
+          absolute_code_target(abs_call, known_starts), 0x0802D974)
+    check("absolute BL target must be resolved by the probe",
+          absolute_code_target({**abs_call, "resolved": False}, known_starts), None)
+    check("absolute BL spelling must agree with the resolved VMA",
+          absolute_code_target({**abs_call, "target_vma": "0x0802d970"},
+                               known_starts), None)
+    check("absolute BL target must be a known function start",
+          absolute_code_target(abs_call, {}), None)
+    private_abs = {"symbol": "*ABS*0x802bc46", "target_vma": "0x0802bc46",
+                   "resolved": True}
+    check("resolved numeric target to an assembled closure label is accepted",
+          absolute_closure_target(private_abs, {0x0802BC46}), 0x0802BC46)
+    check("numeric closure target needs a matching resolved VMA",
+          absolute_closure_target({**private_abs, "target_vma": "0x0802bc44"},
+                                  {0x0802BC46}), None)
+    check("numeric closure target needs an assembled symbol",
+          absolute_closure_target(private_abs, set()), None)
+    check("unresolved numeric closure target is refused",
+          absolute_closure_target({**private_abs, "resolved": False},
+                                  {0x0802BC46}), None)
+    check("named calls cannot use the numeric-target exemption",
+          absolute_code_target({**abs_call, "symbol": "Sub_0802D974"},
+                               known_starts), None)
+    check("a branch to an interior non-entry label is local",
+          local_branch_target({"branch": True, "resolved": True,
+                               "target_vma": "0x0800aaa4"},
+                              0x0800AAA0, 0x0800AAB0, {}), True)
+    check("a branch to this function entry is local",
+          local_branch_target({"branch": True, "resolved": True,
+                               "target_vma": "0x0800aaa0"},
+                              0x0800AAA0, 0x0800AAB0, {0x0800AAA0: 0x0800AAB0}), True)
+    check("a branch to a nested function start remains an external dependency",
+          local_branch_target({"branch": True, "resolved": True,
+                               "target_vma": "0x0800aaa4"},
+                              0x0800AAA0, 0x0800AAB0,
+                              {0x0800AAA4: 0x0800AAA8}), False)
+    check("an external branch is not local",
+          local_branch_target({"branch": True, "resolved": True,
+                               "target_vma": "0x0800aab4"},
+                              0x0800AAA0, 0x0800AAB0, {}), False)
+    check("a BL call is not filtered as an interior branch",
+          local_branch_target({"resolved": True,
+                               "target_vma": "0x0800aaa4"},
+                              0x0800AAA0, 0x0800AAB0, {}), False)
     check("closure has code.s", (ROOT / "asm/code.s") in closure_files(), True)
     check("closure excludes dead file", (ROOT / "asm/__DELETED_GHOST2_TEST_FALLBACK__.s") in closure_files(), False)
     lines = ["@ x", ".type sub_0800AAAA, %function", "sub_0800AAAA:", "movs r0, r0",

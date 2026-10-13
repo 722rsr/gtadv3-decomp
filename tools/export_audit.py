@@ -943,13 +943,15 @@ def self_test() -> int:
     check("negative control: _08008098 was defined then and is not reported",
           reported.count("_08008098"), 0)
 
-    # The third instance was never a manifest defect: 0x08019aec is not a
-    # manifest entry, so `_080019AEC` belongs to the CALLER direction. Pinned so
-    # a future change cannot quietly reclassify it as an export problem.
+    # The third instance was a caller-direction spelling gap before 0x08019aec
+    # was promoted: the source had only `_08019AEC`, while the closure calls
+    # `_080019AEC`. Promotion made that gap visible in the manifest, so keep
+    # both sides pinned: the manifest exports the closure spelling and the C
+    # source defines it as an alias of the exact body.
     live_manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
-    check("_080019AEC is not an export of any manifest entry",
-          "_080019AEC" in {n for e in live_manifest.values()
-                           for n in e.get("export", ())}, False)
+    aec_entry = live_manifest.get("0x08019aec", {})
+    check("the promoted 0x08019aec body exports the closure spelling",
+          "_080019AEC" in aec_entry.get("export", ()), True)
 
     # Scope control: the audit scans `src/*.c` and nothing else. Widening that
     # silently would make the audit blind, so the boundary is pinned, and the
@@ -960,13 +962,17 @@ def self_test() -> int:
           all(p.parent.name == "src" for p in src_files()), True)
     check("live: sub_08008098 was repaired and is no longer reported",
           [r["name"] for r in live_rows if r["name"] == "sub_08008098"], [])
-    # `_080019AEC` is the caller-direction gap that this check CANNOT see: it is
-    # declared `extern` in src/race_scene.c and defined nowhere, and no manifest
-    # entry exports it because 0x08019aec is not a promoted entry at all.
-    check("live: _080019AEC has no C definition (caller direction, not this check)",
-          is_defined("_080019AEC", live), False)
+    # The exact closure spelling is now present in the source as well as the
+    # manifest. If the alias is removed, the spliced-link export could still be
+    # synthesized from its VMA, so this source-definition check catches the
+    # quieter full-build gap that the independent slice alone cannot see.
+    check("live: _080019AEC has an exact C alias",
+          is_defined("_080019AEC", live), True)
     check("live: ...but its 8-digit twin IS defined",
           is_defined("_08019AEC", live), True)
+    check("live: the promoted alias no longer needs a synthesized VMA twin",
+          [r for r in live_rows if r["vma"] == "0x08019aec"
+           and r["name"] == "_080019AEC"], [])
     print(f"export_audit self-test: {ok}/{total}")
     return 0 if ok == total else 1
 

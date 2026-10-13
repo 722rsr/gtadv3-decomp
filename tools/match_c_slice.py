@@ -94,7 +94,8 @@ def command(argv: list[str | Path]) -> None:
 
 
 def asm_section(source: Path, names: list[str], owned: list[str] | None = None,
-                entry_vma: int | None = None) -> str:
+                entry_vma: int | None = None,
+                end_vma: int | None = None) -> str:
     """One agbcc function section, bounded to the function it declares.
 
     agbcc does not give every alias its own section: after a function's
@@ -128,12 +129,16 @@ def asm_section(source: Path, names: list[str], owned: list[str] | None = None,
         for i, line in enumerate(body):
             if re.match(r"^\s*\.size\s+" + re.escape(name) + r"\s*,", line):
                 text = "".join(body[:i + 1] + _own_alias_glue(body[i + 1:], name, wanted))
-                return _export_missing(text, lines, name, wanted, source, entry_vma)
-        return _export_missing("".join(body), lines, name, wanted, source, entry_vma)
+                return _export_missing(text, lines, name, wanted, source,
+                                       entry_vma, end_vma)
+        return _export_missing("".join(body), lines, name, wanted, source,
+                               entry_vma, end_vma)
     raise RuntimeError(f"no unique agbcc function section for {names} in {source}")
 
 
-def _assert_owns_only(text: str, body: str, names: list[str], source: Path) -> None:
+def _assert_owns_only(text: str, body: str, names: list[str], source: Path,
+                      entry_vma: int | None = None,
+                      end_vma: int | None = None) -> None:
     """A splice may define its body and its own VMA spelling, nothing else.
 
     An over-wide section silently redefines other ROM addresses; the assembler
@@ -155,12 +160,32 @@ def _assert_owns_only(text: str, body: str, names: list[str], source: Path) -> N
     byte_free = {m.group(1) for m in
                  re.finditer(r"^\s*([A-Za-z_][A-Za-z_0-9]*)\s*=\s*[^=]", text, re.M)}
     labelled = {m.group(1) for m in re.finditer(r"^\s*([A-Za-z_][A-Za-z_0-9]*):", text, re.M)}
-    extra = defined - {body} - set(names) - (byte_free - labelled)
+    # Naked, hand-matched bodies can contain named literal-pool labels whose
+    # VMA is interior to the function span, e.g. `_080062B8: .word ...` inside
+    # `_0800628C`. They are local assembler labels, not additional function
+    # ownership. The promotion screen separately exports any such label read
+    # from outside the replaced span; here allow only unbound labels whose
+    # spelling places them strictly inside this entry's declared ROM span.
+    # Keep `.globl` and `.thumb_set` names out of this exemption: those change
+    # object-level ownership and must be explicitly listed in `names`.
+    global_names = {m.group(1) for m in
+                    re.finditer(r"^\s*\.globl\s+([A-Za-z_][A-Za-z_0-9]*)", text, re.M)}
+    thumb_names = {m.group(1) for m in
+                   re.finditer(r"^\s*\.thumb_set\s+([A-Za-z_][A-Za-z_0-9]*)", text, re.M)}
+    interior_labels = set()
+    if entry_vma is not None and end_vma is not None and entry_vma < end_vma:
+        interior_labels = {
+            name for name in labelled - global_names - thumb_names
+            if (label_vma := _interior_label_vma(name)) is not None
+            and entry_vma < label_vma < end_vma
+        }
+    extra = defined - {body} - set(names) - (byte_free - labelled) - interior_labels
     if extra:
         raise RuntimeError(f"splice for {names} would also define {sorted(extra)} in {source}")
 
 def _export_missing(text: str, lines: list[str], body: str, wanted: list[str],
-                  source: Path, entry_vma: int | None = None) -> str:
+                  source: Path, entry_vma: int | None = None,
+                  end_vma: int | None = None) -> str:
     """Re-emit an owned alias whose glue agbcc put in another section.
 
     agbcc emits each alias's `.globl`/`.thumb_set` pair into whichever section
@@ -211,7 +236,8 @@ def _export_missing(text: str, lines: list[str], body: str, wanted: list[str],
                 f"splice for {body} exports {name}, which no TU binds and whose "
                 f"name does not denote {body}; refusing to invent the alias "
                 f"(a mismatch here would move a call silently)")
-    _assert_owns_only(text + "".join(extra), body, wanted, source)
+    _assert_owns_only(text + "".join(extra), body, wanted, source,
+                      entry_vma, end_vma)
     return text + "".join(extra)
 
 
@@ -258,6 +284,19 @@ def _name_vma(n: str) -> int | None:
     if len(v) < 4 or len(v) > 6:
         return None
     return 0x08000000 | int(v.zfill(6), 16)
+
+
+def _interior_label_vma(name: str) -> int | None:
+    """VMA encoded by an interior code or literal-pool label.
+
+    Hand-matched bodies can preserve ROM-style pool labels such as
+    `_0800AADC_lit` and qualified forms like `_0802B66C_lit_tab`. Their suffix
+    distinguishes pool entries, but the numeric prefix still locates the
+    label inside the owning function span. Strip only that known local suffix
+    here; keep `_name_vma` strict for alias identities.
+    """
+    stem = re.sub(r"_lit(?:_[A-Za-z0-9]+)*$", "", name)
+    return _name_vma(stem)
 
 
 def _own_alias_glue(tail: list[str], body: str, names: list[str]) -> list[str]:
@@ -798,9 +837,11 @@ def self_test() -> int:
         # exemption AND the three refusals it must not swallow -- especially
         # "alias and a real label of the same name", which is the case a naive
         # `defined -= byte_free` would accept.
-        def owns(text, body="_080012B34", names=("sub_080012B34",)):
+        def owns(text, body="_080012B34", names=("sub_080012B34",),
+                 entry_vma=None, end_vma=None):
             try:
-                _assert_owns_only(text, body, list(names), Path("synthetic.s"))
+                _assert_owns_only(text, body, list(names), Path("synthetic.s"),
+                                  entry_vma, end_vma)
                 return True
             except RuntimeError:
                 return False
@@ -832,6 +873,37 @@ def self_test() -> int:
         # would pass every other case here and silently exempt real bindings.
         check("a bare .globl with no assignment is still refused",
               owns(".globl _X\nsub_080012B34:\n bx lr\n"), False)
+        check("an unbound VMA label inside the declared body span is local",
+              owns("_080062B8: .word 0x0203F758\n"
+                   "CourseOrch_0800628C:\n bx lr\n",
+                   body="CourseOrch_0800628C", names=("_0800628C",),
+                   entry_vma=0x0800628C, end_vma=0x08006468), True)
+        check("an unbound VMA label outside the body span is still refused",
+              owns("_08006468: .word 0x0203F758\n"
+                   "CourseOrch_0800628C:\n bx lr\n",
+                   body="CourseOrch_0800628C", names=("_0800628C",),
+                   entry_vma=0x0800628C, end_vma=0x08006468), False)
+        check("an unbound literal-pool VMA label inside the body span is local",
+              owns("_080062B8_lit: .word 0x0203F758\n"
+                   "CourseOrch_0800628C:\n bx lr\n",
+                   body="CourseOrch_0800628C", names=("_0800628C",),
+                   entry_vma=0x0800628C, end_vma=0x08006468), True)
+        check("a literal-pool VMA label outside the body span is still refused",
+              owns("_08006468_lit: .word 0x0203F758\n"
+                   "CourseOrch_0800628C:\n bx lr\n",
+                   body="CourseOrch_0800628C", names=("_0800628C",),
+                   entry_vma=0x0800628C, end_vma=0x08006468), False)
+        check("a global literal-pool VMA label still requires an explicit export",
+              owns(".globl _080062B8_lit\n"
+                   "_080062B8_lit: .word 0x0203F758\n"
+                   "CourseOrch_0800628C:\n bx lr\n",
+                   body="CourseOrch_0800628C", names=("_0800628C",),
+                   entry_vma=0x0800628C, end_vma=0x08006468), False)
+        check("a global interior VMA label still requires an explicit export",
+              owns(".globl _080062B8\n_080062B8: .word 0x0203F758\n"
+                   "CourseOrch_0800628C:\n bx lr\n",
+                   body="CourseOrch_0800628C", names=("_0800628C",),
+                   entry_vma=0x0800628C, end_vma=0x08006468), False)
         # The export-synthesis gate. An `export` name the owning TU never binds
         # is synthesised so the entry can link -- but ONLY when the name is
         # provably this body. Without that gate a name denoting a DIFFERENT
@@ -1200,13 +1272,18 @@ def main() -> int:
         for extra in (entry.get("c_name"), *entry.get("export", ())):
             if extra and extra not in owned:
                 owned.append(extra)
-        section = asm_section(asm_output, names, owned, vma)
+        section = asm_section(asm_output, names, owned, vma,
+                              int(entry["end_vma"], 16))
         if args.negative_control and vma == 0x08028250:
             original_insn = "\tsub\tr1, r1, #1"
             if section.count(original_insn) != 1:
                 raise RuntimeError("negative-control instruction anchor is not unique")
             section = section.replace(original_insn, "\tsub\tr1, r1, #2")
-        size = symbol_size(obj, names)
+        # For halfword-skewed mixed-mode bodies, the probe reassembles at the
+        # real VMA and records that sized symbol. The isolated object can carry
+        # a spurious alignment halfword at an internal `.arm` transition, so
+        # its ordinary ELF symbol size is not the linked body's true size.
+        size = int(rec["symbol_bytes"]) if rec.get("symbol_bytes") is not None else symbol_size(obj, names)
         span_size = int(entry["end_vma"], 16) - vma
         check_span(key, size, span_size)
         if INCBIN_RE.search(section):

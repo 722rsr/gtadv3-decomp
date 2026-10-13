@@ -70,7 +70,7 @@ void EWRAM_Handler_BlobB(void); // _08000E80
 void InstallEWRAMHandlers(int checksumMode, u32 inputBase); // _08000BF0
 void SoftIrqKicker(void); // _08000A60
 // code_c668 / ce2c / fa0 — c668/ce2c SUBSTANTIATED, fa0 entry SUBSTANTIATED, remainder TODO
-void IntrMain_Dispatch(void *ctx,int v); // _08000FA0
+void IntrMain_Dispatch(void *ctx); // _08000F84
 int Helper_014A4(void *p); // _080014A4
 void Helper_014B4(void *p); // _080014B4
 void Helper_013BC(void *p); // _080013BC

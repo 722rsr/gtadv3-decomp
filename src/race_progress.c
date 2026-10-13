@@ -5,7 +5,7 @@
 // Reference: asm/race_progress.s 0x0800AD84-0x0800B0BC
 // Three routines commit/advance/per-frame tail with WA=0x03001780.
 // Evidence: literal pools at _0800AD84_lit_0..7 and _0800AE78 pools, exact halfword/byte widths,
-// and calls to sub_08025CF4 (Ai_GridGet) and sub_0800279C.
+// and calls to sub_08025CF4 and sub_0800279C.
 // Contracts use AI lane: Ai_GridGet(type,row,col) returns u8 0..3, Ai_GridSet, EventPost.
 
 // Packed-collection-grid accessors. `_08025CF4` takes (a, b, c) = the values of
@@ -88,7 +88,7 @@ __attribute__((naked)) void Race_CommitCell(void) {
         "ldrsh r1, [r6, r2]\n"
         "movs r3, #0\n"
         "ldrsh r2, [r4, r3]\n"
-        "bl Ai_GridGet\n"
+        "bl _08025CF4\n"
         "lsls r0, r0, #24\n"
         "lsrs r0, r0, #24\n"
         "movs r3, #0\n"

@@ -309,3 +309,4 @@ _0800CAB4:
 	pop {r0}
 	bx r0
 	.short 0
+menu_c884_end:

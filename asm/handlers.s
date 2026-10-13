@@ -625,21 +625,6 @@ _08000F74: .4byte 0x04000134
 _08000F78: .4byte 0x04000128
 _08000F7C: .4byte 0x00002003
 _08000F80: .4byte 0x0400012A
-.type _08000F84, %function
-_08000F84:
-	push	{r4, r5, r6, r7, lr}
-	mov	r7, sl
-	mov	r6, r9
-	mov	r5, r8
-	push	{r5, r6, r7}
-	adds	r6, r0, #0
-	bl 0x080014A4
-	cmp	r0, #0
-	beq _08000F9A
-	b 0x08001360
-_08000F9A:
-	adds	r0, r6, #0
-	adds	r0, #74
-	ldrb	r1, [r0, #0]
+handlers_end:
 
 @ End of handlers.s — verified to assemble byte-identical via arm-none-eabi-as -mcpu=arm7tdmi
