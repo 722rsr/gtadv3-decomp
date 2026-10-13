@@ -493,16 +493,21 @@ int _080019200(void *a, void *b) __attribute__((alias("Race_Setup_19200")));
 // 0x08006C10 projection to derive t = (s16[p+20]*dy - s16[p+22]*dx) >> 16 and
 // returns 1 for t < 0 outside the +-40 band, else gates on the +0x10C3 flag.
 //
-// OPEN (45/200): the ROM's first field read is `movs r0,#22 / ldrsh r1,[r7,r0]`
-// (base = the PINNED record, offset in a register), but agbcc folds the address
-// into the argument copy: `adds r0,#22 / movs r3,#0 / ldrsh r2,[r0,r3]`, which
-// shifts every following instruction by one. The index form needs the read's
-// base to have no equivalent argument pseudo (see Idle_Mode4Handler in
-// src/idle_dispatch.c, which is EXACT and shows both spellings side by side).
-// Measured and rejected here: pinned `s32 off asm("r0")=22`, pinned off2=r3,
-// `s16 *` pointer variables, `(s16 *)a)[11]`, `u8 *` temporaries, `+r`
-// barriers (add an `adds r0,r7,#0` copy) and `"r0"` clobber barriers -- all
-// 45/200. Pinning the sum instead measures 195/196 bytes, i.e. worse.
+// OPEN (91/208): banked this round -- the +130 latch path returns 0 (the
+// ROM clears with r0 and falls into the epilogue; the old `return 1` was a
+// behavioral bug, verified against asm/race_setup_18adc.s), and the two
+// field reads share one pinned offset with a direct subtraction (+47).
+// Remaining gaps, each measured:
+//  * Flag sign-extends: the ROM has ldrb+lsls#24+asrs#24 but any spelling
+//    feeding only the !=0 test elides them (plain `int flag` tried, no
+//    change); they need a sign-observing use this logic does not have.
+//  * Read#1 still materialises its address (`adds r1,r7,r0` + index-zero)
+//    where the ROM loads direct off the pinned regs; literal offsets fold
+//    (`adds r0,#22`) and literal+direct scores far worse (-45, reverted).
+//    Read#2 folds into the dying offset reg, so the pair is structurally
+//    asymmetric no matter the spelling.
+//  * Frame/regs (d in r4 vs r6, tie dx/dy in r3/r1 vs r4/r5, flag addr r0
+//    vs r3) follow from total pressure top-down; revisit after the above.
 //
 // Both work-area addresses are TWO pool words in the ROM
 // (`ldr r0,=0x03001780 / ldr r1,=0x00001111 / adds r0,r0,r1`), so they must be
@@ -528,10 +533,13 @@ int Race_Setup_19250(void *a_, void *b_) {
     register void *b __asm__("r8") = b_;
     // NON-volatile halfword reads: a volatile s16 dereference makes agbcc emit
     // `ldrh` plus a `lsls #24 / asrs #24` sign-extend; the ROM has `ldrsh`.
-    s16 d22a = *(s16 *)((u8 *)a + 22);
-    s16 d22b = *(s16 *)((u8 *)b + 22);
-    int d = (int)d22a - (int)d22b;
-    s8 flag = *(volatile s8 *)(RS_WA(&RS_Off1111)); // ldrb + lsls #24 asrs #24
+    // The offset lives in a pinned register (a literal folds into the base
+    // copy as `adds r0,#22`, and literal+direct scores far worse); the
+    // subtraction is direct so no named halfword temporaries constrain the
+    // value homes.
+    register int o22 __asm__("r0") = 22;
+    int d = *(s16 *)((u8 *)a + o22) - *(s16 *)((u8 *)b + o22);
+    s8 flag = *(volatile s8 *)(RS_WA(&RS_Off1111)); // ldrb; ROM also has lsls #24 asrs #24 (see OPEN)
     if (flag != 0) {
         int neg = -d;
         int v = neg << 3; // lsls #3
@@ -543,8 +551,11 @@ int Race_Setup_19250(void *a_, void *b_) {
     volatile u8 *p130 = racectx + 130;
     u8 cur130 = *p130;
     if (cur130 != 0) {
+        // Returns 0, not 1: the ROM clears with r0 (movs r0,#0 does double
+        // duty as the store value and the return value); verified against
+        // asm/race_setup_18adc.s (`movs r0,#0 / strb / b _08001930E`).
         *p130 = 0;
-        return 1;
+        return 0;
     }
     if (d > 0) return 1;
     if (d != 0) return 0;
