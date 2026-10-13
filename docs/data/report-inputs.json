@@ -463,7 +463,7 @@
     "src/sound_table.c": "4eb917c145ce7d90482a7e20b7142fb8ae282bebc283144a3e5db5b72b16f01b",
     "src/sound_voice_commands.c": "ff43d8b7943ffea3207f39a1b4f7ae61e2210cd05146c90148a5b643506b6a0f",
     "src/sound_voice_helpers.c": "bd23a4a98c2a01689611e3742b98996f1c4428eacdf5d09b41459fae880e7be5",
-    "src/sprite_obj_263e0.c": "a7ee1fed04c2a838572ae5ec6a294aa06b9c5a88c40660a70591aff91a8f83a9",
+    "src/sprite_obj_263e0.c": "0c7b8952ef3796616f62bcc4418e287fbf125b2d0ca6329813abec174c7ea811",
     "src/state_block_a.c": "b3f7a8c5557ce5e31f30c7138e027db1d50de879cb490aef2673183a0aa0d31a",
     "src/track_car_helpers.c": "94b66bc3a9162afe16bd70e892e7e049770716ebe90d941281c3e334a318f3ae",
     "tools/agbcc_c89_shim.py": "ac500c81909dcc17067bac631b73d12c8fe611459db07803138e67a6b20e1b46",
