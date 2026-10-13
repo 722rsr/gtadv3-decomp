@@ -62,7 +62,9 @@ neither target replaces `make matching-ready`.
 | `lift_scout.py` | Classify unmatched functions by diagnostic evidence. |
 | `strategy_router.py` | Select applicable diagnostics from measured function properties. |
 | `experiment_kit.py` | Shared candidate compiler, byte scorer, contracts, and output handling. |
-| `compiler_microscope.py` | Compare compiler RTL passes for controlled source variants. |
+| `matching_campaign.py` | Bounded, resumable full-TU variants and matrices; persistent failures, output deduplication, and best candidate. |
+| `instruction_diff.py` | Reachable Thumb instruction alignment, register/operand/target/pool diagnostics; advisory only. |
+| `compiler_microscope.py` | Chronological RTL comparison plus a separate register-note/allocator-prose channel. |
 | `fixtures/agbcc_recipes/` | Reproduce selected upstream matching motifs; see the [recipe cookbook](../docs/findings/agbcc_matching_recipes.md) for applicability and local results. |
 | `recipe_miner.py` | Derive typed templates from freshly verified exact examples. |
 | `leaf_synth.py` | Bounded synthesis for straight-line Thumb leaves. |
@@ -84,9 +86,66 @@ python3 tools/leaf_synth.py _08024B18 --return-type u32 --memory ordinary --budg
 A generated draft is not selected source. Recheck its ABI, memory accesses,
 and output in the owning translation unit and independent link.
 Strategy tools' `--out` names the output directory itself; a rerun replaces
-that directory's generated results.
+that directory's generated results, except `matching_campaign.py`, whose ledger
+and content-addressed candidates persist across runs.
+
+### Resumable full-TU campaigns
+
+```sh
+python3 tools/matching_campaign.py _080013B68 --cases build/cases.json --budget 32 --seconds 300
+```
+
+Example `cases.json` (needles must occur exactly once in the selected body):
+
+```json
+{
+  "variants": [
+    {"name": "address-local", "edits": [{"old": "(loop_rec + 174)", "new": "(loop_rec + 174u)"}]}
+  ],
+  "matrix": [
+    {"name": "offset-form", "old": "(loop_rec + 174)", "choices": ["(loop_rec + 174)", "(loop_rec + 174u)"]}
+  ]
+}
+```
+
+Each case starts at the current baseline and retains the surrounding TU, aliases,
+GNU constraints and per-TU ABI options. Multiline edits can express declaration
+order, scopes/lifetimes, register pins and argument assignments. `--mutate OLD==>NEW`
+is a shorthand for a single edit; repeat it for independent variants.
+The default output is `build/experiments/campaigns/VMA/`; rerunning resumes it.
+`--max-variants` also bounds generation, including duplicate or invalid cases.
+One process owns a campaign directory at a time; a timed-out worker and its
+compiler children are terminated together.
+
+`ledger.jsonl` retains successful and failed compile results. Source/environment
+keys include the compiler, ROM, flags, header closure, symbol resolver, tool hashes
+and surrounding TU. Changed dependencies invalidate reuse; timeouts/tool failures
+are retryable. Different sources emitting the same bytes are marked as duplicate
+outputs. `best.c` and `best.json` preserve the best full TU in the current environment.
+`summary.json` reports final agbcc compiles, reused results, duplicate outputs and
+the stop reason. Ranking prefers exactness, then aligned agreeing instructions,
+length difference, byte count and prefix. These are search heuristics, not promotion.
+The runner never changes game source or the promotion manifest, and always records
+integration as not run and accepted bytes as zero. Review semantics before applying
+any generated candidate, then run the owning-TU and independent-link gates.
+
+The microscope uses the pinned compiler driver's pass order by default; `-da`
+includes `addressof` in its chronological position. An explicit `--passes` order
+is an operator override. `allocation.json` retains `REG_DEAD`, `REG_EQUAL`,
+`REG_UNUSED`, modes/register identities and available allocator prose separately
+from normalized instruction comparison. This exposes evidence without claiming
+that the first changed note explains an allocation decision. The `.greg` dump
+contains global allocation **and reload**, not a pre-reload snapshot.
 
 ## agbcc permuter
+
+GNU statement expressions (including nested expressions and register constraints)
+are opaque to the randomizer. The wrapper represents each outer expression as a
+zero-argument placeholder with advisory parser types, stores the original text in
+workspace metadata, and restores it verbatim before full-TU compilation. Candidates
+removing, duplicating, renaming or adding arguments to a placeholder fail explicitly.
+The expression interior is not searched; other source can still be randomized.
+Parser hints never replace the expression's real C type or code in the compiler.
 
 Install the optional dependencies in your Python environment, then prepare a
 fresh scratch workspace:

@@ -11,11 +11,11 @@
 
 #include "gba/types.h"
 
-extern void Sub_08007B18(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h);
-extern void Sub_08007BFC(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h, u32 i);
-extern int Sub_0800F6D0(int v);
-extern void Sub_080011854(void *a, u32 b);
-extern void Sub_0800118DC(void *a, u32 b);
+extern void sub_08007B18(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h);
+extern void sub_08007BFC(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h, u32 i);
+extern int sub_0800F6D0(int v);
+extern void sub_080011854(void *a, u32 b);
+extern void sub_0800118DC(void *a, u32 b);
 
 // Table base for the record-13 emit tails (stride-8 {w0, w1} pairs).
 #define FF78_TBL_B5B0 ((u32)0x080CB5B0u)
@@ -52,16 +52,16 @@ void MenuFF78_11958(volatile u8 *rec) {
     // mode-2 arm (4 extra bytes, first difference at +0x16).
     switch (mode) {
     case 1: {
-        int h = Sub_0800F6D0((int)*(s16 *)(uintptr_t)(rec + 188));
+        int h = sub_0800F6D0((int)*(s16 *)(uintptr_t)(rec + 188));
         // Switch for the same reason as the mode dispatch: the ROM emits the
         // fall-through `cmp / beq` chain (`cmp r0,#3 / beq`, `cmp r0,#2 / beq`),
         // not an else-if's `bne`.
         switch (h) {
         case 3:
-            Sub_08007B18((void *)rec, 10, 0, 112, 3, 1, 1, 0);
+            sub_08007B18((void *)rec, 10, 0, 112, 3, 1, 1, 0);
             break;
         case 2:
-            Sub_08007B18((void *)rec, 12, 0, 112, 3, 1, 1, 0);
+            sub_08007B18((void *)rec, 12, 0, 112, 3, 1, 1, 0);
             break;
         default:
             break;
@@ -80,55 +80,104 @@ void MenuFF78_11958(volatile u8 *rec) {
             kinds[2] = 56;
             u32 k = 0;
             for (;;) {
-                int lim = Sub_0800F6D0(
+                int lim = sub_0800F6D0(
                     (int)*(s16 *)(uintptr_t)(rec + 188));
                 if (!((int)k < lim)) break;
-                u32 r1 = *(volatile u32 *)(uintptr_t)(rec + 372 + k * 12);
-                u32 r2 = *(volatile u32 *)(uintptr_t)(rec + 376 + k * 12);
-                Sub_08007BFC((void *)(uintptr_t)(rec + 32), (int)r1, (int)r2,
+                register u8 *emit_rec __asm__("r0") = (u8 *)(uintptr_t)(rec + 32);
+                __asm__ volatile("" : "+r"(emit_rec));
+                register u32 stride __asm__("r3") = k * 12;
+                __asm__ volatile("" : "+r"(stride));
+                register u32 word_off __asm__("r4") = 372;
+                __asm__ volatile("" : "+r"(word_off));
+                u32 r1 = *(volatile u32 *)(uintptr_t)(rec + word_off + stride);
+                word_off += 4;
+                __asm__ volatile("" : "+r"(word_off));
+                register volatile u32 *second __asm__("r2") =
+                    (volatile u32 *)(uintptr_t)(rec + word_off + stride);
+                __asm__ volatile("" : "+r"(second));
+                u32 r2 = *second;
+                sub_08007BFC(emit_rec, (int)r1, (int)r2,
                              (int)kinds[k], 120, 5, 1, 1, 0);
                 k++;
             }
         }
-        Sub_080011854((void *)rec, *(volatile u16 *)(uintptr_t)(rec + 190));
-        if (*(volatile u16 *)(uintptr_t)(rec + 190) != 99) {
+        sub_080011854((void *)rec, *(volatile u16 *)(uintptr_t)(rec + 190));
+        register u32 selected1 __asm__("r6") = *(volatile u16 *)(uintptr_t)(rec + 190);
+        __asm__ volatile("" : "+r"(selected1));
+        if (selected1 != 99) {
+            extern u32 J11958_T[];
+            __asm__(".globl J11958_T\nJ11958_T = 0x080CB5B0\n");
+            register u32 tbl_base __asm__("r3") = (uintptr_t)J11958_T;
+            __asm__ volatile("" : "+r"(tbl_base));
             u16 ti = *(volatile u16 *)(uintptr_t)(rec + 212);
-            u32 w0 = *(volatile u32 *)(uintptr_t)(FF78_TBL_B5B0 +
-                                                  (u32)ti * 8);
-            u32 w1 = *(volatile u32 *)(uintptr_t)(FF78_TBL_B5B0 + 4 +
-                                                  (u32)ti * 8);
-            Sub_08007B18((void *)rec, 13, (int)w0, (int)w1, 3, 1, 1, 0);
+            u32 offset = (u32)ti * 8;
+            u32 w0 = *(volatile u32 *)(uintptr_t)(offset + tbl_base);
+            tbl_base += 4;
+            __asm__ volatile("" : "+r"(tbl_base));
+            u32 w1 = *(volatile u32 *)(uintptr_t)(offset + tbl_base);
+            sub_08007B18((void *)rec, 13, (int)w0, (int)w1, 3, 1, 1, 0);
         }
         break;
     }
     case 2: {
-        Sub_08007B18((void *)rec, 10, 0, 112, 3, 1, 1, 0);
+        register u32 init_three __asm__("r4");
+        u32 three;
+        register u32 init_one __asm__("r0");
+        u32 one;
+        register u32 init_zero __asm__("r1");
+        u32 zero;
+        sub_08007B18((void *)rec, 10, 0, 112,
+                     three = init_three = 3, one = init_one = 1, 1,
+                     zero = init_zero = 0);
+        register u8 *emit_rec __asm__("r6") = (u8 *)(uintptr_t)(rec + 32);
+        __asm__ volatile("" : "+r"(emit_rec));
         {
-            u32 r1 = *(volatile u32 *)(uintptr_t)(rec + 372);
-            u32 r2 = *(volatile u32 *)(uintptr_t)(rec + 376);
-            Sub_08007BFC((void *)(uintptr_t)(rec + 32), (int)r1, (int)r2,
-                         8, 120, 5, 1, 1, 0);
+            register u32 off1 __asm__("r2") = 372;
+            __asm__ volatile("" : "+r"(off1));
+            register volatile u32 *cell __asm__("r0") =
+                (volatile u32 *)(uintptr_t)(rec + off1);
+            __asm__ volatile("" : "+r"(cell));
+            u32 r1 = *cell;
+            register u32 off2 __asm__("r4") = 376;
+            __asm__ volatile("" : "+r"(off2));
+            cell = (volatile u32 *)(uintptr_t)(rec + off2);
+            __asm__ volatile("" : "+r"(cell));
+            u32 r2 = *cell;
+            sub_08007BFC(emit_rec, (int)r1, (int)r2,
+                         8, 120, 5, one, one, zero);
         }
         {
             u32 r1 = *(volatile u32 *)(uintptr_t)(rec + 384);
             u32 r2 = *(volatile u32 *)(uintptr_t)(rec + 388);
-            Sub_08007BFC((void *)(uintptr_t)(rec + 32), (int)r1, (int)r2,
-                         32, 120, 5, 1, 1, 0);
+            sub_08007BFC(emit_rec, (int)r1, (int)r2,
+                         32, 120, 5, one, one, zero);
         }
         {
             u32 r1 = *(volatile u32 *)(uintptr_t)(rec + 396);
             u32 r2 = *(volatile u32 *)(uintptr_t)(rec + 400);
-            Sub_08007BFC((void *)(uintptr_t)(rec + 32), (int)r1, (int)r2,
-                         56, 120, 5, 1, 1, 0);
+            // The identical non-volatile copies must share a source line:
+            // agbcc then merges them into the ROM's single mov r4,r8 after
+            // storing 5 from r4. Separate lines or a named local do not merge.
+            sub_08007BFC(emit_rec, (int)r1, (int)r2,
+                         56, 120, 5, ({ register u32 scratch_one __asm__("r4") = one; __asm__("mov %0, %1" : "=r"(scratch_one) : "r"(one)); scratch_one; }), ({ register u32 scratch_one __asm__("r4") = one; __asm__("mov %0, %1" : "=r"(scratch_one) : "r"(one)); scratch_one; }), zero);
         }
-        Sub_0800118DC((void *)rec, *(volatile u16 *)(uintptr_t)(rec + 192));
-        if (*(volatile u16 *)(uintptr_t)(rec + 192) != 99) {
+        sub_0800118DC((void *)rec, *(volatile u16 *)(uintptr_t)(rec + 192));
+        register u32 selected2 __asm__("r4") = *(volatile u16 *)(uintptr_t)(rec + 192);
+        __asm__ volatile("" : "+r"(selected2));
+        if (selected2 != 99) {
+            extern u32 J11958_T[];
+            __asm__(".globl J11958_T\nJ11958_T = 0x080CB5B0\n");
+            register u32 tbl_base __asm__("r3") = (uintptr_t)J11958_T;
+            __asm__ volatile("" : "+r"(tbl_base));
             u16 ti = *(volatile u16 *)(uintptr_t)(rec + 212);
-            u32 w0 = *(volatile u32 *)(uintptr_t)(FF78_TBL_B5B0 +
-                                                  (u32)ti * 8);
-            u32 w1 = *(volatile u32 *)(uintptr_t)(FF78_TBL_B5B0 + 4 +
-                                                  (u32)ti * 8);
-            Sub_08007B18((void *)rec, 13, (int)w0, (int)w1, 3, 1, 1, 0);
+            u32 offset = (u32)ti * 8;
+            u32 w0 = *(volatile u32 *)(uintptr_t)(offset + tbl_base);
+            tbl_base += 4;
+            __asm__ volatile("" : "+r"(tbl_base));
+            u32 w1 = *(volatile u32 *)(uintptr_t)(offset + tbl_base);
+            register u32 final_zero __asm__("r0");
+            sub_08007B18((void *)rec, 13, (int)w0, (int)w1,
+                         three, ({ register u32 scratch_one __asm__("r4") = one; __asm__("mov %0, %1" : "=r"(scratch_one) : "r"(one)); scratch_one; }), ({ register u32 scratch_one __asm__("r4") = one; __asm__("mov %0, %1" : "=r"(scratch_one) : "r"(one)); scratch_one; }), final_zero = zero);
         }
         break;
     }
@@ -155,36 +204,36 @@ void MenuFF78_11B48(void *rec_) {
     if (v == 5 || v == 6) {
         u32 r1 = *(volatile u32 *)(uintptr_t)(rec + 336);
         u32 r2 = *(volatile u32 *)(uintptr_t)(rec + 340);
-        Sub_08007BFC((void *)(uintptr_t)(rec + 32), (int)r1, (int)r2,
+        sub_08007BFC((void *)(uintptr_t)(rec + 32), (int)r1, (int)r2,
                      160, 96, 5, 1, 1, 0);
         if (*(volatile u16 *)(uintptr_t)(rec + 190) != 99) {
             u32 a = *(volatile u32 *)(uintptr_t)(rec + 348);
             u32 b = *(volatile u32 *)(uintptr_t)(rec + 352);
-            Sub_08007BFC((void *)(uintptr_t)(rec + 32), (int)a, (int)b,
+            sub_08007BFC((void *)(uintptr_t)(rec + 32), (int)a, (int)b,
                          184, 96, 5, 1, 1, 0);
         }
         if (*(volatile u16 *)(uintptr_t)(rec + 192) != 99) {
             u32 a = *(volatile u32 *)(uintptr_t)(rec + 360);
             u32 b = *(volatile u32 *)(uintptr_t)(rec + 364);
-            Sub_08007BFC((void *)(uintptr_t)(rec + 32), (int)a, (int)b,
+            sub_08007BFC((void *)(uintptr_t)(rec + 32), (int)a, (int)b,
                          208, 96, 5, 1, 1, 0);
         }
     } else {
         u32 r1 = *(volatile u32 *)(uintptr_t)(rec + 336);
         u32 r2 = (v <= 1) ? *(volatile u32 *)(uintptr_t)(rec + 340)
                           : *(volatile u32 *)(uintptr_t)(rec + 344);
-        Sub_08007BFC((void *)(uintptr_t)(rec + 32), (int)r1, (int)r2,
+        sub_08007BFC((void *)(uintptr_t)(rec + 32), (int)r1, (int)r2,
                      160, 96, 5, 1, 1, 0);
         {
             u32 a = *(volatile u32 *)(uintptr_t)(rec + 348);
             u32 b = *(volatile u32 *)(uintptr_t)(rec + 352);
-            Sub_08007BFC((void *)(uintptr_t)(rec + 32), (int)a, (int)b,
+            sub_08007BFC((void *)(uintptr_t)(rec + 32), (int)a, (int)b,
                          184, 96, 5, 1, 1, 0);
         }
         {
             u32 a = *(volatile u32 *)(uintptr_t)(rec + 360);
             u32 b = *(volatile u32 *)(uintptr_t)(rec + 364);
-            Sub_08007BFC((void *)(uintptr_t)(rec + 32), (int)a, (int)b,
+            sub_08007BFC((void *)(uintptr_t)(rec + 32), (int)a, (int)b,
                          208, 96, 5, 1, 1, 0);
         }
     }

@@ -184,6 +184,7 @@ fast-check:
 .PHONY: experimental-check
 experimental-check:
 	@python3 tools/test_experiment_strategies.py
+	@python3 tools/test_tooling_upgrades.py
 	@python3 tools/test_run_permuter.py
 	@python3 tools/test_objdiff_build.py
 	@python3 tools/test_function_trace.py

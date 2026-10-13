@@ -319,10 +319,10 @@ void sub_08001626C(void *a, int b, int c) __attribute__((alias("Rec35_PlaceByTab
 //     sub_08007C68(rec+8, u32[rec+160], u32[rec+164], 48, 64, 6, 1, 0, 0)
 //   sub_0800DBE8(rec+16); sub_0800163B4(rec)
 //
-// RESIDUAL (210/212 B): everything matches except the frame masks
-// (`push/pop {r4-r7}` vs `{r4-r6}`): the ROM saves dead incoming r7 (never
-// read before its overwrite), which has no honest reproduction. Banked
-// levers, each measured: rec pinned r7; status address into r0 with an int
+// Exact at 212/212 bytes. Leave the record pointer unpinned: agbcc allocates
+// it to r7 and saves/restores that register. An explicit r7 local bypasses
+// its frame-pointer liveness accounting and drops r7 from both frame masks.
+// Other measured levers: status address into r0 with an int
 // (not s16) asm-loaded value into r2; rec+142 derived via subs; plain
 // indexed select; proven-value EMIT args spelled out (a pin on the value
 // blocks the substitution and costs the reuse); table/cell/table+4 pinned
@@ -334,9 +334,8 @@ void sub_08001626C(void *a, int b, int c) __attribute__((alias("Rec35_PlaceByTab
 // do not associative-reorder them.
 // ============================================================================
 void Rec35_Record49Tail(void *rec) {
-    // r7 = rec, pinned: the whole body addresses through it, and it must
-    // survive the calls below.
-    register u8 *r7 __asm__("r7") = (u8 *)rec;
+    // Allocated to r7; an ordinary local preserves its callee-saved ABI.
+    u8 *r7 = (u8 *)rec;
     sub_0800D97C(r7 + 136, 15);
     // Status address into r0 (copy + adds-imm8, since 144 exceeds adds-imm3).
     // int, not s16: an s16 asm output gets a defensive lsls/asrs pair the

@@ -1022,12 +1022,24 @@ void _080021018(void *rec0, int a, int b, int c) {
         register int row __asm__("r4") = a_slot;
         remaining = n;
         do {
-            _08007B18((void *)({
-                register volatile u8 *row_record __asm__("r0") = rec;
-                __asm__ volatile("" : "+r" (row_record));
-                row_record += 8;
-                row_record;
-            }), 6, row, breg, 9, one, one, 0);
+            {
+                register volatile u8 *row_record __asm__("r0");
+                // Keep the outgoing stack arguments ahead of the r0 record
+                // address, as in the ROM's first call site. The four-register
+                // prototype lets the compiler supply r1-r3 and the BL while
+                // this small block fixes the stack stores and their order.
+                __asm__ volatile(
+                    ".syntax unified\n\t.code 16\n\t"
+                    "movs r0, #9\n\tstr r0, [sp, #0]\n\t"
+                    "str %1, [sp, #4]\n\tstr %1, [sp, #8]\n\t"
+                    "movs r0, #0\n\tstr r0, [sp, #12]\n\t"
+                    "mov r0, %2\n\tadds r0, #8\n\t.syntax divided"
+                    : "=&r"(row_record)
+                    : "r"(one), "r"(rec)
+                    : "cc", "memory");
+                ((void (*)(void *, int, int, int))_08007B18)(
+                    (void *)row_record, 6, row, breg);
+            }
             row += 8;
             remaining--;
         } while (remaining != 0);
@@ -1039,31 +1051,8 @@ void _080021018(void *rec0, int a, int b, int c) {
         remaining = n;
     }
     if (odd == 1) {
-        // OPEN (148/164): the only remaining difference is the loop-body call's
-        // argument setup order. ROM site 1 materialises the outgoing stack-arg
-        // constants in r0 first (`movs r0,#9 / str r0,[sp,#0] / str r7,[sp,#4]
-        // / str r7,[sp,#8] / movs r0,#0 / str r0,[sp,#12]`) and only then
-        // `mov r0,r9 / adds r0,#8`; this TU computes r0 first and uses r1 as the
-        // constant scratch (which is exactly what the ROM's SECOND call site at
-        // 0x0802107C does, and that site matches byte-for-byte).
-        // Measured and rejected (all 148/164 or worse): plain `rec + 8`
-        // (OVERSIZED 166), named constants, `six`/`nine` locals, pinning the
-        // stack-arg constants to r0/r1, pinning the statement-expression temp to
-        // r1 (76/164). The r0 pin in the first argument is load-bearing for the
-        // rest of the frame; another 6 variants are in build/cases_21018c.py.
-        // Further negatives (all re-measured, layout byte-identical unless
-        // noted): dropping the inner fence (148, same order -- the fence is
-        // not the decider); fence with "memory" clobber (148, identical
-        // layout); explicit `register int one __asm__("r7")` (102/160,
-        // frame breaks at +0xA); non-volatile statement temp (102/160 --
-        // the temp's volatility is globally load-bearing, cf. V2's 75/164).
-        // Mechanism hypothesis: the r0 mov/adds chain (length 2, arg0
-        // expanded first so lowest UID) wins the scheduler's critical-path
-        // tie-break over the store chains (also length <= 2), so r0
-        // materialises before the stores and the stores take r1. Stores-first
-        // needs a longer store chain or stack-args-expanded-first expansion,
-        // neither reachable from equivalent C (all single-insn variants of
-        // the 9/0/one constants keep the tie).
+        // The second call site uses ordinary C and already matches the ROM;
+        // retain its distinct argument expressions and register allocation.
         _08007B18((void *)(uintptr_t)(rec + 8), 5, a_slot + 8 * remaining,
                   breg, 9, (u32)odd, (u32)odd, 0);
     }

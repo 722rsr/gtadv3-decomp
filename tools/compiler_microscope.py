@@ -42,26 +42,24 @@ STRATEGY = "compiler-microscope"
 
 # --------------------------------------------------------------------------
 # Dump letters. (letter, suffix, pass name) in the tool's default comparison
-# order, which follows the GCC 2.x pass pipeline as this compiler emits them:
-# combine runs inside expand, then expand's RTL dump, the two CSE sweeps, regmove
-# between the local and global allocators, flow analysis 1, gcse, loop analysis,
-# the two jump passes, the final machine RTL, and addressof.
+# order, verified against gcc/toplev.c:rest_of_compilation in the pinned tree.
+# The global-allocation dump includes reload; it is not a pre-reload snapshot.
 #
 # The order is a claim about the toolchain and is overridable with --passes;
 # the raw dumps are always kept so a caller can re-order without recompiling.
 # --------------------------------------------------------------------------
 PASSES: list[tuple[str, str, str]] = [
-    ("c", "combine", "combine"),
     ("r", "rtl", "expand (rtl)"),
+    ("j", "jump", "jump"),
     ("s", "cse", "cse1"),
+    ("G", "gcse", "gcse"),
+    ("L", "loop", "loop"),
     ("t", "cse2", "cse2"),
+    ("f", "flow", "flow1"),
+    ("c", "combine", "combine"),
     ("N", "regmove", "regmove"),
     ("l", "lreg", "local allocator"),
-    ("g", "greg", "global allocator"),
-    ("f", "flow", "flow1"),
-    ("G", "gcse", "gcse"),
-    ("L", "loop", "loop (flow2)"),
-    ("j", "jump", "jump"),
+    ("g", "greg", "global allocator + reload"),
     ("J", "jump2", "jump2"),
     ("M", "mach", "machine rtl"),
 ]
@@ -70,8 +68,8 @@ DEFAULT_LETTERS = "".join(letter for letter, _, _ in PASSES)
 # `-da` is not one pass; it is every dump this compiler knows, including the two
 # with no letter of their own.
 ALL_LETTER = "a"
-ALL_SUFFIXES = ["addressof", "combine", "cse", "cse2", "flow", "gcse", "greg",
-                "jump", "jump2", "loop", "lreg", "mach", "regmove", "rtl"]
+ALL_SUFFIXES = ["rtl", "jump", "cse", "addressof", "gcse", "loop", "cse2",
+                "flow", "combine", "regmove", "lreg", "greg", "jump2", "mach"]
 
 PASS_BY_LETTER = {letter: (suffix, name) for letter, suffix, name in PASSES}
 PASS_BY_SUFFIX = {suffix: name for _, suffix, name in PASSES}
@@ -242,6 +240,31 @@ def parse_dump(text: str, *, keep_insn_list: bool = False) -> list[Record]:
 def display_dump(text: str, *, keep_insn_list: bool = False) -> str:
     """Human-readable normalized dump: one record per line, ids replaced."""
     return "\n".join(r.label for r in parse_dump(text, keep_insn_list=keep_insn_list))
+
+
+def allocation_diagnostics(text: str) -> dict:
+    """Keep allocator evidence separately from UID-normalized instruction diffs.
+
+    Notes preserve modes, pseudo/hard register numbers and constant values.
+    They are observations, not an explanation of the allocator's decisions.
+    """
+    records = []
+    def notes(node):
+        if not isinstance(node, list):
+            return []
+        if node and isinstance(node[0], str) and node[0].startswith("expr_list:REG_"):
+            return [render(node[:2])] + sum((notes(n) for n in node[2:]), [])
+        return sum((notes(n) for n in node), [])
+    for form in parse_forms(text):
+        found = notes(form)
+        if found:
+            records.append({"pattern": render(form[4]) if len(form) > 4 else "",
+                            "register_notes": found})
+    prose = [line.strip() for line in text.splitlines()
+             if not line.lstrip().startswith("(")
+             and re.search(r"\b(conflict|conflicts|live|lifetime|prefer|preferences|reload|allocating|cost)\b",
+                           line, re.I)]
+    return {"records": records, "allocator_prose": prose}
 
 
 
@@ -518,6 +541,7 @@ def run_microscope(run: Run) -> dict:
             + "; ".join(compiled[t]["error"] or "" for t in failed))
 
     diffs: list[PassDiff] = []
+    allocation = []
     for letter in letters:
         if letter == ALL_LETTER:
             requested = [(ALL_LETTER, suffix, PASS_BY_SUFFIX.get(suffix, suffix))
@@ -532,6 +556,10 @@ def run_microscope(run: Run) -> dict:
                 diffs.append(PassDiff(name, suffix, letter_, None, "missing", None, None,
                                       "one variant did not emit this dump"))
                 continue
+            a_alloc = allocation_diagnostics(a_path.read_text(errors="replace"))
+            b_alloc = allocation_diagnostics(b_path.read_text(errors="replace"))
+            allocation.append({"pass": name, "suffix": suffix,
+                               "differs": a_alloc != b_alloc, "a": a_alloc, "b": b_alloc})
             diffs.append(compare_pass(a_path.read_text(errors="replace"),
                                       b_path.read_text(errors="replace"),
                                       keep_insn_list=run.keep_insn_list,
@@ -571,9 +599,13 @@ def run_microscope(run: Run) -> dict:
                  "ROM body, and it cannot promote a byte: no draft was assembled, integrated or "
                  "linked.")
 
+    writer.write_json("allocation.json", {
+        "scope": "register notes and allocator prose; no causal inference",
+        "passes": allocation,
+        "first_differing_pass": next((p["suffix"] for p in allocation if p["differs"]), None),
+    })
     writer.write_json("passes.json", {
-        "order": [{"letter": l, "suffix": s, "pass": n}
-                  for l, s, n in PASSES if l in letters or l == ALL_LETTER],
+        "order": [{"letter": d.letter, "suffix": d.suffix, "pass": d.pass_name} for d in diffs],
         "diffs": [d.to_json() for d in diffs],
         "first_differing_pass": first.to_json() if first else None,
         "scope": "observation about these two variants only",
@@ -660,6 +692,16 @@ def self_test() -> int:
     other = "(note 11 10 12 77 NOTE_INSN_FUNCTION_BEG)\n"
     check("line-marker note codes normalize", display_dump(linemarker) == display_dump(other))
     check("note kind stays visible", "NOTE_INSN_FUNCTION_BEG" in display_dump(linemarker))
+    alloc = allocation_diagnostics(dump)
+    check("allocation channel preserves REG_DEAD and hard register identity",
+          "REG_DEAD (reg:SI 0 r0)" in str(alloc))
+    check("allocation changes remain observable when instruction keys agree",
+          parse_dump(dump)[0].key == parse_dump(dump.replace("REG_DEAD", "REG_UNUSED"))[0].key
+          and alloc != allocation_diagnostics(dump.replace("REG_DEAD", "REG_UNUSED")))
+    check("chronological pass order follows compiler driver",
+          ALL_SUFFIXES.index("loop") < ALL_SUFFIXES.index("flow")
+          < ALL_SUFFIXES.index("combine") < ALL_SUFFIXES.index("regmove")
+          < ALL_SUFFIXES.index("lreg") < ALL_SUFFIXES.index("greg"))
 
     # 2. Pass comparison on fixed text.
     const_a = "(insn 26 23 28 (set (reg:SI 35) (plus:SI (reg/v:SI 28) (const_int 50337266))) -1 (nil) (nil))"

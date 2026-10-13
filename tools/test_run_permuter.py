@@ -17,6 +17,16 @@ import run_permuter as perm
 
 
 class SourceTests(unittest.TestCase):
+    def test_macro_before_body_does_not_become_function_name(self):
+        for macro in ('#define TABLE ((unsigned)0x080CB5B0u)\n',
+                      '#define TABLE \\\n    ((unsigned)0x080CB5B0u)\n'):
+            source = macro + 'void target(void) { return; }\n'
+            with self.subTest(macro=macro):
+                ranges = list(perm.function_ranges(source))
+                self.assertEqual([row[0] for row in ranges], ['target'])
+                _, _, opening, end = ranges[0]
+                self.assertEqual(source[opening:end], '{ return; }')
+
     def test_multiline_body_keeps_real_translation_unit(self):
         source = '''typedef unsigned int u32;
 struct S { u32 x; } __attribute__((packed));
@@ -44,11 +54,30 @@ u32 alias(u32) __attribute__((alias("target")));
         self.assertIn('#pragma _permuter b64literal', base)
 
     def test_unsupported_extensions_are_not_silently_dropped(self):
-        for source in ('int f(void) { return ({ int x = 1; x; }); }',
-                       'int __attribute__((weak)) f(void) { return 1; }',
+        for source in ('int __attribute__((weak)) f(void) { return 1; }',
                        'int f(void) { register int a __asm__("r1"), b; return a; }'):
             with self.subTest(source=source), self.assertRaisesRegex(ValueError, 'unsupported target'):
                 perm.prepare_source(source, 'f')
+
+    def test_statement_expression_is_opaque_and_restored_exactly(self):
+        expression = '({ register int x __asm__("r4") = ({ int y=1; y; }); __asm__("" : : "r"(x)); x; })'
+        source = 'int f(void) { return ' + expression + '; }'
+        base, _, _ = perm.prepare_source(source, 'f')
+        opaque = perm.opaque_expressions(base)
+        self.assertEqual(list(opaque.values()), [expression])
+        rendered = 'int f(void) { return __gtadv_opaque_expr_0(); }'
+        self.assertEqual(perm.restore_expressions(rendered, opaque), source)
+        for bad in ('int f(void){return 1;}', rendered.replace('()', '(1)'),
+                    rendered.replace('();', '()+__gtadv_opaque_expr_0();')):
+            with self.subTest(bad=bad), self.assertRaises(ValueError):
+                perm.restore_expressions(bad, opaque)
+
+    def test_multiple_expressions_and_comments_do_not_change_identity(self):
+        source = 'int f(void) { return ({1;}) + ({2;}); /* ({ignore;}) */ }'
+        base, _, _ = perm.prepare_source(source, 'f')
+        self.assertEqual(len(perm.opaque_expressions(base)), 2)
+        rendered = 'int f(void){return __gtadv_opaque_expr_0() + __gtadv_opaque_expr_1();}'
+        self.assertIn('({1;}) + ({2;})', perm.restore_expressions(rendered, perm.opaque_expressions(base)))
 
     def test_pinned_register_declarator_is_preserved_verbatim(self):
         source = ('void f(void) {\n'
@@ -116,6 +145,32 @@ class ObjectTests(unittest.TestCase):
 @unittest.skipUnless(perm.probe.AGBCC.is_file() and shutil.which('arm-none-eabi-as')
                      and shutil.which('arm-none-eabi-objcopy'), 'optional agbcc toolchain unavailable')
 class CompilerTests(unittest.TestCase):
+    def test_fork_statement_expression_roundtrip_preserves_compiler_bytes(self):
+        try:
+            Candidate, parse, State, _, weights = perm.fork_modules()
+        except ValueError as exc:
+            self.skipTest(str(exc))
+        source = ('typedef unsigned int u32;\n'
+                  'u32 target(u32 x) { return ({ register u32 v __asm__("r1") = x + 1; '
+                  '__asm__ volatile("" : "+r"(v)); v; }); }\n')
+        base, before, after = perm.prepare_source(source, 'target')
+        opaque = perm.opaque_expressions(base)
+        self.assertEqual(len(opaque), 1)
+        state = State()
+        expanded = parse(base).evaluate(0, state)
+        candidate = Candidate.from_source(expanded, state, 'target', weights('gcc'), 0)
+        restored = before + perm.restore_expressions(candidate.get_source(), opaque) + after
+        with tempfile.TemporaryDirectory() as tmp:
+            objects = []
+            for name, text in [('original', source), ('restored', restored)]:
+                path = Path(tmp)/f'{name}.i'
+                path.write_text(text)
+                asm, obj = Path(tmp)/f'{name}.s', Path(tmp)/f'{name}.o'
+                perm.run([perm.probe.AGBCC, *perm.FLAGS, path, '-o', asm], capture_output=True)
+                perm.run(['arm-none-eabi-as', '-mcpu=arm7tdmi', asm, '-o', obj], capture_output=True)
+                objects.append(perm.probe.section_map(obj)['.text.target'])
+            self.assertEqual(objects[0], objects[1])
+
     def test_candidate_changes_survive_and_unknown_calls_fail(self):
         with tempfile.TemporaryDirectory(prefix='permuter space ') as tmp:
             work = Path(tmp)

@@ -89,6 +89,15 @@ that a difference is confined to alignment. Use the predicate implemented by
 For content length congruent to 2 modulo 4, gas may pad a function section
 with `c0 46` while the ROM contains `00 00`. The ROM span includes padding:
 testing the span length instead of content length reverses this diagnostic.
+
+The advisory `instruction_diff` report aligns reachable Thumb instructions and
+separates register choices, immediates/memory offsets, branch/call targets, pool
+values and non-code bytes. A local insertion can therefore leave a large aligned
+tail even while fixed-offset byte counts decrease. Unsupported indirect control
+flow is reported as a limitation; identical mnemonic sequences alone do not prove
+operand or control-flow agreement. The ranker requires explicit comparison evidence
+for its register-only and instruction-order recommendations. These diagnostics
+never relax the whole-span byte gate.
 Compare both tails even when an earlier instruction also differs.
 An in-section `__asm__(".align 2, 0");` can reproduce the zero padding.
 Do not assume an alignment mismatch is unavoidable, or that every two-byte

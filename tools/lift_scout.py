@@ -551,22 +551,18 @@ def _classify_once(rec: dict, shape: dict, body: str, typed: bool = True,
             return "P1-epilogue", (f"declared value-returning, ROM tail bx r0; "
                                    f"prefix {prefix}/{rom}")
 
-    # The report's OWN miss classification is the strongest signal available,
-    # because it is produced by comparing the two byte streams rather than by
-    # reading the declaration. Both of these classes mean the candidate is
-    # already the right code, so the lever is narrow and the body is close.
-    # Measured : all 3 unpromoted bodies in
-    # "identical mnemonics (register/operand choice)" were within 6 bytes of
-    # EXACT, and two of them stopped on the SAME repeatable idiom.
+    # Only operand/control-flow-aware evidence establishes a measured narrow
+    # mismatch. Legacy reports compared mnemonics only; do not turn those class
+    # strings into claims that registers are the sole difference.
     report_class = rec.get("class") or ""
-    if "register/operand choice" in report_class and first_diff not in (None, 0):
+    if rec.get("instruction_diff", {}).get("register_only") and first_diff not in (None, 0):
         return "P1-register-choice", (
-            f"report class `identical mnemonics`: every mnemonic, operand, "
-            f"branch target and pool word already agrees and only REGISTER "
+            f"verified instruction comparison: non-register operands, "
+            f"branch targets and pool values agree and only REGISTER "
             f"NUMBERS differ; {rom - (rec.get('matched_bytes') or 0)} of {rom} "
             f"bytes matched, first difference +{first_diff} -- this is the "
             f"cheapest class in the backlog, do NOT re-shape the expression")
-    if report_class == "instruction order" and first_diff not in (None, 0):
+    if rec.get("instruction_diff", {}).get("reordered") and first_diff not in (None, 0):
         return "P1-statement-order", (
             f"report class `instruction order`: the right instructions in the "
             f"wrong order; {rom - (rec.get('matched_bytes') or 0)} of {rom} "
@@ -855,6 +851,7 @@ def self_test() -> int:
     check("report-class-register-choice",
           classify(rec(rom_bytes=28, cand_bytes=28, prefix=24, first_diff=2,
                        status="PARTIAL", matched_bytes=26,
+                       instruction_diff={"register_only": True},
                        **{"class": "identical mnemonics "
                                    "(register/operand choice)"}),
                    frameless, "void X(volatile u8 *rec){ return 0; }")[0],
@@ -862,6 +859,7 @@ def self_test() -> int:
     check("report-class-statement-order",
           classify(rec(rom_bytes=68, cand_bytes=68, prefix=60, first_diff=4,
                        status="PARTIAL", matched_bytes=54,
+                       instruction_diff={"reordered": True},
                        **{"class": "instruction order"}),
                    frameless, "void X(volatile u8 *rec){ return 0; }")[0],
           "P1-statement-order")
