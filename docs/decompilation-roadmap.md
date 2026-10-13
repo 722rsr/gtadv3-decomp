@@ -1,41 +1,63 @@
 # Build status and completion criteria
 
-The target is a byte-identical US ROM built from readable C and cataloged
-data. The full independent C ROM is not complete.
+The target is a byte-identical US ROM built from readable C and cataloged data.
+The full independent C/hybrid ROM link is not complete. Read the current
+[Objdiff report](data/report.json) together with this evidence ledger: the
+percentages describe different axes, not one overall “decompiled” score.
 
-## Build status
+## Current evidence
 
-The reference build (`make`) assembles reconstructed source, verified generated
-data regions, and zero padding. It checks the resulting ROM against `baserom.sha256`.
-Its matching hash does not establish a C-built ROM.
+- **Exact C-function matching: 100%.** `matching-ready` currently reports
+  1,674 / 1,674 identified C function candidates and 188,136 / 188,136 selected
+  C-function bytes byte-exact. The ROM function inventory is based on source
+  `.type` declarations and `BL` targets, so this is a lower-bound census, not
+  proof that no unlabelled or indirect-call entry points remain. Of the matched
+  candidates, 1,024 have at least three source statements and 650 are one-line
+  stubs; this split is only a triage proxy, not a judgment of semantic
+  completeness or readability.
+- **Whole-slice C-byte ratio: 99.67% (diagnostic only).** This is 188,136 C
+  function bytes / 188,760 bytes in the executable slice. The denominator also
+  includes the cartridge header, startup, reconstructed assembly, and
+  non-function bytes. It is not a C-function decompilation percentage and
+  should not be used as the headline progress figure.
+- **Independent code link: 100%.** The selected C replacements splice into a
+  complete 188,760-byte C/ASM executable slice that links without original
+  executable bytes and compares exactly. This proves the code slice, not the
+  full ROM.
+- **Reference ROM build:** the assembly/data reference build compares exactly
+  against the pinned US ROM. The build still reads the final 326,460 bytes of
+  verified zero padding from `baserom.gba`; it is therefore not a fully
+  independent ROM build.
+- **Data bytes:** all 7,873,388 non-padding content bytes round-trip through the
+  registered data generators. Some payloads are retained verbatim or originate
+  from ROM extraction, so this measures byte reproduction, not semantic asset
+  reconstruction. The 326,460 padding bytes are excluded from the data
+  denominator.
+- **Full independent C/ASM ROM link:** not established.
+- **Runtime equivalence:** not run.
 
-The independent executable slice covers ROM VMA `0x08000000–0x0802E158`
-(file offsets `0x000000–0x02E158`), or 188,760 bytes. It contains reconstructed
-assembly and the C functions selected by
-[`matching_slice_functions.json`](../tools/matching_slice_functions.json).
-The manifest selects 1,408 functions covering 89,980 bytes. `make matching-ready`
-checks this mixed C/assembly slice against the reference and verifies that a
-deliberately changed instruction fails the comparison.
-
-The remaining work is C reconstruction and matching and use of the independent C
-link for the complete ROM. All cataloged data through content end `0x7B04C4`
-(7,873,388 bytes; padding excluded) now uses
-[verified generator inputs](data-integration.md). See the
-[ownership map](code_data_ownership.md), [compiler documentation](compiler_status.md),
-and [build verification guide](matching_workflow.md).
+The generated report in `docs/data/report.json` separates `matched_*` values
+(exact comparisons) from `complete_*` values (linked units/bytes). Padding is
+excluded from data progress, and report function counts are explicitly scoped
+to the currently identified entry inventory. Keep those definitions alongside
+any progress number quoted elsewhere. The [ownership map](code_data_ownership.md),
+[compiler documentation](compiler_status.md), and
+[build verification guide](matching_workflow.md) document the underlying gates.
 
 ## Completion criteria
 
-1. Every executable region has a C owner or documented source assembly for a
-   hardware contract C cannot express, such as startup, interrupt entry, BIOS
-   calls, or register-branch veneers. A known-function count alone does not
-   classify every byte or entry point.
+1. Every executable byte is classified as C-owned, documented source assembly,
+   or non-function content, and the known-function inventory is audited for
+   missed entries. Do not equate a `.type`/call-target count with an exhaustive
+   census. Keep the C function-match count separate from source-quality review;
+   exact byte-matching stubs are not meaningful decompilation.
 2. The complete independent link obtains behavior from reconstructed source.
    It must not link `build/rom.o`, include original executable bytes through
    `.incbin`, or use ROM trampolines. Direct calls, callback tables, interrupt
    vectors, and relocated handlers must resolve to rebuilt code.
-3. Each data or asset input has a named range, type, consumer, and extraction
-   or generation step. Build rules distinguish data from executable bytes.
+3. Each data or asset input has a named range, type, consumer, provenance, and
+   extraction or generation step. Report byte reproduction separately from
+   semantic decoding. Build rules distinguish data from executable bytes.
    Private ROM data may serve as an extraction input; its executable bytes
    cannot satisfy source ownership.
 4. The complete independent ROM matches `baserom.sha256`. Isolated function

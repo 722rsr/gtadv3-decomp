@@ -18,14 +18,18 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import contextlib
 import hashlib
+import io
 import json
 from pathlib import Path
 import re
 import subprocess
 import sys
+import tempfile
 import time
 import unittest
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 README_PATH = ROOT / "README.md"
@@ -55,23 +59,6 @@ def compute_manifest_stats(manifest_file: Path = MANIFEST_PATH) -> tuple[int, in
     count = len(manifest)
     total_bytes = sum(int(entry["end_vma"], 16) - int(start, 16) for start, entry in manifest.items())
     return count, total_bytes
-
-
-def content_progress(source_code_bytes: int, matched_code_bytes: int,
-                     matched_data_bytes: int, content_end_bytes: int,
-                     source_code_exact: bool) -> tuple[int, float]:
-    """Return reconstructed non-padding content bytes and their percentage.
-
-    `matched_code_bytes` counts C-owned functions only. The independent source
-    slice also contains the cartridge header, startup/IRQ assembly, and other
-    non-function bytes, so use its full extent only when its byte-identical
-    proof is present. Bytes after the ownership report's content end are
-    verified zero padding, not missing decompilation.
-    """
-    code_bytes = source_code_bytes if source_code_exact else matched_code_bytes
-    reconstructed = code_bytes + matched_data_bytes
-    percent = reconstructed / content_end_bytes * 100 if content_end_bytes else 0.0
-    return reconstructed, percent
 
 
 def format_readme(content: str, manifest_count: int, manifest_bytes: int,
@@ -210,7 +197,7 @@ def run_ci_verification(root: Path = ROOT, verbose: bool = True) -> None:
 
 
 def print_summary(root: Path = ROOT) -> None:
-    """Display a concise summary of current decompilation progress."""
+    """Display matching, linkage, data, and outstanding gates separately."""
     report_file = root / REPORT_PATH
     if not report_file.exists():
         print("Summary unavailable: report.json does not exist.")
@@ -222,49 +209,57 @@ def print_summary(root: Path = ROOT) -> None:
     func_count, func_bytes = compute_manifest_stats(root / MANIFEST_PATH)
     matched_code = int(measures.get("matched_code", func_bytes))
     total_code = int(measures.get("total_code", 188760))
-    code_pct = float(measures.get("matched_code_percent", (matched_code / total_code) * 100))
+    matched_code_pct = float(measures.get("matched_code_percent", 0.0))
+    matched_c_function_bytes_pct = 100.0 * matched_code / func_bytes if func_bytes else 0.0
+    linked_code = int(measures.get("complete_code", 0))
+    linked_code_pct = float(measures.get("complete_code_percent", 0.0))
 
+    matched_functions = int(measures.get("matched_functions", func_count))
+    total_functions = int(measures.get("total_functions", 0))
+    matched_functions_pct = float(measures.get("matched_functions_percent", 0.0))
     matched_data = int(measures.get("matched_data", 0))
-    total_data = int(measures.get("total_data", 8199848))
-    data_pct = float(measures.get("matched_data_percent", (matched_data / total_data) * 100))
+    total_data = int(measures.get("total_data", 0))
+    matched_data_pct = float(measures.get("matched_data_percent", 0.0))
+    linked_data = int(measures.get("complete_data", 0))
+    linked_data_pct = float(measures.get("complete_data_percent", 0.0))
 
-    total_matched = matched_code + matched_data
-    rom_size = total_code + total_data
-    rom_pct = (total_matched / rom_size) * 100 if rom_size else 0.0
-
-    slice_bytes = total_code
-    slice_exact = False
-    slice_file = root / SLICE_PATH
-    if slice_file.is_file():
+    verification = {}
+    stamp_file = root / STAMP_PATH
+    if stamp_file.is_file():
         try:
-            slice_info = json.loads(slice_file.read_text()).get("slice", {})
-            slice_bytes = int(slice_info.get("bytes", total_code))
-            slice_exact = slice_info.get("matches_baserom") is True
+            verification = json.loads(stamp_file.read_text()).get("verification", {})
         except (OSError, ValueError, TypeError):
             pass
-    content_end = total_code + matched_data
     ownership_file = root / OWNERSHIP_PATH
+    padding_bytes = 0
     if ownership_file.is_file():
         try:
-            content_end = int(json.loads(ownership_file.read_text())
-                              .get("rom", {}).get("content_end", content_end), 16)
-        except (OSError, ValueError, TypeError):
+            ownership = json.loads(ownership_file.read_text())
+            padding_bytes = sum(
+                int(row["size"]) for row in ownership.get("segments", [])
+                if row.get("classification") == "padding")
+        except (OSError, ValueError, TypeError, KeyError):
             pass
-    content_bytes, content_pct = content_progress(
-        slice_bytes, matched_code, matched_data, content_end, slice_exact)
 
     print("\n" + "=" * 65)
-    print("           GT ADVANCE 3 DECOMPILATION PROGRESS")
+    print("       GT ADVANCE 3 MATCHING AND LINK STATUS")
     print("=" * 65)
-    print(f"  Code Progress:")
-    print(f"    Manifest Functions: {func_count:,}")
-    print(f"    Matched Executable: {matched_code:,} / {total_code:,} bytes ({code_pct:.2f}%)")
-    print(f"  Data Progress:")
-    print(f"    Verified Data:      {matched_data:,} / {total_data:,} bytes ({data_pct:.2f}%)")
-    print(f"  Non-padding Content:")
-    print(f"    Source-backed:      {content_bytes:,} / {content_end:,} bytes ({content_pct:.2f}%)")
-    print(f"  Overall Binary:")
-    print(f"    C-matched + data:   {total_matched:,} / {rom_size:,} bytes ({rom_pct:.2f}%)")
+    print("  Exact C-function matching:")
+    print(f"    Identified candidates:  {matched_functions:,} / {total_functions:,} ({matched_functions_pct:.2f}%)")
+    print(f"    Selected-function bytes: {matched_code:,} / {func_bytes:,} ({matched_c_function_bytes_pct:.2f}%)")
+    print(f"    Whole-slice C-byte ratio: {matched_code:,} / {total_code:,} ({matched_code_pct:.2f}%; diagnostic, not completion)")
+    print("  Link/build evidence:")
+    print(f"    C/ASM code slice linked: {linked_code:,} / {total_code:,} ({linked_code_pct:.2f}%)")
+    reference_status = verification.get("reference_rom", "not_verified")
+    print(f"    Reference ROM build:    {reference_status.upper().replace('_', ' ')}")
+    print("    Full independent C/ASM ROM link: NOT ESTABLISHED")
+    print("    Runtime equivalence:    NOT RUN")
+    print("  Data byte reconstruction (non-padding):")
+    print(f"    Reproduced data bytes:  {matched_data:,} / {total_data:,} ({matched_data_pct:.2f}%)")
+    print(f"    Data linked to build:  {linked_data:,} / {total_data:,} ({linked_data_pct:.2f}%)")
+    print(f"    ROM padding excluded:  {padding_bytes:,} bytes")
+    print("    Semantic asset decoding is not measured by this byte-progress report.")
+    print("  Census scope: identified .type/BL-target entries, not a closed all-ROM census.")
     print("-" * 65)
     print("  Artifacts ready for commit:")
     print("    • docs/data/code_data_ownership.json")
@@ -278,28 +273,12 @@ def print_summary(root: Path = ROOT) -> None:
     print(f"    git add docs/data/report.json docs/data/report-inputs.json \\")
     print(f"            docs/data/code_data_ownership.json docs/data/independent_slice.json \\")
     print(f"            objdiff.json README.md")
-    print(f'    git commit -m "Progress: {func_count:,} C functions / {matched_code:,} bytes ({code_pct:.2f}%)"')
+    print(f'    git commit -m "Progress: {matched_functions:,}/{total_functions:,} identified C matches '
+          f'({matched_functions_pct:.2f}%)"')
     print("=" * 65 + "\n")
 
 
 class SelfTests(unittest.TestCase):
-    def test_content_progress_excludes_verified_padding(self):
-        content_bytes, percent = content_progress(
-            source_code_bytes=188760,
-            matched_code_bytes=188136,
-            matched_data_bytes=7873388,
-            content_end_bytes=8062148,
-            source_code_exact=True,
-        )
-        self.assertEqual(content_bytes, 8062148)
-        self.assertEqual(percent, 100.0)
-
-    def test_unverified_slice_falls_back_to_c_matched_bytes(self):
-        content_bytes, percent = content_progress(188760, 188136, 7873388,
-                                                   8062148, False)
-        self.assertEqual(content_bytes, 8061524)
-        self.assertLess(percent, 100.0)
-
     def test_readme_formatter(self):
         sample = """# Header
 The manifest selects **1,252 C functions / 64,740 bytes** within the
@@ -326,6 +305,44 @@ The manifest selects **1,252 C functions / 64,740 bytes** within the
         count, total = compute_manifest_stats(ROOT / "tools/matching_slice_functions.json")
         self.assertGreater(count, 1000)
         self.assertGreater(total, 50000)
+
+    def test_summary_separates_function_match_from_whole_slice_ratio(self):
+        with tempfile.TemporaryDirectory() as temp_dir, patch.multiple(
+                __name__,
+                MANIFEST_PATH=Path("tools/matching_slice_functions.json"),
+                REPORT_PATH=Path("docs/data/report.json"),
+                STAMP_PATH=Path("docs/data/report-inputs.json"),
+                OWNERSHIP_PATH=Path("docs/data/code_data_ownership.json")):
+            root = Path(temp_dir)
+            (root / "tools").mkdir()
+            (root / "docs/data").mkdir(parents=True)
+            (root / MANIFEST_PATH).write_text(json.dumps({
+                "0x08000000": {"end_vma": "0x08000010", "c_name": "candidate"}
+            }))
+            (root / REPORT_PATH).write_text(json.dumps({"measures": {
+                "matched_code": "16", "total_code": "100", "matched_code_percent": 16.0,
+                "complete_code": "100", "complete_code_percent": 100.0,
+                "matched_functions": 1, "total_functions": 1,
+                "matched_functions_percent": 100.0,
+                "matched_data": "20", "total_data": "20", "matched_data_percent": 100.0,
+                "complete_data": "20", "complete_data_percent": 100.0,
+            }}))
+            (root / STAMP_PATH).write_text(json.dumps({
+                "verification": {"reference_rom": "pass"}
+            }))
+            (root / OWNERSHIP_PATH).write_text(json.dumps({"segments": [
+                {"size": 5, "classification": "padding"}
+            ]}))
+
+            output = io.StringIO()
+            with contextlib.redirect_stdout(output):
+                print_summary(root)
+
+            summary = output.getvalue()
+            self.assertIn("Identified candidates:  1 / 1 (100.00%)", summary)
+            self.assertIn("Selected-function bytes: 16 / 16 (100.00%)", summary)
+            self.assertIn("Whole-slice C-byte ratio: 16 / 100 (16.00%; diagnostic, not completion)", summary)
+            self.assertIn("C/ASM code slice linked: 100 / 100 (100.00%)", summary)
 
 
 def main():

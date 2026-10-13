@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Build and verify an independent link slice of the GT Advance 3 cartridge.
 
-The reference `make` build reproduces the cartridge by assembling reconstructed
-source and splicing the still-unknown remainder straight out of `baserom.gba`.
-Neither the reference nor any removed hybrid build answers the question
-this tool answers:
+The reference `make` build reproduces the cartridge from reconstructed code,
+registered data generators, ROM-derived data inputs, and a verified zero-padding
+tail read from `baserom.gba`. That exact reference build is not a fully
+independent ROM link. This tool answers the narrower question:
 
     can a contiguous range of the cartridge be produced from reconstructed
     source alone, with no `rom.o` and no `.incbin` of the reference ROM?
@@ -555,8 +555,10 @@ def render_markdown(report: dict[str, Any]) -> str:
             "  the reference.",
             "* Proves: the slice's out-of-slice references are a *known, enumerated*",
             "  boundary rather than an invisible dependency on `rom.o`.",
-            "* Does not prove: the data/asset tail (`0x02E158`-`0x7B04C4`) is still a",
-            "  raw input; cataloging it into named data is the remaining data-gate work.",
+            "* Does not prove: the complete ROM has an independent C/ASM link, or",
+            "  that the data/asset tail is semantically decoded. Some payload bytes",
+            "  remain verbatim/ROM-derived; the final zero-padding tail is read from",
+            "  `baserom.gba` by the reference build.",
             "",
         ]
     )

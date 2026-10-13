@@ -13,20 +13,31 @@ The full independent C ROM is **not complete**.
 [![GT Advance 3 Decompilation Treemap](https://decomp.dev/722rsr/gtadv3-decomp.png)](https://decomp.dev/722rsr/gtadv3-decomp)
 
 The reference build (`make`) produces a byte-identical ROM from reconstructed
-assembly, verified generated data regions, and zero padding.
+assembly and registered data generators; the final verified zero-padding tail
+is read from the supplied reference ROM. On a clean checkout, missing editable
+data inputs are extracted into ignored `build/data/` from that ROM.
 The `make matching-ready` target
 compiles the C corpus with pinned `old_agbcc` and verifies selected C functions
 in an independent executable slice.
 
-The manifest selects **1,674 C functions / 188,136 bytes** within the
-**188,760-byte** executable slice. The remaining executable bytes are
-reconstructed assembly. Remaining work includes C matching, the complete
-independent link.
+The current report has exact matches for **1,674 / 1,674 identified C function
+candidates and 188,136 / 188,136 selected C-function bytes (100%)**. The
+separate 99.67% code-byte ratio is the selected C spans as a share of the full
+**188,760-byte** executable slice; it includes the cartridge header, startup,
+assembly, and non-function bytes, so it is not the C-function completion rate.
+The slice itself is separately **100% linked and byte-identical** from C/ASM
+sources. Function matching measures emitted bytes, not source readability or
+semantic asset reconstruction. The function denominator is the currently
+identified `.type`/`BL`-target inventory, not a proven exhaustive census of
+every ROM entry point. The complete independent C/hybrid ROM link and runtime
+equivalence are not yet established.
 The [integrated data regions](docs/data-integration.md) cover all cataloged
-data through content end `0x7B04C4` (7,873,388 bytes; padding excluded),
-regenerated from private editable inputs.
-See [build status and completion criteria](docs/decompilation-roadmap.md) or
-view interactive progress on [decomp.dev](https://decomp.dev/722rsr/gtadv3-decomp).
+data through content end `0x7B04C4` (7,873,388 non-padding bytes), regenerated
+from private editable inputs. Some compressed or raw payloads are preserved
+verbatim, so byte reproduction is not the same as semantic asset decoding.
+See [build status and completion criteria](docs/decompilation-roadmap.md) for
+the separate match, link, data, and runtime gates, or view interactive progress
+on [decomp.dev](https://decomp.dev/722rsr/gtadv3-decomp).
 
 ## Repository map
 

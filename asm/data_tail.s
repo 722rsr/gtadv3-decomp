@@ -12,10 +12,10 @@
 @ of baserom.gba — the reference `make` build still pulls this span in, in
 @ ROM order, immediately after asm/passthrough.inc.
 @
-@ The generated palettes, course chain, LUTs, and compressed surface/variant
-@ streams are rebuilt from private editable inputs (compressed streams kept
-@ verbatim like normal .lz data); only the remaining ranges are copied from
-@ the reference.
+@ Registered content regions are generated from editable inputs under build/data.
+@ Some compressed/raw payload bytes are preserved verbatim, and clean builds
+@ may extract those inputs from the reference ROM. The only direct ROM include
+@ after the content end is the verified all-zero padding tail below.
 @ The data/asset inventories remain the layout authority: the catalogued
 @ ranges in docs/data/ (lz77_blobs.txt, mto_entries.txt, track_resources.txt)
 @ all index into this span, as does the on-demand ASCII string inventory

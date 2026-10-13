@@ -26,7 +26,8 @@ an Actions spending budget in GitHub billing.
 full `matching-ready` gate, and writes:
 
 - `docs/data/report.json`: an [objdiff v2 report](https://github.com/encounter/objdiff/blob/main/objdiff-core/protos/report.proto).
-- `docs/data/report-inputs.json`: source/build-input hashes and the report hash.
+- `docs/data/report-inputs.json`: source/build-input hashes, the report hash,
+  and the local verification gates passed when the snapshot was refreshed.
 
 CI compares those hashes against the checkout and independently checks that
 reported selected spans agree with the manifest. Additions, deletions, and
@@ -34,31 +35,48 @@ changes to build inputs require refreshing the snapshot. Documentation outside
 the build inventories does not. Fingerprints prevent accidental stale reports;
 they are not a signed attestation or a substitute for maintainer build review.
 
-Code progress counts only selected C-owned spans that passed the independent
-link, including any padding within those spans. Its conservative denominator
-is the entire 188,760-byte executable slice, including startup, header, literal
-pools, and alignment. Reconstructed assembly alone receives no C-match credit.
-The data denominator is 8,199,848 bytes, including trailing ROM padding.
-Verified generated regions from `tools/data_regions.json` receive data credit
-only when the ownership audit records the same registered range and generator
-input. The first region covers [280 palette bytes](data-integration.md); all
-remaining reference-backed data and padding stay unmatched. This is not a claim that the full independent C ROM is complete.
+The report keeps exact matching and completion/linkage separate, following
+Objdiff's distinct `matched_*` and `complete_*` measures. For the current
+snapshot, the identified C candidates are **1,674 / 1,674 exact (100%)**, and
+their selected spans total **188,136 / 188,136 exact bytes (100%)**. These are
+the C-function progress figures to headline.
 
-The report uses the audited ownership map to group the entire executable slice
-by assembly source region. Every byte contributes to its region's area, including
-unselected code. The `fuzzy_match_percent` field used by decomp.dev for color is
-a conservative byte-weighted score: verified selected spans contribute 100%,
-and all other bytes contribute zero. It equals the C-owned byte percentage;
-it does not estimate instruction similarity for unmatched functions.
+- `matched_functions` counts exact C function candidates in the identified
+  `.type`/`BL`-target inventory. The updater derives the C-function byte rate by
+  dividing `matched_code` by the total selected C-function spans.
+- Objdiff's top-level `matched_code_percent` is currently a different,
+  whole-slice accounting ratio: 188,136 selected C bytes / 188,760 executable
+  bytes (99.67%). Its denominator includes the cartridge header, startup,
+  assembly, and non-function bytes, while its numerator credits only selected C
+  spans. It is not the C-function match rate and should not be described as
+  overall decompilation progress.
+- `complete_code` and `complete_units` mean the entire C/ASM executable slice
+  linked and compared byte-for-byte with no `.incbin` or external code boundary.
+  This is a 100% link-completion measure, not a claim that every byte is C or
+  that the full ROM has an independent C/hybrid link.
+- `total_data` covers non-padding content only, ending at the audited content end
+  in `docs/data/code_data_ownership.json`. `matched_data` counts registered data
+  regions whose editable inputs regenerate the exact bytes and whose ownership
+  audit agrees. Trailing zero padding is excluded from this denominator.
+- `complete_data` records verified content data linked by the reference build.
+  It does not claim that compressed payloads or all asset structures have been
+  semantically decoded. Raw payloads preserved verbatim are byte-reproducible,
+  not semantically reconstructed.
 
-Drill-down lists include selected functions and explicitly named unselected byte
-ranges so their areas still cover the whole region. These ranges may include
-multiple functions, literal pools, header bytes, or padding; they are not a
-function census. Aggregate function counts remain omitted. The report does not
-claim that all selected bodies are free of inline assembly. `objdiff.json` provides
-per-function target/C comparisons, but it does not supply these metrics. Regenerate
-its inventory with `make objdiff-config` when function names, owners, or boundaries
-change.
+Function totals are a scoped lower-bound inventory: the current source census
+uses `.type` entries and `BL` targets, plus manifest validation. The report
+records identified entries and exact matches, but does not claim this is a
+closed census of every possible unlabelled or indirect-call ROM entry point.
+Matching counts byte-exact stubs as matches; it does not score source readability
+or semantic completeness. Report units are ROM ownership groups and generated
+data regions, not compiler translation units.
+
+The reference assembly/data ROM build and independent executable C/ASM slice are
+proven. A complete independent C/hybrid ROM link and runtime equivalence are
+separate outstanding gates; neither is implied by the decomp.dev percentages.
+Treemap sections represent non-function bytes rather than invented function
+boundaries. `objdiff.json` remains the per-function comparison viewer; regenerate
+it with `make objdiff-config` when function names, owners, or boundaries change.
 
 ## One-time decomp.dev activation
 

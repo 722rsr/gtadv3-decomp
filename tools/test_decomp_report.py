@@ -21,35 +21,63 @@ def ownership_fixture():
 
 
 class ReportTests(unittest.TestCase):
+    @staticmethod
+    def fixture_report(manifest, ownership, verified=False):
+        spans = ({report.BASE + 0x100: report.BASE + 0x110} if manifest else {})
+        return report.make_report(manifest, ownership, function_spans=spans,
+                                  verified=verified)
+
+    def test_measures_keep_match_and_link_axes_independent(self):
+        result = report.measures(
+            code=100, matched=60, linked_code=100,
+            data=40, matched_data=30, linked_data=40,
+            total_functions=5, matched_functions=3,
+            total_units=3, complete_units=2,
+        )
+        self.assertEqual(result['matched_code'], '60')
+        self.assertEqual(result['complete_code'], '100')
+        self.assertEqual(result['matched_data'], '30')
+        self.assertEqual(result['complete_data'], '40')
+        self.assertEqual(result['matched_functions'], 3)
+        self.assertEqual(result['total_functions'], 5)
+        self.assertEqual(result['complete_units'], 2)
+
     def test_accounting_and_overlap(self):
         manifest = {'0x08000100': {'end_vma': '0x08000110', 'asm_file': 'asm/a.s', 'c_name': 'a'}}
-        result = report.make_report(manifest, ownership_fixture())
+        result = self.fixture_report(manifest, ownership_fixture(), verified=True)
         self.assertEqual(int(result['measures']['matched_code']), 16)
+        self.assertEqual(int(result['measures']['complete_code']), report.CODE_SIZE)
+        self.assertEqual(result['measures']['matched_functions'], 1)
+        self.assertEqual(result['measures']['total_functions'], 1)
         self.assertEqual(sum(int(u['measures']['total_code']) for u in result['units']), report.CODE_SIZE)
         self.assertEqual(sum(int(u['measures']['total_data']) for u in result['units']), report.ROM_SIZE - report.CODE_SIZE)
         manifest['0x08000108'] = dict(manifest['0x08000100'])
         with self.assertRaisesRegex(ValueError, 'overlapping'):
-            report.make_report(manifest, ownership_fixture())
+            self.fixture_report(manifest, ownership_fixture())
 
     def test_treemap_colors_areas_and_drill_down(self):
         # The splice owner can differ from the physical region owner.
         manifest = {'0x08000100': {'end_vma': '0x08000110',
                                  'asm_file': 'asm/passthrough.inc', 'c_name': 'selected'}}
-        result = report.make_report(manifest, ownership_fixture())
+        result = self.fixture_report(manifest, ownership_fixture(), verified=True)
         a, b, data = result['units']
         self.assertEqual(a['name'], 'asm/a.s')
         self.assertEqual(a['measures']['total_code'], '512')
-        self.assertEqual(a['measures']['fuzzy_match_percent'], 100 * 16 / 512)
-        self.assertEqual(b['measures']['fuzzy_match_percent'], 0)
-        self.assertEqual(result['measures']['fuzzy_match_percent'], 100 * 16 / report.CODE_SIZE)
+        self.assertEqual(a['measures']['matched_code_percent'], 100 * 16 / 512)
+        self.assertEqual(a['measures']['complete_code_percent'], 100.0)
+        self.assertEqual(b['measures']['matched_code_percent'], 0)
+        total_content = report.CODE_SIZE + report.ROM_SIZE - report.CODE_SIZE
+        self.assertEqual(result['measures']['fuzzy_match_percent'], 100 * 16 / total_content)
         for unit in (a, b):
-            self.assertEqual(sum(int(item['size']) for item in unit['functions']),
+            self.assertEqual(sum(int(item['size']) for item in unit['functions'] + unit.get('sections', [])),
                              int(unit['measures']['total_code']))
-        self.assertEqual([item['fuzzy_match_percent'] for item in a['functions']], [0, 100, 0])
-        self.assertTrue(a['functions'][0]['name'].startswith('Unselected range'))
+        self.assertEqual([item['fuzzy_match_percent'] for item in a['functions']], [100])
+        self.assertEqual(len(a['sections']), 2)
+        self.assertTrue(all(item['name'].startswith('Unclassified code bytes')
+                            for item in a['sections']))
         manifest['0x08000100']['end_vma'] = '0x08000210'
         with self.assertRaisesRegex(ValueError, 'crosses ownership'):
-            report.make_report(manifest, ownership_fixture())
+            self.fixture_report(manifest, ownership_fixture())
 
     def test_rejects_bad_ownership_partition(self):
         for modification in ('gap', 'overlap', 'size', 'truncated', 'boundary'):
@@ -65,22 +93,32 @@ class ReportTests(unittest.TestCase):
             else:
                 rows['segments'][1]['executable'] = False
             with self.subTest(modification=modification), self.assertRaises(ValueError):
-                report.make_report({}, rows)
+                self.fixture_report({}, rows)
 
-    def test_real_inventory_preserves_totals_and_has_no_catchall(self):
-        result = json.loads(report.expected_report(report.ROOT))
+    def test_real_inventory_has_scoped_function_counts_and_excludes_padding(self):
+        result = json.loads(report.expected_report(report.ROOT, verified=True))
         self.assertEqual(result['measures']['total_code'], str(report.CODE_SIZE))
-        # Keep this test independent of growth in selected C ownership.
         manifest = json.loads((report.ROOT / 'tools/matching_slice_functions.json').read_text())
         expected = sum(int(row['end_vma'], 16) - int(start, 16) for start, row in manifest.items())
         self.assertEqual(int(result['measures']['matched_code']), expected)
+        self.assertEqual(result['measures']['total_functions'], len(report.corpus_match_probe._rom_functions_scan()))
+        self.assertEqual(result['measures']['matched_functions'], len(manifest))
+        self.assertEqual(result['measures']['matched_functions_percent'], 100.0)
+        ownership = json.loads((report.ROOT / 'docs/data/code_data_ownership.json').read_text())
+        content_end = int(ownership['rom']['content_end'], 16)
+        data_content_bytes = content_end - report.CODE_SIZE
+        self.assertEqual(result['measures']['total_data'], str(data_content_bytes))
+        self.assertEqual(result['measures']['matched_data'], str(data_content_bytes))
+        self.assertEqual(result['measures']['complete_code'], str(report.CODE_SIZE))
+        self.assertEqual(result['measures']['complete_data'], str(data_content_bytes))
+        self.assertEqual(result['measures']['total_units'], result['measures']['complete_units'])
         code = [unit for unit in result['units'] if int(unit['measures']['total_code'])]
         self.assertGreater(len(code), 200)
         self.assertTrue(all(unit['name'].startswith('asm/') for unit in code))
         self.assertEqual(sum(int(unit['measures']['total_code']) for unit in code), report.CODE_SIZE)
         self.assertTrue(any(unit['measures']['fuzzy_match_percent'] > 0 for unit in code))
         for unit in code:
-            self.assertEqual(sum(int(item['size']) for item in unit['functions']),
+            self.assertEqual(sum(int(item['size']) for item in unit['functions'] + unit.get('sections', [])),
                              int(unit['measures']['total_code']))
 
     def test_stale_added_deleted_and_tampered_inputs(self):
@@ -93,9 +131,14 @@ class ReportTests(unittest.TestCase):
             (root / 'tools/matching_slice_functions.json').write_text('{}')
             (root / 'tools/data_regions.json').write_text(json.dumps({'version': 1, 'regions': []}))
             (root / 'docs/data/code_data_ownership.json').write_text(json.dumps(ownership_fixture()))
-            data = report.expected_report(root)
+            data = report.expected_report(root, verified=True)
             (root / report.REPORT).write_bytes(data)
-            (root / report.STAMP).write_bytes(report.encoded({'version': 1, 'inputs': report.inputs(root), 'report_sha256': report.digest(data)}))
+            (root / report.STAMP).write_bytes(report.encoded({
+                'version': report.STAMP_VERSION,
+                'inputs': report.inputs(root),
+                'report_sha256': report.digest(data),
+                'verification': report.VERIFICATION,
+            }))
             report.check(root)
             for change in ('modify', 'add', 'delete', 'tamper'):
                 with self.subTest(change=change):
