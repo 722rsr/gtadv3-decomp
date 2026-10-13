@@ -153,3 +153,4 @@ _award_send:				@ 0x0800B17E
 	bx r0				@ armcc interworking return
 
 @ end of pocket: next VMA 0x0800B190 (raw region owned by the follow-up task)
+award_pkt_end:

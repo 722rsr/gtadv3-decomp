@@ -695,3 +695,4 @@ _0800EBB6:
   pop {r0}
   bx r0
   .align 2, 0
+menu_e650_end:

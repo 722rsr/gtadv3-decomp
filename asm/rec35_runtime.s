@@ -4688,3 +4688,4 @@ _080018A30:
 	movs	r0, r0
 _080018A48: .4byte 0x03001780
 _080018A4C: .4byte 0x000010FC
+rec35_runtime_end:

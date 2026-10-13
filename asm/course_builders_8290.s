@@ -1022,3 +1022,4 @@ _08008A98:
   .align 2, 0
 _08008AA4: .4byte 0x0000404A
 _08008AA8: .4byte 0x0000C0A8
+course_builders_8290_end:

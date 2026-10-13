@@ -1,7 +1,7 @@
 @ GT Advance 3 - ARM EABI signed divide core
-@ Region: file offset 0x02DE9C-0x02DF6A (VMA 0x0802DE9C-0x0802DF6A).
-@ Pure Thumb; byte-exact transcription. The preceding raw pad/stub at
-@ 0x0802DE96-0x0802DE9C is kept in passthrough.inc.
+@ Region: file offset 0x02DE9C-0x02DF6C (VMA 0x0802DE9C-0x0802DF6C).
+@ Pure Thumb; byte-exact transcription. The 0x0802DE96 pad is included at
+@ the end of sound_aeabi_idiv.s; the helper at 0x0802DE98 remains separate.
 
 .thumb
 .type sub_0802DE9C, %function
@@ -125,3 +125,5 @@ _0802DF60:
 	bl sub_0802DE98
 	movs r0, #0
 	pop {pc}
+	.short 0
+sound_aeabi_idiv_core_end:

@@ -24,11 +24,33 @@
    "name": "IrqInstallHooks",
    "size": 52
   },
+  "0x080002c4": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 264,
+    "naked": true
+   },
+   "file": "src/foundation_agbmain.c",
+   "name": "AgbMain",
+   "size": 716
+  },
   "0x08000590": {
    "class": "c",
    "file": "src/foundation_agbmain.c",
    "name": "PaletteFill_00590",
    "size": 48
+  },
+  "0x080005c0": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 82,
+    "naked": true
+   },
+   "file": "src/foundation_agbmain.c",
+   "name": "SessionHook_005C0",
+   "size": 228
   },
   "0x080006a4": {
    "class": "c_fakematch",
@@ -48,6 +70,39 @@
    "name": "SessionExit_080006BC",
    "size": 80
   },
+  "0x0800070c": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 139,
+    "naked": true
+   },
+   "file": "src/agbmain_session.c",
+   "name": "SessionRead_0800070C",
+   "size": 316
+  },
+  "0x08000848": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 78,
+    "naked": true
+   },
+   "file": "src/agbmain_session.c",
+   "name": "PacketBuild_08000848",
+   "size": 172
+  },
+  "0x080008f4": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 171,
+    "naked": true
+   },
+   "file": "src/agbmain_session.c",
+   "name": "SessionVerify_080008F4",
+   "size": 364
+  },
   "0x08000a60": {
    "class": "c_fakematch",
    "detail": {
@@ -56,6 +111,50 @@
    "file": "src/foundation_softirq.c",
    "name": "SoftIrqKicker",
    "size": 148
+  },
+  "0x08000af4": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 112,
+    "naked": true
+   },
+   "file": "src/foundation_handlers.c",
+   "name": "EWRAM_Handler_BlobA",
+   "size": 252
+  },
+  "0x08000bf0": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 64,
+    "naked": true
+   },
+   "file": "src/foundation_handlers.c",
+   "name": "InstallEWRAMHandlers",
+   "size": 176
+  },
+  "0x08000ca0": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 196,
+    "naked": true
+   },
+   "file": "src/runtime_state_dispatch.c",
+   "name": "SessionStep_CA0",
+   "size": 480
+  },
+  "0x08000e80": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 73,
+    "naked": true
+   },
+   "file": "src/foundation_handlers.c",
+   "name": "EWRAM_Handler_BlobB",
+   "size": 200
   },
   "0x08000f48": {
    "class": "c_fakematch",
@@ -67,6 +166,16 @@
    "file": "src/runtime_accessors.c",
    "name": "RecReset_0F48",
    "size": 60
+  },
+  "0x08000f84": {
+   "class": "asm",
+   "detail": {
+    "directive": 1,
+    "naked": true
+   },
+   "file": "src/foundation_fa0.c",
+   "name": "IntrMain_Dispatch",
+   "size": 1004
   },
   "0x08001370": {
    "class": "c",
@@ -80,11 +189,33 @@
    "name": "Helper_013BC",
    "size": 36
   },
+  "0x080013e0": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 75,
+    "naked": true
+   },
+   "file": "src/foundation_fa0.c",
+   "name": "Helper_013E0",
+   "size": 196
+  },
   "0x080014a4": {
    "class": "c",
    "file": "src/foundation_fa0.c",
    "name": "Helper_014A4",
    "size": 16
+  },
+  "0x080014b4": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 112,
+    "naked": true
+   },
+   "file": "src/foundation_fa0.c",
+   "name": "Helper_014B4",
+   "size": 236
   },
   "0x080015a0": {
    "class": "asm",
@@ -216,6 +347,17 @@
    "name": "StateA_Nop_1754",
    "size": 4
   },
+  "0x08001758": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 78,
+    "naked": true
+   },
+   "file": "src/state_block_a.c",
+   "name": "StateA_CommitMode",
+   "size": 192
+  },
   "0x08001818": {
    "class": "c",
    "file": "src/state_block_a.c",
@@ -239,6 +381,28 @@
    "file": "src/state_block_a.c",
    "name": "StateA_SyncPerFrame",
    "size": 32
+  },
+  "0x08001854": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 134,
+    "naked": true
+   },
+   "file": "src/state_block_a.c",
+   "name": "StateA_UpdateClockAndRecords",
+   "size": 308
+  },
+  "0x08001988": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 99,
+    "naked": true
+   },
+   "file": "src/idle_dispatch.c",
+   "name": "Idle_Mode3Handler",
+   "size": 236
   },
   "0x08001a74": {
    "class": "c_fakematch",
@@ -279,6 +443,17 @@
    "name": "Idle_Mode10Handler",
    "size": 44
   },
+  "0x08001b7c": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 60,
+    "naked": true
+   },
+   "file": "src/idle_dispatch.c",
+   "name": "Idle_Dispatcher",
+   "size": 204
+  },
   "0x08001c48": {
    "class": "partial",
    "detail": {
@@ -301,6 +476,17 @@
    "file": "src/idle_accessors.c",
    "name": "Idle_GetD0WordHalved",
    "size": 20
+  },
+  "0x08001cd8": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 148,
+    "naked": true
+   },
+   "file": "src/idle_dispatch.c",
+   "name": "Idle_Ticker",
+   "size": 316
   },
   "0x08001e14": {
    "class": "c_fakematch",
@@ -1050,6 +1236,17 @@
    "name": "Wrap_02C84",
    "size": 20
   },
+  "0x08002c98": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 71,
+    "naked": true
+   },
+   "file": "src/runtime_hud.c",
+   "name": "ObjFlush_02C98",
+   "size": 164
+  },
   "0x08002d3c": {
    "class": "c_fakematch",
    "detail": {
@@ -1101,6 +1298,17 @@
    "file": "src/foundation_runtime.c",
    "name": "EmitPlace_02ED0",
    "size": 152
+  },
+  "0x08002f68": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 72,
+    "naked": true
+   },
+   "file": "src/foundation_runtime.c",
+   "name": "RecordSetter_02F68",
+   "size": 156
   },
   "0x08003004": {
    "class": "c_fakematch",
@@ -1211,6 +1419,17 @@
    "file": "src/runtime_hud.c",
    "name": "LaneEmit_02C0",
    "size": 32
+  },
+  "0x080032e0": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 47,
+    "naked": true
+   },
+   "file": "src/runtime_hud.c",
+   "name": "LaneDriver_02E0",
+   "size": 112
   },
   "0x08003350": {
    "class": "c_fakematch",
@@ -1533,11 +1752,44 @@
    "name": "HexWrite_03C80",
    "size": 52
   },
+  "0x08003cb4": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 47,
+    "naked": true
+   },
+   "file": "src/runtime_hud.c",
+   "name": "Measure_03CB4",
+   "size": 100
+  },
   "0x08003d18": {
    "class": "c",
    "file": "src/runtime_hud.c",
    "name": "TimeStr_03D18",
    "size": 52
+  },
+  "0x08003d4c": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 103,
+    "naked": true
+   },
+   "file": "src/runtime_hud.c",
+   "name": "TimeStr_03D4C",
+   "size": 232
+  },
+  "0x08003e34": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 102,
+    "naked": true
+   },
+   "file": "src/runtime_hud.c",
+   "name": "_08003E34",
+   "size": 228
   },
   "0x08003f18": {
    "class": "c_fakematch",
@@ -1564,6 +1816,17 @@
    "file": "src/runtime_hud.c",
    "name": "ObjAttr_03F88",
    "size": 76
+  },
+  "0x08003fd4": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 81,
+    "naked": true
+   },
+   "file": "src/runtime_hud.c",
+   "name": "ObjList_03FD4",
+   "size": 188
   },
   "0x08004090": {
    "class": "c",
@@ -1674,6 +1937,17 @@
    "file": "src/runtime_hud.c",
    "name": "CamSet_04324",
    "size": 12
+  },
+  "0x08004330": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 53,
+    "naked": true
+   },
+   "file": "src/race_scene_helpers.c",
+   "name": "RaceSpriteReady_04330",
+   "size": 136
   },
   "0x080043b8": {
    "class": "c_fakematch",
@@ -2263,6 +2537,17 @@
    "name": "CounterAdd_050D0",
    "size": 24
   },
+  "0x080050e8": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 163,
+    "naked": true
+   },
+   "file": "src/event_dma_queue.c",
+   "name": "BG2Matrix_Update",
+   "size": 376
+  },
   "0x08005260": {
    "class": "c_fakematch",
    "detail": {
@@ -2641,6 +2926,17 @@
    "name": "MathHelper_05C58",
    "size": 92
   },
+  "0x08005cb4": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 90,
+    "naked": true
+   },
+   "file": "src/foundation_math.c",
+   "name": "MathHelper_05CB4",
+   "size": 192
+  },
   "0x08005d74": {
    "class": "c_fakematch",
    "detail": {
@@ -2785,6 +3081,17 @@
    "name": "Surface_ScatterInit",
    "size": 56
   },
+  "0x08006050": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 72,
+    "naked": true
+   },
+   "file": "src/course_collision.c",
+   "name": "Course_Scan",
+   "size": 156
+  },
   "0x080060ec": {
    "class": "c",
    "file": "src/course_orch.c",
@@ -2812,6 +3119,28 @@
    "file": "src/course_orch.c",
    "name": "Course_Orchestrator",
    "size": 128
+  },
+  "0x080061b8": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 85,
+    "naked": true
+   },
+   "file": "src/course_orch_helpers.c",
+   "name": "CourseOrch_080061B8",
+   "size": 212
+  },
+  "0x0800628c": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 218,
+    "naked": true
+   },
+   "file": "src/course_orch_helpers.c",
+   "name": "CourseOrch_0800628C",
+   "size": 476
   },
   "0x08006468": {
    "class": "c_fakematch",
@@ -2843,6 +3172,17 @@
    "name": "Course_SurfaceLoad",
    "size": 28
   },
+  "0x08006590": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 65,
+    "naked": true
+   },
+   "file": "src/course_orch.c",
+   "name": "Course_SeekRes",
+   "size": 136
+  },
   "0x08006618": {
    "class": "c_fakematch",
    "detail": {
@@ -2873,6 +3213,28 @@
    "file": "src/course_stream.c",
    "name": "Course_StreamRow",
    "size": 604
+  },
+  "0x080068d4": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 167,
+    "naked": true
+   },
+   "file": "src/runtime_state_dispatch.c",
+   "name": "CollectProximity_068D4",
+   "size": 380
+  },
+  "0x08006a50": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 67,
+    "naked": true
+   },
+   "file": "src/runtime_state_dispatch.c",
+   "name": "CollectNearby_06A50",
+   "size": 156
   },
   "0x08006aec": {
    "class": "c_fakematch",
@@ -2973,6 +3335,61 @@
    "file": "src/runtime_record_helpers.c",
    "name": "_08006E1C",
    "size": 84
+  },
+  "0x08006e70": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 175,
+    "naked": true
+   },
+   "file": "src/course_collision.c",
+   "name": "Course_CollisionTest",
+   "size": 356
+  },
+  "0x08006fd4": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 152,
+    "naked": true
+   },
+   "file": "src/course_collision.c",
+   "name": "Course_CollisionMore",
+   "size": 316
+  },
+  "0x08007110": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 122,
+    "naked": true
+   },
+   "file": "src/course_collision.c",
+   "name": "Course_CollisionLoop",
+   "size": 256
+  },
+  "0x08007210": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 169,
+    "naked": true
+   },
+   "file": "src/scene_record_dispatch.c",
+   "name": "CourseProximity_07210",
+   "size": 344
+  },
+  "0x08007368": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 138,
+    "naked": true
+   },
+   "file": "src/runtime_record_helpers.c",
+   "name": "_08007368",
+   "size": 284
   },
   "0x08007484": {
    "class": "c",
@@ -3075,6 +3492,17 @@
    "file": "src/course_resource.c",
    "name": "Course_ResourceSetup",
    "size": 268
+  },
+  "0x08007770": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 100,
+    "naked": true
+   },
+   "file": "src/course_resource_helpers.c",
+   "name": "Course_0x08007770",
+   "size": 236
   },
   "0x0800785c": {
    "class": "c",
@@ -3307,6 +3735,17 @@
    "name": "Course_State_Store8Flag76",
    "size": 48
   },
+  "0x08008164": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 62,
+    "naked": true
+   },
+   "file": "src/runtime_accessors.c",
+   "name": "_08008164",
+   "size": 148
+  },
   "0x080081f8": {
    "class": "c",
    "file": "src/course_records.c",
@@ -3346,6 +3785,17 @@
    "name": "Course_RecordInit",
    "size": 112
   },
+  "0x08008300": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 77,
+    "naked": true
+   },
+   "file": "src/course_records.c",
+   "name": "Course_Build32Row",
+   "size": 184
+  },
   "0x080083b8": {
    "class": "asm",
    "detail": {
@@ -3356,6 +3806,94 @@
    "file": "src/course_records.c",
    "name": "Course_Build16Row",
    "size": 200
+  },
+  "0x08008480": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 160,
+    "naked": true
+   },
+   "file": "src/course_records.c",
+   "name": "Course_BuildDispatch",
+   "size": 412
+  },
+  "0x0800861c": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 151,
+    "naked": true
+   },
+   "file": "src/course_builders.c",
+   "name": "Course_Build_Emit8A",
+   "size": 332
+  },
+  "0x08008768": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 151,
+    "naked": true
+   },
+   "file": "src/course_builders.c",
+   "name": "Course_Build_Emit8B",
+   "size": 328
+  },
+  "0x080088b0": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 151,
+    "naked": true
+   },
+   "file": "src/course_builders.c",
+   "name": "Course_Build_Emit8C",
+   "size": 332
+  },
+  "0x080089fc": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 81,
+    "naked": true
+   },
+   "file": "src/course_builders.c",
+   "name": "Course_Build_Tail_089FC",
+   "size": 176
+  },
+  "0x08008aac": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 119,
+    "naked": true
+   },
+   "file": "src/course_dispatch.c",
+   "name": "Course_Dispatch_08AAC",
+   "size": 268
+  },
+  "0x08008bb8": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 109,
+    "naked": true
+   },
+   "file": "src/course_dispatch.c",
+   "name": "Course_Dispatch_08BB8",
+   "size": 232
+  },
+  "0x08008ca0": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 1038,
+    "naked": true
+   },
+   "file": "src/scene_record_dispatch.c",
+   "name": "CoursePhaseMachine_08CA0",
+   "size": 2384
   },
   "0x080095f0": {
    "class": "c",
@@ -3392,6 +3930,17 @@
    "file": "src/course_records.c",
    "name": "Course_Fetch_S16_20Shift",
    "size": 24
+  },
+  "0x080096a4": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 62,
+    "naked": true
+   },
+   "file": "src/course_record_access.c",
+   "name": "CourseLeaves_096A4",
+   "size": 164
   },
   "0x08009748": {
    "class": "c_fakematch",
@@ -3433,6 +3982,17 @@
    "name": "CourseLeaves_09900",
    "size": 208
   },
+  "0x080099d0": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 144,
+    "naked": true
+   },
+   "file": "src/course_record_access.c",
+   "name": "CourseLeaves_099D0",
+   "size": 344
+  },
   "0x08009b28": {
    "class": "c",
    "file": "src/course_leaves.c",
@@ -3463,6 +4023,17 @@
    "file": "src/car_tick_helpers.c",
    "name": "_08009BCC",
    "size": 44
+  },
+  "0x08009bf8": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 197,
+    "naked": true
+   },
+   "file": "src/car_tick_helpers.c",
+   "name": "_08009BF8",
+   "size": 864
   },
   "0x08009f58": {
    "class": "c",
@@ -3530,6 +4101,17 @@
    "file": "src/car_racer_constants.c",
    "name": "CarRacer_Return17",
    "size": 4
+  },
+  "0x0800a074": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 61,
+    "naked": true
+   },
+   "file": "src/car_tick_helpers.c",
+   "name": "CarTick_Rec_0A074",
+   "size": 168
   },
   "0x0800a11c": {
    "class": "c",
@@ -3648,6 +4230,28 @@
    "name": "CarTick_Rec_0A248",
    "size": 12
   },
+  "0x0800a254": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 81,
+    "naked": true
+   },
+   "file": "src/car_tick_helpers.c",
+   "name": "_0800A254",
+   "size": 240
+  },
+  "0x0800a344": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 89,
+    "naked": true
+   },
+   "file": "src/car_tick_helpers.c",
+   "name": "_0800A344",
+   "size": 264
+  },
   "0x0800a44c": {
    "class": "partial",
    "detail": {
@@ -3659,6 +4263,17 @@
    "file": "src/car_tick_helpers.c",
    "name": "_0800A44C",
    "size": 204
+  },
+  "0x0800a518": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 90,
+    "naked": true
+   },
+   "file": "src/car_tick_helpers.c",
+   "name": "_0800A518",
+   "size": 276
   },
   "0x0800a62c": {
    "class": "asm",
@@ -3737,6 +4352,105 @@
    "name": "CarTick_Shared",
    "size": 32
   },
+  "0x0800aa40": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 345,
+    "naked": true
+   },
+   "file": "src/scene_record_dispatch.c",
+   "name": "RaceFSM_AA40",
+   "size": 836
+  },
+  "0x0800ad84": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 103,
+    "naked": true
+   },
+   "file": "src/race_progress.c",
+   "name": "Race_CommitCell",
+   "size": 244
+  },
+  "0x0800ae78": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 114,
+    "naked": true
+   },
+   "file": "src/race_progress.c",
+   "name": "Race_AdvanceProgress",
+   "size": 268
+  },
+  "0x0800af84": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 118,
+    "naked": true
+   },
+   "file": "src/race_progress.c",
+   "name": "Race_PerFrameTail",
+   "size": 312
+  },
+  "0x0800b0bc": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 97,
+    "naked": true
+   },
+   "file": "src/award_pkt.c",
+   "name": "Award_BuildTierPacket",
+   "size": 212
+  },
+  "0x0800b190": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 348,
+    "naked": true
+   },
+   "file": "src/race_dispatch.c",
+   "name": "Race_Dispatch",
+   "size": 792
+  },
+  "0x0800b4a8": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 377,
+    "naked": true
+   },
+   "file": "src/ai_race_leaves.c",
+   "name": "_0800B4A8",
+   "size": 900
+  },
+  "0x0800b82c": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 48,
+    "naked": true
+   },
+   "file": "src/car_physics_core.c",
+   "name": "GrantDelay_Tick",
+   "size": 112
+  },
+  "0x0800b89c": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 104,
+    "naked": true
+   },
+   "file": "src/car_physics_core.c",
+   "name": "GoStart_Tick",
+   "size": 244
+  },
   "0x0800b990": {
    "class": "c_fakematch",
    "detail": {
@@ -3752,11 +4466,44 @@
    "name": "Award_GrantThresholdCars",
    "size": 76
   },
+  "0x0800ba3c": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 101,
+    "naked": true
+   },
+   "file": "src/award_twins.c",
+   "name": "Award_CopyTwinA",
+   "size": 208
+  },
+  "0x0800bb0c": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 117,
+    "naked": true
+   },
+   "file": "src/award_twins.c",
+   "name": "Award_CopyTwinB",
+   "size": 248
+  },
   "0x0800bc04": {
    "class": "c",
    "file": "src/scene_record_dispatch.c",
    "name": "MenuNoop_BC04",
    "size": 4
+  },
+  "0x0800bc08": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 73,
+    "naked": true
+   },
+   "file": "src/menus.c",
+   "name": "MenuSetup_0800BC08",
+   "size": 204
   },
   "0x0800bcd4": {
    "class": "partial",
@@ -3769,11 +4516,33 @@
    "name": "MenuRecordUpdate_0800BCD4",
    "size": 108
   },
+  "0x0800bd40": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 91,
+    "naked": true
+   },
+   "file": "src/scene_record_dispatch.c",
+   "name": "MenuProgressUpdate_0BD40",
+   "size": 224
+  },
   "0x0800be20": {
    "class": "c",
    "file": "src/menus.c",
    "name": "MenuRecordApply_0800BE20",
    "size": 84
+  },
+  "0x0800be74": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 171,
+    "naked": true
+   },
+   "file": "src/scene_record_dispatch.c",
+   "name": "MenuPlaceUpdate_0BE74",
+   "size": 412
   },
   "0x0800c010": {
    "class": "c_fakematch",
@@ -3893,6 +4662,17 @@
    "name": "_0800C4CC",
    "size": 4
   },
+  "0x0800c4d0": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 127,
+    "naked": true
+   },
+   "file": "src/scene_record_dispatch.c",
+   "name": "MenuCtor20_0C4D0",
+   "size": 308
+  },
   "0x0800c604": {
    "class": "c",
    "file": "src/menus.c",
@@ -3957,6 +4737,28 @@
    "file": "src/menus.c",
    "name": "MenuPoller_0800C814",
    "size": 112
+  },
+  "0x0800c884": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 269,
+    "naked": true
+   },
+   "file": "src/scene_record_dispatch.c",
+   "name": "MenuRecordHandler_0C884",
+   "size": 608
+  },
+  "0x0800cae4": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 129,
+    "naked": true
+   },
+   "file": "src/scene_record_dispatch.c",
+   "name": "MenuDetailRender_0CAE4",
+   "size": 340
   },
   "0x0800cc38": {
    "class": "c",
@@ -4073,6 +4875,17 @@
    "file": "src/runtime_state_dispatch.c",
    "name": "MenuInit_CFE4",
    "size": 100
+  },
+  "0x0800d048": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 113,
+    "naked": true
+   },
+   "file": "src/scene_record_dispatch.c",
+   "name": "MenuRecordUpdater_0D048",
+   "size": 244
   },
   "0x0800d13c": {
    "class": "c",
@@ -4406,11 +5219,33 @@
    "name": "MenuDE4C_0800DE4C",
    "size": 4
   },
+  "0x0800de50": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 162,
+    "naked": true
+   },
+   "file": "src/menus.c",
+   "name": "MenuDE50_0800DE50",
+   "size": 400
+  },
   "0x0800dfe0": {
    "class": "c",
    "file": "src/menus.c",
    "name": "MenuDFE0_0800DFE0",
    "size": 16
+  },
+  "0x0800dff0": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 79,
+    "naked": true
+   },
+   "file": "src/menus.c",
+   "name": "MenuDFF0_0800DFF0",
+   "size": 204
   },
   "0x0800e0bc": {
    "class": "c",
@@ -4424,11 +5259,44 @@
    "name": "MenuE114_0800E114",
    "size": 72
   },
+  "0x0800e15c": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 169,
+    "naked": true
+   },
+   "file": "src/menus.c",
+   "name": "MenuE15C_0800E15C",
+   "size": 392
+  },
   "0x0800e2e4": {
    "class": "c",
    "file": "src/menu_dbe8_helpers.c",
    "name": "MenuE2E4_0800E2E4",
    "size": 44
+  },
+  "0x0800e310": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 128,
+    "naked": true
+   },
+   "file": "src/menus.c",
+   "name": "MenuE310_0800E310",
+   "size": 264
+  },
+  "0x0800e418": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 172,
+    "naked": true
+   },
+   "file": "src/menus.c",
+   "name": "MenuE418_0800E418",
+   "size": 384
   },
   "0x0800e598": {
    "class": "c",
@@ -4471,6 +5339,17 @@
    "name": "MenuE7A8_0800E7A8",
    "size": 36
   },
+  "0x0800e7cc": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 434,
+    "naked": true
+   },
+   "file": "src/menus.c",
+   "name": "MenuE7CC_0800E7CC",
+   "size": 1036
+  },
   "0x0800ebd8": {
    "class": "c_fakematch",
    "detail": {
@@ -4506,6 +5385,28 @@
    "name": "MenuED98_0800ED98",
    "size": 104
   },
+  "0x0800ee00": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 154,
+    "naked": true
+   },
+   "file": "src/menus.c",
+   "name": "MenuEE00_0800EE00",
+   "size": 340
+  },
+  "0x0800ef54": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 103,
+    "naked": true
+   },
+   "file": "src/menus.c",
+   "name": "MenuEF54_0800EF54",
+   "size": 236
+  },
   "0x0800f040": {
    "class": "c",
    "file": "src/menus.c",
@@ -4526,6 +5427,17 @@
    "file": "src/menus.c",
    "name": "MenuF134_0800F134",
    "size": 248
+  },
+  "0x0800f22c": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 401,
+    "naked": true
+   },
+   "file": "src/menus.c",
+   "name": "MenuF22C_0800F22C",
+   "size": 880
   },
   "0x0800f59c": {
    "class": "c",
@@ -4635,6 +5547,105 @@
    "name": "MenuF9A0_Scatter",
    "size": 132
   },
+  "0x0800fa24": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 477,
+    "naked": true
+   },
+   "file": "src/menus.c",
+   "name": "MenuFA24_0800FA24",
+   "size": 1132
+  },
+  "0x0800fe90": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 84,
+    "naked": true
+   },
+   "file": "src/runtime_state_dispatch.c",
+   "name": "MenuFE90",
+   "size": 232
+  },
+  "0x0800ff78": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 97,
+    "naked": true
+   },
+   "file": "src/menus.c",
+   "name": "MenuFF78_0800FF78",
+   "size": 272
+  },
+  "0x08010088": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 162,
+    "naked": true
+   },
+   "file": "src/menus.c",
+   "name": "MenuFF78_Body_080010088",
+   "size": 372
+  },
+  "0x080101fc": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 168,
+    "naked": true
+   },
+   "file": "src/menu_ff78_a.c",
+   "name": "MenuFF78_101FC",
+   "size": 372
+  },
+  "0x08010370": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 170,
+    "naked": true
+   },
+   "file": "src/menu_ff78_a.c",
+   "name": "MenuFF78_10370",
+   "size": 384
+  },
+  "0x080104f0": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 150,
+    "naked": true
+   },
+   "file": "src/menu_ff78_a.c",
+   "name": "MenuFF78_104F0",
+   "size": 340
+  },
+  "0x08010644": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 177,
+    "naked": true
+   },
+   "file": "src/menu_ff78_a.c",
+   "name": "MenuFF78_10644",
+   "size": 392
+  },
+  "0x080107cc": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 111,
+    "naked": true
+   },
+   "file": "src/menu_ff78_a.c",
+   "name": "MenuFF78_107CC",
+   "size": 264
+  },
   "0x080108d4": {
    "class": "c",
    "file": "src/menus.c",
@@ -4672,6 +5683,105 @@
    "file": "src/menu_ff78_a.c",
    "name": "MenuFF78_1096C",
    "size": 104
+  },
+  "0x080109d4": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 324,
+    "naked": true
+   },
+   "file": "src/menu_ff78_a.c",
+   "name": "MenuFF78_109D4",
+   "size": 740
+  },
+  "0x08010cb8": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 297,
+    "naked": true
+   },
+   "file": "src/menu_ff78_b.c",
+   "name": "MenuFF78_10CB8",
+   "size": 644
+  },
+  "0x08010f3c": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 164,
+    "naked": true
+   },
+   "file": "src/menu_ff78_c.c",
+   "name": "MenuFF78_10F3C",
+   "size": 356
+  },
+  "0x080110a0": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 172,
+    "naked": true
+   },
+   "file": "src/menu_ff78_c.c",
+   "name": "MenuFF78_110A0",
+   "size": 372
+  },
+  "0x08011214": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 183,
+    "naked": true
+   },
+   "file": "src/menu_ff78_b.c",
+   "name": "MenuFF78_11214",
+   "size": 396
+  },
+  "0x080113a0": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 102,
+    "naked": true
+   },
+   "file": "src/menu_ff78_b.c",
+   "name": "MenuFF78_113A0",
+   "size": 228
+  },
+  "0x08011484": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 160,
+    "naked": true
+   },
+   "file": "src/menu_ff78_c.c",
+   "name": "MenuFF78_11484",
+   "size": 348
+  },
+  "0x080115e0": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 116,
+    "naked": true
+   },
+   "file": "src/menu_ff78_c.c",
+   "name": "MenuFF78_115E0",
+   "size": 252
+  },
+  "0x080116dc": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 79,
+    "naked": true
+   },
+   "file": "src/menu_ff78_c.c",
+   "name": "MenuFF78_116DC",
+   "size": 168
   },
   "0x08011784": {
    "class": "c",
@@ -4711,6 +5821,17 @@
    "file": "src/menu_ff78_l.c",
    "name": "MenuFF78_11958",
    "size": 496
+  },
+  "0x08011b48": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 162,
+    "naked": true
+   },
+   "file": "src/menu_ff78_l.c",
+   "name": "MenuFF78_11B48",
+   "size": 372
   },
   "0x08011cbc": {
    "class": "c",
@@ -4784,6 +5905,17 @@
    "name": "MenuFF78_12034",
    "size": 116
   },
+  "0x080120a8": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 105,
+    "naked": true
+   },
+   "file": "src/menu_ff78_e.c",
+   "name": "MenuFF78_120A8",
+   "size": 256
+  },
   "0x080121a8": {
    "class": "c_fakematch",
    "detail": {
@@ -4842,6 +5974,17 @@
    "name": "MenuFF78_12578",
    "size": 76
   },
+  "0x080125c4": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 195,
+    "naked": true
+   },
+   "file": "src/menu_ff78_e.c",
+   "name": "MenuFF78_125C4",
+   "size": 560
+  },
   "0x080127f4": {
    "class": "c_fakematch",
    "detail": {
@@ -4886,6 +6029,17 @@
    "name": "MenuFF78_12A44",
    "size": 124
   },
+  "0x08012ac0": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 54,
+    "naked": true
+   },
+   "file": "src/menu_ff78_d.c",
+   "name": "MenuFF78_12AC0",
+   "size": 116
+  },
   "0x08012b34": {
    "class": "c_fakematch",
    "detail": {
@@ -4910,6 +6064,17 @@
    "name": "Menu12C7C_080012C7C",
    "size": 20
   },
+  "0x08012c90": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 85,
+    "naked": true
+   },
+   "file": "src/menu_ff78_g.c",
+   "name": "MenuFF78_12C90",
+   "size": 196
+  },
   "0x08012d54": {
    "class": "c_fakematch",
    "detail": {
@@ -4918,6 +6083,17 @@
    "file": "src/menus.c",
    "name": "MenuTick_080012D54",
    "size": 76
+  },
+  "0x08012da0": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 55,
+    "naked": true
+   },
+   "file": "src/menu_ff78_e.c",
+   "name": "MenuFF78_12DA0",
+   "size": 188
   },
   "0x08012e5c": {
    "class": "c",
@@ -4984,11 +6160,55 @@
    "name": "MenuFF78_12F98",
    "size": 140
   },
+  "0x08013024": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 103,
+    "naked": true
+   },
+   "file": "src/menu_ff78_g.c",
+   "name": "MenuFF78_13024",
+   "size": 228
+  },
+  "0x08013108": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 296,
+    "naked": true
+   },
+   "file": "src/menu_ff78_r.c",
+   "name": "MenuFF78_13108",
+   "size": 728
+  },
   "0x080133e0": {
    "class": "c",
    "file": "src/menu_ff78_c.c",
    "name": "_0800133E0",
    "size": 4
+  },
+  "0x080133e4": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 519,
+    "naked": true
+   },
+   "file": "src/menu_ff78_u.c",
+   "name": "MenuFF78_133E4",
+   "size": 1132
+  },
+  "0x08013850": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 112,
+    "naked": true
+   },
+   "file": "src/menu_ff78_m.c",
+   "name": "MenuFF78_13850",
+   "size": 256
   },
   "0x08013950": {
    "class": "c",
@@ -5097,6 +6317,28 @@
    "name": "_0800141A8",
    "size": 4
   },
+  "0x080141ac": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 310,
+    "naked": true
+   },
+   "file": "src/menu_ff78_t.c",
+   "name": "MenuFF78_141AC",
+   "size": 732
+  },
+  "0x08014488": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 215,
+    "naked": true
+   },
+   "file": "src/menu_ff78_q.c",
+   "name": "MenuFF78_14488",
+   "size": 456
+  },
   "0x08014650": {
    "class": "c_fakematch",
    "detail": {
@@ -5106,6 +6348,39 @@
    "file": "src/menu_ff78_h.c",
    "name": "MenuFF78_14650",
    "size": 128
+  },
+  "0x080146d0": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 96,
+    "naked": true
+   },
+   "file": "src/menu_ff78_d.c",
+   "name": "MenuFF78_146D0",
+   "size": 204
+  },
+  "0x0801479c": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 144,
+    "naked": true
+   },
+   "file": "src/menu_ff78_n.c",
+   "name": "MenuFF78_1479C",
+   "size": 316
+  },
+  "0x080148d8": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 150,
+    "naked": true
+   },
+   "file": "src/menu_ff78_n.c",
+   "name": "MenuFF78_148D8",
+   "size": 304
   },
   "0x08014a08": {
    "class": "c",
@@ -5192,6 +6467,28 @@
    "name": "MenuFF78_14F14",
    "size": 76
   },
+  "0x08014f60": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 232,
+    "naked": true
+   },
+   "file": "src/menu_ff78_t.c",
+   "name": "MenuFF78_14F60",
+   "size": 500
+  },
+  "0x08015154": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 74,
+    "naked": true
+   },
+   "file": "src/menu_ff78_i.c",
+   "name": "MenuFF78_15154",
+   "size": 220
+  },
   "0x08015230": {
    "class": "c_fakematch",
    "detail": {
@@ -5264,6 +6561,17 @@
    "name": "MenuFF78_15620",
    "size": 284
   },
+  "0x0801573c": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 215,
+    "naked": true
+   },
+   "file": "src/menu_ff78_p.c",
+   "name": "MenuFF78_1573C",
+   "size": 500
+  },
   "0x08015930": {
    "class": "c",
    "file": "src/menu_ff78_d.c",
@@ -5279,6 +6587,28 @@
    "name": "MenuFF78_159AC",
    "size": 96
   },
+  "0x08015a0c": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 73,
+    "naked": true
+   },
+   "file": "src/menu_ff78_i.c",
+   "name": "MenuFF78_15A0C",
+   "size": 164
+  },
+  "0x08015ab0": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 73,
+    "naked": true
+   },
+   "file": "src/menu_ff78_i.c",
+   "name": "MenuFF78_15AB0",
+   "size": 164
+  },
   "0x08015b54": {
    "class": "c_fakematch",
    "detail": {
@@ -5287,6 +6617,17 @@
    "file": "src/menu_ff78_f.c",
    "name": "MenuFF78_15B54",
    "size": 76
+  },
+  "0x08015ba0": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 89,
+    "naked": true
+   },
+   "file": "src/menu_ff78_m.c",
+   "name": "MenuFF78_15BA0",
+   "size": 252
   },
   "0x08015c9c": {
    "class": "c",
@@ -5300,6 +6641,17 @@
    "name": "_080015CB0",
    "size": 4
   },
+  "0x08015cb4": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 164,
+    "naked": true
+   },
+   "file": "src/rec35_init.c",
+   "name": "Rec35_Init",
+   "size": 372
+  },
   "0x08015e28": {
    "class": "c",
    "file": "src/rec35_stage.c",
@@ -5311,6 +6663,50 @@
    "file": "src/rec35_stage.c",
    "name": "Rec35_HelperB",
    "size": 84
+  },
+  "0x08015ed0": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 58,
+    "naked": true
+   },
+   "file": "src/rec35_stage.c",
+   "name": "Rec35_StageA",
+   "size": 152
+  },
+  "0x08015f68": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 59,
+    "naked": true
+   },
+   "file": "src/rec35_stage.c",
+   "name": "Rec35_StageB",
+   "size": 156
+  },
+  "0x08016004": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 84,
+    "naked": true
+   },
+   "file": "src/rec35_16002.c",
+   "name": "Rec35_EventA",
+   "size": 192
+  },
+  "0x080160c4": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 75,
+    "naked": true
+   },
+   "file": "src/rec35_16002.c",
+   "name": "Rec35_EventB",
+   "size": 160
   },
   "0x08016164": {
    "class": "c",
@@ -5360,6 +6756,17 @@
    "name": "Rec35_Noop",
    "size": 4
   },
+  "0x080163b8": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 116,
+    "naked": true
+   },
+   "file": "src/rec35_driver.c",
+   "name": "Rec35_Driver",
+   "size": 284
+  },
   "0x080164d4": {
    "class": "c",
    "file": "src/rec35_runtime.c",
@@ -5371,6 +6778,17 @@
    "file": "src/rec35_runtime.c",
    "name": "Rec35_BxLrStub",
    "size": 4
+  },
+  "0x0801650c": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 197,
+    "naked": true
+   },
+   "file": "src/rec35_runtime.c",
+   "name": "Rec35_Record49Constructor",
+   "size": 476
   },
   "0x080166e8": {
    "class": "c_fakematch",
@@ -5485,6 +6903,17 @@
    "name": "Rec35_Dispatch_16F28",
    "size": 168
   },
+  "0x08016fd0": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 440,
+    "naked": true
+   },
+   "file": "src/rec35_mid_region.c",
+   "name": "Rec35_Scene_16FD0",
+   "size": 1048
+  },
   "0x080173e8": {
    "class": "c",
    "file": "src/rec35_runtime.c",
@@ -5538,6 +6967,17 @@
    "file": "src/rec35_mid_region.c",
    "name": "Rec35_Leaf_1774C",
    "size": 60
+  },
+  "0x08017788": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 199,
+    "naked": true
+   },
+   "file": "src/rec35_mid_region.c",
+   "name": "Rec35_Input_17788",
+   "size": 452
   },
   "0x0801794c": {
    "class": "c_fakematch",
@@ -5637,6 +7077,17 @@
    "file": "src/rec35_runtime.c",
    "name": "Rec35_BxLr_17F00",
    "size": 4
+  },
+  "0x08017f04": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 147,
+    "naked": true
+   },
+   "file": "src/rec35_mid_region.c",
+   "name": "Rec35_Setup_17F04",
+   "size": 352
   },
   "0x08018064": {
    "class": "c_fakematch",
@@ -5801,6 +7252,17 @@
    "name": "Rec35_GridFill3_18508",
    "size": 56
   },
+  "0x08018540": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 138,
+    "naked": true
+   },
+   "file": "src/rec35_setup_tail.c",
+   "name": "Rec35_Cascade_18540",
+   "size": 360
+  },
   "0x080186a8": {
    "class": "c_fakematch",
    "detail": {
@@ -5879,6 +7341,17 @@
    "name": "Rec35_Dispatch_1886C",
    "size": 68
   },
+  "0x080188b0": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 171,
+    "naked": true
+   },
+   "file": "src/rec35_dispatch_tail.c",
+   "name": "Rec35_RecordSwitch_188B0",
+   "size": 416
+  },
   "0x08018a50": {
    "class": "c",
    "file": "src/ghost.c",
@@ -5919,6 +7392,28 @@
    "file": "src/ghost.c",
    "name": "Ghost_FlagTest",
    "size": 16
+  },
+  "0x08018adc": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 147,
+    "naked": true
+   },
+   "file": "src/race_setup.c",
+   "name": "Race_Setup_18ADC",
+   "size": 360
+  },
+  "0x08018c44": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 208,
+    "naked": true
+   },
+   "file": "src/race_scene_helpers.c",
+   "name": "RaceScene_18C44",
+   "size": 484
   },
   "0x08018e28": {
    "class": "partial",
@@ -5966,6 +7461,17 @@
    "name": "sub_080018F94",
    "size": 124
   },
+  "0x08019010": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 186,
+    "naked": true
+   },
+   "file": "src/race_scene_helpers.c",
+   "name": "RaceScene_19010",
+   "size": 428
+  },
   "0x080191bc": {
    "class": "partial",
    "detail": {
@@ -5990,17 +7496,72 @@
    "name": "Race_Setup_19200",
    "size": 80
   },
+  "0x08019250": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 92,
+    "naked": true
+   },
+   "file": "src/race_setup.c",
+   "name": "Race_Setup_19250",
+   "size": 200
+  },
+  "0x08019318": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 291,
+    "naked": true
+   },
+   "file": "src/race_setup_helpers.c",
+   "name": "sub_080019318",
+   "size": 672
+  },
   "0x080195b8": {
    "class": "c",
    "file": "src/race_setup.c",
    "name": "Race_Setup_195B8",
    "size": 64
   },
+  "0x080195f8": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 104,
+    "naked": true
+   },
+   "file": "src/race_setup.c",
+   "name": "Race_Setup_195F8",
+   "size": 240
+  },
+  "0x080196e8": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 153,
+    "naked": true
+   },
+   "file": "src/race_setup_helpers.c",
+   "name": "sub_0800196E8",
+   "size": 376
+  },
   "0x08019860": {
    "class": "c",
    "file": "src/race_setup.c",
    "name": "Race_Setup_19860",
    "size": 12
+  },
+  "0x0801986c": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 58,
+    "naked": true
+   },
+   "file": "src/race_scene.c",
+   "name": "Race_Scene_Dispatch_19_86C",
+   "size": 192
   },
   "0x0801992c": {
    "class": "c",
@@ -6041,6 +7602,17 @@
    "file": "src/race_setup_helpers.c",
    "name": "sub_080019A84",
    "size": 104
+  },
+  "0x08019aec": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 106,
+    "naked": true
+   },
+   "file": "src/race_setup_helpers.c",
+   "name": "sub_080019AEC",
+   "size": 268
   },
   "0x08019bf8": {
    "class": "c_fakematch",
@@ -6201,6 +7773,17 @@
    "name": "Race_Cluster_D",
    "size": 68
   },
+  "0x0801a12c": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 64,
+    "naked": true
+   },
+   "file": "src/race_cluster.c",
+   "name": "Race_Cluster_Dispatch",
+   "size": 216
+  },
   "0x0801a204": {
    "class": "c_fakematch",
    "detail": {
@@ -6212,6 +7795,17 @@
    "name": "Course_LoadEntry",
    "size": 144
   },
+  "0x0801a294": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 148,
+    "naked": true
+   },
+   "file": "src/race_scene.c",
+   "name": "Race_Scene_Init_1A294",
+   "size": 440
+  },
   "0x0801a44c": {
    "class": "c_fakematch",
    "detail": {
@@ -6220,6 +7814,39 @@
    "file": "src/race_scene_a1.c",
    "name": "_08001A44C",
    "size": 96
+  },
+  "0x0801a4ac": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 277,
+    "naked": true
+   },
+   "file": "src/race_scene.c",
+   "name": "Race_Scene_Dispatch_1A4AC",
+   "size": 700
+  },
+  "0x0801a768": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 331,
+    "naked": true
+   },
+   "file": "src/race_scene_a1.c",
+   "name": "_08001A768",
+   "size": 824
+  },
+  "0x0801aaa0": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 451,
+    "naked": true
+   },
+   "file": "src/race_scene_a2.c",
+   "name": "_08001AAA0",
+   "size": 1412
   },
   "0x0801b024": {
    "class": "c_fakematch",
@@ -6243,6 +7870,17 @@
    "name": "_08001B068",
    "size": 200
   },
+  "0x0801b130": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 48,
+    "naked": true
+   },
+   "file": "src/race_scene.c",
+   "name": "Race_Scene_Leaf_1B130",
+   "size": 116
+  },
   "0x0801b1a4": {
    "class": "c_fakematch",
    "detail": {
@@ -6262,6 +7900,17 @@
    "name": "_08001B27C",
    "size": 232
   },
+  "0x0801b364": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 70,
+    "naked": true
+   },
+   "file": "src/race_scene_a1.c",
+   "name": "_08001B364",
+   "size": 172
+  },
   "0x0801b410": {
    "class": "partial",
    "detail": {
@@ -6275,6 +7924,17 @@
    "name": "Race_Scene_BHandler_1B410",
    "size": 136
   },
+  "0x0801b498": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 233,
+    "naked": true
+   },
+   "file": "src/race_scene_a1.c",
+   "name": "_08001B498",
+   "size": 664
+  },
   "0x0801b730": {
    "class": "c_fakematch",
    "detail": {
@@ -6283,6 +7943,50 @@
    "file": "src/race_scene_a1.c",
    "name": "_08001B730",
    "size": 76
+  },
+  "0x0801b77c": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 158,
+    "naked": true
+   },
+   "file": "src/race_scene_a1.c",
+   "name": "_08001B77C",
+   "size": 352
+  },
+  "0x0801b8dc": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 92,
+    "naked": true
+   },
+   "file": "src/race_scene_a1.c",
+   "name": "_08001B8DC",
+   "size": 208
+  },
+  "0x0801b9ac": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 143,
+    "naked": true
+   },
+   "file": "src/race_scene_a1.c",
+   "name": "_08001B9AC",
+   "size": 360
+  },
+  "0x0801bb14": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 439,
+    "naked": true
+   },
+   "file": "src/race_scene_a2.c",
+   "name": "_08001BB14",
+   "size": 1176
   },
   "0x0801bfac": {
    "class": "c",
@@ -6307,6 +8011,17 @@
    "file": "src/race_scene_a2.c",
    "name": "_08001C0CC",
    "size": 20
+  },
+  "0x0801c0e0": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 188,
+    "naked": true
+   },
+   "file": "src/race_scene_a2.c",
+   "name": "_08001C0E0",
+   "size": 412
   },
   "0x0801c27c": {
    "class": "c_fakematch",
@@ -6338,6 +8053,17 @@
    "name": "_08001C3AC",
    "size": 52
   },
+  "0x0801c3e0": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 1450,
+    "naked": true
+   },
+   "file": "src/race_scene_b2.c",
+   "name": "_08001C3E0",
+   "size": 3640
+  },
   "0x0801d218": {
    "class": "c",
    "file": "src/race_scene.c",
@@ -6364,6 +8090,17 @@
    "file": "src/race_scene_b1.c",
    "name": "_08001D280",
    "size": 8
+  },
+  "0x0801d288": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 386,
+    "naked": true
+   },
+   "file": "src/race_scene_b1.c",
+   "name": "_08001D288",
+   "size": 972
   },
   "0x0801d654": {
    "class": "c_fakematch",
@@ -6404,6 +8141,17 @@
    "file": "src/race_scene_b1.c",
    "name": "_08001D7B8",
    "size": 160
+  },
+  "0x0801d858": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 78,
+    "naked": true
+   },
+   "file": "src/race_scene_b1.c",
+   "name": "_08001D858",
+   "size": 184
   },
   "0x0801d910": {
    "class": "c",
@@ -6501,6 +8249,17 @@
    "name": "_08001DC20",
    "size": 108
   },
+  "0x0801dc8c": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 541,
+    "naked": true
+   },
+   "file": "src/race_scene_b3.c",
+   "name": "_08001DC8C",
+   "size": 1364
+  },
   "0x0801e1e0": {
    "class": "c",
    "file": "src/race_scene_c.c",
@@ -6595,6 +8354,17 @@
    "name": "_08001E56C",
    "size": 68
   },
+  "0x0801e5b0": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 106,
+    "naked": true
+   },
+   "file": "src/race_scene_c.c",
+   "name": "_08001E5B0",
+   "size": 220
+  },
   "0x0801e68c": {
    "class": "c",
    "file": "src/race_scene_c.c",
@@ -6612,6 +8382,17 @@
    "file": "src/race_scene_c.c",
    "name": "_08001E718",
    "size": 76
+  },
+  "0x0801e764": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 153,
+    "naked": true
+   },
+   "file": "src/race_scene_c.c",
+   "name": "_08001E764",
+   "size": 336
   },
   "0x0801e8b4": {
    "class": "c",
@@ -6664,6 +8445,39 @@
    "file": "src/race_scene.c",
    "name": "Race_Scene_BxLr_1EBA4",
    "size": 4
+  },
+  "0x0801eba8": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 274,
+    "naked": true
+   },
+   "file": "src/race_scene_d1.c",
+   "name": "_08001EBA8",
+   "size": 644
+  },
+  "0x0801ee2c": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 182,
+    "naked": true
+   },
+   "file": "src/race_scene_d2.c",
+   "name": "_08001EE2C",
+   "size": 384
+  },
+  "0x0801efac": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 661,
+    "naked": true
+   },
+   "file": "src/race_scene_d2.c",
+   "name": "_08001EFAC",
+   "size": 1448
   },
   "0x0801f554": {
    "class": "c",
@@ -6843,6 +8657,17 @@
    "name": "_08001FF7C",
    "size": 88
   },
+  "0x0801ffd4": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 205,
+    "naked": true
+   },
+   "file": "src/race_scene_e.c",
+   "name": "_08001FFD4",
+   "size": 452
+  },
   "0x08020198": {
    "class": "partial",
    "detail": {
@@ -6872,11 +8697,55 @@
    "name": "_080020498",
    "size": 128
   },
+  "0x08020518": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 165,
+    "naked": true
+   },
+   "file": "src/race_scene_e.c",
+   "name": "_080020518",
+   "size": 376
+  },
+  "0x08020690": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 107,
+    "naked": true
+   },
+   "file": "src/race_scene_e.c",
+   "name": "_080020690",
+   "size": 244
+  },
+  "0x08020784": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 107,
+    "naked": true
+   },
+   "file": "src/race_scene_e.c",
+   "name": "_080020784",
+   "size": 244
+  },
   "0x08020878": {
    "class": "c",
    "file": "src/race_scene.c",
    "name": "Race_Scene_BxLr_20878",
    "size": 4
+  },
+  "0x0802087c": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 75,
+    "naked": true
+   },
+   "file": "src/race_scene_e.c",
+   "name": "_08002087C",
+   "size": 220
   },
   "0x08020958": {
    "class": "c_fakematch",
@@ -6893,6 +8762,17 @@
    "name": "Race_Scene_BxLr_2099C",
    "size": 4
   },
+  "0x080209a0": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 365,
+    "naked": true
+   },
+   "file": "src/race_scene_e.c",
+   "name": "_0800209A0",
+   "size": 904
+  },
   "0x08020d28": {
    "class": "c_fakematch",
    "detail": {
@@ -6901,6 +8781,17 @@
    "file": "src/race_scene_e.c",
    "name": "_080020D28",
    "size": 220
+  },
+  "0x08020e04": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 149,
+    "naked": true
+   },
+   "file": "src/race_scene_e.c",
+   "name": "_080020E04",
+   "size": 332
   },
   "0x08020f50": {
    "class": "c_fakematch",
@@ -6922,6 +8813,17 @@
    "file": "src/race_scene_e.c",
    "name": "_080021018",
    "size": 164
+  },
+  "0x080210bc": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 175,
+    "naked": true
+   },
+   "file": "src/race_scene_e.c",
+   "name": "_0800210BC",
+   "size": 396
   },
   "0x08021248": {
    "class": "c",
@@ -6965,6 +8867,17 @@
    "name": "CarPhysRacer_Nop",
    "size": 4
   },
+  "0x08021374": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 502,
+    "naked": true
+   },
+   "file": "src/car_physics_core.c",
+   "name": "CarPhysRacer_InitFrame",
+   "size": 1204
+  },
   "0x08021828": {
    "class": "c",
    "file": "src/car_physics_core.c",
@@ -6992,6 +8905,17 @@
    "file": "src/race_scene_helpers.c",
    "name": "CarDisplay_218F8",
    "size": 216
+  },
+  "0x080219d0": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 138,
+    "naked": true
+   },
+   "file": "src/race_scene_helpers.c",
+   "name": "CarDisplay_219D0",
+   "size": 300
   },
   "0x08021afc": {
    "class": "c",
@@ -7038,6 +8962,17 @@
    "name": "RaceVM_021CC4",
    "size": 252
   },
+  "0x08021dc0": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 151,
+    "naked": true
+   },
+   "file": "src/race_phase_vms.c",
+   "name": "RaceVM_021DC0",
+   "size": 340
+  },
   "0x08021f14": {
    "class": "c_fakematch",
    "detail": {
@@ -7046,6 +8981,17 @@
    "file": "src/race_phase_vms.c",
    "name": "RaceVM_021F14",
    "size": 116
+  },
+  "0x08021f88": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 84,
+    "naked": true
+   },
+   "file": "src/race_phase_vms.c",
+   "name": "RaceVM_021F88",
+   "size": 212
   },
   "0x0802205c": {
    "class": "partial",
@@ -7146,6 +9092,17 @@
    "name": "RaceVM_022478",
    "size": 4
   },
+  "0x0802247c": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 178,
+    "naked": true
+   },
+   "file": "src/race_phase_vms.c",
+   "name": "RaceVM_02247C",
+   "size": 424
+  },
   "0x08022624": {
    "class": "partial",
    "detail": {
@@ -7174,6 +9131,17 @@
    "name": "RaceVM_022750",
    "size": 112
   },
+  "0x080227c0": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 73,
+    "naked": true
+   },
+   "file": "src/race_phase_vms.c",
+   "name": "RaceVM_0227C0",
+   "size": 156
+  },
   "0x0802285c": {
    "class": "c",
    "file": "src/race_phase_vms.c",
@@ -7191,6 +9159,28 @@
    "file": "src/race_phase_vms.c",
    "name": "RaceVM_02291C",
    "size": 4
+  },
+  "0x08022920": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 103,
+    "naked": true
+   },
+   "file": "src/race_phase_vms.c",
+   "name": "RaceVM_022920",
+   "size": 244
+  },
+  "0x08022a14": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 81,
+    "naked": true
+   },
+   "file": "src/race_phase_vms.c",
+   "name": "RaceVM_022A14",
+   "size": 184
   },
   "0x08022acc": {
    "class": "c",
@@ -7259,6 +9249,17 @@
    "name": "Code22D74_RecEq",
    "size": 52
   },
+  "0x08022da8": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 456,
+    "naked": true
+   },
+   "file": "src/code_22d20.c",
+   "name": "Code22DA8_Permute",
+   "size": 924
+  },
   "0x08023144": {
    "class": "c",
    "file": "src/car_racer_constants.c",
@@ -7286,6 +9287,17 @@
    "name": "Code23220_Constructor",
    "size": 120
   },
+  "0x08023298": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 343,
+    "naked": true
+   },
+   "file": "src/code_22d20.c",
+   "name": "Code23298_StateMachine",
+   "size": 856
+  },
   "0x080235f0": {
    "class": "c",
    "file": "src/code_22d20.c",
@@ -7297,6 +9309,28 @@
    "file": "src/race_control_leaves.c",
    "name": "Code235F4_Dispatch",
    "size": 52
+  },
+  "0x08023628": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 211,
+    "naked": true
+   },
+   "file": "src/scene_record_dispatch.c",
+   "name": "RaceSceneCtor_23628",
+   "size": 500
+  },
+  "0x0802381c": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 139,
+    "naked": true
+   },
+   "file": "src/race_control_leaves.c",
+   "name": "Code2381C",
+   "size": 316
   },
   "0x08023958": {
    "class": "partial",
@@ -7310,6 +9344,17 @@
    "file": "src/ai_race_leaves.c",
    "name": "_08023958",
    "size": 220
+  },
+  "0x08023a34": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 71,
+    "naked": true
+   },
+   "file": "src/code_23a34.c",
+   "name": "_080023A34",
+   "size": 176
   },
   "0x08023ae4": {
    "class": "c",
@@ -7326,6 +9371,39 @@
    "file": "src/code_23a34.c",
    "name": "_080023B60",
    "size": 116
+  },
+  "0x08023bd4": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 55,
+    "naked": true
+   },
+   "file": "src/runtime_record_helpers.c",
+   "name": "_080023BD4",
+   "size": 128
+  },
+  "0x08023c54": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 110,
+    "naked": true
+   },
+   "file": "src/runtime_record_helpers.c",
+   "name": "_080023C54",
+   "size": 248
+  },
+  "0x08023d4c": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 82,
+    "naked": true
+   },
+   "file": "src/race_control_leaves.c",
+   "name": "Code23D4C",
+   "size": 192
   },
   "0x08023e0c": {
    "class": "c",
@@ -7479,11 +9557,44 @@
    "name": "Ghost_Snapshot",
    "size": 76
   },
+  "0x080241c8": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 165,
+    "naked": true
+   },
+   "file": "src/save.c",
+   "name": "SaveUpdate_080241C8",
+   "size": 368
+  },
   "0x08024338": {
    "class": "c",
    "file": "src/save.c",
    "name": "SaveRebuild_08024338",
    "size": 308
+  },
+  "0x0802446c": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 112,
+    "naked": true
+   },
+   "file": "src/save.c",
+   "name": "SaveHook_0802446C",
+   "size": 252
+  },
+  "0x08024568": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 67,
+    "naked": true
+   },
+   "file": "src/save.c",
+   "name": "SaveBlock1Init",
+   "size": 204
   },
   "0x08024634": {
    "class": "c",
@@ -7502,6 +9613,56 @@
    "file": "src/save.c",
    "name": "SaveStubBxLr",
    "size": 4
+  },
+  "0x0802466c": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 34,
+    "naked": true
+   },
+   "file": "src/save.c",
+   "name": "SaveBlock1SetBit",
+   "size": 80
+  },
+  "0x080246bc": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 14,
+    "naked": true
+   },
+   "file": "src/save.c",
+   "name": "SaveBlock1TestBit",
+   "size": 32
+  },
+  "0x080246dc": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 5,
+    "naked": true
+   },
+   "file": "src/save.c",
+   "name": "SaveBlock1GetHWord",
+   "size": 12
+  },
+  "0x080246e8": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 5,
+    "naked": true
+   },
+   "file": "src/save.c",
+   "name": "SaveBlock1SetHWord",
+   "size": 12
+  },
+  "0x080246f4": {
+   "class": "c",
+   "file": "src/save.c",
+   "name": "SaveBlock1GridPtr",
+   "size": 28
   },
   "0x08024710": {
    "class": "c",
@@ -7545,6 +9706,72 @@
    "file": "src/save.c",
    "name": "SaveGarageMaskTest",
    "size": 40
+  },
+  "0x08024794": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 113,
+    "naked": true
+   },
+   "file": "src/save.c",
+   "name": "SaveGaragePack",
+   "size": 248
+  },
+  "0x0802488c": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 80,
+    "naked": true
+   },
+   "file": "src/save.c",
+   "name": "SaveGarageUnpack",
+   "size": 192
+  },
+  "0x0802494c": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 44,
+    "naked": true
+   },
+   "file": "src/save.c",
+   "name": "SaveCarRecordsPack",
+   "size": 96
+  },
+  "0x080249ac": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 50,
+    "naked": true
+   },
+   "file": "src/save.c",
+   "name": "SaveCarRecordsUnpack",
+   "size": 108
+  },
+  "0x08024a18": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 57,
+    "naked": true
+   },
+   "file": "src/save.c",
+   "name": "SaveBlock2PreSave",
+   "size": 128
+  },
+  "0x08024a98": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 56,
+    "naked": true
+   },
+   "file": "src/save.c",
+   "name": "SaveBlock2PostLoad",
+   "size": 128
   },
   "0x08024b18": {
    "class": "c",
@@ -7782,6 +10009,17 @@
    "name": "Code24E54_Lookup",
    "size": 40
   },
+  "0x08024e7c": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 62,
+    "naked": true
+   },
+   "file": "src/runtime_record_helpers.c",
+   "name": "_080024E7C",
+   "size": 128
+  },
   "0x08024efc": {
    "class": "c",
    "file": "src/runtime_record_helpers.c",
@@ -7910,6 +10148,17 @@
    "file": "src/ai_line_leaves.c",
    "name": "Ai_LineWrite",
    "size": 28
+  },
+  "0x08025264": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 294,
+    "naked": true
+   },
+   "file": "src/scene_record_dispatch.c",
+   "name": "AiLineupBuilder_25264",
+   "size": 644
   },
   "0x080254e8": {
    "class": "c",
@@ -8544,6 +10793,28 @@
    "name": "Sprite_CourseSurface",
    "size": 48
   },
+  "0x08026550": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 127,
+    "naked": true
+   },
+   "file": "src/sprite_obj_263e0.c",
+   "name": "Sprite_PlacePairEntry_26550",
+   "size": 292
+  },
+  "0x08026674": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 171,
+    "naked": true
+   },
+   "file": "src/sprite_obj_263e0.c",
+   "name": "Sprite_PlaceEmitters",
+   "size": 392
+  },
   "0x080267fc": {
    "class": "c_fakematch",
    "detail": {
@@ -8669,6 +10940,17 @@
    "name": "Sprite_Init",
    "size": 80
   },
+  "0x08026b80": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 118,
+    "naked": true
+   },
+   "file": "src/sprite_obj_263e0.c",
+   "name": "Sprite_MenuEvent",
+   "size": 260
+  },
   "0x08026c84": {
    "class": "c",
    "file": "src/sprite_obj_263e0.c",
@@ -8684,6 +10966,17 @@
    "file": "src/sprite_obj_263e0.c",
    "name": "Sprite_EmitTriple",
    "size": 156
+  },
+  "0x08026d48": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 231,
+    "naked": true
+   },
+   "file": "src/sprite_obj_263e0.c",
+   "name": "Sprite_TickRecords",
+   "size": 488
   },
   "0x08026f30": {
    "class": "c",
@@ -8712,6 +11005,17 @@
    "name": "Garage_FC4",
    "size": 48
   },
+  "0x08026ff4": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 93,
+    "naked": true
+   },
+   "file": "src/garage.c",
+   "name": "Garage_InitRecord",
+   "size": 228
+  },
   "0x080270d8": {
    "class": "c",
    "file": "src/garage.c",
@@ -8730,11 +11034,66 @@
    "name": "Garage_DispSel_27114",
    "size": 12
   },
+  "0x08027120": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 115,
+    "naked": true
+   },
+   "file": "src/garage.c",
+   "name": "Garage_CarPos_27120",
+   "size": 240
+  },
   "0x08027210": {
    "class": "c",
    "file": "src/garage.c",
    "name": "Garage_ModeFlag_27210",
    "size": 36
+  },
+  "0x08027234": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 90,
+    "naked": true
+   },
+   "file": "src/garage.c",
+   "name": "Garage_Place_27234",
+   "size": 212
+  },
+  "0x08027308": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 150,
+    "naked": true
+   },
+   "file": "src/garage.c",
+   "name": "Garage_27308",
+   "size": 344
+  },
+  "0x08027460": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 137,
+    "naked": true
+   },
+   "file": "src/garage.c",
+   "name": "Garage_27460",
+   "size": 344
+  },
+  "0x080275b8": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 139,
+    "naked": true
+   },
+   "file": "src/garage.c",
+   "name": "Garage_275B8",
+   "size": 312
   },
   "0x080276f0": {
    "class": "c_fakematch",
@@ -8772,6 +11131,17 @@
    "name": "Garage_277D4",
    "size": 84
   },
+  "0x08027828": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 75,
+    "naked": true
+   },
+   "file": "src/garage.c",
+   "name": "Garage_ListWalk_27828",
+   "size": 180
+  },
   "0x080278dc": {
    "class": "c",
    "file": "src/garage_records.c",
@@ -8790,6 +11160,17 @@
    "file": "src/garage.c",
    "name": "Garage_Ticker_278F0",
    "size": 232
+  },
+  "0x080279d8": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 202,
+    "naked": true
+   },
+   "file": "src/garage.c",
+   "name": "Garage_279D8",
+   "size": 444
   },
   "0x08027b94": {
    "class": "c_fakematch",
@@ -8826,6 +11207,17 @@
    "file": "src/garage.c",
    "name": "Garage_27D30",
    "size": 84
+  },
+  "0x08027d84": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 193,
+    "naked": true
+   },
+   "file": "src/garage.c",
+   "name": "Garage_27D84",
+   "size": 476
   },
   "0x08027f60": {
    "class": "c_fakematch",
@@ -8953,6 +11345,17 @@
    "name": "Garage_2841C",
    "size": 96
   },
+  "0x0802847c": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 61,
+    "naked": true
+   },
+   "file": "src/garage.c",
+   "name": "Garage_2847C",
+   "size": 128
+  },
   "0x080284fc": {
    "class": "c",
    "file": "src/garage.c",
@@ -9049,6 +11452,17 @@
    "file": "src/garage.c",
    "name": "Garage_Stub_28780",
    "size": 4
+  },
+  "0x08028784": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 51,
+    "naked": true
+   },
+   "file": "src/garage_records.c",
+   "name": "_080028784",
+   "size": 164
   },
   "0x08028828": {
    "class": "c",
@@ -9209,6 +11623,28 @@
    "name": "_080028F18",
    "size": 40
   },
+  "0x08028f40": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 104,
+    "naked": true
+   },
+   "file": "src/garage_records.c",
+   "name": "_080028F40",
+   "size": 260
+  },
+  "0x08029044": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 192,
+    "naked": true
+   },
+   "file": "src/garage_records.c",
+   "name": "_080029044",
+   "size": 432
+  },
   "0x080291f4": {
    "class": "c",
    "file": "src/garage_records.c",
@@ -9321,6 +11757,72 @@
    "name": "_08002955C",
    "size": 152
   },
+  "0x080295f4": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 176,
+    "naked": true
+   },
+   "file": "src/garage_records.c",
+   "name": "_0800295F4",
+   "size": 368
+  },
+  "0x08029764": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 313,
+    "naked": true
+   },
+   "file": "src/garage_records.c",
+   "name": "_080029764",
+   "size": 636
+  },
+  "0x080299e0": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 69,
+    "naked": true
+   },
+   "file": "src/garage_records.c",
+   "name": "_0800299E0",
+   "size": 148
+  },
+  "0x08029a74": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 163,
+    "naked": true
+   },
+   "file": "src/garage_records.c",
+   "name": "_080029A74",
+   "size": 340
+  },
+  "0x08029bc8": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 185,
+    "naked": true
+   },
+   "file": "src/garage_records.c",
+   "name": "_080029BC8",
+   "size": 384
+  },
+  "0x08029d48": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 112,
+    "naked": true
+   },
+   "file": "src/garage_records.c",
+   "name": "_080029D48",
+   "size": 232
+  },
   "0x08029e30": {
    "class": "c",
    "file": "src/garage_records.c",
@@ -9336,6 +11838,39 @@
    "file": "src/garage_records.c",
    "name": "_080029E60",
    "size": 228
+  },
+  "0x08029f44": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 258,
+    "naked": true
+   },
+   "file": "src/garage_records.c",
+   "name": "_080029F44",
+   "size": 540
+  },
+  "0x0802a160": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 253,
+    "naked": true
+   },
+   "file": "src/garage_records.c",
+   "name": "_08002A160",
+   "size": 568
+  },
+  "0x0802a398": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 264,
+    "naked": true
+   },
+   "file": "src/garage_records.c",
+   "name": "_08002A398",
+   "size": 572
   },
   "0x0802a5d4": {
    "class": "c_fakematch",
@@ -9353,11 +11888,33 @@
    "name": "_08002A740",
    "size": 36
   },
+  "0x0802a764": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 97,
+    "naked": true
+   },
+   "file": "src/garage_records.c",
+   "name": "_08002A764",
+   "size": 196
+  },
   "0x0802a828": {
    "class": "c",
    "file": "src/garage_records.c",
    "name": "_08002A828",
    "size": 68
+  },
+  "0x0802a86c": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 60,
+    "naked": true
+   },
+   "file": "src/garage_records.c",
+   "name": "_08002A86C",
+   "size": 132
   },
   "0x0802a8f0": {
    "class": "c",
@@ -9370,6 +11927,17 @@
    "file": "src/garage_records.c",
    "name": "_08002A8F8",
    "size": 20
+  },
+  "0x0802a90c": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 125,
+    "naked": true
+   },
+   "file": "src/garage_records.c",
+   "name": "_08002A90C",
+   "size": 292
   },
   "0x0802aa30": {
    "class": "c",
@@ -9418,6 +11986,28 @@
    "name": "_08002AC2C",
    "size": 88
   },
+  "0x0802ac84": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 67,
+    "naked": true
+   },
+   "file": "src/garage_records.c",
+   "name": "_08002AC84",
+   "size": 144
+  },
+  "0x0802ad14": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 400,
+    "naked": true
+   },
+   "file": "src/garage_records.c",
+   "name": "_08002AD14",
+   "size": 824
+  },
   "0x0802b04c": {
    "class": "c_fakematch",
    "detail": {
@@ -9432,6 +12022,17 @@
    "file": "src/sound.c",
    "name": "SoundVBlank",
    "size": 28
+  },
+  "0x0802b098": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 116,
+    "naked": true
+   },
+   "file": "src/sound.c",
+   "name": "SoundVCounter",
+   "size": 248
   },
   "0x0802b190": {
    "class": "c_fakematch",
@@ -9493,6 +12094,17 @@
    "name": "SoundResume",
    "size": 36
   },
+  "0x0802b2a4": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 50,
+    "naked": true
+   },
+   "file": "src/sound.c",
+   "name": "SoundArmFade",
+   "size": 104
+  },
   "0x0802b30c": {
    "class": "c_fakematch",
    "detail": {
@@ -9526,6 +12138,17 @@
    "name": "SoundApplySecVol",
    "size": 20
   },
+  "0x0802b3b8": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 42,
+    "naked": true
+   },
+   "file": "src/sound.c",
+   "name": "SoundIsBankPlaying",
+   "size": 96
+  },
   "0x0802b418": {
    "class": "c_fakematch",
    "detail": {
@@ -9553,6 +12176,39 @@
    "name": "SoundReapplySpeedC",
    "size": 20
   },
+  "0x0802b488": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 55,
+    "naked": true
+   },
+   "file": "src/sound_extra.c",
+   "name": "SoundBankVolPan",
+   "size": 120
+  },
+  "0x0802b500": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 84,
+    "naked": true
+   },
+   "file": "src/sound.c",
+   "name": "SoundBankClaim_2B500",
+   "size": 172
+  },
+  "0x0802b5ac": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 71,
+    "naked": true
+   },
+   "file": "src/sound.c",
+   "name": "SoundBankSwap_2B5AC",
+   "size": 160
+  },
   "0x0802b64c": {
    "class": "c",
    "file": "src/runtime_record_helpers.c",
@@ -9564,6 +12220,17 @@
    "file": "src/runtime_record_helpers.c",
    "name": "_0802B65C",
    "size": 16
+  },
+  "0x0802b66c": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 80,
+    "naked": true
+   },
+   "file": "src/sound_parameter_apply.c",
+   "name": "SoundB66C_Applier",
+   "size": 172
   },
   "0x0802b718": {
    "class": "c_fakematch",
@@ -9648,6 +12315,38 @@
    "name": "Sfx_08002B818",
    "size": 112
   },
+  "0x0802b888": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 4,
+    "naked": true
+   },
+   "file": "src/sound_mixer.c",
+   "name": "MixerVeneer_2B888",
+   "size": 16
+  },
+  "0x0802b898": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 9,
+    "naked": true
+   },
+   "file": "src/sound_mixer.c",
+   "name": "MixerThumb_2B898",
+   "size": 18
+  },
+  "0x0802b8aa": {
+   "class": "asm",
+   "detail": {
+    "directive": 1,
+    "naked": true
+   },
+   "file": "src/sound_mixer.c",
+   "name": "MixerSetup_2B8AA",
+   "size": 894
+  },
   "0x0802bc28": {
    "class": "asm",
    "detail": {
@@ -9658,6 +12357,17 @@
    "file": "src/sound_deep.c",
    "name": "SoundMixerTailEpilogue",
    "size": 36
+  },
+  "0x0802bc4c": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 11,
+    "naked": true
+   },
+   "file": "src/sound_support.c",
+   "name": "SoundClearVoiceArray",
+   "size": 24
   },
   "0x0802bc64": {
    "class": "c_fakematch",
@@ -9907,6 +12617,23 @@
    "name": "SoundBE60_PSGWrite",
    "size": 24
   },
+  "0x0802be78": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 26,
+    "naked": true
+   },
+   "file": "src/sound_support.c",
+   "name": "SoundPump",
+   "size": 60
+  },
+  "0x0802beb4": {
+   "class": "c",
+   "file": "src/sound_channel_lists.c",
+   "name": "SoundChannel_WalkFree",
+   "size": 600
+  },
   "0x0802c10c": {
    "class": "asm",
    "detail": {
@@ -9940,6 +12667,28 @@
    "file": "src/runtime_state_dispatch.c",
    "name": "VoiceEnvelopeApply_2C160",
    "size": 48
+  },
+  "0x0802c190": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 245,
+    "naked": true
+   },
+   "file": "src/sound_channel_lists.c",
+   "name": "SoundNoteOn_2C190",
+   "size": 512
+  },
+  "0x0802c390": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 32,
+    "naked": true
+   },
+   "file": "src/sound_voice_commands.c",
+   "name": "SoundVoiceFollow_NoteOff",
+   "size": 64
   },
   "0x0802c3d0": {
    "class": "c_fakematch",
@@ -10179,6 +12928,17 @@
    "name": "SoundStateInit",
    "size": 204
   },
+  "0x0802c990": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 67,
+    "naked": true
+   },
+   "file": "src/sound_core.c",
+   "name": "SoundControlInit",
+   "size": 164
+  },
   "0x0802ca34": {
    "class": "c_fakematch",
    "detail": {
@@ -10216,11 +12976,44 @@
    "name": "SoundStreamAlloc",
    "size": 120
   },
+  "0x0802cc34": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 110,
+    "naked": true
+   },
+   "file": "src/runtime_state_dispatch.c",
+   "name": "SoundStart_2CC34",
+   "size": 228
+  },
   "0x0802cd18": {
    "class": "c",
    "file": "src/runtime_state_dispatch.c",
    "name": "SoundStopAll_2CD18",
    "size": 64
+  },
+  "0x0802cd58": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 97,
+    "naked": true
+   },
+   "file": "src/sound_core.c",
+   "name": "SoundFadeTick",
+   "size": 200
+  },
+  "0x0802ce20": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 88,
+    "naked": true
+   },
+   "file": "src/runtime_state_dispatch.c",
+   "name": "VoiceParamTick_2CE20",
+   "size": 180
   },
   "0x0802ced4": {
    "class": "c_fakematch",
@@ -10247,6 +13040,16 @@
    "file": "src/sound_voice_helpers.c",
    "name": "SoundVoiceClamp",
    "size": 104
+  },
+  "0x0802d034": {
+   "class": "asm",
+   "detail": {
+    "directive": 1,
+    "naked": true
+   },
+   "file": "src/sound_table.c",
+   "name": "SoundD034_TimerWrite",
+   "size": 1100
   },
   "0x0802d480": {
    "class": "c_fakematch",
@@ -10305,6 +13108,17 @@
    "file": "src/sound_sequence_init.c",
    "name": "_0802D680",
    "size": 116
+  },
+  "0x0802d6f4": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 150,
+    "naked": true
+   },
+   "file": "src/sound_core.c",
+   "name": "SoundSeqInterpreter",
+   "size": 344
   },
   "0x0802d84c": {
    "class": "c_fakematch",
@@ -10529,6 +13343,17 @@
    "name": "SoundDA20_Setup",
    "size": 56
   },
+  "0x0802da58": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 60,
+    "naked": true
+   },
+   "file": "src/runtime_record_helpers.c",
+   "name": "_0802DA58",
+   "size": 136
+  },
   "0x0802dae0": {
    "class": "c",
    "file": "src/runtime_record_helpers.c",
@@ -10555,6 +13380,17 @@
    "file": "src/sound_deep.c",
    "name": "SoundDBA4_Read",
    "size": 176
+  },
+  "0x0802dc54": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 100,
+    "naked": true
+   },
+   "file": "src/sound_deep.c",
+   "name": "SoundDC54_Write",
+   "size": 220
   },
   "0x0802dd30": {
    "class": "c_fakematch",
@@ -10740,6 +13576,17 @@
    "name": "Veneer_2DE00",
    "size": 4
   },
+  "0x0802de04": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 72,
+    "naked": true
+   },
+   "file": "src/sound_extra.c",
+   "name": "SoundSignedDiv",
+   "size": 148
+  },
   "0x0802de98": {
    "class": "asm",
    "detail": {
@@ -10750,6 +13597,39 @@
    "file": "src/sound_extra.c",
    "name": "SoundDivNoop_2DE98",
    "size": 4
+  },
+  "0x0802de9c": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 102,
+    "naked": true
+   },
+   "file": "src/scene_record_dispatch.c",
+   "name": "DivRemS_02DE9C",
+   "size": 208
+  },
+  "0x0802df6c": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 59,
+    "naked": true
+   },
+   "file": "src/runtime_state_dispatch.c",
+   "name": "UDiv_2DF6C",
+   "size": 120
+  },
+  "0x0802dfe4": {
+   "class": "asm",
+   "detail": {
+    "insn": 1,
+    "insn_lines": 95,
+    "naked": true
+   },
+   "file": "src/scene_record_dispatch.c",
+   "name": "DivRemU_02DFE4",
+   "size": 192
   },
   "0x0802e0a4": {
    "class": "partial",
@@ -10772,12 +13652,12 @@
  },
  "totals": {
   "asm": {
-   "bytes": 3632,
-   "functions": 92
+   "bytes": 100056,
+   "functions": 353
   },
   "c": {
-   "bytes": 37878,
-   "functions": 837
+   "bytes": 38506,
+   "functions": 839
   },
   "c_fakematch": {
    "bytes": 38022,

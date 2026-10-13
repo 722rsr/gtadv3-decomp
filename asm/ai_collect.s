@@ -461,3 +461,4 @@ _0800B81C_lit: .word 0x00001058
 _0800B820_lit: .word 0x0000103C
 _0800B824_lit: .word 0x00001076
 _0800B828_lit: .word 0x0000103E
+ai_collect_end:

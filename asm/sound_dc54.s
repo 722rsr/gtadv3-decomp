@@ -120,3 +120,4 @@ sub_0802DC54:
 	.word 0x0300176C
 .L_dd2c:
 	.word 0x0000C001
+sound_dc54_end:

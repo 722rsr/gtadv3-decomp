@@ -74,3 +74,4 @@ _0800B88C_lit: .word 0x03001780
 _0800B890_lit: .word 0x000010F8
 _0800B894_lit: .word 0x00001058
 _0800B898_lit: .word 0x0000103C
+grant_delay_end:

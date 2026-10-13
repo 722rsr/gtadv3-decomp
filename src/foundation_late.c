@@ -115,4 +115,4 @@ void _0800CE2C(int a,int b,int c,void *d) __attribute__((alias("LateDispatch_CE2
 // code_4e6c tail — manager alloc (skipped, TODO) — provide alias guards only
 // 5b3c / fa0 lifted elsewhere; no stubs here.
 // Owners: _08005BA8 → foundation_math.c (MathHelper_05BA8),
-// _08000FA0 → foundation_fa0.c (IntrMain_Dispatch).
+// _08000F84 → foundation_fa0.c (IntrMain_Dispatch).

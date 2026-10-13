@@ -1188,3 +1188,4 @@ void _08019AEC(int mode) __attribute__((alias("sub_080019AEC")));
 // exact aliases beside the shorter C-facing names above.
 void _0800199B0(void) __attribute__((alias("sub_0800199B0")));
 void _0800199CC(void) __attribute__((alias("sub_0800199CC")));
+void _080019AEC(int mode) __attribute__((alias("sub_080019AEC")));

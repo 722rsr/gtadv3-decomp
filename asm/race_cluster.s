@@ -271,3 +271,4 @@ _0801A1FC:
 	.word 0x00001DE4
 _0801A200:
 	.word 0x03005780
+race_cluster_end:

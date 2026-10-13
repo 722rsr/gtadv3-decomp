@@ -144,3 +144,4 @@ sub_0800C4D0:
 	.word 0x080CDFE0
 .L_c600:
 	.word 0x000025EC
+menu_c4d0_end:

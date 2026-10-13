@@ -1,6 +1,6 @@
 @ GT Advance 3 - MTO sound driver: control/reset helpers
-@ Region: file offset 0x02C990-0x02CB20 (VMA 0x0802C990-0x0802CB20).
-@ Two pure-Thumb functions with local pools; byte-exact.
+@ Region: file offset 0x02C990-0x02CA34 (VMA 0x0802C990-0x0802CA34).
+@ One pure-Thumb function with a local pool; byte-exact.
 
 .thumb
 .type sub_0802C990, %function
@@ -77,3 +77,4 @@ _0802CA24: .word 0x04000102
 _0802CA28: .word 0x04000100
 _0802CA2C: .word 0x00044940
 _0802CA30: .word 0x04000006
+sound_control_end:

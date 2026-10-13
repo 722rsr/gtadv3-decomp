@@ -609,3 +609,4 @@ _08001978:
 	movs r0, r0
 	.align 2, 0
 _08001984: .4byte 0x030000E4
+blocka_end:

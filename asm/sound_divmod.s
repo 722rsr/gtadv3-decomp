@@ -120,3 +120,4 @@ _08002E09A:
 	bl sub_0802DE98
 	movs	r0, #0
 	pop	{pc}
+sound_divmod_end:

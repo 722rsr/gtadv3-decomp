@@ -165,6 +165,14 @@
       }
     },
     {
+      "name": "foundation_fa0/_08000F84",
+      "target_path": "build/objdiff/08000f84/target.o",
+      "base_path": "build/objdiff/08000f84/candidate.o",
+      "metadata": {
+        "source_path": "src/foundation_fa0.c"
+      }
+    },
+    {
       "name": "runtime_accessors/sub_08001370",
       "target_path": "build/objdiff/08001370/target.o",
       "base_path": "build/objdiff/08001370/candidate.o",
@@ -12312,6 +12320,14 @@
       "name": "sound_mixer/_0802B898",
       "target_path": "build/objdiff/0802b898/target.o",
       "base_path": "build/objdiff/0802b898/candidate.o",
+      "metadata": {
+        "source_path": "src/sound_mixer.c"
+      }
+    },
+    {
+      "name": "sound_mixer/_0802B8AA",
+      "target_path": "build/objdiff/0802b8aa/target.o",
+      "base_path": "build/objdiff/0802b8aa/candidate.o",
       "metadata": {
         "source_path": "src/sound_mixer.c"
       }

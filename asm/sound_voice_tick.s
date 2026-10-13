@@ -103,3 +103,4 @@ _0802CEC8:
 	pop {r4}
 	pop {r0}
 	bx r0
+sound_voice_tick_end:

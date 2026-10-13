@@ -44,11 +44,8 @@ static volatile u8 *MixerEnter(void){
     return root;
 }
 
-// Thumb setup 0x02B8AA-0x02B928 (interior label _0802B8AA, no VMA alias):
-// VCOUNT-gated mix bound at [sp,#20] (root[12] + VCOUNT + 228 while
-// VCOUNT < 160), the two vector calls above, volume preload into r8,
-// mix buffer root+848, voice count root[4]-1, per-voice rate table walk.
-// Ends with the IWRAM vector load (pool @B90C) and `bx r3`.
+// Thumb guard 0x02B898-0x02B8AA. On the valid Smsh path it increments the
+// root marker and falls through into MixerSetup_2B8AA below.
 __attribute__((naked)) void MixerThumb_2B898(void){
     __asm__ volatile (
         ".syntax unified\n"
@@ -69,14 +66,28 @@ __attribute__((naked)) void MixerThumb_2B898(void){
 void _0802B898(void) __attribute__((alias("MixerThumb_2B898")));
 void sub_0802B898(void) __attribute__((alias("MixerThumb_2B898")));
 
+// Mixed-ISA setup and mixer body 0x02B8AA-0x02BC28. The instruction stream
+// stays in one shared include because it interleaves Thumb dispatch, ARM mix
+// kernels, and literal pools; both the reference assembly and this naked C
+// owner assemble the same source bytes.
+__attribute__((naked)) void MixerSetup_2B8AA(void){
+    __asm__ volatile (
+        ".syntax unified\n"
+        ".include \"asm/mixer_2b8aa_body.inc\"\n"
+        ".thumb\n"
+        ".syntax divided\n"
+    );
+}
+void _0802B8AA(void) __attribute__((alias("MixerSetup_2B8AA")));
+
 // Blocked subregions (asm-owned, no alias here):
 // - Thumb voice dispatch 0x02B968-0x02BA8C: 0x50-stride voice envelope
 //   state machine (voice init/mix-level/select, VCOUNT re-gate @B9AC),
-//   ends with adr/bx into the ARM island. Interior labels only.
+//   ends with adr/bx into the ARM island. It is now part of MixerSetup_2B8AA.
 // - ARM 32-bit mix kernel 0x02B928-0x02B968 (cmp r4,#2 / ldrsb / mul /
 //   asr #8 / strb) and ARM tight mix loop 0x02BA8C-0x02BC28 (ldrsb / mul
-//   / bic #0xFF0000 / ror / str, IWRAM-fed sample pointers). Mixed ISA,
-//   no plain-C transcription; bytes exact in asm/mixer_2b888.s.
+//   / bic #0xFF0000 / ror / str, IWRAM-fed sample pointers). They remain
+//   instruction-level assembly in the shared body; no plain-C transcription.
 // - Epilogue 0x02BC28-0x02BC4C in asm/sound_mixer_tail.s (loop-back to
 //   0x02B990 or restore-and-return, Smsh pool @BC48); its `bx r3`
 //   halfword at 0x0802BC46 doubles as the vector-call gadget above.

@@ -57,6 +57,23 @@ def compute_manifest_stats(manifest_file: Path = MANIFEST_PATH) -> tuple[int, in
     return count, total_bytes
 
 
+def content_progress(source_code_bytes: int, matched_code_bytes: int,
+                     matched_data_bytes: int, content_end_bytes: int,
+                     source_code_exact: bool) -> tuple[int, float]:
+    """Return reconstructed non-padding content bytes and their percentage.
+
+    `matched_code_bytes` counts C-owned functions only. The independent source
+    slice also contains the cartridge header, startup/IRQ assembly, and other
+    non-function bytes, so use its full extent only when its byte-identical
+    proof is present. Bytes after the ownership report's content end are
+    verified zero padding, not missing decompilation.
+    """
+    code_bytes = source_code_bytes if source_code_exact else matched_code_bytes
+    reconstructed = code_bytes + matched_data_bytes
+    percent = reconstructed / content_end_bytes * 100 if content_end_bytes else 0.0
+    return reconstructed, percent
+
+
 def format_readme(content: str, manifest_count: int, manifest_bytes: int,
                   code_size: int = 188760, cache_bust: bool = False,
                   timestamp: int | None = None) -> tuple[str, bool]:
@@ -215,6 +232,27 @@ def print_summary(root: Path = ROOT) -> None:
     rom_size = total_code + total_data
     rom_pct = (total_matched / rom_size) * 100 if rom_size else 0.0
 
+    slice_bytes = total_code
+    slice_exact = False
+    slice_file = root / SLICE_PATH
+    if slice_file.is_file():
+        try:
+            slice_info = json.loads(slice_file.read_text()).get("slice", {})
+            slice_bytes = int(slice_info.get("bytes", total_code))
+            slice_exact = slice_info.get("matches_baserom") is True
+        except (OSError, ValueError, TypeError):
+            pass
+    content_end = total_code + matched_data
+    ownership_file = root / OWNERSHIP_PATH
+    if ownership_file.is_file():
+        try:
+            content_end = int(json.loads(ownership_file.read_text())
+                              .get("rom", {}).get("content_end", content_end), 16)
+        except (OSError, ValueError, TypeError):
+            pass
+    content_bytes, content_pct = content_progress(
+        slice_bytes, matched_code, matched_data, content_end, slice_exact)
+
     print("\n" + "=" * 65)
     print("           GT ADVANCE 3 DECOMPILATION PROGRESS")
     print("=" * 65)
@@ -223,8 +261,10 @@ def print_summary(root: Path = ROOT) -> None:
     print(f"    Matched Executable: {matched_code:,} / {total_code:,} bytes ({code_pct:.2f}%)")
     print(f"  Data Progress:")
     print(f"    Verified Data:      {matched_data:,} / {total_data:,} bytes ({data_pct:.2f}%)")
+    print(f"  Non-padding Content:")
+    print(f"    Source-backed:      {content_bytes:,} / {content_end:,} bytes ({content_pct:.2f}%)")
     print(f"  Overall Binary:")
-    print(f"    Reconstructed:      {total_matched:,} / {rom_size:,} bytes ({rom_pct:.2f}%)")
+    print(f"    C-matched + data:   {total_matched:,} / {rom_size:,} bytes ({rom_pct:.2f}%)")
     print("-" * 65)
     print("  Artifacts ready for commit:")
     print("    • docs/data/code_data_ownership.json")
@@ -243,6 +283,23 @@ def print_summary(root: Path = ROOT) -> None:
 
 
 class SelfTests(unittest.TestCase):
+    def test_content_progress_excludes_verified_padding(self):
+        content_bytes, percent = content_progress(
+            source_code_bytes=188760,
+            matched_code_bytes=188136,
+            matched_data_bytes=7873388,
+            content_end_bytes=8062148,
+            source_code_exact=True,
+        )
+        self.assertEqual(content_bytes, 8062148)
+        self.assertEqual(percent, 100.0)
+
+    def test_unverified_slice_falls_back_to_c_matched_bytes(self):
+        content_bytes, percent = content_progress(188760, 188136, 7873388,
+                                                   8062148, False)
+        self.assertEqual(content_bytes, 8061524)
+        self.assertLess(percent, 100.0)
+
     def test_readme_formatter(self):
         sample = """# Header
 The manifest selects **1,252 C functions / 64,740 bytes** within the

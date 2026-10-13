@@ -63,3 +63,4 @@ _0802BE78_lit_dma:
 	.word 0x040000BC
 _0802BE78_lit_prime:
 	.word 0x84400004
+sound_pump_end:

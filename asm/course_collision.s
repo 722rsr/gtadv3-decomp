@@ -187,3 +187,4 @@ _08006FC2:
         pop {r1}
         bx r1
         .short 0x0000
+course_collision_end:

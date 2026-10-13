@@ -7,8 +7,9 @@
 	.thumb
 @@ converted region 0x000A60-0x000AF4:
 	.include "softirq.s"	@ : _08000A60 soft-IRQ/TX kicker
-@@ converted region 0x000AF4-0x000FA0:
+@@ converted region 0x000AF4-0x000F84:
 	.include "handlers.s"
+	.include "intrmain_dispatch.s"
 	.include "code_fa0.s"
 @@ converted region 0x0015F4-0x001988:
 	.include "blocka.s"
@@ -356,9 +357,9 @@ sub_0800DAB8:
 	.include "rec35_init.s"
 @@ converted region 0x015E28-0x015ED0 (rec35 helpers):
 	.include "rec35_helper.s"
-@@ converted region 0x015ED0-0x016002 (rec35 twin stage machines):
+@@ converted region 0x015ED0-0x016004 (rec35 twin stage machines):
 	.include "rec35_stage.s"
-@@ converted region 0x016002-0x0163B8 (tools/objdump2gas.py):
+@@ converted region 0x016004-0x0163B8 (tools/objdump2gas.py):
 	.include "rec35_16002.s"
 @@ converted region 0x0163B8-0x0164D4 :
 @@   runtime-registered rec35 scene event driver _080163B8 (+ its 13-word
@@ -623,9 +624,8 @@ sub_08026F30:
 @@ converted region 0x02B888-0x02BC28 (mixed-ISA sound mixer: ARM veneer + Thumb body + ARM mix-loop island):
 	.include "mixer_2b888.s"
 	.include "sound_mixer_tail.s"
-@@ converted region 0x02BC4C-0x02BC62 :
+@@ converted region 0x02BC4C-0x02BC64 :
 	.include "sound_mixer_leaf.s"
-	.short 0			@ pad at 0x0802BC62
 @@ converted region 0x02BC64-0x02BC84 :
 	.include "sound_unlink.s"
 	.include "sound_channel_cluster.s"
@@ -759,16 +759,13 @@ sub_0802DDC8:
 	.thumb
 .type sub_0802DE04, %function
 sub_0802DE04:
-	@@ converted region 0x02DE04-0x02DE96 :
+	@@ converted region 0x02DE04-0x02DE98 :
 	.include "sound_aeabi_idiv.s"
-	.thumb
-	.type sub_0802DE96, %function
-	sub_0802DE96:
+	@@ converted region 0x02DE98-0x02DE9C :
 	.include "code_2de96.s"
-	@@ converted region 0x02DE9C-0x02DF6A :
+	@@ converted region 0x02DE9C-0x02DF6C :
 	.include "sound_aeabi_idiv_core.s"
 	.thumb
-	.include "code_2df6a.s"
 	.thumb
 .type sub_0802DF6C, %function
 sub_0802DF6C:

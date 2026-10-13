@@ -453,3 +453,4 @@ _0800AF84_lit_12:
 	.word 0x03001780
 _0800AF84_lit_13:
 	.word 0x00000FBC
+race_progress_end:

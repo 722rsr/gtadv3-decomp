@@ -460,3 +460,4 @@ _0800AD70:
 	.align 2, 0
 _0800AD80_lit:
 	.word 0x00000FC8
+ai_racefsm_end:

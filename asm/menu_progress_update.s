@@ -109,3 +109,4 @@ _0800BDFE:
 _0800BE14: .word 0x03001780
 _0800BE18: .word 0x000010F4
 _0800BE1C: .word 0x00000FCE
+menu_progress_update_end:

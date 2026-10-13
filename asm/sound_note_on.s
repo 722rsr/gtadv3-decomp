@@ -283,3 +283,4 @@ _0802C376:
   .short 0
 _0802C388: .word 0x03007FF0
 _0802C38C: .word 0x08061754
+sound_note_on_end:

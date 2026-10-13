@@ -1,5 +1,5 @@
 @ isolated sound mixer voice-array clear.
-@ VMA 0x0802BC4C-0x0802BC62 (22 bytes), pure Thumb, no pool.
+@ VMA 0x0802BC4C-0x0802BC64 (24 bytes), pure Thumb, no pool.
 
 	.thumb
 	.type sub_0802BC4C, %function
@@ -15,3 +15,5 @@ sub_0802BC4C:
 	stmia r0!, {r1, r2, r3, r4}
 	mov r4, r12
 	bx lr
+	.short 0
+sound_mixer_leaf_end:

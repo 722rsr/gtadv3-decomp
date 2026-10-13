@@ -1,5 +1,5 @@
 @ GT Advance 3 - rec35 scene twin stage machines (legit menu/save transition)
-@ Region: file offset 0x015ED0-0x016002 (VMA 0x08015ED0-0x08016002)
+@ Region: file offset 0x015ED0-0x016004 (VMA 0x08015ED0-0x08016004)
 @
 @ Disassembled via objdump from baserom.gba; byte-exact (make SHA gate).
 @ Companion: asm/rec35_stage.s (save-transition chain),
@@ -181,3 +181,5 @@ _08015FFC:
 	pop {r4, r5}
 	pop {r0}
 	bx r0
+	.short 0
+rec35_stage_end:

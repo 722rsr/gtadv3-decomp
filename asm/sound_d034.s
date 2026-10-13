@@ -546,3 +546,4 @@ _080428: .word 0x08061744 @ pool
 	.hword 0xbc01 @ 0x802D47A: pop {r0}
 	.hword 0x4700 @ 0x802D47C: bx r0
 	.short 0 @ pad 0x802D47E
+sound_d034_end:

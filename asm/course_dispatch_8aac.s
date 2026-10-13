@@ -1421,3 +1421,4 @@ _080095D4:
   bx r0
   .align 2, 0
 _080095EC: .4byte 0x0828A35C
+course_dispatch_8aac_end:

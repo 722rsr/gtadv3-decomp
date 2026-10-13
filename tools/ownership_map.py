@@ -44,11 +44,10 @@ SOURCE_RANGE_OVERRIDES: dict[str, list[tuple[int, int]]] = {
     # The cartridge header sits below the 0xC0 code floor the region-banner
     # parser enforces, so its span is declared here rather than scraped.
     "header.s": [(0x000000, 0x0000C0)],
-    # handlers.s is one 0x0AF4-0x0FA0 hole in asm/passthrough.inc containing
-    # five sub-regions (blob A, the installer, the block-B stepper, blob B,
-    # the helper tail); the banner parser only sees the first, so pin the
-    # whole span.
-    "handlers.s": [(0x0AF4, 0x0FA0)],
+    # handlers.s owns the IRQ/serial helpers through 0x0F84. 0x0F84-0x1370
+    # is isolated in intrmain_dispatch.s so the full dispatcher has one splice
+    # owner; pin the handler file's otherwise-unbannered range here.
+    "handlers.s": [(0x0AF4, 0x0F84)],
     "carphys_tick.s": [
         (0x09BCC, 0x09F58),
         (0x09F58, 0x0A1D4),
@@ -67,11 +66,9 @@ SOURCE_RANGE_OVERRIDES: dict[str, list[tuple[int, int]]] = {
 }
 
 # Literal/padding words emitted directly by the generated passthrough file.
-# They are reconstructed source, not raw ROM bytes, but have no standalone
-# region banner of their own.
-INLINE_SOURCE_RANGES: dict[str, list[tuple[int, int]]] = {
-    "asm/passthrough.inc": [(0x2BC62, 0x2BC64)],
-}
+# There are no standalone inline source ranges currently: alignment halfwords
+# attached to matched function bodies live in those owning source files.
+INLINE_SOURCE_RANGES: dict[str, list[tuple[int, int]]] = {}
 
 # Source files that intentionally own no code range: they exist to carry a
 # data input (currently only the cataloged ROM tail).  They are expected to

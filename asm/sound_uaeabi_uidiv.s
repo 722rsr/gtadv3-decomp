@@ -75,3 +75,4 @@ _0802DFDA:
 	bl sub_0802DE98
 	movs r0, #0
 	pop {pc}
+sound_uaeabi_uidiv_end:

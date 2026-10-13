@@ -159,3 +159,4 @@ _08002394E:
 	pop	{r4, r5, r6, r7}
 	pop	{r0}
 	bx	r0
+code_2381c_end:

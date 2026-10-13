@@ -133,3 +133,4 @@ _080071EA:
         pop {r1}
         bx r1
 _0800720C: .word 0x001FFFFF
+course_collision_loop_end:

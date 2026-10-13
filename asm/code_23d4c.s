@@ -95,3 +95,4 @@ _080023DF8:
 	bx	r0
 _080023E04: .4byte 0x080CC178
 _080023E08: .4byte 0x00000FFF
+code_23d4c_end:
