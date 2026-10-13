@@ -48,9 +48,11 @@ extracted bytes; `make clean` removes them.
 The round-trip claim is byte-level, not semantic asset completion. On a clean
 checkout, missing editable inputs are extracted from the user-supplied reference
 ROM into ignored `build/data/`; several compressed/raw payloads remain verbatim.
-The final 326,460 zero-padding bytes are also included from `baserom.gba` by the
-reference build. These bytes are excluded from data progress and prevent that
-build from serving as a fully independent ROM link.
+The final 326,460 zero-padding bytes are emitted as source zero fill and are
+excluded from data progress. `make full-rom-match` links the C-spliced code and
+registered data across the entire image and compares it byte-for-byte with the
+pinned ROM; this proves the whole-image match, not semantic reconstruction of
+the verbatim/extracted payloads.
 
 ## Adding a region
 

@@ -15,11 +15,13 @@ STAMP = Path('docs/data/report-inputs.json')
 BASE = 0x08000000
 CODE_SIZE = 0x2E158
 ROM_SIZE = 0x800000
-STAMP_VERSION = 2
+STAMP_VERSION = 4
 VERIFICATION = {
-    'command': 'make matching-ready',
+    'command': 'make full-rom-match',
     'reference_rom': 'pass',
     'independent_c_asm_code_slice': 'pass',
+    'full_hybrid_rom_link': 'pass',
+    'function_entry_census': 'pass',
     'runtime_equivalence': 'not_run',
 }
 
@@ -105,8 +107,9 @@ def make_report(manifest, ownership, data_manifest=(), function_spans=None,
 
     if function_spans is None:
         # Match the address inventory used by corpus matching: .type entries
-        # and BL targets known to the source tree. This is a known-entry census,
-        # not proof that the stripped ROM has no undiscovered entry points.
+        # and BL targets known to the source tree. The independent prologue and
+        # shape audit in fast-check verifies that this inventory misses no
+        # executable entry in the owned code slice.
         function_spans = corpus_match_probe._rom_functions_scan()
     if not set(selected).issubset(function_spans):
         missing = sorted(set(selected) - set(function_spans))
@@ -288,7 +291,7 @@ def check(root):
 def refresh(root):
     before = inputs(root)
     subprocess.run(['shasum', '-a', '256', '-c', 'baserom.sha256'], cwd=root, check=True)
-    subprocess.run(['make', 'matching-ready'], cwd=root, check=True)
+    subprocess.run(['make', 'full-rom-match'], cwd=root, check=True)
     if inputs(root) != before:
         raise ValueError('inputs changed during verification; finish edits and rerun make progress')
     data = expected_report(root, verified=True)

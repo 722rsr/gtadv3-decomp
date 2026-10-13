@@ -9,10 +9,8 @@
 // Duplicate alias removed; use ai_catalog's Ai_IdMap via extern.
 extern int Ai_IdMap(int v);
 
-// TODO(unresolved): 22CB4 (asm/code_22cb4.s) — init leaf with multiple literal pools,
-// needs full IWRAM offset trace; stub kept linkable but not claimed lifted.
-void Code22CB4_Init(void *a, void *b){ (void)a;(void)b; }
-// No alias claimed — will alias after substantiation.
+// 0x08022CB4 is implemented as CarRecEventReset_22CB4 in
+// runtime_state_dispatch.c; do not keep the former unreferenced placeholder.
 
 // 2254 — block B slot wrappers around _080016D0/_08001F80 etc. — mechanically translated with opaque volatile
 // _08002254: ldr r0,_08002268 (0x030000F4) -> r1=[r0] -> strb 0,[r1] -> bl _080016D0
@@ -82,13 +80,11 @@ void sub_080024048(void *a) __attribute__((alias("Code24048_StepQueuePush")));
 // asm/ghost2.s holds the same bytes but is NOT in the include closure,
 // so it is documentation, not the oracle; the race_control duplicate was
 // removed.
-// TODO(unresolved): 2417C (asm/code_2417c.s) — ghost snapshot 56B ldmia/stmia copy
-// Needs staging buffer layout confirmation; stub.
-void Code2417C_GhostSnapshot(void){}
-// No alias claimed.
+// 0x0802417C is implemented as Ghost_Snapshot in ghost2.c; the earlier empty
+// placeholder is intentionally absent so it cannot be mistaken for coverage.
 
-// TODO(unresolved): 2446C (asm/code_2446c.s) — guarded save hook — REMOVED duplicate alias collision at 0x2446C
-// _08002446C / _0802446C is owned by save (SaveHook_0802446C, asm/code_2446c.s:7-127, save.c:574-597, strh/strb + loops + bl 0x0802417C/0x08024338); race_control empty placeholder removed per audit.
+// 0x0802446C is owned by save (SaveHook_0802446C in save.c); duplicate
+// race-control aliases were removed to leave one source owner.
 
 // Substantiated leaf sub_0800235F4 (asm/code_235f4.s:7-37): ctx+142 s16 switch
 // 0→0x08023220, 1→0x08023298, 2→0x080235F0 else fallthrough. Preserves s16 width.

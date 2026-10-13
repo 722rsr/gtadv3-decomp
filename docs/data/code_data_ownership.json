@@ -2,7 +2,7 @@
   "dependency_findings": [],
   "errors": [],
   "generator": "tools/ownership_map.py",
-  "generator_sha256": "4b3f53c79d2bd30bf8f788c16ebe652709976d9147fe15b80df3c94fc7649879",
+  "generator_sha256": "3703a0f233494a64f8475e7618d0da0f7f713ab9d7f7ea5550bac5f9efc9bea1",
   "inputs": {
     "code_end": "0x02E158",
     "source_closure": [
@@ -278,30 +278,9 @@
       "asm/surface_access.s",
       "asm/wrapper_pair.s"
     ],
-    "source_closure_sha256": "45f8f3b453bb2bfd0613d01a5e0b61f546fb9057d4a57a70add919e80b1de11c"
+    "source_closure_sha256": "297dba508916d528a752a0a93b90d06395e8815507114dfef1551fc5d2e35e53"
   },
-  "raw_incbin_spans": [
-    {
-      "classification": "padding",
-      "end": "0x800000",
-      "evidence": [
-        "asm/data_tail.s",
-        "baserom.sha256 content-end record",
-        "all bytes after 0x7B04C4 are zero"
-      ],
-      "line": 144,
-      "owner": "linker/source-generated zero padding",
-      "path": "asm/data_tail.s",
-      "sha256": "c7c97eeab83ce36b22430a176168eb7dd4612a74791a095a4e752962c8885633",
-      "size": 326460,
-      "start": "0x7B04C4",
-      "status": "owned-zero-padding",
-      "strict_blocker": false,
-      "text": ".incbin \"baserom.gba\", 0x7B04C4, 0x4FB3C    @ verified zero padding to end of ROM (0x800000)",
-      "vma_end": "0x08800000",
-      "vma_start": "0x087B04C4"
-    }
-  ],
+  "raw_incbin_spans": [],
   "rom": {
     "base_vma": "0x08000000",
     "content_end": "0x7B04C4",
@@ -6765,22 +6744,24 @@
       "vma_start": "0x08799640"
     },
     {
-      "backing": "baserom.gba:.incbin",
+      "backing": "assembler .space zero fill",
       "classification": "padding",
       "end": "0x800000",
       "evidence": [
-        "baserom.sha256",
-        "all bytes after 0x7B04C4 are zero"
+        "asm/data_tail.s .space directive",
+        "pinned ROM has zero bytes after content end"
       ],
       "executable": false,
-      "intended_owner": "linker/source-generated zero padding",
+      "intended_owner": "source-generated zero padding",
       "owners": [
-        "asm/data_tail.s:144"
+        "asm/data_tail.s"
       ],
       "size": 326460,
-      "source_owners": [],
+      "source_owners": [
+        "asm/data_tail.s"
+      ],
       "start": "0x7B04C4",
-      "status": "owned-zero-padding",
+      "status": "source-generated-zero-padding",
       "strict_blocker": false,
       "vma_end": "0x08800000",
       "vma_start": "0x087B04C4"
@@ -8383,9 +8364,15 @@
     },
     {
       "path": "asm/data_tail.s",
-      "ranges": [],
-      "sha256": "60041807337e7a61672288c3df68b086ab77b45df0a04305fb20d66743d3b80c",
-      "size": 5930
+      "ranges": [
+        {
+          "end": "0x800000",
+          "source": "zero-fill",
+          "start": "0x7B04C4"
+        }
+      ],
+      "sha256": "757b5d284e929536a0f8950fcd5c3f51e0d7c6a62f5ea1d48c82570eae25b545",
+      "size": 5899
     },
     {
       "path": "asm/garage_26f50.s",
@@ -9236,7 +9223,7 @@
           "start": "0x002AAC"
         }
       ],
-      "sha256": "3a175491c39ba0e55e37fb1da797b7cb6efcc658754eb746434822f634417623",
+      "sha256": "31c3f2a613f2ac66fa7e8c3ab64c86f3c3910d81640fc86d423d52410e9db52c",
       "size": 68627
     },
     {
@@ -10041,7 +10028,7 @@
     "raw_data_bytes": 0,
     "raw_executable_bytes": 0,
     "raw_header_bytes": 0,
-    "raw_incbin_count": 1,
+    "raw_incbin_count": 0,
     "rom_bytes": 8388608,
     "segment_count": 280,
     "source_file_count": 266,

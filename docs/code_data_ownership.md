@@ -24,7 +24,7 @@ independent link still depends on.
 | Cataloged data-tail bytes | `0` |
 | Verified generated data bytes | `7873388` |
 | Zero padding bytes | `326460` |
-| Direct `.incbin` spans | `1` |
+| Direct `.incbin` spans | `0` |
 | Included assembly source files | `266` |
 | Strict blockers | `0` |
 
@@ -39,7 +39,6 @@ independent link still depends on.
 
 | File offset | VMA range | Size | Class | Status | Source | Strict |
 |---|---|---:|---|---|---|---|
-| `0x7B04C4..0x800000` | `0x087B04C4..0x08800000` | `326460` | padding | owned-zero-padding | `asm/data_tail.s:144` | no |
 
 The large tail is data/assets through the documented content end, followed by verified zero padding.
 
@@ -180,6 +179,7 @@ has already been replaced by C; C-lift coverage remains a separate gate.
 | `asm/course_stream_more.s` | `0x006B30..0x006CB8` |
 | `asm/course_stream_tail.s` | `0x006CB8..0x006D68` |
 | `asm/course_stream_tail_more.s` | `0x006D68..0x006E70` |
+| `asm/data_tail.s` | `0x7B04C4..0x800000` |
 | `asm/garage_26f50.s` | `0x026F50..0x02B04C` |
 | `asm/ghost.s` | `0x018A50..0x018ADC` |
 | `asm/go_start.s` | `0x00B89C..0x00B990` |

@@ -70,30 +70,22 @@ SOURCE_RANGE_OVERRIDES: dict[str, list[tuple[int, int]]] = {
 # attached to matched function bodies live in those owning source files.
 INLINE_SOURCE_RANGES: dict[str, list[tuple[int, int]]] = {}
 
-# Source files that intentionally own no code range: they exist to carry a
-# data input (currently only the cataloged ROM tail).  They are expected to
-# have no region banner, so they must be exempt from the banner requirement.
+# Source files that intentionally own no executable range: they carry the
+# cataloged ROM tail and its source-generated padding, so they are exempt from
+# the code region-banner requirement.
 DATA_ONLY_SOURCES: set[str] = {"data_tail.s"}
 
-# Direct .incbin ranges are deliberately explicit.  A newly introduced raw
-# range must be classified here before the audit can pass.
-# All cataloged data through content end is now generated; only verified zero
-# padding remains as a direct ROM-backed span.
-RAW_OVERRIDES: list[dict[str, Any]] = [
-    {
-        "start": 0x7B04C4,
-        "end": ROM_SIZE,
-        "classification": "padding",
-        "status": "owned-zero-padding",
-        "owner": "linker/source-generated zero padding",
-        "evidence": [
-            "asm/data_tail.s",
-            "baserom.sha256 content-end record",
-            "all bytes after 0x7B04C4 are zero",
-        ],
-        "strict_blocker": False,
-    },
-]
+# Direct .incbin ranges are deliberately explicit.  No reference-ROM ranges
+# are currently allowed: a new .incbin must be reviewed and classified before
+# ownership checks can pass.
+RAW_OVERRIDES: list[dict[str, Any]] = []
+ZERO_FILL_SOURCE_RANGES: dict[str, list[tuple[int, int]]] = {
+    "data_tail.s": [(CONTENT_END, ROM_SIZE)],
+}
+SPACE_RE = re.compile(
+    r"^\s*\.space\s+(0x[0-9a-fA-F]+|[0-9]+)\s*,\s*"
+    r"(0x[0-9a-fA-F]+|[0-9]+)(?:\s*@.*)?$"
+)
 
 INCLUDE_RE = re.compile(r'^\s*\.include\s+"([^"]+)"')
 INCBIN_RE = re.compile(
@@ -323,6 +315,30 @@ def source_ranges(closure: list[Path]) -> tuple[list[dict[str, Any]], list[str]]
             continue
         name = path.name
         if name in DATA_ONLY_SOURCES:
+            expected_ranges = ZERO_FILL_SOURCE_RANGES.get(name, [])
+            for start, end in expected_ranges:
+                fills = []
+                for number, line in active_lines(path):
+                    match = SPACE_RE.match(line)
+                    if not match:
+                        continue
+                    size, fill = (int(value, 0) for value in match.groups())
+                    if size == end - start and fill == 0:
+                        fills.append(number)
+                if len(fills) != 1:
+                    errors.append(
+                        f"expected one zero-fill of 0x{end - start:X} bytes in "
+                        f"{relpath(path)}, found {len(fills)}"
+                    )
+                    continue
+                records.append(
+                    {
+                        "start": start,
+                        "end": end,
+                        "path": relpath(path),
+                        "source": "zero-fill",
+                    }
+                )
             continue
         if is_aggregator(path):
             continue
@@ -511,14 +527,6 @@ def classify_raw_interval(start: int, end: int) -> dict[str, Any]:
             "evidence": ["asm/data_tail.s", "baserom.sha256 content-end record"],
             "strict_blocker": False,
         }
-    if start >= CONTENT_END and end <= ROM_SIZE:
-        return {
-            "classification": "padding",
-            "status": "owned-zero-padding",
-            "owner": "linker/source-generated zero padding",
-            "evidence": ["baserom.sha256", "all bytes after 0x7B04C4 are zero"],
-            "strict_blocker": False,
-        }
     for override in RAW_OVERRIDES:
         if override["start"] == start and override["end"] == end:
             return override
@@ -694,6 +702,25 @@ def build_segments(
                 "evidence": ['tools/data_regions.json',
                              'editable input regenerated and compared byte-for-byte against pinned ROM',
                              f"span SHA-256 {generated['sha256']}"],
+                "strict_blocker": False,
+            }
+        elif source_hits and all(item["source"] == "zero-fill" for item in source_hits):
+            owners = sorted({item["path"] for item in source_hits})
+            segment = {
+                "start": start,
+                "end": end,
+                "size": end - start,
+                "classification": "padding",
+                "status": "source-generated-zero-padding",
+                "executable": False,
+                "backing": "assembler .space zero fill",
+                "owners": owners,
+                "source_owners": owners,
+                "intended_owner": "source-generated zero padding",
+                "evidence": [
+                    "asm/data_tail.s .space directive",
+                    "pinned ROM has zero bytes after content end",
+                ],
                 "strict_blocker": False,
             }
         elif source_hits:
@@ -1124,7 +1151,7 @@ def self_test() -> None:
     # The reviewed raw data tail excludes the generated spans.  If any executable
     # pocket reappears as an .incbin, RAW_OVERRIDES has to grow again and the
     # strict gate has to say so.
-    assert raw_override(0x7B04C4, ROM_SIZE) is not None
+    assert raw_override(0x7B04C4, ROM_SIZE) is None
     assert raw_override(0x02E158, 0x0CE438) is None
     assert raw_override(0x28A35C, 0x3D7DA4) is None
     assert raw_override(0x3D7DA4, 0x799640) is None
@@ -1145,7 +1172,7 @@ def self_test() -> None:
     assert raw_override(0x000CA0, 0x000E80) is None
     assert raw_override(0x021860, 0x021BA0) is None  # transcribed in carphys_racer.s
     assert raw_override(0x021BA0, 0x021BF8) is None
-    assert classify_raw_interval(0x7B04C4, 0x800000)["classification"] == "padding"
+    assert classify_raw_interval(0x7B04C4, 0x800000)["strict_blocker"]
     assert classify_raw_interval(0x02E158, 0x0CE438)["strict_blocker"]
     assert classify_raw_interval(0x28A35C, 0x3D7DA4)["strict_blocker"]
     assert classify_raw_interval(0x3D7DA4, 0x799640)["strict_blocker"]
@@ -1185,7 +1212,15 @@ def self_test() -> None:
     assert is_aggregator(ROOT / "asm" / "rom.s")  # reference top level
     assert is_aggregator(ROOT / "asm" / "code.s")  # shared code top level
     assert not is_aggregator(ROOT / "asm" / "header.s")  # emits .byte rows
-    assert not is_aggregator(ROOT / "asm" / "data_tail.s")  # emits .incbin
+    assert not is_aggregator(ROOT / "asm" / "data_tail.s")  # emits data and zero fill
+    padding_sources, padding_errors = source_ranges([ROOT / "asm" / "data_tail.s"])
+    assert not padding_errors
+    assert any(
+        row["start"] == CONTENT_END and row["end"] == ROM_SIZE
+        and row["source"] == "zero-fill"
+        for row in padding_sources
+    )
+    assert classify_raw_interval(CONTENT_END, ROM_SIZE)["strict_blocker"]
 
     # Positive control for the independent-link dependency scanner: it has to
     # see a reference-build object, and it must not mistake the neighbouring

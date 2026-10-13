@@ -380,14 +380,14 @@ _08002D94: .4byte 0x03000134
 @ `.type` on `_08002D94` (a pool word) would have created an entry four bytes
 @ before the real function and split it. Zero bytes emitted.
 	.type _08002D98, %function
+	.type sub_08002D98, %function
 _08002D98:
+sub_08002D98:
 	push	{r4, r5, lr}
 	ldr	r5, [sp, #12]
 	ldr r4, _08002DB4
 	ldr	r4, [r4, #0]
 	lsls	r0, r0, #5
-	.type sub_08002D98, %function
-sub_08002D98:
 	adds	r0, r0, r4
 	strh	r1, [r0, #6]
 	strh	r2, [r0, #14]

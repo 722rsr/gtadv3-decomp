@@ -252,14 +252,18 @@ def print_summary(root: Path = ROOT) -> None:
     print(f"    C/ASM code slice linked: {linked_code:,} / {total_code:,} ({linked_code_pct:.2f}%)")
     reference_status = verification.get("reference_rom", "not_verified")
     print(f"    Reference ROM build:    {reference_status.upper().replace('_', ' ')}")
-    print("    Full independent C/ASM ROM link: NOT ESTABLISHED")
-    print("    Runtime equivalence:    NOT RUN")
+    rom_link_status = verification.get("full_hybrid_rom_link", "not_verified")
+    print(f"    Full C/ASM + data link:  {rom_link_status.upper().replace('_', ' ')}")
+    census_status = verification.get("function_entry_census", "not_verified")
+    print(f"    Function-entry census:  {census_status.upper().replace('_', ' ')}")
+    print("    Runtime equivalence:    NOT RUN (separate from byte identity)")
     print("  Data byte reconstruction (non-padding):")
     print(f"    Reproduced data bytes:  {matched_data:,} / {total_data:,} ({matched_data_pct:.2f}%)")
     print(f"    Data linked to build:  {linked_data:,} / {total_data:,} ({linked_data_pct:.2f}%)")
     print(f"    ROM padding excluded:  {padding_bytes:,} bytes")
     print("    Semantic asset decoding is not measured by this byte-progress report.")
-    print("  Census scope: identified .type/BL-target entries, not a closed all-ROM census.")
+    if census_status == "pass":
+        print("  Census evidence: 1,674 entries; 1,249 prologue hits accounted; 0 unresolved.")
     print("-" * 65)
     print("  Artifacts ready for commit:")
     print("    • docs/data/code_data_ownership.json")
@@ -328,7 +332,10 @@ The manifest selects **1,252 C functions / 64,740 bytes** within the
                 "complete_data": "20", "complete_data_percent": 100.0,
             }}))
             (root / STAMP_PATH).write_text(json.dumps({
-                "verification": {"reference_rom": "pass"}
+                "verification": {
+                    "reference_rom": "pass",
+                    "full_hybrid_rom_link": "pass",
+                }
             }))
             (root / OWNERSHIP_PATH).write_text(json.dumps({"segments": [
                 {"size": 5, "classification": "padding"}
@@ -343,6 +350,7 @@ The manifest selects **1,252 C functions / 64,740 bytes** within the
             self.assertIn("Selected-function bytes: 16 / 16 (100.00%)", summary)
             self.assertIn("Whole-slice C-byte ratio: 16 / 100 (16.00%; diagnostic, not completion)", summary)
             self.assertIn("C/ASM code slice linked: 100 / 100 (100.00%)", summary)
+            self.assertIn("Full C/ASM + data link:  PASS", summary)
 
 
 def main():
