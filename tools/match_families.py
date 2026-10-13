@@ -9,9 +9,12 @@ from __future__ import annotations
 import argparse
 from bisect import bisect_right
 from collections import defaultdict
+import contextlib
 from difflib import SequenceMatcher
 import hashlib
+import io
 import json
+from functools import lru_cache
 from pathlib import Path
 import re
 import subprocess
@@ -27,7 +30,20 @@ VERSION = 1
 
 
 def digest(path):
-    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+    stat = Path(path).stat()
+    return _digest_cached(str(path), stat.st_mtime_ns, stat.st_size)
+
+
+@lru_cache(maxsize=256)
+def _digest_cached(path_str: str, mtime_ns: int, size: int) -> str:
+    """Content hash memoised on the file's `(mtime_ns, size)` identity.
+
+    `load_index` hashes the 17 MB corpus report and the 8 MB ROM on every call,
+    and `verified_recipes` hashes each recipe's source once per candidate; the
+    value cannot change while the file's identity does, so one read per file
+    per process is enough.
+    """
+    return hashlib.sha256(Path(path_str).read_bytes()).hexdigest()
 
 
 def inventory_digest():
@@ -46,8 +62,41 @@ def sign(value, bits):
     return value - (1 << bits) if value & (1 << (bits - 1)) else value
 
 
+@lru_cache(maxsize=1)
+def _closure_signature() -> str:
+    """A cheap identity for the assembled include closure.
+
+    `(file count, total size, newest mtime)` over `asm/**` -- the same shape
+    `corpus_match_probe` uses for its span cache, and the same weakness class
+    it accepts: an edit that restores byte size and mtime exactly would be
+    missed, which a working checkout does not do. Cheap because `stat` is all
+    it costs.
+    """
+    files = [p for p in (ROOT / 'asm').rglob('*') if p.suffix in ('.s', '.inc')]
+    return ':'.join(str(x) for x in (
+        len(files),
+        sum(p.stat().st_size for p in files),
+        max((p.stat().st_mtime_ns for p in files), default=0),
+    ))
+
+
 def assembled_modes(work):
-    """Get ARM/Thumb/data mappings from the current assembled include closure."""
+    """Get ARM/Thumb/data mappings from the current assembled include closure.
+
+    Assembling `asm/code.s` and reading 3.4k symbols measured ~0.12 s per
+    call, and every leaf synthesis run pays it. The mode map is a pure
+    function of the closure's bytes and the toolchain, so it is cached under
+    `build/` keyed on `_closure_signature()`; an `asm/` edit changes the
+    signature and reassembles.
+    """
+    cache = ROOT / 'build/matching-assist/closure-modes.json'
+    signature = _closure_signature()
+    try:
+        cached = json.loads(cache.read_text())
+        if cached.get('signature') == signature:
+            return [(int(vma), kind) for vma, kind in cached['modes']]
+    except (OSError, ValueError, KeyError):
+        pass
     obj = work / 'mode-map.o'
     subprocess.run(['arm-none-eabi-as', '-mcpu=arm7tdmi', '-I' + str(ROOT / 'asm'),
                     str(ROOT / 'asm/code.s'), '-o', str(obj)], check=True, capture_output=True)
@@ -60,7 +109,14 @@ def assembled_modes(work):
             modes.append((probe.ROM_BASE + int(fields[1], 16), fields[7][1]))
     if not modes:
         raise ValueError('assembled closure has no instruction-set mapping symbols')
-    return sorted(modes)
+    modes.sort()
+    try:
+        cache.parent.mkdir(parents=True, exist_ok=True)
+        cache.write_text(json.dumps({'signature': signature,
+                                     'modes': [[vma, kind] for vma, kind in modes]}))
+    except OSError:
+        pass
+    return modes
 
 
 def mode_at(modes, pc):
@@ -289,24 +345,99 @@ def find_record(index, name):
     return records[0]
 
 
+def _upper_bound_ratio(target_counts: dict, target_len: int, rec_tokens: list) -> float:
+    """Sound upper bound on `SequenceMatcher(...).ratio()` for two token lists.
+
+    `ratio()` is `2*M/(lenA+lenB)` where M counts elements paired by matching
+    blocks. A block pairs distinct elements only, so M can never exceed the
+    multiset intersection of the two token lists -- `sum(min(countA, countB))`.
+    If even that bound is below the caller's cutoff, no exact ratio is needed.
+    Measured on `_08006C10` against the real index: 6 of 1504 records pass the
+    bound, 0 of them were wrongly excluded, and the bound costs 7 ms where the
+    1504 `ratio()` calls cost 34 ms. The target's counts are prepared once per
+    `_similarity_scores` call, not once per record: rebuilding them for a
+    452-token target measured up to 34 ms on its own.
+    """
+    if not target_counts or not rec_tokens:
+        return 0.0
+    counts_a = dict(target_counts)
+    shared = 0
+    for token in rec_tokens:
+        remaining = counts_a.get(token, 0)
+        if remaining:
+            counts_a[token] = remaining - 1
+            shared += 1
+    return 2 * shared / (target_len + len(rec_tokens))
+
+
+# (id(records list), target vma, fingerprint) -> (records list, [(score, rec)])
+# The list reference is kept so a garbage-collected index can never lend its
+# id to a later one and serve its scores. One CLI run holds exactly one index.
+_NEAREST_SCORES: dict[tuple[int, str, str], tuple[list, list[tuple[float, dict]]]] = {}
+
+
+def _similarity_scores(index: dict, target: dict) -> list[tuple[float, dict]]:
+    """`(ratio, record)` for every scored, deduplicated sibling of `target`.
+
+    `nearest()` is called twice per `match_context` run -- once for the sibling
+    list, once (same target, same index) by `verified_recipes` -- and each call
+    re-scored every record with `SequenceMatcher`. The score depends only on
+    the target, so the first call's work is kept and the second call only
+    filters and sorts it. The cheap multiset bound runs before `ratio()` and
+    skips the records that cannot reach 0.45.
+    """
+    key = (id(index["records"]), target["vma"], target.get("fingerprint", ""))
+    cached = _NEAREST_SCORES.get(key)
+    if cached is not None and cached[0] is index["records"]:
+        return cached[1]
+    target_tokens = target["tokens"]
+    target_counts: dict = {}
+    for token in target_tokens:
+        target_counts[token] = target_counts.get(token, 0) + 1
+    target_key = (target["source"], target.get("alias_of") or target["name"])
+    scored: list[tuple[float, dict]] = []
+    seen: set = set()
+    for rec in index["records"]:
+        body_key = (rec["source"], rec.get("alias_of") or rec["name"])
+        if (not rec["complete"] or rec["vma"] == target["vma"] or body_key in seen
+                or body_key == target_key):
+            continue
+        seen.add(body_key)
+        if _upper_bound_ratio(target_counts, len(target_tokens), rec["tokens"]) < 0.45:
+            continue
+        score = SequenceMatcher(None, target_tokens, rec["tokens"], autojunk=False).ratio()
+        if score < 0.45:
+            continue
+        scored.append((score, rec))
+    _NEAREST_SCORES[key] = (index["records"], scored)
+    return scored
+
+
 def nearest(index, target, count=3, recipes=False):
     if not target['complete']:
         return []
     candidates = []
-    seen = set()
-    for rec in index['records']:
-        key = (rec['source'], rec.get('alias_of') or rec['name'])
-        if (not rec['complete'] or rec['vma'] == target['vma'] or key in seen or
-            key == (target['source'], target.get('alias_of') or target['name'])):
-            continue
+    for score, rec in _similarity_scores(index, target):
         if recipes and not (rec['status'] == 'EXACT' or rec['promoted']):
             continue
-        seen.add(key)
-        score = SequenceMatcher(None, target['tokens'], rec['tokens'], autojunk=False).ratio()
-        if score < 0.45:
-            continue
-        candidates.append(dict(rec, similarity=round(score, 4), same_family=rec['fingerprint'] == target['fingerprint']))
+        candidates.append(dict(rec, similarity=round(score, 4),
+                               same_family=rec['fingerprint'] == target['fingerprint']))
     return sorted(candidates, key=lambda r: (-r['same_family'], -r['similarity'], r['vma']))[:count]
+
+
+def _run_probe_captured(name: str, work: Path, report: Path) -> tuple[int, str]:
+    """Score one recipe in THIS process; `(status, combined output)`."""
+    argv = ["corpus_match_probe.py", "--function", name, "--c89", "--require-all",
+            "--require-exact", "--work-dir", str(work), "--json", str(report)]
+    saved_argv = sys.argv
+    captured = io.StringIO()
+    try:
+        sys.argv = argv
+        with contextlib.redirect_stdout(captured), contextlib.redirect_stderr(captured):
+            returncode = probe.main()
+    finally:
+        sys.argv = saved_argv
+    return returncode, captured.getvalue()
 
 
 def verified_recipes(index, target, out, count=3):
@@ -320,15 +451,13 @@ def verified_recipes(index, target, out, count=3):
         work.mkdir(parents=True, exist_ok=True)
         report = work / 'report.json'
         source_hash = digest(ROOT / rec['source'])
-        result = subprocess.run([sys.executable, str(ROOT / 'tools/corpus_match_probe.py'), '--function', rec['name'],
-                                 '--c89', '--require-all', '--require-exact', '--work-dir', str(work), '--json', str(report)],
-                                text=True, capture_output=True)
-        (work / 'probe.log').write_text(result.stdout + result.stderr)
-        fresh = json.loads(report.read_text())['results'] if result.returncode == 0 and report.exists() else []
+        returncode, output = _run_probe_captured(rec['name'], work, report)
+        (work / 'probe.log').write_text(output)
+        fresh = json.loads(report.read_text())['results'] if returncode == 0 and report.exists() else []
         good = [r for r in fresh if source_hash == digest(ROOT / rec['source']) and
                 r['status'] == 'EXACT' and r['vma'] == rec['vma'] and
                 r['source'] == rec['source'] and (r.get('alias_of') or r['name']) == (rec.get('alias_of') or rec['name'])]
-        attempts.append({'name': rec['name'], 'accepted': len(good) == 1, 'returncode': result.returncode,
+        attempts.append({'name': rec['name'], 'accepted': len(good) == 1, 'returncode': returncode,
                          'source_sha256': source_hash, 'report': str(report), 'similarity': rec['similarity']})
         if len(good) != 1:
             continue

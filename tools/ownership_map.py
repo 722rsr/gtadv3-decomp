@@ -15,6 +15,7 @@ the C link still consumes a reference-build object.
 from __future__ import annotations
 
 import argparse
+import array
 import collections
 import difflib
 import hashlib
@@ -437,10 +438,37 @@ def scan_raw_executable_references(
                 return record
         return None
 
+    # Both sweeps below are the hot path (measured 1.43 s of the 2.02 s
+    # --check run) and the ROM is one contiguous buffer, so build native-width
+    # array views once instead of re-decoding bytes with struct.unpack_from on
+    # every iteration.  array uses the host's byte order, so a big-endian host
+    # must byteswap to keep the same little-endian Thumb/word decoding as the
+    # previous '<H'/'<I' struct formats.
+    halfwords = array.array("H")
+    halfwords.frombytes(rom[: len(rom) & ~1])
+    if sys.byteorder == "big":
+        halfwords.byteswap()
+
     for offset in range(0, len(rom) - 3, 2):
-        target = thumb_bl_target(rom, offset)
-        if target is None:
+        # Cheap reject first: only BL encodings start with 0xF000-0xF7FF, so
+        # ~15/16 of the halfwords skip the payload decode entirely.  The
+        # inline decode mirrors thumb_bl_target (kept as the reference reader).
+        first = halfwords[offset >> 1]
+        if (first & 0xF800) != 0xF000:
             continue
+        second = halfwords[(offset >> 1) + 1]
+        if (second & 0xD000) != 0xD000:
+            continue
+        sign = (first >> 10) & 1
+        imm10 = first & 0x3FF
+        j1 = (second >> 13) & 1
+        j2 = (second >> 11) & 1
+        imm11 = second & 0x7FF
+        imm25 = (sign << 24) | ((1 - j1) << 23) | ((1 - j2) << 22)
+        imm25 |= (imm10 << 12) | (imm11 << 1)
+        if sign:
+            imm25 -= 1 << 25
+        target = offset + 4 + imm25
         record = containing(target)
         if record is None:
             continue
@@ -449,8 +477,14 @@ def scan_raw_executable_references(
         if len(item["samples"]) < 8:
             item["samples"].append({"kind": "bl", "site": f"0x{offset:06X}", "target": f"0x{target:06X}"})
 
+    # Same native-view trick for the little-endian literal words (<I decode).
+    words = array.array("I")
+    words.frombytes(rom[: len(rom) & ~3])
+    if sys.byteorder == "big":
+        words.byteswap()
+
     for offset in range(0, len(rom) - 3, 4):
-        value = struct.unpack_from("<I", rom, offset)[0]
+        value = words[offset >> 2]
         target = None
         if ROM_BASE <= value < ROM_BASE + ROM_SIZE:
             target = value - ROM_BASE
@@ -788,7 +822,14 @@ def make_report(rom_path: Path) -> dict[str, Any]:
         raise OwnershipError(
             f"ROM SHA-256 mismatch: {rom_sha}; expected {EXPECTED_ROM_SHA256}"
         )
-    last_nonzero = max(index for index, value in enumerate(rom) if value)
+    # Equivalent to max(i for i, b in enumerate(rom) if b), but O(tail): the
+    # trailing 0x4E600 zero bytes are scanned once by rstrip instead of the
+    # whole-image generator walk.  The SHA gate above already rejects an
+    # all-zero image, so keep max()'s failure mode rather than inventing one.
+    trimmed = rom.rstrip(b"\x00")
+    if not trimmed:
+        raise ValueError("max() arg is an empty sequence")
+    last_nonzero = len(trimmed) - 1
     observed_content_end = last_nonzero + 1
     if observed_content_end != CONTENT_END:
         raise OwnershipError(

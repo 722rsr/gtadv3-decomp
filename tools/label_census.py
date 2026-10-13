@@ -105,8 +105,10 @@ def collect(obj=OBJ, nm=NM):
 
 
 def census(obj=OBJ, nm=NM):
-    rows = collect(obj, nm)
+    # One `nm` spawn, not two: the same table feeds both the 8-digit rows and
+    # the 9-digit name count (the second spawn measured 0.088 s of the run).
     out = subprocess.run([nm, str(obj)], capture_output=True, text=True).stdout
+    rows = parse_nm(out)  # parse_nm owns the empty-table guard
     nine = [line.split() for line in out.splitlines()
             if len(line.split()) == 3 and NINE_RE.match(line.split()[2])]
     funcs = typed_function_names(ROOT / "asm")

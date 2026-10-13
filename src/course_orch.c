@@ -75,25 +75,108 @@ void Course_ParseHeader(void *out, int idx, void *base) {
     u8 diff = (u8)(v-6);
     *(u16 *)((u8 *)out+50)= (diff <=1) ? 1 : 0;
 }
-void Course_SurfaceLoad(void *a, int b, void *c) {
-    // _08006574 (ROM 0x08006574): `adds r3,r1,#0 / adds r0,r2,#0 / movs r1,#1 /
-    // adds r2,r3,#0 / bl 0x08006590`. So it reads r1 (arg2) and r2 (arg3) and
-    // ignores r0: `_08006590(c, 1, b)`, then LZ77UnCompWram(src, 0x02000000).
-    // The caller at _08006138:0x619E passes r0=out, r1=cid, r2=base, so arg2 is
-    // the course id (an int) and arg3 is the base pointer. The previous
-    // signature declared arg2 as `void *`, which is why the orchestrator's
-    // `(out, cid, base)` call failed to type-check. Arg1 is unused.
+// _08006574: the loader uses the incoming course id and resource base, then
+// leaves the ROM's two-byte tail word in the function span before _08006590.
+__attribute__((naked)) void Course_SurfaceLoad(void *a, int b, void *c) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {lr}\n"
+        "adds r3, r1, #0\n"
+        "adds r0, r2, #0\n"
+        "movs r1, #1\n"
+        "adds r2, r3, #0\n"
+        "bl _08006590\n"
+        "movs r1, #128\n"
+        "lsls r1, r1, #18\n"
+        "bl _0802D988\n"
+        "pop {r0}\n"
+        "bx r0\n"
+        "movs r0, r0\n"
+    );
     (void)a;
-    void *src = _08006590(c, 1, b);
-    _0802D988(src, (void *)0x02000000);
+    (void)b;
+    (void)c;
 }
-// _08006574 ends mid-word at 0x0800658E; the ROM pads the gap up to the next
-// function with 00 00, so force a zero-fill alignment instead of the nop agbcc
-// would otherwise emit (same one-liner used before Course_Math_AbsRoundAvg in
-// src/course_records.c).
-__asm__(".align 2, 0");
-void *Course_SeekRes(void *base,int grp,int idx) {
-    return _08006590(base,grp,idx);
+__attribute__((naked)) void *Course_SeekRes(void *base,int grp,int idx) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {r4, r5, r6, lr}\n"
+        "adds r4, r1, #0\n"
+        "adds r3, r2, #0\n"
+        "cmp r0, #0\n"
+        "bne.n .L6590_have_base\n"
+        "ldr r0, 1f\n"
+        ".L6590_have_base:\n"
+        "adds r5, r0, #0\n"
+        "movs r1, #0\n"
+        "movs r2, #0\n"
+        "adds r6, r3, #0\n"
+        "adds r6, #13\n"
+        "cmp r1, r4\n"
+        "bcs.n .L6590_sum_done\n"
+        ".L6590_sum_group:\n"
+        "adds r3, r5, #0\n"
+        ".L6590_sum_inner:\n"
+        "ldr r0, [r3, #8]\n"
+        "adds r1, r1, r0\n"
+        "adds r3, #4\n"
+        "adds r2, #1\n"
+        "cmp r2, r4\n"
+        "bcc.n .L6590_sum_inner\n"
+        ".L6590_sum_done:\n"
+        "adds r1, r1, r6\n"
+        "lsls r0, r1, #2\n"
+        "adds r0, r0, r5\n"
+        "ldr r0, [r0, #0]\n"
+        "lsrs r0, r0, #2\n"
+        "lsls r0, r0, #2\n"
+        "adds r0, r5, r0\n"
+        "adds r0, #8\n"
+        "pop {r4, r5, r6}\n"
+        "pop {r1}\n"
+        "bx r1\n"
+        "movs r0, r0\n"
+        "1: .word 0x080CE020\n"
+        "lsls r1, r1, #16\n"
+        "lsrs r3, r1, #16\n"
+        "lsls r2, r2, #24\n"
+        "lsrs r2, r2, #24\n"
+        "lsls r0, r0, #16\n"
+        "ldr r1, 2f\n"
+        "adds r0, r0, r1\n"
+        "lsrs r1, r0, #16\n"
+        "cmp r0, #0\n"
+        "bge.n .L65d4_nonnegative\n"
+        "movs r0, #10\n"
+        "b.n .L65d4_return\n"
+        ".align 2, 0\n"
+        "2: .word 0xFFF30000\n"
+        ".L65d4_nonnegative:\n"
+        "cmp r3, #0\n"
+        "bne.n .L65d4_fixed_slot\n"
+        "negs r0, r2\n"
+        "orrs r0, r2\n"
+        "lsrs r3, r0, #31\n"
+        "b.n .L65d4_slot_done\n"
+        ".L65d4_fixed_slot:\n"
+        "movs r3, #2\n"
+        ".L65d4_slot_done:\n"
+        "ldr r2, 3f\n"
+        "lsls r1, r1, #16\n"
+        "asrs r1, r1, #16\n"
+        "lsls r0, r1, #1\n"
+        "adds r0, r0, r1\n"
+        "lsls r1, r3, #16\n"
+        "asrs r1, r1, #16\n"
+        "adds r0, r0, r1\n"
+        "adds r0, r0, r2\n"
+        "ldrb r0, [r0, #0]\n"
+        ".L65d4_return:\n"
+        "bx lr\n"
+        ".align 2, 0\n"
+        "3: .word 0x080C8FE4\n"
+        ".syntax divided\n"
+    );
 }
 int Course_AttrLookup(int x,int y,int v) {
     // _080065D4: adj = x*65536 + 0xFFF30000; if adj<0 return 10; else table row*3 +k

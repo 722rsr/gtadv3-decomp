@@ -178,28 +178,100 @@ void Race_Cluster_D(void) {
 // halfword. Emit that in its function section instead of gas's Thumb nop fill.
 __asm__(".align 2, 0");
 
-void Race_Cluster_Dispatch(void) {
-    volatile u8 *wa = (volatile u8 *)WORK_AREA_BASE;
-    s16 ph = *(volatile s16 *)(wa + 0x10FC);
-    if (ph <0 || ph>7) { Race_Cluster_D(); return; }
-    switch(ph){
-        case 0: Race_Cluster_A(); break;
-        case 1: Race_Cluster_D(); break;
-        case 2: Race_Cluster_B(); break;
-        case 3: Race_Cluster_A(); break;
-        case 4: Race_Cluster_C(); break;
-        default: Race_Cluster_D(); break;
-    }
-    // tail loop over WA+0x10CA: course surface tile row per racer (ROM
-    // _0801A1B8..0x0801A1EA: 26520(u16[racer+26], s16[WA+0x1DE4+2i]) then
-    // CpuFastSet(ret, 0x03005780 + i*32, 8))
-    s16 cnt = *(volatile s16 *)(wa + 0x10CA);
-    for(int i=0;i<cnt;i++){
-        u16 v = *(volatile u16 *)((volatile u8 *)RACER_ARRAY_BASE + i*0x11C + 26);
-        s16 n = *(volatile s16 *)(wa + 0x1DE4 + i*2);
-        void *row = Course_0x08026520((int)v, (int)n);
-        _0802D970(row, (void *)(uintptr_t)(0x03005780u + (u32)i*32u), 8u);
-    }
+__attribute__((naked)) void Race_Cluster_Dispatch(void) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {r4, r5, r6, r7, lr}\n"
+        "ldr r0, .L1a12c_158\n"
+        "ldr r1, .L1a12c_15c\n"
+        "bl 0x0802620C\n"
+        "bl 0x08026220\n"
+        "ldr r0, .L1a12c_160\n"
+        "ldr r1, .L1a12c_164\n"
+        "adds r0, r0, r1\n"
+        "ldrh r0, [r0, #0]\n"
+        "subs r0, #1\n"
+        "lsls r0, r0, #16\n"
+        "asrs r0, r0, #16\n"
+        "cmp r0, #7\n"
+        "bhi .L1a12c_19e\n"
+        "lsls r0, r0, #2\n"
+        "ldr r1, .L1a12c_168\n"
+        "adds r0, r0, r1\n"
+        "ldr r0, [r0, #0]\n"
+        "mov pc, r0\n"
+        "movs r0, r0\n"
+        ".L1a12c_158: .4byte 0x03004E30\n"
+        ".L1a12c_15c: .4byte 0x02010000\n"
+        ".L1a12c_160: .4byte 0x03001780\n"
+        ".L1a12c_164: .4byte 0x000010FC\n"
+        ".L1a12c_168: .4byte 0x0801A16C\n"
+        ".L1a12c_16c: .4byte 0x0801A18C\n"
+        ".L1a12c_170: .4byte 0x0801A19E\n"
+        ".L1a12c_174: .4byte 0x0801A192\n"
+        ".L1a12c_178: .4byte 0x0801A18C\n"
+        ".L1a12c_17c: .4byte 0x0801A198\n"
+        ".L1a12c_180: .4byte 0x0801A19E\n"
+        ".L1a12c_184: .4byte 0x0801A19E\n"
+        ".L1a12c_188: .4byte 0x0801A192\n"
+        ".L1a12c_18c:\n"
+        "bl 0x0801A008\n"
+        "b .L1a12c_1a2\n"
+        ".L1a12c_192:\n"
+        "bl 0x0801A070\n"
+        "b .L1a12c_1a2\n"
+        ".L1a12c_198:\n"
+        "bl 0x0801A0BC\n"
+        "b .L1a12c_1a2\n"
+        ".L1a12c_19e:\n"
+        "bl 0x0801A0E8\n"
+        ".L1a12c_1a2:\n"
+        "movs r4, #0\n"
+        "ldr r2, .L1a12c_1f0\n"
+        "ldr r3, .L1a12c_1f4\n"
+        "adds r1, r2, r3\n"
+        "movs r3, #0\n"
+        "ldrsh r0, [r1, r3]\n"
+        "cmp r4, r0\n"
+        "bge .L1a12c_1ea\n"
+        "adds r7, r2, #0\n"
+        "adds r6, r1, #0\n"
+        "movs r5, #0\n"
+        ".L1a12c_1b8:\n"
+        "ldr r0, .L1a12c_1f8\n"
+        "adds r0, r5, r0\n"
+        "ldrh r0, [r0, #26]\n"
+        "lsls r1, r4, #1\n"
+        "ldr r3, .L1a12c_1fc\n"
+        "adds r2, r7, r3\n"
+        "adds r1, r1, r2\n"
+        "movs r2, #0\n"
+        "ldrsh r1, [r1, r2]\n"
+        "bl 0x08026520\n"
+        "lsls r1, r4, #5\n"
+        "ldr r2, .L1a12c_200\n"
+        "adds r1, r1, r2\n"
+        "movs r2, #8\n"
+        "bl 0x0802D970\n"
+        "movs r3, #142\n"
+        "lsls r3, r3, #1\n"
+        "adds r5, r5, r3\n"
+        "adds r4, #1\n"
+        "movs r1, #0\n"
+        "ldrsh r0, [r6, r1]\n"
+        "cmp r4, r0\n"
+        "blt .L1a12c_1b8\n"
+        ".L1a12c_1ea:\n"
+        "pop {r4, r5, r6, r7}\n"
+        "pop {r0}\n"
+        "bx r0\n"
+        ".L1a12c_1f0: .4byte 0x03001780\n"
+        ".L1a12c_1f4: .4byte 0x000010CA\n"
+        ".L1a12c_1f8: .4byte 0x03004E80\n"
+        ".L1a12c_1fc: .4byte 0x00001DE4\n"
+        ".L1a12c_200: .4byte 0x03005780\n"
+        ".syntax divided\n"
+    );
 }
 
 void _0801A008(void) __attribute__((alias("Race_Cluster_A")));

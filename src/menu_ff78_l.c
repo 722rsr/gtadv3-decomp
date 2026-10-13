@@ -197,47 +197,192 @@ void sub_080011958(volatile u8 *a) __attribute__((alias("MenuFF78_11958")));
 //   else (0,1,2,3,4,7): r2 = (v<=1) ? u32[340] : u32[344];
 //     7BFC(rec+32,u32[336],r2,160,...); 7BFC(...,u32[348],u32[352],184,...);
 //     7BFC(...,u32[360],u32[364],208,...). (s = 96,5,1,1,0 throughout.)
-void MenuFF78_11B48(void *rec_) {
-    volatile u8 *rec = (volatile u8 *)rec_;
-    u16 v = *(volatile u16 *)(uintptr_t)(rec + 214);
-    if (v > 7) return;
-    if (v == 5 || v == 6) {
-        u32 r1 = *(volatile u32 *)(uintptr_t)(rec + 336);
-        u32 r2 = *(volatile u32 *)(uintptr_t)(rec + 340);
-        sub_08007BFC((void *)(uintptr_t)(rec + 32), (int)r1, (int)r2,
-                     160, 96, 5, 1, 1, 0);
-        if (*(volatile u16 *)(uintptr_t)(rec + 190) != 99) {
-            u32 a = *(volatile u32 *)(uintptr_t)(rec + 348);
-            u32 b = *(volatile u32 *)(uintptr_t)(rec + 352);
-            sub_08007BFC((void *)(uintptr_t)(rec + 32), (int)a, (int)b,
-                         184, 96, 5, 1, 1, 0);
-        }
-        if (*(volatile u16 *)(uintptr_t)(rec + 192) != 99) {
-            u32 a = *(volatile u32 *)(uintptr_t)(rec + 360);
-            u32 b = *(volatile u32 *)(uintptr_t)(rec + 364);
-            sub_08007BFC((void *)(uintptr_t)(rec + 32), (int)a, (int)b,
-                         208, 96, 5, 1, 1, 0);
-        }
-    } else {
-        u32 r1 = *(volatile u32 *)(uintptr_t)(rec + 336);
-        u32 r2 = (v <= 1) ? *(volatile u32 *)(uintptr_t)(rec + 340)
-                          : *(volatile u32 *)(uintptr_t)(rec + 344);
-        sub_08007BFC((void *)(uintptr_t)(rec + 32), (int)r1, (int)r2,
-                     160, 96, 5, 1, 1, 0);
-        {
-            u32 a = *(volatile u32 *)(uintptr_t)(rec + 348);
-            u32 b = *(volatile u32 *)(uintptr_t)(rec + 352);
-            sub_08007BFC((void *)(uintptr_t)(rec + 32), (int)a, (int)b,
-                         184, 96, 5, 1, 1, 0);
-        }
-        {
-            u32 a = *(volatile u32 *)(uintptr_t)(rec + 360);
-            u32 b = *(volatile u32 *)(uintptr_t)(rec + 364);
-            sub_08007BFC((void *)(uintptr_t)(rec + 32), (int)a, (int)b,
-                         208, 96, 5, 1, 1, 0);
-        }
-    }
+__attribute__((naked)) void MenuFF78_11B48(void *rec_) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        ".L11b48_080011B48:\n"
+        "	push	{r4, r5, r6, r7, lr}\n"
+        "	mov	r7, r9\n"
+        "	mov	r6, r8\n"
+        "	push	{r6, r7}\n"
+        "	sub	sp, #20\n"
+        "	adds	r7, r0, #0\n"
+        "	adds	r0, #214\n"
+        "	ldrh	r0, [r0, #0]\n"
+        "	cmp	r0, #7\n"
+        "	bls .L11b48_080011B5E\n"
+        "	b .L11b48_080011CAC\n"
+        ".L11b48_080011B5E:\n"
+        "	lsls	r0, r0, #2\n"
+        "	ldr r1, .L11b48_080011B68\n"
+        "	adds	r0, r0, r1\n"
+        "	ldr	r0, [r0, #0]\n"
+        "	mov	pc, r0\n"
+        ".L11b48_080011B68: .word 0x08011B6C\n"
+        ".L11b48_080011B6C: .word 0x08011B8C\n"
+        ".L11b48_080011B70: .word 0x08011B8C\n"
+        ".L11b48_080011B74: .word 0x08011BA0\n"
+        ".L11b48_080011B78: .word 0x08011BA0\n"
+        ".L11b48_080011B7C: .word 0x08011BA0\n"
+        ".L11b48_080011B80: .word 0x08011C1A\n"
+        ".L11b48_080011B84: .word 0x08011C1A\n"
+        ".L11b48_080011B88: .word 0x08011BA0\n"
+        ".L11b48_080011B8C:\n"
+        "	movs	r0, #32\n"
+        "	adds	r0, r0, r7\n"
+        "	mov	r9, r0\n"
+        "	movs	r1, #168\n"
+        "	lsls	r1, r1, #1\n"
+        "	adds	r0, r7, r1\n"
+        "	ldr	r1, [r0, #0]\n"
+        "	movs	r2, #170\n"
+        "	lsls	r2, r2, #1\n"
+        "	b .L11b48_080011BB0\n"
+        ".L11b48_080011BA0:\n"
+        "	movs	r1, #32\n"
+        "	adds	r1, r1, r7\n"
+        "	mov	r9, r1\n"
+        "	movs	r2, #168\n"
+        "	lsls	r2, r2, #1\n"
+        "	adds	r0, r7, r2\n"
+        "	ldr	r1, [r0, #0]\n"
+        "	adds	r2, #4\n"
+        ".L11b48_080011BB0:\n"
+        "	adds	r0, r7, r2\n"
+        "	ldr	r2, [r0, #0]\n"
+        "	movs	r0, #96\n"
+        "	mov	r8, r0\n"
+        "	str	r0, [sp, #0]\n"
+        "	movs	r6, #5\n"
+        "	str	r6, [sp, #4]\n"
+        "	movs	r4, #1\n"
+        "	str	r4, [sp, #8]\n"
+        "	str	r4, [sp, #12]\n"
+        "	movs	r5, #0\n"
+        "	str	r5, [sp, #16]\n"
+        "	mov	r0, r9\n"
+        "	movs	r3, #160\n"
+        "	bl sub_08007BFC\n"
+        "	movs	r1, #174\n"
+        "	lsls	r1, r1, #1\n"
+        "	adds	r0, r7, r1\n"
+        "	ldr	r1, [r0, #0]\n"
+        "	movs	r2, #176\n"
+        "	lsls	r2, r2, #1\n"
+        "	adds	r0, r7, r2\n"
+        "	ldr	r2, [r0, #0]\n"
+        "	mov	r0, r8\n"
+        "	str	r0, [sp, #0]\n"
+        "	str	r6, [sp, #4]\n"
+        "	str	r4, [sp, #8]\n"
+        "	str	r4, [sp, #12]\n"
+        "	str	r5, [sp, #16]\n"
+        "	mov	r0, r9\n"
+        "	movs	r3, #184\n"
+        "	bl sub_08007BFC\n"
+        "	movs	r1, #180\n"
+        "	lsls	r1, r1, #1\n"
+        "	adds	r0, r7, r1\n"
+        "	ldr	r1, [r0, #0]\n"
+        "	movs	r2, #182\n"
+        "	lsls	r2, r2, #1\n"
+        "	adds	r0, r7, r2\n"
+        "	ldr	r2, [r0, #0]\n"
+        "	mov	r0, r8\n"
+        "	str	r0, [sp, #0]\n"
+        "	str	r6, [sp, #4]\n"
+        "	str	r4, [sp, #8]\n"
+        "	str	r4, [sp, #12]\n"
+        "	str	r5, [sp, #16]\n"
+        "	mov	r0, r9\n"
+        "	movs	r3, #208\n"
+        "	bl sub_08007BFC\n"
+        "	b .L11b48_080011CAC\n"
+        ".L11b48_080011C1A:\n"
+        "	adds	r5, r7, #0\n"
+        "	adds	r5, #32\n"
+        "	movs	r1, #168\n"
+        "	lsls	r1, r1, #1\n"
+        "	adds	r0, r7, r1\n"
+        "	ldr	r1, [r0, #0]\n"
+        "	movs	r2, #170\n"
+        "	lsls	r2, r2, #1\n"
+        "	adds	r0, r7, r2\n"
+        "	ldr	r2, [r0, #0]\n"
+        "	movs	r0, #96\n"
+        "	mov	r9, r0\n"
+        "	str	r0, [sp, #0]\n"
+        "	movs	r0, #5\n"
+        "	mov	r8, r0\n"
+        "	str	r0, [sp, #4]\n"
+        "	movs	r4, #1\n"
+        "	str	r4, [sp, #8]\n"
+        "	str	r4, [sp, #12]\n"
+        "	movs	r6, #0\n"
+        "	str	r6, [sp, #16]\n"
+        "	adds	r0, r5, #0\n"
+        "	movs	r3, #160\n"
+        "	bl sub_08007BFC\n"
+        "	adds	r0, r7, #0\n"
+        "	adds	r0, #190\n"
+        "	ldrh	r0, [r0, #0]\n"
+        "	cmp	r0, #99\n"
+        "	beq .L11b48_080011C7C\n"
+        "	movs	r1, #174\n"
+        "	lsls	r1, r1, #1\n"
+        "	adds	r0, r7, r1\n"
+        "	ldr	r1, [r0, #0]\n"
+        "	movs	r2, #176\n"
+        "	lsls	r2, r2, #1\n"
+        "	adds	r0, r7, r2\n"
+        "	ldr	r2, [r0, #0]\n"
+        "	mov	r0, r9\n"
+        "	str	r0, [sp, #0]\n"
+        "	mov	r0, r8\n"
+        "	str	r0, [sp, #4]\n"
+        "	str	r4, [sp, #8]\n"
+        "	str	r4, [sp, #12]\n"
+        "	str	r6, [sp, #16]\n"
+        "	adds	r0, r5, #0\n"
+        "	movs	r3, #184\n"
+        "	bl sub_08007BFC\n"
+        ".L11b48_080011C7C:\n"
+        "	adds	r0, r7, #0\n"
+        "	adds	r0, #192\n"
+        "	ldrh	r0, [r0, #0]\n"
+        "	cmp	r0, #99\n"
+        "	beq .L11b48_080011CAC\n"
+        "	movs	r1, #180\n"
+        "	lsls	r1, r1, #1\n"
+        "	adds	r0, r7, r1\n"
+        "	ldr	r1, [r0, #0]\n"
+        "	movs	r2, #182\n"
+        "	lsls	r2, r2, #1\n"
+        "	adds	r0, r7, r2\n"
+        "	ldr	r2, [r0, #0]\n"
+        "	mov	r0, r9\n"
+        "	str	r0, [sp, #0]\n"
+        "	mov	r0, r8\n"
+        "	str	r0, [sp, #4]\n"
+        "	str	r4, [sp, #8]\n"
+        "	str	r4, [sp, #12]\n"
+        "	str	r6, [sp, #16]\n"
+        "	adds	r0, r5, #0\n"
+        "	movs	r3, #208\n"
+        "	bl sub_08007BFC\n"
+        ".L11b48_080011CAC:\n"
+        "	add	sp, #20\n"
+        "	pop	{r3, r4}\n"
+        "	mov	r8, r3\n"
+        "	mov	r9, r4\n"
+        "	pop	{r4, r5, r6, r7}\n"
+        "	pop	{r0}\n"
+        "	bx	r0\n"
+        "	movs	r0, r0\n"
+        ".syntax divided\n"
+    );
 }
+
 void _080011B48(void *a) __attribute__((alias("MenuFF78_11B48")));
 void Sub_080011B48(void *a) __attribute__((alias("MenuFF78_11B48")));
 void sub_080011B48(void *a) __attribute__((alias("MenuFF78_11B48")));

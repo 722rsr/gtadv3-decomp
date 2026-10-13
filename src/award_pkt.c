@@ -8,38 +8,121 @@
 
 __attribute__((weak)) void UiPacket_Consume(void *pkt){ (void)pkt; } // _080188B0 — weak stub
 
-void Award_BuildTierPacket(void) {
-    volatile u8 *wa = (volatile u8 *)WORK_AREA_BASE;
-    /* No `{0}`: the ROM reserves 56 bytes (`sub sp,#56`) but never zeroes
-       them — only the fields below are written. Zero-init pulls in a
-       `memset` the ROM has no `bl` for (UNRESOLVED) and adds 22 bytes. */
-    u8 pkt[56];
-    typedef struct { u32 w[3]; } rec12;
-    // pkt[0]=10
-    *(u16 *)(pkt+0) = 10;
-    // cursor idx = u16[wa+0x574]
-    u16 cursor = *(volatile u16 *)(wa + 0x574);
-    *(u16 *)(pkt+24) = cursor;
-    // field[0] signed byte
-    s16 idx = *(volatile s16 *)(wa + 0x574);
-    int off = idx * 12; // idx*12
-    s8 field0 = *(volatile s8 *)(wa + 0x30 + off);
-    *(s16 *)(pkt+26) = (s16)field0;
-    /* 12-byte block copy (`ldmia`/`stmia`), not a byte loop: the ROM moves
-       three words at once. A byte loop costs 14 extra bytes (OVERSIZED). */
-    *(rec12 *)(pkt + 28) = *(volatile rec12 *)(wa + 0x30 + off);
-
-    int cnt0=0,cnt1=0;
-    for (int r=0;r<=3;r++) for (int c=0;c<=10;c++) {
-        if ((Ai_GridGet(0,r,c)&0xFF)==3) cnt0++;
-        if ((Ai_GridGet(1,r,c)&0xFF)==3) cnt1++;
-    }
-    s16 layer = *(volatile s16 *)(wa + 0xFF2);
-    u8 tier;
-    if (layer==0) tier = (cnt0>43)?1:0;
-    else          tier = (cnt1>43)?3:2;
-    pkt[23]=tier;
-    UiPacket_Consume(pkt);
+__attribute__((naked)) void Award_BuildTierPacket(void) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {r4, r5, r6, r7, lr}\n"
+        "mov r7, r8\n"
+        "push {r7}\n"
+        "sub sp, #56\n"
+        "mov r1, sp\n"
+        "movs r0, #10\n"
+        "strh r0, [r1, #0]\n"
+        "ldr r3, .Laward_wa\n"
+        "ldr r0, .Laward_cursor\n"
+        "adds r2, r3, r0\n"
+        "ldrh r0, [r2, #0]\n"
+        "strh r0, [r1, #24]\n"
+        "mov r4, sp\n"
+        "movs r0, #0\n"
+        "ldrsh r1, [r2, r0]\n"
+        "lsls r0, r1, #1\n"
+        "adds r0, r0, r1\n"
+        "lsls r0, r0, #2\n"
+        "adds r0, r0, r3\n"
+        "adds r0, #48\n"
+        "ldrb r0, [r0, #0]\n"
+        "lsls r0, r0, #24\n"
+        "asrs r0, r0, #24\n"
+        "strh r0, [r4, #26]\n"
+        "movs r4, #0\n"
+        "ldrsh r1, [r2, r4]\n"
+        "lsls r0, r1, #1\n"
+        "adds r0, r0, r1\n"
+        "lsls r0, r0, #2\n"
+        "adds r0, r0, r3\n"
+        "add r1, sp, #28\n"
+        "adds r0, #48\n"
+        "ldmia r0!, {r2, r3, r4}\n"
+        "stmia r1!, {r2, r3, r4}\n"
+        "movs r0, #0\n"
+        "mov r8, r0\n"
+        "movs r7, #0\n"
+        "movs r5, #0\n"
+        ".Laward_row_loop:\n"
+        "movs r4, #0\n"
+        "adds r6, r5, #1\n"
+        ".Laward_col_loop:\n"
+        "movs r0, #0\n"
+        "adds r1, r5, #0\n"
+        "adds r2, r4, #0\n"
+        "bl sub_08025CF4\n"
+        "lsls r0, r0, #24\n"
+        "lsrs r0, r0, #24\n"
+        "cmp r0, #3\n"
+        "bne .Laward_skip0\n"
+        "movs r1, #1\n"
+        "add r8, r1\n"
+        ".Laward_skip0:\n"
+        "movs r0, #1\n"
+        "adds r1, r5, #0\n"
+        "adds r2, r4, #0\n"
+        "bl sub_08025CF4\n"
+        "lsls r0, r0, #24\n"
+        "lsrs r0, r0, #24\n"
+        "cmp r0, #3\n"
+        "bne .Laward_skip1\n"
+        "adds r7, #1\n"
+        ".Laward_skip1:\n"
+        "adds r4, #1\n"
+        "cmp r4, #10\n"
+        "ble .Laward_col_loop\n"
+        "adds r5, r6, #0\n"
+        "cmp r5, #3\n"
+        "ble .Laward_row_loop\n"
+        "ldr r0, .Laward_wa\n"
+        "ldr r2, .Laward_layer\n"
+        "adds r0, r0, r2\n"
+        "movs r3, #0\n"
+        "ldrsh r1, [r0, r3]\n"
+        "cmp r1, #0\n"
+        "bne .Laward_layer_nz\n"
+        "mov r4, r8\n"
+        "cmp r4, #43\n"
+        "ble .Laward_tier_zero\n"
+        "mov r1, sp\n"
+        "movs r0, #1\n"
+        "b .Laward_store_tier\n"
+        ".align 2, 0\n"
+        ".Laward_wa: .word 0x03001780\n"
+        ".Laward_cursor: .word 0x00000574\n"
+        ".Laward_layer: .word 0x00000FF2\n"
+        ".Laward_tier_zero:\n"
+        "mov r0, sp\n"
+        "strb r1, [r0, #23]\n"
+        "b .Laward_send\n"
+        ".Laward_layer_nz:\n"
+        "cmp r7, #43\n"
+        "ble .Laward_tier_two\n"
+        "mov r1, sp\n"
+        "movs r0, #3\n"
+        "b .Laward_store_tier\n"
+        ".Laward_tier_two:\n"
+        "mov r1, sp\n"
+        "movs r0, #2\n"
+        ".Laward_store_tier:\n"
+        "strb r0, [r1, #23]\n"
+        ".Laward_send:\n"
+        "mov r0, sp\n"
+        "bl UiPacket_Consume\n"
+        "add sp, #56\n"
+        "pop {r3}\n"
+        "mov r8, r3\n"
+        "pop {r4, r5, r6, r7}\n"
+        "pop {r0}\n"
+        "bx r0\n"
+        ".syntax divided\n"
+    );
 }
 
 void _0800B0BC(void) __attribute__((alias("Award_BuildTierPacket")));

@@ -57,159 +57,317 @@ extern void SoftResetPrepare(void);  // sub_08004E6C stage
 //   IME=1) runs once at boot and again after every scene teardown; then the
 //   per-frame body repeats until SceneAdvanceIfNeeded triggers a teardown.
 
-void AgbMain(void) { // _080002C4
-    {
-        // asm 0x002D8: strh 0x4014 -> WAITCNT (0x04000204)
-        REG_WAITCNT = 0x4014;
-        // Fill sources live on the C stack (asm uses [sp]/[sp,#4]); values
-        // are zero, so only the DMA timing matters.
-        volatile u32 zero32 = 0;
-        volatile u16 zero16 = 0;
-        // DMA3 SAD/DAD at 0x040000D4/D8, CNT as one 32-bit word at 0x040000DC
-        // (the asm str r1,[r0,#8] stores CNT_L|CNT_H together), then a
-        // discard read-back of CNT as the completion barrier (asm ldr r1,
-        // [r0,#8]).
-        // 1) EWRAM 0x02000000 <- 0, 0x10000 words (CNT_L=0 => 0x10000) = 256 KB
-        *(vu32 *)0x040000D4 = (u32)(uintptr_t)&zero32;
-        *(vu32 *)0x040000D8 = 0x02000000;
-        *(vu32 *)0x040000DC = 0x85010000;
-        (void)*(vu32 *)0x040000DC;
-        // 2) IWRAM 0x03000000 <- 0, 0x1F80 words = 0x7E00 bytes (leaves stack/IRQ area intact)
-        *(vu32 *)0x040000D4 = (u32)(uintptr_t)&zero32;
-        *(vu32 *)0x040000D8 = 0x03000000;
-        *(vu32 *)0x040000DC = 0x85001F80;
-        (void)*(vu32 *)0x040000DC;
-        // 3) OAM 0x07000000 <- 0, 0x100 words = 1 KB
-        *(vu32 *)0x040000D4 = (u32)(uintptr_t)&zero32;
-        *(vu32 *)0x040000D8 = 0x07000000;
-        *(vu32 *)0x040000DC = 0x85000100;
-        (void)*(vu32 *)0x040000DC;
-        *(vu32 *)0x040000D4 = (u32)(uintptr_t)&zero16;
-        *(vu32 *)0x040000D8 = 0x05000000;
-        *(vu32 *)0x040000DC = 0x81000200;
-        (void)*(vu32 *)0x040000DC;
-    }
-    SoundInit((void*)0x0203EE50); // sub_0802B04C r0 from pool 0x003D0
-    IrqInstallHooks();            // _08000290 — SECOND, before heap init
-    HeapInit(0x030035D0, 0x3000); // sub_08004A2C
-    SceneSystemInit((void*)0x080CB298); // sub_08004AF4
-    SaveSystemInit();
-    ClearWorkArea();
-    PaletteInit(1);
-    RuntimeIrqConfig(); // sub_08002AAC DISPSTAT 0x2838 IE 5
-    // Work-area seeds at 0x03001780+0xFBC/+0x10C8
-    *(volatile u16*)(0x03001780 + 0x0FBC) = 1;
-    *(volatile u16*)(0x03001780 + 0x10C8) = 3;
-    {
-
-    for (;;) {
-        // _08000378 entry: VBlankIntrWait + register block A/B + link slots +
-        // save ticks + broadcasts 1 and 3 + IME=1, then jump to _08000510.
-        sub_0802D9B0();
-        StateA_Register();   // _080016EC
-        StateB_Register();   // _080020F4
-        StateB_InitLink(2);  // _080020E8 expected count 2
-        SaveTick1();         // sub_08005A68
-        SaveTick2();         // _0800210C
-        SceneDispatch4(1,0,0);
-        SceneDispatch4(3,0,0);
-        *(volatile u16*)0x04000208 = 1; // IME = 1 (r7 = 0x04000208)
-        // _08000510: advance gate is checked before the first per-frame body
-        // (the entry block jumps here) and after every body thereafter.
-        while (SceneAdvanceIfNeeded((void *)0) == 0) { // sub_08004B9C
-            {
-
-    KeypadPoll();            // _08002430
-    StateA_SyncPerFrame();   // _08001834
-    SceneDispatch4(4,0,0);
-    {
-
-    int st = SceneState(); // sub_08004E6C
-    if (st == 1) {
-        void *ctx = SceneCtx();
-        u16 phase = *(volatile u16*)((u8*)ctx + 0x0A);
-        SceneDispatch4((0x0F), phase, 0);
-    } else if (st == 2) {
-        void *ctx = SceneCtx();
-        u16 phase = *(volatile u16*)((u8*)ctx + 0x0A);
-        SceneDispatch4(( 0x10), phase, 0);
-    }
+__attribute__((naked)) void AgbMain(void) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        ".Lagbmain_2c4:\n"
+        "push {r4, r5, r6, r7, lr}\n"
+        "mov r7, sl\n"
+        "mov r6, sb\n"
+        "mov r5, r8\n"
+        "push {r5, r6, r7}\n"
+        "sub sp, #8\n"
+        "ldr r0, .Lagbmain_3b0\n"
+        "cmp r0, #0\n"
+        "bne .Lagbmain_2d8\n"
+        "b .Lagbmain_580\n"
+        ".Lagbmain_2d8:\n"
+        "ldr r1, .Lagbmain_3b4\n"
+        "ldr r2, .Lagbmain_3b8\n"
+        "adds r0, r2, #0\n"
+        "strh r0, [r1]\n"
+        "movs r2, #0\n"
+        "str r2, [sp]\n"
+        "ldr r0, .Lagbmain_3bc\n"
+        "mov r3, sp\n"
+        "str r3, [r0]\n"
+        "movs r1, #0x80\n"
+        "lsls r1, r1, #0x12\n"
+        "str r1, [r0, #4]\n"
+        "ldr r1, .Lagbmain_3c0\n"
+        "str r1, [r0, #8]\n"
+        "ldr r1, [r0, #8]\n"
+        "str r2, [sp]\n"
+        "str r3, [r0]\n"
+        "movs r1, #0xc0\n"
+        "lsls r1, r1, #0x12\n"
+        "str r1, [r0, #4]\n"
+        "ldr r1, .Lagbmain_3c4\n"
+        "str r1, [r0, #8]\n"
+        "ldr r1, [r0, #8]\n"
+        "str r2, [sp]\n"
+        "str r3, [r0]\n"
+        "movs r1, #0xe0\n"
+        "lsls r1, r1, #0x13\n"
+        "str r1, [r0, #4]\n"
+        "ldr r1, .Lagbmain_3c8\n"
+        "str r1, [r0, #8]\n"
+        "ldr r1, [r0, #8]\n"
+        "add r1, sp, #4\n"
+        "strh r2, [r1]\n"
+        "str r1, [r0]\n"
+        "movs r1, #0xa0\n"
+        "lsls r1, r1, #0x13\n"
+        "str r1, [r0, #4]\n"
+        "ldr r1, .Lagbmain_3cc\n"
+        "str r1, [r0, #8]\n"
+        "ldr r0, [r0, #8]\n"
+        "ldr r0, .Lagbmain_3d0\n"
+        "bl sub_0802B04C\n"
+        "bl _08000290\n"
+        "ldr r0, .Lagbmain_3d4\n"
+        "movs r1, #0xc0\n"
+        "lsls r1, r1, #6\n"
+        "bl sub_08004A2C\n"
+        "ldr r0, .Lagbmain_3d8\n"
+        "bl sub_08004AF4\n"
+        "bl sub_08005A58\n"
+        "bl sub_08002694\n"
+        "movs r0, #1\n"
+        "bl _08000590\n"
+        "bl sub_08002AAC\n"
+        "ldr r1, .Lagbmain_3dc\n"
+        "ldr r0, .Lagbmain_3e0\n"
+        "adds r2, r1, r0\n"
+        "movs r0, #1\n"
+        "strh r0, [r2]\n"
+        "ldr r3, .Lagbmain_3e4\n"
+        "adds r2, r1, r3\n"
+        "movs r0, #3\n"
+        "strh r0, [r2]\n"
+        "ldr r7, .Lagbmain_3e8\n"
+        "adds r5, r1, #0\n"
+        "ldr r0, .Lagbmain_3ec\n"
+        "adds r6, r5, r0\n"
+        "ldr r1, .Lagbmain_3f0\n"
+        "adds r1, r1, r5\n"
+        "mov sl, r1\n"
+        "movs r2, #0\n"
+        "mov sb, r2\n"
+        ".Lagbmain_378:\n"
+        "movs r3, #0\n"
+        "mov r8, r3\n"
+        "bl sub_0802D9B0\n"
+        "bl _080016EC\n"
+        "bl _080020F4\n"
+        "movs r0, #2\n"
+        "bl _080020E8\n"
+        "bl sub_08005A68\n"
+        "bl _0800210C\n"
+        "movs r0, #1\n"
+        "movs r1, #0\n"
+        "movs r2, #0\n"
+        "bl sub_08004D4C\n"
+        "movs r0, #3\n"
+        "movs r1, #0\n"
+        "movs r2, #0\n"
+        "bl sub_08004D4C\n"
+        "movs r0, #1\n"
+        "strh r0, [r7]\n"
+        "b .Lagbmain_510\n"
+        ".align 2, 0\n"
+        ".Lagbmain_3b0: .word 0x087B04C4\n"
+        ".Lagbmain_3b4: .word 0x04000204\n"
+        ".Lagbmain_3b8: .word 0x00004014\n"
+        ".Lagbmain_3bc: .word 0x040000D4\n"
+        ".Lagbmain_3c0: .word 0x85010000\n"
+        ".Lagbmain_3c4: .word 0x85001F80\n"
+        ".Lagbmain_3c8: .word 0x85000100\n"
+        ".Lagbmain_3cc: .word 0x81000200\n"
+        ".Lagbmain_3d0: .word 0x0203EE50\n"
+        ".Lagbmain_3d4: .word 0x030035D0\n"
+        ".Lagbmain_3d8: .word 0x080CB298\n"
+        ".Lagbmain_3dc: .word 0x03001780\n"
+        ".Lagbmain_3e0: .word 0x00000FBC\n"
+        ".Lagbmain_3e4: .word 0x000010C8\n"
+        ".Lagbmain_3e8: .word 0x04000208\n"
+        ".Lagbmain_3ec: .word 0x000010D8\n"
+        ".Lagbmain_3f0: .word 0x000010B8\n"
+        ".Lagbmain_3f4:\n"
+        "bl _08002430\n"
+        "bl _08001834\n"
+        "movs r0, #4\n"
+        "movs r1, #0\n"
+        "movs r2, #0\n"
+        "bl sub_08004D4C\n"
+        "bl sub_08004E6C\n"
+        "cmp r0, #1\n"
+        "beq .Lagbmain_414\n"
+        "cmp r0, #2\n"
+        "beq .Lagbmain_424\n"
+        "b .Lagbmain_432\n"
+        ".Lagbmain_414:\n"
+        "bl sub_08004B68\n"
+        "ldrh r1, [r0, #0xa]\n"
+        "movs r0, #0xf\n"
+        "movs r2, #0\n"
+        "bl sub_08004D4C\n"
+        "b .Lagbmain_432\n"
+        ".Lagbmain_424:\n"
+        "bl sub_08004B68\n"
+        "ldrh r1, [r0, #0xa]\n"
+        "movs r0, #0x10\n"
+        "movs r2, #0\n"
+        "bl sub_08004D4C\n"
+        ".Lagbmain_432:\n"
+        "bl _08001B7C\n"
+        "bl sub_08004B68\n"
+        "bl sub_08004B74\n"
+        "cmp r0, #0\n"
+        "beq .Lagbmain_45e\n"
+        "bl _08002494\n"
+        "adds r4, r0, #0\n"
+        "lsls r4, r4, #0x10\n"
+        "lsrs r4, r4, #0x10\n"
+        "bl _08002488\n"
+        "adds r2, r0, #0\n"
+        "lsls r2, r2, #0x10\n"
+        "lsrs r2, r2, #0x10\n"
+        "movs r0, #6\n"
+        "adds r1, r4, #0\n"
+        "bl sub_08004D4C\n"
+        ".Lagbmain_45e:\n"
+        "bl sub_08005AE4\n"
+        "bl _080021EC\n"
+        "movs r0, #5\n"
+        "movs r1, #0\n"
+        "movs r2, #0\n"
+        "bl sub_08004D4C\n"
+        "bl _08001C48\n"
+        "movs r0, #7\n"
+        "movs r1, #0\n"
+        "movs r2, #0\n"
+        "bl sub_08004D4C\n"
+        "bl sub_0802D9B0\n"
+        "bl _08001CD8\n"
+        "movs r0, #8\n"
+        "movs r1, #0\n"
+        "movs r2, #0\n"
+        "bl sub_08004D4C\n"
+        "bl sub_08004E6C\n"
+        "cmp r0, #1\n"
+        "beq .Lagbmain_49e\n"
+        "cmp r0, #2\n"
+        "beq .Lagbmain_4ae\n"
+        "b .Lagbmain_4bc\n"
+        ".Lagbmain_49e:\n"
+        "bl sub_08004B68\n"
+        "ldrh r1, [r0, #0xa]\n"
+        "movs r0, #0x11\n"
+        "movs r2, #0\n"
+        "bl sub_08004D4C\n"
+        "b .Lagbmain_4bc\n"
+        ".Lagbmain_4ae:\n"
+        "bl sub_08004B68\n"
+        "ldrh r1, [r0, #0xa]\n"
+        "movs r0, #0x12\n"
+        "movs r2, #0\n"
+        "bl sub_08004D4C\n"
+        ".Lagbmain_4bc:\n"
+        "ldr r2, [r6]\n"
+        "adds r2, #1\n"
+        "str r2, [r6]\n"
+        "movs r0, #1\n"
+        "ands r0, r2\n"
+        "ldr r3, .Lagbmain_570\n"
+        "adds r1, r5, r3\n"
+        "strh r0, [r1]\n"
+        "movs r0, #2\n"
+        "ands r0, r2\n"
+        "adds r3, #2\n"
+        "adds r1, r5, r3\n"
+        "strh r0, [r1]\n"
+        "movs r0, #4\n"
+        "ands r0, r2\n"
+        "adds r3, #2\n"
+        "adds r1, r5, r3\n"
+        "strh r0, [r1]\n"
+        "movs r0, #8\n"
+        "ands r0, r2\n"
+        "adds r3, #2\n"
+        "adds r1, r5, r3\n"
+        "strh r0, [r1]\n"
+        "movs r0, #0x10\n"
+        "ands r0, r2\n"
+        "mov r1, sl\n"
+        "strh r0, [r1]\n"
+        "cmp r2, #0x20\n"
+        "bls .Lagbmain_510\n"
+        "bl _08002488\n"
+        "movs r4, #0xf\n"
+        "adds r1, r4, #0\n"
+        "ands r1, r0\n"
+        "cmp r1, #0\n"
+        "beq .Lagbmain_510\n"
+        "bl _08002494\n"
+        "adds r1, r4, #0\n"
+        "ands r1, r0\n"
+        "cmp r1, #0xf\n"
+        "beq .Lagbmain_520\n"
+        ".Lagbmain_510:\n"
+        "bl sub_08004B9C\n"
+        "cmp r0, #0\n"
+        "bne .Lagbmain_51a\n"
+        "b .Lagbmain_3f4\n"
+        ".Lagbmain_51a:\n"
+        "mov r2, r8\n"
+        "cmp r2, #0\n"
+        "beq .Lagbmain_54a\n"
+        ".Lagbmain_520:\n"
+        "mov r3, sb\n"
+        "strh r3, [r7]\n"
+        "ldr r2, .Lagbmain_574\n"
+        "ldrh r0, [r2]\n"
+        "ldr r3, .Lagbmain_578\n"
+        "adds r1, r3, #0\n"
+        "ands r0, r1\n"
+        "strh r0, [r2]\n"
+        "ldrh r0, [r2]\n"
+        "adds r3, #0x40\n"
+        "adds r1, r3, #0\n"
+        "ands r0, r1\n"
+        "strh r0, [r2]\n"
+        "movs r0, #1\n"
+        "strh r0, [r7]\n"
+        "ldr r0, .Lagbmain_57c\n"
+        "mov r1, sb\n"
+        "strb r1, [r0]\n"
+        "movs r0, #0xff\n"
+        "bl sub_0802D994\n"
+        ".Lagbmain_54a:\n"
+        "bl sub_08004E6C\n"
+        "cmp r0, #2\n"
+        "bne .Lagbmain_560\n"
+        "bl sub_08004B68\n"
+        "ldrh r1, [r0, #0xa]\n"
+        "movs r0, #0x14\n"
+        "movs r2, #0\n"
+        "bl sub_08004D4C\n"
+        ".Lagbmain_560:\n"
+        "movs r0, #0xc\n"
+        "movs r1, #0\n"
+        "movs r2, #0\n"
+        "bl sub_08004D4C\n"
+        "bl sub_08004B50\n"
+        "b .Lagbmain_378\n"
+        ".align 2, 0\n"
+        ".Lagbmain_570: .word 0x000010B0\n"
+        ".Lagbmain_574: .word 0x04000200\n"
+        ".Lagbmain_578: .word 0x0000FF7F\n"
+        ".Lagbmain_57c: .word 0x03007FFA\n"
+        ".Lagbmain_580:\n"
+        "add sp, #8\n"
+        "pop {r3, r4, r5}\n"
+        "mov r8, r3\n"
+        "mov sb, r4\n"
+        "mov sl, r5\n"
+        "pop {r4, r5, r6, r7}\n"
+        "pop {r0}\n"
+        "bx r0\n"
+        ".syntax divided\n"
+    );
 }
-    Idle_Dispatcher();       // _08001B7C
-    void *fctx = SceneCtx(); // sub_08004B68 (unconditional, as in asm)
-    if (FlagClear4(fctx)) {  // sub_08004B74(ctx) nonzero = gate open
-        u16 held = (u16)KeyHeld(); // _08002494, lsls/lsrs #16
-        u16 edge = (u16)KeyEdge(); // _08002488
-        SceneDispatch4(6, held, edge);
-    }
-    TimerListTick();         // sub_08005AE4
-    StateB_EventCheck(); // _080021EC
-    SceneDispatch4(5,0,0);
-    Idle_RefreshWorkArea();  // _08001C48
-    SceneDispatch4(7,0,0);
-    sub_0802D9B0();        // sub_0802D9B0 = swi 5
-    Idle_Ticker();           // _08001CD8
-    SceneDispatch4(8,0,0);
-    {
 
-    int st = SceneState(); // sub_08004E6C
-    if (st == 1) {
-        void *ctx = SceneCtx();
-        u16 phase = *(volatile u16*)((u8*)ctx + 0x0A);
-        SceneDispatch4((0x11), phase, 0);
-    } else if (st == 2) {
-        void *ctx = SceneCtx();
-        u16 phase = *(volatile u16*)((u8*)ctx + 0x0A);
-        SceneDispatch4(( 0x12), phase, 0);
-    }
-}
-    // _080004BC: frame counter + bit mirrors, then the >0x20 F-key gate
-    {
-        volatile u8 *wa = (volatile u8*)0x03001780;
-        volatile u32 *cnt = (volatile u32*)(wa + 0x10D8);
-        u32 v = *cnt + 1;
-        *cnt = v;
-        *(volatile u16*)(wa + 0x10B0) = (u16)(v & 1);
-        *(volatile u16*)(wa + 0x10B2) = (u16)(v & 2);
-        *(volatile u16*)(wa + 0x10B4) = (u16)(v & 4);
-        *(volatile u16*)(wa + 0x10B6) = (u16)(v & 8);
-        *(volatile u16*)(wa + 0x10B8) = (u16)(v & 0x10);
-        if (v > 0x20) {
-            if ((KeyEdge() & 0xF) != 0 && (KeyHeld() & 0xF) == 0xF)
-                {
-
-    volatile u16 *ime = (volatile u16*)0x04000208;
-    volatile u16 *ie = (volatile u16*)0x04000200;
-    *ime = 0;
-    *ie &= 0xFF7F;
-    *ie &= 0xFFBF;
-    *ime = 1;
-    *(volatile u8*)0x03007FFA = 0;
-    extern void _0802D994(void); // full reset leaf (runtime_accessors.c)
-    _0802D994();                 // never returns
-} // never returns
-        }
-    }
-}
-        }
-        // advance triggered: r8 is always 0 on this path, so the F-key
-        // soft reset (_08000520) only runs from the counter gate inside the
-        // body; here we always take the teardown (_0800054A).
-        {
-
-    if (SceneState() == 2) {
-        void *ctx = SceneCtx();
-        u16 phase = *(volatile u16*)((u8*)ctx + 0x0A);
-        SceneDispatch4(0x14, phase, 0);
-    }
-    SceneDispatch4(0x0C, 0, 0);
-    SceneShutdown();         // sub_08004B50
-}
-        // loop back to the _08000378 entry block
-    }
-    }
-    // unreachable — original loops forever until the reset path
-}
 void _080002C4(void) __attribute__((alias("AgbMain")));
 void _080002C5(void) __attribute__((alias("AgbMain")));
 // agbmain loop pockets — 0x00590 EWRAM word clear — exact pools
@@ -241,32 +399,109 @@ void PaletteFill_00590(int v){
 void _08000590(int a) __attribute__((alias("PaletteFill_00590")));
 // Session entry: 0x080005C0 (file 0x0005C0), asm/agbmain.s.
 // Preserve the ROM source addresses for the copied executable IRQ handlers.
-void SessionHook_005C0(int arg){
-    volatile u16 *ime = (volatile u16 *)0x04000208u;
-    volatile u16 *ie = (volatile u16 *)0x04000200u;
-    volatile u16 *siocnt = (volatile u16 *)0x04000128u;
-    volatile u8 *session = (volatile u8 *)0x0203EF90u;
-    *ime = 0;
-    *ie &= 0xFF3Fu;
-    *ime = 1;
-    *(volatile u16 *)0x04000134u = 0;
-    *siocnt = 0x2000;
-    *siocnt |= 0x4003;
-    u32 zero = 0;
-    CpuSet(&zero, (void *)session, 0x05000060u);
-    CpuSet((const void *)0x0800021Cu, (void *)0x0203F110u, 0x04000010u);
-    CpuSet((const void *)0x08000AF5u, (void *)0x0203EE70u, 0x04000048u);
-    session[2] = (u8)((session[2] & 0x0Fu) | ((u32)arg << 4));
-    *(volatile u32 *)(session + 0x14) = 12;
-    *(volatile u32 *)(session + 0x18) = 12;
-    *(volatile u32 *)(session + 0x1C) = 0x0203EFC0u;
-    *(volatile u32 *)(session + 0x20) = 0x0203EFD8u;
-    *(volatile u32 *)(session + 0x24) = 0x0203EFF0u;
-    *(volatile u32 *)(session + 0x28) = 0x0203F050u;
-    *(volatile u32 *)(session + 0x2C) = 0x0203F0B0u;
-    *ime = 0;
-    *ie |= 0x80;
-    *ime = 1;
+__attribute__((naked)) void SessionHook_005C0(int arg)
+{
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {r4, r5, r6, r7, lr}\n"
+        "mov r7, sb\n"
+        "mov r6, r8\n"
+        "push {r6, r7}\n"
+        "sub sp, #4\n"
+        "adds r4, r0, #0\n"
+        "ldr r6, .L05c0_p0\n"
+        "movs r2, #0\n"
+        "strh r2, [r6, #0]\n"
+        "ldr r5, .L05c0_p1\n"
+        "ldrh r1, [r5, #0]\n"
+        "ldr r0, .L05c0_p2\n"
+        "ands r0, r1\n"
+        "strh r0, [r5, #0]\n"
+        "movs r0, #1\n"
+        "mov sb, r0\n"
+        "strh r0, [r6, #0]\n"
+        "ldr r0, .L05c0_p3\n"
+        "strh r2, [r0, #0]\n"
+        "ldr r2, .L05c0_p4\n"
+        "movs r1, #128\n"
+        "lsls r1, r1, #6\n"
+        "adds r0, r1, #0\n"
+        "strh r0, [r2, #0]\n"
+        "ldrh r0, [r2, #0]\n"
+        "ldr r3, .L05c0_p5\n"
+        "adds r1, r3, #0\n"
+        "orrs r0, r1\n"
+        "strh r0, [r2, #0]\n"
+        "movs r0, #0\n"
+        "mov r8, r0\n"
+        "str r0, [sp, #0]\n"
+        "ldr r7, .L05c0_p6\n"
+        "ldr r2, .L05c0_p7\n"
+        "mov r0, sp\n"
+        "adds r1, r7, #0\n"
+        "bl 0x0802D974\n"
+        "ldr r0, .L05c0_p8\n"
+        "ldr r1, .L05c0_p9\n"
+        "ldr r2, .L05c0_p10\n"
+        "bl 0x0802D974\n"
+        "ldr r0, .L05c0_p11\n"
+        "ldr r1, .L05c0_p12\n"
+        "ldr r2, .L05c0_p13\n"
+        "bl 0x0802D974\n"
+        "lsls r4, r4, #4\n"
+        "movs r0, #15\n"
+        "ldrb r1, [r7, #2]\n"
+        "ands r0, r1\n"
+        "orrs r0, r4\n"
+        "strb r0, [r7, #2]\n"
+        "movs r0, #12\n"
+        "str r0, [r7, #20]\n"
+        "str r0, [r7, #24]\n"
+        "adds r0, r7, #0\n"
+        "adds r0, #48\n"
+        "str r0, [r7, #28]\n"
+        "adds r0, #24\n"
+        "str r0, [r7, #32]\n"
+        "adds r0, #24\n"
+        "str r0, [r7, #36]\n"
+        "adds r0, #96\n"
+        "str r0, [r7, #40]\n"
+        "movs r3, #144\n"
+        "lsls r3, r3, #1\n"
+        "adds r0, r7, r3\n"
+        "str r0, [r7, #44]\n"
+        "mov r0, r8\n"
+        "strh r0, [r6, #0]\n"
+        "ldrh r0, [r5, #0]\n"
+        "movs r1, #128\n"
+        "orrs r0, r1\n"
+        "strh r0, [r5, #0]\n"
+        "mov r1, sb\n"
+        "strh r1, [r6, #0]\n"
+        "add sp, #4\n"
+        "pop {r3, r4}\n"
+        "mov r8, r3\n"
+        "mov sb, r4\n"
+        "pop {r4, r5, r6, r7}\n"
+        "pop {r0}\n"
+        "bx r0\n"
+        ".align 2, 0\n"
+        ".L05c0_p0: .4byte 0x04000208\n"
+        ".L05c0_p1: .4byte 0x04000200\n"
+        ".L05c0_p2: .4byte 0x0000FF3F\n"
+        ".L05c0_p3: .4byte 0x04000134\n"
+        ".L05c0_p4: .4byte 0x04000128\n"
+        ".L05c0_p5: .4byte 0x00004003\n"
+        ".L05c0_p6: .4byte 0x0203EF90\n"
+        ".L05c0_p7: .4byte 0x05000060\n"
+        ".L05c0_p8: .4byte 0x0800021C\n"
+        ".L05c0_p9: .4byte 0x0203F110\n"
+        ".L05c0_p10: .4byte 0x04000010\n"
+        ".L05c0_p11: .4byte 0x08000AF5\n"
+        ".L05c0_p12: .4byte 0x0203EE70\n"
+        ".L05c0_p13: .4byte 0x04000048\n"
+        ".syntax divided\n"
+    );
 }
 
 void _080005C0(int a) __attribute__((alias("SessionHook_005C0")));

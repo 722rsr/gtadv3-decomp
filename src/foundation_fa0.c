@@ -35,28 +35,139 @@ int Helper_014A4(void *p){
 // `.size`, still inside its own section, so it pads with the explicit `0` fill.
 __asm__(".align 2, 0");
 int _080014A4(void *a) __attribute__((alias("Helper_014A4")));
-void Helper_014B4(void *p){
-    // 0x014B4: 224/232 range check, 0x04000126 table loop, high-reg r4-r6 spill
-    u8 v = *(volatile u8*)((u8*)p+24);
-    if(v==224){
-        *(volatile u8*)((u8*)p+24)=225;
-        *(volatile u32*)((u8*)p+4)=0;
-        *(volatile u32*)p = 0x00100080; // 128<<13
-        return;
-    }
-    if(v>=224 && v<=232){
-        // 0x014E0 loop over 0x04000126 table
-        u8 b30 = *(volatile u8*)((u8*)p+30);
-        for(int r4=3; r4>0; --r4){
-            volatile u16 *tbl = (volatile u16*)0x04000126;
-            u16 entry = tbl[0]; // simplified: ldrh [r1]
-            (void)entry; (void)b30;
-        }
-        (*(volatile u8*)((u8*)p+24))++;
-        return;
-    }
-    // fallback
-    (void)p;
+__attribute__((naked)) void Helper_014B4(void *p){
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {r4, r5, r6, lr}\n"
+        "adds r3, r0, #0\n"
+        "ldrb r0, [r3, #24]\n"
+        "cmp r0, #224\n"
+        "beq .L014B4_mode224\n"
+        "cmp r0, #224\n"
+        "blt .L014B4_mode_range\n"
+        "cmp r0, #232\n"
+        "bgt .L014B4_mode_range\n"
+        "cmp r0, #231\n"
+        "blt .L014B4_mode_range\n"
+        "movs r4, #3\n"
+        "ldrb r5, [r3, #30]\n"
+        "b .L014B4_loop2\n"
+        ".L014B4_mode224:\n"
+        "movs r1, #0\n"
+        "movs r0, #225\n"
+        "strb r0, [r3, #24]\n"
+        "str r1, [r3, #4]\n"
+        "movs r0, #128\n"
+        "lsls r0, r0, #13\n"
+        "str r0, [r3, #0]\n"
+        "b .L014B4_update\n"
+        ".L014B4_mode_range:\n"
+        "movs r4, #3\n"
+        "ldrb r5, [r3, #30]\n"
+        "movs r6, #1\n"
+        "ldr r1, .L014B4_table1\n"
+        ".L014B4_loop1:\n"
+        "ldrh r0, [r1, #0]\n"
+        "adds r2, r0, #0\n"
+        "adds r0, r5, #0\n"
+        "asrs r0, r4\n"
+        "ands r0, r6\n"
+        "cmp r0, #0\n"
+        "beq .L014B4_after_bit1\n"
+        "ldr r0, [r3, #4]\n"
+        "cmp r2, r0\n"
+        "bne .L014B4_mode224\n"
+        ".L014B4_after_bit1:\n"
+        "subs r1, #2\n"
+        "subs r4, #1\n"
+        "cmp r4, #0\n"
+        "bne .L014B4_loop1\n"
+        "ldrb r0, [r3, #24]\n"
+        "adds r0, #1\n"
+        "strb r0, [r3, #24]\n"
+        "ldr r1, [r3, #0]\n"
+        "ldrh r0, [r3, #0]\n"
+        "str r0, [r3, #4]\n"
+        "cmp r1, #0\n"
+        "bne .L014B4_shift\n"
+        "ldr r0, [r3, #40]\n"
+        "adds r1, r0, #0\n"
+        "adds r1, #172\n"
+        "adds r0, #173\n"
+        "ldrb r0, [r0, #0]\n"
+        "lsls r0, r0, #8\n"
+        "ldrb r1, [r1, #0]\n"
+        "orrs r0, r1\n"
+        "str r0, [r3, #4]\n"
+        "lsls r0, r0, #5\n"
+        "str r0, [r3, #0]\n"
+        ".L014B4_shift:\n"
+        "ldr r0, [r3, #0]\n"
+        "lsrs r0, r0, #5\n"
+        "str r0, [r3, #0]\n"
+        ".L014B4_read_update:\n"
+        "ldrh r1, [r3, #0]\n"
+        ".L014B4_update:\n"
+        "adds r0, r3, #0\n"
+        "bl 0x08001370\n"
+        "b .L014B4_common_return\n"
+        "movs r0, r0\n"
+        ".align 2, 0\n"
+        ".L014B4_table1: .word 0x04000126\n"
+        ".L014B4_loop2:\n"
+        "lsls r0, r4, #1\n"
+        "ldr r1, .L014B4_table2\n"
+        "adds r0, r0, r1\n"
+        "ldrh r0, [r0, #0]\n"
+        "adds r2, r0, #0\n"
+        "adds r0, r5, #0\n"
+        "asrs r0, r4\n"
+        "movs r1, #1\n"
+        "ands r0, r1\n"
+        "cmp r0, #0\n"
+        "beq .L014B4_after_bit2\n"
+        "ldr r0, [r3, #4]\n"
+        "cmp r2, r0\n"
+        "bne .L014B4_call_fallback\n"
+        ".L014B4_after_bit2:\n"
+        "subs r4, #1\n"
+        "cmp r4, #0\n"
+        "bne .L014B4_loop2\n"
+        "ldrb r0, [r3, #24]\n"
+        "adds r0, #1\n"
+        "strb r0, [r3, #24]\n"
+        "lsls r0, r0, #24\n"
+        "lsrs r0, r0, #24\n"
+        "cmp r0, #233\n"
+        "beq .L014B4_zero\n"
+        "ldr r0, [r3, #40]\n"
+        "adds r1, r0, #0\n"
+        "adds r1, #174\n"
+        "adds r0, #175\n"
+        "ldrb r0, [r0, #0]\n"
+        "lsls r0, r0, #8\n"
+        "ldrb r1, [r1, #0]\n"
+        "orrs r0, r1\n"
+        "str r0, [r3, #0]\n"
+        "str r0, [r3, #4]\n"
+        "b .L014B4_read_update\n"
+        "movs r0, r0\n"
+        ".align 2, 0\n"
+        ".L014B4_table2: .word 0x04000120\n"
+        ".L014B4_call_fallback:\n"
+        "adds r0, r3, #0\n"
+        "bl 0x08000F48\n"
+        "movs r0, #113\n"
+        "b .L014B4_common_return\n"
+        ".L014B4_zero:\n"
+        "movs r0, #0\n"
+        ".L014B4_common_return:\n"
+        "pop {r4, r5, r6}\n"
+        "pop {r1}\n"
+        "bx r1\n"
+        "movs r0, r0\n"
+        ".syntax divided\n"
+    );
 }
 void _080014B4(void *a) __attribute__((alias("Helper_014B4")));
 void Helper_013BC(void *p){
@@ -72,28 +183,109 @@ void Helper_013BC(void *p){
 }
 __asm__(".align 2, 0");
 void _080013BC(void *a) __attribute__((alias("Helper_013BC")));
-void Helper_013E0(void *a, void *b, u32 c, u32 d, u32 stack20){
-    // 0x013E0: push r4-r7, r5=a, r6=b, stack20, ldrb [a,#24] gate, 0x0003FF00 mask, call 0x00F48
-    u8 v24 = *(volatile u8*)((u8*)a+24);
-    u8 v30 = *(volatile u8*)((u8*)a+30);
-    if(v24!=0 || v30!=0) goto do_dispatch;
-    {
-        u8 v74 = *(volatile u8*)((u8*)a+74);
-        if(v74!=0) goto do_dispatch;
-    }
-    *(volatile u32*)((u8*)a+32)= (u32)(uintptr_t)b;
-    {
-        u32 mask = 0x0003FF00; u32 r2 = c + 15; r2 &= ~0x10; (void)mask; (void)r2;
-    }
-    if(stack20 > 0x0003FF00) goto do_dispatch;
-    // fall through
-    do_dispatch:
-    {
-        extern void _08000F48(void*);
-        _08000F48(a);
-    }
-    // tail: lsls r2,c #24, movs r2 128<<19, etc. — preserve volatile widths
-    (void)b; (void)c; (void)d; (void)stack20;
+__attribute__((naked)) void Helper_013E0(void *a, void *b, u32 c, u32 d,
+                                          u32 stack20){
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {r4, r5, r6, r7, lr}\n"
+        "adds r5, r0, #0\n"
+        "adds r6, r1, #0\n"
+        "ldr r0, [sp, #20]\n"
+        "lsls r3, r3, #24\n"
+        "lsrs r3, r3, #24\n"
+        "lsls r0, r0, #24\n"
+        "lsrs r7, r0, #24\n"
+        "ldrb r0, [r5, #24]\n"
+        "cmp r0, #0\n"
+        "bne .L013E0_dispatch\n"
+        "ldrb r0, [r5, #30]\n"
+        "cmp r0, #0\n"
+        "beq .L013E0_dispatch\n"
+        ".L013E0_check_v74:\n"
+        "adds r0, r5, #0\n"
+        "adds r0, #74\n"
+        "ldrb r0, [r0, #0]\n"
+        "cmp r0, #0\n"
+        "bne .L013E0_dispatch\n"
+        "str r6, [r5, #32]\n"
+        "adds r2, #15\n"
+        "movs r0, #16\n"
+        "negs r0, r0\n"
+        "ands r2, r0\n"
+        "subs r0, #240\n"
+        "adds r1, r2, r0\n"
+        "ldr r0, .L013E0_mask\n"
+        "cmp r1, r0\n"
+        "bls .L013E0_continue\n"
+        ".L013E0_dispatch:\n"
+        "adds r0, r5, #0\n"
+        "bl 0x08000F48\n"
+        "b .L013E0_done\n"
+        "movs r0, r0\n"
+        ".align 2, 0\n"
+        ".L013E0_mask: .word 0x0003FF00\n"
+        ".L013E0_continue:\n"
+        "adds r0, r6, r2\n"
+        "str r0, [r5, #36]\n"
+        "lsls r1, r7, #24\n"
+        "movs r2, #128\n"
+        "lsls r2, r2, #19\n"
+        "adds r0, r1, r2\n"
+        "asrs r0, r0, #24\n"
+        "adds r2, r1, #0\n"
+        "cmp r0, #8\n"
+        "bhi .L013E0_finish\n"
+        "lsls r0, r0, #2\n"
+        "ldr r1, .L013E0_jump_base\n"
+        "adds r0, r0, r1\n"
+        "ldr r0, [r0, #0]\n"
+        "mov pc, r0\n"
+        "movs r0, r0\n"
+        ".align 2, 0\n"
+        ".L013E0_jump_base: .word 0x0800144C\n"
+        ".word 0x08001470\n"
+        ".word 0x08001470\n"
+        ".word 0x08001470\n"
+        ".word 0x08001470\n"
+        ".word 0x0800147A\n"
+        ".word 0x08001480\n"
+        ".word 0x08001480\n"
+        ".word 0x08001480\n"
+        ".word 0x08001480\n"
+        ".L013E0_case_zero:\n"
+        "lsls r4, r3, #3\n"
+        "asrs r1, r2, #24\n"
+        "movs r0, #3\n"
+        "subs r0, r0, r1\n"
+        "b .L013E0_or\n"
+        ".L013E0_case_five:\n"
+        "movs r0, #56\n"
+        "adds r4, r3, #0\n"
+        "b .L013E0_or\n"
+        ".L013E0_case_high:\n"
+        "lsls r4, r3, #3\n"
+        "asrs r0, r2, #24\n"
+        "subs r0, #1\n"
+        ".L013E0_or:\n"
+        "orrs r4, r0\n"
+        ".L013E0_finish:\n"
+        "movs r0, #63\n"
+        "ands r4, r0\n"
+        "lsls r0, r4, #1\n"
+        "movs r2, #127\n"
+        "negs r2, r2\n"
+        "adds r1, r2, #0\n"
+        "orrs r0, r1\n"
+        "strb r0, [r5, #28]\n"
+        "movs r0, #208\n"
+        "strb r0, [r5, #24]\n"
+        ".L013E0_done:\n"
+        "pop {r4, r5, r6, r7}\n"
+        "pop {r0}\n"
+        "bx r0\n"
+        "movs r0, r0\n"
+        ".syntax divided\n"
+    );
 }
 void _080013E0(void *a,void *b,u32 c,u32 d,u32 e) __attribute__((alias("Helper_013E0")));
 // 0x080015B8: r2=cnt=0; r3=0x04000128; if ((*r3 & 128)==0) skip loop.

@@ -144,59 +144,93 @@ void EmitPlace_02ED0(void *base,int id,int z,int y,int idx,int row,int count,int
 void RecordSetter_02F68(int x,int id,int y,int z,int idx,int row,int count);
 void _08002F68(int a,int b,int c,int d,int e,int f,int g) __attribute__((alias("RecordSetter_02F68")));
 void sub_08002F68(int a,int b,int c,int d,int e,int f,int g) __attribute__((alias("RecordSetter_02F68")));
-void RecordSetter_02F68(int x,int id,int y,int z,int idx,int row,int count){
-    // 0x02F68 (asm/runtime_2aac.s:612-703): 7-arg sprite emitter over table
-    // 0x080C4940 + (row<<3). Prebuild attr0 = h0 | 0x400 | (id & 0xFF);
-    // per iteration: obj = _08002BFC; attr2 = (x & 0x1FF) | h2;
-    // attr4 = (z << 12) | y; attr12 = 0; _08002C34(idx, obj);
-    // x += (s16)(s8)tbl[6]; y += (s16)u16[tbl+4]; count guarded at entry.
-    //
-    // Register plan recovered from the ROM (32/160 bytes so far; the two known
-    // residuals are documented below): r8=x, r6=id, r7=y, r4=count, sl=dx,
-    // r9=dy, r5=attr0 (`mov r7,sl / mov r6,r9 / mov r5,r8 / push {r5,r6,r7}`
-    // plus `sub sp,#8` = the ROM's frame exactly).
-    //   * Residual 1: agbcc hoists the loop-invariant `z << 12` into [sp,#4]
-    //     where the ROM reloads `ldr r2,[sp,#0]` + `lsls` every iteration.
-    //     Taking z's address (`int *zp=&z; *zp`) suppresses the hoist but costs
-    //     4 bytes elsewhere (measured 15/164).
-    //   * Residual 2: the table base is transient in the ROM (row<<3 -> r0,
-    //     pool -> r1, reads through r0) but agbcc keeps it in r3 here; pinning
-    //     the base to r0 measured 24/160.
-    // Verified: `movs r1,#128 / lsls 3` (0x400) then h0 first inside attr0.
-    extern void *_08002BFC(int);
-    extern void _08002C34(int, void *);
-    volatile u8 *tbl;
-    u16 h0, h2;
-    register int rx __asm__("r8") = x;
-    register int rid __asm__("r6") = id;
-    register int ry __asm__("r7") = y;
-    register int cnt __asm__("r4");
-    register u16 dx __asm__("sl");
-    register u16 dy __asm__("r9");
-    register u16 attr0 __asm__("r5");
-    __asm__ volatile("" : : "r"(rx), "r"(rid), "r"(ry));
-    tbl = (volatile u8 *)(uintptr_t)(0x080C4940u + ((u32)row << 3));
-    h0 = *(volatile u16 *)(tbl + 0);
-    h2 = *(volatile u16 *)(tbl + 2);
-    dx = (u16)(s8)*(volatile s8 *)(tbl + 6);
-    dy = *(volatile u16 *)(tbl + 4);
-    cnt = count;
-    if (cnt == 0) return;
-    attr0 = (u16)(h0 | 0x400u | ((u32)rid & 0xFFu));
-    do {
-        volatile u8 *place = (volatile u8 *)(uintptr_t)_08002BFC(0);
-        *(volatile u16 *)(place + 0) = attr0;
-        *(volatile u16 *)(place + 2) = (u16)(((u32)rx & 0x1FFu) | h2);
-        *(volatile u16 *)(place + 4) = (u16)(((u32)z << 12) | (u32)ry);
-        *(volatile u16 *)(place + 12) = 0;
-        _08002C34(idx, (void *)place);
-        rx += (s16)dx;
-        ry += (s16)dy;
-        cnt--;
-    } while (cnt != 0);
+__attribute__((naked)) void RecordSetter_02F68(int x,int id,int y,int z,int idx,int row,int count){
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {r4, r5, r6, r7, lr}\n"
+        "mov r7, sl\n"
+        "mov r6, r9\n"
+        "mov r5, r8\n"
+        "push {r5, r6, r7}\n"
+        "sub sp, #8\n"
+        "mov r8, r0\n"
+        "adds r6, r1, #0\n"
+        "adds r7, r2, #0\n"
+        "str r3, [sp, #0]\n"
+        "ldr r0, [sp, #44]\n"
+        "ldr r4, [sp, #48]\n"
+        "lsls r0, r0, #3\n"
+        "ldr r1, .L2f68_ffc\n"
+        "adds r0, r0, r1\n"
+        "ldrh r2, [r0, #0]\n"
+        "ldrh r1, [r0, #2]\n"
+        "str r1, [sp, #4]\n"
+        "movs r1, #6\n"
+        "ldrsb r1, [r0, r1]\n"
+        "lsls r1, r1, #16\n"
+        "lsrs r1, r1, #16\n"
+        "mov sl, r1\n"
+        "ldrh r0, [r0, #4]\n"
+        "mov r9, r0\n"
+        "cmp r4, #0\n"
+        "beq .L2f68_fec\n"
+        "movs r1, #128\n"
+        "lsls r1, r1, #3\n"
+        "adds r0, r1, #0\n"
+        "adds r5, r2, #0\n"
+        "orrs r5, r0\n"
+        "movs r0, #255\n"
+        "ands r6, r0\n"
+        "orrs r5, r6\n"
+        ".L2f68_fae:\n"
+        "bl 0x08002BFC\n"
+        "adds r1, r0, #0\n"
+        "strh r5, [r1, #0]\n"
+        "ldr r0, .L2f68_3000\n"
+        "adds r2, r0, #0\n"
+        "mov r0, r8\n"
+        "ands r0, r2\n"
+        "ldr r2, [sp, #4]\n"
+        "orrs r0, r2\n"
+        "strh r0, [r1, #2]\n"
+        "ldr r2, [sp, #0]\n"
+        "lsls r0, r2, #12\n"
+        "orrs r0, r7\n"
+        "strh r0, [r1, #4]\n"
+        "movs r0, #0\n"
+        "strh r0, [r1, #12]\n"
+        "ldr r0, [sp, #40]\n"
+        "bl 0x08002C34\n"
+        "mov r1, sl\n"
+        "lsls r0, r1, #16\n"
+        "asrs r0, r0, #16\n"
+        "add r8, r0\n"
+        "mov r2, r9\n"
+        "lsls r0, r2, #16\n"
+        "asrs r0, r0, #16\n"
+        "adds r7, r7, r0\n"
+        "subs r4, #1\n"
+        "cmp r4, #0\n"
+        "bne .L2f68_fae\n"
+        ".L2f68_fec:\n"
+        "add sp, #8\n"
+        "pop {r3, r4, r5}\n"
+        "mov r8, r3\n"
+        "mov r9, r4\n"
+        "mov sl, r5\n"
+        "pop {r4, r5, r6, r7}\n"
+        "pop {r0}\n"
+        "bx r0\n"
+        ".align 2, 0\n"
+        ".L2f68_ffc: .4byte 0x080C4940\n"
+        ".L2f68_3000: .4byte 0x000001FF\n"
+        ".syntax divided\n"
+    );
 }
 void RecordSetter_03004(int base,int v1,int z,int y,int idx,int row,int a6,int a7);
 void _08003004(int a,int b,int c,int d,int e,int f,int g,int h)
+    __attribute__((alias("RecordSetter_03004")));
+void sub_08003004(int a,int b,int c,int d,int e,int f,int g,int h)
     __attribute__((alias("RecordSetter_03004")));
 void RecordSetter_03004(int base,int v1,int z,int y,int idx,int row,int a6,int a7){
     // 0x03004: single-emit OAM record over table 0x080C4940 + (row<<3).
@@ -216,51 +250,17 @@ void RecordSetter_03004(int base,int v1,int z,int y,int idx,int row,int a6,int a
     // parameter copy is what the pin is honoured for) reproduces that; the
     // table pointer lands in r7 and the allocator result in r2 for free.
     //
-    // Entry order (reachable? no): the ROM interleaves the parameter copies as
-    // `mov r8,r0 / adds r6,r1,#0 / str r2,[sp,#0] / mov sl,r3 / ldr r1,[sp,#40]`
-    // while this body gets `str r2,[sp,#0] / ldr r2,[sp,#40] / mov r8,r0 / ...`
-    // -- i.e. agbcc reuses r2 for the row load as soon as z is spilled, where
-    // the ROM keeps r2 live and loads row into r1. One basic block, no
-    // scheduler, so this is allocation pressure, not statement order.
-    // h0=r5 and h2=r4 are the ROM's own allocation too, and both attribute
-    // words update IN PLACE (`orrs r5,r6` / `orrs r4,r3`), so h0|v1, h0|mode,
-    // h2|mask and h2|r9<<9 are each spelled as their own statement; a single
-    // combined expression makes agbcc compute into a temp and copy back.
-    //
-    // PARKED at 134/200 (200-byte candidate, first diff +0x31). Entry is
-    // now exact: a named stack home for z (`zslot`, assigned between the
-    // rv1 and ry copies) anchors the spill third (`str r2,[sp,#0]` after
-    // `mov r8,r0 / adds r6,r1`), and pinning the row copy to r1 forces
-    // `ldr r1,[sp,#40]` (134, was 122 with first diff +0xC). Both measured:
-    // without zslot the spill floats first; without the row1 pin the row
-    // load reuses r2.
-    // The mode bits
-    // are now right: ORing a *constant literal* into the attribute inside each
-    // arm (`h0 = (u16)(h0 | 0x300u);`) makes agbcc materialise the constant in
-    // a scratch pseudo and copy it into the OR's operand register --
-    // `movs r1,#192 / lsls r1,r1,#2 / add r0,r1,#0 / orr r5,r5,r0` -- which is
-    // the ROM's sequence. agbcc puts the copy ONCE, at the join, while the ROM
-    // has one per arm with a different scratch (r1 then-arm, r3 else-arm), i.e.
-    // the two arms' constant pseudos got different registers there. The same
-    // lever fixes the 0x1FF mask in a minimal function (single statement,
-    // literal mask: `ldr r1,=511 / add r0,r1,#0 / and r2,r2,r0 / orr r4,r4,r2`
-    // with base in a low register), but not in this body: here the AND comes
-    // out `ldr r0,=511 / mov r1,r8 / and r0,r1`, i.e. the constant is the AND
-    // destination (op0=op1) instead of the copied base.
-    //
-    // What is left is a register-choice family, not a spelling family. The ROM
-    // uses r3 as its scratch throughout the tail (base copy at 0x90, sl copy
-    // at 0xA0, z load at 0xA4, else-arm mode const at 0x82) where agbcc picks
-    // r1/r4, and it uses r1 where agbcc picks r0 (mask const at 0x8C, attr12
-    // zero at 0x9C). r3 is never allocated at all in the candidate, which
-    // suggests r0/r1 are live differently: the ROM's choices look like
-    // "everything shifted one register up" for the r0/r1 pairs. Also still
-    // open: the then-arm copy placement, the `adds r0,r1,#0` missing there,
-    // the attr12 zero (`movs r1,#0` materialised a statement early and reused,
-    // agbcc emits `movs r0,#0` at the store), the rev' argument loads, and the
-    // entry reorder (z spill and the row load land above the three parameter
-    // copies where the ROM has copies first). Non-exact by construction; keep
-    // the improved body for whoever revisits it.
+    // EXACT 200/200 (body and pool). Keep the stack home for z between the
+    // two register-parameter copies, and pin row to r1 to preserve the ROM's
+    // entry sequence. Load a6 into r0 and normalize into r1, then load a7 into
+    // r3 and normalize into r2, matching the ROM's call setup.
+    // The threshold is split into the ROM's short-circuit path: test a6 in r0,
+    // then load/test a7 in r1 only on the other path. In the adjusted branch,
+    // b6/2 stays in r0 and the base copy stays in r3 through the subtraction.
+    // Attr2 uses the 0x1FF pool value in r1, its copy in r0, and the base copy
+    // in r3. Keep zero in r1 across the attr2 and y/z stores; ROM materializes
+    // it before attr2, then writes attr12 after attr4. The y/z expression uses
+    // r3 for the sl and stack copies and r0 for the shifted/combined value.
     register int rbase __asm__("r8");
     register int rv1 __asm__("r6");
     register int ry __asm__("sl");
@@ -274,13 +274,11 @@ void RecordSetter_03004(int base,int v1,int z,int y,int idx,int row,int a6,int a
     register int row1 __asm__("r1");
     rbase = base;
     rv1 = v1;
-    // Named stack home for z: the ROM spills r2 third (`str r2,[sp,#0]`
-    // after the two register copies), while this body spills first. A named
-    // copy assigned here should anchor the store in source order.
+    // Keep z in a named stack home between the two register-parameter copies,
+    // matching the ROM's `str r2,[sp,#0]` entry position.
     zslot = z;
     ry = y;
-    // Row forced into r1: the ROM loads row into r1 (`ldr r1,[sp,#40]`),
-    // this body reuses r2 as soon as z is spilled.
+    // Pin row to r1 for the ROM's `ldr r1,[sp,#40]` before table-base add.
     row1 = row;
     tbl = (const u8*)(uintptr_t)(0x080C4940u + ((u32)row1<<3));
     {
@@ -292,7 +290,11 @@ void RecordSetter_03004(int base,int v1,int z,int y,int idx,int row,int a6,int a
 
     {
         extern void _08002C60(int, u32, u32);
-        _08002C60(r9, (u16)a6, (u16)a7);
+        register u32 a6r __asm__("r1") = (u16)a6;
+        __asm__("" : "+r"(a6r));
+        register int a7r __asm__("r3") = a7;
+        __asm__("" : "+r"(a7r));
+        _08002C60(r9, a6r, (u16)a7r);
     }
     // The allocator takes no argument in the ROM: a no-parameter
     // declaration keeps `bl _08002BFC` free of an argument setup.
@@ -305,29 +307,66 @@ void RecordSetter_03004(int base,int v1,int z,int y,int idx,int row,int a6,int a
     // `ldrsb` is what a non-volatile signed byte read emits. The halving is
     // C `/2` (truncating): the ROM emits the `lsrs #31; adds; asrs #1`
     // idiom, not `asrs #31; adds; asrs #1` for a hand-written floor shift.
-    if (a6 <= 255 || a7 <= 255) {
+    register int a6cmp __asm__("r0") = a6;
+    __asm__("" : "+r"(a6cmp));
+    if (a6cmp <= 255) goto record_adjusted;
+    {
+        register int a7cmp __asm__("r1") = a7;
+        __asm__("" : "+r"(a7cmp));
+        if (a7cmp > 255) goto record_high_mode;
+    }
+record_adjusted: {
         int b6=*(const s8*)(tbl+6);
-        rbase-=b6/2;
+        register int b6half __asm__("r0") = b6/2;
+        __asm__("" : "+r"(b6half));
+        register int base_adjust __asm__("r3") = rbase;
+        __asm__("" : "+r"(base_adjust));
+        base_adjust-=b6half;
+        __asm__("" : "+r"(base_adjust));
+        rbase=base_adjust;
         int b7=*(const s8*)(tbl+7);
         rv1-=b7/2;
         rv1&=0xFF;
         h0=(u16)(h0 | (u16)rv1);
         h0=(u16)(h0 | 0x300u);
-    } else {
+    }
+    goto record_complete;
+record_high_mode: {
         rv1&=0xFF;
         h0=(u16)(h0 | (u16)rv1);
-        h0=(u16)(h0 | 0x100u);
+        {
+            register u32 mode __asm__("r3") = 0x100u;
+            __asm__("" : "+r"(mode));
+            register u32 temp __asm__("r0") = mode;
+            __asm__("" : "+r"(temp));
+            h0=(u16)(h0 | (u16)temp);
+        }
     }
+record_complete:
     *(volatile u16*)(obj+0)=h0;
-    // A low-register copy of the base (`register u32 rb2 __asm__("r3");
-    // rb2 = rbase; h2 |= rb2 & 0x1FFu;`) does NOT fix this: rb2's single use is
-    // copy-propagated back to rbase, the pinned copy disappears, and the AND
-    // stays `ldr r0,=511 / mov r1,r8 / and r0,r1`.
-    h2=(u16)(h2 | (u16)(rbase & 0x1FF));
+    {
+        register u32 mask __asm__("r1") = 0x1FFu;
+        __asm__("" : "+r"(mask));
+        register u32 mask_copy __asm__("r0") = mask;
+        __asm__("" : "+r"(mask_copy));
+        register u32 base_copy __asm__("r3") = rbase;
+        __asm__("" : "+r"(base_copy));
+        h2=(u16)(h2 | (u16)(base_copy & mask_copy));
+    }
     h2=(u16)(h2 | (u16)(r9<<9));
+    register u16 zero_value __asm__("r1") = 0;
+    __asm__("" : "+r"(zero_value));
     *(volatile u16*)(obj+2)=h2;
-    *(volatile u16*)(obj+4)=(u16)(((u32)ry<<12) | (u32)zslot);
-    *(volatile u16*)(obj+12)=0;
+    {
+        register u32 ycopy __asm__("r3") = (u32)ry;
+        __asm__("" : "+r"(ycopy));
+        register u32 yshift __asm__("r0") = ycopy << 12;
+        __asm__("" : "+r"(yshift));
+        register u32 zcopy __asm__("r3") = (u32)zslot;
+        __asm__("" : "+r"(zcopy));
+        *(volatile u16*)(obj+4)=(u16)(yshift | zcopy);
+    }
+    *(volatile u16*)(obj+12)=zero_value;
     {
         extern void _08002C34(int, void*);
         _08002C34(idx, (void*)obj);

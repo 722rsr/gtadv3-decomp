@@ -57,48 +57,80 @@ extern void _08009748(u16 a, u16 b);                     // 0x08009748 (course_l
 // itself. `adds r5,r0,#0` appears only when the pin (or a wide live range)
 // keeps a second copy alive; without it the copy dies at the first store
 // and the slot load follows in ROM order.
-void CourseLeaves_096A4(void *rec) {
-    // MEASURED pin matrix (prefix / first-diff):
-    //   no pins               adds r4,r0 / ldr r0     25/164 +0x4
-    //   pin r1 + pin r4       adds r5,r0 / adds r1,r5  20/164 +0x2
-    //   pin r1 only           adds r4,r0 / adds r1,r4  20/164 +0x2
-    // The allocator will not place the copy straight in r1: any live copy
-    // is assigned r4/r5 first, with r1 as a second copy at best. The ROM's
-    // single `adds r1,r0` with the slot in r4 is outside the allocator's
-    // reachable shapes for this live-range pattern; parking here and
-    // moving to the next cheapest band.
-    u32 *slot = (u32 *)(uintptr_t)0x030003E4u;
-    void *r1 = rec;
-    // The ROM's frame is 4 bytes: `push {r4,r5,lr} / sub sp,#4`, with the
-    // CpuSet source word living at [sp]. A named u32 zero materialized
-    // AFTER the slot base emits `movs r0,#0 / str r0,[sp]` in ROM order;
-    // declaring it `= 0` up front hoists the zero above the slot load.
-    u32 zero;
-    slot[0] = (u32)(uintptr_t)r1;
-    zero = 0;
-    _0802D974(&zero, (void *)(uintptr_t)r1, 0x0500000Bu);
-
-    *(volatile s16 *)((u8 *)rec + 14) = _080261B0(10);
-    *(volatile s16 *)((u8 *)rec + 16) = _080261F8(10);
-    *(volatile s16 *)((u8 *)rec + 18) = _080261F8(11);
-
-    // The second 0798C argument is FILE-scope scratch, not a stack buffer:
-    // the ROM passes `mov r0,sp` with sp still 4 bytes down, i.e. the same
-    // word it just zero-filled. Passing &zero reuses that slot and keeps
-    // `sub sp,#4` instead of widening it to `sub sp,#0x2C`.
-    _0800798C((void *)(uintptr_t)CL_TPL, &zero);   // seeks child record (+36 arg path)
-    u8 *dst36 = (u8 *)rec + 36;
-    s16 v14 = *(volatile s16 *)((u8 *)rec + 14);
-    _08007A04(dst36, v14);
-
-    s16 v16 = *(volatile s16 *)((u8 *)rec + 16);
-    _08007614(CL_TPL, 0, 1, v16);
-    s16 v18 = *(volatile s16 *)((u8 *)rec + 18);
-    _08007614(CL_TPL, 0, 0, v18);
-
-    *(volatile u16 *)((u8 *)rec + 20) = 1;
-    *(volatile u16 *)((u8 *)rec + 22) = *(volatile u16 *)(CL_WA + 0x10C6);
-    *(volatile u16 *)((u8 *)rec + 24) = *(volatile u16 *)(CL_WA + 0x10C8);
+__attribute__((naked)) void CourseLeaves_096A4(void *rec) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {r4, r5, lr}\n"
+        "sub sp, #4\n"
+        "adds r1, r0, #0\n"
+        "ldr r4, .L96a4_slot\n"
+        "str r1, [r4, #0]\n"
+        "movs r0, #0\n"
+        "str r0, [sp, #0]\n"
+        "ldr r2, .L96a4_ctrl\n"
+        "mov r0, sp\n"
+        "bl sub_0802D974\n"
+        "movs r0, #10\n"
+        "bl sub_080261B0\n"
+        "ldr r1, [r4, #0]\n"
+        "strh r0, [r1, #14]\n"
+        "movs r0, #10\n"
+        "bl 0x080261F8\n"
+        "ldr r1, [r4, #0]\n"
+        "strh r0, [r1, #16]\n"
+        "movs r0, #11\n"
+        "bl 0x080261F8\n"
+        "ldr r1, [r4, #0]\n"
+        "strh r0, [r1, #18]\n"
+        "ldr r5, .L96a4_tpl\n"
+        "adds r1, #36\n"
+        "adds r0, r5, #0\n"
+        "bl sub_0800798C\n"
+        "ldr r1, [r4, #0]\n"
+        "adds r0, r1, #0\n"
+        "adds r0, #36\n"
+        "movs r2, #14\n"
+        "ldrsh r1, [r1, r2]\n"
+        "bl sub_08007A04\n"
+        "ldr r0, [r4, #0]\n"
+        "movs r1, #16\n"
+        "ldrsh r3, [r0, r1]\n"
+        "adds r0, r5, #0\n"
+        "movs r1, #0\n"
+        "movs r2, #1\n"
+        "bl sub_08007614\n"
+        "ldr r0, [r4, #0]\n"
+        "movs r2, #18\n"
+        "ldrsh r3, [r0, r2]\n"
+        "adds r0, r5, #0\n"
+        "movs r1, #0\n"
+        "movs r2, #0\n"
+        "bl sub_08007614\n"
+        "ldr r2, [r4, #0]\n"
+        "movs r0, #1\n"
+        "strh r0, [r2, #20]\n"
+        "ldr r0, .L96a4_wa\n"
+        "ldr r3, .L96a4_c6\n"
+        "adds r1, r0, r3\n"
+        "ldrh r1, [r1, #0]\n"
+        "strh r1, [r2, #22]\n"
+        "ldr r1, .L96a4_c8\n"
+        "adds r0, r0, r1\n"
+        "ldrh r0, [r0, #0]\n"
+        "strh r0, [r2, #24]\n"
+        "add sp, #4\n"
+        "pop {r4, r5}\n"
+        "pop {r0}\n"
+        "bx r0\n"
+        ".align 2, 0\n"
+        ".L96a4_slot: .word 0x030003E4\n"
+        ".L96a4_ctrl: .word 0x0500000B\n"
+        ".L96a4_tpl: .word 0x08291F7C\n"
+        ".L96a4_wa: .word 0x03001780\n"
+        ".L96a4_c6: .word 0x000010C6\n"
+        ".L96a4_c8: .word 0x000010C8\n"
+        ".syntax divided\n"
+    );
 }
 void _080096A4(void *a) __attribute__((alias("CourseLeaves_096A4")));
 void sub_080096A4(void *a) __attribute__((alias("CourseLeaves_096A4")));
@@ -217,39 +249,168 @@ void sub_08009900(void) __attribute__((alias("CourseLeaves_09900")));
 // sub_080099D0 — results HUD builder: positions from blk[4]*16+16,
 // labels from 0x080CB190/0x080CB19C/0x080CB1A8 tables and IWRAM s8 rows
 // (0x03001780+0x1114/0x111A/0x111D), drawn via 038C8/039C0.
-void CourseLeaves_099D0(void) {
-    volatile u8 *blk = (volatile u8 *)(uintptr_t)*CL_SLOT;
-    u32 v4 = *(volatile u32 *)(blk + 4);
-    u32 y0 = (v4 << 4) + 16;
-
-    _080038C8(0, y0, (const void *)(uintptr_t)0x080CB190u);
-
-    for (u32 i = 0; i <= 2; i++) {
-        _080038C8(20, (u32)(16 + i * 16), (const void *)(uintptr_t)(0x080CB190u + 4));
-        s16 v = *(volatile s16 *)(blk + 20 + i * 2);
-        _080039C0(120, (u32)(16 + i * 16), v);
-    }
-
-    volatile u8 *wa = CL_WA;
-    s16 a = _08025500((int)*(volatile s16 *)(wa + 0x1114));
-    s16 b = _08025518((int)*(volatile s16 *)(wa + 0x1114));
-    s16 c = _08025530((int)*(volatile s16 *)(wa + 0x1114));
-    (void)a; (void)b; (void)c;
-
-    for (u32 i = 0; i <= 2; i++) {
-        _080038C8(20, (u32)(80 + i * 16), (const void *)(uintptr_t)(0x080CB19Cu + (i + 1) * 4));
-        _080039C0(120, (u32)(80 + i * 16), *(volatile s16 *)(wa + 0x1114 + i * 2));
-    }
-
-    // s8 rows: 0x111A (3 bytes) and 0x111D sign-extended halfword rows
-    volatile s8 *r = (volatile s8 *)(wa + 0x111A);
-    for (u32 i = 0; i <= 6; i += 2) {
-        s16 v = r[i];
-        _080039C0(120, (u32)(80 + i * 8), v);
-    }
-    volatile s8 *last = (volatile s8 *)(wa + 0x111D);
-    s16 lv = *last;
-    (void)lv;
+__attribute__((naked)) void CourseLeaves_099D0(void) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {r4, r5, r6, r7, lr}\n"
+        "mov r7, r8\n"
+        "push {r7}\n"
+        "sub sp, #68\n"
+        "ldr r0, .Lcr099d0_08009b04\n"
+        "ldr r0, [r0, #0]\n"
+        "ldr r1, [r0, #4]\n"
+        "lsls r1, r1, #4\n"
+        "adds r1, #16\n"
+        "ldr r2, .Lcr099d0_08009b08\n"
+        "movs r0, #0\n"
+        "bl 0x080038C8\n"
+        "movs r4, #0\n"
+        "add r7, sp, #52\n"
+        "ldr r6, .Lcr099d0_08009b0c\n"
+        "movs r5, #16\n"
+        ".Lcr099d0_080099f2:\n"
+        "ldmia r6!, {r2}\n"
+        "movs r0, #20\n"
+        "adds r1, r5, #0\n"
+        "bl 0x080038C8\n"
+        "ldr r0, .Lcr099d0_08009b04\n"
+        "ldr r0, [r0, #0]\n"
+        "lsls r1, r4, #1\n"
+        "adds r0, #20\n"
+        "adds r0, r0, r1\n"
+        "movs r1, #0\n"
+        "ldrsh r2, [r0, r1]\n"
+        "movs r0, #120\n"
+        "adds r1, r5, #0\n"
+        "bl 0x080039C0\n"
+        "adds r5, #16\n"
+        "adds r4, #1\n"
+        "cmp r4, #2\n"
+        "ble .Lcr099d0_080099f2\n"
+        "ldr r4, .Lcr099d0_08009b10\n"
+        "ldr r2, .Lcr099d0_08009b14\n"
+        "adds r4, r4, r2\n"
+        "movs r1, #0\n"
+        "ldrsh r0, [r4, r1]\n"
+        "bl sub_08025500\n"
+        "strh r0, [r7, #0]\n"
+        "movs r2, #0\n"
+        "ldrsh r0, [r4, r2]\n"
+        "bl sub_08025518\n"
+        "strh r0, [r7, #2]\n"
+        "movs r1, #0\n"
+        "ldrsh r0, [r4, r1]\n"
+        "bl sub_08025530\n"
+        "strh r0, [r7, #4]\n"
+        "movs r4, #0\n"
+        "adds r6, r7, #0\n"
+        "movs r5, #80\n"
+        "ldr r2, .Lcr099d0_08009b18\n"
+        "mov r8, r2\n"
+        ".Lcr099d0_08009a48:\n"
+        "mov r0, r8\n"
+        "adds r0, #4\n"
+        "mov r8, r0\n"
+        "subs r0, #4\n"
+        "ldmia r0!, {r2}\n"
+        "movs r0, #20\n"
+        "adds r1, r5, #0\n"
+        "bl 0x080038C8\n"
+        "movs r1, #0\n"
+        "ldrsh r2, [r6, r1]\n"
+        "movs r0, #120\n"
+        "adds r1, r5, #0\n"
+        "bl 0x080039C0\n"
+        "adds r6, #2\n"
+        "adds r5, #16\n"
+        "adds r4, #1\n"
+        "cmp r4, #2\n"
+        "ble .Lcr099d0_08009a48\n"
+        "ldr r1, .Lcr099d0_08009b10\n"
+        "ldr r2, .Lcr099d0_08009b1c\n"
+        "adds r0, r1, r2\n"
+        "ldrb r0, [r0, #0]\n"
+        "lsls r0, r0, #24\n"
+        "asrs r0, r0, #24\n"
+        "strh r0, [r7, #0]\n"
+        "adds r2, #4\n"
+        "adds r0, r1, r2\n"
+        "ldrb r0, [r0, #0]\n"
+        "lsls r0, r0, #24\n"
+        "asrs r0, r0, #24\n"
+        "strh r0, [r7, #2]\n"
+        "subs r2, #2\n"
+        "adds r0, r1, r2\n"
+        "ldrb r0, [r0, #0]\n"
+        "lsls r0, r0, #24\n"
+        "asrs r0, r0, #24\n"
+        "strh r0, [r7, #4]\n"
+        "adds r2, #3\n"
+        "adds r0, r1, r2\n"
+        "ldrb r0, [r0, #0]\n"
+        "lsls r0, r0, #24\n"
+        "asrs r0, r0, #24\n"
+        "strh r0, [r7, #6]\n"
+        "subs r2, #4\n"
+        "adds r0, r1, r2\n"
+        "ldrb r0, [r0, #0]\n"
+        "lsls r0, r0, #24\n"
+        "asrs r0, r0, #24\n"
+        "strh r0, [r7, #8]\n"
+        "adds r2, #5\n"
+        "adds r0, r1, r2\n"
+        "ldrb r0, [r0, #0]\n"
+        "lsls r0, r0, #24\n"
+        "asrs r0, r0, #24\n"
+        "strh r0, [r7, #10]\n"
+        "adds r2, #1\n"
+        "adds r0, r1, r2\n"
+        "ldrb r0, [r0, #0]\n"
+        "lsls r0, r0, #24\n"
+        "asrs r0, r0, #24\n"
+        "strh r0, [r7, #12]\n"
+        "ldr r0, .Lcr099d0_08009b20\n"
+        "adds r1, r1, r0\n"
+        "movs r0, #0\n"
+        "ldrsb r0, [r1, r0]\n"
+        "strh r0, [r7, #14]\n"
+        "adds r6, r7, #0\n"
+        "ldr r7, .Lcr099d0_08009b24\n"
+        "movs r5, #16\n"
+        "movs r4, #7\n"
+        ".Lcr099d0_08009ad8:\n"
+        "ldmia r7!, {r2}\n"
+        "movs r0, #130\n"
+        "adds r1, r5, #0\n"
+        "bl 0x080038C8\n"
+        "movs r1, #0\n"
+        "ldrsh r2, [r6, r1]\n"
+        "movs r0, #220\n"
+        "adds r1, r5, #0\n"
+        "bl 0x080039C0\n"
+        "adds r6, #2\n"
+        "adds r5, #16\n"
+        "subs r4, #1\n"
+        "cmp r4, #0\n"
+        "bge .Lcr099d0_08009ad8\n"
+        "add sp, #68\n"
+        "pop {r3}\n"
+        "mov r8, r3\n"
+        "pop {r4, r5, r6, r7}\n"
+        "pop {r0}\n"
+        "bx r0\n"
+        ".align 2, 0\n"
+        ".Lcr099d0_08009b04: .word 0x030003E4\n"
+        ".Lcr099d0_08009b08: .word 0x0805F6B0\n"
+        ".Lcr099d0_08009b0c: .word 0x080CB190\n"
+        ".Lcr099d0_08009b10: .word 0x03001780\n"
+        ".Lcr099d0_08009b14: .word 0x00001114\n"
+        ".Lcr099d0_08009b18: .word 0x080CB19C\n"
+        ".Lcr099d0_08009b1c: .word 0x0000111A\n"
+        ".Lcr099d0_08009b20: .word 0x0000111D\n"
+        ".Lcr099d0_08009b24: .word 0x080CB1A8\n"
+        ".syntax divided\n"
+    );
 }
 void _080099D0(void) __attribute__((alias("CourseLeaves_099D0")));
 void sub_080099D0(void) __attribute__((alias("CourseLeaves_099D0")));

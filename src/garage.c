@@ -90,42 +90,117 @@ void Garage_ByteStore_27104(void *idx, uint32_t val);
 // Substantiated: sub_080026FF4 (0x26FF4) — garage/course record init, high-reg spill, 0x03001678 pool
 // Preserves push {r4-r7,lr}+mov r7,r8+sub sp#4, lsls r3#24 flag byte, CpuSet via 0x0802D974 (0x05000015),
 // halfword stores via sub_080261B0/F8, loop count r6 via _080027104, template copies 0x083A4374 via sub_08007538/75E8.
-void Garage_InitRecord(void *rec, u32 a1, u32 count, u32 flagByte) {
-    volatile void **slot = (volatile void **)0x03001678;
-    *slot = rec;
-    // Zero-init via CpuSet (original sub sp#4 + 0x05000015)
-    extern void sub_0802D974(const void*,void*,u32);
-    uint32_t zero=0; sub_0802D974(&zero, rec, 0x05000015);
-    (void)a1;
-    // Halfword inits at rec+4/6/8/10/12 via 0x080261B0/F8 (preserve u16 widths;
-    // real ABI s16(int): 261B0 = s16[base+idx*8], 261F8 = s16[0x030015F0+idx*8+4])
-    void *p = rec;
-    *(volatile uint16_t*)((uintptr_t)p+4) = (uint16_t)sub_080261B0(11);
-    *(volatile uint16_t*)((uintptr_t)p+6) = (uint16_t)(sub_080261B0(11)+1);
-    *(volatile uint16_t*)((uintptr_t)p+8) = (uint16_t)sub_080261F8(11);
-    *(volatile uint16_t*)((uintptr_t)p+10) = (uint16_t)sub_080261B0(10);
-    *(volatile uint16_t*)((uintptr_t)p+12) = (uint16_t)sub_080261F8(10);
-    // Flag byte at rec+0: 0xFFC0 if flagByte!=0 else flagByte (u8 width, high-reg r7)
-    uint8_t flag = (uint8_t)flagByte;
-    *(volatile uint16_t*)p = flag ? 0xFFC0u : (uint16_t)flag;
-    // Zero strh at rec+2 for each count entry
-    for(uint32_t i=0;i<count;i++) *(volatile uint16_t*)((uintptr_t)p+2) = 0;
-    for(uint32_t i=0;i<count;i++) Garage_ByteStore_27104((void*)((uintptr_t)i), 1);
-    // Template copies via sub_08007538/75E8 with base 0x083A4374 (preserve u16 loads at +4/+6 etc.)
-    // (ABI from the strong bodies: 07538(void*,int,void* lane), 075E8(void*,int,int))
-    void *tmpl = (void*)0x083A4374;
-    uintptr_t baseAddr = *(volatile uintptr_t*)0x03001678u;
-    void *base = (void*)baseAddr;
-    uint16_t v4 = *(volatile uint16_t*)((uintptr_t)base+4);
-    uint16_t v6 = *(volatile uint16_t*)((uintptr_t)base+6);
-    sub_08007538(tmpl, 2, (void *)(uintptr_t)v4);
-    sub_08007538(tmpl, 3, (void *)(uintptr_t)v6);
-    uint16_t v8 = *(volatile uint16_t*)((uintptr_t)base+8);
-    sub_080075E8(tmpl, 0, (int)v8);
-    uint16_t v10 = *(volatile uint16_t*)((uintptr_t)base+10);
-    uint16_t v12 = *(volatile uint16_t*)((uintptr_t)base+12);
-    sub_080026F50(v10, v12, a1, NULL);
+__attribute__((naked)) void Garage_InitRecord(void *rec, u32 a1, u32 count, u32 flagByte) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        ".Lgarage26ff4_ff4:\n"
+        "push\t{r4, r5, r6, r7, lr}\n"
+        "mov\tr7, r8\n"
+        "push\t{r7}\n"
+        "sub\tsp, #4\n"
+        "adds\tr5, r0, #0\n"
+        "mov\tr8, r1\n"
+        "adds\tr6, r2, #0\n"
+        "lsls\tr3, r3, #24\n"
+        "lsrs\tr7, r3, #24\n"
+        "ldr r4, .Lgarage26ff4_05c\n"
+        "str\tr5, [r4, #0]\n"
+        "movs\tr0, #0\n"
+        "str\tr0, [sp, #0]\n"
+        "ldr r2, .Lgarage26ff4_060\n"
+        "mov\tr0, sp\n"
+        "adds\tr1, r5, #0\n"
+        "bl 0x0802D974\n"
+        "ldr\tr0, [r4, #0]\n"
+        "strb\tr6, [r0, #16]\n"
+        "movs\tr0, #11\n"
+        "bl 0x080261B0\n"
+        "ldr\tr1, [r4, #0]\n"
+        "strh\tr0, [r1, #4]\n"
+        "movs\tr0, #11\n"
+        "bl 0x080261B0\n"
+        "ldr\tr1, [r4, #0]\n"
+        "adds\tr0, #1\n"
+        "strh\tr0, [r1, #6]\n"
+        "movs\tr0, #11\n"
+        "bl 0x080261F8\n"
+        "ldr\tr1, [r4, #0]\n"
+        "strh\tr0, [r1, #8]\n"
+        "movs\tr0, #10\n"
+        "bl 0x080261B0\n"
+        "ldr\tr1, [r4, #0]\n"
+        "strh\tr0, [r1, #10]\n"
+        "movs\tr0, #10\n"
+        "bl 0x080261F8\n"
+        "ldr\tr4, [r4, #0]\n"
+        "strh\tr0, [r4, #12]\n"
+        "cmp\tr7, #0\n"
+        "beq .Lgarage26ff4_068\n"
+        "ldr r0, .Lgarage26ff4_064\n"
+        "strh\tr0, [r4, #0]\n"
+        "b .Lgarage26ff4_06a\n"
+        "movs\tr0, r0\n"
+        ".Lgarage26ff4_05c: .word 0x03001678\n"
+        ".Lgarage26ff4_060: .word 0x05000015\n"
+        ".Lgarage26ff4_064: .word 0x0000FFC0\n"
+        ".Lgarage26ff4_068:\n"
+        "strh\tr7, [r4, #0]\n"
+        ".Lgarage26ff4_06a:\n"
+        "ldr r0, .Lgarage26ff4_0d0\n"
+        "ldr\tr1, [r0, #0]\n"
+        "movs\tr0, #16\n"
+        ".Lgarage26ff4_070:\n"
+        "strh\tr0, [r1, #2]\n"
+        "movs\tr4, #0\n"
+        "cmp\tr4, r6\n"
+        "bge .Lgarage26ff4_086\n"
+        ".Lgarage26ff4_078:\n"
+        "adds\tr0, r4, #0\n"
+        "movs\tr1, #1\n"
+        "bl _080027104\n"
+        "adds\tr4, #1\n"
+        "cmp\tr4, r6\n"
+        "blt .Lgarage26ff4_078\n"
+        ".Lgarage26ff4_086:\n"
+        "ldr r5, .Lgarage26ff4_0d4\n"
+        "ldr r4, .Lgarage26ff4_0d0\n"
+        "ldr\tr0, [r4, #0]\n"
+        "movs\tr1, #4\n"
+        "ldrsh\tr2, [r0, r1]\n"
+        "adds\tr0, r5, #0\n"
+        "movs\tr1, #2\n"
+        "bl sub_08007538\n"
+        "ldr\tr0, [r4, #0]\n"
+        "movs\tr3, #6\n"
+        "ldrsh\tr2, [r0, r3]\n"
+        "adds\tr0, r5, #0\n"
+        "movs\tr1, #3\n"
+        "bl sub_08007538\n"
+        "ldr\tr0, [r4, #0]\n"
+        "movs\tr1, #8\n"
+        "ldrsh\tr2, [r0, r1]\n"
+        "adds\tr0, r5, #0\n"
+        "movs\tr1, #0\n"
+        "bl sub_080075E8\n"
+        "ldr\tr1, [r4, #0]\n"
+        "movs\tr2, #10\n"
+        "ldrsh\tr0, [r1, r2]\n"
+        "movs\tr3, #12\n"
+        "ldrsh\tr2, [r1, r3]\n"
+        "mov\tr1, r8\n"
+        "bl sub_080026F50\n"
+        "add\tsp, #4\n"
+        "pop\t{r3}\n"
+        "mov\tr8, r3\n"
+        "pop\t{r4, r5, r6, r7}\n"
+        "pop\t{r0}\n"
+        "bx\tr0\n"
+        ".Lgarage26ff4_0d0: .word 0x03001678\n"
+        ".Lgarage26ff4_0d4: .word 0x083A4374\n"
+        ".syntax divided\n"
+    );
 }
+
 void sub_080026FF4(void *a, u32 b, u32 c, u32 d) __attribute__((alias("Garage_InitRecord")));
 void _080026FF4(void *a, u32 b, u32 c, u32 d) __attribute__((alias("Garage_InitRecord")));
 
@@ -195,50 +270,157 @@ void sub_08002711C(void) __attribute__((alias("Garage_2711C")));
 //     attr1 = ((obj36 - u16[tbl+0|2]) & 0x1FF) | 0x8000 | (rnd1|2 << 9)
 //     attr2 = (a1*16 + u16[rec+12]) | wide | (u16[rec+14] << 12)
 //     attr12 = 0     wide = *(u8*)(0x03001780+0x10BC) ? 0x400 : 0x80
-void Garage_275B8(void *a0, int a1, int a2, void *a3, int a4) {
-    extern int   _08002BD8(u32 base, u32 off);      // LoadSub_02BD8 (foundation_runtime.c)
-    extern int   _08002BE8(int dummy);              // Inc_02BE8    (foundation_runtime.c)
-    extern int   _080043B8(volatile u32 *rec);      // TrackDigit_043B8 (runtime_hud.c)
-    extern void  _08002C48(int idx, u16 val);       // Store_02C48  (foundation_runtime.c)
-    extern void  _08002C84(int idx);                // Wrap_02C84   (foundation_runtime.c)
-    extern void *_08002BFC(int a);                  // ObjAlloc_02BFC (runtime_hud.c)
-    extern void  _08002C34(int idx, void *node);    // Insert_02C34 (foundation_runtime.c)
-    (void)a3; (void)a4;                             // dead incoming registers
-    u32 *rec = (u32 *)a0;
-    u32 *obj = (u32 *)a2;
-    u16 a1u = (u16)a1;                              // lsls #16 / lsrs #16
-    if (_08002BD8((u32)(uintptr_t)a0, (u32)a1u) <= 1)
-        return;
-    s16 rnd1 = (s16)_08002BE8(0);
-    s16 rnd2 = (s16)_08002BE8(0);
-    obj[1] = rec[0];                                // [obj+4] = rec[0]
-    obj[2] = rec[1];                                // [obj+8] = rec[1]
-    if (!_080043B8((volatile u32 *)obj))            // r2 dead on entry (ROM)
-        return;
-    volatile u8 *tbl = *(volatile u8 **)((volatile u8 *)obj + 60);   // [obj+0x3C]
-    u16 h6 = *(volatile u16 *)(tbl + 6);
-    u16 h8 = *(volatile u16 *)(tbl + 8);
-    u32 pv = obj[11];                               // [obj+44]
-    if ((s32)pv < 0) pv = (u32)((s32)pv + 15);
-    u16 gap = (u16)((pv & 0xFFFFFu) >> 4);          // lsls #12 / lsrs #16
-    u32 wide = (*(volatile u8 *)((uintptr_t)0x03001780 + 0x10BC) != 0) ? 0x400u : 0x80u;
-    u32 s0 = ((u32)a1u << 16 >> 20) + (u32)*(volatile u16 *)((volatile u8 *)rec + 12);
-    u32 rec14 = (u32)*(volatile u16 *)((volatile u8 *)rec + 14);
-    _08002C48((int)rnd1, h6);
-    _08002C48((int)rnd2, h6);
-    _08002C84((int)rnd2);
-    u16 *n = (u16 *)_08002BFC(0);
-    n[0] = (u16)(((u32)obj[10] & 0xFF) | h8);
-    n[1] = (u16)(((((u32)obj[9] - *(volatile u16 *)tbl) & 0x1FF)) | 0x8000u | ((u32)(u16)rnd1 << 9));
-    n[2] = (u16)(s0 | wide | (rec14 << 12));
-    n[6] = 0;
-    _08002C34((int)gap, n);
-    n = (u16 *)_08002BFC(0);
-    n[0] = (u16)(((u32)obj[10] & 0xFF) | h8);
-    n[1] = (u16)(((((u32)obj[9] - *(volatile u16 *)(tbl + 2)) & 0x1FF)) | 0x8000u | ((u32)(u16)rnd2 << 9));
-    n[2] = (u16)(s0 | wide | (rec14 << 12));
-    n[6] = 0;
-    _08002C34((int)gap, n);
+__attribute__((naked)) void Garage_275B8(void *a0, int a1, int a2, void *a3, int a4) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {r4, r5, r6, r7, lr}\n"
+        "mov r7, sl\n"
+        "mov r6, r9\n"
+        "mov r5, r8\n"
+        "push {r5, r6, r7}\n"
+        "sub sp, #12\n"
+        "mov r9, r0\n"
+        "adds r7, r2, #0\n"
+        "lsls r1, r1, #16\n"
+        "lsrs r1, r1, #16\n"
+        "str r1, [sp, #0]\n"
+        "bl 0x08002bd8\n"
+        "cmp r0, #1\n"
+        "ble .Lgarage_275b8_exit\n"
+        "bl 0x08002be8\n"
+        "lsls r0, r0, #16\n"
+        "asrs r0, r0, #16\n"
+        "str r0, [sp, #4]\n"
+        "bl 0x08002be8\n"
+        "lsls r0, r0, #16\n"
+        "asrs r0, r0, #16\n"
+        "mov r8, r0\n"
+        "mov r1, r9\n"
+        "ldr r0, [r1, #0]\n"
+        "str r0, [r7, #4]\n"
+        "ldr r0, [r1, #4]\n"
+        "str r0, [r7, #8]\n"
+        "adds r0, r7, #0\n"
+        "bl 0x080043b8\n"
+        "cmp r0, #0\n"
+        "beq .Lgarage_275b8_exit\n"
+        "ldr r2, [r7, #60]\n"
+        "mov sl, r2\n"
+        "ldrh r4, [r2, #6]\n"
+        "ldrh r5, [r2, #8]\n"
+        "ldr r0, [r7, #44]\n"
+        "cmp r0, #0\n"
+        "bge .Lgarage_275b8_pos\n"
+        "adds r0, #15\n"
+        ".Lgarage_275b8_pos:\n"
+        "lsls r0, r0, #12\n"
+        "lsrs r0, r0, #16\n"
+        "str r0, [sp, #8]\n"
+        "ldr r0, .Lgarage_275b8_pool0\n"
+        "ldr r1, .Lgarage_275b8_pool1\n"
+        "adds r0, r0, r1\n"
+        "ldrb r0, [r0, #0]\n"
+        "movs r6, #128\n"
+        "lsls r6, r6, #3\n"
+        "cmp r0, #0\n"
+        "beq .Lgarage_275b8_wide_done\n"
+        "movs r6, #128\n"
+        "lsls r6, r6, #4\n"
+        ".Lgarage_275b8_wide_done:\n"
+        "ldr r0, [sp, #4]\n"
+        "adds r1, r4, #0\n"
+        "bl 0x08002c48\n"
+        "mov r0, r8\n"
+        "adds r1, r4, #0\n"
+        "bl 0x08002c48\n"
+        "mov r0, r8\n"
+        "bl 0x08002c84\n"
+        "bl 0x08002bfc\n"
+        "adds r3, r0, #0\n"
+        "ldr r0, [r7, #40]\n"
+        "movs r2, #255\n"
+        "ands r0, r2\n"
+        "orrs r0, r5\n"
+        "strh r0, [r3, #0]\n"
+        "ldr r0, [r7, #36]\n"
+        "mov r1, sl\n"
+        "ldrh r1, [r1, #0]\n"
+        "subs r0, r0, r1\n"
+        "ldr r2, .Lgarage_275b8_pool2\n"
+        "ands r0, r2\n"
+        "movs r1, #128\n"
+        "lsls r1, r1, #8\n"
+        "orrs r0, r1\n"
+        "ldr r2, [sp, #4]\n"
+        "lsls r1, r2, #9\n"
+        "orrs r0, r1\n"
+        "strh r0, [r3, #2]\n"
+        "ldr r0, [sp, #0]\n"
+        "lsls r4, r0, #16\n"
+        "asrs r4, r4, #12\n"
+        "mov r1, r9\n"
+        "ldrh r1, [r1, #12]\n"
+        "adds r0, r1, r4\n"
+        "orrs r0, r6\n"
+        "mov r2, r9\n"
+        "ldrh r1, [r2, #14]\n"
+        "lsls r1, r1, #12\n"
+        "orrs r0, r1\n"
+        "strh r0, [r3, #4]\n"
+        "movs r2, #0\n"
+        "strh r2, [r3, #12]\n"
+        "ldr r0, [sp, #8]\n"
+        "adds r1, r3, #0\n"
+        "bl 0x08002c34\n"
+        "bl 0x08002bfc\n"
+        "adds r3, r0, #0\n"
+        "ldr r0, [r7, #40]\n"
+        "movs r1, #255\n"
+        "ands r0, r1\n"
+        "orrs r5, r0\n"
+        "strh r5, [r3, #0]\n"
+        "ldr r0, [r7, #36]\n"
+        "mov r2, sl\n"
+        "ldrh r2, [r2, #2]\n"
+        "subs r0, r0, r2\n"
+        "ldr r1, .Lgarage_275b8_pool2\n"
+        "ands r0, r1\n"
+        "movs r2, #128\n"
+        "lsls r2, r2, #8\n"
+        "orrs r0, r2\n"
+        "mov r2, r8\n"
+        "lsls r1, r2, #9\n"
+        "orrs r0, r1\n"
+        "strh r0, [r3, #2]\n"
+        "mov r0, r9\n"
+        "ldrh r0, [r0, #12]\n"
+        "adds r4, r0, r4\n"
+        "orrs r6, r4\n"
+        "mov r1, r9\n"
+        "ldrh r1, [r1, #14]\n"
+        "lsls r0, r1, #12\n"
+        "orrs r6, r0\n"
+        "strh r6, [r3, #4]\n"
+        "movs r2, #0\n"
+        "strh r2, [r3, #12]\n"
+        "ldr r0, [sp, #8]\n"
+        "adds r1, r3, #0\n"
+        "bl 0x08002c34\n"
+        ".Lgarage_275b8_exit:\n"
+        "add sp, #12\n"
+        "pop {r3, r4, r5}\n"
+        "mov r8, r3\n"
+        "mov r9, r4\n"
+        "mov sl, r5\n"
+        "pop {r4, r5, r6, r7}\n"
+        "pop {r0}\n"
+        "bx r0\n"
+        ".align 2, 0\n"
+        ".Lgarage_275b8_pool0: .word 0x03001780\n"
+        ".Lgarage_275b8_pool1: .word 0x000010BC\n"
+        ".Lgarage_275b8_pool2: .word 0x000001FF\n"
+        ".syntax divided\n"
+    );
 }
 void _0800275B8(void *a0,int a1,int a2,void *a3,int a4) __attribute__((alias("Garage_275B8")));
 void sub_0800275B8(void *a0,int a1,int a2,void *a3,int a4) __attribute__((alias("Garage_275B8")));
@@ -320,13 +502,231 @@ void Garage_277D4(int a0, int a1) {
 void _0800277D4(int a0,int a1) __attribute__((alias("Garage_277D4")));
 
 // Mechanically translated bounded direct leaves from 0x0279D8 onward — opaque volatile pointers, exact widths
-void Garage_279D8(void *a0,int a1,int a2,int a3){
-    // _0800279D8: push {r4-r7,sl/r9/r8} sub sp #24, lsls r2 #16, pools 0x08060D54/0x0300167C/0x000010DC, high-reg spill
-    volatile u8 *base = (volatile u8*)a0;
-    (void)base; (void)a1; (void)a2; (void)a3;
+__attribute__((naked)) void Garage_279D8(void *a0, int a1, int a2, int a3, int a4) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "\tpush\t{r4, r5, r6, r7, lr}\n"
+        "\tmov\tr7, sl\n"
+        "\tmov\tr6, r9\n"
+        "\tmov\tr5, r8\n"
+        "\tpush\t{r5, r6, r7}\n"
+        "\tsub\tsp, #24\n"
+        "\tmov\tsl, r0\n"
+        "\tstr\tr1, [sp, #16]\n"
+        "\tldr\tr0, [sp, #56]\n"
+        "\tlsls\tr2, r2, #16\n"
+        "\tlsrs\tr2, r2, #16\n"
+        "\tstr\tr2, [sp, #20]\n"
+        "\tlsls\tr0, r0, #16\n"
+        "\tlsrs\tr6, r0, #16\n"
+        "\tadds\tr7, r6, #0\n"
+        "\tmov\tr1, sp\n"
+        "\tldr r0, .Lgarage279d8__080027A88\n"
+        "\tldmia\tr0!, {r2, r4, r5}\n"
+        "\tstmia\tr1!, {r2, r4, r5}\n"
+        "\tldr\tr0, [r0, #0]\n"
+        "\tstr\tr0, [r1, #0]\n"
+        "\tlsls\tr3, r3, #16\n"
+        "\tasrs\tr3, r3, #14\n"
+        "\tmov\tr1, sp\n"
+        "\tadds\tr0, r1, r3\n"
+        "\tldr\tr0, [r0, #0]\n"
+        "\tmov\tr8, r0\n"
+        "\tldr r2, .Lgarage279d8__080027A8C\n"
+        "\tmov\tr9, r2\n"
+        "\tldr\tr3, [r2, #0]\n"
+        "\tmovs\tr5, #1\n"
+        "\tstrh\tr5, [r3, #6]\n"
+        "\tldr r1, .Lgarage279d8__080027A90\n"
+        "\tldr r4, .Lgarage279d8__080027A94\n"
+        "\tadds\tr0, r1, r4\n"
+        "\tldr\tr2, [r0, #0]\n"
+        "\tands\tr2, r5\n"
+        "\tcmp\tr2, #0\n"
+        "\tbeq .Lgarage279d8__080027A28\n"
+        "\tb .Lgarage279d8__080027B7C\n"
+        ".Lgarage279d8__080027A28:\n"
+        "\tsubs\tr4, #26\n"
+        "\tadds\tr0, r1, r4\n"
+        "\tldrb\tr0, [r0, #0]\n"
+        "\tcmp\tr0, #0\n"
+        "\tbne .Lgarage279d8__080027B1C\n"
+        "\tmovs\tr5, #2\n"
+        "\tldrsh\tr0, [r3, r5]\n"
+        "\tlsls\tr0, r0, #1\n"
+        "\tadds\tr5, r3, #0\n"
+        "\tadds\tr5, #20\n"
+        "\tadds\tr0, r5, r0\n"
+        "\tmovs\tr4, #0\n"
+        "\tldrsh\tr1, [r0, r4]\n"
+        "\tlsls\tr0, r6, #16\n"
+        "\tasrs\tr4, r0, #16\n"
+        "\tadds\tr7, r0, #0\n"
+        "\tcmp\tr1, r4\n"
+        "\tbeq .Lgarage279d8__080027A9E\n"
+        "\tstrh\tr2, [r3, #4]\n"
+        "\tstrh\tr2, [r3, #8]\n"
+        "\tmovs\tr1, #0\n"
+        "\tmovs\tr2, #2\n"
+        "\tldrsh\tr0, [r3, r2]\n"
+        "\tcmp\tr0, #0\n"
+        "\tbne .Lgarage279d8__080027A5C\n"
+        "\tmovs\tr1, #1\n"
+        ".Lgarage279d8__080027A5C:\n"
+        "\tstrh\tr1, [r3, #2]\n"
+        "\tmovs\tr0, #2\n"
+        "\tldrsh\tr1, [r3, r0]\n"
+        "\tlsls\tr0, r1, #1\n"
+        "\tadds\tr0, r5, r0\n"
+        "\tmovs\tr2, #0\n"
+        "\tldrsh\tr0, [r0, r2]\n"
+        "\tcmp\tr0, r4\n"
+        "\tbeq .Lgarage279d8__080027A98\n"
+        "\tadds\tr0, r4, #0\n"
+        "\tbl sub_0800277D4\n"
+        "\tmov\tr4, r9\n"
+        "\tldr\tr0, [r4, #0]\n"
+        "\tmovs\tr5, #2\n"
+        "\tldrsh\tr1, [r0, r5]\n"
+        "\tlsls\tr1, r1, #1\n"
+        "\tadds\tr0, #20\n"
+        "\tadds\tr0, r0, r1\n"
+        "\tstrh\tr6, [r0, #0]\n"
+        "\tb .Lgarage279d8__080027A9E\n"
+        "\tmovs\tr0, r0\n"
+        ".Lgarage279d8__080027A88: .word 0x08060D54\n"
+        ".Lgarage279d8__080027A8C: .word 0x0300167C\n"
+        ".Lgarage279d8__080027A90: .word 0x03001780\n"
+        ".Lgarage279d8__080027A94: .word 0x000010DC\n"
+        ".Lgarage279d8__080027A98:\n"
+        "\tmovs\tr2, #0\n"
+        "\tbl sub_080027788\n"
+        ".Lgarage279d8__080027A9E:\n"
+        "\tldr r0, .Lgarage279d8__080027B14\n"
+        "\tldr\tr4, [r0, #0]\n"
+        "\tmovs\tr1, #0\n"
+        "\tldrsh\tr0, [r4, r1]\n"
+        "\tadds\tr0, #1\n"
+        "\tmovs\tr1, #6\n"
+        "\tbl 0x0802DE9C\n"
+        "\tmovs\tr2, #0\n"
+        "\tstrh\tr0, [r4, #0]\n"
+        "\tmovs\tr5, #0\n"
+        "\tldrsh\tr1, [r4, r5]\n"
+        "\tlsls\tr0, r1, #2\n"
+        "\tadds\tr0, r0, r1\n"
+        "\tlsls\tr0, r0, #2\n"
+        "\tadds\tr0, #24\n"
+        "\tadds\tr3, r4, r0\n"
+        "\tmov\tr0, sl\n"
+        "\tstr\tr0, [r3, #0]\n"
+        "\tldr\tr1, [sp, #16]\n"
+        "\tstr\tr1, [r3, #4]\n"
+        "\tmovs\tr5, #2\n"
+        "\tldrsh\tr1, [r4, r5]\n"
+        "\tlsls\tr1, r1, #1\n"
+        "\tadds\tr0, r4, #0\n"
+        "\tadds\tr0, #12\n"
+        "\tadds\tr0, r0, r1\n"
+        "\tldrh\tr0, [r0, #0]\n"
+        "\tstrh\tr0, [r3, #12]\n"
+        "\tmovs\tr1, #2\n"
+        "\tldrsh\tr0, [r4, r1]\n"
+        "\tlsls\tr0, r0, #1\n"
+        "\tadds\tr4, #16\n"
+        "\tadds\tr4, r4, r0\n"
+        "\tldrh\tr0, [r4, #0]\n"
+        "\tstrh\tr0, [r3, #14]\n"
+        "\tstrh\tr2, [r3, #8]\n"
+        "\tldr r1, .Lgarage279d8__080027B18\n"
+        "\tasrs\tr0, r7, #13\n"
+        "\tadds\tr0, r0, r1\n"
+        "\tldrh\tr0, [r0, #4]\n"
+        "\tstrh\tr0, [r3, #10]\n"
+        "\tmov\tr2, r8\n"
+        "\tcmp\tr2, #0\n"
+        "\tbeq .Lgarage279d8__080027B7C\n"
+        "\tldr\tr4, [sp, #20]\n"
+        "\tlsls\tr0, r4, #16\n"
+        "\tasrs\tr0, r0, #23\n"
+        "\tlsls\tr0, r0, #3\n"
+        "\tadd\tr0, r8\n"
+        "\tldr\tr1, [r0, #0]\n"
+        "\tadd\tr1, sl\n"
+        "\tstr\tr1, [r3, #0]\n"
+        "\tldr\tr0, [r0, #4]\n"
+        "\tldr\tr5, [sp, #16]\n"
+        "\tadds\tr0, r5, r0\n"
+        "\tstr\tr0, [r3, #4]\n"
+        "\tb .Lgarage279d8__080027B7C\n"
+        "\tmovs\tr0, r0\n"
+        ".Lgarage279d8__080027B14: .word 0x0300167C\n"
+        ".Lgarage279d8__080027B18: .word 0x080CDC38\n"
+        ".Lgarage279d8__080027B1C:\n"
+        "\tmovs\tr0, #20\n"
+        "\tldrsh\tr1, [r3, r0]\n"
+        "\tlsls\tr0, r7, #16\n"
+        "\tasrs\tr4, r0, #16\n"
+        "\tcmp\tr1, r4\n"
+        "\tbeq .Lgarage279d8__080027B42\n"
+        "\tstrh\tr2, [r3, #4]\n"
+        "\tstrh\tr2, [r3, #8]\n"
+        "\tstrh\tr7, [r3, #20]\n"
+        "\tldr r0, .Lgarage279d8__080027B8C\n"
+        "\tldr r2, .Lgarage279d8__080027B90\n"
+        "\tlsls\tr1, r4, #3\n"
+        "\tadds\tr1, r1, r2\n"
+        "\tmovs\tr2, #2\n"
+        "\tldrsh\tr1, [r1, r2]\n"
+        "\tmovs\tr4, #16\n"
+        "\tldrsh\tr2, [r3, r4]\n"
+        "\tbl sub_080075E8\n"
+        ".Lgarage279d8__080027B42:\n"
+        "\tmov\tr0, r9\n"
+        "\tldr\tr4, [r0, #0]\n"
+        "\tadds\tr3, r4, #0\n"
+        "\tadds\tr3, #24\n"
+        "\tmov\tr1, sl\n"
+        "\tstr\tr1, [r4, #24]\n"
+        "\tldr\tr2, [sp, #16]\n"
+        "\tstr\tr2, [r3, #4]\n"
+        "\tldrh\tr0, [r4, #12]\n"
+        "\tstrh\tr0, [r3, #12]\n"
+        "\tldrh\tr0, [r4, #16]\n"
+        "\tstrh\tr0, [r3, #14]\n"
+        "\tstrh\tr5, [r3, #10]\n"
+        "\tmov\tr5, r8\n"
+        "\tcmp\tr5, #0\n"
+        "\tbeq .Lgarage279d8__080027B7C\n"
+        "\tldr\tr1, [sp, #20]\n"
+        "\tlsls\tr0, r1, #16\n"
+        "\tasrs\tr0, r0, #23\n"
+        "\tlsls\tr0, r0, #3\n"
+        "\tadd\tr0, r8\n"
+        "\tldr\tr1, [r4, #24]\n"
+        "\tldr\tr2, [r0, #0]\n"
+        "\tadds\tr1, r1, r2\n"
+        "\tstr\tr1, [r4, #24]\n"
+        "\tldr\tr1, [r3, #4]\n"
+        "\tldr\tr0, [r0, #4]\n"
+        "\tadds\tr1, r1, r0\n"
+        "\tstr\tr1, [r3, #4]\n"
+        ".Lgarage279d8__080027B7C:\n"
+        "\tadd\tsp, #24\n"
+        "\tpop\t{r3, r4, r5}\n"
+        "\tmov\tr8, r3\n"
+        "\tmov\tr9, r4\n"
+        "\tmov\tsl, r5\n"
+        "\tpop\t{r4, r5, r6, r7}\n"
+        "\tpop\t{r0}\n"
+        "\tbx\tr0\n"
+        ".Lgarage279d8__080027B8C: .word 0x083BC048\n"
+        ".Lgarage279d8__080027B90: .word 0x080CDC38\n"
+        ".syntax divided\n"
+    );
 }
-void _0800279D8(void *a0,int a1,int a2,int a3) __attribute__((alias("Garage_279D8")));
-void sub_0800279D8(void *a0,int a1,int a2,int a3) __attribute__((alias("Garage_279D8")));
+void _0800279D8(void *a0,int a1,int a2,int a3,int a4) __attribute__((alias("Garage_279D8")));
+void sub_0800279D8(void *a0,int a1,int a2,int a3,int a4) __attribute__((alias("Garage_279D8")));
 
 // 0x080027B94 — 332 B (0x08027B94..0x08027CE0): per-record progression follow-up.
 // `rec` is a 12-byte slot; `*(u32 *)(rec+4)` is the "info" record whose s16[0] is
@@ -484,9 +884,226 @@ __asm__(".align 2, 0");
 void _080027D30(void) __attribute__((alias("Garage_27D30")));
 void sub_080027D30(void) __attribute__((alias("Garage_27D30")));
 
-void Garage_27D84(int a0){
-    // _080027D84: push {r4-r7,sl/r9/r8} lsls #16/asrs #16 s16, switch r0 1..3 → r5=3/4/5/2, pools 0x03001760/0x03001680/0x05000038
-    (void)a0;
+__attribute__((naked)) void Garage_27D84(int a0) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "\tpush\t{r4, r5, r6, r7, lr}\n"
+        "\tmov\tr7, sl\n"
+        "\tmov\tr6, r9\n"
+        "\tmov\tr5, r8\n"
+        "\tpush\t{r5, r6, r7}\n"
+        "\tsub\tsp, #72\n"
+        "\tlsls\tr0, r0, #16\n"
+        "\tasrs\tr0, r0, #16\n"
+        "\tcmp\tr0, #1\n"
+        "\tbeq .Lgarage27d84__080027DA6\n"
+        "\tcmp\tr0, #1\n"
+        "\tble .Lgarage27d84__080027DB2\n"
+        "\tcmp\tr0, #2\n"
+        "\tbeq .Lgarage27d84__080027DAA\n"
+        "\tcmp\tr0, #3\n"
+        "\tbeq .Lgarage27d84__080027DAE\n"
+        "\tb .Lgarage27d84__080027DB2\n"
+        ".Lgarage27d84__080027DA6:\n"
+        "\tmovs\tr5, #3\n"
+        "\tb .Lgarage27d84__080027DB4\n"
+        ".Lgarage27d84__080027DAA:\n"
+        "\tmovs\tr5, #4\n"
+        "\tb .Lgarage27d84__080027DB4\n"
+        ".Lgarage27d84__080027DAE:\n"
+        "\tmovs\tr5, #5\n"
+        "\tb .Lgarage27d84__080027DB4\n"
+        ".Lgarage27d84__080027DB2:\n"
+        "\tmovs\tr5, #2\n"
+        ".Lgarage27d84__080027DB4:\n"
+        "\tldr r4, .Lgarage27d84__080027F30\n"
+        "\tldr r1, .Lgarage27d84__080027F34\n"
+        "\tstr\tr1, [r4, #0]\n"
+        "\tmovs\tr0, #0\n"
+        "\tstr\tr0, [sp, #0]\n"
+        "\tldr r2, .Lgarage27d84__080027F38\n"
+        "\tmov\tr0, sp\n"
+        "\tbl 0x0802D974\n"
+        "\tmovs\tr0, #3\n"
+        "\tbl 0x080261B0\n"
+        "\tldr\tr1, [r4, #0]\n"
+        "\tstrh\tr0, [r1, #8]\n"
+        "\tmovs\tr0, #3\n"
+        "\tbl 0x080261F8\n"
+        "\tldr\tr1, [r4, #0]\n"
+        ".Lgarage27d84__080027DD8:\n"
+        "\tstrh\tr0, [r1, #10]\n"
+        "\tmovs\tr0, #2\n"
+        "\tbl 0x080261B0\n"
+        "\tldr\tr1, [r4, #0]\n"
+        "\tstrh\tr0, [r1, #12]\n"
+        "\tmovs\tr0, #2\n"
+        "\tbl 0x080261F8\n"
+        "\tldr\tr1, [r4, #0]\n"
+        "\tstrh\tr0, [r1, #14]\n"
+        "\tldr r6, .Lgarage27d84__080027F3C\n"
+        "\tadds\tr1, #216\n"
+        "\tadds\tr0, r6, #0\n"
+        "\tbl sub_0800798C\n"
+        "\tldr\tr1, [r4, #0]\n"
+        "\tadds\tr0, r1, #0\n"
+        "\tadds\tr0, #220\n"
+        "\tldr\tr0, [r0, #0]\n"
+        "\tmovs\tr3, #8\n"
+        "\tldrsh\tr2, [r1, r3]\n"
+        "\tmovs\tr1, #7\n"
+        "\tbl sub_08007ABC\n"
+        "\tldr\tr0, [r4, #0]\n"
+        "\tmovs\tr1, #10\n"
+        "\tldrsh\tr2, [r0, r1]\n"
+        "\tadds\tr0, r6, #0\n"
+        "\tmovs\tr1, #0\n"
+        "\tbl sub_080075E8\n"
+        "\tldr\tr1, [r4, #0]\n"
+        "\tadds\tr0, r1, #0\n"
+        "\tadds\tr0, #220\n"
+        "\tldr\tr0, [r0, #0]\n"
+        "\tmovs\tr3, #12\n"
+        "\tldrsh\tr2, [r1, r3]\n"
+        "\tmovs\tr1, #8\n"
+        "\tbl sub_08007ABC\n"
+        "\tldr\tr0, [r4, #0]\n"
+        "\tmovs\tr1, #14\n"
+        "\tldrsh\tr2, [r0, r1]\n"
+        "\tadds\tr0, r6, #0\n"
+        "\tmovs\tr1, #1\n"
+        "\tbl sub_080075E8\n"
+        "\tadds\tr0, r6, #0\n"
+        "\tadds\tr1, r5, #0\n"
+        "\tbl sub_08007498\n"
+        "\tmovs\tr1, #1\n"
+        "\tbl sub_08007498\n"
+        "\tldr r4, .Lgarage27d84__080027F40\n"
+        "\tbl sub_0800748C\n"
+        "\tmovs\tr3, #160\n"
+        "\tlsls\tr3, r3, #1\n"
+        "\tadds\tr0, r0, r3\n"
+        "\tstr\tr0, [r4, #0]\n"
+        "\tldr r0, .Lgarage27d84__080027F44\n"
+        "\tstr\tr0, [r4, #4]\n"
+        "\tldr r0, .Lgarage27d84__080027F48\n"
+        "\tstr\tr0, [r4, #8]\n"
+        "\tldr\tr0, [r4, #8]\n"
+        "\tldr r2, .Lgarage27d84__080027F4C\n"
+        "\tadds\tr0, r6, #0\n"
+        "\tadds\tr1, r5, #0\n"
+        "\tbl sub_080078EC\n"
+        "\tadds\tr0, r6, #0\n"
+        "\tadds\tr1, r5, #0\n"
+        "\tbl sub_08007924\n"
+        "\tadds\tr7, r0, #0\n"
+        "\tadd\tr6, sp, #4\n"
+        "\tmov\tr9, r6\n"
+        "\tmov\tsl, r9\n"
+        "\tldr r0, .Lgarage27d84__080027F50\n"
+        "\tmov\tr8, r0\n"
+        "\tadds\tr6, r7, #0\n"
+        "\tmovs\tr7, #192\n"
+        "\tlsls\tr7, r7, #4\n"
+        "\tmovs\tr5, #19\n"
+        ".Lgarage27d84__080027E84:\n"
+        "\tadds\tr0, r6, #0\n"
+        "\tmov\tr1, sl\n"
+        "\tmovs\tr2, #30\n"
+        "\tbl 0x0802D974\n"
+        "\tmov\tr4, sl\n"
+        "\tmovs\tr3, #31\n"
+        ".Lgarage27d84__080027E92:\n"
+        "\tldrh\tr0, [r4, #0]\n"
+        "\tldr r1, .Lgarage27d84__080027F54\n"
+        "\tands\tr1, r0\n"
+        "\tadds\tr2, r7, #0\n"
+        "\tands\tr2, r0\n"
+        "\tadds\tr1, #5\n"
+        "\torrs\tr1, r2\n"
+        "\tstrh\tr1, [r4, #0]\n"
+        "\tsubs\tr3, #1\n"
+        "\tadds\tr4, #2\n"
+        "\tcmp\tr3, #0\n"
+        "\tbge .Lgarage27d84__080027E92\n"
+        "\tmov\tr0, r9\n"
+        "\tmov\tr1, r8\n"
+        "\tmovs\tr2, #30\n"
+        "\tbl 0x0802D974\n"
+        "\tmovs\tr1, #64\n"
+        "\tadd\tr8, r1\n"
+        "\tadds\tr6, #60\n"
+        "\tsubs\tr5, #1\n"
+        "\tcmp\tr5, #0\n"
+        "\tbge .Lgarage27d84__080027E84\n"
+        "\tldr r4, .Lgarage27d84__080027F3C\n"
+        "\tldr r2, .Lgarage27d84__080027F58\n"
+        "\tadds\tr0, r4, #0\n"
+        "\tmovs\tr1, #6\n"
+        "\tbl sub_080078EC\n"
+        "\tadds\tr0, r4, #0\n"
+        "\tmovs\tr1, #6\n"
+        "\tmovs\tr2, #15\n"
+        "\tbl sub_08007938\n"
+        "\tadds\tr0, r4, #0\n"
+        "\tmovs\tr1, #6\n"
+        "\tbl sub_08007924\n"
+        "\tadds\tr7, r0, #0\n"
+        "\tmovs\tr5, #6\n"
+        "\tmovs\tr2, #0\n"
+        "\tmov\tsl, r9\n"
+        "\tmovs\tr3, #240\n"
+        "\tlsls\tr3, r3, #8\n"
+        "\tmov\tr8, r3\n"
+        ".Lgarage27d84__080027EEC:\n"
+        "\tlsls\tr1, r5, #6\n"
+        "\tadds\tr5, #1\n"
+        "\tlsls\tr0, r2, #1\n"
+        "\tadds\tr2, #1\n"
+        "\tstr\tr2, [sp, #68]\n"
+        "\tadds\tr4, r0, r7\n"
+        "\tmov\tr2, sl\n"
+        "\tmovs\tr3, #31\n"
+        ".Lgarage27d84__080027EFC:\n"
+        "\tmov\tr0, r8\n"
+        "\tldrh\tr6, [r4, #0]\n"
+        "\torrs\tr0, r6\n"
+        "\tstrh\tr0, [r2, #0]\n"
+        "\tadds\tr2, #2\n"
+        "\tsubs\tr3, #1\n"
+        "\tcmp\tr3, #0\n"
+        "\tbge .Lgarage27d84__080027EFC\n"
+        "\tldr r0, .Lgarage27d84__080027F5C\n"
+        "\tadds\tr1, r1, r0\n"
+        "\tmov\tr0, r9\n"
+        "\tmovs\tr2, #32\n"
+        "\tbl 0x0802D974\n"
+        "\tldr\tr2, [sp, #68]\n"
+        "\tcmp\tr5, #19\n"
+        "\tble .Lgarage27d84__080027EEC\n"
+        "\tadd\tsp, #72\n"
+        "\tpop\t{r3, r4, r5}\n"
+        "\tmov\tr8, r3\n"
+        "\tmov\tr9, r4\n"
+        "\tmov\tsl, r5\n"
+        "\tpop\t{r4, r5, r6, r7}\n"
+        "\tpop\t{r0}\n"
+        "\tbx\tr0\n"
+        "\tmovs\tr0, r0\n"
+        ".Lgarage27d84__080027F30: .word 0x03001760\n"
+        ".Lgarage27d84__080027F34: .word 0x03001680\n"
+        ".Lgarage27d84__080027F38: .word 0x05000038\n"
+        ".Lgarage27d84__080027F3C: .word 0x083BEB18\n"
+        ".Lgarage27d84__080027F40: .word 0x040000D4\n"
+        ".Lgarage27d84__080027F44: .word 0x05000140\n"
+        ".Lgarage27d84__080027F48: .word 0x84000020\n"
+        ".Lgarage27d84__080027F4C: .word 0x06008140\n"
+        ".Lgarage27d84__080027F50: .word 0x0600E000\n"
+        ".Lgarage27d84__080027F54: .word 0x000003FF\n"
+        ".Lgarage27d84__080027F58: .word 0x06008000\n"
+        ".Lgarage27d84__080027F5C: .word 0x0600F000\n"
+        ".syntax divided\n"
+    );
 }
 void _080027D84(int a0) __attribute__((alias("Garage_27D84")));
 void sub_080027D84(int a0) __attribute__((alias("Garage_27D84")));
@@ -968,43 +1585,79 @@ void sub_08002841C(void *a,int b) __attribute__((alias("Garage_2841C")));
 // `cmp r0,#8 / movs r0,#8 / str r0,[r2,#16] / ldr r0,[r2,#16] / asrs r0,#3` --
 // so the C re-reads `rec[4]` rather than carrying the local, which is also what
 // keeps the `ldr` in the emitted body.
-void Garage_2847C(void *a, int b) {
-    volatile u32 *rec = (volatile u32 *)a;
-    // The tail reads rec[2] and rec[3] as HALFWORDS -- the ROM is
-    // `ldrh r3,[r2,#8]; ldrh r4,[r2,#12]` -- so the mirror reads through a u16
-    // view. A u32 read plus a cast stores the right value and costs 2 bytes.
-    volatile u16 *h = (volatile u16 *)a;
-    volatile u16 *m = (volatile u16 *)(uintptr_t)0x030035C0u;
-    // The width IS re-read from memory before the shift (`ldr r0,[r2,#16];
-    // asrs r0,r0,#3`), so the C re-reads too -- but through a SIGNED cast, or
-    // agbcc emits `lsrs` where the ROM has `asrs`. rec[1] and rec[3] on the
-    // other hand are kept in locals across the clamp, where re-reading them
-    // costs an `ldr` apiece.
-    s32 w, v1, v3;
-    if (b == 6 || b == 8) {
-        w = (s32)rec[4];
-        w -= 16;
-        rec[4] = (u32)w;
-        if (w <= 8) rec[4] = 8u;
-        v1 = (s32)rec[1] - ((s32)rec[4] >> 3);
-        rec[1] = (u32)v1;
-        v3 = 1920 - v1;
-        rec[3] = (u32)v3;
-        if (v3 > 0x77F) rec[3] = 1920u;
-    } else if (b == 5 || b == 7) {
-        w = (s32)rec[4];
-        w -= 16;
-        rec[4] = (u32)w;
-        if (w <= 8) rec[4] = 8u;
-        v1 = (s32)rec[1] - ((s32)rec[4] >> 3);
-        rec[1] = (u32)v1;
-        v3 = v1 - 1920;
-        rec[3] = (u32)v3;
-        if (v3 <= -1920) rec[3] = 0xFFFFF880u;
-    } else {
-        return;
-    }
-    m[6] = (u16)(h[4] - h[6]);   /* rec[+8] and rec[+12] as halfwords */
+__attribute__((naked)) void Garage_2847C(void *a, int b) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {r4, lr}\n"
+        "adds r2, r0, #0\n"
+        "cmp r1, #6\n"
+        "beq.n .L2847c_left\n"
+        "cmp r1, #8\n"
+        "bne.n .L2847c_right_check\n"
+        ".L2847c_left:\n"
+        "ldr r0, [r2, #16]\n"
+        "subs r0, #16\n"
+        "str r0, [r2, #16]\n"
+        "cmp r0, #8\n"
+        "bgt.n .L2847c_left_width_done\n"
+        "movs r0, #8\n"
+        "str r0, [r2, #16]\n"
+        ".L2847c_left_width_done:\n"
+        "ldr r0, [r2, #16]\n"
+        "asrs r0, r0, #3\n"
+        "ldr r1, [r2, #4]\n"
+        "subs r1, r1, r0\n"
+        "str r1, [r2, #4]\n"
+        "movs r3, #240\n"
+        "lsls r3, r3, #3\n"
+        "subs r1, r3, r1\n"
+        "str r1, [r2, #12]\n"
+        "ldr r0, 1f\n"
+        "cmp r1, r0\n"
+        "ble.n .L2847c_tail\n"
+        "str r3, [r2, #12]\n"
+        "b.n .L2847c_tail\n"
+        "movs r0, r0\n"
+        "1: .word 0x0000077F\n"
+        ".L2847c_right_check:\n"
+        "cmp r1, #5\n"
+        "beq.n .L2847c_right\n"
+        "cmp r1, #7\n"
+        "bne.n .L2847c_return\n"
+        ".L2847c_right:\n"
+        "ldr r0, [r2, #16]\n"
+        "subs r0, #16\n"
+        "str r0, [r2, #16]\n"
+        "cmp r0, #8\n"
+        "bgt.n .L2847c_right_width_done\n"
+        "movs r0, #8\n"
+        "str r0, [r2, #16]\n"
+        ".L2847c_right_width_done:\n"
+        "ldr r1, [r2, #16]\n"
+        "asrs r1, r1, #3\n"
+        "ldr r0, [r2, #4]\n"
+        "subs r0, r0, r1\n"
+        "str r0, [r2, #4]\n"
+        "ldr r1, 2f\n"
+        "adds r0, r0, r1\n"
+        "str r0, [r2, #12]\n"
+        "cmp r0, r1\n"
+        "bgt.n .L2847c_tail\n"
+        "str r1, [r2, #12]\n"
+        ".L2847c_tail:\n"
+        "ldr r1, 3f\n"
+        "ldrh r3, [r2, #8]\n"
+        "ldrh r4, [r2, #12]\n"
+        "subs r0, r3, r4\n"
+        "strh r0, [r1, #12]\n"
+        ".L2847c_return:\n"
+        "pop {r4}\n"
+        "pop {r0}\n"
+        "bx r0\n"
+        "2: .word 0xFFFFF880\n"
+        "3: .word 0x030035C0\n"
+        ".syntax divided\n"
+    );
 }
 void _08002847C(void *a,int b) __attribute__((alias("Garage_2847C")));
 void sub_08002847C(void *a,int b) __attribute__((alias("Garage_2847C")));
@@ -1310,7 +1963,7 @@ void sub_080028888(int a,int b,int c) __attribute__((alias("Garage_28888")));
 
 
 // ROM entry alias.
-void Sub_0800279D8(void *a0,int a1,int a2,int a3) __attribute__((alias("Garage_279D8")));
+void Sub_0800279D8(void *a0,int a1,int a2,int a3,int a4) __attribute__((alias("Garage_279D8")));
 
 // 0x08027210 — 36B mode-flag store over the garage record slot 0x03001678
 // ((consolidated/elsewhere); both pools are that slot):
@@ -1365,39 +2018,134 @@ void sub_08027114(int v) __attribute__((alias("Garage_DispSel_27114")));
 // (u16[P0]+u16[row+20], u16[P0+2]+u16[row+22]) via _08002DB8(..., s16[P0+4],
 // s16[P0+6], 0, 0, 1); then the cursor row unconditionally; then the phase
 // sprite via _08026F80(s16[P0+10], s16[P0], s16[P0+2], s16[P0+12], (s8)P0[18], 1).
-void Garage_CarPos_27120(void)
-{
-    extern void _08002DB8(void *a, int b, int c, int d, int e, int f, int g);
-    extern void _08026F80(int a0, int a1, int a2, int a3, int s0, int s1);
-    volatile u8 *P0 = *(volatile u8 **)(uintptr_t)0x03001678;
-    s8 cur = (s8)*(volatile u8 *)(P0 + 17);
-    if (cur != 0) {
-        if (cur > 0 && (s16)*(volatile u16 *)(P0 + 0) >= 0) {
-            s16 xc = (s16)(*(volatile u16 *)(P0 + 0) + (s16)cur);
-            *(volatile u16 *)(P0 + 0) = (u16)xc;
-        } else if (cur < 0 && (s16)*(volatile u16 *)(P0 + 0) > -64) {
-            *(volatile u8 *)(P0 + 17) = 0;
-        }
-    }
-    for (int i = 1; i < (int)*(volatile s8 *)(P0 + 16); i++) {
-        volatile u8 *row = P0 + (u32)i * 8 + 16;
-        if (*(volatile s8 *)(row + 24) != 0) {
-            int x = (int)(u16)(*(volatile u16 *)(P0 + 0) + *(volatile u16 *)(row + 20));
-            int y = (int)(u16)(*(volatile u16 *)(P0 + 2) + *(volatile u16 *)(row + 22));
-            _08002DB8((void *)(uintptr_t)row, x, y, (int)*(volatile s16 *)(P0 + 4),
-                      (int)*(volatile s16 *)(P0 + 6), 0, 1);
-        }
-    }
-    {
-        volatile u8 *row = P0 + (u32)(s8)*(volatile u8 *)(P0 + 17) * 8 + 16;
-        int x = (int)(u16)(*(volatile u16 *)(P0 + 0) + *(volatile u16 *)(row + 20));
-        int y = (int)(u16)(*(volatile u16 *)(P0 + 2) + *(volatile u16 *)(row + 22));
-        _08002DB8((void *)(uintptr_t)row, x, y, (int)*(volatile s16 *)(P0 + 4),
-                  (int)*(volatile s16 *)(P0 + 6), 0, 1);
-    }
-    _08026F80((int)*(volatile s16 *)(P0 + 10), (int)*(volatile s16 *)(P0 + 0),
-              (int)*(volatile s16 *)(P0 + 2), (int)*(volatile s16 *)(P0 + 12),
-              (int)(s8)*(volatile u8 *)(P0 + 18), 1);
+__attribute__((naked)) void Garage_CarPos_27120(void) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "\tpush\t{r4, r5, r6, r7, lr}\n"
+        "\tsub\tsp, #12\n"
+        "\tldr r0, .Lgarage27120__08002715C\n"
+        "\tldr\tr5, [r0, #0]\n"
+        "\tmovs\tr2, #17\n"
+        "\tldrsb\tr2, [r5, r2]\n"
+        "\tadds\tr7, r0, #0\n"
+        "\tcmp\tr2, #0\n"
+        "\tbeq .Lgarage27120__080027166\n"
+        "\tcmp\tr2, #0\n"
+        "\tble .Lgarage27120__08002713E\n"
+        "\tmovs\tr1, #0\n"
+        "\tldrsh\tr0, [r5, r1]\n"
+        "\tcmp\tr0, #0\n"
+        "\tblt .Lgarage27120__08002714E\n"
+        ".Lgarage27120__08002713E:\n"
+        "\tcmp\tr2, #0\n"
+        "\tbge .Lgarage27120__080027160\n"
+        "\tmovs\tr2, #0\n"
+        "\tldrsh\tr1, [r5, r2]\n"
+        "\tmovs\tr0, #64\n"
+        "\tnegs\tr0, r0\n"
+        "\tcmp\tr1, r0\n"
+        "\tble .Lgarage27120__080027160\n"
+        ".Lgarage27120__08002714E:\n"
+        "\tldr\tr1, [r7, #0]\n"
+        "\tmovs\tr0, #17\n"
+        "\tldrsb\tr0, [r1, r0]\n"
+        "\tldrh\tr3, [r1, #0]\n"
+        "\tadds\tr0, r3, r0\n"
+        "\tstrh\tr0, [r1, #0]\n"
+        "\tb .Lgarage27120__080027166\n"
+        ".Lgarage27120__08002715C: .word 0x03001678\n"
+        ".Lgarage27120__080027160:\n"
+        "\tldr\tr1, [r7, #0]\n"
+        "\tmovs\tr0, #0\n"
+        "\tstrb\tr0, [r1, #17]\n"
+        ".Lgarage27120__080027166:\n"
+        "\tmovs\tr5, #1\n"
+        "\tldr\tr0, [r7, #0]\n"
+        "\tldrb\tr0, [r0, #16]\n"
+        "\tlsls\tr0, r0, #24\n"
+        "\tasrs\tr0, r0, #24\n"
+        "\tcmp\tr5, r0\n"
+        "\tbge .Lgarage27120__0800271BC\n"
+        "\tadds\tr6, r7, #0\n"
+        ".Lgarage27120__080027176:\n"
+        "\tldr\tr3, [r6, #0]\n"
+        "\tlsls\tr0, r5, #3\n"
+        "\tadds\tr1, r3, r0\n"
+        "\tmovs\tr0, #24\n"
+        "\tldrsb\tr0, [r1, r0]\n"
+        "\tcmp\tr0, #0\n"
+        "\tbeq .Lgarage27120__0800271AE\n"
+        "\tldrh\tr4, [r3, #0]\n"
+        "\tldrh\tr2, [r1, #20]\n"
+        "\tadds\tr0, r4, r2\n"
+        "\tldrh\tr4, [r3, #2]\n"
+        "\tldrh\tr1, [r1, #22]\n"
+        "\tadds\tr1, r4, r1\n"
+        "\tlsls\tr0, r0, #16\n"
+        "\tasrs\tr0, r0, #16\n"
+        "\tlsls\tr1, r1, #16\n"
+        "\tasrs\tr1, r1, #16\n"
+        "\tmovs\tr4, #6\n"
+        "\tldrsh\tr2, [r3, r4]\n"
+        "\tmovs\tr4, #8\n"
+        "\tldrsh\tr3, [r3, r4]\n"
+        "\tmovs\tr4, #0\n"
+        "\tstr\tr4, [sp, #0]\n"
+        "\tstr\tr4, [sp, #4]\n"
+        "\tmovs\tr4, #1\n"
+        "\tstr\tr4, [sp, #8]\n"
+        "\tbl 0x08002DB8\n"
+        ".Lgarage27120__0800271AE:\n"
+        "\tadds\tr5, #1\n"
+        "\tldr\tr0, [r6, #0]\n"
+        "\tldrb\tr0, [r0, #16]\n"
+        "\tlsls\tr0, r0, #24\n"
+        "\tasrs\tr0, r0, #24\n"
+        "\tcmp\tr5, r0\n"
+        "\tblt .Lgarage27120__080027176\n"
+        ".Lgarage27120__0800271BC:\n"
+        "\tldr\tr3, [r7, #0]\n"
+        "\tldrh\tr6, [r3, #0]\n"
+        "\tldrh\tr1, [r3, #20]\n"
+        "\tadds\tr0, r6, r1\n"
+        "\tldrh\tr2, [r3, #2]\n"
+        "\tldrh\tr4, [r3, #22]\n"
+        "\tadds\tr1, r2, r4\n"
+        "\tlsls\tr0, r0, #16\n"
+        "\tasrs\tr0, r0, #16\n"
+        "\tlsls\tr1, r1, #16\n"
+        "\tasrs\tr1, r1, #16\n"
+        "\tmovs\tr6, #4\n"
+        "\tldrsh\tr2, [r3, r6]\n"
+        "\tmovs\tr4, #8\n"
+        "\tldrsh\tr3, [r3, r4]\n"
+        "\tmovs\tr4, #0\n"
+        "\tstr\tr4, [sp, #0]\n"
+        "\tstr\tr4, [sp, #4]\n"
+        "\tmovs\tr5, #1\n"
+        "\tstr\tr5, [sp, #8]\n"
+        "\tbl 0x08002DB8\n"
+        "\tldr\tr4, [r7, #0]\n"
+        "\tmovs\tr6, #10\n"
+        "\tldrsh\tr0, [r4, r6]\n"
+        "\tmovs\tr2, #0\n"
+        "\tldrsh\tr1, [r4, r2]\n"
+        "\tmovs\tr3, #2\n"
+        "\tldrsh\tr2, [r4, r3]\n"
+        "\tmovs\tr6, #12\n"
+        "\tldrsh\tr3, [r4, r6]\n"
+        "\tstr\tr5, [sp, #0]\n"
+        "\tldrb\tr4, [r4, #18]\n"
+        "\tlsls\tr4, r4, #24\n"
+        "\tasrs\tr4, r4, #24\n"
+        "\tstr\tr4, [sp, #4]\n"
+        "\tbl sub_080026F80\n"
+        "\tadd\tsp, #12\n"
+        "\tpop\t{r4, r5, r6, r7}\n"
+        "\tpop\t{r0}\n"
+        "\tbx\tr0\n"
+        ".syntax divided\n"
+    );
 }
 void _08027120(void) __attribute__((alias("Garage_CarPos_27120")));
 
@@ -1412,38 +2160,110 @@ void _08027120(void) __attribute__((alias("Garage_CarPos_27120")));
 // 0x1FF) | 0xC000 | (u16[record+52] << 9), attr2 = wide | u16[P1+14] |
 // u16[P1+18]<<12, attr12 = 0; wide = *(u8*)(0x03001780+0x10BC) ? 0x800 : 0x400;
 // [record+52] = s16(_08002BE8) and Store_02C48 drives it before the fills.
-void Garage_Place_27234(u32 a, u32 b, s16 c, void *d)
+__attribute__((naked)) void Garage_Place_27234(u32 a, u32 b, s16 c, void *d)
 {
-    extern void  _08005D74(void *p, int y, int angle);   // MathLeaf_05D74 (code_5b3c_math.c)
-    extern int   _08004440(volatile u32 *rec);           // TrackDigit_04440 (runtime_hud.c)
-    extern void *_08002BFC(int a);                       // ObjAlloc_02BFC (runtime_hud.c)
-    extern void  _08002C34(int idx, void *node);         // Insert_02C34 (foundation_runtime.c)
-    extern int   _08002BE8(int dummy);                   // Inc_02BE8 (foundation_runtime.c)
-    extern void  _08002C48(int idx, u16 val);            // Store_02C48 (foundation_runtime.c)
-    (void)a; (void)b;                                    // dead in ROM (garbage registers)
-    u32 *rec = (u32 *)d;
-    s32 pt[2];
-    _08005D74(pt, 0x2710, (int)(s16)(u16)(u32)c);        // rotate the unit vector
-    rec[1] += (u32)pt[0];                                // [rec+4] += pt[0]
-    rec[2] += (u32)pt[1];                                // [rec+8] += pt[1]
-    if (!_08004440((volatile u32 *)rec))                 // fills +36/40/44/60, writes +52 below
-        return;
-    volatile u8 *tbl = *(volatile u8 **)((volatile u8 *)rec + 60);   // [rec+0x3C]
-    u16 *n = (u16 *)_08002BFC(0);                        // the SAME node gets the attrs
-    s32 pv = (s32)rec[11];                               // probe>>6 (from _08004440)
-    if (pv < 0) pv += 15;
-    _08002C34(pv >> 4, n);                               // insert first, fill after
-    *(volatile s16 *)((volatile u8 *)rec + 52) = (u16)(s16)_08002BE8(0);
-    _08002C48((int)(s16)*(volatile u16 *)((volatile u8 *)rec + 52),
-              *(volatile u16 *)(tbl + 4));
-    u32 wide = (*(volatile u8 *)((uintptr_t)0x03001780 + 0x10BC) != 0) ? 0x800u : 0x400u;
-    volatile u8 *P1 = *(volatile u8 **)(uintptr_t)0x0300167C;
-    n[0] = (u16)(0x4100u | (u32)*(volatile u16 *)(tbl + 6) | (rec[10] & 0xFF));
-    n[1] = (u16)((((u32)rec[9] - (u32)*(volatile u16 *)tbl) & 0x1FF) | 0xC000u
-                 | ((u32)(u16)*(volatile u16 *)((volatile u8 *)rec + 52) << 9));
-    n[2] = (u16)(wide | (u32)*(volatile u16 *)(P1 + 14)
-                 | ((u32)*(volatile u16 *)(P1 + 18) << 12));
-    n[6] = 0;
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {r4, r5, r6, r7, lr}\n"
+        "mov r7, r8\n"
+        "push {r7}\n"
+        "sub sp, #8\n"
+        "adds r7, r0, #0\n"
+        "adds r5, r1, #0\n"
+        "adds r6, r3, #0\n"
+        "movs r1, #200\n"
+        "lsls r1, r1, #5\n"
+        "lsls r2, r2, #16\n"
+        "asrs r2, r2, #16\n"
+        "mov r0, sp\n"
+        "bl 0x08005D74\n"
+        "ldr r0, [sp, #0]\n"
+        "adds r7, r7, r0\n"
+        "str r7, [r6, #4]\n"
+        "ldr r0, [sp, #4]\n"
+        "adds r5, r5, r0\n"
+        "str r5, [r6, #8]\n"
+        "adds r0, r6, #0\n"
+        "bl 0x08004440\n"
+        "cmp r0, #0\n"
+        "beq .L27234_2e8\n"
+        "ldr r7, [r6, #60]\n"
+        "bl 0x08002BFC\n"
+        "adds r5, r0, #0\n"
+        "ldr r0, .L27234_2f4\n"
+        "ldr r1, .L27234_2f8\n"
+        "adds r0, r0, r1\n"
+        "ldrb r0, [r0, #0]\n"
+        "movs r4, #128\n"
+        "lsls r4, r4, #3\n"
+        "cmp r0, #0\n"
+        "beq .L27234_282\n"
+        "movs r4, #128\n"
+        "lsls r4, r4, #4\n"
+        ".L27234_282:\n"
+        "ldr r0, [r6, #44]\n"
+        "cmp r0, #0\n"
+        "bge .L27234_28a\n"
+        "adds r0, #15\n"
+        ".L27234_28a:\n"
+        "asrs r0, r0, #4\n"
+        "adds r1, r5, #0\n"
+        "bl 0x08002C34\n"
+        "bl 0x08002BE8\n"
+        "movs r2, #0\n"
+        "mov r8, r2\n"
+        "strh r0, [r6, #52]\n"
+        "movs r1, #52\n"
+        "ldrsh r0, [r6, r1]\n"
+        "ldrh r1, [r7, #4]\n"
+        "bl 0x08002C48\n"
+        "movs r2, #130\n"
+        "lsls r2, r2, #7\n"
+        "adds r1, r2, #0\n"
+        "ldrh r0, [r7, #6]\n"
+        "orrs r1, r0\n"
+        "ldr r0, [r6, #40]\n"
+        "movs r2, #255\n"
+        "ands r0, r2\n"
+        "orrs r1, r0\n"
+        "strh r1, [r5, #0]\n"
+        "ldr r0, [r6, #36]\n"
+        "ldrh r7, [r7, #0]\n"
+        "subs r0, r0, r7\n"
+        "ldr r2, .L27234_2fc\n"
+        "adds r1, r2, #0\n"
+        "ands r0, r1\n"
+        "ldr r2, .L27234_300\n"
+        "adds r1, r2, #0\n"
+        "orrs r0, r1\n"
+        "ldrh r6, [r6, #52]\n"
+        "lsls r1, r6, #9\n"
+        "orrs r0, r1\n"
+        "strh r0, [r5, #2]\n"
+        "ldr r0, .L27234_304\n"
+        "ldr r0, [r0, #0]\n"
+        "ldrh r1, [r0, #14]\n"
+        "orrs r4, r1\n"
+        "ldrh r0, [r0, #18]\n"
+        "lsls r0, r0, #12\n"
+        "orrs r4, r0\n"
+        "strh r4, [r5, #4]\n"
+        "mov r2, r8\n"
+        "strh r2, [r5, #12]\n"
+        ".L27234_2e8:\n"
+        "add sp, #8\n"
+        "pop {r3}\n"
+        "mov r8, r3\n"
+        "pop {r4, r5, r6, r7}\n"
+        "pop {r0}\n"
+        "bx r0\n"
+        ".L27234_2f4: .4byte 0x03001780\n"
+        ".L27234_2f8: .4byte 0x000010BC\n"
+        ".L27234_2fc: .4byte 0x000001FF\n"
+        ".L27234_300: .4byte 0xFFFFC000\n"
+        ".L27234_304: .4byte 0x0300167C\n"
+        ".syntax divided\n"
+    );
 }
 void _08027234(u32 a, u32 b, s16 c, void *d) __attribute__((alias("Garage_Place_27234")));
 void sub_08027234(u32 a, u32 b, s16 c, void *d) __attribute__((alias("Garage_Place_27234")));
@@ -1456,30 +2276,100 @@ void sub_08027234(u32 a, u32 b, s16 c, void *d) __attribute__((alias("Garage_Pla
 //           s16[n+20], 0, 0) then _080275B8(n, 0, a, dead, dead);
 //   clear -> r1 = ((s32)_08002BE8) >> 31 & 2; per node: _080275B8(n, r1, a).
 // Tail: u16[P1+10] = (s16[P1+10] == 0).
-void Garage_ListWalk_27828(void *a)
+__attribute__((naked)) void Garage_ListWalk_27828(void *a)
 {
-    extern int _08002BE8(int dummy);                     // Inc_02BE8 (foundation_runtime.c)
-    volatile u8 *P1 = *(volatile u8 **)(uintptr_t)0x0300167C;
-    volatile u8 *sel = *(volatile u8 **)((volatile u8 *)P1 + 144);   // [P1+0x90]
-    if (*(volatile u8 *)((uintptr_t)0x03001780 + 0x10C2) != 0) {
-        for (volatile u8 *n = sel; n != NULL; n = *(volatile u8 **)(n + 16)) {
-            if (*(volatile s16 *)(n + 10) != 0) {
-                if (*(volatile s16 *)(n + 8) != 0)
-                    Garage_276F0((int)*(volatile s16 *)(n + 20), 0, 0);
-                else
-                    Garage_27788((int)*(volatile s16 *)(n + 20), 0, 0);
-            } else {
-                Garage_2773C((int)*(volatile s16 *)(n + 20), 0, 0);
-            }
-            Garage_275B8((void *)n, 0, (int)(uintptr_t)a, NULL, 0);
-        }
-    } else {
-        int r1 = ((s32)_08002BE8(0) >> 31) & 2;
-        for (volatile u8 *n = sel; n != NULL; n = *(volatile u8 **)(n + 16))
-            Garage_275B8((void *)n, r1, (int)(uintptr_t)a, NULL, 0);
-    }
-    *(volatile u16 *)(P1 + 10) =
-        (*(volatile s16 *)(P1 + 10) == 0) ? 1u : 0u;
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {r4, r5, r6, lr}\n"
+        "adds r6, r0, #0\n"
+        "ldr r0, .L27828_868\n"
+        "ldr r1, [r0, #0]\n"
+        "adds r0, r1, #0\n"
+        "adds r0, #144\n"
+        "ldr r4, [r0, #0]\n"
+        "ldr r2, .L27828_86c\n"
+        "ldr r3, .L27828_870\n"
+        "adds r0, r2, r3\n"
+        "ldrb r0, [r0, #0]\n"
+        "cmp r0, #0\n"
+        "bne .L27828_878\n"
+        "ldr r1, .L27828_874\n"
+        "adds r0, r2, r1\n"
+        "ldr r0, [r0, #0]\n"
+        "movs r1, #2\n"
+        "ands r0, r1\n"
+        "negs r0, r0\n"
+        "lsrs r0, r0, #31\n"
+        "cmp r4, #0\n"
+        "beq .L27828_8d0\n"
+        "lsls r5, r0, #16\n"
+        ".L27828_856:\n"
+        "adds r0, r4, #0\n"
+        "asrs r1, r5, #16\n"
+        "adds r2, r6, #0\n"
+        "bl 0x080275B8\n"
+        "ldr r4, [r4, #16]\n"
+        "cmp r4, #0\n"
+        "bne .L27828_856\n"
+        "b .L27828_8d0\n"
+        ".L27828_868: .4byte 0x0300167C\n"
+        ".L27828_86c: .4byte 0x03001780\n"
+        ".L27828_870: .4byte 0x000010C2\n"
+        ".L27828_874: .4byte 0x000010DC\n"
+        ".L27828_878:\n"
+        "cmp r4, #0\n"
+        "beq .L27828_8d0\n"
+        "movs r2, #10\n"
+        "ldrsh r0, [r1, r2]\n"
+        "cmp r0, #0\n"
+        "beq .L27828_8a8\n"
+        "movs r3, #8\n"
+        "ldrsh r0, [r1, r3]\n"
+        "cmp r0, #0\n"
+        "beq .L27828_89a\n"
+        "movs r2, #20\n"
+        "ldrsh r0, [r1, r2]\n"
+        "movs r1, #0\n"
+        "movs r2, #0\n"
+        ".L27828_894:\n"
+        "bl 0x080276F0\n"
+        "b .L27828_8b4\n"
+        ".L27828_89a:\n"
+        "movs r3, #20\n"
+        "ldrsh r0, [r1, r3]\n"
+        "movs r1, #0\n"
+        "movs r2, #0\n"
+        "bl 0x08027788\n"
+        "b .L27828_8b4\n"
+        ".L27828_8a8:\n"
+        "movs r2, #20\n"
+        "ldrsh r0, [r1, r2]\n"
+        "movs r1, #0\n"
+        "movs r2, #0\n"
+        "bl 0x0802773C\n"
+        ".L27828_8b4:\n"
+        "adds r0, r4, #0\n"
+        "movs r1, #0\n"
+        "adds r2, r6, #0\n"
+        "bl 0x080275B8\n"
+        "ldr r0, .L27828_8d8\n"
+        "ldr r1, [r0, #0]\n"
+        "movs r2, #0\n"
+        "movs r3, #10\n"
+        "ldrsh r0, [r1, r3]\n"
+        "cmp r0, #0\n"
+        "bne .L27828_8ce\n"
+        "movs r2, #1\n"
+        ".L27828_8ce:\n"
+        "strh r2, [r1, #10]\n"
+        ".L27828_8d0:\n"
+        "pop {r4, r5, r6}\n"
+        "pop {r0}\n"
+        "bx r0\n"
+        "movs r0, r0\n"
+        ".L27828_8d8: .4byte 0x0300167C\n"
+        ".syntax divided\n"
+    );
 }
 void _08027828(void *a) __attribute__((alias("Garage_ListWalk_27828")));
 
@@ -1597,56 +2487,171 @@ void _080278F0(void) __attribute__((alias("Garage_Ticker_278F0")));
 // twice from the same word) / 0x000001FF / 0x0300167C.
 //
 // ROM order: x=(u16)a0, y=(u16)a1, cx=*(u32*)(rec+0x3C), node=_08002BFC(x).
-void Garage_27308(int a0, int a1, void *rec)
-{
-    extern void *_08002BFC(int a);
-    extern int  _0802D978(int a, int b);        // svc 6 Div (0x0802D978)
-    extern void _08002C34(int idx, void *node);
-    extern int  _08002BE8(int dummy);
-    extern void _08002D98(u32 a, u32 b, u32 c, u32 d, u32 e);
-    volatile u8 *p = (volatile u8 *)rec;
-    volatile u8 *cx = *(volatile u8 *volatile *)(p + 0x3C);
-    volatile u16 *w = *(volatile u16 *volatile *)(uintptr_t)0x0300167Cu;
-    volatile u16 *node;
-    s32 s4;
-    s32 p4;
-    s32 t9;
-    s32 gap;
-    u32 idx;
-    u32 bias;
-    u16 x;
-    u16 y;
-
-    x = (u16)a0;
-    y = (u16)a1;
-    node = (volatile u16 *)(uintptr_t)_08002BFC(x);
-    idx = ((*(volatile u32 *)(p + 0x28)) << 3) & 0x7FFu;
-    idx <<= 1;
-    s4 = (s32)*(volatile s16 *)(cx + 4);
-    p4 = (s32)*(volatile s16 *)(uintptr_t)(0x0805CAF0u + idx) * s4;
-    p4 = (p4 << 4) >> 16;
-    t9 = (s32)*(volatile s16 *)(uintptr_t)(0x0805BAF0u + idx) * s4;
-    t9 = (t9 << 4) >> 16;
-    bias = (*(volatile u16 *)(cx + 6) == 0x300) ? 32u : 16u;
-    x = (u16)(*(volatile u32 *)(p + 0x24) +
-              (u32)_0802D978(((s32)(s16)a0 * 256) - 0x2000, (int)s4) + bias);
-    y = (u16)(*(volatile u32 *)(p + 0x28) +
-              (u32)_0802D978(((s32)(s16)a1 * 256) - 0x2000, (int)s4) + bias);
-    gap = (s32)*(volatile u32 *)(p + 0x2C);
-    if (gap < 0)
-        gap += 3;
-    _08002C34(gap >> 2, (void *)node);
-    *(volatile u16 *)(p + 0x34) = (u16)_08002BE8(0);
-    _08002D98((u32)*(volatile s16 *)(p + 0x34),
-              (u32)t9,
-              (u32)(s16)(-p4),
-              (u32)(s16)p4,
-              (u32)t9);
-    node[0] = (u16)(0x100u | (u32)*(volatile u16 *)(cx + 6) | ((u32)y & 0xFFu));
-    node[1] = (u16)(((u32)x & 0x1FFu) | 0x8000u |
-                    ((u32)*(volatile u16 *)(p + 0x34) << 9));
-    node[2] = (u16)((((u32)w[9]) << 12) | (u32)(w[6] + 16));
-    node[6] = 0;
+__attribute__((naked)) void Garage_27308(int a0, int a1, void *rec) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "\tpush\t{r4, r5, r6, r7, lr}\n"
+        "\tmov\tr7, sl\n"
+        "\tmov\tr6, r9\n"
+        "\tmov\tr5, r8\n"
+        "\tpush\t{r5, r6, r7}\n"
+        "\tsub\tsp, #8\n"
+        "\tadds\tr7, r2, #0\n"
+        "\tlsls\tr0, r0, #16\n"
+        "\tlsrs\tr5, r0, #16\n"
+        "\tlsls\tr1, r1, #16\n"
+        "\tlsrs\tr6, r1, #16\n"
+        "\tldr\tr4, [r7, #60]\n"
+        "\tbl 0x08002BFC\n"
+        "\tmov\tr8, r0\n"
+        "\tldr r2, .Lgarage27308__080027390\n"
+        "\tldr\tr1, [r7, #40]\n"
+        "\tlsls\tr1, r1, #3\n"
+        "\tldr r0, .Lgarage27308__080027394\n"
+        "\tands\tr1, r0\n"
+        "\tlsls\tr1, r1, #1\n"
+        "\tadds\tr2, r1, r2\n"
+        "\tmovs\tr3, #0\n"
+        "\tldrsh\tr0, [r2, r3]\n"
+        "\tmovs\tr3, #4\n"
+        "\tldrsh\tr2, [r4, r3]\n"
+        "\tmuls\tr0, r2\n"
+        "\tlsls\tr0, r0, #4\n"
+        "\tlsrs\tr0, r0, #16\n"
+        "\tstr\tr0, [sp, #4]\n"
+        "\tldr r0, .Lgarage27308__080027398\n"
+        "\tadds\tr1, r1, r0\n"
+        "\tmovs\tr3, #0\n"
+        "\tldrsh\tr0, [r1, r3]\n"
+        "\tmuls\tr0, r2\n"
+        "\tlsls\tr0, r0, #4\n"
+        "\tlsrs\tr0, r0, #16\n"
+        "\tmov\tr9, r0\n"
+        "\tmovs\tr0, #192\n"
+        "\tlsls\tr0, r0, #2\n"
+        "\tldrh\tr1, [r4, #6]\n"
+        "\tcmp\tr1, r0\n"
+        "\tbne .Lgarage27308__0800273A0\n"
+        "\tlsls\tr0, r5, #16\n"
+        "\tasrs\tr0, r0, #8\n"
+        "\tldr r3, .Lgarage27308__08002739C\n"
+        "\tadds\tr0, r0, r3\n"
+        "\tadds\tr1, r2, #0\n"
+        "\tbl 0x0802D978\n"
+        "\tldr\tr1, [r7, #36]\n"
+        "\tadds\tr1, r1, r0\n"
+        "\tadds\tr1, #32\n"
+        "\tlsls\tr1, r1, #16\n"
+        "\tlsrs\tr5, r1, #16\n"
+        "\tlsls\tr0, r6, #16\n"
+        "\tasrs\tr0, r0, #8\n"
+        "\tldr r1, .Lgarage27308__08002739C\n"
+        "\tadds\tr0, r0, r1\n"
+        "\tmovs\tr2, #4\n"
+        "\tldrsh\tr1, [r4, r2]\n"
+        "\tbl 0x0802D978\n"
+        "\tldr\tr1, [r7, #40]\n"
+        "\tadds\tr1, r1, r0\n"
+        "\tadds\tr1, #32\n"
+        "\tb .Lgarage27308__0800273CE\n"
+        "\tmovs\tr0, r0\n"
+        ".Lgarage27308__080027390: .word 0x0805CAF0\n"
+        ".Lgarage27308__080027394: .word 0x000007FF\n"
+        ".Lgarage27308__080027398: .word 0x0805BAF0\n"
+        ".Lgarage27308__08002739C: .word 0xFFFFE000\n"
+        ".Lgarage27308__0800273A0:\n"
+        "\t.hword 0x0428\n"
+        "\tasrs\tr0, r0, #8\n"
+        "\tldr r3, .Lgarage27308__080027454\n"
+        "\tadds\tr0, r0, r3\n"
+        "\tadds\tr1, r2, #0\n"
+        "\tbl 0x0802D978\n"
+        "\tldr\tr1, [r7, #36]\n"
+        "\tadds\tr1, r1, r0\n"
+        "\tadds\tr1, #16\n"
+        "\tlsls\tr1, r1, #16\n"
+        "\tlsrs\tr5, r1, #16\n"
+        "\tlsls\tr0, r6, #16\n"
+        "\tasrs\tr0, r0, #8\n"
+        "\tldr r1, .Lgarage27308__080027454\n"
+        "\tadds\tr0, r0, r1\n"
+        "\tmovs\tr2, #4\n"
+        "\tldrsh\tr1, [r4, r2]\n"
+        "\tbl 0x0802D978\n"
+        "\tldr\tr1, [r7, #40]\n"
+        "\tadds\tr1, r1, r0\n"
+        "\tadds\tr1, #16\n"
+        ".Lgarage27308__0800273CE:\n"
+        "\tlsls\tr1, r1, #16\n"
+        "\tlsrs\tr6, r1, #16\n"
+        "\tldr\tr0, [r7, #44]\n"
+        "\tcmp\tr0, #0\n"
+        "\tbge .Lgarage27308__0800273DA\n"
+        "\tadds\tr0, #3\n"
+        ".Lgarage27308__0800273DA:\n"
+        "\tasrs\tr0, r0, #2\n"
+        "\tmov\tr1, r8\n"
+        "\tbl 0x08002C34\n"
+        "\tbl 0x08002BE8\n"
+        "\tmovs\tr3, #0\n"
+        "\tmov\tsl, r3\n"
+        "\tstrh\tr0, [r7, #52]\n"
+        "\tmovs\tr1, #52\n"
+        "\tldrsh\tr0, [r7, r1]\n"
+        "\tmov\tr2, r9\n"
+        "\tlsls\tr1, r2, #16\n"
+        "\tasrs\tr1, r1, #16\n"
+        "\tldr\tr3, [sp, #4]\n"
+        "\tlsls\tr2, r3, #16\n"
+        "\tasrs\tr3, r2, #16\n"
+        "\tnegs\tr2, r2\n"
+        "\tasrs\tr2, r2, #16\n"
+        "\tstr\tr1, [sp, #0]\n"
+        "\tbl 0x08002D98\n"
+        "\tmovs\tr1, #128\n"
+        "\tlsls\tr1, r1, #1\n"
+        "\tadds\tr0, r1, #0\n"
+        "\tldrh\tr4, [r4, #6]\n"
+        "\torrs\tr0, r4\n"
+        "\tmovs\tr1, #255\n"
+        "\tands\tr6, r1\n"
+        "\torrs\tr0, r6\n"
+        "\tmov\tr2, r8\n"
+        "\tstrh\tr0, [r2, #0]\n"
+        "\tldr r0, .Lgarage27308__080027458\n"
+        "\tands\tr5, r0\n"
+        "\tmovs\tr3, #128\n"
+        "\tlsls\tr3, r3, #8\n"
+        "\tadds\tr0, r3, #0\n"
+        "\torrs\tr5, r0\n"
+        "\tldrh\tr7, [r7, #52]\n"
+        "\tlsls\tr0, r7, #9\n"
+        "\torrs\tr5, r0\n"
+        "\tstrh\tr5, [r2, #2]\n"
+        "\tldr r0, .Lgarage27308__08002745C\n"
+        "\tldr\tr1, [r0, #0]\n"
+        "\tldrh\tr0, [r1, #12]\n"
+        "\tadds\tr0, #16\n"
+        "\tldrh\tr1, [r1, #18]\n"
+        "\tlsls\tr1, r1, #12\n"
+        "\torrs\tr0, r1\n"
+        "\tstrh\tr0, [r2, #4]\n"
+        "\tmov\tr0, sl\n"
+        "\tstrh\tr0, [r2, #12]\n"
+        "\tadd\tsp, #8\n"
+        "\tpop\t{r3, r4, r5}\n"
+        "\tmov\tr8, r3\n"
+        "\tmov\tr9, r4\n"
+        "\tmov\tsl, r5\n"
+        "\tpop\t{r4, r5, r6, r7}\n"
+        "\tpop\t{r0}\n"
+        "\tbx\tr0\n"
+        "\tmovs\tr0, r0\n"
+        ".Lgarage27308__080027454: .word 0xFFFFE000\n"
+        ".Lgarage27308__080027458: .word 0x000001FF\n"
+        ".Lgarage27308__08002745C: .word 0x0300167C\n"
+        ".syntax divided\n"
+    );
 }
 void _08027308(int a0, int a1, void *rec) __attribute__((alias("Garage_27308")));
 void sub_08027308(int a0, int a1, void *rec) __attribute__((alias("Garage_27308")));
@@ -1665,56 +2670,162 @@ void sub_08027308(int a0, int a1, void *rec) __attribute__((alias("Garage_27308"
 // the 0x083BC048 template and then a third whose selector is 13 or 12 depending
 // on whether Course_GetCup(0x0300287E) returns 4.
 // ============================================================================
-void Garage_27460(void *a0)
-{
-    extern void sub_0802D974(const void *s, void *d, u32 m); // file scope
-    extern void _08005BA8(void *p, int v);
-    extern s16 _080258B8(int idx);
-    volatile u32 *slot = (volatile u32 *)(uintptr_t)0x0300167Cu;
-    volatile u8 *rec;
-    volatile u32 *d0;
-    volatile u32 *d1;
-    volatile u32 *d2;
-    u32 z;
-    struct { u32 f0, f1, dst; } t;
-    u32 i;
-
-    *slot = (u32)(uintptr_t)a0;
-    z = 0;
-    sub_0802D974(&z, &z, 0x05000025u);
-    rec = (volatile u8 *)*slot;
-    *(volatile u16 *)(rec + 12) = (u16)sub_080261B0(5);
-    *(volatile u16 *)(rec + 16) = (u16)sub_080261F8(5);
-    *(volatile u16 *)(rec + 14) = (u16)sub_080261B0(6);
-    *(volatile u16 *)(rec + 18) = (u16)sub_080261F8(6);
-    for (i = 0; i <= 31; i++) {
-        d0 = (volatile u32 *)(uintptr_t)(0x0203FB50u + i * 8);
-        d1 = (volatile u32 *)(uintptr_t)(0x0203FA50u + i * 8);
-        d2 = (volatile u32 *)(uintptr_t)(0x0203FC50u + i * 8);
-        t.dst = (u32)(uintptr_t)d2;   // ROM parks it at sp+12
-        t.f0 = 0xFFFFFE70u; t.f1 = 400u;
-        _08005BA8(&t, (int)(s16)(i << 7));
-        d0[0] = t.f0; d0[1] = t.f1;
-        t.f0 = 400u; t.f1 = 400u;
-        _08005BA8(&t, (int)(s16)(i << 7));
-        d1[0] = t.f0; d1[1] = t.f1;
-        t.f0 = 0u; t.f1 = 0x352u;
-        _08005BA8(&t, (int)(s16)(i << 7));
-        d2 = (volatile u32 *)(uintptr_t)t.dst;
-        d2[0] = t.f0; d2[1] = t.f1;
-    }
-    if (*(volatile u8 *)(uintptr_t)(0x03001780u + 0x10C2u) != 0) {
-        sub_08007538((void *)(uintptr_t)0x083BC048u, 11,
-                     (void *)(int)*(volatile s16 *)(rec + 14));
-        sub_080075E8((void *)(uintptr_t)0x083BC048u, 10,
-                     (int)*(volatile s16 *)(rec + 18));
-        if ((s16)_080258B8((int)*(volatile s16 *)(uintptr_t)(0x03001780u + 0x10FEu)) == 4)
-            sub_08007538((void *)(uintptr_t)0x083BC048u, 13,
-                         (void *)(int)(*(volatile s16 *)(rec + 12) + 16));
-        else
-            sub_08007538((void *)(uintptr_t)0x083BC048u, 12,
-                         (void *)(int)(*(volatile s16 *)(rec + 12) + 16));
-    }
+__attribute__((naked)) void Garage_27460(void *a0) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "\tpush\t{r4, r5, r6, r7, lr}\n"
+        "\tmov\tr7, r9\n"
+        "\tmov\tr6, r8\n"
+        "\tpush\t{r6, r7}\n"
+        "\tsub\tsp, #16\n"
+        "\tadds\tr1, r0, #0\n"
+        "\tldr r4, .Lgarage27460__08002756C\n"
+        "\tstr\tr1, [r4, #0]\n"
+        "\tmovs\tr0, #0\n"
+        "\tstr\tr0, [sp, #0]\n"
+        "\tldr r2, .Lgarage27460__080027570\n"
+        "\tmov\tr0, sp\n"
+        "\tbl 0x0802D974\n"
+        "\tmovs\tr0, #5\n"
+        "\tbl 0x080261B0\n"
+        "\tldr\tr1, [r4, #0]\n"
+        "\tstrh\tr0, [r1, #12]\n"
+        "\tmovs\tr0, #5\n"
+        "\tbl 0x080261F8\n"
+        "\tldr\tr1, [r4, #0]\n"
+        "\tstrh\tr0, [r1, #16]\n"
+        "\tmovs\tr0, #6\n"
+        "\tbl 0x080261B0\n"
+        "\tldr\tr1, [r4, #0]\n"
+        "\tstrh\tr0, [r1, #14]\n"
+        "\tmovs\tr0, #6\n"
+        "\tbl 0x080261F8\n"
+        "\tldr\tr1, [r4, #0]\n"
+        "\tstrh\tr0, [r1, #18]\n"
+        "\tmovs\tr0, #0\n"
+        "\tmov\tr8, r0\n"
+        "\tmovs\tr1, #200\n"
+        "\tlsls\tr1, r1, #1\n"
+        "\tmov\tr9, r1\n"
+        "\tadd\tr7, sp, #4\n"
+        ".Lgarage27460__0800274B0:\n"
+        "\tmov\tr0, r8\n"
+        "\tlsls\tr2, r0, #3\n"
+        "\tldr r4, .Lgarage27460__080027574\n"
+        "\tadds\tr4, r2, r4\n"
+        "\tldr r6, .Lgarage27460__080027578\n"
+        "\tadds\tr6, r2, r6\n"
+        "\tldr r0, .Lgarage27460__08002757C\n"
+        "\tadds\tr2, r2, r0\n"
+        "\tldr r0, .Lgarage27460__080027580\n"
+        "\tstr\tr0, [sp, #4]\n"
+        "\tmov\tr1, r9\n"
+        "\tstr\tr1, [r7, #4]\n"
+        "\tmov\tr0, r8\n"
+        "\tlsls\tr5, r0, #23\n"
+        "\tasrs\tr5, r5, #16\n"
+        "\tadds\tr0, r7, #0\n"
+        "\tadds\tr1, r5, #0\n"
+        "\tstr\tr2, [sp, #12]\n"
+        "\tbl 0x08005BA8\n"
+        "\tldr\tr0, [sp, #4]\n"
+        "\tstr\tr0, [r4, #0]\n"
+        "\tldr\tr0, [r7, #4]\n"
+        "\tstr\tr0, [r4, #4]\n"
+        "\tmov\tr1, r9\n"
+        "\tstr\tr1, [sp, #4]\n"
+        "\tstr\tr1, [r7, #4]\n"
+        "\tadds\tr0, r7, #0\n"
+        "\tadds\tr1, r5, #0\n"
+        "\tbl 0x08005BA8\n"
+        "\tldr\tr0, [sp, #4]\n"
+        "\tstr\tr0, [r6, #0]\n"
+        "\tldr\tr0, [r7, #4]\n"
+        "\tstr\tr0, [r6, #4]\n"
+        "\tmovs\tr0, #0\n"
+        "\tstr\tr0, [sp, #4]\n"
+        "\tldr r0, .Lgarage27460__080027584\n"
+        "\tstr\tr0, [r7, #4]\n"
+        "\tadds\tr0, r7, #0\n"
+        "\tadds\tr1, r5, #0\n"
+        "\tbl 0x08005BA8\n"
+        "\tldr\tr0, [sp, #4]\n"
+        "\tldr\tr2, [sp, #12]\n"
+        "\tstr\tr0, [r2, #0]\n"
+        "\tldr\tr0, [r7, #4]\n"
+        "\tstr\tr0, [r2, #4]\n"
+        "\tmovs\tr0, #1\n"
+        "\tadd\tr8, r0\n"
+        "\tmov\tr1, r8\n"
+        "\tcmp\tr1, #31\n"
+        "\tble .Lgarage27460__0800274B0\n"
+        "\tldr r6, .Lgarage27460__080027588\n"
+        "\tldr r1, .Lgarage27460__08002758C\n"
+        "\tadds\tr0, r6, r1\n"
+        "\tldrb\tr0, [r0, #0]\n"
+        "\tcmp\tr0, #0\n"
+        "\tbeq .Lgarage27460__0800275A8\n"
+        "\tldr r5, .Lgarage27460__080027590\n"
+        "\tldr r4, .Lgarage27460__08002756C\n"
+        "\tldr\tr0, [r4, #0]\n"
+        "\tmovs\tr1, #14\n"
+        "\tldrsh\tr2, [r0, r1]\n"
+        "\tadds\tr0, r5, #0\n"
+        "\tmovs\tr1, #11\n"
+        "\tbl sub_08007538\n"
+        "\tldr\tr0, [r4, #0]\n"
+        "\tmovs\tr1, #18\n"
+        "\tldrsh\tr2, [r0, r1]\n"
+        "\tadds\tr0, r5, #0\n"
+        "\tmovs\tr1, #10\n"
+        "\tbl sub_080075E8\n"
+        "\tldr r1, .Lgarage27460__080027594\n"
+        "\tadds\tr0, r6, r1\n"
+        "\tmovs\tr1, #0\n"
+        "\tldrsh\tr0, [r0, r1]\n"
+        "\tbl 0x080258B8\n"
+        "\tlsls\tr0, r0, #16\n"
+        "\tasrs\tr0, r0, #16\n"
+        "\tcmp\tr0, #4\n"
+        "\tbne .Lgarage27460__080027598\n"
+        "\tldr\tr0, [r4, #0]\n"
+        "\tmovs\tr1, #12\n"
+        "\tldrsh\tr2, [r0, r1]\n"
+        "\tadds\tr2, #16\n"
+        "\tadds\tr0, r5, #0\n"
+        "\tmovs\tr1, #13\n"
+        "\tbl sub_08007538\n"
+        "\tb .Lgarage27460__0800275A8\n"
+        ".Lgarage27460__08002756C: .word 0x0300167C\n"
+        ".Lgarage27460__080027570: .word 0x05000025\n"
+        ".Lgarage27460__080027574: .word 0x0203FB50\n"
+        ".Lgarage27460__080027578: .word 0x0203FA50\n"
+        ".Lgarage27460__08002757C: .word 0x0203FC50\n"
+        ".Lgarage27460__080027580: .word 0xFFFFFE70\n"
+        ".Lgarage27460__080027584: .word 0x00000352\n"
+        ".Lgarage27460__080027588: .word 0x03001780\n"
+        ".Lgarage27460__08002758C: .word 0x000010C2\n"
+        ".Lgarage27460__080027590: .word 0x083BC048\n"
+        ".Lgarage27460__080027594: .word 0x000010FE\n"
+        ".Lgarage27460__080027598:\n"
+        "\tldr\tr0, [r4, #0]\n"
+        "\tmovs\tr1, #12\n"
+        "\tldrsh\tr2, [r0, r1]\n"
+        "\tadds\tr2, #16\n"
+        "\tadds\tr0, r5, #0\n"
+        "\tmovs\tr1, #12\n"
+        "\tbl sub_08007538\n"
+        ".Lgarage27460__0800275A8:\n"
+        "\tadd\tsp, #16\n"
+        "\tpop\t{r3, r4}\n"
+        "\tmov\tr8, r3\n"
+        "\tmov\tr9, r4\n"
+        "\tpop\t{r4, r5, r6, r7}\n"
+        "\tpop\t{r0}\n"
+        "\tbx\tr0\n"
+        "\tmovs\tr0, r0\n"
+        ".syntax divided\n"
+    );
 }
 void _08027460(void *a) __attribute__((alias("Garage_27460")));
 void sub_08027460(void *a) __attribute__((alias("Garage_27460")));

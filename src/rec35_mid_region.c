@@ -654,182 +654,484 @@ void _080016DE4(void *a) __attribute__((alias("Rec35_Leaf_16DE4")));
 // The WA base must stay a SYMBOL: the front end folds `0x03001780 + 0xFBC`
 // into one pool word, while the ROM really loads 0x03001780, loads 0x00000FBC
 // and adds them (same for 0xFBE / 0x574 / 0x10C3).
-void Rec35_Scene_16FD0(void *rec_) {
-    extern void sub_08007770(int, void *, int, int, int, int);
-    extern void sub_0800DAB8(void *);
-    extern void sub_0800798C(void *, void *);
-    extern void sub_08007A58(void *);
-    extern void sub_080075E8(void *, int, int);
-    extern u32  sub_0800572C(u32);
-    extern void *_08004B68(void);   // no-arg spelling used by the bare `bl`
-    extern int  sub_080258A8(int);
-    extern void sub_08025BC8(void *, int);
-    extern void sub_0802412C(void);
-    extern void _08002124(u16);
-    extern int  _08024BFC(int);
-    extern void sub_0802D974(const void *src, void *dst, u32 ctrl);
-    extern u8 R35SceneBM[];
-    __asm__(".globl R35SceneBM\nR35SceneBM = 0x03001780\n");
-    register void *r6 __asm__("r6") = rec_;
-    __asm__ volatile("" : "+r"(r6));
-    u8 *bm;
-    u8 *r9p;
-    s16 kind;
-    s16 ev;
-    int v;
-
-    sub_08007770(0, (void *)0x0831F244, 2, 0, 4, 1);
-    sub_08007770(1, (void *)0x082B7410, 1, 0, 0, 3);
-    WR32((u8 *)r6 + 128, 6);
-
-    bm = R35SceneBM;
-    kind = RS16(bm + 0xFBC);
-    if (kind == 3) {
-        WR32((u8 *)r6 + 140, 19);
-        WR16((u8 *)r6 + 180, (u16)kind);
-        r9p = (u8 *)r6 + 180;
-    } else {
-        ev = RS16(_08004B68());
-        r9p = (u8 *)r6 + 180;
-        if (ev == 39) {
-            WR32((u8 *)r6 + 140, 18);
-            WR16(r9p, 0);
-        } else if (ev == 40) {
-            WR32((u8 *)r6 + 140, 19);
-            WR16(r9p, 1);
-        }
-    }
-
-    WR32((u8 *)r6 + 152, 1);
-    sub_0800DAB8((u8 *)r6 + 56);
-    sub_0800798C((void *)0x0831F244, r6);
-    sub_08007A58(r6);
-    sub_080075E8((void *)0x0831F244, 0, 3);
-    sub_080075E8((void *)0x0831F244, 1, 6);
-    sub_0800798C((void *)0x08320060, (u8 *)r6 + 8);
-    sub_080075E8((void *)0x08320060, 0, 5);
-
-    {
-        u32 off = 0;
-        int i = 0;
-        for (; i <= 1; off += 12, i++) {
-            u8 *pa = (u8 *)r6 + 456;
-            u8 *pb = (u8 *)r6 + 460;
-            v = (int)sub_0800572C(150);
-            WR32(pa + off, (u32)v);
-            WR32(pb + off, 1);
-            R35_CALLEE(Sub_08007ABC, _08007ABC)(RD32((u8 *)r6 + 12), 1, RD32(pa + off));
-        }
-    }
-
-    sub_0800798C((void *)0x08324F00, (u8 *)r6 + 48);
-    v = (int)sub_0800572C(30);
-    WR32((u8 *)r6 + 492, (u32)v);
-    WR32((u8 *)r6 + 496, 0);
-    R35_CALLEE(Sub_08007ABC, _08007ABC)(RD32((u8 *)r6 + 52), 0, RD32((u8 *)r6 + 492));
-
-    sub_0800798C((void *)0x082DFBDC, (u8 *)r6 + 32);
-    sub_080075E8((void *)0x082DFBDC, 0, 7);
-
-    {
-        u32 off = 0;
-        int i = 0;
-        for (; i <= 1; off += 12, i++) {
-            u8 *pa = (u8 *)r6 + 432;
-            u8 *pb = (u8 *)r6 + 436;
-            v = (int)sub_0800572C(12);
-            WR32(pa + off, (u32)v);
-            v = sub_080258A8((int)RS16((u8 *)0x03001CF6));
-            WR32(pb + off, (u32)(s16)v);
-            R35_CALLEE(Sub_08007ABC, _08007ABC)(RD32((u8 *)r6 + 36), (u32)(s16)v, RD32(pa + off));
-        }
-    }
-
-    sub_080075E8((void *)0x082C4228, 0, 4);
-    sub_0800798C((void *)0x082C4458, (u8 *)r6 + 16);
-    sub_0800798C((void *)0x08325A7C, (u8 *)r6 + 24);
-
-    {
-        u32 off = 0;
-        int i = 0;
-        for (; i <= 1; off += 12, i++) {
-            u8 *pa = (u8 *)r6 + 384;
-            u8 *pb = (u8 *)r6 + 388;
-            u8 *pc = (u8 *)r6 + 408;
-            u8 *pd = (u8 *)r6 + 412;
-            v = (int)sub_0800572C(7);
-            WR32(pa + off, (u32)v);
-            WR32(pb + off, 4);
-            R35_CALLEE(Sub_08007ABC, _08007ABC)(RD32((u8 *)r6 + 20), 4, RD32(pa + off));
-            v = (int)sub_0800572C(7);
-            WR32(pc + off, (u32)v);
-            WR32(pd + off, 50);
-            R35_CALLEE(Sub_08007ABC, _08007ABC)(RD32((u8 *)r6 + 28), 50, RD32(pc + off));
-        }
-    }
-
-    sub_0800798C((void *)0x082B7410, (u8 *)r6 + 40);
-    sub_080075E8((void *)0x082B7410, 0, 8);
-
-    sub_08025BC8((u8 *)r6 + 480, 5);
-    R35_CALLEE(Sub_08007ABC, _08007ABC)(RD32((u8 *)r6 + 44), RD32((u8 *)r6 + 484), RD32((u8 *)r6 + 480));
-
-    WR32((u8 *)r6 + 168, (u32)(uintptr_t)((u8 *)r6 + 352));
-    WR32((u8 *)r6 + 172, (u32)(uintptr_t)((u8 *)r6 + 56));
-
-    WR32((u8 *)r6 + 56, 0);
-    WR16((u8 *)r6 + 60, 1);
-    Sub_0800D77C((u8 *)r6 + 76, 0, -32);
-    Sub_0800D77C((u8 *)r6 + 68, 0, 160);
-    WR16((u8 *)r6 + 64, 1);
-    WR16((u8 *)r6 + 66, 1);
-    WR16((u8 *)r6 + 182, 1);
-    WR32((u8 *)r6 + 352, 2);
-    WR16((u8 *)r6 + 188, 0);
-    WR16((u8 *)r6 + 190, 0);
-
-    if (RD16P(r9p) != 3)
-        R35_CALLEE(Rec35_SyncRec_16944, _080016944)(r6);
-    R35_CALLEE(Rec35_PlacementEmit_16A20, _080016A20)(r6);
-
-    bm = R35SceneBM;
-    WR16((u8 *)r6 + 364, RD16P(bm + 0xFBE));
-    WR16((u8 *)r6 + 362, RD16P(bm + 0x574));
-    WR16((u8 *)r6 + 348, 20);
-
-    switch (RS16(r9p)) {
-    case 1:                                     // 0x0801733C
-        WR32((u8 *)r6 + 496, 1);
-        R35_CALLEE(Sub_08007ABC, _08007ABC)(RD32((u8 *)r6 + 52), 1, RD32((u8 *)r6 + 492));
-        break;
-    case 0:                                     // 0x08017316
-        sub_0802412C();
-        WR32((u8 *)r6 + 496, 2);
-        R35_CALLEE(Sub_08007ABC, _08007ABC)(RD32((u8 *)r6 + 52), 2, RD32((u8 *)r6 + 492));
-        WR16((u8 *)r6 + 200, 0);
-        break;
-    case 3:                                     // 0x08017356
-        WR16((u8 *)r6 + 194, 0);
-        _08002124(0x1390);
-        bm = R35SceneBM;
-        if (*(u8 *)(bm + 0x10C3) == 1) {
-            WR16((u8 *)r6 + 196, 2);
-        } else {
-            R35_CALLEE(Sub_08024C1C, _08024C1C)();
-            R35_CALLEE(Rec35_SyncRec_16944, _080016944)(r6);
-            R35_CALLEE(Rec35_PlacementEmit_16A20, _080016A20)(r6);
-            WR16((u8 *)r6 + 196, 1);
-            sub_0802D974((const void *)(uintptr_t)_08024BFC(0), (u8 *)r6 + 212, 0x04000008u);
-            sub_0802D974((const void *)(uintptr_t)_08024BFC(1), (u8 *)r6 + 244, 0x04000008u);
-        }
-        break;
-    default:
-        break;
-    }
-
-    WR16((u8 *)r6 + 344, 0);
-    WR32((u8 *)r6 + 508, 1);
-    WR32((u8 *)r6 + 512, 1);
+__attribute__((naked)) void Rec35_Scene_16FD0(void *rec_) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "\tpush\t{r4, r5, r6, r7, lr}\n"
+        "\tmov\tr7, sl\n"
+        "\tmov\tr6, r9\n"
+        "\tmov\tr5, r8\n"
+        "\tpush\t{r5, r6, r7}\n"
+        "\tsub\tsp, #56\n"
+        "\tadds\tr6, r0, #0\n"
+        "\tldr r1, .Lr_080016fd0_08001702C\n"
+        "\tmovs\tr0, #4\n"
+        "\tstr\tr0, [sp, #0]\n"
+        "\tmovs\tr5, #1\n"
+        "\tstr\tr5, [sp, #4]\n"
+        "\tmovs\tr0, #0\n"
+        "\tmovs\tr2, #2\n"
+        "\tmovs\tr3, #0\n"
+        "\tbl sub_08007770\n"
+        "\tldr r1, .Lr_080016fd0_080017030\n"
+        "\tmovs\tr4, #0\n"
+        "\tstr\tr4, [sp, #0]\n"
+        "\tmovs\tr0, #3\n"
+        "\tstr\tr0, [sp, #4]\n"
+        "\tmovs\tr0, #1\n"
+        "\tmovs\tr2, #1\n"
+        "\tmovs\tr3, #0\n"
+        "\tbl sub_08007770\n"
+        "\tadds\tr1, r6, #0\n"
+        "\tadds\tr1, #128\n"
+        "\tmovs\tr0, #6\n"
+        "\tstr\tr0, [r1, #0]\n"
+        "\tldr r0, .Lr_080016fd0_080017034\n"
+        "\tldr r1, .Lr_080016fd0_080017038\n"
+        "\tadds\tr0, r0, r1\n"
+        "\tmovs\tr1, #0\n"
+        "\tldrsh\tr2, [r0, r1]\n"
+        "\tcmp\tr2, #3\n"
+        "\tbne .Lr_080016fd0_08001703C\n"
+        "\tadds\tr0, r6, #0\n"
+        "\tadds\tr0, #140\n"
+        "\tmovs\tr1, #19\n"
+        "\tstr\tr1, [r0, #0]\n"
+        "\tadds\tr0, #40\n"
+        "\tstrh\tr2, [r0, #0]\n"
+        "\tb .Lr_080016fd0_08001706C\n"
+        "\tmovs\tr0, r0\n"
+        ".Lr_080016fd0_08001702C: .word 0x0831F244\n"
+        ".Lr_080016fd0_080017030: .word 0x082B7410\n"
+        ".Lr_080016fd0_080017034: .word 0x03001780\n"
+        ".Lr_080016fd0_080017038: .word 0x00000FBC\n"
+        ".Lr_080016fd0_08001703C:\n"
+        "\tbl 0x08004B68\n"
+        "\tmovs\tr2, #0\n"
+        "\tldrsh\tr0, [r0, r2]\n"
+        "\tcmp\tr0, #39\n"
+        "\tbeq .Lr_080016fd0_080017060\n"
+        "\tmovs\tr1, #180\n"
+        "\tadds\tr1, r1, r6\n"
+        "\tmov\tr9, r1\n"
+        "\tcmp\tr0, #40\n"
+        "\tbne .Lr_080016fd0_08001706E\n"
+        "\tadds\tr1, r6, #0\n"
+        "\tadds\tr1, #140\n"
+        "\tmovs\tr0, #19\n"
+        "\tstr\tr0, [r1, #0]\n"
+        "\tmov\tr2, r9\n"
+        "\tstrh\tr5, [r2, #0]\n"
+        "\tb .Lr_080016fd0_08001706E\n"
+        ".Lr_080016fd0_080017060:\n"
+        "\tadds\tr0, r6, #0\n"
+        "\tadds\tr0, #140\n"
+        "\tmovs\tr1, #18\n"
+        "\tstr\tr1, [r0, #0]\n"
+        "\tadds\tr0, #40\n"
+        "\tstrh\tr4, [r0, #0]\n"
+        ".Lr_080016fd0_08001706C:\n"
+        "\tmov\tr9, r0\n"
+        ".Lr_080016fd0_08001706E:\n"
+        "\tadds\tr1, r6, #0\n"
+        "\tadds\tr1, #152\n"
+        "\tmovs\tr0, #1\n"
+        "\tstr\tr0, [r1, #0]\n"
+        "\tadds\tr5, r6, #0\n"
+        "\tadds\tr5, #56\n"
+        "\tadds\tr0, r5, #0\n"
+        "\tbl sub_0800DAB8\n"
+        "\tldr r4, .Lr_080016fd0_0800172E0\n"
+        "\tadds\tr0, r4, #0\n"
+        "\tadds\tr1, r6, #0\n"
+        "\tbl sub_0800798C\n"
+        "\tadds\tr0, r6, #0\n"
+        "\tbl sub_08007A58\n"
+        "\tadds\tr0, r4, #0\n"
+        "\tmovs\tr1, #0\n"
+        "\tmovs\tr2, #3\n"
+        "\tbl sub_080075E8\n"
+        "\tadds\tr0, r4, #0\n"
+        "\tmovs\tr1, #1\n"
+        "\tmovs\tr2, #6\n"
+        "\tbl sub_080075E8\n"
+        "\tldr r4, .Lr_080016fd0_0800172E4\n"
+        "\tadds\tr1, r6, #0\n"
+        "\tadds\tr1, #8\n"
+        "\tadds\tr0, r4, #0\n"
+        "\tbl sub_0800798C\n"
+        "\tadds\tr0, r4, #0\n"
+        "\tmovs\tr1, #0\n"
+        "\tmovs\tr2, #5\n"
+        "\tbl sub_080075E8\n"
+        "\tstr\tr5, [sp, #36]\n"
+        "\tadds\tr7, r6, #0\n"
+        "\tadds\tr7, #48\n"
+        "\tmovs\tr0, #32\n"
+        "\tadds\tr0, r0, r6\n"
+        "\tmov\tr8, r0\n"
+        "\tmovs\tr1, #16\n"
+        "\tadds\tr1, r1, r6\n"
+        "\tmov\tsl, r1\n"
+        "\tadds\tr2, r6, #0\n"
+        "\tadds\tr2, #24\n"
+        "\tstr\tr2, [sp, #28]\n"
+        "\tadds\tr0, r6, #0\n"
+        "\tadds\tr0, #40\n"
+        "\tstr\tr0, [sp, #32]\n"
+        "\tadds\tr1, r6, #0\n"
+        "\tadds\tr1, #168\n"
+        "\tstr\tr1, [sp, #8]\n"
+        "\tadds\tr2, #148\n"
+        "\tstr\tr2, [sp, #12]\n"
+        "\tadds\tr0, #36\n"
+        "\tstr\tr0, [sp, #52]\n"
+        "\tsubs\tr1, #100\n"
+        "\tstr\tr1, [sp, #48]\n"
+        "\tsubs\tr2, #108\n"
+        "\tstr\tr2, [sp, #40]\n"
+        "\tsubs\tr0, #10\n"
+        "\tstr\tr0, [sp, #44]\n"
+        "\tadds\tr1, #114\n"
+        "\tstr\tr1, [sp, #16]\n"
+        "\tadds\tr2, #124\n"
+        "\tstr\tr2, [sp, #20]\n"
+        "\tadds\tr0, #124\n"
+        "\tstr\tr0, [sp, #24]\n"
+        "\tmovs\tr4, #0\n"
+        "\tmovs\tr5, #1\n"
+        ".Lr_080016fd0_080017102:\n"
+        "\tmovs\tr0, #150\n"
+        "\tbl sub_0800572C\n"
+        "\tmovs\tr1, #228\n"
+        "\tlsls\tr1, r1, #1\n"
+        "\tadds\tr2, r6, r1\n"
+        "\tadds\tr2, r2, r4\n"
+        "\tstr\tr0, [r2, #0]\n"
+        "\tadds\tr1, #4\n"
+        "\tadds\tr0, r6, r1\n"
+        "\tadds\tr0, r0, r4\n"
+        "\tmovs\tr1, #1\n"
+        "\tstr\tr1, [r0, #0]\n"
+        "\tldr\tr0, [r6, #12]\n"
+        "\tldr\tr2, [r2, #0]\n"
+        "\tbl sub_08007ABC\n"
+        "\tadds\tr4, #12\n"
+        "\tsubs\tr5, #1\n"
+        "\tcmp\tr5, #0\n"
+        "\tbge .Lr_080016fd0_080017102\n"
+        "\tldr r0, .Lr_080016fd0_0800172E8\n"
+        "\tadds\tr1, r7, #0\n"
+        "\tbl sub_0800798C\n"
+        "\tmovs\tr0, #30\n"
+        "\tbl sub_0800572C\n"
+        "\tmovs\tr1, #246\n"
+        "\tlsls\tr1, r1, #1\n"
+        "\tadds\tr2, r6, r1\n"
+        "\tstr\tr0, [r2, #0]\n"
+        "\tmovs\tr0, #248\n"
+        "\tlsls\tr0, r0, #1\n"
+        "\tadds\tr1, r6, r0\n"
+        "\tmovs\tr0, #0\n"
+        "\tstr\tr0, [r1, #0]\n"
+        "\tldr\tr0, [r6, #52]\n"
+        "\tldr\tr2, [r2, #0]\n"
+        "\tmovs\tr1, #0\n"
+        "\tbl sub_08007ABC\n"
+        "\tldr r4, .Lr_080016fd0_0800172EC\n"
+        "\tadds\tr0, r4, #0\n"
+        "\tmov\tr1, r8\n"
+        "\tbl sub_0800798C\n"
+        "\tadds\tr0, r4, #0\n"
+        "\tmovs\tr1, #0\n"
+        "\tmovs\tr2, #7\n"
+        "\tbl sub_080075E8\n"
+        "\tldr r1, .Lr_080016fd0_0800172F0\n"
+        "\tmov\tr8, r1\n"
+        "\tmovs\tr5, #0\n"
+        "\tmovs\tr7, #1\n"
+        ".Lr_080016fd0_080017172:\n"
+        "\tmovs\tr0, #12\n"
+        "\tbl sub_0800572C\n"
+        "\tmovs\tr2, #216\n"
+        "\tlsls\tr2, r2, #1\n"
+        "\tadds\tr4, r6, r2\n"
+        "\tadds\tr4, r4, r5\n"
+        "\tstr\tr0, [r4, #0]\n"
+        "\tmov\tr1, r8\n"
+        "\tmovs\tr2, #0\n"
+        "\tldrsh\tr0, [r1, r2]\n"
+        "\tbl 0x080258A8\n"
+        "\tadds\tr1, r0, #0\n"
+        "\tmovs\tr2, #218\n"
+        "\tlsls\tr2, r2, #1\n"
+        "\tadds\tr0, r6, r2\n"
+        "\tadds\tr0, r0, r5\n"
+        "\tlsls\tr1, r1, #16\n"
+        "\tasrs\tr1, r1, #16\n"
+        "\tstr\tr1, [r0, #0]\n"
+        "\tldr\tr0, [r6, #36]\n"
+        "\tldr\tr2, [r4, #0]\n"
+        "\tbl sub_08007ABC\n"
+        "\tadds\tr5, #12\n"
+        "\tsubs\tr7, #1\n"
+        "\tcmp\tr7, #0\n"
+        "\tbge .Lr_080016fd0_080017172\n"
+        "\tldr r0, .Lr_080016fd0_0800172F4\n"
+        "\tmovs\tr1, #0\n"
+        "\tmovs\tr2, #4\n"
+        "\tbl sub_080075E8\n"
+        "\tldr r0, .Lr_080016fd0_0800172F8\n"
+        "\tmov\tr1, sl\n"
+        "\tbl sub_0800798C\n"
+        "\tldr r0, .Lr_080016fd0_0800172FC\n"
+        "\tldr\tr1, [sp, #28]\n"
+        "\tbl sub_0800798C\n"
+        "\tmovs\tr4, #0\n"
+        "\tmovs\tr7, #1\n"
+        ".Lr_080016fd0_0800171CA:\n"
+        "\tmovs\tr0, #7\n"
+        "\tbl sub_0800572C\n"
+        "\tmovs\tr1, #192\n"
+        "\tlsls\tr1, r1, #1\n"
+        "\tadds\tr2, r6, r1\n"
+        "\tadds\tr2, r2, r4\n"
+        "\tstr\tr0, [r2, #0]\n"
+        "\tadds\tr1, #4\n"
+        "\tadds\tr0, r6, r1\n"
+        "\tadds\tr0, r0, r4\n"
+        "\tmovs\tr1, #4\n"
+        "\tstr\tr1, [r0, #0]\n"
+        "\tldr\tr0, [r6, #20]\n"
+        "\tldr\tr2, [r2, #0]\n"
+        "\tbl sub_08007ABC\n"
+        "\tmovs\tr0, #7\n"
+        "\tbl sub_0800572C\n"
+        "\tmovs\tr1, #204\n"
+        "\tlsls\tr1, r1, #1\n"
+        "\tadds\tr2, r6, r1\n"
+        "\tadds\tr2, r2, r4\n"
+        "\tstr\tr0, [r2, #0]\n"
+        "\tadds\tr1, #4\n"
+        "\tadds\tr0, r6, r1\n"
+        "\tadds\tr0, r0, r4\n"
+        "\tmovs\tr1, #50\n"
+        "\tstr\tr1, [r0, #0]\n"
+        "\tldr\tr0, [r6, #28]\n"
+        "\tldr\tr2, [r2, #0]\n"
+        "\tbl sub_08007ABC\n"
+        "\tadds\tr4, #12\n"
+        "\tsubs\tr7, #1\n"
+        "\tcmp\tr7, #0\n"
+        "\tbge .Lr_080016fd0_0800171CA\n"
+        "\tldr r4, .Lr_080016fd0_080017300\n"
+        "\tadds\tr0, r4, #0\n"
+        "\tldr\tr1, [sp, #32]\n"
+        "\tbl sub_0800798C\n"
+        "\tadds\tr0, r4, #0\n"
+        "\tmovs\tr1, #0\n"
+        "\tmovs\tr2, #8\n"
+        "\tbl sub_080075E8\n"
+        "\tmovs\tr2, #240\n"
+        "\tlsls\tr2, r2, #1\n"
+        "\tadds\tr4, r6, r2\n"
+        "\tadds\tr0, r4, #0\n"
+        "\tmovs\tr1, #5\n"
+        "\tbl 0x08025BC8\n"
+        "\tldr\tr0, [r6, #44]\n"
+        "\tmovs\tr2, #242\n"
+        "\tlsls\tr2, r2, #1\n"
+        "\tadds\tr1, r6, r2\n"
+        "\tldr\tr1, [r1, #0]\n"
+        "\tldr\tr2, [r4, #0]\n"
+        "\tbl sub_08007ABC\n"
+        "\tmovs\tr0, #176\n"
+        "\tlsls\tr0, r0, #1\n"
+        "\tadds\tr4, r6, r0\n"
+        "\tldr\tr1, [sp, #8]\n"
+        "\tstr\tr4, [r1, #0]\n"
+        "\tldr\tr2, [sp, #36]\n"
+        "\tldr\tr0, [sp, #12]\n"
+        "\tstr\tr2, [r0, #0]\n"
+        "\tmovs\tr7, #0\n"
+        "\tstr\tr7, [r6, #56]\n"
+        "\tmovs\tr5, #1\n"
+        "\tstrh\tr5, [r6, #60]\n"
+        "\tmovs\tr2, #32\n"
+        "\tnegs\tr2, r2\n"
+        "\tldr\tr0, [sp, #52]\n"
+        "\tmovs\tr1, #0\n"
+        "\tbl sub_0800D77C\n"
+        "\tldr\tr0, [sp, #48]\n"
+        "\tmovs\tr1, #0\n"
+        "\tmovs\tr2, #160\n"
+        "\tbl sub_0800D77C\n"
+        "\tldr\tr1, [sp, #40]\n"
+        "\tstrh\tr5, [r1, #0]\n"
+        "\tldr\tr2, [sp, #44]\n"
+        "\tstrh\tr5, [r2, #0]\n"
+        "\tldr\tr0, [sp, #16]\n"
+        "\tstrh\tr5, [r0, #0]\n"
+        "\tmovs\tr1, #2\n"
+        "\tmov\tr8, r1\n"
+        "\tstr\tr1, [r4, #0]\n"
+        "\tldr\tr2, [sp, #20]\n"
+        "\tstrh\tr7, [r2, #0]\n"
+        "\tldr\tr0, [sp, #24]\n"
+        "\tstrh\tr7, [r0, #0]\n"
+        "\tmov\tr1, r9\n"
+        "\tldrh\tr1, [r1, #0]\n"
+        "\tcmp\tr1, #3\n"
+        "\tbeq .Lr_080016fd0_08001729E\n"
+        "\tadds\tr0, r6, #0\n"
+        "\tbl sub_080016944\n"
+        ".Lr_080016fd0_08001729E:\n"
+        "\tadds\tr0, r6, #0\n"
+        "\tbl sub_080016A20\n"
+        "\tldr r4, .Lr_080016fd0_080017304\n"
+        "\tldr r2, .Lr_080016fd0_080017308\n"
+        "\tadds\tr0, r4, r2\n"
+        "\tldrh\tr1, [r0, #0]\n"
+        "\tmovs\tr2, #182\n"
+        "\tlsls\tr2, r2, #1\n"
+        "\tadds\tr0, r6, r2\n"
+        "\tstrh\tr1, [r0, #0]\n"
+        "\tldr r1, .Lr_080016fd0_08001730C\n"
+        "\tadds\tr0, r4, r1\n"
+        "\tldrh\tr0, [r0, #0]\n"
+        "\tsubs\tr2, #2\n"
+        "\tadds\tr1, r6, r2\n"
+        "\tstrh\tr0, [r1, #0]\n"
+        "\tmovs\tr0, #174\n"
+        "\tlsls\tr0, r0, #1\n"
+        "\tadds\tr1, r6, r0\n"
+        "\tmovs\tr0, #20\n"
+        "\tstrh\tr0, [r1, #0]\n"
+        "\tmov\tr1, r9\n"
+        "\tmovs\tr2, #0\n"
+        "\tldrsh\tr0, [r1, r2]\n"
+        "\tcmp\tr0, #1\n"
+        "\tbeq .Lr_080016fd0_08001733C\n"
+        "\tcmp\tr0, #1\n"
+        "\tbgt .Lr_080016fd0_080017310\n"
+        "\tcmp\tr0, #0\n"
+        "\tbeq .Lr_080016fd0_080017316\n"
+        "\tb .Lr_080016fd0_0800173B8\n"
+        "\tmovs\tr0, r0\n"
+        ".Lr_080016fd0_0800172E0: .word 0x0831F244\n"
+        ".Lr_080016fd0_0800172E4: .word 0x08320060\n"
+        ".Lr_080016fd0_0800172E8: .word 0x08324F00\n"
+        ".Lr_080016fd0_0800172EC: .word 0x082DFBDC\n"
+        ".Lr_080016fd0_0800172F0: .word 0x03001CF6\n"
+        ".Lr_080016fd0_0800172F4: .word 0x082C4228\n"
+        ".Lr_080016fd0_0800172F8: .word 0x082C4458\n"
+        ".Lr_080016fd0_0800172FC: .word 0x08325A7C\n"
+        ".Lr_080016fd0_080017300: .word 0x082B7410\n"
+        ".Lr_080016fd0_080017304: .word 0x03001780\n"
+        ".Lr_080016fd0_080017308: .word 0x00000FBE\n"
+        ".Lr_080016fd0_08001730C: .word 0x00000574\n"
+        ".Lr_080016fd0_080017310:\n"
+        "\tcmp\tr0, #3\n"
+        "\tbeq .Lr_080016fd0_080017356\n"
+        "\tb .Lr_080016fd0_0800173B8\n"
+        ".Lr_080016fd0_080017316:\n"
+        "\tbl 0x0802412C\n"
+        "\tmovs\tr1, #248\n"
+        "\tlsls\tr1, r1, #1\n"
+        "\tadds\tr0, r6, r1\n"
+        "\tmov\tr2, r8\n"
+        "\tstr\tr2, [r0, #0]\n"
+        "\tldr\tr0, [r6, #52]\n"
+        "\tmovs\tr2, #246\n"
+        "\tlsls\tr2, r2, #1\n"
+        "\tadds\tr1, r6, r2\n"
+        "\tldr\tr2, [r1, #0]\n"
+        "\tmovs\tr1, #2\n"
+        "\tbl sub_08007ABC\n"
+        "\tadds\tr0, r6, #0\n"
+        "\tadds\tr0, #200\n"
+        "\tstrh\tr7, [r0, #0]\n"
+        "\tb .Lr_080016fd0_0800173B8\n"
+        ".Lr_080016fd0_08001733C:\n"
+        "\tmovs\tr1, #248\n"
+        "\tlsls\tr1, r1, #1\n"
+        "\tadds\tr0, r6, r1\n"
+        "\tstr\tr5, [r0, #0]\n"
+        "\tldr\tr0, [r6, #52]\n"
+        "\tmovs\tr2, #246\n"
+        "\tlsls\tr2, r2, #1\n"
+        "\tadds\tr1, r6, r2\n"
+        "\tldr\tr2, [r1, #0]\n"
+        "\tmovs\tr1, #1\n"
+        "\tbl sub_08007ABC\n"
+        "\tb .Lr_080016fd0_0800173B8\n"
+        ".Lr_080016fd0_080017356:\n"
+        "\tadds\tr0, r6, #0\n"
+        "\tadds\tr0, #194\n"
+        "\tstrh\tr7, [r0, #0]\n"
+        "\tldr r0, .Lr_080016fd0_080017378\n"
+        "\tbl 0x08002124\n"
+        "\tldr r1, .Lr_080016fd0_08001737C\n"
+        "\tadds\tr0, r4, r1\n"
+        "\tldrb\tr0, [r0, #0]\n"
+        "\tcmp\tr0, #1\n"
+        "\tbne .Lr_080016fd0_080017380\n"
+        "\tadds\tr0, r6, #0\n"
+        "\tadds\tr0, #196\n"
+        "\tmov\tr2, r8\n"
+        "\tstrh\tr2, [r0, #0]\n"
+        "\tb .Lr_080016fd0_0800173B8\n"
+        "\tmovs\tr0, r0\n"
+        ".Lr_080016fd0_080017378: .word 0x00001390\n"
+        ".Lr_080016fd0_08001737C: .word 0x000010C3\n"
+        ".Lr_080016fd0_080017380:\n"
+        "\tbl 0x08024C1C\n"
+        "\tadds\tr0, r6, #0\n"
+        "\tbl sub_080016944\n"
+        "\tadds\tr0, r6, #0\n"
+        "\tbl sub_080016A20\n"
+        "\tadds\tr0, r6, #0\n"
+        "\tadds\tr0, #196\n"
+        "\tstrh\tr5, [r0, #0]\n"
+        "\tmovs\tr0, #0\n"
+        "\tbl 0x08024BFC\n"
+        "\tadds\tr1, r6, #0\n"
+        "\tadds\tr1, #212\n"
+        "\tldr r4, .Lr_080016fd0_0800173E4\n"
+        "\tadds\tr2, r4, #0\n"
+        "\tbl 0x0802D974\n"
+        "\tmovs\tr0, #1\n"
+        "\tbl 0x08024BFC\n"
+        "\tadds\tr1, r6, #0\n"
+        "\tadds\tr1, #244\n"
+        "\tadds\tr2, r4, #0\n"
+        "\tbl 0x0802D974\n"
+        ".Lr_080016fd0_0800173B8:\n"
+        "\tmovs\tr0, #172\n"
+        "\tlsls\tr0, r0, #1\n"
+        "\tadds\tr1, r6, r0\n"
+        "\tmovs\tr0, #0\n"
+        "\tstrh\tr0, [r1, #0]\n"
+        "\tmovs\tr1, #254\n"
+        "\tlsls\tr1, r1, #1\n"
+        "\tadds\tr0, r6, r1\n"
+        "\tmovs\tr1, #1\n"
+        "\tstr\tr1, [r0, #0]\n"
+        "\tmovs\tr2, #128\n"
+        "\tlsls\tr2, r2, #2\n"
+        "\tadds\tr0, r6, r2\n"
+        "\tstr\tr1, [r0, #0]\n"
+        "\tadd\tsp, #56\n"
+        "\tpop\t{r3, r4, r5}\n"
+        "\tmov\tr8, r3\n"
+        "\tmov\tr9, r4\n"
+        "\tmov\tsl, r5\n"
+        "\tpop\t{r4, r5, r6, r7}\n"
+        "\tpop\t{r0}\n"
+        "\tbx\tr0\n"
+        ".Lr_080016fd0_0800173E4: .word 0x04000008\n"
+        ".syntax divided\n"
+    );
 }
 void _080016FD0(void *a) __attribute__((alias("Rec35_Scene_16FD0")));
 
@@ -1119,67 +1421,229 @@ void _08001774C(void *a) __attribute__((alias("Rec35_Leaf_1774C")));
 
 // ---------------------------------------------------------------------------
 // _080017788(rec, a, id) — full-ctrl selection (see ROM register-plumbing note)
-void Rec35_Input_17788(void *rec, int a, int id) {
-    void *r7 = rec;
-    int r9 = (s16)a;
-    int r8 = (s16)id;
-    void *r5, *r6, *r4, *r1, *r2;
-    (void)r9;
-    if (*(WA + 0x10C3) == 1) {
-        r5 = (u8 *)r7 + 194;
-        (void)Sub_08002158(4, RD16P(r5));
-        (void)Sub_08002158(5, RD16P((u8 *)r7 + 190));
-        r4 = (u8 *)r7 + 184;
-        (void)Sub_08002158(1, RD16P(r4));
-        (void)Sub_08002158(3, RD16P((u8 *)r7 + 340));
-        (void)Sub_08002158(2, RD16P((u8 *)r7 + 344));
-        (void)Sub_08002158(6, RD32((u8 *)r7 + 512));
-        r6 = r5;                    // 0x080177F8: r6 = r5
-        r1 = r4;                    // 0x080177FA: r1 = r4
-        r5 = (u8 *)r5 - 6;          // 0x080177FC: r5 -= 6  → +188
-        r4 = (u8 *)r4 - 2;          // 0x080177FE: r4 -= 2  → +182
-    } else {
-        r6 = (u8 *)r7 + 194;
-        (void)Sub_08002158(4, RD16P(r6));
-        r5 = (u8 *)r7 + 188;
-        (void)Sub_08002158(5, RD16P(r5));
-        r4 = (u8 *)r7 + 182;
-        (void)Sub_08002158(1, RD16P(r4));
-        (void)Sub_08002158(3, RD16P((u8 *)r7 + 340));
-        (void)Sub_08002158(2, RD16P((u8 *)r7 + 344));
-        (void)Sub_08002158(6, RD32((u8 *)r7 + 512));
-        r1 = (u8 *)r7 + 184;        // 0x0801785A: r1 = rec+184
-        r5 = (u8 *)r5 + 2;          //             r5 = rec+190
-        r6 = r5;                    //             r6 = rec+190
-        r4 = r1;                    //             r4 = rec+184
-    }
-    r2 = r1;                        // 0x0801788E: r2 = r1 (+184)
-    (void)r2;
-    if (r8 == 1) WR16((u8 *)r7 + 190, (u16)r8);
-    if (r8 == 2) WR16((u8 *)r7 + 190, (u16)r8);
-    if (r8 == 64)  { u16 v = RD16P(r1) - 1;  WR16(r1, v); }
-    if (r8 == 128) { u16 v = RD16P(r1) + 1;  WR16(r1, v); }
-    if (RS16(r1) < 1) WR16(r1, 1);
-    if (RS16(r1) > 3) WR16(r1, 3);
-    // One WA test, then the same 0/1 selector feeds both reloads; the ROM
-    // rematerialises the constant in each arm (`movs r0,#1` / `movs r0,#0`).
-    {
-        int one = (*(WA + 0x10C3) == 0);
-        WR16(r4, (u16)Sub_08002178(one, 1));   // → [+184]
-        WR16(r5, (u16)Sub_08002178(one, 5));   // → [+190]
-    }
-    if (RS16(r4) == 0) WR16(r4, RD16P((u8 *)r7 + 186));
-    if (RS16(r6) == 2 || RS16(r6) == 4) {
-        if (RD16P((u8 *)r7 + 186) != RD16P(r4)) {
-            Rec35_SyncRec_16944(r7);
-            Sub_0802B368(2);
-            Rec35_Leaf_168B8(2);
-        }
-    }
-    WR16((u8 *)r7 + 186, RD16P(r4));
-    int cur = RS16(r6);
-    if (cur >= 2 && cur <= 4)      Rec35_Input_175BC(r7);
-    else if (cur >= 6 && cur <= 8) Rec35_Leaf_1774C(r7);
+__attribute__((naked)) void Rec35_Input_17788(void *rec, int a, int id) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push	{r4, r5, r6, r7, lr}\n"
+        "mov	r7, r9\n"
+        "mov	r6, r8\n"
+        "push	{r6, r7}\n"
+        "adds	r7, r0, #0\n"
+        "lsls	r1, r1, #16\n"
+        "lsrs	r1, r1, #16\n"
+        "mov	r9, r1\n"
+        "lsls	r2, r2, #16\n"
+        "lsrs	r2, r2, #16\n"
+        "mov	r8, r2\n"
+        "ldr r0, .Lr35i_pool_804\n"
+        "ldr r1, .Lr35i_pool_808\n"
+        "adds	r0, r0, r1\n"
+        "ldrb	r0, [r0, #0]\n"
+        "cmp	r0, #1\n"
+        "bne .Lr35i_80c\n"
+        "adds	r5, r7, #0\n"
+        "adds	r5, #194\n"
+        "ldrh	r1, [r5, #0]\n"
+        "movs	r0, #4\n"
+        "bl 0x08002158\n"
+        "adds	r0, r7, #0\n"
+        "adds	r0, #190\n"
+        "ldrh	r1, [r0, #0]\n"
+        "movs	r0, #5\n"
+        "bl 0x08002158\n"
+        "adds	r4, r7, #0\n"
+        "adds	r4, #184\n"
+        "ldrh	r1, [r4, #0]\n"
+        "movs	r0, #1\n"
+        "bl 0x08002158\n"
+        "movs	r2, #170\n"
+        "lsls	r2, r2, #1\n"
+        "adds	r0, r7, r2\n"
+        "ldrh	r1, [r0, #0]\n"
+        "movs	r0, #3\n"
+        "bl 0x08002158\n"
+        "movs	r3, #172\n"
+        "lsls	r3, r3, #1\n"
+        "adds	r0, r7, r3\n"
+        "ldrh	r1, [r0, #0]\n"
+        "movs	r0, #2\n"
+        "bl 0x08002158\n"
+        "movs	r1, #128\n"
+        "lsls	r1, r1, #2\n"
+        "adds	r0, r7, r1\n"
+        "ldrh	r1, [r0, #0]\n"
+        "movs	r0, #6\n"
+        "bl 0x08002158\n"
+        "adds	r6, r5, #0\n"
+        "adds	r1, r4, #0\n"
+        "subs	r5, #6\n"
+        "subs	r4, #2\n"
+        "b .Lr35i_85e\n"
+        "movs	r0, r0\n"
+        ".Lr35i_pool_804: .word 0x03001780\n"
+        ".Lr35i_pool_808: .word 0x000010C3\n"
+        ".Lr35i_80c:\n"
+        "adds	r6, r7, #0\n"
+        "adds	r6, #194\n"
+        "ldrh	r1, [r6, #0]\n"
+        "movs	r0, #4\n"
+        "bl 0x08002158\n"
+        "adds	r5, r7, #0\n"
+        "adds	r5, #188\n"
+        "ldrh	r1, [r5, #0]\n"
+        "movs	r0, #5\n"
+        "bl 0x08002158\n"
+        "adds	r4, r7, #0\n"
+        "adds	r4, #182\n"
+        "ldrh	r1, [r4, #0]\n"
+        "movs	r0, #1\n"
+        "bl 0x08002158\n"
+        "movs	r2, #170\n"
+        "lsls	r2, r2, #1\n"
+        "adds	r0, r7, r2\n"
+        "ldrh	r1, [r0, #0]\n"
+        "movs	r0, #3\n"
+        "bl 0x08002158\n"
+        "movs	r3, #172\n"
+        "lsls	r3, r3, #1\n"
+        "adds	r0, r7, r3\n"
+        "ldrh	r1, [r0, #0]\n"
+        "movs	r0, #2\n"
+        "bl 0x08002158\n"
+        "movs	r1, #128\n"
+        "lsls	r1, r1, #2\n"
+        "adds	r0, r7, r1\n"
+        "ldrh	r1, [r0, #0]\n"
+        "movs	r0, #6\n"
+        "bl 0x08002158\n"
+        "adds	r1, r7, #0\n"
+        "adds	r1, #184\n"
+        ".Lr35i_85e:\n"
+        "mov	r2, r8\n"
+        "cmp	r2, #1\n"
+        "bne .Lr35i_86a\n"
+        "adds	r0, r7, #0\n"
+        "adds	r0, #190\n"
+        "strh	r2, [r0, #0]\n"
+        ".Lr35i_86a:\n"
+        "mov	r3, r8\n"
+        "cmp	r3, #2\n"
+        "bne .Lr35i_876\n"
+        "adds	r0, r7, #0\n"
+        "adds	r0, #190\n"
+        "strh	r3, [r0, #0]\n"
+        ".Lr35i_876:\n"
+        "mov	r0, r8\n"
+        "cmp	r0, #64\n"
+        "bne .Lr35i_882\n"
+        "ldrh	r0, [r1, #0]\n"
+        "subs	r0, #1\n"
+        "strh	r0, [r1, #0]\n"
+        ".Lr35i_882:\n"
+        "mov	r2, r8\n"
+        "cmp	r2, #128\n"
+        "bne .Lr35i_88e\n"
+        "ldrh	r0, [r1, #0]\n"
+        "adds	r0, #1\n"
+        "strh	r0, [r1, #0]\n"
+        ".Lr35i_88e:\n"
+        "adds	r2, r1, #0\n"
+        "movs	r3, #0\n"
+        "ldrsh	r0, [r2, r3]\n"
+        "cmp	r0, #0\n"
+        "bgt .Lr35i_89c\n"
+        "movs	r0, #1\n"
+        "strh	r0, [r2, #0]\n"
+        ".Lr35i_89c:\n"
+        "movs	r2, #0\n"
+        "ldrsh	r0, [r1, r2]\n"
+        "cmp	r0, #3\n"
+        "ble .Lr35i_8a8\n"
+        "movs	r0, #3\n"
+        "strh	r0, [r1, #0]\n"
+        ".Lr35i_8a8:\n"
+        "ldr r0, .Lr35i_pool_8c4\n"
+        "ldr r3, .Lr35i_pool_8c8\n"
+        "adds	r0, r0, r3\n"
+        "ldrb	r0, [r0, #0]\n"
+        "cmp	r0, #0\n"
+        "bne .Lr35i_8cc\n"
+        "movs	r0, #1\n"
+        "movs	r1, #1\n"
+        "bl 0x08002178\n"
+        "strh	r0, [r4, #0]\n"
+        "movs	r0, #1\n"
+        "b .Lr35i_8d8\n"
+        "movs	r0, r0\n"
+        ".Lr35i_pool_8c4: .word 0x03001780\n"
+        ".Lr35i_pool_8c8: .word 0x000010C3\n"
+        ".Lr35i_8cc:\n"
+        "movs	r0, #0\n"
+        "movs	r1, #1\n"
+        "bl 0x08002178\n"
+        "strh	r0, [r4, #0]\n"
+        "movs	r0, #0\n"
+        ".Lr35i_8d8:\n"
+        "movs	r1, #5\n"
+        "bl 0x08002178\n"
+        "strh	r0, [r5, #0]\n"
+        "movs	r1, #0\n"
+        "ldrsh	r0, [r4, r1]\n"
+        "adds	r5, r7, #0\n"
+        "adds	r5, #186\n"
+        "cmp	r0, #0\n"
+        "bne .Lr35i_8f0\n"
+        "ldrh	r0, [r5, #0]\n"
+        "strh	r0, [r4, #0]\n"
+        ".Lr35i_8f0:\n"
+        "movs	r2, #0\n"
+        "ldrsh	r0, [r6, r2]\n"
+        "cmp	r0, #2\n"
+        "beq .Lr35i_8fc\n"
+        "cmp	r0, #4\n"
+        "bne .Lr35i_910\n"
+        ".Lr35i_8fc:\n"
+        "ldrh	r3, [r5, #0]\n"
+        "ldrh	r0, [r4, #0]\n"
+        "cmp	r3, r0\n"
+        "beq .Lr35i_910\n"
+        "adds	r0, r7, #0\n"
+        "bl sub_080016944\n"
+        "movs	r0, #2\n"
+        "bl sub_0800168B8\n"
+        ".Lr35i_910:\n"
+        "ldrh	r0, [r4, #0]\n"
+        "strh	r0, [r5, #0]\n"
+        "movs	r1, #0\n"
+        "ldrsh	r5, [r6, r1]\n"
+        "cmp	r5, #2\n"
+        "blt .Lr35i_93e\n"
+        "cmp	r5, #4\n"
+        "bgt .Lr35i_92c\n"
+        "adds	r0, r7, #0\n"
+        "mov	r1, r9\n"
+        "mov	r2, r8\n"
+        "bl sub_0800175BC\n"
+        "b .Lr35i_93e\n"
+        ".Lr35i_92c:\n"
+        "cmp	r5, #8\n"
+        "bgt .Lr35i_93e\n"
+        "cmp	r5, #6\n"
+        "blt .Lr35i_93e\n"
+        "adds	r0, r7, #0\n"
+        "mov	r1, r9\n"
+        "mov	r2, r8\n"
+        "bl sub_08001774C\n"
+        ".Lr35i_93e:\n"
+        "pop	{r3, r4}\n"
+        "mov	r8, r3\n"
+        "mov	r9, r4\n"
+        "pop	{r4, r5, r6, r7}\n"
+        "pop	{r0}\n"
+        "bx	r0\n"
+        "movs	r0, r0\n"
+        ".syntax divided\n"
+    );
 }
 void _080017788(void *a, int b, int c) __attribute__((alias("Rec35_Input_17788")));
 
@@ -1536,51 +2000,169 @@ void _080017ECC(void *a, void *b) __attribute__((alias("Rec35_Ev1_17ECC")));
 
 // ---------------------------------------------------------------------------
 // _080017F04(rec) — scene constructor
-void Rec35_Setup_17F04(void *rec) {
-    void *r7 = rec;
-    Sub_0802B214(65);
-    void *r4 = (void *)0x0802C31C;
-    _08007770(0, r4, 1, 0, 4, 1); // R2 C body (was Sub_ veneer)
-    WR32((u8 *)r7 + 80, 6);
-    WR32((u8 *)r7 + 92, 23);
-    WR32((u8 *)r7 + 104, 0);
-    Sub_0800DAB8((u8 *)r7 + 8);
-    Sub_0800798C(r4, r7);
-    sub_08007A58(r7);
-    Sub_080075E8(r4, 0, 3);
-    // The running minimum lives in the ARM `sl` register in the ROM
-    // (`movs r0,#3 / mov sl,r0`), so the working value has to be pinned --
-    // with a plain local agbcc keeps it in r0..r3 and drops the sl save from
-    // the prologue entirely.
-    register int sl __asm__("sl") = 3;
-    int r5 = 0;
-    // The ROM re-reads the SAME two cells every iteration (r3 = WA+0xFF4 and
-    // r9 = WA+0xFF8 are loop-invariant); only the column index i varies.
-    const s16 *rowT = (const s16 *)(WA + 0x0FF4);
-    const s16 *colT = (const s16 *)(WA + 0x0FF8);
-    for (int i = 0; i <= 2; i++) {
-        int res = _08025CF4(RS16(rowT), RS16(colT), i);
-        if ((u32)(res - 1) <= 2) r5 = res;
-        if (r5 <= sl) sl = r5;
-    }
-    WR16((u8 *)r7 + 132, (u16)sl);
-    Sub_08002714(RS16(rowT), RS16(rowT + 2), sl);
-    void *allocated = Sub_08005758(64);
-    WR16((u16 *)0x0203F8EA, (u16)(u32)allocated);
-    WR16((u16 *)0x0203F8E8, 0);
-    int sel = RS16((u8 *)r7 + 132) - 1;
-    Sub_08007570((void *)0x08306B54, RS16((u8 *)0x080CB8E0 + 2 * sel),
-                 RS16((u16 *)0x0203F8EA), 64, 64);
-    Sub_080075E8((void *)0x08306B54, RS16((u8 *)0x080CB8E6 + 2 * sel), 4);
-    WR32((u8 *)r7 + 120, (u32)((u8 *)r7 + 136));
-    WR32((u8 *)r7 + 124, (u32)((u8 *)r7 + 8));
-    WR32((u8 *)r7 + 8, 0);
-    WR16((u8 *)r7 + 12, 1);
-    Sub_0800D77C((u8 *)r7 + 28, 0, -32);
-    Sub_0800D77C((u8 *)r7 + 20, 0, 160);
-    WR16((u8 *)r7 + 16, 6);
-    WR16((u8 *)r7 + 18, 5);
-    WR32((u8 *)r7 + 136, 2);
+__attribute__((naked)) void Rec35_Setup_17F04(void *rec) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push	{r4, r5, r6, r7, lr}\n"
+        "mov	r7, sl\n"
+        "mov	r6, r9\n"
+        "mov	r5, r8\n"
+        "push	{r5, r6, r7}\n"
+        "sub	sp, #12\n"
+        "adds	r7, r0, #0\n"
+        "movs	r0, #65\n"
+        "bl 0x0802B214\n"
+        "ldr r4, .Lr35f_pool_044\n"
+        "movs	r0, #4\n"
+        "str	r0, [sp, #0]\n"
+        "movs	r0, #1\n"
+        "str	r0, [sp, #4]\n"
+        "movs	r0, #0\n"
+        "adds	r1, r4, #0\n"
+        "movs	r2, #1\n"
+        "movs	r3, #0\n"
+        "bl sub_08007770\n"
+        "movs	r0, #6\n"
+        "str	r0, [r7, #80]\n"
+        "movs	r0, #23\n"
+        "str	r0, [r7, #92]\n"
+        "movs	r0, #0\n"
+        "str	r0, [r7, #104]\n"
+        "adds	r0, r7, #0\n"
+        "adds	r0, #8\n"
+        "bl sub_0800DAB8\n"
+        "adds	r0, r4, #0\n"
+        "adds	r1, r7, #0\n"
+        "bl sub_0800798C\n"
+        "adds	r0, r7, #0\n"
+        "bl sub_08007A58\n"
+        "adds	r0, r4, #0\n"
+        "movs	r1, #0\n"
+        "movs	r2, #3\n"
+        "bl sub_080075E8\n"
+        "movs	r0, #3\n"
+        "mov	sl, r0\n"
+        "movs	r5, #0\n"
+        "movs	r4, #0\n"
+        "ldr r1, .Lr35f_pool_048\n"
+        "mov	r8, r1\n"
+        "ldr r2, .Lr35f_pool_04c\n"
+        "add	r2, r8\n"
+        "mov	r9, r2\n"
+        ".Lr35f_f6c:\n"
+        "ldr r3, .Lr35f_pool_050\n"
+        "add	r3, r8\n"
+        "movs	r6, #0\n"
+        "ldrsh	r0, [r3, r6]\n"
+        "mov	r2, r9\n"
+        "movs	r6, #0\n"
+        "ldrsh	r1, [r2, r6]\n"
+        "adds	r2, r4, #0\n"
+        "str	r3, [sp, #8]\n"
+        "bl 0x08025CF4\n"
+        "adds	r1, r0, #0\n"
+        "subs	r0, r1, #1\n"
+        "ldr	r3, [sp, #8]\n"
+        "cmp	r0, #2\n"
+        "bhi .Lr35f_f8e\n"
+        "adds	r5, r1, #0\n"
+        ".Lr35f_f8e:\n"
+        "cmp	r5, sl\n"
+        "bgt .Lr35f_f94\n"
+        "mov	sl, r5\n"
+        ".Lr35f_f94:\n"
+        "adds	r4, #1\n"
+        "cmp	r4, #2\n"
+        "ble .Lr35f_f6c\n"
+        "adds	r4, r7, #0\n"
+        "adds	r4, #132\n"
+        "movs	r0, #0\n"
+        "mov	r8, r0\n"
+        "mov	r1, sl\n"
+        "strh	r1, [r4, #0]\n"
+        "movs	r2, #0\n"
+        "ldrsh	r0, [r3, r2]\n"
+        "movs	r6, #4\n"
+        "ldrsh	r1, [r3, r6]\n"
+        "mov	r2, sl\n"
+        "bl sub_08002714\n"
+        "movs	r0, #64\n"
+        "bl sub_08005758\n"
+        "ldr r2, .Lr35f_pool_054\n"
+        "strh	r0, [r2, #2]\n"
+        "mov	r0, r8\n"
+        "strh	r0, [r2, #0]\n"
+        "ldr r5, .Lr35f_pool_058\n"
+        "ldr r1, .Lr35f_pool_05c\n"
+        "movs	r3, #0\n"
+        "ldrsh	r0, [r4, r3]\n"
+        "subs	r0, #1\n"
+        "lsls	r0, r0, #1\n"
+        "adds	r0, r0, r1\n"
+        "movs	r6, #0\n"
+        "ldrsh	r1, [r0, r6]\n"
+        "movs	r0, #2\n"
+        "ldrsh	r2, [r2, r0]\n"
+        "movs	r0, #64\n"
+        "str	r0, [sp, #0]\n"
+        "adds	r0, r5, #0\n"
+        "movs	r3, #64\n"
+        "bl sub_08007570\n"
+        "ldr r1, .Lr35f_pool_060\n"
+        "movs	r2, #0\n"
+        "ldrsh	r0, [r4, r2]\n"
+        "subs	r0, #1\n"
+        "lsls	r0, r0, #1\n"
+        "adds	r0, r0, r1\n"
+        "movs	r3, #0\n"
+        "ldrsh	r1, [r0, r3]\n"
+        "adds	r0, r5, #0\n"
+        "movs	r2, #4\n"
+        "bl sub_080075E8\n"
+        "adds	r4, #4\n"
+        "str	r4, [r7, #120]\n"
+        "adds	r0, r7, #0\n"
+        "adds	r0, #8\n"
+        "str	r0, [r7, #124]\n"
+        "mov	r6, r8\n"
+        "str	r6, [r7, #8]\n"
+        "movs	r0, #1\n"
+        "strh	r0, [r7, #12]\n"
+        "adds	r0, r7, #0\n"
+        "adds	r0, #28\n"
+        "movs	r2, #32\n"
+        "negs	r2, r2\n"
+        "movs	r1, #0\n"
+        "bl sub_0800D77C\n"
+        "adds	r0, r7, #0\n"
+        "adds	r0, #20\n"
+        "movs	r1, #0\n"
+        "movs	r2, #160\n"
+        "bl sub_0800D77C\n"
+        "movs	r0, #6\n"
+        "strh	r0, [r7, #16]\n"
+        "movs	r0, #5\n"
+        "strh	r0, [r7, #18]\n"
+        "movs	r0, #2\n"
+        "str	r0, [r4, #0]\n"
+        "add	sp, #12\n"
+        "pop	{r3, r4, r5}\n"
+        "mov	r8, r3\n"
+        "mov	r9, r4\n"
+        "mov	sl, r5\n"
+        "pop	{r4, r5, r6, r7}\n"
+        "pop	{r0}\n"
+        "bx	r0\n"
+        ".Lr35f_pool_044: .word 0x0832C31C\n"
+        ".Lr35f_pool_048: .word 0x03001780\n"
+        ".Lr35f_pool_04c: .word 0x00000FF8\n"
+        ".Lr35f_pool_050: .word 0x00000FF4\n"
+        ".Lr35f_pool_054: .word 0x0203F8E8\n"
+        ".Lr35f_pool_058: .word 0x08306B54\n"
+        ".Lr35f_pool_05c: .word 0x080CB8E0\n"
+        ".Lr35f_pool_060: .word 0x080CB8E6\n"
+        ".syntax divided\n"
+    );
 }
 void _080017F04(void *a) __attribute__((alias("Rec35_Setup_17F04")));
 

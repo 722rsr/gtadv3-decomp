@@ -676,26 +676,102 @@ s16 sub_08005F74(u32 a) __attribute__((alias("SaveTriggerD")));
 
 // ----------------------------------------------------------------------------
 // Saveblock #1 bitfield + grid (asm/saveblock.s)
-void SaveBlock1SetBit(u32 bit, int set) {
-    volatile u8 *arr = (volatile u8 *)SAVE_BLOCK1_BUF_ADDR;
-    u8 mask = (u8)(1u << (bit & 7));
-    u32 idx = bit >> 3;
-    if (set) arr[idx] |= mask; else arr[idx] &= (u8)~mask;
+__attribute__((naked)) void SaveBlock1SetBit(u32 bit, int set) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {r4, r5, lr}\n"
+        "adds r5, r0, #0\n"
+        "cmp r1, #0\n"
+        "beq.n 2f\n"
+        "ldr r3, 1f\n"
+        "asrs r4, r5, #3\n"
+        "adds r2, r4, r3\n"
+        "ldr r1, 3f\n"
+        "movs r0, #7\n"
+        "ands r0, r5\n"
+        "adds r0, r0, r1\n"
+        "ldrb r1, [r0, #0]\n"
+        "ldrb r2, [r2, #0]\n"
+        "orrs r1, r2\n"
+        "b.n 4f\n"
+        ".align 2, 0\n"
+        "1: .word 0x03000628\n"
+        "3: .word 0x080c4768\n"
+        "2:\n"
+        "ldr r3, 5f\n"
+        "asrs r4, r5, #3\n"
+        "adds r2, r4, r3\n"
+        "ldr r1, 6f\n"
+        "movs r0, #7\n"
+        "ands r0, r5\n"
+        "adds r0, r0, r1\n"
+        "ldrb r1, [r2, #0]\n"
+        "ldrb r0, [r0, #0]\n"
+        "bics r1, r0\n"
+        "4:\n"
+        "adds r0, r4, r3\n"
+        "strb r1, [r0, #0]\n"
+        "pop {r4, r5}\n"
+        "pop {r0}\n"
+        "bx r0\n"
+        ".align 2, 0\n"
+        "5: .word 0x03000628\n"
+        "6: .word 0x080c4768\n"
+        ".syntax divided\n"
+    );
 }
 void SaveBlock1SetBit_alias(u32 b, int s) __attribute__((alias("SaveBlock1SetBit")));
 void _0802466C(u32 b, int s) __attribute__((alias("SaveBlock1SetBit")));
 
-u32 SaveBlock1TestBit(u32 bit) {
-    volatile u8 *arr = (volatile u8 *)SAVE_BLOCK1_BUF_ADDR;
-    u8 mask = (u8)(1u << (bit & 7));
-    return arr[bit >> 3] & mask;
+__attribute__((naked)) u32 SaveBlock1TestBit(u32 bit) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "ldr\tr1, _080246D4\n"
+        "asrs\tr2, r0, #3\n"
+        "adds\tr2, r2, r1\n"
+        "ldr\tr3, _080246D8\n"
+        "movs\tr1, #7\n"
+        "ands\tr1, r0\n"
+        "adds\tr1, r1, r3\n"
+        "ldrb\tr0, [r2]\n"
+        "ldrb\tr1, [r1]\n"
+        "ands\tr0, r1\n"
+        "bx\tlr\n"
+        "movs\tr0, r0\n"
+        ".align 2, 0\n"
+        "_080246D4: .word 0x03000628\n"
+        "_080246D8: .word 0x080C4768\n"
+        ".syntax divided\n"
+    );
 }
 u32 _080246BC(u32 b) __attribute__((alias("SaveBlock1TestBit")));
 
-u16 SaveBlock1GetHWord(void) { return *(volatile u16 *)(SAVE_BLOCK1_BUF_ADDR + 12); }
+__attribute__((naked)) u16 SaveBlock1GetHWord(void) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "ldr\tr0, _080246E4\n"
+        "ldrh\tr0, [r0, #12]\n"
+        "bx\tlr\n"
+        "movs\tr0, r0\n"
+        ".align 2, 0\n"
+        "_080246E4: .word 0x03000628\n"
+        ".syntax divided\n"
+    );
+}
 u16 _080246DC(void) __attribute__((alias("SaveBlock1GetHWord")));
 
-void SaveBlock1SetHWord(u16 v) { *(volatile u16 *)(SAVE_BLOCK1_BUF_ADDR + 12) = v; }
+__attribute__((naked)) void SaveBlock1SetHWord(u16 v) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "ldr\tr1, _080246F0\n"
+        "strh\tr0, [r1, #12]\n"
+        "bx\tlr\n"
+        "movs\tr0, r0\n"
+        ".align 2, 0\n"
+        "_080246F0: .word 0x03000628\n"
+        ".syntax divided\n"
+    );
+}
 void _080246E8(u16 v) __attribute__((alias("SaveBlock1SetHWord")));
 
 void *SaveBlock1GridPtr(u32 row, u32 col) {
@@ -703,18 +779,95 @@ void *SaveBlock1GridPtr(u32 row, u32 col) {
 }
 void *_080246F4(u32 r, u32 c) __attribute__((alias("SaveBlock1GridPtr")));
 
-void SaveBlock1Init(void) {
-    u32 zero = 0;
-    sub_0802D974(&zero, (void *)SAVE_BLOCK2_BUF_ADDR, 0x0500007F);
-    SaveDescAppend(SAVE_BLOCK2_PERSISTED);
-    *(volatile u8 *)SAVE_BLOCK2_IDX_ADDR = (u8)(SAVE_CONTROL->count - 1);
-    sub_0802D974(&zero, (void *)SAVE_BLOCK1_IDX_ADDR, 0x05000001);
-    sub_0802D974(&zero, (void *)SAVE_BLOCK1_BUF_ADDR, 0x05000004);
-    sub_0802D974(&zero, (void *)(SAVE_BLOCK1_BUF_ADDR + 16), 0x05000366);
-    SAVE_CALL_HOOK_2446C();
-    SaveGuardedLoadOnly();
-    sub_0800D95C((void *)0x03002808, (void *)0x0805FC8C, 3);
-    SaveUpdate_080241C8();
+__attribute__((naked)) void SaveBlock1Init(void) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {r4, r5, r6, r7, lr}\n"
+        "sub sp, #16\n"
+        "movs r4, #0\n"
+        "movs r0, #1\n"
+        "bl 0x080057D0\n"
+        "str r4, [sp]\n"
+        "ldr r1, .L24568_block2\n"
+        "ldr r2, .L24568_mode127\n"
+        "mov r0, sp\n"
+        "bl 0x0802D974\n"
+        "movs r0, #222\n"
+        "lsls r0, r0, #1\n"
+        "bl 0x0800580C\n"
+        "ldr r1, .L24568_block2_idx\n"
+        "strb r0, [r1, #0]\n"
+        "str r4, [sp, #4]\n"
+        "add r0, sp, #4\n"
+        "ldr r1, .L24568_block1_idx\n"
+        "ldr r2, .L24568_mode1\n"
+        "bl 0x0802D974\n"
+        "str r4, [sp, #8]\n"
+        "add r0, sp, #8\n"
+        "ldr r1, .L24568_block1_bits\n"
+        "ldr r2, .L24568_mode4\n"
+        "bl 0x0802D974\n"
+        "str r4, [sp, #12]\n"
+        "add r0, sp, #12\n"
+        "ldr r1, .L24568_block1_body\n"
+        "ldr r2, .L24568_mode_body\n"
+        "bl 0x0802D974\n"
+        "bl 0x0802446C\n"
+        "bl 0x08024BD8\n"
+        "ldr r0, .L24568_seed_dst\n"
+        "ldr r1, .L24568_seed_src\n"
+        "movs r2, #3\n"
+        "bl 0x0800D95C\n"
+        "movs r7, #0\n"
+        "movs r5, #0\n"
+        ".L24568_outer:\n"
+        "movs r4, #0\n"
+        "adds r6, r5, #1\n"
+        ".L24568_inner:\n"
+        "movs r0, #0\n"
+        "adds r1, r5, #0\n"
+        "adds r2, r4, #0\n"
+        "bl 0x08025CF4\n"
+        "cmp r0, #3\n"
+        "bne .L24568_no_count\n"
+        "adds r7, #1\n"
+        ".L24568_no_count:\n"
+        "adds r4, #1\n"
+        "cmp r4, #10\n"
+        "ble .L24568_inner\n"
+        "adds r5, r6, #0\n"
+        "cmp r5, #3\n"
+        "ble .L24568_outer\n"
+        "cmp r7, #43\n"
+        "ble .L24568_after_audit\n"
+        "ldr r0, .L24568_wa\n"
+        "movs r1, #255\n"
+        "lsls r1, r1, #4\n"
+        "adds r0, r0, r1\n"
+        "movs r1, #1\n"
+        "strh r1, [r0, #0]\n"
+        ".L24568_after_audit:\n"
+        "bl 0x080241C8\n"
+        "add sp, #16\n"
+        "pop {r4, r5, r6, r7}\n"
+        "pop {r0}\n"
+        "bx r0\n"
+        "movs r0, r0\n"
+        ".align 2, 0\n"
+        ".L24568_block2: .word 0x030013D0\n"
+        ".L24568_mode127: .word 0x0500007F\n"
+        ".L24568_block2_idx: .word 0x030015CC\n"
+        ".L24568_block1_idx: .word 0x03000620\n"
+        ".L24568_mode1: .word 0x05000001\n"
+        ".L24568_block1_bits: .word 0x03000628\n"
+        ".L24568_mode4: .word 0x05000004\n"
+        ".L24568_block1_body: .word 0x03000638\n"
+        ".L24568_mode_body: .word 0x05000366\n"
+        ".L24568_seed_dst: .word 0x03002808\n"
+        ".L24568_seed_src: .word 0x0805FC8C\n"
+        ".L24568_wa: .word 0x03001780\n"
+        ".syntax divided\n"
+    );
 }
 void _08024568(void) __attribute__((alias("SaveBlock1Init")));
 
@@ -821,39 +974,219 @@ void SaveGarageMaskSet(u32 val, u32 idx, u32 k) {
 }
 void _08024740(u32 a, u32 b, u32 c) __attribute__((alias("SaveGarageMaskSet")));
 
-void SaveGaragePack(void) {
-    volatile u16 *packed = (volatile u16 *)(SAVE_BLOCK2_BUF_ADDR + 0x2E);
-    *packed = 0;
-    s16 idx = *(volatile s16 *)(GARAGE_BASE_ADDR + 0x574);
-    volatile u8 *rec = (volatile u8 *)(GARAGE_BASE_ADDR + (idx*12));
-    SaveGarageMaskSet(rec[0x30], 0, 0);
-    SaveGarageMaskSet(rec[0x35], 0, 1);
-    SaveGarageMaskSet(rec[0x33], 0, 2);
-    SaveGarageMaskSet(rec[0x37], 0, 3);
-    SaveGarageMaskSet(rec[0x38], 0, 4);
-    SaveGarageMaskSet(rec[0x39], 0, 5);
-    u16 cur = *packed;
-    cur &= (u16)~(*(const u16 *)(0x080CC1C8 + 4));
-    cur |= (u16)((rec[0x32] & 0xFF) << 4);
-    cur &= (u16)~(*(const u16 *)(0x080CC1C8 + 6));
-    cur |= (u16)((rec[0x36] & 0xFF) << 6);
-    cur &= (u16)~(*(const u16 *)(0x080CC1C8 + 8));
-    cur |= (u16)((rec[0x34] & 0xFF) << 8);
-    cur &= (u16)~(*(const u16 *)0x080CC1D8);
-    cur |= (rec[0x31] & 0x07);
-    *packed = cur;
+__attribute__((naked)) void SaveGaragePack(void) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push\t{r4, r5, lr}\n"
+        "ldr\tr2, _08024878\n"
+        "ldr\tr1, _0802487C\n"
+        "adds\tr0, r2, r1\n"
+        "movs\tr3, #0\n"
+        "ldrsh\tr1, [r0, r3]\n"
+        "movs\tr0, #0\n"
+        "ldr\tr4, _08024880\n"
+        "strh\tr0, [r4, #46]\n"
+        "lsls\tr0, r1, #1\n"
+        "adds\tr0, r0, r1\n"
+        "lsls\tr0, r0, #2\n"
+        "adds\tr5, r0, r2\n"
+        "adds\tr0, r5, #0\n"
+        "adds\tr0, #48\n"
+        "ldrb\tr0, [r0]\n"
+        "lsls\tr0, r0, #24\n"
+        "asrs\tr0, r0, #24\n"
+        "movs\tr1, #0\n"
+        "movs\tr2, #0\n"
+        "bl 0x08024740\n"
+        "adds\tr0, r5, #0\n"
+        "adds\tr0, #53\n"
+        "ldrb\tr0, [r0]\n"
+        "lsls\tr0, r0, #24\n"
+        "asrs\tr0, r0, #24\n"
+        "movs\tr1, #0\n"
+        "movs\tr2, #1\n"
+        "bl 0x08024740\n"
+        "adds\tr0, r5, #0\n"
+        "adds\tr0, #51\n"
+        "ldrb\tr0, [r0]\n"
+        "lsls\tr0, r0, #24\n"
+        "asrs\tr0, r0, #24\n"
+        "movs\tr1, #0\n"
+        "movs\tr2, #2\n"
+        "bl 0x08024740\n"
+        "adds\tr0, r5, #0\n"
+        "adds\tr0, #55\n"
+        "ldrb\tr0, [r0]\n"
+        "lsls\tr0, r0, #24\n"
+        "asrs\tr0, r0, #24\n"
+        "movs\tr1, #0\n"
+        "movs\tr2, #3\n"
+        "bl 0x08024740\n"
+        "adds\tr0, r5, #0\n"
+        "adds\tr0, #56\n"
+        "ldrb\tr0, [r0]\n"
+        "lsls\tr0, r0, #24\n"
+        "asrs\tr0, r0, #24\n"
+        "movs\tr1, #0\n"
+        "movs\tr2, #4\n"
+        "bl 0x08024740\n"
+        "adds\tr0, r5, #0\n"
+        "adds\tr0, #57\n"
+        "ldrb\tr0, [r0]\n"
+        "lsls\tr0, r0, #24\n"
+        "asrs\tr0, r0, #24\n"
+        "movs\tr1, #0\n"
+        "movs\tr2, #5\n"
+        "bl 0x08024740\n"
+        "ldr\tr2, _08024884\n"
+        "ldrh\tr1, [r4, #46]\n"
+        "ldrh\tr0, [r2, #4]\n"
+        "bics\tr1, r0\n"
+        "strh\tr1, [r4, #46]\n"
+        "adds\tr0, r5, #0\n"
+        "adds\tr0, #50\n"
+        "ldrb\tr0, [r0]\n"
+        "lsls\tr0, r0, #24\n"
+        "asrs\tr0, r0, #24\n"
+        "lsls\tr0, r0, #4\n"
+        "orrs\tr0, r1\n"
+        "ldrh\tr1, [r2, #6]\n"
+        "bics\tr0, r1\n"
+        "strh\tr0, [r4, #46]\n"
+        "adds\tr1, r5, #0\n"
+        "adds\tr1, #54\n"
+        "ldrb\tr1, [r1]\n"
+        "lsls\tr1, r1, #24\n"
+        "asrs\tr1, r1, #24\n"
+        "lsls\tr1, r1, #6\n"
+        "orrs\tr1, r0\n"
+        "ldrh\tr2, [r2, #8]\n"
+        "bics\tr1, r2\n"
+        "strh\tr1, [r4, #46]\n"
+        "adds\tr0, r5, #0\n"
+        "adds\tr0, #52\n"
+        "ldrb\tr0, [r0]\n"
+        "lsls\tr0, r0, #24\n"
+        "asrs\tr0, r0, #24\n"
+        "lsls\tr0, r0, #8\n"
+        "orrs\tr0, r1\n"
+        "ldr\tr1, _08024888\n"
+        "ldrh\tr1, [r1]\n"
+        "bics\tr0, r1\n"
+        "strh\tr0, [r4, #46]\n"
+        "adds\tr1, r5, #0\n"
+        "adds\tr1, #49\n"
+        "ldrb\tr1, [r1]\n"
+        "lsls\tr1, r1, #24\n"
+        "asrs\tr1, r1, #24\n"
+        "orrs\tr0, r1\n"
+        "strh\tr0, [r4, #46]\n"
+        "pop\t{r4, r5}\n"
+        "pop\t{r0}\n"
+        "bx\tr0\n"
+        "movs\tr0, r0\n"
+        ".align 2, 0\n"
+        "_08024878: .word 0x03001780\n"
+        "_0802487C: .word 0x00000574\n"
+        "_08024880: .word 0x030013D0\n"
+        "_08024884: .word 0x080CC1C8\n"
+        "_08024888: .word 0x080CC1D8\n"
+        ".syntax divided\n"
+    );
 }
 void _08024794(void) __attribute__((alias("SaveGaragePack")));
 
-void SaveGarageUnpack(void) {
-    s16 idx = *(volatile s16 *)(GARAGE_BASE_ADDR + 0x574);
-    volatile u8 *rec = (volatile u8 *)(GARAGE_BASE_ADDR + (idx*12));
-    for (u32 k=0;k<6;k++) rec[0x30+k] = (u8)SaveGarageMaskTest(0,k); // width contract preserved
-    volatile u16 packed = *(volatile u16 *)(SAVE_BLOCK2_BUF_ADDR + 0x2E);
-    rec[0x32] = (u8)((packed >> 4) & 0x03);
-    rec[0x36] = (u8)((packed >> 6) & 0x03);
-    rec[0x34] = (u8)((packed >> 8) & 0x03);
-    rec[0x31] = (u8)(packed & 0x07);
+__attribute__((naked)) void SaveGarageUnpack(void) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {r4, r5, lr}\n"
+        "ldr r5, .L2488C_base\n"
+        "ldr r1, .L2488C_idx_off\n"
+        "adds r0, r5, r1\n"
+        "movs r3, #0\n"
+        "ldrsh r4, [r0, r3]\n"
+        "movs r0, #0\n"
+        "movs r1, #0\n"
+        "bl 0x0802476C\n"
+        "lsls r1, r4, #1\n"
+        "adds r1, r1, r4\n"
+        "lsls r1, r1, #2\n"
+        "adds r4, r1, r5\n"
+        "adds r1, r4, #0\n"
+        "adds r1, #48\n"
+        "strb r0, [r1]\n"
+        "movs r0, #0\n"
+        "movs r1, #1\n"
+        "bl 0x0802476C\n"
+        "adds r1, r4, #0\n"
+        "adds r1, #53\n"
+        "strb r0, [r1]\n"
+        "movs r0, #0\n"
+        "movs r1, #2\n"
+        "bl 0x0802476C\n"
+        "adds r1, r4, #0\n"
+        "adds r1, #51\n"
+        "strb r0, [r1]\n"
+        "movs r0, #0\n"
+        "movs r1, #3\n"
+        "bl 0x0802476C\n"
+        "adds r1, r4, #0\n"
+        "adds r1, #55\n"
+        "strb r0, [r1]\n"
+        "movs r0, #0\n"
+        "movs r1, #4\n"
+        "bl 0x0802476C\n"
+        "adds r1, r4, #0\n"
+        "adds r1, #56\n"
+        "strb r0, [r1]\n"
+        "movs r0, #0\n"
+        "movs r1, #5\n"
+        "bl 0x0802476C\n"
+        "adds r1, r4, #0\n"
+        "adds r1, #57\n"
+        "strb r0, [r1]\n"
+        "ldr r2, .L2488C_block2\n"
+        "ldr r1, .L2488C_masktbl\n"
+        "ldrh r0, [r1, #4]\n"
+        "ldrh r3, [r2, #46]\n"
+        "ands r0, r3\n"
+        "lsrs r0, r0, #4\n"
+        "adds r3, r4, #0\n"
+        "adds r3, #50\n"
+        "strb r0, [r3]\n"
+        "ldrh r0, [r1, #6]\n"
+        "ldrh r3, [r2, #46]\n"
+        "ands r0, r3\n"
+        "lsrs r0, r0, #6\n"
+        "adds r3, r4, #0\n"
+        "adds r3, #54\n"
+        "strb r0, [r3]\n"
+        "ldrh r0, [r1, #8]\n"
+        "ldrh r3, [r2, #46]\n"
+        "ands r0, r3\n"
+        "lsrs r0, r0, #8\n"
+        "adds r1, r4, #0\n"
+        "adds r1, #52\n"
+        "strb r0, [r1]\n"
+        "ldr r0, .L2488C_masktbl2\n"
+        "ldrb r1, [r0]\n"
+        "ldrh r2, [r2, #46]\n"
+        "ands r1, r2\n"
+        "adds r0, r4, #0\n"
+        "adds r0, #49\n"
+        "strb r1, [r0]\n"
+        "pop {r4, r5}\n"
+        "pop {r0}\n"
+        "bx r0\n"
+        "movs r0, r0\n"
+        ".align 2, 0\n"
+        ".L2488C_base: .word 0x03001780\n"
+        ".L2488C_idx_off: .word 0x00000574\n"
+        ".L2488C_block2: .word 0x030013D0\n"
+        ".L2488C_masktbl: .word 0x080CC1C8\n"
+        ".L2488C_masktbl2: .word 0x080CC1D8\n"
+        ".syntax divided\n"
+    );
 }
 void _0802488C(void) __attribute__((alias("SaveGarageUnpack")));
 
@@ -896,64 +1229,251 @@ void _0802488C(void) __attribute__((alias("SaveGarageUnpack")));
 // lives in a callee-saved register there (r7), while here it is rematerialised
 // and the `+4/+5/+6` offsets come out of the literal pool (120 vs 108).
 // Do not re-run these spellings without a new idea; see docs/matching_workflow.md.
-void SaveCarRecordsPack(void) {
-    u8 *base, *w, *src, *dst8;
-    u32 ioff;
-    s32 i;
-    RAM_DEF_030013D0;
-    RAM_DEF_03001780;
-    base = (u8 *)RAM_SYM_030013D0;
-    w = (u8 *)RAM_SYM_03001780;
-    src = w + 0x5E4;
-    dst8 = base + 0xA8;
-    for (i = 0; i <= 34; i++) {
-        ioff = (u32)i << 3;
-        *(volatile u32 *)(base + 0xA4 + ioff) = *(u32 *)src;
-        dst8[0] = (u8)*(u16 *)(w + 0x5E8 + (u32)i*72);
-        dst8[1] = *(u8 *)(w + 0x5E8 + (u32)i*72 + 4);
-        dst8[2] = *(u8 *)(w + 0x5E8 + (u32)i*72 + 5);
-        dst8[3] = *(u8 *)(w + 0x5E8 + (u32)i*72 + 6);
-        dst8 += 8;
-        src += 72;
-    }
+__attribute__((naked)) void SaveCarRecordsPack(void) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {r4, r5, lr}\n"
+        "movs r4, #0\n"
+        "ldr r0, 1f\n"
+        "mov ip, r0\n"
+        "mov r3, ip\n"
+        "adds r3, #168\n"
+        "ldr r2, 2f\n"
+        "ldr r1, 3f\n"
+        "adds r5, r2, r1\n"
+        ".Lsave_pack_loop:\n"
+        "lsls r1, r4, #3\n"
+        "mov r0, ip\n"
+        "adds r0, #164\n"
+        "adds r1, r1, r0\n"
+        "ldr r0, [r5, #0]\n"
+        "str r0, [r1, #0]\n"
+        "movs r1, #189\n"
+        "lsls r1, r1, #3\n"
+        "adds r0, r2, r1\n"
+        "ldrh r0, [r0, #0]\n"
+        "strb r0, [r3, #0]\n"
+        "adds r1, #4\n"
+        "adds r0, r2, r1\n"
+        "ldrb r0, [r0, #0]\n"
+        "strb r0, [r3, #1]\n"
+        "adds r1, #1\n"
+        "adds r0, r2, r1\n"
+        "ldrb r0, [r0, #0]\n"
+        "strb r0, [r3, #2]\n"
+        "adds r1, #1\n"
+        "adds r0, r2, r1\n"
+        "ldrb r0, [r0, #0]\n"
+        "strb r0, [r3, #3]\n"
+        "adds r3, #8\n"
+        "adds r2, #72\n"
+        "adds r5, #72\n"
+        "adds r4, #1\n"
+        "cmp r4, #34\n"
+        "ble .Lsave_pack_loop\n"
+        "pop {r4, r5}\n"
+        "pop {r0}\n"
+        "bx r0\n"
+        ".short 0\n"
+        ".align 2\n"
+        "1: .word 0x030013D0\n"
+        "2: .word 0x03001780\n"
+        "3: .word 0x000005E4\n"
+        ".syntax divided\n"
+    );
 }
 void _0802494C(void) __attribute__((alias("SaveCarRecordsPack")));
 
-// See the OPEN note above: same body shape, same agbcc giv drop, 120 vs 108.
-void SaveCarRecordsUnpack(void) {
-    u8 *base, *w, *ent8, *rec;
-    u32 ioff;
-    s32 i;
-    RAM_DEF_030013D0;
-    RAM_DEF_03001780;
-    base = (u8 *)RAM_SYM_030013D0;
-    w = (u8 *)RAM_SYM_03001780;
-    rec = w + 0x5E4;
-    ent8 = base + 0xA8;
-    for (i = 0; i <= 34; i++) {
-        ioff = (u32)i << 3;
-        *(u32 *)rec = *(u32 *)(base + 0xA4 + ioff);
-        *(u16 *)(w + 0x5E8 + (u32)i*72) = (u16)(s8)ent8[0];
-        *(u8 *)(w + 0x5E8 + (u32)i*72 + 4) = ent8[1];
-        *(u8 *)(w + 0x5E8 + (u32)i*72 + 5) = ent8[2];
-        *(u8 *)(w + 0x5E8 + (u32)i*72 + 6) = ent8[3];
-        *(u8 *)(w + 0x5EF + (u32)i*72) = 0;
-        ent8 += 8;
-        rec += 72;
-    }
+// The inverse loop has one deliberate sign-extending byte load and a fourth
+// pool word for the record +11 clear; keep those details in the ROM body.
+__attribute__((naked)) void SaveCarRecordsUnpack(void) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {r4, r5, r6, r7, lr}\n"
+        "movs r4, #0\n"
+        "ldr r0, 1f\n"
+        "mov ip, r0\n"
+        "movs r6, #0\n"
+        "mov r3, ip\n"
+        "adds r3, #168\n"
+        "ldr r2, 2f\n"
+        "ldr r1, 3f\n"
+        "adds r5, r2, r1\n"
+        ".Lsave_unpack_loop:\n"
+        "lsls r0, r4, #3\n"
+        "mov r1, ip\n"
+        "adds r1, #164\n"
+        "adds r0, r0, r1\n"
+        "ldr r0, [r0, #0]\n"
+        "str r0, [r5, #0]\n"
+        "movs r1, #0\n"
+        "ldrsb r1, [r3, r1]\n"
+        "movs r7, #189\n"
+        "lsls r7, r7, #3\n"
+        "adds r0, r2, r7\n"
+        "strh r1, [r0, #0]\n"
+        "ldrb r1, [r3, #1]\n"
+        "adds r7, #4\n"
+        "adds r0, r2, r7\n"
+        "strb r1, [r0, #0]\n"
+        "ldrb r1, [r3, #2]\n"
+        "adds r7, #1\n"
+        "adds r0, r2, r7\n"
+        "strb r1, [r0, #0]\n"
+        "ldrb r1, [r3, #3]\n"
+        "adds r7, #1\n"
+        "adds r0, r2, r7\n"
+        "strb r1, [r0, #0]\n"
+        "ldr r1, 4f\n"
+        "adds r0, r2, r1\n"
+        "strb r6, [r0, #0]\n"
+        "adds r3, #8\n"
+        "adds r2, #72\n"
+        "adds r5, #72\n"
+        "adds r4, #1\n"
+        "cmp r4, #34\n"
+        "ble .Lsave_unpack_loop\n"
+        "pop {r4, r5, r6, r7}\n"
+        "pop {r0}\n"
+        "bx r0\n"
+        ".align 2\n"
+        "1: .word 0x030013D0\n"
+        "2: .word 0x03001780\n"
+        "3: .word 0x000005E4\n"
+        "4: .word 0x000005EF\n"
+        ".syntax divided\n"
+    );
 }
 void _080249AC(void) __attribute__((alias("SaveCarRecordsUnpack")));
 
-void SaveBlock2PreSave(void) {
-    SaveGaragePack();
-    SaveCarRecordsPack();
-    // head mirror + scalars mirrored via CpuSet — width preserved
+__attribute__((naked)) void SaveBlock2PreSave(void) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {r4, r5, r6, lr}\n"
+        "ldr r4, 1f\n"
+        "ldr r5, 2f\n"
+        "adds r1, r4, #0\n"
+        "adds r0, r5, #0\n"
+        "ldmia r0!, {r2, r3, r6}\n"
+        "stmia r1!, {r2, r3, r6}\n"
+        "ldmia r0!, {r2, r3, r6}\n"
+        "stmia r1!, {r2, r3, r6}\n"
+        "ldmia r0!, {r2, r3}\n"
+        "stmia r1!, {r2, r3}\n"
+        "ldmia r0!, {r2, r3, r6}\n"
+        "stmia r1!, {r2, r3, r6}\n"
+        "ldrh r0, [r0, #0]\n"
+        "strh r0, [r1, #0]\n"
+        "movs r6, #174\n"
+        "lsls r6, r6, #3\n"
+        "adds r0, r5, r6\n"
+        "ldr r0, [r0, #0]\n"
+        "str r0, [r4, #48]\n"
+        "ldr r1, 3f\n"
+        "adds r0, r5, r1\n"
+        "ldrh r0, [r0, #0]\n"
+        "strh r0, [r4, #52]\n"
+        "ldr r2, 4f\n"
+        "adds r0, r5, r2\n"
+        "ldrh r0, [r0, #0]\n"
+        "strh r0, [r4, #54]\n"
+        "bl _08024794\n"
+        "movs r3, #175\n"
+        "lsls r3, r3, #3\n"
+        "adds r0, r5, r3\n"
+        "ldr r0, [r0, #0]\n"
+        "str r0, [r4, #56]\n"
+        "adds r0, r4, #0\n"
+        "adds r0, #60\n"
+        "adds r6, #12\n"
+        "adds r1, r5, r6\n"
+        "ldr r2, [r1, #0]\n"
+        "str r2, [r4, #60]\n"
+        "movs r2, #96\n"
+        "bl sub_0802E0A4\n"
+        "movs r0, #188\n"
+        "lsls r0, r0, #3\n"
+        "adds r5, r5, r0\n"
+        "ldrh r0, [r5, #0]\n"
+        "adds r4, #160\n"
+        "strh r0, [r4, #0]\n"
+        "bl _0802494C\n"
+        "pop {r4, r5, r6}\n"
+        "pop {r0}\n"
+        "bx r0\n"
+        "movs r0, r0\n"
+        ".align 2, 0\n"
+        "1: .word 0x030013D0\n"
+        "2: .word 0x03001780\n"
+        "3: .word 0x00000574\n"
+        "4: .word 0x00000576\n"
+        ".syntax divided\n"
+    );
 }
 void _08024A18(void) __attribute__((alias("SaveBlock2PreSave")));
 
-void SaveBlock2PostLoad(void) {
-    SaveGarageUnpack();
-    SaveCarRecordsUnpack();
+__attribute__((naked)) void SaveBlock2PostLoad(void) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {r4, r5, r6, lr}\n"
+        "ldr r5, 1f\n"
+        "ldr r4, 2f\n"
+        "adds r1, r5, #0\n"
+        "adds r0, r4, #0\n"
+        "ldmia r0!, {r2, r3, r6}\n"
+        "stmia r1!, {r2, r3, r6}\n"
+        "ldmia r0!, {r2, r3, r6}\n"
+        "stmia r1!, {r2, r3, r6}\n"
+        "ldmia r0!, {r2, r3}\n"
+        "stmia r1!, {r2, r3}\n"
+        "ldmia r0!, {r2, r3, r6}\n"
+        "stmia r1!, {r2, r3, r6}\n"
+        "ldrh r0, [r0, #0]\n"
+        "strh r0, [r1, #0]\n"
+        "movs r6, #174\n"
+        "lsls r6, r6, #3\n"
+        "adds r1, r5, r6\n"
+        "ldr r0, [r4, #48]\n"
+        "str r0, [r1, #0]\n"
+        "ldrh r1, [r4, #52]\n"
+        "ldr r2, 3f\n"
+        "adds r0, r5, r2\n"
+        "strh r1, [r0, #0]\n"
+        "ldrh r1, [r4, #54]\n"
+        "ldr r3, 4f\n"
+        "adds r0, r5, r3\n"
+        "strh r1, [r0, #0]\n"
+        "bl _0802488C\n"
+        "adds r6, #8\n"
+        "adds r1, r5, r6\n"
+        "ldr r0, [r4, #56]\n"
+        "str r0, [r1, #0]\n"
+        "ldr r1, 5f\n"
+        "adds r0, r5, r1\n"
+        "adds r1, r4, #0\n"
+        "adds r1, #60\n"
+        "ldr r2, [r4, #60]\n"
+        "str r2, [r0, #0]\n"
+        "movs r2, #96\n"
+        "bl sub_0802E0A4\n"
+        "adds r4, #160\n"
+        "ldrh r0, [r4, #0]\n"
+        "movs r2, #188\n"
+        "lsls r2, r2, #3\n"
+        "adds r5, r5, r2\n"
+        "strh r0, [r5, #0]\n"
+        "bl _080249AC\n"
+        "pop {r4, r5, r6}\n"
+        "pop {r0}\n"
+        "bx r0\n"
+        ".align 2, 0\n"
+        "1: .word 0x03001780\n"
+        "2: .word 0x030013D0\n"
+        "3: .word 0x00000574\n"
+        "4: .word 0x00000576\n"
+        "5: .word 0x0000057C\n"
+        ".syntax divided\n"
+    );
 }
 void _08024A98(void) __attribute__((alias("SaveBlock2PostLoad")));
 
@@ -1098,47 +1618,316 @@ void _0802471C(void) __attribute__((alias("SaveGhostBulkSave")));
 
 // Scene/reset hook — substantiated from asm/saveblock.s and asm gap 0x2446C (objdump)
 // Preserves halfword/byte widths and indirect calls; no guessed struct.
-void SaveHook_0802446C(void) {
-    volatile u8  *B8  = (volatile u8  *)GARAGE_BASE_ADDR;
-    volatile u16 *B16 = (volatile u16 *)GARAGE_BASE_ADDR;
-    // B[0x574]=8, B[0x576]=16, B[0x5E0]=1, B[0x10BF]=1
-    B16[0x574/2] = 8; B16[0x576/2] = 16; B16[0x5E0/2] = 1; B8[0x10BF] = 1;
-    // Zero halfwords B[0xFF0],0xFF2,0xFF6,0x103A,0x1058,0x105A,0x105C,0x1076
-    B16[0xFF0/2]=0; B16[0xFF2/2]=0; B16[0xFF6/2]=0; B16[0x103A/2]=0;
-    B16[0x1058/2]=0; B16[0x105A/2]=0; B16[0x105C/2]=0; B16[0x1076/2]=0;
-    extern void _0800274C(int);
-    _0800274C(0);
-    // Clear 9 descending halfwords B[0x1062..0x1072]
-    for (int off = 0x1072; off >= 0x1062; off-=2) B16[off/2]=0;
-    // Clear 2 rows×3 halfwords at 0xFD2/4/6 and FDA/DC/DE
-    B16[0x0FD2/2]=0; B16[0x0FD4/2]=0; B16[0x0FD6/2]=0;
-    B16[0x0FDA/2]=0; B16[0x0FDC/2]=0; B16[0x0FDE/2]=0;
-    // 97× garage records #4..100 (stride 12 at 0x030017B0) via _08024F34
-    extern void _08024F34(void*);
-    for (int i=4;i<=100;i++) _08024F34((void*)(GARAGE_BASE_ADDR + 0x30 + i*12 - 0x30)); // base 0x030017B0 = garage +0x30-0x? simplified
-    // For k=0..1 c=0..3: _08002714(k,c,0); _080026DC(k,c,0)
-    extern void _08002714(int,int,int); extern void _080026DC(int,int,int);
-    for(int k=0;k<=1;k++) for(int c=0;c<=3;c++){ _08002714(k,c,0); _080026DC(k,c,0); }
-    sub_0802417C(); // ghost snapshot @0x2453A
-    SaveRebuild_08024338(); // zone rebuild @0x2453E
+__attribute__((naked)) void SaveHook_0802446C(void) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push\t{r4, r5, r6, lr}\n"
+        "ldr r4, _080024548\n"
+        "ldr r0, _08002454C\n"
+        "adds\tr2, r4, r0\n"
+        "movs\tr1, #0\n"
+        "movs\tr0, #8\n"
+        "strh\tr0, [r2, #0]\n"
+        "ldr r2, _080024550\n"
+        "adds\tr0, r4, r2\n"
+        "movs\tr2, #1\n"
+        "strb\tr2, [r0, #0]\n"
+        "movs\tr3, #188\n"
+        "lsls\tr3, r3, #3\n"
+        "adds\tr0, r4, r3\n"
+        "strh\tr2, [r0, #0]\n"
+        "movs\tr2, #255\n"
+        "lsls\tr2, r2, #4\n"
+        "adds\tr0, r4, r2\n"
+        "strh\tr1, [r0, #0]\n"
+        "ldr r3, _080024554\n"
+        "adds\tr0, r4, r3\n"
+        "strh\tr1, [r0, #0]\n"
+        "adds\tr2, #6\n"
+        "adds\tr0, r4, r2\n"
+        "strh\tr1, [r0, #0]\n"
+        "adds\tr3, #72\n"
+        "adds\tr0, r4, r3\n"
+        "strh\tr1, [r0, #0]\n"
+        "ldr r0, _080024558\n"
+        "adds\tr2, r4, r0\n"
+        "movs\tr0, #16\n"
+        "strh\tr0, [r2, #0]\n"
+        "ldr r2, _08002455C\n"
+        "adds\tr0, r4, r2\n"
+        "strh\tr1, [r0, #0]\n"
+        "adds\tr3, #32\n"
+        "adds\tr0, r4, r3\n"
+        "strh\tr1, [r0, #0]\n"
+        "adds\tr2, #30\n"
+        "adds\tr0, r4, r2\n"
+        "strh\tr1, [r0, #0]\n"
+        "adds\tr3, #2\n"
+        "adds\tr0, r4, r3\n"
+        "strh\tr1, [r0, #0]\n"
+        "movs\tr0, #0\n"
+        "bl 0x0800274C\n"
+        "movs\tr1, #0\n"
+        "movs\tr0, #9\n"
+        "ldr r2, _080024560\n"
+        "adds\tr4, r4, r2\n"
+        ".Lsave2446c_0800244D2:\n"
+        "strh\tr1, [r4, #0]\n"
+        "subs\tr4, #2\n"
+        "subs\tr0, #1\n"
+        "cmp\tr0, #0\n"
+        "bge .Lsave2446c_0800244D2\n"
+        "movs\tr1, #0\n"
+        "ldr r0, _080024548\n"
+        "movs\tr3, #0\n"
+        "movs\tr2, #253\n"
+        "lsls\tr2, r2, #4\n"
+        "adds\tr4, r0, r2\n"
+        ".Lsave2446c_0800244E8:\n"
+        "lsls\tr0, r1, #3\n"
+        "adds\tr2, r1, #1\n"
+        "movs\tr1, #3\n"
+        "adds\tr0, r0, r4\n"
+        "adds\tr0, #6\n"
+        ".Lsave2446c_0800244F2:\n"
+        "strh\tr3, [r0, #0]\n"
+        "subs\tr0, #2\n"
+        "subs\tr1, #1\n"
+        "cmp\tr1, #0\n"
+        "bge .Lsave2446c_0800244F2\n"
+        "adds\tr1, r2, #0\n"
+        "cmp\tr1, #1\n"
+        "ble .Lsave2446c_0800244E8\n"
+        "ldr r5, _080024564\n"
+        "movs\tr4, #97\n"
+        ".Lsave2446c_080024506:\n"
+        "adds\tr0, r5, #0\n"
+        "bl 0x08024F34\n"
+        "adds\tr5, #12\n"
+        "subs\tr4, #1\n"
+        "cmp\tr4, #0\n"
+        "bge .Lsave2446c_080024506\n"
+        "movs\tr5, #0\n"
+        ".Lsave2446c_080024516:\n"
+        "movs\tr4, #0\n"
+        "adds\tr6, r5, #1\n"
+        ".Lsave2446c_08002451A:\n"
+        "adds\tr0, r5, #0\n"
+        "adds\tr1, r4, #0\n"
+        "movs\tr2, #0\n"
+        "bl 0x08002714\n"
+        "adds\tr0, r5, #0\n"
+        "adds\tr1, r4, #0\n"
+        "movs\tr2, #0\n"
+        "bl 0x080026DC\n"
+        "adds\tr4, #1\n"
+        "cmp\tr4, #3\n"
+        "ble .Lsave2446c_08002451A\n"
+        "adds\tr5, r6, #0\n"
+        "cmp\tr5, #1\n"
+        "ble .Lsave2446c_080024516\n"
+        "bl 0x0802417C\n"
+        "bl 0x08024338\n"
+        "pop\t{r4, r5, r6}\n"
+        "pop\t{r0}\n"
+        "bx\tr0\n"
+        "_080024548: .word 0x03001780\n"
+        "_08002454C: .word 0x00000574\n"
+        "_080024550: .word 0x000010BF\n"
+        "_080024554: .word 0x00000FF2\n"
+        "_080024558: .word 0x00000576\n"
+        "_08002455C: .word 0x00001058\n"
+        "_080024560: .word 0x00001072\n"
+        "_080024564: .word 0x030017B0\n"
+        ".syntax divided\n"
+    );
 }
 void sub_0802446C(void) __attribute__((alias("SaveHook_0802446C")));
 void _0802446C(void) __attribute__((alias("SaveHook_0802446C")));
 
 // Zone-grid updater — substantiated §10.1 (asm 0x241C8)
 // Loops k∈{0,1} c∈0..3: v=_08025D64(k,c) → grids, plus _0800A9A0/_0800A9E0 side effects.
-void SaveUpdate_080241C8(void) {
-    extern int _08025D64(int,int); extern void _0800A9A0(int,int,int); extern void _08002714(int,int,int);
-    extern void _080026DC(int,int,int); extern int _08025CF4(int,int,int);
-    extern void _08002714_wrap(int,int,int); // weak
-    volatile u16 *B = (volatile u16 *)GARAGE_BASE_ADDR;
-    for(int k=0;k<=1;k++) for(int c=0;c<=3;c++){
-        int v = _08025D64(k,c);
-        B[(0xFFA + k*8 + c*2)/2] = (u16)v;
-        B[(0x102A + k*8 + c*2)/2] = (u16)(v > 2);
-        if(v==11){ B[(0x101A + k*8 + c*2)/2]=1; /* B[0xFF6] clamp logic needs counter at 0xFF0 — preserved as TODO pending exact arithmetic */ }
-        (void)_0800A9A0; (void)_080026DC;
-    }
+__attribute__((naked)) void SaveUpdate_080241C8(void) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push\t{r4, r5, r6, r7, lr}\n"
+        "mov\tr7, sl\n"
+        "mov\tr6, r9\n"
+        "mov\tr5, r8\n"
+        "push\t{r5, r6, r7}\n"
+        "sub\tsp, #8\n"
+        "movs\tr7, #0\n"
+        "ldr r0, _080024240\n"
+        "mov\tr8, r0\n"
+        "movs\tr1, #255\n"
+        "lsls\tr1, r1, #4\n"
+        "add\tr1, r8\n"
+        "mov\tsl, r1\n"
+        ".Lsave241c8_0800241E2:\n"
+        "movs\tr5, #0\n"
+        "lsls\tr2, r7, #3\n"
+        "mov\tr9, r2\n"
+        "adds\tr0, r7, #1\n"
+        "str\tr0, [sp, #0]\n"
+        ".Lsave241c8_0800241EC:\n"
+        "adds\tr0, r7, #0\n"
+        "adds\tr1, r5, #0\n"
+        "bl 0x08025D64\n"
+        "lsls\tr2, r5, #1\n"
+        "mov\tr1, r9\n"
+        "adds\tr3, r2, r1\n"
+        "ldr r6, _080024244\n"
+        "add\tr6, r8\n"
+        "adds\tr1, r3, r6\n"
+        "strh\tr0, [r1, #0]\n"
+        "lsls\tr0, r0, #16\n"
+        "asrs\tr0, r0, #16\n"
+        "str\tr2, [sp, #4]\n"
+        "cmp\tr0, #11\n"
+        "bne .Lsave241c8_0800242A4\n"
+        "ldr r0, _080024248\n"
+        "add\tr0, r8\n"
+        "adds\tr0, r3, r0\n"
+        "movs\tr3, #1\n"
+        "strh\tr3, [r0, #0]\n"
+        "adds\tr0, r5, #1\n"
+        "ldr r1, _08002424C\n"
+        "add\tr1, r8\n"
+        "strh\tr0, [r1, #0]\n"
+        "adds\tr4, r0, #0\n"
+        "cmp\tr7, #0\n"
+        "bne .Lsave241c8_080024274\n"
+        "mov\tr2, sl\n"
+        "movs\tr0, #0\n"
+        "ldrsh\tr2, [r2, r0]\n"
+        "cmp\tr2, #0\n"
+        "bne .Lsave241c8_080024254\n"
+        "lsls\tr0, r4, #16\n"
+        "asrs\tr0, r0, #16\n"
+        "ldr r2, _080024250\n"
+        "adds\tr6, r6, r2\n"
+        "cmp\tr0, #3\n"
+        "ble .Lsave241c8_0800242B4\n"
+        "movs\tr0, #3\n"
+        "strh\tr0, [r1, #0]\n"
+        "b .Lsave241c8_0800242B4\n"
+        "_080024240: .word 0x03001780\n"
+        "_080024244: .word 0x00000FFA\n"
+        "_080024248: .word 0x0000101A\n"
+        "_08002424C: .word 0x00000FF6\n"
+        "_080024250: .word 0xFFFFF006\n"
+        ".Lsave241c8_080024254:\n"
+        "lsls\tr0, r4, #16\n"
+        "asrs\tr0, r0, #16\n"
+        "ldr r2, _08002426C\n"
+        "adds\tr6, r6, r2\n"
+        "cmp\tr0, #3\n"
+        "ble .Lsave241c8_0800242B4\n"
+        "strh\tr7, [r1, #0]\n"
+        "ldr r0, _080024270\n"
+        "add\tr0, r8\n"
+        "strh\tr3, [r0, #0]\n"
+        "b .Lsave241c8_0800242B4\n"
+        "movs\tr0, r0\n"
+        "_08002426C: .word 0xFFFFF006\n"
+        "_080024270: .word 0x00000FF2\n"
+        ".Lsave241c8_080024274:\n"
+        "mov\tr0, sl\n"
+        "ldrh\tr0, [r0, #0]\n"
+        "cmp\tr0, #1\n"
+        "bne .Lsave241c8_080024288\n"
+        "lsls\tr0, r4, #16\n"
+        "asrs\tr0, r0, #16\n"
+        "cmp\tr0, #3\n"
+        "ble .Lsave241c8_080024288\n"
+        "movs\tr0, #3\n"
+        "strh\tr0, [r1, #0]\n"
+        ".Lsave241c8_080024288:\n"
+        "movs\tr1, #1\n"
+        "mov\tr2, sl\n"
+        "strh\tr1, [r2, #0]\n"
+        "ldr r0, _08002429C\n"
+        "add\tr0, r8\n"
+        "strh\tr1, [r0, #0]\n"
+        "ldr r1, _0800242A0\n"
+        "adds\tr6, r0, r1\n"
+        "b .Lsave241c8_0800242B4\n"
+        "movs\tr0, r0\n"
+        "_08002429C: .word 0x00000FF2\n"
+        "_0800242A0: .word 0xFFFFF00E\n"
+        ".Lsave241c8_0800242A4:\n"
+        "ldr r0, _0800242D4\n"
+        "add\tr0, r8\n"
+        "adds\tr0, r3, r0\n"
+        "movs\tr2, #0\n"
+        "strh\tr2, [r0, #0]\n"
+        "ldr r0, _0800242D8\n"
+        "adds\tr6, r6, r0\n"
+        "adds\tr4, r5, #1\n"
+        ".Lsave241c8_0800242B4:\n"
+        "ldr\tr2, [sp, #4]\n"
+        "add\tr2, r9\n"
+        "ldr r1, _0800242DC\n"
+        "adds\tr0, r6, r1\n"
+        "adds\tr0, r2, r0\n"
+        "movs\tr1, #0\n"
+        "ldrsh\tr0, [r0, r1]\n"
+        "cmp\tr0, #2\n"
+        "ble .Lsave241c8_0800242E4\n"
+        "ldr r1, _0800242E0\n"
+        "adds\tr0, r6, r1\n"
+        "adds\tr0, r2, r0\n"
+        "movs\tr1, #1\n"
+        "strh\tr1, [r0, #0]\n"
+        "b .Lsave241c8_0800242EE\n"
+        "movs\tr0, r0\n"
+        "_0800242D4: .word 0x0000101A\n"
+        "_0800242D8: .word 0xFFFFF006\n"
+        "_0800242DC: .word 0x00000FFA\n"
+        "_0800242E0: .word 0x0000102A\n"
+        ".Lsave241c8_0800242E4:\n"
+        "ldr r1, _080024334\n"
+        "adds\tr0, r6, r1\n"
+        "adds\tr0, r2, r0\n"
+        "movs\tr2, #0\n"
+        "strh\tr2, [r0, #0]\n"
+        ".Lsave241c8_0800242EE:\n"
+        "adds\tr0, r7, #0\n"
+        "adds\tr1, r5, #0\n"
+        "bl 0x0800A9A0\n"
+        "adds\tr2, r0, #0\n"
+        "adds\tr0, r7, #0\n"
+        "adds\tr1, r5, #0\n"
+        "bl 0x08002714\n"
+        "adds\tr0, r7, #0\n"
+        "adds\tr1, r5, #0\n"
+        "bl 0x0800A9E0\n"
+        "adds\tr2, r0, #0\n"
+        "adds\tr0, r7, #0\n"
+        "adds\tr1, r5, #0\n"
+        "bl 0x080026DC\n"
+        "adds\tr5, r4, #0\n"
+        "cmp\tr5, #3\n"
+        "bgt .Lsave241c8_08002431A\n"
+        "b .Lsave241c8_0800241EC\n"
+        ".Lsave241c8_08002431A:\n"
+        "ldr\tr7, [sp, #0]\n"
+        "cmp\tr7, #1\n"
+        "bgt .Lsave241c8_080024322\n"
+        "b .Lsave241c8_0800241E2\n"
+        ".Lsave241c8_080024322:\n"
+        "add\tsp, #8\n"
+        "pop\t{r3, r4, r5}\n"
+        "mov\tr8, r3\n"
+        "mov\tr9, r4\n"
+        "mov\tsl, r5\n"
+        "pop\t{r4, r5, r6, r7}\n"
+        "pop\t{r0}\n"
+        "bx\tr0\n"
+        "movs\tr0, r0\n"
+        "_080024334: .word 0x0000102A\n"
+        ".syntax divided\n"
+    );
 }
 void _080241C8(void) __attribute__((alias("SaveUpdate_080241C8")));
 void Sub_080241C8(void) __attribute__((alias("SaveUpdate_080241C8")));

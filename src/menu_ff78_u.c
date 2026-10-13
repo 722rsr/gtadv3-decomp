@@ -67,153 +67,573 @@ extern void Sub_080026A4C(void *mgr, int b, int c);
 //     u32[612]=24C58(...); 7ABC(u32[28],u32[612],u32[608]);
 //     DMA x5 over s16[174] row (pals 82..8A).
 //   s16[172] != (s32)(s16)sp8 -> 26A4C(u32[580], s16[180], s16[172]).
-void MenuFF78_133E4(void *rec_, u32 a1_, u32 ev_) {
-    volatile u8 *rec = (volatile u8 *)rec_;
-    volatile u8 *wa = (volatile u8 *)(uintptr_t)0x03001780u;
-    u16 a1 = (u16)a1_;
-    u16 ev = (u16)ev_;
-    u16 sp4 = *(volatile u16 *)(uintptr_t)(rec + 174);
-    u16 sp8 = *(volatile u16 *)(uintptr_t)(rec + 172);
-    u16 sp12 = *(volatile u16 *)(uintptr_t)(rec + 136);
-    if (ev == 1) {
-        s16 s = *(volatile s16 *)(uintptr_t)(rec + 138);
-        if (s == 1) {
-            Sub_08002B368(1);
-            *(volatile s16 *)(uintptr_t)(rec + 186) = (s16)ev;
-            WA_PAIR(rec, wa, *(volatile s16 *)(uintptr_t)(rec + 174));
-            *(volatile u32 *)(uintptr_t)(rec + 144) = 0;
-        } else if (s == 0) {
-            s16 c = *(volatile s16 *)(uintptr_t)(wa + 0xFC2u);
-            if (c == 95) {
-                Sub_08002B368(1);
-                *(volatile s16 *)(uintptr_t)(rec + 186) = (s16)ev;
-                WA_PAIR(rec, wa, *(volatile s16 *)(uintptr_t)(rec + 174));
-                *(volatile u32 *)(uintptr_t)(rec + 144) = 0;
-            } else if (c == 94 || c == 96) {
-                Sub_08002B368(1);
-                WA_PAIR(rec, wa, *(volatile s16 *)(uintptr_t)(rec + 174));
-                *(volatile u32 *)(uintptr_t)(rec + 32) = 10;
-                *(volatile s16 *)(uintptr_t)(rec + 36) = 0;
-                *(volatile u32 *)(uintptr_t)(rec + 64) = 10;
-                *(volatile s16 *)(uintptr_t)(rec + 40) = 5;
-                *(volatile u32 *)(uintptr_t)(rec + 60) = 1;
-                *(volatile u16 *)(uintptr_t)(wa + 0xFBEu) =
-                    *(volatile u16 *)(uintptr_t)(rec + 176);
-                *(volatile u16 *)(uintptr_t)(wa + 0xFC2u) =
-                    *(volatile u16 *)(uintptr_t)(rec + 174);
-                WA_PAIR(rec, wa, *(volatile s16 *)(uintptr_t)(wa + 0xFC2u));
-            }
-        }
-    }
-    if (ev == 2) {
-        Sub_08002B368(4);
-        *(volatile u32 *)(uintptr_t)(rec + 32) = 10;
-        *(volatile s16 *)(uintptr_t)(rec + 36) = 0;
-        *(volatile u32 *)(uintptr_t)(rec + 64) = 10;
-        *(volatile u32 *)(uintptr_t)(rec + 60) = 0;
-    }
-    if ((a1 & 32) != 0 && *(volatile s16 *)(uintptr_t)(rec + 140) <= 0) {
-        u16 c = *(volatile u16 *)(uintptr_t)(rec + 136);
-        *(volatile u16 *)(uintptr_t)(rec + 136) = (u16)(c - 1);
-        *(volatile s16 *)(uintptr_t)(rec + 140) = 5;
-    }
-    if ((a1 & 16) != 0 && *(volatile s16 *)(uintptr_t)(rec + 140) <= 0) {
-        u16 c = *(volatile u16 *)(uintptr_t)(rec + 136);
-        *(volatile u16 *)(uintptr_t)(rec + 136) = (u16)(c + 1);
-        *(volatile s16 *)(uintptr_t)(rec + 140) = 5;
-    }
-    {
-        s16 c = (s16)(*(volatile s16 *)(uintptr_t)(rec + 140) - 1);
-        *(volatile s16 *)(uintptr_t)(rec + 140) = (c <= 0) ? 0 : c;
-    }
-    if (ev == 64) {
-        s16 c = *(volatile s16 *)(uintptr_t)(rec + 172);
-        *(volatile s16 *)(uintptr_t)(rec + 172) = (s16)(c - 1);
-    }
-    if (ev == 128) {
-        s16 c = *(volatile s16 *)(uintptr_t)(rec + 172);
-        *(volatile s16 *)(uintptr_t)(rec + 172) = (s16)(c + 1);
-    }
-    if (*(volatile s16 *)(uintptr_t)(rec + 136) < 0)
-        *(volatile s16 *)(uintptr_t)(rec + 136) = 0;
-    if (*(volatile u32 *)(uintptr_t)(rec + 188 +
-            ((u32)(s32)*(volatile s16 *)(uintptr_t)(rec + 136) << 2)) ==
-        0xFFFFFFFFu) {
-        u16 c = *(volatile u16 *)(uintptr_t)(rec + 136);
-        *(volatile u16 *)(uintptr_t)(rec + 136) = (u16)(c - 1);
-    }
-    {
-        s16 v = *(volatile s16 *)(uintptr_t)(rec + 172);
-        s16 w = *(volatile s16 *)(uintptr_t)(rec + 174);
-        if (v < 0) {
-            int t = (int)(s8)Sub_080254E8((int)w) - 1;
-            *(volatile s16 *)(uintptr_t)(rec + 172) = (s16)t;
-        }
-    }
-    {
-        s16 v = *(volatile s16 *)(uintptr_t)(rec + 172);
-        s16 w = *(volatile s16 *)(uintptr_t)(rec + 174);
-        if (v > (int)(s8)Sub_080254E8((int)w) - 1)
-            *(volatile s16 *)(uintptr_t)(rec + 172) = 0;
-    }
-    {
-        s16 w = *(volatile s16 *)(uintptr_t)(rec + 174);
-        u32 off = (((u32)(s32)w << 1) + (u32)(s32)w) << 2; // *12
-        *(volatile u8 *)(uintptr_t)(wa + off + 49) =
-            (u8)*(volatile u16 *)(uintptr_t)(rec + 172);
-    }
-    if ((s16)sp12 != *(volatile s16 *)(uintptr_t)(rec + 136))
-        Sub_08002B368(3);
-    if ((s32)(s16)sp8 != (int)*(volatile s16 *)(uintptr_t)(rec + 172))
-        Sub_08002B368(2);
-    if (*(volatile s16 *)(uintptr_t)(rec + 136) != (s16)sp12) {
-        u32 v = *(volatile u32 *)(uintptr_t)(rec + 188 +
-            ((u32)(s32)*(volatile s16 *)(uintptr_t)(rec + 136) << 2));
-        *(volatile u16 *)(uintptr_t)(rec + 174) = (u16)v;
-        *(volatile s16 *)(uintptr_t)(rec + 180) =
-            (s16)Sub_080022E4(
-                (int)*(volatile s16 *)(uintptr_t)(rec + 174));
-    }
-    if (*(volatile u16 *)(uintptr_t)(rec + 174) != sp4) {
-        s16 w = *(volatile s16 *)(uintptr_t)(rec + 174);
-        u32 off = (((u32)(s32)w << 1) + (u32)(s32)w) << 2; // *12
-        s8 b = (s8)*(volatile u8 *)(uintptr_t)(wa + off + 49);
-        *(volatile s16 *)(uintptr_t)(rec + 172) = (s16)b;
-        Sub_0800DA50((void *)(uintptr_t)(rec + 580),
-                     (int)*(volatile s16 *)(uintptr_t)(rec + 174),
-                     (int)*(volatile s16 *)(uintptr_t)(rec + 172));
-        {
-            int v = Sub_08024C3C(
-                (int)*(volatile s16 *)(uintptr_t)(rec + 174));
-            *(volatile u32 *)(uintptr_t)(rec + 600) = (u32)v;
-            Sub_08007ABC(*(volatile u32 *)(uintptr_t)(rec + 20), (u32)v,
-                         *(volatile u32 *)(uintptr_t)(rec + 596));
-        }
-        {
-            int v = Sub_08024C58(
-                (int)*(volatile s16 *)(uintptr_t)(rec + 174));
-            *(volatile u32 *)(uintptr_t)(rec + 612) = (u32)v;
-            Sub_08007ABC(*(volatile u32 *)(uintptr_t)(rec + 28), (u32)v,
-                         *(volatile u32 *)(uintptr_t)(rec + 608));
-        }
-        {
-            s16 i = *(volatile s16 *)(uintptr_t)(rec + 174);
-            u32 row = (u32)(s32)i * 20;
-            volatile u32 *dma = (volatile u32 *)(uintptr_t)0x040000D4u;
-            for (u32 k = 1; k <= 5; k++) {
-                s8 bb = (s8)*(volatile u8 *)(uintptr_t)(0x080CCEECu + row + k);
-                dma[0] = 0x080CD7A8u + (u32)((s32)bb * 2);
-                dma[1] = 0x05000280u + k * 2;
-                dma[2] = 0x80000001u;
-                (void)dma[2];
-            }
-        }
-    }
-    if (*(volatile s16 *)(uintptr_t)(rec + 172) != (s32)(s16)sp8)
-        Sub_080026A4C((void *)(uintptr_t)*(volatile u32 *)(uintptr_t)(rec + 580),
-                      (int)*(volatile s16 *)(uintptr_t)(rec + 180),
-                      (int)*(volatile s16 *)(uintptr_t)(rec + 172));
+__attribute__((naked)) void MenuFF78_133E4(void *rec_, u32 a1_, u32 ev_) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        ".L133e4_0800133E4:\n"
+        "	push	{r4, r5, r6, r7, lr}\n"
+        "	mov	r7, sl\n"
+        "	mov	r6, r9\n"
+        "	mov	r5, r8\n"
+        "	push	{r5, r6, r7}\n"
+        "	sub	sp, #28\n"
+        "	adds	r6, r0, #0\n"
+        "	lsls	r1, r1, #16\n"
+        "	lsrs	r1, r1, #16\n"
+        "	str	r1, [sp, #0]\n"
+        "	lsls	r2, r2, #16\n"
+        "	lsrs	r2, r2, #16\n"
+        "	mov	r9, r2\n"
+        "	adds	r4, r6, #0\n"
+        "	adds	r4, #174\n"
+        "	ldrh	r0, [r4, #0]\n"
+        "	str	r0, [sp, #4]\n"
+        "	adds	r7, r6, #0\n"
+        "	adds	r7, #172\n"
+        "	ldrh	r1, [r7, #0]\n"
+        "	str	r1, [sp, #8]\n"
+        "	adds	r0, r6, #0\n"
+        "	adds	r0, #136\n"
+        "	ldrh	r0, [r0, #0]\n"
+        "	str	r0, [sp, #12]\n"
+        "	cmp	r2, #1\n"
+        "	beq .L133e4_08001341C\n"
+        "	b .L133e4_080013568\n"
+        ".L133e4_08001341C:\n"
+        "	adds	r0, r6, #0\n"
+        "	adds	r0, #138\n"
+        "	movs	r2, #0\n"
+        "	ldrsh	r5, [r0, r2]\n"
+        "	cmp	r5, #0\n"
+        "	beq .L133e4_080013474\n"
+        "	cmp	r5, #1\n"
+        "	beq .L133e4_08001342E\n"
+        "	b .L133e4_080013568\n"
+        ".L133e4_08001342E:\n"
+        "	movs	r0, #1\n"
+        "	bl 0x0802B368\n"
+        "	adds	r0, r6, #0\n"
+        "	adds	r0, #186\n"
+        "	movs	r3, #0\n"
+        "	mov	r1, r9\n"
+        "	strh	r1, [r0, #0]\n"
+        "	ldr r2, .L133e4_080013470\n"
+        "	movs	r0, #0\n"
+        "	ldrsh	r1, [r4, r0]\n"
+        "	lsls	r0, r1, #1\n"
+        "	adds	r0, r0, r1\n"
+        "	lsls	r0, r0, #2\n"
+        "	adds	r0, r0, r2\n"
+        "	ldrh	r1, [r7, #0]\n"
+        "	adds	r0, #49\n"
+        "	strb	r1, [r0, #0]\n"
+        "	movs	r7, #0\n"
+        "	ldrsh	r1, [r4, r7]\n"
+        "	lsls	r0, r1, #1\n"
+        "	adds	r0, r0, r1\n"
+        "	lsls	r0, r0, #2\n"
+        "	adds	r0, r0, r2\n"
+        "	adds	r1, r6, #0\n"
+        "	adds	r1, #178\n"
+        "	ldrh	r1, [r1, #0]\n"
+        "	adds	r0, #48\n"
+        "	strb	r1, [r0, #0]\n"
+        "	adds	r0, r6, #0\n"
+        "	adds	r0, #144\n"
+        "	str	r3, [r0, #0]\n"
+        "	b .L133e4_080013568\n"
+        ".L133e4_080013470: .word 0x03001780\n"
+        ".L133e4_080013474:\n"
+        "	ldr r0, .L133e4_080013490\n"
+        "	mov	r8, r0\n"
+        "	ldr r0, .L133e4_080013494\n"
+        "	add	r0, r8\n"
+        "	movs	r1, #0\n"
+        "	ldrsh	r0, [r0, r1]\n"
+        "	cmp	r0, #95\n"
+        "	beq .L133e4_08001352C\n"
+        "	cmp	r0, #95\n"
+        "	bgt .L133e4_080013498\n"
+        "	cmp	r0, #94\n"
+        "	beq .L133e4_08001349C\n"
+        "	b .L133e4_080013568\n"
+        "	movs	r0, r0\n"
+        ".L133e4_080013490: .word 0x03001780\n"
+        ".L133e4_080013494: .word 0x00000FC2\n"
+        ".L133e4_080013498:\n"
+        "	cmp	r0, #96\n"
+        "	bne .L133e4_080013568\n"
+        ".L133e4_08001349C:\n"
+        "	movs	r0, #1\n"
+        "	bl 0x0802B368\n"
+        "	ldr r3, .L133e4_080013520\n"
+        "	adds	r5, r6, #0\n"
+        "	adds	r5, #174\n"
+        "	movs	r2, #0\n"
+        "	ldrsh	r1, [r5, r2]\n"
+        "	lsls	r0, r1, #1\n"
+        "	adds	r0, r0, r1\n"
+        "	lsls	r0, r0, #2\n"
+        "	adds	r0, r0, r3\n"
+        "	adds	r4, r6, #0\n"
+        "	adds	r4, #172\n"
+        "	ldrh	r1, [r4, #0]\n"
+        "	adds	r0, #49\n"
+        "	movs	r2, #0\n"
+        "	strb	r1, [r0, #0]\n"
+        "	movs	r7, #0\n"
+        "	ldrsh	r1, [r5, r7]\n"
+        "	lsls	r0, r1, #1\n"
+        "	adds	r0, r0, r1\n"
+        "	lsls	r0, r0, #2\n"
+        "	adds	r0, r0, r3\n"
+        "	adds	r7, r6, #0\n"
+        "	adds	r7, #178\n"
+        "	ldrh	r1, [r7, #0]\n"
+        "	adds	r0, #48\n"
+        "	strb	r1, [r0, #0]\n"
+        "	movs	r0, #10\n"
+        "	str	r0, [r6, #32]\n"
+        "	strh	r2, [r6, #36]\n"
+        "	str	r0, [r6, #64]\n"
+        "	movs	r0, #5\n"
+        "	strh	r0, [r6, #40]\n"
+        "	movs	r0, #1\n"
+        "	str	r0, [r6, #60]\n"
+        "	adds	r0, r6, #0\n"
+        "	adds	r0, #176\n"
+        "	ldrh	r1, [r0, #0]\n"
+        "	ldr r2, .L133e4_080013524\n"
+        "	adds	r0, r3, r2\n"
+        "	strh	r1, [r0, #0]\n"
+        "	ldrh	r0, [r5, #0]\n"
+        "	ldr r1, .L133e4_080013528\n"
+        "	adds	r2, r3, r1\n"
+        "	strh	r0, [r2, #0]\n"
+        "	movs	r0, #0\n"
+        "	ldrsh	r1, [r2, r0]\n"
+        "	lsls	r0, r1, #1\n"
+        "	adds	r0, r0, r1\n"
+        "	lsls	r0, r0, #2\n"
+        "	adds	r0, r0, r3\n"
+        "	ldrh	r1, [r4, #0]\n"
+        "	adds	r0, #49\n"
+        "	strb	r1, [r0, #0]\n"
+        "	movs	r4, #0\n"
+        "	ldrsh	r1, [r2, r4]\n"
+        "	lsls	r0, r1, #1\n"
+        "	adds	r0, r0, r1\n"
+        "	lsls	r0, r0, #2\n"
+        "	adds	r0, r0, r3\n"
+        "	ldrh	r1, [r7, #0]\n"
+        "	adds	r0, #48\n"
+        "	strb	r1, [r0, #0]\n"
+        "	b .L133e4_080013568\n"
+        ".L133e4_080013520: .word 0x03001780\n"
+        ".L133e4_080013524: .word 0x00000FBE\n"
+        ".L133e4_080013528: .word 0x00000FC2\n"
+        ".L133e4_08001352C:\n"
+        "	movs	r0, #1\n"
+        "	bl 0x0802B368\n"
+        "	adds	r0, r6, #0\n"
+        "	adds	r0, #186\n"
+        "	mov	r1, r9\n"
+        "	strh	r1, [r0, #0]\n"
+        "	movs	r2, #0\n"
+        "	ldrsh	r1, [r4, r2]\n"
+        "	lsls	r0, r1, #1\n"
+        "	adds	r0, r0, r1\n"
+        "	lsls	r0, r0, #2\n"
+        "	add	r0, r8\n"
+        "	ldrh	r1, [r7, #0]\n"
+        "	adds	r0, #49\n"
+        "	strb	r1, [r0, #0]\n"
+        "	movs	r3, #0\n"
+        "	ldrsh	r1, [r4, r3]\n"
+        "	lsls	r0, r1, #1\n"
+        "	adds	r0, r0, r1\n"
+        "	lsls	r0, r0, #2\n"
+        "	add	r0, r8\n"
+        "	adds	r1, r6, #0\n"
+        "	adds	r1, #178\n"
+        "	ldrh	r1, [r1, #0]\n"
+        "	adds	r0, #48\n"
+        "	strb	r1, [r0, #0]\n"
+        "	adds	r0, r6, #0\n"
+        "	adds	r0, #144\n"
+        "	str	r5, [r0, #0]\n"
+        ".L133e4_080013568:\n"
+        "	mov	r4, r9\n"
+        "	cmp	r4, #2\n"
+        "	bne .L133e4_080013580\n"
+        "	movs	r0, #4\n"
+        "	bl 0x0802B368\n"
+        "	movs	r1, #10\n"
+        "	str	r1, [r6, #32]\n"
+        "	movs	r0, #0\n"
+        "	strh	r0, [r6, #36]\n"
+        "	str	r1, [r6, #64]\n"
+        "	str	r0, [r6, #60]\n"
+        ".L133e4_080013580:\n"
+        "	movs	r0, #32\n"
+        "	ldr	r7, [sp, #0]\n"
+        "	ands	r0, r7\n"
+        "	movs	r1, #136\n"
+        "	adds	r1, r1, r6\n"
+        "	mov	sl, r1\n"
+        "	adds	r1, r6, #0\n"
+        "	adds	r1, #140\n"
+        "	cmp	r0, #0\n"
+        "	beq .L133e4_0800135A8\n"
+        "	movs	r2, #0\n"
+        "	ldrsh	r0, [r1, r2]\n"
+        "	cmp	r0, #0\n"
+        "	bgt .L133e4_0800135A8\n"
+        "	mov	r3, sl\n"
+        "	ldrh	r0, [r3, #0]\n"
+        "	subs	r0, #1\n"
+        "	strh	r0, [r3, #0]\n"
+        "	movs	r0, #5\n"
+        "	strh	r0, [r1, #0]\n"
+        ".L133e4_0800135A8:\n"
+        "	movs	r0, #16\n"
+        "	ldr	r4, [sp, #0]\n"
+        "	ands	r0, r4\n"
+        "	cmp	r0, #0\n"
+        "	beq .L133e4_0800135C6\n"
+        "	movs	r7, #0\n"
+        "	ldrsh	r0, [r1, r7]\n"
+        "	cmp	r0, #0\n"
+        "	bgt .L133e4_0800135C6\n"
+        "	mov	r2, sl\n"
+        "	ldrh	r0, [r2, #0]\n"
+        "	adds	r0, #1\n"
+        "	strh	r0, [r2, #0]\n"
+        "	movs	r0, #5\n"
+        "	strh	r0, [r1, #0]\n"
+        ".L133e4_0800135C6:\n"
+        "	ldrh	r0, [r1, #0]\n"
+        "	subs	r0, #1\n"
+        "	strh	r0, [r1, #0]\n"
+        "	lsls	r0, r0, #16\n"
+        "	cmp	r0, #0\n"
+        "	bgt .L133e4_0800135D6\n"
+        "	movs	r3, #0\n"
+        "	strh	r3, [r1, #0]\n"
+        ".L133e4_0800135D6:\n"
+        "	adds	r4, r6, #0\n"
+        "	adds	r4, #172\n"
+        "	str	r4, [sp, #20]\n"
+        "	mov	r7, r9\n"
+        "	cmp	r7, #64\n"
+        "	bne .L133e4_0800135E8\n"
+        "	ldrh	r0, [r4, #0]\n"
+        "	subs	r0, #1\n"
+        "	strh	r0, [r4, #0]\n"
+        ".L133e4_0800135E8:\n"
+        "	mov	r0, r9\n"
+        "	cmp	r0, #128\n"
+        "	bne .L133e4_0800135F6\n"
+        "	ldr	r1, [sp, #20]\n"
+        "	ldrh	r0, [r1, #0]\n"
+        "	adds	r0, #1\n"
+        "	strh	r0, [r1, #0]\n"
+        ".L133e4_0800135F6:\n"
+        "	mov	r7, sl\n"
+        "	movs	r2, #0\n"
+        "	ldrsh	r0, [r7, r2]\n"
+        "	cmp	r0, #0\n"
+        "	bge .L133e4_080013604\n"
+        "	movs	r3, #0\n"
+        "	strh	r3, [r7, #0]\n"
+        ".L133e4_080013604:\n"
+        "	movs	r4, #0\n"
+        "	ldrsh	r0, [r7, r4]\n"
+        "	lsls	r0, r0, #2\n"
+        "	adds	r1, r6, #0\n"
+        "	adds	r1, #188\n"
+        "	str	r1, [sp, #16]\n"
+        "	adds	r0, r1, r0\n"
+        "	ldr	r1, [r0, #0]\n"
+        "	movs	r0, #1\n"
+        "	negs	r0, r0\n"
+        "	cmp	r1, r0\n"
+        "	bne .L133e4_080013622\n"
+        "	ldrh	r0, [r7, #0]\n"
+        "	subs	r0, #1\n"
+        "	strh	r0, [r7, #0]\n"
+        ".L133e4_080013622:\n"
+        "	ldr	r5, [sp, #20]\n"
+        "	movs	r2, #0\n"
+        "	ldrsh	r0, [r5, r2]\n"
+        "	movs	r3, #174\n"
+        "	adds	r3, r3, r6\n"
+        "	mov	r8, r3\n"
+        "	cmp	r0, #0\n"
+        "	bge .L133e4_080013642\n"
+        "	movs	r4, #0\n"
+        "	ldrsh	r0, [r3, r4]\n"
+        "	bl 0x080254E8\n"
+        "	lsls	r0, r0, #24\n"
+        "	asrs	r0, r0, #24\n"
+        "	subs	r0, #1\n"
+        "	strh	r0, [r5, #0]\n"
+        ".L133e4_080013642:\n"
+        "	movs	r0, #0\n"
+        "	ldrsh	r4, [r5, r0]\n"
+        "	mov	r9, r8\n"
+        "	mov	r1, r9\n"
+        "	movs	r2, #0\n"
+        "	ldrsh	r0, [r1, r2]\n"
+        "	bl 0x080254E8\n"
+        "	lsls	r0, r0, #24\n"
+        "	asrs	r0, r0, #24\n"
+        "	subs	r0, #1\n"
+        "	cmp	r4, r0\n"
+        "	ble .L133e4_080013660\n"
+        "	movs	r3, #0\n"
+        "	strh	r3, [r5, #0]\n"
+        ".L133e4_080013660:\n"
+        "	mov	r4, r9\n"
+        "	movs	r0, #0\n"
+        "	ldrsh	r1, [r4, r0]\n"
+        "	lsls	r0, r1, #1\n"
+        "	adds	r0, r0, r1\n"
+        "	lsls	r0, r0, #2\n"
+        "	ldr r1, .L133e4_080013828\n"
+        "	adds	r0, r0, r1\n"
+        "	ldrh	r1, [r5, #0]\n"
+        "	adds	r0, #49\n"
+        "	strb	r1, [r0, #0]\n"
+        "	ldr	r2, [sp, #12]\n"
+        "	lsls	r0, r2, #16\n"
+        "	asrs	r4, r0, #16\n"
+        "	movs	r3, #0\n"
+        "	ldrsh	r0, [r7, r3]\n"
+        "	cmp	r4, r0\n"
+        "	beq .L133e4_08001368A\n"
+        "	movs	r0, #3\n"
+        "	bl 0x0802B368\n"
+        ".L133e4_08001368A:\n"
+        "	ldr	r7, [sp, #8]\n"
+        "	lsls	r0, r7, #16\n"
+        "	asrs	r0, r0, #16\n"
+        "	str	r0, [sp, #24]\n"
+        "	movs	r1, #0\n"
+        "	ldrsh	r0, [r5, r1]\n"
+        "	ldr	r2, [sp, #24]\n"
+        "	cmp	r2, r0\n"
+        "	beq .L133e4_0800136A2\n"
+        "	movs	r0, #2\n"
+        "	bl 0x0802B368\n"
+        ".L133e4_0800136A2:\n"
+        "	mov	r3, sl\n"
+        "	movs	r7, #0\n"
+        "	ldrsh	r0, [r3, r7]\n"
+        "	cmp	r0, r4\n"
+        "	beq .L133e4_0800136C6\n"
+        "	lsls	r0, r0, #2\n"
+        "	ldr	r2, [sp, #16]\n"
+        "	adds	r0, r2, r0\n"
+        "	ldr	r0, [r0, #0]\n"
+        "	mov	r3, r9\n"
+        "	strh	r0, [r3, #0]\n"
+        "	movs	r4, #0\n"
+        "	ldrsh	r0, [r3, r4]\n"
+        "	bl 0x080022E4\n"
+        "	adds	r1, r6, #0\n"
+        "	adds	r1, #180\n"
+        "	strh	r0, [r1, #0]\n"
+        ".L133e4_0800136C6:\n"
+        "	mov	r7, r8\n"
+        "	ldrh	r7, [r7, #0]\n"
+        "	ldr	r0, [sp, #4]\n"
+        "	cmp	r7, r0\n"
+        "	bne .L133e4_0800136D2\n"
+        "	b .L133e4_0800137F2\n"
+        ".L133e4_0800136D2:\n"
+        "	mov	r2, r8\n"
+        "	movs	r3, #0\n"
+        "	ldrsh	r1, [r2, r3]\n"
+        "	lsls	r0, r1, #1\n"
+        "	adds	r0, r0, r1\n"
+        "	lsls	r0, r0, #2\n"
+        "	ldr r4, .L133e4_080013828\n"
+        "	adds	r0, r0, r4\n"
+        "	adds	r0, #49\n"
+        "	ldrb	r0, [r0, #0]\n"
+        "	lsls	r0, r0, #24\n"
+        "	asrs	r0, r0, #24\n"
+        "	strh	r0, [r5, #0]\n"
+        "	movs	r7, #145\n"
+        "	lsls	r7, r7, #2\n"
+        "	adds	r0, r6, r7\n"
+        "	movs	r3, #0\n"
+        "	ldrsh	r1, [r2, r3]\n"
+        "	movs	r4, #0\n"
+        "	ldrsh	r2, [r5, r4]\n"
+        "	bl sub_0800DA50\n"
+        "	mov	r7, r8\n"
+        "	movs	r1, #0\n"
+        "	ldrsh	r0, [r7, r1]\n"
+        "	bl 0x08024C3C\n"
+        "	adds	r1, r0, #0\n"
+        "	movs	r2, #150\n"
+        "	lsls	r2, r2, #2\n"
+        "	adds	r0, r6, r2\n"
+        "	str	r1, [r0, #0]\n"
+        "	ldr	r0, [r6, #20]\n"
+        "	movs	r3, #149\n"
+        "	lsls	r3, r3, #2\n"
+        "	adds	r2, r6, r3\n"
+        "	ldr	r2, [r2, #0]\n"
+        "	bl sub_08007ABC\n"
+        "	movs	r4, #0\n"
+        "	ldrsh	r0, [r7, r4]\n"
+        "	bl 0x08024C58\n"
+        "	adds	r1, r0, #0\n"
+        "	movs	r7, #153\n"
+        "	lsls	r7, r7, #2\n"
+        "	adds	r0, r6, r7\n"
+        "	str	r1, [r0, #0]\n"
+        "	ldr	r0, [r6, #28]\n"
+        "	movs	r3, #152\n"
+        "	lsls	r3, r3, #2\n"
+        "	adds	r2, r6, r3\n"
+        "	ldr	r2, [r2, #0]\n"
+        "	bl sub_08007ABC\n"
+        "	ldr r2, .L133e4_08001382C\n"
+        "	ldr r5, .L133e4_080013830\n"
+        "	mov	r4, r8\n"
+        "	movs	r7, #0\n"
+        "	ldrsh	r1, [r4, r7]\n"
+        "	lsls	r0, r1, #2\n"
+        "	adds	r0, r0, r1\n"
+        "	lsls	r0, r0, #2\n"
+        "	adds	r0, r0, r5\n"
+        "	ldrb	r0, [r0, #1]\n"
+        "	lsls	r0, r0, #24\n"
+        "	asrs	r0, r0, #24\n"
+        "	lsls	r0, r0, #1\n"
+        "	ldr r4, .L133e4_080013834\n"
+        "	adds	r0, r0, r4\n"
+        "	str	r0, [r2, #0]\n"
+        "	ldr r0, .L133e4_080013838\n"
+        "	str	r0, [r2, #4]\n"
+        "	ldr r3, .L133e4_08001383C\n"
+        "	str	r3, [r2, #8]\n"
+        "	ldr	r0, [r2, #8]\n"
+        "	mov	r0, r8\n"
+        "	movs	r7, #0\n"
+        "	ldrsh	r1, [r0, r7]\n"
+        "	lsls	r0, r1, #2\n"
+        "	adds	r0, r0, r1\n"
+        "	lsls	r0, r0, #2\n"
+        "	adds	r0, r0, r5\n"
+        "	ldrb	r0, [r0, #2]\n"
+        "	lsls	r0, r0, #24\n"
+        "	asrs	r0, r0, #24\n"
+        "	lsls	r0, r0, #1\n"
+        "	adds	r0, r0, r4\n"
+        "	str	r0, [r2, #0]\n"
+        "	ldr r0, .L133e4_080013840\n"
+        "	str	r0, [r2, #4]\n"
+        ".L133e4_080013788:\n"
+        "	str	r3, [r2, #8]\n"
+        "	ldr	r0, [r2, #8]\n"
+        "	mov	r0, r8\n"
+        "	movs	r7, #0\n"
+        "	ldrsh	r1, [r0, r7]\n"
+        "	lsls	r0, r1, #2\n"
+        "	adds	r0, r0, r1\n"
+        "	lsls	r0, r0, #2\n"
+        "	adds	r0, r0, r5\n"
+        "	ldrb	r0, [r0, #3]\n"
+        "	lsls	r0, r0, #24\n"
+        "	asrs	r0, r0, #24\n"
+        "	lsls	r0, r0, #1\n"
+        "	adds	r0, r0, r4\n"
+        "	str	r0, [r2, #0]\n"
+        "	ldr r0, .L133e4_080013844\n"
+        "	str	r0, [r2, #4]\n"
+        "	str	r3, [r2, #8]\n"
+        "	ldr	r0, [r2, #8]\n"
+        "	mov	r0, r8\n"
+        "	movs	r7, #0\n"
+        "	ldrsh	r1, [r0, r7]\n"
+        "	lsls	r0, r1, #2\n"
+        "	adds	r0, r0, r1\n"
+        "	lsls	r0, r0, #2\n"
+        "	adds	r0, r0, r5\n"
+        "	ldrb	r0, [r0, #4]\n"
+        "	lsls	r0, r0, #24\n"
+        "	asrs	r0, r0, #24\n"
+        "	lsls	r0, r0, #1\n"
+        "	adds	r0, r0, r4\n"
+        "	str	r0, [r2, #0]\n"
+        "	ldr r0, .L133e4_080013848\n"
+        "	str	r0, [r2, #4]\n"
+        "	str	r3, [r2, #8]\n"
+        "	ldr	r0, [r2, #8]\n"
+        "	mov	r0, r8\n"
+        "	movs	r7, #0\n"
+        "	ldrsh	r1, [r0, r7]\n"
+        "	lsls	r0, r1, #2\n"
+        "	adds	r0, r0, r1\n"
+        "	lsls	r0, r0, #2\n"
+        "	adds	r0, r0, r5\n"
+        "	ldrb	r0, [r0, #5]\n"
+        "	lsls	r0, r0, #24\n"
+        "	asrs	r0, r0, #24\n"
+        "	lsls	r0, r0, #1\n"
+        "	adds	r0, r0, r4\n"
+        "	str	r0, [r2, #0]\n"
+        "	ldr r0, .L133e4_08001384C\n"
+        "	str	r0, [r2, #4]\n"
+        "	str	r3, [r2, #8]\n"
+        "	ldr	r0, [r2, #8]\n"
+        ".L133e4_0800137F2:\n"
+        "	ldr	r1, [sp, #20]\n"
+        "	movs	r2, #0\n"
+        "	ldrsh	r0, [r1, r2]\n"
+        "	ldr	r3, [sp, #24]\n"
+        "	cmp	r0, r3\n"
+        "	beq .L133e4_080013818\n"
+        "	movs	r4, #145\n"
+        "	lsls	r4, r4, #2\n"
+        "	adds	r0, r6, r4\n"
+        "	ldr	r0, [r0, #0]\n"
+        "	adds	r1, r6, #0\n"
+        "	adds	r1, #180\n"
+        "	movs	r7, #0\n"
+        "	ldrsh	r1, [r1, r7]\n"
+        "	ldr	r3, [sp, #20]\n"
+        "	movs	r4, #0\n"
+        "	ldrsh	r2, [r3, r4]\n"
+        "	bl 0x08026A4C\n"
+        ".L133e4_080013818:\n"
+        "	add	sp, #28\n"
+        "	pop	{r3, r4, r5}\n"
+        "	mov	r8, r3\n"
+        "	mov	r9, r4\n"
+        "	mov	sl, r5\n"
+        "	pop	{r4, r5, r6, r7}\n"
+        "	pop	{r0}\n"
+        "	bx	r0\n"
+        ".L133e4_080013828: .word 0x03001780\n"
+        ".L133e4_08001382C: .word 0x040000D4\n"
+        ".L133e4_080013830: .word 0x080CCEEC\n"
+        ".L133e4_080013834: .word 0x080CD7A8\n"
+        ".L133e4_080013838: .word 0x05000282\n"
+        ".L133e4_08001383C: .word 0x80000001\n"
+        ".L133e4_080013840: .word 0x05000284\n"
+        ".L133e4_080013844: .word 0x05000286\n"
+        ".L133e4_080013848: .word 0x05000288\n"
+        ".L133e4_08001384C: .word 0x0500028A\n"
+        ".syntax divided\n"
+    );
 }
+
 void _0800133E4(void *a, u32 b, u32 c) __attribute__((alias("MenuFF78_133E4")));
 void Sub_0800133E4(void *a, u32 b, u32 c) __attribute__((alias("MenuFF78_133E4")));
 void sub_0800133E4(void *a, u32 b, u32 c) __attribute__((alias("MenuFF78_133E4")));

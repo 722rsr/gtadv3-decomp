@@ -71,140 +71,421 @@ __attribute__((weak)) void UiPacket_Consume(void *pkt) { (void)pkt; }
  * source of truth and the local below only mirrors it for legibility. */
 #define SET_SEL(v) do { sel = (u16)(v); PK_U16(0) = sel; } while (0)
 
-void Race_Dispatch(void) {
-    u8 pkt[60] __attribute__((aligned(4)));
-    u16 sel;
-    int rec_off;
-    int i;
-
-    /* 0x0800B190 — CpuSet(src = sp+56 (a zero word), dst = sp,
-     * 0x0500000E): fill mode, 32-bit units, 14 words = 56 bytes.  This is also
-     * where the selector starts out as 0 for the two paths that never store
-     * one (phase 4 and the out-of-table branch), which mirrors the ROM. */
-    for (i = 0; i < 56; ++i) pkt[i] = 0;
-    sel = PK_U16(0);
-
-    /* 0x0800B1A2 — jump table _0800B1CC on the signed phase cell, entered
-     * only while (u32)(s32)phase <= 7 (cmp #7 + bls). */
-    {
-        s16 phase = WA_S16(0x0FBC);
-        if ((u32)phase > 7u) goto tail;
-        switch ((u16)phase) {
-        case 0:  goto c01F4;
-        case 1:  goto c0254;
-        case 2:  goto c025C;
-        case 3:  goto c02AC;
-        case 4:  goto tail;
-        case 5:  goto c023C;
-        case 6:  goto c01EC;
-        default: goto c0264;
-        }
-    }
-
-c01EC: /* 0x0800B1EC */
-    SET_SEL(0);
-    goto tail;
-
-c01F4: /* 0x0800B1F4 */
-    if (WA_S16(0x103A) > 2) {            /* cmp #2 + bgt (signed) */
-        SET_SEL(1);
-        PK_U16(6) = (u16)_08025790(WA_S16(0x0FF2), WA_S16(0x0FF6),
-                                   WA_S16(0x103A));
-    } else {
-        SET_SEL(2);
-    }
-    goto tail;
-
-c023C: /* 0x0800B23C */
-    SET_SEL(4);
-    PK_U16(6) = (u16)_0802591C(WA_S16(0x0576));
-    goto tail;
-
-c0254: /* 0x0800B254 */
-    SET_SEL(3);
-    goto tail;
-
-c025C: /* 0x0800B25C */
-    SET_SEL(5);
-    goto tail;
-
-c0264: { /* 0x0800B264 */
-    s16 v = WA_S16(0x1078);
-    if (v == 1) {                        /* beq 0x0800B288 */
-        SET_SEL(7);
-        PK_U16(6) = (u16)_0802591C(WA_S16(0x0576));
-    } else if (v == 2) {                 /* bne -> 0x0800B2A4 */
-        SET_SEL(6);
-    } else {
-        SET_SEL(7);
-    }
-    goto tail;
+__attribute__((naked)) void Race_Dispatch(void) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "\tpush {r4, r5, r6, lr}\n"
+        "\tsub sp, #60\n"
+        "\tmovs r0, #0\n"
+        "\tstr r0, [sp, #56]\n"
+        "\tadd r0, sp, #56\n"
+        "\tldr r2, .Lrd_b190_0800b1bc\n"
+        "\tmov r1, sp\n"
+        "\tbl 0x0802D974\n"
+        "\tldr r0, .Lrd_b190_0800b1c0\n"
+        "\tldr r1, .Lrd_b190_0800b1c4\n"
+        "\tadds r0, r0, r1\n"
+        "\tmovs r2, #0\n"
+        "\tldrsh r0, [r0, r2]\n"
+        "\tcmp r0, #7\n"
+        "\tbls .Lrd_b190_0800b1b2\n"
+        "\tb .Lrd_b190_0800b2f8\n"
+        ".Lrd_b190_0800b1b2:\n"
+        "\tlsls r0, r0, #2\n"
+        "\tldr r1, .Lrd_b190_0800b1c8\n"
+        "\tadds r0, r0, r1\n"
+        "\tldr r0, [r0]\n"
+        "\tmov pc, r0\n"
+        "\t.align 2, 0\n"
+        ".Lrd_b190_0800b1bc:\n"
+        "\t.word 0x0500000E\n"
+        ".Lrd_b190_0800b1c0:\n"
+        "\t.word 0x03001780\n"
+        ".Lrd_b190_0800b1c4:\n"
+        "\t.word 0x00000FBC\n"
+        ".Lrd_b190_0800b1c8:\n"
+        "\t.word .Lrd_b190_0800b1cc\n"
+        ".Lrd_b190_0800b1cc:\n"
+        "\t.word .Lrd_b190_0800b1f4\n"
+        "\t.word .Lrd_b190_0800b254\n"
+        "\t.word .Lrd_b190_0800b25c\n"
+        "\t.word .Lrd_b190_0800b2ac\n"
+        "\t.word .Lrd_b190_0800b2f8\n"
+        "\t.word .Lrd_b190_0800b23c\n"
+        "\t.word .Lrd_b190_0800b1ec\n"
+        "\t.word .Lrd_b190_0800b264\n"
+        ".Lrd_b190_0800b1ec:\n"
+        "\tmov r1, sp\n"
+        "\tmovs r0, #0\n"
+        "\tstrh r0, [r1, #0]\n"
+        "\tb .Lrd_b190_0800b2f8\n"
+        ".Lrd_b190_0800b1f4:\n"
+        "\tldr r2, .Lrd_b190_0800b20c\n"
+        "\tldr r4, .Lrd_b190_0800b210\n"
+        "\tadds r3, r2, r4\n"
+        "\tmovs r5, #0\n"
+        "\tldrsh r0, [r3, r5]\n"
+        "\tcmp r0, #2\n"
+        "\tbgt .Lrd_b190_0800b214\n"
+        "\tmov r1, sp\n"
+        "\tmovs r0, #2\n"
+        "\tstrh r0, [r1, #0]\n"
+        "\tb .Lrd_b190_0800b2f8\n"
+        "\t.align 2, 0\n"
+        ".Lrd_b190_0800b20c:\n"
+        "\t.word 0x03001780\n"
+        ".Lrd_b190_0800b210:\n"
+        "\t.word 0x0000103A\n"
+        ".Lrd_b190_0800b214:\n"
+        "\tmov r1, sp\n"
+        "\tmovs r0, #1\n"
+        "\tstrh r0, [r1, #0]\n"
+        "\tldr r1, .Lrd_b190_0800b234\n"
+        "\tadds r0, r2, r1\n"
+        "\tmovs r4, #0\n"
+        "\tldrsh r0, [r0, r4]\n"
+        "\tldr r5, .Lrd_b190_0800b238\n"
+        "\tadds r1, r2, r5\n"
+        "\tmovs r2, #0\n"
+        "\tldrsh r1, [r1, r2]\n"
+        "\tmovs r4, #0\n"
+        "\tldrsh r2, [r3, r4]\n"
+        "\tbl 0x08025790\n"
+        "\tb .Lrd_b190_0800b29a\n"
+        "\t.align 2, 0\n"
+        ".Lrd_b190_0800b234:\n"
+        "\t.word 0x00000FF2\n"
+        ".Lrd_b190_0800b238:\n"
+        "\t.word 0x00000FF6\n"
+        ".Lrd_b190_0800b23c:\n"
+        "\tmov r1, sp\n"
+        "\tmovs r0, #4\n"
+        "\tstrh r0, [r1, #0]\n"
+        "\tldr r0, .Lrd_b190_0800b24c\n"
+        "\tldr r5, .Lrd_b190_0800b250\n"
+        "\tadds r0, r0, r5\n"
+        "\tb .Lrd_b190_0800b292\n"
+        "\t.align 2, 0\n"
+        ".Lrd_b190_0800b24c:\n"
+        "\t.word 0x03001780\n"
+        ".Lrd_b190_0800b250:\n"
+        "\t.word 0x00000576\n"
+        ".Lrd_b190_0800b254:\n"
+        "\tmov r1, sp\n"
+        "\tmovs r0, #3\n"
+        "\tstrh r0, [r1, #0]\n"
+        "\tb .Lrd_b190_0800b2f8\n"
+        ".Lrd_b190_0800b25c:\n"
+        "\tmov r1, sp\n"
+        "\tmovs r0, #5\n"
+        "\tstrh r0, [r1, #0]\n"
+        "\tb .Lrd_b190_0800b2f8\n"
+        ".Lrd_b190_0800b264:\n"
+        "\tldr r2, .Lrd_b190_0800b280\n"
+        "\tldr r3, .Lrd_b190_0800b284\n"
+        "\tadds r0, r2, r3\n"
+        "\tmovs r4, #0\n"
+        "\tldrsh r0, [r0, r4]\n"
+        "\tcmp r0, #1\n"
+        "\tbeq .Lrd_b190_0800b288\n"
+        "\tcmp r0, #2\n"
+        "\tbne .Lrd_b190_0800b2a4\n"
+        "\tmov r1, sp\n"
+        "\tmovs r0, #6\n"
+        "\tstrh r0, [r1, #0]\n"
+        "\tb .Lrd_b190_0800b2f8\n"
+        "\t.align 2, 0\n"
+        ".Lrd_b190_0800b280:\n"
+        "\t.word 0x03001780\n"
+        ".Lrd_b190_0800b284:\n"
+        "\t.word 0x00001078\n"
+        ".Lrd_b190_0800b288:\n"
+        "\tmov r1, sp\n"
+        "\tmovs r0, #7\n"
+        "\tstrh r0, [r1, #0]\n"
+        "\tldr r5, .Lrd_b190_0800b2a0\n"
+        "\tadds r0, r2, r5\n"
+        ".Lrd_b190_0800b292:\n"
+        "\tmovs r1, #0\n"
+        "\tldrsh r0, [r0, r1]\n"
+        "\tbl 0x0802591C\n"
+        ".Lrd_b190_0800b29a:\n"
+        "\tmov r1, sp\n"
+        "\tstrh r0, [r1, #6]\n"
+        "\tb .Lrd_b190_0800b2f8\n"
+        "\t.align 2, 0\n"
+        ".Lrd_b190_0800b2a0:\n"
+        "\t.word 0x00000576\n"
+        ".Lrd_b190_0800b2a4:\n"
+        "\tmov r1, sp\n"
+        "\tmovs r0, #7\n"
+        "\tstrh r0, [r1, #0]\n"
+        "\tb .Lrd_b190_0800b2f8\n"
+        ".Lrd_b190_0800b2ac:\n"
+        "\tmov r1, sp\n"
+        "\tmovs r0, #8\n"
+        "\tstrh r0, [r1, #0]\n"
+        "\tldr r2, .Lrd_b190_0800b344\n"
+        "\tldr r3, .Lrd_b190_0800b348\n"
+        "\tadds r0, r2, r3\n"
+        "\tldrh r0, [r0]\n"
+        "\tstrh r0, [r1, #40]\n"
+        "\tmov r4, sp\n"
+        "\tldr r5, .Lrd_b190_0800b34c\n"
+        "\tadds r3, r2, r5\n"
+        "\tmovs r0, #0\n"
+        "\tldrsh r1, [r3, r0]\n"
+        "\tlsls r0, r1, #1\n"
+        "\tadds r0, r0, r1\n"
+        "\tlsls r0, r0, #2\n"
+        "\tadds r0, r0, r2\n"
+        "\tadds r0, #48\n"
+        "\tldrb r0, [r0]\n"
+        "\tlsls r0, r0, #24\n"
+        "\tasrs r0, r0, #24\n"
+        "\tstrh r0, [r4, #42]\n"
+        "\tmovs r4, #0\n"
+        "\tldrsh r1, [r3, r4]\n"
+        "\tlsls r0, r1, #1\n"
+        "\tadds r0, r0, r1\n"
+        "\tlsls r0, r0, #2\n"
+        "\tadds r0, r0, r2\n"
+        "\tadd r1, sp, #44\n"
+        "\tadds r0, #48\n"
+        "\tldmia r0!, {r3, r4, r5}\n"
+        "\tstmia r1!, {r3, r4, r5}\n"
+        "\tldr r5, .Lrd_b190_0800b350\n"
+        "\tadds r2, r2, r5\n"
+        "\tldrh r1, [r2]\n"
+        "\tmov r0, sp\n"
+        "\tadds r0, #45\n"
+        "\tstrb r1, [r0]\n"
+        ".Lrd_b190_0800b2f8:\n"
+        "\tmov r1, sp\n"
+        "\tldr r4, .Lrd_b190_0800b344\n"
+        "\tldr r2, .Lrd_b190_0800b354\n"
+        "\tadds r0, r4, r2\n"
+        "\tldrh r0, [r0]\n"
+        "\tstrb r0, [r1, #21]\n"
+        "\tldr r3, .Lrd_b190_0800b358\n"
+        "\tadds r0, r4, r3\n"
+        "\tldrh r0, [r0]\n"
+        "\tstrh r0, [r1, #2]\n"
+        "\tldr r0, .Lrd_b190_0800b35c\n"
+        "\tadds r5, r4, r0\n"
+        "\tldrh r0, [r5]\n"
+        "\tstrh r0, [r1, #4]\n"
+        "\tldr r1, .Lrd_b190_0800b360\n"
+        "\tadds r0, r4, r1\n"
+        "\tmovs r2, #0\n"
+        "\tldrsh r0, [r0, r2]\n"
+        "\tcmp r0, #0\n"
+        "\tbne .Lrd_b190_0800b364\n"
+        "\tmovs r3, #0\n"
+        "\tldrsh r0, [r5, r3]\n"
+        "\tadds r1, #126\n"
+        "\tadds r4, r4, r1\n"
+        "\tmovs r2, #0\n"
+        "\tldrsh r1, [r4, r2]\n"
+        "\tbl 0x080256F4\n"
+        "\tmov r1, sp\n"
+        "\tstrh r0, [r1, #8]\n"
+        "\tmovs r3, #0\n"
+        "\tldrsh r0, [r5, r3]\n"
+        "\tmovs r5, #0\n"
+        "\tldrsh r1, [r4, r5]\n"
+        "\tbl 0x08025710\n"
+        "\tmov r1, sp\n"
+        "\tb .Lrd_b190_0800b374\n"
+        "\t.align 2, 0\n"
+        ".Lrd_b190_0800b344:\n"
+        "\t.word 0x03001780\n"
+        ".Lrd_b190_0800b348:\n"
+        "\t.word 0x00000FC4\n"
+        ".Lrd_b190_0800b34c:\n"
+        "\t.word 0x00000574\n"
+        ".Lrd_b190_0800b350:\n"
+        "\t.word 0x00000FC6\n"
+        ".Lrd_b190_0800b354:\n"
+        "\t.word 0x00000FEE\n"
+        ".Lrd_b190_0800b358:\n"
+        "\t.word 0x00000576\n"
+        ".Lrd_b190_0800b35c:\n"
+        "\t.word 0x00000FF6\n"
+        ".Lrd_b190_0800b360:\n"
+        "\t.word 0x00000FBC\n"
+        ".Lrd_b190_0800b364:\n"
+        "\tmov r1, sp\n"
+        "\tldr r2, .Lrd_b190_0800b3a0\n"
+        "\tadds r0, r4, r2\n"
+        "\tldrh r0, [r0]\n"
+        "\tstrh r0, [r1, #8]\n"
+        "\tldr r3, .Lrd_b190_0800b3a4\n"
+        "\tadds r0, r4, r3\n"
+        "\tldrh r0, [r0]\n"
+        ".Lrd_b190_0800b374:\n"
+        "\tstrh r0, [r1, #10]\n"
+        "\tmov r0, sp\n"
+        "\tldrh r0, [r0]\n"
+        "\tcmp r0, #2\n"
+        "\tbne .Lrd_b190_0800b3b8\n"
+        "\tldr r2, .Lrd_b190_0800b3a8\n"
+        "\tldr r4, .Lrd_b190_0800b3ac\n"
+        "\tadds r0, r2, r4\n"
+        "\tmovs r5, #0\n"
+        "\tldrsh r0, [r0, r5]\n"
+        "\tldr r3, .Lrd_b190_0800b3b0\n"
+        "\tadds r1, r2, r3\n"
+        "\tmovs r4, #0\n"
+        "\tldrsh r1, [r1, r4]\n"
+        "\tldr r5, .Lrd_b190_0800b3b4\n"
+        "\tadds r2, r2, r5\n"
+        "\tmovs r3, #0\n"
+        "\tldrsh r2, [r2, r3]\n"
+        "\tbl 0x08025750\n"
+        "\tb .Lrd_b190_0800b3d0\n"
+        "\t.align 2, 0\n"
+        ".Lrd_b190_0800b3a0:\n"
+        "\t.word 0x00000FE6\n"
+        ".Lrd_b190_0800b3a4:\n"
+        "\t.word 0x00000FE4\n"
+        ".Lrd_b190_0800b3a8:\n"
+        "\t.word 0x03001780\n"
+        ".Lrd_b190_0800b3ac:\n"
+        "\t.word 0x00000FF2\n"
+        ".Lrd_b190_0800b3b0:\n"
+        "\t.word 0x00000FF6\n"
+        ".Lrd_b190_0800b3b4:\n"
+        "\t.word 0x0000103A\n"
+        ".Lrd_b190_0800b3b8:\n"
+        "\tldr r2, .Lrd_b190_0800b3e8\n"
+        "\tldr r4, .Lrd_b190_0800b3ec\n"
+        "\tadds r0, r2, r4\n"
+        "\tmovs r5, #0\n"
+        "\tldrsh r1, [r0, r5]\n"
+        "\tlsls r0, r1, #3\n"
+        "\tadds r0, r0, r1\n"
+        "\tlsls r0, r0, #3\n"
+        "\tldr r1, .Lrd_b190_0800b3f0\n"
+        "\tadds r2, r2, r1\n"
+        "\tadds r0, r0, r2\n"
+        "\tldr r0, [r0]\n"
+        ".Lrd_b190_0800b3d0:\n"
+        "\tstr r0, [sp, #12]\n"
+        "\tmov r0, sp\n"
+        "\tldrh r1, [r0]\n"
+        "\tsubs r0, r1, #6\n"
+        "\tlsls r0, r0, #16\n"
+        "\tlsrs r0, r0, #16\n"
+        "\tcmp r0, #1\n"
+        "\tbhi .Lrd_b190_0800b3f8\n"
+        "\tmov r1, sp\n"
+        "\tldr r3, .Lrd_b190_0800b3e8\n"
+        "\tldr r4, .Lrd_b190_0800b3f4\n"
+        "\tb .Lrd_b190_0800b446\n"
+        "\t.align 2, 0\n"
+        ".Lrd_b190_0800b3e8:\n"
+        "\t.word 0x03001780\n"
+        ".Lrd_b190_0800b3ec:\n"
+        "\t.word 0x00000576\n"
+        ".Lrd_b190_0800b3f0:\n"
+        "\t.word 0x000005E4\n"
+        ".Lrd_b190_0800b3f4:\n"
+        "\t.word 0x00000FC2\n"
+        ".Lrd_b190_0800b3f8:\n"
+        "\tlsls r0, r1, #16\n"
+        "\tasrs r0, r0, #16\n"
+        "\tcmp r0, #2\n"
+        "\tbne .Lrd_b190_0800b440\n"
+        "\tldr r4, .Lrd_b190_0800b434\n"
+        "\tldr r0, .Lrd_b190_0800b438\n"
+        "\tadds r5, r4, r0\n"
+        "\tmovs r1, #0\n"
+        "\tldrsh r0, [r5, r1]\n"
+        "\tldr r2, .Lrd_b190_0800b43c\n"
+        "\tadds r4, r4, r2\n"
+        "\tmovs r3, #0\n"
+        "\tldrsh r1, [r4, r3]\n"
+        "\tbl 0x080257D4\n"
+        "\tmov r1, sp\n"
+        "\tmovs r6, #0\n"
+        "\tstrh r0, [r1, #24]\n"
+        "\tmovs r1, #0\n"
+        "\tldrsh r0, [r5, r1]\n"
+        "\tmovs r2, #0\n"
+        "\tldrsh r1, [r4, r2]\n"
+        "\tbl 0x080257F0\n"
+        "\tmov r1, sp\n"
+        "\tstrb r0, [r1, #29]\n"
+        "\tmov r0, sp\n"
+        "\tstrh r6, [r0, #26]\n"
+        "\tb .Lrd_b190_0800b478\n"
+        "\t.align 2, 0\n"
+        ".Lrd_b190_0800b434:\n"
+        "\t.word 0x03001780\n"
+        ".Lrd_b190_0800b438:\n"
+        "\t.word 0x00000FF6\n"
+        ".Lrd_b190_0800b43c:\n"
+        "\t.word 0x0000103A\n"
+        ".Lrd_b190_0800b440:\n"
+        "\tmov r1, sp\n"
+        "\tldr r3, .Lrd_b190_0800b49c\n"
+        "\tldr r4, .Lrd_b190_0800b4a0\n"
+        ".Lrd_b190_0800b446:\n"
+        "\tadds r2, r3, r4\n"
+        "\tldrh r0, [r2]\n"
+        "\tstrh r0, [r1, #24]\n"
+        "\tmov r4, sp\n"
+        "\tmovs r5, #0\n"
+        "\tldrsh r1, [r2, r5]\n"
+        "\tlsls r0, r1, #1\n"
+        "\tadds r0, r0, r1\n"
+        "\tlsls r0, r0, #2\n"
+        "\tadds r0, r0, r3\n"
+        "\tadds r0, #48\n"
+        "\tldrb r0, [r0]\n"
+        "\tlsls r0, r0, #24\n"
+        "\tasrs r0, r0, #24\n"
+        "\tstrh r0, [r4, #26]\n"
+        "\tmovs r0, #0\n"
+        "\tldrsh r1, [r2, r0]\n"
+        "\tlsls r0, r1, #1\n"
+        "\tadds r0, r0, r1\n"
+        "\tlsls r0, r0, #2\n"
+        "\tadds r0, r0, r3\n"
+        "\tadd r1, sp, #28\n"
+        "\tadds r0, #48\n"
+        "\tldmia r0!, {r2, r3, r4}\n"
+        "\tstmia r1!, {r2, r3, r4}\n"
+        ".Lrd_b190_0800b478:\n"
+        "\tmov r2, sp\n"
+        "\tldr r1, .Lrd_b190_0800b49c\n"
+        "\tldr r5, .Lrd_b190_0800b4a4\n"
+        "\tadds r0, r1, r5\n"
+        "\tldrh r0, [r0]\n"
+        "\tstrb r0, [r2, #22]\n"
+        "\tmovs r0, #188\n"
+        "\tlsls r0, r0, #3\n"
+        "\tadds r1, r1, r0\n"
+        "\tldrh r0, [r1]\n"
+        "\tstrb r0, [r2, #20]\n"
+        "\tmov r0, sp\n"
+        "\tbl 0x080188B0\n"
+        "\tadd sp, #60\n"
+        "\tpop {r4, r5, r6}\n"
+        "\tpop {r0}\n"
+        "\tbx r0\n"
+        "\t.align 2, 0\n"
+        ".Lrd_b190_0800b49c:\n"
+        "\t.word 0x03001780\n"
+        ".Lrd_b190_0800b4a0:\n"
+        "\t.word 0x00000574\n"
+        ".Lrd_b190_0800b4a4:\n"
+        "\t.word 0x00000FF2\n"
+        ".syntax divided\n"
+    );
 }
 
-c02AC: { /* 0x0800B2AC */
-    s16 idx;
-    const u8 *rec;
-    SET_SEL(8);
-    PK_U16(40) = WA_U16(0x0FC4);
-    idx = WA_S16(0x0574);
-    rec = RD_WA + 0x30 + (s32)idx * 12;  /* ldrb/lsls #24/asrs #24 */
-    PK_U16(42) = (s16)*(volatile s8 *)rec;
-    for (i = 0; i < 12; ++i) pkt[44 + i] = rec[i];
-    pkt[45] = (u8)WA_U16(0x0FC6);        /* strb at sp+45 overwrites the copy */
-    goto tail;
-}
-
-tail: /* 0x0800B2F8 */
-    sel = PK_U16(0);                     /* the ROM re-reads sp+0 here */
-    pkt[21] = (u8)WA_U16(0x0FEE);
-    PK_U16(2) = WA_U16(0x0576);
-    PK_U16(4) = WA_U16(0x0FF6);
-    if (WA_S16(0x0FBC) == 0) {
-        PK_U16(8)  = (u16)_080256F4(WA_S16(0x0FF6), WA_S16(0x103A), 0);
-        PK_U16(10) = (u16)_08025710(WA_S16(0x0FF6), WA_S16(0x103A), 0);
-    } else {
-        PK_U16(8)  = WA_U16(0x0FE6);
-        PK_U16(10) = WA_U16(0x0FE4);
-    }
-
-    /* 0x0800B3D0 — pkt+12, before the selector checks. */
-    if (sel == 2) {                      /* ldrh + cmp #2 */
-        PK_U32(12) = (u32)(u16)_08025750(WA_S16(0x0FF2), WA_S16(0x0FF6),
-                                         WA_S16(0x103A));
-    } else {
-        s16 idx = WA_S16(0x0576);
-        PK_U32(12) = WA_U32(0x05E4 + (s32)idx * 72);
-    }
-
-    /* 0x0800B3D6 — (u16)(sel-6) <= 1, else the signed sel == 2 re-test. */
-    if (sel == 6 || sel == 7) {
-        rec_off = 0x0FC2;
-    } else if (sel == 2) {
-        /* 0x0800B400 — the i/j arm: it replaces the *record* block
-         * (+24/+26/+28..39) with two catalog fields and a clear. */
-        PK_U16(24) = (u16)_080257D4(WA_S16(0x0FF6), WA_S16(0x103A), 0);
-        pkt[29] = (u8)_080257F0(WA_S16(0x0FF6), WA_S16(0x103A), 0);
-        PK_U16(26) = 0;
-        goto finish;
-    } else {
-        rec_off = 0x0574;                /* 0x0800B440 */
-    }
-
-    /* 0x0800B446 — index a 12-byte record by the u16 at WA+rec_off. */
-    {
-        u16 v = WA_U16(rec_off);
-        const u8 *rec;
-        PK_U16(24) = v;
-        rec = RD_WA + 0x30 + (s32)(s16)v * 12;
-        PK_U16(26) = (s16)*(volatile s8 *)rec;
-        for (i = 0; i < 12; ++i) pkt[28 + i] = rec[i];
-    }
-
-finish: /* 0x0800B478 */
-    pkt[22] = (u8)WA_U16(0x0FF2);
-    pkt[20] = (u8)WA_U16(0x05E0);        /* ldrh at WA + (188 << 3) */
-    _080188B0(pkt);
-}
 
 void _0800B190(void) __attribute__((alias("Race_Dispatch")));
 // The closure spells this address ONLY `sub_0800B190` (asm/race_dispatch.s),

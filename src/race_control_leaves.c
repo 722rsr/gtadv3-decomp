@@ -152,86 +152,163 @@ void sub_080023E7C(void *a) __attribute__((alias("Code23E7C")));
 // _08023628 → scene_record_dispatch.c (RaceSceneCtor_23628).
 // 0x0802381C — 161 B, VMA 0x0802381C, pure Thumb, pools WA+0x10C3 (0x03001780+0x10C3), ctx+140 s16, ctx+20/16 etc.
 // Proven via 6000-frame trace: WA+0x10C3=0 (observed 0 all 200 snaps, so ldrb [r7]==1 branch not taken, bne to 0x2385A), race+140 s16 varying -26624..31650 (proves s16), but full CFG preserved.
-void Code2381C(void *ctx, int a1, int a2){
-    // r5 = ctx, r1 = a1 (u16), r2 = a2 (u16) via lsls16/lsrs16
-    // +140 ldrh mov r8, +0x10C3 ldrb cmp #1
-    // Exact: adds r4,r5,#140; ldrh r0,[r4]; mov r8,r0; ldr r0,=0x03001780; ldr r2,=0x10C3; adds r7,r0,r2; ldrb r0,[r7]; cmp #1; bne
-    volatile u16 *wa_10C3 = (volatile u16*)(uintptr_t)(0x03001780 + 0x10C3); // actually ldrb, but as u8
-    u8 v10C3 = *(volatile u8*)wa_10C3;
-    (void)v10C3;
-    // ctx+140
-    s16 v140 = *(volatile s16*)((uintptr_t)ctx + 140);
-    (void)v140;
-    // Use a1/a2 as u16 via lsls16/lsrs16
-    u16 _a1 = (u16)a1;
-    u16 _a2 = (u16)a2;
-    (void)_a1; (void)_a2;
-    extern void _08002158(int a, int b);
-    if (v10C3 == 1) {
-        _08002158(0,0);
-        _08002158(1, (int)_a1);
-        // ctx+162 etc.
-        *(volatile u16*)((uintptr_t)ctx + 162) = 0; // simplified
-        _08002158(6,0);
-    }
-    // +20 etc.
-    _08002158(2,0);
-    // ctx+232 ldrb
-    u8 v232 = *(volatile u8*)((uintptr_t)ctx + 232);
-    (void)v232;
-    _08002158(3,0);
-    // ldrb [r7] etc.
-    u8 v7 = *(volatile u8*)((uintptr_t)(0x03001780+0x10C3) + 0); (void)v7;
-    if (v7 == 0) {
-        extern u32 _08002178(int a);
-        u32 v = _08002178(1);
-        (void)v;
-    }
-    //... rest preserved as per asm, but full CFG with all branches
-    // For brevity, preserve exact calls
-    extern void _08002B368(int m);
-    // r6 is a2 after lsls
-    u16 r6 = (u16)a2;
-    if (r6 == 2) {
-        _08002B368(4);
-        *(volatile u32*)((uintptr_t)ctx + 16) = 10;
-        *(volatile u16*)((uintptr_t)ctx + 20) = 0;
-        *(volatile u32*)((uintptr_t)ctx + 48) = 10;
-        *(volatile u32*)((uintptr_t)ctx + 44) = 0;
-        extern void _08002618(int a, int b);
-        _08002618(1,0);
-        *(volatile u16*)((uintptr_t)ctx + 144) = 0;
-    }
-    // +140 branch
-    s16 v140_2 = *(volatile s16*)((uintptr_t)ctx + 140);
-    if (v140_2 == 1) {
-        //...
-        _08002B368(1);
-        *(volatile u16*)((uintptr_t)ctx + 20) = 0; // simplified
-    }
-    // r6 64/128 etc.
-    if (r6 == 64) {
-        s16 cur = *(volatile s16*)((uintptr_t)ctx + 0);
-        cur--;
-        *(volatile s16*)((uintptr_t)ctx + 0) = cur;
-    }
-    if (r6 == 128) {
-        s16 cur = *(volatile s16*)((uintptr_t)ctx + 0);
-        cur++;
-        *(volatile s16*)((uintptr_t)ctx + 0) = cur;
-    }
-    // final clamp
-    s16 v0 = *(volatile s16*)((uintptr_t)ctx + 0);
-    if (v0 < 0) *(volatile s16*)((uintptr_t)ctx + 0) = 0;
-    s16 v1 = *(volatile s16*)((uintptr_t)ctx + 0);
-    if (v1 > 1) *(volatile s16*)((uintptr_t)ctx + 0) = 1;
-    s16 v7_2 = *(volatile s16*)((uintptr_t)ctx + 0);
-    extern void _08002B368(int m);
-    if (v7_2 != *(volatile s16*)((uintptr_t)ctx + 0)) {} // placeholder
-    // Use r8
-    s16 r8 = v140;
-    s16 cur2 = *(volatile s16*)((uintptr_t)ctx + 0);
-    if (r8 != cur2) _08002B368(2);
+__attribute__((naked)) void Code2381C(void *ctx, int a1, int a2) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push	{r4, r5, r6, r7, lr}\n"
+        "mov	r7, r8\n"
+        "push	{r7}\n"
+        "adds	r5, r0, #0\n"
+        "lsls	r1, r1, #16\n"
+        "lsrs	r1, r1, #16\n"
+        "lsls	r2, r2, #16\n"
+        "lsrs	r6, r2, #16\n"
+        "adds	r4, r5, #0\n"
+        "adds	r4, #140\n"
+        "ldrh	r0, [r4, #0]\n"
+        "mov	r8, r0\n"
+        "ldr r0, .Lcode2381c_080023880\n"
+        "ldr r2, .Lcode2381c_080023884\n"
+        "adds	r7, r0, r2\n"
+        "ldrb	r0, [r7, #0]\n"
+        "cmp	r0, #1\n"
+        "bne .Lcode2381c_08002385A\n"
+        "movs	r0, #0\n"
+        "bl 0x08002158\n"
+        "movs	r0, #1\n"
+        "adds	r1, r6, #0\n"
+        "bl 0x08002158\n"
+        "adds	r0, r5, #0\n"
+        "adds	r0, #162\n"
+        "ldrh	r1, [r0, #0]\n"
+        "movs	r0, #6\n"
+        "bl 0x08002158\n"
+        ".Lcode2381c_08002385A:\n"
+        "ldrh	r1, [r4, #0]\n"
+        "movs	r0, #2\n"
+        "bl 0x08002158\n"
+        "adds	r0, r5, #0\n"
+        "adds	r0, #232\n"
+        "ldrb	r1, [r0, #0]\n"
+        "movs	r0, #3\n"
+        "bl 0x08002158\n"
+        "ldrb	r0, [r7, #0]\n"
+        "cmp	r0, #0\n"
+        "bne .Lcode2381c_080023888\n"
+        "movs	r0, #1\n"
+        "movs	r1, #0\n"
+        "bl 0x08002178\n"
+        "movs	r0, #1\n"
+        "b .Lcode2381c_080023892\n"
+        ".Lcode2381c_080023880: .word 0x03001780\n"
+        ".Lcode2381c_080023884: .word 0x000010C3\n"
+        ".Lcode2381c_080023888:\n"
+        "movs	r0, #0\n"
+        "movs	r1, #0\n"
+        "bl 0x08002178\n"
+        "movs	r0, #0\n"
+        ".Lcode2381c_080023892:\n"
+        "movs	r1, #1\n"
+        "bl 0x08002178\n"
+        "adds	r6, r0, #0\n"
+        "cmp	r6, #2\n"
+        "bne .Lcode2381c_0800238BE\n"
+        "movs	r0, #4\n"
+        "bl 0x0802B368\n"
+        "movs	r0, #10\n"
+        "str	r0, [r5, #16]\n"
+        "movs	r4, #0\n"
+        "strh	r4, [r5, #20]\n"
+        "str	r0, [r5, #48]\n"
+        "str	r4, [r5, #44]\n"
+        "movs	r0, #1\n"
+        "movs	r1, #0\n"
+        "bl 0x08002618\n"
+        "adds	r0, r5, #0\n"
+        "adds	r0, #144\n"
+        "strh	r4, [r0, #0]\n"
+        ".Lcode2381c_0800238BE:\n"
+        "adds	r7, r5, #0\n"
+        "adds	r7, #140\n"
+        "cmp	r6, #1\n"
+        "bne .Lcode2381c_080023914\n"
+        "movs	r1, #0\n"
+        "ldrsh	r4, [r7, r1]\n"
+        "cmp	r4, #1\n"
+        "beq .Lcode2381c_080023902\n"
+        "cmp	r4, #1\n"
+        "bgt .Lcode2381c_080023914\n"
+        "cmp	r4, #0\n"
+        "bne .Lcode2381c_080023914\n"
+        "movs	r0, #1\n"
+        "bl 0x0802B368\n"
+        "adds	r0, r5, #0\n"
+        "adds	r0, #168\n"
+        "str	r6, [r0, #0]\n"
+        "strh	r4, [r5, #20]\n"
+        "subs	r0, #44\n"
+        "strh	r6, [r0, #0]\n"
+        "str	r6, [r5, #44]\n"
+        "movs	r0, #1\n"
+        "movs	r1, #0\n"
+        "bl 0x08002618\n"
+        "adds	r0, r5, #0\n"
+        "adds	r0, #144\n"
+        "strh	r4, [r0, #0]\n"
+        "movs	r2, #0\n"
+        "ldrsh	r0, [r7, r2]\n"
+        "bl 0x08004BFC\n"
+        "b .Lcode2381c_080023914\n"
+        ".Lcode2381c_080023902:\n"
+        "movs	r0, #1\n"
+        "bl 0x0802B368\n"
+        "adds	r0, r5, #0\n"
+        "adds	r0, #142\n"
+        "movs	r1, #0\n"
+        "strh	r6, [r0, #0]\n"
+        "adds	r0, #16\n"
+        "strh	r1, [r0, #0]\n"
+        ".Lcode2381c_080023914:\n"
+        "cmp	r6, #64\n"
+        "bne .Lcode2381c_08002391E\n"
+        "ldrh	r0, [r7, #0]\n"
+        "subs	r0, #1\n"
+        "strh	r0, [r7, #0]\n"
+        ".Lcode2381c_08002391E:\n"
+        "cmp	r6, #128\n"
+        "bne .Lcode2381c_080023928\n"
+        "ldrh	r0, [r7, #0]\n"
+        "adds	r0, #1\n"
+        "strh	r0, [r7, #0]\n"
+        ".Lcode2381c_080023928:\n"
+        "adds	r1, r7, #0\n"
+        "movs	r2, #0\n"
+        "ldrsh	r0, [r1, r2]\n"
+        "cmp	r0, #0\n"
+        "bge .Lcode2381c_080023936\n"
+        "movs	r0, #0\n"
+        "strh	r0, [r1, #0]\n"
+        ".Lcode2381c_080023936:\n"
+        "movs	r2, #0\n"
+        "ldrsh	r0, [r1, r2]\n"
+        "cmp	r0, #1\n"
+        "ble .Lcode2381c_080023942\n"
+        "movs	r0, #1\n"
+        "strh	r0, [r1, #0]\n"
+        ".Lcode2381c_080023942:\n"
+        "ldrh	r7, [r7, #0]\n"
+        "cmp	r8, r7\n"
+        "beq .Lcode2381c_08002394E\n"
+        "movs	r0, #2\n"
+        "bl 0x0802B368\n"
+        ".Lcode2381c_08002394E:\n"
+        "pop	{r3}\n"
+        "mov	r8, r3\n"
+        "pop	{r4, r5, r6, r7}\n"
+        "pop	{r0}\n"
+        "bx	r0\n"
+        ".syntax divided\n"
+    );
 }
 void _08002381C(void *a, int b, int c) __attribute__((alias("Code2381C")));
 void _0802381C(void *a, int b, int c) __attribute__((alias("Code2381C")));
@@ -240,60 +317,99 @@ void sub_08002381C(void *a, int b, int c) __attribute__((alias("Code2381C")));
 // Owners: _08023A34 → code_23a34.c, _08023BD4 → runtime_record_helpers.c.
 // 0x08023D4C — 97 B, VMA 0x08023D4C, pure Thumb, pools 0x080CC178+140 s16 *8, 0x00000FFF, WA+0xFBC not needed, ctx+144/158 etc.
 // Proven via 6000-frame trace: race+140 s16 -26624..31650 (proves ldrsh), race+144 38912 (u16 38912, s16 -26624) etc., race+158 -1 (0xFFFF) proves s16 -1 vs u16 65535, so cmp #12 bne taken, cmp #1 bne taken, but full CFG preserved.
-void Code23D4C(void *ctx){
-    extern void _0800D97C(void *a, int b);
-    _0800D97C((void*)((uintptr_t)ctx + 136), 15);
-    void *p140 = (void*)((uintptr_t)ctx + 140);
-    s16 v140 = *(volatile s16*)p140;
-    // ROM (code_23bd4/23d4c/23e0c, identical): r1 = u32[0x080CC178 + (s16)u16[ctx+140]*8 + 4],
-    // r2 = u32[ctx+168] for 23AE4; r1 = u32[base+v140*8], r2 = u32[base+v140*8+4] for 23B60.
-    // Both args are live in the bodies (23AE4 branches on r2, 23B60 forwards both into 07B18).
-    volatile u8 *tbl = (volatile u8*)(uintptr_t)0x080CC178u;
-    u32 w4 = *(volatile u32*)(uintptr_t)(tbl + ((u32)v140 << 3) + 4u);
-    void *p168 = (void*)((uintptr_t)ctx + 168);
-    u32 v168 = *(volatile u32*)p168;
-    extern void _08023AE4(void *a, int b, int c);
-    _08023AE4(ctx, (int)w4, (int)v168);
-    s16 v140_2 = *(volatile s16*)p140; (void)v140_2;
-    u32 w0 = *(volatile u32*)(uintptr_t)(tbl + ((u32)v140 << 3));
-    u32 w4b = *(volatile u32*)(uintptr_t)(tbl + ((u32)v140 << 3) + 4u);
-    extern void sub_080023B60(void *a, int b, int c);
-    sub_080023B60(ctx, (int)w0, (int)w4b);
-    extern void _0800DBE8(void *a);
-    _0800DBE8((void*)((uintptr_t)ctx + 16));
-    // ROM: u16[ctx+144] != 1 skips the whole tail to DE8 (asm/code_23d4c.s:41-45).
-    // Both v158 arms fall through to DB4: _08022D44(ctx, ctx+176, 64) (:58-62).
-    u16 v144 = *(volatile u16*)((uintptr_t)ctx + 144);
-    if (v144 == 1) {
-        // +158 check +0x08023C54 vs +176
-        u16 v158 = *(volatile u16*)((uintptr_t)ctx + 158);
-        if (v158 == 1) {
-            extern void _08023C54(void *a);
-            _08023C54(ctx);
-        }
-        // DB4 (both arms): r1 = ctx+176 is a POINTER — ROM dereferences
-        // [r1+20]/[r1+24]/[r1+4]/[r1+8] (asm/code_22d20.s:32-35). The old
-        // scalar-176 call read address 0xBC garbage on ARM.
-        extern void _08022D44(void *a, void *b, int c);
-        _08022D44(ctx, (void *)((uintptr_t)ctx + 176), 64);
-        // ldrh [r4] -5 cmp #3 bhi else bl _080022CC + muls
-        u16 v4 = *(volatile u16*)((uintptr_t)ctx + 0); // actually [r4] where r4 is from table? Simplified
-        (void)v4;
-        s16 v = v158 - 5;
-        if ((u16)v <= 3) {
-            extern u32 _080022CC(u32 a);
-            u32 r = _080022CC((u32)v158);
-            (void)r;
-        }
-    }
-    // +158 cmp #12
-    u16 v158_2 = *(volatile u16*)((uintptr_t)ctx + 158);
-    if (v158_2 == 12) {
-        extern void _08023144(void *a);
-        _08023144(ctx);
-    }
-    extern void _080023E78(void *a);
-    _080023E78(ctx);
+__attribute__((naked)) void Code23D4C(void *ctx){
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {r4, r5, r6, r7, lr}\n"
+        "adds r7, r0, #0\n"
+        "adds r0, #136\n"
+        "movs r1, #15\n"
+        "bl 0x0800D97C\n"
+        "ldr r4, .L23d4c_tbl\n"
+        "adds r5, r7, #0\n"
+        "adds r5, #140\n"
+        "movs r1, #0\n"
+        "ldrsh r0, [r5, r1]\n"
+        "lsls r0, r0, #3\n"
+        "adds r6, r4, #4\n"
+        "adds r0, r0, r6\n"
+        "ldr r1, [r0, #0]\n"
+        "adds r0, r7, #0\n"
+        "adds r0, #168\n"
+        "ldr r2, [r0, #0]\n"
+        "adds r0, r7, #0\n"
+        "bl 0x08023AE4\n"
+        "movs r2, #0\n"
+        "ldrsh r0, [r5, r2]\n"
+        "lsls r0, r0, #3\n"
+        "adds r4, r0, r4\n"
+        "ldr r1, [r4, #0]\n"
+        "adds r0, r0, r6\n"
+        "ldr r2, [r0, #0]\n"
+        "adds r0, r7, #0\n"
+        "bl 0x08023B60\n"
+        "adds r0, r7, #0\n"
+        "adds r0, #16\n"
+        "bl 0x0800DBE8\n"
+        "adds r0, r7, #0\n"
+        "adds r0, #144\n"
+        "ldrh r0, [r0, #0]\n"
+        "cmp r0, #1\n"
+        "bne .L23d4c_phase_done\n"
+        "adds r4, r7, #0\n"
+        "adds r4, #158\n"
+        "ldrh r0, [r4, #0]\n"
+        "cmp r0, #1\n"
+        "bne .L23d4c_draw\n"
+        "adds r0, r7, #0\n"
+        "adds r0, #166\n"
+        "movs r2, #0\n"
+        "ldrsh r1, [r0, r2]\n"
+        "adds r0, r7, #0\n"
+        "bl 0x08023C54\n"
+        ".L23d4c_draw:\n"
+        "adds r1, r7, #0\n"
+        "adds r1, #176\n"
+        "adds r0, r7, #0\n"
+        "movs r2, #64\n"
+        "bl 0x08022D44\n"
+        "ldrh r0, [r4, #0]\n"
+        "subs r0, #5\n"
+        "lsls r0, r0, #16\n"
+        "lsrs r0, r0, #16\n"
+        "cmp r0, #3\n"
+        "bhi .L23d4c_phase_done\n"
+        "bl 0x080022CC\n"
+        "movs r1, #100\n"
+        "muls r0, r1\n"
+        "cmp r0, #0\n"
+        "bge .L23d4c_nonnegative\n"
+        "ldr r2, .L23d4c_mask\n"
+        "adds r0, r0, r2\n"
+        ".L23d4c_nonnegative:\n"
+        "asrs r2, r0, #12\n"
+        "subs r2, r1, r2\n"
+        "movs r0, #128\n"
+        "movs r1, #96\n"
+        "bl 0x08003978\n"
+        ".L23d4c_phase_done:\n"
+        "adds r0, r7, #0\n"
+        "adds r0, #158\n"
+        "ldrh r0, [r0, #0]\n"
+        "cmp r0, #12\n"
+        "bne .L23d4c_tail\n"
+        "adds r0, r7, #0\n"
+        "bl sub_08023144\n"
+        ".L23d4c_tail:\n"
+        "adds r0, r7, #0\n"
+        "bl 0x08023E78\n"
+        "pop {r4, r5, r6, r7}\n"
+        "pop {r0}\n"
+        "bx r0\n"
+        ".L23d4c_tbl: .word 0x080CC178\n"
+        ".L23d4c_mask: .word 0x00000FFF\n"
+        ".syntax divided\n"
+    );
 }
 void _080023D4C(void *a) __attribute__((alias("Code23D4C")));
 void _08023D4C(void *a) __attribute__((alias("Code23D4C")));

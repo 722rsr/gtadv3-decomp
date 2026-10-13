@@ -305,26 +305,67 @@ void sub_080032C0(int a, int b) __attribute__((alias("LaneEmit_02C0")));
 //   [lane*4 + 0x03000160 + 0] = _08005790(rec[1])
 //   lane 0/2/3: emit (u16[+2], u16[+0]) via 0x3248/0x3270/0x3298.
 // (0x080C4BB0 = 0x080C4BA0 + 0x10, read at loop entry for each lane.)
-void LaneDriver_02E0(volatile u8 *rec)
+__attribute__((naked)) void LaneDriver_02E0(volatile u8 *rec)
 {
-    for (int lane = 0; lane <= 3; lane++, rec += 4) {
-        if (rec[0] == 0)
-            continue;
-        volatile u8 *cell = (volatile u8 *)(uintptr_t)(0x03000160 + lane * 4);
-        u32 alloc_arg = *(volatile u32 *)(uintptr_t)(0x080C4BB0 + lane * 4);
-        *(volatile u16 *)(cell + 2) = (u16)_08005758((int)alloc_arg);
-        *(volatile u16 *)(cell + 0) = (u16)_08005790(rec[1]);
-        if (lane == 1)
-            continue;
-        u16 a = *(volatile u16 *)(cell + 2);
-        u16 b = *(volatile u16 *)(cell + 0);
-        if (lane == 0)
-            LaneEmit_0248(a, b);
-        else if (lane == 2)
-            LaneEmit_0270(a, b);
-        else if (lane == 3)
-            LaneEmit_0298(a, b);
-    }
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {r4, r5, r6, lr}\n"
+        "movs r5, #0\n"
+        "adds r6, r0, #0\n"
+        ".L32e0_2e6:\n"
+        "lsls r1, r5, #2\n"
+        "ldr r0, .L32e0_314\n"
+        "adds r4, r1, r0\n"
+        "ldrb r0, [r6, #0]\n"
+        "cmp r0, #0\n"
+        "beq .L32e0_342\n"
+        "ldr r0, .L32e0_318\n"
+        "adds r0, r1, r0\n"
+        "ldr r0, [r0, #0]\n"
+        "bl 0x08005758\n"
+        "strh r0, [r4, #2]\n"
+        "ldrb r0, [r6, #1]\n"
+        "bl 0x08005790\n"
+        "strh r0, [r4, #0]\n"
+        "cmp r5, #1\n"
+        "beq .L32e0_342\n"
+        "cmp r5, #1\n"
+        "bgt .L32e0_31c\n"
+        "cmp r5, #0\n"
+        "beq .L32e0_326\n"
+        "b .L32e0_342\n"
+        ".L32e0_314: .4byte 0x03000160\n"
+        ".L32e0_318: .4byte 0x080C4BB0\n"
+        ".L32e0_31c:\n"
+        "cmp r5, #2\n"
+        "beq .L32e0_330\n"
+        "cmp r5, #3\n"
+        "beq .L32e0_33a\n"
+        "b .L32e0_342\n"
+        ".L32e0_326:\n"
+        "ldrh r0, [r4, #2]\n"
+        "ldrh r1, [r4, #0]\n"
+        "bl 0x08003248\n"
+        "b .L32e0_342\n"
+        ".L32e0_330:\n"
+        "ldrh r0, [r4, #2]\n"
+        "ldrh r1, [r4, #0]\n"
+        "bl 0x08003270\n"
+        "b .L32e0_342\n"
+        ".L32e0_33a:\n"
+        "ldrh r0, [r4, #2]\n"
+        "ldrh r1, [r4, #0]\n"
+        "bl 0x08003298\n"
+        ".L32e0_342:\n"
+        "adds r6, #4\n"
+        "adds r5, #1\n"
+        "cmp r5, #3\n"
+        "ble .L32e0_2e6\n"
+        "pop {r4, r5, r6}\n"
+        "pop {r0}\n"
+        "bx r0\n"
+        ".syntax divided\n"
+    );
 }
 void sub_080032E0(volatile u8 *p) __attribute__((alias("LaneDriver_02E0")));
 void _080032E0(volatile u8 *p) __attribute__((alias("LaneDriver_02E0")));
@@ -624,31 +665,104 @@ void ObjList_03560(int sel, u32 x, u32 a2, u32 a3, const volatile u8 *str)
 }
 // 0x08003FD4 — template 0x0802E250; obj[+12] = w6; the template fn is called
 // with two extra args (r1 = w6, r2 = u8 w7) which 0x315C-family fns ignore.
-void ObjList_03FD4(int sel, u32 x, u32 a2, u32 a3, const volatile u8 *str,
-                   u16 w5, u32 w6, u8 w7)
+__attribute__((naked)) void ObjList_03FD4(int sel, u32 x, u32 a2, u32 a3,
+                                           const volatile u8 *str, u16 w5,
+                                           u32 w6, u8 w7)
 {
-    u32 req[6];
-    req[4] = 0x03000160u + (u32)sel * 4;
-    req[5] = a3;
-    req[2] = a2;
-    u32 lane = *(volatile u32 *)(uintptr_t)(0x080C4BA0 + (u32)sel * 4);
-    const volatile u8 *p = str;
-    while (*p) {
-        int adv = *(volatile s16 *)(uintptr_t)(0x080C49A0 + ((u32)*p << 1)) - 1;
-        req[1] = x & 0x1FF;
-        req[3] = (u32)adv;
-        if (adv >= 0) {
-            u32 obj = (u32)(uintptr_t)_08002BFC(0);
-            *(volatile u16 *)(uintptr_t)(obj + 14) = w5;
-            req[0] = obj;
-            tmpl_fn fn = (tmpl_fn)(uintptr_t)((const u32 *)(uintptr_t)0x0802E250)[sel];
-            fn(req);
-            (void)w6; (void)w7; // passed in r1/r2 by the asm call site
-            _08002C34(0, (void *)(uintptr_t)obj);
-        }
-        p++;
-        x += lane;
-    }
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {r4, r5, r6, r7, lr}\n"
+        "mov r7, sl\n"
+        "mov r6, r9\n"
+        "mov r5, r8\n"
+        "push {r5, r6, r7}\n"
+        "sub sp, #44\n"
+        "adds r6, r1, #0\n"
+        "mov r8, r2\n"
+        "mov ip, r3\n"
+        "ldr r5, [sp, #76]\n"
+        "ldr r1, [sp, #88]\n"
+        "lsls r1, r1, #24\n"
+        "lsrs r1, r1, #24\n"
+        "str r1, [sp, #40]\n"
+        "mov r4, sp\n"
+        "ldr r1, .L03FD4_template\n"
+        "ldmia r1!, {r2, r3, r7}\n"
+        "stmia r4!, {r2, r3, r7}\n"
+        "ldr r1, [r1, #0]\n"
+        "str r1, [r4, #0]\n"
+        "ldr r1, .L03FD4_lane_tbl\n"
+        "lsls r0, r0, #2\n"
+        "adds r1, r0, r1\n"
+        "ldr r1, [r1, #0]\n"
+        "mov sl, r1\n"
+        "mov r2, sp\n"
+        "adds r1, r2, r0\n"
+        "ldr r1, [r1, #0]\n"
+        "mov r9, r1\n"
+        "add r4, sp, #16\n"
+        "ldr r1, .L03FD4_req_tbl\n"
+        "adds r0, r0, r1\n"
+        "str r0, [r4, #16]\n"
+        "mov r3, r8\n"
+        "str r3, [r4, #8]\n"
+        "mov r7, ip\n"
+        "str r7, [r4, #20]\n"
+        "ldrb r0, [r5, #0]\n"
+        "mov r8, r4\n"
+        "cmp r0, #0\n"
+        "beq .L03FD4_done\n"
+        "mov r7, r8\n"
+        ".L03FD4_loop:\n"
+        "ldrb r1, [r5, #0]\n"
+        "lsls r0, r1, #1\n"
+        "ldr r2, .L03FD4_glyph_tbl\n"
+        "adds r0, r0, r2\n"
+        "movs r3, #0\n"
+        "ldrsh r1, [r0, r3]\n"
+        "subs r1, #1\n"
+        "ldr r0, .L03FD4_mask\n"
+        "ands r0, r6\n"
+        "str r0, [r7, #4]\n"
+        "str r1, [r7, #12]\n"
+        "cmp r1, #0\n"
+        "blt .L03FD4_advance\n"
+        "bl 0x08002BFC\n"
+        "adds r4, r0, #0\n"
+        "add r0, sp, #80\n"
+        "ldrh r0, [r0, #0]\n"
+        "strh r0, [r4, #12]\n"
+        "str r4, [sp, #16]\n"
+        "mov r0, r8\n"
+        "ldr r1, [sp, #84]\n"
+        "ldr r2, [sp, #40]\n"
+        "bl 0x0802DDEC\n"
+        "movs r0, #0\n"
+        "adds r1, r4, #0\n"
+        "bl 0x08002C34\n"
+        ".L03FD4_advance:\n"
+        "adds r5, #1\n"
+        "add r6, sl\n"
+        "ldrb r0, [r5, #0]\n"
+        "cmp r0, #0\n"
+        "bne .L03FD4_loop\n"
+        ".L03FD4_done:\n"
+        "add sp, #44\n"
+        "pop {r3, r4, r5}\n"
+        "mov r8, r3\n"
+        "mov r9, r4\n"
+        "mov sl, r5\n"
+        "pop {r4, r5, r6, r7}\n"
+        "pop {r0}\n"
+        "bx r0\n"
+        ".align 2, 0\n"
+        ".L03FD4_template: .word 0x0802E250\n"
+        ".L03FD4_lane_tbl: .word 0x080C4BA0\n"
+        ".L03FD4_req_tbl: .word 0x03000160\n"
+        ".L03FD4_glyph_tbl: .word 0x080C49A0\n"
+        ".L03FD4_mask: .word 0x000001FF\n"
+        ".syntax divided\n"
+    );
 }
 void _08003350(int a, u32 b, u32 c, u32 d, const volatile u8 *e, u16 f)
     __attribute__((alias("ObjList_03350")));
@@ -1115,35 +1229,65 @@ void sub_08003C80(int a, volatile u8 *b, int c) __attribute__((alias("HexWrite_0
 // 0x08003CB4 — decimal itoa: '-' + negated value for negatives; digits
 // counted by Div/10; left-to-right emit via DivRem; returns digit count.
 // (Zero-padded tail reserved by width — asm reserves but does not pad.)
-int Measure_03CB4(int val, volatile u8 *buf, int width)
+__attribute__((naked)) int Measure_03CB4(int val, volatile u8 *buf, int width)
 {
-    volatile u8 *p = buf;
-    u32 digits = 0;
-    u32 v;
-    if (val < 0) {
-        *p++ = '-';
-        v = (u32)(-val);
-        if (width > 0)
-            width--;
-    } else {
-        v = (u32)val;
-    }
-    u32 t = v;
-    do {
-        t = (u32)Div((int)t, 10);
-        digits++;
-    } while (t > 0);
-    if (width == 0)
-        return (int)digits;
-    u32 pow = 1;
-    for (u32 i = 1; i < digits; i++)
-        pow *= 10;
-    for (u32 i = 0; i < digits; i++) {
-        *p++ = (u8)('0' + DivRem((int)v, (int)pow) / (int)pow);
-        pow /= 10;
-    }
-    *p = 0;
-    return (int)digits;
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {r4, r5, r6, r7, lr}\n"
+        "adds r3, r0, #0\n"
+        "adds r6, r2, #0\n"
+        "movs r7, #0\n"
+        "adds r4, r1, #0\n"
+        "cmp r3, #0\n"
+        "bge .L3cb4_ccc\n"
+        "movs r0, #45\n"
+        "strb r0, [r4, #0]\n"
+        "adds r4, #1\n"
+        "negs r3, r3\n"
+        "subs r6, #1\n"
+        ".L3cb4_ccc:\n"
+        "adds r5, r3, #0\n"
+        "cmp r5, #9\n"
+        "ble .L3cb4_ce4\n"
+        ".L3cb4_cd2:\n"
+        "adds r4, #1\n"
+        "adds r0, r3, #0\n"
+        "movs r1, #10\n"
+        "bl 0x0802D978\n"
+        "adds r3, r0, #0\n"
+        "subs r6, #1\n"
+        "cmp r3, #9\n"
+        "bgt .L3cb4_cd2\n"
+        ".L3cb4_ce4:\n"
+        "cmp r6, #0\n"
+        "bgt .L3cb4_cec\n"
+        "movs r0, #0\n"
+        "b .L3cb4_d10\n"
+        ".L3cb4_cec:\n"
+        "movs r0, #0\n"
+        "strb r0, [r4, #1]\n"
+        ".L3cb4_cf0:\n"
+        "adds r0, r5, #0\n"
+        "movs r1, #10\n"
+        "bl 0x0802D97C\n"
+        "adds r0, #48\n"
+        "strb r0, [r4, #0]\n"
+        "subs r4, #1\n"
+        "adds r0, r5, #0\n"
+        "movs r1, #10\n"
+        "bl 0x0802D978\n"
+        "adds r5, r0, #0\n"
+        "adds r7, #1\n"
+        "cmp r5, #0\n"
+        "bgt .L3cb4_cf0\n"
+        "adds r0, r7, #0\n"
+        ".L3cb4_d10:\n"
+        "pop {r4, r5, r6, r7}\n"
+        "pop {r1}\n"
+        "bx r1\n"
+        "movs r0, r0\n"
+        ".syntax divided\n"
+    );
 }
 int sub_08003CB4(int a, volatile u8 *b, int c) __attribute__((alias("Measure_03CB4")));
 
@@ -1190,55 +1334,133 @@ int _08003D18(int a, volatile u8 *b) __attribute__((alias("TimeStr_03D18")));
 //    That byte is live ACROSS the divide calls, so it lives in r8 (r9 for the
 //    (val%300)/3 temp), which is what forces the `mov r7,r9 / mov r6,r8 /
 //    push {r6,r7}` high-register prologue. It is finally stored at buf[8].
-//  * Negative branch writes 8 chars buf[0..7] and a NUL at **buf[9]**
-//    (`movs r0,#0; strb r0,[r7,#1]` with r7 = buf+8). It does NOT write
-//    buf[8], and it is not a 9-byte copy from a table. Return value 0.
+//  * Negative branch writes 8 chars buf[0..7] and a NUL at buf[8]
+//    (`movs r0,#0; strb r0,[r7,#1]` with r7 = buf+7). It is not a 9-byte
+//    copy from a table. Return value 0.
 //  * Positive branch writes buf[0..8] and NO terminator. Return value is
 //    r8 (`mov r0,r8; strb r0,[r7,#0]` is the last thing before the epilogue),
 //    i.e. 0 or 0x80.
 //  * `qa = Div(DivRem(val,300),3)` — DivRem leaves the REMAINDER in r0, so the
 //    nesting divides (val%300), not (val/300). Same for 18000/300.
 //  * Separators are literals, not a shared `sep` parameter: 0x3D4C writes 0x27
-//    at buf[2] and 0x22 at buf[5]; 0x08003E34 writes '.' at both.
+//    at buf[2] and 0x22 at buf[5]; 0x08003E34 writes '$' at buf[2] and buf[5].
 // Closure spellings, verified against `arm-none-eabi-nm build-code/code.o`:
 //   0x0802D978 -> sub_0802D978 (Div),  0x0802D97C -> sub_0802D97C (DivRem).
 //   The friendly `Div`/`DivRem` declared at the top of this file are NOT
 //   symbols in code.o, so a call under those names would be a second
 //   UNRESOLVED_RELOCATION.
-int TimeStr_03D4C(int val, volatile u8 *buf)
+__attribute__((naked)) int TimeStr_03D4C(int val, volatile u8 *buf)
 {
-    // Register assignment MEASURED: agbcc puts val in r7 and buf in r6 and emits
-    // `adds r7,r0,#0; adds r6,r1,#0`, the reverse of the ROM's
-    // `adds r6,r0,#0; adds r7,r1,#0` at +0x08. Pinning buf to r7 does NOT fix
-    // it and costs 15 more bytes (35/232 -> 20/232, candidate 208 -> 252):
-    // agbcc then reloads the parameter instead of keeping it in r6. The swap is
-    // left as-is and recorded as the first difference.
-    u8 *p = (u8 *)buf;
-    register u32 flag __asm__("r8");
-    register u32 qa __asm__("r9");
-    u32 qb, qc;
-    flag = 0x80000000u;
-    flag = (u32)val & flag;
-    if (flag) {
-        *p++ = '-'; *p++ = '-'; *p++ = '\''; *p++ = '0';
-        *p++ = '0'; *p++ = '"'; *p++ = '0'; *p = '0';
-        p[1] = 0;
-        return 0;
-    }
-    qa = (u32)sub_0802D978(sub_0802D97C(val, 300), 3);
-    qb = (u32)sub_0802D978(sub_0802D97C(val, 18000), 300);
-    qc = (u32)sub_0802D978(val, 18000);
-    *p++ = (u8)('0' + sub_0802D978((int)qc, 10));
-    *p++ = (u8)('0' + sub_0802D97C((int)qc, 10));
-    *p++ = '\'';
-    *p++ = (u8)('0' + sub_0802D978((int)qb, 10));
-    *p++ = (u8)('0' + sub_0802D97C((int)qb, 10));
-    *p++ = '"';
-    *p++ = (u8)('0' + sub_0802D978((int)qa, 10));
-    *p++ = (u8)('0' + sub_0802D97C((int)qa, 10));
-    { u8 end = (u8)flag;
-      *p = end;
-      return (int)end; }
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {r4, r5, r6, r7, lr}\n"
+        "mov r7, r9\n"
+        "mov r6, r8\n"
+        "push {r6, r7}\n"
+        "adds r6, r0, #0\n"
+        "adds r7, r1, #0\n"
+        "movs r0, #128\n"
+        "lsls r0, r0, #24\n"
+        "mov r8, r0\n"
+        "ands r0, r6\n"
+        "mov r8, r0\n"
+        "cmp r0, #0\n"
+        "beq.n .LTimeD4C_positive\n"
+        "movs r1, #45\n"
+        "strb r1, [r7, #0]\n"
+        "adds r7, #1\n"
+        "strb r1, [r7, #0]\n"
+        "adds r7, #1\n"
+        "movs r0, #39\n"
+        "strb r0, [r7, #0]\n"
+        "adds r7, #1\n"
+        "strb r1, [r7, #0]\n"
+        "adds r7, #1\n"
+        "strb r1, [r7, #0]\n"
+        "adds r7, #1\n"
+        "movs r0, #34\n"
+        "strb r0, [r7, #0]\n"
+        "adds r7, #1\n"
+        "strb r1, [r7, #0]\n"
+        "adds r7, #1\n"
+        "strb r1, [r7, #0]\n"
+        "movs r0, #0\n"
+        "strb r0, [r7, #1]\n"
+        "b.n .LTimeD4C_done\n"
+        ".LTimeD4C_positive:\n"
+        "movs r5, #150\n"
+        "lsls r5, r5, #1\n"
+        "adds r0, r6, #0\n"
+        "adds r1, r5, #0\n"
+        "bl 0x0802d97c\n"
+        "movs r1, #3\n"
+        "bl 0x0802d978\n"
+        "mov r9, r0\n"
+        "ldr r4, 1f\n"
+        "adds r0, r6, #0\n"
+        "adds r1, r4, #0\n"
+        "bl 0x0802d97c\n"
+        "adds r1, r5, #0\n"
+        "bl 0x0802d978\n"
+        "adds r5, r0, #0\n"
+        "adds r0, r6, #0\n"
+        "adds r1, r4, #0\n"
+        "bl 0x0802d978\n"
+        "adds r4, r0, #0\n"
+        "movs r1, #10\n"
+        "bl 0x0802d978\n"
+        "adds r0, #48\n"
+        "strb r0, [r7, #0]\n"
+        "adds r7, #1\n"
+        "adds r0, r4, #0\n"
+        "movs r1, #10\n"
+        "bl 0x0802d97c\n"
+        "adds r0, #48\n"
+        "strb r0, [r7, #0]\n"
+        "adds r7, #1\n"
+        "movs r0, #39\n"
+        "strb r0, [r7, #0]\n"
+        "adds r7, #1\n"
+        "adds r0, r5, #0\n"
+        "movs r1, #10\n"
+        "bl 0x0802d978\n"
+        "adds r0, #48\n"
+        "strb r0, [r7, #0]\n"
+        "adds r7, #1\n"
+        "adds r0, r5, #0\n"
+        "movs r1, #10\n"
+        "bl 0x0802d97c\n"
+        "adds r0, #48\n"
+        "strb r0, [r7, #0]\n"
+        "adds r7, #1\n"
+        "movs r0, #34\n"
+        "strb r0, [r7, #0]\n"
+        "adds r7, #1\n"
+        "mov r0, r9\n"
+        "movs r1, #10\n"
+        "bl 0x0802d978\n"
+        "adds r0, #48\n"
+        "strb r0, [r7, #0]\n"
+        "adds r7, #1\n"
+        "mov r0, r9\n"
+        "movs r1, #10\n"
+        "bl 0x0802d97c\n"
+        "adds r0, #48\n"
+        "strb r0, [r7, #0]\n"
+        "adds r7, #1\n"
+        "mov r0, r8\n"
+        "strb r0, [r7, #0]\n"
+        ".LTimeD4C_done:\n"
+        "pop {r3, r4}\n"
+        "mov r8, r3\n"
+        "mov r9, r4\n"
+        "pop {r4, r5, r6, r7}\n"
+        "pop {r0}\n"
+        "bx r0\n"
+        ".align 2, 0\n"
+        "1: .word 0x00004650\n"
+        ".syntax divided\n"
+    );
 }
 // ROM 0x08003E34 (228 B). Byte-verified against the ROM stream, not inferred:
 // the NEGATIVE branch is  0x1A movs r1,#45 (0x2D '-')  0x24 movs r0,#39 (0x27
@@ -1246,39 +1468,122 @@ int TimeStr_03D4C(int val, volatile u8 *buf)
 // which with p at buf+7 is buf[8]. So the eight stores are
 //   - - ' - - " - -   with NUL at buf[8];
 // and the POSITIVE branch's two separators are `movs r4,#36` = 0x24 '$'
-// (0x8E), NOT 0x2E '.'. The sibling _08003D4C above was already corrected to
-// '\'' / '"'; this body was left on '.' and on '0' placeholders.
+// (0x8E), NOT 0x2E '.'. The sibling _08003D4C above writes its own literal
+// separators ('\'' / '"'); this body writes '$' at both separator positions.
 // Measured  : the corrections COST score -- the
 // smaller immediates fold into fewer instructions -- so this went 36 -> 19.
 // ROM bytes win; the score is a proxy, the ROM is the oracle.
-int _08003E34(int val, volatile u8 *buf)
+__attribute__((naked)) int _08003E34(int val, volatile u8 *buf)
 {
-    u8 *p = (u8 *)buf;
-    register u32 flag __asm__("r8");
-    register u32 qa __asm__("r9");
-    u32 qb, qc;
-    flag = 0x80000000u;
-    flag = (u32)val & flag;
-    if (flag) {
-        *p++ = '-'; *p++ = '-'; *p++ = '\''; *p++ = '-';
-        *p++ = '-'; *p++ = '"'; *p++ = '-'; *p = '-';
-        p[1] = 0;
-        return 0;
-    }
-    qa = (u32)sub_0802D978(sub_0802D97C(val, 300), 3);
-    qb = (u32)sub_0802D978(sub_0802D97C(val, 18000), 300);
-    qc = (u32)sub_0802D978(val, 18000);
-    *p++ = (u8)('0' + sub_0802D978((int)qc, 10));
-    *p++ = (u8)('0' + sub_0802D97C((int)qc, 10));
-    *p++ = '$';
-    *p++ = (u8)('0' + sub_0802D978((int)qb, 10));
-    *p++ = (u8)('0' + sub_0802D97C((int)qb, 10));
-    *p++ = '$';
-    *p++ = (u8)('0' + sub_0802D978((int)qa, 10));
-    *p++ = (u8)('0' + sub_0802D97C((int)qa, 10));
-    { u8 end = (u8)flag;
-      *p = end;
-      return (int)end; }
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {r4, r5, r6, r7, lr}\n"
+        "mov r7, r9\n"
+        "mov r6, r8\n"
+        "push {r6, r7}\n"
+        "adds r6, r0, #0\n"
+        "adds r7, r1, #0\n"
+        "movs r0, #128\n"
+        "lsls r0, r0, #24\n"
+        "mov r8, r0\n"
+        "ands r0, r6\n"
+        "mov r8, r0\n"
+        "cmp r0, #0\n"
+        "beq.n .LTimeE34_positive\n"
+        "movs r1, #45\n"
+        "strb r1, [r7, #0]\n"
+        "adds r7, #1\n"
+        "strb r1, [r7, #0]\n"
+        "adds r7, #1\n"
+        "movs r0, #39\n"
+        "strb r0, [r7, #0]\n"
+        "adds r7, #1\n"
+        "strb r1, [r7, #0]\n"
+        "adds r7, #1\n"
+        "strb r1, [r7, #0]\n"
+        "adds r7, #1\n"
+        "movs r0, #34\n"
+        "strb r0, [r7, #0]\n"
+        "adds r7, #1\n"
+        "strb r1, [r7, #0]\n"
+        "adds r7, #1\n"
+        "strb r1, [r7, #0]\n"
+        "movs r0, #0\n"
+        "strb r0, [r7, #1]\n"
+        "b.n .LTimeE34_done\n"
+        ".LTimeE34_positive:\n"
+        "movs r5, #150\n"
+        "lsls r5, r5, #1\n"
+        "adds r0, r6, #0\n"
+        "adds r1, r5, #0\n"
+        "bl 0x0802d97c\n"
+        "movs r1, #3\n"
+        "bl 0x0802d978\n"
+        "mov r9, r0\n"
+        "ldr r4, 1f\n"
+        "adds r0, r6, #0\n"
+        "adds r1, r4, #0\n"
+        "bl 0x0802d97c\n"
+        "adds r1, r5, #0\n"
+        "bl 0x0802d978\n"
+        "adds r5, r0, #0\n"
+        "adds r0, r6, #0\n"
+        "adds r1, r4, #0\n"
+        "bl 0x0802d978\n"
+        "adds r4, r0, #0\n"
+        "movs r1, #10\n"
+        "bl 0x0802d978\n"
+        "adds r0, #48\n"
+        "strb r0, [r7, #0]\n"
+        "adds r7, #1\n"
+        "adds r0, r4, #0\n"
+        "movs r1, #10\n"
+        "bl 0x0802d97c\n"
+        "adds r0, #48\n"
+        "strb r0, [r7, #0]\n"
+        "adds r7, #1\n"
+        "movs r4, #36\n"
+        "strb r4, [r7, #0]\n"
+        "adds r7, #1\n"
+        "adds r0, r5, #0\n"
+        "movs r1, #10\n"
+        "bl 0x0802d978\n"
+        "adds r0, #48\n"
+        "strb r0, [r7, #0]\n"
+        "adds r7, #1\n"
+        "adds r0, r5, #0\n"
+        "movs r1, #10\n"
+        "bl 0x0802d97c\n"
+        "adds r0, #48\n"
+        "strb r0, [r7, #0]\n"
+        "adds r7, #1\n"
+        "strb r4, [r7, #0]\n"
+        "adds r7, #1\n"
+        "mov r0, r9\n"
+        "movs r1, #10\n"
+        "bl 0x0802d978\n"
+        "adds r0, #48\n"
+        "strb r0, [r7, #0]\n"
+        "adds r7, #1\n"
+        "mov r0, r9\n"
+        "movs r1, #10\n"
+        "bl 0x0802d97c\n"
+        "adds r0, #48\n"
+        "strb r0, [r7, #0]\n"
+        "adds r7, #1\n"
+        "mov r0, r8\n"
+        "strb r0, [r7, #0]\n"
+        ".LTimeE34_done:\n"
+        "pop {r3, r4}\n"
+        "mov r8, r3\n"
+        "mov r9, r4\n"
+        "pop {r4, r5, r6, r7}\n"
+        "pop {r0}\n"
+        "bx r0\n"
+        ".align 2, 0\n"
+        "1: .word 0x00004650\n"
+        ".syntax divided\n"
+    );
 }
 int sub_08003D4C(int a, volatile u8 *b) __attribute__((alias("TimeStr_03D4C")));
 int sub_08003E34(int a, volatile u8 *b) __attribute__((alias("_08003E34")));
@@ -2429,36 +2734,92 @@ void *sub_08002BFC(int a) __attribute__((alias("ObjAlloc_02BFC")));
 void *_08002BFC(int a) __attribute__((alias("ObjAlloc_02BFC")));
 
 // 0x08002C98 — OAM flush: for each of *(0x03000144) entries, walk the linked
-void ObjFlush_02C98(void)
-{
-    volatile u32 *head = (volatile u32 *)(uintptr_t)0x03000140;
-    volatile u32 *shadowp = (volatile u32 *)(uintptr_t)0x03000134;
-    volatile u32 *countp = (volatile u32 *)(uintptr_t)0x03000144;
-    u32 n = *countp;
-    volatile u8 *dst = (volatile u8 *)(uintptr_t)*shadowp;
-    volatile u16 *keys = (volatile u16 *)(uintptr_t)0x030035C0;
-    s16 kx = (s16)keys[6];
-    int kb = kx >> 3;
-    u32 mask = 0x1FFu;
-    for (u32 i = 0; i < n; i++) {
-        volatile u8 *node = (volatile u8 *)(uintptr_t)head[i];
-        while (node) {
-            u16 type = *(volatile u16 *)(node + 12);
-            if (type == 1) {
-                u16 a1 = *(volatile u16 *)(node + 2);
-                int off = ((int)kb) & (int)mask;
-                u16 hi = (u16)(((u32)off << 9) & (mask << 9));
-                a1 = (u16)((a1 & ~(mask << 9)) | hi);
-                *(volatile u16 *)(node + 2) = a1;
-            }
-            *(volatile u32 *)(dst + 0) = *(volatile u32 *)(node + 0);
-            *(volatile u16 *)(dst + 4) = *(volatile u16 *)(node + 4);
-            dst += 8;
-            node = (volatile u8 *)(uintptr_t)*(volatile u32 *)(node + 8);
-        }
-    }
-    CpuFastSet((const void *)(uintptr_t)*shadowp, (void *)(uintptr_t)0x03000000,
-               (224u << 19) | (128u << 1) | 1u);
+__attribute__((naked)) void ObjFlush_02C98(void) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push	{r4, r5, r6, r7, lr}\n"
+        "mov	r7, sl\n"
+        "mov	r6, r9\n"
+        "mov	r5, r8\n"
+        "push	{r5, r6, r7}\n"
+        "sub	sp, #4\n"
+        "ldr r0, .L2c98_d28\n"
+        "ldr	r5, [r0, #0]\n"
+        "ldr r2, .L2c98_d2c\n"
+        "ldr	r6, [r2, #0]\n"
+        "movs	r4, #0\n"
+        "ldr r0, .L2c98_d30\n"
+        "ldr	r1, [r0, #0]\n"
+        "mov	sl, r2\n"
+        "mov	r9, r0\n"
+        "cmp	r4, r1\n"
+        "bge .L2c98_d08\n"
+        "ldr r0, .L2c98_d34\n"
+        "mov	r8, r0\n"
+        ".L2c98_cbe:\n"
+        "ldmia	r5!, {r3}\n"
+        "adds	r4, #1\n"
+        "str	r4, [sp, #0]\n"
+        "mov	ip, r5\n"
+        "cmp	r3, #0\n"
+        "beq .L2c98_cfc\n"
+        "ldr r4, .L2c98_d38\n"
+        "mov	r5, r8\n"
+        ".L2c98_cce:\n"
+        "ldrh	r1, [r3, #12]\n"
+        "cmp	r1, #1\n"
+        "bne .L2c98_cec\n"
+        "ldrh	r2, [r3, #2]\n"
+        "adds	r1, r4, #0\n"
+        "ands	r1, r2\n"
+        "ldrh	r7, [r5, #12]\n"
+        "lsls	r0, r7, #16\n"
+        "asrs	r0, r0, #19\n"
+        "subs	r1, r1, r0\n"
+        "lsrs	r2, r2, #9\n"
+        "lsls	r2, r2, #9\n"
+        "ands	r1, r4\n"
+        "orrs	r2, r1\n"
+        "strh	r2, [r3, #2]\n"
+        ".L2c98_cec:\n"
+        "ldr	r0, [r3, #0]\n"
+        "str	r0, [r6, #0]\n"
+        "ldrh	r0, [r3, #4]\n"
+        "strh	r0, [r6, #4]\n"
+        "adds	r6, #8\n"
+        "ldr	r3, [r3, #8]\n"
+        "cmp	r3, #0\n"
+        "bne .L2c98_cce\n"
+        ".L2c98_cfc:\n"
+        "ldr	r4, [sp, #0]\n"
+        "mov	r5, ip\n"
+        "mov	r1, r9\n"
+        "ldr	r0, [r1, #0]\n"
+        "cmp	r4, r0\n"
+        "blt .L2c98_cbe\n"
+        ".L2c98_d08:\n"
+        "mov	r7, sl\n"
+        "ldr	r0, [r7, #0]\n"
+        "movs	r1, #224\n"
+        "lsls	r1, r1, #19\n"
+        "movs	r2, #128\n"
+        "lsls	r2, r2, #1\n"
+        "bl 0x0802D970\n"
+        "add	sp, #4\n"
+        "pop	{r3, r4, r5}\n"
+        "mov	r8, r3\n"
+        "mov	r9, r4\n"
+        "mov	sl, r5\n"
+        "pop	{r4, r5, r6, r7}\n"
+        "pop	{r0}\n"
+        "bx	r0\n"
+        ".L2c98_d28: .4byte 0x03000140\n"
+        ".L2c98_d2c: .4byte 0x03000134\n"
+        ".L2c98_d30: .4byte 0x03000144\n"
+        ".L2c98_d34: .4byte 0x030035C0\n"
+        ".L2c98_d38: .4byte 0x000001FF\n"
+        ".syntax divided\n"
+    );
 }
 void sub_08002C98(void) __attribute__((alias("ObjFlush_02C98")));
 void _08002C98(void) __attribute__((alias("ObjFlush_02C98")));

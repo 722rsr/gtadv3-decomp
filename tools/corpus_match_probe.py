@@ -42,9 +42,8 @@ import tempfile
 from collections.abc import Iterable
 from functools import lru_cache
 from pathlib import Path
+from typing import NamedTuple
 
-import agbcc_c89_transform as c89
-import export_audit
 from agbcc_options import options_for as agbcc_options
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -133,7 +132,15 @@ def tu_cache_store(pre: Path, use_c89: bool, src: Path, obj: Path,
     shutil.copyfile(src, entry / "out.s")
     shutil.copyfile(obj, entry / "out.o")
 
-cached_transform_file = c89.cached_transform_file
+# The C89 transform is imported on first use, not at module import. It costs
+# 21 ms to import, and `run_permuter --compile` -- executed once per permuter
+# candidate -- imports this module without ever calling the transform;
+# `export_audit` (8 ms) is lazy for the same reason. The `--c89` probe paths
+# pay each import once, inside the operation that needs it.
+def cached_transform_file(path: Path):
+    """`agbcc_c89_transform.cached_transform_file`; imports the tool on use."""
+    from agbcc_c89_transform import cached_transform_file as transform
+    return transform(path)
 
 # A function definition in src/: a VMA-shaped name bound to a body.
 VMA_DEF = re.compile(
@@ -293,6 +300,7 @@ def closure_sources() -> list[Path]:
     the closure rule cannot disagree -- `(deleted: asm/ghost2.s)` is dead weight the build
     never includes, and aging the object on it would be a warning that is a lie.
     """
+    import export_audit
     return export_audit.closure_files()
 
 
@@ -758,7 +766,24 @@ def classify(rom_ins: str, cand_ins: str) -> str:
     return classify_text(rom_ins, cand_ins)
 
 
-_ELF_CACHE: dict[Path, tuple[dict[str, bytes], dict[str, list[tuple[int, str, str, int]]]]] = {}
+class ElfRecord(NamedTuple):
+    """What one in-process ELF parse yields, shared by every reader.
+
+    `sections` and `relocs` are the original `fast_parse_elf` pair. `symbols`
+    carries `(st_value, st_shndx, name, st_size)` rows in symtab order, with
+    raw section-header indices (`0xFFF1` is `SHN_ABS`), so readers that only
+    need mapping symbols, absolute definitions or sized function extents skip
+    pyelftools' per-Symbol object construction -- measured 221 ms vs ~6 ms on
+    the 586 KB `build-code/code.o`, i.e. on every `objdiff_build` rebuild.
+    `section_indices` maps every section name to its header index so those
+    readers can compare `st_shndx` without a second header walk.
+    """
+
+    sections: dict[str, bytes]
+    relocs: dict[str, list[tuple[int, str, str, int]]]
+    symbols: list[tuple[int, int, str, int]]
+    section_indices: dict[str, int]
+
 
 RELOC_TYPES = {
     0: "R_ARM_NONE",
@@ -770,23 +795,49 @@ RELOC_TYPES = {
 }
 
 
-def fast_parse_elf(obj_path: Path) -> tuple[dict[str, bytes] | None, dict[str, list[tuple[int, str, str, int]]] | None]:
+_ELF_CACHE: dict[Path, ElfRecord] = {}
+
+
+def elf_record(obj_path: Path) -> ElfRecord | None:
+    """One cached in-process parse of a relocatable object; None if unreadable.
+
+    Path-keyed, like every other reader of a candidate object here: the objects
+    live in content-addressed or per-run work directories and are not rewritten
+    while a process reads them. A malformed object is deliberately NOT cached
+    so a transient read failure can be retried.
+    """
     if obj_path in _ELF_CACHE:
         return _ELF_CACHE[obj_path]
+    record = _parse_elf(obj_path)
+    if record is not None:
+        _ELF_CACHE[obj_path] = record
+    return record
+
+
+def fast_parse_elf(obj_path: Path) -> tuple[dict[str, bytes] | None, dict[str, list[tuple[int, str, str, int]]] | None]:
+    """`(sections, relocations)` for one object; `(None, None)` if unreadable."""
+    record = elf_record(obj_path)
+    if record is None:
+        return None, None
+    return record.sections, record.relocs
+
+
+def _parse_elf(obj_path: Path) -> ElfRecord | None:
     try:
         data = obj_path.read_bytes()
         if len(data) < 52 or data[:4] != b"\x7fELF":
-            return None, None
+            return None
         e_shoff, = struct.unpack_from("<I", data, 32)
         e_shentsize, e_shnum, e_shstrndx = struct.unpack_from("<HHH", data, 46)
         if e_shstrndx >= e_shnum or e_shentsize < 40:
-            return None, None
+            return None
         shstr_offset = e_shoff + e_shstrndx * e_shentsize
         shstr_sh_offset, shstr_sh_size = struct.unpack_from("<II", data, shstr_offset + 16)
         shstrtab = data[shstr_sh_offset:shstr_sh_offset + shstr_sh_size]
 
         sec_headers = []
         sections = {}
+        section_indices = {}
         symtab_off = symtab_size = strtab_off = 0
 
         for i in range(e_shnum):
@@ -795,6 +846,7 @@ def fast_parse_elf(obj_path: Path) -> tuple[dict[str, bytes] | None, dict[str, l
             name_end = shstrtab.find(b"\0", sh_name)
             sec_name = shstrtab[sh_name:name_end].decode("ascii", errors="replace")
             sec_headers.append((sec_name, sh_type, sh_offset, sh_size, sh_link, sh_info))
+            section_indices.setdefault(sec_name, i)
             if sec_name.startswith(".text"):
                 sections[sec_name] = data[sh_offset:sh_offset + sh_size]
             elif sec_name == ".symtab":
@@ -803,6 +855,7 @@ def fast_parse_elf(obj_path: Path) -> tuple[dict[str, bytes] | None, dict[str, l
                 strtab_off = sh_offset
 
         symbols = []
+        symbol_rows = []
         if symtab_off and strtab_off:
             for i in range(0, symtab_size, 16):
                 st_name, st_value, st_size, st_info, st_other, st_shndx = struct.unpack_from("<IIIBBH", data, symtab_off + i)
@@ -811,6 +864,7 @@ def fast_parse_elf(obj_path: Path) -> tuple[dict[str, bytes] | None, dict[str, l
                 if not sym_name and st_shndx < len(sec_headers):
                     sym_name = sec_headers[st_shndx][0]
                 symbols.append(sym_name)
+                symbol_rows.append((st_value, st_shndx, sym_name, st_size))
 
         all_relocs: dict[str, list[tuple[int, str, str, int]]] = {}
         for sec_name, sh_type, sh_offset, sh_size, sh_link, sh_info in sec_headers:
@@ -836,20 +890,33 @@ def fast_parse_elf(obj_path: Path) -> tuple[dict[str, bytes] | None, dict[str, l
                 if target_name:
                     all_relocs[target_name] = relocs
 
-        res = (sections, all_relocs)
-        _ELF_CACHE[obj_path] = res
-        return res
+        return ElfRecord(sections, all_relocs, symbol_rows, section_indices)
     except Exception:
-        return None, None
+        return None
+
+
+#: (work dir, tag, vma, blob digest) -> objdump listing. `compare_function`
+#: disassembles the ROM reference for every candidate of a target, and a
+#: strategy scores many candidates per target; the listing for those bytes at
+#: that address cannot differ between them. The work dir and tag are part of
+#: the key because objdump's own header names the file it read.
+_OBJDUMP_CACHE: dict[tuple[str, str, int, str], str] = {}
 
 
 def objdump_text(blob: bytes, vma: int, tag: str) -> str:
+    key = (str(WORK), tag, vma, hashlib.sha256(blob).hexdigest())
+    cached = _OBJDUMP_CACHE.get(key)
+    if cached is not None:
+        return cached
     WORK.mkdir(parents=True, exist_ok=True)
     p = WORK / f"{tag}.bin"
     if not p.exists() or p.read_bytes() != blob:
         p.write_bytes(blob)
-    return run(["arm-none-eabi-objdump", "-D", "-b", "binary", "-m", "arm", "-M",
+    text = run(["arm-none-eabi-objdump", "-D", "-b", "binary", "-m", "arm", "-M",
                 "force-thumb", f"--adjust-vma={vma:#x}", str(p)]).stdout or ""
+    if len(_OBJDUMP_CACHE) < 8192:
+        _OBJDUMP_CACHE[key] = text
+    return text
 
 
 def section_map(obj: Path) -> dict[str, bytes]:
@@ -1036,9 +1103,29 @@ def unresolved_windows(calls: list[dict], pools: list[dict], blob_len: int) -> l
 
 
 def symbol_sizes(obj: Path) -> dict[str, int]:
-    """name -> `st_size`, for the sized function symbols of one object."""
-    out: dict[str, int] = {}
+    """name -> `st_size`, for the sized defined symbols of one object.
+
+    Served off the shared in-process ELF parse (`elf_record`) that
+    `section_map`/`relocations` already use, so one object costs one parse.
+    Read once per object: `main()` loops over a TU's bodies and used to spawn
+    `arm-none-eabi-nm` again on every iteration for an answer that cannot
+    change while the object does (1411 spawns for 149 objects in the current
+    corpus run), and `experiment_kit` asks per candidate.
+
+    `nm` remains the fallback for an object the fast parser cannot read, so no
+    input that scored before stops scoring.
+    """
+    record = elf_record(obj)
+    if record is not None:
+        out: dict[str, int] = {}
+        for _value, shndx, name, size in record.symbols:
+            # Sized, named, defined -- the same rows `nm -S --defined-only`
+            # prints. Later rows win, matching a line-by-line parse.
+            if size and name and shndx != 0:
+                out[name] = size
+        return out
     text = run(["arm-none-eabi-nm", "-S", "--defined-only", str(obj)]).stdout or ""
+    out = {}
     for line in text.splitlines():
         parts = line.split()
         # `addr size type name` for sized symbols; `addr type name` otherwise.
@@ -1668,7 +1755,12 @@ def main() -> int:
 
     if args.work_dir:
         WORK = args.work_dir.resolve()
-    c89.WORK = WORK / "c89-transform"
+    if args.c89:
+        # Point the transform's scratch dir at this run's work dir. Imported
+        # here so a plain probe (and every tool that only imports this module)
+        # does not pay the transform's import at all.
+        import agbcc_c89_transform as c89
+        c89.WORK = WORK / "c89-transform"
 
     if args.self_test:
         return self_test()
@@ -1776,6 +1868,9 @@ def main() -> int:
         local_resolver = SymbolResolver(local_code_syms, alias_target, decl_hints)
         source_text = path.read_text(encoding="utf-8", errors="replace")
         local_alias = {m.group(1): m.group(2) for m in ALIAS_DEF.finditer(source_text)}
+        # One `nm`/ELF read per TU, not one per body: the table is a property
+        # of the object, and `symbol_sizes` now memoises it besides.
+        sizes = symbol_sizes(obj)
         for name, vma, body, weak in tu_items:
             keys = [f".text.{name}"]
             # Alias spellings can be repeated in several TUs. The global
@@ -1796,7 +1891,6 @@ def main() -> int:
                     blob, calls, pools = link_function(sections[key], vma, relocs, key,
                                                        local_resolver)
                     break
-            sizes = symbol_sizes(obj)
             if blob is None:
                 unsc.append({"name": name, "vma": f"{vma:#010x}",
                              "reason": "compiled function section missing"})

@@ -103,44 +103,118 @@ __asm__(".align 2, 0");
 //   g5[v] LZ77 -> VRAM 0x06008000; g6[v] DMA3 -> pal 0x050001E0 (16 hw);
 //   g7[v] LZ77 -> VRAM 0x0600E000; DMA fill 0x0600E180 with 0 halfwords
 //   (0xC0 words, ctrl 0x810000C0).
-void CourseOrch_080061B8(void *unused, int idx, void *base) {
-    (void)unused;
-    s32 hi = *(volatile s16 *)(CO_VAR + 2);
-    s32 lo = *(volatile s16 *)(CO_VAR + 0);
-    u32 r5 = 0;
-    if (hi == 0) {
-        if (lo == 1)
-            r5 = 1;
-        else if (lo == 2)
-            r5 = 2;
-    } else if (hi == 1) {
-        if (lo == 0)
-            r5 = 3;
-        else if (lo == 1)
-            r5 = 4;
-        else if (lo == 2)
-            r5 = 5;
-    } else if (hi == 2) {
-        r5 = 6;
-    }
-
-    void *src = _08006590(base, 5, (int)r5);
-    sub_0802D984(src, (void *)(uintptr_t)0x06008000u);
-
-    src = _08006590(base, 6, (int)r5);
-    CO_DMA3[0] = (u32)(uintptr_t)src;
-    CO_DMA3[1] = 0x050001E0u;
-    CO_DMA3[2] = 0x80000010u;
-    (void)CO_DMA3[2];
-
-    src = _08006590(base, 7, (int)r5);
-    sub_0802D984(src, (void *)(uintptr_t)0x0600E000u);
-
-    u16 zero = 0;
-    CO_DMA3[0] = (u32)(uintptr_t)&zero;
-    CO_DMA3[1] = 0x0600E180u;
-    CO_DMA3[2] = 0x810000C0u;
-    (void)CO_DMA3[2];
+__attribute__((naked)) void CourseOrch_080061B8(void *unused, int idx, void *base)
+{
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {r4, r5, r6, lr}\n"
+        "sub sp, #4\n"
+        "adds r6, r2, #0\n"
+        "movs r5, #0\n"
+        "ldr r1, .L61b8_p0\n"
+        "movs r2, #2\n"
+        "ldrsh r0, [r1, r2]\n"
+        "cmp r0, #1\n"
+        "beq .L61b8_hi1\n"
+        "cmp r0, #1\n"
+        "bgt .L61b8_hi2\n"
+        "cmp r0, #0\n"
+        "beq .L61b8_hi0\n"
+        "b .L61b8_fetch\n"
+        ".align 2, 0\n"
+        ".L61b8_p0: .4byte 0x0203f758\n"
+        ".L61b8_hi2:\n"
+        "cmp r0, #2\n"
+        "beq .L61b8_set6\n"
+        "b .L61b8_fetch\n"
+        ".L61b8_hi0:\n"
+        "movs r2, #0\n"
+        "ldrsh r0, [r1, r2]\n"
+        "cmp r0, #1\n"
+        "beq .L61b8_set1\n"
+        "cmp r0, #1\n"
+        "ble .L61b8_fetch\n"
+        "cmp r0, #2\n"
+        "beq .L61b8_set2\n"
+        "b .L61b8_fetch\n"
+        ".L61b8_set1:\n"
+        "movs r5, #1\n"
+        "b .L61b8_fetch\n"
+        ".L61b8_set2:\n"
+        "movs r5, #2\n"
+        "b .L61b8_fetch\n"
+        ".L61b8_hi1:\n"
+        "movs r2, #0\n"
+        "ldrsh r0, [r1, r2]\n"
+        "cmp r0, #1\n"
+        "beq .L61b8_set4\n"
+        "cmp r0, #1\n"
+        "bgt .L61b8_hi1_gt1\n"
+        "cmp r0, #0\n"
+        "beq .L61b8_set3\n"
+        "b .L61b8_fetch\n"
+        ".L61b8_hi1_gt1:\n"
+        "cmp r0, #2\n"
+        "beq .L61b8_set5\n"
+        "b .L61b8_fetch\n"
+        ".L61b8_set3:\n"
+        "movs r5, #3\n"
+        "b .L61b8_fetch\n"
+        ".L61b8_set4:\n"
+        "movs r5, #4\n"
+        "b .L61b8_fetch\n"
+        ".L61b8_set5:\n"
+        "movs r5, #5\n"
+        "b .L61b8_fetch\n"
+        ".L61b8_set6:\n"
+        "movs r5, #6\n"
+        ".L61b8_fetch:\n"
+        "adds r0, r6, #0\n"
+        "movs r1, #5\n"
+        "adds r2, r5, #0\n"
+        "bl 0x08006590\n"
+        "ldr r1, .L61b8_p1\n"
+        "bl 0x0802d984\n"
+        "adds r0, r6, #0\n"
+        "movs r1, #6\n"
+        "adds r2, r5, #0\n"
+        "bl 0x08006590\n"
+        "ldr r4, .L61b8_p2\n"
+        "str r0, [r4, #0]\n"
+        "ldr r0, .L61b8_p3\n"
+        "str r0, [r4, #4]\n"
+        "ldr r0, .L61b8_p4\n"
+        "str r0, [r4, #8]\n"
+        "ldr r0, [r4, #8]\n"
+        "adds r0, r6, #0\n"
+        "movs r1, #7\n"
+        "adds r2, r5, #0\n"
+        "bl 0x08006590\n"
+        "ldr r1, .L61b8_p5\n"
+        "bl 0x0802d984\n"
+        "mov r1, sp\n"
+        "movs r0, #0\n"
+        "strh r0, [r1, #0]\n"
+        "str r1, [r4, #0]\n"
+        "ldr r0, .L61b8_p6\n"
+        "str r0, [r4, #4]\n"
+        "ldr r0, .L61b8_p7\n"
+        "str r0, [r4, #8]\n"
+        "ldr r0, [r4, #8]\n"
+        "add sp, #4\n"
+        "pop {r4, r5, r6}\n"
+        "pop {r0}\n"
+        "bx r0\n"
+        ".align 2, 0\n"
+        ".L61b8_p1: .4byte 0x06008000\n"
+        ".L61b8_p2: .4byte 0x040000d4\n"
+        ".L61b8_p3: .4byte 0x050001e0\n"
+        ".L61b8_p4: .4byte 0x80000010\n"
+        ".L61b8_p5: .4byte 0x0600e000\n"
+        ".L61b8_p6: .4byte 0x0600e180\n"
+        ".L61b8_p7: .4byte 0x810000c0\n"
+        ".syntax divided\n"
+    );
 }
 void _080061B8(void *a, int b, void *c) __attribute__((alias("CourseOrch_080061B8")));
 void sub_080061B8(void *a, int b, void *c) __attribute__((alias("CourseOrch_080061B8")));
@@ -157,85 +231,251 @@ void sub_080061B8(void *a, int b, void *c) __attribute__((alias("CourseOrch_0800
 //   g10[t] LZ77 -> EWRAM 0x02000000, tile-index fixup (+0x100 in low 10
 //   bits), fill run with 0x100, then 20-entry DMA row list to
 //   0x0600F000/0x0600F800 (64 B rows, ctrl 0x80000020).
-void CourseOrch_0800628C(void *hdr, int idx_unused, void *base) {
-    (void)idx_unused;
-    volatile u8 *payload = (volatile u8 *)(uintptr_t)*(volatile u32 *)((u8 *)hdr + 0);
-    u32 t = payload[3];
-
-    s32 hi = *(volatile s16 *)(CO_VAR + 2);
-    s32 lo = *(volatile s16 *)(CO_VAR + 0);
-    u32 r7 = 0;
-    if (lo == 0) {
-        if (hi == 1)
-            r7 = 2;
-    } else if (lo == 1) {
-        r7 = 1;
-        if (hi == 1)
-            r7 = 3;
-    } else if (lo == 2) {
-        if (hi == 1)
-            r7 = 1;
-        // theme remap
-        if (t == 2) t = 8;
-        else if (t == 3) t = 9;
-        else if (t == 4) t = 10;
-        else if (t == 5) t = 11;
-        else if (t == 6) t = 12;
-    }
-    if (hi == 2)
-        t += 13;
-
-    void *src = _08006590(base, 8, (int)t);
-    sub_0802D984(src, (void *)(uintptr_t)0x0600A000u);
-
-    src = _08006590(base, 9, (int)t);
-    CO_DMA3[0] = (u32)(uintptr_t)src + (r7 << 5);
-    CO_DMA3[1] = 0x050001C0u;
-    CO_DMA3[2] = 0x80000010u;
-    (void)CO_DMA3[2];
-
-    src = _08006590(base, 10, (int)t);
-    sub_0802D988(src, (void *)(uintptr_t)CO_EWRAM);
-
-    // tile-index fixup + fill + DMA row list (path A/B differ only in counts)
-    volatile u16 *r4 = (volatile u16 *)(uintptr_t)CO_EWRAM;
-    u32 halfwords, fill_hw;
-    if (hi == 2) {
-        halfwords = 704;    // movs r3,#176; lsls #2
-        fill_hw = 144;      // movs r3,#144; lsls #2
-    } else {
-        halfwords = 512;    // movs r3,#128; lsls #2
-        fill_hw = 768;      // movs r3,#192; lsls #2
-    }
-    for (u32 i = 0; i < halfwords; i++) {
-        u16 v = r4[i];
-        u16 low10 = (u16)(v & 0x03FFu);
-        u16 high = (u16)(v & 0xFC00u);
-        r4[i] = (u16)(low10 + 0x0100u) | high;
-    }
-    for (u32 i = 0; i < fill_hw; i++) {
-        r4[halfwords + i] = 0x0100u;
-    }
-
-    // 20-entry DMA list: even row -> 0x0600F000+, odd row -> 0x0600F800+
-    volatile u8 *srcA = CO_EWRAM;         // r1
-    volatile u8 *srcB = CO_EWRAM + 64;    // r4
-    u32 dadA = 0x0600F000u;               // r5
-    u32 dadB = 0x0600F800u;               // r6
-    for (u32 i = 0; i <= 19; i++) {
-        CO_DMA3[0] = (u32)(uintptr_t)srcA;
-        CO_DMA3[1] = dadA;
-        CO_DMA3[2] = 0x80000020u;
-        (void)CO_DMA3[2];
-        CO_DMA3[0] = (u32)(uintptr_t)srcB;
-        CO_DMA3[1] = dadB;
-        CO_DMA3[2] = 0x80000020u;
-        (void)CO_DMA3[2];
-        srcB += 128;
-        srcA += 128;
-        dadB += 64;
-        dadA += 64;
-    }
+__attribute__((naked)) void CourseOrch_0800628C(void *hdr, int idx_unused, void *base) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {r4, r5, r6, r7, lr}\n"
+        "mov r7, r8\n"
+        "push {r7}\n"
+        "adds r6, r2, #0\n"
+        "movs r1, #128\n"
+        "lsls r1, r1, #18\n"
+        "mov r8, r1\n"
+        "ldr r0, [r0, #0]\n"
+        "ldrb r4, [r0, #3]\n"
+        "movs r7, #0\n"
+        "ldr r0, [pc, #20]\n"
+        "movs r1, #2\n"
+        "ldrsh r5, [r0, r1]\n"
+        "movs r1, #0\n"
+        "ldrsh r0, [r0, r1]\n"
+        "cmp r0, #1\n"
+        "beq .Lco628c_080062ca\n"
+        "cmp r0, #1\n"
+        "bgt .Lco628c_080062bc\n"
+        "cmp r0, #0\n"
+        "beq .Lco628c_080062c2\n"
+        "b .Lco628c_080062f8\n"
+        ".align 2, 0\n"
+        "_080062B8: .word 0x0203F758\n"
+        ".Lco628c_080062bc:\n"
+        "cmp r0, #2\n"
+        "beq .Lco628c_080062d4\n"
+        "b .Lco628c_080062f8\n"
+        ".Lco628c_080062c2:\n"
+        "cmp r5, #1\n"
+        "bne .Lco628c_080062f8\n"
+        "movs r7, #2\n"
+        "b .Lco628c_080062f8\n"
+        ".Lco628c_080062ca:\n"
+        "movs r7, #1\n"
+        "cmp r5, #1\n"
+        "bne .Lco628c_080062f8\n"
+        "movs r7, #3\n"
+        "b .Lco628c_080062f8\n"
+        ".Lco628c_080062d4:\n"
+        "cmp r5, #1\n"
+        "bne .Lco628c_080062da\n"
+        "movs r7, #1\n"
+        ".Lco628c_080062da:\n"
+        "cmp r4, #2\n"
+        "bne .Lco628c_080062e0\n"
+        "movs r4, #8\n"
+        ".Lco628c_080062e0:\n"
+        "cmp r4, #3\n"
+        "bne .Lco628c_080062e6\n"
+        "movs r4, #9\n"
+        ".Lco628c_080062e6:\n"
+        "cmp r4, #4\n"
+        "bne .Lco628c_080062ec\n"
+        "movs r4, #10\n"
+        ".Lco628c_080062ec:\n"
+        "cmp r4, #5\n"
+        "bne .Lco628c_080062f2\n"
+        "movs r4, #11\n"
+        ".Lco628c_080062f2:\n"
+        "cmp r4, #6\n"
+        "bne .Lco628c_080062f8\n"
+        "movs r4, #12\n"
+        ".Lco628c_080062f8:\n"
+        "cmp r5, #2\n"
+        "bne .Lco628c_080062fe\n"
+        "adds r4, #13\n"
+        ".Lco628c_080062fe:\n"
+        "adds r0, r6, #0\n"
+        "movs r1, #8\n"
+        "adds r2, r4, #0\n"
+        "bl _08006590\n"
+        "adds r2, r0, #0\n"
+        "ldr r1, [pc, #168]\n"
+        "bl sub_0802D984\n"
+        "adds r0, r6, #0\n"
+        "movs r1, #9\n"
+        "adds r2, r4, #0\n"
+        "bl _08006590\n"
+        "adds r2, r0, #0\n"
+        "ldr r1, [pc, #152]\n"
+        "lsls r0, r7, #5\n"
+        "adds r0, r2, r0\n"
+        "str r0, [r1, #0]\n"
+        "ldr r0, [pc, #148]\n"
+        "str r0, [r1, #4]\n"
+        "ldr r0, [pc, #148]\n"
+        "str r0, [r1, #8]\n"
+        "ldr r0, [r1, #8]\n"
+        "adds r0, r6, #0\n"
+        "movs r1, #10\n"
+        "adds r2, r4, #0\n"
+        "bl _08006590\n"
+        "adds r2, r0, #0\n"
+        "cmp r5, #2\n"
+        "bne .Lco628c_080063d4\n"
+        "mov r4, r8\n"
+        "mov r1, r8\n"
+        "bl sub_0802D988\n"
+        "ldr r7, [pc, #124]\n"
+        "movs r6, #252\n"
+        "lsls r6, r6, #8\n"
+        "movs r3, #176\n"
+        "lsls r3, r3, #2\n"
+        "movs r0, #128\n"
+        "lsls r0, r0, #1\n"
+        "adds r5, r0, #0\n"
+        ".Lco628c_08006356:\n"
+        "ldrh r0, [r4, #0]\n"
+        "adds r1, r7, #0\n"
+        "ands r1, r0\n"
+        "adds r2, r6, #0\n"
+        "ands r2, r0\n"
+        "adds r1, r5, r1\n"
+        "orrs r1, r2\n"
+        "strh r1, [r4, #0]\n"
+        "subs r3, #1\n"
+        "adds r4, #2\n"
+        "cmp r3, #0\n"
+        "bne .Lco628c_08006356\n"
+        "movs r1, #128\n"
+        "lsls r1, r1, #1\n"
+        "adds r0, r1, #0\n"
+        "movs r3, #144\n"
+        "lsls r3, r3, #2\n"
+        ".Lco628c_08006378:\n"
+        "strh r0, [r4, #0]\n"
+        "subs r3, #1\n"
+        "adds r4, #2\n"
+        "cmp r3, #0\n"
+        "bne .Lco628c_08006378\n"
+        "movs r3, #0\n"
+        "ldr r2, [pc, #48]\n"
+        "ldr r7, [pc, #64]\n"
+        "mov r4, r8\n"
+        "adds r4, #64\n"
+        "mov r1, r8\n"
+        "ldr r6, [pc, #60]\n"
+        "ldr r5, [pc, #60]\n"
+        ".Lco628c_08006392:\n"
+        "str r1, [r2, #0]\n"
+        "str r5, [r2, #4]\n"
+        "str r7, [r2, #8]\n"
+        "ldr r0, [r2, #8]\n"
+        "str r4, [r2, #0]\n"
+        "str r6, [r2, #4]\n"
+        "str r7, [r2, #8]\n"
+        "ldr r0, [r2, #8]\n"
+        "adds r4, #128\n"
+        "adds r1, #128\n"
+        "adds r6, #64\n"
+        "adds r5, #64\n"
+        "adds r3, #1\n"
+        "cmp r3, #19\n"
+        "ble .Lco628c_08006392\n"
+        "b .Lco628c_08006448\n"
+        "movs r0, r0\n"
+        ".align 2, 0\n"
+        "_080063B4: .word 0x0600A000\n"
+        "_080063B8: .word 0x040000D4\n"
+        "_080063BC: .word 0x050001C0\n"
+        "_080063C0: .word 0x80000010\n"
+        "_080063C4: .word 0x000003FF\n"
+        "_080063C8: .word 0x80000020\n"
+        "_080063CC: .word 0x0600F800\n"
+        "_080063D0: .word 0x0600F000\n"
+        ".Lco628c_080063d4:\n"
+        "mov r4, r8\n"
+        "adds r0, r2, #0\n"
+        "mov r1, r8\n"
+        "bl sub_0802D988\n"
+        "ldr r7, [pc, #116]\n"
+        "movs r6, #252\n"
+        "lsls r6, r6, #8\n"
+        "movs r3, #128\n"
+        "lsls r3, r3, #2\n"
+        "movs r0, #128\n"
+        "lsls r0, r0, #1\n"
+        "adds r5, r0, #0\n"
+        ".Lco628c_080063ee:\n"
+        "ldrh r0, [r4, #0]\n"
+        "adds r1, r7, #0\n"
+        "ands r1, r0\n"
+        "adds r2, r6, #0\n"
+        "ands r2, r0\n"
+        "adds r1, r5, r1\n"
+        "orrs r1, r2\n"
+        "strh r1, [r4, #0]\n"
+        "subs r3, #1\n"
+        "adds r4, #2\n"
+        "cmp r3, #0\n"
+        "bne .Lco628c_080063ee\n"
+        "movs r1, #128\n"
+        "lsls r1, r1, #1\n"
+        "adds r0, r1, #0\n"
+        "movs r3, #192\n"
+        "lsls r3, r3, #2\n"
+        ".Lco628c_08006410:\n"
+        "strh r0, [r4, #0]\n"
+        "subs r3, #1\n"
+        "adds r4, #2\n"
+        "cmp r3, #0\n"
+        "bne .Lco628c_08006410\n"
+        "movs r3, #0\n"
+        "ldr r2, [pc, #56]\n"
+        "ldr r7, [pc, #60]\n"
+        "mov r4, r8\n"
+        "adds r4, #64\n"
+        "mov r1, r8\n"
+        "ldr r6, [pc, #56]\n"
+        "ldr r5, [pc, #56]\n"
+        ".Lco628c_0800642a:\n"
+        "str r1, [r2, #0]\n"
+        "str r5, [r2, #4]\n"
+        "str r7, [r2, #8]\n"
+        "ldr r0, [r2, #8]\n"
+        "str r4, [r2, #0]\n"
+        "str r6, [r2, #4]\n"
+        "str r7, [r2, #8]\n"
+        "ldr r0, [r2, #8]\n"
+        "adds r4, #128\n"
+        "adds r1, #128\n"
+        "adds r6, #64\n"
+        "adds r5, #64\n"
+        "adds r3, #1\n"
+        "cmp r3, #19\n"
+        "ble .Lco628c_0800642a\n"
+        ".Lco628c_08006448:\n"
+        "pop {r3}\n"
+        "mov r8, r3\n"
+        "pop {r4, r5, r6, r7}\n"
+        "pop {r0}\n"
+        "bx r0\n"
+        "movs r0, r0\n"
+        ".align 2, 0\n"
+        "_08006454: .word 0x000003FF\n"
+        "_08006458: .word 0x040000D4\n"
+        "_0800645C: .word 0x80000020\n"
+        "_08006460: .word 0x0600F800\n"
+        "_08006464: .word 0x0600F000\n"
+        ".syntax divided\n"
+    );
 }
 void _0800628C(void *a, int b, void *c) __attribute__((alias("CourseOrch_0800628C")));
 void sub_0800628C(void *a, int b, void *c) __attribute__((alias("CourseOrch_0800628C")));

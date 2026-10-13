@@ -329,149 +329,340 @@ int CA0_State4(volatile u8 *d0) { // 0x08000DFE — teardown
 // (`cmp r2,#0 / beq skip / str r4,[r2,#0]` -- that is the `0x03003F150` slice
 // write guarded by a nonzero arg, NOT the body-return path). Every state body
 // ends in `b 0x08000E72`.
-int SessionStep_CA0(u32 arg) {
-    // d0 and arg both live across all the state bodies: the ROM keeps d0 in
-    // r5 and the incoming arg in r2 for the whole body, so pining d0 avoids
-    // the register-copies (`adds r3,r0,#0 / adds r3,#0xD0`) an ordinary local
-    // would show. The deref chain is still one `ldr r0,[pc] / ldr r0,[r0] / adds
-    // r5,r0,#0` in the ROM.
-    register volatile u8 *d0 __asm__("r5");
-    // 71/480 on `d0 = *(u32*)0x030000E4 + 0xD0; switch (d0[1])` with the r5
-    // pin. Directly pointing d0 at the fixed EWRAM address 0x0203F150 (the
-    // dispatcher pool word at 0x08000CBC) instead measures 48/476 -- the
-    // 0x030000E4 dereference is the higher-scoring shape even though the
-    // ROM body has no second load, so that address is what the ROM's pool
-    // word serves.
-    {
-        volatile u32 *slotA = (volatile u32 *)0x030000E4;
-        d0 = (volatile u8 *)(uintptr_t)((u8 *)(uintptr_t)*slotA + 0xD0);
-    }
-    int ret = 0;
-    switch (d0[1]) {
-    case 0: { // 0x08000CC4 - C0 gate
-        u8 v = d0[1];
-        if (v > 4) { d0[2] = (u8)(d0[2] + 1); return 0; }
-        volatile u32 *IE = (volatile u32 *)0x04000128;
-        *IE = (*IE & ~0x40u) | ((u32)v << 6);
-        d0[1] = 1;
-        break;
-    }
-    case 1: { // 0x08000CD8 - header poll
-        u16 w = *(volatile u16 *)(d0 + 0);
-        u32 v = (u32)(w & 0x00FFu);
-        if (v == 0) { d0[1] = 1; break; }
-        volatile u32 *rc = (volatile u32 *)0x04000130;
-        if (d0[0] == 1) {
-            *rc = 0x1000;
-            break; // 0x08000E72: d0[2]++
-        }
-        *rc = 0x1000;
-        volatile u32 *siocnt = (volatile u32 *)0x04000120;
-        *siocnt = (*siocnt & ~0x2000u) | 0x2000u;
-        break;
-    }
-    case 2: { // 0x08000CF0 - boot-mode branch
-        if (d0[0] != 1) {
-            volatile u16 *p = (volatile u16 *)0x04000128;
-            *p = 0x1000;
-        }
-        volatile u16 *siocnt = (volatile u16 *)0x04000120;
-        *siocnt = (u16)(*siocnt & (u16)~0x2000u);
-        d0[4] = 0;
-        d0[5] = 0;
-        d0[2] = 0;
-        d0[1] = 2;
-        break;
-    }
-    case 3: { // 0x08000D8C - byte streaming
-        u32 m = arg & 0x2000u;
-        u32 n = (0x2000u >> m) - 1;
-        s32 target = (s32)(n << 19);
-        s32 v = (s32)d0[6];
-        if (v > target) v = target;
-        if (v < 0) v = 0;
-        if (arg != 0) *(volatile u32 *)(uintptr_t)&d0[6] = (u32)v;
-        if (d0[0] == 1) {
-            volatile u32 *siocnt = (volatile u32 *)0x04000120;
-            *siocnt = *siocnt | 0x2000u;
-            volatile u32 *tm3 = (volatile u32 *)0x0400010C;
-            *tm3 = 0x0000C000u;
-            *(volatile u16 *)(d0 + 0xAC) &= (u16)~0x0080u;
-            volatile u32 *iflags = (volatile u32 *)0x04000202;
-            *iflags = 0x2000u;
-        } else {
-            volatile u32 *siocnt = (volatile u32 *)0x04000120;
-            *siocnt = *siocnt | 0x4080u;
-            *(volatile u16 *)(d0 + 0xAC) &= (u16)~0x0080u;
-            *(volatile u16 *)(d0 + 0xAC) = 0x0001u;
-        }
-        d0[2] = 0;
-        d0[1] = 2;
-        break;
-    }
-    case 4: { // 0x08000DFE - teardown
-        volatile u32 *iflags = (volatile u32 *)0x04000202;
-        *iflags = 0;
-        volatile u32 *ie = (volatile u32 *)0x04000128;
-        *ie &= ~0x40u;
-        *ie |= 0x40u;
-        volatile u32 *siocnt = (volatile u32 *)0x04000120;
-        *siocnt = 0x1000;
-        *siocnt = 0x20000083u;
-        *siocnt = 0x20000086u;
-        volatile u32 *t = (volatile u32 *)0x0203F150;
-        t[0] = 0;
-        t[1] = 0;
-        u8 bm = d0[0];
-        if (bm != 0) { *(volatile u32 *)0x04000130 = 0; }
-        *(volatile u32 *)0x04000120 = 0xC0000000u;
-        if (bm != 0) {
-            d0[2] = 0;
-            d0[1] = 4;
-            return 4;
-        }
-        u8 chk = d0[2];
-        if (chk > 2) return 1;
-        d0[2] = chk + 1;
-        return 0;
-    }
-    default:
-        d0[2] = (u8)(d0[2] + 1);
-        return 0;
-    }
-    // 0x08000E72 shared tail: d0[2]++ / return 0
-    d0[2] = (u8)(d0[2] + 1);
-    return ret;
+__attribute__((naked)) int SessionStep_CA0(u32 arg) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push	{r4, r5, r6, r7, lr}\n"
+        "adds	r2, r0, #0\n"
+        "ldr r0, .Lca0_08000CBC\n"
+        "ldrb	r1, [r0, #1]\n"
+        "adds	r5, r0, #0\n"
+        "cmp	r1, #4\n"
+        "bls .Lca0_08000CB0\n"
+        "b .Lca0_08000E72\n"
+        ".Lca0_08000CB0:\n"
+        "lsls	r0, r1, #2\n"
+        "ldr r1, .Lca0_08000CC0\n"
+        "adds	r0, r0, r1\n"
+        "ldr	r0, [r0, #0]\n"
+        "mov	pc, r0\n"
+        "movs	r0, r0\n"
+        ".Lca0_08000CBC: .word 0x0203F150\n"
+        ".Lca0_08000CC0: .word 0x08000CC4\n"
+        ".Lca0_08000CC4: .word 0x08000CD8\n"
+        ".Lca0_08000CC8: .word 0x08000CF0\n"
+        ".Lca0_08000CCC: .word 0x08000D8C\n"
+        ".Lca0_08000CD0: .word 0x08000DFE\n"
+        ".Lca0_08000CD4: .word 0x08000E68\n"
+        ".Lca0_08000CD8:\n"
+        "ldr	r0, [r5, #0]\n"
+        "ldr r1, .Lca0_08000CEC\n"
+        "ands	r0, r1\n"
+        "cmp	r0, #0\n"
+        "bne .Lca0_08000CE4\n"
+        "b .Lca0_08000E72\n"
+        ".Lca0_08000CE4:\n"
+        "movs	r0, #1\n"
+        "strb	r0, [r5, #1]\n"
+        "b .Lca0_08000E72\n"
+        "movs	r0, r0\n"
+        ".Lca0_08000CEC: .word 0x00FF00FF\n"
+        ".Lca0_08000CF0:\n"
+        "ldrb	r0, [r5, #0]\n"
+        "cmp	r0, #1\n"
+        "bne .Lca0_08000D00\n"
+        "ldrb	r2, [r5, #2]\n"
+        "cmp	r2, #5\n"
+        "bhi .Lca0_08000CFE\n"
+        "b .Lca0_08000E72\n"
+        ".Lca0_08000CFE:\n"
+        "b .Lca0_08000D0A\n"
+        ".Lca0_08000D00:\n"
+        "ldr r1, .Lca0_08000D40\n"
+        "movs	r3, #128\n"
+        "lsls	r3, r3, #5\n"
+        "adds	r0, r3, #0\n"
+        "strh	r0, [r1, #0]\n"
+        ".Lca0_08000D0A:\n"
+        "ldr r0, .Lca0_08000D44\n"
+        "movs	r6, #0\n"
+        "str	r6, [r0, #0]\n"
+        "ldr r1, .Lca0_08000D48\n"
+        "movs	r0, #192\n"
+        "strh	r0, [r1, #0]\n"
+        "ldrb	r4, [r5, #0]\n"
+        "cmp	r4, #1\n"
+        "bne .Lca0_08000D58\n"
+        "ldr r2, .Lca0_08000D40\n"
+        "ldrh	r0, [r2, #0]\n"
+        "movs	r1, #128\n"
+        "orrs	r0, r1\n"
+        "strh	r0, [r2, #0]\n"
+        "ldr r1, .Lca0_08000D4C\n"
+        "ldr r0, .Lca0_08000D50\n"
+        "str	r0, [r1, #0]\n"
+        "ldr r3, .Lca0_08000D54\n"
+        "strh	r6, [r3, #0]\n"
+        "adds	r2, #216\n"
+        "ldrh	r0, [r2, #0]\n"
+        "movs	r1, #64\n"
+        "orrs	r0, r1\n"
+        "strh	r0, [r2, #0]\n"
+        "strh	r4, [r3, #0]\n"
+        "b .Lca0_08000D78\n"
+        "movs	r0, r0\n"
+        ".Lca0_08000D40: .word 0x04000128\n"
+        ".Lca0_08000D44: .word 0x04000120\n"
+        ".Lca0_08000D48: .word 0x04000202\n"
+        ".Lca0_08000D4C: .word 0x0400010C\n"
+        ".Lca0_08000D50: .word 0x00C0F318\n"
+        ".Lca0_08000D54: .word 0x04000208\n"
+        ".Lca0_08000D58:\n"
+        "ldr r2, .Lca0_08000D84\n"
+        "ldrh	r0, [r2, #0]\n"
+        "movs	r3, #129\n"
+        "lsls	r3, r3, #7\n"
+        "adds	r1, r3, #0\n"
+        "orrs	r0, r1\n"
+        "strh	r0, [r2, #0]\n"
+        "ldr r3, .Lca0_08000D88\n"
+        "strh	r6, [r3, #0]\n"
+        "adds	r2, #216\n"
+        "ldrh	r0, [r2, #0]\n"
+        "movs	r1, #128\n"
+        "orrs	r0, r1\n"
+        "strh	r0, [r2, #0]\n"
+        "movs	r0, #1\n"
+        "strh	r0, [r3, #0]\n"
+        ".Lca0_08000D78:\n"
+        "movs	r0, #0\n"
+        "strb	r0, [r5, #2]\n"
+        "movs	r0, #2\n"
+        "strb	r0, [r5, #1]\n"
+        "b .Lca0_08000E72\n"
+        "movs	r0, r0\n"
+        ".Lca0_08000D84: .word 0x04000128\n"
+        ".Lca0_08000D88: .word 0x04000208\n"
+        ".Lca0_08000D8C:\n"
+        "ldr	r6, [r5, #8]\n"
+        "adds	r4, r6, #0\n"
+        "movs	r0, #128\n"
+        "lsls	r0, r0, #6\n"
+        "cmp	r6, r0\n"
+        "ble .Lca0_08000D9C\n"
+        "adds	r4, r0, #0\n"
+        "b .Lca0_08000DA2\n"
+        ".Lca0_08000D9C:\n"
+        "cmp	r6, #0\n"
+        "bge .Lca0_08000DA2\n"
+        "movs	r4, #0\n"
+        ".Lca0_08000DA2:\n"
+        "cmp	r2, #0\n"
+        "beq .Lca0_08000DA8\n"
+        "str	r4, [r2, #0]\n"
+        ".Lca0_08000DA8:\n"
+        "ldrb	r0, [r5, #0]\n"
+        "cmp	r0, #1\n"
+        "beq .Lca0_08000DEA\n"
+        "ldr	r0, [r5, #20]\n"
+        "cmp	r0, r4\n"
+        "bge .Lca0_08000DCE\n"
+        "adds	r3, r5, #0\n"
+        "ldr	r7, [r5, #4]\n"
+        ".Lca0_08000DB8:\n"
+        "ldr	r2, [r3, #20]\n"
+        "lsls	r0, r2, #2\n"
+        "adds	r0, r0, r7\n"
+        "ldr	r1, [r3, #16]\n"
+        "ldr	r0, [r0, #0]\n"
+        "adds	r1, r1, r0\n"
+        "str	r1, [r3, #16]\n"
+        "adds	r2, #1\n"
+        "str	r2, [r3, #20]\n"
+        "cmp	r2, r4\n"
+        "blt .Lca0_08000DB8\n"
+        ".Lca0_08000DCE:\n"
+        "movs	r0, #128\n"
+        "lsls	r0, r0, #6\n"
+        "cmp	r6, r0\n"
+        "ble .Lca0_08000DF2\n"
+        "ldr	r0, [r5, #12]\n"
+        "ldr	r1, [r5, #16]\n"
+        "adds	r0, r0, r1\n"
+        "str	r0, [r5, #12]\n"
+        "movs	r1, #1\n"
+        "negs	r1, r1\n"
+        "cmp	r0, r1\n"
+        "bne .Lca0_08000DEA\n"
+        "movs	r0, #1\n"
+        "strb	r0, [r5, #3]\n"
+        ".Lca0_08000DEA:\n"
+        "movs	r0, #128\n"
+        "lsls	r0, r0, #6\n"
+        "cmp	r6, r0\n"
+        "bgt .Lca0_08000DF8\n"
+        ".Lca0_08000DF2:\n"
+        "ldrb	r2, [r5, #2]\n"
+        "cmp	r2, #140\n"
+        "bne .Lca0_08000E72\n"
+        ".Lca0_08000DF8:\n"
+        "movs	r0, #3\n"
+        "strb	r0, [r5, #1]\n"
+        "b .Lca0_08000E72\n"
+        ".Lca0_08000DFE:\n"
+        "ldr r3, .Lca0_08000E50\n"
+        "movs	r4, #0\n"
+        "strh	r4, [r3, #0]\n"
+        "ldr r2, .Lca0_08000E54\n"
+        "ldrh	r1, [r2, #0]\n"
+        "ldr r0, .Lca0_08000E58\n"
+        "ands	r0, r1\n"
+        "strh	r0, [r2, #0]\n"
+        "movs	r0, #1\n"
+        "strh	r0, [r3, #0]\n"
+        "ldr r1, .Lca0_08000E5C\n"
+        "movs	r3, #128\n"
+        "lsls	r3, r3, #5\n"
+        "adds	r0, r3, #0\n"
+        "strh	r0, [r1, #0]\n"
+        "movs	r0, #128\n"
+        "lsls	r0, r0, #6\n"
+        "str	r0, [r1, #0]\n"
+        "adds	r0, #3\n"
+        "str	r0, [r1, #0]\n"
+        "subs	r2, #224\n"
+        "movs	r0, #0\n"
+        "movs	r1, #0\n"
+        "str	r0, [r2, #0]\n"
+        "str	r1, [r2, #4]\n"
+        "ldrb	r0, [r5, #0]\n"
+        "cmp	r0, #0\n"
+        "beq .Lca0_08000E3C\n"
+        "ldr r1, .Lca0_08000E60\n"
+        "movs	r0, #0\n"
+        "str	r0, [r1, #0]\n"
+        ".Lca0_08000E3C:\n"
+        "ldr r0, .Lca0_08000E64\n"
+        "movs	r1, #192\n"
+        "strh	r1, [r0, #0]\n"
+        "ldrb	r0, [r5, #0]\n"
+        "cmp	r0, #0\n"
+        "beq .Lca0_08000E6E\n"
+        "strb	r4, [r5, #2]\n"
+        "movs	r0, #4\n"
+        "strb	r0, [r5, #1]\n"
+        "b .Lca0_08000E72\n"
+        ".Lca0_08000E50: .word 0x04000208\n"
+        ".Lca0_08000E54: .word 0x04000200\n"
+        ".Lca0_08000E58: .word 0x0000FF3F\n"
+        ".Lca0_08000E5C: .word 0x04000128\n"
+        ".Lca0_08000E60: .word 0x0400010C\n"
+        ".Lca0_08000E64: .word 0x04000202\n"
+        ".Lca0_08000E68:\n"
+        "ldrb	r0, [r5, #2]\n"
+        "cmp	r0, #2\n"
+        "bls .Lca0_08000E72\n"
+        ".Lca0_08000E6E:\n"
+        "movs	r0, #1\n"
+        "b .Lca0_08000E7A\n"
+        ".Lca0_08000E72:\n"
+        "ldrb	r0, [r5, #2]\n"
+        "adds	r0, #1\n"
+        "strb	r0, [r5, #2]\n"
+        "movs	r0, #0\n"
+        ".Lca0_08000E7A:\n"
+        "pop	{r4, r5, r6, r7}\n"
+        "pop	{r1}\n"
+        "bx	r1\n"
+        ".syntax divided\n"
+    );
 }
 int _08000CA0(u32 a) __attribute__((alias("SessionStep_CA0")));
 int SubCA0(u32 a) __attribute__((alias("SessionStep_CA0")));
 int sub_08000CA0(u32 a) __attribute__((alias("SessionStep_CA0")));
 
-void CollectNearby_06A50(int camX, int camY) {
-    u32 *outCount = (u32 *)0x0203F8A8;
-    u16 *outCursor = (u16 *)0x0203F874;
-    u32 *outArray = (u32 *)0x0203F880;
-    *outCount = 0;
-    *outCursor = 0;
-
-    int wx = div8000_trunc(camX);
-    int wy = div8000_trunc(camY);
-
-    u8 *header = (u8 *)(uintptr_t)*(u32 *)0x0203F760;
-    int count = (int)*(s16 *)(header + 46);
-    u8 *recBase = (u8 *)(uintptr_t)*(u32 *)(header + 16);
-
-    for (int i = 0; i < count; i++) {
-        u8 *rec = recBase + i * 8;
-        int rx = (int)*(s16 *)(rec + 0);
-        int ry = (int)*(s16 *)(rec + 2);
-        if (_08005B5C(wx - rx) <= 1 &&
-            _08005B5C(wy - ry) <= 1) {
-            u32 n = *outCount;
-            outArray[n] = (u32)(uintptr_t)rec;
-            *outCount = n + 1;
-        }
-    }
+__attribute__((naked)) void CollectNearby_06A50(int camX, int camY) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {r4, r5, r6, r7, lr}\n"
+        "mov r7, r9\n"
+        "mov r6, r8\n"
+        "push {r6, r7}\n"
+        "adds r7, r0, #0\n"
+        "adds r6, r1, #0\n"
+        "ldr r2, .L6a50_adc\n"
+        "movs r1, #0\n"
+        "str r1, [r2, #0]\n"
+        "ldr r0, .L6a50_ae0\n"
+        "strh r1, [r0, #0]\n"
+        "asrs r0, r7, #11\n"
+        "cmp r0, #0\n"
+        "bge .L6a50_a6e\n"
+        "adds r0, #15\n"
+        ".L6a50_a6e:\n"
+        "asrs r7, r0, #4\n"
+        "asrs r0, r6, #11\n"
+        "cmp r0, #0\n"
+        "bge .L6a50_a78\n"
+        "adds r0, #15\n"
+        ".L6a50_a78:\n"
+        "asrs r6, r0, #4\n"
+        "movs r5, #0\n"
+        "ldr r1, .L6a50_ae4\n"
+        "ldr r0, [r1, #0]\n"
+        "movs r3, #46\n"
+        "ldrsh r0, [r0, r3]\n"
+        "cmp r5, r0\n"
+        "bge .L6a50_ace\n"
+        "ldr r0, .L6a50_ae8\n"
+        "mov r9, r0\n"
+        "mov r8, r2\n"
+        ".L6a50_a8e:\n"
+        "ldr r0, [r1, #0]\n"
+        "lsls r1, r5, #3\n"
+        "ldr r0, [r0, #16]\n"
+        "adds r4, r0, r1\n"
+        "movs r1, #0\n"
+        "ldrsh r0, [r4, r1]\n"
+        "subs r0, r7, r0\n"
+        "bl 0x08005B5C\n"
+        "cmp r0, #1\n"
+        "bgt .L6a50_ac0\n"
+        "movs r2, #2\n"
+        "ldrsh r0, [r4, r2]\n"
+        "subs r0, r6, r0\n"
+        "bl 0x08005B5C\n"
+        "cmp r0, #1\n"
+        "bgt .L6a50_ac0\n"
+        "mov r3, r8\n"
+        "ldr r1, [r3, #0]\n"
+        "lsls r0, r1, #2\n"
+        "add r0, r9\n"
+        "str r4, [r0, #0]\n"
+        "adds r1, #1\n"
+        "str r1, [r3, #0]\n"
+        ".L6a50_ac0:\n"
+        "adds r5, #1\n"
+        "ldr r1, .L6a50_ae4\n"
+        "ldr r0, [r1, #0]\n"
+        "movs r2, #46\n"
+        "ldrsh r0, [r0, r2]\n"
+        "cmp r5, r0\n"
+        "blt .L6a50_a8e\n"
+        ".L6a50_ace:\n"
+        "pop {r3, r4}\n"
+        "mov r8, r3\n"
+        "mov r9, r4\n"
+        "pop {r4, r5, r6, r7}\n"
+        "pop {r0}\n"
+        "bx r0\n"
+        ".short 0x0000\n"
+        ".L6a50_adc: .4byte 0x0203F8A8\n"
+        ".L6a50_ae0: .4byte 0x0203F874\n"
+        ".L6a50_ae4: .4byte 0x0203F760\n"
+        ".L6a50_ae8: .4byte 0x0203F880\n"
+        ".syntax divided\n"
+    );
 }
 void _08006A50(int a, int b) __attribute__((alias("CollectNearby_06A50")));
 void sub_08006A50(int a, int b) __attribute__((alias("CollectNearby_06A50")));
@@ -540,29 +731,109 @@ void sub_080023E78(void *a) __attribute__((alias("Stub_23E78")));
 //   [+22] pan, [+24] mode.
 // Bit0: amplitude/pan → out bytes; bit4: env → [+8]/[+9]; flags ← 0xFA.
 // ============================================================================
-void VoiceParamTick_2CE20(void *ch, void *unused) {
-    (void)unused;
-    volatile u8 *c = (volatile u8 *)ch;
-    u8 flags = c[0];
-    if (flags & 1) {
-        int amp = ((int)c[19] * (int)c[18]) >> 5;
-        int mode = c[24];
-        if (mode == 1) amp = ((((s8)c[22] + 128) * amp) >> 7);
-        int pan = ((s8)c[20] << 1) + (s8)c[21];
-        if (mode == 2) pan += (s8)c[22];
-        if (pan < -128) pan = -128;
-        if (pan > 127)  pan = 127;
-        c[16] = (u8)(((pan + 128) * amp) >> 8);
-        c[17] = (u8)(((127 - pan) * amp) >> 8);
-    }
-    if (flags & 4) {
-        int env = ((s8)c[14] * c[15] + ((s8)c[12] << 2))
-                + ((s8)c[10] << 8) + ((s8)c[11] << 8) + c[13];
-        if (c[24] == 0) env += (s8)c[22] << 4;
-        c[8] = (u8)(env >> 8);
-        c[9] = (u8)env;
-    }
-    c[0] = flags & 0xFA;
+__attribute__((naked)) void VoiceParamTick_2CE20(void *ch, void *unused)
+{
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {r4, lr}\n"
+        "adds r2, r1, #0\n"
+        "movs r0, #1\n"
+        "ldrb r1, [r2, #0]\n"
+        "ands r0, r1\n"
+        "cmp r0, #0\n"
+        "beq.n .L2ce20_env\n"
+        "ldrb r3, [r2, #19]\n"
+        "ldrb r1, [r2, #18]\n"
+        "adds r0, r3, #0\n"
+        "muls r0, r1\n"
+        "lsrs r3, r0, #5\n"
+        "ldrb r4, [r2, #24]\n"
+        "cmp r4, #1\n"
+        "bne.n .L2ce20_pan\n"
+        "movs r0, #22\n"
+        "ldrsb r0, [r2, r0]\n"
+        "adds r0, #128\n"
+        "muls r0, r3\n"
+        "lsrs r3, r0, #7\n"
+        ".L2ce20_pan:\n"
+        "movs r0, #20\n"
+        "ldrsb r0, [r2, r0]\n"
+        "lsls r0, r0, #1\n"
+        "movs r1, #21\n"
+        "ldrsb r1, [r2, r1]\n"
+        ".hword 0x1841\n"
+        "cmp r4, #2\n"
+        "bne.n .L2ce20_clamp_low\n"
+        "movs r0, #22\n"
+        "ldrsb r0, [r2, r0]\n"
+        "adds r1, r0\n"
+        ".L2ce20_clamp_low:\n"
+        "movs r0, #128\n"
+        "negs r0, r0\n"
+        "cmp r1, r0\n"
+        "bge.n .L2ce20_clamp_high\n"
+        "adds r1, r0, #0\n"
+        "b.n .L2ce20_scale\n"
+        ".L2ce20_clamp_high:\n"
+        "cmp r1, #127\n"
+        "ble.n .L2ce20_scale\n"
+        "movs r1, #127\n"
+        ".L2ce20_scale:\n"
+        "adds r0, r1, #0\n"
+        "adds r0, #128\n"
+        "muls r0, r3\n"
+        "lsrs r0, r0, #8\n"
+        "strb r0, [r2, #16]\n"
+        "movs r0, #127\n"
+        "subs r0, r1\n"
+        "muls r0, r3\n"
+        "lsrs r0, r0, #8\n"
+        "strb r0, [r2, #17]\n"
+        ".L2ce20_env:\n"
+        "ldrb r1, [r2, #0]\n"
+        "movs r0, #4\n"
+        "ands r0, r1\n"
+        "adds r3, r1, #0\n"
+        "cmp r0, #0\n"
+        "beq.n .L2ce20_done\n"
+        "movs r0, #14\n"
+        "ldrsb r0, [r2, r0]\n"
+        "ldrb r1, [r2, #15]\n"
+        "muls r0, r1\n"
+        "movs r1, #12\n"
+        "ldrsb r1, [r2, r1]\n"
+        "adds r1, r0\n"
+        "lsls r1, r1, #2\n"
+        "movs r0, #10\n"
+        "ldrsb r0, [r2, r0]\n"
+        "lsls r0, r0, #8\n"
+        "adds r1, r0\n"
+        "movs r0, #11\n"
+        "ldrsb r0, [r2, r0]\n"
+        "lsls r0, r0, #8\n"
+        "adds r1, r0\n"
+        "ldrb r0, [r2, #13]\n"
+        ".hword 0x1841\n"
+        "ldrb r0, [r2, #24]\n"
+        "cmp r0, #0\n"
+        "bne.n .L2ce20_env_store\n"
+        "movs r0, #22\n"
+        "ldrsb r0, [r2, r0]\n"
+        "lsls r0, r0, #4\n"
+        "adds r1, r0\n"
+        ".L2ce20_env_store:\n"
+        "asrs r0, r1, #8\n"
+        "strb r0, [r2, #8]\n"
+        "strb r1, [r2, #9]\n"
+        ".L2ce20_done:\n"
+        "movs r0, #250\n"
+        "ands r0, r3\n"
+        "strb r0, [r2, #0]\n"
+        "pop {r4}\n"
+        "pop {r0}\n"
+        "bx r0\n"
+        ".syntax divided\n"
+    );
 }
 void _0802CE20(void *a, void *b) __attribute__((alias("VoiceParamTick_2CE20")));
 void sub_0802CE20(void *a, void *b) __attribute__((alias("VoiceParamTick_2CE20")));
@@ -807,27 +1078,124 @@ void sub_0802C574(int a) __attribute__((alias("SoundC574_Replace")));
 static inline int WA16s(int off) { return (int)*(volatile s16 *)(0x03001780 + off); }
 static inline volatile u16 *WA16p(int off) { return (volatile u16 *)(0x03001780 + off); }
 
-void MenuFE90(void *rec) {
-    u8 *r = (u8 *)rec;
-    (void)r;
-    int phase = WA16s(0x0FBC);
-    int ev = -1, ph = 4;
-    switch (phase) {
-    case 0: ph = 4; ev = (WA16s(0x103A) > 2) ? 0 : 1; break;
-    case 5: ph = 3; ev = 5; break;
-    case 1: ph = 4; ev = 2; break;
-    case 2: ph = 4; ev = 3; break;
-    case 3: *WA16p(0x0D6) = 4; ph = 4; break; // r0 stays rec+0xD6 in the arm
-    case 7: {
-        int v = WA16s(0x1078);
-        if (v == 1)      { ph = 3; ev = 6; }
-        else if (v == 2) { ph = 4; ev = 7; }
-        break;
-    }
-    default: break; // 4, 6 → straight to tail
-    }
-    if (ev >= 0) *WA16p(0x0D6) = (u16)ev;
-    _08007770(0, (void *)0x082D9EF8, ph, 0, 4, 1);
+__attribute__((naked)) void MenuFE90(void *rec) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {r4, lr}\n"
+        "sub sp, #8\n"
+        "adds r3, r0, #0\n"
+        "ldr r1, .Lfe90_feb0\n"
+        "ldr r4, .Lfe90_feb4\n"
+        "adds r0, r1, r4\n"
+        "movs r4, #0\n"
+        "ldrsh r0, [r0, r4]\n"
+        "adds r4, r1, #0\n"
+        "cmp r0, #7\n"
+        "bhi .Lfe90_ff54\n"
+        "lsls r0, r0, #2\n"
+        "ldr r1, .Lfe90_feb8\n"
+        "adds r0, r0, r1\n"
+        "ldr r0, [r0, #0]\n"
+        "mov pc, r0\n"
+        ".align 2, 0\n"
+        ".Lfe90_feb0: .4byte 0x03001780\n"
+        ".Lfe90_feb4: .4byte 0x00000FBC\n"
+        ".Lfe90_feb8: .4byte .Lfe90_febc\n"
+        ".Lfe90_febc: .4byte .Lfe90_fedc\n"
+        ".4byte .Lfe90_ff0a\n"
+        ".4byte .Lfe90_ff14\n"
+        ".4byte .Lfe90_ff1e\n"
+        ".4byte .Lfe90_ff54\n"
+        ".4byte .Lfe90_ff00\n"
+        ".4byte .Lfe90_ff54\n"
+        ".4byte .Lfe90_ff28\n"
+        ".Lfe90_fedc:\n"
+        "movs r2, #4\n"
+        "ldr r1, .Lfe90_fef4\n"
+        "adds r0, r4, r1\n"
+        "movs r4, #0\n"
+        "ldrsh r0, [r0, r4]\n"
+        "cmp r0, #2\n"
+        "bgt .Lfe90_fef8\n"
+        "adds r1, r3, #0\n"
+        "adds r1, #214\n"
+        "movs r0, #1\n"
+        "b .Lfe90_ff52\n"
+        ".align 2, 0\n"
+        ".Lfe90_fef4: .4byte 0x0000103A\n"
+        ".Lfe90_fef8:\n"
+        "adds r1, r3, #0\n"
+        "adds r1, #214\n"
+        "movs r0, #0\n"
+        "b .Lfe90_ff52\n"
+        ".Lfe90_ff00:\n"
+        "movs r2, #3\n"
+        "adds r1, r3, #0\n"
+        "adds r1, #214\n"
+        "movs r0, #5\n"
+        "b .Lfe90_ff52\n"
+        ".Lfe90_ff0a:\n"
+        "movs r2, #4\n"
+        "adds r1, r3, #0\n"
+        "adds r1, #214\n"
+        "movs r0, #2\n"
+        "b .Lfe90_ff52\n"
+        ".Lfe90_ff14:\n"
+        "movs r2, #4\n"
+        "adds r1, r3, #0\n"
+        "adds r1, #214\n"
+        "movs r0, #3\n"
+        "b .Lfe90_ff52\n"
+        ".Lfe90_ff1e:\n"
+        "movs r2, #4\n"
+        "adds r0, r3, #0\n"
+        "adds r0, #214\n"
+        "strh r2, [r0, #0]\n"
+        "b .Lfe90_ff54\n"
+        ".Lfe90_ff28:\n"
+        "ldr r1, .Lfe90_ff3c\n"
+        "adds r0, r4, r1\n"
+        "movs r4, #0\n"
+        "ldrsh r0, [r0, r4]\n"
+        "cmp r0, #1\n"
+        "beq .Lfe90_ff40\n"
+        "cmp r0, #2\n"
+        "beq .Lfe90_ff4a\n"
+        "b .Lfe90_ff54\n"
+        ".align 2, 0\n"
+        ".Lfe90_ff3c: .4byte 0x00001078\n"
+        ".Lfe90_ff40:\n"
+        "movs r2, #3\n"
+        "adds r1, r3, #0\n"
+        "adds r1, #214\n"
+        "movs r0, #6\n"
+        "b .Lfe90_ff52\n"
+        ".Lfe90_ff4a:\n"
+        "movs r2, #4\n"
+        "adds r1, r3, #0\n"
+        "adds r1, #214\n"
+        "movs r0, #7\n"
+        ".Lfe90_ff52:\n"
+        "strh r0, [r1, #0]\n"
+        ".Lfe90_ff54:\n"
+        "ldr r1, .Lfe90_ff74\n"
+        "lsls r2, r2, #16\n"
+        "asrs r2, r2, #16\n"
+        "movs r0, #4\n"
+        "str r0, [sp, #0]\n"
+        "movs r0, #1\n"
+        "str r0, [sp, #4]\n"
+        "movs r0, #0\n"
+        "movs r3, #0\n"
+        "bl _08007770\n"
+        "add sp, #8\n"
+        "pop {r4}\n"
+        "pop {r0}\n"
+        "bx r0\n"
+        ".align 2, 0\n"
+        ".Lfe90_ff74: .4byte 0x082D9EF8\n"
+        ".syntax divided\n"
+    );
 }
 void _0800FE90(void *a) __attribute__((alias("MenuFE90")));
 void sub_0800FE90(void *a) __attribute__((alias("MenuFE90")));
@@ -951,66 +1319,208 @@ __asm__(".align 2, 0");
 void _0800F59C(void *a) __attribute__((alias("Stub_0F59C")));
 void sub_0800F59C(void *a) __attribute__((alias("Stub_0F59C")));
 
-void CollectProximity_068D4(void) {
-    volatile u16 *colSrc = (volatile u16 *)0x0203F728;
-    int col = (((0xC00 - (int)*colSrc) & 0x0FFF) + 64) >> 7;
-    col &= 31;
-
-    volatile u32 *cam = (volatile u32 *)0x0203F6B0;
-    s32 camX = (s32)cam[0], camY = (s32)cam[1];
-    volatile u32 *ceilPtr = (volatile u32 *)0x0203F8E0;
-    ceilPtr[0] = (u32)div8000_trunc(camX);
-    ceilPtr[1] = (u32)div8000_trunc(camY);
-
-    const s32 *orig = (const s32 *)(0x0805DBF4 + col * 8);
-    s32 dx = camX - orig[0];
-    s32 dy = camY - orig[1];
-
-    s32 tileDX, tileDY;
-    if (dx < 0)      tileDX = div8000_trunc(dx) - 1; // floor
-    else             tileDX = div8000_trunc(dx);
-    if (dy < 0)      tileDY = div8000_trunc(dy) - 1;
-    else             tileDY = div8000_trunc(dy);
-
-    volatile u32 *delta = (volatile u32 *)0x0203F8B0;
-    delta[0] = (u32)tileDX;
-    delta[1] = (u32)tileDY;
-
-    volatile u16 *cnt = (volatile u16 *)0x0203F870;
-    volatile u16 *streamCursor = (volatile u16 *)0x0203F8A4;
-    *cnt = 0;
-    *streamCursor = 0;
-
-    const u8 *entry = (const u8 *)(0x0805DCF4 + col * 200);
-    if ((s8)entry[0] < 0) return;
-
-    volatile u8 *cache = (volatile u8 *)0x0203F770;
-    volatile u8 *outBaseX = (volatile u8 *)0x0203F8C0;
-    volatile u8 *outBaseY = (volatile u8 *)0x0203F8C4;
-
-    const u8 *cur = entry;
-    const u8 *end = entry + 196;
-    for (;;) {
-        s32 x = (s32)(s8)cur[0] + tileDX;
-        s32 y = (s32)(s8)cur[1] + tileDY;
-        volatile u8 *slot = cache + ((((y & 7) << 3) | (x & 7)) << 2);
-        if ((s8)slot[0] != x || (s8)slot[1] != y) {
-            slot[0] = (u8)x;
-            slot[1] = (u8)y;
-            u16 n = *cnt;
-            // ROM: r1 = n*8 + base; str x / str y (s32, sign-extended).
-            // Stride 8, not 4: X[n] at C0+8n, Y[n] at C4+8n.
-            *(volatile s32 *)(outBaseX + (u32)n * 8u) = (s32)(s8)x;
-            *(volatile s32 *)(outBaseY + (u32)n * 8u) = (s32)(s8)y;
-            u16 n2 = (u16)(n + 1);
-            *cnt = n2;
-            if ((s16)n2 > 3) break;
-        }
-        cur += 4;
-        if (cur > end) break;
-        if ((s8)cur[0] < 0) break;
-    }
+__attribute__((naked)) void CollectProximity_068D4(void) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        ".L068d4_080068D4:\n"
+        "  push {r4, r5, r6, r7, lr}\n"
+        "  mov r7, sl\n"
+        "  mov r6, r9\n"
+        "  mov r5, r8\n"
+        "  push {r5, r6, r7}\n"
+        "  ldr r1, .L068d4_08006948\n"
+        "  movs r2, #192\n"
+        "  lsls r2, r2, #4\n"
+        "  adds r0, r2, #0\n"
+        "  ldrh r1, [r1]\n"
+        "  subs r0, r0, r1\n"
+        "  ldr r3, .L068d4_0800694C\n"
+        "  adds r1, r3, #0\n"
+        "  ands r0, r1\n"
+        "  adds r0, #64\n"
+        "  asrs r4, r0, #7\n"
+        "  movs r0, #31\n"
+        "  ands r4, r0\n"
+        "  ldr r2, .L068d4_08006950\n"
+        "  ldr r1, .L068d4_08006954\n"
+        "  ldr r7, [r1]\n"
+        "  mov ip, r7\n"
+        "  mov r3, ip\n"
+        "  asrs r0, r3, #11\n"
+        "  cmp r0, #0\n"
+        "  bge .L068d4_0800690A\n"
+        "  adds r0, #15\n"
+        ".L068d4_0800690A:\n"
+        "  asrs r0, r0, #4\n"
+        "  str r0, [r2]\n"
+        "  ldr r7, [r1, #4]\n"
+        "  asrs r0, r7, #11\n"
+        "  cmp r0, #0\n"
+        "  bge .L068d4_08006918\n"
+        "  adds r0, #15\n"
+        ".L068d4_08006918:\n"
+        "  asrs r0, r0, #4\n"
+        "  str r0, [r2, #4]\n"
+        "  ldr r2, .L068d4_08006958\n"
+        "  lsls r4, r4, #16\n"
+        "  asrs r1, r4, #13\n"
+        "  adds r0, r1, r2\n"
+        "  ldr r3, [r0]\n"
+        "  mov r0, ip\n"
+        "  subs r3, r0, r3\n"
+        "  adds r5, r3, #0\n"
+        "  adds r2, #4\n"
+        "  adds r1, r1, r2\n"
+        "  ldr r0, [r1]\n"
+        "  subs r6, r7, r0\n"
+        "  cmp r3, #0\n"
+        "  bge .L068d4_0800695C\n"
+        "  asrs r0, r5, #11\n"
+        "  cmp r0, #0\n"
+        "  bge .L068d4_08006940\n"
+        "  adds r0, #15\n"
+        ".L068d4_08006940:\n"
+        "  asrs r0, r0, #4\n"
+        "  subs r5, r0, #1\n"
+        "  b .L068d4_08006966\n"
+        "  .align 2, 0\n"
+        ".L068d4_08006948: .word 0x0203F728\n"
+        ".L068d4_0800694C: .word 0x00000FFF\n"
+        ".L068d4_08006950: .word 0x0203F8E0\n"
+        ".L068d4_08006954: .word 0x0203F6B0\n"
+        ".L068d4_08006958: .word 0x0805DBF4\n"
+        ".L068d4_0800695C:\n"
+        "  asrs r0, r5, #11\n"
+        "  cmp r0, #0\n"
+        "  bge .L068d4_08006964\n"
+        "  adds r0, #15\n"
+        ".L068d4_08006964:\n"
+        "  asrs r5, r0, #4\n"
+        ".L068d4_08006966:\n"
+        "  cmp r6, #0\n"
+        "  bge .L068d4_08006978\n"
+        "  asrs r0, r6, #11\n"
+        "  cmp r0, #0\n"
+        "  bge .L068d4_08006972\n"
+        "  adds r0, #15\n"
+        ".L068d4_08006972:\n"
+        "  asrs r0, r0, #4\n"
+        "  subs r6, r0, #1\n"
+        "  b .L068d4_08006982\n"
+        ".L068d4_08006978:\n"
+        "  asrs r0, r6, #11\n"
+        "  cmp r0, #0\n"
+        "  bge .L068d4_08006980\n"
+        "  adds r0, #15\n"
+        ".L068d4_08006980:\n"
+        "  asrs r6, r0, #4\n"
+        ".L068d4_08006982:\n"
+        "  ldr r0, .L068d4_08006A38\n"
+        "  str r5, [r0]\n"
+        "  str r6, [r0, #4]\n"
+        "  asrs r1, r4, #16\n"
+        "  movs r0, #200\n"
+        "  muls r1, r0\n"
+        "  ldr r0, .L068d4_08006A3C\n"
+        "  adds r1, r1, r0\n"
+        "  mov ip, r1\n"
+        "  ldr r2, .L068d4_08006A40\n"
+        "  movs r1, #0\n"
+        "  strh r1, [r2]\n"
+        "  ldr r0, .L068d4_08006A44\n"
+        "  strh r1, [r0]\n"
+        "  mov r1, ip\n"
+        "  movs r0, #0\n"
+        "  ldrsb r0, [r1, r0]\n"
+        "  cmp r0, #0\n"
+        "  blt .L068d4_08006A2A\n"
+        "  movs r3, #7\n"
+        "  mov r8, r3\n"
+        "  ldr r7, .L068d4_08006A48\n"
+        "  mov r9, r7\n"
+        "  movs r0, #4\n"
+        "  add r0, r9\n"
+        "  mov sl, r0\n"
+        "  mov r4, ip\n"
+        ".L068d4_080069B8:\n"
+        "  movs r0, #0\n"
+        "  ldrsb r0, [r4, r0]\n"
+        "  adds r2, r0, r5\n"
+        "  movs r0, #1\n"
+        "  ldrsb r0, [r4, r0]\n"
+        "  adds r3, r0, r6\n"
+        "  adds r1, r3, #0\n"
+        "  mov r7, r8\n"
+        "  ands r1, r7\n"
+        "  lsls r1, r1, #3\n"
+        "  adds r0, r2, #0\n"
+        "  ands r0, r7\n"
+        "  orrs r1, r0\n"
+        "  lsls r1, r1, #2\n"
+        "  ldr r0, .L068d4_08006A4C\n"
+        "  adds r1, r1, r0\n"
+        "  movs r0, #0\n"
+        "  ldrsb r0, [r1, r0]\n"
+        "  cmp r0, r2\n"
+        "  bne .L068d4_080069E8\n"
+        "  movs r0, #1\n"
+        "  ldrsb r0, [r1, r0]\n"
+        "  cmp r0, r3\n"
+        "  beq .L068d4_08006A18\n"
+        ".L068d4_080069E8:\n"
+        "  strb r2, [r1]\n"
+        "  strb r3, [r1, #1]\n"
+        "  ldr r7, .L068d4_08006A40\n"
+        "  movs r0, #0\n"
+        "  ldrsh r1, [r7, r0]\n"
+        "  lsls r1, r1, #3\n"
+        "  add r1, r9\n"
+        "  lsls r0, r2, #24\n"
+        "  asrs r0, r0, #24\n"
+        "  str r0, [r1]\n"
+        "  movs r2, #0\n"
+        "  ldrsh r1, [r7, r2]\n"
+        "  lsls r1, r1, #3\n"
+        "  add r1, sl\n"
+        "  lsls r0, r3, #24\n"
+        "  asrs r0, r0, #24\n"
+        "  str r0, [r1]\n"
+        "  ldrh r0, [r7]\n"
+        "  adds r0, #1\n"
+        "  strh r0, [r7]\n"
+        "  lsls r0, r0, #16\n"
+        "  asrs r0, r0, #16\n"
+        "  cmp r0, #3\n"
+        "  bgt .L068d4_08006A2A\n"
+        ".L068d4_08006A18:\n"
+        "  adds r4, #4\n"
+        "  mov r0, ip\n"
+        "  adds r0, #196\n"
+        "  cmp r4, r0\n"
+        "  bgt .L068d4_08006A2A\n"
+        "  movs r0, #0\n"
+        "  ldrsb r0, [r4, r0]\n"
+        "  cmp r0, #0\n"
+        "  bge .L068d4_080069B8\n"
+        ".L068d4_08006A2A:\n"
+        "  pop {r3, r4, r5}\n"
+        "  mov r8, r3\n"
+        "  mov r9, r4\n"
+        "  mov sl, r5\n"
+        "  pop {r4, r5, r6, r7}\n"
+        "  pop {r0}\n"
+        "  bx r0\n"
+        "  .align 2, 0\n"
+        ".L068d4_08006A38: .word 0x0203F8B0\n"
+        ".L068d4_08006A3C: .word 0x0805DCF4\n"
+        ".L068d4_08006A40: .word 0x0203F870\n"
+        ".L068d4_08006A44: .word 0x0203F8A4\n"
+        ".L068d4_08006A48: .word 0x0203F8C0\n"
+        ".L068d4_08006A4C: .word 0x0203F770\n"
+        ".syntax divided\n"
+    );
 }
+
 void _080068D4(void) __attribute__((alias("CollectProximity_068D4")));
 void sub_080068D4(void) __attribute__((alias("CollectProximity_068D4")));
 
@@ -1064,63 +1574,131 @@ void sub_0802CB84(void *a) __attribute__((alias("SoundStop_2CB84")));
 // ============================================================================
 HOST_STUB(void _0802CA34(void *s));
 
-void SoundStart_2CC34(void *rec, void *cfg) {
-    volatile u8 *r5 = (volatile u8 *)rec;
-    volatile u8 *r7 = (volatile u8 *)cfg;
-    u32 magic = *(volatile u32 *)(r5 + 52);
-    if (magic != 0x68736D53u) return;
-    u8 r2 = r7[2];
-    if (r5[11] != 0 && r5[0] != 0) {
-        volatile u8 *ch44 = (volatile u8 *)(uintptr_t)*(volatile u32 *)(r5 + 44);
-        if ((ch44[0] & 0x40) != 0) {
-            if (*(volatile u32 *)(r5 + 4) == 0 || (s32)*(volatile u32 *)(r5 + 4) < 0) {
-                // keep r2 from cfg
-            } else if (r5[9] > r2) {
-                return; // _0802CD0A
-            }
-        }
-    } else if (r5[11] != 0) {
-        if (*(volatile u32 *)(r5 + 4) == 0 || (s32)*(volatile u32 *)(r5 + 4) < 0) {
-            // fall through to start
-        }
-    } else if (r5[9] > r2) {
-        return; // _0802CD0A (path via 0x0802CC6C)
-    }
-
-    *(volatile u32 *)(r5 + 52) = magic + 1;
-    *(volatile u32 *)(r5 + 4) = 0;
-    *(volatile u32 *)(r5 + 0) = (u32)(uintptr_t)cfg;
-    *(volatile u32 *)(r5 + 48) = *(volatile u32 *)(r7 + 4);
-    r5[9] = r2;
-    *(volatile u32 *)(r5 + 12) = 0;
-    *(volatile u16 *)(r5 + 28) = 150;
-    *(volatile u16 *)(r5 + 32) = 150;
-    *(volatile u16 *)(r5 + 30) = 256;
-    *(volatile u16 *)(r5 + 34) = 0;
-    *(volatile u16 *)(r5 + 36) = 0;
-
-    u8 n = r7[0];
-    u8 maxCh = r5[8];
-    volatile u8 *r4 = (volatile u8 *)(uintptr_t)*(volatile u32 *)(r5 + 44);
-    u8 i = 0;
-    if (n != 0 && i < maxCh) {
-        for (; i < n && i < maxCh; i++) {
-            _0802C11C((void *)r5, (void *)r4);
-            r4[0] = 192;
-            *(volatile u32 *)(r4 + 32) = i;
-            *(volatile u32 *)(r4 + 64) = *(volatile u32 *)(r7 + 8 + i * 4);
-            r4 += 80;
-        }
-    }
-    if (i < maxCh) {
-        for (; i < maxCh; i++) {
-            _0802C11C((void *)r5, (void *)r4);
-            r4[0] = 0;
-            r4 += 80;
-        }
-    }
-    if (r7[3] & 0x80) _0802CA34((void *)r7);
-    *(volatile u32 *)(r5 + 52) = magic;
+__attribute__((naked)) void SoundStart_2CC34(void *rec, void *cfg) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {r4, r5, r6, r7, lr}\n"
+        "mov r7, r8\n"
+        "push {r7}\n"
+        "adds r5, r0, #0\n"
+        "adds r7, r1, #0\n"
+        "ldr r1, [r5, #52]\n"
+        "ldr r0, 1f\n"
+        "cmp r1, r0\n"
+        "bne.n .L2cc34_done\n"
+        "ldrb r0, [r5, #11]\n"
+        "ldrb r2, [r7, #2]\n"
+        "cmp r0, #0\n"
+        "beq.n .L2cc34_start\n"
+        "ldr r0, [r5, #0]\n"
+        "cmp r0, #0\n"
+        "beq.n .L2cc34_check_state\n"
+        "ldr r1, [r5, #44]\n"
+        "movs r0, #64\n"
+        "ldrb r1, [r1, #0]\n"
+        "ands r0, r1\n"
+        "cmp r0, #0\n"
+        "bne.n .L2cc34_check_limit\n"
+        ".L2cc34_check_state:\n"
+        "ldr r1, [r5, #4]\n"
+        "ldrh r0, [r5, #4]\n"
+        "cmp r0, #0\n"
+        "beq.n .L2cc34_start\n"
+        "cmp r1, #0\n"
+        "blt.n .L2cc34_start\n"
+        ".L2cc34_check_limit:\n"
+        "ldrb r0, [r7, #2]\n"
+        "adds r2, r0, #0\n"
+        "ldrb r0, [r5, #9]\n"
+        "cmp r0, r2\n"
+        "bhi.n .L2cc34_done\n"
+        ".L2cc34_start:\n"
+        "ldr r0, [r5, #52]\n"
+        "adds r0, #1\n"
+        "str r0, [r5, #52]\n"
+        "movs r1, #0\n"
+        "str r1, [r5, #4]\n"
+        "str r7, [r5, #0]\n"
+        "ldr r0, [r7, #4]\n"
+        "str r0, [r5, #48]\n"
+        "strb r2, [r5, #9]\n"
+        "str r1, [r5, #12]\n"
+        "movs r0, #150\n"
+        "strh r0, [r5, #28]\n"
+        "strh r0, [r5, #32]\n"
+        "adds r0, #106\n"
+        "strh r0, [r5, #30]\n"
+        "strh r1, [r5, #34]\n"
+        "strh r1, [r5, #36]\n"
+        "movs r6, #0\n"
+        "ldr r4, [r5, #44]\n"
+        "ldrb r1, [r7, #0]\n"
+        "cmp r6, r1\n"
+        "bge.n .L2cc34_tail\n"
+        "ldrb r0, [r5, #8]\n"
+        "cmp r6, r0\n"
+        "bge.n .L2cc34_tail_done\n"
+        "mov r8, r6\n"
+        ".L2cc34_data_loop:\n"
+        "adds r0, r5, #0\n"
+        "adds r1, r4, #0\n"
+        "bl 0x0802c11c\n"
+        "movs r0, #192\n"
+        "strb r0, [r4, #0]\n"
+        "mov r1, r8\n"
+        "str r1, [r4, #32]\n"
+        "lsls r1, r6, #2\n"
+        "adds r0, r7, #0\n"
+        "adds r0, #8\n"
+        "adds r0, r0, r1\n"
+        "ldr r0, [r0, #0]\n"
+        "str r0, [r4, #64]\n"
+        "adds r6, #1\n"
+        "adds r4, #80\n"
+        "ldrb r0, [r7, #0]\n"
+        "cmp r6, r0\n"
+        "bge.n .L2cc34_tail\n"
+        "ldrb r1, [r5, #8]\n"
+        "cmp r6, r1\n"
+        "blt.n .L2cc34_data_loop\n"
+        ".L2cc34_tail:\n"
+        "ldrb r0, [r5, #8]\n"
+        "cmp r6, r0\n"
+        "bge.n .L2cc34_tail_done\n"
+        "movs r1, #0\n"
+        "mov r8, r1\n"
+        ".L2cc34_tail_loop:\n"
+        "adds r0, r5, #0\n"
+        "adds r1, r4, #0\n"
+        "bl 0x0802c11c\n"
+        "mov r0, r8\n"
+        "strb r0, [r4, #0]\n"
+        "adds r6, #1\n"
+        "adds r4, #80\n"
+        "ldrb r1, [r5, #8]\n"
+        "cmp r6, r1\n"
+        "blt.n .L2cc34_tail_loop\n"
+        ".L2cc34_tail_done:\n"
+        "movs r0, #128\n"
+        "ldrb r1, [r7, #3]\n"
+        "ands r0, r1\n"
+        "cmp r0, #0\n"
+        "beq.n .L2cc34_restore\n"
+        "ldrb r0, [r7, #3]\n"
+        "bl 0x0802ca34\n"
+        ".L2cc34_restore:\n"
+        "ldr r0, 1f\n"
+        "str r0, [r5, #52]\n"
+        ".L2cc34_done:\n"
+        "pop {r3}\n"
+        "mov r8, r3\n"
+        "pop {r4, r5, r6, r7}\n"
+        "pop {r0}\n"
+        "bx r0\n"
+        ".align 2, 0\n"
+        "1: .word 0x68736d53\n"
+        ".syntax divided\n"
+    );
 }
 void _0802CC34(void *a, void *b) __attribute__((alias("SoundStart_2CC34")));
 void sub_0802CC34(void *a, void *b) __attribute__((alias("SoundStart_2CC34")));
@@ -1201,12 +1779,81 @@ void sub_0802C738(void *a) __attribute__((alias("SoundTick_2C738")));
 // ============================================================================
 HOST_STUB(void _0802DE98(void));
 
-u32 UDiv_2DF6C(u32 n, u32 d) {
-    if (d == 0) {
-        _0802DE98();
-        return 0;
-    }
-    return n / d; // host division is behaviorally equivalent for u32/u32
+__attribute__((naked)) u32 UDiv_2DF6C(u32 n, u32 d) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        ".Ludiv__0802DF6C:\n"
+        "cmp r1, #0\n"
+        "beq.n .Ludiv__0802DFDA\n"
+        "movs r3, #1\n"
+        "movs r2, #0\n"
+        "push {r4}\n"
+        "cmp r0, r1\n"
+        "bcc.n .Ludiv__0802DFD4\n"
+        "movs r4, #1\n"
+        "lsls r4, r4, #28\n"
+        ".Ludiv__0802DF7E:\n"
+        "cmp r1, r4\n"
+        "bcs.n .Ludiv__0802DF8C\n"
+        "cmp r1, r0\n"
+        "bcs.n .Ludiv__0802DF8C\n"
+        "lsls r1, r1, #4\n"
+        "lsls r3, r3, #4\n"
+        "b.n .Ludiv__0802DF7E\n"
+        ".Ludiv__0802DF8C:\n"
+        "lsls r4, r4, #3\n"
+        ".Ludiv__0802DF8E:\n"
+        "cmp r1, r4\n"
+        "bcs.n .Ludiv__0802DF9C\n"
+        "cmp r1, r0\n"
+        "bcs.n .Ludiv__0802DF9C\n"
+        "lsls r1, r1, #1\n"
+        "lsls r3, r3, #1\n"
+        "b.n .Ludiv__0802DF8E\n"
+        ".Ludiv__0802DF9C:\n"
+        "cmp r0, r1\n"
+        "bcc.n .Ludiv__0802DFA4\n"
+        "subs r0, r0, r1\n"
+        "orrs r2, r3\n"
+        ".Ludiv__0802DFA4:\n"
+        "lsrs r4, r1, #1\n"
+        "cmp r0, r4\n"
+        "bcc.n .Ludiv__0802DFB0\n"
+        "subs r0, r0, r4\n"
+        "lsrs r4, r3, #1\n"
+        "orrs r2, r4\n"
+        ".Ludiv__0802DFB0:\n"
+        "lsrs r4, r1, #2\n"
+        "cmp r0, r4\n"
+        "bcc.n .Ludiv__0802DFBC\n"
+        "subs r0, r0, r4\n"
+        "lsrs r4, r3, #2\n"
+        "orrs r2, r4\n"
+        ".Ludiv__0802DFBC:\n"
+        "lsrs r4, r1, #3\n"
+        "cmp r0, r4\n"
+        "bcc.n .Ludiv__0802DFC8\n"
+        "subs r0, r0, r4\n"
+        "lsrs r4, r3, #3\n"
+        "orrs r2, r4\n"
+        ".Ludiv__0802DFC8:\n"
+        "cmp r0, #0\n"
+        "beq.n .Ludiv__0802DFD4\n"
+        "lsrs r3, r3, #4\n"
+        "beq.n .Ludiv__0802DFD4\n"
+        "lsrs r1, r1, #4\n"
+        "b.n .Ludiv__0802DF9C\n"
+        ".Ludiv__0802DFD4:\n"
+        "adds r0, r2, #0\n"
+        "pop {r4}\n"
+        "mov pc, lr\n"
+        ".Ludiv__0802DFDA:\n"
+        "push {lr}\n"
+        "bl 0x0802DE98\n"
+        "movs r0, #0\n"
+        "pop {pc}\n"
+        ".syntax divided\n"
+    );
 }
 u32 _0802DF6C(u32 a, u32 b) __attribute__((alias("UDiv_2DF6C")));
 u32 sub_0802DF6C(u32 a, u32 b) __attribute__((alias("UDiv_2DF6C")));

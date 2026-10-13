@@ -309,47 +309,188 @@ u16 OAMSlotAttrAdd(int slot, u16 add) {
 u16 _080050E4(int a, u16 b) __attribute__((alias("OAMSlotAttrAdd")));
 u16 sub_080050E4(int a, u16 b) __attribute__((alias("OAMSlotAttrAdd")));
 
-void BG2Matrix_Update(const volatile u8 *rec, u32 mode) {
-    u8 tmpl12[12], tmpl8A[8], tmpl8B[8], tmpl8C[8];
-    u16 attrs[4];
-    RuntimeMemcpy(tmpl12, (const void *)0x0805BA80, 12);
-    RuntimeMemcpy(tmpl8A, (const void *)0x0805BA8C, 8);
-    RuntimeMemcpy(tmpl8B, (const void *)0x0805BA94, 8);
-    RuntimeMemcpy(tmpl8C, (const void *)0x0805BA9C, 8);
-    (void)*(volatile u16 *)0x04000000; // dead DISPCNT load (asm reads r0, overwrites)
-    u32 flags = (u32)*(const u16 *)(tmpl12 + ((u16)*(const volatile u16 *)(rec + 0)) * 2) | 0x40;
-    for (int i = 0; i < 4; i++) {
-        if (rec[i * 16 + 4] != 0) flags |= *(const u16 *)(tmpl8A + i * 2);
-    }
-    for (int i = 0; i < 4; i++) {
-        u32 h = (u32)*(const u16 *)(tmpl8C + rec[i * 16 + 9] * 2)
-              | (u32)*(const u16 *)(tmpl8B + rec[i * 16 + 8] * 2)
-              | 0x40;
-        if (rec[i * 16 + 7] != 0) h |= 0x80;
-        h |= (u32)rec[i * 16 + 5] << 2;
-        h |= (u32)rec[i * 16 + 6] << 8;
-        attrs[i] = (u16)h;
-    }
-    flags |= 0x40; // (already set above; keeps asm flag shape)
-    if (*(const volatile u16 *)(rec + 2) != 0) flags |= 0x1000;
-    flags &= 0xFFFF;
-    OAMSlotAttrSet(0, *(const volatile u16 *)(rec + 12));
-    OAMSlotAttrSet(1, *(const volatile u16 *)(rec + 28));
-    OAMSlotAttrSet(2, *(const volatile u16 *)(rec + 44));
-    OAMSlotAttrSet(3, *(const volatile u16 *)(rec + 60));
-    OAMSlotParamSet(0, *(const volatile u32 *)(rec + 16));
-    OAMSlotParamSet(1, *(const volatile u32 *)(rec + 32));
-    OAMSlotParamSet(2, *(const volatile u32 *)(rec + 48));
-    OAMSlotParamSet(3, *(const volatile u32 *)(rec + 64));
-    if (mode != 0) {
-        *(volatile u16 *)0x04000008 = attrs[0];
-        *(volatile u16 *)0x0400000A = attrs[1];
-        *(volatile u16 *)0x0400000C = attrs[2];
-        *(volatile u16 *)0x0400000E = attrs[3];
-        *(volatile u16 *)0x04000000 = (u16)flags;
-    }
-    RuntimeMemcpy((void *)SLOT_BASE, (const void *)rec, 68);
+__attribute__((naked)) void BG2Matrix_Update(const volatile u8 *rec, u32 mode) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "	push	{r4, r5, r6, r7, lr}\n"
+        "	mov	r7, sl\n"
+        "	mov	r6, r9\n"
+        "	mov	r5, r8\n"
+        "	push	{r5, r6, r7}\n"
+        "	sub	sp, #48\n"
+        "	adds	r7, r0, #0\n"
+        "	mov	sl, r1\n"
+        "	add	r4, sp, #8\n"
+        "	ldr r1, .L50e8_08005248\n"
+        "	adds	r0, r4, #0\n"
+        "	movs	r2, #12\n"
+        "	bl 0x0802E0A4\n"
+        "	add	r0, sp, #20\n"
+        "	mov	r8, r0\n"
+        "	ldr r1, .L50e8_0800524C\n"
+        "	movs	r2, #8\n"
+        "	bl 0x0802E0A4\n"
+        "	add	r6, sp, #28\n"
+        "	ldr r1, .L50e8_08005250\n"
+        "	adds	r0, r6, #0\n"
+        "	movs	r2, #8\n"
+        "	bl 0x0802E0A4\n"
+        "	add	r5, sp, #36\n"
+        "	ldr r1, .L50e8_08005254\n"
+        "	adds	r0, r5, #0\n"
+        "	movs	r2, #8\n"
+        "	bl 0x0802E0A4\n"
+        "	movs	r0, #128\n"
+        "	lsls	r0, r0, #19\n"
+        "	ldrh	r0, [r0, #0]\n"
+        "	movs	r1, #64\n"
+        "	mov	r9, r1\n"
+        "	ldrh	r1, [r7, #0]\n"
+        "	lsls	r0, r1, #1\n"
+        "	adds	r4, r4, r0\n"
+        "	ldrh	r4, [r4, #0]\n"
+        "	mov	r0, r9\n"
+        "	orrs	r4, r0\n"
+        "	mov	r9, r4\n"
+        "	mov	r3, r8\n"
+        "	adds	r2, r7, #0\n"
+        "	movs	r4, #3\n"
+        ".L50e8_08005146:\n"
+        "	ldrb	r0, [r2, #4]\n"
+        "	cmp	r0, #0\n"
+        "	beq .L50e8_08005154\n"
+        "	ldrh	r1, [r3, #0]\n"
+        "	mov	r0, r9\n"
+        "	orrs	r1, r0\n"
+        "	mov	r9, r1\n"
+        ".L50e8_08005154:\n"
+        "	adds	r3, #2\n"
+        "	adds	r2, #16\n"
+        "	subs	r4, #1\n"
+        "	cmp	r4, #0\n"
+        "	bge .L50e8_08005146\n"
+        "	ldrh	r1, [r7, #2]\n"
+        "	mov	r8, r1\n"
+        "	ldrh	r0, [r7, #12]\n"
+        "	mov	ip, r0\n"
+        "	str	r6, [sp, #44]\n"
+        "	mov	r3, sp\n"
+        "	adds	r2, r7, #0\n"
+        "	movs	r4, #3\n"
+        ".L50e8_0800516E:\n"
+        "	ldrb	r6, [r2, #9]\n"
+        "	lsls	r1, r6, #1\n"
+        "	adds	r1, r5, r1\n"
+        "	ldrb	r6, [r2, #8]\n"
+        "	lsls	r0, r6, #1\n"
+        "	ldr	r6, [sp, #44]\n"
+        "	adds	r0, r6, r0\n"
+        "	ldrh	r1, [r1, #0]\n"
+        "	ldrh	r0, [r0, #0]\n"
+        "	orrs	r1, r0\n"
+        "	movs	r0, #64\n"
+        "	orrs	r1, r0\n"
+        "	ldrb	r0, [r2, #7]\n"
+        "	cmp	r0, #0\n"
+        "	beq .L50e8_08005190\n"
+        "	movs	r0, #128\n"
+        "	orrs	r1, r0\n"
+        ".L50e8_08005190:\n"
+        "	ldrb	r6, [r2, #5]\n"
+        "	lsls	r0, r6, #2\n"
+        "	orrs	r1, r0\n"
+        "	ldrb	r6, [r2, #6]\n"
+        "	lsls	r0, r6, #8\n"
+        "	orrs	r1, r0\n"
+        "	strh	r1, [r3, #0]\n"
+        "	adds	r3, #2\n"
+        "	adds	r2, #16\n"
+        "	subs	r4, #1\n"
+        "	cmp	r4, #0\n"
+        "	bge .L50e8_0800516E\n"
+        "	mov	r1, r8\n"
+        "	lsls	r0, r1, #16\n"
+        "	cmp	r0, #0\n"
+        "	beq .L50e8_080051C0\n"
+        "	movs	r6, #128\n"
+        "	lsls	r6, r6, #5\n"
+        "	adds	r0, r6, #0\n"
+        "	mov	r1, r9\n"
+        "	orrs	r1, r0\n"
+        "	lsls	r0, r1, #16\n"
+        "	lsrs	r0, r0, #16\n"
+        "	mov	r9, r0\n"
+        ".L50e8_080051C0:\n"
+        "	movs	r0, #0\n"
+        "	mov	r1, ip\n"
+        "	bl _080050A4\n"
+        "	ldrh	r1, [r7, #28]\n"
+        "	movs	r0, #1\n"
+        "	bl _080050A4\n"
+        "	ldrh	r1, [r7, #44]\n"
+        "	movs	r0, #2\n"
+        "	bl _080050A4\n"
+        "	ldrh	r1, [r7, #60]\n"
+        "	movs	r0, #3\n"
+        "	bl _080050A4\n"
+        "	ldr	r1, [r7, #16]\n"
+        "	movs	r0, #0\n"
+        "	bl _080050C0\n"
+        "	ldr	r1, [r7, #32]\n"
+        "	movs	r0, #1\n"
+        "	bl _080050C0\n"
+        "	ldr	r1, [r7, #48]\n"
+        "	movs	r0, #2\n"
+        "	bl _080050C0\n"
+        "	ldr	r1, [r7, #64]\n"
+        "	movs	r0, #3\n"
+        "	bl _080050C0\n"
+        "	mov	r6, sl\n"
+        "	cmp	r6, #0\n"
+        "	beq .L50e8_0800522E\n"
+        "	ldr r1, .L50e8_08005258\n"
+        "	mov	r0, sp\n"
+        "	ldrh	r0, [r0, #0]\n"
+        "	strh	r0, [r1, #0]\n"
+        "	adds	r1, #2\n"
+        "	mov	r0, sp\n"
+        "	ldrh	r0, [r0, #2]\n"
+        "	strh	r0, [r1, #0]\n"
+        "	adds	r1, #2\n"
+        "	mov	r0, sp\n"
+        "	ldrh	r0, [r0, #4]\n"
+        "	strh	r0, [r1, #0]\n"
+        "	adds	r1, #2\n"
+        "	mov	r0, sp\n"
+        "	ldrh	r0, [r0, #6]\n"
+        "	strh	r0, [r1, #0]\n"
+        "	movs	r0, #128\n"
+        "	lsls	r0, r0, #19\n"
+        "	mov	r1, r9\n"
+        "	strh	r1, [r0, #0]\n"
+        ".L50e8_0800522E:\n"
+        "	ldr r0, .L50e8_0800525C\n"
+        "	adds	r1, r7, #0\n"
+        "	movs	r2, #68\n"
+        "	bl 0x0802E0A4\n"
+        "	add	sp, #48\n"
+        "	pop	{r3, r4, r5}\n"
+        "	mov	r8, r3\n"
+        "	mov	r9, r4\n"
+        "	mov	sl, r5\n"
+        "	pop	{r4, r5, r6, r7}\n"
+        "	pop	{r0}\n"
+        "	bx	r0\n"
+        ".L50e8_08005248: .word 0x0805BA80\n"
+        ".L50e8_0800524C: .word 0x0805BA8C\n"
+        ".L50e8_08005250: .word 0x0805BA94\n"
+        ".L50e8_08005254: .word 0x0805BA9C\n"
+        ".L50e8_08005258: .word 0x04000008\n"
+        ".L50e8_0800525C: .word 0x03000260\n"
+        ".syntax divided\n"
+    );
 }
+
 void _080050E8(const volatile u8 *a, u32 b) __attribute__((alias("BG2Matrix_Update")));
 void sub_080050E8(const volatile u8 *a, u32 b) __attribute__((alias("BG2Matrix_Update")));
 

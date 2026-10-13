@@ -13,18 +13,18 @@
 extern void Sub_08007770(int a, void *b, int c, int d, u32 e, u32 f);
 extern void _08007770(int a, void *b, int c, int d, u32 e, u32 f); // R2-faithful strong body
 extern void Sub_0800DAB8(void *a);
-extern void Sub_08007614(void *a, int b, int c, int d);
-extern void Sub_0800798C(void *a, void *b);
-extern void Sub_08007A58(void *a);
-extern void Sub_080075E8(void *a, int b, int c);
-extern void Sub_08007ABC(u32 a, u32 b, u32 c);
-extern void Sub_0800D77C(void *a, int b, int c);
-extern int Sub_08002124(u32 v);
+extern void sub_08007614(void *a, int b, int c, int d);
+extern void sub_0800798C(void *a, void *b);
+extern void sub_08007A58(void *a);
+extern void sub_080075E8(void *a, int b, int c);
+extern void sub_08007ABC(u32 a, u32 b, u32 c);
+extern void sub_0800D77C(void *a, int b, int c);
+extern int _08002124(u32 v);
 extern int Sub_08024068(void);
 extern void Sub_08001549C(void *a);
 extern void _08001549C(void *a);
-extern void Sub_080025BC8(void *a, int b);
-extern void Sub_0800152A8(void *a);
+extern void sub_080025BC8(void *a, int b);
+extern void sub_0800152A8(void *a);
 extern void _0802B368(u32 v);
 
 /* Preserve the ROM's literal WA base/offset loads and scratch registers. */
@@ -76,11 +76,11 @@ extern void _0802B368(u32 v);
 // ----------------------------------------------------------------------------
 // sub_080015304 — (rec): head = 8-way on s16[WA+0xFBC]:
 //   0: 07770(0,tmpl,1,0,4,1), s16[rec+138]=2.
-//   1,2,4,6: 07770(0,tmpl,0,0,4,1), s16[rec+138]=0.
+//   1,2,5,7: 07770(0,tmpl,0,0,4,1), s16[rec+138]=0.
 //   3: 07770(0,tmpl,0,0,4,1), s16[rec+138]=1.
-//   5,7: nothing. (tmpl = 0x082FA8E4.)
+//   4,6: nothing. (tmpl = 0x082FA8E4.)
 // Tail (always):
-//   u16[rec+88]=6; u32[rec+100]=12; u32[rec+112]=0; DAB8(rec+16);
+//   u32[rec+88]=6; u32[rec+100]=12; u32[rec+112]=0; DAB8(rec+16);
 //   tile=0x082A798C: 7614(tile,1,0,3); 7614(tile,1,1,4);
 //   798C(tmpl,rec); 7A58(rec); 798C(0x082B7410,rec+8); 75E8(tm2,0,5);
 //   25BC8(rec+152,5);
@@ -91,62 +91,83 @@ extern void _0802B368(u32 v);
 //   s16[rec+148]=0; s16[rec+150]=0; 02124(0x1392);
 //   if s16[rec+138]==1: 152A8(rec).
 void MenuFF78_15304(void *rec_) {
-    volatile u8 *rec = (volatile u8 *)rec_;
-    volatile u8 *wa = (volatile u8 *)(uintptr_t)0x03001780u;
-    void *tmpl = (void *)(uintptr_t)0x082FA8E4u;
-    void *tile = (void *)(uintptr_t)0x082A798Cu;
+    register volatile u8 *rec __asm__("r7") = (volatile u8 *)rec_;
+    register u32 sixlo __asm__("r0");
+    register u32 sixhi __asm__("r8");
     {
-        s16 v = *(volatile s16 *)(uintptr_t)(wa + 0xFBCu);
-        if (v >= 0 && v <= 7) {
+        extern u8 Menu15304WaBase;
+        extern u8 Menu15304WaOffset;
+        __asm__(".globl Menu15304WaBase\nMenu15304WaBase = 0x03001780\n"
+                ".globl Menu15304WaOffset\nMenu15304WaOffset = 0x00000FBC\n");
+        s16 *gate = (s16 *)(uintptr_t)((uintptr_t)&Menu15304WaBase +
+                                       (uintptr_t)&Menu15304WaOffset);
+        int v = gate[0];
+        if ((u32)v <= 7u) {
+            // Match the ROM table order: 0, 1/2/5/7, 3, then 4/6.
             switch (v) {
             case 0:
-                _08007770(0, tmpl, 1, 0, 4, 1);
+                _08007770(0, (void *)(uintptr_t)0x082FA8E4u, 1, 0, 4, 1);
                 *(volatile s16 *)(uintptr_t)(rec + 138) = 2;
                 break;
+            case 1: case 2: case 5: case 7:
+                _08007770(0, (void *)(uintptr_t)0x082FA8E4u, 0, 0, 4, 1);
+                *(volatile s16 *)(uintptr_t)(rec + 138) = 0;
+                break;
             case 3:
-                _08007770(0, tmpl, 0, 0, 4, 1);
+                _08007770(0, (void *)(uintptr_t)0x082FA8E4u, 0, 0, 4, 1);
                 *(volatile s16 *)(uintptr_t)(rec + 138) = 1;
                 break;
-            case 1: case 2: case 4: case 6:
-                _08007770(0, tmpl, 0, 0, 4, 1);
-                *(volatile s16 *)(uintptr_t)(rec + 138) = 0;
+            case 4: case 6:
                 break;
             default:
                 break;
             }
         }
     }
-    *(volatile u16 *)(uintptr_t)(rec + 88) = 6;
+    // The ROM stores a word here and keeps the same value in r8 for +26.
+    sixlo = 6;
+    sixhi = sixlo;
+    __asm__ volatile("" : "+r"(sixlo), "+r"(sixhi));
+    *(volatile u32 *)(uintptr_t)(rec + 88) = sixlo;
     *(volatile u32 *)(uintptr_t)(rec + 100) = 12;
     *(volatile u32 *)(uintptr_t)(rec + 112) = 0;
     Sub_0800DAB8((void *)(uintptr_t)(rec + 16));
-    Sub_08007614(tile, 1, 0, 3);
-    Sub_08007614(tile, 1, 1, 4);
-    Sub_0800798C(tmpl, rec_);
-    Sub_08007A58(rec_);
+    {
+        register void *tile __asm__("r4") = (void *)(uintptr_t)0x082A798Cu;
+        __asm__ volatile("" : "+r"(tile));
+        sub_08007614(tile, 1, 0, 3);
+        sub_08007614(tile, 1, 1, 4);
+    }
+    sub_0800798C((void *)(uintptr_t)0x082FA8E4u, rec_);
+    sub_08007A58(rec_);
     {
         void *tm2 = (void *)(uintptr_t)0x082B7410u;
-        Sub_0800798C(tm2, (void *)(uintptr_t)(rec + 8));
-        Sub_080075E8(tm2, 0, 5);
+        sub_0800798C(tm2, (void *)(uintptr_t)(rec + 8));
+        sub_080075E8(tm2, 0, 5);
     }
-    Sub_080025BC8((void *)(uintptr_t)(rec + 152), 5);
-    Sub_08007ABC(*(volatile u32 *)(uintptr_t)(rec + 12),
+    sub_080025BC8((void *)(uintptr_t)(rec + 152), 5);
+    sub_08007ABC(*(volatile u32 *)(uintptr_t)(rec + 12),
                  *(volatile u32 *)(uintptr_t)(rec + 156),
                  *(volatile u32 *)(uintptr_t)(rec + 152));
     *(volatile u32 *)(uintptr_t)(rec + 128) = (u32)(uintptr_t)(rec + 164);
     *(volatile u32 *)(uintptr_t)(rec + 132) = (u32)(uintptr_t)(rec + 16);
     *(volatile u32 *)(uintptr_t)(rec + 16) = 0;
-    *(volatile s16 *)(uintptr_t)(rec + 20) = 1;
-    Sub_0800D77C((void *)(uintptr_t)(rec + 36), 0, -32);
-    Sub_0800D77C((void *)(uintptr_t)(rec + 28), 0, 160);
-    *(volatile s16 *)(uintptr_t)(rec + 24) = 5;
-    *(volatile s16 *)(uintptr_t)(rec + 26) = 6;
+    // The ROM uses immediate r7-based STRH forms here; agbcc expands the
+    // equivalent byte-offset volatile lvalues into pointer arithmetic.
+    __asm__ volatile(".code 16\n\tmovs r0, #1\n\tstrh r0, [r7, #20]"
+                     : : : "r0", "cc", "memory");
+    sub_0800D77C((void *)(uintptr_t)(rec + 36), 0, -32);
+    sub_0800D77C((void *)(uintptr_t)(rec + 28), 0, 160);
+    __asm__ volatile(".code 16\n\tmovs r0, #5\n\tstrh r0, [r7, #24]"
+                     : : : "r0", "cc", "memory");
+    __asm__ volatile(".code 16\n\tmov r1, %0\n\tstrh r1, [r7, #26]"
+                     : : "r"(sixhi) : "r1", "cc", "memory");
     *(volatile u32 *)(uintptr_t)(rec + 164) = 2;
     *(volatile s16 *)(uintptr_t)(rec + 148) = 0;
     *(volatile s16 *)(uintptr_t)(rec + 150) = 0;
-    Sub_08002124(0x1392u);
+    _08002124(0x1392u);
     if (*(volatile s16 *)(uintptr_t)(rec + 138) == 1)
-        Sub_0800152A8(rec_);
+        sub_0800152A8(rec_);
 }
 void _080015304(void *a) __attribute__((alias("MenuFF78_15304")));
 void Sub_080015304(void *a) __attribute__((alias("MenuFF78_15304")));

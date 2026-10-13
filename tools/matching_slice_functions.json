@@ -1435,6 +1435,17 @@
       "sub_08002ED0"
     ]
   },
+  "0x08003004": {
+    "c_name": "_08003004",
+    "asm_file": "asm/runtime_2aac.s",
+    "start_marker": ".type sub_08003004, %function",
+    "end_marker": ".type sub_080030CC, %function",
+    "end_vma": "0x080030cc",
+    "export": [
+      "_08003004",
+      "sub_08003004"
+    ]
+  },
   "0x080030cc": {
     "asm_file": "asm/runtime_2aac.s",
     "c_name": "_080030CC",
@@ -6985,6 +6996,18 @@
       "sub_0800152A8"
     ],
     "start_marker": ".type sub_0800152A8, %function"
+  },
+  "0x08015304": {
+    "asm_file": "asm/menu_ff78.s",
+    "c_name": "_080015304",
+    "end_marker": ".type sub_08001549C, %function",
+    "end_vma": "0x0801549c",
+    "export": [
+      "_080015304",
+      "sub_080015304",
+      "Sub_080015304"
+    ],
+    "start_marker": ".type sub_080015304, %function"
   },
   "0x0801549c": {
     "asm_file": "asm/menu_ff78.s",

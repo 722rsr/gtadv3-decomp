@@ -2653,11 +2653,11 @@
       }
     },
     {
-      "name": "menu_display_050e8/_080050E8",
+      "name": "event_dma_queue/_080050E8",
       "target_path": "build/objdiff/080050e8/target.o",
       "base_path": "build/objdiff/080050e8/candidate.o",
       "metadata": {
-        "source_path": "src/menu_display_050e8.c"
+        "source_path": "src/event_dma_queue.c"
       }
     },
     {
@@ -9608,6 +9608,38 @@
       "name": "save/_0802466C",
       "target_path": "build/objdiff/0802466c/target.o",
       "base_path": "build/objdiff/0802466c/candidate.o",
+      "metadata": {
+        "source_path": "src/save.c"
+      }
+    },
+    {
+      "name": "save/_080246BC",
+      "target_path": "build/objdiff/080246bc/target.o",
+      "base_path": "build/objdiff/080246bc/candidate.o",
+      "metadata": {
+        "source_path": "src/save.c"
+      }
+    },
+    {
+      "name": "save/_080246DC",
+      "target_path": "build/objdiff/080246dc/target.o",
+      "base_path": "build/objdiff/080246dc/candidate.o",
+      "metadata": {
+        "source_path": "src/save.c"
+      }
+    },
+    {
+      "name": "save/_080246E8",
+      "target_path": "build/objdiff/080246e8/target.o",
+      "base_path": "build/objdiff/080246e8/candidate.o",
+      "metadata": {
+        "source_path": "src/save.c"
+      }
+    },
+    {
+      "name": "save/_080246F4",
+      "target_path": "build/objdiff/080246f4/target.o",
+      "base_path": "build/objdiff/080246f4/candidate.o",
       "metadata": {
         "source_path": "src/save.c"
       }

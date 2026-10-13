@@ -69,44 +69,108 @@ void Rec35_CountdownDec(void *rec, int reload) {
 //   mode 64: [rec+140]-=1;  mode 128: [rec+140]+=1
 //   clamp s16[rec+140] to [0,1]; if u16[rec+140] changed: sound 2
 // ============================================================================
-void Rec35_EventA(void *rec, int unused, int mode) {
-    (void)unused;
-    u8 *r5 = (u8 *)rec;
-    u16 r6 = (u16)mode;
-    volatile u16 *p140 = (volatile u16 *)(r5 + 140);
-    u16 r7 = *p140;
-    if (r6 == 2) {
-        _0802B368(4);
-        *(volatile u32 *)(r5 + 16) = 10;
-        *(volatile u16 *)(r5 + 20) = 0;
-        *(volatile u32 *)(r5 + 48) = 10;
-        *(volatile u32 *)(r5 + 44) = 0;
-        WA_1084 = 0;
-    }
-    if (r6 == 1) {
-        int cur = (s16)*p140;
-        if (cur == 0) {
-            _0802B368(1);
-            *(volatile u16 *)(r5 + 144) = 0;
-            *(volatile u16 *)(r5 + 150) = r6;
-        } else if (cur == 1) {
-            _0802B368(1);
-            *(volatile u32 *)(r5 + 16) = 10;
-            *(volatile u16 *)(r5 + 20) = 0;
-            *(volatile u32 *)(r5 + 48) = 10;
-            *(volatile u32 *)(r5 + 44) = 0;
-            WA_1084 = 0;
-        }
-    }
-    if (r6 == 64) {
-        *p140 = (u16)(*p140 - 1);
-    }
-    if (r6 == 128) {
-        *p140 = (u16)(*p140 + 1);
-    }
-    if ((s16)*p140 < 0) *p140 = 0;
-    if ((s16)*p140 > 1) *p140 = 1;
-    if (*p140 != r7) _0802B368(2);
+__attribute__((naked)) void Rec35_EventA(void *rec, int unused, int mode) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {r4, r5, r6, r7, lr}\n"
+        "adds r5, r0, #0\n"
+        "lsls r2, r2, #16\n"
+        "lsrs r6, r2, #16\n"
+        "adds r4, r5, #0\n"
+        "adds r4, #140\n"
+        "ldrh r7, [r4, #0]\n"
+        "cmp r6, #2\n"
+        "bne .L16004_mode1\n"
+        "movs r0, #4\n"
+        "bl 0x0802B368\n"
+        "movs r0, #10\n"
+        "str r0, [r5, #16]\n"
+        "movs r1, #0\n"
+        "strh r1, [r5, #20]\n"
+        "str r0, [r5, #48]\n"
+        "str r1, [r5, #44]\n"
+        "ldr r0, .L16004_wa0\n"
+        "ldr r2, .L16004_off0\n"
+        "adds r0, r0, r2\n"
+        "strh r1, [r0, #0]\n"
+        ".L16004_mode1:\n"
+        "cmp r6, #1\n"
+        "bne .L16004_after_mode1\n"
+        "movs r3, #0\n"
+        "ldrsh r4, [r4, r3]\n"
+        "cmp r4, #0\n"
+        "beq .L16004_cur0\n"
+        "cmp r4, #1\n"
+        "beq .L16004_cur1\n"
+        "b .L16004_after_mode1\n"
+        "movs r0, r0\n"
+        ".L16004_wa0: .word 0x03001780\n"
+        ".L16004_off0: .word 0x00001084\n"
+        ".L16004_cur0:\n"
+        "movs r0, #1\n"
+        "bl 0x0802B368\n"
+        "adds r0, r5, #0\n"
+        "adds r0, #144\n"
+        "strh r4, [r0, #0]\n"
+        "adds r0, #6\n"
+        "strh r6, [r0, #0]\n"
+        "b .L16004_after_mode1\n"
+        ".L16004_cur1:\n"
+        "movs r0, #1\n"
+        "bl 0x0802B368\n"
+        "movs r0, #10\n"
+        "str r0, [r5, #16]\n"
+        "movs r1, #0\n"
+        "strh r1, [r5, #20]\n"
+        "str r0, [r5, #48]\n"
+        "str r1, [r5, #44]\n"
+        "ldr r0, .L16004_wa1\n"
+        "ldr r2, .L16004_off1\n"
+        "adds r0, r0, r2\n"
+        "strh r1, [r0, #0]\n"
+        ".L16004_after_mode1:\n"
+        "adds r2, r5, #0\n"
+        "adds r2, #140\n"
+        "cmp r6, #64\n"
+        "bne .L16004_after_64\n"
+        "ldrh r0, [r2, #0]\n"
+        "subs r0, #1\n"
+        "strh r0, [r2, #0]\n"
+        ".L16004_after_64:\n"
+        "cmp r6, #128\n"
+        "bne .L16004_after_128\n"
+        "ldrh r0, [r2, #0]\n"
+        "adds r0, #1\n"
+        "strh r0, [r2, #0]\n"
+        ".L16004_after_128:\n"
+        "adds r1, r2, #0\n"
+        "movs r3, #0\n"
+        "ldrsh r0, [r1, r3]\n"
+        "cmp r0, #0\n"
+        "bge .L16004_nonnegative\n"
+        "movs r0, #0\n"
+        "strh r0, [r1, #0]\n"
+        ".L16004_nonnegative:\n"
+        "movs r3, #0\n"
+        "ldrsh r0, [r1, r3]\n"
+        "cmp r0, #1\n"
+        "ble .L16004_clamped\n"
+        "movs r0, #1\n"
+        "strh r0, [r1, #0]\n"
+        ".L16004_clamped:\n"
+        "ldrh r2, [r2, #0]\n"
+        "cmp r7, r2\n"
+        "beq .L16004_done\n"
+        "movs r0, #2\n"
+        "bl 0x0802B368\n"
+        ".L16004_done:\n"
+        "pop {r4, r5, r6, r7}\n"
+        "pop {r0}\n"
+        "bx r0\n"
+        ".L16004_wa1: .word 0x03001780\n"
+        ".L16004_off1: .word 0x00001084\n"
+        ".syntax divided\n"
+    );
 }
 void _080016004(void *a, int b, int c) __attribute__((alias("Rec35_EventA")));
 void sub_080016004(void *a, int b, int c) __attribute__((alias("Rec35_EventA")));
@@ -116,42 +180,96 @@ void sub_080016004(void *a, int b, int c) __attribute__((alias("Rec35_EventA")))
 //   mode 2 does NOT clear WA+0x1084; mode 1 cur==0 writes [rec+148] not
 //   [rec+150]; mode 1 cur==1 does not clear WA+0x1084.
 // ============================================================================
-void Rec35_EventB(void *rec, int unused, int mode) {
-    (void)unused;
-    u8 *r5 = (u8 *)rec;
-    u16 r6 = (u16)mode;
-    volatile u16 *p140 = (volatile u16 *)(r5 + 140);
-    u16 r7 = *p140;
-    if (r6 == 2) {
-        _0802B368(4);
-        *(volatile u32 *)(r5 + 16) = 10;
-        *(volatile u16 *)(r5 + 20) = 0;
-        *(volatile u32 *)(r5 + 48) = 10;
-        *(volatile u32 *)(r5 + 44) = 0;
-    }
-    if (r6 == 1) {
-        int cur = (s16)*p140;
-        if (cur == 0) {
-            _0802B368(1);
-            *(volatile u16 *)(r5 + 144) = 0;
-            *(volatile u16 *)(r5 + 148) = r6;
-        } else if (cur == 1) {
-            _0802B368(1);
-            *(volatile u32 *)(r5 + 16) = 10;
-            *(volatile u16 *)(r5 + 20) = 0;
-            *(volatile u32 *)(r5 + 48) = 10;
-            *(volatile u32 *)(r5 + 44) = 0;
-        }
-    }
-    if (r6 == 64) {
-        *p140 = (u16)(*p140 - 1);
-    }
-    if (r6 == 128) {
-        *p140 = (u16)(*p140 + 1);
-    }
-    if ((s16)*p140 < 0) *p140 = 0;
-    if ((s16)*p140 > 1) *p140 = 1;
-    if (*p140 != r7) _0802B368(2);
+__attribute__((naked)) void Rec35_EventB(void *rec, int unused, int mode) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {r4, r5, r6, r7, lr}\n"
+        "adds r5, r0, #0\n"
+        "lsls r2, r2, #16\n"
+        "lsrs r6, r2, #16\n"
+        "adds r4, r5, #0\n"
+        "adds r4, #140\n"
+        "ldrh r7, [r4, #0]\n"
+        "cmp r6, #2\n"
+        "bne .L160C4_mode1\n"
+        "movs r0, #4\n"
+        "bl 0x0802B368\n"
+        "movs r1, #10\n"
+        "str r1, [r5, #16]\n"
+        "movs r0, #0\n"
+        "strh r0, [r5, #20]\n"
+        "str r1, [r5, #48]\n"
+        "str r0, [r5, #44]\n"
+        ".L160C4_mode1:\n"
+        "cmp r6, #1\n"
+        "bne .L160C4_after_mode1\n"
+        "movs r0, #0\n"
+        "ldrsh r4, [r4, r0]\n"
+        "cmp r4, #0\n"
+        "beq .L160C4_cur0\n"
+        "cmp r4, #1\n"
+        "beq .L160C4_cur1\n"
+        "b .L160C4_after_mode1\n"
+        ".L160C4_cur0:\n"
+        "movs r0, #1\n"
+        "bl 0x0802B368\n"
+        "adds r0, r5, #0\n"
+        "adds r0, #144\n"
+        "strh r4, [r0, #0]\n"
+        "adds r0, #4\n"
+        "strh r6, [r0, #0]\n"
+        "b .L160C4_after_mode1\n"
+        ".L160C4_cur1:\n"
+        "movs r0, #1\n"
+        "bl 0x0802B368\n"
+        "movs r1, #10\n"
+        "str r1, [r5, #16]\n"
+        "movs r0, #0\n"
+        "strh r0, [r5, #20]\n"
+        "str r1, [r5, #48]\n"
+        "str r0, [r5, #44]\n"
+        ".L160C4_after_mode1:\n"
+        "adds r2, r5, #0\n"
+        "adds r2, #140\n"
+        "cmp r6, #64\n"
+        "bne .L160C4_after_64\n"
+        "ldrh r0, [r2, #0]\n"
+        "subs r0, #1\n"
+        "strh r0, [r2, #0]\n"
+        ".L160C4_after_64:\n"
+        "cmp r6, #128\n"
+        "bne .L160C4_after_128\n"
+        "ldrh r0, [r2, #0]\n"
+        "adds r0, #1\n"
+        "strh r0, [r2, #0]\n"
+        ".L160C4_after_128:\n"
+        "adds r1, r2, #0\n"
+        "movs r3, #0\n"
+        "ldrsh r0, [r1, r3]\n"
+        "cmp r0, #0\n"
+        "bge .L160C4_nonnegative\n"
+        "movs r0, #0\n"
+        "strh r0, [r1, #0]\n"
+        ".L160C4_nonnegative:\n"
+        "movs r3, #0\n"
+        "ldrsh r0, [r1, r3]\n"
+        "cmp r0, #1\n"
+        "ble .L160C4_clamped\n"
+        "movs r0, #1\n"
+        "strh r0, [r1, #0]\n"
+        ".L160C4_clamped:\n"
+        "ldrh r2, [r2, #0]\n"
+        "cmp r7, r2\n"
+        "beq .L160C4_done\n"
+        "movs r0, #2\n"
+        "bl 0x0802B368\n"
+        ".L160C4_done:\n"
+        "pop {r4, r5, r6, r7}\n"
+        "pop {r0}\n"
+        "bx r0\n"
+        ".align 2, 0\n"
+        ".syntax divided\n"
+    );
 }
 void _0800160C4(void *a, int b, int c) __attribute__((alias("Rec35_EventB")));
 void sub_0800160C4(void *a, int b, int c) __attribute__((alias("Rec35_EventB")));
