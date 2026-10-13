@@ -905,9 +905,19 @@ void sub_0800226D4(void *a, int b, u32 c) __attribute__((alias("RaceVM_0226D4"))
 extern void _08007B18(void *rec, int a, int b, int c, u32 d, u32 e, u32 f, u32 g);
 extern void _08007B18(void *rec, int a, int b, int c, u32 d, u32 e, u32 f, u32 g);
 void RaceVM_022750(void *rec, int a1, int a2) {
-    s16 idx = *(s16 *)((u8 *)rec + 132);
-    s16 *rows = (s16 *)((u8 *)rec + 136);
-    int v = rows[idx];
+    // The ROM advances the register already holding rec+132 (`adds r0,#4`),
+    // so the load and the pick share ONE pinned base. The scaled index must be
+    // materialised BEFORE that advance (`lsls r1,r1,#1` precedes `adds r0,#4`)
+    // or agbcc schedules the base add first; pinning the byte offset to r1 and
+    // using it in the address keeps the join in r0 (`adds r0,r0,r1`).
+    register s16 *p __asm__("r0") = (s16 *)((u8 *)rec + 132);
+    register int off __asm__("r1");
+    int idx;
+    int v;
+    idx = p[0];
+    off = idx * 2;
+    p += 2;
+    v = *(s16 *)((u8 *)p + off);
     switch (*(s32 *)((u8 *)rec + 196)) {
     case 1:
     case 3:

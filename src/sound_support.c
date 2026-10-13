@@ -17,19 +17,19 @@ void SoundPump(void){
     volatile u32 *cell = (volatile u32 *)SOUND_ROOT_PTR_CELL;
     volatile u32 *root = (volatile u32 *)(uintptr_t)*cell;
     u32 lock = root[0];
-    if (lock != SOUND_MAGIC && lock != SOUND_MAGIC+1) return;
-    u8 cnt = ((volatile u8*)root)[4];
-    cnt = (u8)(cnt - 1);
-    ((volatile u8*)root)[4] = cnt;
-    if ((s8)cnt > 0) return;
+    if (lock - SOUND_MAGIC > 1u) return;
+    int cnt = ((volatile u8*)root)[4];
+    cnt = cnt - 1;
+    ((volatile u8*)root)[4] = (u8)cnt;
+    if (cnt > 0) return;
     ((volatile u8*)root)[4] = ((volatile u8*)root)[11];
     volatile u32 *dma = (volatile u32 *)0x040000BCu;
     u32 ctrl = dma[2]; // word at 0x040000C4
-    if (ctrl & 1){
+    if (ctrl & 0x02000000u){
         dma[2] = 0x84400004u;
     }
-    *(volatile u16*)0x040000C6 = 0x0400;
-    *(volatile u16*)0x040000C6 = 0xB600;
+    ((volatile u16*)dma)[5] = 0x0400u;
+    ((volatile u16*)dma)[5] = 0xB600u;
 }
 void _0802BE78(void) __attribute__((alias("SoundPump")));
 void sub_0802BE78(void) __attribute__((alias("SoundPump")));

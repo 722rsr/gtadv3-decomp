@@ -5856,6 +5856,17 @@
     ],
     "start_marker": ".type sub_0800DD20, %function"
   },
+  "0x0800dd9c": {
+    "c_name": "_0800DD9C",
+    "asm_file": "asm/menu_dbe8.s",
+    "start_marker": ".type sub_0800DD9C, %function",
+    "end_marker": ".type sub_0800DE4C, %function",
+    "end_vma": "0x0800de4c",
+    "export": [
+      "_0800DD9C",
+      "sub_0800DD9C"
+    ]
+  },
   "0x0800de4c": {
     "asm_file": "asm/menu_dbe8.s",
     "c_name": "_0800DE4C",
@@ -9401,6 +9412,17 @@
     ],
     "start_marker": ".type sub_0800226D4, %function"
   },
+  "0x08022750": {
+    "c_name": "_080022750",
+    "asm_file": "asm/carphys_racer_tail.s",
+    "start_marker": ".type sub_080022750, %function",
+    "end_marker": ".type sub_0800227C0, %function",
+    "end_vma": "0x080227c0",
+    "export": [
+      "_080022750",
+      "sub_080022750"
+    ]
+  },
   "0x0802285c": {
     "asm_file": "asm/carphys_racer_tail.s",
     "c_name": "_08002285C",
@@ -9818,6 +9840,17 @@
       "sub_08002417C"
     ],
     "start_marker": ".type sub_08002417C, %function"
+  },
+  "0x08024338": {
+    "c_name": "_08024338",
+    "asm_file": "asm/code_241c8.s",
+    "start_marker": ".type sub_080024338, %function",
+    "end_marker": "code_241c8_end:",
+    "end_vma": "0x0802446c",
+    "export": [
+      "_080024338",
+      "sub_080024338"
+    ]
   },
   "0x08024634": {
     "asm_file": "asm/saveblock.s",

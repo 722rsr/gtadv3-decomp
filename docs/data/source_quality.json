@@ -4369,6 +4369,12 @@
    "name": "MenuDD20_0800DD20",
    "size": 124
   },
+  "0x0800dd9c": {
+   "class": "c",
+   "file": "src/menus.c",
+   "name": "MenuDD9C_0800DD9C",
+   "size": 176
+  },
   "0x0800de4c": {
    "class": "c",
    "file": "src/menu_dbe8_helpers.c",
@@ -7061,6 +7067,15 @@
    "name": "RaceVM_0226D4",
    "size": 124
   },
+  "0x08022750": {
+   "class": "c_fakematch",
+   "detail": {
+    "pin": 2
+   },
+   "file": "src/race_phase_vms.c",
+   "name": "RaceVM_022750",
+   "size": 112
+  },
   "0x0802285c": {
    "class": "c",
    "file": "src/race_phase_vms.c",
@@ -7365,6 +7380,12 @@
    "file": "src/ghost2.c",
    "name": "Ghost_Snapshot",
    "size": 76
+  },
+  "0x08024338": {
+   "class": "c",
+   "file": "src/save.c",
+   "name": "SaveRebuild_08024338",
+   "size": 308
   },
   "0x08024634": {
    "class": "c",
@@ -10648,12 +10669,12 @@
    "functions": 91
   },
   "c": {
-   "bytes": 37422,
-   "functions": 836
+   "bytes": 37906,
+   "functions": 838
   },
   "c_fakematch": {
-   "bytes": 36062,
-   "functions": 403
+   "bytes": 36174,
+   "functions": 404
   },
   "partial": {
    "bytes": 10136,

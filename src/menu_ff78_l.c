@@ -35,25 +35,53 @@ extern void Sub_0800118DC(void *a, u32 b);
 //     7BFC(rec+32,u32[396],u32[400],56,120,5,1,1,0);
 //     118DC(rec,u16[rec+192]); if u16[rec+192] != 99: same 13-emit.
 //   else: return.
-void MenuFF78_11958(void *rec_) {
-    volatile u8 *rec = (volatile u8 *)rec_;
-    s16 mode = *(volatile s16 *)(uintptr_t)(rec + 168);
-    if (mode == 1) {
-        int h = Sub_0800F6D0((int)*(volatile s16 *)(uintptr_t)(rec + 188));
-        if (h == 3) {
-            Sub_08007B18(rec_, 10, 0, 112, 3, 1, 1, 0);
-        } else if (h == 2) {
-            Sub_08007B18(rec_, 12, 0, 112, 3, 1, 1, 0);
+// The record pointer is the PARAMETER itself: declaring a local
+// `volatile u8 *rec = (volatile u8 *)rec_;` makes agbcc emit two copies of it
+// (`adds r6,r0,#0` then `adds r7,r6,#0`) where the ROM has one
+// (`adds r7,r0,#0`), and the extra register then leaks into every `rec + off`
+// base below.
+void MenuFF78_11958(volatile u8 *rec) {
+    // Non-volatile s16 lvalues: agbcc lowers `*(s16 *)` to a true indexed
+    // `movs r1,#0 / ldrsh rN,[r0,r1]`, while the volatile spelling becomes
+    // `ldrh + lsls + asrs`. Same rule as RD16 in src/race_scene_e.c.
+    s16 mode = *(s16 *)(uintptr_t)(rec + 168);
+    // Switch, not `if / else if`: the ROM tests `cmp r5,#1 / beq body1`,
+    // `cmp r5,#2 / beq body2`, `b default` -- the fall-through comparison chain
+    // agbcc emits for a switch. An else-if chain instead compiles to
+    // `cmp #1 / bne else`, which also strands a second `cmp #2 / bne` inside the
+    // mode-2 arm (4 extra bytes, first difference at +0x16).
+    switch (mode) {
+    case 1: {
+        int h = Sub_0800F6D0((int)*(s16 *)(uintptr_t)(rec + 188));
+        // Switch for the same reason as the mode dispatch: the ROM emits the
+        // fall-through `cmp / beq` chain (`cmp r0,#3 / beq`, `cmp r0,#2 / beq`),
+        // not an else-if's `bne`.
+        switch (h) {
+        case 3:
+            Sub_08007B18((void *)rec, 10, 0, 112, 3, 1, 1, 0);
+            break;
+        case 2:
+            Sub_08007B18((void *)rec, 12, 0, 112, 3, 1, 1, 0);
+            break;
+        default:
+            break;
         }
         {
             // kinds = {8,32,56} at sp+20: k is bounded by the F6D0 limit,
             // whose ROM table (0x0805F940 rows) yields at most 3, so k
             // never exceeds 2 and the 3-word array is never over-read.
-            u32 kinds[3] = { 8, 32, 56 };
+            // The elements are stored one by one: an aggregate initializer
+            // makes agbcc emit a .rodata copy (a relocation with no ROM VMA,
+            // which the probe reports as UNRESOLVED_RELOCATION) and costs the
+            // 24 extra bytes that kept this body at 520/496.
+            u32 kinds[3];
+            kinds[0] = 8;
+            kinds[1] = 32;
+            kinds[2] = 56;
             u32 k = 0;
             for (;;) {
                 int lim = Sub_0800F6D0(
-                    (int)*(volatile s16 *)(uintptr_t)(rec + 188));
+                    (int)*(s16 *)(uintptr_t)(rec + 188));
                 if (!((int)k < lim)) break;
                 u32 r1 = *(volatile u32 *)(uintptr_t)(rec + 372 + k * 12);
                 u32 r2 = *(volatile u32 *)(uintptr_t)(rec + 376 + k * 12);
@@ -62,17 +90,19 @@ void MenuFF78_11958(void *rec_) {
                 k++;
             }
         }
-        Sub_080011854(rec_, *(volatile u16 *)(uintptr_t)(rec + 190));
+        Sub_080011854((void *)rec, *(volatile u16 *)(uintptr_t)(rec + 190));
         if (*(volatile u16 *)(uintptr_t)(rec + 190) != 99) {
             u16 ti = *(volatile u16 *)(uintptr_t)(rec + 212);
             u32 w0 = *(volatile u32 *)(uintptr_t)(FF78_TBL_B5B0 +
                                                   (u32)ti * 8);
             u32 w1 = *(volatile u32 *)(uintptr_t)(FF78_TBL_B5B0 + 4 +
                                                   (u32)ti * 8);
-            Sub_08007B18(rec_, 13, (int)w0, (int)w1, 3, 1, 1, 0);
+            Sub_08007B18((void *)rec, 13, (int)w0, (int)w1, 3, 1, 1, 0);
         }
-    } else if (mode == 2) {
-        Sub_08007B18(rec_, 10, 0, 112, 3, 1, 1, 0);
+        break;
+    }
+    case 2: {
+        Sub_08007B18((void *)rec, 10, 0, 112, 3, 1, 1, 0);
         {
             u32 r1 = *(volatile u32 *)(uintptr_t)(rec + 372);
             u32 r2 = *(volatile u32 *)(uintptr_t)(rec + 376);
@@ -91,20 +121,24 @@ void MenuFF78_11958(void *rec_) {
             Sub_08007BFC((void *)(uintptr_t)(rec + 32), (int)r1, (int)r2,
                          56, 120, 5, 1, 1, 0);
         }
-        Sub_0800118DC(rec_, *(volatile u16 *)(uintptr_t)(rec + 192));
+        Sub_0800118DC((void *)rec, *(volatile u16 *)(uintptr_t)(rec + 192));
         if (*(volatile u16 *)(uintptr_t)(rec + 192) != 99) {
             u16 ti = *(volatile u16 *)(uintptr_t)(rec + 212);
             u32 w0 = *(volatile u32 *)(uintptr_t)(FF78_TBL_B5B0 +
                                                   (u32)ti * 8);
             u32 w1 = *(volatile u32 *)(uintptr_t)(FF78_TBL_B5B0 + 4 +
                                                   (u32)ti * 8);
-            Sub_08007B18(rec_, 13, (int)w0, (int)w1, 3, 1, 1, 0);
+            Sub_08007B18((void *)rec, 13, (int)w0, (int)w1, 3, 1, 1, 0);
         }
+        break;
+    }
+    default:
+        break;
     }
 }
-void _080011958(void *a) __attribute__((alias("MenuFF78_11958")));
-void Sub_080011958(void *a) __attribute__((alias("MenuFF78_11958")));
-void sub_080011958(void *a) __attribute__((alias("MenuFF78_11958")));
+void _080011958(volatile u8 *a) __attribute__((alias("MenuFF78_11958")));
+void Sub_080011958(volatile u8 *a) __attribute__((alias("MenuFF78_11958")));
+void sub_080011958(volatile u8 *a) __attribute__((alias("MenuFF78_11958")));
 
 // ----------------------------------------------------------------------------
 // sub_080011B48 — (rec): v = u16[rec+214]; v > 7 -> return.

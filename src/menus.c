@@ -480,19 +480,50 @@ void MenuDD20_0800DD20(void *rec_, u32 a1, u32 a2) {
 }
 void _0800DD20(void *a,u32 b,u32 c) __attribute__((alias("MenuDD20_0800DD20")));
 
-// menu_dbe8.s sub_0800DD9C — 28-entry jump on s16(value-15) → rec+84 =5/1
-void MenuDD9C_0800DD9C(void *rec, u32 val) {
-    // val is s16 from sub_08004B68+2
-    s16 v = (s16)val - 15;
+// menu_dbe8.s sub_0800DD9C (0x0800DD9C, 176 B) — jump-table dispatch:
+//   push {r4, lr}; r4 = arg2 (the record, NOT arg1); *(u8*)(arg2 + 88) = 1;
+//   r0 = SceneCtx() (bl 0x08004B68); v = (s16)*(u16*)(ctx + 2) - 15;
+//   if v <= 27 (unsigned `bhi`, so any value below 0 also routes to default —
+//   the ROM's `(s16)u16 - 15` index SKIPS the table for v<0 with no guard,
+//   because the cast makes the compare unsigned): r0 = tab[v] (28 halfword
+//   pairs at 0x0800DDC4), `mov pc, r0` into one of the two tails:
+//     0x0800DE3C: r1 = r4 + 84, r0 = 1, strh, pop, bx
+//     0x0800DE34: r1 = r4 + 84, r0 = 5, strh (shared tail at DDDA merges them)
+//   so: *(u16*)(rec + 84) = tab[v] ? 5 : 1.
+// NOTE the manifest's 176 B span includes the 28-entry table (112 B) plus the
+// 4-byte entry pool at 0x0800DDC4.
+void MenuDD9C_0800DD9C(void *arg1, volatile u8 *rec) {
+    volatile u8 *base = (volatile u8 *)(rec + 88);
+    *base = 1;
+    extern void *_08004B68(void);
+    // NON-volatile sh rte: the volatile spelling STOPS agbcc from reusing the
+    // 0x0800DDC8 pool word, causing an extra ldr; and the read must be
+    // written as `(s16)(u16) - 15` so agbcc emits ldrh/subs/lsls/asrs in the
+    // ROM's order (subtract FIRST, then sign-extend; writing `(s16)(u16-x)`
+    // inverts that and emits `subs` last).
+    volatile u8 *ctx = (volatile u8 *)_08004B68();
+    int v = (int)(s16)((int)*(u16 *)(uintptr_t)(ctx + 2) - 15);
     u16 out;
-    if (v<0 || v>27) out=1;
-    else {
-        // table at 0xDDC4: entries 0,2,5,8,16,21,22,26,27 →5 else 1 (per header)
-        static const u8 is5[28] = {1,0,1,0,0,1,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,1,1,0,0,0,1,1};
-        out = is5[v] ? 5 : 1;
-    }
-    *(volatile u16*)((u8*)rec + 84) = out;
-}
+    // STORES IN EACH ARM, not one shared store: the ROM emits one full copy of
+    // the address expression and the store in each arm (`adds r1,r4,#0 /
+    // adds r1,#84 / movs r0,#5 / b`, then the same with `movs r0,#1`). The
+    // store base lives in ARG2 (r4 via the prologue copy from r1), so
+    // putting the store AFTER the switch with `out = N` instead tail-merges
+    // both arms (`movs r1,#5 / movs r1,#1 / adds r0,#84 / strh r1`), which
+    // is the last 2 bytes (174/176).
+    switch (v) {
+    case 0: case 2: case 5: case 8: case 16: case 21: case 22: case 26: case 27:
+        *(volatile u16 *)(uintptr_t)(rec + 84) = 5;
+        break;
+    default:
+        *(volatile u16 *)(uintptr_t)(rec + 84) = 1;
+        break;
+    } }
+// The ROM's 174-byte body is followed by a zero halfword (00 00) before the
+// next function at 0x0800DE50; the top-level asm must sit BEFORE the alias
+// declarations or agbcc drops it and GAS pads the Thumb section with `46 c0`
+// instead (same rule as Race_Setup_19200 in src/race_setup.c).
+__asm__(".pushsection .text.MenuDD9C_0800DD9C,\"ax\",%progbits\n\t.short 0\n\t.popsection");
 void _0800DD9C(void *a,u32 b) __attribute__((alias("MenuDD9C_0800DD9C")));
 // alias for high-reg spill variant handled via same function
 void sub_0800DD9C(void *a,u32 b) __attribute__((alias("MenuDD9C_0800DD9C")));

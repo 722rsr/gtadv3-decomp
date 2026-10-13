@@ -34,123 +34,28 @@ extern void StateB_EventCheck(void); // _080021EC (r0 not part of the contract)
 extern void Idle_RefreshWorkArea(void); // _08001C48
 extern void Idle_Ticker(void);       // _08001CD8
 extern void Idle_Dispatcher(void);   // _08001B7C
-extern void VBlankIntrWait(void);
+extern void sub_0802D9B0(void);   // closure spelling of the BIOS VBlankIntrWait (swi 5)
 extern int  SceneAdvanceIfNeeded(void *ctx); // sub_08004B9C — ctx dead, body reloads r0 (0x03000198)
 extern void SceneShutdown(void);     // sub_08004B50
 extern void SoftResetPrepare(void);  // sub_08004E6C stage
 
 // Scene-state dispatch used twice per frame: (a, b) event pairs (0xF,0x10)
 // before idle and (0x11,0x12) after the VBlank wait (asm _080003F4/_0800049E).
-static void AgbMain_SceneStateDispatch(u16 ev1, u16 ev2) {
-    int st = SceneState(); // sub_08004E6C
-    if (st == 1) {
-        void *ctx = SceneCtx();
-        u16 phase = *(volatile u16*)((u8*)ctx + 0x0A);
-        SceneDispatch4(ev1, phase, 0);
-    } else if (st == 2) {
-        void *ctx = SceneCtx();
-        u16 phase = *(volatile u16*)((u8*)ctx + 0x0A);
-        SceneDispatch4(ev2, phase, 0);
-    }
-}
 
 // Soft-reset path (_08000520): reachable only via the counter's F-key gate
 // after frame 32 (sb == 0 here, so sb-driven writes are 0). Calls the full
 // reset leaf (SP=0x03007F00, RegisterRamReset, SoftReset) which never
 // returns.
-static void AgbMain_SoftReset(void) {
-    volatile u16 *ime = (volatile u16*)0x04000208;
-    volatile u16 *ie = (volatile u16*)0x04000200;
-    *ime = 0;
-    *ie &= 0xFF7F;
-    *ie &= 0xFFBF;
-    *ime = 1;
-    *(volatile u8*)0x03007FFA = 0;
-    extern void _0802D994(void); // full reset leaf (runtime_accessors.c)
-    _0802D994();                 // never returns
-}
 
 // Per-frame body — mirrors asm _080003F4.. _08000510 exactly.
-static void AgbMain_PerFrameBody(void) {
-    KeypadPoll();            // _08002430
-    StateA_SyncPerFrame();   // _08001834
-    SceneDispatch4(4,0,0);
-    AgbMain_SceneStateDispatch(0x0F, 0x10);
-    Idle_Dispatcher();       // _08001B7C
-    void *fctx = SceneCtx(); // sub_08004B68 (unconditional, as in asm)
-    if (FlagClear4(fctx)) {  // sub_08004B74(ctx) nonzero = gate open
-        u16 held = (u16)KeyHeld(); // _08002494, lsls/lsrs #16
-        u16 edge = (u16)KeyEdge(); // _08002488
-        SceneDispatch4(6, held, edge);
-    }
-    TimerListTick();         // sub_08005AE4
-    StateB_EventCheck(); // _080021EC
-    SceneDispatch4(5,0,0);
-    Idle_RefreshWorkArea();  // _08001C48
-    SceneDispatch4(7,0,0);
-    VBlankIntrWait();        // sub_0802D9B0 = swi 5
-    Idle_Ticker();           // _08001CD8
-    SceneDispatch4(8,0,0);
-    AgbMain_SceneStateDispatch(0x11, 0x12);
-    // _080004BC: frame counter + bit mirrors, then the >0x20 F-key gate
-    {
-        volatile u8 *wa = (volatile u8*)0x03001780;
-        volatile u32 *cnt = (volatile u32*)(wa + 0x10D8);
-        u32 v = *cnt + 1;
-        *cnt = v;
-        *(volatile u16*)(wa + 0x10B0) = (u16)(v & 1);
-        *(volatile u16*)(wa + 0x10B2) = (u16)(v & 2);
-        *(volatile u16*)(wa + 0x10B4) = (u16)(v & 4);
-        *(volatile u16*)(wa + 0x10B6) = (u16)(v & 8);
-        *(volatile u16*)(wa + 0x10B8) = (u16)(v & 0x10);
-        if (v > 0x20) {
-            if ((KeyEdge() & 0xF) != 0 && (KeyHeld() & 0xF) == 0xF)
-                AgbMain_SoftReset(); // never returns
-        }
-    }
-}
 
 // Scene teardown + shutdown when SceneAdvanceIfNeeded returns nonzero
 // (asm _0800054A.._08000560). Returns to re-run the _08000378 entry block.
-static void AgbMain_Teardown(void) {
-    if (SceneState() == 2) {
-        void *ctx = SceneCtx();
-        u16 phase = *(volatile u16*)((u8*)ctx + 0x0A);
-        SceneDispatch4(0x14, phase, 0);
-    }
-    SceneDispatch4(0x0C, 0, 0);
-    SceneShutdown();         // sub_08004B50
-}
 
 // Main per-frame loop + scene-advance gate. Mirrors asm _08000378 onward:
 //   entry block (VBlank wait, register blocks, save ticks, broadcasts 1/3,
 //   IME=1) runs once at boot and again after every scene teardown; then the
 //   per-frame body repeats until SceneAdvanceIfNeeded triggers a teardown.
-static void AgbMain_Run(void) {
-    for (;;) {
-        // _08000378 entry: VBlankIntrWait + register block A/B + link slots +
-        // save ticks + broadcasts 1 and 3 + IME=1, then jump to _08000510.
-        VBlankIntrWait();
-        StateA_Register();   // _080016EC
-        StateB_Register();   // _080020F4
-        StateB_InitLink(2);  // _080020E8 expected count 2
-        SaveTick1();         // sub_08005A68
-        SaveTick2();         // _0800210C
-        SceneDispatch4(1,0,0);
-        SceneDispatch4(3,0,0);
-        *(volatile u16*)0x04000208 = 1; // IME = 1 (r7 = 0x04000208)
-        // _08000510: advance gate is checked before the first per-frame body
-        // (the entry block jumps here) and after every body thereafter.
-        while (SceneAdvanceIfNeeded((void *)0) == 0) { // sub_08004B9C
-            AgbMain_PerFrameBody();
-        }
-        // advance triggered: r8 is always 0 on this path, so the F-key
-        // soft reset (_08000520) only runs from the counter gate inside the
-        // body; here we always take the teardown (_0800054A).
-        AgbMain_Teardown();
-        // loop back to the _08000378 entry block
-    }
-}
 
 void AgbMain(void) { // _080002C4
     {
@@ -195,7 +100,114 @@ void AgbMain(void) { // _080002C4
     // Work-area seeds at 0x03001780+0xFBC/+0x10C8
     *(volatile u16*)(0x03001780 + 0x0FBC) = 1;
     *(volatile u16*)(0x03001780 + 0x10C8) = 3;
-    AgbMain_Run();
+    {
+
+    for (;;) {
+        // _08000378 entry: VBlankIntrWait + register block A/B + link slots +
+        // save ticks + broadcasts 1 and 3 + IME=1, then jump to _08000510.
+        sub_0802D9B0();
+        StateA_Register();   // _080016EC
+        StateB_Register();   // _080020F4
+        StateB_InitLink(2);  // _080020E8 expected count 2
+        SaveTick1();         // sub_08005A68
+        SaveTick2();         // _0800210C
+        SceneDispatch4(1,0,0);
+        SceneDispatch4(3,0,0);
+        *(volatile u16*)0x04000208 = 1; // IME = 1 (r7 = 0x04000208)
+        // _08000510: advance gate is checked before the first per-frame body
+        // (the entry block jumps here) and after every body thereafter.
+        while (SceneAdvanceIfNeeded((void *)0) == 0) { // sub_08004B9C
+            {
+
+    KeypadPoll();            // _08002430
+    StateA_SyncPerFrame();   // _08001834
+    SceneDispatch4(4,0,0);
+    {
+
+    int st = SceneState(); // sub_08004E6C
+    if (st == 1) {
+        void *ctx = SceneCtx();
+        u16 phase = *(volatile u16*)((u8*)ctx + 0x0A);
+        SceneDispatch4((0x0F), phase, 0);
+    } else if (st == 2) {
+        void *ctx = SceneCtx();
+        u16 phase = *(volatile u16*)((u8*)ctx + 0x0A);
+        SceneDispatch4(( 0x10), phase, 0);
+    }
+}
+    Idle_Dispatcher();       // _08001B7C
+    void *fctx = SceneCtx(); // sub_08004B68 (unconditional, as in asm)
+    if (FlagClear4(fctx)) {  // sub_08004B74(ctx) nonzero = gate open
+        u16 held = (u16)KeyHeld(); // _08002494, lsls/lsrs #16
+        u16 edge = (u16)KeyEdge(); // _08002488
+        SceneDispatch4(6, held, edge);
+    }
+    TimerListTick();         // sub_08005AE4
+    StateB_EventCheck(); // _080021EC
+    SceneDispatch4(5,0,0);
+    Idle_RefreshWorkArea();  // _08001C48
+    SceneDispatch4(7,0,0);
+    sub_0802D9B0();        // sub_0802D9B0 = swi 5
+    Idle_Ticker();           // _08001CD8
+    SceneDispatch4(8,0,0);
+    {
+
+    int st = SceneState(); // sub_08004E6C
+    if (st == 1) {
+        void *ctx = SceneCtx();
+        u16 phase = *(volatile u16*)((u8*)ctx + 0x0A);
+        SceneDispatch4((0x11), phase, 0);
+    } else if (st == 2) {
+        void *ctx = SceneCtx();
+        u16 phase = *(volatile u16*)((u8*)ctx + 0x0A);
+        SceneDispatch4(( 0x12), phase, 0);
+    }
+}
+    // _080004BC: frame counter + bit mirrors, then the >0x20 F-key gate
+    {
+        volatile u8 *wa = (volatile u8*)0x03001780;
+        volatile u32 *cnt = (volatile u32*)(wa + 0x10D8);
+        u32 v = *cnt + 1;
+        *cnt = v;
+        *(volatile u16*)(wa + 0x10B0) = (u16)(v & 1);
+        *(volatile u16*)(wa + 0x10B2) = (u16)(v & 2);
+        *(volatile u16*)(wa + 0x10B4) = (u16)(v & 4);
+        *(volatile u16*)(wa + 0x10B6) = (u16)(v & 8);
+        *(volatile u16*)(wa + 0x10B8) = (u16)(v & 0x10);
+        if (v > 0x20) {
+            if ((KeyEdge() & 0xF) != 0 && (KeyHeld() & 0xF) == 0xF)
+                {
+
+    volatile u16 *ime = (volatile u16*)0x04000208;
+    volatile u16 *ie = (volatile u16*)0x04000200;
+    *ime = 0;
+    *ie &= 0xFF7F;
+    *ie &= 0xFFBF;
+    *ime = 1;
+    *(volatile u8*)0x03007FFA = 0;
+    extern void _0802D994(void); // full reset leaf (runtime_accessors.c)
+    _0802D994();                 // never returns
+} // never returns
+        }
+    }
+}
+        }
+        // advance triggered: r8 is always 0 on this path, so the F-key
+        // soft reset (_08000520) only runs from the counter gate inside the
+        // body; here we always take the teardown (_0800054A).
+        {
+
+    if (SceneState() == 2) {
+        void *ctx = SceneCtx();
+        u16 phase = *(volatile u16*)((u8*)ctx + 0x0A);
+        SceneDispatch4(0x14, phase, 0);
+    }
+    SceneDispatch4(0x0C, 0, 0);
+    SceneShutdown();         // sub_08004B50
+}
+        // loop back to the _08000378 entry block
+    }
+    }
     // unreachable — original loops forever until the reset path
 }
 void _080002C4(void) __attribute__((alias("AgbMain")));

@@ -254,7 +254,22 @@ bool _08001744(u32 mode) __attribute__((alias("StateA_IsSpecialMode")));
 
 // _08001758 — mode-change processor
 // Pseudocode documented in asm/blocka.s header and asm/blocka.s
+// Called spellings: the ROM's three calls are the real functions
+// _080005C0 / _080006BC / _08000BF0 (`bl 0x80005c0`, `bl 0x80006bc`,
+// `bl 0x8000bf0`); going through the file-local Session*Hook wrappers leaves
+// the relocations unresolved (the wrappers are static in this TU).
+// Naming the hooks would be right only if the closure exported them -- it does
+// not, so the probe reports UNRESOLVED_RELOCATION and the candidate loses the
+// match from +0x62 on.
 void StateA_CommitMode(void) {
+    extern void _080005C0(int);
+    extern void _080006BC(void);
+    extern void _08000BF0(int, u32);
+    // Pinning the slot register instead of caching the record pointer
+    // measures 9/148 (candidate grows by 4); the simple `stateA()` form with
+    // the three direct call spellings is the high-water mark at 9/144. Do not
+    // re-pin this body -- the ROM's r7 slot/ldrb scheduling is compiler
+    // internal.
     volatile StateBlockA *st = stateA();
     u16 cur = st->curMode;
     u16 req = st->reqMode;
@@ -264,10 +279,10 @@ void StateA_CommitMode(void) {
     bool newA = StateA_IsGameMode(req);
 
     if (!oldA && newA) {
-        SessionEnterHook(0);
+        _080005C0(0);
         st->scratch08 = 0; // original stores r6 (0) — see note about oldA false path
     } else if (oldA && !newA) {
-        SessionExitHook();
+        _080006BC();
         *(volatile u8 *)((uintptr_t)st + 1) = 0; // +0x01 byte clear (armcc leftover)
     }
 
@@ -280,10 +295,10 @@ void StateA_CommitMode(void) {
         st->pendingParam = 0x03EB;
     } else if (req == 8) {
         u32 arg = *(volatile u32 *)((uintptr_t)st + 0x24);
-        SessionMode8Hook(arg, 1);
+        _08000BF0(1, arg);
     } else if (req == 11) {
         u32 arg = *(volatile u32 *)((uintptr_t)st + 0x28);
-        SessionMode8Hook(arg, 0);
+        _08000BF0(0, arg);
     }
 
     st->curMode = req;

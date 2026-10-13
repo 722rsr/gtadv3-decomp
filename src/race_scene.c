@@ -216,17 +216,35 @@ tail: {
 void _08001A4AC(void) __attribute__((alias("Race_Scene_Dispatch_1A4AC")));
 
 extern void Sub_08002A86C(void *rec, u32 bits, u32 flag);
+// The ROM never keeps the work-area base in a register: every WA-relative
+// access is rebuilt as two pool words (`ldr r0,=0x03001780 / ldr r2,=0x10CA /
+// adds r1,r0,r2`). A folded `WORK_AREA_BASE + off` collapses to one word and
+// forces the base to stay live (an extra callee-saved r7 and `push {r4-r7,lr}`),
+// so the offsets come from their own anchor symbols. Same recipe as WA_SPLIT in
+// src/race_scene_b1.c; the `.globl` assignments must be inside the body because
+// match_c_slice splices only this function's own section.
+__asm__(".set RS1B410_WA, 0x03001780");
+extern u8 RS1B410_WA;
+__asm__(".set RS1B410_O10CA, 0x000010CA");
+extern u8 RS1B410_O10CA;
+__asm__(".set RS1B410_O1110, 0x00001110");
+extern u8 RS1B410_O1110;
 void Race_Scene_BHandler_1B410(void) {
-    volatile u8 *wa = (volatile u8 *)WORK_AREA_BASE;
-    volatile s16 *countp = (volatile s16 *)(wa + 0x10CAu);
-    for (int i = 0; i < *countp; i++) {
+    __asm__(".globl RS1B410_WA\nRS1B410_WA = 0x03001780\n"
+            ".globl RS1B410_O10CA\nRS1B410_O10CA = 0x000010CA\n"
+            ".globl RS1B410_O1110\nRS1B410_O1110 = 0x00001110\n"
+            ".globl RS1B410_O10FE\nRS1B410_O10FE = 0x000010FE\n");
+    volatile s16 *countp = (volatile s16 *)((uintptr_t)&RS1B410_WA
+                                            + (uintptr_t)&RS1B410_O10CA);
+    int i;
+    for (i = 0; i < (int)*countp; i++) {
         Sub_08002A86C((void *)(uintptr_t)(0x03004EA4u + (u32)i * 284u),
                       1, 0);
     }
     if (Ghost_FlagTest(32u) == 0u) {
-        s8 v = *(volatile s8 *)(wa + 0x1110u);
+        s8 v = *(volatile s8 *)((uintptr_t)&RS1B410_WA + (uintptr_t)&RS1B410_O1110);
         if (v != 0) {
-            s16 c = *(volatile s16 *)(wa + 0x1110u - 18u);
+            s16 c = *(volatile s16 *)((uintptr_t)&RS1B410_WA + (uintptr_t)&RS1B410_O1110 - 18u);
             u16 song = (u16)Course_GetSong((int)c);
             SoundSetMasterVol((u32)song);
         }

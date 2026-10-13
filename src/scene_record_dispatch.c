@@ -165,6 +165,7 @@ HOST_STUB(void  _08007658(void *a));
 HOST_STUB(int   _080050D0(int a, int b));
 HOST_STUB(void  _08005260(void *a, void *b, int c, int d)); // 4-arg (r3 = transfer size)
 HOST_STUB(u32   _080074A8(void *x));
+HOST_STUB(void  _08007770(int a, void *b, int c, int d, u32 e, u32 f)); // 0x08007770 course-resource setup (6 machine args)
 
 // ============================================================================
 // Faithful div-remainder cores (sound_divmod.s 0x0802DFE4, armcc ROR
@@ -1216,9 +1217,12 @@ void RaceSceneCtor_23628(void *rec) {
     u8 *r7 = (u8 *)rec;
     _08002B214(51);
     u8 *r8 = (u8 *)(uintptr_t)0x0839F5FCu;
-    CourseSetup7770_Static((void *)(uintptr_t)0u, r8, 0, 0, 4u, 1u);
+    // The ROM calls bl 0x8007770 twice (the setup is a real ROM span at
+    // 0x08007770); a file-local static wrapper leaves two
+    // UNRESOLVED_RELOCATION bls -- these are the closure spellings.
+    _08007770(0, r8, 0, 0, 4u, 1u);
     u8 *r5 = (u8 *)(uintptr_t)0x082B7410u;
-    CourseSetup7770_Static((void *)(uintptr_t)1u, r5, 3, 0, 0u, 3u);
+    _08007770(1, r5, 3, 0, 0u, 3u);
     *(u32 *)(r7 + 88) = 6u;
     *(u32 *)(r7 + 100) = 21u;
     *(u32 *)(r7 + 112) = 1u;
@@ -1288,21 +1292,27 @@ void sub_08023628(void *r) __attribute__((alias("RaceSceneCtor_23628")));
 // NOTE: the place byte is wa+0x10E5 (== 0x03002865); every ROM site reaches
 // it as pool literal 0x000010E5 added to the 0x03001780 base (e.g. the
 // 0x0800AB78 and 0x0800AD2C literals). Do NOT write wa+0x2865 here.
-static void race_lap_tail(void) {
-    _080023FF8(21, 0);
-    _0800B9F0();
-    _080023FF8(35, 0);
-}
-static void race_progress_check(int c, u8 *wa) {
-    int r4 = (int)(s16)_08002581C(c);
-    int ru = (int)(u8)_080025E1C(r4);
-    int rb = (int)(s8)*(wa + 0x10E5);
-    if (ru < rb) {
-        _080025DBC(r4, rb);
-        _0800279C(1);
-    }
-    race_lap_tail();
-}
+// The lap-tail and progress-check bodies are INLINED at every call site: the
+// ROM has no `bl` for them between 0x0800AA40 and 0x0800AD34 (each former call
+// site repeats the full body), so file-local static helpers left two
+// UNRESOLVED_RELOCATION bls. Kept as macros for readability at the 4 sites.
+#define RACE_LAP_TAIL()                                                       \
+    do {                                                                      \
+        _080023FF8(21, 0);                                                    \
+        _0800B9F0();                                                          \
+        _080023FF8(35, 0);                                                    \
+    } while (0)
+#define RACE_PROGRESS_CHECK(c, wap)                                           \
+    do {                                                                      \
+        int r4v = (int)(s16)_08002581C(c);                                    \
+        int ruv = (int)(u8)_080025E1C(r4v);                                   \
+        int rbv = (int)(s8)*(wap + 0x10E5);                                   \
+        if (ruv < rbv) {                                                      \
+            _080025DBC(r4v, rbv);                                             \
+            _0800279C(1);                                                     \
+        }                                                                     \
+        RACE_LAP_TAIL();                                                      \
+    } while (0)
 void RaceFSM_AA40(void) {
     s32 stk0, stk4, slot32;
     u8 *wa = (u8 *)(uintptr_t)0x03001780u;
@@ -1378,10 +1388,10 @@ common0:
     case 5: {
         u8 place = *(wa + 0x10E5);
         if ((u8)(place - 1u) > 2u) {
-            race_lap_tail();
+            RACE_LAP_TAIL();
             return;
         }
-        race_progress_check((int)(s16)(*(u16 *)(wa + 0x576)), wa);
+        RACE_PROGRESS_CHECK((int)(s16)(*(u16 *)(wa + 0x576)), wa);
         return;
     }
     case 2:
@@ -1402,10 +1412,10 @@ common0:
         if (v == 1) {
             u8 place = *(wa + 0x10E5);
             if ((u8)(place - 1u) > 2u) {
-                race_lap_tail();
+                RACE_LAP_TAIL();
                 return;
             }
-            race_progress_check((int)(s16)(*(u16 *)(wa + 0x576)), wa);
+            RACE_PROGRESS_CHECK((int)(s16)(*(u16 *)(wa + 0x576)), wa);
             return;
         }
         if (v == 2) {

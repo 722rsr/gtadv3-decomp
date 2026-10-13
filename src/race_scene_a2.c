@@ -65,6 +65,11 @@ HOST_STUB(void  _0800199CC(void));                                 // 0x0800199C
 #define WA     0x03001780u
 #define WA_U8(o)  (*(volatile u8  *)(uintptr_t)(WA + (o)))
 #define WA_U16(o) (*(volatile u16 *)(uintptr_t)(WA + (o)))
+// VOLATILE on purpose: the non-volatile form of this macro was measured on the
+// two bodies that read through it and is a regression in both (matched bytes
+// 147 -> 134 on _08001AAA0, 90 -> 88 on _08001BB14). Unlike WA_S16 in
+// src/menu_ff78_a.c, these reads are not the ROM's `movs rN,#0 / ldrsh` shape --
+// do not "fix" it to match.
 #define WA_S16(o) (*(volatile s16 *)(uintptr_t)(WA + (o)))
 #define WA_S8(o)  (*(volatile s8  *)(uintptr_t)(WA + (o)))
 #define WA_U32(o) (*(volatile u32 *)(uintptr_t)(WA + (o)))

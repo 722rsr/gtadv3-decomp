@@ -41,6 +41,10 @@
 #define RD_WA ((u8 *)(uintptr_t)WORK_AREA_BASE)
 
 #define WA_U16(o) (*(volatile u16 *)(RD_WA + (o)))
+// VOLATILE on purpose: the non-volatile form of this macro was measured on
+// _0800B190 and is a regression there (matched bytes 69 -> 67, candidate 704 ->
+// 688). The reader index in this body is not the ROM's `movs rN,#0 / ldrsh`
+// shape, unlike WA_S16 in src/menu_ff78_a.c -- do not "fix" it to match.
 #define WA_S16(o) (*(volatile s16 *)(RD_WA + (o)))
 #define WA_U32(o) (*(volatile u32 *)(RD_WA + (o)))
 

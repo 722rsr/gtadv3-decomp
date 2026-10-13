@@ -84,16 +84,36 @@ typedef struct { u8 spr_kp_pad[12]; u16 spr_kp_w12; } SpriteKp;
 // source buffer into the 0x06010120 VRAM tile series, bank = arg1<<5.
 //   for i in 0..11: CpuFastSet(dst + i*192, 0x06010120 + i*0x100 + bank*32, 48)
 // ============================================================================
+// The ROM has NO loop over a vram table: it inlines all twelve _0802D970
+// calls, loading each destination font base from its own pool word and adding
+// the bank offset in a register (`ldr r2,[pc] / adds r1,r5,r2`). A
+// `static const u32 vram[12]` array instead emits a .rodata table -- a
+// relocation with no ROM VMA, so the probe reports UNRESOLVED_RELOCATION with
+// a 40-byte candidate instead of the ROM's 248.
 void Sprite_BlitTiles(u8 *dst, int bank) {
-    static const u32 vram[12] = {
-        0x06010120u, 0x06010220u, 0x06010320u, 0x06010420u,
-        0x06010520u, 0x06010620u, 0x06010920u, 0x06010A20u,
-        0x06010B20u, 0x06010C20u, 0x06010D20u, 0x06010E20u,
-    };
+    // The r4/r5 swap is NOT reachable through declaration order (222 both
+    // ways, and pinning dst costs 53/248). The compiler's arg-copy slot
+    // choice is tied to the parameter's own position (r0), so the ROM's
+    // r4/r5 layout is the one shape this body cannot be nudged into; the
+    // remaining 26 bytes are this register swap only.
     u32 base = (u32)(bank << 5);
-    for (int i = 0; i < 12; i++) {
-        _0802D970(dst + i * 192, (void *)(uintptr_t)(vram[i] + base), 48);
-    }
+    _0802D970(dst + 0,   (void *)(uintptr_t)(0x06010120u + base), 48);
+    _0802D970(dst + 192, (void *)(uintptr_t)(0x06010220u + base), 48);
+    _0802D970(dst + 384, (void *)(uintptr_t)(0x06010320u + base), 48);
+    _0802D970(dst + 576, (void *)(uintptr_t)(0x06010420u + base), 48);
+    _0802D970(dst + 768, (void *)(uintptr_t)(0x06010520u + base), 48);
+    _0802D970(dst + 960, (void *)(uintptr_t)(0x06010620u + base), 48);
+    _0802D970(dst + 1152,(void *)(uintptr_t)(0x06010920u + base), 48);
+    _0802D970(dst + 1344,(void *)(uintptr_t)(0x06010A20u + base), 48);
+    _0802D970(dst + 1536,(void *)(uintptr_t)(0x06010B20u + base), 48);
+    _0802D970(dst + 1728,(void *)(uintptr_t)(0x06010C20u + base), 48);
+    _0802D970(dst + 1920,(void *)(uintptr_t)(0x06010D20u + base), 48);
+    _0802D970(dst + 2112,(void *)(uintptr_t)(0x06010E20u + base), 48);
+    // Keep dst (r4) and base (r5) live past the LAST call: once they are dead
+    // agbcc folds the last call's arguments into them destructively
+    // (`adds r4,r4,r0` / `adds r5,r5,r1` + two copies, +4 bytes). The barrier
+    // emits no instructions -- it only marks the registers live.
+    __asm__ volatile("" : "+r"(dst), "+r"(base));
 }
 void _0800263E0(u8 *a, int b) __attribute__((alias("Sprite_BlitTiles")));
 void sub_0800263E0(u8 *a, int b) __attribute__((alias("Sprite_BlitTiles")));
