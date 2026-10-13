@@ -9,7 +9,7 @@ The matching build uses the pinned `old_agbcc` compiler with
 
 ```sh
 make toolchain
-make matching-ready
+make full-rom-match
 git diff --check
 ```
 
@@ -18,6 +18,11 @@ C copies, checks original/transformed object equivalence, scores the C corpus,
 and links the selected C functions into the independent executable slice.
 It also runs an instruction-mutation negative control, runtime-provenance
 comparison, and source/data ownership checks.
+`full-rom-match` then links that C-spliced code object with the registered data
+object, emits source-generated zero padding, and compares the complete 8 MiB
+image with the pinned reference. Some registered data inputs remain
+verbatim/ROM-derived; the gate proves the exact whole-image build, not semantic
+asset reconstruction.
 
 Generated source, objects, reports, captures, and extracted assets belong in
 ignored output directories. Never commit the reference ROM or derived binaries.
@@ -31,8 +36,9 @@ make fast-check
 ```
 
 `fast-check` runs tool regressions and static audits. It does not replace the
-independent link. On a fresh checkout, first run `matching-ready` to generate
-the corpus report and assembled symbol closure used by these audits.
+whole-image `full-rom-match`. On a fresh checkout, that target runs
+`matching-ready` first to generate the corpus report and assembled symbol
+closure used by these audits.
 `make matching-slice` checks the selected C slice and its
 negative control. Assembly edits also require `make independent-slice` and
 `make ownership-map` to refresh source hashes before auditing the inventories.

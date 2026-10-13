@@ -14,8 +14,8 @@
 @
 @ Registered content regions are generated from editable inputs under build/data.
 @ Some compressed/raw payload bytes are preserved verbatim, and clean builds
-@ may extract those inputs from the reference ROM. The only direct ROM include
-@ after the content end is the verified all-zero padding tail below.
+@ may extract those inputs from the reference ROM. The final padding is emitted
+@ as explicit zero fill, not copied from the reference ROM.
 @ The data/asset inventories remain the layout authority: the catalogued
 @ ranges in docs/data/ (lz77_blobs.txt, mto_entries.txt, track_resources.txt)
 @ all index into this span, as does the on-demand ASCII string inventory
@@ -141,4 +141,4 @@ tail_end_data_start:
     .global tail_end_data_end
 tail_end_data_end:
 
-    .incbin "baserom.gba", 0x7B04C4, 0x4FB3C    @ verified zero padding to end of ROM (0x800000)
+    .space 0x4FB3C, 0    @ verified zero padding to end of ROM (0x800000)

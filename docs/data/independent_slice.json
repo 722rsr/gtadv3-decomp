@@ -2,7 +2,7 @@
   "errors": [],
   "external_boundary": [],
   "generator": "tools/independent_slice.py",
-  "generator_sha256": "f93c76853efe3591e044eeeb6a36c2a622ac88dbf54a7abd04f240e893acb7c4",
+  "generator_sha256": "d3e3c9cb32918e38e6222ae8989cf09af34b7af66018974c8667c87b063871e3",
   "header": {
     "complement_checksum": {
       "formula": "-(sum of bytes 0x0A0..0x0BC) - 0x19",
@@ -893,7 +893,7 @@
     },
     {
       "path": "asm/runtime_2aac.s",
-      "sha256": "3a175491c39ba0e55e37fb1da797b7cb6efcc658754eb746434822f634417623"
+      "sha256": "31c3f2a613f2ac66fa7e8c3ab64c86f3c3910d81640fc86d423d52410e9db52c"
     },
     {
       "path": "asm/runtime_mem.s",

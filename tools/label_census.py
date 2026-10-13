@@ -122,17 +122,14 @@ def census(obj=OBJ, nm=NM):
     _sp = _il.spec_from_file_location("_cov", ROOT / "tools" / "coverage.py")
     _cov = _il.module_from_spec(_sp)
     _sp.loader.exec_module(_cov)
-    for _o, _n in typed_nine:
-        # norm_vma returns the VMA as hex digits WITHOUT the 0x08 -- i.e. a FILE
-        # OFFSET -- and collapses the redundant-zero spellings, which is exactly
-        # the mapping needed here. Both _080026220 and _08026220 give 026220.
-        claimed = _cov.norm_vma(_n)
-        if not claimed:
-            continue
-        d = int(_o, 16) - int(claimed, 16)
-        if d:
-            drifted.append((int(claimed, 16) + ROM_BASE, _n, d))
-    drifted = sorted((r for r in rows if r[2] != 0), key=lambda r: r[2])
+    # norm_vma returns a FILE OFFSET and collapses redundant-zero spellings.
+    # Preserve these findings: the old code appended them to an undefined list
+    # and then overwrote that list with eight-digit results, silently dropping
+    # every nine-digit drift.
+    drifted = [r for r in rows if r[2] != 0]
+    drifted.extend(nine_digit_drift_rows(
+        [(offset, name) for offset, _typ, name in nine], funcs, _cov.norm_vma))
+    drifted.sort(key=lambda r: (r[0], r[1]))
     return {
         "total_vma_labels": len(rows),
         "ambiguous_9digit_names": len(nine),
@@ -143,7 +140,7 @@ def census(obj=OBJ, nm=NM):
                 "named_vma": f"0x{n:08x}",
                 "symbol": s,
                 "drift": d,
-                "class": "prologue-preamble" if d <= PROLOGUE_DRIFT_MAX else "adjudicate",
+                "class": drift_class(d),
             }
             for n, s, d in drifted
         ],
@@ -172,6 +169,30 @@ def typed_function_names(asm_dir):
         for m in BL_RE.finditer(code):
             called.add(m.group(1))
     return typed | called
+
+
+def nine_digit_drift_rows(nine, funcs, norm_vma):
+    """Return address drift for typed nine-digit symbols only.
+
+    Their spelling is ambiguous, so the shared coverage normaliser is the
+    authority for the claimed ROM offset. `nine` contains `(offset, name)`.
+    """
+    rows = []
+    for offset, name in nine:
+        if name not in funcs:
+            continue
+        claimed = norm_vma(name)
+        if not claimed:
+            continue
+        drift = int(offset, 16) - int(claimed, 16)
+        if drift:
+            rows.append((int(claimed, 16) + ROM_BASE, name, drift))
+    return rows
+
+
+def drift_class(drift):
+    """Only a small positive assembly preamble is a known label displacement."""
+    return "prologue-preamble" if 0 < drift <= PROLOGUE_DRIFT_MAX else "adjudicate"
 
 
 def _check(name, got, want):
@@ -226,15 +247,24 @@ def self_test():
                  _cov.norm_vma("_080026220"), _cov.norm_vma("_08026220"))
     ok &= _check("and that shared value is a file offset",
                  int(_cov.norm_vma("_08026220"), 16), 0x26220)
+    ok &= _check("a matching typed 9-digit symbol has no drift",
+                 nine_digit_drift_rows([("026220", "_080026220")],
+                                       {"_080026220"}, _cov.norm_vma), [])
+    ok &= _check("a typed 9-digit drift is retained",
+                 nine_digit_drift_rows([("026222", "_080026220")],
+                                       {"_080026220"}, _cov.norm_vma),
+                 [(0x08026220, "_080026220", 2)])
 
-    # Classification: <=+16 is the prologue class, beyond it is not safe to move together.
+    # Classification: only a positive <=16-byte preamble is the safe class.
     rep_rows = parse_nm("00002bb8 t sub_08002BB4\n0002abcd0 t sub_080046D0\n")
-    cls = {s: ("prologue-preamble" if dr <= PROLOGUE_DRIFT_MAX else "adjudicate")
+    cls = {s: drift_class(dr)
            for _n, s, dr in rep_rows}
     ok &= _check("+4 classifies as prologue-preamble",
                  cls.get("sub_08002BB4"), "prologue-preamble")
     ok &= _check("a large drift is NOT safe to move together",
                  cls.get("sub_080046D0"), "adjudicate")
+    ok &= _check("a negative drift is NOT a prologue preamble",
+                 drift_class(-4), "adjudicate")
 
     # An empty object must fail loudly, never fall back to name-parsing.
     try:

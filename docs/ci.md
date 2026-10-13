@@ -23,7 +23,7 @@ an Actions spending budget in GitHub billing.
 ## Progress measurements
 
 `make progress` verifies the private US ROM against `baserom.sha256`, runs the
-full `matching-ready` gate, and writes:
+full `full-rom-match` gate (which includes `matching-ready`), and writes:
 
 - `docs/data/report.json`: an [objdiff v2 report](https://github.com/encounter/objdiff/blob/main/objdiff-core/protos/report.proto).
 - `docs/data/report-inputs.json`: source/build-input hashes, the report hash,
@@ -52,8 +52,8 @@ the C-function progress figures to headline.
   overall decompilation progress.
 - `complete_code` and `complete_units` mean the entire C/ASM executable slice
   linked and compared byte-for-byte with no `.incbin` or external code boundary.
-  This is a 100% link-completion measure, not a claim that every byte is C or
-  that the full ROM has an independent C/hybrid link.
+  This is the code-slice link measure; the separate `full_hybrid_rom_link`
+  gate proves the complete 8 MiB C/ASM plus registered-data image.
 - `total_data` covers non-padding content only, ending at the audited content end
   in `docs/data/code_data_ownership.json`. `matched_data` counts registered data
   regions whose editable inputs regenerate the exact bytes and whose ownership
@@ -63,17 +63,20 @@ the C-function progress figures to headline.
   semantically decoded. Raw payloads preserved verbatim are byte-reproducible,
   not semantically reconstructed.
 
-Function totals are a scoped lower-bound inventory: the current source census
-uses `.type` entries and `BL` targets, plus manifest validation. The report
-records identified entries and exact matches, but does not claim this is a
-closed census of every possible unlabelled or indirect-call ROM entry point.
-Matching counts byte-exact stubs as matches; it does not score source readability
-or semantic completeness. Report units are ROM ownership groups and generated
-data regions, not compiler translation units.
+The `.type`/`BL` inventory is cross-checked by `span_audit.py`: all 1,249
+push-with-link-register patterns are accounted for, all 1,674 spans are checked,
+and no unexplained prologue, shape-only entry, or swallowed entry remains.
+Matching counts byte-exact source owners, including documented assembly and
+inline assembly; it does not score source readability or semantic completeness.
+Report units are ROM ownership groups and generated data regions, not compiler
+translation units.
 
-The reference assembly/data ROM build and independent executable C/ASM slice are
-proven. A complete independent C/hybrid ROM link and runtime equivalence are
-separate outstanding gates; neither is implied by the decomp.dev percentages.
+The reference assembly/data ROM build, independent executable C/ASM slice, and
+whole-image C/ASM plus registered-data link are proven. Some registered data
+inputs are still verbatim or extracted from the reference ROM, so this byte
+completion does not claim semantic decoding of every asset. Runtime equivalence
+is not run; it is separate evidence and is not needed to establish an exact
+full-image match.
 Treemap sections represent non-function bytes rather than invented function
 boundaries. `objdiff.json` remains the per-function comparison viewer; regenerate
 it with `make objdiff-config` when function names, owners, or boundaries change.

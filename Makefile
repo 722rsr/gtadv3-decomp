@@ -20,7 +20,7 @@ $(BUILD):
 # Both code and data includes are inputs to the reference object.
 ASM_SOURCES := $(wildcard asm/*.s) $(wildcard asm/*.inc) $(wildcard asm/macros/*.inc)
 
-$(BUILD)/rom.o: asm/rom.s $(ASM_SOURCES) baserom.gba $(BUILD)/data/variant_palette.bin $(BUILD)/data/mto_group0.bin $(BUILD)/data/theme_lut_a.bin $(BUILD)/data/theme_palette.bin $(BUILD)/data/scenery_table.bin $(BUILD)/data/surface_tile.bin $(BUILD)/data/variant_overlay.bin $(BUILD)/data/surface_map.bin $(BUILD)/data/theme_texture.bin $(BUILD)/data/big_gfx.bin $(BUILD)/data/minimap.bin $(BUILD)/data/early_data.bin $(BUILD)/data/mid_gap.bin $(BUILD)/data/blob_field.bin $(BUILD)/data/tail_end.bin | $(BUILD)
+$(BUILD)/rom.o: asm/rom.s $(ASM_SOURCES) $(BUILD)/data/variant_palette.bin $(BUILD)/data/mto_group0.bin $(BUILD)/data/theme_lut_a.bin $(BUILD)/data/theme_palette.bin $(BUILD)/data/scenery_table.bin $(BUILD)/data/surface_tile.bin $(BUILD)/data/variant_overlay.bin $(BUILD)/data/surface_map.bin $(BUILD)/data/theme_texture.bin $(BUILD)/data/big_gfx.bin $(BUILD)/data/minimap.bin $(BUILD)/data/early_data.bin $(BUILD)/data/mid_gap.bin $(BUILD)/data/blob_field.bin $(BUILD)/data/tail_end.bin | $(BUILD)
 	$(AS) $(ASFLAGS) $< -o $@
 
 $(BUILD)/rom.elf: $(BUILD)/rom.o ldscript.ld
@@ -57,7 +57,7 @@ $(CODEBUILD):
 $(CODEBUILD)/code.o: asm/code.s $(ASM_SOURCES) | $(CODEBUILD)
 	$(AS) $(ASFLAGS) asm/code.s -o $@
 
-$(CODEBUILD)/data.o: asm/data_tail.s baserom.gba $(BUILD)/data/variant_palette.bin $(BUILD)/data/mto_group0.bin $(BUILD)/data/theme_lut_a.bin $(BUILD)/data/theme_palette.bin $(BUILD)/data/scenery_table.bin $(BUILD)/data/surface_tile.bin $(BUILD)/data/variant_overlay.bin $(BUILD)/data/surface_map.bin $(BUILD)/data/theme_texture.bin $(BUILD)/data/big_gfx.bin $(BUILD)/data/minimap.bin $(BUILD)/data/early_data.bin $(BUILD)/data/mid_gap.bin $(BUILD)/data/blob_field.bin $(BUILD)/data/tail_end.bin | $(CODEBUILD)
+$(CODEBUILD)/data.o: asm/data_tail.s $(BUILD)/data/variant_palette.bin $(BUILD)/data/mto_group0.bin $(BUILD)/data/theme_lut_a.bin $(BUILD)/data/theme_palette.bin $(BUILD)/data/scenery_table.bin $(BUILD)/data/surface_tile.bin $(BUILD)/data/variant_overlay.bin $(BUILD)/data/surface_map.bin $(BUILD)/data/theme_texture.bin $(BUILD)/data/big_gfx.bin $(BUILD)/data/minimap.bin $(BUILD)/data/early_data.bin $(BUILD)/data/mid_gap.bin $(BUILD)/data/blob_field.bin $(BUILD)/data/tail_end.bin | $(CODEBUILD)
 	$(AS) $(ASFLAGS) asm/data_tail.s -o $@
 
 # Private extraction input -> editable palette fields -> verified data bytes.
@@ -275,6 +275,14 @@ matching-ready: all code-objects
 	@$(MAKE) era-runtime-probe independent-audit ownership-check
 	@echo "matching-ready: PASS (reports in build/era-corpus; C-owned slice in build/matching-slice)"
 
+# Whole-image gate: link the exact C/ASM slice and registered data object
+# together, with zero padding emitted by source, then compare all 8 MiB.
+# Data payloads may still be verbatim or extracted from the user-supplied ROM;
+# this gate proves the complete link and byte match, not semantic asset decoding.
+.PHONY: full-rom-match
+full-rom-match: matching-ready
+	@python3 tools/full_rom_match.py
+
 .PHONY: decomp-tools
 decomp-tools:
 	@tools/build_gbafix.sh
@@ -326,6 +334,7 @@ ci-check: progress-check
 	@python3 tools/call_audit.py --self-test
 	@python3 tools/agbcc_c89_transform.py --self-test
 	@python3 tools/update_progress.py --self-test
+	@python3 tools/full_rom_match.py --self-test
 	@python3 tools/test_matching_assist.py
 	@python3 tools/test_decomp_report.py
 	@python3 tools/test_data_regions.py

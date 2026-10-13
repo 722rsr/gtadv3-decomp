@@ -75,7 +75,7 @@ work rather than of this gate.
   the reference.
 * Proves: the slice's out-of-slice references are a *known, enumerated*
   boundary rather than an invisible dependency on `rom.o`.
-* Does not prove: the complete ROM has an independent C/ASM link, or
-  that the data/asset tail is semantically decoded. Some payload bytes
-  remain verbatim/ROM-derived; the final zero-padding tail is read from
-  `baserom.gba` by the reference build.
+* Does not prove: the data/asset tail is semantically decoded. Some
+  payload bytes remain verbatim/ROM-derived. The separate
+  `make full-rom-match` gate links the complete C/ASM plus registered
+  data image and compares all 8 MiB byte-for-byte.

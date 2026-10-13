@@ -8,14 +8,19 @@ The goal is readable game source and cataloged data that build a ROM
 
 ## Status
 
-The full independent C ROM is **not complete**.
+The full 8 MiB C/ASM + registered-data link now matches the US reference.
+The byte-complete decompilation gates pass: every identified function matches,
+the independent entry census has no unresolved candidates, and the executable
+slice and full ROM both link byte-identically. Some compressed assets remain
+verbatim or are extracted from the supplied reference ROM; asset semantics are
+not part of the code-match percentage.
 
 [![GT Advance 3 Decompilation Treemap](https://decomp.dev/722rsr/gtadv3-decomp.png)](https://decomp.dev/722rsr/gtadv3-decomp)
 
 The reference build (`make`) produces a byte-identical ROM from reconstructed
-assembly and registered data generators; the final verified zero-padding tail
-is read from the supplied reference ROM. On a clean checkout, missing editable
-data inputs are extracted into ignored `build/data/` from that ROM.
+assembly and registered data generators. Its zero-padding tail is emitted as
+source zero fill. On a clean checkout, missing editable data inputs are
+extracted into ignored `build/data/` from the supplied reference ROM.
 The `make matching-ready` target
 compiles the C corpus with pinned `old_agbcc` and verifies selected C functions
 in an independent executable slice.
@@ -25,12 +30,16 @@ candidates and 188,136 / 188,136 selected C-function bytes (100%)**. The
 separate 99.67% code-byte ratio is the selected C spans as a share of the full
 **188,760-byte** executable slice; it includes the cartridge header, startup,
 assembly, and non-function bytes, so it is not the C-function completion rate.
-The slice itself is separately **100% linked and byte-identical** from C/ASM
-sources. Function matching measures emitted bytes, not source readability or
-semantic asset reconstruction. The function denominator is the currently
-identified `.type`/`BL`-target inventory, not a proven exhaustive census of
-every ROM entry point. The complete independent C/hybrid ROM link and runtime
-equivalence are not yet established.
+The code slice is separately **100% linked and byte-identical** from C/ASM
+sources, and `make full-rom-match` combines it with the registered data object
+and confirms all 8 MiB byte-for-byte. The census cross-checks the 1,674-entry
+`.type`/`BL` inventory against all 1,249 push-with-link-register patterns in
+the executable slice, literal-pool annotations, reviewed non-entry cases, and
+function-shaped labels; it reports zero unresolved candidates or swallowed
+entries. Function matching measures emitted bytes, not source readability or
+semantic asset reconstruction. Some data inputs are verbatim or extracted from
+the reference ROM, so the full-image match does not mean all assets are
+semantically decoded.
 The [integrated data regions](docs/data-integration.md) cover all cataloged
 data through content end `0x7B04C4` (7,873,388 non-padding bytes), regenerated
 from private editable inputs. Some compressed or raw payloads are preserved
@@ -89,14 +98,14 @@ python3 -m venv .venv
 . .venv/bin/activate
 python3 -m pip install -r requirements.txt
 make toolchain
-make matching-ready
+make full-rom-match
 make fast-check
 make ci-check
 ```
 
-`make matching-ready` includes the reference build and checks the pinned US
-ROM hash. `make` alone runs that reference build and hash verification.
-`make progress` runs the full matching gate and refreshes the progress snapshot
+`make full-rom-match` includes `matching-ready`, the reference build, and the
+whole-image hybrid link/hash comparison. `make` alone runs the reference build
+and hash verification. `make progress` runs the full matching gate and refreshes the progress snapshot
 when build inputs change; see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 `make toolchain` builds `old_agbcc`, the comparison `agbcc` binary, and their

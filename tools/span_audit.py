@@ -71,6 +71,7 @@ Usage:
 """
 
 import bisect
+import importlib.util
 import json
 import re
 import subprocess
@@ -115,6 +116,11 @@ REG_BX_RE = re.compile(r"^bx (r\d+|sl|sb|fp|ip|sp)$")
 # Do not add an address here to make a number look better. Each one needs the
 # same evidence, and the audit still prints anything it has no record for.
 KNOWN_NON_ENTRIES = {
+    0x0801B550: (
+        "NOT an entry: this halfword is the first word of the six-case indirect "
+        "dispatch table in asm/race_scene.s. The containing word is `.4byte "
+        "0x0801B568`; it is data selected by `mov pc, r0`, not Thumb code."
+    ),
     0x0802BEC2: (
         "NOT an entry: an inlined `if (f56) f60();`. The instruction before it "
         "is `str r3, [r0, #52]` at 0x0802BEC0 -- neither an epilogue nor a pool "
@@ -124,6 +130,26 @@ KNOWN_NON_ENTRIES = {
         "equals 0x0802BEC2 or +1, no bl targets it, and no branch targets it. "
         "_0802BEB4 is genuinely a 600-byte function, so leaving its span whole "
         "is correct."
+    ),
+    0x0802DE8C: (
+        "NOT an entry: local divide-by-zero branch block in "
+        "asm/sound_aeabi_idiv.s. It is reached by `beq`, saves the parent "
+        "function's lr around `__aeabi_idiv0`, then returns through that lr."
+    ),
+    0x0802DF60: (
+        "NOT an entry: local divide-by-zero branch block in "
+        "asm/sound_aeabi_idiv_core.s. It is reached by a conditional branch "
+        "inside the parent divide routine, not an independent call entry."
+    ),
+    0x0802DFDA: (
+        "NOT an entry: local divide-by-zero branch block in "
+        "asm/sound_uaeabi_uidiv.s. It is reached by `beq` inside the unsigned "
+        "divide routine and returns through the saved parent lr."
+    ),
+    0x0802E09A: (
+        "NOT an entry: local divide-by-zero branch block in "
+        "asm/sound_divmod.s. It is reached by `beq` inside the divide routine "
+        "and returns through the saved parent lr."
     ),
 }
 
@@ -247,6 +273,39 @@ def pool_slots(dis):
     return out
 
 
+def account_prologues(prologues, function_entries, pool, known_non_entries):
+    """Account for every push-lr scan hit without treating data as a function.
+
+    Addresses here are file offsets. `function_entries` comes independently
+    from assembly `.type` declarations and `bl` targets; pool bytes come from
+    objdump's literal-load annotations. Anything else needs a reviewed
+    non-entry explanation or becomes a gate failure.
+    """
+    accounted_entries = []
+    literal_pool = []
+    non_entries = []
+    unresolved = []
+    for off in prologues:
+        if off in function_entries:
+            accounted_entries.append(off)
+        elif any(off + byte in pool for byte in range(2)):
+            literal_pool.append(off)
+        elif off + ROM_BASE in known_non_entries:
+            non_entries.append(off + ROM_BASE)
+        else:
+            unresolved.append(off + ROM_BASE)
+    observed_non_entries = set(non_entries)
+    unused_non_entries = sorted(set(known_non_entries) - observed_non_entries)
+    return {
+        "detected": len(prologues),
+        "known_function_entries": len(accounted_entries),
+        "literal_pool_data": [f"0x{off + ROM_BASE:08x}" for off in literal_pool],
+        "adjudicated_non_entries": [f"0x{addr:08x}" for addr in non_entries],
+        "unresolved": [f"0x{addr:08x}" for addr in unresolved],
+        "unused_adjudications": [f"0x{addr:08x}" for addr in unused_non_entries],
+    }
+
+
 def _text(dis, off):
     e = dis.get(off)
     return e[3] if e else None
@@ -364,12 +423,27 @@ def audit(report_path=REPORT, obj=CODE_O, rom_path=ROOT / "baserom.gba"):
             abs_targets.add(int(m.group(1), 16))
 
     rom = Path(rom_path).read_bytes()
-    # scan_prologues returns FILE OFFSETS; spans are VMAs. Convert once, here,
-    # or every comparison silently fails and the tool reports a clean tree.
-    prologues = [off + ROM_BASE for off in scan_prologues(rom, 0, SLICE_HI)]
+    # coverage.py is the independent source inventory: typed function symbols
+    # plus direct BL targets. Its VMAs are represented as file offsets.
+    coverage_spec = importlib.util.spec_from_file_location(
+        "_coverage_audit", ROOT / "tools" / "coverage.py")
+    coverage = importlib.util.module_from_spec(coverage_spec)
+    coverage_spec.loader.exec_module(coverage)
+    function_entries = {
+        int(vma, 16)
+        for entries in coverage.asm_vmas(str(ROOT / "asm")).values()
+        for vma in entries
+    }
+
+    # scan_prologues returns FILE OFFSETS; spans and labels are VMAs. Keep both
+    # units explicit so neither comparison can silently report a clean tree.
+    prologue_offsets = scan_prologues(rom, 0, SLICE_HI)
+    prologues = [off + ROM_BASE for off in prologue_offsets]
 
     dis = disassemble(rom_path)
     pool = pool_slots(dis)
+    prologue_accounting = account_prologues(
+        prologue_offsets, function_entries, pool, KNOWN_NON_ENTRIES)
     next_label = {}
     for i, v in enumerate(labelled):
         next_label[v] = (labelled[i + 1] if i + 1 < len(labelled)
@@ -408,6 +482,8 @@ def audit(report_path=REPORT, obj=CODE_O, rom_path=ROOT / "baserom.gba"):
     return {
         "spans_checked": len(spans),
         "prologues_in_text": len(prologues),
+        "function_inventory_entries": len(function_entries),
+        "prologue_accounting": prologue_accounting,
         "abs_targets": len(abs_targets),
         "pool_bytes": len(pool),
         "mis_measured": bad,
@@ -545,6 +621,15 @@ def self_test():
     ok &= _check("a label whose body never returns owns nothing",
                  entry_at(dis, 0x18, 0x1A, pool)[2], False)
 
+    accounting = account_prologues(
+        [0, 2, 4, 6], {0}, {2, 3}, {ROM_BASE + 6: "reviewed non-entry"})
+    ok &= _check("prologue census accounts for typed starts, pools, and reviewed blocks",
+                 (accounting["known_function_entries"],
+                  len(accounting["literal_pool_data"]),
+                  len(accounting["adjudicated_non_entries"]),
+                  len(accounting["unresolved"])),
+                 (1, 1, 1, 1))
+
     # ---- live regression ----------------------------------------------------
     # The blind spot: `0x08004560` is a bare label + `bx lr` + one pad byte
     # (asm/runtime_2aac.s:3553) with NO `.type` and no `bl`, so neither a
@@ -594,10 +679,16 @@ def main(argv):
     print(f"  {rep['spans_checked']} spans checked, "
           f"{rep['prologues_in_text']} prologues in the text, "
           f"{rep['pool_bytes']} pool bytes")
+    census = rep["prologue_accounting"]
+    print(f"  prologue census: {census['known_function_entries']} inventory entries, "
+          f"{len(census['literal_pool_data'])} literal-pool words, "
+          f"{len(census['adjudicated_non_entries'])} adjudicated non-entries, "
+          f"{len(census['unresolved'])} unresolved")
     print(f"  {len(rep['mis_measured'])} spans swallow an unlabelled entry; "
           f"{rep['unlabelled_entries']} entries in total")
-    for e in rep.get("adjudicated_non_entries", []):
-        print(f"  (adjudicated non-entry {e['addr']}: {e['why'][:70]}...)")
+    for addr in census["adjudicated_non_entries"]:
+        why = KNOWN_NON_ENTRIES[int(addr, 16)]
+        print(f"  (adjudicated non-entry {addr}: {why})")
     for d in rep["mis_measured"][:25]:
         print(f"  {d['vma']} {d['name']:<14} {d['matched_bytes']}/"
               f"{d['rom_bytes']}  {d['source']}")
@@ -608,7 +699,8 @@ def main(argv):
                   f"  (branched to: {d['branched_to']})")
     if len(rep["mis_measured"]) > 25:
         print(f"  ... and {len(rep['mis_measured']) - 25} more")
-    return 0
+    return 1 if (rep["mis_measured"] or census["unresolved"]
+                  or census["unused_adjudications"]) else 0
 
 
 if __name__ == "__main__":
