@@ -5,9 +5,9 @@
     "complete_data": "7873388",
     "complete_data_percent": 100.0,
     "complete_units": 279,
-    "fuzzy_match_percent": 99.99226012720183,
-    "matched_code": "188136",
-    "matched_code_percent": 99.6694214876033,
+    "fuzzy_match_percent": 100.0,
+    "matched_code": "188760",
+    "matched_code_percent": 100.0,
     "matched_data": "7873388",
     "matched_data_percent": 100.0,
     "matched_functions": 1674,
@@ -1913,9 +1913,9 @@
         "complete_data": "0",
         "complete_data_percent": 0.0,
         "complete_units": 1,
-        "fuzzy_match_percent": 20.155038759689923,
-        "matched_code": "104",
-        "matched_code_percent": 20.155038759689923,
+        "fuzzy_match_percent": 100.0,
+        "matched_code": "516",
+        "matched_code_percent": 100.0,
         "matched_data": "0",
         "matched_data_percent": 0.0,
         "matched_functions": 3,
@@ -1932,11 +1932,11 @@
       "name": "asm/boot.s",
       "sections": [
         {
-          "fuzzy_match_percent": 0.0,
+          "fuzzy_match_percent": 100.0,
           "metadata": {
             "virtual_address": "134217920"
           },
-          "name": "Unclassified code bytes 0x080000C0-0x0800025C",
+          "name": "Non-function source bytes 0x080000C0-0x0800025C",
           "size": "412"
         }
       ]
@@ -4484,9 +4484,9 @@
         "complete_data": "0",
         "complete_data_percent": 0.0,
         "complete_units": 1,
-        "fuzzy_match_percent": 0.0,
-        "matched_code": "0",
-        "matched_code_percent": 0.0,
+        "fuzzy_match_percent": 100.0,
+        "matched_code": "2",
+        "matched_code_percent": 100.0,
         "matched_data": "0",
         "matched_data_percent": 0.0,
         "matched_functions": 0,
@@ -4503,11 +4503,11 @@
       "name": "asm/code_263de.s",
       "sections": [
         {
-          "fuzzy_match_percent": 0.0,
+          "fuzzy_match_percent": 100.0,
           "metadata": {
             "virtual_address": "134374366"
           },
-          "name": "Unclassified code bytes 0x080263DE-0x080263E0",
+          "name": "Non-function source bytes 0x080263DE-0x080263E0",
           "size": "2"
         }
       ]
@@ -5198,9 +5198,9 @@
         "complete_data": "0",
         "complete_data_percent": 0.0,
         "complete_units": 1,
-        "fuzzy_match_percent": 0.0,
-        "matched_code": "0",
-        "matched_code_percent": 0.0,
+        "fuzzy_match_percent": 100.0,
+        "matched_code": "2",
+        "matched_code_percent": 100.0,
         "matched_data": "0",
         "matched_data_percent": 0.0,
         "matched_functions": 0,
@@ -5217,11 +5217,11 @@
       "name": "asm/code_2dd86.s",
       "sections": [
         {
-          "fuzzy_match_percent": 0.0,
+          "fuzzy_match_percent": 100.0,
           "metadata": {
             "virtual_address": "134405510"
           },
-          "name": "Unclassified code bytes 0x0802DD86-0x0802DD88",
+          "name": "Non-function source bytes 0x0802DD86-0x0802DD88",
           "size": "2"
         }
       ]
@@ -5234,9 +5234,9 @@
         "complete_data": "0",
         "complete_data_percent": 0.0,
         "complete_units": 1,
-        "fuzzy_match_percent": 0.0,
-        "matched_code": "0",
-        "matched_code_percent": 0.0,
+        "fuzzy_match_percent": 100.0,
+        "matched_code": "2",
+        "matched_code_percent": 100.0,
         "matched_data": "0",
         "matched_data_percent": 0.0,
         "matched_functions": 0,
@@ -5253,11 +5253,11 @@
       "name": "asm/code_2ddc6.s",
       "sections": [
         {
-          "fuzzy_match_percent": 0.0,
+          "fuzzy_match_percent": 100.0,
           "metadata": {
             "virtual_address": "134405574"
           },
-          "name": "Unclassified code bytes 0x0802DDC6-0x0802DDC8",
+          "name": "Non-function source bytes 0x0802DDC6-0x0802DDC8",
           "size": "2"
         }
       ]
@@ -9593,9 +9593,9 @@
         "complete_data": "0",
         "complete_data_percent": 0.0,
         "complete_units": 1,
-        "fuzzy_match_percent": 0.0,
-        "matched_code": "0",
-        "matched_code_percent": 0.0,
+        "fuzzy_match_percent": 100.0,
+        "matched_code": "192",
+        "matched_code_percent": 100.0,
         "matched_data": "0",
         "matched_data_percent": 0.0,
         "matched_functions": 0,
@@ -9612,11 +9612,11 @@
       "name": "asm/header.s",
       "sections": [
         {
-          "fuzzy_match_percent": 0.0,
+          "fuzzy_match_percent": 100.0,
           "metadata": {
             "virtual_address": "134217728"
           },
-          "name": "Unclassified code bytes 0x08000000-0x080000C0",
+          "name": "Non-function source bytes 0x08000000-0x080000C0",
           "size": "192"
         }
       ]
@@ -11308,9 +11308,9 @@
         "complete_data": "0",
         "complete_data_percent": 0.0,
         "complete_units": 1,
-        "fuzzy_match_percent": 99.80353634577604,
-        "matched_code": "1016",
-        "matched_code_percent": 99.80353634577604,
+        "fuzzy_match_percent": 100.0,
+        "matched_code": "1018",
+        "matched_code_percent": 100.0,
         "matched_data": "0",
         "matched_data_percent": 0.0,
         "matched_functions": 25,
@@ -11327,11 +11327,11 @@
       "name": "asm/menu_d4ea.s",
       "sections": [
         {
-          "fuzzy_match_percent": 0.0,
+          "fuzzy_match_percent": 100.0,
           "metadata": {
             "virtual_address": "134272234"
           },
-          "name": "Unclassified code bytes 0x0800D4EA-0x0800D4EC",
+          "name": "Non-function source bytes 0x0800D4EA-0x0800D4EC",
           "size": "2"
         }
       ]
@@ -18061,9 +18061,9 @@
         "complete_data": "0",
         "complete_data_percent": 0.0,
         "complete_units": 1,
-        "fuzzy_match_percent": 98.05194805194805,
-        "matched_code": "604",
-        "matched_code_percent": 98.05194805194805,
+        "fuzzy_match_percent": 100.0,
+        "matched_code": "616",
+        "matched_code_percent": 100.0,
         "matched_data": "0",
         "matched_data_percent": 0.0,
         "matched_functions": 2,
@@ -18080,11 +18080,11 @@
       "name": "asm/sound_beb4.s",
       "sections": [
         {
-          "fuzzy_match_percent": 0.0,
+          "fuzzy_match_percent": 100.0,
           "metadata": {
             "virtual_address": "134398224"
           },
-          "name": "Unclassified code bytes 0x0802C110-0x0802C11C",
+          "name": "Non-function source bytes 0x0802C110-0x0802C11C",
           "size": "12"
         }
       ]

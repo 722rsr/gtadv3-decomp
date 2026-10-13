@@ -32,7 +32,10 @@ separate 99.67% code-byte ratio is the selected C spans as a share of the full
 assembly, and non-function bytes, so it is not the C-function completion rate.
 The code slice is separately **100% linked and byte-identical** from C/ASM
 sources, and `make full-rom-match` combines it with the registered data object
-and confirms all 8 MiB byte-for-byte. The census cross-checks the 1,674-entry
+and confirms all 8 MiB byte-for-byte. The Objdiff/decomp.dev report credits the
+source-owned non-function spans only after that code-slice comparison passes,
+so its byte-match and link measures both read 100%; the 99.67% figure remains
+the C-function share of the slice. The census cross-checks the 1,674-entry
 `.type`/`BL` inventory against all 1,249 push-with-link-register patterns in
 the executable slice, literal-pool annotations, reviewed non-entry cases, and
 function-shaped labels; it reports zero unresolved candidates or swallowed

@@ -61,6 +61,22 @@ def compute_manifest_stats(manifest_file: Path = MANIFEST_PATH) -> tuple[int, in
     return count, total_bytes
 
 
+def compute_matched_manifest_bytes(manifest_file: Path, report: dict) -> int:
+    """Count exact selected function spans, excluding matched non-function bytes."""
+    manifest = json.loads(manifest_file.read_text())
+    exact_addresses = {
+        int(function.get("metadata", {}).get("virtual_address", "0"))
+        for unit in report.get("units", [])
+        for function in unit.get("functions", [])
+        if float(function.get("fuzzy_match_percent", 0)) == 100.0
+    }
+    return sum(
+        int(entry["end_vma"], 16) - int(start, 16)
+        for start, entry in manifest.items()
+        if int(start, 16) in exact_addresses
+    )
+
+
 def format_readme(content: str, manifest_count: int, manifest_bytes: int,
                   code_size: int = 188760, cache_bust: bool = False,
                   timestamp: int | None = None) -> tuple[str, bool]:
@@ -207,10 +223,12 @@ def print_summary(root: Path = ROOT) -> None:
     measures = report.get("measures", {})
 
     func_count, func_bytes = compute_manifest_stats(root / MANIFEST_PATH)
+    matched_c_function_bytes = compute_matched_manifest_bytes(root / MANIFEST_PATH, report)
     matched_code = int(measures.get("matched_code", func_bytes))
     total_code = int(measures.get("total_code", 188760))
     matched_code_pct = float(measures.get("matched_code_percent", 0.0))
-    matched_c_function_bytes_pct = 100.0 * matched_code / func_bytes if func_bytes else 0.0
+    matched_c_function_bytes_pct = 100.0 * matched_c_function_bytes / func_bytes if func_bytes else 0.0
+    matched_c_slice_pct = 100.0 * matched_c_function_bytes / total_code if total_code else 0.0
     linked_code = int(measures.get("complete_code", 0))
     linked_code_pct = float(measures.get("complete_code_percent", 0.0))
 
@@ -246,8 +264,9 @@ def print_summary(root: Path = ROOT) -> None:
     print("=" * 65)
     print("  Exact C-function matching:")
     print(f"    Identified candidates:  {matched_functions:,} / {total_functions:,} ({matched_functions_pct:.2f}%)")
-    print(f"    Selected-function bytes: {matched_code:,} / {func_bytes:,} ({matched_c_function_bytes_pct:.2f}%)")
-    print(f"    Whole-slice C-byte ratio: {matched_code:,} / {total_code:,} ({matched_code_pct:.2f}%; diagnostic, not completion)")
+    print(f"    Selected-function bytes: {matched_c_function_bytes:,} / {func_bytes:,} ({matched_c_function_bytes_pct:.2f}%)")
+    print(f"    C-function share of slice: {matched_c_function_bytes:,} / {total_code:,} ({matched_c_slice_pct:.2f}%; diagnostic, not completion)")
+    print(f"    Objdiff byte-matched code: {matched_code:,} / {total_code:,} ({matched_code_pct:.2f}%)")
     print("  Link/build evidence:")
     print(f"    C/ASM code slice linked: {linked_code:,} / {total_code:,} ({linked_code_pct:.2f}%)")
     reference_status = verification.get("reference_rom", "not_verified")
@@ -324,13 +343,16 @@ The manifest selects **1,252 C functions / 64,740 bytes** within the
                 "0x08000000": {"end_vma": "0x08000010", "c_name": "candidate"}
             }))
             (root / REPORT_PATH).write_text(json.dumps({"measures": {
-                "matched_code": "16", "total_code": "100", "matched_code_percent": 16.0,
+                "matched_code": "100", "total_code": "100", "matched_code_percent": 100.0,
                 "complete_code": "100", "complete_code_percent": 100.0,
                 "matched_functions": 1, "total_functions": 1,
                 "matched_functions_percent": 100.0,
                 "matched_data": "20", "total_data": "20", "matched_data_percent": 100.0,
                 "complete_data": "20", "complete_data_percent": 100.0,
-            }}))
+            }, "units": [{"functions": [{
+                "name": "candidate", "size": "16", "fuzzy_match_percent": 100.0,
+                "metadata": {"virtual_address": "134217728"},
+            }]}]}))
             (root / STAMP_PATH).write_text(json.dumps({
                 "verification": {
                     "reference_rom": "pass",
@@ -348,7 +370,8 @@ The manifest selects **1,252 C functions / 64,740 bytes** within the
             summary = output.getvalue()
             self.assertIn("Identified candidates:  1 / 1 (100.00%)", summary)
             self.assertIn("Selected-function bytes: 16 / 16 (100.00%)", summary)
-            self.assertIn("Whole-slice C-byte ratio: 16 / 100 (16.00%; diagnostic, not completion)", summary)
+            self.assertIn("C-function share of slice: 16 / 100 (16.00%; diagnostic, not completion)", summary)
+            self.assertIn("Objdiff byte-matched code: 100 / 100 (100.00%)", summary)
             self.assertIn("C/ASM code slice linked: 100 / 100 (100.00%)", summary)
             self.assertIn("Full C/ASM + data link:  PASS", summary)
 

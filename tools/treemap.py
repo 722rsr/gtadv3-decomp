@@ -2,16 +2,17 @@
 """Generate cushion treemap visualizations for decompilation progress.
 
 Visualizes every function in the cartridge binary as a 3D-shaded "cushion"
-tile using the van Wijk (1999) cushion treemap algorithm. Tile size is
-proportional to function size in bytes; tiles are grouped by subsystem/module;
-and tile colors reflect decompilation/matching status.
+tile using the van Wijk (1999) cushion treemap algorithm. Verified report spans
+include both functions and source-owned non-function code bytes, so the full
+code region is represented. Tiles are grouped by subsystem/module.
 
 Modes:
-  --mode independent: Green = verified byte-identical independent slice,
-                      Blue = C-lifted / hybrid function,
-                      Red = unlifted assembly gap.
-  --mode c-lift:      Green = reconstructed C function (99.9% complete),
-                      Red = unlifted assembly gap.
+  --mode independent: Green = byte-exact function,
+                      Teal = verified non-function source bytes,
+                      Red = unmatched code.
+  --mode c-lift:      Green = C-source function,
+                      Red = assembly-owned function,
+                      Slate = non-function source bytes.
   --mode subsystem:   Distinct color palette per game subsystem (Audio,
                       Physics, AI, Race, UI/Menus, Garage, Save, System/Boot).
 
@@ -33,7 +34,7 @@ import math
 import os
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 import numpy as np
 from PIL import Image
@@ -42,8 +43,8 @@ from PIL import Image
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
 import tools.coverage as cov
+import tools.decomp_report as decomp_report
 
-ROM_CODE_END = 0x02E158
 BOOT_SLICE_END = 0x0015F4
 
 # Subsystem categorization based on source filename
@@ -80,8 +81,9 @@ def classify_subsystem(filename: str) -> str:
 
 
 def gather_function_data() -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
-    """Extract all functions, sizes, source files, and status."""
-    per_file = cov.asm_vmas(str(REPO_ROOT / "asm"))
+    """Load exact function and non-function spans from the verified report."""
+    decomp_report.check(REPO_ROOT)
+    progress = json.loads((REPO_ROOT / "docs/data/report.json").read_text())
     defined_c, aliases = cov.parse_c(str(REPO_ROOT / "src"))
 
     names_by_vma: Dict[str, set[str]] = {}
@@ -100,53 +102,69 @@ def gather_function_data() -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
         if v and v not in vma_to_name:
             vma_to_name[v] = name
 
-    all_vmas = sorted(list(set().union(*per_file.values())), key=lambda x: int(x, 16))
-    vma_ints = [int(v, 16) for v in all_vmas]
-
     functions: List[Dict[str, Any]] = []
-    for i, v in enumerate(all_vmas):
-        v_int = vma_ints[i]
-        if i < len(all_vmas) - 1:
-            size = vma_ints[i + 1] - v_int
-        else:
-            size = ROM_CODE_END - v_int
-        size = max(size, 4)
+    for unit in progress["units"]:
+        owner = unit.get("metadata", {}).get("source_path", unit["name"])
+        if not owner.startswith("asm/"):
+            owner = f"asm/{owner}"
+        subsystem = classify_subsystem(owner)
 
-        # Check C coverage
-        is_covered = False
-        for name in names_by_vma.get(v, ()):
-            if cov.resolve(name, defined_c, aliases) == "real":
-                is_covered = True
-                break
+        for record in unit.get("functions", []):
+            addr = int(record["metadata"]["virtual_address"])
+            offset = addr - 0x08000000
+            vma = cov.norm_vma(f"{addr:08X}") or f"{offset:06X}"
+            is_c_function = any(
+                cov.resolve(name, defined_c, aliases) == "real"
+                for name in names_by_vma.get(vma, ())
+            )
+            functions.append({
+                "kind": "function",
+                "vma": vma,
+                "addr": addr,
+                "name": vma_to_name.get(vma, record["name"]),
+                "size": int(record["size"]),
+                "asm_file": owner,
+                "subsystem": subsystem,
+                "is_boot_slice": offset < BOOT_SLICE_END,
+                "is_c_lifted": is_c_function,
+                "is_byte_matched": float(record.get("fuzzy_match_percent", 0)) == 100.0,
+            })
 
-        # Locate owning asm file
-        asm_file = "unknown.s"
-        for f, f_vmas in per_file.items():
-            if v in f_vmas:
-                asm_file = f
-                break
+        for record in unit.get("sections", []):
+            addr = int(record["metadata"]["virtual_address"])
+            offset = addr - 0x08000000
+            functions.append({
+                "kind": "section",
+                "vma": f"{offset:06X}",
+                "addr": addr,
+                "name": record["name"],
+                "size": int(record["size"]),
+                "asm_file": owner,
+                "subsystem": subsystem,
+                "is_boot_slice": offset < BOOT_SLICE_END,
+                "is_c_lifted": False,
+                "is_byte_matched": float(record.get("fuzzy_match_percent", 0)) == 100.0,
+            })
 
-        subsys = classify_subsystem(asm_file)
-        is_boot_slice = v_int < BOOT_SLICE_END
-
-        fn_data = {
-            "vma": f"08{v}",
-            "addr": 0x08000000 + v_int,
-            "name": vma_to_name.get(v, f"_08{v}"),
-            "size": size,
-            "asm_file": asm_file,
-            "subsystem": subsys,
-            "is_boot_slice": is_boot_slice,
-            "is_c_lifted": is_covered,
-        }
-        functions.append(fn_data)
-
+    measures = progress["measures"]
+    total_code_bytes = int(measures["total_code"])
+    if sum(item["size"] for item in functions) != total_code_bytes:
+        raise ValueError("treemap spans do not partition the verified code region")
+    function_items = [item for item in functions if item["kind"] == "function"]
     stats = {
-        "total_functions": len(functions),
-        "total_code_bytes": sum(f["size"] for f in functions),
-        "boot_slice_functions": sum(1 for f in functions if f["is_boot_slice"]),
-        "c_lifted_functions": sum(1 for f in functions if f["is_c_lifted"]),
-        "unlifted_functions": sum(1 for f in functions if not f["is_c_lifted"]),
+        "total_functions": int(measures["total_functions"]),
+        "matched_functions": int(measures["matched_functions"]),
+        "function_match_percent": float(measures["matched_functions_percent"]),
+        "total_code_bytes": total_code_bytes,
+        "matched_code_bytes": int(measures["matched_code"]),
+        "code_match_percent": float(measures["matched_code_percent"]),
+        "non_function_code_bytes": sum(item["size"] for item in functions
+                                        if item["kind"] == "section"),
+        "non_function_spans": sum(item["kind"] == "section" for item in functions),
+        "boot_slice_functions": sum(item["is_boot_slice"] for item in function_items),
+        "c_lifted_functions": sum(item["is_c_lifted"] for item in function_items),
+        "unmatched_functions": sum(not item["is_byte_matched"] for item in function_items),
+        "unmatched_code_spans": sum(not item["is_byte_matched"] for item in functions),
     }
     return functions, stats
 
@@ -242,7 +260,7 @@ def squarify(
 def compute_layout(
     functions: List[Dict[str, Any]], width: int, height: int
 ) -> Tuple[List[Tuple[Dict[str, Any], float, float, float, float]], List[Tuple[str, float, float, float, float]]]:
-    """Compute hierarchical treemap layout (Subsystem -> Functions)."""
+    """Compute hierarchical treemap layout (Subsystem -> Code spans)."""
     subsystems: Dict[str, List[Dict[str, Any]]] = collections.OrderedDict()
     for fn in functions:
         subsystems.setdefault(fn["subsystem"], []).append(fn)
@@ -265,19 +283,20 @@ def compute_layout(
 
 
 def get_tile_color(fn: Dict[str, Any], mode: str) -> np.ndarray:
-    """Determine base RGB color for a function tile based on display mode."""
+    """Determine base RGB color for a code-span tile based on display mode."""
     if mode == "subsystem":
         return SUBSYSTEM_COLORS.get(fn["subsystem"], np.array([120, 140, 160], dtype=float))
 
     if mode == "independent":
-        if fn["is_boot_slice"]:
-            return np.array([0, 215, 45], dtype=float)    # Bright Emerald (Byte-matched slice)
-        elif fn["is_c_lifted"]:
-            return np.array([10, 115, 215], dtype=float)  # Sky Blue (C-lifted hybrid)
-        else:
-            return np.array([225, 40, 25], dtype=float)   # Red (ASM gap)
+        if not fn["is_byte_matched"]:
+            return np.array([225, 40, 25], dtype=float)   # Red (unmatched)
+        if fn["kind"] == "section":
+            return np.array([25, 175, 115], dtype=float)  # Teal (verified non-function bytes)
+        return np.array([0, 195, 45], dtype=float)        # Green (byte-exact function)
 
     # mode == "c-lift"
+    if fn["kind"] == "section":
+        return np.array([105, 115, 130], dtype=float)     # Slate (non-function bytes)
     if fn["is_c_lifted"]:
         return np.array([0, 195, 30], dtype=float)        # Decompiled C Green
     else:
@@ -291,7 +310,7 @@ def render_cushion_treemap(
     height: int,
     mode: str,
 ) -> Image.Image:
-    """Render image using the van Wijk (1999) parabolic cushion shading algorithm."""
+    """Render spans using van Wijk's (1999) parabolic cushion algorithm."""
     img = np.zeros((height, width, 3), dtype=np.uint8)
 
     # Directional light source from top-left:
@@ -377,14 +396,16 @@ def generate_interactive_html(
     rects_json = []
     for fn, rx, ry, rw, rh in fn_rects:
         rects_json.append({
+            "kind": fn["kind"],
             "name": fn["name"],
             "vma": fn["vma"],
             "addr": f"0x{fn['addr']:08X}",
             "size": fn["size"],
-            "file": fn["asm_file"],
+            "source": fn["asm_file"],
             "subsystem": fn["subsystem"],
             "is_boot_slice": fn["is_boot_slice"],
             "is_c_lifted": fn["is_c_lifted"],
+            "is_byte_matched": fn["is_byte_matched"],
             "x": round(rx, 1),
             "y": round(ry, 1),
             "w": round(rw, 1),
@@ -392,6 +413,23 @@ def generate_interactive_html(
         })
 
     title = "GT Advance 3 — Decompilation Treemap"
+    if mode == "subsystem":
+        legend_items = "".join(
+            f'<div class="legend-item"><div class="color-swatch" style="background:rgb({int(color[0])},{int(color[1])},{int(color[2])});"></div>{html.escape(name)}</div>'
+            for name, color in SUBSYSTEM_COLORS.items()
+        )
+    elif mode == "c-lift":
+        legend_items = (
+            '<div class="legend-item"><div class="color-swatch" style="background:#00c31e;"></div>C source function</div>'
+            '<div class="legend-item"><div class="color-swatch" style="background:#e12819;"></div>Assembly-owned function</div>'
+            '<div class="legend-item"><div class="color-swatch" style="background:#697382;"></div>Non-function source bytes</div>'
+        )
+    else:
+        legend_items = (
+            '<div class="legend-item"><div class="color-swatch" style="background:#00c32d;"></div>Byte-exact function</div>'
+            '<div class="legend-item"><div class="color-swatch" style="background:#19af73;"></div>Verified non-function source bytes</div>'
+            '<div class="legend-item"><div class="color-swatch" style="background:#e12819;"></div>Unmatched code</div>'
+        )
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -468,14 +506,13 @@ def generate_interactive_html(
 <body>
 
 <h1>{title}</h1>
-<div class="subtitle">Hierarchical cushion treemap of all 1,340 functions in GT Advance 3: Pro Concept Racing (GBA).</div>
+<div class="subtitle">Verified ROM code-region spans: functions and source-owned non-function bytes. Tiles are sized by their exact byte ranges.</div>
 
 <div class="stats-bar">
-  <div class="stat-item">Total Functions: <span>{stats['total_functions']}</span></div>
-  <div class="stat-item">Total Code Size: <span>{stats['total_code_bytes']:,} bytes (~188 KB)</span></div>
-  <div class="stat-item">C-Lifted Functions: <span>{stats['c_lifted_functions']} (99.9%)</span></div>
-  <div class="stat-item">Boot Slice (Byte-Identical): <span>{stats['boot_slice_functions']} (5,620 B)</span></div>
-  <div class="stat-item">ASM Residual Gaps: <span>{stats['unlifted_functions']}</span></div>
+  <div class="stat-item">Byte-exact functions: <span>{stats['matched_functions']:,} / {stats['total_functions']:,} ({stats['function_match_percent']:.2f}%)</span></div>
+  <div class="stat-item">Byte-exact code region: <span>{stats['matched_code_bytes']:,} / {stats['total_code_bytes']:,} ({stats['code_match_percent']:.2f}%)</span></div>
+  <div class="stat-item">Non-function source ranges: <span>{stats['non_function_spans']:,} ({stats['non_function_code_bytes']:,} bytes)</span></div>
+  <div class="stat-item">Unmatched code spans: <span>{stats['unmatched_code_spans']:,}</span></div>
 </div>
 
 <div class="container" id="treemap-container">
@@ -485,9 +522,7 @@ def generate_interactive_html(
 
 <div class="legend">
   <strong>Display Mode ({mode}):</strong>
-  <div class="legend-item"><div class="color-swatch" style="background:#00d72d;"></div> Byte-Identical Independent Slice</div>
-  <div class="legend-item"><div class="color-swatch" style="background:#0a73d7;"></div> Reconstructed C Function (Hybrid)</div>
-  <div class="legend-item"><div class="color-swatch" style="background:#e12819;"></div> Assembly Gap</div>
+  {legend_items}
 </div>
 
 <script>
@@ -525,22 +560,17 @@ canvas.addEventListener('mousemove', (e) => {{
 
   if (found) {{
     hoveredRect = found;
-    let badgeClass = 'badge-lifted';
-    let badgeText = 'C Lifted (Hybrid Link)';
-    if (found.is_boot_slice) {{
-      badgeClass = 'badge-match';
-      badgeText = 'Byte-Identical Slice';
-    }} else if (!found.is_c_lifted) {{
-      badgeClass = 'badge-asm';
-      badgeText = 'Unlifted ASM Gap';
-    }}
+    const badgeClass = found.is_byte_matched ? 'badge-match' : 'badge-asm';
+    const badgeText = found.kind === 'section'
+      ? (found.is_byte_matched ? 'Verified non-function source bytes' : 'Unmatched non-function source bytes')
+      : (found.is_byte_matched ? 'Byte-identical function' : 'Not yet byte-matched');
 
     tooltip.innerHTML = `
       <div class="fn-name">${{found.name}}</div>
       <div><strong>Address:</strong> ${{found.addr}}</div>
       <div><strong>Size:</strong> ${{found.size}} bytes</div>
       <div><strong>Subsystem:</strong> ${{found.subsystem}}</div>
-      <div><strong>Source:</strong> asm/${{found.file}}</div>
+      <div><strong>Source:</strong> ${{found.source}}</div>
       <div class="fn-badge ${{badgeClass}}">${{badgeText}}</div>
     `;
     tooltip.style.display = 'block';
@@ -587,10 +617,14 @@ def main():
 
     print(f"Gathering functions and coverage data from repo...")
     functions, stats = gather_function_data()
-    print(f"Found {stats['total_functions']} functions ({stats['total_code_bytes']:,} bytes).")
-    print(f"  - Boot slice byte-identical: {stats['boot_slice_functions']}")
-    print(f"  - Reconstructed C lifted:    {stats['c_lifted_functions']} (99.9%)")
-    print(f"  - Unlifted assembly gaps:    {stats['unlifted_functions']}")
+    print(f"Found {stats['total_functions']:,} functions plus "
+          f"{stats['non_function_spans']:,} non-function source ranges "
+          f"({stats['total_code_bytes']:,} bytes total).")
+    print(f"  - Byte-exact functions:      {stats['matched_functions']:,}/"
+          f"{stats['total_functions']:,} ({stats['function_match_percent']:.2f}%)")
+    print(f"  - Byte-exact code region:    {stats['matched_code_bytes']:,}/"
+          f"{stats['total_code_bytes']:,} ({stats['code_match_percent']:.2f}%)")
+    print(f"  - Unmatched functions:       {stats['unmatched_functions']:,}")
 
     print(f"Computing hierarchical squarified treemap layout ({args.width}x{args.height})...")
     fn_rects, subsys_bounds = compute_layout(functions, args.width, args.height)

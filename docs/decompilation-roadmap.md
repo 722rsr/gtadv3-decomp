@@ -25,9 +25,11 @@ linking, and asset semantics are separate measures.
   includes the cartridge header, startup, reconstructed assembly, and
   non-function bytes. It is not a C-function decompilation percentage and
   should not be used as the headline progress figure.
-- **Independent code link: 100%.** The selected C replacements splice into a
-  complete 188,760-byte C/ASM executable slice that links without original
-  executable bytes and compares exactly.
+- **Independent code link and Objdiff byte match: 100%.** The selected C
+  replacements splice into a complete 188,760-byte C/ASM slice that links
+  without original executable bytes and compares exactly. The report credits
+  its 624 source-owned non-function bytes as exact only after this gate passes;
+  these are not missing functions or hand-waved C matches.
 - **Whole-ROM hybrid link: PASS.** `make full-rom-match` combines the exact
   C/ASM code slice with the registered data object, emits the 326,460-byte
   zero-padding tail from source, and compares the entire 8 MiB output
