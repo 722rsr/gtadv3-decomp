@@ -91,29 +91,26 @@ typedef struct { u8 spr_kp_pad[12]; u16 spr_kp_w12; } SpriteKp;
 // relocation with no ROM VMA, so the probe reports UNRESOLVED_RELOCATION with
 // a 40-byte candidate instead of the ROM's 248.
 void Sprite_BlitTiles(u8 *dst, int bank) {
-    // The r4/r5 swap is NOT reachable through declaration order (222 both
-    // ways, and pinning dst costs 53/248). The compiler's arg-copy slot
-    // choice is tied to the parameter's own position (r0), so the ROM's
-    // r4/r5 layout is the one shape this body cannot be nudged into; the
-    // remaining 26 bytes are this register swap only.
-    u32 base = (u32)(bank << 5);
-    _0802D970(dst + 0,   (void *)(uintptr_t)(0x06010120u + base), 48);
-    _0802D970(dst + 192, (void *)(uintptr_t)(0x06010220u + base), 48);
-    _0802D970(dst + 384, (void *)(uintptr_t)(0x06010320u + base), 48);
-    _0802D970(dst + 576, (void *)(uintptr_t)(0x06010420u + base), 48);
-    _0802D970(dst + 768, (void *)(uintptr_t)(0x06010520u + base), 48);
-    _0802D970(dst + 960, (void *)(uintptr_t)(0x06010620u + base), 48);
-    _0802D970(dst + 1152,(void *)(uintptr_t)(0x06010920u + base), 48);
-    _0802D970(dst + 1344,(void *)(uintptr_t)(0x06010A20u + base), 48);
-    _0802D970(dst + 1536,(void *)(uintptr_t)(0x06010B20u + base), 48);
-    _0802D970(dst + 1728,(void *)(uintptr_t)(0x06010C20u + base), 48);
-    _0802D970(dst + 1920,(void *)(uintptr_t)(0x06010D20u + base), 48);
-    _0802D970(dst + 2112,(void *)(uintptr_t)(0x06010E20u + base), 48);
-    // Keep dst (r4) and base (r5) live past the LAST call: once they are dead
-    // agbcc folds the last call's arguments into them destructively
-    // (`adds r4,r4,r0` / `adds r5,r5,r1` + two copies, +4 bytes). The barrier
-    // emits no instructions -- it only marks the registers live.
-    __asm__ volatile("" : "+r"(dst), "+r"(base));
+    // Double pin (measured): dst in r4, bank-offset in r5 across all twelve
+    // calls. Single-lever variants fail -- declaration-order swap scores 222
+    // both ways (pure r4/r5 swap remains) and pinning dst alone collapses to
+    // 53/248. With both pinned the per-call temporaries stay in r0-r2 as the
+    // ROM has them, and the pins themselves keep the values live past the
+    // last call (no keep-alive barrier needed).
+    register u8 *d4 __asm__("r4") = dst;
+    register u32 b5 __asm__("r5") = (u32)(bank << 5);
+    _0802D970(d4 + 0,   (void *)(uintptr_t)(0x06010120u + b5), 48);
+    _0802D970(d4 + 192, (void *)(uintptr_t)(0x06010220u + b5), 48);
+    _0802D970(d4 + 384, (void *)(uintptr_t)(0x06010320u + b5), 48);
+    _0802D970(d4 + 576, (void *)(uintptr_t)(0x06010420u + b5), 48);
+    _0802D970(d4 + 768, (void *)(uintptr_t)(0x06010520u + b5), 48);
+    _0802D970(d4 + 960, (void *)(uintptr_t)(0x06010620u + b5), 48);
+    _0802D970(d4 + 1152,(void *)(uintptr_t)(0x06010920u + b5), 48);
+    _0802D970(d4 + 1344,(void *)(uintptr_t)(0x06010A20u + b5), 48);
+    _0802D970(d4 + 1536,(void *)(uintptr_t)(0x06010B20u + b5), 48);
+    _0802D970(d4 + 1728,(void *)(uintptr_t)(0x06010C20u + b5), 48);
+    _0802D970(d4 + 1920,(void *)(uintptr_t)(0x06010D20u + b5), 48);
+    _0802D970(d4 + 2112,(void *)(uintptr_t)(0x06010E20u + b5), 48);
 }
 void _0800263E0(u8 *a, int b) __attribute__((alias("Sprite_BlitTiles")));
 void sub_0800263E0(u8 *a, int b) __attribute__((alias("Sprite_BlitTiles")));
