@@ -332,8 +332,10 @@ distclean:
 	rm -rf $(BUILD) $(AUX_BUILD_DIRS)
 
 # Cheap, ROM-free hosted CI. Full byte verification remains a local gate.
-.PHONY: ci-check progress progress-check update-progress
+.PHONY: ci-check progress progress-check source-quality update-progress
 ci-check: progress-check
+	@python3 tools/source_quality.py --self-test
+	@python3 tools/source_quality.py
 	@python3 tools/export_audit.py --self-test
 	@python3 tools/call_audit.py --self-test
 	@python3 tools/agbcc_c89_transform.py --self-test
@@ -347,10 +349,14 @@ ci-check: progress-check
 progress-check:
 	@python3 tools/decomp_report.py
 
+# Refresh the asm/partial/C classification that decides what counts as decompiled.
+source-quality:
+	@python3 tools/source_quality.py --write
+
 # Never stamp a snapshot from an unchecked manifest or a stale build.
-progress:
+progress: source-quality
 	@python3 tools/decomp_report.py --refresh
 
-# Comprehensive progress automation: ownership, slice, objdiff, decomp.dev, treemap, and README.
+# Comprehensive progress automation: ownership, slice, objdiff, source classification, report, treemap, and README.
 update-progress:
 	@python3 tools/update_progress.py

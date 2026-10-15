@@ -8132,7 +8132,7 @@
    "detail": {
     "barrier": 4,
     "directive": 1,
-    "pin": 6
+    "pin": 8
    },
    "file": "src/race_scene_b1.c",
    "name": "_08001D974",

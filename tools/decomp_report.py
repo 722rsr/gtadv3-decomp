@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
-"""Publish a ROM-free objdiff v2 snapshot after local byte verification."""
+"""Publish a ROM-free objdiff v2 snapshot after local byte verification.
+
+Matched code and matched functions count only functions decompiled to C, as
+classified by tools/source_quality.py. Naked or asm-dominated bodies and C with
+spliced instructions match byte-for-byte but are reported at 0%, as other
+decompilation projects treat INCLUDE_ASM/NAKED placeholders. Byte identity of
+the whole linked slice is reported separately through the complete_* measures.
+"""
 import argparse
 import hashlib
 import json
@@ -8,6 +15,7 @@ import subprocess
 
 import corpus_match_probe
 import data_regions
+import source_quality
 
 ROOT = Path(__file__).resolve().parents[1]
 REPORT = Path('docs/data/report.json')
@@ -15,7 +23,7 @@ STAMP = Path('docs/data/report-inputs.json')
 BASE = 0x08000000
 CODE_SIZE = 0x2E158
 ROM_SIZE = 0x800000
-STAMP_VERSION = 4
+STAMP_VERSION = 5
 VERIFICATION = {
     'command': 'make full-rom-match',
     'reference_rom': 'pass',
@@ -79,7 +87,11 @@ def measures(code=0, matched=0, linked_code=0, data=0, matched_data=0,
 
 
 def make_report(manifest, ownership, data_manifest=(), function_spans=None,
-                verified=False, code_match_verified=False):
+                verified=False, source_classes=None):
+    """Build the objdiff report; `source_classes` maps VMA -> source_quality class.
+
+    Without it every selected function counts as decompiled (fixtures only).
+    """
     # Use the audited ROM partition, not the splice file: some manifest entries
     # replace includes in passthrough.inc but belong to a physical .s region.
     regions = sorted(ownership['segments'], key=lambda row: int(row['start'], 16))
@@ -104,6 +116,8 @@ def make_report(manifest, ownership, data_manifest=(), function_spans=None,
             raise ValueError(f'invalid or overlapping selected span: {start}')
         previous_end = end
         selected[address] = {'end': end, 'name': entry['c_name']}
+    if source_classes is not None and set(source_classes) != set(selected):
+        raise ValueError('source classes do not cover exactly the selected C manifest')
 
     if function_spans is None:
         # Match the address inventory used by corpus matching: .type entries
@@ -119,6 +133,7 @@ def make_report(manifest, ownership, data_manifest=(), function_spans=None,
     groups = {}
     matched_code = 0
     matched_function_count = 0
+    selected_seen = 0
     linked_code = 0
     for region in regions:
         if not region['executable']:
@@ -145,18 +160,18 @@ def make_report(manifest, ownership, data_manifest=(), function_spans=None,
                                  f'crosses ownership boundary {BASE + start:#010x}-{BASE + end:#010x}')
             if selected_entry and last > inferred_end - BASE:
                 raise ValueError(f'selected span exceeds known ROM function extent: {selected_entry["name"]}')
+            decompiled = selected_entry is not None and (
+                source_classes is None
+                or source_classes[vma] in source_quality.DECOMPILED)
+            selected_seen += selected_entry is not None
             entries.append((first, last,
                             selected_entry['name'] if selected_entry else f'_{vma:08X}',
-                            selected_entry is not None))
+                            decompiled))
 
         cursor = start
         for first, last, function, is_matched in entries:
             if cursor < first:
-                group['sections'].append(range_item(cursor, first, code_match_verified))
-                if code_match_verified:
-                    section_size = first - cursor
-                    group['matched'] += section_size
-                    matched_code += section_size
+                group['sections'].append(range_item(cursor, first))
             if first < cursor:
                 raise ValueError(f'overlapping known function span at {function}')
             size = last - first
@@ -173,11 +188,7 @@ def make_report(manifest, ownership, data_manifest=(), function_spans=None,
                 matched_function_count += 1
             cursor = last
         if cursor < end:
-            group['sections'].append(range_item(cursor, end, code_match_verified))
-            if code_match_verified:
-                section_size = end - cursor
-                group['matched'] += section_size
-                matched_code += section_size
+            group['sections'].append(range_item(cursor, end))
 
     units = []
     for name, group in sorted(groups.items()):
@@ -248,7 +259,7 @@ def make_report(manifest, ownership, data_manifest=(), function_spans=None,
                          f'expected {data_total}')
     if seen != set(registered):
         raise ValueError('registered data regions are missing from the ownership map')
-    if matched_function_count != len(selected):
+    if selected_seen != len(selected):
         raise ValueError('selected C manifest entries do not map one-to-one to known functions')
 
     complete_units = sum(int(unit['metadata']['complete']) for unit in units)
@@ -264,13 +275,14 @@ def make_report(manifest, ownership, data_manifest=(), function_spans=None,
     }
 
 
-def range_item(start, end, matched=False):
-    # Keep non-function bytes as source-owned sections rather than inventing
-    # function entries. The independent full code-slice comparison verifies
-    # these spans just as it verifies the selected function bodies.
+def range_item(start, end):
+    # Keep non-function bytes (header, startup, pools) as source-owned sections
+    # rather than inventing function entries. The code-slice comparison
+    # verifies them, which the complete_* measures record; they are not
+    # decompiled C, so they never count as matched code.
     return {'name': f'Non-function source bytes 0x{BASE + start:08X}-0x{BASE + end:08X}',
             'size': str(end - start),
-            'fuzzy_match_percent': 100.0 if matched else 0.0,
+            'fuzzy_match_percent': 0.0,
             'metadata': {'virtual_address': str(BASE + start)}}
 
 
@@ -286,7 +298,7 @@ def expected_report(root, verified=False):
         function_spans=(corpus_match_probe._rom_functions_scan()
                         if root.resolve() == ROOT.resolve() else {}),
         verified=verified,
-        code_match_verified=verified))
+        source_classes=source_quality.source_classes(root)))
 
 
 def check(root):
