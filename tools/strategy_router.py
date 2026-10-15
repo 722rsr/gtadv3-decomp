@@ -76,7 +76,7 @@ BAND_ROUTES: dict[str, Route] = {
         "an inventory entry and its span is measured. The real suspect is an "
         "INTERIOR function with no label at all, whose bytes inflate this "
         "body's span. Do not spend the comparison here.",
-        ("run tools/label_census.py to find an unlabelled interior entry",),
+        ("run tools/span_audit.py to test for a swallowed interior entry",),
     ),
     "P9-unresolved-reloc": Route(
         MANUAL,

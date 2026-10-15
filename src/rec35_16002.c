@@ -35,7 +35,9 @@ extern u8 Rec35Wa[] __asm__("Rec35Wa");
 #define REC35_WA_BASE ((volatile u8 *)(uintptr_t)Rec35Wa)
 // The `.globl` DEFINITION is emitted inside Rec35_RecordClear2 -- see there.
 
-void Rec35_Noop(void *rec); // fwd (defined below, called by Rec35_Record49Tail)
+extern void sub_0800161F0(void *rec, int arg1, int mode); // assembly closure spelling
+extern void sub_08001626C(void *rec, int arg1, int arg2); // assembly closure spelling
+extern void sub_0800163B4(void *rec); // assembly closure spelling
 
 // ============================================================================
 // sub_0800D97C (0x0800D97C, 0x26 B, from asm/menu_d8e4.s) — countdown cell:
@@ -456,15 +458,12 @@ void Rec35_Record49Tail(void *rec) {
     u8 *r7 = (u8 *)rec;
     sub_0800D97C(r7 + 136, 15);
     // Status address into r0 (copy + adds-imm8, since 144 exceeds adds-imm3).
-    // int, not s16: an s16 asm output gets a defensive lsls/asrs pair the
-    // ROM does not have. Unpinned: a pin blocks the branch-proven reuse of
-    // the value below (the EMIT arms' zero arg), and the load dest then
-    // floats to the same home anyway.
+    // Keep the sign-extended load in int; a separate s16 temporary adds
+    // redundant shifts. Leave it unpinned so the proven zero can feed both
+    // EMIT arms and the load destination can use the ROM's register.
     register u8 *saddr __asm__("r0") = r7 + 144;
     int status;
-    /* Thumb has no immediate LDRSH form; use the ROM's zero-register load. */
-    __asm__ volatile("movs r1, #0\n\tldrsh %0, [%1, r1]"
-                     : "=r"(status) : "r"(saddr) : "r1", "memory");
+    status = *(s16 *)saddr;
     if (status == 0) {
         // rec+142 derives from the status address (subs, no new pool), and
         // the select load is a plain indexed ldrsh.
@@ -489,7 +488,7 @@ void Rec35_Record49Tail(void *rec) {
             register u32 t4 __asm__("r6") = tbl + 4;
             u32 r1a = *(u32 *)(idx8 + t4);
             u32 r2a = *(u32 *)(r7 + 152);
-            Rec35_PlaceRecords(r7, (int)r1a, (int)r2a);
+            sub_0800161F0(r7, (int)r1a, (int)r2a);
             s16 idx2 = ((s16 *)c140)[0];
             int idx82 = idx2 << 3;
             u32 r1b = *(u32 *)(idx82 + tbl);
@@ -497,7 +496,7 @@ void Rec35_Record49Tail(void *rec) {
             // plain lets the add fold back into t4 (`adds r6,r6,r0`).
             register u32 ad3 __asm__("r0") = idx82 + t4;
             u32 r2b = *(u32 *)ad3;
-            Rec35_PlaceByTable(r7, (int)r1b, (int)r2b);
+            sub_08001626C(r7, (int)r1b, (int)r2b);
         }
     }
     // Status re-read into r4 (plain indexed ldrsh); rec+8 derives from its
@@ -512,7 +511,7 @@ void Rec35_Record49Tail(void *rec) {
                      48, 64, 6, st, 0, 0);
     }
     sub_0800DBE8(r7 + 16);
-    Rec35_Noop(r7);
+    sub_0800163B4(r7);
 }
 void _0800162E0(void *a) __attribute__((alias("Rec35_Record49Tail")));
 void sub_0800162E0(void *a) __attribute__((alias("Rec35_Record49Tail")));

@@ -108,7 +108,11 @@ void Ai_GridSetPacked(int type, int val){
     register volatile u8 *mp __asm__("r0") = t + sh;
     register u32 cur __asm__("r1") = *cell;
     register u32 mask __asm__("r0") = *mp;
-    __asm__("bic %0, %1\n\tadd %1, %0, #0" : "+r"(cur), "+r"(mask));
+    // Preserve the ROM register pair; without this empty constraint agbcc
+    // inserts a temporary move before lowering the C bit-clear.
+    __asm__ volatile ("" : "+r"(cur), "+r"(mask));
+    cur &= ~mask;
+    mask = cur;
     *cell = mask;
     int sh2 = packed_shift(type, 4);
     v <<= (sh2 << 1);
@@ -240,7 +244,10 @@ void Ai_GridHalfwordSet(int id, int val){
     register volatile u8 *mp __asm__("r0") = t + sh;
     register u32 cur __asm__("r3") = *cell;
     register u32 mask __asm__("r0") = *mp;
-    __asm__("bic %0, %1\n\tadd %1, %0, #0" : "+r"(cur), "+r"(mask));
+    // Keep the cell value in its ROM register for the C bit-clear below.
+    __asm__ volatile ("" : "+r"(cur), "+r"(mask));
+    cur &= ~mask;
+    mask = cur;
     *cell = mask;
     int sh2 = packed_shift(masked, 4);
     v <<= (sh2 << 1);

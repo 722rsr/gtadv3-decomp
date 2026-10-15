@@ -404,7 +404,9 @@ void _0802B280(void) __attribute__((alias("SoundResume")));
 void sub_0802B280(void) __attribute__((alias("SoundResume")));
 
 // _0802B2A4 arm fade, _0802B30C fadeOut, _0802B330 remaining
-void SoundArmFade(u16 target, u8 step){
+void SoundArmFade(u32 target, u32 step){
+    register u32 raw_target __asm__("r0") = target;
+    register u32 raw_step __asm__("r1") = step;
     register volatile u32 *cell __asm__("r4");
     register u32 target_direct __asm__("r3");
     register u32 target_saved __asm__("r8");
@@ -419,19 +421,10 @@ void SoundArmFade(u16 target, u8 step){
     register u32 zero __asm__("r7");
     register u32 scratch __asm__("ip");
 
-    __asm__ volatile (
-        ".syntax unified\n"
-        "lsls r0, r0, #16\n"
-        "lsrs r3, r0, #16\n"
-        "mov r8, r3\n"
-        "lsls r1, r1, #24\n"
-        "lsrs r5, r1, #24\n"
-        "adds r6, r5, #0\n"
-        ".syntax divided\n"
-        : "=r" (target_direct), "=r" (target_saved),
-          "=r" (step_main), "=r" (step_other)
-        :
-        : "r0", "r1", "cc", "memory");
+    target_direct = (raw_target << 16) >> 16;
+    target_saved = target_direct;
+    step_main = (raw_step << 24) >> 24;
+    step_other = step_main;
     cell = (volatile u32 *)SOUND_MASTER_PTR;
 
     m1 = (SoundMaster *)(uintptr_t)*cell;
@@ -449,18 +442,18 @@ void SoundArmFade(u16 target, u8 step){
         m2->fadeTarget = (u16)target_direct;
         m2->fadeStep = (u8)step_main;
         m1 = (SoundMaster *)(uintptr_t)*cell;
+        __asm__ volatile ("" : : "r" (m1));
         fade_mask = 4;
-        fade_mask |= m1->flags;
-        m1->flags = (u8)fade_mask;
       } else {
         target_other = target_saved;
         m2->fadeTarget = (u16)target_other;
         m2->fadeStep = (u8)step_other;
         m1 = (SoundMaster *)(uintptr_t)*cell;
+        __asm__ volatile ("" : : "r" (m1));
         fade_mask = 8;
-        fade_mask |= m1->flags;
-        m1->flags = (u8)fade_mask;
       }
+      fade_mask |= m1->flags;
+      m1->flags = (u8)fade_mask;
 
       m1 = (SoundMaster *)(uintptr_t)*cell;
       clear_mask = 0xEF;
@@ -468,8 +461,8 @@ void SoundArmFade(u16 target, u8 step){
       m1->flags = (u8)clear_mask;
     }
 }
-void _0802B2A4(u16 t, u8 s) __attribute__((alias("SoundArmFade")));
-void sub_0802B2A4(u16 t, u8 s) __attribute__((alias("SoundArmFade")));
+void _0802B2A4(u32 t, u32 s) __attribute__((alias("SoundArmFade")));
+void sub_0802B2A4(u32 t, u32 s) __attribute__((alias("SoundArmFade")));
 void SoundFadeOut(u8 step){
     register SoundMaster *m __asm__("r1");
     register u8 mask __asm__("r0");
@@ -541,68 +534,36 @@ void SoundApplySecVol(void){
 void _0802B3A4(void) __attribute__((alias("SoundApplySecVol")));
 void sub_0802B3A4(void) __attribute__((alias("SoundApplySecVol")));
 
-// _0802B3B8 bank probe, _0802B418 speed
-// The bank selector and the four stream addresses are laid out as four
-// branch-local literal pools in the ROM.  Keeping the leaf as its ROM body
-// also preserves the signed full-word test after the low-halfword gate.
-__attribute__((naked)) bool SoundIsBankPlaying(u32 bank){
-    __asm__ volatile (
-        ".syntax unified\n"
-        "adds r3, r0, #0\n"
-        "ldr r2, 1f\n"
-        "ldr r1, [r2]\n"
-        "movs r0, #1\n"
-        "ldrb r1, [r1, #8]\n"
-        "ands r0, r1\n"
-        "cmp r0, #0\n"
-        "beq.n .Lsbp_false\n"
-        "cmp r3, #0\n"
-        "bne.n .Lsbp_bank1\n"
-        "ldr r0, 2f\n"
-        "b.n .Lsbp_probe\n"
-        ".align 2\n"
-        "1: .word 0x03001764\n"
-        "2: .word 0x0203ED40\n"
-        ".Lsbp_bank1:\n"
-        "cmp r3, #1\n"
-        "bne.n .Lsbp_bank2\n"
-        "ldr r0, 3f\n"
-        "b.n .Lsbp_probe\n"
-        ".align 2\n"
-        "3: .word 0x0203ED80\n"
-        ".Lsbp_bank2:\n"
-        "cmp r3, #2\n"
-        "bne.n .Lsbp_bank3\n"
-        "ldr r0, 4f\n"
-        "b.n .Lsbp_probe\n"
-        ".align 2\n"
-        "4: .word 0x0203EDC0\n"
-        ".Lsbp_bank3:\n"
-        "ldr r0, 5f\n"
-        ".Lsbp_probe:\n"
-        "ldr r1, [r0, #4]\n"
-        "ldr r0, [r2]\n"
-        "ldrb r0, [r0, #17]\n"
-        "cmp r0, #1\n"
-        "beq.n .Lsbp_true\n"
-        "ldr r0, 6f\n"
-        "ands r0, r1\n"
-        "cmp r0, #0\n"
-        "beq.n .Lsbp_false\n"
-        "cmp r1, #0\n"
-        "blt.n .Lsbp_false\n"
-        ".Lsbp_true:\n"
-        "movs r0, #1\n"
-        "b.n .Lsbp_done\n"
-        ".align 2\n"
-        "5: .word 0x0203EE10\n"
-        "6: .word 0x0000FFFF\n"
-        ".Lsbp_false:\n"
-        "movs r0, #0\n"
-        ".Lsbp_done:\n"
-        "bx lr\n"
-        ".syntax divided\n"
-    );
+// Sound code can replace the master pointer, so read its volatile cell again
+// for the change flag. The scoped register pins preserve this leaf's allocation.
+bool SoundIsBankPlaying(u32 bank){
+    register u32 selector __asm__("r3") = bank;
+    register volatile u32 *cell __asm__("r2") = (volatile u32 *)SOUND_MASTER_PTR;
+    {
+        register volatile u8 *master __asm__("r1");
+        register u32 enabled __asm__("r0");
+        master = (volatile u8 *)(uintptr_t)*cell;
+        enabled = 1;
+        enabled = (u32)master[8] & enabled;
+        if (enabled == 0) return false;
+    }
+    {
+        register volatile u32 *stream __asm__("r0");
+        u32 state;
+        if (selector == 0) stream = (volatile u32 *)(uintptr_t)0x0203ED40u;
+        else if (selector == 1) stream = (volatile u32 *)(uintptr_t)0x0203ED80u;
+        else if (selector == 2) stream = (volatile u32 *)(uintptr_t)0x0203EDC0u;
+        else stream = (volatile u32 *)(uintptr_t)0x0203EE10u;
+        state = stream[1];
+        {
+            register volatile u8 *changedMaster __asm__("r0");
+            changedMaster = (volatile u8 *)(uintptr_t)*cell;
+            if (changedMaster[17] == 1) return true;
+        }
+        if ((state & 0xFFFFu) == 0) return false;
+        if ((s32)state < 0) return false;
+        return true;
+    }
 }
 bool _0802B3B8(u32 b) __attribute__((alias("SoundIsBankPlaying")));
 bool Sub_0802B3B8(u32 b) __attribute__((alias("SoundIsBankPlaying")));

@@ -52,8 +52,7 @@ void Race_Setup_18E28(u32 index_arg) {
     lookup = context + 132;
     lookup += index;
     zero = 0;
-    __asm__ volatile("ldrsh %0, [%1, %2]"
-                     : "=r"(field) : "r"(lookup), "r"(zero) : "memory");
+    field = *(s16 *)(lookup + zero);
     *field_dest = field;
     *(volatile u32 *)(record + 228) = 160 << 7;
     {
@@ -454,14 +453,11 @@ void Race_Setup_191BC(u32 a0) {
     // Materialize the first table address in r1 before reloading the slot.
     register volatile u32 *tvPtr __asm__("r1") = &tbl[(int)sv];
     __asm__ volatile("" : "+r"(tvPtr));
-    // The ROM reloads p90 with ldrsh [r3,r5] after the first index. Keep the
-    // zero index in r5 and the second read distinct from the first.
-    register s32 zero __asm__("r5") = 0;
-    __asm__ volatile("" : "+r"(zero));
+    // Keep the second signed read distinct from the earlier `cur` sample.
     __asm__ volatile("" : : : "memory");
     s32 sc;
-    __asm__ volatile("ldrsh %0, [%1, %2]"
-                     : "=r"(sc) : "r"(p90), "r"(zero) : "memory");
+    sc = *(s16 *)(void *)p90;
+    __asm__ volatile("" : : : "memory");
     // Pin the second address in r0; the ROM compares table values as signed.
     register volatile u32 *tcPtr __asm__("r0") = &tbl[(int)sc];
     s32 tv = (s32)*tvPtr;
@@ -686,8 +682,7 @@ int Race_Setup_19200(void *a, void *b) {
     __asm__ volatile("" : "+r"(ra), "+r"(rb) : : "r5", "memory");
     u8 *pA = *(u8 **)(ra + 28);
     register s32 hA18 __asm__("r1");
-    __asm__ volatile("movs r2, #18\n\tldrsh %0, [%1, r2]"
-                     : "=&r"(hA18) : "r"(pA) : "r2", "memory");
+    hA18 = *(s16 *)(pA + 18);
     u8 *pB = *(u8 **)(rb + 28);
     s16 hB18 = *(s16 *)(pB + 18);
     int d = (int)hA18 - (int)hB18;

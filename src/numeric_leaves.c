@@ -188,8 +188,7 @@ int Code279C_Get_4770_Entry0(int idx){
     __asm__ volatile("" : "+r"(table_base) : : "memory");
     address = (s16)idx * 8;
     address += (s32)table_base;
-    __asm__ volatile("movs r1, #0\n\tldrsh %0, [%0, r1]"
-                     : "+r"(address) : : "r1", "memory");
+    address = *(const s16 *)(uintptr_t)address;
     return address;
 }
 // 0x0800281C — signed field 1 from the same table row.
@@ -199,8 +198,7 @@ int Code279C_Get_4770_Entry1(int idx){
     __asm__ volatile("" : "+r"(table_base) : : "memory");
     address = (s16)idx * 8;
     address += (s32)table_base;
-    __asm__ volatile("movs r1, #2\n\tldrsh %0, [%0, r1]"
-                     : "+r"(address) : : "r1", "memory");
+    address = *(const s16 *)(uintptr_t)(address + 2);
     return address;
 }
 // 0x08002830 — signed field 2 from the same table row.
@@ -210,8 +208,7 @@ int Code279C_Get_4770_Entry2(int idx){
     __asm__ volatile("" : "+r"(table_base) : : "memory");
     address = (s16)idx * 8;
     address += (s32)table_base;
-    __asm__ volatile("movs r1, #4\n\tldrsh %0, [%0, r1]"
-                     : "+r"(address) : : "r1", "memory");
+    address = *(const s16 *)(uintptr_t)(address + 4);
     return address;
 }
 void _0800279C(int v) __attribute__((alias("Code279C_SetFlag0")));

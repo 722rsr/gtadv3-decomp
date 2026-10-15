@@ -16,7 +16,9 @@ int Ai_LineSumA(const void *rec){
     __asm__("" : "+r"(v2));
     register int v6 __asm__("r0") = *p6;
     register int sum __asm__("r0");
-    __asm__("add %0, %1, %2" : "=r"(sum) : "r"(v2), "r"(v6));
+    /* Keep v6 live so agbcc emits the ROM's r1 + r0 operand order. */
+    __asm__("" : "+r"(v6));
+    sum = v2 + v6;
     sum += (tbl + r[4] * 8)[65];
     sum += (tbl + r[7] * 8)[97];
     sum += (tbl + r[5] * 8)[129];
@@ -41,7 +43,9 @@ int Ai_LineSumB(const void *rec){
     __asm__("" : "+r"(v2));
     register int v6 __asm__("r0") = *p6;
     register int sum __asm__("r0");
-    __asm__("add %0, %1, %2" : "=r"(sum) : "r"(v2), "r"(v6));
+    /* Keep v6 live so agbcc emits the ROM's r1 + r0 operand order. */
+    __asm__("" : "+r"(v6));
+    sum = v2 + v6;
     sum += (tbl + r[4] * 8)[64];
     sum += (tbl + r[7] * 8)[96];
     sum += (tbl + r[5] * 8)[128];

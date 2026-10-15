@@ -180,13 +180,7 @@ void MenuPoller_0800C814(void *ctx) {
         sub_08004BFC(5);
         {
             register s32 signedKey __asm__("r1");
-            __asm__ volatile(
-                ".code 16\n\t"
-                "mov r0, #0\n\t"
-                "ldrsh r1, [r5, r0]"
-                : "=r"(signedKey)
-                : "r"(rec)
-                : "r0", "cc", "memory");
+            signedKey = *(const s16 *)(uintptr_t)rec;
             ((void (*)(u32, s32))(void *)_08004C84)(0u, signedKey);
         }
         sub_08004EC0(1);
@@ -4536,23 +4530,9 @@ void sub_0800108F0(void *a) __attribute__((alias("Menu108F0_0800108F0")));
 // Evidence: asm/menu_ff78.s:1197-1221, objdump 0x080010914: b530 1c04 b01a 4605 3101 8801 b9?? f7ff ff??..., no literal pool, no branch to VRAM, rec+168 is opaque +168, complete CFG, callers via dispatch (no direct bl xref, but typed entry present) — r2 is arg (lsls r2,#16), r1 is ignored
 void Menu010914_080010914(void *rec, u32 dummy, u16 arg) {
     (void)dummy;
-    // The ROM keeps TWO live copies of the normalized u16 parameter:
-    //   r2 -- the incoming arg, consumed by `cmp r2,#2` before the first call
-    //   r5 -- a callee-saved copy that must survive Menu108D4 to feed `cmp r5,#1`
-    // Writing `u16 a = arg;` does NOT work: agbcc copy-propagates it and
-    // allocates ONE register, emitting `lsr r5,r2,#16` and then testing r5
-    // twice, which drops both the `adds r5,r2,#0` and the whole r2 use.
-    // The copy is therefore forced through the repo's stale-register asm idiom.
-//
-    // Two details of the asm are load-bearing:
-    //   * the `"r"(rec)` INPUT operand keeps the incoming r0 live across the
-    //     asm, so the rec+168 load consumes r0 directly (`adds r0,#168`).
-    //     Without it agbcc CSEs rec into r4 and re-materializes it with an
-    //     extra `mov r0,r4` the ROM does not have.
-    //   * the asm is non-volatile, so it is not sunk below the load; the
-    //     volatile form reorders the copy to after the ldrh.
-    u16 a;
-    __asm__ ("mov %0, r2" : "=r" (a) : "r" (rec));
+    // Keep the second copy of the normalized argument in the callee-saved r5
+    // across Menu108D4; the original remains available for the arg == 2 test.
+    register u16 a __asm__("r5") = arg;
     u16 v168 = *(volatile u16 *)((u8 *)rec + 168);
     if (v168 != 3) goto end;
     if (arg == 2) {
@@ -4571,23 +4551,9 @@ void sub_080010914(void *a, u32 b, u16 c) __attribute__((alias("Menu010914_08001
 // Evidence: asm/menu_ff78.s:1222-1246, objdump 0x080010940: b530 1c04 b01a 4605 3101 8801 2803 d1?? 2a02 d1?? f7ff ff?? 2d01 d1?? f7ff ff?? bc30 bc01 4700, no literal pool, no branch to VRAM, rec+168 is opaque +168, complete CFG, callers via dispatch (no direct bl xref, but typed entry present) — same pattern as 010914, fully proven without 0x03001780 pool
 void Menu010940_080010940(void *rec, u32 dummy, u16 arg) {
     (void)dummy;
-    // The ROM keeps TWO live copies of the normalized u16 parameter:
-    //   r2 -- the incoming arg, consumed by `cmp r2,#2` before the first call
-    //   r5 -- a callee-saved copy that must survive Menu108D4 to feed `cmp r5,#1`
-    // Writing `u16 a = arg;` does NOT work: agbcc copy-propagates it and
-    // allocates ONE register, emitting `lsr r5,r2,#16` and then testing r5
-    // twice, which drops both the `adds r5,r2,#0` and the whole r2 use.
-    // The copy is therefore forced through the repo's stale-register asm idiom.
-//
-    // Two details of the asm are load-bearing:
-    //   * the `"r"(rec)` INPUT operand keeps the incoming r0 live across the
-    //     asm, so the rec+168 load consumes r0 directly (`adds r0,#168`).
-    //     Without it agbcc CSEs rec into r4 and re-materializes it with an
-    //     extra `mov r0,r4` the ROM does not have.
-    //   * the asm is non-volatile, so it is not sunk below the load; the
-    //     volatile form reorders the copy to after the ldrh.
-    u16 a;
-    __asm__ ("mov %0, r2" : "=r" (a) : "r" (rec));
+    // Keep the second copy of the normalized argument in the callee-saved r5
+    // across Menu108D4; the original remains available for the arg == 2 test.
+    register u16 a __asm__("r5") = arg;
     u16 v168 = *(volatile u16 *)((u8 *)rec + 168);
     if (v168 != 3) goto end;
     if (arg == 2) {

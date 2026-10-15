@@ -115,20 +115,37 @@ void *Course_SeekRes(void *base, int grp, int idx) {
     offset = (offset >> 2) << 2;
     return (void *)(uintptr_t)(directory + offset + 8u);
 }
-int Course_AttrLookup(int x,int y,int v) {
-    // _080065D4: adj = x*65536 + 0xFFF30000; if adj<0 return 10; else table row*3 +k
-    s32 adj = (x<<16) + (s32)0xFFF30000;
-    if (adj < 0) return 10;
-    // Table at 0x080C8FE4, s16 row = hi(adj)
-    s16 row = (s16)(adj>>16);
-    int k = 2;
-    if ((u16)x==0) {
-        int s = (-(s32)v) | (s32)v;
-        k = (s>>31) & 1;
+int Course_AttrLookup(int x, int y, int v) {
+    // The ROM derives the row from x, but tests zero-extended y to select
+    // either the special sign-of-v column (0/1) or column 2.
+    register u32 selector __asm__("r3") = (u16)y;
+    u8 value = (u8)v;
+    register s32 adjusted __asm__("r0") =
+        (s32)(((u32)x << 16) + 0xFFF30000u);
+    register s32 row __asm__("r1") = (u32)adjusted >> 16;
+    register s32 sign __asm__("r0");
+    register const u8 *table __asm__("r2");
+    register s32 selector16 __asm__("r1");
+    register u32 index __asm__("r0");
+
+    if (adjusted < 0)
+        return 10;
+    if (selector == 0) {
+        sign = -(s32)value;
+        sign |= (s32)value;
+        selector = (u32)sign >> 31;
+    } else {
+        selector = 2;
     }
-    const u8 *tbl = (const u8 *)0x080C8FE4;
-    s32 idx = row*3 + k;
-    return tbl[idx];
+    table = (const u8 *)(uintptr_t)0x080C8FE4u;
+    // Keep the table literal materialized before the two signed index casts.
+    __asm__ volatile ("" : : "r" (table));
+    row = (s16)row;
+    index = (u32)(row * 3);
+    selector16 = (s16)selector;
+    index = index + selector16;
+    index = index + (u32)(uintptr_t)table;
+    return *(const u8 *)(uintptr_t)index;
 }
 
 void Course_ThemeGfx(void *out,int idx,void *base) {

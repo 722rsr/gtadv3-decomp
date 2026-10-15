@@ -278,7 +278,7 @@
       "asm/surface_access.s",
       "asm/wrapper_pair.s"
     ],
-    "source_closure_sha256": "f27fe7a7339a6c9630c866944c1c639b281263fd15ca99b9e676aa1727ec653f"
+    "source_closure_sha256": "bc0611a708507511dee84f6c07c4daa59abb61f82b5e515a83682aec6b314c1e"
   },
   "raw_incbin_spans": [],
   "rom": {
@@ -6777,8 +6777,8 @@
           "start": "0x0002C4"
         }
       ],
-      "sha256": "9f11cee09df0aab6b1ed08f97554b02301141285efd82892f437897b49f74678",
-      "size": 18126
+      "sha256": "331e9a3ae50107f7d3f2d8ed5bf18b2b6d4483b7934e41dd269e74cadb304c8b",
+      "size": 18151
     },
     {
       "path": "asm/ai_award_bitset.s",

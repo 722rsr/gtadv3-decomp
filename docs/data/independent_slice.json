@@ -89,7 +89,7 @@
   "source_closure": [
     {
       "path": "asm/agbmain.s",
-      "sha256": "9f11cee09df0aab6b1ed08f97554b02301141285efd82892f437897b49f74678"
+      "sha256": "331e9a3ae50107f7d3f2d8ed5bf18b2b6d4483b7934e41dd269e74cadb304c8b"
     },
     {
       "path": "asm/ai_award_bitset.s",

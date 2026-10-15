@@ -837,25 +837,18 @@ void MenuFF78_12F98(void *rec_) {
     *(volatile u16 *)(uintptr_t)(rec + 180) =
         (u16)_080022E4((int)*(s16 *)(uintptr_t)(rec + 174));
     {
-        // The ROM's +49 read is `ldrsb r1,[r0,r1]` with r1=0; direct C emits
-        // `ldrb` plus sign-extension, so keep this signed register-offset load.
+        // Keep the zero index in r1; the signed C read emits the ROM's
+        // `ldrsb r1,[r0,r1]` register-offset load.
         u8 *base = (u8 *)wa;
         u8 *p1 = base + ((int)*(s16 *)(uintptr_t)(rec + 174) * 3) * 4 + 49;
         register s32 b1 __asm__("r1") = 0;
-        __asm__ volatile("ldrsb %0, [%1, %0]"
-                         : "+l"(b1) : "l"(p1) : "memory");
+        b1 = *(s8 *)(p1 + b1);
         *(volatile s16 *)(uintptr_t)(rec + 172) = (s16)b1;
-        // Keep the +48 ldrb/sign-extension before the rec+178 address; agbcc
-        // otherwise hoists the destination calculation above the byte read.
+        // Keep the +48 signed-byte read before the rec+178 address; agbcc
+        // otherwise hoists the destination calculation above the read.
         register s32 b2 __asm__("r0") = (s32)(uintptr_t)(
             base + ((int)*(s16 *)(uintptr_t)(rec + 174) * 3) * 4 + 48);
-        __asm__ volatile(
-            ".syntax unified\n\t"
-            "ldrb %0, [%0]\n\t"
-            "lsls %0, %0, #24\n\t"
-            "asrs %0, %0, #24\n\t"
-            ".syntax divided\n\t"
-            : "+l"(b2) : : "cc", "memory");
+        b2 = *(s8 *)(uintptr_t)b2;
         *(volatile s16 *)(uintptr_t)(rec + 178) = (s16)b2;
     }
     *(volatile u32 *)(uintptr_t)(rec + 144) = 2;

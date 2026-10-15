@@ -47,32 +47,31 @@ void Code2254_Wrapper1(void *a, int b){
 void _0800226C(void *a,int b) __attribute__((alias("Code2254_Wrapper1")));
 void sub_0800226C(void *a,int b) __attribute__((alias("Code2254_Wrapper1")));
 
-// 24048 — step queue push at 0x030005B0 — mechanically translated with opaque volatile
-// _080024048: r3=0x030005B0, r2=[r3], r1=r2<<3 + r3, r4=[r1,#4], r5=[r1,#8], r2++ -> [r3]=r2, [r0]=r4, [r0,#4]=r5, widths u32
-__attribute__((naked)) void Code24048_StepQueuePush(void *out){
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, lr}\n"
-        "ldr r3, 1f\n"
-        "ldr r2, [r3, #0]\n"
-        "lsls r1, r2, #3\n"
-        "adds r1, r1, r3\n"
-        "ldr r4, [r1, #4]\n"
-        "ldr r5, [r1, #8]\n"
-        "adds r2, #1\n"
-        "str r2, [r3, #0]\n"
-        "str r4, [r0, #0]\n"
-        "str r5, [r0, #4]\n"
-        "pop {r4, r5}\n"
-        "pop {r2}\n"
-        "bx r2\n"
-        ".align 2, 0\n"
-        "1: .4byte 0x030005B0\n"
-        ".syntax divided\n"
-    );
+// 24048 — dequeue a two-word step pair from the count-prefixed queue at
+// 0x030005B0. The C struct-return ABI supplies the result buffer in r0;
+// sub_08024048 is also declared as an explicit output-buffer alias for the
+// existing caller so its emitted stack sequence stays unchanged.
+typedef struct {
+    u32 preceding_word;
+    Code24048StepPair value;
+} Code24048QueueWindow;
+
+Code24048StepPair Code24048_StepQueuePop(void)
+{
+    register volatile Code24048QueueWindow *queue __asm__("r3");
+    register u32 index __asm__("r2");
+    register volatile Code24048QueueWindow *slot __asm__("r1");
+    Code24048StepPair result;
+
+    queue = (volatile Code24048QueueWindow *)(uintptr_t)0x030005B0u;
+    index = queue->preceding_word;
+    slot = (volatile Code24048QueueWindow *)((index << 3) + (uintptr_t)queue);
+    result = slot->value;
+    queue->preceding_word = index + 1u;
+    return result;
 }
-void _080024048(void *a) __attribute__((alias("Code24048_StepQueuePush")));
-void sub_080024048(void *a) __attribute__((alias("Code24048_StepQueuePush")));
+Code24048StepPair _080024048(void) __attribute__((alias("Code24048_StepQueuePop")));
+Code24048StepPair sub_080024048(void) __attribute__((alias("Code24048_StepQueuePop")));
 
 // 241* family: ghost manager at 0x03000610 helpers — REMOVED duplicate alias collision at 0x24150
 // _080024150 / _08024150 is owned by ghost (Ghost_Invalidate, src/ghost2.c:49,
@@ -455,7 +454,7 @@ void sub_080023E0C(void *a) __attribute__((alias("Code23E0C")));
 
 // 240D0 / 24138 etc. tiny ghost flag helpers — REMOVED duplicate alias collision at 0x240D0
 // _0800240D0 / _080240D0 is owned by ghost (Ghost_GetRecP, asm/ghost2.s:36-45, ldr r0,=0x03000610 ldr r0,[r0,#8] bx lr; also asm/code_240d0.s:7-11); race_control empty helper removed per audit.
-void sub_08024048(void *a) __attribute__((alias("Code24048_StepQueuePush")));
+void sub_08024048(void *out) __attribute__((alias("Code24048_StepQueuePop")));
 
 // ROM entry alias.
 void Sub_0800226C(void *a, int b) __attribute__((alias("Code2254_Wrapper1")));

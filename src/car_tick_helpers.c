@@ -18,10 +18,10 @@ extern void sub_08004CC4(void);   // reset LIFO
 extern void sub_08004CD4(u32 v);  // push LIFO (CounterBump takes u32)
 extern int  _0800AA20(void);      // shared racer tick (src/car_tick_dispatch.c)
 extern int  _08002340(int idx);   // id lookup (raw asm route)
-extern void _080188B0(void *pkt); // UI packet consumer (raw asm route)
+extern void sub_0800188B0(void *pkt); // UI packet consumer at ROM +0x188B0
 extern void _0800D778(void);      // rec10 router helper (raw asm route)
 extern void _08001F80(u16 v);     // Idle_SetRecordCount (src/idle_accessors.c)
-extern void _0802D974(const void *a, void *b, u32 c); // CpuSet (bios_wrappers.c)
+extern void sub_0802D974(const void *a, void *b, u32 c); // CpuSet wrapper
 extern void _0800B190(void);      // Race_Dispatch (src/race_dispatch.c)
 // The ARM branch calls the spelling the CLOSURE uses (asm/race_dispatch.s
 // labels 0x0800b190 only `sub_0800B190`), so it needs its own declaration.
@@ -130,55 +130,66 @@ int _08009BF8(void *ctx)
 
     switch (key) {
     case 0: {
-        volatile s16 *cursor;
-        volatile u8 *record;
-        const u32 *sourceWords;
+        /* This is ordinary IWRAM state, not a hardware register. Keep each
+         * read separate: a volatile record-byte write can alias WA+0x574
+         * when the cursor value is 112. */
+        s16 *cursor;
 
         slot = (u32)CarTickWa;
-        cursor = (volatile s16 *)(uintptr_t)(slot + 0x574u);
-        record = (volatile u8 *)(uintptr_t)(slot + (s32)(*cursor) * 12);
-        record += 48;
-        record[0] = 0;
-        record = (volatile u8 *)(uintptr_t)(slot + (s32)(*cursor) * 12);
-        record += 49;
-        record[0] = *(volatile u8 *)(uintptr_t)(slot + 0x1151u);
-        record = (volatile u8 *)(uintptr_t)(slot + (s32)(*cursor) * 12);
-        record += 50;
-        record[0] = 0;
-        record = (volatile u8 *)(uintptr_t)(slot + (s32)(*cursor) * 12);
-        record += 51;
-        record[0] = 0;
-        record = (volatile u8 *)(uintptr_t)(slot + (s32)(*cursor) * 12);
-        record += 52;
-        record[0] = 0;
-        record = (volatile u8 *)(uintptr_t)(slot + (s32)(*cursor) * 12);
-        record += 53;
-        record[0] = 0;
-        record = (volatile u8 *)(uintptr_t)(slot + (s32)(*cursor) * 12);
-        record += 54;
-        record[0] = 0;
-        record = (volatile u8 *)(uintptr_t)(slot + (s32)(*cursor) * 12);
-        record += 55;
-        record[0] = 0;
-        record = (volatile u8 *)(uintptr_t)(slot + (s32)(*cursor) * 12);
-        record += 56;
-        record[0] = 0;
-        record = (volatile u8 *)(uintptr_t)(slot + (s32)(*cursor) * 12);
-        record += 57;
-        record[0] = 0;
+        cursor = (s16 *)(uintptr_t)(slot + 0x574u);
+        {
+            /* Keep the volatile record cursor in the ROM's r0 register. */
+            register volatile u8 *record __asm__("r0");
+            u8 recordByte;
 
-        *(u32 *)(packet + 56) = 0;
-        _0802D974(packet + 56, packet, 0x0500000Eu);
+            record = (volatile u8 *)(uintptr_t)((s32)(*cursor) * 12 + slot);
+            record += 48;
+            record[0] = 0;
+            record = (volatile u8 *)(uintptr_t)((s32)(*cursor) * 12 + slot);
+            recordByte = *(volatile u8 *)(uintptr_t)(slot + 0x1151u);
+            record += 49;
+            record[0] = recordByte;
+            record = (volatile u8 *)(uintptr_t)((s32)(*cursor) * 12 + slot);
+            record += 50;
+            record[0] = 0;
+            record = (volatile u8 *)(uintptr_t)((s32)(*cursor) * 12 + slot);
+            record += 51;
+            record[0] = 0;
+            record = (volatile u8 *)(uintptr_t)((s32)(*cursor) * 12 + slot);
+            record += 52;
+            record[0] = 0;
+            record = (volatile u8 *)(uintptr_t)((s32)(*cursor) * 12 + slot);
+            record += 53;
+            record[0] = 0;
+            record = (volatile u8 *)(uintptr_t)((s32)(*cursor) * 12 + slot);
+            record += 54;
+            record[0] = 0;
+            record = (volatile u8 *)(uintptr_t)((s32)(*cursor) * 12 + slot);
+            record += 55;
+            record[0] = 0;
+            record = (volatile u8 *)(uintptr_t)((s32)(*cursor) * 12 + slot);
+            record += 56;
+            record[0] = 0;
+            record = (volatile u8 *)(uintptr_t)((s32)(*cursor) * 12 + slot);
+            record += 57;
+            record[0] = 0;
+        }
+
+        *(u32 *)(packet + 56) = (u32)result;
+        sub_0802D974(packet + 56, packet, 0x0500000Eu);
         ((u16 *)packet)[0] = 0xFFFF;
         ((u16 *)packet)[1] = *(volatile u16 *)(uintptr_t)(slot + 0x576u);
         ((u16 *)packet)[5] = *(volatile u16 *)(uintptr_t)(slot + 0x113Eu);
         ((u16 *)packet)[4] = *(volatile u16 *)(uintptr_t)(slot + 0x113Cu);
         ((u16 *)packet)[12] = (u16)_08002340((int)(*cursor));
-        sourceWords = (const u32 *)(uintptr_t)(slot + (s32)(*cursor) * 12 + 48);
-        __asm__ volatile ("" : : "r" (sourceWords) : "memory");
-        ((u32 *)(packet + 28))[0] = sourceWords[0];
-        ((u32 *)(packet + 28))[1] = sourceWords[1];
-        ((u32 *)(packet + 28))[2] = sourceWords[2];
+        {
+            /* The ROM keeps the source in r0 for its three-word copy. */
+            register const u32 *sourceWords __asm__("r0");
+
+            sourceWords = (const u32 *)(uintptr_t)((s32)(*cursor) * 12 + slot + 48);
+            __asm__ volatile ("" : : "r" (sourceWords) : "memory");
+            __builtin_memcpy(packet + 28, sourceWords, 3 * sizeof(u32));
+        }
         goto packet_epilogue;
     }
     case 1:
@@ -203,25 +214,23 @@ int _08009BF8(void *ctx)
     case 7:
         slot++;
     case 6: {
-        volatile s16 *cursor;
-        const u32 *sourceWords;
+        s16 *cursor;
+        register const u32 *sourceWords __asm__("r0");
 
         *(u32 *)(packet + 60) = 0;
-        _0802D974(packet + 60, packet, 0x0500000Eu);
+        sub_0802D974(packet + 60, packet, 0x0500000Eu);
         ((u16 *)packet)[0] = 10;
         packet[23] = (u8)slot;
         slot = (u32)CarTickWa;
-        cursor = (volatile s16 *)(uintptr_t)(slot + 0x574u);
+        cursor = (s16 *)(uintptr_t)(slot + 0x574u);
         ((u16 *)packet)[12] = (u16)_08002340((int)(*cursor));
         sourceWords = (const u32 *)(uintptr_t)(slot + (s32)(*cursor) * 12 + 48);
         __asm__ volatile ("" : : "r" (sourceWords) : "memory");
-        ((u32 *)(packet + 28))[0] = sourceWords[0];
-        ((u32 *)(packet + 28))[1] = sourceWords[1];
-        ((u32 *)(packet + 28))[2] = sourceWords[2];
+        __builtin_memcpy(packet + 28, sourceWords, 3 * sizeof(u32));
         goto packet_epilogue;
     }
 packet_epilogue:
-        _080188B0(packet);
+        sub_0800188B0(packet);
         result = 51;
         break;
     case 10:
@@ -533,8 +542,7 @@ int _0800A44C(void)
     __asm__ volatile("" : "+r"(variant), "+r"(variantOffset));
     variant += variantOffset;
     variantOffset = 0;
-    __asm__ volatile(".code 16\n\tldrsh r0, [r0, r2]"
-                     : "+r"(variant) : "r"(variantOffset) : "cc");
+    variant = *(s16 *)((u8 *)(uintptr_t)variant + variantOffset);
 
     switch (variant) {
     case 0:

@@ -774,18 +774,17 @@ void Race_Scene_BHandler_1B410(void) {
         register u32 workbase2 __asm__("r1") = (u32)(uintptr_t)&RS1B410_WA;
         register u32 offset2 __asm__("r2") = (u32)(uintptr_t)&RS1B410_O1110;
         int v = (int)*(volatile u8 *)(uintptr_t)(workbase2 + offset2);
-        // Sign extension is behaviorally required for an s8 value, although
-        // a plain `v != 0` lets the compiler optimize it away.
-        __asm__ volatile("lsl %0, %0, #24\n\tasr %0, %0, #24" : "+l"(v));
+        // Preserve the ROM's explicit s8-to-int conversion across the
+        // truthiness check; the empty constraint only holds the computed C value.
+        v = (s8)v;
+        __asm__ volatile("" : "+l"(v));
         if (v != 0) {
             offset2 -= 18u;
             register u32 countaddr __asm__("r0") = workbase2 + offset2;
             __asm__ volatile("" : "+r"(countaddr));
             register int c __asm__("r0");
-            // Load the signed halfword into the address register, as the ROM
-            // does; this is equivalent to `*(s16 *)countaddr`.
-            __asm__ volatile("mov r1, #0\n\tldrsh r0, [r0, r1]"
-                             : "=r"(c) : "0"(countaddr) : "r1");
+            c = *(s16 *)(uintptr_t)countaddr;
+            __asm__ volatile("" : : "r"(offset2));
             u16 song = (u16)RS_CALLEE(Course_GetSong, _080258E0)(c);
             RS_CALLEE(SoundSetMasterVol, _0802B1E4)((u32)song);
         }

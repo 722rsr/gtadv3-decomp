@@ -1300,18 +1300,19 @@ int _080029488(void *rec) {
     __asm__ volatile("" : "+r"(slot));
     slot += slotOffset;
     register u32 uv __asm__("r1") = *(volatile u16 *)slot;
-    register s32 zero __asm__("r4") = 0;
-    __asm__ volatile("" : "+r"(zero));
-    register s32 slotSigned __asm__("r0");
-    __asm__ volatile("ldrsh %0, [%1, %2]"
-                     : "=r"(slotSigned) : "r"(slot), "r"(zero) : "memory");
+    /* Keep the unsigned and signed reads separate as they are in the ROM. */
+    __asm__ volatile("" : : "r"(uv) : "memory");
+    register s32 slotSigned __asm__("r0") = *(s16 *)slot;
     if (slotSigned > 0) {
         register u8 *bptr __asm__("r0") = r;
         bptr += 140;
         result = *(volatile u16 *)bptr;
         register u32 product __asm__("r2") = (u32)uv * result;
-        __asm__ volatile("mov r0, %1\n\tlsl r0, r0, #16\n\tlsr %0, r0, #16"
-                         : "=r"(result) : "r"(product) : "r0", "cc");
+        __asm__ volatile("" : "+r"(product));
+        register u32 shifted __asm__("r0") = product;
+        __asm__ volatile("" : "+r"(shifted));
+        shifted <<= 16;
+        result = (u16)(shifted >> 16);
     }
     return (s16)result;
 }
@@ -4191,10 +4192,9 @@ int _08002AB98(u32 idx, u16 *tab, u32 *ctr) {
 write_fresh_marker:
     {
         register u32 markerValue __asm__("r1") = 0xFFFFu;
-        register u32 markerCopy __asm__("r0");
-        __asm__ volatile(".code 16\n\t"
-                         "mov r0, r1"
-                         : "=r"(markerCopy) : "r"(markerValue) : "cc");
+        // Keep the literal in r1 so the C copy uses the ROM register flow.
+        __asm__ volatile("" : "+r"(markerValue));
+        register u32 markerCopy __asm__("r0") = markerValue;
         * (volatile u16 *)(entry + 1) = (u16)markerCopy;
     }
     goto finish;

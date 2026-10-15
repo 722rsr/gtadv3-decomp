@@ -76,10 +76,9 @@ void _08023958(void *ctx, int a, int b) {
             register s16 *r0_p __asm__("r0") = (s16 *)(c + 166);
             register int val __asm__("r1");
             register s16 *p166 __asm__("r4");
-            register int r2_zero __asm__("r2");
             __asm__("" : "+r"(r0_p));
-            __asm__("movs %3, #0\n\tldrsh %0, [%1, %3]\n\tmov %2, %1"
-                    : "=r"(val), "+r"(r0_p), "=r"(p166), "=r"(r2_zero));
+            val = *r0_p;
+            p166 = r0_p;
             if (val == 0)
                 *p166 = 2;
             {

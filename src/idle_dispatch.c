@@ -363,8 +363,7 @@ void Idle_RefreshWorkArea(void) {
     register u16 rawCount __asm__("r0") = *(volatile u16 *)(st+8);
     register u32 countOff __asm__("r3") = 8;
     register s32 signedCount __asm__("r2");
-    __asm__ volatile ("ldrsh %0, [%1, %2]"
-                      : "=r" (signedCount) : "r" (st), "r" (countOff));
+    signedCount = *(s16 *)(st + countOff);
     if (signedCount==0) {
         u32 z=(u32)signedCount; CpuSet(&z, (void*)(st+0xC0), 0x05000004);
     } else {

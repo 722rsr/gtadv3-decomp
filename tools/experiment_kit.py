@@ -35,6 +35,7 @@ Two rules from the strategy document are load-bearing here:
 """
 from __future__ import annotations
 
+import argparse
 import hashlib
 import json
 import os
