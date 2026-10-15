@@ -790,101 +790,119 @@ unsigned long long _08001D7B8(void *out_, int mode, int center, int extra) {
 // Seeds rec+154/172/180/182/184/186/146 from work-area cells; both
 // 8-bit cells feed s8-extended stores.
 // ----------------------------------------------------------------------------
-__attribute__((naked)) void _08001D858(void *rec_) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, lr}\n"
-        "adds r3, r0, #0\n"
-        "ldr r1, .L1d858_wa\n"
-        "ldr r2, .L1d858_fce\n"
-        "adds r0, r1, r2\n"
-        "ldrh r5, [r0, #0]\n"
-        "ldr r2, .L1d858_576\n"
-        "adds r0, r1, r2\n"
-        "ldrh r0, [r0, #0]\n"
-        "adds r2, r3, #0\n"
-        "adds r2, #154\n"
-        "movs r4, #0\n"
-        "strh r0, [r2, #0]\n"
-        "ldr r2, .L1d858_fca\n"
-        "adds r0, r1, r2\n"
-        "adds r6, r1, #0\n"
-        "ldrh r0, [r0, #0]\n"
-        "lsls r0, r5, #16\n"
-        "asrs r0, r0, #15\n"
-        "adds r1, r3, #0\n"
-        "adds r1, #172\n"
-        "adds r1, r1, r0\n"
-        "strh r4, [r1, #0]\n"
-        "adds r0, r3, #0\n"
-        "adds r0, #182\n"
-        "strh r4, [r0, #0]\n"
-        "adds r4, r0, #0\n"
-        "ldr r1, .L1d858_fc8\n"
-        "adds r0, r6, r1\n"
-        "movs r2, #0\n"
-        "ldrsh r1, [r0, r2]\n"
-        "cmp r1, #1\n"
-        "bne .L1d858_else\n"
-        "adds r0, r3, #0\n"
-        "adds r0, #180\n"
-        "b .L1d858_store_pair\n"
-        ".L1d858_wa: .word 0x03001780\n"
-        ".L1d858_fce: .word 0x00000FCE\n"
-        ".L1d858_576: .word 0x00000576\n"
-        ".L1d858_fca: .word 0x00000FCA\n"
-        ".L1d858_fc8: .word 0x00000FC8\n"
-        ".L1d858_else:\n"
-        "adds r0, r3, #0\n"
-        "adds r0, #180\n"
-        "movs r1, #0\n"
-        ".L1d858_store_pair:\n"
-        "strh r1, [r0, #0]\n"
-        "adds r0, #4\n"
-        "strh r1, [r0, #0]\n"
-        "adds r2, r0, #0\n"
-        "ldr r1, .L1d858_10e5\n"
-        "adds r0, r6, r1\n"
-        "ldrb r0, [r0, #0]\n"
-        "lsls r0, r0, #24\n"
-        "asrs r0, r0, #24\n"
-        "adds r1, r3, #0\n"
-        "adds r1, #146\n"
-        "strh r0, [r1, #0]\n"
-        "subs r0, #1\n"
-        "lsls r0, r0, #16\n"
-        "lsrs r0, r0, #16\n"
-        "cmp r0, #2\n"
-        "bhi .L1d858_large\n"
-        "adds r1, #40\n"
-        "movs r0, #1\n"
-        "b .L1d858_store_last\n"
-        "movs r0, r0\n"
-        ".L1d858_10e5: .word 0x000010E5\n"
-        ".L1d858_large:\n"
-        "adds r1, r3, #0\n"
-        "adds r1, #186\n"
-        "movs r0, #0\n"
-        ".L1d858_store_last:\n"
-        "strh r0, [r1, #0]\n"
-        "ldr r3, .L1d858_10e4\n"
-        "adds r0, r6, r3\n"
-        "ldrb r0, [r0, #0]\n"
-        "lsls r0, r0, #24\n"
-        "asrs r0, r0, #24\n"
-        "cmp r0, #0\n"
-        "bne .L1d858_done\n"
-        "strh r0, [r4, #0]\n"
-        "strh r0, [r2, #0]\n"
-        "strh r0, [r1, #0]\n"
-        ".L1d858_done:\n"
-        "pop {r4, r5, r6}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        "movs r0, r0\n"
-        ".L1d858_10e4: .word 0x000010E4\n"
-        ".syntax divided\n"
-    );
+__asm__(".set WAOff858FCE, 0x00000FCE");
+extern u8 WAOff858FCE;
+__asm__(".set WAOff858F576, 0x00000576");
+extern u8 WAOff858F576;
+__asm__(".set WAOff858FCA, 0x00000FCA");
+extern u8 WAOff858FCA;
+__asm__(".set WAOff858FC8, 0x00000FC8");
+extern u8 WAOff858FC8;
+__asm__(".set WAOff858E5, 0x000010E5");
+extern u8 WAOff858E5;
+__asm__(".set WAOff858E4, 0x000010E4");
+extern u8 WAOff858E4;
+
+#define WA858_SPLIT_DECL \
+    __asm__(".globl WABaseB1\nWABaseB1 = 0x03001780\n" \
+            ".globl WAOff858FCE\nWAOff858FCE = 0x00000FCE\n" \
+            ".globl WAOff858F576\nWAOff858F576 = 0x00000576\n" \
+            ".globl WAOff858FCA\nWAOff858FCA = 0x00000FCA\n" \
+            ".globl WAOff858FC8\nWAOff858FC8 = 0x00000FC8\n" \
+            ".globl WAOff858E5\nWAOff858E5 = 0x000010E5\n" \
+            ".globl WAOff858E4\nWAOff858E4 = 0x000010E4\n")
+
+void _08001D858(void *rec_) {
+    WA858_SPLIT_DECL;
+    register u32 rec  __asm__("r3") = (u32)rec_;
+    register u32 wa   __asm__("r1") = (u32)&WABaseB1;
+    register u32 wa2  __asm__("r6");
+    register u32 off  __asm__("r2");
+    register u32 off2 __asm__("r1");
+    register u32 off3 __asm__("r3");
+    register u32 addr __asm__("r0");
+    register u32 idx  __asm__("r0");
+    register volatile u16 *p172 __asm__("r1");
+    register s16 lane __asm__("r5");
+    register u32 zero __asm__("r4");
+    register volatile u16 *p182 __asm__("r4");
+    register volatile u16 *p184 __asm__("r2");
+    register volatile u16 *p186 __asm__("r1");
+    register volatile u16 *p146 __asm__("r1");
+    register volatile u16 *p180 __asm__("r0");
+    register int f __asm__("r1");
+    volatile u16 *q;
+    volatile u16 *q154;
+    u16 v154;
+    u32 val180;
+    u32 val186;
+    int b;
+
+    __asm__("" : "+r" (rec), "+r" (wa));
+
+    off = (u32)&WAOff858FCE;
+    addr = wa + off;
+    lane = *(volatile u16 *)addr;
+
+    off = (u32)&WAOff858F576;
+    addr = wa + off;
+    v154 = *(volatile u16 *)addr;
+    q154 = (volatile u16 *)(rec + 154u);
+    zero = 0;
+    *(volatile u16 *)q154 = v154;
+
+    off = (u32)&WAOff858FCA;
+    addr = wa + off;
+    wa2 = wa;
+    __asm__("" : "+r" (wa2));
+    *(volatile u16 *)addr;
+
+    idx = (u32)(lane << 1);
+    p172 = (volatile u16 *)(rec + 172u);
+    p172 = (volatile u16 *)((u8 *)p172 + idx);
+    *(volatile u16 *)p172 = (u16)zero;
+    q = (volatile u16 *)(rec + 182u);
+    *(volatile u16 *)q = (u16)zero;
+    p182 = q;
+
+    off2 = (u32)&WAOff858FC8;
+    addr = wa2 + off2;
+    f = *(s16 *)(void *)addr;
+    __asm__("" : "+r" (f));
+
+    if (f == 1) {
+        p180 = (volatile u16 *)(rec + 180u);
+        val180 = f;
+    } else {
+        p180 = (volatile u16 *)(rec + 180u);
+        val180 = 0;
+    }
+    *(volatile u16 *)p180 = (u16)val180;
+    p180 = (volatile u16 *)((u8 *)p180 + 4);
+    *(volatile u16 *)p180 = (u16)val180;
+    p184 = p180;
+
+    off2 = (u32)&WAOff858E5;
+    addr = wa2 + off2;
+    b = *(volatile s8 *)addr;
+    p146 = (volatile u16 *)(rec + 146u);
+    *(volatile u16 *)p146 = b;
+    if ((u16)(b - 1) <= 2) {
+        p186 = (volatile u16 *)((u8 *)p146 + 40);
+        val186 = 1;
+    } else {
+        p186 = (volatile u16 *)(rec + 186u);
+        val186 = 0;
+    }
+    *(volatile u16 *)p186 = (u16)val186;
+
+    off3 = (u32)&WAOff858E4;
+    addr = wa2 + off3;
+    if (*(volatile s8 *)addr == 0) {
+        *(volatile u16 *)p182 = 0;
+        *(volatile u16 *)p184 = 0;
+        *(volatile u16 *)p186 = 0;
+    }
 }
 
 // ----------------------------------------------------------------------------
@@ -951,8 +969,8 @@ void _08001D974(void *a_, void *b_) {
     register volatile u8 *pb __asm__("r4") = (volatile u8 *)b_;
     register uintptr_t waBase __asm__("r2");
     register uintptr_t waOff __asm__("r1");
-    register uintptr_t waAddr __asm__("r0");
-    register u32 zero __asm__("r0");
+    uintptr_t waAddr;
+    u32 zero;
     pa += 160u;
     zero = 0;
     *(volatile u16 *)pa = (u16)zero;
@@ -963,8 +981,7 @@ void _08001D974(void *a_, void *b_) {
     __asm__("" : "+r" (waAddr));
     if (*(volatile u16 *)waAddr == 3u) {
         register volatile u8 *p88 __asm__("r1") = pb + 88u;
-        zero = 0;
-        *p88 = (u8)zero;
+            *p88 = (u8)zero;
         waOff = (uintptr_t)&WAOff10C3;
         __asm__("" : "+r" (waBase), "+r" (waOff));
         waAddr = waBase + waOff;
@@ -1215,3 +1232,4 @@ void sub_08001DA70(int a0, int a1, u32 a2, int a3) __attribute__((alias("_08001D
 int sub_08001D750(int mode) __attribute__((alias("_08001D750")));
 unsigned long long sub_08001D7B8(void *out, int mode, int center, int extra) __attribute__((alias("_08001D7B8")));
 void sub_08001DC20(void *rec, int sel) __attribute__((alias("_08001DC20")));
+void sub_08001D858(void *rec) __attribute__((alias("_08001D858")));

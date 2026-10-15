@@ -537,91 +537,56 @@ void _0800125C4(void *a, int b, int c, int d) __attribute__((alias("MenuFF78_125
 void sub_0800125C4(void *a, int b, int c, int d) __attribute__((alias("MenuFF78_125C4")));
 
 // sub_080012DA0 — same pattern: 12-way phase dispatcher.
-__attribute__((naked)) void MenuFF78_12DA0(void *rec_, int a1, int a2, int a3) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, lr}\n"
-        "adds r5, r1, #0\n"
-        "adds r6, r2, #0\n"
-        "adds r4, r3, #0\n"
-        "subs r0, #1\n"
-        "cmp r0, #11\n"
-        "bhi .L12da0_done\n"
-        "lsls r0, r0, #2\n"
-        "ldr r1, .L12da0_table\n"
-        "adds r0, r0, r1\n"
-        "ldr r0, [r0, #0]\n"
-        "mov pc, r0\n"
-        ".L12da0_table: .word 0x08012DBC\n"
-        ".word 0x08012E48\n"
-        ".word 0x08012DEC\n"
-        ".word 0x08012E56\n"
-        ".word 0x08012E56\n"
-        ".word 0x08012DF6\n"
-        ".word 0x08012E2C\n"
-        ".word 0x08012E24\n"
-        ".word 0x08012E56\n"
-        ".word 0x08012E56\n"
-        ".word 0x08012E56\n"
-        ".word 0x08012E56\n"
-        ".word 0x08012E50\n"
-        ".L12da0_case2:\n"
-        "adds r0, r4, #0\n"
-        "adds r1, r5, #0\n"
-        "bl sub_0800127F4\n"
-        "b .L12da0_done\n"
-        ".L12da0_case5:\n"
-        "adds r0, r4, #0\n"
-        "adds r0, #8\n"
-        "bl sub_0800D854\n"
-        "adds r0, r4, #0\n"
-        "adds r0, #112\n"
-        "bl sub_0800D8E4\n"
-        "ldr r0, .L12da0_wa\n"
-        "ldr r1, .L12da0_fbc\n"
-        "adds r0, r0, r1\n"
-        "ldrh r0, [r0, #0]\n"
-        "cmp r0, #3\n"
-        "bne .L12da0_done\n"
-        "adds r0, r4, #0\n"
-        "bl sub_080012C7C\n"
-        "b .L12da0_done\n"
-        "movs r0, r0\n"
-        ".L12da0_wa: .word 0x03001780\n"
-        ".L12da0_fbc: .word 0x00000FBC\n"
-        ".L12da0_case7:\n"
-        "adds r0, r4, #0\n"
-        "bl sub_080012C90\n"
-        "b .L12da0_done\n"
-        ".L12da0_case6:\n"
-        "adds r0, r4, #0\n"
-        "bl sub_080012D54\n"
-        "ldrh r0, [r4, #12]\n"
-        "cmp r0, #0\n"
-        "beq .L12da0_done\n"
-        "lsls r1, r5, #16\n"
-        "lsrs r1, r1, #16\n"
-        "lsls r2, r6, #16\n"
-        "lsrs r2, r2, #16\n"
-        "adds r0, r4, #0\n"
-        "bl sub_080012990\n"
-        "b .L12da0_done\n"
-        ".L12da0_case0:\n"
-        "adds r0, r4, #0\n"
-        "bl sub_080012854\n"
-        "b .L12da0_done\n"
-        ".L12da0_case11:\n"
-        "adds r0, r4, #0\n"
-        "bl sub_080012850\n"
-        ".L12da0_done:\n"
-        "pop {r4, r5, r6}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        ".syntax divided\n"
-    );
+extern void sub_0800127F4(int a, void *b);
+extern void sub_0800D854(void *p);
+extern void sub_0800D8E4(void *p);
+extern void sub_080012C7C(void *rec);
+extern void sub_080012C90(void *rec);
+extern void sub_080012D54(void *rec);
+extern void sub_080012990(void *rec, u16 a1, u16 a2);
+extern void sub_080012854(void *rec);
+extern void sub_080012850(void *rec);
+
+void MenuFF78_12DA0(int ev, int a1, int a2, void *rec_) {
+    u8 *r4 = (u8 *)rec_;
+    switch (ev) {
+    case 2:
+        sub_0800127F4((int)(uintptr_t)r4, (void *)(uintptr_t)a1);
+        break;
+    case 5: {
+        extern u8 Wa12DA0[];
+        extern u8 Fbc12DA0[];
+        __asm__(".globl Wa12DA0\nWa12DA0 = 0x03001780\n"
+                ".globl Fbc12DA0\nFbc12DA0 = 0x00000FBC\n");
+        sub_0800D854(r4 + 8);
+        sub_0800D8E4(r4 + 112);
+        {
+            register u8 *wa __asm__("r0") = Wa12DA0;
+            register u32 off __asm__("r1") = (u32)(uintptr_t)Fbc12DA0;
+            __asm__ volatile ("" : "+r"(wa), "+r"(off));
+            if (*(volatile u16 *)(wa + off) == 3)
+                sub_080012C7C(r4);
+        }
+        break;
+    }
+    case 7:
+        sub_080012C90(r4);
+        break;
+    case 6:
+        sub_080012D54(r4);
+        if (*(volatile u16 *)(r4 + 12) != 0)
+            sub_080012990(r4, (u16)a1, (u16)a2);
+        break;
+    case 1:
+        sub_080012854(r4);
+        break;
+    case 12:
+        sub_080012850(r4);
+        break;
+    }
 }
-void _080012DA0(void *a, int b, int c, int d) __attribute__((alias("MenuFF78_12DA0")));
-void sub_080012DA0(void *a, int b, int c, int d) __attribute__((alias("MenuFF78_12DA0")));
+void _080012DA0(int a, int b, int c, void *d) __attribute__((alias("MenuFF78_12DA0")));
+void sub_080012DA0(int a, int b, int c, void *d) __attribute__((alias("MenuFF78_12DA0")));
 
 // ============================================================================
 // sub_080012F18 — strh leaf with sentinel walk.

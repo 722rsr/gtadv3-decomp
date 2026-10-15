@@ -15,6 +15,8 @@ extern u16 Idle_GetDirectHalfword(int recOff, int hwIdx);
 extern u32 Idle_GetCounterC(void);
 extern u32 Idle_GetRecordFiltered(int idx);
 extern bool Idle_IsMode1(void);
+extern int _08001E5C(int idx0, int idx1);
+extern int _08001E8C(int recOff, int hwIdx);
 // The closure spells 0x0800210C (BlockB_Reset) this way; the alias is declared
 // at the bottom of this unit, so call the closure spelling directly.
 extern void _0800210C(void);
@@ -25,7 +27,6 @@ extern void _0800210C(void);
 // Word-width payload: the ROM never narrows r1, so the u16 form added an
 // lsls/lsrs pair the body could not match (see src/idle_accessors.c).
 extern void _08001E48(int id, u32 payload);
-
 
 // Provide strong aliases for the idle helpers once they exist:
 // If idle_accessors.c is linked, the weak Idle_* above are replaced.
@@ -124,31 +125,18 @@ void BlockB_ForwardEvent(int id, u16 payload) {
     _08001E48(id, payload);
 }
 
-__attribute__((naked)) u16 BlockB_DispatchIfLess(int x) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, lr}\n"
-        "adds r2, r0, #0\n"
-        "movs r3, #0\n"
-        "ldr r0, 2f\n"
-        "ldr r0, [r0]\n"
-        "movs r4, #4\n"
-        "ldrsh r0, [r0, r4]\n"
-        "cmp r2, r0\n"
-        "bge 1f\n"
-        "adds r0, r2, #0\n"
-        "bl _08001E5C\n"
-        "lsls r0, r0, #16\n"
-        "lsrs r3, r0, #16\n"
-        "1:\n"
-        "adds r0, r3, #0\n"
-        "pop {r4}\n"
-        "pop {r1}\n"
-        "bx r1\n"
-        ".align 2, 0\n"
-        "2: .4byte 0x030000F4\n"
-        ".syntax divided\n"
-    );
+u32 BlockB_DispatchIfLess(int x, int hwIndex) {
+    register int index __asm__("r2") = x;
+    register u32 result __asm__("r3");
+    register int fieldOffset __asm__("r4");
+    BlockB *b;
+
+    result = 0;
+    b = (BlockB *)(uintptr_t)*(volatile u32 *)BLOCK_B_SLOT_ADDR;
+    fieldOffset = 4;
+    if (index < *(s16 *)((u8 *)b + fieldOffset))
+        result = (u16)_08001E5C(index, hwIndex);
+    return result;
 }
 
 // _080021A0 — refresh matcher: if +0x0C == expected, scan first +0x0C
@@ -201,31 +189,18 @@ check_ack:
         ((BlockB *)(uintptr_t)*(volatile u32 *)BLOCK_B_SLOT_ADDR)->ack = 0;
 }
 
-__attribute__((naked)) u16 BlockB_DispatchIfLess2(int x) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, lr}\n"
-        "adds r2, r0, #0\n"
-        "movs r3, #0\n"
-        "ldr r0, 2f\n"
-        "ldr r0, [r0]\n"
-        "movs r4, #4\n"
-        "ldrsh r0, [r0, r4]\n"
-        "cmp r2, r0\n"
-        "bge 1f\n"
-        "adds r0, r2, #0\n"
-        "bl _08001E8C\n"
-        "lsls r0, r0, #16\n"
-        "lsrs r3, r0, #16\n"
-        "1:\n"
-        "adds r0, r3, #0\n"
-        "pop {r4}\n"
-        "pop {r1}\n"
-        "bx r1\n"
-        ".align 2, 0\n"
-        "2: .4byte 0x030000F4\n"
-        ".syntax divided\n"
-    );
+u32 BlockB_DispatchIfLess2(int x, int hwIndex) {
+    register int index __asm__("r2") = x;
+    register u32 result __asm__("r3");
+    register int fieldOffset __asm__("r4");
+    BlockB *b;
+
+    result = 0;
+    b = (BlockB *)(uintptr_t)*(volatile u32 *)BLOCK_B_SLOT_ADDR;
+    fieldOffset = 4;
+    if (index < *(s16 *)((u8 *)b + fieldOffset))
+        result = (u16)_08001E8C(index, hwIndex);
+    return result;
 }
 
 // Original symbol aliases
@@ -243,11 +218,11 @@ s32 sub_08002140(void) __attribute__((alias("BlockB_GetMatchOrZero")));
 s32 Sub_08002140(void) __attribute__((alias("BlockB_GetMatchOrZero")));
 void _08002158(int a, u16 b) __attribute__((alias("BlockB_ForwardEvent")));
 void sub_08002158(int a, u16 b) __attribute__((alias("BlockB_ForwardEvent")));
-u16 _08002178(int x) __attribute__((alias("BlockB_DispatchIfLess")));
-u16 sub_08002178(int x) __attribute__((alias("BlockB_DispatchIfLess")));
+u32 _08002178(int x, int hwIndex) __attribute__((alias("BlockB_DispatchIfLess")));
+u32 sub_08002178(int x, int hwIndex) __attribute__((alias("BlockB_DispatchIfLess")));
 void _080021A0(void) __attribute__((alias("BlockB_RefreshMatcher")));
 void _080021EC(void) __attribute__((alias("BlockB_Frame")));
 void StateB_EventCheck(void) __attribute__((alias("BlockB_Frame")));
-u16 _0800222C(int x) __attribute__((alias("BlockB_DispatchIfLess2")));
+u32 _0800222C(int x, int hwIndex) __attribute__((alias("BlockB_DispatchIfLess2")));
 void Sub_08002158(int a, u16 b) __attribute__((alias("BlockB_ForwardEvent")));
-u16 Sub_08002178(int x) __attribute__((alias("BlockB_DispatchIfLess")));
+u32 Sub_08002178(int x, int hwIndex) __attribute__((alias("BlockB_DispatchIfLess")));

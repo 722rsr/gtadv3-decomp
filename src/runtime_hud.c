@@ -6,6 +6,10 @@ void _080038A4(int a, u32 b, const volatile u8 *c);  /* alias of ObjLane_038A4, 
 extern void _08002C34(int a, void *b);   // foundation_runtime.c free-list push
 extern int _08005790(u32 a);             // save.c allocator (returns the new cursor)
 extern int _08005758(u32 a);   // save.c allocator (returns the new cursor)
+extern void _08003248(u16 a, u16 b);
+extern void _08003270(u16 a, u16 b);
+extern void _08003298(u16 a, u16 b);
+extern u8 TBL_C4BB0[];
 extern void _08007538(void *a, int b, void *c);   // course_resource.c
 extern void _08007614(void *a, int b, int c, int d);  // course_resource.c
 // Closure spellings for the two measured helpers called below. The `_` twins
@@ -305,67 +309,37 @@ void sub_080032C0(int a, int b) __attribute__((alias("LaneEmit_02C0")));
 //   [lane*4 + 0x03000160 + 0] = _08005790(rec[1])
 //   lane 0/2/3: emit (u16[+2], u16[+0]) via 0x3248/0x3270/0x3298.
 // (0x080C4BB0 = 0x080C4BA0 + 0x10, read at loop entry for each lane.)
-__attribute__((naked)) void LaneDriver_02E0(volatile u8 *rec)
+void LaneDriver_02E0(volatile u8 *rec_)
 {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, lr}\n"
-        "movs r5, #0\n"
-        "adds r6, r0, #0\n"
-        ".L32e0_2e6:\n"
-        "lsls r1, r5, #2\n"
-        "ldr r0, .L32e0_314\n"
-        "adds r4, r1, r0\n"
-        "ldrb r0, [r6, #0]\n"
-        "cmp r0, #0\n"
-        "beq .L32e0_342\n"
-        "ldr r0, .L32e0_318\n"
-        "adds r0, r1, r0\n"
-        "ldr r0, [r0, #0]\n"
-        "bl 0x08005758\n"
-        "strh r0, [r4, #2]\n"
-        "ldrb r0, [r6, #1]\n"
-        "bl 0x08005790\n"
-        "strh r0, [r4, #0]\n"
-        "cmp r5, #1\n"
-        "beq .L32e0_342\n"
-        "cmp r5, #1\n"
-        "bgt .L32e0_31c\n"
-        "cmp r5, #0\n"
-        "beq .L32e0_326\n"
-        "b .L32e0_342\n"
-        ".L32e0_314: .4byte 0x03000160\n"
-        ".L32e0_318: .4byte 0x080C4BB0\n"
-        ".L32e0_31c:\n"
-        "cmp r5, #2\n"
-        "beq .L32e0_330\n"
-        "cmp r5, #3\n"
-        "beq .L32e0_33a\n"
-        "b .L32e0_342\n"
-        ".L32e0_326:\n"
-        "ldrh r0, [r4, #2]\n"
-        "ldrh r1, [r4, #0]\n"
-        "bl 0x08003248\n"
-        "b .L32e0_342\n"
-        ".L32e0_330:\n"
-        "ldrh r0, [r4, #2]\n"
-        "ldrh r1, [r4, #0]\n"
-        "bl 0x08003270\n"
-        "b .L32e0_342\n"
-        ".L32e0_33a:\n"
-        "ldrh r0, [r4, #2]\n"
-        "ldrh r1, [r4, #0]\n"
-        "bl 0x08003298\n"
-        ".L32e0_342:\n"
-        "adds r6, #4\n"
-        "adds r5, #1\n"
-        "cmp r5, #3\n"
-        "ble .L32e0_2e6\n"
-        "pop {r4, r5, r6}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        ".syntax divided\n"
-    );
+    int lane;
+    volatile u8 *rec;
+    volatile u16 *cell;
+    __asm__(".globl TBL_C4BB0\nTBL_C4BB0 = 0x080C4BB0\n");
+    lane = 0;
+    rec = rec_;
+    while (lane <= 3) {
+        cell = (volatile u16 *)(0x03000160 + lane * 4);
+        __asm__("" : "+r" (cell));
+        if (rec[0] != 0) {
+            cell[1] = _08005758(*(volatile u32 *)(TBL_C4BB0 + lane * 4));
+            cell[0] = _08005790(rec[1]);
+            switch (lane) {
+            case 0:
+                _08003248(cell[1], cell[0]);
+                break;
+            case 1:
+                break;
+            case 2:
+                _08003270(cell[1], cell[0]);
+                break;
+            case 3:
+                _08003298(cell[1], cell[0]);
+                break;
+            }
+        }
+        rec += 4;
+        lane++;
+    }
 }
 void sub_080032E0(volatile u8 *p) __attribute__((alias("LaneDriver_02E0")));
 void _080032E0(volatile u8 *p) __attribute__((alias("LaneDriver_02E0")));
@@ -1229,66 +1203,40 @@ void sub_08003C80(int a, volatile u8 *b, int c) __attribute__((alias("HexWrite_0
 // 0x08003CB4 — decimal itoa: '-' + negated value for negatives; digits
 // counted by Div/10; left-to-right emit via DivRem; returns digit count.
 // (Zero-padded tail reserved by width — asm reserves but does not pad.)
-__attribute__((naked)) int Measure_03CB4(int val, volatile u8 *buf, int width)
+int Measure_03CB4(int val, volatile u8 *buf, int width)
 {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, r7, lr}\n"
-        "adds r3, r0, #0\n"
-        "adds r6, r2, #0\n"
-        "movs r7, #0\n"
-        "adds r4, r1, #0\n"
-        "cmp r3, #0\n"
-        "bge .L3cb4_ccc\n"
-        "movs r0, #45\n"
-        "strb r0, [r4, #0]\n"
-        "adds r4, #1\n"
-        "negs r3, r3\n"
-        "subs r6, #1\n"
-        ".L3cb4_ccc:\n"
-        "adds r5, r3, #0\n"
-        "cmp r5, #9\n"
-        "ble .L3cb4_ce4\n"
-        ".L3cb4_cd2:\n"
-        "adds r4, #1\n"
-        "adds r0, r3, #0\n"
-        "movs r1, #10\n"
-        "bl 0x0802D978\n"
-        "adds r3, r0, #0\n"
-        "subs r6, #1\n"
-        "cmp r3, #9\n"
-        "bgt .L3cb4_cd2\n"
-        ".L3cb4_ce4:\n"
-        "cmp r6, #0\n"
-        "bgt .L3cb4_cec\n"
-        "movs r0, #0\n"
-        "b .L3cb4_d10\n"
-        ".L3cb4_cec:\n"
-        "movs r0, #0\n"
-        "strb r0, [r4, #1]\n"
-        ".L3cb4_cf0:\n"
-        "adds r0, r5, #0\n"
-        "movs r1, #10\n"
-        "bl 0x0802D97C\n"
-        "adds r0, #48\n"
-        "strb r0, [r4, #0]\n"
-        "subs r4, #1\n"
-        "adds r0, r5, #0\n"
-        "movs r1, #10\n"
-        "bl 0x0802D978\n"
-        "adds r5, r0, #0\n"
-        "adds r7, #1\n"
-        "cmp r5, #0\n"
-        "bgt .L3cb4_cf0\n"
-        "adds r0, r7, #0\n"
-        ".L3cb4_d10:\n"
-        "pop {r4, r5, r6, r7}\n"
-        "pop {r1}\n"
-        "bx r1\n"
-        "movs r0, r0\n"
-        ".syntax divided\n"
-    );
+    int n = val;
+    int w = width;
+    int digits = 0;
+    volatile u8 *p = buf;
+    int v;
+    if (n < 0) {
+        *p = 45;
+        p++;
+        n = -n;
+        w--;
+    }
+    v = n;
+    if (v > 9) {
+        do {
+            p++;
+            n = RM_CALLEE(Div, sub_0802D978)(n, 10);
+            w--;
+        } while (n > 9);
+    }
+    if (w <= 0) {
+        return 0;
+    }
+    p[1] = 0;
+    do {
+        *p = (u8)(RM_CALLEE(DivRem, sub_0802D97C)(v, 10) + 48);
+        p--;
+        v = RM_CALLEE(Div, sub_0802D978)(v, 10);
+        digits++;
+    } while (v > 0);
+    return digits;
 }
+__asm__(".align 2, 0");
 int sub_08003CB4(int a, volatile u8 *b, int c) __attribute__((alias("Measure_03CB4")));
 
 // ----------------------------------------------------------------------------

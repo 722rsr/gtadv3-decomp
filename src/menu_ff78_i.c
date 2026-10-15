@@ -453,111 +453,56 @@ void sub_080014A08(void *a) __attribute__((alias("MenuFF78_14A08")));
 //   6->[u16[rec+12]!=0] 14D94(rec,(u16)a1,(u16)a2), then on s16[rec+134]:
 //     0->14E3C, 1->14EA0, 2->14F14 (each (rec,(u16)a1,(u16)a2)),
 //   11->14C84(rec), else no-op.
-__attribute__((naked)) void MenuFF78_15154(int ev, u32 a1, u32 a2, void *rec_)
+extern void sub_080014C70(void *rec, u32 a1);
+extern void sub_0800D854(void *p);
+extern void sub_0800D8E4(void *p);
+extern void sub_080014F60(void *rec);
+extern void sub_080014D94(void *rec, u32 a1, u32 a2);
+extern void sub_080014E3C(void *rec, u32 a1, u32 a2);
+extern void sub_080014EA0(void *rec, u32 a1, u32 a2);
+extern void sub_080014F14(void *rec, u32 a1, u32 a2);
+extern void sub_080014C88(void *rec);
+extern void sub_080014C84(void *rec);
+
+void MenuFF78_15154(int ev, u32 a1, u32 a2, void *rec_)
 {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, lr}\n"
-        "adds r5, r1, #0\n"
-        "adds r4, r3, #0\n"
-        "subs r0, #1\n"
-        "cmp r0, #11\n"
-        "bhi .L15154_end\n"
-        "lsls r0, r0, #2\n"
-        "ldr r1, .L15154_table_base\n"
-        "adds r0, r0, r1\n"
-        "ldr r0, [r0, #0]\n"
-        "mov pc, r0\n"
-        "movs r0, r0\n"
-        ".align 2, 0\n"
-        ".L15154_table_base: .4byte 0x08015170\n"
-        ".4byte 0x0801521c\n"
-        ".4byte 0x080151a0\n"
-        ".4byte 0x0801522a\n"
-        ".4byte 0x0801522a\n"
-        ".4byte 0x080151aa\n"
-        ".4byte 0x080151c4\n"
-        ".4byte 0x080151bc\n"
-        ".4byte 0x0801522a\n"
-        ".4byte 0x0801522a\n"
-        ".4byte 0x0801522a\n"
-        ".4byte 0x0801522a\n"
-        ".4byte 0x08015224\n"
-        ".L15154_case1:\n"
-        "adds r0, r4, #0\n"
-        "adds r1, r5, #0\n"
-        "bl 0x08014c70\n"
-        "b .L15154_end\n"
-        ".L15154_case4:\n"
-        "adds r0, r4, #0\n"
-        "adds r0, #8\n"
-        "bl 0x0800d854\n"
-        "adds r0, r4, #0\n"
-        "adds r0, #112\n"
-        "bl 0x0800d8e4\n"
-        "b .L15154_end\n"
-        ".L15154_case5:\n"
-        "adds r0, r4, #0\n"
-        "bl 0x08014f60\n"
-        "b .L15154_end\n"
-        ".L15154_case6:\n"
-        "ldrh r0, [r4, #12]\n"
-        "cmp r0, #0\n"
-        "beq .L15154_end\n"
-        "lsls r0, r5, #16\n"
-        "lsrs r5, r0, #16\n"
-        "lsls r0, r2, #16\n"
-        "lsrs r6, r0, #16\n"
-        "adds r0, r4, #0\n"
-        "adds r1, r5, #0\n"
-        "adds r2, r6, #0\n"
-        "bl 0x08014d94\n"
-        "adds r0, r4, #0\n"
-        "adds r0, #134\n"
-        "movs r1, #0\n"
-        "ldrsh r0, [r0, r1]\n"
-        "cmp r0, #1\n"
-        "beq .L15154_state1\n"
-        "cmp r0, #1\n"
-        "bgt .L15154_state_gt1\n"
-        "cmp r0, #0\n"
-        "beq .L15154_state0\n"
-        "b .L15154_end\n"
-        ".L15154_state_gt1:\n"
-        "cmp r0, #2\n"
-        "beq .L15154_state2\n"
-        "b .L15154_end\n"
-        ".L15154_state0:\n"
-        "adds r0, r4, #0\n"
-        "adds r1, r5, #0\n"
-        "adds r2, r6, #0\n"
-        "bl 0x08014e3c\n"
-        "b .L15154_end\n"
-        ".L15154_state1:\n"
-        "adds r0, r4, #0\n"
-        "adds r1, r5, #0\n"
-        "adds r2, r6, #0\n"
-        "bl 0x08014ea0\n"
-        "b .L15154_end\n"
-        ".L15154_state2:\n"
-        "adds r0, r4, #0\n"
-        "adds r1, r5, #0\n"
-        "adds r2, r6, #0\n"
-        "bl 0x08014f14\n"
-        "b .L15154_end\n"
-        ".L15154_case11:\n"
-        "adds r0, r4, #0\n"
-        "bl 0x08014c88\n"
-        "b .L15154_end\n"
-        ".L15154_case_default:\n"
-        "adds r0, r4, #0\n"
-        "bl 0x08014c84\n"
-        ".L15154_end:\n"
-        "pop {r4, r5, r6}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        ".syntax divided\n"
-    );
+    u8 *r4 = (u8 *)rec_;
+    switch (ev) {
+    case 2:
+        sub_080014C70(r4, a1);
+        break;
+    case 5:
+        sub_0800D854(r4 + 8);
+        sub_0800D8E4(r4 + 112);
+        break;
+    case 7:
+        sub_080014F60(r4);
+        break;
+    case 6:
+        if (*(volatile u16 *)(r4 + 12) != 0) {
+            u32 b1 = (u16)a1;
+            u32 b2 = (u16)a2;
+            sub_080014D94(r4, b1, b2);
+            switch (*(s16 *)(r4 + 134)) {
+            case 0:
+                sub_080014E3C(r4, b1, b2);
+                break;
+            case 1:
+                sub_080014EA0(r4, b1, b2);
+                break;
+            case 2:
+                sub_080014F14(r4, b1, b2);
+                break;
+            }
+        }
+        break;
+    case 1:
+        sub_080014C88(r4);
+        break;
+    case 12:
+        sub_080014C84(r4);
+        break;
+    }
 }
 void _080015154(int a, u32 b, u32 c, void *d) __attribute__((alias("MenuFF78_15154")));
 void sub_080015154(int a, u32 b, u32 c, void *d) __attribute__((alias("MenuFF78_15154")));

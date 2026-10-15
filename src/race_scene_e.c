@@ -910,124 +910,60 @@ __attribute__((naked)) void _080020518(void *rec0) {
 }
 
 // ---- 0x08020690 — scene setup B (03B9C path, mode-1 area select) + pools {WA+0x5E4, 0x03001D64} ----
-__attribute__((naked)) void _080020690(void *rec0) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        ".L20690_080020690:\n"
-        "	push	{r4, r5, r6, r7, lr}\n"
-        "	sub	sp, #20\n"
-        "	adds	r5, r0, #0\n"
-        "	adds	r0, #172\n"
-        "	movs	r1, #5\n"
-        "	bl sub_0800D97C\n"
-        "	movs	r7, #0\n"
-        "	ldr r4, .L20690_080020718\n"
-        "	movs	r0, #28\n"
-        "	ldrsh	r1, [r5, r0]\n"
-        "	lsls	r0, r1, #3\n"
-        "	adds	r0, r0, r1\n"
-        "	lsls	r0, r0, #3\n"
-        "	ldr r1, .L20690_08002071C\n"
-        "	adds	r6, r4, r1\n"
-        "	adds	r0, r0, r6\n"
-        "	ldr	r2, [r0, #0]\n"
-        "	movs	r0, #56\n"
-        "	movs	r1, #74\n"
-        "	bl 0x08003B9C\n"
-        "	movs	r2, #28\n"
-        "	ldrsh	r1, [r5, r2]\n"
-        "	lsls	r0, r1, #3\n"
-        "	adds	r0, r0, r1\n"
-        "	lsls	r0, r0, #3\n"
-        "	adds	r0, r0, r4\n"
-        "	movs	r1, #189\n"
-        "	lsls	r1, r1, #3\n"
-        "	adds	r0, r0, r1\n"
-        "	movs	r2, #0\n"
-        "	ldrsh	r0, [r0, r2]\n"
-        "	bl sub_08002370\n"
-        "	adds	r2, r0, #0\n"
-        "	movs	r0, #128\n"
-        "	movs	r1, #78\n"
-        "	movs	r3, #3\n"
-        "	bl sub_08001FA64\n"
-        "	adds	r0, r5, #0\n"
-        "	adds	r0, #156\n"
-        "	movs	r1, #0\n"
-        "	ldrsh	r0, [r0, r1]\n"
-        "	cmp	r7, r0\n"
-        "	bne .L20690_080020720\n"
-        "	adds	r0, r5, #0\n"
-        "	adds	r0, #160\n"
-        "	movs	r2, #0\n"
-        "	ldrsh	r1, [r0, r2]\n"
-        "	cmp	r1, #1\n"
-        "	bne .L20690_080020720\n"
-        "	movs	r2, #28\n"
-        "	ldrsh	r0, [r5, r2]\n"
-        "	lsls	r3, r0, #3\n"
-        "	adds	r3, r3, r0\n"
-        "	lsls	r3, r3, #3\n"
-        "	adds	r3, r3, r6\n"
-        "	adds	r3, #8\n"
-        "	str	r1, [sp, #0]\n"
-        "	adds	r0, r5, #0\n"
-        "	movs	r1, #184\n"
-        "	movs	r2, #78\n"
-        "	bl sub_080020498\n"
-        "	b .L20690_080020742\n"
-        "	movs	r0, r0\n"
-        ".L20690_080020718: .word 0x03001780\n"
-        ".L20690_08002071C: .word 0x000005E4\n"
-        ".L20690_080020720:\n"
-        "	movs	r2, #2\n"
-        "	lsls	r2, r2, #4\n"
-        "	adds	r2, #46\n"
-        "	movs	r1, #28\n"
-        "	ldrsh	r0, [r5, r1]\n"
-        "	lsls	r3, r0, #3\n"
-        "	adds	r3, r3, r0\n"
-        "	lsls	r3, r3, #3\n"
-        "	ldr r0, .L20690_080020780\n"
-        "	adds	r3, r3, r0\n"
-        "	adds	r3, #8\n"
-        "	movs	r0, #0\n"
-        "	str	r0, [sp, #0]\n"
-        "	adds	r0, r5, #0\n"
-        "	movs	r1, #184\n"
-        "	bl sub_080020498\n"
-        ".L20690_080020742:\n"
-        "	adds	r0, r5, #0\n"
-        "	adds	r0, #8\n"
-        "	adds	r1, r5, #0\n"
-        "	adds	r1, #176\n"
-        "	ldr	r1, [r1, #0]\n"
-        "	adds	r2, r5, #0\n"
-        "	adds	r2, #180\n"
-        "	ldr	r2, [r2, #0]\n"
-        "	movs	r3, #33\n"
-        "	str	r3, [sp, #0]\n"
-        "	movs	r3, #6\n"
-        "	str	r3, [sp, #4]\n"
-        "	movs	r3, #1\n"
-        "	str	r3, [sp, #8]\n"
-        "	movs	r3, #0\n"
-        "	str	r3, [sp, #12]\n"
-        "	str	r3, [sp, #16]\n"
-        "	movs	r3, #24\n"
-        "	bl sub_08007BFC\n"
-        "	adds	r0, r5, #0\n"
-        "	adds	r0, #32\n"
-        "	bl sub_0800DBE8\n"
-        "	adds	r0, r5, #0\n"
-        "	bl sub_080020878\n"
-        "	add	sp, #20\n"
-        "	pop	{r4, r5, r6, r7}\n"
-        "	pop	{r0}\n"
-        "	bx	r0\n"
-        ".L20690_080020780: .word 0x03001D64\n"
-        ".syntax divided\n"
-    );
+void _080020690(void *rec0) {
+    register volatile u8 *rec __asm__("r5");
+    extern u8 RaceSceneE_Wa_20690[];
+    extern u8 RaceSceneE_Offset_20690[];
+    extern u8 RaceSceneE_AltWa_20690[];
+    __asm__(".globl RaceSceneE_Wa_20690\nRaceSceneE_Wa_20690 = 0x03001780");
+    __asm__(".globl RaceSceneE_Offset_20690\nRaceSceneE_Offset_20690 = 0x000005E4");
+    __asm__(".globl RaceSceneE_AltWa_20690\nRaceSceneE_AltWa_20690 = 0x03001D64");
+
+    register uintptr_t wa __asm__("r4");
+    int zero;
+    uintptr_t table;
+
+    __asm__ volatile ("mov %0, %1" : "=r" (rec) : "r" (rec0));
+    _0800D97C((void *)((volatile u8 *)rec0 + 172), 5);
+    zero = 0;
+    __asm__ volatile ("" : "+r" (zero));
+    wa = (uintptr_t)RaceSceneE_Wa_20690;
+    {
+        int rowIndex = RD16(rec, 28);
+        uintptr_t row = (uintptr_t)(rowIndex * 72);
+        register uintptr_t offset __asm__("r1") = (uintptr_t)RaceSceneE_Offset_20690;
+        __asm__ volatile ("" : "+r" (offset) : : "memory");
+        table = wa + offset;
+        __asm__ volatile ("" : "+r" (table));
+        row += table;
+        _08003B9C(56, 74, *(volatile u32 *)row);
+    }
+
+    {
+        int index = RD16(rec, 28);
+        s16 value = *(s16 *)(uintptr_t)(wa + (uintptr_t)(index * 72) + 1512u);
+        int transformed = _08002370(value);
+        _08001FA64(128, 78, transformed, 3);
+    }
+
+    if (zero == RD16(rec, 156) && RD16(rec, 160) == 1) {
+        int index = RD16(rec, 28);
+        uintptr_t area = table + (uintptr_t)(index * 72) + 8u;
+        _080020498((void *)rec, 184, 78, (void *)area, 1);
+    } else {
+        int index = RD16(rec, 28);
+        uintptr_t altWa = (uintptr_t)RaceSceneE_AltWa_20690;
+        __asm__ volatile ("" : "+r" (altWa) : : "memory");
+        uintptr_t area = altWa + (uintptr_t)(index * 72);
+        area += 8;
+        _080020498((void *)rec, 184, 78, (void *)area, 0);
+    }
+
+    _08007BFC((void *)(rec + 8),
+              *(volatile u32 *)(rec + 176), *(volatile u32 *)(rec + 180),
+              24, 33, 6, 1, 0, 0);
+    _0800DBE8((void *)(rec + 32));
+    _080020878();
 }
 
 // ---- 0x08020784 — scene setup C (03954 path, mode-1 area select) + pools {WA+0x5E4, 0x03001D64} ----
@@ -1152,112 +1088,61 @@ __attribute__((naked)) void _080020784(void *rec0) {
 }
 
 // ---- 0x0802087C — 12-way event dispatcher (ev-1 over table 0x08020894) ----
-__attribute__((naked)) void _08002087C(int ev, int b, int c, void *rec0) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push	{r4, lr}\n"
-        "adds	r4, r1, #0\n"
-        "subs	r0, #1\n"
-        "cmp	r0, #11\n"
-        "bhi .L2087c_950\n"
-        "lsls	r0, r0, #2\n"
-        "ldr r1, .L2087c_890\n"
-        "adds	r0, r0, r1\n"
-        "ldr	r0, [r0, #0]\n"
-        "mov	pc, r0\n"
-        ".L2087c_890: .4byte 0x08020894\n"
-        ".L2087c_894: .4byte 0x08020942\n"
-        ".L2087c_898: .4byte 0x080208C4\n"
-        ".L2087c_89c: .4byte 0x08020950\n"
-        ".L2087c_8a0: .4byte 0x08020950\n"
-        ".L2087c_8a4: .4byte 0x080208CE\n"
-        ".L2087c_8a8: .4byte 0x08020908\n"
-        ".L2087c_8ac: .4byte 0x080208D8\n"
-        ".L2087c_8b0: .4byte 0x08020950\n"
-        ".L2087c_8b4: .4byte 0x08020950\n"
-        ".L2087c_8b8: .4byte 0x08020950\n"
-        ".L2087c_8bc: .4byte 0x08020950\n"
-        ".L2087c_8c0: .4byte 0x0802094A\n"
-        ".L2087c_8c4:\n"
-        "adds	r0, r3, #0\n"
-        "adds	r1, r4, #0\n"
-        "bl 0x0801FBAC\n"
-        "b .L2087c_950\n"
-        ".L2087c_8ce:\n"
-        "adds	r0, r3, #0\n"
-        "adds	r0, #32\n"
-        "bl 0x0800D854\n"
-        "b .L2087c_950\n"
-        ".L2087c_8d8:\n"
-        "movs	r1, #24\n"
-        "ldrsh	r0, [r3, r1]\n"
-        "cmp	r0, #2\n"
-        "beq .L2087c_8f8\n"
-        "cmp	r0, #2\n"
-        "bgt .L2087c_8ea\n"
-        "cmp	r0, #0\n"
-        "beq .L2087c_8f0\n"
-        "b .L2087c_950\n"
-        ".L2087c_8ea:\n"
-        "cmp	r0, #3\n"
-        "beq .L2087c_900\n"
-        "b .L2087c_950\n"
-        ".L2087c_8f0:\n"
-        "adds	r0, r3, #0\n"
-        "bl 0x08020518\n"
-        "b .L2087c_950\n"
-        ".L2087c_8f8:\n"
-        "adds	r0, r3, #0\n"
-        "bl 0x08020690\n"
-        "b .L2087c_950\n"
-        ".L2087c_900:\n"
-        "adds	r0, r3, #0\n"
-        "bl 0x08020784\n"
-        "b .L2087c_950\n"
-        ".L2087c_908:\n"
-        "ldrh	r0, [r3, #36]\n"
-        "cmp	r0, #0\n"
-        "beq .L2087c_950\n"
-        "movs	r1, #24\n"
-        "ldrsh	r0, [r3, r1]\n"
-        "cmp	r0, #0\n"
-        "bne .L2087c_926\n"
-        "lsls	r1, r4, #16\n"
-        "lsrs	r1, r1, #16\n"
-        "lsls	r2, r2, #16\n"
-        "lsrs	r2, r2, #16\n"
-        "adds	r0, r3, #0\n"
-        "bl 0x0801FFD4\n"
-        "b .L2087c_950\n"
-        ".L2087c_926:\n"
-        "cmp	r0, #0\n"
-        "blt .L2087c_950\n"
-        "cmp	r0, #3\n"
-        "bgt .L2087c_950\n"
-        "cmp	r0, #2\n"
-        "blt .L2087c_950\n"
-        "lsls	r1, r4, #16\n"
-        "lsrs	r1, r1, #16\n"
-        "lsls	r2, r2, #16\n"
-        "lsrs	r2, r2, #16\n"
-        "adds	r0, r3, #0\n"
-        "bl 0x08020198\n"
-        "b .L2087c_950\n"
-        ".L2087c_942:\n"
-        "adds	r0, r3, #0\n"
-        "bl 0x0801FC14\n"
-        "b .L2087c_950\n"
-        ".L2087c_94a:\n"
-        "adds	r0, r3, #0\n"
-        "bl 0x0801FBD8\n"
-        ".L2087c_950:\n"
-        "pop	{r4}\n"
-        "pop	{r0}\n"
-        "bx	r0\n"
-        "movs	r0, r0\n"
-        ".syntax divided\n"
-    );
+void _08002087C(int ev, int b, int c, void *rec_) {
+    int idx = ev - 1;
+    if ((u32)idx > 11u)
+        return;
+
+    // agbcc emits case bodies in source order. Keep the ROM's table targets:
+    // 1, 4, 6, 5, 0, 11; the other six slots go to the common exit.
+    switch (idx) {
+    case 1:
+        _08001FBAC((int)(uintptr_t)rec_, (void *)(uintptr_t)b);
+        break;
+    case 4:
+        _0800D854((void *)((volatile u8 *)rec_ + 32));
+        break;
+    case 6: {
+        s16 state = *(s16 *)((volatile u8 *)rec_ + 24);
+        switch (state) {
+        case 0: _080020518(rec_); break;
+        case 2: _080020690(rec_); break;
+        case 3: _080020784(rec_); break;
+        }
+        break;
+    }
+    case 5: {
+        register s32 state __asm__("r0");
+        if (*(volatile u16 *)((volatile u8 *)rec_ + 36) == 0)
+            break;
+        state = *(s16 *)((volatile u8 *)rec_ + 24);
+        if (state == 0) {
+            _08001FFD4(rec_, (u16)b, (u16)c);
+        } else {
+            if (state < 0)
+                break;
+            if (state > 3)
+                break;
+            // Preserve the ROM's `cmp r0,#2 / blt common_exit`. agbcc
+            // canonicalizes `state < 2` to the equivalent `cmp #1 / ble`.
+            __asm__ volatile ("cmp %0, #2\n\tblt .L2087c_exit"
+                              : : "l" (state) : "cc", "memory");
+            _080020198(rec_, (u16)b, (u16)c);
+        }
+        break;
+    }
+    case 0:
+        _08001FC14(rec_);
+        break;
+    case 11:
+        _08001FBD8(rec_);
+        break;
+    default:
+        break;
+    }
+    __asm__ volatile (".L2087c_exit:");
 }
+__asm__(".align 2, 0");
 
 void _080020958(void *unused, void *rec_) {
     (void)unused;

@@ -28,35 +28,19 @@ __asm__(".align 2, 0");
 void _08002B7DC(int a, int b) __attribute__((alias("Sfx_08002B7DC")));
 void sub_08002B7DC(int a, int b) __attribute__((alias("Sfx_08002B7DC")));
 
-__attribute__((naked)) void Sfx_08002B7E0(int id, int a1, int a2, int a3) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, lr}\n"
-        "adds r4, r2, #0\n"
-        "adds r2, r3, #0\n"
-        "cmp r0, #5\n"
-        "beq 1f\n"
-        "cmp r0, #6\n"
-        "beq 2f\n"
-        "b 3f\n"
-        "1:\n"
-        "adds r0, r2, #0\n"
-        "bl sub_08002B7D8\n"
-        "b 3f\n"
-        "2:\n"
-        "lsls r0, r1, #16\n"
-        "lsrs r0, r0, #16\n"
-        "lsls r1, r4, #16\n"
-        "lsrs r1, r1, #16\n"
-        "bl sub_08002B7DC\n"
-        "3:\n"
-        "pop {r4}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        "movs r0, r0\n"
-        ".syntax divided\n"
-    );
+void Sfx_08002B7E0(int id, int a1, int a2, int a3) {
+    register int arg3 __asm__("r2");
+    arg3 = a3;
+    switch (id) {
+    case 5:
+        sub_08002B7D8(arg3, a1);
+        break;
+    case 6:
+        sub_08002B7DC((u16)a1, (u16)a2);
+        break;
+    }
 }
+__asm__(".align 2, 0");
 void _08002B7E0(int a, int b, int c, int d) __attribute__((alias("Sfx_08002B7E0")));
 void sub_08002B7E0(int a, int b, int c, int d) __attribute__((alias("Sfx_08002B7E0")));
 

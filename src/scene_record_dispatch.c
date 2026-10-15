@@ -142,7 +142,7 @@ HOST_STUB(void  _0800313C(u32 a));
 HOST_STUB(void  _08008768(void *a, int b));
 HOST_STUB(void  _080088B0(void *a, int b));
 HOST_STUB(void  _0800861C(void *a, int b));
-HOST_STUB(void  _080089FC(void *a));
+HOST_STUB(void *_080089FC(void *a));
 HOST_STUB(void  _08005BA8(void *a, int b));
 HOST_STUB(void  _08005DA4(void *a, void *b));
 HOST_STUB(void  _080053DC(int a, const volatile u8 *b, int c, int d, int e, int f, int g, int h));

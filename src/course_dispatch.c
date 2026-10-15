@@ -139,129 +139,154 @@ __attribute__((naked)) void Course_Dispatch_08AAC(void *rec) {
 void _08008AAC(void *a) __attribute__((alias("Course_Dispatch_08AAC")));
 void sub_08008AAC(void *a) __attribute__((alias("Course_Dispatch_08AAC")));
 
-__attribute__((naked)) void Course_Dispatch_08BB8(void *rec) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, r7, lr}\n"
-        "mov r7, r8\n"
-        "push {r7}\n"
-        "adds r3, r0, #0\n"
-        "ldr r0, 1f\n"
-        "mov ip, r0\n"
-        "ldr r2, [r0, #0]\n"
-        "movs r1, #16\n"
-        "ldrsh r0, [r2, r1]\n"
-        "cmp r0, #1\n"
-        "ble.n .L8bb8_initial\n"
-        "ldr r5, [r2, #84]\n"
-        "movs r4, #255\n"
-        "mov r8, r4\n"
-        "adds r0, r5, #0\n"
-        "ands r0, r4\n"
-        "movs r7, #128\n"
-        "lsls r7, r7, #7\n"
-        "adds r1, r7, #0\n"
-        "orrs r0, r1\n"
-        "strh r0, [r3, #0]\n"
-        "ldr r4, [r2, #80]\n"
-        "adds r0, r4, #0\n"
-        "adds r0, #12\n"
-        "ldr r1, 2f\n"
-        "adds r6, r1, #0\n"
-        "ands r0, r6\n"
-        "ldr r7, 3f\n"
-        "adds r1, r7, #0\n"
-        "orrs r0, r1\n"
-        "strh r0, [r3, #2]\n"
-        "ldrh r1, [r2, #58]\n"
-        "lsls r0, r1, #12\n"
-        "ldrh r7, [r2, #60]\n"
-        "orrs r0, r7\n"
-        "strh r0, [r3, #4]\n"
-        "adds r3, #8\n"
-        "movs r1, #16\n"
-        "ldrsh r0, [r2, r1]\n"
-        "cmp r0, #9\n"
-        "ble.n .L8bb8_second_done\n"
-        "subs r0, r5, #6\n"
-        "mov r7, r8\n"
-        "ands r0, r7\n"
-        "strh r0, [r3, #0]\n"
-        "adds r0, r4, #0\n"
-        "subs r0, #20\n"
-        "ands r0, r6\n"
-        "ldr r4, 4f\n"
-        "adds r1, r4, #0\n"
-        "orrs r0, r1\n"
-        "strh r0, [r3, #2]\n"
-        "ldrh r0, [r2, #56]\n"
-        "adds r0, #16\n"
-        "ldrh r2, [r2, #58]\n"
-        "lsls r1, r2, #12\n"
-        "orrs r0, r1\n"
-        "strh r0, [r3, #4]\n"
-        "adds r3, #8\n"
-        ".L8bb8_second_done:\n"
-        "mov r7, ip\n"
-        "ldr r2, [r7, #0]\n"
-        "ldr r0, [r2, #84]\n"
-        "subs r0, #6\n"
-        "mov r1, r8\n"
-        "ands r0, r1\n"
-        "strh r0, [r3, #0]\n"
-        "ldr r0, [r2, #80]\n"
-        "ands r0, r6\n"
-        "ldr r4, 4f\n"
-        "adds r1, r4, #0\n"
-        "orrs r0, r1\n"
-        "strh r0, [r3, #2]\n"
-        "ldrh r7, [r2, #58]\n"
-        "lsls r0, r7, #12\n"
-        "b.n .L8bb8_third\n"
-        ".align 2, 0\n"
-        "1: .word 0x030003e0\n"
-        "2: .word 0x000001ff\n"
-        "3: .word 0xffffc000\n"
-        "4: .word 0xffff8000\n"
-        ".L8bb8_initial:\n"
-        "ldr r0, [r2, #84]\n"
-        "subs r0, #6\n"
-        "movs r1, #255\n"
-        "ands r0, r1\n"
-        "movs r4, #128\n"
-        "lsls r4, r4, #7\n"
-        "adds r1, r4, #0\n"
-        "orrs r0, r1\n"
-        "strh r0, [r3, #0]\n"
-        "ldr r0, [r2, #80]\n"
-        "ldr r1, 5f\n"
-        "ands r0, r1\n"
-        "ldr r7, 6f\n"
-        "adds r1, r7, #0\n"
-        "orrs r0, r1\n"
-        "strh r0, [r3, #2]\n"
-        "ldrh r1, [r2, #58]\n"
-        "lsls r0, r1, #12\n"
-        ".L8bb8_third:\n"
-        "ldrh r2, [r2, #56]\n"
-        ".L8bb8_third_merge:\n"
-        "orrs r0, r2\n"
-        "strh r0, [r3, #4]\n"
-        "adds r3, #8\n"
-        "adds r0, r3, #0\n"
-        "pop {r3}\n"
-        "mov r8, r3\n"
-        "pop {r4, r5, r6, r7}\n"
-        "pop {r1}\n"
-        "bx r1\n"
-        ".align 2, 0\n"
-        "5: .word 0x000001ff\n"
-        "6: .word 0xffffc000\n"
-        ".syntax divided\n"
-    );
+void *Course_Dispatch_08BB8(void *out) {
+    register volatile u16 *cursor __asm__("r3") = (volatile u16 *)out;
+    register volatile u8 * volatile *root __asm__("ip") =
+        (volatile u8 * volatile *)0x030003e0u;
+    register volatile u8 *rec __asm__("r2") = *root;
+    register u32 reg1 __asm__("r1");
+    register s32 value __asm__("r0");
+    register u32 word4 __asm__("r4");
+    register u32 word5 __asm__("r5");
+    register u32 mask __asm__("r6");
+    register u32 word7;
+    register u32 mask8 __asm__("r8");
+
+    reg1 = 16;
+    __asm__ volatile ("" : "+r"(reg1));
+    __asm__ volatile ("ldrsh %0, [%1, %2]"
+                      : "=r"(value) : "r"(rec), "r"(reg1));
+    if (value > 1) {
+        word5 = *(volatile u32 *)(rec + 84);
+        word4 = 255;
+        __asm__ volatile ("" : "+r"(word4));
+        mask8 = word4;
+        __asm__ volatile ("" : "+r"(mask8));
+        value = word5;
+        value &= word4;
+        word7 = 128;
+        word7 <<= 7;
+        __asm__ volatile ("" : "+r"(word7));
+        reg1 = word7;
+        __asm__ volatile ("" : "+r"(reg1));
+        value |= reg1;
+        cursor[0] = (u16)value;
+
+        word4 = *(volatile u32 *)(rec + 80);
+        value = word4;
+        value += 12;
+        reg1 = 0x1ff;
+        __asm__ volatile ("" : "+r"(reg1));
+        mask = reg1;
+        __asm__ volatile ("" : "+r"(mask));
+        value &= mask;
+        word7 = 0xffffc000u;
+        __asm__ volatile ("" : "+r"(word7));
+        reg1 = word7;
+        __asm__ volatile ("" : "+r"(reg1));
+        value |= reg1;
+        cursor[1] = (u16)value;
+
+        reg1 = *(volatile u16 *)(rec + 58);
+        __asm__ volatile ("" : "+r"(reg1));
+        value = reg1 << 12;
+        word7 = *(volatile u16 *)(rec + 60);
+        __asm__ volatile ("" : "+r"(word7));
+        value |= word7;
+        cursor[2] = (u16)value;
+        cursor = (volatile u16 *)((volatile u8 *)cursor + 8);
+
+        reg1 = 16;
+        __asm__ volatile ("" : "+r"(reg1));
+        __asm__ volatile ("ldrsh %0, [%1, %2]"
+                          : "=r"(value) : "r"(rec), "r"(reg1));
+        if (value > 9) {
+            value = word5 - 6;
+            reg1 = mask8;
+            __asm__ volatile ("" : "+r"(reg1));
+            value &= reg1;
+            cursor[0] = (u16)value;
+
+            value = word4 - 20;
+            value &= mask;
+            word4 = 0xffff8000u;
+            __asm__ volatile ("" : "+r"(word4));
+            reg1 = word4;
+            __asm__ volatile ("" : "+r"(reg1));
+            value |= reg1;
+            cursor[1] = (u16)value;
+
+            value = *(volatile u16 *)(rec + 56);
+            value += 16;
+            __asm__ volatile ("ldrh %0, [%0, #58]"
+                              : "+r"(rec) : : "memory");
+            reg1 = (u32)(uintptr_t)rec;
+            __asm__ volatile ("" : "+r"(reg1));
+            reg1 <<= 12;
+            value |= reg1;
+            cursor[2] = (u16)value;
+            cursor = (volatile u16 *)((volatile u8 *)cursor + 8);
+        }
+
+        rec = *root;
+        value = *(volatile u32 *)(rec + 84);
+        value -= 6;
+        reg1 = mask8;
+        __asm__ volatile ("" : "+r"(reg1));
+        value &= reg1;
+        cursor[0] = (u16)value;
+        value = *(volatile u32 *)(rec + 80);
+        value &= mask;
+        word4 = 0xffff8000u;
+        __asm__ volatile ("" : "+r"(word4));
+        reg1 = word4;
+        __asm__ volatile ("" : "+r"(reg1));
+        value |= reg1;
+        cursor[1] = (u16)value;
+        word7 = *(volatile u16 *)(rec + 58);
+        value = word7 << 12;
+        __asm__ volatile ("ldrh %0, [%0, #56]"
+                          : "+r"(rec) : : "memory");
+        value |= (u32)(uintptr_t)rec;
+    } else {
+        value = *(volatile u32 *)(rec + 84);
+        value -= 6;
+        reg1 = 255;
+        __asm__ volatile ("" : "+r"(reg1));
+        value &= reg1;
+        word4 = 128;
+        word4 <<= 7;
+        __asm__ volatile ("" : "+r"(word4));
+        reg1 = word4;
+        __asm__ volatile ("" : "+r"(reg1));
+        value |= reg1;
+        cursor[0] = (u16)value;
+
+        value = *(volatile u32 *)(rec + 80);
+        reg1 = 0x1ff;
+        __asm__ volatile ("" : "+r"(reg1));
+        value &= reg1;
+        word7 = 0xffffc000u;
+        __asm__ volatile ("" : "+r"(word7));
+        reg1 = word7;
+        __asm__ volatile ("" : "+r"(reg1));
+        value |= reg1;
+        cursor[1] = (u16)value;
+
+        reg1 = *(volatile u16 *)(rec + 58);
+        __asm__ volatile ("" : "+r"(reg1));
+        value = reg1 << 12;
+        __asm__ volatile ("ldrh %0, [%0, #56]"
+                          : "+r"(rec) : : "memory");
+        value |= (u32)(uintptr_t)rec;
+    }
+
+    cursor[2] = (u16)value;
+    cursor = (volatile u16 *)((volatile u8 *)cursor + 8);
+    return (void *)cursor;
 }
-void _08008BB8(void *a) __attribute__((alias("Course_Dispatch_08BB8")));
-void sub_08008BB8(void *a) __attribute__((alias("Course_Dispatch_08BB8")));
+void *_08008BB8(void *a) __attribute__((alias("Course_Dispatch_08BB8")));
+void *sub_08008BB8(void *a) __attribute__((alias("Course_Dispatch_08BB8")));
 
 void Course_Dispatch_08CA0(void *rec) { // _08008CA0: phase dispatcher — 9-entry table at 0x08008EB4 vs audit 21, blocked on indirect MovPc
     // lsls #2; ldr r0,[r1,r0]; mov pc,r0 — indirect table target not proven, leave blocked
@@ -272,4 +297,4 @@ void Course_Dispatch_08CA0(void *rec) { // _08008CA0: phase dispatcher — 9-ent
 
 // ROM entry alias.
 void RomEmit8AAC(void *rec) __attribute__((alias("Course_Dispatch_08AAC")));
-void RomEmit8BB8(void *rec) __attribute__((alias("Course_Dispatch_08BB8")));
+void *RomEmit8BB8(void *out) __attribute__((alias("Course_Dispatch_08BB8")));

@@ -868,65 +868,37 @@ extern void Sub_08009674(void);
 extern int Sub_0800968C(int v);
 extern void Sub_08001B498(int v);
 extern void Sub_08019AEC(int v);
-__attribute__((naked)) void Race_Scene_Leaf_1B130(int a0) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, lr}\n"
-        "adds r4, r0, #0\n"
-        "movs r0, #128\n"
-        "lsls r0, r0, #14\n"
-        "movs r1, #0\n"
-        "bl _08018AA8\n"
-        "cmp r4, #1\n"
-        "beq.n .Lrs1b130_case1\n"
-        "cmp r4, #1\n"
-        "bgt.n .Lrs1b130_gt1\n"
-        "cmp r4, #0\n"
-        "beq.n .Lrs1b130_case0\n"
-        "b.n .Lrs1b130_done\n"
-        ".Lrs1b130_gt1:\n"
-        "cmp r4, #2\n"
-        "beq.n .Lrs1b130_case2\n"
-        "b.n .Lrs1b130_done\n"
-        ".Lrs1b130_case0:\n"
-        "movs r0, #128\n"
-        "lsls r0, r0, #13\n"
-        "movs r1, #0\n"
-        "bl _08018AA8\n"
-        "b.n .Lrs1b130_done\n"
-        ".Lrs1b130_case1:\n"
-        "movs r0, #1\n"
-        "bl _0802B368\n"
-        "movs r0, #16\n"
-        "movs r1, #1\n"
-        "bl _08018AA8\n"
-        "movs r0, #2\n"
-        "movs r1, #1\n"
-        "bl _08018AA8\n"
-        "ldr r0, 1f\n"
-        "ldr r1, 2f\n"
-        "adds r0, r0, r1\n"
-        "movs r1, #0\n"
-        "strb r1, [r0, #0]\n"
-        "b.n .Lrs1b130_done\n"
-        ".align 2\n"
-        "1: .word 0x03001780\n"
-        "2: .word 0x000010BD\n"
-        ".Lrs1b130_case2:\n"
-        "movs r0, #1\n"
-        "bl _0802B368\n"
-        "movs r0, #1\n"
-        "negs r0, r0\n"
-        "bl Sub_08019AEC\n"
-        "movs r0, #2\n"
-        "movs r1, #1\n"
-        "bl _08018AA8\n"
-        ".Lrs1b130_done:\n"
-        "pop {r4}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        ".syntax divided\n"
-    );
+void Race_Scene_Leaf_1B130(int a0) {
+    extern u8 RSWa[] __asm__("RSWa");
+    __asm__(".globl RSWa\nRSWa = 0x03001780\n");
+    int mode = a0;
+    volatile u8 *wa;
+    uintptr_t off;
+    _08018AA8(0x200000u, 0);
+    if (mode == 1) goto case1;
+    if (mode > 1) goto gt1;
+    if (mode == 0) goto case0;
+    goto done;
+gt1:
+    if (mode == 2) goto case2;
+    goto done;
+case0:
+    _08018AA8(0x100000u, 0);
+    goto done;
+case1:
+    _0802B368(1);
+    _08018AA8(16, 1);
+    _08018AA8(2, 1);
+    wa = RSWa;
+    off = 0x10BD;
+    *(volatile u8 *)(wa + off) = 0;
+    goto done;
+case2:
+    _0802B368(1);
+    sub_080019AEC(-1);
+    _08018AA8(2, 1);
+done:
+    return;
 }
 void _08001B130(int a0) __attribute__((alias("Race_Scene_Leaf_1B130")));
 

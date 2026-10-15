@@ -4050,8 +4050,8 @@
     "c_name": "_08006590",
     "asm_file": "asm/course_orch.s",
     "start_marker": "_08006590:",
-    "end_marker": "_08006618:",
-    "end_vma": "0x08006618",
+    "end_marker": "_080065D4:",
+    "end_vma": "0x080065D4",
     "export": [
       "_08006590"
     ]

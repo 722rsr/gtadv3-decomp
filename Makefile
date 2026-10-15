@@ -179,6 +179,10 @@ fast-check:
 	@python3 tools/label_census.py
 	@python3 tools/span_audit.py --self-test
 	@python3 tools/span_audit.py
+	@python3 tools/frame_rule_audit.py --self-test
+	@python3 tools/frame_rule_audit.py
+	@python3 tools/naked_doc_audit.py --self-test
+	@python3 tools/naked_doc_audit.py
 
 # Optional local verification before recording changes.
 .PHONY: experimental-check

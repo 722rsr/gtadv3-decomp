@@ -31,9 +31,9 @@ void BlockB_Reset(void);                 // _0800210C
 void BlockB_Arm(u16 param);              // _08002124
 s32  BlockB_GetMatchOrZero(void);        // _08002140 (word return: `adds r0,r2,#0`, no u16 mask)
 void BlockB_ForwardEvent(int id, u16 payload); // _08002158
-u16  BlockB_DispatchIfLess(int idx);     // _08002178 via _08001E5C
+u32  BlockB_DispatchIfLess(int idx, int hwIndex); // _08002178 returns a zero-extended halfword from _08001E5C
 void BlockB_RefreshMatcher(void);        // _080021A0
 void BlockB_Frame(void);                 // _080021EC
-u16  BlockB_DispatchIfLess2(int idx);    // _0800222C via _08001E8C
+u32  BlockB_DispatchIfLess2(int idx, int hwIndex); // _0800222C returns a zero-extended halfword from _08001E8C
 
 #endif // GTADV_BLOCK_B_H

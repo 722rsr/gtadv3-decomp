@@ -4,10 +4,12 @@
 
 // Reference: asm/rec35_stage.s 0x08015ED0-0x08016002 + asm/rec35_helper.s
 
-extern int Sound_Cmd3(void); // 0x0802B3B8 returns 0 when complete (low byte 0)
+extern int Sound_Cmd3(int a); // 0x0802B3B8 returns 0 when complete (low byte 0)
 extern void GuardedSaveOnly(void); // 0x08024BC0
 extern void GuardedFullSave(void); // 0x08024B70
 extern void ScenePost(int a,int b); // 0x08002618
+extern void _08015E28(void *ctx);
+extern void _08015E7C(void *ctx);
 extern void EventPost(void *list, int id); // 0x08025BF0 (ROM shape (P,S): [list+4] = s16[0x080CD830 + id*20])
 extern void EventBind(void *a, int b, int c); // 0x08007ABC (ROM shape: 3 reg args (void*,int,int),)
 extern void sub_08025BF0(void *list, int id);
@@ -59,157 +61,80 @@ void Rec35_HelperB(void *ctx){
 }
 __asm__(".align 2, 0");
 
-__attribute__((naked)) void Rec35_StageA(void *ctx){
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, lr}\n"
-        "adds r4, r0, #0\n"
-        "adds r0, #148\n"
-        "movs r1, #0\n"
-        "ldrsh r0, [r0, r1]\n"
-        "cmp r0, #4\n"
-        "bhi.n .L15ed0_done\n"
-        "lsls r0, r0, #2\n"
-        "ldr r1, 1f\n"
-        "adds r0, r0, r1\n"
-        "ldr r0, [r0, #0]\n"
-        "mov pc, r0\n"
-        "1: .word 0x08015EEC\n"
-        "   .word 0x08015F00\n"
-        "   .word 0x08015F0A\n"
-        "   .word 0x08015F2A\n"
-        "   .word 0x08015F60\n"
-        "   .word 0x08015F60\n"
-        "   .L15ed0_case0:\n"
-        "adds r1, r4, #0\n"
-        "adds r1, #148\n"
-        "movs r0, #4\n"
-        "strh r0, [r1, #0]\n"
-        "b.n .L15ed0_done\n"
-        ".L15ed0_case1:\n"
-        "adds r1, r4, #0\n"
-        "adds r1, #144\n"
-        "movs r0, #1\n"
-        "strh r0, [r1, #0]\n"
-        "adds r0, r4, #0\n"
-        "bl _08015E28\n"
-        "movs r0, #1\n"
-        "movs r1, #1\n"
-        "bl ScenePost\n"
-        "adds r1, r4, #0\n"
-        "adds r1, #148\n"
-        "movs r0, #2\n"
-        "strh r0, [r1, #0]\n"
-        "b.n .L15ed0_done\n"
-        ".L15ed0_case2:\n"
-        "adds r0, r4, #0\n"
-        "adds r0, #144\n"
-        "movs r5, #1\n"
-        "strh r5, [r0, #0]\n"
-        "movs r0, #3\n"
-        "bl Sound_Cmd3\n"
-        "lsls r0, r0, #24\n"
-        "cmp r0, #0\n"
-        "bne.n .L15ed0_busy\n"
-        "strh r5, [r4, #20]\n"
-        "bl GuardedSaveOnly\n"
-        "adds r0, r4, #0\n"
-        "bl _08015E28\n"
-        "movs r0, #1\n"
-        "movs r1, #1\n"
-        "bl ScenePost\n"
-        "adds r1, r4, #0\n"
-        "adds r1, #148\n"
-        "movs r0, #3\n"
-        "strh r0, [r1, #0]\n"
-        "b.n .L15ed0_done\n"
-        ".L15ed0_busy:\n"
-        "movs r0, #0\n"
-        "strh r0, [r4, #20]\n"
-        ".L15ed0_done:\n"
-        "pop {r4, r5}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        ".align 2, 0\n"
-        ".syntax divided\n"
-    );
+void Rec35_StageA(void *ctx){
+    u8 *r4 = (u8 *)ctx;
+    int s = *(s16 *)(r4 + 148);
+    switch (s) {
+    case 0:
+        *(u16 *)(r4 + 148) = 4;
+        break;
+    case 1:
+        *(u16 *)(r4 + 144) = 1;
+        _08015E28(r4);
+        ScenePost(1, 1);
+        *(u16 *)(r4 + 148) = 2;
+        break;
+    case 2: {
+        register u16 *p144 __asm__("r0") = (u16 *)(r4 + 144);
+        register u16 one __asm__("r5");
+        __asm__ volatile ("" : "+r"(p144));
+        one = 1;
+        *p144 = one;
+        if ((u8)Sound_Cmd3(3) == 0) {
+            *(u16 *)(r4 + 20) = one;
+            GuardedSaveOnly();
+            _08015E28(r4);
+            ScenePost(1, 1);
+            *(u16 *)(r4 + 148) = 3;
+        } else {
+            *(u16 *)(r4 + 20) = 0;
+        }
+        break;
+    }
+    case 3:
+    case 4:
+        break;
+    }
 }
-__attribute__((naked)) void Rec35_StageB(void *ctx){
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, lr}\n"
-        "adds r4, r0, #0\n"
-        "adds r0, #150\n"
-        "movs r1, #0\n"
-        "ldrsh r0, [r0, r1]\n"
-        "cmp r0, #4\n"
-        "bhi.n .L15f68_done\n"
-        "lsls r0, r0, #2\n"
-        "ldr r1, 1f\n"
-        "adds r0, r0, r1\n"
-        "ldr r0, [r0, #0]\n"
-        "mov pc, r0\n"
-        "1: .word 0x08015F84\n"
-        "   .word 0x08015F98\n"
-        "   .word 0x08015FA2\n"
-        "   .word 0x08015FC2\n"
-        "   .word 0x08015FFC\n"
-        "   .word 0x08015FFC\n"
-        ".L15f68_case0:\n"
-        "adds r1, r4, #0\n"
-        "adds r1, #150\n"
-        "movs r0, #4\n"
-        "strh r0, [r1, #0]\n"
-        "b.n .L15f68_done\n"
-        ".L15f68_case1:\n"
-        "adds r1, r4, #0\n"
-        "adds r1, #144\n"
-        "movs r0, #1\n"
-        "strh r0, [r1, #0]\n"
-        "adds r0, r4, #0\n"
-        "bl _08015E7C\n"
-        "movs r0, #1\n"
-        "movs r1, #1\n"
-        "bl ScenePost\n"
-        "adds r1, r4, #0\n"
-        "adds r1, #150\n"
-        "movs r0, #2\n"
-        "strh r0, [r1, #0]\n"
-        "b.n .L15f68_done\n"
-        ".L15f68_case2:\n"
-        "adds r0, r4, #0\n"
-        "adds r0, #144\n"
-        "movs r5, #1\n"
-        "strh r5, [r0, #0]\n"
-        "movs r0, #3\n"
-        "bl Sound_Cmd3\n"
-        "lsls r0, r0, #24\n"
-        "cmp r0, #0\n"
-        "bne.n .L15f68_busy\n"
-        "strh r5, [r4, #20]\n"
-        "bl GuardedFullSave\n"
-        "bl GuardedSaveOnly\n"
-        "adds r0, r4, #0\n"
-        "bl _08015E7C\n"
-        "movs r0, #1\n"
-        "movs r1, #1\n"
-        "bl ScenePost\n"
-        "adds r1, r4, #0\n"
-        "adds r1, #150\n"
-        "movs r0, #3\n"
-        "strh r0, [r1, #0]\n"
-        "b.n .L15f68_done\n"
-        ".L15f68_busy:\n"
-        "movs r0, #0\n"
-        "strh r0, [r4, #20]\n"
-        ".L15f68_done:\n"
-        "pop {r4, r5}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        ".align 2, 0\n"
-        ".syntax divided\n"
-    );
+__asm__(".align 2, 0");
+
+void Rec35_StageB(void *ctx){
+    u8 *r4 = (u8 *)ctx;
+    int s = *(s16 *)(r4 + 150);
+    switch (s) {
+    case 0:
+        *(u16 *)(r4 + 150) = 4;
+        break;
+    case 1:
+        *(u16 *)(r4 + 144) = 1;
+        _08015E7C(r4);
+        ScenePost(1, 1);
+        *(u16 *)(r4 + 150) = 2;
+        break;
+    case 2: {
+        register u16 *p144 __asm__("r0") = (u16 *)(r4 + 144);
+        register u16 one __asm__("r5");
+        __asm__ volatile ("" : "+r"(p144));
+        one = 1;
+        *p144 = one;
+        if ((u8)Sound_Cmd3(3) == 0) {
+            *(u16 *)(r4 + 20) = one;
+            GuardedFullSave();
+            GuardedSaveOnly();
+            _08015E7C(r4);
+            ScenePost(1, 1);
+            *(u16 *)(r4 + 150) = 3;
+        } else {
+            *(u16 *)(r4 + 20) = 0;
+        }
+        break;
+    }
+    case 3:
+    case 4:
+        break;
+    }
 }
+__asm__(".align 2, 0");
 
 void _08015ED0(void *c) __attribute__((alias("Rec35_StageA")));
 void _08015F68(void *c) __attribute__((alias("Rec35_StageB")));

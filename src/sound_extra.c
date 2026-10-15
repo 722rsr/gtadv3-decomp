@@ -120,7 +120,6 @@ s32 _0802DE04(s32 a, s32 b) __attribute__((alias("SoundSignedDiv")));
 s32 sub_0802DE04(s32 a, s32 b) __attribute__((alias("SoundSignedDiv")));
 s32 __aeabi_idiv(s32 a, s32 b) __attribute__((alias("SoundSignedDiv")));
 
-
 // --- Stream allocation helper (sound_alloc.s 0x02CBBC) ---
 // u32 sub_0802CBBC(state, channels, count) — validates count<=16, Smsh lock at *0x03007FF0==0x68736D53
 void SoundStreamAlloc(void *state, void *chArray, u32 count){
@@ -186,70 +185,29 @@ void sub_0802CBBC(void *a, void *b, u32 c) __attribute__((alias("SoundStreamAllo
 // scaled volume and signed pan values into the sound descriptor layer; keeping
 // the literal pool in place preserves the ARMCC register split at the call
 // boundary.
-__attribute__((naked)) void SoundBankVolPan(u32 id, u32 vol, u32 mode){
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, lr}\n"
-        "lsls r0, r0, #16\n"
-        "lsrs r3, r0, #16\n"
-        "lsls r1, r1, #16\n"
-        "lsrs r1, r1, #16\n"
-        "lsls r2, r2, #16\n"
-        "asrs r2, r2, #16\n"
-        "cmp r2, #1\n"
-        "bne.n .Lsbvp_half\n"
-        "lsls r0, r1, #16\n"
-        "asrs r0, r0, #16\n"
-        "lsls r2, r3, #16\n"
-        "asrs r1, r2, #21\n"
-        "adds r1, #110\n"
-        "muls r0, r1\n"
-        "adds r5, r2, #0\n"
-        "cmp r0, #0\n"
-        "bge.n .Lsbvp_scaled\n"
-        "adds r0, #255\n"
-        ".Lsbvp_scaled:\n"
-        "lsls r0, r0, #8\n"
-        "lsrs r1, r0, #16\n"
-        "b.n .Lsbvp_apply\n"
-        ".Lsbvp_half:\n"
-        "lsls r0, r1, #16\n"
-        "asrs r1, r0, #16\n"
-        "lsrs r0, r0, #31\n"
-        "adds r1, r1, r0\n"
-        "lsls r1, r1, #15\n"
-        "lsrs r1, r1, #16\n"
-        "lsls r5, r3, #16\n"
-        ".Lsbvp_apply:\n"
-        "ldr r4, 1f\n"
-        "ldr r0, [r4, #0]\n"
-        "ldrb r0, [r0, #13]\n"
-        "lsls r2, r1, #16\n"
-        "asrs r2, r2, #16\n"
-        "movs r1, #255\n"
-        "bl _0802B718\n"
-        "ldr r1, 2f\n"
-        "adds r0, r5, r1\n"
-        "asrs r0, r0, #16\n"
-        "movs r1, #100\n"
-        "muls r0, r1\n"
-        "movs r1, #130\n"
-        "bl _0802DE04\n"
-        "adds r2, r0, #0\n"
-        "ldr r0, [r4, #0]\n"
-        "ldrb r0, [r0, #13]\n"
-        "lsls r2, r2, #16\n"
-        "asrs r2, r2, #16\n"
-        "movs r1, #255\n"
-        "bl _0802B74C\n"
-        "pop {r4, r5}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        ".align 2\n"
-        "1: .word 0x03001764\n"
-        "2: .word 0xEE6C0000\n"
-        ".syntax divided\n"
-    );
+extern void _0802B718(u32 id, u32 chsel, u32 val);
+extern void _0802B74C(u32 id, u32 chsel, u32 val);
+
+void SoundBankVolPan(u32 id, u32 vol, u32 mode)
+{
+    u16 id16;
+    s16 m;
+    u16 t;
+    s32 d;
+
+    id16 = (u16)id;
+    vol = vol << 16;
+    vol = vol >> 16;
+    m = (s16)mode;
+    if (m == 1) {
+        t = (u16)(((s16)vol * (110 + ((s32)(id16 << 16) >> 21))) / 256);
+    } else {
+        t = (u16)((s16)vol / 2);
+    }
+    _0802B718(*(volatile u8 *)(*(volatile u32 *)0x03001764 + 13), 255, (s16)t);
+    d = ((s32)((id16 << 16) + (s32)0xEE6C0000)) >> 16;
+    d = d * 100 / 130;
+    _0802B74C(*(volatile u8 *)(*(volatile u32 *)0x03001764 + 13), 255, (s16)d);
 }
 void _0802B488(u32 a, u32 b, u32 c) __attribute__((alias("SoundBankVolPan")));
 void sub_0802B488(u32 a, u32 b, u32 c) __attribute__((alias("SoundBankVolPan")));
@@ -269,7 +227,6 @@ __attribute__((naked)) u32 SoundBCE8_CursorFetch(void *dummy, void *seq) {
 }
 u32 _0802BCE8(void *dummy, void *s) __attribute__((alias("SoundBCE8_CursorFetch")));
 u32 sub_0802BCE8(void *dummy, void *s) __attribute__((alias("SoundBCE8_CursorFetch")));
-
 
 // --- Premix leaves (sound_premix.s 0x02B7B4–0x02B888) — accessor/pitch stubs ---
 // The ROM is `ldr r0,[r0,#8] / bx lr` -- it LOADS the word at +8 and returns
@@ -293,7 +250,6 @@ void *_0802B7B8(void *o, u32 *f) __attribute__((alias("SoundPremixPitch")));
 // which is really the 64-byte clear owned by SoundClearVoiceArray
 // (src/sound_support.c). Two C bodies for one ROM entry made the probe score
 // the stub instead of the real body.
-
 
 // ROM entry alias.
 void _08002B488(u32 id, u32 vol, u32 mode) __attribute__((alias("SoundBankVolPan")));

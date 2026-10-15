@@ -714,6 +714,7 @@ _080065D0: .4byte 0x080CE020
 @   adj = x*65536 + 0xFFF30000 (saturating-ish guard); returns 10 when
 @   negative; else row = s16(hi(adj)), k = 2 (or sign trick -> 0/1 when
 @   adj==0); result = table[row*3 + k].
+.type _080065D4, %function
 _080065D4:
 	lsls r1, r1, #16
 	lsrs r3, r1, #16         @ u16(x)

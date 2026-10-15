@@ -439,6 +439,17 @@ ldr r4,=0x080CB6E0               .L6:
   preheader initialisations. That is how the `ldr r4` in the preheader was
   identified as the strength-reduced table pointer rather than a hoisted load.
 
+## Absolute symbols and reload registers
+
+When matching code needs a constant to reach an add in its destination
+register, an assembler absolute symbol can preserve the symbol reference through
+reload. An integer literal may instead be loaded into a separate pseudo and
+change register assignment. `LaneDriver_02E0` uses this form for `TBL_C4BB0`.
+
+For switches with omitted values, write a missing value as an explicit empty
+case when arm order matters; `default` can change the source-order placement of
+the case bodies.
+
 ## Related traps found the same way
 
 * Two pins aimed at the same register collapse: the second is silently ignored.

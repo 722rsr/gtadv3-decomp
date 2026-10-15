@@ -95,51 +95,27 @@ void sub_0802D86C(void *s, void *q) __attribute__((alias("SoundD6F4_VecCall")));
 // r4 with 4 fetched bytes, store u32[seq+40], cursor += 4.
 //
 // Custom ABI: the accumulator is r4 itself, and the ROM reads r4's incoming
-// (caller) value — `ands r4, 0xFFFFFF00` keeps only its low byte (the
-// armcc mask-and-merge idiom), then each fetched byte is merged into one
-// lane. r4 is callee-saved in the standard ABI, so no plain-C body can name
-// it as an input: the previous C version took it as r0 and compiled to the
-// wrong registers (PARTIAL 10/72). The body is therefore a naked
-// transcription; the pool order and the `movs r0,r0` pad at +0x36 match the
-// ROM so the section is 72 B ending at 0x0802D8C8.
-__attribute__((naked)) void SoundD6F4_LoadWord(void *r4state, void *seq) {
-    (void)r4state; (void)seq;
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, lr}\n"
-        "ldr r2, [r1, #64]\n"
-        "ldr r0, 1f\n"
-        "ands r4, r0\n"
-        "ldrb r0, [r2, #0]\n"
-        "orrs r4, r0\n"
-        "ldrb r0, [r2, #1]\n"
-        "lsls r3, r0, #8\n"
-        "ldr r0, 2f\n"
-        "ands r4, r0\n"
-        "orrs r4, r3\n"
-        "ldrb r0, [r2, #2]\n"
-        "lsls r3, r0, #16\n"
-        "ldr r0, 3f\n"
-        "ands r4, r0\n"
-        "orrs r4, r3\n"
-        "ldrb r0, [r2, #3]\n"
-        "lsls r3, r0, #24\n"
-        "ldr r0, 4f\n"
-        "ands r4, r0\n"
-        "orrs r4, r3\n"
-        "str r4, [r1, #40]\n"
-        "adds r2, #4\n"
-        "str r2, [r1, #64]\n"
-        "pop {r4}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        "movs r0, r0\n"
-        "1: .word 0xFFFFFF00\n"
-        "2: .word 0xFFFF00FF\n"
-        "3: .word 0xFF00FFFF\n"
-        "4: .word 0x00FFFFFF\n"
-        ".syntax divided\n"
-    );
+void SoundD6F4_LoadWord(void *state, void *seq) {
+    register u32 acc __asm__("r4");
+    volatile u8 *p = (volatile u8 *)seq;
+    volatile u8 *pc;
+    u32 t;
+    __asm__ volatile("" : "=r" (acc));
+    pc = (volatile u8 *)(u32)*(volatile u32 *)(p + 64);
+    acc &= 0xFFFFFF00u;
+    acc |= (u32)pc[0];
+    t = (u32)pc[1] << 8;
+    acc &= 0xFFFF00FFu;
+    acc |= t;
+    t = (u32)pc[2] << 16;
+    acc &= 0xFF00FFFFu;
+    acc |= t;
+    t = (u32)pc[3] << 24;
+    acc &= 0x00FFFFFFu;
+    acc |= t;
+    *(volatile u32 *)(p + 40) = acc;
+    *(volatile u32 *)(p + 64) = (u32)pc + 4;
+    (void)state;
 }
 void _0802D880(void *a, void *s) __attribute__((alias("SoundD6F4_LoadWord")));
 void sub_0802D880(void *a, void *s) __attribute__((alias("SoundD6F4_LoadWord")));

@@ -676,198 +676,148 @@ s16 sub_08005F74(u32 a) __attribute__((alias("SaveTriggerD")));
 
 // ----------------------------------------------------------------------------
 // Saveblock #1 bitfield + grid (asm/saveblock.s)
-__attribute__((naked)) void SaveBlock1SetBit(u32 bit, int set) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, lr}\n"
-        "adds r5, r0, #0\n"
-        "cmp r1, #0\n"
-        "beq.n 2f\n"
-        "ldr r3, 1f\n"
-        "asrs r4, r5, #3\n"
-        "adds r2, r4, r3\n"
-        "ldr r1, 3f\n"
-        "movs r0, #7\n"
-        "ands r0, r5\n"
-        "adds r0, r0, r1\n"
-        "ldrb r1, [r0, #0]\n"
-        "ldrb r2, [r2, #0]\n"
-        "orrs r1, r2\n"
-        "b.n 4f\n"
-        ".align 2, 0\n"
-        "1: .word 0x03000628\n"
-        "3: .word 0x080c4768\n"
-        "2:\n"
-        "ldr r3, 5f\n"
-        "asrs r4, r5, #3\n"
-        "adds r2, r4, r3\n"
-        "ldr r1, 6f\n"
-        "movs r0, #7\n"
-        "ands r0, r5\n"
-        "adds r0, r0, r1\n"
-        "ldrb r1, [r2, #0]\n"
-        "ldrb r0, [r0, #0]\n"
-        "bics r1, r0\n"
-        "4:\n"
-        "adds r0, r4, r3\n"
-        "strb r1, [r0, #0]\n"
-        "pop {r4, r5}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        ".align 2, 0\n"
-        "5: .word 0x03000628\n"
-        "6: .word 0x080c4768\n"
-        ".syntax divided\n"
-    );
+extern volatile u8 SaveBlock1Flags_Set[];
+extern volatile u8 SaveBlock1Flags_Clear[];
+extern const u8 SaveBlock1Masks_Set[];
+extern const u8 SaveBlock1Masks_Clear[];
+
+void SaveBlock1SetBit(u32 bit, int set) {
+    __asm__(
+        ".globl SaveBlock1Flags_Set\nSaveBlock1Flags_Set = 0x03000628\n"
+        ".globl SaveBlock1Flags_Clear\nSaveBlock1Flags_Clear = 0x03000628\n"
+        ".globl SaveBlock1Masks_Set\nSaveBlock1Masks_Set = 0x080C4768\n"
+        ".globl SaveBlock1Masks_Clear\nSaveBlock1Masks_Clear = 0x080C4768");
+    {
+    register u32 bit_value __asm__("r5") = bit;
+    register volatile u8 *flags __asm__("r3");
+    register uintptr_t flag_temp __asm__("r2");
+    register volatile u8 *work_addr __asm__("r0");
+    register s32 byte_index __asm__("r4");
+    register uintptr_t masks_base __asm__("r1");
+    u32 mask_index;
+    u8 mask;
+    if (set != 0) {
+        flags = SaveBlock1Flags_Set;
+        __asm__ volatile ("" : "+r"(flags), "+r"(bit_value));
+        byte_index = (s32)bit_value >> 3;
+        flag_temp = (uintptr_t)byte_index + (uintptr_t)flags;
+        masks_base = (uintptr_t)SaveBlock1Masks_Set;
+        __asm__ volatile ("" : "+r"(masks_base), "+r"(bit_value));
+        mask_index = bit_value & 7u;
+        work_addr = (volatile u8 *)(mask_index + masks_base);
+        masks_base = *work_addr;
+        flag_temp = *(volatile u8 *)flag_temp;
+        __asm__ volatile ("" : "+r"(flag_temp));
+        masks_base |= flag_temp;
+    } else {
+        flags = SaveBlock1Flags_Clear;
+        __asm__ volatile ("" : "+r"(flags), "+r"(bit_value));
+        byte_index = (s32)bit_value >> 3;
+        flag_temp = (uintptr_t)byte_index + (uintptr_t)flags;
+        masks_base = (uintptr_t)SaveBlock1Masks_Clear;
+        __asm__ volatile ("" : "+r"(masks_base), "+r"(bit_value));
+        mask_index = bit_value & 7u;
+        work_addr = (volatile u8 *)(mask_index + masks_base);
+        masks_base = *(volatile u8 *)flag_temp;
+        mask = *work_addr;
+        masks_base &= ~(u32)mask;
+    }
+    work_addr = (volatile u8 *)((uintptr_t)byte_index + (uintptr_t)flags);
+    *work_addr = (u8)masks_base;
+    }
 }
 void SaveBlock1SetBit_alias(u32 b, int s) __attribute__((alias("SaveBlock1SetBit")));
 void _0802466C(u32 b, int s) __attribute__((alias("SaveBlock1SetBit")));
 
-__attribute__((naked)) u32 SaveBlock1TestBit(u32 bit) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "ldr\tr1, _080246D4\n"
-        "asrs\tr2, r0, #3\n"
-        "adds\tr2, r2, r1\n"
-        "ldr\tr3, _080246D8\n"
-        "movs\tr1, #7\n"
-        "ands\tr1, r0\n"
-        "adds\tr1, r1, r3\n"
-        "ldrb\tr0, [r2]\n"
-        "ldrb\tr1, [r1]\n"
-        "ands\tr0, r1\n"
-        "bx\tlr\n"
-        "movs\tr0, r0\n"
-        ".align 2, 0\n"
-        "_080246D4: .word 0x03000628\n"
-        "_080246D8: .word 0x080C4768\n"
-        ".syntax divided\n"
-    );
+u32 SaveBlock1TestBit(u32 bit) {
+    extern const u8 SaveBlock1BitMasks[];
+    register uintptr_t flags_base __asm__("r1") = SAVE_BLOCK1_BUF_ADDR;
+    register u32 bit_value __asm__("r0") = bit;
+    __asm__ volatile ("" : "+r" (flags_base), "+r" (bit_value));
+    __asm__(".globl SaveBlock1BitMasks\nSaveBlock1BitMasks = 0x080C4768");
+    {
+        register volatile u8 *flags __asm__("r2") =
+            (volatile u8 *)(((s32)bit_value >> 3) + flags_base);
+        register uintptr_t masks_base __asm__("r3") =
+            (uintptr_t)SaveBlock1BitMasks;
+        register const u8 *mask_ptr __asm__("r1") =
+            (const u8 *)((bit_value & 7u) + masks_base);
+        u32 value = *flags;
+        u32 mask = *mask_ptr;
+        return value & mask;
+    }
 }
 u32 _080246BC(u32 b) __attribute__((alias("SaveBlock1TestBit")));
 
-__attribute__((naked)) u16 SaveBlock1GetHWord(void) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "ldr\tr0, _080246E4\n"
-        "ldrh\tr0, [r0, #12]\n"
-        "bx\tlr\n"
-        "movs\tr0, r0\n"
-        ".align 2, 0\n"
-        "_080246E4: .word 0x03000628\n"
-        ".syntax divided\n"
-    );
+u16 SaveBlock1GetHWord(void) {
+    volatile u8 *b = (volatile u8 *)0x03000628;
+    return *(volatile u16 *)(b + 12);
 }
 u16 _080246DC(void) __attribute__((alias("SaveBlock1GetHWord")));
 
-__attribute__((naked)) void SaveBlock1SetHWord(u16 v) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "ldr\tr1, _080246F0\n"
-        "strh\tr0, [r1, #12]\n"
-        "bx\tlr\n"
-        "movs\tr0, r0\n"
-        ".align 2, 0\n"
-        "_080246F0: .word 0x03000628\n"
-        ".syntax divided\n"
-    );
+void SaveBlock1SetHWord(u32 v) {
+    volatile u8 *b = (volatile u8 *)0x03000628;
+    *(volatile u16 *)(b + 12) = v;
 }
-void _080246E8(u16 v) __attribute__((alias("SaveBlock1SetHWord")));
+void _080246E8(u32 v) __attribute__((alias("SaveBlock1SetHWord")));
 
 void *SaveBlock1GridPtr(u32 row, u32 col) {
     return (void *)(SAVE_BLOCK1_BUF_ADDR + 16 + row*60 + col*12);
 }
 void *_080246F4(u32 r, u32 c) __attribute__((alias("SaveBlock1GridPtr")));
 
-__attribute__((naked)) void SaveBlock1Init(void) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, r7, lr}\n"
-        "sub sp, #16\n"
-        "movs r4, #0\n"
-        "movs r0, #1\n"
-        "bl 0x080057D0\n"
-        "str r4, [sp]\n"
-        "ldr r1, .L24568_block2\n"
-        "ldr r2, .L24568_mode127\n"
-        "mov r0, sp\n"
-        "bl 0x0802D974\n"
-        "movs r0, #222\n"
-        "lsls r0, r0, #1\n"
-        "bl 0x0800580C\n"
-        "ldr r1, .L24568_block2_idx\n"
-        "strb r0, [r1, #0]\n"
-        "str r4, [sp, #4]\n"
-        "add r0, sp, #4\n"
-        "ldr r1, .L24568_block1_idx\n"
-        "ldr r2, .L24568_mode1\n"
-        "bl 0x0802D974\n"
-        "str r4, [sp, #8]\n"
-        "add r0, sp, #8\n"
-        "ldr r1, .L24568_block1_bits\n"
-        "ldr r2, .L24568_mode4\n"
-        "bl 0x0802D974\n"
-        "str r4, [sp, #12]\n"
-        "add r0, sp, #12\n"
-        "ldr r1, .L24568_block1_body\n"
-        "ldr r2, .L24568_mode_body\n"
-        "bl 0x0802D974\n"
-        "bl 0x0802446C\n"
-        "bl 0x08024BD8\n"
-        "ldr r0, .L24568_seed_dst\n"
-        "ldr r1, .L24568_seed_src\n"
-        "movs r2, #3\n"
-        "bl 0x0800D95C\n"
-        "movs r7, #0\n"
-        "movs r5, #0\n"
-        ".L24568_outer:\n"
-        "movs r4, #0\n"
-        "adds r6, r5, #1\n"
-        ".L24568_inner:\n"
-        "movs r0, #0\n"
-        "adds r1, r5, #0\n"
-        "adds r2, r4, #0\n"
-        "bl 0x08025CF4\n"
-        "cmp r0, #3\n"
-        "bne .L24568_no_count\n"
-        "adds r7, #1\n"
-        ".L24568_no_count:\n"
-        "adds r4, #1\n"
-        "cmp r4, #10\n"
-        "ble .L24568_inner\n"
-        "adds r5, r6, #0\n"
-        "cmp r5, #3\n"
-        "ble .L24568_outer\n"
-        "cmp r7, #43\n"
-        "ble .L24568_after_audit\n"
-        "ldr r0, .L24568_wa\n"
-        "movs r1, #255\n"
-        "lsls r1, r1, #4\n"
-        "adds r0, r0, r1\n"
-        "movs r1, #1\n"
-        "strh r1, [r0, #0]\n"
-        ".L24568_after_audit:\n"
-        "bl 0x080241C8\n"
-        "add sp, #16\n"
-        "pop {r4, r5, r6, r7}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        "movs r0, r0\n"
-        ".align 2, 0\n"
-        ".L24568_block2: .word 0x030013D0\n"
-        ".L24568_mode127: .word 0x0500007F\n"
-        ".L24568_block2_idx: .word 0x030015CC\n"
-        ".L24568_block1_idx: .word 0x03000620\n"
-        ".L24568_mode1: .word 0x05000001\n"
-        ".L24568_block1_bits: .word 0x03000628\n"
-        ".L24568_mode4: .word 0x05000004\n"
-        ".L24568_block1_body: .word 0x03000638\n"
-        ".L24568_mode_body: .word 0x05000366\n"
-        ".L24568_seed_dst: .word 0x03002808\n"
-        ".L24568_seed_src: .word 0x0805FC8C\n"
-        ".L24568_wa: .word 0x03001780\n"
-        ".syntax divided\n"
-    );
+void SaveBlock1Init(void) {
+    extern void SaveSlotConfig(int);
+    extern int _08025CF4(int, int, int);
+    volatile u32 zero[4];
+    register u32 zero_word __asm__("r4") = 0;
+    s32 completed;
+    s32 row;
+    s32 col;
+
+    SaveSlotConfig(1);
+    zero[0] = zero_word;
+    sub_0802D974((const void *)&zero[0],
+                 (void *)SAVE_BLOCK2_BUF_ADDR, 0x0500007Fu);
+    *(volatile u8 *)SAVE_BLOCK2_IDX_ADDR = (u8)SaveDescAppend(444u);
+
+    zero[1] = zero_word;
+    sub_0802D974((const void *)&zero[1],
+                 (void *)SAVE_BLOCK1_IDX_ADDR, 0x05000001u);
+    zero[2] = zero_word;
+    sub_0802D974((const void *)&zero[2],
+                 (void *)SAVE_BLOCK1_BUF_ADDR, 0x05000004u);
+    zero[3] = zero_word;
+    sub_0802D974((const void *)&zero[3],
+                 (void *)(SAVE_BLOCK1_BUF_ADDR + 16u), 0x05000366u);
+
+    SaveHook_0802446C();
+    SaveGuardedLoadOnly();
+    sub_0800D95C((void *)0x03002808u, (const void *)0x0805FC8Cu, 3u);
+
+    completed = 0;
+    for (row = 0; row <= 3; row++) {
+        for (col = 0; col <= 10; col++) {
+            if (_08025CF4(0, row, col) == 3)
+                completed++;
+        }
+    }
+
+    if (completed > 43) {
+        RAM_DEF_03001780;
+        {
+        register volatile u8 *wa_reg __asm__("r0");
+        register u32 offset_reg __asm__("r1");
+        wa_reg = RAM_SYM_03001780;
+        offset_reg = 255;
+        offset_reg <<= 4;
+        wa_reg += offset_reg;
+        offset_reg = 1;
+        *(volatile u16 *)wa_reg = (u16)offset_reg;
+            }
+}
+
+    SaveUpdate_080241C8();
 }
 void _08024568(void) __attribute__((alias("SaveBlock1Init")));
 
@@ -974,219 +924,166 @@ void SaveGarageMaskSet(u32 val, u32 idx, u32 k) {
 }
 void _08024740(u32 a, u32 b, u32 c) __attribute__((alias("SaveGarageMaskSet")));
 
-__attribute__((naked)) void SaveGaragePack(void) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push\t{r4, r5, lr}\n"
-        "ldr\tr2, _08024878\n"
-        "ldr\tr1, _0802487C\n"
-        "adds\tr0, r2, r1\n"
-        "movs\tr3, #0\n"
-        "ldrsh\tr1, [r0, r3]\n"
-        "movs\tr0, #0\n"
-        "ldr\tr4, _08024880\n"
-        "strh\tr0, [r4, #46]\n"
-        "lsls\tr0, r1, #1\n"
-        "adds\tr0, r0, r1\n"
-        "lsls\tr0, r0, #2\n"
-        "adds\tr5, r0, r2\n"
-        "adds\tr0, r5, #0\n"
-        "adds\tr0, #48\n"
-        "ldrb\tr0, [r0]\n"
-        "lsls\tr0, r0, #24\n"
-        "asrs\tr0, r0, #24\n"
-        "movs\tr1, #0\n"
-        "movs\tr2, #0\n"
-        "bl 0x08024740\n"
-        "adds\tr0, r5, #0\n"
-        "adds\tr0, #53\n"
-        "ldrb\tr0, [r0]\n"
-        "lsls\tr0, r0, #24\n"
-        "asrs\tr0, r0, #24\n"
-        "movs\tr1, #0\n"
-        "movs\tr2, #1\n"
-        "bl 0x08024740\n"
-        "adds\tr0, r5, #0\n"
-        "adds\tr0, #51\n"
-        "ldrb\tr0, [r0]\n"
-        "lsls\tr0, r0, #24\n"
-        "asrs\tr0, r0, #24\n"
-        "movs\tr1, #0\n"
-        "movs\tr2, #2\n"
-        "bl 0x08024740\n"
-        "adds\tr0, r5, #0\n"
-        "adds\tr0, #55\n"
-        "ldrb\tr0, [r0]\n"
-        "lsls\tr0, r0, #24\n"
-        "asrs\tr0, r0, #24\n"
-        "movs\tr1, #0\n"
-        "movs\tr2, #3\n"
-        "bl 0x08024740\n"
-        "adds\tr0, r5, #0\n"
-        "adds\tr0, #56\n"
-        "ldrb\tr0, [r0]\n"
-        "lsls\tr0, r0, #24\n"
-        "asrs\tr0, r0, #24\n"
-        "movs\tr1, #0\n"
-        "movs\tr2, #4\n"
-        "bl 0x08024740\n"
-        "adds\tr0, r5, #0\n"
-        "adds\tr0, #57\n"
-        "ldrb\tr0, [r0]\n"
-        "lsls\tr0, r0, #24\n"
-        "asrs\tr0, r0, #24\n"
-        "movs\tr1, #0\n"
-        "movs\tr2, #5\n"
-        "bl 0x08024740\n"
-        "ldr\tr2, _08024884\n"
-        "ldrh\tr1, [r4, #46]\n"
-        "ldrh\tr0, [r2, #4]\n"
-        "bics\tr1, r0\n"
-        "strh\tr1, [r4, #46]\n"
-        "adds\tr0, r5, #0\n"
-        "adds\tr0, #50\n"
-        "ldrb\tr0, [r0]\n"
-        "lsls\tr0, r0, #24\n"
-        "asrs\tr0, r0, #24\n"
-        "lsls\tr0, r0, #4\n"
-        "orrs\tr0, r1\n"
-        "ldrh\tr1, [r2, #6]\n"
-        "bics\tr0, r1\n"
-        "strh\tr0, [r4, #46]\n"
-        "adds\tr1, r5, #0\n"
-        "adds\tr1, #54\n"
-        "ldrb\tr1, [r1]\n"
-        "lsls\tr1, r1, #24\n"
-        "asrs\tr1, r1, #24\n"
-        "lsls\tr1, r1, #6\n"
-        "orrs\tr1, r0\n"
-        "ldrh\tr2, [r2, #8]\n"
-        "bics\tr1, r2\n"
-        "strh\tr1, [r4, #46]\n"
-        "adds\tr0, r5, #0\n"
-        "adds\tr0, #52\n"
-        "ldrb\tr0, [r0]\n"
-        "lsls\tr0, r0, #24\n"
-        "asrs\tr0, r0, #24\n"
-        "lsls\tr0, r0, #8\n"
-        "orrs\tr0, r1\n"
-        "ldr\tr1, _08024888\n"
-        "ldrh\tr1, [r1]\n"
-        "bics\tr0, r1\n"
-        "strh\tr0, [r4, #46]\n"
-        "adds\tr1, r5, #0\n"
-        "adds\tr1, #49\n"
-        "ldrb\tr1, [r1]\n"
-        "lsls\tr1, r1, #24\n"
-        "asrs\tr1, r1, #24\n"
-        "orrs\tr0, r1\n"
-        "strh\tr0, [r4, #46]\n"
-        "pop\t{r4, r5}\n"
-        "pop\t{r0}\n"
-        "bx\tr0\n"
-        "movs\tr0, r0\n"
-        ".align 2, 0\n"
-        "_08024878: .word 0x03001780\n"
-        "_0802487C: .word 0x00000574\n"
-        "_08024880: .word 0x030013D0\n"
-        "_08024884: .word 0x080CC1C8\n"
-        "_08024888: .word 0x080CC1D8\n"
-        ".syntax divided\n"
-    );
+void SaveGaragePack(void) {
+    extern const u16 SaveGaragePackMasks16[];
+    extern const u16 SaveGaragePackMasks8[];
+    __asm__(".globl SaveGaragePackMasks16\nSaveGaragePackMasks16 = 0x080CC1C8\n.globl SaveGaragePackMasks8\nSaveGaragePackMasks8 = 0x080CC1D8");
+    RAM_DEF_03001780;
+    RAM_DEF_030013D0;
+    {
+    register volatile u8 *work __asm__("r2") = (volatile u8 *)RAM_SYM_03001780;
+    register volatile u8 *record __asm__("r5");
+    register volatile u16 *block2 __asm__("r4");
+    register s32 record_index __asm__("r1");
+    register u32 record_offset __asm__("r0");
+    register u32 zero __asm__("r0");
+    register s32 zero_index __asm__("r3");
+    register s16 *index_ptr __asm__("r0");
+    register const volatile u16 *masks16 __asm__("r2");
+    register const volatile u16 *masks8 __asm__("r1");
+
+    index_ptr = (s16 *)(work + 0x574);
+    __asm__ volatile ("" : "+r" (index_ptr) : : "memory");
+    zero_index = 0;
+    __asm__ volatile ("ldrsh %0, [%1, %2]"
+                      : "=r" (record_index)
+                      : "r" (index_ptr), "r" (zero_index));
+    __asm__ volatile ("" : "+r" (record_index) : : "memory");
+    zero = 0;
+    __asm__ volatile ("" : "+r" (zero) : : "memory");
+    block2 = (volatile u16 *)RAM_SYM_030013D0;
+    block2[23] = (u16)zero;
+    record_offset = (u32)record_index * 12;
+    record = (volatile u8 *)(uintptr_t)(record_offset + (u32)(uintptr_t)work);
+    SaveGarageMaskSet((s32)(s8)record[48], 0, 0);
+    SaveGarageMaskSet((s32)(s8)record[53], 0, 1);
+    SaveGarageMaskSet((s32)(s8)record[51], 0, 2);
+    SaveGarageMaskSet((s32)(s8)record[55], 0, 3);
+    SaveGarageMaskSet((s32)(s8)record[56], 0, 4);
+    SaveGarageMaskSet((s32)(s8)record[57], 0, 5);
+
+    masks16 = SaveGaragePackMasks16;
+    __asm__ volatile ("" : "+r" (masks16) : : "memory");
+    {
+    register u32 packed1 __asm__("r1");
+    packed1 = block2[23];
+    packed1 &= (u32)~masks16[2];
+    block2[23] = (u16)packed1;
+    {
+    register u32 packed0 __asm__("r0");
+    packed0 = (u32)(s32)(s8)record[50];
+    __asm__ volatile ("" : : "r" (packed0));
+    packed0 <<= 4;
+    packed0 |= packed1;
+    packed0 &= (u32)~masks16[3];
+    block2[23] = (u16)packed0;
+    {
+    register u32 packed1_next __asm__("r1");
+    register u32 clear_mask2 __asm__("r2");
+    packed1_next = (u32)(s32)(s8)record[54];
+    __asm__ volatile ("" : : "r" (packed1_next));
+    packed1_next <<= 6;
+    packed1_next |= packed0;
+    clear_mask2 = masks16[4];
+    __asm__ volatile ("" : "+r" (clear_mask2));
+    packed1_next &= (u32)~clear_mask2;
+    block2[23] = (u16)packed1_next;
+    {
+    register u32 packed0_next __asm__("r0");
+    packed0_next = (u32)(s32)(s8)record[52];
+    __asm__ volatile ("" : : "r" (packed0_next));
+    packed0_next <<= 8;
+    packed0_next |= packed1_next;
+    masks8 = SaveGaragePackMasks8;
+    packed0_next &= (u32)~masks8[0];
+    block2[23] = (u16)packed0_next;
+    packed0_next |= (u32)(s32)(s8)record[49];
+    block2[23] = (u16)packed0_next;
+    __asm__ volatile ("" : "+r" (record));
+    }
+    }
+    }
+    }
+    }
 }
 void _08024794(void) __attribute__((alias("SaveGaragePack")));
 
-__attribute__((naked)) void SaveGarageUnpack(void) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, lr}\n"
-        "ldr r5, .L2488C_base\n"
-        "ldr r1, .L2488C_idx_off\n"
-        "adds r0, r5, r1\n"
-        "movs r3, #0\n"
-        "ldrsh r4, [r0, r3]\n"
-        "movs r0, #0\n"
-        "movs r1, #0\n"
-        "bl 0x0802476C\n"
-        "lsls r1, r4, #1\n"
-        "adds r1, r1, r4\n"
-        "lsls r1, r1, #2\n"
-        "adds r4, r1, r5\n"
-        "adds r1, r4, #0\n"
-        "adds r1, #48\n"
-        "strb r0, [r1]\n"
-        "movs r0, #0\n"
-        "movs r1, #1\n"
-        "bl 0x0802476C\n"
-        "adds r1, r4, #0\n"
-        "adds r1, #53\n"
-        "strb r0, [r1]\n"
-        "movs r0, #0\n"
-        "movs r1, #2\n"
-        "bl 0x0802476C\n"
-        "adds r1, r4, #0\n"
-        "adds r1, #51\n"
-        "strb r0, [r1]\n"
-        "movs r0, #0\n"
-        "movs r1, #3\n"
-        "bl 0x0802476C\n"
-        "adds r1, r4, #0\n"
-        "adds r1, #55\n"
-        "strb r0, [r1]\n"
-        "movs r0, #0\n"
-        "movs r1, #4\n"
-        "bl 0x0802476C\n"
-        "adds r1, r4, #0\n"
-        "adds r1, #56\n"
-        "strb r0, [r1]\n"
-        "movs r0, #0\n"
-        "movs r1, #5\n"
-        "bl 0x0802476C\n"
-        "adds r1, r4, #0\n"
-        "adds r1, #57\n"
-        "strb r0, [r1]\n"
-        "ldr r2, .L2488C_block2\n"
-        "ldr r1, .L2488C_masktbl\n"
-        "ldrh r0, [r1, #4]\n"
-        "ldrh r3, [r2, #46]\n"
-        "ands r0, r3\n"
-        "lsrs r0, r0, #4\n"
-        "adds r3, r4, #0\n"
-        "adds r3, #50\n"
-        "strb r0, [r3]\n"
-        "ldrh r0, [r1, #6]\n"
-        "ldrh r3, [r2, #46]\n"
-        "ands r0, r3\n"
-        "lsrs r0, r0, #6\n"
-        "adds r3, r4, #0\n"
-        "adds r3, #54\n"
-        "strb r0, [r3]\n"
-        "ldrh r0, [r1, #8]\n"
-        "ldrh r3, [r2, #46]\n"
-        "ands r0, r3\n"
-        "lsrs r0, r0, #8\n"
-        "adds r1, r4, #0\n"
-        "adds r1, #52\n"
-        "strb r0, [r1]\n"
-        "ldr r0, .L2488C_masktbl2\n"
-        "ldrb r1, [r0]\n"
-        "ldrh r2, [r2, #46]\n"
-        "ands r1, r2\n"
-        "adds r0, r4, #0\n"
-        "adds r0, #49\n"
-        "strb r1, [r0]\n"
-        "pop {r4, r5}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        "movs r0, r0\n"
-        ".align 2, 0\n"
-        ".L2488C_base: .word 0x03001780\n"
-        ".L2488C_idx_off: .word 0x00000574\n"
-        ".L2488C_block2: .word 0x030013D0\n"
-        ".L2488C_masktbl: .word 0x080CC1C8\n"
-        ".L2488C_masktbl2: .word 0x080CC1D8\n"
-        ".syntax divided\n"
-    );
+void SaveGarageUnpack(void) {
+    extern const u16 SaveGaragePackMasks16[];
+    extern const u16 SaveGaragePackMasks8[];
+    __asm__(".globl SaveGaragePackMasks16\nSaveGaragePackMasks16 = 0x080CC1C8\n.globl SaveGaragePackMasks8\nSaveGaragePackMasks8 = 0x080CC1D8");
+    RAM_DEF_03001780;
+    RAM_DEF_030013D0;
+    {
+    register volatile u8 *work __asm__("r5") = (volatile u8 *)RAM_SYM_03001780;
+    register volatile u8 *record __asm__("r4");
+    register volatile u16 *block2 __asm__("r2");
+    register s32 record_index __asm__("r4");
+    register u32 record_offset __asm__("r1");
+    register s32 zero_index __asm__("r3");
+    register const volatile u16 *masks16 __asm__("r1");
+    register const u16 *masks8 __asm__("r0");
+    register u32 masked __asm__("r0");
+    register u32 v __asm__("r0");
+    register s16 *index_ptr __asm__("r0");
+
+    index_ptr = (s16 *)(work + 0x574);
+    __asm__ volatile ("" : "+r" (index_ptr) : : "memory");
+    zero_index = 0;
+    __asm__ volatile ("ldrsh %0, [%1, %2]"
+                      : "=r" (record_index)
+                      : "r" (index_ptr), "r" (zero_index));
+    __asm__ volatile ("" : "+r" (record_index) : : "memory");
+
+    v = SaveGarageMaskTest(0, 0);
+    record_offset = (u32)record_index * 12;
+    record = (volatile u8 *)(uintptr_t)(record_offset + (u32)(uintptr_t)work);
+    record[48] = (u8)v;
+    v = SaveGarageMaskTest(0, 1);
+    record[53] = (u8)v;
+    v = SaveGarageMaskTest(0, 2);
+    record[51] = (u8)v;
+    v = SaveGarageMaskTest(0, 3);
+    record[55] = (u8)v;
+    v = SaveGarageMaskTest(0, 4);
+    record[56] = (u8)v;
+    v = SaveGarageMaskTest(0, 5);
+    record[57] = (u8)v;
+
+    block2 = (volatile u16 *)RAM_SYM_030013D0;
+    masks16 = SaveGaragePackMasks16;
+    __asm__ volatile ("" : "+r" (masks16) : : "memory");
+    masked = (u32)masks16[2];
+    masked = masked & (u32)block2[23];
+    masked = masked >> 4;
+    record[50] = (u8)masked;
+    masked = (u32)masks16[3];
+    masked = masked & (u32)block2[23];
+    masked = masked >> 6;
+    record[54] = (u8)masked;
+    masked = (u32)masks16[4];
+    masked = masked & (u32)block2[23];
+    masked = masked >> 8;
+    __asm__ volatile ("" : "+r" (masks16));
+    {
+    register u8 *d3 __asm__("r1");
+    d3 = record + 52;
+    *d3 = (u8)masked;
+    }
+    masks8 = SaveGaragePackMasks8;
+    {
+    register u32 m __asm__("r1");
+    register u8 *d __asm__("r0");
+    register u32 blk __asm__("r2");
+    m = *(const u8 *)masks8;
+    __asm__ volatile ("" : "+r" (m));
+    __asm__ volatile ("ldrh %0, [%1, #46]" : "=r" (blk) : "r" (block2));
+    m = m & blk;
+    d = record + 49;
+    *d = (u8)m;
+    }
+    __asm__ volatile ("" : "+r" (record));
+    }
 }
 void _0802488C(void) __attribute__((alias("SaveGarageUnpack")));
 
@@ -1229,120 +1126,121 @@ void _0802488C(void) __attribute__((alias("SaveGarageUnpack")));
 // lives in a callee-saved register there (r7), while here it is rematerialised
 // and the `+4/+5/+6` offsets come out of the literal pool (120 vs 108).
 // Do not re-run these spellings without a new idea; see docs/matching_workflow.md.
-__attribute__((naked)) void SaveCarRecordsPack(void) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, lr}\n"
-        "movs r4, #0\n"
-        "ldr r0, 1f\n"
-        "mov ip, r0\n"
-        "mov r3, ip\n"
-        "adds r3, #168\n"
-        "ldr r2, 2f\n"
-        "ldr r1, 3f\n"
-        "adds r5, r2, r1\n"
-        ".Lsave_pack_loop:\n"
-        "lsls r1, r4, #3\n"
-        "mov r0, ip\n"
-        "adds r0, #164\n"
-        "adds r1, r1, r0\n"
-        "ldr r0, [r5, #0]\n"
-        "str r0, [r1, #0]\n"
-        "movs r1, #189\n"
-        "lsls r1, r1, #3\n"
-        "adds r0, r2, r1\n"
-        "ldrh r0, [r0, #0]\n"
-        "strb r0, [r3, #0]\n"
-        "adds r1, #4\n"
-        "adds r0, r2, r1\n"
-        "ldrb r0, [r0, #0]\n"
-        "strb r0, [r3, #1]\n"
-        "adds r1, #1\n"
-        "adds r0, r2, r1\n"
-        "ldrb r0, [r0, #0]\n"
-        "strb r0, [r3, #2]\n"
-        "adds r1, #1\n"
-        "adds r0, r2, r1\n"
-        "ldrb r0, [r0, #0]\n"
-        "strb r0, [r3, #3]\n"
-        "adds r3, #8\n"
-        "adds r2, #72\n"
-        "adds r5, #72\n"
-        "adds r4, #1\n"
-        "cmp r4, #34\n"
-        "ble .Lsave_pack_loop\n"
-        "pop {r4, r5}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        ".short 0\n"
-        ".align 2\n"
-        "1: .word 0x030013D0\n"
-        "2: .word 0x03001780\n"
-        "3: .word 0x000005E4\n"
-        ".syntax divided\n"
-    );
+void SaveCarRecordsPack(void) {
+    extern u8 SaveCarRecordSrcOffset_2494C[];
+    RAM_DEF_030013D0;
+    RAM_DEF_03001780;
+    __asm__(".globl SaveCarRecordSrcOffset_2494C\nSaveCarRecordSrcOffset_2494C = 0x000005E4");
+
+    {
+    register u8 *record_blob __asm__("ip");
+    register u8 *work __asm__("r2");
+    register s32 i __asm__("r4");
+    register u8 *packed __asm__("r3");
+    register u8 *record __asm__("r5");
+    register u32 index __asm__("r1");
+    register u8 *field __asm__("r0");
+
+    i = 0;
+    __asm__ volatile ("" : "+r" (i) : : "memory");
+    record_blob = (u8 *)RAM_SYM_030013D0;
+    packed = record_blob + 168;
+    __asm__ volatile ("" : "+r" (packed) : : "memory");
+    work = (u8 *)RAM_SYM_03001780;
+    index = (u32)(uintptr_t)SaveCarRecordSrcOffset_2494C;
+    __asm__ volatile ("" : "+r" (index));
+    record = work + index;
+loop:
+    index = (u32)i << 3;
+    {
+        u8 *base = record_blob;
+        base += 164;
+        index += (u32)base;
+    }
+    *(u32 *)index = *(u32 *)record;
+
+    index = 189;
+    index <<= 3;
+    packed[0] = (u8)*(u16 *)(work + index);
+    index += 4;
+    packed[1] = work[index];
+    index += 1;
+    packed[2] = work[index];
+    index += 1;
+    field = work + index;
+    packed[3] = *field;
+
+    packed += 8;
+    work += 72;
+    record += 72;
+    i += 1;
+    if (i <= 34) goto loop;
+    }
 }
 void _0802494C(void) __attribute__((alias("SaveCarRecordsPack")));
 
-// The inverse loop has one deliberate sign-extending byte load and a fourth
-// pool word for the record +11 clear; keep those details in the ROM body.
-__attribute__((naked)) void SaveCarRecordsUnpack(void) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, r7, lr}\n"
-        "movs r4, #0\n"
-        "ldr r0, 1f\n"
-        "mov ip, r0\n"
-        "movs r6, #0\n"
-        "mov r3, ip\n"
-        "adds r3, #168\n"
-        "ldr r2, 2f\n"
-        "ldr r1, 3f\n"
-        "adds r5, r2, r1\n"
-        ".Lsave_unpack_loop:\n"
-        "lsls r0, r4, #3\n"
-        "mov r1, ip\n"
-        "adds r1, #164\n"
-        "adds r0, r0, r1\n"
-        "ldr r0, [r0, #0]\n"
-        "str r0, [r5, #0]\n"
-        "movs r1, #0\n"
-        "ldrsb r1, [r3, r1]\n"
-        "movs r7, #189\n"
-        "lsls r7, r7, #3\n"
-        "adds r0, r2, r7\n"
-        "strh r1, [r0, #0]\n"
-        "ldrb r1, [r3, #1]\n"
-        "adds r7, #4\n"
-        "adds r0, r2, r7\n"
-        "strb r1, [r0, #0]\n"
-        "ldrb r1, [r3, #2]\n"
-        "adds r7, #1\n"
-        "adds r0, r2, r7\n"
-        "strb r1, [r0, #0]\n"
-        "ldrb r1, [r3, #3]\n"
-        "adds r7, #1\n"
-        "adds r0, r2, r7\n"
-        "strb r1, [r0, #0]\n"
-        "ldr r1, 4f\n"
-        "adds r0, r2, r1\n"
-        "strb r6, [r0, #0]\n"
-        "adds r3, #8\n"
-        "adds r2, #72\n"
-        "adds r5, #72\n"
-        "adds r4, #1\n"
-        "cmp r4, #34\n"
-        "ble .Lsave_unpack_loop\n"
-        "pop {r4, r5, r6, r7}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        ".align 2\n"
-        "1: .word 0x030013D0\n"
-        "2: .word 0x03001780\n"
-        "3: .word 0x000005E4\n"
-        "4: .word 0x000005EF\n"
-        ".syntax divided\n"
-    );
+void SaveCarRecordsUnpack(void) {
+    extern u8 SaveCarRecordDstOffset_249AC[];
+    extern u8 SaveCarRecordZeroOffset_249AC[];
+    RAM_DEF_030013D0;
+    RAM_DEF_03001780;
+    __asm__(".globl SaveCarRecordDstOffset_249AC\nSaveCarRecordDstOffset_249AC = 0x000005E4");
+    __asm__(".globl SaveCarRecordZeroOffset_249AC\nSaveCarRecordZeroOffset_249AC = 0x000005EF");
+
+    {
+    register u8 *record_blob __asm__("ip");
+    register u8 *work __asm__("r2");
+    register s32 i __asm__("r4");
+    register u8 *packed __asm__("r3");
+    register u8 *record __asm__("r5");
+    register u32 zero __asm__("r6");
+    u32 index;
+    register u32 b __asm__("r1");
+    register u8 *field __asm__("r0");
+
+    i = 0;
+    __asm__ volatile ("" : "+r" (i) : : "memory");
+    record_blob = (u8 *)RAM_SYM_030013D0;
+    zero = 0;
+    __asm__ volatile ("" : "+r" (zero) : : "memory");
+    packed = record_blob + 168;
+    __asm__ volatile ("" : "+r" (packed) : : "memory");
+    work = (u8 *)RAM_SYM_03001780;
+    b = (u32)(uintptr_t)SaveCarRecordDstOffset_249AC;
+    __asm__ volatile ("" : "+r" (b));
+    record = work + b;
+loop:
+    field = (u8 *)((u32)i << 3);
+    b = (u32)(uintptr_t)(record_blob + 164);
+    field = (u8 *)((u32)(uintptr_t)field + b);
+    *(u32 *)record = *(u32 *)field;
+
+    b = (u32)(s32)(s8)packed[0];
+    index = 189;
+    index <<= 3;
+    *(u16 *)(work + index) = (u16)b;
+    b = packed[1];
+    index += 4;
+    work[index] = (u8)b;
+    b = packed[2];
+    index += 1;
+    work[index] = (u8)b;
+    b = packed[3];
+    index += 1;
+    field = work + index;
+    *field = (u8)b;
+    b = (u32)(uintptr_t)SaveCarRecordZeroOffset_249AC;
+    __asm__ volatile ("" : "+r" (b));
+    field = work + b;
+    *field = (u8)zero;
+
+    packed += 8;
+    work += 72;
+    record += 72;
+    i += 1;
+    if (i <= 34) goto loop;
+    __asm__ volatile ("" : "+r" (index));
+    }
 }
 void _080249AC(void) __attribute__((alias("SaveCarRecordsUnpack")));
 
@@ -1541,7 +1439,7 @@ void _08024BD8(void) __attribute__((alias("SaveGuardedLoadOnly")));
 // only differing offsets are the last two. Do not "fix" that -- it is the pad.
 extern void *sub_080240D0(void);   // Ghost_GetRecP (src/ghost2.c:122)
 #define SAVE_CALL_GHOST_REC_P()   sub_080240D0()
-extern int _08024B18(void);        // SaveRet1_24B18 (src/runtime_state_dispatch.c)
+extern int _08024B18(u32 unused);  // SaveRet1_24B18 (src/runtime_state_dispatch.c)
 
 void *SaveGhostRecPair_BF0(void) { return SAVE_CALL_GHOST_REC_P(); }
 __asm__(".align 2, 0");
@@ -1561,23 +1459,14 @@ __asm__(".align 2, 0");
 // Guarded no-op sequence: the guarded bracket around two calls to the
 // return-1 stub. The `movs r0, #0/#1` before the two `_08024B18` calls is the
 // dead argument described above.
-__attribute__((naked)) void SaveGuardedNoOp_24C1C(void) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {lr}\n"
-        "bl sub_0802B234\n"
-        "bl sub_0802B190\n"
-        "movs r0, #0\n"
-        "bl _08024B18\n"
-        "movs r0, #1\n"
-        "bl _08024B18\n"
-        "bl sub_0802B1B8\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        "movs r0, r0\n"
-        ".syntax divided\n"
-    );
+void SaveGuardedNoOp_24C1C(void) {
+    sub_0802B234();
+    sub_0802B190();
+    _08024B18(0);
+    _08024B18(1);
+    sub_0802B1B8();
 }
+__asm__(".align 2, 0");
 
 void *_08024BF0(void) __attribute__((alias("SaveGhostRecPair_BF0")));
 void *sub_08024BF0(void) __attribute__((alias("SaveGhostRecPair_BF0")));
@@ -1618,129 +1507,118 @@ void _0802471C(void) __attribute__((alias("SaveGhostBulkSave")));
 
 // Scene/reset hook — substantiated from asm/saveblock.s and asm gap 0x2446C (objdump)
 // Preserves halfword/byte widths and indirect calls; no guessed struct.
-__attribute__((naked)) void SaveHook_0802446C(void) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push\t{r4, r5, r6, lr}\n"
-        "ldr r4, _080024548\n"
-        "ldr r0, _08002454C\n"
-        "adds\tr2, r4, r0\n"
-        "movs\tr1, #0\n"
-        "movs\tr0, #8\n"
-        "strh\tr0, [r2, #0]\n"
-        "ldr r2, _080024550\n"
-        "adds\tr0, r4, r2\n"
-        "movs\tr2, #1\n"
-        "strb\tr2, [r0, #0]\n"
-        "movs\tr3, #188\n"
-        "lsls\tr3, r3, #3\n"
-        "adds\tr0, r4, r3\n"
-        "strh\tr2, [r0, #0]\n"
-        "movs\tr2, #255\n"
-        "lsls\tr2, r2, #4\n"
-        "adds\tr0, r4, r2\n"
-        "strh\tr1, [r0, #0]\n"
-        "ldr r3, _080024554\n"
-        "adds\tr0, r4, r3\n"
-        "strh\tr1, [r0, #0]\n"
-        "adds\tr2, #6\n"
-        "adds\tr0, r4, r2\n"
-        "strh\tr1, [r0, #0]\n"
-        "adds\tr3, #72\n"
-        "adds\tr0, r4, r3\n"
-        "strh\tr1, [r0, #0]\n"
-        "ldr r0, _080024558\n"
-        "adds\tr2, r4, r0\n"
-        "movs\tr0, #16\n"
-        "strh\tr0, [r2, #0]\n"
-        "ldr r2, _08002455C\n"
-        "adds\tr0, r4, r2\n"
-        "strh\tr1, [r0, #0]\n"
-        "adds\tr3, #32\n"
-        "adds\tr0, r4, r3\n"
-        "strh\tr1, [r0, #0]\n"
-        "adds\tr2, #30\n"
-        "adds\tr0, r4, r2\n"
-        "strh\tr1, [r0, #0]\n"
-        "adds\tr3, #2\n"
-        "adds\tr0, r4, r3\n"
-        "strh\tr1, [r0, #0]\n"
-        "movs\tr0, #0\n"
-        "bl 0x0800274C\n"
-        "movs\tr1, #0\n"
-        "movs\tr0, #9\n"
-        "ldr r2, _080024560\n"
-        "adds\tr4, r4, r2\n"
-        ".Lsave2446c_0800244D2:\n"
-        "strh\tr1, [r4, #0]\n"
-        "subs\tr4, #2\n"
-        "subs\tr0, #1\n"
-        "cmp\tr0, #0\n"
-        "bge .Lsave2446c_0800244D2\n"
-        "movs\tr1, #0\n"
-        "ldr r0, _080024548\n"
-        "movs\tr3, #0\n"
-        "movs\tr2, #253\n"
-        "lsls\tr2, r2, #4\n"
-        "adds\tr4, r0, r2\n"
-        ".Lsave2446c_0800244E8:\n"
-        "lsls\tr0, r1, #3\n"
-        "adds\tr2, r1, #1\n"
-        "movs\tr1, #3\n"
-        "adds\tr0, r0, r4\n"
-        "adds\tr0, #6\n"
-        ".Lsave2446c_0800244F2:\n"
-        "strh\tr3, [r0, #0]\n"
-        "subs\tr0, #2\n"
-        "subs\tr1, #1\n"
-        "cmp\tr1, #0\n"
-        "bge .Lsave2446c_0800244F2\n"
-        "adds\tr1, r2, #0\n"
-        "cmp\tr1, #1\n"
-        "ble .Lsave2446c_0800244E8\n"
-        "ldr r5, _080024564\n"
-        "movs\tr4, #97\n"
-        ".Lsave2446c_080024506:\n"
-        "adds\tr0, r5, #0\n"
-        "bl 0x08024F34\n"
-        "adds\tr5, #12\n"
-        "subs\tr4, #1\n"
-        "cmp\tr4, #0\n"
-        "bge .Lsave2446c_080024506\n"
-        "movs\tr5, #0\n"
-        ".Lsave2446c_080024516:\n"
-        "movs\tr4, #0\n"
-        "adds\tr6, r5, #1\n"
-        ".Lsave2446c_08002451A:\n"
-        "adds\tr0, r5, #0\n"
-        "adds\tr1, r4, #0\n"
-        "movs\tr2, #0\n"
-        "bl 0x08002714\n"
-        "adds\tr0, r5, #0\n"
-        "adds\tr1, r4, #0\n"
-        "movs\tr2, #0\n"
-        "bl 0x080026DC\n"
-        "adds\tr4, #1\n"
-        "cmp\tr4, #3\n"
-        "ble .Lsave2446c_08002451A\n"
-        "adds\tr5, r6, #0\n"
-        "cmp\tr5, #1\n"
-        "ble .Lsave2446c_080024516\n"
-        "bl 0x0802417C\n"
-        "bl 0x08024338\n"
-        "pop\t{r4, r5, r6}\n"
-        "pop\t{r0}\n"
-        "bx\tr0\n"
-        "_080024548: .word 0x03001780\n"
-        "_08002454C: .word 0x00000574\n"
-        "_080024550: .word 0x000010BF\n"
-        "_080024554: .word 0x00000FF2\n"
-        "_080024558: .word 0x00000576\n"
-        "_08002455C: .word 0x00001058\n"
-        "_080024560: .word 0x00001072\n"
-        "_080024564: .word 0x030017B0\n"
-        ".syntax divided\n"
-    );
+void SaveHook_0802446C(void) {
+    extern void _0800274C(int value);
+    extern void _08024F34(void *address);
+    extern void _08002714(int type, int row, int value);
+    extern void _080026DC(int type, int row, int value);
+    extern void _0802417C(void);
+    extern void _08024338(void);
+    extern u8 SaveHookWorkBase[];
+    __asm__(".globl SaveHookWorkBase\nSaveHookWorkBase = 0x03001780");
+    {
+    register u32 r4 __asm__("r4") = (u32)(uintptr_t)SaveHookWorkBase;
+    register u32 r5 __asm__("r5");
+    register int r6 __asm__("r6");
+    register int r0 __asm__("r0");
+    register int r1 __asm__("r1");
+    register int r2 __asm__("r2");
+    register int r3 __asm__("r3");
+    r0 = 0x0574;
+    r2 = r4 + r0;
+    r1 = 0;
+    __asm__ volatile ("" : "+r" (r1));
+    r0 = 8;
+    *(volatile u16 *)(uintptr_t)r2 = (u16)r0;
+    r2 = 0x10BF;
+    r0 = r4 + r2;
+    r2 = 1;
+    *(volatile u8 *)(uintptr_t)r0 = (u8)r2;
+    r3 = 188;
+    r3 <<= 3;
+    r0 = r4 + r3;
+    *(volatile u16 *)(uintptr_t)r0 = (u16)r2;
+    r2 = 255;
+    r2 <<= 4;
+    r0 = r4 + r2;
+    *(volatile u16 *)(uintptr_t)r0 = (u16)r1;
+    r3 = 0x0FF2;
+    r0 = r4 + r3;
+    *(volatile u16 *)(uintptr_t)r0 = (u16)r1;
+    r2 += 6;
+    __asm__ volatile ("" : "+r" (r2));
+    r0 = r4 + r2;
+    *(volatile u16 *)(uintptr_t)r0 = (u16)r1;
+    r3 += 72;
+    r0 = r4 + r3;
+    *(volatile u16 *)(uintptr_t)r0 = (u16)r1;
+    r0 = 0x0576;
+    r2 = r4 + r0;
+    r0 = 16;
+    *(volatile u16 *)(uintptr_t)r2 = (u16)r0;
+    r2 = 0x1058;
+    r0 = r4 + r2;
+    *(volatile u16 *)(uintptr_t)r0 = (u16)r1;
+    r3 += 32;
+    r0 = r4 + r3;
+    *(volatile u16 *)(uintptr_t)r0 = (u16)r1;
+    r2 += 30;
+    r0 = r4 + r2;
+    *(volatile u16 *)(uintptr_t)r0 = (u16)r1;
+    r3 += 2;
+    r0 = r4 + r3;
+    *(volatile u16 *)(uintptr_t)r0 = (u16)r1;
+    r0 = 0;
+    _0800274C(r0);
+    r1 = 0;
+    r0 = 9;
+    r2 = 0x1072;
+    r4 += r2;
+clear_tail:
+    *(volatile u16 *)(uintptr_t)r4 = (u16)r1;
+    r4 -= 2;
+    r0--;
+    if (r0 >= 0) goto clear_tail;
+    r1 = 0;
+    r0 = (u32)(uintptr_t)SaveHookWorkBase;
+    r3 = 0;
+    r2 = 253;
+    r2 <<= 4;
+    r4 = r0 + r2;
+clear_pair_rows:
+    r0 = r1 << 3;
+    r2 = r1 + 1;
+    r1 = 3;
+    r0 += r4;
+    r0 += 6;
+clear_pair_row:
+    *(volatile u16 *)(uintptr_t)r0 = (u16)r3;
+    r0 -= 2;
+    r1--;
+    if (r1 >= 0) goto clear_pair_row;
+    r1 = r2;
+    if (r1 <= 1) goto clear_pair_rows;
+    r5 = 0x030017B0;
+    r4 = 97;
+clear_records:
+    _08024F34((void *)(uintptr_t)r5);
+    r5 += 12;
+    r4--;
+    if ((s32)r4 >= 0) goto clear_records;
+    r5 = 0;
+clear_grids:
+    r4 = 0;
+    r6 = r5 + 1;
+clear_grid_row:
+    _08002714(r5, r4, 0);
+    _080026DC(r5, r4, 0);
+    r4++;
+    if ((s32)r4 <= 3) goto clear_grid_row;
+    r5 = r6;
+    if ((s32)r5 <= 1) goto clear_grids;
+    _0802417C();
+    _08024338();
+    }
 }
 void sub_0802446C(void) __attribute__((alias("SaveHook_0802446C")));
 void _0802446C(void) __attribute__((alias("SaveHook_0802446C")));

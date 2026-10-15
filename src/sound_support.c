@@ -170,7 +170,6 @@ __asm__(".align 2, 0");
 void _0802BC4C(void *b) __attribute__((alias("SoundClearVoiceArray")));
 void sub_0802BC4C(void *b) __attribute__((alias("SoundClearVoiceArray")));
 
-
 // Friendly-name wrapper used by lifted C (idle_dispatch.c mode-3 tail,
 // state_block_a.c). _08002DE04 (signed __aeabi_idiv) routes div-by-zero
 // through the no-op leaf _08002DE98 then returns 0, so plain C division

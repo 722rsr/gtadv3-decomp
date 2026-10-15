@@ -12,7 +12,9 @@ extern void _08002C48(int index, u16 value);
 extern int _0802D978(int numerator, int denominator);
 extern void _08002D98(u32 a, u32 b, u32 c, u32 d, u32 e);
 extern int _0802DE04(int numerator, int denominator);
-extern int CamSector_042C4(int x, int y, volatile u32 *delta);
+extern int sub_080042C4(int x, int y, volatile u32 *delta);
+extern void sub_08005BA8(void *xy, int angle);
+extern s16 TRow04330[];
 extern int _080044C4(int x, int y, volatile u32 *delta);
 extern int _08004508(volatile u32 *record);
 extern void MathHelper_05BA8(void *xy, int angle);
@@ -46,75 +48,39 @@ static inline volatile u32 *u32_at(u32 address)
 
 // 0x08004330 — validate a point against the current camera sector, then
 // derive the projected track coordinates and retain the selected track row.
-__attribute__((naked)) int RaceSpriteReady_04330(void *record_)
+int RaceSpriteReady_04330(void *record_)
 {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, r7, lr}\n"
-        "sub sp, #8\n"
-        "adds r7, r0, #0\n"
-        "ldr r0, [r7, #4]\n"
-        "ldr r1, [r7, #8]\n"
-        "mov r2, sp\n"
-        "bl 0x080042C4\n"
-        "lsls r0, r0, #24\n"
-        "cmp r0, #0\n"
-        "beq .L04330_fail\n"
-        "ldr r0, .L04330_p0\n"
-        "movs r2, #0\n"
-        "ldrsh r1, [r0, r2]\n"
-        "mov r0, sp\n"
-        "bl 0x08005BA8\n"
-        "ldr r6, [sp, #4]\n"
-        "ldr r0, .L04330_p1\n"
-        "adds r1, r6, r0\n"
-        "ldr r0, .L04330_p2\n"
-        "cmp r1, r0\n"
-        "bhi .L04330_fail\n"
-        "asrs r5, r6, #8\n"
-        "str r5, [r7, #44]\n"
-        "lsls r5, r5, #3\n"
-        "ldr r0, .L04330_p3\n"
-        ".L04330_row:\n"
-        "adds r5, r5, r0\n"
-        "movs r1, #0\n"
-        "ldrsh r0, [r5, r1]\n"
-        "movs r4, #120\n"
-        "subs r4, r4, r0\n"
-        "ldr r1, [sp, #0]\n"
-        "movs r0, #200\n"
-        "muls r0, r1\n"
-        "adds r1, r6, #0\n"
-        "bl 0x0802DE04\n"
-        "subs r4, r4, r0\n"
-        "str r4, [r7, #36]\n"
-        "ldr r0, .L04330_p4\n"
-        "adds r1, r6, #0\n"
-        "bl 0x0802DE04\n"
-        "movs r2, #2\n"
-        "ldrsh r1, [r5, r2]\n"
-        "subs r1, #48\n"
-        "subs r0, r0, r1\n"
-        "str r0, [r7, #40]\n"
-        "str r5, [r7, #60]\n"
-        "movs r0, #1\n"
-        "b .L04330_success\n"
-        ".L04330_p0: .4byte 0x0203F728\n"
-        ".L04330_p1: .4byte 0xFFFFDD9F\n"
-        ".L04330_p2: .4byte 0x0001549E\n"
-        ".L04330_p3: .4byte 0x08032260\n"
-        ".L04330_p4: .4byte 0x000ED800\n"
-        ".L04330_fail:\n"
-        "movs r0, #0\n"
-        ".L04330_success:\n"
-        "add sp, #8\n"
-        "pop {r4, r5, r6, r7}\n"
-        "pop {r1}\n"
-        "bx r1\n"
-        ".align 2, 0\n"
-        ".syntax divided\n"
-    );
+    volatile u8 *rec = (volatile u8 *)record_;
+    s32 local[2];
+    s16 *p;
+    s16 *row;
+    s32 idx;
+    s32 acc;
+    int t0;
+    s32 v;
+    __asm__(".globl TRow04330\nTRow04330 = 0x08032260\n");
+    if (!(u8)sub_080042C4(*(volatile u32 *)(rec + 4),
+                          *(volatile u32 *)(rec + 8), (u32 *)local))
+        return 0;
+    p = (s16 *)0x0203F728;
+    sub_08005BA8(local, p[0]);
+    v = local[1];
+    if ((u32)(v + (s32)0xFFFFDD9F) > 0x0001549Eu)
+        return 0;
+    idx = v >> 8;
+    *(volatile u32 *)(rec + 44) = (u32)idx;
+    row = &TRow04330[idx * 4];
+    t0 = *(s16 *)(void *)row;
+    acc = 120 - t0;
+    *(volatile s32 *)(rec + 36) = acc - _0802DE04(200 * local[0], v);
+    *(volatile s32 *)(rec + 40) =
+        _0802DE04(0x000ED800, v) - ({ s32 t = *(s16 *)(void *)((u8 *)row + 2) - 48;
+                                     __asm__("" : "+r" (t));
+                                     t; });
+    *(volatile u32 *)(rec + 60) = (u32)row;
+    return 1;
 }
+__asm__(".align 2, 0");
 
 // NOTE: do NOT re-derive 0x08027308 here. The side-list walk below calls the
 // real ROM routine (sub_08027308 / _08027308, defined in asm/garage_26f50.s and

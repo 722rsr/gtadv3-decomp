@@ -3,126 +3,132 @@
 #include "gtadv/memory.h"
 #include "gba/types.h"
 
-// Reference: asm/award_pkt.s 0x0800B0BC-0x0800B190
-// 56-byte stack packet -> _080188B0
+// Reference: asm/award_pkt.s 0x0800B0BC-0x0800B190.
+// Builds a 56-byte type-10 packet and sends it to the ROM packet consumer.
 
 __attribute__((weak)) void UiPacket_Consume(void *pkt){ (void)pkt; } // _080188B0 — weak stub
 
-__attribute__((naked)) void Award_BuildTierPacket(void) {
+extern int sub_08025CF4(int type, int row, int col);
+extern void sub_0800188B0(void *pkt);
+
+void Award_BuildTierPacket(void)
+{
+    u8 packet[56];
+    register volatile u8 *copySource __asm__("r0");
+    register volatile u8 *copyDestination __asm__("r1");
+    register s32 count0 __asm__("r8");
+    s32 count1;
+    register s32 nextRow __asm__("r6");
+    s32 row;
+    s32 col;
+    s32 layer;
+    register u8 tier __asm__("r0");
+    register volatile u8 *tierDestination __asm__("r1");
+
+    {
+        register volatile u8 *packetBase __asm__("r1") = packet;
+        *(volatile u16 *)(packetBase + 0) = 10;
+        __asm__ volatile ("" ::: "memory");
+        {
+            register volatile u8 *wa __asm__("r3") = (volatile u8 *)0x03001780;
+            register volatile s16 *cursor __asm__("r2") =
+                (volatile s16 *)(wa + 0x574);
+
+            *(volatile u16 *)(packetBase + 24) = (u16)*(volatile u16 *)cursor;
+            __asm__ volatile ("" ::: "memory");
+            {
+                register volatile u8 *fieldBase __asm__("r4") = packet;
+                register s32 fieldIndex __asm__("r1");
+                __asm__ volatile (
+                    "movs r0, #0\n\t"
+                    "ldrsh %0, [%1, r0]"
+                    : "=r" (fieldIndex) : "r" (cursor) : "r0", "memory");
+                *(volatile s16 *)(fieldBase + 26) =
+                    (s8)*(volatile u8 *)(wa + fieldIndex * 12 + 48);
+            }
+            __asm__ volatile ("" ::: "memory");
+            {
+                register s32 copyIndex __asm__("r1");
+                __asm__ volatile (
+                    "movs r4, #0\n\t"
+                    "ldrsh %0, [%1, r4]"
+                    : "=r" (copyIndex) : "r" (cursor) : "r4", "memory");
+                copySource = (volatile u8 *)(copyIndex * 12 +
+                                             (u32)(uintptr_t)wa);
+                copyDestination = packet + 28;
+                __asm__ volatile ("" : "+r" (copySource),
+                                  "+r" (copyDestination));
+                copySource += 48;
+            }
+        }
+    }
     __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, r7, lr}\n"
-        "mov r7, r8\n"
-        "push {r7}\n"
-        "sub sp, #56\n"
-        "mov r1, sp\n"
-        "movs r0, #10\n"
-        "strh r0, [r1, #0]\n"
-        "ldr r3, .Laward_wa\n"
-        "ldr r0, .Laward_cursor\n"
-        "adds r2, r3, r0\n"
-        "ldrh r0, [r2, #0]\n"
-        "strh r0, [r1, #24]\n"
-        "mov r4, sp\n"
-        "movs r0, #0\n"
-        "ldrsh r1, [r2, r0]\n"
-        "lsls r0, r1, #1\n"
-        "adds r0, r0, r1\n"
-        "lsls r0, r0, #2\n"
-        "adds r0, r0, r3\n"
-        "adds r0, #48\n"
-        "ldrb r0, [r0, #0]\n"
-        "lsls r0, r0, #24\n"
-        "asrs r0, r0, #24\n"
-        "strh r0, [r4, #26]\n"
-        "movs r4, #0\n"
-        "ldrsh r1, [r2, r4]\n"
-        "lsls r0, r1, #1\n"
-        "adds r0, r0, r1\n"
-        "lsls r0, r0, #2\n"
-        "adds r0, r0, r3\n"
-        "add r1, sp, #28\n"
-        "adds r0, #48\n"
-        "ldmia r0!, {r2, r3, r4}\n"
-        "stmia r1!, {r2, r3, r4}\n"
-        "movs r0, #0\n"
-        "mov r8, r0\n"
-        "movs r7, #0\n"
-        "movs r5, #0\n"
-        ".Laward_row_loop:\n"
-        "movs r4, #0\n"
-        "adds r6, r5, #1\n"
-        ".Laward_col_loop:\n"
-        "movs r0, #0\n"
-        "adds r1, r5, #0\n"
-        "adds r2, r4, #0\n"
-        "bl sub_08025CF4\n"
-        "lsls r0, r0, #24\n"
-        "lsrs r0, r0, #24\n"
-        "cmp r0, #3\n"
-        "bne .Laward_skip0\n"
-        "movs r1, #1\n"
-        "add r8, r1\n"
-        ".Laward_skip0:\n"
-        "movs r0, #1\n"
-        "adds r1, r5, #0\n"
-        "adds r2, r4, #0\n"
-        "bl sub_08025CF4\n"
-        "lsls r0, r0, #24\n"
-        "lsrs r0, r0, #24\n"
-        "cmp r0, #3\n"
-        "bne .Laward_skip1\n"
-        "adds r7, #1\n"
-        ".Laward_skip1:\n"
-        "adds r4, #1\n"
-        "cmp r4, #10\n"
-        "ble .Laward_col_loop\n"
-        "adds r5, r6, #0\n"
-        "cmp r5, #3\n"
-        "ble .Laward_row_loop\n"
-        "ldr r0, .Laward_wa\n"
-        "ldr r2, .Laward_layer\n"
-        "adds r0, r0, r2\n"
-        "movs r3, #0\n"
-        "ldrsh r1, [r0, r3]\n"
-        "cmp r1, #0\n"
-        "bne .Laward_layer_nz\n"
-        "mov r4, r8\n"
-        "cmp r4, #43\n"
-        "ble .Laward_tier_zero\n"
-        "mov r1, sp\n"
-        "movs r0, #1\n"
-        "b .Laward_store_tier\n"
-        ".align 2, 0\n"
-        ".Laward_wa: .word 0x03001780\n"
-        ".Laward_cursor: .word 0x00000574\n"
-        ".Laward_layer: .word 0x00000FF2\n"
-        ".Laward_tier_zero:\n"
-        "mov r0, sp\n"
-        "strb r1, [r0, #23]\n"
-        "b .Laward_send\n"
-        ".Laward_layer_nz:\n"
-        "cmp r7, #43\n"
-        "ble .Laward_tier_two\n"
-        "mov r1, sp\n"
-        "movs r0, #3\n"
-        "b .Laward_store_tier\n"
-        ".Laward_tier_two:\n"
-        "mov r1, sp\n"
-        "movs r0, #2\n"
-        ".Laward_store_tier:\n"
-        "strb r0, [r1, #23]\n"
-        ".Laward_send:\n"
-        "mov r0, sp\n"
-        "bl UiPacket_Consume\n"
-        "add sp, #56\n"
-        "pop {r3}\n"
-        "mov r8, r3\n"
-        "pop {r4, r5, r6, r7}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        ".syntax divided\n"
-    );
+        "ldmia %0!, {r2, r3, r4}\n\t"
+        "stmia %1!, {r2, r3, r4}"
+        : "+r" (copySource), "+r" (copyDestination)
+        : : "r2", "r3", "r4", "memory");
+    __asm__ volatile ("" ::: "memory");
+
+    __asm__ volatile (
+        "movs r0, #0\n\t"
+        "mov r8, r0"
+        : "=r" (count0) : : "r0");
+    count1 = 0;
+    for (row = 0; row <= 3; row = nextRow) {
+        col = 0;
+        nextRow = row + 1;
+        while (col <= 10) {
+            if ((u8)sub_08025CF4(0, row, col) == 3) {
+                register s32 one __asm__("r1") = 1;
+                __asm__ volatile ("" : "+r" (one));
+                count0 += one;
+            }
+            if ((u8)sub_08025CF4(1, row, col) == 3)
+                count1++;
+            col++;
+        }
+    }
+
+    {
+        register volatile u8 *layerBase __asm__("r0") = (volatile u8 *)0x03001780;
+        register u32 layerOffset __asm__("r2") = 0xFF2;
+        __asm__ volatile ("" : "+r" (layerBase), "+r" (layerOffset));
+        __asm__ volatile (
+            "add %0, %0, %1\n\t"
+            "movs r3, #0\n\t"
+            "ldrsh %2, [%0, r3]"
+            : "+r" (layerBase), "+r" (layerOffset), "=r" (layer)
+            : : "r3", "memory");
+    }
+
+    if (layer != 0)
+        goto tier_nonzero;
+    {
+        register s32 layerZeroCount __asm__("r4") = count0;
+        __asm__ volatile ("" : "+r" (layerZeroCount));
+        if (layerZeroCount > 43) {
+            tierDestination = packet;
+            __asm__ volatile ("" : "+r" (tierDestination));
+            tier = 1;
+            goto store_tier;
+        }
+    }
+    packet[23] = (u8)layer;
+    goto send_packet;
+tier_nonzero:
+    if (count1 > 43) {
+        tierDestination = packet;
+        __asm__ volatile ("" : "+r" (tierDestination));
+        tier = 3;
+        goto store_tier;
+    }
+    tierDestination = packet;
+    __asm__ volatile ("" : "+r" (tierDestination));
+    tier = 2;
+store_tier:
+    tierDestination[23] = tier;
+send_packet:
+    sub_0800188B0(packet);
 }
 
 void _0800B0BC(void) __attribute__((alias("Award_BuildTierPacket")));

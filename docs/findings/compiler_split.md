@@ -35,6 +35,17 @@ epilogue. Changing source expressions cannot remove a frame imposed by this
 compiler behavior. Interworking is still required for the ROM's non-leaf
 epilogues; disabling it is not a substitute for the correct compiler.
 
+## Thumb frames and interworking returns
+
+`old_agbcc` saves `lr` whenever a function makes a call or saves a low
+callee-saved register. It cannot produce a non-leaf `mov ip, lr` / `bx ip`
+frame or a push of low registers without `lr`.
+
+With `-mthumb-interwork`, the epilogue scratch register follows the declared
+return width: void and structure returns use `r0`, returns up to four bytes use
+`r1`, returns up to eight bytes use `r2`, and wider returns use `r3`. Check
+caller behavior before changing a declaration to match an epilogue.
+
 ## Source constraints
 
 | ROM VMA | Source | Constraint |
