@@ -1,4 +1,4 @@
-# CI and decomp.dev
+# CI and progress reporting
 
 ## Hosted checks
 
@@ -35,20 +35,18 @@ changes to build inputs require refreshing the snapshot. Documentation outside
 the build inventories does not. Fingerprints prevent accidental stale reports;
 they are not a signed attestation or a substitute for maintainer build review.
 
-The report keeps exact matching and completion/linkage separate, following
-Objdiff's distinct `matched_*` and `complete_*` measures. For the current
-snapshot, the identified C candidates are **1,674 / 1,674 exact (100%)**, and
-their selected spans total **188,136 / 188,136 exact bytes (100%)**. These are
-the C-function progress figures to headline.
+The report keeps decompilation and completion/linkage separate, following
+Objdiff's distinct `matched_*` and `complete_*` measures. The README's
+generated progress block quotes the current figures.
 
-- `matched_functions` counts exact C function candidates in the identified
-  `.type`/`BL`-target inventory. `matched_code` includes those exact function
-  spans plus the source-owned non-function ranges verified by the independent
-  C/ASM slice; therefore the current Objdiff `matched_code_percent` is 100%.
-- The separate **99.67% diagnostic** is 188,136 selected C-function bytes /
-  188,760 bytes in the code slice. Its denominator includes the cartridge
-  header, startup, assembly, and non-function bytes, so it is not the C-function
-  match rate or overall decompilation progress.
+- `matched_functions` and `matched_code` count only functions decompiled to C:
+  the `c` and `c_fakematch` classes in `docs/data/source_quality.json`, which
+  `tools/source_quality.py` produces. Naked or asm-dominated bodies (`asm`) and
+  C with spliced instructions (`partial`) match byte-for-byte but are reported
+  at 0%, as other projects report `INCLUDE_ASM`/`NAKED` placeholders.
+  Non-function bytes (header, startup, pools) are never matched code.
+- `total_functions` is the whole `.type`/`BL` inventory, including identified
+  functions that have not been selected for C at all.
 - `complete_code` and `complete_units` mean the entire C/ASM executable slice
   linked and compared byte-for-byte with no `.incbin` or external code boundary.
   This is the code-slice link measure; the separate `full_hybrid_rom_link`
@@ -62,11 +60,10 @@ the C-function progress figures to headline.
   semantically decoded. Raw payloads preserved verbatim are byte-reproducible,
   not semantically reconstructed.
 
-The `.type`/`BL` inventory is cross-checked by `span_audit.py`: all 1,249
-push-with-link-register patterns are accounted for, all 1,674 spans are checked,
-and no unexplained prologue, shape-only entry, or swallowed entry remains.
-Matching counts byte-exact source owners, including documented assembly and
-inline assembly; it does not score source readability or semantic completeness.
+The `.type`/`BL` inventory is cross-checked by `span_audit.py`: every
+push-with-link-register pattern is accounted for, and no unexplained prologue,
+shape-only entry, or swallowed entry remains. The census proves the inventory
+is complete; it says nothing about how much of it is decompiled.
 Report units are ROM ownership groups and generated data regions, not compiler
 translation units.
 
@@ -80,23 +77,8 @@ Treemap sections represent non-function bytes rather than invented function
 boundaries. `objdiff.json` remains the per-function comparison viewer; regenerate
 it with `make objdiff-config` when function names, owners, or boundaries change.
 
-## One-time decomp.dev activation
+## decomp.dev
 
-The [official integration guide](https://decomp.wiki/tools/decomp-dev) requires
-a report artifact on the default branch before registration.
-
-1. Push the migrated repository and this workflow to `722rsr/gtadv3-decomp` on
-   `main`, then confirm that CI passes and exposes `us_report/report.json`.
-2. Sign in to [decomp.dev](https://decomp.dev/manage/new) with a GitHub account
-   that has administrator access to the repository and add the project.
-   Use the repository URL, the game title, Game Boy Advance platform, and
-   version `us` when configuring the project.
-3. Confirm the first report appears and its code/data totals match the local
-   JSON. Add dashboard badges only after the project is registered.
-4. Optionally install the decomp.dev GitHub app for this repository. It receives
-   workflow completion notifications; without it, decomp.dev polls periodically.
-
-No decomp.dev token is needed in Actions. This workflow publishes progress only
-on `main`; it does not supply PR progress reports or enable PR bot comments.
-Registration and the first hosted run must be checked separately from local
-validation.
+decomp.dev has shut down, so nothing consumes the uploaded `us_report`
+artifact. The report stays in objdiff v2 format so any objdiff-compatible
+viewer can read it.

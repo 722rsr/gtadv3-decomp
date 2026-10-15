@@ -789,6 +789,34 @@ unsigned long long _08001D7B8(void *out_, int mode, int center, int extra) {
 // Pools: {WA+0xFCE, WA+0x576, WA+0xFCA, WA+0xFC8, WA+0x10E5, WA+0x10E4}.
 // Seeds rec+154/172/180/182/184/186/146 from work-area cells; both
 // 8-bit cells feed s8-extended stores.
+//
+// EXACT 184/184. Four spellings here are load-bearing; each was measured on
+// the pinned compiler (see build/lab/pcfinal for the winning object):
+//
+//  * The work-area base is loaded once into r1 and reused for the first four
+//    cell reads, then copied to r6 (`adds r6,r1,#0`) for the last two. That
+//    copy is the ROM's, so the source has to keep one live value (`wa`) and
+//    derive a second name from it (`wa2 = wa`); two independent literals
+//    would emit a second 0x03001780 pool word. Each offset is its own pool
+//    word, so the address stays `&WABaseB1 + &WAOff858xxx` -- the same split
+//    WA_SPLIT gives `_08001DB0C`. Pinning `off` is not what keeps it split;
+//    the pins on `wa`/`wa2` are, and dropping the offset barriers entirely
+//    still reproduces all seven words.
+//  * `zero` is materialised in r4 between the rec+154 address computation
+//    and its store, so `v154`/`q154` are separate statements rather than one
+//    assignment expression: folded into `*(rec+154) = *(...)`, agbcc sinks the
+//    volatile load to its use and the constant to the top of the block
+//    (182/184, `movs r4,#0` and `ldrh r0,[r0]` swapped).
+//  * The rec+172 lane index is a separate statement chained through `p172`,
+//    so `adds r1,r1,r0` overwrites the base pseudo. Written inline as
+//    `(u8 *)rec + 172 + idx` the add lands in r0 and costs 2 bytes short.
+//  * `f` is read through a plain `(s16 *)(void *)` cast into an `int` and
+//    tied with an empty asm. The cast plus the QImode home is what keeps
+//    agbcc from canonicalising `s16 == 1` to `ldrh`/`cmp`, which is 2 bytes
+//    short and drops the sign; the asm is what stops the s16->int widening
+//    (`lsls #16 / asrs #16`) from appearing instead. In the taken arm the
+//    stored value is `f`, not the literal 1: agbcc then knows r1 already
+//    holds 1 from the `cmp` and emits no `movs`, exactly as the ROM does.
 // ----------------------------------------------------------------------------
 __asm__(".set WAOff858FCE, 0x00000FCE");
 extern u8 WAOff858FCE;
@@ -969,10 +997,9 @@ void _08001D974(void *a_, void *b_) {
     register volatile u8 *pb __asm__("r4") = (volatile u8 *)b_;
     register uintptr_t waBase __asm__("r2");
     register uintptr_t waOff __asm__("r1");
-    uintptr_t waAddr;
-    u32 zero;
+    register uintptr_t waAddr __asm__("r0");
+    register u32 zero __asm__("r0");
     pa += 160u;
-    zero = 0;
     *(volatile u16 *)pa = (u16)zero;
     waBase = (uintptr_t)&WABaseB1;
     waOff = (uintptr_t)&WAOffFBC;
@@ -1232,4 +1259,7 @@ void sub_08001DA70(int a0, int a1, u32 a2, int a3) __attribute__((alias("_08001D
 int sub_08001D750(int mode) __attribute__((alias("_08001D750")));
 unsigned long long sub_08001D7B8(void *out, int mode, int center, int extra) __attribute__((alias("_08001D7B8")));
 void sub_08001DC20(void *rec, int sel) __attribute__((alias("_08001DC20")));
+// asm/race_scene.s:6349 types the span at `sub_08001D858` and :6350 aliases
+// `_08001D858` onto the same address; race_scene_b3.c's lifted caller still
+// spells the call `sub_08001D858`. Both spellings must survive the splice.
 void sub_08001D858(void *rec) __attribute__((alias("_08001D858")));
