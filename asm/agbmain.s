@@ -483,7 +483,7 @@ _08000700: .4byte 0x00002003
 _08000704: .4byte 0x0000ABFB
 _08000708: .4byte 0x0203EF90
 @ ----------------------------------------------------------------------------
-@ _0800070C(buf) -> u16 — session-word reader (called from idle path
+@ _0800070C(buf) -> u32 — session-word reader (called from idle path
 @ every frame with st+0x30). Samples SIOCNT once at entry; switches on
 @ the soft-IRQ state machine byte at 0x0203EF90+1:
 @   state 0: if link lines idle and [+0x14]==12, arm the serial timer
@@ -491,8 +491,8 @@ _08000708: .4byte 0x0203EF90
 @            advance state; else just set state 1.
 @   state 1: watchdog — bump retry counter +8 up to 7, then state 2.
 @   state 2 / default: verify via _08008F4.
-@ Finally composes the status halfword from state bytes (+2/+3/+6/+7/+8)
-@ plus sampled SIOCNT bits, and returns it.
+@ Finally composes the status word from state bytes (+2/+3/+6/+7/+8)
+@ plus sampled SIOCNT bits, and returns it. The caller stores all of r0.
 _0800070C:
 	push {r4, r5, r6, r7, lr}
 	mov ip, r0

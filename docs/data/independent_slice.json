@@ -541,7 +541,7 @@
     },
     {
       "path": "asm/course_orch.s",
-      "sha256": "8008c6b22cc3b05509ba30fdb95e2c9748c6f720248733dffabf283d763d3a8a"
+      "sha256": "f851b9f9029fbe30b83d0cf2a4620a9482e8af9038ee4f4a1764b72f387d0857"
     },
     {
       "path": "asm/course_proximity.s",

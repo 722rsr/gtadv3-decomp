@@ -170,62 +170,49 @@ int Ai_GridGetPacked(int type){
 int _08025E1C(int a) __attribute__((alias("Ai_GridGetPacked")));
 int Sub_08025E1C(int a) __attribute__((alias("Ai_GridGetPacked")));
 
-__attribute__((naked)) void Ai_GridWriteRecord(u32 a,int b,int c, u32 val){
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, lr}\n"
-        "ldr r5, 1f\n"
-        "lsls r4, r1, #1\n"
-        "adds r4, r4, r1\n"
-        "adds r4, r4, r2\n"
-        "lsls r4, r4, #2\n"
-        "lsls r1, r0, #1\n"
-        "adds r1, r1, r0\n"
-        "lsls r1, r1, #4\n"
-        "adds r4, r4, r1\n"
-        "movs r0, #176\n"
-        "lsls r0, r0, #3\n"
-        "adds r5, r5, r0\n"
-        "adds r4, r4, r5\n"
-        "str r3, [r4, #0]\n"
-        "pop {r4, r5}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        ".align 2, 0\n"
-        "1: .word 0x03001780\n"
-        ".syntax divided\n"
-    );
+void Ai_GridWriteRecord(u32 a,int b,int c, u32 val){
+    extern u8 AiGridBase[];
+    register u32 bse __asm__("r5");
+    int t;
+    int u;
+    int off;
+    __asm__(".globl AiGridBase\nAiGridBase = 0x03001780\n");
+    bse = (u32)AiGridBase;
+    __asm__ volatile("" : "+r" (bse));
+    t = (b << 1) + b + c;
+    t <<= 2;
+    u = ((int)a << 1) + (int)a;
+    u <<= 4;
+    t += u;
+    off = 176;
+    off <<= 3;
+    bse += (u32)off;
+    t += (int)bse;
+    *(u32 *)t = val;
 }
 void _08025E70(u32 a,int b,int c, u32 d) __attribute__((alias("Ai_GridWriteRecord")));
 
-__attribute__((naked)) u32 Ai_GridReadRecord(u32 a,int b,int c){
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, lr}\n"
-        "ldr r4, 1f\n"
-        "lsls r3, r1, #1\n"
-        "adds r3, r3, r1\n"
-        "adds r3, r3, r2\n"
-        "lsls r3, r3, #2\n"
-        "lsls r1, r0, #1\n"
-        "adds r1, r1, r0\n"
-        "lsls r1, r1, #4\n"
-        "adds r3, r3, r1\n"
-        "movs r0, #176\n"
-        "lsls r0, r0, #3\n"
-        "adds r4, r4, r0\n"
-        "adds r3, r3, r4\n"
-        "ldr r0, [r3, #0]\n"
-        "pop {r4}\n"
-        "pop {r1}\n"
-        "bx r1\n"
-        ".align 2, 0\n"
-        "1: .word 0x03001780\n"
-        ".syntax divided\n"
-    );
+u32 Ai_GridReadRecord(u32 a,int b,int c){
+    extern u8 AiGridBase[];
+    register u32 bse __asm__("r4");
+    int t;
+    int u;
+    int off;
+    __asm__(".globl AiGridBase\nAiGridBase = 0x03001780\n");
+    bse = (u32)AiGridBase;
+    __asm__ volatile("" : "+r" (bse));
+    t = (b << 1) + b + c;
+    t <<= 2;
+    u = ((int)a << 1) + (int)a;
+    u <<= 4;
+    t += u;
+    off = 176;
+    off <<= 3;
+    bse += (u32)off;
+    t += (int)bse;
+    return *(u32 *)t;
 }
 u32 _08025E98(u32 a,int b,int c) __attribute__((alias("Ai_GridReadRecord")));
-
 
 // _08025EC0(id,val) halfword packed
 void Ai_GridHalfwordSet(int id, int val){

@@ -404,70 +404,69 @@ void _0802B280(void) __attribute__((alias("SoundResume")));
 void sub_0802B280(void) __attribute__((alias("SoundResume")));
 
 // _0802B2A4 arm fade, _0802B30C fadeOut, _0802B330 remaining
-// The original leaf has an ARMCC register-save boundary and two branch-local
-// stores that agbcc's otherwise exact C lift assigns to r7 instead of r0.
-// Keep the ROM-derived body here so both those stores and the ABI are exact.
-__attribute__((naked)) void SoundArmFade(u16 target, u8 step){
+void SoundArmFade(u16 target, u8 step){
+    register volatile u32 *cell __asm__("r4");
+    register u32 target_direct __asm__("r3");
+    register u32 target_saved __asm__("r8");
+    register u32 step_main __asm__("r5");
+    register u32 step_other __asm__("r6");
+    register u32 target_other __asm__("r0");
+    register SoundMaster *m1 __asm__("r1");
+    register SoundMaster *m2 __asm__("r2");
+    u32 flags2_mask;
+    u32 fade_mask;
+    u32 clear_mask;
+    register u32 zero __asm__("r7");
+    register u32 scratch __asm__("ip");
+
     __asm__ volatile (
         ".syntax unified\n"
-        "push {r4, r5, r6, r7, lr}\n"
-        "mov r7, r8\n"
-        "push {r7}\n"
         "lsls r0, r0, #16\n"
         "lsrs r3, r0, #16\n"
         "mov r8, r3\n"
         "lsls r1, r1, #24\n"
         "lsrs r5, r1, #24\n"
         "adds r6, r5, #0\n"
-        "ldr r4, 3f\n"
-        "ldr r1, [r4]\n"
-        "movs r0, #191\n"
-        "ldrb r2, [r1, #14]\n"
-        "ands r0, r2\n"
-        "movs r7, #0\n"
-        "mov ip, r7\n"
-        "strb r0, [r1, #14]\n"
-        "ldr r2, [r4]\n"
-        "ldrb r0, [r2, #9]\n"
-        "cmp r0, #255\n"
-        "beq.n 4f\n"
-        "lsls r1, r3, #16\n"
-        "ldrh r7, [r2, #2]\n"
-        "lsls r0, r7, #16\n"
-        "cmp r0, r1\n"
-        "blt.n 1f\n"
-        "strh r3, [r2, #0]\n"
-        "strb r5, [r2, #12]\n"
-        "ldr r1, [r4]\n"
-        "movs r0, #4\n"
-        "b.n 2f\n"
-        "movs r0, r0\n"
-        ".align 2\n"
-        "3:\n"
-        ".word 0x03001764\n"
-        "1:\n"
-        "mov r0, r8\n"
-        "strh r0, [r2, #0]\n"
-        "strb r6, [r2, #12]\n"
-        "ldr r1, [r4]\n"
-        "movs r0, #8\n"
-        "2:\n"
-        "ldrb r2, [r1, #8]\n"
-        "orrs r0, r2\n"
-        "strb r0, [r1, #8]\n"
-        "ldr r1, [r4]\n"
-        "movs r0, #239\n"
-        "ldrb r7, [r1, #8]\n"
-        "ands r0, r7\n"
-        "strb r0, [r1, #8]\n"
-        "4:\n"
-        "pop {r3}\n"
-        "mov r8, r3\n"
-        "pop {r4, r5, r6, r7}\n"
-        "pop {r0}\n"
-        "bx r0\n"
         ".syntax divided\n"
-    );
+        : "=r" (target_direct), "=r" (target_saved),
+          "=r" (step_main), "=r" (step_other)
+        :
+        : "r0", "r1", "cc", "memory");
+    cell = (volatile u32 *)SOUND_MASTER_PTR;
+
+    m1 = (SoundMaster *)(uintptr_t)*cell;
+    flags2_mask = 0xBF;
+    flags2_mask &= m1->flags2;
+    zero = 0;
+    __asm__ volatile ("" : "+r" (zero));
+    scratch = zero;
+    __asm__ volatile ("" : : "r" (scratch));
+    m1->flags2 = (u8)flags2_mask;
+
+    m2 = (SoundMaster *)(uintptr_t)*cell;
+    if (m2->masterVol != 0xFF) {
+      if ((s16)m2->fadeCur >= (s16)target_direct) {
+        m2->fadeTarget = (u16)target_direct;
+        m2->fadeStep = (u8)step_main;
+        m1 = (SoundMaster *)(uintptr_t)*cell;
+        fade_mask = 4;
+        fade_mask |= m1->flags;
+        m1->flags = (u8)fade_mask;
+      } else {
+        target_other = target_saved;
+        m2->fadeTarget = (u16)target_other;
+        m2->fadeStep = (u8)step_other;
+        m1 = (SoundMaster *)(uintptr_t)*cell;
+        fade_mask = 8;
+        fade_mask |= m1->flags;
+        m1->flags = (u8)fade_mask;
+      }
+
+      m1 = (SoundMaster *)(uintptr_t)*cell;
+      clear_mask = 0xEF;
+      clear_mask &= m1->flags;
+      m1->flags = (u8)clear_mask;
+    }
 }
 void _0802B2A4(u16 t, u8 s) __attribute__((alias("SoundArmFade")));
 void sub_0802B2A4(u16 t, u8 s) __attribute__((alias("SoundArmFade")));
@@ -644,7 +643,6 @@ void sub_0802B460(void) __attribute__((alias("SoundReapplySpeedB")));
 void SoundReapplySpeedC(void){ volatile SoundMaster *m=soundMaster(); sub_0802B64C(m->songSpeed); }
 void _0802B474(void) __attribute__((alias("SoundReapplySpeedC")));
 void sub_0802B474(void) __attribute__((alias("SoundReapplySpeedC")));
-
 
 // sound_alloc.s CBBC, sound_cmd.s CB20, sound_control.s C990, sound_channel_cluster.s BC84 — blocked
 // CBBC alloc sentinel 0x03007FF0 0x68736D53, CB20 dispatcher, C990 control, BC84 stream helper remain

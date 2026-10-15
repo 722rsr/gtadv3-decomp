@@ -56,6 +56,7 @@ HOST_STUB(void _08001F80(u32 v));               // 0x08001F80
 HOST_STUB(void _08001FB4(u32 v));               // 0x08001FB4
 HOST_STUB(u32 _08001CC4(void));                 // 0x08001CC4
 HOST_STUB(u32 _08002014(void));                 // 0x08002014
+extern int Idle_IsSpecialModeAny(void) __asm__("_08002014");
 HOST_STUB(void _08004EC0(int v));               // 0x08004EC0
 HOST_STUB(void _08004EA8(int v));               // 0x08004EA8
 HOST_STUB(void _08003940(int a, u32 b));        // 0x08003940
@@ -254,81 +255,48 @@ __asm__(".align 2, 0");
 // ----------------------------------------------------------------------------
 // 0x08028784 — 8-state dispatcher on [rec] word.
 // ----------------------------------------------------------------------------
-__attribute__((naked)) void _080028784(void *rec_) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, lr}\n"
-        "adds r4, r0, #0\n"
-        "ldr r0, [r4, #0]\n"
-        "cmp r0, #7\n"
-        "bhi.n .L28784_done\n"
-        "lsls r0, r0, #2\n"
-        "ldr r1, 1f\n"
-        "adds r0, r0, r1\n"
-        "ldr r0, [r0, #0]\n"
-        "mov pc, r0\n"
-        "1: .word 0x0802879C\n"
-        "   .word 0x0802881A\n"
-        "   .word 0x080287BC\n"
-        "   .word 0x080287C4\n"
-        "   .word 0x080287DA\n"
-        "   .word 0x080287E8\n"
-        "   .word 0x080287F8\n"
-        "   .word 0x08028804\n"
-        "   .word 0x08028814\n"
-        ".L28784_case1:\n"
-        "adds r0, r4, #4\n"
-        "bl _08001F08\n"
-        "b.n .L28784_increment\n"
-        ".L28784_case2:\n"
-        "bl _08001CB4\n"
-        "str r0, [r4, #80]\n"
-        "bl _08001F24\n"
-        "cmp r0, #0\n"
-        "beq.n .L28784_done\n"
-        "ldr r0, [r4, #4]\n"
-        "bl _08001F80\n"
-        "b.n .L28784_increment\n"
-        ".L28784_case3:\n"
-        "ldr r0, 2f\n"
-        "bl _08001FB4\n"
-        "b.n .L28784_increment\n"
-        "movs r0, r0\n"
-        "2: .word 0x02030000\n"
-        ".L28784_case4:\n"
-        "bl _08001CC4\n"
-        "str r0, [r4, #84]\n"
-        "bl _08002014\n"
-        "cmp r0, #0\n"
-        "beq.n .L28784_done\n"
-        "b.n .L28784_increment\n"
-        ".L28784_case5:\n"
-        "ldr r0, 3f\n"
-        "bl _08001FB4\n"
-        "b.n .L28784_increment\n"
-        "3: .word 0x02038000\n"
-        ".L28784_case6:\n"
-        "bl _08001CC4\n"
-        "str r0, [r4, #88]\n"
-        "bl _08002014\n"
-        "cmp r0, #0\n"
-        "beq.n .L28784_done\n"
-        "b.n .L28784_increment\n"
-        ".L28784_case7:\n"
-        "movs r0, #1\n"
-        "bl _08004EC0\n"
-        ".L28784_increment:\n"
-        "ldr r0, [r4, #0]\n"
-        "adds r0, #1\n"
-        "str r0, [r4, #0]\n"
-        ".L28784_done:\n"
-        "pop {r4}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        ".align 2, 0\n"
-        ".syntax divided\n"
-    );
+void _080028784(void *rec_)
+{
+    volatile u32 *rec = (volatile u32 *)rec_;
+    u32 state = rec[0];
+
+    if (state > 7) return;
+    switch (state) {
+    case 0:
+        break;
+    case 1:
+        _08001F08((void *)(rec + 1));
+        break;
+    case 2:
+        rec[20] = _08001CB4();
+        if (_08001F24() == 0) return;
+        _08001F80(rec[1]);
+        break;
+    case 3:
+        _08001FB4(0x02030000u);
+        break;
+    case 4: {
+        int special;
+        rec[21] = _08001CC4();
+        special = _08002014();
+        if (special == 0) return;
+        __asm__ volatile ("");
+        break;
+    }
+    case 5:
+        _08001FB4(0x02038000u);
+        break;
+    case 6:
+        rec[22] = _08001CC4();
+        if (Idle_IsSpecialModeAny() == 0) return;
+        break;
+    case 7:
+        _08004EC0(1);
+        break;
+    }
+    rec[0] = rec[0] + 1;
 }
+__asm__(".align 2, 0");
 
 // ----------------------------------------------------------------------------
 // 0x08028834 — triple 03940 setup + 3-word sum + Div + 03ADC.
@@ -763,7 +731,6 @@ __asm__(".align 2, 0");
 // reference. ARM only: clang rejects `alias` attributes outright on darwin
 // ("aliases are not supported on darwin"), which breaks the host build.
 void sub_080028F18(void *rec) __attribute__((alias("_080028F18")));
-
 
 // ----------------------------------------------------------------------------
 // 0x08028F40 — frame tick.
@@ -1988,89 +1955,61 @@ __attribute__((naked)) void _080029764(void *rec) {
 // ----------------------------------------------------------------------------
 // 0x080299E0 — heading corrector (140>199 gate; 294C0/2937C/295F4).
 // ----------------------------------------------------------------------------
-__attribute__((naked)) void _0800299E0(void *rec) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, lr}\n"
-        "adds r4, r0, #0\n"
-        "adds r5, r4, #0\n"
-        "adds r5, #159\n"
-        "movs r6, #0\n"
-        "movs r0, #0\n"
-        "strb r0, [r5, #0]\n"
-        "adds r0, r4, #0\n"
-        "adds r0, #140\n"
-        "movs r1, #0\n"
-        "ldrsh r0, [r0, r1]\n"
-        "cmp r0, #199\n"
-        "ble .L299E0_done\n"
-        "adds r0, r4, #4\n"
-        "adds r1, r4, #0\n"
-        "adds r1, #36\n"
-        "movs r2, #1\n"
-        "bl 0x080294C0\n"
-        "adds r1, r4, #0\n"
-        "adds r1, #32\n"
-        "movs r2, #8\n"
-        "bl 0x0802937C\n"
-        "adds r1, r0, #0\n"
-        "cmp r1, #0\n"
-        "ble .L299E0_nonpositive\n"
-        "movs r0, #8\n"
-        "b .L299E0_set_flag\n"
-        ".L299E0_nonpositive:\n"
-        "cmp r1, #0\n"
-        "bge .L299E0_abs\n"
-        "movs r0, #4\n"
-        ".L299E0_set_flag:\n"
-        "ldrb r2, [r5, #0]\n"
-        "orrs r0, r2\n"
-        "strb r0, [r5, #0]\n"
-        ".L299E0_abs:\n"
-        "adds r0, r1, #0\n"
-        "cmp r1, #0\n"
-        "bge .L299E0_magnitude\n"
-        "negs r0, r1\n"
-        ".L299E0_magnitude:\n"
-        "cmp r0, #192\n"
-        "ble .L299E0_after_clamp\n"
-        "adds r2, r4, #0\n"
-        "adds r2, #134\n"
-        "asrs r0, r1, #1\n"
-        "ldrh r1, [r2, #0]\n"
-        "adds r3, r1, r0\n"
-        "strh r3, [r2, #0]\n"
-        "ldr r0, [r4, #92]\n"
-        "movs r1, #128\n"
-        "lsls r1, r1, #8\n"
-        "ands r0, r1\n"
-        "cmp r0, #0\n"
-        "bne .L299E0_after_clamp\n"
-        "lsls r0, r3, #16\n"
-        "asrs r0, r0, #16\n"
-        "movs r1, #200\n"
-        "lsls r1, r1, #1\n"
-        "cmp r0, r1\n"
-        "ble .L299E0_upper_done\n"
-        "strh r1, [r2, #0]\n"
-        ".L299E0_upper_done:\n"
-        "movs r1, #0\n"
-        "ldrsh r0, [r2, r1]\n"
-        "ldr r1, .L299E0_min\n"
-        "cmp r0, r1\n"
-        "bge .L299E0_after_clamp\n"
-        "strh r1, [r2, #0]\n"
-        ".L299E0_after_clamp:\n"
-        "adds r0, r4, #0\n"
-        "bl 0x080295F4\n"
-        ".L299E0_done:\n"
-        "pop {r4, r5, r6}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        ".L299E0_min: .4byte 0xFFFFFE70\n"
-        ".syntax divided\n"
-    );
+void _0800299E0(void *rec_) {
+    register u8 *rec __asm__("r4") = (u8 *)rec_;
+    register u8 *status __asm__("r5") = rec + 159;
+    __asm__ volatile ("movs r6, #0" : : : "r6", "cc");
+    register u32 clear __asm__("r0");
+    __asm__ volatile ("movs %0, #0" : "=r" (clear) : : "cc");
+    *(volatile u8 *)status = (u8)clear;
+    register int speed __asm__("r0");
+    {
+        register u8 *speed_ptr __asm__("r0") = rec + 140;
+        register u32 zero __asm__("r1") = 0;
+        __asm__ volatile ("ldrsh %0, [%1, %2]"
+                          : "=r" (speed) : "r" (speed_ptr), "r" (zero) : "memory");
+    }
+    if (speed > 199) {
+        int initial = _0800294C0(rec + 4, rec + 36, 1);
+        register int delta __asm__("r1") =
+            _08002937C(initial, (u32 *)(rec + 32), 8);
+        if (delta > 0)
+            *status |= 8;
+        else if (delta < 0)
+            *status |= 4;
+
+        int magnitude = delta;
+        if (delta < 0)
+            magnitude = -delta;
+        if (magnitude > 192) {
+            register volatile u16 *heading __asm__("r2") =
+                (volatile u16 *)(rec + 134);
+            register int half __asm__("r0") = delta >> 1;
+            register u32 old __asm__("r1") = *heading;
+            register u32 sum __asm__("r3") = old + (u32)half;
+            __asm__ volatile ("" : "+r" (half), "+r" (old), "+r" (sum));
+            *heading = (u16)sum;
+            if ((*(u32 *)(rec + 92) & 0x8000u) == 0) {
+                register int signed_sum __asm__("r0") = (s16)sum;
+                register int maximum __asm__("r1") = 400;
+                if (signed_sum > maximum)
+                    *heading = (u16)maximum;
+                int lower;
+                {
+                    register u32 zero_index __asm__("r1") = 0;
+                    __asm__ volatile ("ldrsh %0, [%1, %2]"
+                                      : "=r" (lower)
+                                      : "r" (heading), "r" (zero_index) : "memory");
+                }
+                register int minimum __asm__("r1") = -400;
+                if (lower < minimum)
+                    *heading = (u16)minimum;
+            }
+        }
+        _0800295F4(rec);
+    }
 }
+void sub_0800299E0(void *rec) __attribute__((alias("_0800299E0")));
 
 // ----------------------------------------------------------------------------
 // 0x08029A74 — surface-adaptive speed (rem/div + flag-159 lanes).
@@ -3857,81 +3796,51 @@ u32 _08002A828(void *rec, u32 flags) {
 //     the return type alone. No pin is used here.
 __asm__(".align 2, 0");
 
-__attribute__((naked)) void _08002A86C(void *rec, u32 bits, u32 flag) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, lr}\n"
-        "adds r4, r0, #0\n"
-        "lsls r2, r2, #24\n"
-        "ldr r3, [r4, #92]\n"
-        "cmp r2, #0\n"
-        "beq.n .L2a86c_clear\n"
-        "orrs r1, r3\n"
-        "str r1, [r4, #92]\n"
-        "b.n .L2a86c_test\n"
-        ".L2a86c_clear:\n"
-        "adds r0, r3, #0\n"
-        "bics r0, r1\n"
-        "str r0, [r4, #92]\n"
-        ".L2a86c_test:\n"
-        "movs r1, #1\n"
-        "ands r3, r1\n"
-        "cmp r3, #0\n"
-        "beq.n .L2a86c_done\n"
-        "ldr r0, [r4, #92]\n"
-        "ands r0, r1\n"
-        "cmp r0, #0\n"
-        "bne.n .L2a86c_done\n"
-        "adds r0, r4, #0\n"
-        "adds r0, #156\n"
-        "strb r1, [r0, #0]\n"
-        "adds r5, r4, #0\n"
-        "adds r5, #104\n"
-        "ldrh r1, [r5, #0]\n"
-        "ldr r2, 1f\n"
-        "adds r0, r1, r2\n"
-        "lsls r0, r0, #16\n"
-        "ldr r1, 2f\n"
-        "cmp r0, r1\n"
-        "bhi.n .L2a86c_fast\n"
-        "adds r0, r4, #0\n"
-        "bl sub_080029488\n"
-        "lsls r0, r0, #16\n"
-        "asrs r0, r0, #16\n"
-        "ldrh r5, [r5, #0]\n"
-        "subs r0, r5, r0\n"
-        "lsls r0, r0, #16\n"
-        "asrs r0, r0, #16\n"
-        "movs r1, #12\n"
-        "bl _08002DE04\n"
-        "b.n .L2a86c_store\n"
-        "movs r0, r0\n"
-        "1: .word 0xFFFFE69B\n"
-        "2: .word 0x03E60000\n"
-        ".L2a86c_fast:\n"
-        "adds r0, r4, #0\n"
-        "bl sub_080029488\n"
-        "lsls r0, r0, #16\n"
-        "asrs r0, r0, #16\n"
-        "ldrh r5, [r5, #0]\n"
-        "subs r0, r5, r0\n"
-        "lsls r0, r0, #16\n"
-        "asrs r0, r0, #18\n"
-        ".L2a86c_store:\n"
-        "adds r1, r4, #0\n"
-        "adds r1, #142\n"
-        "strh r0, [r1, #0]\n"
-        ".L2a86c_done:\n"
-        "pop {r4, r5}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        ".align 2, 0\n"
-        ".syntax divided\n"
-    );
+void _08002A86C(void *rec_, u32 bits, u32 flag) {
+    register u8 *rec __asm__("r4") = (u8 *)rec_;
+    u32 shifted_flag = flag << 24;
+    u32 old = *(volatile u32 *)(rec + 92);
+
+    if (shifted_flag)
+        *(volatile u32 *)(rec + 92) = bits | old;
+    else
+        *(volatile u32 *)(rec + 92) = old & ~bits;
+    if ((old & 1u) != 0 && (*(volatile u32 *)(rec + 92) & 1u) == 0) {
+        *(u8 *)(rec + 156) = 1;
+        __asm__ volatile ("" ::: "memory");
+        register volatile u16 *cell __asm__("r5") = (volatile u16 *)(rec + 104);
+        register int current __asm__("r1");
+        __asm__ volatile ("ldrh %0, [%1]" : "=r" (current) : "r" (cell));
+        register u32 offset __asm__("r2") = (u32)-6501;
+        register u32 shifted __asm__("r0") = ((u32)current + offset) << 16;
+        register u32 threshold __asm__("r1") = 0x03E60000u;
+        int value;
+        if (shifted <= threshold) {
+            register int result __asm__("r0") = _080029488(rec);
+            __asm__ volatile (".syntax unified\n\tlsls %0, %0, #16\n\tasrs %0, %0, #16\n\t.syntax divided"
+                              : "+r" (result) : : "cc");
+            register int after __asm__("r5") = *cell;
+            int delta = (s16)(after - result);
+            value = sub_0802DE04(delta, 12);
+        } else {
+            register int result __asm__("r0") = _080029488(rec);
+            __asm__ volatile (".syntax unified\n\tlsls %0, %0, #16\n\tasrs %0, %0, #16\n\t.syntax divided"
+                              : "+r" (result) : : "cc");
+            register int after __asm__("r5") = *cell;
+            int delta = (s16)(after - result);
+            value = delta >> 2;
+        }
+        register volatile u16 *out __asm__("r1") = (volatile u16 *)(rec + 142);
+        *out = (u16)value;
+    }
 }
 // Third spelling: race_scene.c reaches this VMA as Sub_08002A86C with a raw-word
 // first parameter, so the alias carries the same pointer-first shape.
 void Sub_08002A86C(void *rec, u32 bits, u32 flag) __attribute__((alias("_08002A86C")));
+__asm__(".pushsection .text._08002A86C,\"ax\",%progbits\n"
+        ".subsection 1\n"
+        ".short 0\n"
+        ".popsection\n");
 
 // ----------------------------------------------------------------------------
 // 0x0802A8F8 — pair accumulator leaf (no prologue/pools; no.type in asm).
@@ -4366,86 +4275,38 @@ __asm__(".align 2, 0");
 // ----------------------------------------------------------------------------
 // 0x0802AC84 — state tick orchestrator (bit2->0; bit3 alloc; bit4 probe).
 // ----------------------------------------------------------------------------
-__attribute__((naked)) u32 _08002AC84(void *rec) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, lr}\n"
-        "sub sp, #4\n"
-        "adds r4, r0, #0\n"
-        "movs r1, #0\n"
-        "mov r0, sp\n"
-        "strb r1, [r0, #0]\n"
-        "ldr r1, [r4, #92]\n"
-        "movs r0, #4\n"
-        "ands r0, r1\n"
-        "cmp r0, #0\n"
-        "beq .L2AC84_bit8\n"
-        "movs r0, #0\n"
-        "b .L2AC84_early_return\n"
-        ".L2AC84_bit8:\n"
-        "movs r0, #8\n"
-        "ands r0, r1\n"
-        "cmp r0, #0\n"
-        "beq .L2AC84_bit16\n"
-        "bl 0x0802AB28\n"
-        "lsls r0, r0, #24\n"
-        "lsrs r0, r0, #24\n"
-        "mov r1, sp\n"
-        "strb r0, [r1, #0]\n"
-        "ldr r1, [r4, #64]\n"
-        "adds r2, r4, #0\n"
-        "adds r2, #100\n"
-        "bl 0x0802AB98\n"
-        "lsls r0, r0, #24\n"
-        "lsrs r0, r0, #24\n"
-        "cmp r0, #4\n"
-        "bne .L2AC84_return\n"
-        "ldr r0, [r4, #92]\n"
-        "movs r1, #9\n"
-        "negs r1, r1\n"
-        "b .L2AC84_set_flags\n"
-        ".L2AC84_bit16:\n"
-        "movs r0, #16\n"
-        "ands r1, r0\n"
-        "cmp r1, #0\n"
-        "beq .L2AC84_no_bits\n"
-        "ldr r1, [r4, #64]\n"
-        "adds r2, r4, #0\n"
-        "adds r2, #100\n"
-        "adds r3, r4, #0\n"
-        "adds r3, #152\n"
-        "mov r0, sp\n"
-        "bl 0x0802AC2C\n"
-        "lsls r0, r0, #24\n"
-        "lsrs r0, r0, #24\n"
-        "cmp r0, #3\n"
-        "bne .L2AC84_return\n"
-        "ldr r0, [r4, #92]\n"
-        "movs r1, #17\n"
-        "negs r1, r1\n"
-        ".L2AC84_set_flags:\n"
-        "ands r0, r1\n"
-        "movs r1, #128\n"
-        "lsls r1, r1, #9\n"
-        "orrs r0, r1\n"
-        "str r0, [r4, #92]\n"
-        "b .L2AC84_return\n"
-        ".L2AC84_no_bits:\n"
-        "bl 0x0802AB28\n"
-        "mov r1, sp\n"
-        "strb r0, [r1, #0]\n"
-        ".L2AC84_return:\n"
-        "mov r0, sp\n"
-        "ldrb r0, [r0, #0]\n"
-        ".L2AC84_early_return:\n"
-        "add sp, #4\n"
-        "pop {r4}\n"
-        "pop {r1}\n"
-        "bx r1\n"
-        ".align 2, 0\n"
-        ".syntax divided\n"
-    );
+u32 _08002AC84(void *rec_) {
+    register u8 *rec __asm__("r4") = (u8 *)rec_;
+    register u32 zero __asm__("r1") = 0;
+    u8 result = (u8)zero;
+    u32 flags = *(u32 *)(rec + 92);
+
+    if (flags & 4u)
+        return 0;
+    if (flags & 8u) {
+        result = (u8)_08002AB28();
+        u8 status = (u8)_08002AB98(result, *(u16 **)(rec + 64),
+                                   (u32 *)(rec + 100));
+        if (status == 4) {
+            *(u32 *)(rec + 92) = (*(u32 *)(rec + 92) & ~8u) | 0x10000u;
+        }
+    } else if (flags & 16u) {
+        u8 status = (u8)_08002AC2C((u8 *)&result, *(u16 **)(rec + 64),
+                                   (u32 *)(rec + 100), (u16 *)(rec + 152));
+        if (status == 3) {
+            *(u32 *)(rec + 92) = (*(u32 *)(rec + 92) & ~16u) | 0x10000u;
+        }
+    } else {
+        u32 key = _08002AB28();
+        result = (u8)key;
+    }
+    return result;
 }
+u32 sub_08002AC84(void *rec) __attribute__((alias("_08002AC84")));
+__asm__(".pushsection .text._08002AC84,\"ax\",%progbits\n"
+        ".subsection 1\n"
+        ".short 0\n"
+        ".popsection\n");
 
 // ----------------------------------------------------------------------------
 // 0x0802AD14 — static record initializer (straight-line const stores;

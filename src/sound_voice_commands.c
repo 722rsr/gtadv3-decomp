@@ -10,9 +10,6 @@
 // The body works on the SECOND parameter (r1): the first is unused. The cursor
 // byte either becomes the searched id (advancing the +64 cursor) or, when it is
 // >= 128, the id is taken from c[5]; the ROM's two-arm `bcs` keeps that shape.
-// The ROM uses a leaf ABI boundary (`push {r4,r5}` / `bx lr`) that GCC cannot
-// express from ordinary C without adding lr to the stack. Keep the proven
-// byte-oriented loop and its exact nonstandard boundary here.
 __attribute__((naked)) void SoundVoiceFollow_NoteOff(void *unused, void *chan){
     __asm__ volatile (
         ".syntax unified\n"

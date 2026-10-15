@@ -54,7 +54,6 @@ extern void sub_0802C3D0(void *a, volatile u8 *b); // 0x0802C3D0 envelope-apply 
 // this TU, and its result is read from r3 (see `_0802C3EC` below).
 static __attribute__((unused, noinline)) void SoundC3EC_FetchByte(void *a, volatile u8 *seq);
 
-
 // ROM pools (byte-exact words in the listings):
 #define SQ_TABLE_BASE  0x080614E0u   // _0802BCE4
 #define SQ_HW_REG      0x04000060u   // _0802BE74
@@ -73,38 +72,34 @@ extern u32 SqHdrIndex[];
 // 0x0802BC84 — channel free-all helper
 void _0802BC84(u32 d, void *s) __attribute__((alias("SoundChannelFreeAll")));
 void sub_0802BC84(u32 d, void *s) __attribute__((alias("SoundChannelFreeAll")));
-__attribute__((naked)) void SoundChannelFreeAll(u32 dummy, u8 *stream) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, lr}\n"
-        "adds r5, r1, #0\n"
-        "ldr  r4, [r5, #32]\n"
-        "cmp  r4, #0\n"
-        "beq.n 2f\n"
-        "1:\n"
-        "ldrb r1, [r4, #0]\n"
-        "movs r0, #199\n"
-        "tst  r0, r1\n"
-        "beq.n 3f\n"
-        "movs r0, #64\n"
-        "orrs r1, r0\n"
-        "strb r1, [r4, #0]\n"
-        "3:\n"
-        "adds r0, r4, #0\n"
-        "bl   _0802BC64\n"
-        "ldr  r4, [r4, #52]\n"
-        "cmp  r4, #0\n"
-        "bne.n 1b\n"
-        "2:\n"
-        "movs r0, #0\n"
-        "strb r0, [r5, #0]\n"
-        "pop  {r4, r5}\n"
-        "pop  {r0}\n"
-        "bx   r0\n"
-        ".short 0x0000\n"
-        ".syntax divided\n"
-    );
+void SoundChannelFreeAll(u32 dummy, u8 *stream) {
+    register u8 *base __asm__("r5") = stream;
+    register u8 *channel __asm__("r4") =
+        *(u8 **)(uintptr_t)(base + 32);
+
+    (void)dummy;
+    while (channel != 0) {
+        register u8 flags __asm__("r1") = channel[0];
+        __asm__ volatile (
+            ".syntax unified\n"
+            "movs r0, #199\n"
+            "tst r0, %0\n"
+            "beq 1f\n"
+            "movs r0, #64\n"
+            "orrs %0, r0\n"
+            "strb %0, [r4]\n"
+            "1:\n"
+            ".syntax divided\n"
+            : "+r"(flags) : : "r0", "cc", "memory");
+        _0802BC64(channel);
+        channel = *(u8 **)(uintptr_t)(channel + 52);
+    }
+    base[0] = 0;
 }
+__asm__(".pushsection .text.SoundChannelFreeAll,\"ax\",%progbits\n"
+        ".subsection 1\n"
+        ".short 0\n"
+        ".popsection");
 
 // ----------------------------------------------------------------------------
 // 0x0802BCCC is a two-byte cursor-fetch prefix: `ldrb r3,[r2]`, then fall
@@ -429,7 +424,6 @@ __attribute__((naked)) void SoundBE34_TrackSel(void *a, void *seq) {
     );
 }
 
-
 // ----------------------------------------------------------------------------
 // 0x0802BE4C — volume byte (64-bias).
 //   fetch byte; [seq+12] = b - 64; [seq+0] |= 0x0C.
@@ -456,7 +450,6 @@ __attribute__((naked)) void SoundBE4C_Volume(void *a, void *seq) {
         ".syntax divided\n"
     );
 }
-
 
 // ----------------------------------------------------------------------------
 // 0x0802BE60 — PSG hardware register write (byte-0 register index).
@@ -491,7 +484,6 @@ __attribute__((naked)) void SoundBE60_PSGWrite(void *a, void *seq) {
         ".syntax divided\n"
     );
 }
-
 
 // ============================================================================
 // sound_voice_follow.s
@@ -540,7 +532,6 @@ static __attribute__((unused, noinline)) void SoundC3EC_FetchByte(void *a, volat
 // own section, and pads with the explicit `0` fill instead.
 __asm__(".align 2, 0");
 
-
 // ----------------------------------------------------------------------------
 // 0x0802C3F8 — fetch byte -> [seq+25]; if 0 -> envelope-apply leaf (C3D0).
 //
@@ -570,7 +561,6 @@ __attribute__((naked)) void SoundC3F8_NoteOn(void *a, void *seq) {
     );
 }
 
-
 // ----------------------------------------------------------------------------
 // 0x0802C40C — fetch byte -> [seq+23]; if 0 -> envelope-apply leaf (C3D0).
 // Same shape and same residue as `_0802C3F8`, one byte store target apart.
@@ -593,7 +583,6 @@ __attribute__((naked)) void SoundC40C_EnvByte(void *a, void *seq) {
         ".syntax divided\n"
     );
 }
-
 
 // ----------------------------------------------------------------------------
 // 0x0802C420 — interpolated volume ramp over ROM envelope tables.
@@ -722,34 +711,29 @@ void sub_0802C648(void *a) __attribute__((alias("SoundC648_Unclaim")));
 
 // ----------------------------------------------------------------------------
 // 0x0802C67C — stop-all loop over 4 headers.
-__attribute__((naked)) void SoundC67C_StopAll(void) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, lr}\n"
-        "ldr r0, 2f\n"
-        "lsls r0, r0, #16\n"
-        "lsrs r0, r0, #16\n"
-        "cmp r0, #0\n"
-        "beq 1f\n"
-        "ldr r5, 3f\n"
-        "adds r4, r0, #0\n"
-        "4:\n"
-        "ldr r0, [r5, #0]\n"
-        "bl _0802CD18\n"
-        "adds r5, #12\n"
-        "subs r4, #1\n"
-        "cmp r4, #0\n"
-        "bne 4b\n"
-        "1:\n"
-        "pop {r4, r5}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        ".align 2, 0\n"
-        "2: .word 0x00000004\n"
-        "3: .word 0x08061F74\n"
-        ".syntax divided\n"
-    );
+void SoundC67C_StopAll(void) {
+    register u32 count __asm__("r0");
+    register u32 remaining __asm__("r4");
+    register u32 table __asm__("r5");
+
+    __asm__ volatile ("ldr %0, .LSoundC67C_count" : "=r"(count));
+    count = (u16)count;
+    if (count != 0) {
+        __asm__ volatile ("ldr %0, .LSoundC67C_table" : "=r"(table));
+        remaining = count;
+        do {
+            _0802CD18((void *)(uintptr_t)*(volatile u32 *)(uintptr_t)table);
+            table += 12;
+            remaining--;
+        } while (remaining != 0);
+    }
 }
+__asm__(".pushsection .text.SoundC67C_StopAll,\"ax\",%progbits\n"
+        ".subsection 1\n"
+        ".align 2, 0\n"
+        ".LSoundC67C_count: .word 4\n"
+        ".LSoundC67C_table: .word 0x08061F74\n"
+        ".popsection");
 void _0802C67C(void) __attribute__((alias("SoundC67C_StopAll")));
 void sub_0802C67C(void) __attribute__((alias("SoundC67C_StopAll")));
 
@@ -763,34 +747,29 @@ void _0802C6A8(void *a) __attribute__((alias("SoundC6A8_PauseOff")));
 void sub_0802C6A8(void *a) __attribute__((alias("SoundC6A8_PauseOff")));
 
 // ----------------------------------------------------------------------------
-__attribute__((naked)) void SoundC6B4_PauseAll(void) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, lr}\n"
-        "ldr r0, 2f\n"
-        "lsls r0, r0, #16\n"
-        "lsrs r0, r0, #16\n"
-        "cmp r0, #0\n"
-        "beq 1f\n"
-        "ldr r5, 3f\n"
-        "adds r4, r0, #0\n"
-        "4:\n"
-        "ldr r0, [r5, #0]\n"
-        "bl _0802C488\n"
-        "adds r5, #12\n"
-        "subs r4, #1\n"
-        "cmp r4, #0\n"
-        "bne 4b\n"
-        "1:\n"
-        "pop {r4, r5}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        ".align 2, 0\n"
-        "2: .word 0x00000004\n"
-        "3: .word 0x08061F74\n"
-        ".syntax divided\n"
-    );
+void SoundC6B4_PauseAll(void) {
+    register u32 count __asm__("r0");
+    register u32 remaining __asm__("r4");
+    register u32 table __asm__("r5");
+
+    __asm__ volatile ("ldr %0, .LSoundC6B4_count" : "=r"(count));
+    count = (u16)count;
+    if (count != 0) {
+        __asm__ volatile ("ldr %0, .LSoundC6B4_table" : "=r"(table));
+        remaining = count;
+        do {
+            _0802C488((void *)(uintptr_t)*(volatile u32 *)(uintptr_t)table);
+            table += 12;
+            remaining--;
+        } while (remaining != 0);
+    }
 }
+__asm__(".pushsection .text.SoundC6B4_PauseAll,\"ax\",%progbits\n"
+        ".subsection 1\n"
+        ".align 2, 0\n"
+        ".LSoundC6B4_count: .word 4\n"
+        ".LSoundC6B4_table: .word 0x08061F74\n"
+        ".popsection");
 void _0802C6B4(void) __attribute__((alias("SoundC6B4_PauseAll")));
 void sub_0802C6B4(void) __attribute__((alias("SoundC6B4_PauseAll")));
 

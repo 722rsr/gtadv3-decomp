@@ -93,6 +93,24 @@ def command(argv: list[str | Path]) -> None:
         raise RuntimeError(f"{' '.join(map(str, argv))}\n" + "\n".join(shown))
 
 
+def _subsection_pool(tail: list[str], section_name: str) -> list[str]:
+    """Collect subsection-1 pool bytes for this function section."""
+    wanted = f".text.{section_name}"
+    for i, line in enumerate(tail):
+        pushed = re.match(r"^\s*\.pushsection\s+([^\s,]+)", line)
+        if not pushed or pushed.group(1) != wanted:
+            continue
+        subsection = next((j for j in range(i + 1, len(tail))
+                           if re.match(r"^\s*\.subsection\s+1\b", tail[j])), None)
+        if subsection is None:
+            continue
+        end = next((j for j in range(subsection + 1, len(tail))
+                    if re.match(r"^\s*\.popsection\b", tail[j])), None)
+        if end is not None:
+            return tail[subsection + 1:end]
+    return []
+
+
 def asm_section(source: Path, names: list[str], owned: list[str] | None = None,
                 entry_vma: int | None = None,
                 end_vma: int | None = None) -> str:
@@ -128,7 +146,9 @@ def asm_section(source: Path, names: list[str], owned: list[str] | None = None,
         wanted = owned or names
         for i, line in enumerate(body):
             if re.match(r"^\s*\.size\s+" + re.escape(name) + r"\s*,", line):
-                text = "".join(body[:i + 1] + _own_alias_glue(body[i + 1:], name, wanted))
+                tail = body[i + 1:]
+                text = "".join(body[:i + 1] + _own_alias_glue(tail, name, wanted)
+                               + _subsection_pool(tail, name))
                 return _export_missing(text, lines, name, wanted, source,
                                        entry_vma, end_vma)
         return _export_missing("".join(body), lines, name, wanted, source,
@@ -551,6 +571,26 @@ def pad_only(rom: bytes, start_vma: int, end_vma: int, base: int = 0) -> bool:
     if lo < 0 or hi > len(rom):
         return False
     return not any(rom[lo:hi])
+
+
+def bind_runtime_calls(section: str) -> str:
+    """Retarget compiler runtime branches to ROM labels in this section.
+
+    Only names in `RUNTIME_VMAS` that are not defined by this section are
+    rewritten. Decisions are section-local because the splice links one
+    function section, not the complete translation-unit object.
+    """
+    for name, vma in sorted(probe.RUNTIME_VMAS.items()):
+        target = f"_{vma:08X}"
+        if name.upper() == target.upper():
+            continue
+        if re.search(rf"^\s*{re.escape(name)}\s*:", section, re.M):
+            continue
+        if re.search(rf"^\s*\.globl\s+{re.escape(name)}\s*$", section, re.M):
+            continue
+        section = re.sub(rf"\b(bl|blx|b)(\s+){re.escape(name)}\b",
+                         rf"\1\2{target}", section)
+    return section
 
 
 def self_test() -> int:
@@ -1043,6 +1083,28 @@ def self_test() -> int:
         check("a declared pool-word data label survives the splice",
               "_0802BCE4: .word 0x080614E0" in kept
               and ".thumb_set\t_0802BCE4" not in kept, True)
+    # Exercise the runtime branch retargeting rules.
+    divcall = "\tbl\t__divsi3\n"
+    check("a runtime call is retargeted at the closure label",
+          bind_runtime_calls(divcall), "\tbl\t_0802DE04\n")
+    check("...at the probe's own address for that name, not a second table",
+          probe.RUNTIME_VMAS["__divsi3"], 0x0802DE04)
+    check("a section that DEFINES the name is left alone",
+          bind_runtime_calls("\t.globl\t__divsi3\n__divsi3:\n\tbl\t__divsi3\n"),
+          "\t.globl\t__divsi3\n__divsi3:\n\tbl\t__divsi3\n")
+    check("...and a bare label counts as defining it",
+          bind_runtime_calls("__divsi3:\n\tbl\t__divsi3\n"),
+          "__divsi3:\n\tbl\t__divsi3\n")
+    check("a section calling no runtime name is untouched",
+          bind_runtime_calls("\tbl\tSoundPump\n"), "\tbl\tSoundPump\n")
+    check("a name that is already a ROM label is not retargeted",
+          bind_runtime_calls("\tbl\t_0802E0A4\n"), "\tbl\t_0802E0A4\n")
+    check("a `b` to a runtime name is retargeted too",
+          bind_runtime_calls("\tb\t__udivsi3\n"), "\tb\t_0802DF6C\n")
+    check("the indirect-call veneer name is retargeted, no symbol added",
+          bind_runtime_calls("\tbl\t_call_via_r9\n"), "\tbl\t_0802DDEC\n")
+    check("...and no `.thumb_set` is emitted for a later `.set` to collide with",
+          ".thumb_set" in bind_runtime_calls(divcall), False)
     print(f"match_c_slice self-test: {ok}/{total}")
     return 0 if ok == total else 1
 
@@ -1291,6 +1353,8 @@ def main() -> int:
         # Local compiler labels are TU-scoped in their own object. Give them a
         # VMA prefix before splicing several C bodies into one assembly section.
         section = re.sub(r"\.L([A-Za-z_0-9]+)", rf".Lmatch_{vma:08X}_\1", section)
+        # Resolve compiler runtime branches within the spliced section.
+        section = bind_runtime_calls(section)
         section = splice_section(vma, section, span_size)
         asm_path = ROOT / entry["asm_file"]
         original = replacements.get(asm_path, file_text[asm_path])

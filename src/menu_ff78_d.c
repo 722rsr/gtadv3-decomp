@@ -257,191 +257,76 @@ void Sub_080012B34(void *a) __attribute__((alias("MenuFF78_12B34")));
 void sub_080012B34(void *a) __attribute__((alias("MenuFF78_12B34")));
 
 // ============================================================================
-// sub_080012AC0 — switch on u32[rec+140]: case 0/2 -> stack {3,1,0,0}
-// kind=r1; case 1/3 -> stack {4,1,0,0} kind=r1. r3 = arg passed.
-// u16 idx = u16[0x080CB678 + 2*s16[rec+128]] (read before switch).
-// ============================================================================
-__attribute__((naked)) void MenuFF78_12AC0(void *rec_, int a1, int a2) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, lr}\n"
-        "sub sp, #16\n"
-        "adds r3, r0, #0\n"
-        "adds r4, r1, #0\n"
-        "adds r5, r2, #0\n"
-        "ldr r1, .L12ac0_aec\n"
-        "adds r0, #128\n"
-        "movs r2, #0\n"
-        "ldrsh r0, [r0, r2]\n"
-        "lsls r0, r0, #1\n"
-        "adds r0, r0, r1\n"
-        "ldrh r1, [r0, #0]\n"
-        "adds r0, r3, #0\n"
-        "adds r0, #140\n"
-        "ldr r0, [r0, #0]\n"
-        "cmp r0, #1\n"
-        "beq .L12ac0_af8\n"
-        "cmp r0, #1\n"
-        "bgt .L12ac0_af0\n"
-        "cmp r0, #0\n"
-        "beq .L12ac0_b12\n"
-        "b .L12ac0_b2a\n"
-        ".L12ac0_aec: .4byte 0x080CB678\n"
-        ".L12ac0_af0:\n"
-        "cmp r0, #2\n"
-        "beq .L12ac0_b12\n"
-        "cmp r0, #3\n"
-        "bne .L12ac0_b2a\n"
-        ".L12ac0_af8:\n"
-        "movs r0, #4\n"
-        "str r0, [sp, #0]\n"
-        "movs r0, #1\n"
-        "str r0, [sp, #4]\n"
-        "movs r0, #0\n"
-        "str r0, [sp, #8]\n"
-        "str r0, [sp, #12]\n"
-        "adds r0, r3, #0\n"
-        "adds r2, r4, #0\n"
-        "adds r3, r5, #0\n"
-        "bl 0x08007B18\n"
-        "b .L12ac0_b2a\n"
-        ".L12ac0_b12:\n"
-        "movs r0, #3\n"
-        "str r0, [sp, #0]\n"
-        "movs r0, #1\n"
-        "str r0, [sp, #4]\n"
-        "movs r0, #0\n"
-        "str r0, [sp, #8]\n"
-        "str r0, [sp, #12]\n"
-        "adds r0, r3, #0\n"
-        "adds r2, r4, #0\n"
-        "adds r3, r5, #0\n"
-        "bl 0x08007B18\n"
-        ".L12ac0_b2a:\n"
-        "add sp, #16\n"
-        "pop {r4, r5}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        "movs r0, r0\n"
-        ".syntax divided\n"
-    );
+void MenuFF78_12AC0(void *rec_, int a1, int a2)
+{
+    extern const s16 MenuFF78Table12AC0[];
+    extern void sub_08007B18(void *rec, int dst, int kind, int off,
+                             u32 mode, u32 a5, u32 a6, u32 a7);
+    const s16 *table = MenuFF78Table12AC0;
+    u8 *rec = (u8 *)rec_;
+    s16 *indexp = (s16 *)(rec + 128);
+    s16 index = *indexp;
+    u16 kind = (u16)table[index];
+    s32 mode = *(s32 *)(rec + 140);
+
+    __asm__(".globl MenuFF78Table12AC0\nMenuFF78Table12AC0 = 0x080CB678\n");
+    if (mode == 1)
+        goto mode4;
+    if (mode > 1)
+        goto above_one;
+    if (mode == 0)
+        goto mode3;
+    goto done;
+above_one:
+    if (mode == 2)
+        goto mode3;
+    if (mode != 3)
+        goto done;
+mode4:
+    sub_08007B18(rec_, kind, a1, a2, 4, 1, 0, 0);
+    goto done;
+mode3:
+    sub_08007B18(rec_, kind, a1, a2, 3, 1, 0, 0);
+done:
+    ;
 }
+__asm__(".align 2, 0");
 void _080012AC0(void *a, int b, int c) __attribute__((alias("MenuFF78_12AC0")));
 void Sub_080012AC0(void *a, int b, int c) __attribute__((alias("MenuFF78_12AC0")));
 void sub_080012AC0(void *a, int b, int c) __attribute__((alias("MenuFF78_12AC0")));
 
-// ============================================================================
-// sub_0800146D0 — 5-builder filler (with high-register ldrh/strh).
-// r8 = s16[rec+164] if s16[rec+166] in [0..3] else 0.
-// r6 = u16[rec+36]. r7 = rec+8.
-// if r6==1: _08007B18(rec+8, 5, r8-24, 64, {5,1,0,0}) + r8+216.
-// always: _08007B18(rec+8, 5, r8+24/+72/+120/+168, 64, {5,1,0,0}).
-// ============================================================================
-__attribute__((naked)) void MenuFF78_146D0(void *rec_)
+// 0x0800146D0: issue the course record filler calls.
+void MenuFF78_146D0(void *rec_)
 {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, r7, lr}\n"
-        "mov r7, r8\n"
-        "push {r7}\n"
-        "sub sp, #16\n"
-        "adds r1, r0, #0\n"
-        "movs r0, #0\n"
-        "mov r8, r0\n"
-        "adds r0, r1, #0\n"
-        "adds r0, #166\n"
-        "movs r2, #0\n"
-        "ldrsh r0, [r0, r2]\n"
-        "cmp r0, #0\n"
-        "blt .L146d0_after_gate\n"
-        "cmp r0, #3\n"
-        "bgt .L146d0_after_gate\n"
-        "adds r0, r1, #0\n"
-        "adds r0, #164\n"
-        "movs r2, #0\n"
-        "ldrsh r3, [r0, r2]\n"
-        "mov r8, r3\n"
-        ".L146d0_after_gate:\n"
-        "ldrh r6, [r1, #36]\n"
-        "adds r7, r1, #0\n"
-        "adds r7, #8\n"
-        "cmp r6, #1\n"
-        "bne .L146d0_common\n"
-        "mov r2, r8\n"
-        "subs r2, #24\n"
-        "movs r5, #5\n"
-        "str r5, [sp, #0]\n"
-        "str r6, [sp, #4]\n"
-        "movs r4, #0\n"
-        "str r4, [sp, #8]\n"
-        "str r4, [sp, #12]\n"
-        "adds r0, r7, #0\n"
-        "movs r1, #5\n"
-        "movs r3, #64\n"
-        "bl 0x08007B18\n"
-        "mov r2, r8\n"
-        "adds r2, #216\n"
-        "str r5, [sp, #0]\n"
-        "str r6, [sp, #4]\n"
-        "str r4, [sp, #8]\n"
-        "str r4, [sp, #12]\n"
-        "adds r0, r7, #0\n"
-        "movs r1, #5\n"
-        "movs r3, #64\n"
-        "bl 0x08007B18\n"
-        ".L146d0_common:\n"
-        "mov r2, r8\n"
-        "adds r2, #24\n"
-        "movs r6, #5\n"
-        "str r6, [sp, #0]\n"
-        "movs r5, #1\n"
-        "str r5, [sp, #4]\n"
-        "movs r4, #0\n"
-        "str r4, [sp, #8]\n"
-        "str r4, [sp, #12]\n"
-        "adds r0, r7, #0\n"
-        "movs r1, #5\n"
-        "movs r3, #64\n"
-        "bl 0x08007B18\n"
-        "mov r2, r8\n"
-        "adds r2, #72\n"
-        "str r6, [sp, #0]\n"
-        "str r5, [sp, #4]\n"
-        "str r4, [sp, #8]\n"
-        "str r4, [sp, #12]\n"
-        "adds r0, r7, #0\n"
-        "movs r1, #5\n"
-        "movs r3, #64\n"
-        "bl 0x08007B18\n"
-        "mov r2, r8\n"
-        "adds r2, #120\n"
-        "str r6, [sp, #0]\n"
-        "str r5, [sp, #4]\n"
-        "str r4, [sp, #8]\n"
-        "str r4, [sp, #12]\n"
-        "adds r0, r7, #0\n"
-        "movs r1, #5\n"
-        "movs r3, #64\n"
-        "bl 0x08007B18\n"
-        "mov r2, r8\n"
-        "adds r2, #168\n"
-        "str r6, [sp, #0]\n"
-        "str r5, [sp, #4]\n"
-        "str r4, [sp, #8]\n"
-        "str r4, [sp, #12]\n"
-        "adds r0, r7, #0\n"
-        "movs r1, #5\n"
-        "movs r3, #64\n"
-        "bl 0x08007B18\n"
-        "add sp, #16\n"
-        "pop {r3}\n"
-        "mov r8, r3\n"
-        "pop {r4, r5, r6, r7}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        ".syntax divided\n"
-    );
+    register u8 *rec __asm__("r1") = (u8 *)rec_;
+    register s32 offset __asm__("r8") = 0;
+    register s32 gate __asm__("r6");
+    u8 *base;
+    s32 phase;
+
+    __asm__ volatile ("" : "+r" (offset) : : "memory");
+    phase = *(s16 *)(rec + 166);
+    if (phase < 0)
+        goto use_default;
+    __asm__ volatile ("" : "+r" (phase));
+    if (phase > 3)
+        goto use_default;
+    offset = *(s16 *)(rec + 164);
+use_default:
+    gate = *(u16 *)(rec + 36);
+    base = rec + 8;
+
+    if (gate == 1) {
+        _08007B18((void *)base, 5, offset - 24, 64, 5, gate, 0, 0);
+        _08007B18((void *)base, 5, offset + 216, 64, 5, gate, 0, 0);
+    }
+
+    _08007B18((void *)base, 5, offset + 24, 64, 5, 1, 0, 0);
+    _08007B18((void *)base, 5, offset + 72, 64, 5, 1, 0, 0);
+    _08007B18((void *)base, 5, offset + 120, 64, 5, 1, 0, 0);
+    _08007B18((void *)base, 5, offset + 168, 64, 5, 1, 0, 0);
 }
+
 void _0800146D0(void *a) __attribute__((alias("MenuFF78_146D0")));
 void Sub_0800146D0(void *a) __attribute__((alias("MenuFF78_146D0")));
 void sub_0800146D0(void *a) __attribute__((alias("MenuFF78_146D0")));

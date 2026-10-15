@@ -22,7 +22,7 @@ extern void Sub_08001573C(void *a, u32 b, u32 c);
 extern void Sub_080015A0C(void *a);
 extern void Sub_080015AB0(void *a);
 extern void Sub_080015304(void *a);
-extern void Sub_08001529C(void); // 0-arg ABI (asm/menu_ff78.s:10450 reads no input)
+extern void Sub_08001529C(void *a); // 1-arg caller ABI (adds r0, r4, #0)
 
 // ----------------------------------------------------------------------------
 // sub_080013850 — (rec, dead, ev):
@@ -183,127 +183,51 @@ void sub_080013850(void *a, u32 b, u32 c) __attribute__((alias("MenuFF78_13850")
 //     0->154E0, 1->1573C, 2->15620 (each (rec,(u16)a1,(u16)a2)),
 //   6->on s16[rec+138]: 0/1->15A0C(rec), 2->15AB0(rec),
 //   11->1529C(rec), else no-op.
-__attribute__((naked)) void MenuFF78_15BA0(int ev, u32 a1, u32 a2, void *rec_) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, lr}\n"
-        "adds r5, r1, #0\n"
-        "adds r6, r2, #0\n"
-        "adds r4, r3, #0\n"
-        "subs r0, #1\n"
-        "cmp r0, #11\n"
-        "bhi .L15ba0_c94\n"
-        "lsls r0, r0, #2\n"
-        "ldr r1, .L15ba0_bb8\n"
-        "adds r0, r0, r1\n"
-        "ldr r0, [r0, #0]\n"
-        "mov pc, r0\n"
-        ".align 2, 0\n"
-        ".L15ba0_bb8: .4byte .L15ba0_bbc\n"
-        ".L15ba0_bbc: .4byte .L15ba0_c86\n"
-        ".4byte .L15ba0_bec\n"
-        ".4byte .L15ba0_c94\n"
-        ".4byte .L15ba0_c94\n"
-        ".4byte .L15ba0_bf6\n"
-        ".4byte .L15ba0_c2e\n"
-        ".4byte .L15ba0_c08\n"
-        ".4byte .L15ba0_c94\n"
-        ".4byte .L15ba0_c94\n"
-        ".4byte .L15ba0_c94\n"
-        ".4byte .L15ba0_c94\n"
-        ".4byte .L15ba0_c8e\n"
-        ".L15ba0_bec:\n"
-        "adds r0, r4, #0\n"
-        "adds r1, r5, #0\n"
-        "bl Sub_080015230\n"
-        "b .L15ba0_c94\n"
-        ".L15ba0_bf6:\n"
-        "adds r0, r4, #0\n"
-        "adds r0, #16\n"
-        "bl Sub_0800D854\n"
-        "adds r0, r4, #0\n"
-        "adds r0, #120\n"
-        "bl Sub_0800D8E4\n"
-        "b .L15ba0_c94\n"
-        ".L15ba0_c08:\n"
-        "adds r0, r4, #0\n"
-        "adds r0, #138\n"
-        "movs r1, #0\n"
-        "ldrsh r0, [r0, r1]\n"
-        "cmp r0, #0\n"
-        "blt .L15ba0_c94\n"
-        "cmp r0, #1\n"
-        "ble .L15ba0_c1e\n"
-        "cmp r0, #2\n"
-        "beq .L15ba0_c26\n"
-        "b .L15ba0_c94\n"
-        ".L15ba0_c1e:\n"
-        "adds r0, r4, #0\n"
-        "bl Sub_080015A0C\n"
-        "b .L15ba0_c94\n"
-        ".L15ba0_c26:\n"
-        "adds r0, r4, #0\n"
-        "bl Sub_080015AB0\n"
-        "b .L15ba0_c94\n"
-        ".L15ba0_c2e:\n"
-        "adds r0, r4, #0\n"
-        "bl Sub_080015B54\n"
-        "ldrh r0, [r4, #20]\n"
-        "cmp r0, #0\n"
-        "beq .L15ba0_c94\n"
-        "adds r0, r4, #0\n"
-        "adds r0, #138\n"
-        "movs r1, #0\n"
-        "ldrsh r0, [r0, r1]\n"
-        "cmp r0, #1\n"
-        "beq .L15ba0_c76\n"
-        "cmp r0, #1\n"
-        "bgt .L15ba0_c50\n"
-        "cmp r0, #0\n"
-        "beq .L15ba0_c56\n"
-        "b .L15ba0_c94\n"
-        ".L15ba0_c50:\n"
-        "cmp r0, #2\n"
-        "beq .L15ba0_c66\n"
-        "b .L15ba0_c94\n"
-        ".L15ba0_c56:\n"
-        "lsls r1, r5, #16\n"
-        "lsrs r1, r1, #16\n"
-        "lsls r2, r6, #16\n"
-        "lsrs r2, r2, #16\n"
-        "adds r0, r4, #0\n"
-        "bl Sub_0800154E0\n"
-        "b .L15ba0_c94\n"
-        ".L15ba0_c66:\n"
-        "lsls r1, r5, #16\n"
-        "lsrs r1, r1, #16\n"
-        "lsls r2, r6, #16\n"
-        "lsrs r2, r2, #16\n"
-        "adds r0, r4, #0\n"
-        "bl Sub_080015620\n"
-        "b .L15ba0_c94\n"
-        ".L15ba0_c76:\n"
-        "lsls r1, r5, #16\n"
-        "lsrs r1, r1, #16\n"
-        "lsls r2, r6, #16\n"
-        "lsrs r2, r2, #16\n"
-        "adds r0, r4, #0\n"
-        "bl Sub_08001573C\n"
-        "b .L15ba0_c94\n"
-        ".L15ba0_c86:\n"
-        "adds r0, r4, #0\n"
-        "bl Sub_080015304\n"
-        "b .L15ba0_c94\n"
-        ".L15ba0_c8e:\n"
-        "adds r0, r4, #0\n"
-        "bl Sub_08001529C\n"
-        ".L15ba0_c94:\n"
-        "pop {r4, r5, r6}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        "movs r0, r0\n"
-        ".syntax divided\n"
-    );
+void MenuFF78_15BA0(int ev, u32 a1, u32 a2, void *rec_) {
+    u8 *r4 = (u8 *)rec_;
+    switch (ev) {
+    case 2:
+        Sub_080015230(r4, (void *)(uintptr_t)a1);
+        break;
+    case 5:
+        Sub_0800D854(r4 + 16);
+        Sub_0800D8E4(r4 + 120);
+        break;
+    case 7:
+        switch (*(s16 *)(r4 + 138)) {
+        case 0:
+        case 1:
+            Sub_080015A0C(r4);
+            break;
+        case 2:
+            Sub_080015AB0(r4);
+            break;
+        }
+        break;
+    case 6:
+        Sub_080015B54(r4);
+        if (*(volatile u16 *)(r4 + 20) != 0) {
+            switch (*(s16 *)(r4 + 138)) {
+            case 0:
+                Sub_0800154E0(r4, (u16)a1, (u16)a2);
+                break;
+            case 2:
+                Sub_080015620(r4, (u16)a1, (u16)a2);
+                break;
+            case 1:
+                Sub_08001573C(r4, (u16)a1, (u16)a2);
+                break;
+            }
+        }
+        break;
+    case 1:
+        Sub_080015304(r4);
+        break;
+    case 12:
+        Sub_08001529C(r4);
+        break;
+    }
 }
+__asm__(".align 2, 0");
 void _080015BA0(int a, u32 b, u32 c, void *d) __attribute__((alias("MenuFF78_15BA0")));
 void sub_080015BA0(int a, u32 b, u32 c, void *d) __attribute__((alias("MenuFF78_15BA0")));

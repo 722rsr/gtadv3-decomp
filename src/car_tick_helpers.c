@@ -15,9 +15,9 @@ extern int  sub_08004CF0(void);   // pop LIFO (src/foundation_subsys.c) — int,
 //   0x08009BCC) returns r0 straight out with no u8->int widening, and the
 //   whole 0x08008000-0x08010000 window contains no such mask at all.
 extern void sub_08004CC4(void);   // reset LIFO
-extern void sub_08004CD4(u8 v);   // push LIFO
+extern void sub_08004CD4(u32 v);  // push LIFO (CounterBump takes u32)
 extern int  _0800AA20(void);      // shared racer tick (src/car_tick_dispatch.c)
-extern void _08002340(int idx);   // id lookup (raw asm route)
+extern int  _08002340(int idx);   // id lookup (raw asm route)
 extern void _080188B0(void *pkt); // UI packet consumer (raw asm route)
 extern void _0800D778(void);      // rec10 router helper (raw asm route)
 extern void _08001F80(u16 v);     // Idle_SetRecordCount (src/idle_accessors.c)
@@ -116,356 +116,218 @@ __asm__(".align 2, 0");
 //   else     : 0
 //   Packet handlers share one epilogue: _080188B0(sp), return 51.
 // ----------------------------------------------------------------------------
-__attribute__((naked)) int _08009BF8(void *ctx) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, lr}\n"
-        "sub sp, #64\n"
-        "movs r4, #0\n"
-        "movs r2, #0\n"
-        "ldr r0, [r0, #44]\n"
-        "cmp r0, #101\n"
-        "bls .Lct09bf8_08009c08\n"
-        "b .Lct09bf8_08009f4c\n"
-        ".Lct09bf8_08009c08:\n"
-        "lsls r0, r0, #2\n"
-        "ldr r1, .Lct09bf8_r0_lit\n"
-        "adds r0, r0, r1\n"
-        "ldr r0, [r0, #0]\n"
-        "mov pc, r0\n"
-        "movs r0, r0\n"
-        ".align 2, 0\n"
-        ".Lct09bf8_r0_lit:\n"
-        ".word .Lct09bf8_rec0_table\n"
-        ".align 2, 0\n"
-        ".Lct09bf8_rec0_table:\n"
-        ".word .Lct09bf8_08009db0\n"
-        ".word .Lct09bf8_08009ecc\n"
-        ".word .Lct09bf8_08009ed0\n"
-        ".word .Lct09bf8_08009ed4\n"
-        ".word .Lct09bf8_08009ed8\n"
-        ".word .Lct09bf8_08009edc\n"
-        ".word .Lct09bf8_08009ee6\n"
-        ".word .Lct09bf8_08009ee4\n"
-        ".word .Lct09bf8_08009ee2\n"
-        ".word .Lct09bf8_08009ee0\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f4c\n"
-        ".word .Lct09bf8_08009f3c\n"
-        ".word .Lct09bf8_08009f40\n"
-        ".Lct09bf8_08009db0:\n"
-        "ldr r4, .Lct09bf8_ra_lit1\n"
-        "ldr r0, .Lct09bf8_ra_lit2\n"
-        "adds r5, r4, r0\n"
-        "movs r2, #0\n"
-        "ldrsh r1, [r5, r2]\n"
-        "lsls r0, r1, #1\n"
-        "adds r0, r0, r1\n"
-        "lsls r0, r0, #2\n"
-        "adds r0, r0, r4\n"
-        "adds r0, #48\n"
-        "movs r2, #0\n"
-        "strb r2, [r0, #0]\n"
-        "movs r3, #0\n"
-        "ldrsh r1, [r5, r3]\n"
-        "lsls r0, r1, #1\n"
-        "adds r0, r0, r1\n"
-        "lsls r0, r0, #2\n"
-        "adds r0, r0, r4\n"
-        "ldr r3, .Lct09bf8_ra_lit3\n"
-        "adds r1, r4, r3\n"
-        "ldrb r1, [r1, #0]\n"
-        "adds r0, #49\n"
-        "strb r1, [r0, #0]\n"
-        "movs r0, #0\n"
-        "ldrsh r1, [r5, r0]\n"
-        "lsls r0, r1, #1\n"
-        "adds r0, r0, r1\n"
-        "lsls r0, r0, #2\n"
-        "adds r0, r0, r4\n"
-        "adds r0, #50\n"
-        "strb r2, [r0, #0]\n"
-        "movs r3, #0\n"
-        "ldrsh r1, [r5, r3]\n"
-        "lsls r0, r1, #1\n"
-        "adds r0, r0, r1\n"
-        "lsls r0, r0, #2\n"
-        "adds r0, r0, r4\n"
-        "adds r0, #51\n"
-        "strb r2, [r0, #0]\n"
-        "movs r0, #0\n"
-        "ldrsh r1, [r5, r0]\n"
-        "lsls r0, r1, #1\n"
-        "adds r0, r0, r1\n"
-        "lsls r0, r0, #2\n"
-        "adds r0, r0, r4\n"
-        "adds r0, #52\n"
-        "strb r2, [r0, #0]\n"
-        "movs r3, #0\n"
-        "ldrsh r1, [r5, r3]\n"
-        "lsls r0, r1, #1\n"
-        "adds r0, r0, r1\n"
-        "lsls r0, r0, #2\n"
-        "adds r0, r0, r4\n"
-        "adds r0, #53\n"
-        "strb r2, [r0, #0]\n"
-        "movs r0, #0\n"
-        "ldrsh r1, [r5, r0]\n"
-        "lsls r0, r1, #1\n"
-        "adds r0, r0, r1\n"
-        "lsls r0, r0, #2\n"
-        "adds r0, r0, r4\n"
-        "adds r0, #54\n"
-        "strb r2, [r0, #0]\n"
-        "movs r3, #0\n"
-        "ldrsh r1, [r5, r3]\n"
-        "lsls r0, r1, #1\n"
-        "adds r0, r0, r1\n"
-        "lsls r0, r0, #2\n"
-        "adds r0, r0, r4\n"
-        "adds r0, #55\n"
-        "strb r2, [r0, #0]\n"
-        "movs r0, #0\n"
-        "ldrsh r1, [r5, r0]\n"
-        "lsls r0, r1, #1\n"
-        "adds r0, r0, r1\n"
-        "lsls r0, r0, #2\n"
-        "adds r0, r0, r4\n"
-        "adds r0, #56\n"
-        "strb r2, [r0, #0]\n"
-        "movs r3, #0\n"
-        "ldrsh r1, [r5, r3]\n"
-        "lsls r0, r1, #1\n"
-        "adds r0, r0, r1\n"
-        "lsls r0, r0, #2\n"
-        "adds r0, r0, r4\n"
-        "adds r0, #57\n"
-        "strb r2, [r0, #0]\n"
-        "str r2, [sp, #56]\n"
-        "add r0, sp, #56\n"
-        "ldr r2, .Lct09bf8_ra_lit4\n"
-        "mov r1, sp\n"
-        "bl sub_0802D974\n"
-        "mov r1, sp\n"
-        "ldr r0, .Lct09bf8_ra_lit5\n"
-        "strh r0, [r1, #0]\n"
-        "ldr r2, .Lct09bf8_ra_lit6\n"
-        "adds r0, r4, r2\n"
-        "ldrh r0, [r0, #0]\n"
-        "strh r0, [r1, #2]\n"
-        "ldr r3, .Lct09bf8_ra_lit7\n"
-        "adds r0, r4, r3\n"
-        "ldrh r0, [r0, #0]\n"
-        "strh r0, [r1, #10]\n"
-        "ldr r2, .Lct09bf8_ra_lit8\n"
-        "adds r0, r4, r2\n"
-        "ldrh r0, [r0, #0]\n"
-        "strh r0, [r1, #8]\n"
-        "movs r3, #0\n"
-        "ldrsh r0, [r5, r3]\n"
-        "bl 0x08002340\n"
-        "mov r1, sp\n"
-        "strh r0, [r1, #24]\n"
-        "movs r0, #0\n"
-        "ldrsh r1, [r5, r0]\n"
-        "lsls r0, r1, #1\n"
-        "adds r0, r0, r1\n"
-        "lsls r0, r0, #2\n"
-        "adds r0, r0, r4\n"
-        "add r1, sp, #28\n"
-        "adds r0, #48\n"
-        "ldmia r0!, {r2, r3, r4}\n"
-        "stmia r1!, {r2, r3, r4}\n"
-        "b .Lct09bf8_08009f24\n"
-        "movs r0, r0\n"
-        ".align 2, 0\n"
-        ".Lct09bf8_ra_lit1:\n"
-        ".word 0x03001780\n"
-        ".Lct09bf8_ra_lit2:\n"
-        ".word 0x00000574\n"
-        ".Lct09bf8_ra_lit3:\n"
-        ".word 0x00001151\n"
-        ".Lct09bf8_ra_lit4:\n"
-        ".word 0x0500000E\n"
-        ".Lct09bf8_ra_lit5:\n"
-        ".word 0x0000FFFF\n"
-        ".Lct09bf8_ra_lit6:\n"
-        ".word 0x00000576\n"
-        ".Lct09bf8_ra_lit7:\n"
-        ".word 0x0000113E\n"
-        ".Lct09bf8_ra_lit8:\n"
-        ".word 0x0000113C\n"
-        ".Lct09bf8_08009ecc:\n"
-        "movs r2, #1\n"
-        "b .Lct09bf8_08009f4c\n"
-        ".Lct09bf8_08009ed0:\n"
-        "movs r2, #14\n"
-        "b .Lct09bf8_08009f4c\n"
-        ".Lct09bf8_08009ed4:\n"
-        "movs r2, #4\n"
-        "b .Lct09bf8_08009f4c\n"
-        ".Lct09bf8_08009ed8:\n"
-        "movs r2, #5\n"
-        "b .Lct09bf8_08009f4c\n"
-        ".Lct09bf8_08009edc:\n"
-        "movs r2, #8\n"
-        "b .Lct09bf8_08009f4c\n"
-        ".Lct09bf8_08009ee0:\n"
-        "adds r4, #1\n"
-        ".Lct09bf8_08009ee2:\n"
-        "adds r4, #1\n"
-        ".Lct09bf8_08009ee4:\n"
-        "adds r4, #1\n"
-        ".Lct09bf8_08009ee6:\n"
-        "movs r0, #0\n"
-        "str r0, [sp, #60]\n"
-        "add r0, sp, #60\n"
-        "ldr r2, .Lct09bf8_rb_lit1\n"
-        "mov r1, sp\n"
-        "bl sub_0802D974\n"
-        "mov r1, sp\n"
-        "movs r0, #10\n"
-        "strh r0, [r1, #0]\n"
-        "mov r0, sp\n"
-        "strb r4, [r0, #23]\n"
-        "ldr r5, .Lct09bf8_rb_lit2\n"
-        "ldr r0, .Lct09bf8_rb_lit3\n"
-        "adds r4, r5, r0\n"
-        "movs r1, #0\n"
-        "ldrsh r0, [r4, r1]\n"
-        "bl 0x08002340\n"
-        "mov r1, sp\n"
-        "strh r0, [r1, #24]\n"
-        "movs r2, #0\n"
-        "ldrsh r1, [r4, r2]\n"
-        "lsls r0, r1, #1\n"
-        "adds r0, r0, r1\n"
-        "lsls r0, r0, #2\n"
-        "adds r0, r0, r5\n"
-        "add r1, sp, #28\n"
-        "adds r0, #48\n"
-        "ldmia r0!, {r2, r3, r4}\n"
-        "stmia r1!, {r2, r3, r4}\n"
-        ".Lct09bf8_08009f24:\n"
-        "mov r0, sp\n"
-        "bl 0x080188B0\n"
-        "movs r2, #51\n"
-        "b .Lct09bf8_08009f4c\n"
-        "movs r0, r0\n"
-        ".align 2, 0\n"
-        ".Lct09bf8_rb_lit1:\n"
-        ".word 0x0500000E\n"
-        ".Lct09bf8_rb_lit2:\n"
-        ".word 0x03001780\n"
-        ".Lct09bf8_rb_lit3:\n"
-        ".word 0x00000574\n"
-        ".Lct09bf8_08009f3c:\n"
-        "movs r2, #6\n"
-        "b .Lct09bf8_08009f4c\n"
-        ".Lct09bf8_08009f40:\n"
-        "movs r0, #1\n"
-        "bl 0x08001F80\n"
-        "bl 0x0800D778\n"
-        "movs r2, #11\n"
-        ".Lct09bf8_08009f4c:\n"
-        "adds r0, r2, #0\n"
-        "add sp, #64\n"
-        "pop {r4, r5}\n"
-        "pop {r1}\n"
-        "bx r1\n"
-        "movs r0, r0\n"
-        ".syntax divided\n"
-    );
-}
+int _08009BF8(void *ctx)
+{
+    extern u8 CarTickWa[];
+    register u32 slot __asm__("r4") = 0;
+    register int result __asm__("r2") = 0;
+    u32 key;
+    u8 packet[64];
 
+    __asm__ volatile(".globl CarTickWa\nCarTickWa = 0x03001780\n");
+    __asm__ volatile("" : "+r" (result), "+r" (slot));
+    key = *(const u32 *)((const u8 *)ctx + 0x2Cu);
+
+    switch (key) {
+    case 0: {
+        volatile s16 *cursor;
+        volatile u8 *record;
+        const u32 *sourceWords;
+
+        slot = (u32)CarTickWa;
+        cursor = (volatile s16 *)(uintptr_t)(slot + 0x574u);
+        record = (volatile u8 *)(uintptr_t)(slot + (s32)(*cursor) * 12);
+        record += 48;
+        record[0] = 0;
+        record = (volatile u8 *)(uintptr_t)(slot + (s32)(*cursor) * 12);
+        record += 49;
+        record[0] = *(volatile u8 *)(uintptr_t)(slot + 0x1151u);
+        record = (volatile u8 *)(uintptr_t)(slot + (s32)(*cursor) * 12);
+        record += 50;
+        record[0] = 0;
+        record = (volatile u8 *)(uintptr_t)(slot + (s32)(*cursor) * 12);
+        record += 51;
+        record[0] = 0;
+        record = (volatile u8 *)(uintptr_t)(slot + (s32)(*cursor) * 12);
+        record += 52;
+        record[0] = 0;
+        record = (volatile u8 *)(uintptr_t)(slot + (s32)(*cursor) * 12);
+        record += 53;
+        record[0] = 0;
+        record = (volatile u8 *)(uintptr_t)(slot + (s32)(*cursor) * 12);
+        record += 54;
+        record[0] = 0;
+        record = (volatile u8 *)(uintptr_t)(slot + (s32)(*cursor) * 12);
+        record += 55;
+        record[0] = 0;
+        record = (volatile u8 *)(uintptr_t)(slot + (s32)(*cursor) * 12);
+        record += 56;
+        record[0] = 0;
+        record = (volatile u8 *)(uintptr_t)(slot + (s32)(*cursor) * 12);
+        record += 57;
+        record[0] = 0;
+
+        *(u32 *)(packet + 56) = 0;
+        _0802D974(packet + 56, packet, 0x0500000Eu);
+        ((u16 *)packet)[0] = 0xFFFF;
+        ((u16 *)packet)[1] = *(volatile u16 *)(uintptr_t)(slot + 0x576u);
+        ((u16 *)packet)[5] = *(volatile u16 *)(uintptr_t)(slot + 0x113Eu);
+        ((u16 *)packet)[4] = *(volatile u16 *)(uintptr_t)(slot + 0x113Cu);
+        ((u16 *)packet)[12] = (u16)_08002340((int)(*cursor));
+        sourceWords = (const u32 *)(uintptr_t)(slot + (s32)(*cursor) * 12 + 48);
+        __asm__ volatile ("" : : "r" (sourceWords) : "memory");
+        ((u32 *)(packet + 28))[0] = sourceWords[0];
+        ((u32 *)(packet + 28))[1] = sourceWords[1];
+        ((u32 *)(packet + 28))[2] = sourceWords[2];
+        goto packet_epilogue;
+    }
+    case 1:
+        result = 1;
+        break;
+    case 2:
+        result = 14;
+        break;
+    case 3:
+        result = 4;
+        break;
+    case 4:
+        result = 5;
+        break;
+    case 5:
+        result = 8;
+        break;
+    case 9:
+        slot++;
+    case 8:
+        slot++;
+    case 7:
+        slot++;
+    case 6: {
+        volatile s16 *cursor;
+        const u32 *sourceWords;
+
+        *(u32 *)(packet + 60) = 0;
+        _0802D974(packet + 60, packet, 0x0500000Eu);
+        ((u16 *)packet)[0] = 10;
+        packet[23] = (u8)slot;
+        slot = (u32)CarTickWa;
+        cursor = (volatile s16 *)(uintptr_t)(slot + 0x574u);
+        ((u16 *)packet)[12] = (u16)_08002340((int)(*cursor));
+        sourceWords = (const u32 *)(uintptr_t)(slot + (s32)(*cursor) * 12 + 48);
+        __asm__ volatile ("" : : "r" (sourceWords) : "memory");
+        ((u32 *)(packet + 28))[0] = sourceWords[0];
+        ((u32 *)(packet + 28))[1] = sourceWords[1];
+        ((u32 *)(packet + 28))[2] = sourceWords[2];
+        goto packet_epilogue;
+    }
+packet_epilogue:
+        _080188B0(packet);
+        result = 51;
+        break;
+    case 10:
+    case 11:
+    case 12:
+    case 13:
+    case 14:
+    case 15:
+    case 16:
+    case 17:
+    case 18:
+    case 19:
+    case 20:
+    case 21:
+    case 22:
+    case 23:
+    case 24:
+    case 25:
+    case 26:
+    case 27:
+    case 28:
+    case 29:
+    case 30:
+    case 31:
+    case 32:
+    case 33:
+    case 34:
+    case 35:
+    case 36:
+    case 37:
+    case 38:
+    case 39:
+    case 40:
+    case 41:
+    case 42:
+    case 43:
+    case 44:
+    case 45:
+    case 46:
+    case 47:
+    case 48:
+    case 49:
+    case 50:
+    case 51:
+    case 52:
+    case 53:
+    case 54:
+    case 55:
+    case 56:
+    case 57:
+    case 58:
+    case 59:
+    case 60:
+    case 61:
+    case 62:
+    case 63:
+    case 64:
+    case 65:
+    case 66:
+    case 67:
+    case 68:
+    case 69:
+    case 70:
+    case 71:
+    case 72:
+    case 73:
+    case 74:
+    case 75:
+    case 76:
+    case 77:
+    case 78:
+    case 79:
+    case 80:
+    case 81:
+    case 82:
+    case 83:
+    case 84:
+    case 85:
+    case 86:
+    case 87:
+    case 88:
+    case 89:
+    case 90:
+    case 91:
+    case 92:
+    case 93:
+    case 94:
+    case 95:
+    case 96:
+    case 97:
+    case 98:
+    case 99:
+        break;
+    case 100:
+        result = 6;
+        break;
+    case 101:
+        _08001F80(1);
+        _0800D778();
+        result = 11;
+        break;
+    default:
+        break;
+    }
+    return result;
+}
 // ----------------------------------------------------------------------------
 // 0x0800A228 _0800A228 — rec37 tick: reset LIFO, enqueue 13, racer tick.
 // ----------------------------------------------------------------------------
@@ -481,245 +343,180 @@ int _0800A228(void)
 //   variant s16[WA+0x107C]: 0 -> _0800B190, id 49;
 //   1 -> {13,14,15}; 2 -> {13,14,15,+phase id}; 3 -> {...,19};
 //   4 -> {...,22}; else stale (r1 remains live from the caller).
+//   The C switch keeps the ROM's five-entry jump table; variant 2's phase
+//   checks retain their ordered branch tree. The out-of-range selector returns
+//   caller r1 unchanged, captured by the empty output-only asm claim.
 // ----------------------------------------------------------------------------
-__attribute__((naked)) int _0800A254(void)
+int _0800A254(void)
 {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {lr}\n"
-        "ldr r0, .L254_base\n"
-        "ldr r2, .L254_off\n"
-        "adds r0, r0, r2\n"
-        "movs r2, #0\n"
-        "ldrsh r0, [r0, r2]\n"
-        "cmp r0, #4\n"
-        "bhi .L254_end\n"
-        "lsls r0, r0, #2\n"
-        "ldr r1, .L254_lit\n"
-        "adds r0, r0, r1\n"
-        "ldr r0, [r0, #0]\n"
-        "mov pc, r0\n"
-        "movs r0, r0\n"
-        ".align 2, 0\n"
-        ".L254_base: .word 0x03001780\n"
-        ".L254_off: .word 0x0000107C\n"
-        ".L254_lit: .word 0x0800A27C\n"
-        ".word 0x0800A290\n"
-        ".word 0x0800A298\n"
-        ".word 0x0800A2AC\n"
-        ".word 0x0800A302\n"
-        ".word 0x0800A31C\n"
-        ".L254_v0:\n"
-        "bl sub_0800B190\n"
-        "movs r1, #49\n"
-        "b .L254_end\n"
-        ".L254_v1:\n"
-        "bl sub_08004CC4\n"
-        "movs r0, #13\n"
-        "bl sub_08004CD4\n"
-        "movs r0, #14\n"
-        "bl sub_08004CD4\n"
-        "movs r0, #15\n"
-        "b .L254_queue_done\n"
-        ".L254_v2:\n"
-        "bl sub_08004CC4\n"
-        "movs r0, #13\n"
-        "bl sub_08004CD4\n"
-        "movs r0, #14\n"
-        "bl sub_08004CD4\n"
-        "movs r0, #15\n"
-        "bl sub_08004CD4\n"
-        "ldr r0, .L254_phase_base\n"
-        "ldr r1, .L254_phase_off\n"
-        "adds r0, r0, r1\n"
-        "movs r2, #0\n"
-        "ldrsh r0, [r0, r2]\n"
-        "cmp r0, #1\n"
-        "beq .L254_phase1\n"
-        "cmp r0, #1\n"
-        "bgt .L254_phase_gt1\n"
-        "cmp r0, #0\n"
-        "beq .L254_phase0\n"
-        "b .L254_phase_done\n"
-        "movs r0, r0\n"
-        ".align 2, 0\n"
-        ".L254_phase_base: .word 0x03001780\n"
-        ".L254_phase_off: .word 0x00000FBC\n"
-        ".L254_phase_gt1:\n"
-        "cmp r0, #2\n"
-        "beq .L254_phase2\n"
-        "cmp r0, #5\n"
-        "beq .L254_phase5\n"
-        "b .L254_phase_done\n"
-        ".L254_phase0:\n"
-        "movs r0, #18\n"
-        "b .L254_queue_done\n"
-        ".L254_phase5:\n"
-        "movs r0, #17\n"
-        "b .L254_queue_done\n"
-        ".L254_phase1:\n"
-        "movs r0, #16\n"
-        "b .L254_queue_done\n"
-        ".L254_phase2:\n"
-        "movs r0, #16\n"
-        "bl sub_08004CD4\n"
-        "b .L254_phase_done\n"
-        ".L254_v3:\n"
-        "bl sub_08004CC4\n"
-        "movs r0, #13\n"
-        "bl sub_08004CD4\n"
-        "movs r0, #14\n"
-        "bl sub_08004CD4\n"
-        "movs r0, #15\n"
-        "bl sub_08004CD4\n"
-        "movs r0, #19\n"
-        "b .L254_queue_done\n"
-        ".L254_v4:\n"
-        "bl sub_08004CC4\n"
-        "movs r0, #13\n"
-        "bl sub_08004CD4\n"
-        "movs r0, #14\n"
-        "bl sub_08004CD4\n"
-        "movs r0, #15\n"
-        "bl sub_08004CD4\n"
-        "movs r0, #22\n"
-        ".L254_queue_done:\n"
-        "bl sub_08004CD4\n"
-        ".L254_phase_done:\n"
-        "bl _0800AA20\n"
-        "adds r1, r0, #0\n"
-        ".L254_end:\n"
-        "adds r0, r1, #0\n"
-        "pop {r1}\n"
-        "bx r1\n"
-        ".syntax divided\n"
-    );
+    extern u8 CarTickWa[];
+    register int result __asm__("r1");
+    register u32 queueArg __asm__("r0");
+    u32 variant;
+    s16 phase;
+    uintptr_t base;
+
+    __asm__ volatile(".globl CarTickWa\nCarTickWa = 0x03001780\n");
+    __asm__ volatile("" : "=r" (result));
+    base = (uintptr_t)CarTickWa;
+    variant = (u32)*(const s16 *)(uintptr_t)(base + 0x107Cu);
+    if (variant > 4u)
+        return result;
+
+    switch (variant) {
+    case 0:
+        sub_0800B190();
+        result = 49;
+        break;
+    case 1:
+        sub_08004CC4();
+        sub_08004CD4(13);
+        sub_08004CD4(14);
+        queueArg = 15;
+        goto queue_done;
+    case 2:
+        sub_08004CC4();
+        sub_08004CD4(13);
+        sub_08004CD4(14);
+        sub_08004CD4(15);
+        base = (uintptr_t)CarTickWa;
+        phase = *(const s16 *)(uintptr_t)(base + 0x0FBCu);
+        if (phase == 1)
+            goto phase1;
+        if (phase > 1)
+            goto phase_gt1;
+        if (phase == 0)
+            goto phase0;
+        goto phase_done;
+    phase_gt1:
+        if (phase == 2)
+            goto phase2;
+        if (phase == 5)
+            goto phase5;
+        goto phase_done;
+    phase0:
+        queueArg = 18;
+        goto queue_done;
+    phase5:
+        queueArg = 17;
+        goto queue_done;
+    phase1:
+        queueArg = 16;
+        goto queue_done;
+    phase2:
+        sub_08004CD4(16);
+        goto phase_done;
+    case 3:
+        sub_08004CC4();
+        sub_08004CD4(13);
+        sub_08004CD4(14);
+        sub_08004CD4(15);
+        queueArg = 19;
+        goto queue_done;
+    case 4:
+        sub_08004CC4();
+        sub_08004CD4(13);
+        sub_08004CD4(14);
+        sub_08004CD4(15);
+        queueArg = 22;
+    queue_done:
+        sub_08004CD4(queueArg);
+    phase_done:
+        result = _0800AA20();
+        break;
+    }
+    return result;
 }
 
 // ----------------------------------------------------------------------------
-// 0x0800A344 _0800A344 — record-35 PHASE-0 handler (programs queue car id
-// 31 instead of command 42).
+// 0x0800A344 _0800A344 — record-35 PHASE-0 handler. It uses the same
+// variant/phase route as _0800A254, with car id 31 inserted before command 15
+// in variants 1-4. The C switch preserves its jump table and phase branch tree;
+// out-of-range variants return caller r1 unchanged.
 // ----------------------------------------------------------------------------
-__attribute__((naked)) int _0800A344(void)
+int _0800A344(void)
 {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {lr}\n"
-        "ldr r0, .L344_base\n"
-        "ldr r2, .L344_off\n"
-        "adds r0, r0, r2\n"
-        "movs r2, #0\n"
-        "ldrsh r0, [r0, r2]\n"
-        "cmp r0, #4\n"
-        "bhi .L344_end\n"
-        "lsls r0, r0, #2\n"
-        "ldr r1, .L344_lit\n"
-        "adds r0, r0, r1\n"
-        "ldr r0, [r0, #0]\n"
-        "mov pc, r0\n"
-        "movs r0, r0\n"
-        ".align 2, 0\n"
-        ".L344_base: .word 0x03001780\n"
-        ".L344_off: .word 0x0000107C\n"
-        ".L344_lit: .word 0x0800A36C\n"
-        ".word 0x0800A380\n"
-        ".word 0x0800A388\n"
-        ".word 0x0800A3A2\n"
-        ".word 0x0800A3FE\n"
-        ".word 0x0800A41E\n"
-        ".L344_v0:\n"
-        "bl sub_0800B190\n"
-        "movs r1, #49\n"
-        "b .L344_end\n"
-        ".L344_v1:\n"
-        "bl sub_08004CC4\n"
-        "movs r0, #13\n"
-        "bl sub_08004CD4\n"
-        "movs r0, #14\n"
-        "bl sub_08004CD4\n"
-        "movs r0, #31\n"
-        "bl sub_08004CD4\n"
-        "movs r0, #15\n"
-        "b .L344_queue_done\n"
-        ".L344_v2:\n"
-        "bl sub_08004CC4\n"
-        "movs r0, #13\n"
-        "bl sub_08004CD4\n"
-        "movs r0, #14\n"
-        "bl sub_08004CD4\n"
-        "movs r0, #31\n"
-        "bl sub_08004CD4\n"
-        "movs r0, #15\n"
-        "bl sub_08004CD4\n"
-        "ldr r0, .L344_phase_base\n"
-        "ldr r1, .L344_phase_off\n"
-        "adds r0, r0, r1\n"
-        "movs r2, #0\n"
-        "ldrsh r0, [r0, r2]\n"
-        "cmp r0, #1\n"
-        "beq .L344_phase1\n"
-        "cmp r0, #1\n"
-        "bgt .L344_phase_gt1\n"
-        "cmp r0, #0\n"
-        "beq .L344_phase0\n"
-        "b .L344_phase_done\n"
-        "movs r0, r0\n"
-        ".align 2, 0\n"
-        ".L344_phase_base: .word 0x03001780\n"
-        ".L344_phase_off: .word 0x00000FBC\n"
-        ".L344_phase_gt1:\n"
-        "cmp r0, #2\n"
-        "beq .L344_phase2\n"
-        "cmp r0, #5\n"
-        "beq .L344_phase5\n"
-        "b .L344_phase_done\n"
-        ".L344_phase0:\n"
-        "movs r0, #18\n"
-        "b .L344_queue_done\n"
-        ".L344_phase5:\n"
-        "movs r0, #17\n"
-        "b .L344_queue_done\n"
-        ".L344_phase1:\n"
-        "movs r0, #16\n"
-        "b .L344_queue_done\n"
-        ".L344_phase2:\n"
-        "movs r0, #16\n"
-        "bl sub_08004CD4\n"
-        "b .L344_phase_done\n"
-        ".L344_v3:\n"
-        "bl sub_08004CC4\n"
-        "movs r0, #13\n"
-        "bl sub_08004CD4\n"
-        "movs r0, #14\n"
-        "bl sub_08004CD4\n"
-        "movs r0, #31\n"
-        "bl sub_08004CD4\n"
-        "movs r0, #15\n"
-        "bl sub_08004CD4\n"
-        "movs r0, #19\n"
-        "b .L344_queue_done\n"
-        ".L344_v4:\n"
-        "bl sub_08004CC4\n"
-        "movs r0, #13\n"
-        "bl sub_08004CD4\n"
-        "movs r0, #14\n"
-        "bl sub_08004CD4\n"
-        "movs r0, #31\n"
-        "bl sub_08004CD4\n"
-        "movs r0, #15\n"
-        "bl sub_08004CD4\n"
-        "movs r0, #22\n"
-        ".L344_queue_done:\n"
-        "bl sub_08004CD4\n"
-        ".L344_phase_done:\n"
-        "bl _0800AA20\n"
-        "adds r1, r0, #0\n"
-        ".L344_end:\n"
-        "adds r0, r1, #0\n"
-        "pop {r1}\n"
-        "bx r1\n"
-        ".syntax divided\n"
-    );
+    extern u8 CarTickWa[];
+    register int result __asm__("r1");
+    register u32 queueArg __asm__("r0");
+    u32 variant;
+    s16 phase;
+    uintptr_t base;
+
+    __asm__ volatile(".globl CarTickWa\nCarTickWa = 0x03001780\n");
+    __asm__ volatile("" : "=r" (result));
+    base = (uintptr_t)CarTickWa;
+    variant = (u32)*(const s16 *)(uintptr_t)(base + 0x107Cu);
+    if (variant > 4u)
+        return result;
+
+    switch (variant) {
+    case 0:
+        sub_0800B190();
+        result = 49;
+        break;
+    case 1:
+        sub_08004CC4();
+        sub_08004CD4(13);
+        sub_08004CD4(14);
+        sub_08004CD4(31);
+        queueArg = 15;
+        goto queue_done;
+    case 2:
+        sub_08004CC4();
+        sub_08004CD4(13);
+        sub_08004CD4(14);
+        sub_08004CD4(31);
+        sub_08004CD4(15);
+        base = (uintptr_t)CarTickWa;
+        phase = *(const s16 *)(uintptr_t)(base + 0x0FBCu);
+        if (phase == 1)
+            goto phase1;
+        if (phase > 1)
+            goto phase_gt1;
+        if (phase == 0)
+            goto phase0;
+        goto phase_done;
+    phase_gt1:
+        if (phase == 2)
+            goto phase2;
+        if (phase == 5)
+            goto phase5;
+        goto phase_done;
+    phase0:
+        queueArg = 18;
+        goto queue_done;
+    phase5:
+        queueArg = 17;
+        goto queue_done;
+    phase1:
+        queueArg = 16;
+        goto queue_done;
+    phase2:
+        sub_08004CD4(16);
+        goto phase_done;
+    case 3:
+        sub_08004CC4();
+        sub_08004CD4(13);
+        sub_08004CD4(14);
+        sub_08004CD4(31);
+        sub_08004CD4(15);
+        queueArg = 19;
+        goto queue_done;
+    case 4:
+        sub_08004CC4();
+        sub_08004CD4(13);
+        sub_08004CD4(14);
+        sub_08004CD4(31);
+        sub_08004CD4(15);
+        queueArg = 22;
+    queue_done:
+        sub_08004CD4(queueArg);
+    phase_done:
+        result = _0800AA20();
+        break;
+    }
+    return result;
 }
 
 // ----------------------------------------------------------------------------
@@ -786,176 +583,130 @@ int _0800A44C(void)
 
 // ----------------------------------------------------------------------------
 // 0x0800A518 _0800A518 — variant-B race selector.
-//   1: {13,14,41,44,15}
+//   0: sound off, return 49; 1: {13,14,41,44,15}
 //   2: {13,14,41,44,15} + ev17 if u16[WA+0x1078]==1 / ev16 if ==2
-//   3: + ev20    4: + ev22
+//   3: same queue + ev20; 4: same queue + ev22; else return caller r1.
+//   The C switch preserves the ROM jump table; its final section pad is zero.
 // ----------------------------------------------------------------------------
-__attribute__((naked)) int _0800A518(void) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {lr}\n"
-        "ldr r0, .Lct0a518_0800a534\n"
-        "ldr r2, .Lct0a518_0800a538\n"
-        "adds r0, r0, r2\n"
-        "movs r2, #0\n"
-        "ldrsh r0, [r0, r2]\n"
-        "cmp r0, #4\n"
-        "bls .Lct0a518_0800a52a\n"
-        "b .Lct0a518_0800a624\n"
-        ".Lct0a518_0800a52a:\n"
-        "lsls r0, r0, #2\n"
-        "ldr r1, .Lct0a518_0800a53c\n"
-        "adds r0, r0, r1\n"
-        "ldr r0, [r0]\n"
-        "mov pc, r0\n"
-        ".align 2, 0\n"
-        ".Lct0a518_0800a534: .word 0x03001780\n"
-        ".Lct0a518_0800a538: .word 0x0000107C\n"
-        ".Lct0a518_0800a53c: .word .Lct0a518_0800a540\n"
-        ".Lct0a518_0800a540:\n"
-        ".word .Lct0a518_0800a554\n"
-        ".word .Lct0a518_0800a55c\n"
-        ".word .Lct0a518_0800a580\n"
-        ".word .Lct0a518_0800a5ce\n"
-        ".word .Lct0a518_0800a5f4\n"
-        ".Lct0a518_0800a554:\n"
-        "bl sub_0800B190\n"
-        "movs r1, #49\n"
-        "b .Lct0a518_0800a624\n"
-        ".Lct0a518_0800a55c:\n"
-        "bl sub_08004CC4\n"
-        "movs r0, #13\n"
-        "bl sub_08004CD4\n"
-        "movs r0, #14\n"
-        "bl sub_08004CD4\n"
-        "movs r0, #41\n"
-        "bl sub_08004CD4\n"
-        "movs r0, #44\n"
-        "bl sub_08004CD4\n"
-        "movs r0, #15\n"
-        "bl sub_08004CD4\n"
-        "b .Lct0a518_0800a61e\n"
-        ".Lct0a518_0800a580:\n"
-        "bl sub_08004CC4\n"
-        "movs r0, #13\n"
-        "bl sub_08004CD4\n"
-        "movs r0, #14\n"
-        "bl sub_08004CD4\n"
-        "movs r0, #41\n"
-        "bl sub_08004CD4\n"
-        "movs r0, #44\n"
-        "bl sub_08004CD4\n"
-        "movs r0, #15\n"
-        "bl sub_08004CD4\n"
-        "ldr r0, .Lct0a518_0800a5b8\n"
-        "ldr r1, .Lct0a518_0800a5bc\n"
-        "adds r0, r0, r1\n"
-        "movs r2, #0\n"
-        "ldrsh r0, [r0, r2]\n"
-        "cmp r0, #1\n"
-        "beq .Lct0a518_0800a5c0\n"
-        "cmp r0, #2\n"
-        "beq .Lct0a518_0800a5c4\n"
-        "b .Lct0a518_0800a61e\n"
-        "movs r0, r0\n"
-        ".align 2, 0\n"
-        ".Lct0a518_0800a5b8: .word 0x03001780\n"
-        ".Lct0a518_0800a5bc: .word 0x00001078\n"
-        ".Lct0a518_0800a5c0:\n"
-        "movs r0, #17\n"
-        "b .Lct0a518_0800a618\n"
-        ".Lct0a518_0800a5c4:\n"
-        "movs r0, #16\n"
-        "movs r1, #0\n"
-        "bl _08023FF8\n"
-        "b .Lct0a518_0800a61e\n"
-        ".Lct0a518_0800a5ce:\n"
-        "bl sub_08004CC4\n"
-        "movs r0, #13\n"
-        "bl sub_08004CD4\n"
-        "movs r0, #14\n"
-        "bl sub_08004CD4\n"
-        "movs r0, #41\n"
-        "bl sub_08004CD4\n"
-        "movs r0, #44\n"
-        "bl sub_08004CD4\n"
-        "movs r0, #15\n"
-        "bl sub_08004CD4\n"
-        "movs r0, #20\n"
-        "b .Lct0a518_0800a618\n"
-        ".Lct0a518_0800a5f4:\n"
-        "bl sub_08004CC4\n"
-        "movs r0, #13\n"
-        "bl sub_08004CD4\n"
-        "movs r0, #14\n"
-        "bl sub_08004CD4\n"
-        "movs r0, #41\n"
-        "bl sub_08004CD4\n"
-        "movs r0, #44\n"
-        "bl sub_08004CD4\n"
-        "movs r0, #15\n"
-        "bl sub_08004CD4\n"
-        "movs r0, #22\n"
-        ".Lct0a518_0800a618:\n"
-        "movs r1, #0\n"
-        "bl _08023FF8\n"
-        ".Lct0a518_0800a61e:\n"
-        "bl _0800AA20\n"
-        "adds r1, r0, #0\n"
-        ".Lct0a518_0800a624:\n"
-        "adds r0, r1, #0\n"
-        "pop {r1}\n"
-        "bx r1\n"
-        "movs r0, r0\n"
-        ".syntax divided\n"
-    );
+int _0800A518(void) {
+    extern u8 CarTickWa[];
+    register int result __asm__("r1");
+    register int eventId __asm__("r0");
+    u32 variant;
+    s16 eventChoice;
+    uintptr_t base;
+
+    __asm__ volatile(".globl CarTickWa\nCarTickWa = 0x03001780\n");
+    __asm__ volatile("" : "=r" (result));
+    base = (uintptr_t)CarTickWa;
+    variant = (u32)*(const s16 *)(uintptr_t)(base + 0x107Cu);
+
+    if (variant <= 4u) {
+        switch (variant) {
+        case 0:
+            sub_0800B190();
+            result = 49;
+            break;
+        case 1:
+            sub_08004CC4();
+            sub_08004CD4(13);
+            sub_08004CD4(14);
+            sub_08004CD4(41);
+            sub_08004CD4(44);
+            sub_08004CD4(15);
+            result = _0800AA20();
+            break;
+        case 2:
+            sub_08004CC4();
+            sub_08004CD4(13);
+            sub_08004CD4(14);
+            sub_08004CD4(41);
+            sub_08004CD4(44);
+            sub_08004CD4(15);
+            base = (uintptr_t)CarTickWa;
+            eventChoice = *(const s16 *)(uintptr_t)(base + 0x1078u);
+            if (eventChoice == 1)
+                goto event17;
+            if (eventChoice == 2)
+                goto event16;
+            goto tick;
+        event17:
+            eventId = 17;
+            goto event_common;
+        event16:
+                _08023FF8(16, 0);
+            goto tick;
+        case 3:
+            sub_08004CC4();
+            sub_08004CD4(13);
+            sub_08004CD4(14);
+            sub_08004CD4(41);
+            sub_08004CD4(44);
+            sub_08004CD4(15);
+            eventId = 20;
+            goto event_common;
+        case 4:
+            sub_08004CC4();
+            sub_08004CD4(13);
+            sub_08004CD4(14);
+            sub_08004CD4(41);
+            sub_08004CD4(44);
+            sub_08004CD4(15);
+            eventId = 22;
+        event_common:
+            _08023FF8(eventId, 0);
+        tick:
+            result = _0800AA20();
+            break;
+        }
+    }
+    return result;
 }
+__asm__(".align 2, 0");
 
 // ----------------------------------------------------------------------------
 // 0x0800A62C _0800A62C(ctx) — record 13 tick (boot-flow decision point).
 //   key = [ctx+0x2C]: ==1 -> _08009B60, return 50;
 //   >1 -> return 0; ==0 -> request latch u16[WA+0x1086]:
 //   ==1 -> clear it, return 49; else return 14.
-//   Naked transcription: the second head check (cmp #1/bcs) has no C
-//   spelling — agbcc folds `key < 1`, `key >= 1`, `key > 0` and `key != 0`
-//   alike to cmp #0 (measured t_* battery against old_agbcc; same fold as
-//   StateA_IsGameMode in src/state_block_a.c). The ROM passes the key
-//   (r0, already holding it — the ctx load clobbers r0) rather than ctx;
-//   the callee only uses sp/WA (asm/menu_pkt.s), so the value is
-//   immaterial. The host fallback below keeps that shape in C.
+//   The latch, helper call, and shared result path are C. Register pins keep
+//   the ROM's r0 key and r1 result; three inline instructions retain the
+//   initial zero result across the assembly branch and the second `cmp #1 /
+//   bcs`, which agbcc folds to `cmp #0` for equivalent C conditions. The ROM
+//   passes the key (now 1) rather than ctx; the callee only uses sp/WA
+//   (asm/menu_pkt.s), so the value is immaterial.
 // ----------------------------------------------------------------------------
-__attribute__((naked)) int _0800A62C(void *ctx) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {lr}\n"
-        "movs r1, #0\n"
-        "ldr r0, [r0, #44]\n"
-        "cmp r0, #1\n"
-        "beq 5f\n"
-        "cmp r0, #1\n"
-        "bcs 6f\n"
-        "ldr r0, 3f\n"
-        "ldr r1, 4f\n"
-        "adds r2, r0, r1\n"
-        "ldrh r0, [r2, #0]\n"
-        "cmp r0, #1\n"
-        "bne 2f\n"
-        "movs r1, #49\n"
-        "movs r0, #0\n"
-        "strh r0, [r2, #0]\n"
-        "b 6f\n"
-        ".align 2, 0\n"
-        "3: .word 0x03001780\n"
-        "4: .word 0x00001086\n"
-        "2: movs r1, #14\n"
-        "b 6f\n"
-        "5: bl _08009B60\n"
-        "movs r1, #50\n"
-        "6: adds r0, r1, #0\n"
-        "pop {r1}\n"
-        "bx r1\n"
-        ".syntax divided\n"
-    );
+int _0800A62C(void *ctx) {
+    register int result __asm__("r1");
+    register u32 key __asm__("r0");
+    __asm__ volatile("movs r1, #0" : "=r" (result) : : "cc");
+    key = *(const u32 *)((const u8 *)ctx + 0x2Cu);
+
+    if (key == 1u)
+        goto key_one;
+    __asm__ volatile("cmp r0, #1\n\tbcs 1f" ::: "cc");
+
+    {
+        extern u8 CarTickWa[];
+        __asm__(".globl CarTickWa\nCarTickWa = 0x03001780\n");
+        uintptr_t base = (uintptr_t)CarTickWa;
+        volatile u16 *request = (volatile u16 *)(uintptr_t)(base + 0x1086u);
+
+        if (*request == 1u) {
+            result = 49;
+            *request = 0;
+        } else
+            result = 14;
+    }
+
+    goto done;
+
+key_one:
+    _08009B60((void *)(uintptr_t)key);
+    result = 50;
+done:
+    __asm__ volatile("1:" ::: "cc");
+    return result;
 }
 
 // ----------------------------------------------------------------------------
@@ -1076,42 +827,50 @@ int _08009F5C(void *c) __attribute__((alias("Rec9F5C")));
 // with the explicit `0` fill.
 __asm__(".align 2, 0");
 
-// PROBE 11/36. The gap is the stale-register seam, not the branch tree: the
-// ROM keeps the caller's r4 alive in a callee-saved register and so opens
-// `push {r4, lr}`; STALE_REG (above) is the repo's documented stand-in and
-// cannot produce that, so agbcc opens `push {lr}` and materialises the value
-// in r1. The file's existing Rec9F5C, same idiom, scores 5/92. Four source
-// shapes (preloaded r4, inverted key!=1 nest, explicit else-assign) all give
-// 11/36, so the shape is not the lever.
+// CONVERTED to C 2026-10-14. Two levers, both needed (the old PROBE 11/36 note
+// below is kept for the record -- it predates both).
+//
+//  * the stale-register seam. The ROM's default arm never writes r4, so the
+//    return is the CALLER's r4 (`adds r0, r4, #0`), and the ROM saves it
+//    (`push {r4, lr}`). A LOCAL register variable pinned to r4 plus an empty
+//    `__asm__ volatile("" : "=r" (r))` stake claim reads that incoming value
+//    while keeping agbcc's own frame. The file-scope STALE_REG macro above is
+//    the wrong lever here: it emits `adds r4, r4, #0` before the call and
+//    loses the frame (measured 15/36). See
+//    docs/findings/r4_input_reachability.md lever B.
+//  * the branch tree is a THREE-case switch whose MIDDLE case is empty. That
+//    is what emits the ROM's doubled compare against 1 (`cmp r0,#1 / beq exit`
+//    then `cmp r0,#1 / bcc case0`): a binary case search whose pivot 1 is
+//    itself a case. A two-case switch emits the flat chain `cmp #0 / cmp #2`
+//    (13/36), and every `key < 1u` spelling folds to `cmp r0,#0`.
+//
+// PROBE 11/36 (superseded). The gap is the stale-register seam, not the branch
+// tree: the ROM keeps the caller's r4 alive in a callee-saved register and so
+// opens `push {r4, lr}`; STALE_REG (above) is the repo's documented stand-in
+// and cannot produce that, so agbcc opens `push {lr}` and materialises the
+// value in r1. The file's existing Rec9F5C, same idiom, scores 5/92. Four
+// source shapes (preloaded r4, inverted key!=1 nest, explicit else-assign) all
+// give 11/36, so the shape is not the lever.
 // --------------------------------------------------------------------------
-__attribute__((naked)) int Rec9FFC(void *ctx) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, lr}\n"
-        "bl _08004C0C\n"
-        "cmp r0, #1\n"
-        "beq 1f\n"
-        "cmp r0, #1\n"
-        "bcc 2f\n"
-        "cmp r0, #2\n"
-        "beq 3f\n"
-        "b 1f\n"
-        "2:\n"
-        "movs r4, #15\n"
-        "b 1f\n"
-        "3:\n"
-        "movs r4, #40\n"
-        "1:\n"
-        "adds r0, r4, #0\n"
-        "pop {r4}\n"
-        "pop {r1}\n"
-        "bx r1\n"
-        "movs r0, r0\n"
-        ".syntax divided\n"
-    );
+int Rec9FFC(void *ctx)
+{
+    register int r __asm__("r4");
+    u32 key;
+    __asm__ volatile("" : "=r" (r));
+    key = (u32)(uintptr_t)_08004C0C();
+    switch (key) {
+    case 0:  r = 15; break;
+    case 1:  break;
+    case 2:  r = 40; break;
+    }
+    (void)ctx;
+    return r;
 }
 int _08009FFC(void *c) __attribute__((alias("Rec9FFC")));
 int sub_08009FFC(void *c) __attribute__((alias("Rec9FFC")));
+// Body is 34 bytes; the ROM pads the span to 36 with `00 00`, not gas's 0x46c0
+// section-close filler. Same file-scope idiom as Rec9F5C above.
+__asm__(".align 2, 0");
 
 // ----------------------------------------------------------------------------
 // 0x0800A1A4 CarTick_Rec_0A1A4(ctx) — records 40/17/18: fire the engine
@@ -1135,52 +894,44 @@ int sub_0800A1A4(void *c) __attribute__((alias("CarTick_Rec_0A1A4")));
 // ----------------------------------------------------------------------------
 // 0x08009FB8 Rec9FB8(ctx) — record 23 ROUTER. key = s16[WA+0x1080]:
 //   0 -> 24, 1 -> 34, 2 -> 37 (and mark grid [37][0] = 1), else -> stale r4.
-//   Naked transcription (same seam as the sibling Rec9FFC just below): the
-//   stale-r4 tail keeps the caller's r4 alive with zero instructions, and
-//   the compare chain (cmp #1/beq, cmp #1/bgt, cmp #0/beq) has no C
-//   spelling — agbcc folds every range-check form and zeroes the stale
-//   value. The literal word sits mid-function at entry+0x1C, as in the ROM.
+// CONVERTED to C 2026-10-14 — same two levers as Rec9FFC below, plus two
+// details this body needs (the old note called the compare chain unreachable;
+// it is not):
+//   * the stale-r4 tail is the local-pinned-to-r4 + empty-asm stake claim
+//     (docs/findings/r4_input_reachability.md lever B).
+//   * the compare chain (`cmp #1 / beq`, `cmp #1 / bgt`, `cmp #0 / beq`) is a
+//     THREE-case signed switch (pivot 1) — agbcc's binary case search,
+//     unchanged by the claim lever. An if-chain scores 15/68.
+//   * the key read must be NON-volatile to reach the single indexed `ldrsh`,
+//     and the WA base must go through a VARIABLE (`base = (uintptr_t)WA`), as
+//     the comment on MgrBlock records: a symbol plus a constant offset folds
+//     into the pool word (measured 8/68), a variable does not.
+//   * the literal word sits mid-function at entry+0x1C, as in the ROM, and the
+//     span's `00 00` pad is the file-scope `.align 2, 0` idiom.
 // ----------------------------------------------------------------------------
-__attribute__((naked)) int Rec9FB8(void *ctx) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, lr}\n"
-        "ldr r0, 5f\n"
-        "movs r1, #132\n"
-        "lsls r1, r1, #5\n"
-        "adds r0, r0, r1\n"
-        "movs r1, #0\n"
-        "ldrsh r0, [r0, r1]\n"
-        "cmp r0, #1\n"
-        "beq 2f\n"
-        "cmp r0, #1\n"
-        "bgt 4f\n"
-        "cmp r0, #0\n"
-        "beq 3f\n"
-        "b 1f\n"
-        ".align 2, 0\n"
-        "5: .word 0x03001780\n"
-        "4: cmp r0, #2\n"
-        "beq 6f\n"
-        "b 1f\n"
-        "3: movs r4, #24\n"
-        "b 1f\n"
-        "2: movs r4, #34\n"
-        "b 1f\n"
-        "6: movs r4, #37\n"
-        "movs r0, #37\n"
-        "movs r1, #0\n"
-        "movs r2, #1\n"
-        "bl _08004C48\n"
-        "1: adds r0, r4, #0\n"
-        "pop {r4}\n"
-        "pop {r1}\n"
-        "bx r1\n"
-        "movs r0, r0\n"
-        ".syntax divided\n"
-    );
+int Rec9FB8(void *ctx)
+{
+    extern u8 CarTickWa[];
+    __asm__(".globl CarTickWa\nCarTickWa = 0x03001780\n");
+    register int r __asm__("r4");
+    s32 key;
+    uintptr_t base;
+    __asm__ volatile("" : "=r" (r));
+    base = (uintptr_t)CarTickWa;
+    key = *(const s16 *)(uintptr_t)(base + 0x1080u);
+    switch (key) {
+    case 0:  r = 24; break;
+    case 1:  r = 34; break;
+    case 2:
+        r = 37;
+        _08004C48(37, 0, 1);
+        break;
+    }
+    (void)ctx;
+    return r;
 }
 int _08009FB8(void *c) __attribute__((alias("Rec9FB8")));
+__asm__(".align 2, 0");
 
 // ----------------------------------------------------------------------------
 // 0x0800A028 CarTick_Rec_0A028(ctx) — record 31 ROUTER.
@@ -1220,94 +971,79 @@ int _0800A028(void *c) __attribute__((alias("CarTick_Rec_0A028")));
 //   1 : u16[WA+0x0FBC] == 7 ? 20 : 19
 //   2 : 22        3 : 36        else : stale r2
 // ----------------------------------------------------------------------------
-__attribute__((naked)) int CarTick_Rec_0A074(void *ctx)
+int CarTick_Rec_0A074(void *ctx)
 {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {lr}\n"
-        "ldr r0, [r0, #44]\n"
-        "cmp r0, #1\n"
-        "beq 9f\n"
-        "cmp r0, #1\n"
-        "bcc 1f\n"
-        "cmp r0, #2\n"
-        "beq 10f\n"
-        "cmp r0, #3\n"
-        "beq 11f\n"
-        "b 12f\n"
-        "1:\n"
-        "ldr r1, 2f\n"
-        "ldr r3, 3f\n"
-        "adds r0, r1, r3\n"
-        "movs r3, #0\n"
-        "ldrsh r0, [r0, r3]\n"
-        "adds r3, r1, #0\n"
-        "cmp r0, #7\n"
-        "bhi 12f\n"
-        "lsls r0, r0, #2\n"
-        "ldr r1, 4f\n"
-        "adds r0, r0, r1\n"
-        "ldr r0, [r0, #0]\n"
-        "mov pc, r0\n"
-        ".align 2, 0\n"
-        "2: .word 0x03001780\n"
-        "3: .word 0x00000FBC\n"
-        "4: .word 0x0800A0B0\n"
-        ".word 0x0800A0D0\n"
-        ".word 0x0800A0E8\n"
-        ".word 0x0800A0E8\n"
-        ".word 0x0800A0E8\n"
-        ".word 0x0800A116\n"
-        ".word 0x0800A0F0\n"
-        ".word 0x0800A0D4\n"
-        ".word 0x0800A0DC\n"
-        "13:\n"
-        "movs r2, #33\n"
-        "b 12f\n"
-        "14:\n"
-        "bl _0800B190\n"
-        "movs r2, #49\n"
-        "b 12f\n"
-        "15:\n"
-        "ldr r1, 5f\n"
-        "adds r0, r3, r1\n"
-        "movs r3, #0\n"
-        "ldrsh r0, [r0, r3]\n"
-        "cmp r0, #1\n"
-        "beq 6f\n"
-        "16:\n"
-        "movs r2, #16\n"
-        "b 12f\n"
-        ".align 2, 0\n"
-        "5: .word 0x00001078\n"
-        "6:\n"
-        "movs r2, #17\n"
-        "b 12f\n"
-        "9:\n"
-        "ldr r0, 7f\n"
-        "ldr r1, 8f\n"
-        "adds r0, r0, r1\n"
-        "movs r2, #19\n"
-        "ldrh r0, [r0, #0]\n"
-        "cmp r0, #7\n"
-        "bne 12f\n"
-        "movs r2, #20\n"
-        "b 12f\n"
-        "movs r0, r0\n"
-        ".align 2, 0\n"
-        "7: .word 0x03001780\n"
-        "8: .word 0x00000FBC\n"
-        "10:\n"
-        "movs r2, #22\n"
-        "b 12f\n"
-        "11:\n"
-        "movs r2, #36\n"
-        "12:\n"
-        "adds r0, r2, #0\n"
-        "pop {r1}\n"
-        "bx r1\n"
-        ".syntax divided\n"
-    );
+    extern u8 CarTickWa[];
+    register int result __asm__("r2");
+    u32 key;
+    u32 phase;
+    uintptr_t base;
+
+    __asm__ volatile(".globl CarTickWa\nCarTickWa = 0x03001780\n");
+    __asm__ volatile("" : "=r" (result));
+    key = *(const u32 *)((const u8 *)ctx + 0x2Cu);
+
+    switch (key) {
+    case 0:
+        base = (uintptr_t)CarTickWa;
+        phase = (u32)*(const s16 *)(uintptr_t)(base + 0x0FBCu);
+        switch (phase) {
+        case 0:
+            result = 33;
+            break;
+        case 1:
+        case 2:
+        case 3:
+            result = 16;
+            break;
+        case 5:
+            goto phase17;
+        case 6:
+            _0800B190();
+            result = 49;
+            break;
+        case 7:
+            base = (uintptr_t)CarTickWa;
+            {
+                u32 selectorValue = (u32)(base + 0x1078u);
+                __asm__ volatile (".code 16\n\t"
+                                  "movs r3, #0\n\t"
+                                  "ldrsh %0, [%0, r3]"
+                                  : "+l" (selectorValue)
+                                  : : "r3", "cc", "memory");
+                if (selectorValue == 1)
+                    goto phase17;
+            }
+            result = 16;
+            break;
+        phase17:
+            result = 17;
+            break;
+        }
+        break;
+    case 1: {
+        register u32 phaseBase __asm__("r0") = (u32)CarTickWa;
+        register u32 phaseOffset __asm__("r1") = 0x0FBCu;
+        __asm__ volatile ("" : "+r" (phaseBase), "+r" (phaseOffset));
+        __asm__ volatile (".code 16\n\t"
+                          "add r0, r0, r1\n\t"
+                          "movs r2, #19\n\t"
+                          "ldrh r0, [r0]"
+                          : "+r" (phaseBase), "+r" (phaseOffset), "=r" (result)
+                          : : "cc", "memory");
+        phase = phaseBase;
+        if (phase == 7)
+            result = 20;
+        break;
+    }
+    case 2:
+        result = 22;
+        break;
+    case 3:
+        result = 36;
+        break;
+    }
+    return result;
 }
 int _0800A074(void *c) __attribute__((alias("CarTick_Rec_0A074")));
 

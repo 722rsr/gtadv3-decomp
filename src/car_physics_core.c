@@ -39,184 +39,96 @@ extern void _0802B368(u16 v);   // closure spelling; was sub_08002B368, a
 #define WA 0x03001780u
 
 // ---- grant_delay : _0800B82C ----
-// The ROM keeps the work-area offsets in three literal words and uses a
-// halfword count as the byte offset into the award log.  The exact body is
-// retained here while the surrounding grant flow remains source-lifted.
-__attribute__((naked)) void GrantDelay_Tick(int carId, int delay){
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, lr}\n"
-        "adds r5, r0, #0\n"
-        "ldr r6, 1f\n"
-        "ldr r2, 2f\n"
-        "adds r0, r6, r2\n"
-        "ldr r0, [r0, #0]\n"
-        "cmp r0, r1\n"
-        "bcc .Lgrant_done\n"
-        "adds r0, r5, #0\n"
-        "bl sub_08025FAC\n"
-        "lsls r0, r0, #16\n"
-        "cmp r0, #0\n"
-        "bne .Lgrant_done\n"
-        "ldr r1, 3f\n"
-        "adds r0, r6, r1\n"
-        "movs r4, #1\n"
-        "strh r4, [r0, #0]\n"
-        "adds r0, r5, #0\n"
-        "bl sub_08024C90\n"
-        "lsls r0, r0, #1\n"
-        "movs r2, #131\n"
-        "lsls r2, r2, #5\n"
-        "adds r1, r6, r2\n"
-        "adds r0, r0, r1\n"
-        "strh r4, [r0, #0]\n"
-        "ldr r0, 4f\n"
-        "adds r4, r6, r0\n"
-        "movs r1, #0\n"
-        "ldrsh r0, [r4, r1]\n"
-        "subs r2, #34\n"
-        "adds r1, r6, r2\n"
-        "adds r0, r0, r1\n"
-        "strb r5, [r0, #0]\n"
-        "adds r0, r5, #0\n"
-        "bl sub_08025F78\n"
-        "movs r0, #28\n"
-        "movs r1, #0\n"
-        "bl _08023FF8\n"
-        "ldrh r0, [r4, #0]\n"
-        "adds r0, #1\n"
-        "strh r0, [r4, #0]\n"
-        ".Lgrant_done:\n"
-        "pop {r4, r5, r6}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        ".align 2\n"
-        "1: .word 0x03001780\n"
-        "2: .word 0x000010F8\n"
-        "3: .word 0x00001058\n"
-        "4: .word 0x0000103C\n"
-        ".syntax divided\n"
-    );
+void GrantDelay_Tick(int carId, int delay)
+{
+    extern u8 GrantDelayWa[];
+    register int id __asm__("r5") = carId;
+    register volatile u8 *wa __asm__("r6") = (volatile u8 *)GrantDelayWa;
+    register u32 offset __asm__("r2") = 0x10F8u;
+    register uintptr_t slot __asm__("r4");
+    register u32 index __asm__("r0");
+    register volatile u8 *store_addr __asm__("r1");
+
+    __asm__(".globl GrantDelayWa\nGrantDelayWa = 0x03001780\n");
+    if (*(volatile u32 *)(wa + offset) < (u32)delay)
+        return;
+    if (((u32)sub_08025FAC(id) << 16) != 0)
+        return;
+
+    offset = 0x1058u;
+    {
+        volatile u16 *flag = (volatile u16 *)(wa + offset);
+        __asm__ volatile ("" : : : "memory");
+        slot = 1;
+        *flag = (u16)slot;
+    }
+    index = (u32)sub_08024C90(id);
+    index <<= 1;
+    offset = 131;
+    offset <<= 5;
+    store_addr = wa + offset;
+    index += (u32)(uintptr_t)store_addr;
+    *(volatile u16 *)(uintptr_t)index = (u16)slot;
+
+    slot = (uintptr_t)(wa + 0x103Cu);
+    {
+        register u32 work __asm__("r1") = 0;
+        register s32 count __asm__("r0");
+        __asm__ volatile ("ldrsh %0, [%1, %2]"
+                          : "=r" (count)
+                          : "r" ((volatile u8 *)slot), "r" (work)
+                          : "memory");
+        offset -= 34;
+        work = (u32)(wa + offset);
+        count += work;
+        *(volatile u8 *)(uintptr_t)count = (u8)id;
+    }
+
+    sub_08025F78(id);
+    _08023FF8(28, 0);
+    *(volatile u16 *)slot = *(volatile u16 *)slot + 1;
 }
+
 void _0800B82C(int a0,int a1) __attribute__((alias("GrantDelay_Tick")));
 void sub_0800B82C(int a0,int a1) __attribute__((alias("GrantDelay_Tick")));
 
 // ---- go_start : _0800B89C ----
-__attribute__((naked)) void GoStart_Tick(void) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, lr}\n"
-        "ldr r5, 1f\n"
-        "ldr r0, 2f\n"
-        "adds r4, r5, r0\n"
-        "ldrh r1, [r4, #0]\n"
-        "cmp r1, #1\n"
-        "bne.n .Lb89c_stage2\n"
-        "movs r0, #86\n"
-        "movs r1, #10\n"
-        "bl 0x0800b82c\n"
-        "movs r0, #56\n"
-        "movs r1, #30\n"
-        "bl 0x0800b82c\n"
-        ".Lb89c_stage2:\n"
-        "ldrh r2, [r4, #0]\n"
-        "cmp r2, #2\n"
-        "bne.n .Lb89c_stage3\n"
-        "movs r0, #55\n"
-        "movs r1, #10\n"
-        "bl 0x0800b82c\n"
-        "movs r0, #31\n"
-        "movs r1, #30\n"
-        "bl 0x0800b82c\n"
-        ".Lb89c_stage3:\n"
-        "ldrh r0, [r4, #0]\n"
-        "cmp r0, #3\n"
-        "bne.n .Lb89c_stage_checks\n"
-        "movs r0, #14\n"
-        "movs r1, #10\n"
-        "bl 0x0800b82c\n"
-        "movs r0, #98\n"
-        "movs r1, #30\n"
-        "bl 0x0800b82c\n"
-        ".Lb89c_stage_checks:\n"
-        "ldrh r4, [r4, #0]\n"
-        "cmp r4, #1\n"
-        "bne.n .Lb89c_second\n"
-        "ldr r1, 3f\n"
-        "adds r0, r5, r1\n"
-        "ldr r0, [r0, #0]\n"
-        "cmp r0, #19\n"
-        "bls.n .Lb89c_second\n"
-        "movs r0, #1\n"
-        "bl 0x08026004\n"
-        "lsls r0, r0, #16\n"
-        "cmp r0, #0\n"
-        "bne.n .Lb89c_second\n"
-        "movs r0, #1\n"
-        "bl 0x08025ff0\n"
-        "ldr r2, 4f\n"
-        "adds r4, r5, r2\n"
-        "movs r1, #0\n"
-        "ldrsh r0, [r4, r1]\n"
-        "lsls r0, r0, #1\n"
-        "adds r2, #2\n"
-        "adds r1, r5, r2\n"
-        "adds r0, r0, r1\n"
-        "movs r1, #2\n"
-        "strh r1, [r0, #0]\n"
-        "movs r0, #30\n"
-        "movs r1, #0\n"
-        "bl 0x08023ff8\n"
-        "ldrh r0, [r4, #0]\n"
-        "adds r0, #1\n"
-        "strh r0, [r4, #0]\n"
-        ".Lb89c_second:\n"
-        "ldr r5, 1f\n"
-        "ldr r1, 2f\n"
-        "adds r0, r5, r1\n"
-        "ldrh r0, [r0, #0]\n"
-        "cmp r0, #2\n"
-        "bne.n .Lb89c_done\n"
-        "ldr r2, 3f\n"
-        "adds r0, r5, r2\n"
-        "ldr r0, [r0, #0]\n"
-        "cmp r0, #19\n"
-        "bls.n .Lb89c_done\n"
-        "movs r0, #2\n"
-        "bl 0x08026004\n"
-        "lsls r0, r0, #16\n"
-        "cmp r0, #0\n"
-        "bne.n .Lb89c_done\n"
-        "movs r0, #2\n"
-        "bl 0x08025ff0\n"
-        "ldr r0, 4f\n"
-        "adds r4, r5, r0\n"
-        "movs r1, #0\n"
-        "ldrsh r0, [r4, r1]\n"
-        "lsls r0, r0, #1\n"
-        "ldr r2, 5f\n"
-        "adds r1, r5, r2\n"
-        "adds r0, r0, r1\n"
-        "movs r1, #3\n"
-        "strh r1, [r0, #0]\n"
-        "movs r0, #30\n"
-        "movs r1, #0\n"
-        "bl 0x08023ff8\n"
-        "ldrh r0, [r4, #0]\n"
-        "adds r0, #1\n"
-        "strh r0, [r4, #0]\n"
-        ".Lb89c_done:\n"
-        "pop {r4, r5}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        ".align 2, 0\n"
-        "1: .word 0x03001780\n"
-        "2: .word 0x00000576\n"
-        "3: .word 0x000010f8\n"
-        "4: .word 0x0000104a\n"
-        "5: .word 0x0000104c\n"
-        ".syntax divided\n"
-    );
+void GoStart_Tick(void) {
+    register volatile u8 *wa __asm__("r5") = (volatile u8 *)(uintptr_t)WA;
+    register volatile u16 *stage __asm__("r4") = (volatile u16 *)(wa + 0x576);
+
+    if (*stage == 1) {
+        GrantDelay_Tick(86, 10);
+        GrantDelay_Tick(56, 30);
+    }
+    if (*stage == 2) {
+        GrantDelay_Tick(55, 10);
+        GrantDelay_Tick(31, 30);
+    }
+    if (*stage == 3) {
+        GrantDelay_Tick(14, 10);
+        GrantDelay_Tick(98, 30);
+    }
+
+    if (*stage == 1 && *(volatile u32 *)(wa + 0x10F8) > 19u &&
+        (u16)sub_08026004(1) == 0) {
+        sub_08025FF0(1);
+        volatile s16 *selection = (volatile s16 *)(wa + 0x104A);
+        s16 index = *(s16 *)(uintptr_t)selection;
+        *(volatile u16 *)(wa + 0x104C + 2 * (s32)index) = 2;
+        _08023FF8(30, 0);
+        *selection = (u16)(*selection + 1);
+    }
+
+    if (*stage == 2 && *(volatile u32 *)(wa + 0x10F8) > 19u &&
+        (u16)sub_08026004(2) == 0) {
+        sub_08025FF0(2);
+        volatile s16 *selection = (volatile s16 *)(wa + 0x104A);
+        s16 index = *(s16 *)(uintptr_t)selection;
+        *(volatile u16 *)(wa + 0x104C + 2 * (s32)index) = 3;
+        _08023FF8(30, 0);
+        *selection = (u16)(*selection + 1);
+    }
 }
 void _0800B89C(void) __attribute__((alias("GoStart_Tick")));
 void sub_0800B89C(void) __attribute__((alias("GoStart_Tick")));

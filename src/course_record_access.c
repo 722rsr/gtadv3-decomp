@@ -1,20 +1,9 @@
-// ============================================================================
-// course_record_access.c — C lift of the 4 remaining course_leaves_95f0.s
-// functions (VMA 0x080096A4 / 0x08009830 / 0x08009900 / 0x080099D0).
-//
-// Transcribed instruction-for-instruction from asm/course_leaves_95f0.s.
-//
-// Course-state block: *0x030003E4 (subsystem instance slot), fields used:
-//   +0  mode (u32)          +4  counter (u32, mode-1 path)
-//   +12 u16 submode         +14/16/18 s16 HUD fields
-//   +20/22/24 u16 HUD trio  +36 record area
-// IWRAM cells: 0x03001780+0x10C6/0x10C8/0x10CA/0x1114/0x111A/0x111D.
-// ============================================================================
+// Course record and HUD accessors.
 
 #include "gba/types.h"
 
 // ---- extern callees --------------------------------------------------------
-extern void _0802D974(const void *a, void *b, u32 c);   // CpuSet
+extern void sub_0802D974(const void *a, void *b, u32 c); // CpuSet
 extern s16  _080261B0(int a);                            // 0x080261B0 Ai_AwardLeafGet
 extern s16  _080261F8(int a);                            // 0x080261F8 award s16 read
 extern void _08007A04(void *a, int b);                   // 0x08007A04 (defined in course_resource_more.c)
@@ -32,105 +21,48 @@ extern void _08009748(u16 a, u16 b);                     // 0x08009748 (course_l
 
 // Anchors (byte-exact pools):
 #define CL_SLOT   ((volatile u32 *)(uintptr_t)0x030003E4)
-#define CL_WA     ((volatile u8 *)(uintptr_t)0x03001780)
-#define CL_TPL    ((void *)(uintptr_t)0x08291F7C)
 
 
-// ----------------------------------------------------------------------------
-// sub_080096A4 — course-state HUD record setup (r0 = new record pointer).
-//   *slot = r0; CpuSet(&0, slot, 0x0500000B) (11 halfword zero-fill via
-//   fill ctrl); [rec+14] = 261B0(10); [rec+16] = 261F8(10);
-//   [rec+18] = 261F8(11); seek template 0x08291F7C+36 via 0798C;
-//   07A04(rec+36, s16[rec+14]); 07614(0x08291F7C, 0, 1, s16[rec+16]);
-//   07614(0x08291F7C, 0, 0, s16[rec+18]); [rec+20] = 1;
-//   [rec+22] = u16[0x03001780+0x10C6]; [rec+24] = u16[0x03001780+0x10C8].
-//
-// The ROM carries no 40-byte stack buffer: the 0798C callee's sp argument
-// feeds straight through from the 4-byte frame, and the CpuSet source word
-// (`movs r0,#0 / str r0,[sp]`) is the same word reused as that argument.
-// A `u8 tpl[40]` local widens the frame (`sub sp,#0x2C`), so the scratch
-// pointer must alias the 4-byte frame slot instead.
-//
-// PROLOGUE SHAPE (measured): `adds r1,r0,#0 / ldr r4,[slot] / str r1,[r4]`.
-// The copy must be a PLAIN local initialized from the argument BEFORE the
-// slot base is materialized -- not a pinned register, not the argument
-// itself. `adds r5,r0,#0` appears only when the pin (or a wide live range)
-// keeps a second copy alive; without it the copy dies at the first store
-// and the slot load follows in ROM order.
-__attribute__((naked)) void CourseLeaves_096A4(void *rec) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, lr}\n"
-        "sub sp, #4\n"
-        "adds r1, r0, #0\n"
-        "ldr r4, .L96a4_slot\n"
-        "str r1, [r4, #0]\n"
-        "movs r0, #0\n"
-        "str r0, [sp, #0]\n"
-        "ldr r2, .L96a4_ctrl\n"
-        "mov r0, sp\n"
-        "bl sub_0802D974\n"
-        "movs r0, #10\n"
-        "bl sub_080261B0\n"
-        "ldr r1, [r4, #0]\n"
-        "strh r0, [r1, #14]\n"
-        "movs r0, #10\n"
-        "bl 0x080261F8\n"
-        "ldr r1, [r4, #0]\n"
-        "strh r0, [r1, #16]\n"
-        "movs r0, #11\n"
-        "bl 0x080261F8\n"
-        "ldr r1, [r4, #0]\n"
-        "strh r0, [r1, #18]\n"
-        "ldr r5, .L96a4_tpl\n"
-        "adds r1, #36\n"
-        "adds r0, r5, #0\n"
-        "bl sub_0800798C\n"
-        "ldr r1, [r4, #0]\n"
-        "adds r0, r1, #0\n"
-        "adds r0, #36\n"
-        "movs r2, #14\n"
-        "ldrsh r1, [r1, r2]\n"
-        "bl sub_08007A04\n"
-        "ldr r0, [r4, #0]\n"
-        "movs r1, #16\n"
-        "ldrsh r3, [r0, r1]\n"
-        "adds r0, r5, #0\n"
-        "movs r1, #0\n"
-        "movs r2, #1\n"
-        "bl sub_08007614\n"
-        "ldr r0, [r4, #0]\n"
-        "movs r2, #18\n"
-        "ldrsh r3, [r0, r2]\n"
-        "adds r0, r5, #0\n"
-        "movs r1, #0\n"
-        "movs r2, #0\n"
-        "bl sub_08007614\n"
-        "ldr r2, [r4, #0]\n"
-        "movs r0, #1\n"
-        "strh r0, [r2, #20]\n"
-        "ldr r0, .L96a4_wa\n"
-        "ldr r3, .L96a4_c6\n"
-        "adds r1, r0, r3\n"
-        "ldrh r1, [r1, #0]\n"
-        "strh r1, [r2, #22]\n"
-        "ldr r1, .L96a4_c8\n"
-        "adds r0, r0, r1\n"
-        "ldrh r0, [r0, #0]\n"
-        "strh r0, [r2, #24]\n"
-        "add sp, #4\n"
-        "pop {r4, r5}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        ".align 2, 0\n"
-        ".L96a4_slot: .word 0x030003E4\n"
-        ".L96a4_ctrl: .word 0x0500000B\n"
-        ".L96a4_tpl: .word 0x08291F7C\n"
-        ".L96a4_wa: .word 0x03001780\n"
-        ".L96a4_c6: .word 0x000010C6\n"
-        ".L96a4_c8: .word 0x000010C8\n"
-        ".syntax divided\n"
-    );
+// 0x080096A4: initialize the course HUD record and copy its template fields.
+void CourseLeaves_096A4(void *rec)
+{
+    void *new_record = rec;
+    void **slot = (void **)0x030003E4u;
+    u32 zero_storage;
+    u32 second_offset;
+    register volatile u8 *current __asm__("r2");
+    register volatile u8 *work __asm__("r0");
+    register volatile u8 *source __asm__("r1");
+    register u32 offset __asm__("r3");
+    register u32 zero_value __asm__("r0");
+    extern u8 CourseLeaves096A4Wa[];
+    void *template;
+
+    __asm__(".globl CourseLeaves096A4Wa\nCourseLeaves096A4Wa = 0x03001780\n");
+    __asm__ volatile ("" : "+r" (new_record) : : "memory");
+    *slot = new_record;
+    __asm__ volatile ("movs %0, #0" : "=r" (zero_value));
+    zero_storage = zero_value;
+    sub_0802D974(&zero_storage, new_record, 0x0500000Bu);
+    *(volatile u16 *)((u8 *)*slot + 14) = _080261B0(10);
+    *(volatile u16 *)((u8 *)*slot + 16) = _080261F8(10);
+    *(volatile u16 *)((u8 *)*slot + 18) = _080261F8(11);
+
+    template = (void *)(uintptr_t)0x08291F7Cu;
+    _0800798C(template, (u8 *)*slot + 36);
+    _08007A04((u8 *)*slot + 36, *(s16 *)((u8 *)*slot + 14));
+    _08007614(template, 0, 1, *(s16 *)((u8 *)*slot + 16));
+    _08007614(template, 0, 0, *(s16 *)((u8 *)*slot + 18));
+    current = *slot;
+    *(volatile u16 *)(current + 20) = 1;
+    work = (volatile u8 *)CourseLeaves096A4Wa;
+    offset = 0x10C6u;
+    __asm__ volatile ("" : "+r" (work), "+r" (offset) : : "memory");
+    source = work + offset;
+    *(volatile u16 *)(current + 22) = *(volatile u16 *)source;
+    second_offset = 0x10C8u;
+    __asm__ volatile ("" : "+r" (second_offset) : : "memory");
+    *(volatile u16 *)(current + 24) = *(volatile u16 *)(work + second_offset);
 }
 void _080096A4(void *a) __attribute__((alias("CourseLeaves_096A4")));
 void sub_080096A4(void *a) __attribute__((alias("CourseLeaves_096A4")));

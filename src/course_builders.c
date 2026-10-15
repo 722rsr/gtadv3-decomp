@@ -6,589 +6,639 @@
 // explicit stack args/temporaries, table strides, direct helper ABIs.
 // Uses course trace 0x0203F760 -> 0x030039D0 root where it proves r4=out/w args.
 
-extern int sub_08002D97C(int a, int b); // u32 div, s32
-extern int sub_08002D978(int a, int b); // s32 div, s16
+extern int sub_0802D97C(int a, int b); // u32 div, s32
+extern int sub_0802D978(int a, int b); // s32 div, s16
 
-__attribute__((naked)) void Course_Build_Emit8A(void *out, int w) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, lr}\n"
-        "mov r6, sl\n"
-        "mov r5, r9\n"
-        "mov r4, r8\n"
-        "push {r4, r5, r6}\n"
-        "adds r4, r0, #0\n"
-        "adds r5, r1, #0\n"
-        "movs r0, #150\n"
-        "lsls r0, r0, #1\n"
-        "mov r8, r0\n"
-        "adds r0, r5, #0\n"
-        "mov r1, r8\n"
-        "bl 0x0802d97c\n"
-        "movs r1, #3\n"
-        "bl 0x0802d978\n"
-        "mov sl, r0\n"
-        "ldr r6, 1f\n"
-        "adds r0, r5, #0\n"
-        "adds r1, r6, #0\n"
-        "bl 0x0802d97c\n"
-        "mov r1, r8\n"
-        "bl 0x0802d978\n"
-        "mov r9, r0\n"
-        "adds r0, r5, #0\n"
-        "adds r1, r6, #0\n"
-        "bl 0x0802d978\n"
-        "mov r8, r0\n"
-        "ldr r1, 2f\n"
-        "adds r5, r1, #0\n"
-        "strh r5, [r4, #0]\n"
-        "movs r0, #90\n"
-        "strh r0, [r4, #2]\n"
-        "mov r0, r8\n"
-        "movs r1, #10\n"
-        "bl 0x0802d978\n"
-        "ldr r6, 3f\n"
-        "ldr r1, [r6, #0]\n"
-        "lsls r0, r0, #1\n"
-        "ldrh r2, [r1, #52]\n"
-        "adds r0, r2, r0\n"
-        "ldrh r1, [r1, #54]\n"
-        "lsls r1, r1, #12\n"
-        "orrs r0, r1\n"
-        "strh r0, [r4, #4]\n"
-        "adds r4, #8\n"
-        "strh r5, [r4, #0]\n"
-        "movs r0, #98\n"
-        "strh r0, [r4, #2]\n"
-        "mov r0, r8\n"
-        "movs r1, #10\n"
-        "bl 0x0802d97c\n"
-        "ldr r2, [r6, #0]\n"
-        "lsls r0, r0, #1\n"
-        "ldrh r3, [r2, #52]\n"
-        "adds r0, r3, r0\n"
-        "ldrh r3, [r2, #54]\n"
-        "lsls r1, r3, #12\n"
-        "orrs r0, r1\n"
-        "strh r0, [r4, #4]\n"
-        "adds r4, #8\n"
-        "strh r5, [r4, #0]\n"
-        "movs r0, #106\n"
-        "strh r0, [r4, #2]\n"
-        "ldrh r0, [r2, #52]\n"
-        "adds r0, #20\n"
-        "ldrh r2, [r2, #54]\n"
-        "lsls r1, r2, #12\n"
-        "orrs r0, r1\n"
-        "strh r0, [r4, #4]\n"
-        "adds r4, #8\n"
-        "strh r5, [r4, #0]\n"
-        "movs r0, #114\n"
-        "strh r0, [r4, #2]\n"
-        "mov r0, r9\n"
-        "movs r1, #10\n"
-        "bl 0x0802d978\n"
-        "ldr r1, [r6, #0]\n"
-        "lsls r0, r0, #1\n"
-        "ldrh r2, [r1, #52]\n"
-        "adds r0, r2, r0\n"
-        "ldrh r1, [r1, #54]\n"
-        "lsls r1, r1, #12\n"
-        "orrs r0, r1\n"
-        "strh r0, [r4, #4]\n"
-        "adds r4, #8\n"
-        "strh r5, [r4, #0]\n"
-        "movs r0, #122\n"
-        "strh r0, [r4, #2]\n"
-        "mov r0, r9\n"
-        "movs r1, #10\n"
-        "bl 0x0802d97c\n"
-        "ldr r2, [r6, #0]\n"
-        "lsls r0, r0, #1\n"
-        "ldrh r3, [r2, #52]\n"
-        "adds r0, r3, r0\n"
-        "ldrh r3, [r2, #54]\n"
-        "lsls r1, r3, #12\n"
-        "orrs r0, r1\n"
-        "strh r0, [r4, #4]\n"
-        "adds r4, #8\n"
-        "strh r5, [r4, #0]\n"
-        "movs r0, #130\n"
-        "strh r0, [r4, #2]\n"
-        "ldrh r0, [r2, #52]\n"
-        "adds r0, #22\n"
-        "ldrh r2, [r2, #54]\n"
-        "lsls r1, r2, #12\n"
-        "orrs r0, r1\n"
-        "strh r0, [r4, #4]\n"
-        "adds r4, #8\n"
-        "strh r5, [r4, #0]\n"
-        "movs r0, #138\n"
-        "strh r0, [r4, #2]\n"
-        "mov r0, sl\n"
-        "movs r1, #10\n"
-        "bl 0x0802d978\n"
-        "ldr r1, [r6, #0]\n"
-        "lsls r0, r0, #1\n"
-        "ldrh r2, [r1, #52]\n"
-        "adds r0, r2, r0\n"
-        "ldrh r1, [r1, #54]\n"
-        "lsls r1, r1, #12\n"
-        "orrs r0, r1\n"
-        "strh r0, [r4, #4]\n"
-        "adds r4, #8\n"
-        "strh r5, [r4, #0]\n"
-        "movs r0, #146\n"
-        "strh r0, [r4, #2]\n"
-        "mov r0, sl\n"
-        "movs r1, #10\n"
-        "bl 0x0802d97c\n"
-        "ldr r1, [r6, #0]\n"
-        "lsls r0, r0, #1\n"
-        "ldrh r3, [r1, #52]\n"
-        "adds r0, r3, r0\n"
-        "ldrh r1, [r1, #54]\n"
-        "lsls r1, r1, #12\n"
-        "orrs r0, r1\n"
-        "strh r0, [r4, #4]\n"
-        "adds r4, #8\n"
-        "adds r0, r4, #0\n"
-        "pop {r3, r4, r5}\n"
-        "mov r8, r3\n"
-        "mov r9, r4\n"
-        "mov sl, r5\n"
-        "pop {r4, r5, r6}\n"
-        "pop {r1}\n"
-        "bx r1\n"
-        ".align 2, 0\n"
-        "1: .word 0x00004650\n"
-        "2: .word 0x0000803c\n"
-        "3: .word 0x030003e0\n"
-        ".syntax divided\n"
-    );
-}
-void _0800861C(void *a, int b) __attribute__((alias("Course_Build_Emit8A")));
-void sub_0800861C(void *a, int b) __attribute__((alias("Course_Build_Emit8A")));
+void *Course_Build_Emit8A(void *out, int w)
+{
+    register volatile u8 *dst __asm__("r4") = (volatile u8 *)out;
+    register s32 width __asm__("r5") = (s32)w;
+    register s32 pitch __asm__("r8");
+    register s32 mid __asm__("r9");
+    register s32 tall __asm__("sl");
+    register u32 tableCell __asm__("r6");
+    register u32 result __asm__("r0");
+    register u32 base __asm__("r1");
+    register u32 rowBase2 __asm__("r2");
+    register u32 label __asm__("r1");
 
-__attribute__((naked)) void Course_Build_Emit8B(void *out, int w) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, lr}\n"
-        "mov r6, sl\n"
-        "mov r5, r9\n"
-        "mov r4, r8\n"
-        "push {r4, r5, r6}\n"
-        "adds r4, r0, #0\n"
-        "adds r5, r1, #0\n"
-        "movs r0, #150\n"
-        "lsls r0, r0, #1\n"
-        "mov r8, r0\n"
-        "adds r0, r5, #0\n"
-        "mov r1, r8\n"
-        "bl 0x0802d97c\n"
-        "movs r1, #3\n"
-        "bl 0x0802d978\n"
-        "mov sl, r0\n"
-        "ldr r6, 1f\n"
-        "adds r0, r5, #0\n"
-        "adds r1, r6, #0\n"
-        "bl 0x0802d97c\n"
-        "mov r1, r8\n"
-        "bl 0x0802d978\n"
-        "mov r9, r0\n"
-        "adds r0, r5, #0\n"
-        "adds r1, r6, #0\n"
-        "bl 0x0802d978\n"
-        "mov r8, r0\n"
-        "movs r1, #128\n"
-        "lsls r1, r1, #8\n"
-        "adds r5, r1, #0\n"
-        "strh r5, [r4, #0]\n"
-        "movs r0, #56\n"
-        "strh r0, [r4, #2]\n"
-        "mov r0, r8\n"
-        "movs r1, #10\n"
-        "bl 0x0802d978\n"
-        "ldr r6, 2f\n"
-        "ldr r1, [r6, #0]\n"
-        "lsls r0, r0, #1\n"
-        "ldrh r2, [r1, #52]\n"
-        "adds r0, r2, r0\n"
-        "ldrh r1, [r1, #54]\n"
-        "lsls r1, r1, #12\n"
-        "orrs r0, r1\n"
-        "strh r0, [r4, #4]\n"
-        "adds r4, #8\n"
-        "strh r5, [r4, #0]\n"
-        "movs r0, #64\n"
-        "strh r0, [r4, #2]\n"
-        "mov r0, r8\n"
-        "movs r1, #10\n"
-        "bl 0x0802d97c\n"
-        "ldr r2, [r6, #0]\n"
-        "lsls r0, r0, #1\n"
-        "ldrh r3, [r2, #52]\n"
-        "adds r0, r3, r0\n"
-        "ldrh r3, [r2, #54]\n"
-        "lsls r1, r3, #12\n"
-        "orrs r0, r1\n"
-        "strh r0, [r4, #4]\n"
-        "adds r4, #8\n"
-        "strh r5, [r4, #0]\n"
-        "movs r0, #70\n"
-        "strh r0, [r4, #2]\n"
-        "ldrh r0, [r2, #52]\n"
-        "adds r0, #20\n"
-        "ldrh r2, [r2, #54]\n"
-        "lsls r1, r2, #12\n"
-        "orrs r0, r1\n"
-        "strh r0, [r4, #4]\n"
-        "adds r4, #8\n"
-        "strh r5, [r4, #0]\n"
-        "movs r0, #77\n"
-        "strh r0, [r4, #2]\n"
-        "mov r0, r9\n"
-        "movs r1, #10\n"
-        "bl 0x0802d978\n"
-        "ldr r1, [r6, #0]\n"
-        "lsls r0, r0, #1\n"
-        "ldrh r2, [r1, #52]\n"
-        "adds r0, r2, r0\n"
-        "ldrh r1, [r1, #54]\n"
-        "lsls r1, r1, #12\n"
-        "orrs r0, r1\n"
-        "strh r0, [r4, #4]\n"
-        "adds r4, #8\n"
-        "strh r5, [r4, #0]\n"
-        "movs r0, #85\n"
-        "strh r0, [r4, #2]\n"
-        "mov r0, r9\n"
-        "movs r1, #10\n"
-        "bl 0x0802d97c\n"
-        "ldr r2, [r6, #0]\n"
-        "lsls r0, r0, #1\n"
-        "ldrh r3, [r2, #52]\n"
-        "adds r0, r3, r0\n"
-        "ldrh r3, [r2, #54]\n"
-        "lsls r1, r3, #12\n"
-        "orrs r0, r1\n"
-        "strh r0, [r4, #4]\n"
-        "adds r4, #8\n"
-        "strh r5, [r4, #0]\n"
-        "movs r0, #91\n"
-        "strh r0, [r4, #2]\n"
-        "ldrh r0, [r2, #52]\n"
-        "adds r0, #22\n"
-        "ldrh r2, [r2, #54]\n"
-        "lsls r1, r2, #12\n"
-        "orrs r0, r1\n"
-        "strh r0, [r4, #4]\n"
-        "adds r4, #8\n"
-        "strh r5, [r4, #0]\n"
-        "movs r0, #98\n"
-        "strh r0, [r4, #2]\n"
-        "mov r0, sl\n"
-        "movs r1, #10\n"
-        "bl 0x0802d978\n"
-        "ldr r1, [r6, #0]\n"
-        "lsls r0, r0, #1\n"
-        "ldrh r2, [r1, #52]\n"
-        "adds r0, r2, r0\n"
-        "ldrh r1, [r1, #54]\n"
-        "lsls r1, r1, #12\n"
-        "orrs r0, r1\n"
-        "strh r0, [r4, #4]\n"
-        "adds r4, #8\n"
-        "strh r5, [r4, #0]\n"
-        "movs r0, #106\n"
-        "strh r0, [r4, #2]\n"
-        "mov r0, sl\n"
-        "movs r1, #10\n"
-        "bl 0x0802d97c\n"
-        "ldr r1, [r6, #0]\n"
-        "lsls r0, r0, #1\n"
-        "ldrh r3, [r1, #52]\n"
-        "adds r0, r3, r0\n"
-        "ldrh r1, [r1, #54]\n"
-        "lsls r1, r1, #12\n"
-        "orrs r0, r1\n"
-        "strh r0, [r4, #4]\n"
-        "adds r4, #8\n"
-        "adds r0, r4, #0\n"
-        "pop {r3, r4, r5}\n"
-        "mov r8, r3\n"
-        "mov r9, r4\n"
-        "mov sl, r5\n"
-        "pop {r4, r5, r6}\n"
-        "pop {r1}\n"
-        "bx r1\n"
-        ".align 2, 0\n"
-        "1: .word 0x00004650\n"
-        "2: .word 0x030003e0\n"
-        ".syntax divided\n"
-    );
-}
-void _08008768(void *a, int b) __attribute__((alias("Course_Build_Emit8B")));
-void sub_08008768(void *a, int b) __attribute__((alias("Course_Build_Emit8B")));
+    pitch = 150;
+    pitch <<= 1;
+    result = (u32)sub_0802D97C(width, pitch);
+    result = (u32)sub_0802D978((s32)result, 3);
+    tall = (s32)result;
 
-__attribute__((naked)) void Course_Build_Emit8C(void *out, int w) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, lr}\n"
-        "mov r6, sl\n"
-        "mov r5, r9\n"
-        "mov r4, r8\n"
-        "push {r4, r5, r6}\n"
-        "adds r4, r0, #0\n"
-        "adds r5, r1, #0\n"
-        "movs r0, #150\n"
-        "lsls r0, r0, #1\n"
-        "mov r8, r0\n"
-        "adds r0, r5, #0\n"
-        "mov r1, r8\n"
-        "bl 0x0802d97c\n"
-        "movs r1, #3\n"
-        "bl 0x0802d978\n"
-        "mov sl, r0\n"
-        "ldr r6, 1f\n"
-        "adds r0, r5, #0\n"
-        "adds r1, r6, #0\n"
-        "bl 0x0802d97c\n"
-        "mov r1, r8\n"
-        "bl 0x0802d978\n"
-        "mov r9, r0\n"
-        "adds r0, r5, #0\n"
-        "adds r1, r6, #0\n"
-        "bl 0x0802d978\n"
-        "mov r8, r0\n"
-        "ldr r1, 2f\n"
-        "adds r5, r1, #0\n"
-        "strh r5, [r4, #0]\n"
-        "movs r0, #56\n"
-        "strh r0, [r4, #2]\n"
-        "mov r0, r8\n"
-        "movs r1, #10\n"
-        "bl 0x0802d978\n"
-        "ldr r6, 3f\n"
-        "ldr r1, [r6, #0]\n"
-        "lsls r0, r0, #1\n"
-        "ldrh r2, [r1, #52]\n"
-        "adds r0, r2, r0\n"
-        "ldrh r1, [r1, #54]\n"
-        "lsls r1, r1, #12\n"
-        "orrs r0, r1\n"
-        "strh r0, [r4, #4]\n"
-        "adds r4, #8\n"
-        "strh r5, [r4, #0]\n"
-        "movs r0, #64\n"
-        "strh r0, [r4, #2]\n"
-        "mov r0, r8\n"
-        "movs r1, #10\n"
-        "bl 0x0802d97c\n"
-        "ldr r2, [r6, #0]\n"
-        "lsls r0, r0, #1\n"
-        "ldrh r3, [r2, #52]\n"
-        "adds r0, r3, r0\n"
-        "ldrh r3, [r2, #54]\n"
-        "lsls r1, r3, #12\n"
-        "orrs r0, r1\n"
-        "strh r0, [r4, #4]\n"
-        "adds r4, #8\n"
-        "strh r5, [r4, #0]\n"
-        "movs r0, #70\n"
-        "strh r0, [r4, #2]\n"
-        "ldrh r0, [r2, #52]\n"
-        "adds r0, #20\n"
-        "ldrh r2, [r2, #54]\n"
-        "lsls r1, r2, #12\n"
-        "orrs r0, r1\n"
-        "strh r0, [r4, #4]\n"
-        "adds r4, #8\n"
-        "strh r5, [r4, #0]\n"
-        "movs r0, #77\n"
-        "strh r0, [r4, #2]\n"
-        "mov r0, r9\n"
-        "movs r1, #10\n"
-        "bl 0x0802d978\n"
-        "ldr r1, [r6, #0]\n"
-        "lsls r0, r0, #1\n"
-        "ldrh r2, [r1, #52]\n"
-        "adds r0, r2, r0\n"
-        "ldrh r1, [r1, #54]\n"
-        "lsls r1, r1, #12\n"
-        "orrs r0, r1\n"
-        "strh r0, [r4, #4]\n"
-        "adds r4, #8\n"
-        "strh r5, [r4, #0]\n"
-        "movs r0, #85\n"
-        "strh r0, [r4, #2]\n"
-        "mov r0, r9\n"
-        "movs r1, #10\n"
-        "bl 0x0802d97c\n"
-        "ldr r2, [r6, #0]\n"
-        "lsls r0, r0, #1\n"
-        "ldrh r3, [r2, #52]\n"
-        "adds r0, r3, r0\n"
-        "ldrh r3, [r2, #54]\n"
-        "lsls r1, r3, #12\n"
-        "orrs r0, r1\n"
-        "strh r0, [r4, #4]\n"
-        "adds r4, #8\n"
-        "strh r5, [r4, #0]\n"
-        "movs r0, #91\n"
-        "strh r0, [r4, #2]\n"
-        "ldrh r0, [r2, #52]\n"
-        "adds r0, #22\n"
-        "ldrh r2, [r2, #54]\n"
-        "lsls r1, r2, #12\n"
-        "orrs r0, r1\n"
-        "strh r0, [r4, #4]\n"
-        "adds r4, #8\n"
-        "strh r5, [r4, #0]\n"
-        "movs r0, #98\n"
-        "strh r0, [r4, #2]\n"
-        "mov r0, sl\n"
-        "movs r1, #10\n"
-        "bl 0x0802d978\n"
-        "ldr r1, [r6, #0]\n"
-        "lsls r0, r0, #1\n"
-        "ldrh r2, [r1, #52]\n"
-        "adds r0, r2, r0\n"
-        "ldrh r1, [r1, #54]\n"
-        "lsls r1, r1, #12\n"
-        "orrs r0, r1\n"
-        "strh r0, [r4, #4]\n"
-        "adds r4, #8\n"
-        "strh r5, [r4, #0]\n"
-        "movs r0, #106\n"
-        "strh r0, [r4, #2]\n"
-        "mov r0, sl\n"
-        "movs r1, #10\n"
-        "bl 0x0802d97c\n"
-        "ldr r1, [r6, #0]\n"
-        "lsls r0, r0, #1\n"
-        "ldrh r3, [r1, #52]\n"
-        "adds r0, r3, r0\n"
-        "ldrh r1, [r1, #54]\n"
-        "lsls r1, r1, #12\n"
-        "orrs r0, r1\n"
-        "strh r0, [r4, #4]\n"
-        "adds r4, #8\n"
-        "adds r0, r4, #0\n"
-        "pop {r3, r4, r5}\n"
-        "mov r8, r3\n"
-        "mov r9, r4\n"
-        "mov sl, r5\n"
-        "pop {r4, r5, r6}\n"
-        "pop {r1}\n"
-        "bx r1\n"
-        ".align 2, 0\n"
-        "1: .word 0x00004650\n"
-        "2: .word 0x0000808f\n"
-        "3: .word 0x030003e0\n"
-        ".syntax divided\n"
-    );
-}
-void _080088B0(void *a, int b) __attribute__((alias("Course_Build_Emit8C")));
-void sub_080088B0(void *a, int b) __attribute__((alias("Course_Build_Emit8C")));
+    tableCell = 0x4650;
+    result = (u32)sub_0802D97C(width, (s32)tableCell);
+    result = (u32)sub_0802D978((s32)result, pitch);
+    mid = (s32)result;
+    result = (u32)sub_0802D978(width, (s32)tableCell);
+    pitch = (s32)result;
 
-__attribute__((naked)) void Course_Build_Tail_089FC(void *out) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, lr}\n"
-        "adds r2, r0, #0\n"
-        "ldr r4, 1f\n"
-        "ldr r3, [r4, #0]\n"
-        "movs r1, #16\n"
-        "ldrsh r0, [r3, r1]\n"
-        "cmp r0, #1\n"
-        "ble.n .L89fc_initial\n"
-        "ldr r0, [r3, #84]\n"
-        "movs r1, #255\n"
-        "ands r0, r1\n"
-        "movs r5, #128\n"
-        "lsls r5, r5, #7\n"
-        "adds r1, r5, #0\n"
-        "orrs r0, r1\n"
-        "strh r0, [r2, #0]\n"
-        "ldr r0, [r3, #80]\n"
-        "adds r0, #12\n"
-        "ldr r5, 2f\n"
-        "adds r1, r5, #0\n"
-        "ands r0, r1\n"
-        "ldr r5, 3f\n"
-        "adds r1, r5, #0\n"
-        "orrs r0, r1\n"
-        "strh r0, [r2, #2]\n"
-        "ldrh r1, [r3, #58]\n"
-        "lsls r0, r1, #12\n"
-        "ldrh r5, [r3, #60]\n"
-        "orrs r0, r5\n"
-        "strh r0, [r2, #4]\n"
-        "adds r2, #8\n"
-        "movs r1, #16\n"
-        "ldrsh r0, [r3, r1]\n"
-        "cmp r0, #9\n"
-        "ble.n .L89fc_second\n"
-        "movs r0, #74\n"
-        "strh r0, [r2, #0]\n"
-        "ldr r5, 4f\n"
-        "adds r0, r5, #0\n"
-        "strh r0, [r2, #2]\n"
-        "ldrh r0, [r3, #56]\n"
-        "adds r0, #16\n"
-        "ldrh r3, [r3, #58]\n"
-        "lsls r1, r3, #12\n"
-        "orrs r0, r1\n"
-        "strh r0, [r2, #4]\n"
-        "adds r2, #8\n"
-        ".L89fc_second:\n"
-        "movs r0, #74\n"
-        "strh r0, [r2, #0]\n"
-        "ldr r1, 5f\n"
-        "adds r0, r1, #0\n"
-        "strh r0, [r2, #2]\n"
-        "ldr r1, [r4, #0]\n"
-        "ldrh r3, [r1, #58]\n"
-        "lsls r0, r3, #12\n"
-        "ldrh r1, [r1, #56]\n"
-        "orrs r0, r1\n"
-        "b.n .L89fc_tail_store\n"
-        ".align 2, 0\n"
-        "1: .word 0x030003e0\n"
-        "2: .word 0x000001ff\n"
-        "3: .word 0xffffc000\n"
-        "4: .word 0x00008094\n"
-        "5: .word 0x000080a8\n"
-        ".L89fc_initial:\n"
-        "ldr r5, 6f\n"
-        "adds r0, r5, #0\n"
-        "strh r0, [r2, #0]\n"
-        "ldr r1, 7f\n"
-        "adds r0, r1, #0\n"
-        "strh r0, [r2, #2]\n"
-        "ldrh r5, [r3, #58]\n"
-        "lsls r0, r5, #12\n"
-        "ldrh r3, [r3, #56]\n"
-        "orrs r0, r3\n"
-        ".L89fc_tail_store:\n"
-        "strh r0, [r2, #4]\n"
-        "adds r2, #8\n"
-        "adds r0, r2, #0\n"
-        "pop {r4, r5}\n"
-        "pop {r1}\n"
-        "bx r1\n"
-        ".align 2, 0\n"
-        "6: .word 0x0000404a\n"
-        "7: .word 0x0000c0a8\n"
-        ".syntax divided\n"
-    );
+    label = 0x803C;
+    __asm__ volatile ("" : "+r" (label));
+    width = (s32)label;
+    *(volatile u16 *)(dst + 0) = (u16)width;
+    *(volatile u16 *)(dst + 2) = 90;
+    result = (u32)sub_0802D978(pitch, 10);
+    tableCell = 0x030003E0;
+    base = *(volatile u32 *)(uintptr_t)tableCell;
+    result <<= 1;
+    {
+        register u32 low __asm__("r2");
+        low = *(volatile u16 *)(uintptr_t)(base + 52);
+        result += low;
+    }
+    base = *(volatile u16 *)(uintptr_t)(base + 54);
+    base <<= 12;
+    result |= base;
+    *(volatile u16 *)(dst + 4) = (u16)result;
+    dst += 8;
+
+    *(volatile u16 *)(dst + 0) = (u16)width;
+    *(volatile u16 *)(dst + 2) = 98;
+    result = (u32)sub_0802D97C(pitch, 10);
+    {
+        register u32 part __asm__("r3");
+        register u32 high __asm__("r1");
+        rowBase2 = *(volatile u32 *)(uintptr_t)tableCell;
+        __asm__ volatile ("" : "+r" (rowBase2));
+        result <<= 1;
+        part = *(volatile u16 *)(uintptr_t)(rowBase2 + 52);
+        __asm__ volatile ("" : "+r" (part));
+        result = part + result;
+        part = *(volatile u16 *)(uintptr_t)(rowBase2 + 54);
+        __asm__ volatile ("" : "+r" (part));
+        high = part << 12;
+        result |= high;
+    }
+    *(volatile u16 *)(dst + 4) = (u16)result;
+    dst += 8;
+
+    *(volatile u16 *)(dst + 0) = (u16)width;
+    *(volatile u16 *)(dst + 2) = 106;
+    {
+        result = *(volatile u16 *)(uintptr_t)(rowBase2 + 52);
+        result += 20;
+        rowBase2 = *(volatile u16 *)(uintptr_t)(rowBase2 + 54);
+        __asm__ volatile ("" : "+r" (rowBase2));
+        {
+            register u32 high __asm__("r1");
+            high = rowBase2 << 12;
+            result |= high;
+        }
+    }
+    *(volatile u16 *)(dst + 4) = (u16)result;
+    dst += 8;
+
+    *(volatile u16 *)(dst + 0) = (u16)width;
+    *(volatile u16 *)(dst + 2) = 114;
+    result = (u32)sub_0802D978(mid, 10);
+    base = *(volatile u32 *)(uintptr_t)tableCell;
+    result <<= 1;
+    {
+        register u32 low __asm__("r2");
+        low = *(volatile u16 *)(uintptr_t)(base + 52);
+        result += low;
+    }
+    base = *(volatile u16 *)(uintptr_t)(base + 54);
+    base <<= 12;
+    result |= base;
+    *(volatile u16 *)(dst + 4) = (u16)result;
+    dst += 8;
+
+    *(volatile u16 *)(dst + 0) = (u16)width;
+    *(volatile u16 *)(dst + 2) = 122;
+    result = (u32)sub_0802D97C(mid, 10);
+    {
+        register u32 part __asm__("r3");
+        register u32 high __asm__("r1");
+        rowBase2 = *(volatile u32 *)(uintptr_t)tableCell;
+        __asm__ volatile ("" : "+r" (rowBase2));
+        result <<= 1;
+        part = *(volatile u16 *)(uintptr_t)(rowBase2 + 52);
+        __asm__ volatile ("" : "+r" (part));
+        result = part + result;
+        part = *(volatile u16 *)(uintptr_t)(rowBase2 + 54);
+        __asm__ volatile ("" : "+r" (part));
+        high = part << 12;
+        result |= high;
+    }
+    *(volatile u16 *)(dst + 4) = (u16)result;
+    dst += 8;
+
+    *(volatile u16 *)(dst + 0) = (u16)width;
+    *(volatile u16 *)(dst + 2) = 130;
+    {
+        result = *(volatile u16 *)(uintptr_t)(rowBase2 + 52);
+        result += 22;
+        rowBase2 = *(volatile u16 *)(uintptr_t)(rowBase2 + 54);
+        __asm__ volatile ("" : "+r" (rowBase2));
+        {
+            register u32 high __asm__("r1");
+            high = rowBase2 << 12;
+            result |= high;
+        }
+    }
+    *(volatile u16 *)(dst + 4) = (u16)result;
+    dst += 8;
+
+    *(volatile u16 *)(dst + 0) = (u16)width;
+    *(volatile u16 *)(dst + 2) = 138;
+    result = (u32)sub_0802D978(tall, 10);
+    base = *(volatile u32 *)(uintptr_t)tableCell;
+    result <<= 1;
+    {
+        register u32 low __asm__("r2");
+        low = *(volatile u16 *)(uintptr_t)(base + 52);
+        result += low;
+    }
+    base = *(volatile u16 *)(uintptr_t)(base + 54);
+    base <<= 12;
+    result |= base;
+    *(volatile u16 *)(dst + 4) = (u16)result;
+    dst += 8;
+
+    *(volatile u16 *)(dst + 0) = (u16)width;
+    *(volatile u16 *)(dst + 2) = 146;
+    result = (u32)sub_0802D97C(tall, 10);
+    base = *(volatile u32 *)(uintptr_t)tableCell;
+    result <<= 1;
+    {
+        register u32 part __asm__("r3");
+        part = *(volatile u16 *)(uintptr_t)(base + 52);
+        __asm__ volatile ("" : "+r" (part));
+        result = part + result;
+        base = *(volatile u16 *)(uintptr_t)(base + 54);
+        __asm__ volatile ("" : "+r" (base));
+        base <<= 12;
+        result |= base;
+    }
+    *(volatile u16 *)(dst + 4) = (u16)result;
+    dst += 8;
+    return (void *)dst;
 }
-void _080089FC(void *a) __attribute__((alias("Course_Build_Tail_089FC")));
-void sub_080089FC(void *a) __attribute__((alias("Course_Build_Tail_089FC")));
+void *_0800861C(void *a, int b) __attribute__((alias("Course_Build_Emit8A")));
+void *sub_0800861C(void *a, int b) __attribute__((alias("Course_Build_Emit8A")));
+
+void *Course_Build_Emit8B(void *out, int w)
+{
+    register volatile u8 *dst __asm__("r4") = (volatile u8 *)out;
+    register s32 width __asm__("r5") = (s32)w;
+    register s32 pitch __asm__("r8");
+    register s32 mid __asm__("r9");
+    register s32 tall __asm__("sl");
+    register u32 tableCell __asm__("r6");
+    register u32 result __asm__("r0");
+    register u32 base __asm__("r1");
+    register u32 rowBase2 __asm__("r2");
+    register u32 label __asm__("r1");
+
+    pitch = 150;
+    pitch <<= 1;
+    result = (u32)sub_0802D97C(width, pitch);
+    result = (u32)sub_0802D978((s32)result, 3);
+    tall = (s32)result;
+
+    tableCell = 0x4650;
+    result = (u32)sub_0802D97C(width, (s32)tableCell);
+    result = (u32)sub_0802D978((s32)result, pitch);
+    mid = (s32)result;
+    result = (u32)sub_0802D978(width, (s32)tableCell);
+    pitch = (s32)result;
+
+    label = 128;
+    label <<= 8;
+    __asm__ volatile ("" : "+r" (label));
+    width = (s32)label;
+    *(volatile u16 *)(dst + 0) = (u16)width;
+    *(volatile u16 *)(dst + 2) = 56;
+    result = (u32)sub_0802D978(pitch, 10);
+    tableCell = 0x030003E0;
+    base = *(volatile u32 *)(uintptr_t)tableCell;
+    result <<= 1;
+    {
+        register u32 low __asm__("r2");
+        low = *(volatile u16 *)(uintptr_t)(base + 52);
+        result += low;
+    }
+    base = *(volatile u16 *)(uintptr_t)(base + 54);
+    base <<= 12;
+    result |= base;
+    *(volatile u16 *)(dst + 4) = (u16)result;
+    dst += 8;
+
+    *(volatile u16 *)(dst + 0) = (u16)width;
+    *(volatile u16 *)(dst + 2) = 64;
+    result = (u32)sub_0802D97C(pitch, 10);
+    {
+        register u32 part __asm__("r3");
+        register u32 high __asm__("r1");
+        rowBase2 = *(volatile u32 *)(uintptr_t)tableCell;
+        __asm__ volatile ("" : "+r" (rowBase2));
+        result <<= 1;
+        part = *(volatile u16 *)(uintptr_t)(rowBase2 + 52);
+        __asm__ volatile ("" : "+r" (part));
+        result = part + result;
+        part = *(volatile u16 *)(uintptr_t)(rowBase2 + 54);
+        __asm__ volatile ("" : "+r" (part));
+        high = part << 12;
+        result |= high;
+    }
+    *(volatile u16 *)(dst + 4) = (u16)result;
+    dst += 8;
+
+    *(volatile u16 *)(dst + 0) = (u16)width;
+    *(volatile u16 *)(dst + 2) = 70;
+    {
+        result = *(volatile u16 *)(uintptr_t)(rowBase2 + 52);
+        result += 20;
+        rowBase2 = *(volatile u16 *)(uintptr_t)(rowBase2 + 54);
+        __asm__ volatile ("" : "+r" (rowBase2));
+        {
+            register u32 high __asm__("r1");
+            high = rowBase2 << 12;
+            result |= high;
+        }
+    }
+    *(volatile u16 *)(dst + 4) = (u16)result;
+    dst += 8;
+
+    *(volatile u16 *)(dst + 0) = (u16)width;
+    *(volatile u16 *)(dst + 2) = 77;
+    result = (u32)sub_0802D978(mid, 10);
+    base = *(volatile u32 *)(uintptr_t)tableCell;
+    result <<= 1;
+    {
+        register u32 low __asm__("r2");
+        low = *(volatile u16 *)(uintptr_t)(base + 52);
+        result += low;
+    }
+    base = *(volatile u16 *)(uintptr_t)(base + 54);
+    base <<= 12;
+    result |= base;
+    *(volatile u16 *)(dst + 4) = (u16)result;
+    dst += 8;
+
+    *(volatile u16 *)(dst + 0) = (u16)width;
+    *(volatile u16 *)(dst + 2) = 85;
+    result = (u32)sub_0802D97C(mid, 10);
+    {
+        register u32 part __asm__("r3");
+        register u32 high __asm__("r1");
+        rowBase2 = *(volatile u32 *)(uintptr_t)tableCell;
+        __asm__ volatile ("" : "+r" (rowBase2));
+        result <<= 1;
+        part = *(volatile u16 *)(uintptr_t)(rowBase2 + 52);
+        __asm__ volatile ("" : "+r" (part));
+        result = part + result;
+        part = *(volatile u16 *)(uintptr_t)(rowBase2 + 54);
+        __asm__ volatile ("" : "+r" (part));
+        high = part << 12;
+        result |= high;
+    }
+    *(volatile u16 *)(dst + 4) = (u16)result;
+    dst += 8;
+
+    *(volatile u16 *)(dst + 0) = (u16)width;
+    *(volatile u16 *)(dst + 2) = 91;
+    {
+        result = *(volatile u16 *)(uintptr_t)(rowBase2 + 52);
+        result += 22;
+        rowBase2 = *(volatile u16 *)(uintptr_t)(rowBase2 + 54);
+        __asm__ volatile ("" : "+r" (rowBase2));
+        {
+            register u32 high __asm__("r1");
+            high = rowBase2 << 12;
+            result |= high;
+        }
+    }
+    *(volatile u16 *)(dst + 4) = (u16)result;
+    dst += 8;
+
+    *(volatile u16 *)(dst + 0) = (u16)width;
+    *(volatile u16 *)(dst + 2) = 98;
+    result = (u32)sub_0802D978(tall, 10);
+    base = *(volatile u32 *)(uintptr_t)tableCell;
+    result <<= 1;
+    {
+        register u32 low __asm__("r2");
+        low = *(volatile u16 *)(uintptr_t)(base + 52);
+        result += low;
+    }
+    base = *(volatile u16 *)(uintptr_t)(base + 54);
+    base <<= 12;
+    result |= base;
+    *(volatile u16 *)(dst + 4) = (u16)result;
+    dst += 8;
+
+    *(volatile u16 *)(dst + 0) = (u16)width;
+    *(volatile u16 *)(dst + 2) = 106;
+    result = (u32)sub_0802D97C(tall, 10);
+    base = *(volatile u32 *)(uintptr_t)tableCell;
+    result <<= 1;
+    {
+        register u32 part __asm__("r3");
+        part = *(volatile u16 *)(uintptr_t)(base + 52);
+        __asm__ volatile ("" : "+r" (part));
+        result = part + result;
+        base = *(volatile u16 *)(uintptr_t)(base + 54);
+        __asm__ volatile ("" : "+r" (base));
+        base <<= 12;
+        result |= base;
+    }
+    *(volatile u16 *)(dst + 4) = (u16)result;
+    dst += 8;
+    return (void *)dst;
+}
+void *_08008768(void *a, int b) __attribute__((alias("Course_Build_Emit8B")));
+void *sub_08008768(void *a, int b) __attribute__((alias("Course_Build_Emit8B")));
+
+void *Course_Build_Emit8C(void *out, int w)
+{
+    register volatile u8 *dst __asm__("r4") = (volatile u8 *)out;
+    register s32 width __asm__("r5") = (s32)w;
+    register s32 pitch __asm__("r8");
+    register s32 mid __asm__("r9");
+    register s32 tall __asm__("sl");
+    register u32 tableCell __asm__("r6");
+    register u32 result __asm__("r0");
+    register u32 base __asm__("r1");
+    register u32 rowBase2 __asm__("r2");
+    register u32 label __asm__("r1");
+
+    pitch = 150;
+    pitch <<= 1;
+    result = (u32)sub_0802D97C(width, pitch);
+    result = (u32)sub_0802D978((s32)result, 3);
+    tall = (s32)result;
+
+    tableCell = 0x4650;
+    result = (u32)sub_0802D97C(width, (s32)tableCell);
+    result = (u32)sub_0802D978((s32)result, pitch);
+    mid = (s32)result;
+    result = (u32)sub_0802D978(width, (s32)tableCell);
+    pitch = (s32)result;
+
+    label = 0x808F;
+    __asm__ volatile ("" : "+r" (label));
+    width = (s32)label;
+    *(volatile u16 *)(dst + 0) = (u16)width;
+    *(volatile u16 *)(dst + 2) = 56;
+    result = (u32)sub_0802D978(pitch, 10);
+    tableCell = 0x030003E0;
+    base = *(volatile u32 *)(uintptr_t)tableCell;
+    result <<= 1;
+    {
+        register u32 low __asm__("r2");
+        low = *(volatile u16 *)(uintptr_t)(base + 52);
+        result += low;
+    }
+    base = *(volatile u16 *)(uintptr_t)(base + 54);
+    base <<= 12;
+    result |= base;
+    *(volatile u16 *)(dst + 4) = (u16)result;
+    dst += 8;
+
+    *(volatile u16 *)(dst + 0) = (u16)width;
+    *(volatile u16 *)(dst + 2) = 64;
+    result = (u32)sub_0802D97C(pitch, 10);
+    {
+        register u32 part __asm__("r3");
+        register u32 high __asm__("r1");
+        rowBase2 = *(volatile u32 *)(uintptr_t)tableCell;
+        __asm__ volatile ("" : "+r" (rowBase2));
+        result <<= 1;
+        part = *(volatile u16 *)(uintptr_t)(rowBase2 + 52);
+        __asm__ volatile ("" : "+r" (part));
+        result = part + result;
+        part = *(volatile u16 *)(uintptr_t)(rowBase2 + 54);
+        __asm__ volatile ("" : "+r" (part));
+        high = part << 12;
+        result |= high;
+    }
+    *(volatile u16 *)(dst + 4) = (u16)result;
+    dst += 8;
+
+    *(volatile u16 *)(dst + 0) = (u16)width;
+    *(volatile u16 *)(dst + 2) = 70;
+    {
+        result = *(volatile u16 *)(uintptr_t)(rowBase2 + 52);
+        result += 20;
+        rowBase2 = *(volatile u16 *)(uintptr_t)(rowBase2 + 54);
+        __asm__ volatile ("" : "+r" (rowBase2));
+        {
+            register u32 high __asm__("r1");
+            high = rowBase2 << 12;
+            result |= high;
+        }
+    }
+    *(volatile u16 *)(dst + 4) = (u16)result;
+    dst += 8;
+
+    *(volatile u16 *)(dst + 0) = (u16)width;
+    *(volatile u16 *)(dst + 2) = 77;
+    result = (u32)sub_0802D978(mid, 10);
+    base = *(volatile u32 *)(uintptr_t)tableCell;
+    result <<= 1;
+    {
+        register u32 low __asm__("r2");
+        low = *(volatile u16 *)(uintptr_t)(base + 52);
+        result += low;
+    }
+    base = *(volatile u16 *)(uintptr_t)(base + 54);
+    base <<= 12;
+    result |= base;
+    *(volatile u16 *)(dst + 4) = (u16)result;
+    dst += 8;
+
+    *(volatile u16 *)(dst + 0) = (u16)width;
+    *(volatile u16 *)(dst + 2) = 85;
+    result = (u32)sub_0802D97C(mid, 10);
+    {
+        register u32 part __asm__("r3");
+        register u32 high __asm__("r1");
+        rowBase2 = *(volatile u32 *)(uintptr_t)tableCell;
+        __asm__ volatile ("" : "+r" (rowBase2));
+        result <<= 1;
+        part = *(volatile u16 *)(uintptr_t)(rowBase2 + 52);
+        __asm__ volatile ("" : "+r" (part));
+        result = part + result;
+        part = *(volatile u16 *)(uintptr_t)(rowBase2 + 54);
+        __asm__ volatile ("" : "+r" (part));
+        high = part << 12;
+        result |= high;
+    }
+    *(volatile u16 *)(dst + 4) = (u16)result;
+    dst += 8;
+
+    *(volatile u16 *)(dst + 0) = (u16)width;
+    *(volatile u16 *)(dst + 2) = 91;
+    {
+        result = *(volatile u16 *)(uintptr_t)(rowBase2 + 52);
+        result += 22;
+        rowBase2 = *(volatile u16 *)(uintptr_t)(rowBase2 + 54);
+        __asm__ volatile ("" : "+r" (rowBase2));
+        {
+            register u32 high __asm__("r1");
+            high = rowBase2 << 12;
+            result |= high;
+        }
+    }
+    *(volatile u16 *)(dst + 4) = (u16)result;
+    dst += 8;
+
+    *(volatile u16 *)(dst + 0) = (u16)width;
+    *(volatile u16 *)(dst + 2) = 98;
+    result = (u32)sub_0802D978(tall, 10);
+    base = *(volatile u32 *)(uintptr_t)tableCell;
+    result <<= 1;
+    {
+        register u32 low __asm__("r2");
+        low = *(volatile u16 *)(uintptr_t)(base + 52);
+        result += low;
+    }
+    base = *(volatile u16 *)(uintptr_t)(base + 54);
+    base <<= 12;
+    result |= base;
+    *(volatile u16 *)(dst + 4) = (u16)result;
+    dst += 8;
+
+    *(volatile u16 *)(dst + 0) = (u16)width;
+    *(volatile u16 *)(dst + 2) = 106;
+    result = (u32)sub_0802D97C(tall, 10);
+    base = *(volatile u32 *)(uintptr_t)tableCell;
+    result <<= 1;
+    {
+        register u32 part __asm__("r3");
+        part = *(volatile u16 *)(uintptr_t)(base + 52);
+        __asm__ volatile ("" : "+r" (part));
+        result = part + result;
+        base = *(volatile u16 *)(uintptr_t)(base + 54);
+        __asm__ volatile ("" : "+r" (base));
+        base <<= 12;
+        result |= base;
+    }
+    *(volatile u16 *)(dst + 4) = (u16)result;
+    dst += 8;
+    return (void *)dst;
+}
+void *_080088B0(void *a, int b) __attribute__((alias("Course_Build_Emit8C")));
+void *sub_080088B0(void *a, int b) __attribute__((alias("Course_Build_Emit8C")));
+
+// Return the end cursor consumed by the next course-emission step.
+// The body logic is C; the short asm constraints retain the ROM's indexed
+// halfword loads and shift form where old_agbcc otherwise lowers them apart.
+void *Course_Build_Tail_089FC(void *out) {
+    register volatile u16 *cursor __asm__("r2") = (volatile u16 *)out;
+    register volatile u8 * volatile *root __asm__("r4") =
+        (volatile u8 * volatile *)0x030003e0u;
+    register volatile u8 *rec __asm__("r3") = *root;
+    register u32 reg1 __asm__("r1");
+    register s32 value __asm__("r0");
+    register u32 literal __asm__("r5");
+
+    reg1 = 16;
+    __asm__ volatile ("" : "+r"(reg1));
+    __asm__ volatile ("ldrsh %0, [%1, %2]"
+                      : "=r"(value) : "r"(rec), "r"(reg1));
+    if (value > 1) {
+        value = *(volatile u32 *)(rec + 84);
+        reg1 = 255;
+        __asm__ volatile ("" : "+r"(reg1));
+        value &= reg1;
+        literal = 128;
+        literal <<= 7;
+        __asm__ volatile ("" : "+r"(literal));
+        reg1 = literal;
+        __asm__ volatile ("" : "+r"(reg1));
+        value |= reg1;
+        cursor[0] = (u16)value;
+
+        value = *(volatile u32 *)(rec + 80);
+        value += 12;
+        literal = 0x1ff;
+        __asm__ volatile ("" : "+r"(literal));
+        reg1 = literal;
+        __asm__ volatile ("" : "+r"(reg1));
+        value &= reg1;
+        literal = 0xffffc000u;
+        __asm__ volatile ("" : "+r"(literal));
+        reg1 = literal;
+        __asm__ volatile ("" : "+r"(reg1));
+        value |= reg1;
+        cursor[1] = (u16)value;
+
+        reg1 = *(volatile u16 *)(rec + 58);
+        __asm__ volatile ("" : "+r"(reg1));
+        value = reg1 << 12;
+        literal = *(volatile u16 *)(rec + 60);
+        __asm__ volatile ("" : "+r"(literal));
+        value |= literal;
+        cursor[2] = (u16)value;
+        cursor = (volatile u16 *)((volatile u8 *)cursor + 8);
+
+        reg1 = 16;
+        __asm__ volatile ("" : "+r"(reg1));
+        __asm__ volatile ("ldrsh %0, [%1, %2]"
+                          : "=r"(value) : "r"(rec), "r"(reg1));
+        if (value > 9) {
+            cursor[0] = 74;
+            literal = 0x8094;
+            __asm__ volatile ("" : "+r"(literal));
+            value = literal;
+            cursor[1] = (u16)value;
+            value = *(volatile u16 *)(rec + 56);
+            value += 16;
+            __asm__ volatile ("ldrh %0, [%0, #58]"
+                              : "+r"(rec) : : "memory");
+            __asm__ volatile ("lsl %0, %1, #12"
+                              : "=r"(reg1) : "r"(rec));
+            value |= reg1;
+            cursor[2] = (u16)value;
+            cursor = (volatile u16 *)((volatile u8 *)cursor + 8);
+        }
+
+        cursor[0] = 74;
+        reg1 = 0x80a8;
+        __asm__ volatile ("" : "+r"(reg1));
+        value = reg1;
+        cursor[1] = (u16)value;
+        {
+            register volatile u8 *rec2 __asm__("r1") = *root;
+            register u32 high __asm__("r3");
+            __asm__ volatile ("ldrh %0, [%1, #58]"
+                              : "=r"(high) : "r"(rec2) : "memory");
+            value = high << 12;
+            __asm__ volatile ("ldrh %0, [%0, #56]"
+                              : "+r"(rec2) : : "memory");
+            value |= (u32)(uintptr_t)rec2;
+        }
+    } else {
+        literal = 0x404a;
+        __asm__ volatile ("" : "+r"(literal));
+        value = literal;
+        cursor[0] = (u16)value;
+        reg1 = 0xc0a8;
+        __asm__ volatile ("" : "+r"(reg1));
+        value = reg1;
+        cursor[1] = (u16)value;
+        literal = *(volatile u16 *)(rec + 58);
+        __asm__ volatile ("" : "+r"(literal));
+        value = literal << 12;
+        __asm__ volatile ("ldrh %0, [%0, #56]"
+                          : "+r"(rec) : : "memory");
+        value |= (u32)(uintptr_t)rec;
+    }
+    cursor[2] = (u16)value;
+    cursor = (volatile u16 *)((volatile u8 *)cursor + 8);
+    return (void *)cursor;
+}
+void *_080089FC(void *a) __attribute__((alias("Course_Build_Tail_089FC")));
+void *sub_080089FC(void *a) __attribute__((alias("Course_Build_Tail_089FC")));
 
 // ROM entry alias.
-void RomEmit861C(void *out, int w) __attribute__((alias("Course_Build_Emit8A")));
-void RomEmit8768(void *out, int w) __attribute__((alias("Course_Build_Emit8B")));
-void RomEmit88B0(void *out, int w) __attribute__((alias("Course_Build_Emit8C")));
-void RomEmit89FC(void *out) __attribute__((alias("Course_Build_Tail_089FC")));
+void *RomEmit861C(void *out, int w) __attribute__((alias("Course_Build_Emit8A")));
+void *RomEmit8768(void *out, int w) __attribute__((alias("Course_Build_Emit8B")));
+void *RomEmit88B0(void *out, int w) __attribute__((alias("Course_Build_Emit8C")));
+void *RomEmit89FC(void *out) __attribute__((alias("Course_Build_Tail_089FC")));

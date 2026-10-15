@@ -101,7 +101,7 @@ s16 SaveTriggerD(u32 arg); // _08005F74  base 0x0805BAF0
 void SaveBlock1SetBit(u32 bit, int set); // _0802466C
 u32  SaveBlock1TestBit(u32 bit);         // _080246BC
 u16  SaveBlock1GetHWord(void);           // _080246DC @+0x0C
-void SaveBlock1SetHWord(u16 v);          // _080246E8
+void SaveBlock1SetHWord(u32 v);          // _080246E8 (word-width value)
 void *SaveBlock1GridPtr(u32 row, u32 col); // _080246F4 = 0x03000638 + row*60 + col*12
 void SaveBlock1Init(void);               // _08024568 (full clear + slot pick + load + seed + audit)
 int  SaveBlock1Load(void);               // _08024634

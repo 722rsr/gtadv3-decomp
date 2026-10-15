@@ -981,69 +981,50 @@ void sub_08002612C(void) __attribute__((alias("_08002612C")));
 // code_23bd4.s — race presentation tick + BG bind
 // ============================================================================
 
-__attribute__((naked)) void _080023BD4(void *rec)
+void _080023BD4(void *rec_)
 {
+    u8 *rec = (u8 *)rec_;
+    register const u8 *table __asm__("r4");
+    register u8 *indexp __asm__("r5");
+    register const u8 *table4 __asm__("r6");
+    s16 index;
+    register int scaled __asm__("r0");
+    u32 a, b, c, d;
+    register u32 wa __asm__("r0");
+    register u32 flagoff __asm__("r1");
+
+    _0800D97C(rec + 136, 15);
+    __asm__ volatile ("ldr %0, .L23bd4_table" : "=r"(table));
+    indexp = rec + 140;
+    index = *(s16 *)indexp;
+    scaled = index << 3;
+    table4 = table + 4;
+    a = *(u32 *)(uintptr_t)(scaled + (uintptr_t)table4);
+    b = *(u32 *)(rec + 168);
+    _080023AE4(rec, (int)a, (int)b);
+
+    index = *(s16 *)indexp;
+    c = *(u32 *)(table + index * 8);
+    d = *(u32 *)(table4 + index * 8);
+    _080023B60(rec, (int)c, (int)d);
+    _0800DBE8(rec + 16);
+
     __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, r7, lr}\n"
-        "adds r7, r0, #0\n"
-        "adds r0, #136\n"
-        "movs r1, #15\n"
-        "bl _0800D97C\n"
-        "ldr r4, 1f\n"
-        "adds r5, r7, #0\n"
-        "adds r5, #140\n"
-        "movs r1, #0\n"
-        "ldrsh r0, [r5, r1]\n"
-        "lsls r0, r0, #3\n"
-        "adds r6, r4, #4\n"
-        "adds r0, r0, r6\n"
-        "ldr r1, [r0, #0]\n"
-        "adds r0, r7, #0\n"
-        "adds r0, #168\n"
-        "ldr r2, [r0, #0]\n"
-        "adds r0, r7, #0\n"
-        "bl _080023AE4\n"
-        "movs r1, #0\n"
-        "ldrsh r0, [r5, r1]\n"
-        "lsls r0, r0, #3\n"
-        "adds r4, r0, r4\n"
-        "ldr r1, [r4, #0]\n"
-        "adds r0, r0, r6\n"
-        "ldr r2, [r0, #0]\n"
-        "adds r0, r7, #0\n"
-        "bl _080023B60\n"
-        "adds r0, r7, #0\n"
-        "adds r0, #16\n"
-        "bl _0800DBE8\n"
-        "ldr r0, 2f\n"
-        "ldr r1, 3f\n"
-        "adds r0, r0, r1\n"
-        "ldrb r0, [r0, #0]\n"
-        "cmp r0, #0\n"
-        "bne.n .L23bd4_done\n"
-        "adds r0, r7, #0\n"
-        "adds r0, #144\n"
-        "ldrh r0, [r0, #0]\n"
-        "cmp r0, #1\n"
-        "bne.n .L23bd4_done\n"
-        "adds r1, r7, #0\n"
-        "adds r1, #176\n"
-        "adds r0, r7, #0\n"
-        "movs r2, #48\n"
-        "bl _08022D44\n"
-        ".L23bd4_done:\n"
-        "adds r0, r7, #0\n"
-        "bl _08023E78\n"
-        "pop {r4, r5, r6, r7}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        "1: .word 0x080CC178\n"
-        "2: .word 0x03001780\n"
-        "3: .word 0x000010C3\n"
-        ".syntax divided\n"
-    );
+        "ldr %0, .L23bd4_wa\n"
+        "ldr %1, .L23bd4_flag\n"
+        : "=r"(wa), "=r"(flagoff));
+    if (*(volatile u8 *)(uintptr_t)(wa + flagoff) == 0
+        && *(u16 *)(rec + 144) == 1)
+        _08022D44(rec, rec + 176, 48);
+    _08023E78(rec);
 }
+__asm__(".pushsection .text._080023BD4,\"ax\",%progbits\n"
+        ".subsection 1\n"
+        ".align 2, 0\n"
+        ".L23bd4_table: .word 0x080CC178\n"
+        ".L23bd4_wa: .word 0x03001780\n"
+        ".L23bd4_flag: .word 0x000010C3\n"
+        ".popsection");
 void sub_080023BD4(void *a) __attribute__((alias("_080023BD4")));
 void _08023BD4(void *a) __attribute__((alias("_080023BD4")));
 

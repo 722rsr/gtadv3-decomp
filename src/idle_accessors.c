@@ -350,32 +350,17 @@ u32 _0800206C(int a) __attribute__((alias("Idle_GetRecordFiltered")));
 int Idle_22C0_IsMode1(void) { return _08001F3C(); }
 __asm__(".align 2, 0");
 
-// 0x08002298 — 20B: `B = *(u32*)0x030000F4; u8[B+1] = 1; r0 = s16[B+8];
-// _08001F80(r0); _08001F08(rec)` ((consolidated/elsewhere): state-block-B arm — mark
-// flag 1, forward s16[B+8] to the setter, run the record's setup arm).
-__attribute__((naked)) void Idle_2298_ReloadCurrent(void *rec) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, lr}\n"
-        "adds r4, r0, #0\n"
-        "ldr r2, 1f\n"
-        "ldr r1, [r2, #0]\n"
-        "movs r0, #1\n"
-        "strb r0, [r1, #1]\n"
-        "ldr r0, [r2, #0]\n"
-        "movs r1, #8\n"
-        "ldrsh r0, [r0, r1]\n"
-        "bl _08001F80\n"
-        "adds r0, r4, #0\n"
-        "bl _08001F08\n"
-        "pop {r4}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        "movs r0, r0\n"
-        ".align 2, 0\n"
-        "1: .4byte 0x030000F4\n"
-        ".syntax divided\n"
-    );
+void Idle_2298_ReloadCurrent(void *rec) {
+    register void *rc __asm__("r4") = rec;
+    volatile u32 *cell = (volatile u32 *)0x030000F4;
+    u32 b = *cell;
+    u32 b2;
+    int v;
+    *(volatile u8 *)(b + 1) = 1;
+    b2 = *cell;
+    v = *(s16 *)((u8 *)(uintptr_t)b2 + 8);
+    _08001F80((u32)v);
+    _08001F08((u32)rc);
 }
 
 // 0x08002340 — 8B..0x68: linear search `for (i = 0; i <= 98; i++)
@@ -399,21 +384,12 @@ __asm__(".align 2, 0");
 
 // 0x08002370 — 20B: `return &0x080C44B2[v * 7]` — row getter into the
 // per-mode 28-byte table (asm/code_22e4.s; pool 0x08002380).
-// Armcc register allocation: r0 sign-extended, r1 = r0*7, r0 = pool, r1 += r0, r0 = r1.
-__attribute__((naked)) void *Idle_ModeRow(s16 v) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "lsls r0, r0, #16\n"
-        "asrs r0, r0, #16\n"
-        "lsls r1, r0, #3\n"
-        "subs r1, r1, r0\n"
-        "ldr  r0, 1f\n"
-        "adds r1, r1, r0\n"
-        "adds r0, r1, #0\n"
-        "bx   lr\n"
-        "1: .word 0x080C44B2\n"
-        ".syntax divided\n"
-    );
+void *Idle_ModeRow(int v) {
+    extern u8 ModeRowTbl[];
+    register int x __asm__("r0") = v;
+    __asm__(".globl ModeRowTbl\nModeRowTbl = 0x080C44B2\n");
+    x = (x << 16) >> 16;
+    return (void *)(ModeRowTbl + x * 7);
 }
 
 // 0x08002384 — 4B: empty stub leaf (bx lr + nop pad)
@@ -426,8 +402,8 @@ __attribute__((naked)) void Idle_Stub_2384(void) {
 
 int   _08002340(int v) __attribute__((alias("Idle_IdSearch")));
 int   sub_08002340(int v) __attribute__((alias("Idle_IdSearch")));
-void *_08002370(s16 v) __attribute__((alias("Idle_ModeRow")));
-void *sub_08002370(s16 v) __attribute__((alias("Idle_ModeRow")));
+void *_08002370(int v) __attribute__((alias("Idle_ModeRow")));
+void *sub_08002370(int v) __attribute__((alias("Idle_ModeRow")));
 void  _08002384(void) __attribute__((alias("Idle_Stub_2384")));
 void  sub_08002384(void) __attribute__((alias("Idle_Stub_2384")));
 void  _08002298(void *a) __attribute__((alias("Idle_2298_ReloadCurrent")));

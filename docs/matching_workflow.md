@@ -68,6 +68,10 @@ retained assembly. A file-scope `__asm__(".set...")` is not sufficient.
 An export list must preserve entry aliases without moving an interior label
 to the start of its owner.
 
+Compiler runtime calls such as `__divsi3` are retargeted to closure labels
+using `RUNTIME_VMAS`; do not add aliases or linker symbol overrides for them.
+See [runtime calls in section splices](findings/runtime_names_in_spliced_sections.md).
+
 Branch targets and literal-pool references into a replaced span require special
 care. Define an interior label at its exact offset inside the retained C
 section, or keep the relevant source assembly. A first-statement inline label
@@ -298,6 +302,8 @@ Same file, same body: symbol 116/116 exact, cast constant 104/116.
   case 2:` when the ROM has the {1,3} arm first.
 * The mode word's signedness is visible: `bgt` means the source read it as
   `s32`, `bcc` means `u32` (`_080021F14`: `*(s32 *)(rec + 160)`).
+* For a switch with a missing value, use an explicit empty case when arm
+  order matters; `default` can change the source-order placement of the bodies.
 
 ## Halfword loads: keep the value's width
 

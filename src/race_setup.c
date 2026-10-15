@@ -618,49 +618,54 @@ void Race_Setup_19860(void) { _080027FCC(); }
 __asm__(".align 2, 0");
 void _080019860(void) __attribute__((alias("Race_Setup_19860")));
 
-// _080018EC0: zero-loop at 0x03000598, WA+0x10CA s16 count, 0x03005E48 and racectx+70
-// Pools: 0x03001780+0x10CA s16, 0x03005E48, 0x03004E20+70, 0x03000598 array, 0x00FFFFFF
-__attribute__((naked)) void Race_Setup_18EC0(void) {
-    __asm__ volatile(
-        "push {r4, r5, r6, r7, lr}\n\t"
-        "movs r1, #0\n\t"
-        "ldr r0, .L18ec0_wa\n\t"
-        "ldr r3, .L18ec0_count_offset\n\t"
-        "add r2, r0, r3\n\t"
-        "movs r7, #0\n\t"
-        "ldrsh r0, [r2, r7]\n\t"
-        "sub r0, r0, #1\n\t"
-        "ldr r5, .L18ec0_field\n\t"
-        "ldr r6, .L18ec0_ctx\n\t"
-        "cmp r1, r0\n\t"
-        "bge .L18ec0_done\n\t"
-        "movs r4, #0\n\t"
-        "ldr r3, .L18ec0_array\n"
-        ".L18ec0_loop:\n\t"
-        "stmia r3!, {r4}\n\t"
-        "add r1, r1, #1\n\t"
-        "movs r7, #0\n\t"
-        "ldrsh r0, [r2, r7]\n\t"
-        "sub r0, r0, #1\n\t"
-        "cmp r1, r0\n\t"
-        "blt .L18ec0_loop\n"
-        ".L18ec0_done:\n\t"
-        "ldr r0, .L18ec0_fill\n\t"
-        "str r0, [r5, #0]\n\t"
-        "ldr r0, [r6, #0]\n\t"
-        "add r0, r0, #70\n\t"
-        "movs r1, #1\n\t"
-        "strh r1, [r0, #0]\n\t"
-        "pop {r4, r5, r6, r7}\n\t"
-        "pop {r0}\n\t"
-        "bx r0\n"
-        ".balign 4\n"
-        ".L18ec0_wa: .word 0x03001780\n"
-        ".L18ec0_count_offset: .word 0x000010CA\n"
-        ".L18ec0_field: .word 0x03005E48\n"
-        ".L18ec0_ctx: .word 0x03004E20\n"
-        ".L18ec0_array: .word 0x03000598\n"
-        ".L18ec0_fill: .word 0x00FFFFFF\n");
+void Race_Setup_18EC0(void)
+{
+    register s32 base_limit __asm__("r0");
+    register u32 scratch __asm__("r3");
+    register volatile u8 *count_ptr __asm__("r2");
+    register s32 i __asm__("r1");
+    u32 index;
+    register volatile u32 *field __asm__("r5");
+    register volatile u8 **ctx_slot __asm__("r6");
+
+    __asm__ volatile ("movs %0, #0" : "=r" (i));
+    base_limit = (s32)0x03001780u;
+    scratch = 0x10CAu;
+    __asm__ volatile ("" : "+r" (base_limit), "+r" (scratch) : : "memory");
+    count_ptr = (volatile u8 *)base_limit + scratch;
+    __asm__ volatile ("" : "+r" (count_ptr) : : "memory");
+    __asm__ volatile ("movs %0, #0" : "=l" (index));
+    __asm__ volatile ("ldrsh %0, [%1, %2]"
+                      : "=r" (base_limit) : "r" (count_ptr), "r" (index) : "memory");
+    __asm__ volatile ("" : "+l" (index));
+    base_limit--;
+    field = (volatile u32 *)(uintptr_t)0x03005E48u;
+    ctx_slot = (volatile u8 **)(uintptr_t)0x03004E20u;
+    __asm__ volatile ("" : "+r" (field), "+r" (ctx_slot) : : "memory");
+    if (i >= base_limit)
+        goto finished;
+
+    {
+        register u32 zero __asm__("r4") = 0;
+
+        __asm__ volatile ("" : "+r" (zero) : : "memory");
+        scratch = 0x03000598u;
+        __asm__ volatile ("" : "+r" (scratch) : : "memory");
+        do {
+            *(volatile u32 *)scratch = zero;
+            scratch += 4;
+            i++;
+            __asm__ volatile ("movs %0, #0" : "=l" (index));
+            __asm__ volatile ("ldrsh %0, [%1, %2]"
+                              : "=r" (base_limit) : "r" (count_ptr), "r" (index) : "memory");
+            __asm__ volatile ("" : "+l" (index));
+            base_limit--;
+        } while (i < base_limit);
+    }
+
+finished:
+    *field = 0x00FFFFFFu;
+    *(volatile u16 *)(*ctx_slot + 70) = 1;
 }
 void _080018EC0(void) __attribute__((alias("Race_Setup_18EC0")));
 

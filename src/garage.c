@@ -1585,79 +1585,36 @@ void sub_08002841C(void *a,int b) __attribute__((alias("Garage_2841C")));
 // `cmp r0,#8 / movs r0,#8 / str r0,[r2,#16] / ldr r0,[r2,#16] / asrs r0,#3` --
 // so the C re-reads `rec[4]` rather than carrying the local, which is also what
 // keeps the `ldr` in the emitted body.
-__attribute__((naked)) void Garage_2847C(void *a, int b) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, lr}\n"
-        "adds r2, r0, #0\n"
-        "cmp r1, #6\n"
-        "beq.n .L2847c_left\n"
-        "cmp r1, #8\n"
-        "bne.n .L2847c_right_check\n"
-        ".L2847c_left:\n"
-        "ldr r0, [r2, #16]\n"
-        "subs r0, #16\n"
-        "str r0, [r2, #16]\n"
-        "cmp r0, #8\n"
-        "bgt.n .L2847c_left_width_done\n"
-        "movs r0, #8\n"
-        "str r0, [r2, #16]\n"
-        ".L2847c_left_width_done:\n"
-        "ldr r0, [r2, #16]\n"
-        "asrs r0, r0, #3\n"
-        "ldr r1, [r2, #4]\n"
-        "subs r1, r1, r0\n"
-        "str r1, [r2, #4]\n"
-        "movs r3, #240\n"
-        "lsls r3, r3, #3\n"
-        "subs r1, r3, r1\n"
-        "str r1, [r2, #12]\n"
-        "ldr r0, 1f\n"
-        "cmp r1, r0\n"
-        "ble.n .L2847c_tail\n"
-        "str r3, [r2, #12]\n"
-        "b.n .L2847c_tail\n"
-        "movs r0, r0\n"
-        "1: .word 0x0000077F\n"
-        ".L2847c_right_check:\n"
-        "cmp r1, #5\n"
-        "beq.n .L2847c_right\n"
-        "cmp r1, #7\n"
-        "bne.n .L2847c_return\n"
-        ".L2847c_right:\n"
-        "ldr r0, [r2, #16]\n"
-        "subs r0, #16\n"
-        "str r0, [r2, #16]\n"
-        "cmp r0, #8\n"
-        "bgt.n .L2847c_right_width_done\n"
-        "movs r0, #8\n"
-        "str r0, [r2, #16]\n"
-        ".L2847c_right_width_done:\n"
-        "ldr r1, [r2, #16]\n"
-        "asrs r1, r1, #3\n"
-        "ldr r0, [r2, #4]\n"
-        "subs r0, r0, r1\n"
-        "str r0, [r2, #4]\n"
-        "ldr r1, 2f\n"
-        "adds r0, r0, r1\n"
-        "str r0, [r2, #12]\n"
-        "cmp r0, r1\n"
-        "bgt.n .L2847c_tail\n"
-        "str r1, [r2, #12]\n"
-        ".L2847c_tail:\n"
-        "ldr r1, 3f\n"
-        "ldrh r3, [r2, #8]\n"
-        "ldrh r4, [r2, #12]\n"
-        "subs r0, r3, r4\n"
-        "strh r0, [r1, #12]\n"
-        ".L2847c_return:\n"
-        "pop {r4}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        "2: .word 0xFFFFF880\n"
-        "3: .word 0x030035C0\n"
-        ".syntax divided\n"
-    );
+void Garage_2847C(void *a, int b) {
+    volatile u32 *rec = (volatile u32 *)a;
+    if (b == 6 || b == 8) {
+        s32 w = (s32)rec[4] - 16;
+        s32 x, right;
+        rec[4] = (u32)w;
+        if (w <= 8) rec[4] = 8;
+        x = (s32)rec[1] - ((s32)rec[4] >> 3);
+        rec[1] = (u32)x;
+        right = 1920 - x;
+        rec[3] = (u32)right;
+        if (right > 0x77F) rec[3] = 1920;
+    } else if (b == 5 || b == 7) {
+        s32 w = (s32)rec[4] - 16;
+        s32 x, right;
+        rec[4] = (u32)w;
+        if (w <= 8) rec[4] = 8;
+        x = (s32)rec[1] - ((s32)rec[4] >> 3);
+        rec[1] = (u32)x;
+        right = x - 1920;
+        rec[3] = (u32)right;
+        if (right <= -1920) rec[3] = (u32)-1920;
+    } else {
+        return;
+    }
+    {
+        volatile u8 *p = (volatile u8 *)a;
+        volatile u16 *m = (volatile u16 *)(uintptr_t)0x030035C0u;
+        m[6] = (u16)(*(u16 *)(p + 8) - *(u16 *)(p + 12));
+    }
 }
 void _08002847C(void *a,int b) __attribute__((alias("Garage_2847C")));
 void sub_08002847C(void *a,int b) __attribute__((alias("Garage_2847C")));
@@ -2268,108 +2225,42 @@ __attribute__((naked)) void Garage_Place_27234(u32 a, u32 b, s16 c, void *d)
 void _08027234(u32 a, u32 b, s16 c, void *d) __attribute__((alias("Garage_Place_27234")));
 void sub_08027234(u32 a, u32 b, s16 c, void *d) __attribute__((alias("Garage_Place_27234")));
 
-// 0x08027828 (ROM 0x08027828-0x080278D6, transcribed from the raw image):
-// a = the P1 record pointer (ROM caller r0 = 0x03005DF0; also forwarded as
-// _080275B8's a2 on both paths). Gate *(u8*)(0x03001780+0x10C2):
-//   set  -> per node of the [P1+0x90] list: three-way halfword exchange
-//           (s16[n+10]==0 ? 2773C : s16[n+8]==0 ? 276F0 : 27788, all on
-//           s16[n+20], 0, 0) then _080275B8(n, 0, a, dead, dead);
-//   clear -> r1 = ((s32)_08002BE8) >> 31 & 2; per node: _080275B8(n, r1, a).
-// Tail: u16[P1+10] = (s16[P1+10] == 0).
-__attribute__((naked)) void Garage_ListWalk_27828(void *a)
+void Garage_ListWalk_27828(void *a)
 {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, lr}\n"
-        "adds r6, r0, #0\n"
-        "ldr r0, .L27828_868\n"
-        "ldr r1, [r0, #0]\n"
-        "adds r0, r1, #0\n"
-        "adds r0, #144\n"
-        "ldr r4, [r0, #0]\n"
-        "ldr r2, .L27828_86c\n"
-        "ldr r3, .L27828_870\n"
-        "adds r0, r2, r3\n"
-        "ldrb r0, [r0, #0]\n"
-        "cmp r0, #0\n"
-        "bne .L27828_878\n"
-        "ldr r1, .L27828_874\n"
-        "adds r0, r2, r1\n"
-        "ldr r0, [r0, #0]\n"
-        "movs r1, #2\n"
-        "ands r0, r1\n"
-        "negs r0, r0\n"
-        "lsrs r0, r0, #31\n"
-        "cmp r4, #0\n"
-        "beq .L27828_8d0\n"
-        "lsls r5, r0, #16\n"
-        ".L27828_856:\n"
-        "adds r0, r4, #0\n"
-        "asrs r1, r5, #16\n"
-        "adds r2, r6, #0\n"
-        "bl 0x080275B8\n"
-        "ldr r4, [r4, #16]\n"
-        "cmp r4, #0\n"
-        "bne .L27828_856\n"
-        "b .L27828_8d0\n"
-        ".L27828_868: .4byte 0x0300167C\n"
-        ".L27828_86c: .4byte 0x03001780\n"
-        ".L27828_870: .4byte 0x000010C2\n"
-        ".L27828_874: .4byte 0x000010DC\n"
-        ".L27828_878:\n"
-        "cmp r4, #0\n"
-        "beq .L27828_8d0\n"
-        "movs r2, #10\n"
-        "ldrsh r0, [r1, r2]\n"
-        "cmp r0, #0\n"
-        "beq .L27828_8a8\n"
-        "movs r3, #8\n"
-        "ldrsh r0, [r1, r3]\n"
-        "cmp r0, #0\n"
-        "beq .L27828_89a\n"
-        "movs r2, #20\n"
-        "ldrsh r0, [r1, r2]\n"
-        "movs r1, #0\n"
-        "movs r2, #0\n"
-        ".L27828_894:\n"
-        "bl 0x080276F0\n"
-        "b .L27828_8b4\n"
-        ".L27828_89a:\n"
-        "movs r3, #20\n"
-        "ldrsh r0, [r1, r3]\n"
-        "movs r1, #0\n"
-        "movs r2, #0\n"
-        "bl 0x08027788\n"
-        "b .L27828_8b4\n"
-        ".L27828_8a8:\n"
-        "movs r2, #20\n"
-        "ldrsh r0, [r1, r2]\n"
-        "movs r1, #0\n"
-        "movs r2, #0\n"
-        "bl 0x0802773C\n"
-        ".L27828_8b4:\n"
-        "adds r0, r4, #0\n"
-        "movs r1, #0\n"
-        "adds r2, r6, #0\n"
-        "bl 0x080275B8\n"
-        "ldr r0, .L27828_8d8\n"
-        "ldr r1, [r0, #0]\n"
-        "movs r2, #0\n"
-        "movs r3, #10\n"
-        "ldrsh r0, [r1, r3]\n"
-        "cmp r0, #0\n"
-        "bne .L27828_8ce\n"
-        "movs r2, #1\n"
-        ".L27828_8ce:\n"
-        "strh r2, [r1, #10]\n"
-        ".L27828_8d0:\n"
-        "pop {r4, r5, r6}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        "movs r0, r0\n"
-        ".L27828_8d8: .4byte 0x0300167C\n"
-        ".syntax divided\n"
-    );
+    extern u8 GarageListWalkWa[];
+    __asm__(".globl GarageListWalkWa\nGarageListWalkWa = 0x03001780\n");
+    u8 *p1 = *(u8 **)0x0300167Cu;
+    u8 *node = *(u8 **)(p1 + 144);
+    volatile u8 *wa = (volatile u8 *)(uintptr_t)GarageListWalkWa;
+
+    if (*(volatile u8 *)(wa + 0x10C2u) == 0) {
+        u32 flag = (0u - (*(volatile u32 *)(wa + 0x10DCu) & 2u)) >> 31;
+
+        if (node != 0) {
+            s32 scaled_flag = (s32)(flag << 16);
+            do {
+                ((void (*)(void *, int, void *))sub_0800275B8)(
+                    node, scaled_flag >> 16, a);
+                node = *(u8 **)(node + 16);
+            } while (node != 0);
+        }
+        return;
+    }
+
+    if (node != 0) {
+        if (*(s16 *)(p1 + 10) != 0) {
+            if (*(s16 *)(p1 + 8) != 0) {
+                sub_0800276F0(*(s16 *)(p1 + 20), 0, 0);
+            } else {
+                sub_080027788(*(s16 *)(p1 + 20), 0, 0);
+            }
+        } else {
+            sub_08002773C(*(s16 *)(p1 + 20), 0, 0);
+        }
+        ((void (*)(void *, int, void *))sub_0800275B8)(node, 0, a);
+        p1 = *(u8 **)0x0300167Cu;
+        *(s16 *)(p1 + 10) = (*(s16 *)(p1 + 10) == 0);
+    }
 }
 void _08027828(void *a) __attribute__((alias("Garage_ListWalk_27828")));
 

@@ -38,31 +38,20 @@ void Ghost_RaiseFlag2(void) {
 }
 __asm__(".align 2, 0");
 
-__attribute__((naked)) void Ghost_FlagOp(u32 mask, int set) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "adds r2, r0, #0\n"
-        "cmp r1, #0\n"
-        "beq 1f\n"
-        "ldr r0, 2f\n"
-        "ldr r1, [r0, #0]\n"
-        "ldr r0, [r1, #60]\n"
-        "orrs r0, r2\n"
-        "b 3f\n"
-        ".align 2, 0\n"
-        "2: .4byte 0x03004E20\n"
-        "1:\n"
-        "ldr r0, 4f\n"
-        "ldr r1, [r0, #0]\n"
-        "ldr r0, [r1, #60]\n"
-        "bics r0, r2\n"
-        "3:\n"
-        "str r0, [r1, #60]\n"
-        "bx lr\n"
-        ".align 2, 0\n"
-        "4: .4byte 0x03004E20\n"
-        ".syntax divided\n"
-    );
+void Ghost_FlagOp(u32 mask, int set) {
+    if (set) {
+        u32 ctx = *(volatile u32 *)0x03004E20;
+        volatile u32 *fp = (volatile u32 *)(ctx + 60);
+        u32 v = *fp;
+        v |= mask;
+        *fp = v;
+    } else {
+        u32 ctx = *(volatile u32 *)0x03004E20;
+        volatile u32 *fp = (volatile u32 *)(ctx + 60);
+        u32 v = *fp;
+        v &= ~mask;
+        *fp = v;
+    }
 }
 
 u32 Ghost_FlagTest(u32 mask) {

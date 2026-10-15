@@ -839,47 +839,10 @@ void _0802CE20(void *a, void *b) __attribute__((alias("VoiceParamTick_2CE20")));
 void sub_0802CE20(void *a, void *b) __attribute__((alias("VoiceParamTick_2CE20")));
 
 // ============================================================================
-// sound_voice_apply.s 0x0802C160 — voice envelope apply (uses r4/r5 caller
-// state: r4 = voice record, r5 = param source)
-// ROM is a pure leaf (no push/pop, bx lr) expecting voice in r4 and params
-// in r5, so a normal (void *, void *) prototype forces agbcc to push r4/r5
-// (62 B vs 48 B). Use a (void) leaf so agbcc emits the 48-byte body straight;
-// host keeps the behavioural C spelling.
+// sound_voice_apply.s 0x0802C160 — voice envelope apply (moved to
+// src/sound_interp_ced4.c so its file-scope fixed r4/r5 register declarations
+// sit at the top of a TU with no other r4/r5-saving functions).
 // ============================================================================
-__attribute__((naked)) void VoiceEnvelopeApply_2C160(void) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "ldrb r1, [r4, #18]\n"
-        "movs r0, #20\n"
-        "ldrsb r2, [r4, r0]\n"
-        "movs r3, #128\n"
-        "adds r3, r3, r2\n"
-        "muls r3, r1\n"
-        "ldrb r0, [r5, #16]\n"
-        "muls r0, r3\n"
-        "asrs r0, r0, #14\n"
-        "cmp r0, #255\n"
-        "bls 1f\n"
-        "movs r0, #255\n"
-        "1:\n"
-        "strb r0, [r4, #2]\n"
-        "movs r3, #127\n"
-        "subs r3, r3, r2\n"
-        "muls r3, r1\n"
-        "ldrb r0, [r5, #17]\n"
-        "muls r0, r3\n"
-        "asrs r0, r0, #14\n"
-        "cmp r0, #255\n"
-        "bls 2f\n"
-        "movs r0, #255\n"
-        "2:\n"
-        "strb r0, [r4, #3]\n"
-        "bx lr\n"
-        ".syntax divided\n"
-    );
-}
-void _0802C160(void) __attribute__((alias("VoiceEnvelopeApply_2C160")));
-void sub_0802C160(void) __attribute__((alias("VoiceEnvelopeApply_2C160")));
 
 // ============================================================================
 // sound_veneer.s 0x0802DDC8 — bx r0 veneer slot (4 bytes: bx r0 + nop pad).

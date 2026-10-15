@@ -11,14 +11,13 @@
 
 #include "gba/types.h"
 
-
 extern void sub_08000F48(void *p);              // 0x08000F48 (raw asm route)
 extern void _080023AC(int slot, void *h);       // 0x080023AC (src/code_22e4.c)
 extern void _08007ABC(void *a, int b, int c);   // EventBind
 extern void _08007538(void *a, int b, void *c); // 0x08007538 lane emit (course_resource.c)
 extern void _08007614(void *a, int b, int c, int d); // 0x08007614 lane emit (course_resource.c)
-extern int _08002D978(int a, int b);            // SWI Div quotient (bios_wrappers.c)
-extern int _08002D97C(int a, int b);            // SWI DivRem remainder (bios_wrappers.c)
+extern int sub_0802D978(int a, int b);
+extern int sub_0802D97C(int a, int b);
 extern int _08002DE04(int a, int b);            // signed __aeabi_idiv quotient (sound_extra.c)
 
 // Closure spellings for the two _0800821C callees. A HOST_STUB is NOT a
@@ -193,78 +192,52 @@ void sub_080015A0(int delay) __attribute__((alias("_080015A0")));
 // (course-state block behind the global pointer slot 0x030003E0)
 // ============================================================================
 
-__attribute__((naked)) void _08008164(int id)
+extern u8 CellStart_8164[];
+extern u8 CellDone_8164[];
+void _08008164(int id)
 {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, r7, lr}\n"
-        "adds r6, r0, #0\n"
-        "ldr r7, 1f\n"
-        "ldr r1, [r7, #0]\n"
-        "movs r0, #0\n"
-        "strh r6, [r1, #16]\n"
-        "strh r0, [r1, #28]\n"
-        "cmp r6, #1\n"
-        "ble.n .L8164_small\n"
-        "cmp r6, #9\n"
-        "ble.n .L8164_tens\n"
-        "ldr r5, 2f\n"
-        "ldr r4, 3f\n"
-        "adds r0, r6, #0\n"
-        "movs r1, #10\n"
-        "bl _0802D978\n"
-        "lsls r0, r0, #1\n"
-        "adds r0, r0, r4\n"
-        "ldrh r1, [r0, #0]\n"
-        "ldr r0, [r7, #0]\n"
-        "ldrh r2, [r0, #56]\n"
-        "adds r2, #16\n"
-        "adds r0, r5, #0\n"
-        "bl _08007538\n"
-        ".L8164_tens:\n"
-        "ldr r5, 2f\n"
-        "ldr r4, 3f\n"
-        "adds r0, r6, #0\n"
-        "movs r1, #10\n"
-        "bl _0802D97C\n"
-        "lsls r0, r0, #1\n"
-        "adds r0, r0, r4\n"
-        "ldrh r1, [r0, #0]\n"
-        "ldr r0, [r7, #0]\n"
-        "ldrh r2, [r0, #56]\n"
-        "adds r0, r5, #0\n"
-        "bl _08007538\n"
-        "b.n .L8164_done_branch\n"
-        "movs r0, r0\n"
-        "1: .word 0x030003E0\n"
-        "2: .word 0x0828A35C\n"
-        "3: .word 0x080CB17C\n"
-        ".L8164_small:\n"
-        "ldr r0, 4f\n"
-        "ldrh r2, [r1, #56]\n"
-        "movs r1, #11\n"
-        "bl _08007538\n"
-        ".L8164_done_branch:\n"
-        "ldr r0, 5f\n"
-        "ldr r4, 6f\n"
-        "ldr r1, [r4, #0]\n"
-        "ldrh r3, [r1, #58]\n"
-        "movs r1, #1\n"
-        "movs r2, #0\n"
-        "bl _08007614\n"
-        "ldr r0, [r4, #0]\n"
-        "adds r0, #79\n"
-        "movs r1, #1\n"
-        "strb r1, [r0, #0]\n"
-        "pop {r4, r5, r6, r7}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        "4: .word 0x0828C420\n"
-        "5: .word 0x0828A35C\n"
-        "6: .word 0x030003E0\n"
-        ".syntax divided\n"
-    );
+    register int course_id __asm__("r6") = id;
+    register void *spr __asm__("r5");
+    register void *tab __asm__("r4");
+    u8 *cell;
+    u8 *b;
+
+    __asm__(".globl CellStart_8164\nCellStart_8164 = 0x030003E0\n");
+    __asm__(".globl CellDone_8164\nCellDone_8164 = 0x030003E0\n");
+    cell = (u8 *)CellStart_8164;
+    b = (u8 *)*(volatile u8 *volatile *)cell;
+    {
+        u32 zero = 0;
+        *(volatile u16 *)(b + 16) = (u16)course_id;
+        *(volatile u16 *)(b + 28) = (u16)zero;
+    }
+    if (course_id > 1) {
+        if (course_id > 9) {
+            spr = (void *)0x0828A35Cu;
+            tab = (void *)0x080CB17Cu;
+            __asm__("" : : "r" (spr), "r" (tab));
+            _08007538(spr,
+                      *(u16 *)((u32)(sub_0802D978(course_id, 10) << 1) + (u32)tab),
+                      (void *)(u32)(*(volatile u16 *)
+                          ((u8 *)*(volatile u8 *volatile *)cell + 56) + 16));
+        }
+        spr = (void *)0x0828A35Cu;
+        tab = (void *)0x080CB17Cu;
+        __asm__("" : : "r" (spr), "r" (tab));
+        _08007538(spr,
+                  *(u16 *)((u32)(sub_0802D97C(course_id, 10) << 1) + (u32)tab),
+                  (void *)(u32)(*(volatile u16 *)
+                      ((u8 *)*(volatile u8 *volatile *)cell + 56)));
+    } else {
+        _08007538((void *)0x0828C420u, 11,
+                  (void *)(u32)*(volatile u16 *)(b + 56));
+    }
+    _08007614((void *)0x0828A35Cu, 1, 0,
+              (int)*(volatile u16 *)((u8 *)*(volatile u8 *volatile *)CellDone_8164 + 58));
+    *(volatile u8 *)((u8 *)*(volatile u8 *volatile *)CellDone_8164 + 79) = 1;
+    __asm__ volatile ("" : "+r" (cell) : : "memory");
 }
+void sub_08008164(int id) __attribute__((alias("_08008164")));
 
 void _0800821C(void)
 {
