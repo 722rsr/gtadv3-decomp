@@ -614,11 +614,10 @@ int Course_Math_HeadingInterp(int p0, int p1, int p2, void *out) {
         int res = tv * (int)c;
         if (res < 0) res += 0xFFF;
         res >>= 12;
-        // Thumb's three-register ADD must encode the ROM's r3+r0 operand order.
+        // Keep the start angle in r3 and the scaled delta in r0 for the ROM's ADD.
         register int accum __asm__("r0") = res;
         register int start __asm__("r3") = (int)p1s;
-        __asm__ volatile ("add %0, %1, %0"
-                          : "+r" (accum) : "r" (start) : "cc");
+        accum = start + accum;
         res = accum;
         *(volatile s16 *)o = (s16)res;
     }

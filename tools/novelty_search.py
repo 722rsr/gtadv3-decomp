@@ -607,6 +607,11 @@ def run(name: str, out: Path, seed_source: str, mode: str, exploration: float,
     seed_candidate = Candidate(name="seed", source=seed_source,
                                ancestry=["seed"], mutation=None)
     seed_candidate.score = adapter.evaluate(seed_source, "candidate", contract, index=0)
+    #: Keep the measured outcomes independently of `pool`. Selection removes
+    #: its chosen item, so folding only the remaining pool can erase the last
+    #: scored candidate and turn a real negative result into
+    #: UNSUPPORTED_CONTRACT.
+    scores = [seed_candidate.score]
     seed_candidate.semantic = "n/a (baseline)"
     # The SEED's own signature, from the bytes `evaluate` just produced. This
     # was never computed, so `Candidate.signature` stayed None and
@@ -671,6 +676,7 @@ def run(name: str, out: Path, seed_source: str, mode: str, exploration: float,
             try:
                 candidate.score = adapter.evaluate(item.source, "candidate", contract,
                                                   index=index)
+                scores.append(candidate.score)
                 # `evaluate` already compiled and linked this candidate, and
                 # `Score` now carries those emitted bytes, so the signature is
                 # computed from them instead of from a SECOND `compile()` of the
@@ -713,10 +719,7 @@ def run(name: str, out: Path, seed_source: str, mode: str, exploration: float,
             # search never actually walked away from its starting point.
             parent = chosen
 
-    exact = [r for r in rows if r.get("status") == kit.EXACT_DRAFT]
-    status = (kit.EXACT_DRAFT if exact else
-              kit.BUDGET_EXHAUSTED if exhausted and pool else
-              kit.summarize_status([c.score for c in pool if c.score], exhausted=exhausted))
+    status = kit.summarize_status(scores, exhausted=exhausted)
     writer.finish({
         "draft_status": status,
         "mode": mode,
@@ -946,6 +949,12 @@ def self_test() -> int:
     # --- status discipline ----------------------------------------------
     check("a compile error is not a tested alternative",
           kit.COMPILE_ERROR not in kit.NEGATIVE_STATUSES)
+    measured_miss = kit.Score(status=kit.NO_EXACT_DRAFT,
+                              matched_bytes=30, rom_bytes=32)
+    check("a drained selection pool does not erase a measured candidate",
+          kit.summarize_status([measured_miss]) == kit.NO_EXACT_DRAFT)
+    check("an empty score set remains unsupported",
+          kit.summarize_status([]) == kit.UNSUPPORTED_CONTRACT)
     check("an unavailable semantic check is not a pass",
           check_equivalent(SEED, "u32 candidate(void) { return f(); }")[1]
           in ("unavailable", "mutant is not in the checkable grammar"))

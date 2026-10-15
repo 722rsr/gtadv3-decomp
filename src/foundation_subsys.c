@@ -449,61 +449,24 @@ void _08004B80(void *a) __attribute__((alias("MgrClearBit4")));
 // span and nothing else would define the name. `call_audit.py` found this
 // before the link did.
 void sub_08004B80(void *a) __attribute__((alias("MgrClearBit4")));
-// 0x08004B74 bit-test leaf — ldrh r0,[r0,#4]; lsrs r1,r0,#2; movs r0,#1; bics r0,r1; bx lr
-// r0=mgr, Vu16 at +4, lsrs #2, bics 1, returns !(val&4)
-//
-// The axis is the TAIL's RTL SHAPE, and the diagnosis of it is wrong
-// in a way that matters. That note claimed the address's reload pseudo "always
-// takes r0 first", so the load can only ever target r1. It does not: the load
-// pseudo CAN take r0, and `agbcc -da` shows it doing so. Two spellings of the
-// same statement, same first three pseudos in both:
-//
-//   (v & 4) ? 0 : 1        -> ldrh r1,[r0,#4]; lsr r1,r1,#2; mov r0,#1; bic r0,r0,r1
-//   1 & ~(v >> 2)          -> ldrh r0,[r0,#4]; lsr r0,r0,#2; mvn r0,r0; mov r1,#1; and r0,r0,r1
-//
-// and the second is the ONLY family that loads into r0. Its lreg dump says
-// `;; Register 25 in 0.` for the load, sharing r0 with the dead address pseudo
-// Register 22 -- so the address is not what blocks r0. The two forms differ
-// only in the `and` node, and that difference is what decides the register:
-//
-//   bic form:   (set 32 (const_int 1)); (set 32 (and (reg 32) (not (reg 29))))
-//   mvn form:   (set 32 (not (reg 29))); (set 33 (const_int 1)); (set 32 (and (reg 32) (reg 33)))
-//
-// `bicsi3` folds only when the `1` is already in the destination, which puts
-// the complemented operand (pseudo 29) in a register of its own and leaves
-// pseudo 25 to the allocator with Register 22 still live on the same insn
-// boundary -- so 25 lands in r1. The mvn form computes the complement in
-// place, which frees 25 to share r0. The ROM wants both properties at once:
-// the load in r0 AND the `bicsi3` tail. Within the 4,704-shape sweep
-// (declaration/assignment x tail x return type x parameter type, plus the
-// twenty-nine) those two never co-occur: 0 exact, and every shape is
-// one family or the other. MgrSetBit4 below takes r1 for the same reason.
-// Re-attempting needs a spelling that yields `(and (const 1) (not t))` in RTL
-// with no in-place complement -- i.e. a tail agbcc does not reassociate.
-// The 4,704-shape sweep above is a measured negative for every C spelling of
-// this body: the ROM wants the load in r0 (so `lsrs r1,r0,#2` may read it) AND
-// the `bics r0,r1` tail, and no declaration/assignment/return/parameter
-// combination yields both. The body is 5 instructions + the trailing `00 00`
-// alignment pad, so it is transcribed verbatim instead. Same register contract
-// as before (r0 = manager pointer in, 0/1 out), so every caller is unaffected.
-// The inline block is wrapped in a scoped `.syntax unified`: agbcc emits
-// divided syntax, where gas parses `lsrs r1,r0,#2` and `bics r0,r1` only as
-// the 32-bit Thumb-2 forms and rejects them ("instruction not supported in
-// Thumb16 mode"). Unified syntax parses them and still emits the 16-bit
-// encodings 0x0881 / 0x4388 the ROM holds; the trailing `.syntax divided`
-// restores the mode for the rest of the TU.
-__attribute__((naked)) int MgrTestBit4(void *mgr) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "ldrh r0, [r0, #4]\n"
-        "lsrs r1, r0, #2\n"
-        "movs r0, #1\n"
-        "bics r0, r1\n"
-        "bx lr\n"
-        ".short 0\n"
-        ".syntax divided\n"
-    );
+// _08004B74 — return 1 when bit 2 of the manager halfword at +4 is clear.
+// The live base and loaded word share r0: empty barriers keep that destructive
+// load in the argument/return register, while `shifted` stays in r1 for the
+// final `bics`. The file-scope alignment directive supplies the ROM's 00 00
+// trailing pad after the compiler-emitted `bx lr`.
+int MgrTestBit4(void *mgr) {
+    register volatile u8 *base __asm__("r0") = (volatile u8 *)mgr;
+    register u32 flags __asm__("r0");
+    register u32 shifted __asm__("r1");
+    __asm__ volatile ("" : "+r"(base));
+    flags = *(volatile u16 *)(base + 4);
+    __asm__ volatile ("" : "+r"(flags));
+    shifted = flags >> 2;
+    flags = 1;
+    flags &= ~shifted;
+    return flags;
 }
+__asm__(".align 2, 0");
 int _08004B74(void *a) __attribute__((alias("MgrTestBit4")));
 int FlagClear4(void *a) __attribute__((alias("MgrTestBit4")));
 int sub_08004B74(void *a) __attribute__((alias("MgrTestBit4")));

@@ -937,17 +937,13 @@ void SaveGaragePack(void) {
     register s32 record_index __asm__("r1");
     register u32 record_offset __asm__("r0");
     register u32 zero __asm__("r0");
-    register s32 zero_index __asm__("r3");
     register s16 *index_ptr __asm__("r0");
     register const volatile u16 *masks16 __asm__("r2");
     register const volatile u16 *masks8 __asm__("r1");
 
     index_ptr = (s16 *)(work + 0x574);
     __asm__ volatile ("" : "+r" (index_ptr) : : "memory");
-    zero_index = 0;
-    __asm__ volatile ("ldrsh %0, [%1, %2]"
-                      : "=r" (record_index)
-                      : "r" (index_ptr), "r" (zero_index));
+    record_index = *index_ptr;
     __asm__ volatile ("" : "+r" (record_index) : : "memory");
     zero = 0;
     __asm__ volatile ("" : "+r" (zero) : : "memory");

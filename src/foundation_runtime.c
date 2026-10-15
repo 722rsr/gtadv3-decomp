@@ -144,88 +144,89 @@ void EmitPlace_02ED0(void *base,int id,int z,int y,int idx,int row,int count,int
 void RecordSetter_02F68(int x,int id,int y,int z,int idx,int row,int count);
 void _08002F68(int a,int b,int c,int d,int e,int f,int g) __attribute__((alias("RecordSetter_02F68")));
 void sub_08002F68(int a,int b,int c,int d,int e,int f,int g) __attribute__((alias("RecordSetter_02F68")));
-__attribute__((naked)) void RecordSetter_02F68(int x,int id,int y,int z,int idx,int row,int count){
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, r7, lr}\n"
-        "mov r7, sl\n"
-        "mov r6, r9\n"
-        "mov r5, r8\n"
-        "push {r5, r6, r7}\n"
-        "sub sp, #8\n"
-        "mov r8, r0\n"
-        "adds r6, r1, #0\n"
-        "adds r7, r2, #0\n"
-        "str r3, [sp, #0]\n"
-        "ldr r0, [sp, #44]\n"
-        "ldr r4, [sp, #48]\n"
-        "lsls r0, r0, #3\n"
-        "ldr r1, .L2f68_ffc\n"
-        "adds r0, r0, r1\n"
-        "ldrh r2, [r0, #0]\n"
-        "ldrh r1, [r0, #2]\n"
-        "str r1, [sp, #4]\n"
-        "movs r1, #6\n"
-        "ldrsb r1, [r0, r1]\n"
-        "lsls r1, r1, #16\n"
-        "lsrs r1, r1, #16\n"
-        "mov sl, r1\n"
-        "ldrh r0, [r0, #4]\n"
-        "mov r9, r0\n"
-        "cmp r4, #0\n"
-        "beq .L2f68_fec\n"
-        "movs r1, #128\n"
-        "lsls r1, r1, #3\n"
-        "adds r0, r1, #0\n"
-        "adds r5, r2, #0\n"
-        "orrs r5, r0\n"
-        "movs r0, #255\n"
-        "ands r6, r0\n"
-        "orrs r5, r6\n"
-        ".L2f68_fae:\n"
-        "bl 0x08002BFC\n"
-        "adds r1, r0, #0\n"
-        "strh r5, [r1, #0]\n"
-        "ldr r0, .L2f68_3000\n"
-        "adds r2, r0, #0\n"
-        "mov r0, r8\n"
-        "ands r0, r2\n"
-        "ldr r2, [sp, #4]\n"
-        "orrs r0, r2\n"
-        "strh r0, [r1, #2]\n"
-        "ldr r2, [sp, #0]\n"
-        "lsls r0, r2, #12\n"
-        "orrs r0, r7\n"
-        "strh r0, [r1, #4]\n"
-        "movs r0, #0\n"
-        "strh r0, [r1, #12]\n"
-        "ldr r0, [sp, #40]\n"
-        "bl 0x08002C34\n"
-        "mov r1, sl\n"
-        "lsls r0, r1, #16\n"
-        "asrs r0, r0, #16\n"
-        "add r8, r0\n"
-        "mov r2, r9\n"
-        "lsls r0, r2, #16\n"
-        "asrs r0, r0, #16\n"
-        "adds r7, r7, r0\n"
-        "subs r4, #1\n"
-        "cmp r4, #0\n"
-        "bne .L2f68_fae\n"
-        ".L2f68_fec:\n"
-        "add sp, #8\n"
-        "pop {r3, r4, r5}\n"
-        "mov r8, r3\n"
-        "mov r9, r4\n"
-        "mov sl, r5\n"
-        "pop {r4, r5, r6, r7}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        ".align 2, 0\n"
-        ".L2f68_ffc: .4byte 0x080C4940\n"
-        ".L2f68_3000: .4byte 0x000001FF\n"
-        ".syntax divided\n"
-    );
+void RecordSetter_02F68(int x, int id, int y, int z,
+                        volatile int idx, volatile int row, volatile int count) {
+    typedef struct { u16 attr0; u16 attr1; u16 advance; s8 dx; u8 pad; } Row;
+    // For each table row, allocate a record, combine the incoming coordinates
+    // with attr0/attr1, call the indexed writer, then advance x/y by dx/advance.
+    // The volatile stack arguments and homes preserve the ROM's caller-stack
+    // loads and its z/attr1 homes at sp+0 and sp+4.
+    register int base __asm__("r8") = x;
+    register int item_id __asm__("r6") = id;
+    register int ybase = y;
+    register u32 dx __asm__("sl");
+    register u32 dy __asm__("r9");
+    volatile u32 zslot = (u32)z;
+    register int rowindex __asm__("r0") = row;
+    register int remaining __asm__("r4") = count;
+    // Keep the ROM's row scaling in r0 and its table-base pool value in r1.
+    register u32 tableaddr __asm__("r0") = (u32)rowindex << 3;
+    register u32 tablebase __asm__("r1") = 0x080C4940u;
+    __asm__("" : "+r"(tableaddr), "+r"(tablebase));
+    tableaddr += tablebase;
+    const Row *table = (const Row *)(uintptr_t)tableaddr;
+    register u32 row_attr0 __asm__("r2") = table->attr0;
+    volatile u32 attr1_home = table->attr1;
+    dx = (u16)(s8)table->dx;
+    // The ROM zero-extends the signed byte into sl, then narrows it to s16
+    // when applying each x step. r9 retains the row's unsigned advance.
+    __asm__ volatile ("" : : "r"(dx));
+    dy = table->advance;
+    if (remaining == 0) return;
+    register u32 maskbase __asm__("r1") = 128u;
+    __asm__("" : "+r"(maskbase));
+    maskbase <<= 3;
+    __asm__("" : "+r"(maskbase));
+    register u32 maskcopy __asm__("r0") = maskbase;
+    __asm__("" : "+r"(maskcopy));
+    register u32 attr0 __asm__("r5") = row_attr0;
+    __asm__("" : "+r"(attr0));
+    attr0 |= maskcopy;
+    item_id &= 255u;
+    attr0 |= (u32)item_id;
+    do {
+        extern void *EmitAllocate_02F68(void) __asm__("_08002BFC");
+        extern void _08002C34(int, void *);
+        register volatile u8 *obj __asm__("r1") = (volatile u8 *)EmitAllocate_02F68();
+        *(volatile u16 *)(obj + 0) = (u16)attr0;
+        {
+            // Preserve the ROM's r0 mask, r2 copy, and attr1 combination.
+            register u32 mask __asm__("r0") = 0x1FFu;
+            __asm__("" : "+r"(mask));
+            register u32 mask_copy __asm__("r2") = mask;
+            __asm__("" : "+r"(mask_copy));
+            register u32 base_copy __asm__("r0") = (u32)base;
+            __asm__("" : "+r"(base_copy));
+            base_copy &= mask_copy;
+            register u32 attr1_copy __asm__("r2") = attr1_home;
+            __asm__("" : "+r"(attr1_copy));
+            base_copy |= attr1_copy;
+            *(volatile u16 *)(obj + 2) = (u16)base_copy;
+        }
+        {
+            register u32 zvalue __asm__("r2") = zslot;
+            __asm__("" : "+r"(zvalue));
+            register u32 zbits __asm__("r0") = zvalue << 12;
+            __asm__("" : "+r"(zbits));
+            zbits |= (u32)ybase;
+            *(volatile u16 *)(obj + 4) = (u16)zbits;
+        }
+        *(volatile u16 *)(obj + 12) = 0;
+        _08002C34(idx, (void *)obj);
+        {
+            register u32 dx_copy __asm__("r1") = dx;
+            register int delta __asm__("r0") = (s16)dx_copy;
+            base += delta;
+        }
+        {
+            register u32 dy_copy __asm__("r2") = dy;
+            __asm__("" : "+r"(dy_copy));
+            register int delta __asm__("r0") = (s16)dy_copy;
+            __asm__("" : "+r"(delta));
+            ybase += delta;
+        }
+        remaining--;
+    } while (remaining != 0);
 }
 void RecordSetter_03004(int base,int v1,int z,int y,int idx,int row,int a6,int a7);
 void _08003004(int a,int b,int c,int d,int e,int f,int g,int h)

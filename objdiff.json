@@ -3301,6 +3301,14 @@
       }
     },
     {
+      "name": "course_orch/_080065D4",
+      "target_path": "build/objdiff/080065d4/target.o",
+      "base_path": "build/objdiff/080065d4/candidate.o",
+      "metadata": {
+        "source_path": "src/course_orch.c"
+      }
+    },
+    {
       "name": "course_stream/_08006618",
       "target_path": "build/objdiff/08006618/target.o",
       "base_path": "build/objdiff/08006618/candidate.o",
@@ -3893,7 +3901,7 @@
       }
     },
     {
-      "name": "runtime_accessors/_08008164",
+      "name": "runtime_accessors/sub_08008164",
       "target_path": "build/objdiff/08008164/target.o",
       "base_path": "build/objdiff/08008164/candidate.o",
       "metadata": {
@@ -7941,7 +7949,7 @@
       }
     },
     {
-      "name": "race_scene_a1/_08001B364",
+      "name": "race_scene_a1/sub_08001B364",
       "target_path": "build/objdiff/0801b364/target.o",
       "base_path": "build/objdiff/0801b364/candidate.o",
       "metadata": {
@@ -8157,7 +8165,7 @@
       }
     },
     {
-      "name": "race_scene_b1/_08001D858",
+      "name": "race_scene_b1/sub_08001D858",
       "target_path": "build/objdiff/0801d858/target.o",
       "base_path": "build/objdiff/0801d858/candidate.o",
       "metadata": {
@@ -11813,7 +11821,7 @@
       }
     },
     {
-      "name": "garage_records/_0800299E0",
+      "name": "garage_records/sub_0800299E0",
       "target_path": "build/objdiff/080299e0/target.o",
       "base_path": "build/objdiff/080299e0/candidate.o",
       "metadata": {
@@ -11997,7 +12005,7 @@
       }
     },
     {
-      "name": "garage_records/_08002AC84",
+      "name": "garage_records/sub_08002AC84",
       "target_path": "build/objdiff/0802ac84/target.o",
       "base_path": "build/objdiff/0802ac84/candidate.o",
       "metadata": {
@@ -12565,11 +12573,11 @@
       }
     },
     {
-      "name": "runtime_state_dispatch/_0802C160",
+      "name": "sound_channel_be14/_0802C160",
       "target_path": "build/objdiff/0802c160/target.o",
       "base_path": "build/objdiff/0802c160/candidate.o",
       "metadata": {
-        "source_path": "src/runtime_state_dispatch.c"
+        "source_path": "src/sound_channel_be14.c"
       }
     },
     {

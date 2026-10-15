@@ -923,7 +923,7 @@ void _080020690(void *rec0) {
     int zero;
     uintptr_t table;
 
-    __asm__ volatile ("mov %0, %1" : "=r" (rec) : "r" (rec0));
+    rec = (volatile u8 *)rec0;
     _0800D97C((void *)((volatile u8 *)rec0 + 172), 5);
     zero = 0;
     __asm__ volatile ("" : "+r" (zero));

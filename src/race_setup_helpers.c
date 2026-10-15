@@ -758,58 +758,19 @@ void sub_08001992C(void)
 // ----------------------------------------------------------------------------
 void sub_0800199CC(void)
 {
+    u8 *rc;
+    u8 *record;
     if (_08018ACC(128u << 7)) {
-        register volatile u8 *rc __asm__("r1") =
-            *(volatile u8 *volatile *)(uintptr_t)0x03004E20u;
-        register u32 offset __asm__("r2") = 158;
-        __asm__ volatile("" : "+r"(offset));
-        offset <<= 3;
-        __asm__ volatile("" : "+r"(offset));
-        register u32 addr __asm__("r0") = (u32)(uintptr_t)rc + offset;
-        __asm__ volatile("" : "+r"(addr));
-        register int total __asm__("r0");
-        __asm__ volatile(".code 16\n\t"
-                         "mov r2, #0\n\t"
-                         "ldrsh r0, [r0, r2]"
-                         : "=r"(total) : "0"(addr) : "r2", "cc");
-        if (total > 79) {
-            register u32 addr94 __asm__("r0") = (u32)(uintptr_t)rc;
-            __asm__ volatile("" : "+r"(addr94));
-            addr94 += 94;
-            __asm__ volatile("" : "+r"(addr94));
-            register int positive __asm__("r0");
-            __asm__ volatile(".code 16\n\t"
-                             "mov r2, #0\n\t"
-                             "ldrsh r0, [r0, r2]"
-                             : "=r"(positive) : "0"(addr94)
-                             : "r2", "cc");
-            if (positive > 0) {
-                register u32 offset4E4 __asm__("r2") = 0x4E4u;
-                __asm__ volatile("" : "+r"(offset4E4));
-                register volatile u8 *record __asm__("r0");
-                __asm__ volatile(".code 16\n\t"
-                                 "add r0, r1, r2\n\t"
-                                 "ldr r0, [r0]"
-                                 : "=r"(record)
-                                 : "r"(rc), "r"(offset4E4)
-                                 : "cc", "memory");
-                register int value22 __asm__("r0") =
-                    (int)(uintptr_t)record;
-                register int value18 __asm__("r1");
-                __asm__ volatile(".code 16\n\t"
-                                 "mov r2, #18\n\t"
-                                 "ldrsh r1, [r0, r2]\n\t"
-                                 "mov r2, #22\n\t"
-                                 "ldrsh r0, [r0, r2]"
-                                 : "+r"(value22), "=r"(value18)
-                                 : : "r2", "cc");
-                if (value18 >= value22)
-                    sub_08001992C();
-            }
+        rc = *(u8 *volatile *)(uintptr_t)0x03004E20u;
+        if (*(s16 *)(rc + 0x4F0u) > 79 &&
+            *(s16 *)(rc + 94u) > 0) {
+            record = *(u8 *volatile *)(rc + 0x4E4u);
+            if (*(s16 *)(record + 18u) >= *(s16 *)(record + 22u))
+                sub_08001992C();
         }
     }
-    volatile u8 *rc = *(volatile u8 *volatile *)(uintptr_t)0x03004E20u;
-    *(volatile int *)(rc + 56) = 0;
+    rc = *(u8 *volatile *)(uintptr_t)0x03004E20u;
+    *(u32 *)(rc + 56u) = 0;
     _08018AA8(128u << 21, 0);
 }
 

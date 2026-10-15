@@ -81,7 +81,8 @@ MOVES = {
         "comparison here. Check whether the bytes this body seems to 'absorb' belong "
         "to an INTERIOR function with no label at all: that one is invisible to "
         "the inventory and its bytes are charged to its PREDECESSOR's span. "
-        "Use tools/label_census.py to find it before touching any C.",
+        "Use tools/span_audit.py to test for swallowed interior entries before "
+        "touching any C.",
     "P1-epilogue":
         "Compare the ROM tail halfword against the declared return type. A ROM "
         "`02 bc` (pop {{r1}}) with a `void` declaration is fixed by the "

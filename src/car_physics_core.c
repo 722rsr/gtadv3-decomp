@@ -74,10 +74,9 @@ void GrantDelay_Tick(int carId, int delay)
     {
         register u32 work __asm__("r1") = 0;
         register s32 count __asm__("r0");
-        __asm__ volatile ("ldrsh %0, [%1, %2]"
-                          : "=r" (count)
-                          : "r" ((volatile u8 *)slot), "r" (work)
-                          : "memory");
+        // Keep this non-volatile signed-halfword read into an int accumulator:
+        // agbcc then emits the ROM's `movs r1,#0; ldrsh r0,[r4,r1]` directly.
+        count = *(s16 *)(uintptr_t)(slot + work);
         offset -= 34;
         work = (u32)(wa + offset);
         count += work;

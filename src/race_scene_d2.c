@@ -1054,8 +1054,7 @@ void _08001FC14(void *rec0) {
     __asm__ volatile("" : "+r"(fbc), "+r"(fbcOffset));
     fbc += fbcOffset;
     fbcOffset = 0;
-    __asm__ volatile(".code 16\n\tldrsh r0, [r0, r1]"
-                     : "+r"(fbc) : "r"(fbcOffset) : "cc");
+    fbc = *(s16 *)(uintptr_t)(fbc + fbcOffset);
     switch (fbc) {
     case 0:
     case 1:
@@ -1076,8 +1075,7 @@ void _08001FC14(void *rec0) {
         register int cls __asm__("r0");
         register int clsIndex __asm__("r1");
         clsIndex = 0;
-        __asm__ volatile(".code 16\n\tldrsh r0, [r0, r1]"
-                         : "=r"(cls) : "0"(clsBase), "r"(clsIndex) : "cc");
+        cls = *(s16 *)(uintptr_t)(clsBase + clsIndex);
         switch (cls) {
         case 24:
             D2_CALLEE(_08002B214, sub_0802B214)(51);
@@ -1115,8 +1113,7 @@ void _08001FC14(void *rec0) {
     __asm__ volatile("" : "+r"(fbc), "+r"(fbcOffset));
     fbc += fbcOffset;
     fbcOffset = 0;
-    __asm__ volatile(".code 16\n\tldrsh r0, [r0, r1]"
-                     : "+r"(fbc) : "r"(fbcOffset) : "cc");
+    fbc = *(s16 *)(uintptr_t)(fbc + fbcOffset);
     w = D2_CALLEE(_0800258A8, sub_080258A8)(fbc);
     {
         volatile u32 *out180 = (volatile u32 *)(rec + 180);
@@ -1154,8 +1151,7 @@ void _08001FC14(void *rec0) {
     {
         register int sel __asm__("r0");
         register int selOffset __asm__("r1") = 24;
-        __asm__ volatile(".code 16\n\tldrsh r0, [r6, r1]"
-                         : "=r"(sel) : "r"(selOffset), "r"(rec) : "cc");
+        sel = *(s16 *)(uintptr_t)(rec + selOffset);
         switch (sel) {
         case 0:
             _08001FE24((void *)rec);

@@ -185,6 +185,9 @@ int _0800A668(void *c) __attribute__((alias("CarTick_Dispatcher")));
 int CarTick_Shared(void){
     long long pair;
     register int a __asm__("r0");
+    // Raw output-buffer spelling maps the destination to r0; the C aggregate
+    // return uses r0 for its hidden result buffer, so this preserves the exact
+    // caller sequence while the callee is expressed as a struct pop.
     extern void sub_08024048(void*);
     sub_08024048(&pair);
     a = (int)*(volatile long long *)&pair;

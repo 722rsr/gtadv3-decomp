@@ -51,7 +51,7 @@ void SoundSetMasterVolCond(u16 vol);  // _0802B214
 void SoundStopMute(void);             // _0802B234
 void SoundPause(void);                // _0802B25C
 void SoundResume(void);               // _0802B280
-void SoundArmFade(u16 target, u8 step); // _0802B2A4
+void SoundArmFade(u32 target, u32 step); // _0802B2A4, truncates to ROM's low 16/8 bits
 void SoundFadeOut(u8 step);           // _0802B30C
 s16 SoundFadeRemaining(void);         // _0802B330
 void _0802B368(u16 vol);              // was SoundDeferredVol; the closure spelling is the definition

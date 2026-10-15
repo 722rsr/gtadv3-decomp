@@ -2137,6 +2137,9 @@
     "c_name": "sub_08003B9C",
     "end_marker": ".type sub_08003BC0, %function",
     "end_vma": "0x08003bc0",
+    "export": [
+      "_08003B9C"
+    ],
     "start_marker": ".type sub_08003B9C, %function"
   },
   "0x08003bc0": {
@@ -4050,10 +4053,20 @@
     "c_name": "_08006590",
     "asm_file": "asm/course_orch.s",
     "start_marker": "_08006590:",
-    "end_marker": "_080065D4:",
+    "end_marker": ".type _080065D4, %function",
     "end_vma": "0x080065D4",
     "export": [
       "_08006590"
+    ]
+  },
+  "0x080065d4": {
+    "c_name": "_080065D4",
+    "asm_file": "asm/course_orch.s",
+    "start_marker": ".type _080065D4, %function",
+    "end_marker": "_08006618:",
+    "end_vma": "0x08006618",
+    "export": [
+      "_080065D4"
     ]
   },
   "0x08006618": {

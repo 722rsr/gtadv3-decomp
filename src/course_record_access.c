@@ -41,7 +41,7 @@ void CourseLeaves_096A4(void *rec)
     __asm__(".globl CourseLeaves096A4Wa\nCourseLeaves096A4Wa = 0x03001780\n");
     __asm__ volatile ("" : "+r" (new_record) : : "memory");
     *slot = new_record;
-    __asm__ volatile ("movs %0, #0" : "=r" (zero_value));
+    zero_value = 0;
     zero_storage = zero_value;
     sub_0802D974(&zero_storage, new_record, 0x0500000Bu);
     *(volatile u16 *)((u8 *)*slot + 14) = _080261B0(10);

@@ -782,7 +782,9 @@ void sub_080053DC(volatile int a, const volatile u8 *b, int c, int d, int e, int
 // if count > 0: for i in 0..count-1: DMA3 { SAD = src, DAD = dst + offset,
 // CNT = 0x84000000 | ((bytes + (bytes<0)) >> 1) } read-back; src += 64;
 // dst += 64.  (offset = r1 arg, constant across rows.)
-void DMA3_ParamRows(int slot, int offset, int row, int bytes, int count) {
+// Keep the fifth, stack-passed argument volatile so agbcc loads it after the
+// two register-argument copies, matching the order at the ROM entry.
+void DMA3_ParamRows(int slot, int offset, int row, int bytes, volatile int count) {
     register volatile u8 *base __asm__("r3");
     register int offsetReg __asm__("r6");
     register int bytesReg __asm__("r5");
@@ -792,8 +794,10 @@ void DMA3_ParamRows(int slot, int offset, int row, int bytes, int count) {
     register u32 dst __asm__("r4");
     __asm__(".globl ParamBase_54A4\nParamBase_54A4 = 0x03000260\n");
     extern u8 ParamBase_54A4[];
-    __asm__ volatile("mov %0, r1\nmov %1, r3\nldr %2, [sp, #20]"
-                     : "=r"(offsetReg), "=r"(bytesReg), "=r"(countReg));
+    offsetReg = offset;
+    bytesReg = bytes;
+    __asm__ volatile ("" : "+r"(offsetReg), "+r"(bytesReg) : : "memory");
+    countReg = count;
     base = ParamBase_54A4;
     tmp = (u32)*(volatile u8 *)(base + slot * 16 + 6);
     __asm__ volatile("" : "+r"(tmp));
@@ -880,10 +884,16 @@ void ObjQueueFlush(volatile u8 *rec) {
     register volatile u32 *dma __asm__("r6");
     int i;
     register int bound __asm__("r0");
+    // An s16 load through a volatile pointer becomes ldrh + sign extension.
+    // These compiler-only barriers keep each plain signed load at its ROM
+    // point, force a fresh read, and let the pinned byte offset select ldrsh.
+    register s32 limitOffset __asm__("r1");
     q = rec;
     i = 0;
     e = *(volatile u8 * volatile *)(q + 8);
-    __asm__ volatile("movs r1, #2\nldrsh %0, [r5, r1]" : "=r"(bound) : : "r1");
+    __asm__ volatile("" : "=r"(limitOffset) : : "memory");
+    limitOffset = 2;
+    bound = *(s16 *)(q + limitOffset);
     if (i >= bound)
         goto reset;
     dma = DMA3;
@@ -908,7 +918,9 @@ void ObjQueueFlush(volatile u8 *rec) {
         }
         i++;
         e += 16;
-        __asm__ volatile("movs r1, #2\nldrsh %0, [r5, r1]" : "=r"(bound) : : "r1");
+        __asm__ volatile("" : "=r"(limitOffset) : : "memory");
+        limitOffset = 2;
+        bound = *(s16 *)(q + limitOffset);
     } while (i < bound);
 reset:
     *(volatile u16 *)(q + 2) = 0;
@@ -964,14 +976,14 @@ void sub_08005604(void) __attribute__((alias("ObjQueueFlushMain")));
 void ObjQueueSubmit(u32 a, u32 b, int c) {
     register volatile u8 *base __asm__("r1");
     register volatile u8 *gate __asm__("r0");
+    s32 gate_value;
     __asm__(".globl SubmitBase_5614\nSubmitBase_5614 = 0x03000260\n");
     extern u8 SubmitBase_5614[];
     base = SubmitBase_5614;
     gate = base;
     gate += 100;
-    __asm__ volatile("movs r2, #0\nldrsh %0, [%0, r2]"
-                     : "+r"(gate) : : "r2");
-    if ((int)(uintptr_t)gate == 0) {
+    gate_value = *(const s16 *)(uintptr_t)gate;
+    if (gate_value == 0) {
         register volatile u32 *dma __asm__("r2");
         dma = DMA3;
         dma[0] = a;

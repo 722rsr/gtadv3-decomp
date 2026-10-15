@@ -854,25 +854,24 @@ void Garage_27D30(void){
     // The v==1 arm enters the shared store tail after movs #1, reusing r0==1;
     // cases 2/3 enter before it. Keep v in r0 to preserve that branch shape.
     if (v == 2)
-        goto L123;
+        goto L123_SET;
     if (v > 2)
         goto HIGH;
-    __asm__ volatile("cmp %0, #1\n\tbeq 1f" : : "l"(v) : "cc");
+    if (v == 1)
+        goto L123_STORE;
     goto Ldef;
 HIGH:
     if (v == 3)
-        goto L123;
+        goto L123_SET;
     if (v == 5) {
         sb[16] = 1;
         goto OUT;
     }
     goto Ldef;
-L123:
-    {
-        register u32 one __asm__("r0");
-        __asm__ volatile("movs r0, #1\n\t1:" : "=r"(one));
-        rec[0] = (u8)one;
-    }
+L123_SET:
+    v = 1;
+L123_STORE:
+    rec[0] = (u8)v;
     *(volatile u16 *)(rec + 8) = 160;
     goto OUT;
 Ldef:

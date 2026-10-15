@@ -32,7 +32,11 @@ int  Code22E4_Clamp97(int v); // _080022E4 -> -1 if >97 else halfword
 int  Code23X_RaceHelper(int a0,int a1,int a2); // placeholder for 23628 family
 void Code23E0C(void *ctx); // _080023E0C: +140 s16 *8 0x080CC178 + ctx+144 u16 ==1 + 23E78 (62 B, proven via 6000-frame trace WA+0xFBC=5, race+140 s16)
 void Code23D4C(void *ctx); // _080023D4C: +140 s16 *8 0x080CC178 + ctx+144/158 + 0x08022D44/022CC/03978 (97 B, proven via 6000-frame race+140 s16)
-void Code24048_StepQueuePush(void *out); // _080024048
+typedef struct {
+    u32 first;
+    u32 second;
+} Code24048StepPair;
+Code24048StepPair Code24048_StepQueuePop(void); // _080024048, result buffer in r0
 void Code24150_ClearSlot(void *slot);
 void Code2417C_GhostSnapshot(void);
 void Code2446C_GuardedSaveHook(void);

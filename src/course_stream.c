@@ -136,9 +136,9 @@ void Course_StreamRow(void) {
     register u32 dst __asm__("r6") = ypart + xpart;
     volatile u32 *hp = (volatile u32 *)EWRAM_ROOT_PTR_ADDR;
     register u32 header __asm__("r0") = *(volatile u32 *)(uintptr_t)*hp;
-    u32 w;
-    // Keep the width load's destination live through both bounds and row-stride use.
-    __asm__ volatile("ldrh %0, [%1, #8]" : "=r"(w) : "r"(header) : "memory");
+    // This selected surface header is RAM; the plain halfword read preserves
+    // the ROM's immediate-offset ldrh used by both bounds and the row stride.
+    u32 w = *(u16 *)((u8 *)(uintptr_t)header + 8);
     u32 h = *(volatile u16 *)(uintptr_t)(header + SURFACE_HEADER_H_OFF);
     register u32 ctrl __asm__("r5");
 

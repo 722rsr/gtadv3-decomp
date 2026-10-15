@@ -454,10 +454,8 @@
    "size": 204
   },
   "0x08001c48": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 1,
     "pin": 6
    },
    "file": "src/idle_dispatch.c",
@@ -995,11 +993,9 @@
    "size": 28
   },
   "0x08002808": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
     "barrier": 1,
-    "insn": 1,
-    "insn_lines": 2,
     "pin": 2
    },
    "file": "src/numeric_leaves.c",
@@ -1007,11 +1003,9 @@
    "size": 20
   },
   "0x0800281c": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
     "barrier": 1,
-    "insn": 1,
-    "insn_lines": 2,
     "pin": 2
    },
    "file": "src/numeric_leaves.c",
@@ -1019,11 +1013,9 @@
    "size": 20
   },
   "0x08002830": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
     "barrier": 1,
-    "insn": 1,
-    "insn_lines": 2,
     "pin": 2
    },
    "file": "src/numeric_leaves.c",
@@ -1292,11 +1284,11 @@
    "size": 152
   },
   "0x08002f68": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 72,
-    "naked": true
+    "barrier": 14,
+    "directive": 1,
+    "pin": 23
    },
    "file": "src/foundation_runtime.c",
    "name": "RecordSetter_02F68",
@@ -1367,11 +1359,9 @@
    "size": 64
   },
   "0x080031d4": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
-    "barrier": 3,
-    "insn": 2,
-    "insn_lines": 3,
+    "barrier": 4,
     "pin": 12
    },
    "file": "src/runtime_hud.c",
@@ -1839,10 +1829,8 @@
    "size": 48
   },
   "0x08004128": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 2,
-    "insn_lines": 4,
     "pin": 6
    },
    "file": "src/runtime_hud.c",
@@ -1856,12 +1844,10 @@
    "size": 32
   },
   "0x08004180": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
     "barrier": 1,
-    "insn": 1,
-    "insn_lines": 1,
-    "pin": 3
+    "pin": 2
    },
    "file": "src/runtime_hud.c",
    "name": "SpriteFree_04180",
@@ -1874,13 +1860,7 @@
    "size": 16
   },
   "0x080041d4": {
-   "class": "partial",
-   "detail": {
-    "barrier": 1,
-    "insn": 1,
-    "insn_lines": 1,
-    "pin": 1
-   },
+   "class": "c",
    "file": "src/runtime_hud.c",
    "name": "CamAngle_041D4",
    "size": 12
@@ -1985,12 +1965,10 @@
    "size": 84
   },
   "0x080045b8": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
-    "barrier": 1,
+    "barrier": 2,
     "directive": 2,
-    "insn": 1,
-    "insn_lines": 1,
     "pin": 4
    },
    "file": "src/runtime_hud.c",
@@ -1998,12 +1976,10 @@
    "size": 88
   },
   "0x08004610": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
-    "barrier": 3,
+    "barrier": 5,
     "directive": 2,
-    "insn": 2,
-    "insn_lines": 2,
     "pin": 7
    },
    "file": "src/runtime_hud.c",
@@ -2011,12 +1987,10 @@
    "size": 96
   },
   "0x08004670": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
-    "barrier": 3,
+    "barrier": 4,
     "directive": 2,
-    "insn": 1,
-    "insn_lines": 1,
     "pin": 7
    },
    "file": "src/runtime_hud.c",
@@ -2045,24 +2019,20 @@
    "size": 16
   },
   "0x08004758": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
-    "barrier": 8,
-    "insn": 1,
-    "insn_lines": 1,
-    "pin": 17
+    "barrier": 9,
+    "pin": 18
    },
    "file": "src/runtime_hud.c",
    "name": "TrackProjectObject_04758",
    "size": 192
   },
   "0x08004818": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
-    "barrier": 7,
-    "insn": 1,
-    "insn_lines": 1,
-    "pin": 15
+    "barrier": 8,
+    "pin": 16
    },
    "file": "src/runtime_hud.c",
    "name": "TrackProj_04818",
@@ -2137,11 +2107,10 @@
    "size": 12
   },
   "0x08004b74": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 5,
-    "naked": true
+    "barrier": 2,
+    "pin": 3
    },
    "file": "src/foundation_subsys.c",
    "name": "MgrTestBit4",
@@ -2573,12 +2542,10 @@
    "size": 200
   },
   "0x080054a4": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
-    "barrier": 3,
+    "barrier": 4,
     "directive": 1,
-    "insn": 1,
-    "insn_lines": 3,
     "pin": 7
    },
    "file": "src/event_dma_queue.c",
@@ -2598,11 +2565,10 @@
    "size": 48
   },
   "0x0800555c": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 2,
-    "insn_lines": 4,
-    "pin": 4
+    "barrier": 2,
+    "pin": 5
    },
    "file": "src/event_dma_queue.c",
    "name": "ObjQueueFlush",
@@ -2633,11 +2599,9 @@
    "size": 16
   },
   "0x08005614": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
     "directive": 1,
-    "insn": 1,
-    "insn_lines": 2,
     "pin": 3
    },
    "file": "src/event_dma_queue.c",
@@ -3161,6 +3125,16 @@
    "name": "Course_SeekRes",
    "size": 68
   },
+  "0x080065d4": {
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 1,
+    "pin": 7
+   },
+   "file": "src/course_orch.c",
+   "name": "Course_AttrLookup",
+   "size": 68
+  },
   "0x08006618": {
    "class": "c_fakematch",
    "detail": {
@@ -3181,11 +3155,9 @@
    "size": 40
   },
   "0x08006678": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
     "directive": 1,
-    "insn": 1,
-    "insn_lines": 1,
     "pin": 13
    },
    "file": "src/course_stream.c",
@@ -3620,11 +3592,9 @@
    "size": 184
   },
   "0x08007fc0": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
     "barrier": 2,
-    "insn": 1,
-    "insn_lines": 1,
     "pin": 6
    },
    "file": "src/course_records.c",
@@ -3909,12 +3879,10 @@
    "size": 24
   },
   "0x080096a4": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
     "barrier": 3,
     "directive": 1,
-    "insn": 1,
-    "insn_lines": 1,
     "pin": 5
    },
    "file": "src/course_record_access.c",
@@ -4008,7 +3976,7 @@
    "detail": {
     "barrier": 3,
     "directive": 1,
-    "pin": 2
+    "pin": 5
    },
    "file": "src/car_tick_helpers.c",
    "name": "_08009BF8",
@@ -4233,11 +4201,9 @@
    "size": 264
   },
   "0x0800a44c": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
     "barrier": 1,
-    "insn": 1,
-    "insn_lines": 1,
     "pin": 3
    },
    "file": "src/car_tick_helpers.c",
@@ -4412,12 +4378,10 @@
    "size": 900
   },
   "0x0800b82c": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
     "barrier": 1,
     "directive": 1,
-    "insn": 1,
-    "insn_lines": 1,
     "pin": 8
    },
    "file": "src/car_physics_core.c",
@@ -4710,10 +4674,8 @@
    "size": 32
   },
   "0x0800c814": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 2,
     "pin": 5
    },
    "file": "src/menus.c",
@@ -5641,20 +5603,18 @@
    "size": 36
   },
   "0x08010914": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 1
+    "pin": 1
    },
    "file": "src/menus.c",
    "name": "Menu010914_080010914",
    "size": 44
   },
   "0x08010940": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 1
+    "pin": 1
    },
    "file": "src/menus.c",
    "name": "Menu010940_080010940",
@@ -6128,12 +6088,10 @@
    "size": 44
   },
   "0x08012f98": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
     "barrier": 1,
     "directive": 1,
-    "insn": 2,
-    "insn_lines": 6,
     "pin": 3
    },
    "file": "src/menu_ff78_e.c",
@@ -6707,10 +6665,8 @@
    "size": 116
   },
   "0x080162e0": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 2,
     "pin": 7
    },
    "file": "src/rec35_16002.c",
@@ -7378,11 +7334,9 @@
    "size": 484
   },
   "0x08018e28": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
     "barrier": 5,
-    "insn": 1,
-    "insn_lines": 1,
     "pin": 9
    },
    "file": "src/race_setup.c",
@@ -7436,23 +7390,19 @@
    "size": 428
   },
   "0x080191bc": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
     "barrier": 3,
-    "insn": 1,
-    "insn_lines": 1,
-    "pin": 3
+    "pin": 2
    },
    "file": "src/race_setup.c",
    "name": "Race_Setup_191BC",
    "size": 68
   },
   "0x08019200": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
     "barrier": 2,
-    "insn": 1,
-    "insn_lines": 2,
     "pin": 8
    },
    "file": "src/race_setup.c",
@@ -7539,13 +7489,7 @@
    "size": 28
   },
   "0x080199cc": {
-   "class": "asm",
-   "detail": {
-    "barrier": 6,
-    "insn": 4,
-    "insn_lines": 10,
-    "pin": 10
-   },
+   "class": "c",
    "file": "src/race_setup_helpers.c",
    "name": "sub_0800199CC",
    "size": 96
@@ -7862,11 +7806,9 @@
    "size": 232
   },
   "0x0801b364": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "barrier": 1,
-    "insn": 7,
-    "insn_lines": 14,
+    "barrier": 4,
     "pin": 13
    },
    "file": "src/race_scene_a1.c",
@@ -7874,12 +7816,10 @@
    "size": 172
   },
   "0x0801b410": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
-    "barrier": 2,
+    "barrier": 4,
     "directive": 1,
-    "insn": 2,
-    "insn_lines": 4,
     "pin": 10
    },
    "file": "src/race_scene.c",
@@ -8155,11 +8095,9 @@
    "size": 68
   },
   "0x0801da10": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
     "barrier": 1,
-    "insn": 1,
-    "insn_lines": 1,
     "pin": 4
    },
    "file": "src/race_scene_b1.c",
@@ -8586,11 +8524,9 @@
    "size": 60
   },
   "0x0801fc14": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
     "barrier": 5,
-    "insn": 4,
-    "insn_lines": 4,
     "pin": 7
    },
    "file": "src/race_scene_d2.c",
@@ -8671,12 +8607,10 @@
    "size": 376
   },
   "0x08020690": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
     "barrier": 4,
     "directive": 3,
-    "insn": 1,
-    "insn_lines": 1,
     "pin": 3
    },
    "file": "src/race_scene_e.c",
@@ -9298,13 +9232,11 @@
    "size": 316
   },
   "0x08023958": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
     "barrier": 3,
     "directive": 2,
-    "insn": 1,
-    "insn_lines": 3,
-    "pin": 9
+    "pin": 8
    },
    "file": "src/ai_race_leaves.c",
    "name": "_08023958",
@@ -9415,14 +9347,12 @@
    "size": 80
   },
   "0x08024048": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 15,
-    "naked": true
+    "pin": 3
    },
    "file": "src/race_control_leaves.c",
-   "name": "Code24048_StepQueuePush",
+   "name": "Code24048_StepQueuePop",
    "size": 32
   },
   "0x08024068": {
@@ -9662,13 +9592,11 @@
    "size": 40
   },
   "0x08024794": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
     "barrier": 9,
     "directive": 3,
-    "insn": 1,
-    "insn_lines": 1,
-    "pin": 15
+    "pin": 14
    },
    "file": "src/save.c",
    "name": "SaveGaragePack",
@@ -10138,12 +10066,10 @@
    "size": 24
   },
   "0x08025548": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
-    "barrier": 1,
+    "barrier": 2,
     "directive": 1,
-    "insn": 1,
-    "insn_lines": 1,
     "pin": 3
    },
    "file": "src/ai_line_leaves.c",
@@ -10151,12 +10077,10 @@
    "size": 124
   },
   "0x080255c4": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
-    "barrier": 1,
+    "barrier": 2,
     "directive": 1,
-    "insn": 1,
-    "insn_lines": 1,
     "pin": 3
    },
    "file": "src/ai_line_more.c",
@@ -10164,12 +10088,10 @@
    "size": 124
   },
   "0x08025640": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
-    "barrier": 1,
+    "barrier": 2,
     "directive": 1,
-    "insn": 1,
-    "insn_lines": 1,
     "pin": 3
    },
    "file": "src/ai_line_more.c",
@@ -10495,10 +10417,9 @@
    "size": 44
   },
   "0x08025dbc": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 2,
+    "barrier": 1,
     "pin": 9
    },
    "file": "src/ai_grid_leaves.c",
@@ -10534,11 +10455,10 @@
    "size": 40
   },
   "0x08025ec0": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
+    "barrier": 1,
     "directive": 1,
-    "insn": 1,
-    "insn_lines": 2,
     "pin": 11
    },
    "file": "src/ai_grid_leaves.c",
@@ -11149,11 +11069,9 @@
    "size": 40
   },
   "0x08027d30": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 2,
-    "insn_lines": 3,
-    "pin": 2
+    "pin": 1
    },
    "file": "src/garage.c",
    "name": "Garage_27D30",
@@ -11672,11 +11590,9 @@
    "size": 60
   },
   "0x08029488": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "barrier": 3,
-    "insn": 2,
-    "insn_lines": 4,
+    "barrier": 5,
     "pin": 10
    },
    "file": "src/garage_records.c",
@@ -11915,11 +11831,9 @@
    "size": 8
   },
   "0x0802ab98": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
-    "barrier": 6,
-    "insn": 1,
-    "insn_lines": 1,
+    "barrier": 7,
     "pin": 19
    },
    "file": "src/garage_records.c",
@@ -12039,12 +11953,10 @@
    "size": 36
   },
   "0x0802b2a4": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
-    "barrier": 2,
-    "insn": 1,
-    "insn_lines": 6,
-    "pin": 10
+    "barrier": 4,
+    "pin": 12
    },
    "file": "src/sound.c",
    "name": "SoundArmFade",
@@ -12084,11 +11996,9 @@
    "size": 20
   },
   "0x0802b3b8": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 42,
-    "naked": true
+    "pin": 6
    },
    "file": "src/sound.c",
    "name": "SoundIsBankPlaying",
@@ -13590,20 +13500,20 @@
  },
  "totals": {
   "asm": {
-   "bytes": 89276,
-   "functions": 283
+   "bytes": 88656,
+   "functions": 276
   },
   "c": {
-   "bytes": 39446,
-   "functions": 849
+   "bytes": 39554,
+   "functions": 851
   },
   "c_fakematch": {
-   "bytes": 44670,
-   "functions": 448
+   "bytes": 50954,
+   "functions": 497
   },
   "partial": {
-   "bytes": 14676,
-   "functions": 94
+   "bytes": 8972,
+   "functions": 51
   }
  },
  "version": 1

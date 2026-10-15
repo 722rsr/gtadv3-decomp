@@ -1069,8 +1069,7 @@ void _08001DA10(int v) {
         u16 t = *(volatile u16 *)(uintptr_t)(table + (u32)(w[i] * 2));
         register s32 laneOffset __asm__("r0") = 2;
         register s32 laneValue __asm__("r2");
-        __asm__ volatile(".code 16\n\tldrsh r2, [r5, r0]"
-                         : "=r"(laneValue) : "r"(base), "r"(laneOffset) : "cc");
+        laneValue = *(s16 *)(base + laneOffset);
         _08007570((void *)(uintptr_t)0x08336CA0u, t,
                   laneValue, 0, 16);
         base += 8;

@@ -120,11 +120,10 @@ HOST_STUB(int sub_0802D97C(int a, int b)); // 0x0802D97C swi 0x06 DivRem remaind
 //     The barrier buys the register but changes the following add's FORM
 //     (ROM `adds r1,r2` 0x1851 vs 0x1889 with a barrier), so measure both.
 //
-// 0x080031D4 reaches 58/60 with both levers and stays unpromoted: its only
-// miss is the src[2] load DESTINATION, where the ROM coalesces the dest onto
-// the dying base (`ldrh r2,[r2,#2]`) and agbcc picks r0. Forcing r2 flips the
-// add to 0x1889; `register volatile` costs a stack frame. Axis recorded, not
-// settled.
+// 0x080031D4 is exact after keeping src2 live in r2 with an empty register
+// barrier and spelling the addition as `src2 + v`: agbcc then emits the ROM's
+// `ldrh r2,[r2,#2]` / `adds r1,r2,r1` pair. The body is C with register pins
+// and empty barriers only, so it counts as decompiled.
 void _0800315C(volatile u8 *req)
 {
     register volatile u8 *p __asm__("r3") = req;
@@ -235,9 +234,9 @@ void _080031D4(volatile u8 *req)
         *(volatile u16 *)(o + 2) = (u16)f1;
         register u32 v __asm__("r1") = (u32)(f3 << 1);
         register u32 src2 __asm__("r2");
-        __asm__("ldrh %0, [%1, #2]" : "=l" (src2) : "l" (src));
-        __asm__(".syntax unified\n\tadds %0, %1, %0\n\t.syntax divided"
-                : "+l" (v) : "l" (src2) : "cc");
+        src2 = *(volatile u16 *)(src + 2);
+        __asm__("" : "+r" (src2));
+        v = src2 + v;
         register u32 idxv __asm__("r0") = *(volatile u32 *)(p + 20);
         idxv += 12;
         v |= idxv << 12;
@@ -1680,13 +1679,12 @@ void SpriteHideAll_04128(u32 id)
     count = (s32)state[1];
     if (i >= count)
         return;
-    __asm__ volatile("lsl %0, %1, #16\n\tasr %1, %0, #16"
-                     : "=r"(key_shift), "+r"(key) : : "cc");
+    key_shift = (s32)(key << 16);
+    key = key_shift >> 16;
     zero = 0;
     do {
         s32 current;
-        __asm__ volatile("movs r6, #0\n\tldrsh %0, [%1, r6]"
-                         : "=r"(current) : "r"(slot) : "r6", "memory");
+        current = *(const s16 *)(uintptr_t)slot;
         if (current == (s32)key)
             *(volatile u16 *)(slot + 2) = zero;
         i++;
@@ -1730,11 +1728,9 @@ void SpriteFree_04180(u16 id)
                    t = (volatile s32 *)(uintptr_t)0x03000178) {
         if (*(volatile u16 *)(p + 2) != 0) {
             // ROM compares with movs r1,#0; ldrsh r0,[r4,r1].
-            register s32 zero __asm__("r1") = 0;
             register s32 slotId __asm__("r0");
-            __asm__ volatile ("" : "+r"(zero));
-            __asm__ volatile (".code 16\n\tldrsh %0, [%1, %2]"
-                              : "=r"(slotId) : "r"(p), "r"(zero));
+            __asm__ volatile ("" : : : "memory");
+            slotId = *(const s16 *)(uintptr_t)p;
             if (slotId == (s16)id) {
                 typedef void (*rel_fn)(u32);
                 ((rel_fn)(uintptr_t)*(volatile u32 *)(p + 4))
@@ -1757,14 +1753,8 @@ void CamCopy_041C4(volatile u32 *dst)
 // 0x080041D4 — sign-extend the halfword at 0x0203F728 into r0.
 s32 CamAngle_041D4(void)
 {
-    volatile s16 *angle = (volatile s16 *)(uintptr_t)0x0203F728;
-    // ROM uses r1=0 for ldrsh [r0,r1], rather than an immediate halfword load.
-    register s32 zero __asm__("r1") = 0;
-    __asm__ volatile ("" : "+r"(zero));
-    register s32 value;
-    __asm__ volatile (".code 16\n\tldrsh %0, [%1, %2]"
-                      : "=r"(value) : "r"(angle), "r"(zero));
-    return value;
+    s16 *angle = (s16 *)(uintptr_t)0x0203F728;
+    return (s32)*angle;
 }
 // 0x080041E0 — s16(120 - (a0 * 200) / a1)
 s16 CamY_041E0(int a0, int a1)
@@ -2104,8 +2094,11 @@ int TrackProjectObject_04758(volatile u8 *obj)
     __asm__ volatile("" : "+r"(angleBase));
     register s32 angle __asm__("r1") = angleBase;
     __asm__ volatile("" : "+r"(angle) : : "memory");
-    __asm__ volatile("ldrh r4, [r4, #8]" : "+r"(cam) : : "memory");
-    angle -= (s32)(uintptr_t)cam;
+    register u32 angleValue __asm__("r4") =
+        *(volatile u16 *)((volatile u8 *)cam + 8);
+    /* The ROM reuses r4 for this halfword value before the subtract. */
+    __asm__ volatile("" : "+r"(angleValue));
+    angle -= (s32)angleValue;
     register s32 angleMask __asm__("r2") = 0xFFF;
     __asm__ volatile("" : "+r"(angleMask));
     register s32 angleMaskValue __asm__("r0") = angleMask;
@@ -2179,8 +2172,11 @@ int TrackProj_04818(volatile u8 *obj_)
     __asm__ volatile("" : "+r"(angleBase));
     register s32 angle __asm__("r1") = angleBase;
     __asm__ volatile("" : "+r"(angle) : : "memory");
-    __asm__ volatile("ldrh r4, [r4, #8]" : "+r"(cam) : : "memory");
-    angle -= (s32)(uintptr_t)cam;
+    register u32 angleValue __asm__("r4") =
+        *(volatile u16 *)((volatile u8 *)cam + 8);
+    /* The ROM reuses r4 for this halfword value before the subtract. */
+    __asm__ volatile("" : "+r"(angleValue));
+    angle -= (s32)angleValue;
     register s32 angleMask __asm__("r2") = 0xFFF;
     __asm__ volatile("" : "+r"(angleMask));
     register s32 angleMaskValue __asm__("r0") = angleMask;
@@ -2311,8 +2307,10 @@ void BgRot_045B8(void)
         dw[2] = (u32)(x + *(volatile s32 *)(rec + 4));
         dw[3] = (u32)(y + *(volatile s32 *)(rec + 0));
         register u32 negv __asm__("r6") = *(volatile u16 *)(rec + 10);
+        // Keep the ROM's r6 input live so agbcc preserves the x/y allocation.
+        __asm__ volatile ("" : "+r"(negv));
         register u32 negresult __asm__("r0");
-        __asm__("neg %0, %1" : "=l" (negresult) : "l" (negv));
+        negresult = 0u - negv;
         *(volatile u16 *)(d + 0) = (u16)negresult;
         *(volatile u16 *)(d + 4) = *(volatile u16 *)(rec + 8);
         dest += 16;
@@ -2353,11 +2351,14 @@ void BgRot_04610(void)
         dw[2] = (u32)(x - *(volatile s32 *)(rec + 0));
         dw[3] = (u32)(y + *(volatile s32 *)(rec + 4));
         register u32 negv __asm__("r6") = *(volatile u16 *)(rec + 8);
+        /* Keep r6 live for both of the ROM's neg r0, r6 operations. */
+        __asm__ volatile ("" : "+r"(negv));
         register u32 negresult __asm__("r0");
-        __asm__("neg %0, %1" : "=l" (negresult) : "l" (negv));
+        negresult = 0u - negv;
         *(volatile u16 *)(d + 0) = (u16)negresult;
         negv = *(volatile u16 *)(rec + 10);
-        __asm__("neg %0, %1" : "=l" (negresult) : "l" (negv));
+        __asm__ volatile ("" : "+r"(negv));
+        negresult = 0u - negv;
         *(volatile u16 *)(d + 4) = (u16)negresult;
         dest += 16;
         rec += 12;
@@ -2398,8 +2399,10 @@ void BgRot_04670(void)
         dw[3] = (u32)(y - *(volatile s32 *)(rec + 0));
         *(volatile u16 *)(d + 0) = *(volatile u16 *)(rec + 10);
         register u32 negv __asm__("r6") = *(volatile u16 *)(rec + 8);
+        /* Keep the ROM's r6 input live so agbcc preserves the x/y allocation. */
+        __asm__ volatile ("" : "+r"(negv));
         register u32 negresult __asm__("r0");
-        __asm__("neg %0, %1" : "=l" (negresult) : "l" (negv));
+        negresult = 0u - negv;
         *(volatile u16 *)(d + 4) = (u16)negresult;
         dest += 16;
         rec += 12;

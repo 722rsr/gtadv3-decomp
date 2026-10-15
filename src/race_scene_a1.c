@@ -713,20 +713,19 @@ extern int _080098C8_wide(u32 a, u32 b) __asm__("_080098C8");
 // ACC(4) picks B1A4 (flag-0x8000 clear or flag-0x4000 set → B130(0)+2;
 // else ACC(0x4000) re-test then [ctx]+122 decrement or 098C8) vs B27C.
 // ----------------------------------------------------------------------------
-void _08001B364(u16 a, u16 b) {
+void _08001B364(u32 a, u32 b) {
     u32 arg_a;
     u32 arg_b;
-    __asm__ volatile ("lsl r0, r0, #16\n\tlsr %0, r0, #16\n"
-                      "lsl r1, r1, #16\n\tlsr %1, r1, #16"
-                      : "=r" (arg_b), "=r" (arg_a)
-                      : : "r0", "r1", "cc");
+    arg_b = (u16)a;
+    arg_a = (u16)b;
     register u32 wa_base __asm__("r0") = 0x03001780u;
     register u32 wa_offset __asm__("r1") = 0x10FCu;
     __asm__ volatile ("" : "+r" (wa_base), "+r" (wa_offset));
     register volatile u16 *wa_mode __asm__("r5") =
         (volatile u16 *)(uintptr_t)(wa_base + wa_offset);
     register u32 initial_mode __asm__("r3");
-    __asm__ volatile ("ldrh %0, [%1]" : "=r" (initial_mode) : "r" (wa_mode));
+    initial_mode = *wa_mode;
+    __asm__ volatile ("" : "+r" (initial_mode));
 
     if (initial_mode == 8) {
         u8 *ctx = *(u8 **)(uintptr_t)0x03004E20u;
@@ -736,7 +735,8 @@ void _08001B364(u16 a, u16 b) {
     if (_08018ACC(4) != 0) {
         register int action __asm__("r4") = 0;
         register u32 mode __asm__("r5");
-        __asm__ volatile ("ldrh %0, [%1]" : "=r" (mode) : "r" (wa_mode));
+        mode = *wa_mode;
+        __asm__ volatile ("" : "+r" (mode));
         if (mode == 8) {
             if (_08018ACC(0x800000u) != 0 || _08018ACC(0x400000u) != 0) {
                 _08001B130(0);
@@ -750,42 +750,28 @@ void _08001B364(u16 a, u16 b) {
             register volatile u16 *count __asm__("r1") =
                 (volatile u16 *)(ctx + 122);
             register u32 count_value __asm__("r2");
-            __asm__ volatile ("ldrh %0, [%1]"
-                              : "=r" (count_value) : "r" (count));
+            count_value = *count;
+            __asm__ volatile ("" : "+r" (count_value));
             register u32 zero __asm__("r3") = 0;
             register int signed_count __asm__("r0");
-            __asm__ volatile ("ldrsh %0, [%1, %2]"
-                              : "=r" (signed_count)
-                              : "r" (count), "r" (zero) : "memory");
+            signed_count = ((s16 *)(uintptr_t)count)[zero];
             if (signed_count > 0) {
                 register int decremented __asm__("r0") = count_value - 1;
                 *count = (u16)decremented;
             }
             else {
                 register int call_result __asm__("r0");
-                __asm__ volatile ("add r0, %2, #0\n\t"
-                                  "add r1, %1, #0\n\t"
-                                  "bl _080098C8"
-                                  : "=r" (call_result)
-                                  : "l" (arg_a), "l" (arg_b)
-                                  : "r1", "r2", "r3", "r12", "lr",
-                                    "cc", "memory");
+                call_result = _080098C8_wide(arg_b, arg_a);
                 action = call_result;
             }
         }
     dispatch:
         _08001B1A4(action);
     } else {
-        __asm__ volatile ("add r0, %1, #0\n\t"
-                          "add r1, %0, #0\n\t"
-                          "bl _08001B27C"
-                          :
-                          : "l" (arg_a), "l" (arg_b)
-                          : "r0", "r1", "r2", "r3", "r12", "lr",
-                            "cc", "memory");
+        _08001B27C_wide(arg_b, arg_a);
     }
 }
-void sub_08001B364(u16 a, u16 b) __attribute__((alias("_08001B364")));
+void sub_08001B364(u32 a, u32 b) __attribute__((alias("_08001B364")));
 
 // ----------------------------------------------------------------------------
 // ---- 0x0801B498 — 6-way select dispatcher + case bodies ----
