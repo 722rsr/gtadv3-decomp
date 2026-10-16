@@ -3818,10 +3818,10 @@
   "0x08008bb8": {
    "class": "partial",
    "detail": {
-    "barrier": 26,
-    "insn": 5,
-    "insn_lines": 5,
-    "pin": 9
+    "barrier": 29,
+    "insn": 3,
+    "insn_lines": 3,
+    "pin": 10
    },
    "file": "src/course_dispatch.c",
    "name": "Course_Dispatch_08BB8",

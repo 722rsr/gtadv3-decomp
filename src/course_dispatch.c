@@ -149,7 +149,12 @@ void *Course_Dispatch_08BB8(void *out) {
     register u32 word4 __asm__("r4");
     register u32 word5 __asm__("r5");
     register u32 mask __asm__("r6");
-    register u32 word7;
+    // word7/temp7 both encode the ROM's r7 scratch use: word7 (pinned) carries
+    // the shifted/loaded temps whose copies to r1 are real instructions, and
+    // temp7 spans two blocks so global-alloc must place it in r7, whose
+    // mark_home_live also restores the ROM's r7 prologue save.
+    register u32 word7 __asm__("r7");
+    register u32 temp7;
     register u32 mask8 __asm__("r8");
 
     reg1 = 16;
@@ -180,9 +185,11 @@ void *Course_Dispatch_08BB8(void *out) {
         mask = reg1;
         __asm__ volatile ("" : "+r"(mask));
         value &= mask;
-        word7 = 0xffffc000u;
-        __asm__ volatile ("" : "+r"(word7));
-        reg1 = word7;
+        temp7 = 0xffffc000u;
+        __asm__ volatile ("" : "+r"(reg1));
+        __asm__ volatile ("" : "+r"(temp7));
+        reg1 = temp7;
+        __asm__ volatile ("" : "+r"(temp7));
         __asm__ volatile ("" : "+r"(reg1));
         value |= reg1;
         cursor[1] = (u16)value;
@@ -190,7 +197,7 @@ void *Course_Dispatch_08BB8(void *out) {
         reg1 = *(volatile u16 *)(rec + 58);
         __asm__ volatile ("" : "+r"(reg1));
         value = reg1 << 12;
-        word7 = *(volatile u16 *)(rec + 60);
+        word7 = *(u16 *)(rec + 60);
         __asm__ volatile ("" : "+r"(word7));
         value |= word7;
         cursor[2] = (u16)value;
@@ -202,9 +209,9 @@ void *Course_Dispatch_08BB8(void *out) {
                           : "=r"(value) : "r"(rec), "r"(reg1));
         if (value > 9) {
             value = word5 - 6;
-            reg1 = mask8;
-            __asm__ volatile ("" : "+r"(reg1));
-            value &= reg1;
+            word7 = mask8;
+            __asm__ volatile ("" : "+r"(word7));
+            value &= word7;
             cursor[0] = (u16)value;
 
             value = word4 - 20;
@@ -220,15 +227,15 @@ void *Course_Dispatch_08BB8(void *out) {
             value += 16;
             __asm__ volatile ("ldrh %0, [%0, #58]"
                               : "+r"(rec) : : "memory");
-            reg1 = (u32)(uintptr_t)rec;
-            __asm__ volatile ("" : "+r"(reg1));
-            reg1 <<= 12;
+            reg1 = (u32)(uintptr_t)rec << 12;
             value |= reg1;
             cursor[2] = (u16)value;
             cursor = (volatile u16 *)((volatile u8 *)cursor + 8);
         }
 
-        rec = *root;
+        word7 = (u32)(uintptr_t)root;
+        __asm__ volatile ("" : "+r"(word7));
+        rec = *(volatile u8 **)(uintptr_t)word7;
         value = *(volatile u32 *)(rec + 84);
         value -= 6;
         reg1 = mask8;
@@ -243,10 +250,9 @@ void *Course_Dispatch_08BB8(void *out) {
         __asm__ volatile ("" : "+r"(reg1));
         value |= reg1;
         cursor[1] = (u16)value;
-        word7 = *(volatile u16 *)(rec + 58);
+        word7 = *(u16 *)(rec + 58);
         value = word7 << 12;
-        __asm__ volatile ("ldrh %0, [%0, #56]"
-                          : "+r"(rec) : : "memory");
+        rec = (volatile u8 *)(uintptr_t)*(u16 *)(rec + 56);
         value |= (u32)(uintptr_t)rec;
     } else {
         value = *(volatile u32 *)(rec + 84);
@@ -266,9 +272,10 @@ void *Course_Dispatch_08BB8(void *out) {
         reg1 = 0x1ff;
         __asm__ volatile ("" : "+r"(reg1));
         value &= reg1;
-        word7 = 0xffffc000u;
-        __asm__ volatile ("" : "+r"(word7));
-        reg1 = word7;
+        temp7 = 0xffffc000u;
+        __asm__ volatile ("" : "+r"(temp7));
+        reg1 = temp7;
+        __asm__ volatile ("" : "+r"(temp7));
         __asm__ volatile ("" : "+r"(reg1));
         value |= reg1;
         cursor[1] = (u16)value;
@@ -276,8 +283,7 @@ void *Course_Dispatch_08BB8(void *out) {
         reg1 = *(volatile u16 *)(rec + 58);
         __asm__ volatile ("" : "+r"(reg1));
         value = reg1 << 12;
-        __asm__ volatile ("ldrh %0, [%0, #56]"
-                          : "+r"(rec) : : "memory");
+        rec = (volatile u8 *)(uintptr_t)*(u16 *)(rec + 56);
         value |= (u32)(uintptr_t)rec;
     }
 
