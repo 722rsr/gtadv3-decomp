@@ -910,6 +910,12 @@ __attribute__((naked)) void _080020518(void *rec0) {
 }
 
 // ---- 0x08020690 — scene setup B (03B9C path, mode-1 area select) + pools {WA+0x5E4, 0x03001D64} ----
+// EXACT 244/244. The zero word is an unpinned temp whose liveness is extended
+// past the tail calls by the closing "+r" barrier: that makes it a global
+// allocno, which global-alloc places in r7, and marked-home r7 restores the
+// ROM's push {r4,r5,r6,r7,lr}. table wins r6 on the allocno priority. The
+// else arm materialises 78 as movs/lsls/adds in r2 (see the note there), and
+// the trailing bx-lr stub takes the record in r0 like every ROM call site.
 void _080020690(void *rec0) {
     register volatile u8 *rec __asm__("r5");
     extern u8 RaceSceneE_Wa_20690[];

@@ -986,9 +986,12 @@ __asm__(".align 2, 0");
 // to relatch a+160; always sets u16[b+84] = 1.
 //
 // EXACT 84/84: keep the incoming record pointers in r5/r4, the IWRAM base
-// and offsets in r2/r1, and the computed addresses in r0. The empty asm ties
-// prevent agbcc from folding WA+offset into one literal. Pinning the final
-// b+84 address in r1 preserves the ROM's two-step pointer advance and pool
+// and offsets in r2/r1, and the computed addresses in r0. Declaring pb before
+// pa makes the prologue copy b into r4 first. The empty asm ties prevent
+// agbcc from folding WA+offset into one literal, and assigning zero = 0
+// before each store makes agbcc rematerialise the ROM's two movs r0,#0
+// instead of reusing the address already in r0. Pinning the final b+84
+// address in r1 preserves the ROM's two-step pointer advance and pool
 // position.
 // ----------------------------------------------------------------------------
 void _08001D974(void *a_, void *b_) {

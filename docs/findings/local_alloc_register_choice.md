@@ -63,35 +63,69 @@ No instruction is emitted (`.code 16` is the only artifact in the listing) and
 both reads then match. Placing the use before the load would add nothing but
 would pin r1 for the first read as well, which the ROM does not have.
 
-## r7 is unreachable as a saved register
+## r7 is reachable through global-alloc, not through pins
 
-A separate structural limit, found while chasing `_080019200` (whose ROM
-prologue is `push {r4,r5,r6,r7,lr}`): agbcc can never push r7.
+`thumb.h` defines `FRAME_POINTER_REGNUM 7`, and r7 is eliminable to sp. That
+shapes both halves of register use and is worth stating precisely, because the
+first version of this note ("r7 is out of reach") was wrong and parked
+`_080019200` unnecessarily:
 
-`thumb.h` defines `FRAME_POINTER_REGNUM 7`. In `flow.c`, when a hard register
-use is scanned, the first branch is
+* **Local allocation can never use r7.** `local-alloc.c`'s `find_free_reg`
+  unconditionally marks every eliminable register used:
+  `for (i = 0; i < sizeof eliminables / ...; i++) SET_HARD_REG_BIT (used,
+  eliminables[i].from);` ("Don't use the frame pointer reg in local-alloc even
+  if we may omit the frame pointer..."). A pseudo born and dead inside one
+  basic block therefore never lands in r7.
+* **Global allocation can.** `global_conflicts` records r7's (permanent)
+  frame-pointer liveness against every allocno, but immediately after that
+  scan `global.c` clears it again:
+  `AND_COMPL_HARD_REG_SET (hard_reg_conflicts[i], eliminable_regset)` -- "If
+  we do eliminate the register, the conflict will no longer exist". Any
+  *global* allocno (a pseudo that spans basic blocks) is therefore free to
+  take r7 whenever r0-r6 conflict.
+* **A pseudo allocated to r7 sets `regs_ever_live[7]`.** reload() walks every
+  pseudo through `mark_home_live` (reload1.c:2333, "compute which hard
+  registers are now in use as homes for pseudo registers"), which sets
+  `regs_ever_live[home]`; reload spilling r7 (`used_spill_regs`) sets it too.
+  `thumb_function_prologue` builds its push list from `regs_ever_live`, so
+  that is what emits `push {r4,r5,r6,r7,lr}` and makes the high-save scratch
+  `mov r7, r8 / push {r7}`.
+* **A pin is not a pseudo.** `register T x __asm__("r7")` emits raw r7
+  references; `flow.c`'s `mark_used_regs` and `mark_set_1` both early-return
+  for `FRAME_POINTER_REGNUM` in `elim_reg_set`, so a pinned r7 body never
+  sets `regs_ever_live[7]`: the body's uses assemble, the prologue keeps
+  `push {r4,r5,r6,lr}` and uses `mov r6,r8 / push {r6}`, and the epilogue
+  drops r7. (That is the half the old note got right.)
 
-```c
-if (regno == STACK_POINTER_REGNUM
-    || (regno == ARG_POINTER_REGNUM && fixed_regs[regno])
-    || regno == FRAME_POINTER_REGNUM)
-  {
-    /* If this is a register we are going to try to eliminate,
-       don't mark it live here. ... */
-    if (! TEST_HARD_REG_BIT (elim_reg_set, regno))
-      regs_ever_live[regno] = 1;
-    return;
-  }
-```
+The working recipe, used by `PacketBuild_08000848`, `Course_Dispatch_08BB8`
+and `_080020690`, is an **unpinned temp** made into a global allocno
+that conflicts with r0-r6:
 
-r7 is eliminable to sp, so it is in `elim_reg_set`, the assignment is skipped,
-and `regs_ever_live[7]` stays clear. `thumb_function_prologue` then builds its
-push list from `regs_ever_live[regno] && !call_used_regs[regno]` -- so r7 is
-never saved. A pseudo cannot land in r7 either for the prologue's purposes:
-reload marks pseudo homes through `mark_home_live`, which r7 never reaches.
-Pinning `register T x __asm__("r7")` does emit the body's r7 uses (the copy is
-honoured), which is how `_080019200` reaches 62/80 -- but the `push` half is
-out of reach, so that body is parked with this note.
+* span two basic blocks with the same temp, or extend its last use with an
+  empty `"+r"` barrier in a later block (`_080020690` puts the
+  barrier after the tail call); a pseudo that spans blocks is left for
+  global-alloc;
+* keep the registers you want excluded busy inside the temp's live range with
+  empty `"+r"` barriers on values already living there (`Course_Dispatch`'s
+  `reg1` barrier inside the temp's range is the model);
+* when two allocnos compete for the same pair of registers, the
+  `allocno_compare` priority decides -- highest
+  `floor_log2(refs) * refs / live_length * size` is allocated first, ties
+  settled by allocno number (so the order is deterministic);
+  `_080020690` gets `table` into r6 and `zero` into r7 because
+  table's 5 refs over a 52-insn range outrank zero's 2 refs over 92 insns,
+  and `find_reg` then propagates the taken register to every conflicting
+  allocno.
+
+Value-known-constant temps interact with this: `reg_equiv_constant` lets
+reload rematerialise a constant per use instead of keeping its register live,
+which is how a ROM can hold a zero in r2 through a loop and free r2 again for
+the reload scratches. A *pin* makes the value opaque and its range real, so
+that rematerialisation disappears -- `_08009BF8` is parked on exactly this
+(zero-valued `result` plus the const-id cases that must still come out in r2).
+
+`_080019200` (parked at 62/80 under the old note) should be re-examined with
+this rule: this session's four exact matches all needed the r7 prologue.
 
 ## Loads can sink past earlier statements, and no `-f` flag stops it
 
@@ -372,8 +406,9 @@ not off a local.
 Pinning those pointers instead is *worse*: `register volatile u32 *s
 __asm__("r7");` makes agbcc treat r7 as occupied, spill the frame pointer into a
 stack slot and shuffle through r8 (`mov r7,r8 / push {r7} / mov r8,r0 / adds
-r7,r1,#0 / mov r7,r8`), growing the body by 20 bytes. Pins on r7 are not a
-tool in this compiler.
+r7,r1,#0 / mov r7,r8`), growing the body by 20 bytes. Pins alone are not a tool
+here; the r7 rules are in [the r7 section above](#r7-is-reachable-through-global-alloc-not-through-pins)
+-- r7 wants an unpinned global allocno, not a pin.
 
 Two smaller levers from the same function:
 
@@ -456,6 +491,12 @@ the case bodies.
 * A pinned local whose value folds to a constant is copy-propagated away.
 * `agbcc` has no instruction scheduler (`thumb.md` has no `flag_schedule_insns`
   consumers), so a reorder inside one basic block cannot be reached by respelling.
+  Reconfirmed on `_0800B89C`: the ROM's `adds r2,#2` bump and the
+  `wa+off` base materialisation sit *after* the `ldrsh`/`lsls` group while the
+  candidate lifts both above the load; statement order, an in-place
+  `selOff += 2` inside the address expression, and an operand-less
+  `__asm__("")` fence between the load and the bump all leave the emitted
+  order unchanged (220/244, parked).
 * A promoted function whose ROM span carries a 2-byte zero alignment pad can
   still be staged: `promotion_screen.alignment_only` accepts a `PARTIAL` with
   `cand_bytes == rom_bytes`, `prefix + 2 == rom_bytes` and an all-zero tail
