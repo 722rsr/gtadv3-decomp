@@ -90,7 +90,7 @@ HOST_STUB(void  _0800DAB8(void *p));                                 // 0x0800DA
 HOST_STUB(void  _0800D854(void *p));                                 // 0x0800D854 record tick
 HOST_STUB(void  _0800DBE8(void *p));                                 // 0x0800DBE8 record setup
 HOST_STUB(void  _0800D9A4(void *a, int b, int c));                   // 0x0800D9A4 grid paint
-HOST_STUB(void  _080020878(void));                                   // 0x080020878 bx-lr (race_scene.c)
+HOST_STUB(void  _080020878(void *a));                                // 0x080020878 bx-lr (race_scene.c)
 HOST_STUB(void  _08002099C(void *a));                                // 0x08002099C bx-lr (race_scene.c)
 HOST_STUB(void  _080021248(void));                                   // 0x080021248 bx-lr (race_scene.c)
 HOST_STUB(void  _08002124C(void *a));                                // 0x08002124C leaf (race_scene.c)
@@ -926,7 +926,6 @@ void _080020690(void *rec0) {
     rec = (volatile u8 *)rec0;
     _0800D97C((void *)((volatile u8 *)rec0 + 172), 5);
     zero = 0;
-    __asm__ volatile ("" : "+r" (zero));
     wa = (uintptr_t)RaceSceneE_Wa_20690;
     {
         int rowIndex = RD16(rec, 28);
@@ -948,22 +947,30 @@ void _080020690(void *rec0) {
 
     if (zero == RD16(rec, 156) && RD16(rec, 160) == 1) {
         int index = RD16(rec, 28);
-        uintptr_t area = table + (uintptr_t)(index * 72) + 8u;
+        uintptr_t area = (uintptr_t)(index * 72) + table + 8u;
         _080020498((void *)rec, 184, 78, (void *)area, 1);
     } else {
+        /* The ROM synthesizes 78 as (2 << 4) + 46 in r2 rather than
+         * loading the immediate directly; the barriers keep agbcc from
+         * folding the constant arithmetic into a single movs. */
+        register u32 idParts __asm__("r2");
+        idParts = 2u;
+        __asm__ volatile ("" : "+r" (idParts));
+        idParts <<= 4;
+        __asm__ volatile ("" : "+r" (idParts));
+        idParts += 46u;
         int index = RD16(rec, 28);
-        uintptr_t altWa = (uintptr_t)RaceSceneE_AltWa_20690;
-        __asm__ volatile ("" : "+r" (altWa) : : "memory");
-        uintptr_t area = altWa + (uintptr_t)(index * 72);
+        uintptr_t area = (uintptr_t)(index * 72) + (uintptr_t)RaceSceneE_AltWa_20690;
         area += 8;
-        _080020498((void *)rec, 184, 78, (void *)area, 0);
+        _080020498((void *)rec, 184, (int)idParts, (void *)area, 0);
     }
 
     _08007BFC((void *)(rec + 8),
               *(volatile u32 *)(rec + 176), *(volatile u32 *)(rec + 180),
               24, 33, 6, 1, 0, 0);
     _0800DBE8((void *)(rec + 32));
-    _080020878();
+    _080020878((void *)rec);
+    __asm__ volatile ("" : "+r" (zero));
 }
 
 // ---- 0x08020784 — scene setup C (03954 path, mode-1 area select) + pools {WA+0x5E4, 0x03001D64} ----
