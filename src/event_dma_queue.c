@@ -142,11 +142,12 @@ void _08004FEC(void *a) __attribute__((alias("Event_Broadcast4")));
 void sub_08004FEC(void *a) __attribute__((alias("Event_Broadcast4")));
 void _08004FE4(void *a) __attribute__((alias("Event_Broadcast4")));
 
-// 0x08005018 — ROM's standalone return leaf, `bx lr; movs r0,r0`.
-void EventQueueReturn_05018(void) __attribute__((naked));
+// 0x08005018 — ROM's standalone return leaf: an empty Thumb leaf compiles to
+// `bx lr`, and the file-scope `.align 2, 0` below pads the section with
+// `00 00` instead of gas's default Thumb-section-close `c0 46` nop.
 void EventQueueReturn_05018(void) {
-    __asm__ volatile("bx lr\n\t.hword 0x0000");
 }
+__asm__(".align 2, 0");
 void _08005018(void) __attribute__((alias("EventQueueReturn_05018")));
 
 // ----------------------------------------------------------------------------

@@ -137,6 +137,13 @@ See [candidate-length diagnostics](findings/oversized_plus4_class.md).
   can prevent rematerialization. Combined with a pinned register and later
   reuse, it preserves the source-to-return copy in the runtime entry writers
   at `0x0800315C`, `0x08003194`, and `0x08003210`.
+- A register-indexed signed byte read whose index differs from the destination
+  (`ldrsb r2,[r4,r0]`) is not reachable from C with either shipped compiler:
+  the constant path of `*extendqisi2_insn` reuses the destination as the
+  index, and REG+REG memory addresses never form (the Thumb address predicate
+  admits them only after reload, and nothing recreates them). `0x0802C160`
+  keeps its one-instruction asm splice. See
+  [register-indexed byte loads](findings/byte_ldrsb_register_index.md).
 - An assembler-resolved absolute base can preserve a pool load before address
   arithmetic. Keep its definition in the function section. See
   [the track-award example](findings/track_car_26180_pool_order.md).

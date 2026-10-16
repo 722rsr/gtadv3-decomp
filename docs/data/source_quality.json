@@ -2406,11 +2406,7 @@
    "size": 52
   },
   "0x08005018": {
-   "class": "partial",
-   "detail": {
-    "insn": 1,
-    "insn_lines": 2
-   },
+   "class": "c",
    "file": "src/event_dma_queue.c",
    "name": "EventQueueReturn_05018",
    "size": 4
@@ -7548,12 +7544,10 @@
    "size": 32
   },
   "0x08019cbc": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
-    "barrier": 3,
-    "insn": 1,
-    "insn_lines": 1,
-    "pin": 3
+    "barrier": 2,
+    "pin": 2
    },
    "file": "src/race_setup.c",
    "name": "_080019CBC",
@@ -7588,12 +7582,10 @@
    "size": 32
   },
   "0x08019ddc": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
-    "barrier": 3,
-    "insn": 1,
-    "insn_lines": 1,
-    "pin": 3
+    "barrier": 2,
+    "pin": 2
    },
    "file": "src/race_setup.c",
    "name": "_080019DDC",
@@ -13504,16 +13496,16 @@
    "functions": 276
   },
   "c": {
-   "bytes": 39554,
-   "functions": 851
+   "bytes": 39558,
+   "functions": 852
   },
   "c_fakematch": {
-   "bytes": 50954,
-   "functions": 497
+   "bytes": 51066,
+   "functions": 499
   },
   "partial": {
-   "bytes": 8972,
-   "functions": 51
+   "bytes": 8856,
+   "functions": 48
   }
  },
  "version": 1

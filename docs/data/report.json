@@ -5,13 +5,13 @@
     "complete_data": "7873388",
     "complete_data_percent": 100.0,
     "complete_units": 279,
-    "fuzzy_match_percent": 98.78131733627316,
-    "matched_code": "90508",
-    "matched_code_percent": 47.94871794871795,
+    "fuzzy_match_percent": 98.78275615878051,
+    "matched_code": "90624",
+    "matched_code_percent": 48.010171646535284,
     "matched_data": "7873388",
     "matched_data_percent": 100.0,
-    "matched_functions": 1348,
-    "matched_functions_percent": 80.4776119402985,
+    "matched_functions": 1351,
+    "matched_functions_percent": 80.65671641791045,
     "total_code": "188760",
     "total_data": "7873388",
     "total_functions": 1675,
@@ -5970,7 +5970,7 @@
           "size": "52"
         },
         {
-          "fuzzy_match_percent": 0.0,
+          "fuzzy_match_percent": 100.0,
           "metadata": {
             "virtual_address": "134238232"
           },
@@ -6216,13 +6216,13 @@
         "complete_data": "0",
         "complete_data_percent": 0.0,
         "complete_units": 1,
-        "fuzzy_match_percent": 74.10714285714286,
-        "matched_code": "1660",
-        "matched_code_percent": 74.10714285714286,
+        "fuzzy_match_percent": 74.28571428571429,
+        "matched_code": "1664",
+        "matched_code_percent": 74.28571428571429,
         "matched_data": "0",
         "matched_data_percent": 0.0,
-        "matched_functions": 39,
-        "matched_functions_percent": 92.85714285714286,
+        "matched_functions": 40,
+        "matched_functions_percent": 95.23809523809524,
         "total_code": "2240",
         "total_data": "0",
         "total_functions": 42,
@@ -14804,7 +14804,7 @@
           "size": "32"
         },
         {
-          "fuzzy_match_percent": 0.0,
+          "fuzzy_match_percent": 100.0,
           "metadata": {
             "virtual_address": "134323388"
           },
@@ -14844,7 +14844,7 @@
           "size": "32"
         },
         {
-          "fuzzy_match_percent": 0.0,
+          "fuzzy_match_percent": 100.0,
           "metadata": {
             "virtual_address": "134323676"
           },
@@ -14898,13 +14898,13 @@
         "complete_data": "0",
         "complete_data_percent": 0.0,
         "complete_units": 1,
-        "fuzzy_match_percent": 32.32472324723247,
-        "matched_code": "1752",
-        "matched_code_percent": 32.32472324723247,
+        "fuzzy_match_percent": 34.391143911439116,
+        "matched_code": "1864",
+        "matched_code_percent": 34.391143911439116,
         "matched_data": "0",
         "matched_data_percent": 0.0,
-        "matched_functions": 22,
-        "matched_functions_percent": 61.111111111111114,
+        "matched_functions": 24,
+        "matched_functions_percent": 66.66666666666667,
         "total_code": "5420",
         "total_data": "0",
         "total_functions": 36,
