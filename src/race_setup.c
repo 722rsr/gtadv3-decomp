@@ -135,13 +135,12 @@ void _080019CBC(void) {
     register volatile u8 *vcount_cell __asm__("r0") =
         (volatile u8 *)(uintptr_t)0x04000006u;
     register s32 limit __asm__("r1") = 0x03005760;
-    register u32 offset __asm__("r2") = 10;
     u8 vcount;
     __asm__ volatile("" : "+r"(vcount_cell) : : "memory");
     __asm__ volatile("" : "+r"(limit) : : "memory");
-    __asm__ volatile("" : "+r"(offset) : : "memory");
-    __asm__ volatile("ldrsh %0, [%0, %1]"
-                     : "+r"(limit) : "r"(offset) : "memory");
+    // Plain signed halfword read: the constant offset lowers through the
+    // extendhisi2 scratch path to `movs r2, #10; ldrsh r1, [r1, r2]`.
+    limit = *(s16 *)((u8 *)(uintptr_t)limit + 10);
     vcount = *vcount_cell;
     if (vcount < limit)
         return;
@@ -154,13 +153,12 @@ void _080019DDC(void) {
     register volatile u8 *vcount_cell __asm__("r0") =
         (volatile u8 *)(uintptr_t)0x04000006u;
     register s32 limit __asm__("r1") = 0x03005760;
-    register u32 offset __asm__("r2") = 10;
     u8 vcount;
     __asm__ volatile("" : "+r"(vcount_cell) : : "memory");
     __asm__ volatile("" : "+r"(limit) : : "memory");
-    __asm__ volatile("" : "+r"(offset) : : "memory");
-    __asm__ volatile("ldrsh %0, [%0, %1]"
-                     : "+r"(limit) : "r"(offset) : "memory");
+    // Same lowering as _080019CBC: constant offset through the extendhisi2
+    // scratch path emits `movs r2, #10; ldrsh r1, [r1, r2]`.
+    limit = *(s16 *)((u8 *)(uintptr_t)limit + 10);
     vcount = *vcount_cell;
     if (vcount < limit)
         return;

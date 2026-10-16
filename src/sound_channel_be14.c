@@ -15,6 +15,10 @@ void VoiceEnvelopeApply_2C160(void) {
     register s32 off __asm__("r0") = 20;
     register s32 r2 __asm__("r2");
     register s32 r3 __asm__("r3");
+    // ROM `movs r0, #20 / ldrsb r2, [r4, r0]` (index != destination) is
+    // unreachable from C with old_agbcc: the constant path of
+    // *extendqisi2_insn reuses the destination as the index, and REG+REG
+    // addresses never form. See docs/findings/byte_ldrsb_register_index.md.
     __asm__ volatile ("ldrsb %0, [%1, %2]"
                       : "=r"(r2) : "r"(g_voice_2C160_r4), "r"(off));
     r3 = 128;
