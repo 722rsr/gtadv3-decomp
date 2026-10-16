@@ -298,6 +298,8 @@ void PacketBuild_08000848(void *payload, u32 flag)
     register u32 sum __asm__("r6");
     register volatile u8 *base __asm__("r4");
     register u32 value __asm__("r1");
+    register u32 one __asm__("r3");
+    u32 temp;
     sum = 0;
     __asm__ volatile ("" : "+r" (sum));
     base = EF90;
@@ -321,9 +323,8 @@ void PacketBuild_08000848(void *payload, u32 flag)
     }
 
     {
-        register volatile u8 *packet __asm__("r5");
+        register u8 *packet __asm__("r5");
         register volatile u8 *source __asm__("r1");
-        register u32 one __asm__("r3");
         register u32 bits __asm__("r2");
         packet = *(volatile u8 * volatile *)(base + 0x1C);
         source = (volatile u8 *)(uintptr_t)0x0203F150;
@@ -340,16 +341,17 @@ void PacketBuild_08000848(void *payload, u32 flag)
         value = 33;
         __asm__ volatile ("" : "+r" (value));
         value = 0u - value;
-        value &= packet[1];
+        temp = packet[1];
+        __asm__ volatile ("" : "+r" (temp));
+        value &= temp;
         value |= bits;
         packet[1] = (u8)value;
     }
 
     {
-        register volatile u8 *packet __asm__("r2");
+        register u8 *packet __asm__("r2");
         register u32 sioByte __asm__("r5");
         register u32 bit __asm__("r1");
-        register u32 one __asm__("r3");
         packet = *(volatile u8 * volatile *)(base + 0x1C);
         sioByte = base[6];
         __asm__ volatile ("" : "+r" (sioByte));
@@ -357,13 +359,14 @@ void PacketBuild_08000848(void *payload, u32 flag)
         __asm__ volatile ("" : "+r" (bit));
         bit >>= 31;
         __asm__ volatile ("" : "+r" (bit));
-        one = 1;
         one &= bit;
         one <<= 6;
         bit = 65;
         __asm__ volatile ("" : "+r" (bit));
         bit = 0u - bit;
-        bit &= packet[1];
+        temp = packet[1];
+        __asm__ volatile ("" : "+r" (temp));
+        bit &= temp;
         bit |= one;
         packet[1] = (u8)bit;
     }
@@ -413,11 +416,13 @@ void PacketBuild_08000848(void *payload, u32 flag)
     }
 
     {
-        register volatile u16 *words __asm__("r0");
+        register u16 *words __asm__("r0");
         value = 0;
-        words = (volatile u16 *)*(volatile u8 * volatile *)(base + 0x1C);
+        words = (u16 *)*(volatile u8 * volatile *)(base + 0x1C);
         do {
-            sum += *words;
+            temp = *words;
+            __asm__ volatile ("" : "+r" (temp));
+            sum = temp + sum;
             words++;
             value++;
         } while (value <= 9);
