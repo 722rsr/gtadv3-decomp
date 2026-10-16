@@ -94,37 +94,62 @@ void sub_0800B82C(int a0,int a1) __attribute__((alias("GrantDelay_Tick")));
 // ---- go_start : _0800B89C ----
 void GoStart_Tick(void) {
     register volatile u8 *wa __asm__("r5") = (volatile u8 *)(uintptr_t)WA;
-    register volatile u16 *stage __asm__("r4") = (volatile u16 *)(wa + 0x576);
+    volatile u16 *stage = (volatile u16 *)(wa + 0x576);
 
-    if (*stage == 1) {
-        GrantDelay_Tick(86, 10);
-        GrantDelay_Tick(56, 30);
+    {
+        register u16 stageWord __asm__("r1");
+        stageWord = *stage;
+        if (stageWord == 1) {
+            GrantDelay_Tick(86, 10);
+            GrantDelay_Tick(56, 30);
+        }
     }
-    if (*stage == 2) {
-        GrantDelay_Tick(55, 10);
-        GrantDelay_Tick(31, 30);
+    {
+        register u16 stageWord __asm__("r2");
+        stageWord = *stage;
+        if (stageWord == 2) {
+            GrantDelay_Tick(55, 10);
+            GrantDelay_Tick(31, 30);
+        }
     }
-    if (*stage == 3) {
-        GrantDelay_Tick(14, 10);
-        GrantDelay_Tick(98, 30);
+    {
+        register u16 stageWord __asm__("r0");
+        stageWord = *stage;
+        if (stageWord == 3) {
+            GrantDelay_Tick(14, 10);
+            GrantDelay_Tick(98, 30);
+        }
     }
 
-    if (*stage == 1 && *(volatile u32 *)(wa + 0x10F8) > 19u &&
-        (u16)sub_08026004(1) == 0) {
-        sub_08025FF0(1);
-        volatile s16 *selection = (volatile s16 *)(wa + 0x104A);
-        s16 index = *(s16 *)(uintptr_t)selection;
-        *(volatile u16 *)(wa + 0x104C + 2 * (s32)index) = 2;
-        _08023FF8(30, 0);
-        *selection = (u16)(*selection + 1);
+    {
+        register u16 stageWord __asm__("r4");
+        stageWord = *stage;
+        if (stageWord == 1 && *(volatile u32 *)(wa + 0x10F8) > 19u &&
+            (u16)sub_08026004(1) == 0) {
+            sub_08025FF0(1);
+            register u32 selOff __asm__("r2") = 0x104Au;
+            volatile s16 *selection = (volatile s16 *)(wa + selOff);
+            s16 index = *(s16 *)(uintptr_t)selection;
+            __asm__ volatile ("");
+            *(volatile u16 *)(2 * (s32)index + (wa + (selOff += 2u))) = 2;
+            __asm__ volatile ("" : "+r"(selOff));
+            __asm__ volatile ("" : "+r"(wa));
+            _08023FF8(30, 0);
+            *selection = (u16)(*selection + 1);
+        }
     }
 
-    if (*stage == 2 && *(volatile u32 *)(wa + 0x10F8) > 19u &&
+    wa = (volatile u8 *)(uintptr_t)WA;
+    if (*(volatile u16 *)(wa + 0x576) == 2 && *(volatile u32 *)(wa + 0x10F8) > 19u &&
         (u16)sub_08026004(2) == 0) {
         sub_08025FF0(2);
         volatile s16 *selection = (volatile s16 *)(wa + 0x104A);
         s16 index = *(s16 *)(uintptr_t)selection;
-        *(volatile u16 *)(wa + 0x104C + 2 * (s32)index) = 3;
+        {
+            volatile u8 *targetBase = wa + 0x104C;
+            *(volatile u16 *)(targetBase + 2 * (s32)index) = 3;
+            __asm__ volatile ("" : "+r"(wa));
+        }
         _08023FF8(30, 0);
         *selection = (u16)(*selection + 1);
     }
