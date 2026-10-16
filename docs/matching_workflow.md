@@ -137,6 +137,16 @@ See [candidate-length diagnostics](findings/oversized_plus4_class.md).
   can prevent rematerialization. Combined with a pinned register and later
   reuse, it preserves the source-to-return copy in the runtime entry writers
   at `0x0800315C`, `0x08003194`, and `0x08003210`.
+- r7 is reachable even though the frame pointer owns it, but only through an
+  unpinned *global* allocno (two blocks, or one `"+r"` barrier after a later
+  use), never through a pin. A pseudo placed in r7 sets `regs_ever_live[7]`
+  via `mark_home_live`, which is what emits the `push {..., r7, lr}` prologue
+  and the `mov r7, r8` high-save. The byte-temp, combine-rewire,
+  zero-scratch, constant-synthesis and parameter-copy levers used to land
+  those allocations are collected in
+  [register-shaping levers](findings/register_shaping_levers.md); the compiler
+  rules are in the r7 section of
+  [how agbcc picks a register](findings/local_alloc_register_choice.md#r7-is-reachable-through-global-alloc-not-through-pins).
 - A register-indexed signed byte read whose index differs from the destination
   (`ldrsb r2,[r4,r0]`) is not reachable from C with either shipped compiler:
   the constant path of `*extendqisi2_insn` reuses the destination as the

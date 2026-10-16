@@ -293,6 +293,15 @@ u32 sub_0800070C(void *a) __attribute__((alias("SessionRead_0800070C")));
 //     checksum = ~(sum of first 10 halfwords) - 12 -> u16[pkt+2]
 //     EF90[4] = 1
 // Masks from asm negs: -17=~0x10, -33=~0x20, -65=~0x40, -16=~0x0F.
+//
+// EXACT 172/172. The three byte/halfword temps are one function-scope temp
+// kept as a global allocno: non-volatile lvalues make the front end load
+// zero-extended straight into it, and the empty "+r" barriers after each def
+// stop combine folding the load into the following and/add. That lets
+// global-alloc place it in r7 (local-alloc never uses the eliminable frame
+// pointer register), so marked-home r7 also restores the ROM's
+// push {r4,r5,r6,r7,lr} and the mov r7,r8 high-save. The checksum add reads
+// temp first -- sum = temp + sum -- to match the ROM's adds r6,r7,r6.
 void PacketBuild_08000848(void *payload, u32 flag)
 {
     register u32 sum __asm__("r6");
