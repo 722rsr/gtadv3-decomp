@@ -83,8 +83,8 @@
   "0x08000848": {
    "class": "c_fakematch",
    "detail": {
-    "barrier": 12,
-    "pin": 26
+    "barrier": 15,
+    "pin": 25
    },
    "file": "src/agbmain_session.c",
    "name": "PacketBuild_08000848",
