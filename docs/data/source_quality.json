@@ -4387,7 +4387,8 @@
   "0x0800b89c": {
    "class": "c_fakematch",
    "detail": {
-    "pin": 2
+    "barrier": 4,
+    "pin": 6
    },
    "file": "src/car_physics_core.c",
    "name": "GoStart_Tick",
