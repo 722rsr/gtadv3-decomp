@@ -993,13 +993,14 @@ __asm__(".align 2, 0");
 // ----------------------------------------------------------------------------
 void _08001D974(void *a_, void *b_) {
     WA_SPLIT_DECL;
-    register volatile u8 *pa __asm__("r5") = (volatile u8 *)a_;
     register volatile u8 *pb __asm__("r4") = (volatile u8 *)b_;
+    register volatile u8 *pa __asm__("r5") = (volatile u8 *)a_;
     register uintptr_t waBase __asm__("r2");
     register uintptr_t waOff __asm__("r1");
     register uintptr_t waAddr __asm__("r0");
     register u32 zero __asm__("r0");
     pa += 160u;
+    zero = 0;
     *(volatile u16 *)pa = (u16)zero;
     waBase = (uintptr_t)&WABaseB1;
     waOff = (uintptr_t)&WAOffFBC;
@@ -1008,6 +1009,7 @@ void _08001D974(void *a_, void *b_) {
     __asm__("" : "+r" (waAddr));
     if (*(volatile u16 *)waAddr == 3u) {
         register volatile u8 *p88 __asm__("r1") = pb + 88u;
+        zero = 0;
             *p88 = (u8)zero;
         waOff = (uintptr_t)&WAOff10C3;
         __asm__("" : "+r" (waBase), "+r" (waOff));
