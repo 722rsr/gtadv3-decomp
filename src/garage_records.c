@@ -4073,54 +4073,64 @@ void sub_08002AACC(void *a, void *b, void *c, void *d) __attribute__((alias("_08
 
 // ----------------------------------------------------------------------------
 // 0x0802AB28 — key bitmap remap (bits 0/1/5/4/8/9 -> 0..5).
+//
+// Promoted from instruction splices to plain C (2026-10-16), measured on
+// the pinned old_agbcc. Five levers reproduce the ROM's register file:
+//   * `one` is pinned to r1 so `k & one` materialises the constant INTO the
+//     destination (`movs r1,#1 / ands r1,r2`); an unpinned `k & 1u` puts the
+//     constant in r0 and copies k into r1 first.
+//   * each arm's OR value is pinned to r0. agbcc CSEs equal constants across
+//     blocks, so unpinned pairs like (mask 2, value 2), (mask 32, value 32)
+//     and (mask 16, value 16) collapse into one pseudo that spans the
+//     function and lands in a callee-saved r4/r5 (extra `push {r4,r5}`).
+//     The hard-reg pin is opaque to CSE, so each site rematerialises
+//     `movs r0,#N` exactly where the ROM does.
+//   * the `(u8)` truncations are the ROM's `lsls r0,r1,#24 / lsrs r1,r0,#24`.
+//     `(u8)o` and an unpinned `(o << 24) >> 24` both let combine rewire the
+//     shift temp onto r1 (in-place `lsls r1 / lsrs r1`, 2 bytes off per
+//     arm). Reusing the just-dead r0 pin for the shift keeps the two
+//     registers distinct: `bN = o << 24; o = bN >> 24;`.
+//   * the last test reads the entry copy `rest` (r3) rather than `k` (r2),
+//     matching the ROM's `ands r3, r0` — the test value is pinned to r3 so
+//     the AND writes r3, not r0.
+// Verified with corpus_match_probe --c89 --require-exact.
 // ----------------------------------------------------------------------------
 u32 _08002AB28(void) {
     register u32 k __asm__("r2") = _08009B50();
-    register u32 kLast __asm__("r3");
-    register u32 o __asm__("r1");
-    __asm__ volatile(".code 16\n\t"
-                     "add r3, r2, #0\n\t"
-                     "mov r1, #1\n\t"
-                     "and r1, r2"
-                     : "=r"(kLast), "=r"(o), "+r"(k) : : "cc");
-    if (k & 2u)
-        __asm__ volatile(".code 16\n\t"
-                         "mov r0, #2\n\t"
-                         "orr r1, r0"
-                         : "+r"(o) : : "r0", "cc");
-    if (k & 0x20u)
-        __asm__ volatile(".code 16\n\t"
-                         "mov r0, #4\n\t"
-                         "orr r1, r0\n\t"
-                         "lsl r0, r1, #24\n\t"
-                         "lsr r1, r0, #24"
-                         : "+r"(o) : : "r0", "cc");
-    if (k & 0x10u)
-        __asm__ volatile(".code 16\n\t"
-                         "mov r0, #8\n\t"
-                         "orr r1, r0\n\t"
-                         "lsl r0, r1, #24\n\t"
-                         "lsr r1, r0, #24"
-                         : "+r"(o) : : "r0", "cc");
-    if (k & 0x100u)
-        __asm__ volatile(".code 16\n\t"
-                         "mov r0, #16\n\t"
-                         "orr r1, r0\n\t"
-                         "lsl r0, r1, #24\n\t"
-                         "lsr r1, r0, #24"
-                         : "+r"(o) : : "r0", "cc");
-    __asm__ volatile(".code 16\n\t"
-                     "mov r0, #128\n\t"
-                     "lsl r0, r0, #2\n\t"
-                     "and r3, r0\n\t"
-                     "cmp r3, #0\n\t"
-                     "beq 1f\n\t"
-                     "mov r0, #32\n\t"
-                     "orr r1, r0\n\t"
-                     "lsl r0, r1, #24\n\t"
-                     "lsr r1, r0, #24\n"
-                     "1:"
-                     : "+r"(kLast), "+r"(o) : : "r0", "cc");
+    register u32 rest __asm__("r3") = k;
+    register u32 one __asm__("r1") = 1;
+    register u32 o __asm__("r1") = k & one;
+    if (k & 2u) {
+        register u32 b1 __asm__("r0") = 2;
+        o |= b1;
+    }
+    if (k & 0x20u) {
+        register u32 b5 __asm__("r0") = 4;
+        o |= b5;
+        b5 = o << 24;
+        o = b5 >> 24;
+    }
+    if (k & 0x10u) {
+        register u32 b4 __asm__("r0") = 8;
+        o |= b4;
+        b4 = o << 24;
+        o = b4 >> 24;
+    }
+    if (k & 0x100u) {
+        register u32 b8 __asm__("r0") = 16;
+        o |= b8;
+        b8 = o << 24;
+        o = b8 >> 24;
+    }
+    {
+        register u32 last __asm__("r3") = rest & 0x200u;
+        if (last) {
+            register u32 b9 __asm__("r0") = 32;
+            o |= b9;
+            b9 = o << 24;
+            o = b9 >> 24;
+        }
+    }
     return o;
 }
 __asm__(".2byte 0");

@@ -11,10 +11,11 @@
 // ============================================================================
 
 #include "gba/types.h"
+#include "gtadv/ram_blocks.h"
 
 
 extern void _08002158(int a, int b);   // 0x08002158 block-B packet emit
-extern u16  _08002178(int a);          // 0x08002178 block-B read (1-arg)
+extern u32  _08002178(int x, int hwIndex); // 0x08002178 block-B dispatch
 extern void _08002618(int a, int b);   // 0x08002618
 extern void _08007B18(void *a, int b, int c, int d, int e, int f, int g, int h); // 0x08007B18 (4 stack args)
 
@@ -22,104 +23,106 @@ extern void _08007B18(void *a, int b, int c, int d, int e, int f, int g, int h);
 #define GATE_10C3 0x10C3u
 
 // ----------------------------------------------------------------------------
-// 0x080023A34 sub_080023A34(rec, a_u16, b_u16)
-//   r5=rec, r1=(u16), r4=(u16)r2, r6=rec+140, r7 = WA+0x10C3 gate byte
-//   if (gate == 1):
-//     _08002158(0, 0); _08002158(1, r4); _08002158(2, u16[rec+140]);
-//     _08002158(3, u8[rec+232])
-//   if (gate == 0): r0 = _08002178(1) else r0 = _08002178(0)
-//   r4 = _08002178(1)
-//   if (r4 != 2) return
-//   [rec+142] = 0
-//   if (gate == 0): _08002618(1, 1); [rec+144] = 1
-//   else:            _08002618(1, 0); [rec+144] = 0
-// ----------------------------------------------------------------------------
-__attribute__((naked)) void _080023A34(void *rec, u16 a, u16 b)
+// 0x080023A34 sub_080023A34(rec, a, b) -- promoted from instruction
+// splices to plain C (2026-10-16), byte-exact under old_agbcc
+// (corpus_match_probe --c89 --require-exact), measured on the pinned
+// toolchain. The spinning levers, all load-bearing:
+//   * params are `int`, NOT `u16`: agbcc normalises u16 formals at function
+//     ENTRY (before any statement), which would place the `lsls/lsrs r1`
+//     pair above the ROM's `adds r5,r0,#0`. Writing `aN = (u16)a` as
+//     ordered statements between fences restores the ROM order, and
+//     `argB = (u16)b` into the r4 pin emits the ROM's rotate-truncate
+//     `lsls r2,r2,#16 / lsrs r4,r2,#16` (the intermediate coalesces into
+//     the input) and keeps the call's `adds r1,r4` a plain copy.
+//   * homes r5 = rec, r4 = argB, r6 = rec+140 pins; the gate address stays
+//     an UNPINNED allocno: flow.c early-returns on pinned hard regs, so a
+//     pin would drop r7 out of `regs_ever_live` and lose the `push`; an
+//     allocno reaches it (`adds r7,r0,r2`) and the push stays {r4-r7}.
+//   * the gate address is spelled as `wa + gateOff` with wa/off as separate
+//     dead-after-use locals: one expression `RAM_SYM + 0x10C3` folds in the
+//     front end to a single pool word. The third gate read recomputes both
+//     (`w2`/`o2` in r0/r1) because cse keeps the earlier values in callee-
+//     saved regs across the calls.
+//   * `result` needs a `"+r"` barrier after the call: without it agbcc
+//     compares the call result in r0 directly and never emits the ROM's
+//     `adds r4,r0,#0`; the barrier also frees r0 for the 142/144 address
+//     copies. `z = 0` then lands in r4 after argB/result die.
+//   * one `tmp` per site (pins r0/r0/r1/r0) rather than a single local:
+//     the ROM builds each field address in a different register
+//     (r0, r0, r1, r0).
+// The two literal pools sit mid-body behind unconditional `b`s -- agbcc
+// itself places them there; only their CONTENT needed the wa/off split.
+// ------------------------------------------------------------------------------
+void _080023A34(void *rec, int a, int b)
 {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, r7, lr}\n"
-        "adds r5, r0, #0\n"
-        "lsls r1, r1, #16\n"
-        "lsrs r1, r1, #16\n"
-        "lsls r2, r2, #16\n"
-        "lsrs r4, r2, #16\n"
-        "adds r6, r5, #0\n"
-        "adds r6, #140\n"
-        "ldr r0, .L23a34_wa\n"
-        "ldr r2, .L23a34_off\n"
-        "adds r7, r0, r2\n"
-        "ldrb r0, [r7, #0]\n"
-        "cmp r0, #1\n"
-        "bne .L23a34_after_gate\n"
-        "movs r0, #0\n"
-        "bl 0x08002158\n"
-        "movs r0, #1\n"
-        "adds r1, r4, #0\n"
-        "bl 0x08002158\n"
-        "ldrh r1, [r6, #0]\n"
-        "movs r0, #2\n"
-        "bl 0x08002158\n"
-        "adds r0, r5, #0\n"
-        "adds r0, #232\n"
-        "ldrb r1, [r0, #0]\n"
-        "movs r0, #3\n"
-        "bl 0x08002158\n"
-        ".L23a34_after_gate:\n"
-        "ldrb r0, [r7, #0]\n"
-        "cmp r0, #0\n"
-        "bne .L23a34_gate_nonzero\n"
-        "movs r0, #1\n"
-        "movs r1, #0\n"
-        "bl 0x08002178\n"
-        "movs r0, #1\n"
-        "b .L23a34_read_common\n"
-        ".L23a34_wa: .word 0x03001780\n"
-        ".L23a34_off: .word 0x000010C3\n"
-        ".L23a34_gate_nonzero:\n"
-        "movs r0, #0\n"
-        "movs r1, #0\n"
-        "bl 0x08002178\n"
-        "movs r0, #0\n"
-        ".L23a34_read_common:\n"
-        "movs r1, #1\n"
-        "bl 0x08002178\n"
-        "adds r4, r0, #0\n"
-        "cmp r4, #2\n"
-        "bne .L23a34_done\n"
-        "adds r0, r5, #0\n"
-        "adds r0, #142\n"
-        "movs r4, #0\n"
-        "strh r4, [r0, #0]\n"
-        "ldr r0, .L23a34_wa2\n"
-        "ldr r1, .L23a34_off2\n"
-        "adds r0, r0, r1\n"
-        "ldrb r0, [r0, #0]\n"
-        "cmp r0, #0\n"
-        "bne .L23a34_final_nonzero\n"
-        "movs r0, #1\n"
-        "movs r1, #1\n"
-        "bl 0x08002618\n"
-        "adds r1, r5, #0\n"
-        "adds r1, #144\n"
-        "movs r0, #1\n"
-        "strh r0, [r1, #0]\n"
-        "b .L23a34_done\n"
-        ".L23a34_wa2: .word 0x03001780\n"
-        ".L23a34_off2: .word 0x000010C3\n"
-        ".L23a34_final_nonzero:\n"
-        "movs r0, #1\n"
-        "movs r1, #0\n"
-        "bl 0x08002618\n"
-        "adds r0, r5, #0\n"
-        "adds r0, #144\n"
-        "strh r4, [r0, #0]\n"
-        ".L23a34_done:\n"
-        "pop {r4, r5, r6, r7}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        ".syntax divided\n"
-    );
+    register u8 *self __asm__("r5");
+    register u32 argB __asm__("r4");
+    u16 aN;
+    u8 *rec140;
+    volatile u8 *wa;
+    u32 gateOff;
+    volatile u8 *gate;
+    register u8 *tmpA __asm__("r0");
+    register u8 *tmpB __asm__("r0");
+    register u8 *tmpC __asm__("r1");
+    register u8 *tmpD __asm__("r0");
+    int sel;
+    register int result __asm__("r4");
+    int z;
+    u8 *w2;
+    u32 o2;
+
+    RAM_DEF_03001780;
+    self = (u8 *)rec;
+    __asm__ volatile ("" ::: "memory");
+    aN = (u16)a;
+    __asm__ volatile ("" ::: "memory");
+    argB = (u16)b;
+    __asm__ volatile ("" : "+r" (argB));
+    rec140 = self;
+    rec140 += 140;
+    wa = RAM_SYM_03001780;
+    gateOff = 0x10C3;
+    gate = wa + gateOff;
+
+    if (*gate == 1) {
+        _08002158(0, aN);
+        _08002158(1, argB);
+        _08002158(2, *(u16 *)rec140);
+        tmpA = self;
+        tmpA += 232;
+        _08002158(3, *tmpA);
+    }
+
+    if (*gate == 0) {
+        _08002178(1, 0);
+        sel = 1;
+    } else {
+        _08002178(0, 0);
+        sel = 0;
+    }
+    result = _08002178(sel, 1);
+    __asm__ volatile ("" : "+r" (result));
+
+    if (result == 2) {
+        tmpB = self;
+        tmpB += 142;
+        z = 0;
+        *(u16 *)tmpB = z;
+        w2 = RAM_SYM_03001780;
+        o2 = 0x10C3;
+        if (*(w2 + o2) == 0) {
+            _08002618(1, 1);
+            tmpC = self;
+            tmpC += 144;
+            *(u16 *)tmpC = 1;
+        } else {
+            _08002618(1, 0);
+            tmpD = self;
+            tmpD += 144;
+            *(u16 *)tmpD = z;
+        }
+    }
 }
 
 // ----------------------------------------------------------------------------
@@ -200,7 +203,7 @@ void _080023B60(void *rec, int a, int b)
 __asm__(".align 2, 0");
 
 // ROM entry alias.
-void _08023A34(void *rec, u16 a, u16 b) __attribute__((alias("_080023A34")));
+void _08023A34(void *rec, int a, int b) __attribute__((alias("_080023A34")));
 
 // ROM entry alias.
 void _08023AE4(void *rec, int a, int b) __attribute__((alias("_080023AE4")));
