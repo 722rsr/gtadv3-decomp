@@ -392,13 +392,13 @@ void *Idle_ModeRow(int v) {
     return (void *)(ModeRowTbl + x * 7);
 }
 
-// 0x08002384 — 4B: empty stub leaf (bx lr + nop pad)
-__attribute__((naked)) void Idle_Stub_2384(void) {
-    __asm__ volatile (
-        "bx lr\n"
-        ".short 0\n"
-    );
+// 0x08002384 — 4B: empty stub leaf (`70 47 00 00` = `bx lr` + zero pad).
+// Plain C: an empty function emits the lone `bx lr`; the file-scope
+// `.align 2, 0` pads the section tail with `00 00` where bare gas would
+// emit the Thumb nop `46 c0` (same Trap-6 lever as SoundC484_Noop).
+void Idle_Stub_2384(void) {
 }
+__asm__(".align 2, 0");
 
 int   _08002340(int v) __attribute__((alias("Idle_IdSearch")));
 int   sub_08002340(int v) __attribute__((alias("Idle_IdSearch")));

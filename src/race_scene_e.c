@@ -669,50 +669,48 @@ void _0800203E8(void *rec0) {
 __asm__(".align 2, 0");
 
 // ---- 0x080020498 — 5-arg emit helper: mode 0 -> 01FADC, mode 1 -> 01FB58 loop ----
+// Promoted from instruction splices to plain C (2026-10-16): every splice
+// was a register-shaping lever that pins reproduce directly, measured on the
+// pinned old_agbcc (corpus_match_probe --c89 --require-exact):
+//   * rec/area are pinned to the ROM's r8/r2 and their initializers emit the
+//     prologue copies (`mov r8,r0 / adds r2,r3,#0`) in declaration order.
+//     `bReg` must stay UNPINNED: it is the body's real global allocno (live
+//     across the loop's calls), it takes r7, and that is what sets
+//     regs_ever_live[7] -> `push {r4,r5,r6,r7,lr}` plus the r9->r7 / r8->r6
+//     high-save staging. Pinning it to r7 instead drops the save
+//     (`push {r4,r5,r6,lr}`, 111/128, measured).
+//   * `modeReg` is pinned to r0 so the stack-arg read (`ldr r0,[sp,#32]`)
+//     lands after the prologue copies at the dispatch, not scheduled early
+//     into a scratch (the r7 save above is also what makes the slot #32).
+//   * the case-1 setup declares k/currentField/cur/cursor in ROM order:
+//     `movs r6,#0`, then `movs r0,#164 / add r0,r8 / mov r9,r0` (the
+//     high-reg `add` form falls out of adding through the r8 pin), then the
+//     r5/r4 copies.
+//   * `*(s16 *)base` is deliberately NOT volatile: the ROM's
+//     `mov r1,r9 / movs r2,#0 / ldrsh r0,[r1,r2]` is extendhisi2's
+//     zero-scratch index form; the base copy is pinned to r1 (an unpinned
+//     base reloads into r0 and rotates the scratch to r1), and a volatile
+//     halfword would emit `ldrh;lsls;asrs` instead.
+//   * the call block is duplicated in both arms on purpose: the ROM has two
+//     copies of `ldrb r2,[r5] / adds r0,r4,#0 / adds r1,r7,#0 / movs r3,#4 /
+//     bl`, so a shared tail would drop one.
 void _080020498(void *rec0, int a, int b, void *area0, int mode) {
-    register volatile u8 *rec __asm__("r8");
-    int bReg;
-    register volatile u8 *area __asm__("r2");
-    register int modeReg __asm__("r0");
-    __asm__ volatile(".code 16\n\tmov %0, %1"
-                     : "=r"(rec) : "r"(rec0) : "cc");
-    __asm__ volatile(".code 16\n\tmovs %0, %1"
-                     : "=r"(bReg) : "r"(b) : "cc");
-    __asm__ volatile(".code 16\n\tmovs %0, %1"
-                     : "=r"(area) : "r"(area0) : "cc");
-    __asm__ volatile(".code 16\n\tldr r0, [sp, #32]"
-                     : "=r"(modeReg) : : "cc", "memory");
+    register volatile u8 *rec __asm__("r8") = rec0;
+    int bReg = b;
+    register volatile u8 *area __asm__("r2") = area0;
+    register int modeReg __asm__("r0") = mode;
     switch (modeReg) {
     case 0:
         _08001FADC(a, bReg, (void *)(uintptr_t)area, 3, 4);
         break;
     case 1: {
-        register volatile u8 *cur __asm__("r5");
-        register int cursor __asm__("r4");
-        register int k __asm__("r6");
-        register volatile u8 *currentField __asm__("r9");
-        __asm__ volatile(
-            ".code 16\n\t"
-            "movs r6, #0\n\t"
-            "movs r0, #164\n\t"
-            "add r0, r8\n\t"
-            "mov r9, r0\n\t"
-            "movs r5, r2\n\t"
-            "movs r4, r1"
-            : "=r"(k), "=r"(currentField), "=r"(cur), "=r"(cursor)
-            :
-            : "r0", "cc", "memory");
+        register int k __asm__("r6") = 0;
+        register volatile u8 *currentField __asm__("r9") = rec + 164;
+        register volatile u8 *cur __asm__("r5") = area;
+        register int cursor __asm__("r4") = a;
         do {
-            // ROM duplicates the call block for the two sides of this test.
-            register s32 current __asm__("r0");
-            __asm__ volatile(
-                ".code 16\n\t"
-                "mov r1, r9\n\t"
-                "movs r2, #0\n\t"
-                "ldrsh r0, [r1, r2]"
-                : "=r"(current)
-                :
-                : "r1", "r2", "cc", "memory");
+            register volatile u8 *base __asm__("r1") = currentField;
+            register s32 current __asm__("r0") = *(s16 *)base;
             if (current == k) {
                 if (R16(rec, 174) == 1)
                     _08001FB58(cursor, bReg, (int)*cur, 4);

@@ -216,25 +216,33 @@ void sub_080027104(void *a, uint32_t b) __attribute__((alias("Garage_ByteStore_2
 void _08027104(void *a, uint32_t b) __attribute__((alias("Garage_ByteStore_27104")));
 void sub_08027104(void *a, uint32_t b) __attribute__((alias("Garage_ByteStore_27104")));
 
-// Bounded single-pool no-ops (0 literal pools, tail call) — substantiated via
-// objdump. All six are the same 4 bytes: `70 47 00 00` = `bx lr` + 2 pad
-// bytes (`00 00` = `movs r0, r0`).
+// Bounded single-pool no-op leaves (0 literal pools, no calls) — substantiated
+// via objdump. All six are the same 4 bytes: `70 47 00 00` = `bx lr` + 2 pad
+// bytes (`00 00`).
 //
 // These were six separate ROM entries aliased onto ONE empty body, and that is
 // what blocked five of them: the screen enforces one VMA per C body, so every
 // entry past the first read "body Garage_Noop already owns 0x0802869c". The
-// alias pile also scored 2/4, and NOT because of the instruction: the empty body
-// and the ROM both emit `bx lr` (`47 70`) and agree there. The disagreement is
-// the padding -- the assembler inserts `46 c0` (`nop`) where the ROM has
-// `00 00`. So the asm below writes `.hword 0x0000` explicitly rather than
-// leaving the gap to the assembler, which is what a naked body otherwise
-// does. A distinct body per VMA fixes the ownership half.
-__attribute__((naked)) void Garage_Stub_2869C(void) { __asm__ volatile ("bx lr\n .hword 0x0000\n"); }
-__attribute__((naked)) void Garage_Stub_286A0(void) { __asm__ volatile ("bx lr\n .hword 0x0000\n"); }
-__attribute__((naked)) void Garage_Stub_28730(void) { __asm__ volatile ("bx lr\n .hword 0x0000\n"); }
-__attribute__((naked)) void Garage_Stub_28740(void) { __asm__ volatile ("bx lr\n .hword 0x0000\n"); }
-__attribute__((naked)) void Garage_Stub_28780(void) { __asm__ volatile ("bx lr\n .hword 0x0000\n"); }
-__attribute__((naked)) void Garage_Stub_28F14(void) { __asm__ volatile ("bx lr\n .hword 0x0000\n"); }
+// alias pile also scored 2/4 because of the padding, not the instruction: the
+// empty body and the ROM both emit `bx lr` (`47 70`), but the assembler pads
+// the section tail with `46 c0` (Thumb nop) where the ROM has `00 00`.
+// Each body is now plain C — an empty function emits the lone `bx lr` — with
+// the file-scope `.align 2, 0` (the same Trap-6 lever as
+// src/sound_seq_follow.c `SoundC484_Noop`) reproducing the zero padding
+// inside the body's own section. A distinct body per VMA keeps the ownership
+// half; verified with corpus_match_probe --c89 --require-exact.
+void Garage_Stub_2869C(void) { }
+__asm__(".align 2, 0");
+void Garage_Stub_286A0(void) { }
+__asm__(".align 2, 0");
+void Garage_Stub_28730(void) { }
+__asm__(".align 2, 0");
+void Garage_Stub_28740(void) { }
+__asm__(".align 2, 0");
+void Garage_Stub_28780(void) { }
+__asm__(".align 2, 0");
+void Garage_Stub_28F14(void) { }
+__asm__(".align 2, 0");
 void sub_08002869C(void) __attribute__((alias("Garage_Stub_2869C")));
 void _08002869C(void) __attribute__((alias("Garage_Stub_2869C")));
 void sub_0800286A0(void) __attribute__((alias("Garage_Stub_286A0")));
