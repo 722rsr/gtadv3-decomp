@@ -3412,6 +3412,21 @@ void MenuD280_0800D280(void *unused, void *rec) {
 void _0800D280(void *a, void *b) __attribute__((alias("MenuD280_0800D280")));
 void sub_0800D280(void *a, void *b) __attribute__((alias("MenuD280_0800D280")));
 
+// Promoted from instruction splices to plain C (2026-10-16), measured on
+// the pinned old_agbcc (corpus_match_probe --c89 --require-exact):
+//   * the two `add r0, r2, r1` splices are plain pointer arithmetic through
+//     the r2-pinned base: `base + 0xFBCu` / `base + 0x10C3u` keep the base
+//     in r2 and rematerialise each offset as its own pool word, which is
+//     also the ROM's pool order (0x03001780, 0x00000FBC, 0x000010C3).
+//   * `*(s16 *)((const u8 *)sceneBase + 2)` reaches the ROM's
+//     `movs r1,#2 / ldrsh r0,[r0,r1]` through *extendhisi2_insn: a PLUS
+//     with a constant emits `mov SCRATCH,#2; ldrsh DST,[BASE,SCRATCH]`,
+//     and the scratch takes the just-freed r1. A volatile halfword would
+//     emit `ldrh;lsls;asrs` instead.
+//   * the scene==35 / range / else arms each assign outp and value, so the
+//     ROM's three duplicated `adds r1,r4,#0 / adds r1,#84` blocks survive
+//     (a shared store would tail-merge them) and the `&&` chain lowers to
+//     the ROM's `cmp #35 blt / cmp #40 bgt / cmp #39 blt` decision tree.
 void MenuF924_0800F924(void *a, void *b) {
     extern void _080056F4(void *s, u32 idx, u32 val);
     extern void *_08004B68(void);
@@ -3426,18 +3441,13 @@ void MenuF924_0800F924(void *a, void *b) {
     }
     {
         register volatile u8 *base __asm__("r2") = globalBase;
-        register u32 stateOffset __asm__("r1") = 0xFBCu;
-        register volatile u16 *statep __asm__("r0");
-        __asm__ volatile ("add r0, r2, r1" : "=r"(statep)
-                          : "r"(base), "r"(stateOffset) : "memory");
+        volatile u16 *statep = (volatile u16 *)(base + 0xFBCu);
         if (*statep == 3) {
             register volatile u8 *clearp __asm__("r1") = r4 + 88;
             register u8 clearValue __asm__("r0") = 0;
             *clearp = clearValue;
             register u32 flagOffset __asm__("r1") = 0x10C3u;
-            register volatile u8 *flagp __asm__("r0");
-            __asm__ volatile ("add r0, r2, r1" : "=r"(flagp)
-                              : "r"(base), "r"(flagOffset) : "memory");
+            register volatile u8 *flagp __asm__("r0") = base + flagOffset;
             if (*flagp == 0) {
                 _080056F4(r4, 1, 1);
                 *(volatile u16 *)r5 = 1;
@@ -3446,28 +3456,35 @@ void MenuF924_0800F924(void *a, void *b) {
     }
     {
         register void *sceneBase __asm__("r0") = _08004B68();
-        register s32 sceneOffset __asm__("r1") = 2;
-        register s32 scene __asm__("r0");
-        __asm__ volatile ("ldrsh r0, [r0, r1]" : "=r"(scene)
-                          : "r"(sceneBase), "r"(sceneOffset) : "memory");
+        register s32 scene __asm__("r0") = *(s16 *)((const u8 *)sceneBase + 2);
         register volatile u16 *outp __asm__("r1");
         register u16 value __asm__("r0");
-        if (scene == 35) {
+        /* The ROM's dispatch is ONE switch: `cmp #35 beq` (smoothed to
+           `bne` over body 5), then the case tree's
+           `cmp #35 blt / cmp #40 bgt / cmp #39 blt` all targeting the
+           default body. A switch is the only agbcc construct that emits
+           `blt` with the ORIGINAL constant: fold-const rewrites every
+           `x < C` / `x >= C` tree with positive C into `<=`/`>` with
+           C-1, while stmt.c's emit_case_nodes emits the case bounds
+           directly. Case 35 must be IN the switch (it makes node 35 the
+           tree root, whose single-right-child path emits the leading
+           `LT low -> default`); an `if (scene == 35)` ahead of a
+           case-39/40-only switch loses it (measured). */
+        switch (scene) {
+        case 35:
             outp = (volatile u16 *)(r4 + 84);
             value = 5;
             goto store_scene;
+        case 39:
+        case 40:
+            outp = (volatile u16 *)(r4 + 84);
+            value = 1;
+            goto store_scene;
+        default:
+            outp = (volatile u16 *)(r4 + 84);
+            value = 6;
+            goto store_scene;
         }
-        value = scene;
-        __asm__ volatile ("cmp r0, #35\n\tblt 1f\n\t"
-                          "cmp r0, #40\n\tbgt 1f\n\t"
-                          "cmp r0, #39\n\tblt 1f\n\t"
-                          "add r1, r4, #0\n\tadd r1, #84\n\t"
-                          "mov r0, #1\n\tb 2f\n"
-                          "1:\n\tadd r1, r4, #0\n\tadd r1, #84\n\t"
-                          "mov r0, #6\n"
-                          "2:"
-                          : "+r"(value), "=r"(outp)
-                          : "r"(r4) : "cc", "memory");
 store_scene:
         *outp = value;
     }

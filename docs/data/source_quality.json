@@ -324,12 +324,7 @@
    "size": 12
   },
   "0x08001730": {
-   "class": "asm",
-   "detail": {
-    "insn": 1,
-    "insn_lines": 10,
-    "naked": true
-   },
+   "class": "c",
    "file": "src/state_block_a.c",
    "name": "StateA_IsGameMode",
    "size": 20
@@ -807,12 +802,7 @@
    "size": 20
   },
   "0x08002384": {
-   "class": "asm",
-   "detail": {
-    "insn": 1,
-    "insn_lines": 1,
-    "naked": true
-   },
+   "class": "c",
    "file": "src/idle_accessors.c",
    "name": "Idle_Stub_2384",
    "size": 4
@@ -5467,11 +5457,9 @@
    "size": 112
   },
   "0x0800f924": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 4,
-    "insn_lines": 16,
-    "pin": 13
+    "pin": 10
    },
    "file": "src/menus.c",
    "name": "MenuF924_0800F924",
@@ -8578,11 +8566,9 @@
    "size": 176
   },
   "0x08020498": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 6,
-    "insn_lines": 13,
-    "pin": 8
+    "pin": 9
    },
    "file": "src/race_scene_e.c",
    "name": "_080020498",
@@ -9236,11 +9222,11 @@
    "size": 220
   },
   "0x08023a34": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 71,
-    "naked": true
+    "barrier": 4,
+    "directive": 1,
+    "pin": 7
    },
    "file": "src/code_23a34.c",
    "name": "_080023A34",
@@ -11235,23 +11221,13 @@
    "size": 176
   },
   "0x0802869c": {
-   "class": "asm",
-   "detail": {
-    "insn": 1,
-    "insn_lines": 1,
-    "naked": true
-   },
+   "class": "c",
    "file": "src/garage.c",
    "name": "Garage_Stub_2869C",
    "size": 4
   },
   "0x080286a0": {
-   "class": "asm",
-   "detail": {
-    "insn": 1,
-    "insn_lines": 1,
-    "naked": true
-   },
+   "class": "c",
    "file": "src/garage.c",
    "name": "Garage_Stub_286A0",
    "size": 4
@@ -11263,12 +11239,7 @@
    "size": 140
   },
   "0x08028730": {
-   "class": "asm",
-   "detail": {
-    "insn": 1,
-    "insn_lines": 1,
-    "naked": true
-   },
+   "class": "c",
    "file": "src/garage.c",
    "name": "Garage_Stub_28730",
    "size": 4
@@ -11280,12 +11251,7 @@
    "size": 12
   },
   "0x08028740": {
-   "class": "asm",
-   "detail": {
-    "insn": 1,
-    "insn_lines": 1,
-    "naked": true
-   },
+   "class": "c",
    "file": "src/garage.c",
    "name": "Garage_Stub_28740",
    "size": 4
@@ -11300,12 +11266,7 @@
    "size": 60
   },
   "0x08028780": {
-   "class": "asm",
-   "detail": {
-    "insn": 1,
-    "insn_lines": 1,
-    "naked": true
-   },
+   "class": "c",
    "file": "src/garage.c",
    "name": "Garage_Stub_28780",
    "size": 4
@@ -11462,12 +11423,7 @@
    "size": 100
   },
   "0x08028f14": {
-   "class": "asm",
-   "detail": {
-    "insn": 1,
-    "insn_lines": 1,
-    "naked": true
-   },
+   "class": "c",
    "file": "src/garage.c",
    "name": "Garage_Stub_28F14",
    "size": 4
@@ -11807,11 +11763,9 @@
    "size": 92
   },
   "0x0802ab28": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 6,
-    "insn_lines": 26,
-    "pin": 3
+    "pin": 10
    },
    "file": "src/garage_records.c",
    "name": "_08002AB28",
@@ -13493,16 +13447,16 @@
  },
  "totals": {
   "asm": {
-   "bytes": 88656,
-   "functions": 276
+   "bytes": 88076,
+   "functions": 264
   },
   "c": {
-   "bytes": 39558,
-   "functions": 852
+   "bytes": 39606,
+   "functions": 860
   },
   "c_fakematch": {
-   "bytes": 51066,
-   "functions": 499
+   "bytes": 51598,
+   "functions": 503
   },
   "partial": {
    "bytes": 8856,

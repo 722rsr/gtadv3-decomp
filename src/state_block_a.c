@@ -202,34 +202,30 @@ void _08001724(u32 mode) __attribute__((alias("StateA_SetReqMode")));
 //   * the answer must live in a local, not be returned from each arm.
 //     `return false` / `return true` materialises `movs r0,#0` on the
 //     fall-through and branches over it (32 bytes, no `adds r0,r1,#0` copy).
-// What the C cannot express is the FIRST compare. agbcc canonicalises every
-// spelling of "mode is at least 1" -- `mode >= 1`, `1 <= mode`, `mode > 0`,
-// `mode - 1 >= 0`, the goto form, the switch form, and the signed `int`
-// parameter -- to `cmp r0,#0` (unsigned: `!= 0`, `beq`/`bne`; signed:
-// `x < 1` is folded to `x <= 0` and inverted to `ble`). Nine shapes measured,
-// every one `cmp r0,#0` at +0x02; the ROM holds `cmp r0,#1 / blt`. Only a
-// `cmp r0,#1` with the body as the fall-through survives, so the body is
-// transcribed. The inline block is wrapped in a scoped `.syntax unified`:
-// agbcc emits divided syntax, in which gas parses `ble`/`bne` against
-// immediate 0 only in the 32-bit Thumb-2 forms. The register contract is
-// unchanged (r0 in, 0/1 out), so every caller is unaffected.
-__attribute__((naked)) bool StateA_IsGameMode(int mode) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "movs r1, #0\n"
-        "cmp  r0, #1\n"
-        "blt  1f\n"
-        "cmp  r0, #7\n"
-        "ble  2f\n"
-        "cmp  r0, #10\n"
-        "bne  1f\n"
-        "2:\n"
-        "movs r1, #1\n"
-        "1:\n"
-        "adds r0, r1, #0\n"
-        "bx   lr\n"
-        ".syntax divided\n"
-    );
+// TRUE (`mode` in [1,7] or == 10) comes from a SWITCH, not an `if` chain:
+// fold-const rewrites every tree `x < 1` / `x >= 1` with a positive constant
+// into `<= 0` / `> 0` (measured nine spellings, all `cmp r0,#0` at +0x02),
+// but stmt.c's switch lowering emits case bounds with their original
+// constants. This case set makes node [1,7] the tree root with 10 as its
+// right child, which emits the ROM's exact dispatch -- `cmp r0,#1 blt` (below
+// low bound -> default), `cmp r0,#7 ble` (in range -> body), `cmp r0,#10
+// bne` (== 10 -> default), fall into the body. The default arm supplies
+// `mov r1,#0`; `r = 1`, with both in r0/r1, keeps the frameless leaf
+// (`adds r0,r1,#0 / bx lr`). Promoted from naked asm 2026-10-16.
+bool StateA_IsGameMode(int mode) {
+    int r = 0;
+    switch (mode) {
+    case 1:
+    case 2:
+    case 3:
+    case 4:
+    case 5:
+    case 6:
+    case 7:
+    case 10:
+        r = 1;
+    }
+    return r;
 }
 bool _08001730(int mode) __attribute__((alias("StateA_IsGameMode")));
 
