@@ -147,6 +147,13 @@ See [candidate-length diagnostics](findings/oversized_plus4_class.md).
   [register-shaping levers](findings/register_shaping_levers.md); the compiler
   rules are in the r7 section of
   [how agbcc picks a register](findings/local_alloc_register_choice.md#r7-is-reachable-through-global-alloc-not-through-pins).
+- agbcc cannot emit the Thumb `tst` instruction at all: its thumb.md
+  `tstsi` pattern expands to `cmp %0, #0`, so `if (flags & mask)` always
+  lowers to `and` + `cmp #0` + `beq` (3 instructions where armcc has
+  `tst r0, r1`). The register-form `tst` in a ROM body keeps its one-
+  instruction asm splice; measured on `SoundChannelFreeAll` (0x0802BC84),
+  where plain `flags & 199` scored PARTIAL 16/48 with the first difference
+  at the test (+0x08).
 - A register-indexed signed byte read whose index differs from the destination
   (`ldrsb r2,[r4,r0]`) is not reachable from C with either shipped compiler:
   the constant path of `*extendqisi2_insn` reuses the destination as the
@@ -321,6 +328,21 @@ Same file, same body: symbol 116/116 exact, cast constant 104/116.
   `s32`, `bcc` means `u32` (`_080021F14`: `*(s32 *)(rec + 160)`).
 * For a switch with a missing value, use an explicit empty case when arm
   order matters; `default` can change the source-order placement of the bodies.
+* `blt`/`bge` with the **original positive constant** is reachable only from
+  switch lowering. fold-const rewrites every tree comparison `x < C` / `x >= C`
+  with positive `C` into `<=`/`>` with `C-1` (`/* Change X >= CST to X >
+  (CST - 1) */`, fold-const.c), so an `if` can never emit `cmp #35 / blt` --
+  it always comes out `cmp #34 / ble` (measured at -O0 too). `stmt.c`'s
+  `emit_case_nodes` emits case bounds directly and keeps them. This is how
+  `MenuF924_0800F924` (`src/menus.c`) reproduces the ROM's
+  `cmp #35 blt / cmp #40 bgt / cmp #39 blt` dispatch: ONE switch containing
+  `case 35` (value 5), `case 39: case 40` (value 1) and `default` (value 6).
+  The case tree makes node 35 the root; its single-right-child range path
+  emits the leading `LT low -> default`, and jump smoothing turns the case
+  test into `bne` over the case-35 body. An `if (x == 35)` ahead of a
+  case-39/40-only switch loses the leading compare (measured), and an `&&`
+  chain loses everything to fold_truthop's range merge
+  (`(unsigned)(x-39) <= 1`).
 
 ## Halfword loads: keep the value's width
 

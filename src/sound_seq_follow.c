@@ -79,6 +79,11 @@ void SoundChannelFreeAll(u32 dummy, u8 *stream) {
 
     (void)dummy;
     while (channel != 0) {
+        /* MEASURED (2026-10-16): the ROM's `tst r0, r1` is unreachable from
+           agbcc. Its thumb.md `tstsi` pattern expands to `cmp %0, #0`, so
+           every spelling of `flags & 199` emits `and` + `cmp #0` + `beq`
+           (4-byte + 2-byte delta at +0x08, PARTIAL 16/48). The test stays a
+           one-instruction asm splice. */
         register u8 flags __asm__("r1") = channel[0];
         __asm__ volatile (
             ".syntax unified\n"
