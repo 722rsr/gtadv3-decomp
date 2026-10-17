@@ -1,6 +1,6 @@
 {
   "inputs": {
-    "Makefile": "d43a254bdda1e9fda04c211d32b950941b05ee5bc9cd5ccd8b80bc3a3aed22e3",
+    "Makefile": "0c562d9a8ab5d11dde8651567445b21212775d1c803fbbb06f13640e5d8dc9b3",
     "asm/agbmain.s": "331e9a3ae50107f7d3f2d8ed5bf18b2b6d4483b7934e41dd269e74cadb304c8b",
     "asm/ai_award_bitset.s": "2f5fbd53276a09a110074b80ea94c7e16c76dbdcce52c584c0072f95dc36f63e",
     "asm/ai_award_leaf.s": "8708f41f42eb75b33988fa707867483709a0e17cdf1fb94d399948034f4e59c8",
@@ -501,7 +501,6 @@
     "tools/export_audit.py": "649fa82104dd440b4d75182dd3371da8acde30df4f4d027d5a40d045a13b5f17",
     "tools/extract_assets.py": "ef01878c19037c6c3fe9616353d3d3a49a422fa9d7bcd0fd66f454213564981d",
     "tools/findstr.py": "2869c9bc676c6a7938b4ead0d95a7268d25420c3cab2307bd3d83059228220f2",
-    "tools/frame_rule_audit.py": "461da0337a1d9cc6dd4337468f771965f96bbfce2ae7c8616e100825e53e3061",
     "tools/full_rom_match.py": "b8bfc3f27786fa4c0ba356ff84025bd5494fa1c45aef37ed78958b2318b00a22",
     "tools/function_trace.py": "56be29278c4b9e041b75f43b2e62389279785a9559d97ef38c446f47bbeb200a",
     "tools/gbadisasm_patch.py": "811a0ccaeedfcd665758041bc7c0f5256eb1ce277878778afeb9e3cf2bbb9a91",
@@ -519,7 +518,6 @@
     "tools/mini_dis.py": "39ae864fe621fdcf1ae65d87070d038bb789ff48b650cb147b959f712710a94d",
     "tools/mk_passthrough.py": "006eecf36690fec7118bdbf59206f207ae7e3c2db549206b89925dbd89a32f52",
     "tools/mto_dump.py": "af4a79160dba2fcd404fd86e378c0336646ae1cceeeceee2fd266d08751bfd83",
-    "tools/naked_doc_audit.py": "9eb88412cf62c51057c5419e525c1d4c7adcced2d9de41fa78cc1bbe8bb9f74a",
     "tools/novelty_search.py": "1c120b73e005e1f63730e8c1eb241f3912dc0c9284c54541229ba28a707fa0d0",
     "tools/objdiff_build.py": "492d9fe9f6997c1978b3d3244943174291766aa35b190d26f480c859e5f6b525",
     "tools/objdump2gas.py": "25d1d609fb16e5b93103e1199263b9b82198db16401b08498a2d67879e76eca3",
