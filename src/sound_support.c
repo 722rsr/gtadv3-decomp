@@ -13,46 +13,61 @@
 __attribute__((weak)) void sub_0802B898(void) {} // mixer entry marker
 
 // _0802BE78 pump — DMA1 DirectSound A re-arm, preserve register semantics
-__attribute__((naked)) void SoundPump(void){
+void SoundPump(void){
+    register volatile u32 *rootCell __asm__("r0");
+    register volatile u8 *root __asm__("r0");
+    register u32 magic __asm__("r2");
+    register u32 lock __asm__("r3");
+    register u32 countdown __asm__("r1");
+
+    /* The shared pool at 0x0802C114/0x0802C118 is 0x298 bytes ahead. */
     __asm__ volatile (
         ".syntax unified\n"
-        // The shared root/magic pool is 0x298 bytes ahead of this leaf in
-        // the linked ROM; encode those two PC-relative literal loads
-        // directly so the standalone TU does not need a remote relocation.
-        ".hword 0x48A6\n"
-        "ldr r0, [r0, #0]\n"
-        ".hword 0x4AA6\n"
-        "ldr r3, [r0, #0]\n"
-        "subs r3, r3, r2\n"
-        "cmp r3, #1\n"
-        "bhi.n .Lsound_pump_done\n"
-        "ldrb r1, [r0, #4]\n"
-        "subs r1, #1\n"
-        "strb r1, [r0, #4]\n"
-        "bgt.n .Lsound_pump_done\n"
-        "ldrb r1, [r0, #11]\n"
-        "strb r1, [r0, #4]\n"
-        "ldr r2, 1f\n"
-        "ldr r1, [r2, #8]\n"
-        "lsls r1, r1, #7\n"
-        "bcc.n .Lsound_pump_rearm\n"
-        "ldr r1, 2f\n"
-        "str r1, [r2, #8]\n"
-        ".Lsound_pump_rearm:\n"
-        "movs r1, #4\n"
-        "lsls r1, r1, #8\n"
-        "strh r1, [r2, #10]\n"
-        "movs r1, #182\n"
-        "lsls r1, r1, #8\n"
-        "strh r1, [r2, #10]\n"
-        ".Lsound_pump_done:\n"
-        "bx lr\n"
-        ".align 2\n"
-        "1: .word 0x040000BC\n"
-        "2: .word 0x84400004\n"
+        ".hword 0x48A6 @ %0\n"
         ".syntax divided\n"
-    );
+        : "=r"(rootCell));
+    root = (volatile u8 *)(uintptr_t)*rootCell;
+    __asm__ volatile (
+        ".syntax unified\n"
+        ".hword 0x4AA6 @ %0\n"
+        ".syntax divided\n"
+        : "=r"(magic));
+    lock = *(volatile u32 *)root;
+    lock -= magic;
+    if (lock > 1)
+        goto pump_done;
+
+    countdown = root[4];
+    countdown -= 1;
+    root[4] = (u8)countdown;
+    /* Consume the signed flags from the decrement, as the ROM's BGT does. */
+    __asm__ volatile (".syntax unified\nbgt .Lsound_pump_done\n.syntax divided" : : : "cc");
+    countdown = root[11];
+    root[4] = (u8)countdown;
+
+    register volatile u32 *dma __asm__("r2") =
+        (volatile u32 *)(uintptr_t)0x040000BCu;
+    register u32 dmaCount __asm__("r1") = dma[2];
+    dmaCount <<= 7;
+    __asm__ volatile ("" : "+r"(dmaCount));
+    /* BCC consumes the shift's carry (original DMA word bit 25). */
+    __asm__ volatile (".syntax unified\nbcc .Lsound_pump_rearm\n.syntax divided" : : : "cc");
+    register u32 prime __asm__("r1") = 0x84400004u;
+    __asm__ volatile ("" : "+r"(prime));
+    *(volatile u32 *)(dma + 2) = prime;
+    __asm__ volatile (".syntax unified\n.Lsound_pump_rearm:\n.syntax divided");
+
+    register u32 control __asm__("r1") = 4;
+    __asm__ volatile ("" : "+r"(control));
+    control <<= 8;
+    *(volatile u16 *)((volatile u8 *)dma + 10) = (u16)control;
+    control = 182;
+    control <<= 8;
+    *(volatile u16 *)((volatile u8 *)dma + 10) = (u16)control;
+pump_done:
+    __asm__ volatile (".syntax unified\n.Lsound_pump_done:\n.syntax divided");
 }
+
 void _0802BE78(void) __attribute__((alias("SoundPump")));
 void sub_0802BE78(void) __attribute__((alias("SoundPump")));
 

@@ -53,6 +53,8 @@ HOST_STUB(void  _08024A98(void));
 HOST_STUB(int   _08002178(int i));
 HOST_STUB(void  _0800F7C0(void *rec));
 HOST_STUB(u32   _0800F700(int a, int b));
+extern void sub_0800F7C0(void *rec);
+extern u32 sub_0800F700(int a, int b);
 HOST_STUB(void  _0800E650(void *rec, u32 arg));
 HOST_STUB(void  _0800D854(void *rec));
 HOST_STUB(void  _0800D8E4(void *rec));
@@ -581,88 +583,92 @@ int _08000CA0(u32 a) __attribute__((alias("SessionStep_CA0")));
 int SubCA0(u32 a) __attribute__((alias("SessionStep_CA0")));
 int sub_08000CA0(u32 a) __attribute__((alias("SessionStep_CA0")));
 
-__attribute__((naked)) void CollectNearby_06A50(int camX, int camY) {
+void CollectNearby_06A50(int camX, int camY) {
+    extern volatile u32 NearbyCountCell_06A50[];
+    extern volatile u16 NearbyCursorCell_06A50[];
+    extern volatile u32 CourseRootCell_06A50[];
+    extern volatile u32 NearbyRecordArray_06A50[];
+    register s32 tileX;
+    register s32 tileY __asm__("r6");
+    register s32 index __asm__("r5");
+    register volatile u8 *record __asm__("r4");
+    register volatile u8 *table __asm__("r0");
+    register volatile u32 *countCell __asm__("r2");
+    register volatile u16 *cursorCell __asm__("r0");
+    register volatile u32 *activeCount __asm__("r8");
+    register volatile u32 *countTemp __asm__("r3");
+    register volatile u32 *nearby __asm__("r9");
+    register volatile u32 *rootCell __asm__("r1");
+    register s32 loopBound __asm__("r0");
+    register s32 recordY __asm__("r0");
+    register u32 zero __asm__("r1");
+    register u32 offset __asm__("r1");
+    s32 count;
+    s32 dx;
+    s32 dy;
+    s32 shifted;
+    s32 slot;
+
+    tileX = camX;
+    tileY = camY;
+    __asm__(".globl NearbyCountCell_06A50\nNearbyCountCell_06A50 = 0x0203F8A8\n");
+    __asm__(".globl NearbyCursorCell_06A50\nNearbyCursorCell_06A50 = 0x0203F874\n");
+    __asm__(".globl CourseRootCell_06A50\nCourseRootCell_06A50 = 0x0203F760\n");
+    __asm__(".globl NearbyRecordArray_06A50\nNearbyRecordArray_06A50 = 0x0203F880\n");
+
+    countCell = NearbyCountCell_06A50;
+    zero = 0;
+    *countCell = zero;
+    cursorCell = (volatile u16 *)NearbyCursorCell_06A50;
+    *cursorCell = (u16)zero;
+
     __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, r7, lr}\n"
-        "mov r7, r9\n"
-        "mov r6, r8\n"
-        "push {r6, r7}\n"
-        "adds r7, r0, #0\n"
-        "adds r6, r1, #0\n"
-        "ldr r2, .L6a50_adc\n"
-        "movs r1, #0\n"
-        "str r1, [r2, #0]\n"
-        "ldr r0, .L6a50_ae0\n"
-        "strh r1, [r0, #0]\n"
-        "asrs r0, r7, #11\n"
-        "cmp r0, #0\n"
-        "bge .L6a50_a6e\n"
-        "adds r0, #15\n"
-        ".L6a50_a6e:\n"
-        "asrs r7, r0, #4\n"
-        "asrs r0, r6, #11\n"
-        "cmp r0, #0\n"
-        "bge .L6a50_a78\n"
-        "adds r0, #15\n"
-        ".L6a50_a78:\n"
-        "asrs r6, r0, #4\n"
-        "movs r5, #0\n"
-        "ldr r1, .L6a50_ae4\n"
-        "ldr r0, [r1, #0]\n"
-        "movs r3, #46\n"
-        "ldrsh r0, [r0, r3]\n"
-        "cmp r5, r0\n"
-        "bge .L6a50_ace\n"
-        "ldr r0, .L6a50_ae8\n"
-        "mov r9, r0\n"
-        "mov r8, r2\n"
-        ".L6a50_a8e:\n"
-        "ldr r0, [r1, #0]\n"
-        "lsls r1, r5, #3\n"
-        "ldr r0, [r0, #16]\n"
-        "adds r4, r0, r1\n"
-        "movs r1, #0\n"
-        "ldrsh r0, [r4, r1]\n"
-        "subs r0, r7, r0\n"
-        "bl 0x08005B5C\n"
-        "cmp r0, #1\n"
-        "bgt .L6a50_ac0\n"
-        "movs r2, #2\n"
-        "ldrsh r0, [r4, r2]\n"
-        "subs r0, r6, r0\n"
-        "bl 0x08005B5C\n"
-        "cmp r0, #1\n"
-        "bgt .L6a50_ac0\n"
-        "mov r3, r8\n"
-        "ldr r1, [r3, #0]\n"
-        "lsls r0, r1, #2\n"
-        "add r0, r9\n"
-        "str r4, [r0, #0]\n"
-        "adds r1, #1\n"
-        "str r1, [r3, #0]\n"
-        ".L6a50_ac0:\n"
-        "adds r5, #1\n"
-        "ldr r1, .L6a50_ae4\n"
-        "ldr r0, [r1, #0]\n"
-        "movs r2, #46\n"
-        "ldrsh r0, [r0, r2]\n"
-        "cmp r5, r0\n"
-        "blt .L6a50_a8e\n"
-        ".L6a50_ace:\n"
-        "pop {r3, r4}\n"
-        "mov r8, r3\n"
-        "mov r9, r4\n"
-        "pop {r4, r5, r6, r7}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        ".short 0x0000\n"
-        ".L6a50_adc: .4byte 0x0203F8A8\n"
-        ".L6a50_ae0: .4byte 0x0203F874\n"
-        ".L6a50_ae4: .4byte 0x0203F760\n"
-        ".L6a50_ae8: .4byte 0x0203F880\n"
-        ".syntax divided\n"
-    );
+        "asr r0, %0, #11\n\t"
+        "cmp r0, #0\n\t"
+        "bge 1f\n\t"
+        "add r0, #15\n"
+        "1:\n\t"
+        "asr %0, r0, #4"
+        : "+l"(tileX) : : "r0", "cc");
+    {
+        register s32 tileShiftedY __asm__("r0") = tileY >> 11;
+        if (tileShiftedY < 0) tileShiftedY += 15;
+        tileY = tileShiftedY >> 4;
+    }
+
+    index = 0;
+    rootCell = CourseRootCell_06A50;
+    count = *(s16 *)(*(volatile u32 *)rootCell + 46);
+    if (index < count) {
+        nearby = NearbyRecordArray_06A50;
+        activeCount = countCell;
+        do {
+            u32 root = *rootCell;
+            offset = index << 3;
+            table = (volatile u8 *)(*(volatile u32 *)(root + 16));
+            __asm__ volatile ("" : "+r"(table));
+            record = table + offset;
+            dx = tileX - *(s16 *)(record + 0);
+            if (_08005B5C(dx) <= 1) {
+                __asm__ volatile (
+                    "movs r2, #2\n\t"
+                    "ldrsh %0, [%1, r2]"
+                    : "=r"(recordY) : "r"(record) : "r2", "memory");
+                dy = tileY - recordY;
+                if (_08005B5C(dy) <= 1) {
+                    countTemp = activeCount;
+                    slot = *countTemp;
+                    nearby[slot] = (u32)(uintptr_t)record;
+                    *countTemp = (u32)(slot + 1);
+                }
+            }
+            index++;
+            rootCell = CourseRootCell_06A50;
+            loopBound = *rootCell;
+            loopBound = *(s16 *)((u8 *)(uintptr_t)loopBound + 46);
+            count = loopBound;
+        } while (index < count);
+    }
 }
 void _08006A50(int a, int b) __attribute__((alias("CollectNearby_06A50")));
 void sub_08006A50(int a, int b) __attribute__((alias("CollectNearby_06A50")));
@@ -730,110 +736,101 @@ void sub_080023E78(void *a) __attribute__((alias("Stub_23E78")));
 //   [+16] L out, [+17] R out, [+18] bal, [+19] vol, [+20] pan L, [+21] pan R,
 //   [+22] pan, [+24] mode.
 // Bit0: amplitude/pan → out bytes; bit4: env → [+8]/[+9]; flags ← 0xFA.
+// The channel is the second source argument (r1) in this call convention.
+// Signed RAM fields use `s8 *` lvalues so old_agbcc selects the ROM's indexed
+// LDRSB form; volatile signed-byte lvalues lower to a longer LDRB/extend pair.
 // ============================================================================
-__attribute__((naked)) void VoiceParamTick_2CE20(void *ch, void *unused)
+void VoiceParamTick_2CE20(void *ch, void *unused)
 {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, lr}\n"
-        "adds r2, r1, #0\n"
-        "movs r0, #1\n"
-        "ldrb r1, [r2, #0]\n"
-        "ands r0, r1\n"
-        "cmp r0, #0\n"
-        "beq.n .L2ce20_env\n"
-        "ldrb r3, [r2, #19]\n"
-        "ldrb r1, [r2, #18]\n"
-        "adds r0, r3, #0\n"
-        "muls r0, r1\n"
-        "lsrs r3, r0, #5\n"
-        "ldrb r4, [r2, #24]\n"
-        "cmp r4, #1\n"
-        "bne.n .L2ce20_pan\n"
-        "movs r0, #22\n"
-        "ldrsb r0, [r2, r0]\n"
-        "adds r0, #128\n"
-        "muls r0, r3\n"
-        "lsrs r3, r0, #7\n"
-        ".L2ce20_pan:\n"
-        "movs r0, #20\n"
-        "ldrsb r0, [r2, r0]\n"
-        "lsls r0, r0, #1\n"
-        "movs r1, #21\n"
-        "ldrsb r1, [r2, r1]\n"
-        ".hword 0x1841\n"
-        "cmp r4, #2\n"
-        "bne.n .L2ce20_clamp_low\n"
-        "movs r0, #22\n"
-        "ldrsb r0, [r2, r0]\n"
-        "adds r1, r0\n"
-        ".L2ce20_clamp_low:\n"
-        "movs r0, #128\n"
-        "negs r0, r0\n"
-        "cmp r1, r0\n"
-        "bge.n .L2ce20_clamp_high\n"
-        "adds r1, r0, #0\n"
-        "b.n .L2ce20_scale\n"
-        ".L2ce20_clamp_high:\n"
-        "cmp r1, #127\n"
-        "ble.n .L2ce20_scale\n"
-        "movs r1, #127\n"
-        ".L2ce20_scale:\n"
-        "adds r0, r1, #0\n"
-        "adds r0, #128\n"
-        "muls r0, r3\n"
-        "lsrs r0, r0, #8\n"
-        "strb r0, [r2, #16]\n"
-        "movs r0, #127\n"
-        "subs r0, r1\n"
-        "muls r0, r3\n"
-        "lsrs r0, r0, #8\n"
-        "strb r0, [r2, #17]\n"
-        ".L2ce20_env:\n"
-        "ldrb r1, [r2, #0]\n"
-        "movs r0, #4\n"
-        "ands r0, r1\n"
-        "adds r3, r1, #0\n"
-        "cmp r0, #0\n"
-        "beq.n .L2ce20_done\n"
-        "movs r0, #14\n"
-        "ldrsb r0, [r2, r0]\n"
-        "ldrb r1, [r2, #15]\n"
-        "muls r0, r1\n"
-        "movs r1, #12\n"
-        "ldrsb r1, [r2, r1]\n"
-        "adds r1, r0\n"
-        "lsls r1, r1, #2\n"
-        "movs r0, #10\n"
-        "ldrsb r0, [r2, r0]\n"
-        "lsls r0, r0, #8\n"
-        "adds r1, r0\n"
-        "movs r0, #11\n"
-        "ldrsb r0, [r2, r0]\n"
-        "lsls r0, r0, #8\n"
-        "adds r1, r0\n"
-        "ldrb r0, [r2, #13]\n"
-        ".hword 0x1841\n"
-        "ldrb r0, [r2, #24]\n"
-        "cmp r0, #0\n"
-        "bne.n .L2ce20_env_store\n"
-        "movs r0, #22\n"
-        "ldrsb r0, [r2, r0]\n"
-        "lsls r0, r0, #4\n"
-        "adds r1, r0\n"
-        ".L2ce20_env_store:\n"
-        "asrs r0, r1, #8\n"
-        "strb r0, [r2, #8]\n"
-        "strb r1, [r2, #9]\n"
-        ".L2ce20_done:\n"
-        "movs r0, #250\n"
-        "ands r0, r3\n"
-        "strb r0, [r2, #0]\n"
-        "pop {r4}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        ".syntax divided\n"
-    );
+    register volatile u8 *c __asm__("r2") = (volatile u8 *)unused;
+    register u32 test __asm__("r0") = 1;
+    register u32 initialFlags __asm__("r1") = c[0];
+    test &= initialFlags;
+    if (test != 0) {
+        register u32 level __asm__("r3") = c[19];
+        register u32 factor __asm__("r1") = c[18];
+        register u32 product __asm__("r0") = level;
+        __asm__ volatile ("" : "+r"(level));
+        __asm__ volatile ("" : "+r"(product));
+        product *= factor;
+        __asm__ volatile ("" : "+r"(product));
+        level = product >> 5;
+        register s32 mode __asm__("r4") = c[24];
+        if (mode == 1) {
+            register s32 volumePan __asm__("r0") = ((s8 *)c)[22];
+            volumePan += 128;
+            volumePan *= (s32)level;
+            level = (u32)volumePan >> 7;
+        }
+        {
+            register s32 left __asm__("r0") = ((s8 *)c)[20];
+            register s32 pan __asm__("r1");
+            left <<= 1;
+            pan = ((s8 *)c)[21];
+            pan = left + pan;
+            if (mode == 2) {
+                register s32 adjust __asm__("r0") = ((s8 *)c)[22];
+                pan += adjust;
+            }
+            if (pan < -128) {
+                pan = -128;
+                goto pan_ready;
+            }
+            if (pan > 127) pan = 127;
+pan_ready:
+            {
+                register u32 out __asm__("r0") = (u32)(pan + 128);
+                out *= level;
+                out >>= 8;
+                *(volatile u8 *)(c + 16) = (u8)out;
+            }
+            {
+                register u32 out __asm__("r0") = (u32)(127 - pan);
+                out *= level;
+                out >>= 8;
+                *(volatile u8 *)(c + 17) = (u8)out;
+            }
+        }
+    }
+    {
+        register u32 envFlags __asm__("r1") = c[0];
+        register u32 testEnv __asm__("r0") = 4;
+        register u32 savedFlags __asm__("r3");
+        testEnv &= envFlags;
+        savedFlags = envFlags;
+        if (testEnv != 0) {
+            register s32 product __asm__("r0") = ((s8 *)c)[14];
+            register u32 factor __asm__("r1") = c[15];
+            product *= factor;
+            register s32 env __asm__("r1") = ((s8 *)c)[12];
+            env += product;
+            env <<= 2;
+            {
+                register s32 part __asm__("r0") = ((s8 *)c)[10];
+                part <<= 8;
+                env += part;
+            }
+            {
+                register s32 part __asm__("r0") = ((s8 *)c)[11];
+                part <<= 8;
+                env += part;
+            }
+            env += c[13];
+            if (c[24] == 0) {
+                register s32 part __asm__("r0") = ((s8 *)c)[22];
+                part <<= 4;
+                env += part;
+            }
+            *(volatile u8 *)(c + 8) = (u8)(env >> 8);
+            *(volatile u8 *)(c + 9) = (u8)env;
+        }
+        {
+            register u32 clear __asm__("r0") = 250;
+            clear &= savedFlags;
+            *(volatile u8 *)c = (u8)clear;
+        }
+    }
+    (void)ch;
 }
 void _0802CE20(void *a, void *b) __attribute__((alias("VoiceParamTick_2CE20")));
 void sub_0802CE20(void *a, void *b) __attribute__((alias("VoiceParamTick_2CE20")));
@@ -1170,41 +1167,38 @@ void sub_0800FE90(void *a) __attribute__((alias("MenuFE90")));
 // ============================================================================
 void MenuF9A0_Scatter(void *rec) {
     u8 *r = (u8 *)rec;
-    volatile u8 *wa = (volatile u8 *)0x03001780;
+    /* Pin the WA base so C pointer additions keep the ROM's operand order. */
+    register volatile u8 *wa __asm__("r4") = (volatile u8 *)0x03001780;
     register u32 offset __asm__("r2");
     {
         register u16 value __asm__("r1") = *(volatile u16 *)(r + 172);
         register volatile u16 *dst __asm__("r0");
         offset = 0x576;
-        __asm__ volatile ("add %0, %1, %2" : "=r"(dst)
-                          : "r"(wa), "r"(offset) : "memory");
+        dst = (volatile u16 *)(wa + offset);
         *dst = value;
     }
     {
         register u16 value __asm__("r1") = *(volatile u16 *)(r + 192);
         register volatile u16 *dst __asm__("r0");
         offset = 0xFE4;
-        __asm__ volatile ("add %0, %1, %2" : "=r"(dst)
-                          : "r"(wa), "r"(offset) : "memory");
+        dst = (volatile u16 *)(wa + offset);
         *dst = value;
     }
     {
+        /* Pinned zero indices preserve both register-offset signed loads. */
         register u8 *xBase __asm__("r0") = r + 188;
         register s32 xZero __asm__("r1") = 0;
         register s32 x __asm__("r0");
-        __asm__ volatile ("ldrsh r0, [r0, r1]" : "=r"(x)
-                          : "r"(xBase), "r"(xZero) : "memory");
+        x = *(s16 *)(xBase + xZero);
         register u8 *yBase __asm__("r1") = r + 190;
         register s32 yZero __asm__("r2") = 0;
         register s32 y __asm__("r1");
-        __asm__ volatile ("ldrsh r1, [r1, r2]" : "=r"(y)
-                          : "r"(yBase), "r"(yZero) : "memory");
-        register u32 dist __asm__("r0") = _0800F700(x, y);
+        y = *(s16 *)(yBase + yZero);
+        register u32 dist __asm__("r0") = sub_0800F700(x, y);
         {
             register volatile u16 *dst __asm__("r1");
             offset = 0xFE6;
-            __asm__ volatile ("add %0, %1, %2" : "=r"(dst)
-                              : "r"(wa), "r"(offset) : "memory");
+            dst = (volatile u16 *)(wa + offset);
             *dst = (u16)dist;
         }
     }
@@ -1212,16 +1206,14 @@ void MenuF9A0_Scatter(void *rec) {
         register u16 value __asm__("r1") = *(volatile u16 *)(r + 176);
         register volatile u16 *dst __asm__("r0");
         offset += 6;
-        __asm__ volatile ("add %0, %1, %2" : "=r"(dst)
-                          : "r"(wa), "r"(offset) : "memory");
+        dst = (volatile u16 *)(wa + offset);
         *dst = value;
     }
     {
         register u16 value __asm__("r1") = *(volatile u16 *)(r + 200);
         register volatile u16 *dst __asm__("r0");
         offset -= 4;
-        __asm__ volatile ("add %0, %1, %2" : "=r"(dst)
-                          : "r"(wa), "r"(offset) : "memory");
+        dst = (volatile u16 *)(wa + offset);
         *dst = value;
     }
     {
@@ -1230,7 +1222,7 @@ void MenuF9A0_Scatter(void *rec) {
         wa += offset;
         *(volatile u16 *)wa = value;
     }
-    if (*(volatile u16 *)(r + 220) == 1) _0800F7C0(rec);
+    if (*(volatile u16 *)(r + 220) == 1) sub_0800F7C0(rec);
 }
 void _0800F9A0(void *a) __attribute__((alias("MenuF9A0_Scatter")));
 void sub_0800F9A0(void *a) __attribute__((alias("MenuF9A0_Scatter")));
@@ -1271,8 +1263,8 @@ void MenuF5EC(int ev, u32 a, u32 b, void *rec) {
     }
 }
 __asm__(".align 2, 0");
-void _0800F5EC(void *a, int b, u32 c, u32 d) __attribute__((alias("MenuF5EC")));
-void sub_0800F5EC(void *a, int b, u32 c, u32 d) __attribute__((alias("MenuF5EC")));
+void _0800F5EC(int ev, u32 a, u32 b, void *rec) __attribute__((alias("MenuF5EC")));
+void sub_0800F5EC(int ev, u32 a, u32 b, void *rec) __attribute__((alias("MenuF5EC")));
 
 // ============================================================================
 // menu_f22c.s 0x0800F59C — bx lr stub
@@ -1537,131 +1529,133 @@ void sub_0802CB84(void *a) __attribute__((alias("SoundStop_2CB84")));
 // ============================================================================
 HOST_STUB(void _0802CA34(void *s));
 
-__attribute__((naked)) void SoundStart_2CC34(void *rec, void *cfg) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, r7, lr}\n"
-        "mov r7, r8\n"
-        "push {r7}\n"
-        "adds r5, r0, #0\n"
-        "adds r7, r1, #0\n"
-        "ldr r1, [r5, #52]\n"
-        "ldr r0, 1f\n"
-        "cmp r1, r0\n"
-        "bne.n .L2cc34_done\n"
-        "ldrb r0, [r5, #11]\n"
-        "ldrb r2, [r7, #2]\n"
-        "cmp r0, #0\n"
-        "beq.n .L2cc34_start\n"
-        "ldr r0, [r5, #0]\n"
-        "cmp r0, #0\n"
-        "beq.n .L2cc34_check_state\n"
-        "ldr r1, [r5, #44]\n"
-        "movs r0, #64\n"
-        "ldrb r1, [r1, #0]\n"
-        "ands r0, r1\n"
-        "cmp r0, #0\n"
-        "bne.n .L2cc34_check_limit\n"
-        ".L2cc34_check_state:\n"
-        "ldr r1, [r5, #4]\n"
-        "ldrh r0, [r5, #4]\n"
-        "cmp r0, #0\n"
-        "beq.n .L2cc34_start\n"
-        "cmp r1, #0\n"
-        "blt.n .L2cc34_start\n"
-        ".L2cc34_check_limit:\n"
-        "ldrb r0, [r7, #2]\n"
-        "adds r2, r0, #0\n"
-        "ldrb r0, [r5, #9]\n"
-        "cmp r0, r2\n"
-        "bhi.n .L2cc34_done\n"
-        ".L2cc34_start:\n"
-        "ldr r0, [r5, #52]\n"
-        "adds r0, #1\n"
-        "str r0, [r5, #52]\n"
-        "movs r1, #0\n"
-        "str r1, [r5, #4]\n"
-        "str r7, [r5, #0]\n"
-        "ldr r0, [r7, #4]\n"
-        "str r0, [r5, #48]\n"
-        "strb r2, [r5, #9]\n"
-        "str r1, [r5, #12]\n"
-        "movs r0, #150\n"
-        "strh r0, [r5, #28]\n"
-        "strh r0, [r5, #32]\n"
-        "adds r0, #106\n"
-        "strh r0, [r5, #30]\n"
-        "strh r1, [r5, #34]\n"
-        "strh r1, [r5, #36]\n"
-        "movs r6, #0\n"
-        "ldr r4, [r5, #44]\n"
-        "ldrb r1, [r7, #0]\n"
-        "cmp r6, r1\n"
-        "bge.n .L2cc34_tail\n"
-        "ldrb r0, [r5, #8]\n"
-        "cmp r6, r0\n"
-        "bge.n .L2cc34_tail_done\n"
-        "mov r8, r6\n"
-        ".L2cc34_data_loop:\n"
-        "adds r0, r5, #0\n"
-        "adds r1, r4, #0\n"
-        "bl 0x0802c11c\n"
-        "movs r0, #192\n"
-        "strb r0, [r4, #0]\n"
-        "mov r1, r8\n"
-        "str r1, [r4, #32]\n"
-        "lsls r1, r6, #2\n"
-        "adds r0, r7, #0\n"
-        "adds r0, #8\n"
-        "adds r0, r0, r1\n"
-        "ldr r0, [r0, #0]\n"
-        "str r0, [r4, #64]\n"
-        "adds r6, #1\n"
-        "adds r4, #80\n"
-        "ldrb r0, [r7, #0]\n"
-        "cmp r6, r0\n"
-        "bge.n .L2cc34_tail\n"
-        "ldrb r1, [r5, #8]\n"
-        "cmp r6, r1\n"
-        "blt.n .L2cc34_data_loop\n"
-        ".L2cc34_tail:\n"
-        "ldrb r0, [r5, #8]\n"
-        "cmp r6, r0\n"
-        "bge.n .L2cc34_tail_done\n"
-        "movs r1, #0\n"
-        "mov r8, r1\n"
-        ".L2cc34_tail_loop:\n"
-        "adds r0, r5, #0\n"
-        "adds r1, r4, #0\n"
-        "bl 0x0802c11c\n"
-        "mov r0, r8\n"
-        "strb r0, [r4, #0]\n"
-        "adds r6, #1\n"
-        "adds r4, #80\n"
-        "ldrb r1, [r5, #8]\n"
-        "cmp r6, r1\n"
-        "blt.n .L2cc34_tail_loop\n"
-        ".L2cc34_tail_done:\n"
-        "movs r0, #128\n"
-        "ldrb r1, [r7, #3]\n"
-        "ands r0, r1\n"
-        "cmp r0, #0\n"
-        "beq.n .L2cc34_restore\n"
-        "ldrb r0, [r7, #3]\n"
-        "bl 0x0802ca34\n"
-        ".L2cc34_restore:\n"
-        "ldr r0, 1f\n"
-        "str r0, [r5, #52]\n"
-        ".L2cc34_done:\n"
-        "pop {r3}\n"
-        "mov r8, r3\n"
-        "pop {r4, r5, r6, r7}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        ".align 2, 0\n"
-        "1: .word 0x68736d53\n"
-        ".syntax divided\n"
-    );
+// The state gate, setup writes, two channel walks, and byte/table loads are C.
+// Empty register barriers preserve old_agbcc's register choices; whole-span
+// and isolated-slice matches gate the body.
+void SoundStart_2CC34(void *rec, void *cfg) {
+    register volatile u8 *state __asm__("r5") = (volatile u8 *)rec;
+    volatile u8 *config = (volatile u8 *)cfg;
+    register s32 i __asm__("r6");
+    register volatile u8 *channel __asm__("r4");
+    register volatile u8 *head __asm__("r1");
+    register u32 channelIndex __asm__("r8");
+    register u32 startMode __asm__("r0");
+    register u32 count __asm__("r2");
+    register s32 initialLimit __asm__("r1");
+    register u32 flagTest __asm__("r0");
+    register s32 stateLimit __asm__("r1");
+
+    if (*(volatile u32 *)(state + 52) != 0x68736D53u)
+        return;
+    startMode = state[11];
+    count = config[2];
+
+    if (startMode != 0) {
+        if (*(volatile u32 *)state != 0) {
+            head = *(volatile u8 * volatile *)(state + 44);
+            flagTest = 64;
+            flagTest &= *head;
+            if (flagTest != 0)
+                goto check_limit;
+        }
+        {
+            u32 whole = *(volatile u32 *)(state + 4);
+            u16 low = *(volatile u16 *)(state + 4);
+            if (low == 0 || (s32)whole < 0)
+                goto start;
+        }
+check_limit:
+        {
+            register u32 reloadedCount __asm__("r0") = config[2];
+            __asm__ volatile ("" : "+r"(reloadedCount));
+            count = reloadedCount;
+            __asm__ volatile ("" : "+r"(count));
+        }
+        if (state[9] > count)
+            return;
+    }
+
+start:
+    *(volatile u32 *)(state + 52) += 1;
+    *(volatile u32 *)(state + 4) = 0;
+    *(volatile u8 * volatile *)state = (volatile u8 *)config;
+    *(volatile u32 *)(state + 48) = *(volatile u32 *)(config + 4);
+    state[9] = (u8)count;
+    *(volatile u32 *)(state + 12) = 0;
+    {
+        u32 volume = 150;
+        *(volatile u16 *)(state + 28) = (u16)volume;
+        *(volatile u16 *)(state + 32) = (u16)volume;
+        volume += 106;
+        *(volatile u16 *)(state + 30) = (u16)volume;
+    }
+    *(volatile u16 *)(state + 34) = 0;
+    *(volatile u16 *)(state + 36) = 0;
+
+    i = 0;
+    channel = *(volatile u8 * volatile *)(state + 44);
+    initialLimit = config[0];
+    __asm__ volatile ("" : "+r"(initialLimit));
+    if (i >= initialLimit)
+        goto data_tail;
+    if (i >= state[8])
+        goto tail_done;
+    channelIndex = (u32)i;
+    __asm__ volatile ("" : "+r"(channelIndex));
+data_loop:
+        _0802C11C((void *)state, (void *)channel);
+        channel[0] = 192;
+        {
+            register u32 storedIndex __asm__("r1") = channelIndex;
+            __asm__ volatile ("" : "+r"(storedIndex));
+            *(volatile u32 *)(channel + 32) = storedIndex;
+        }
+        {
+            register u32 lookupOffset __asm__("r1") = (u32)i << 2;
+            register volatile u8 *lookupBase __asm__("r0") = config;
+            __asm__ volatile ("" : "+r"(lookupOffset));
+            __asm__ volatile ("" : "+r"(lookupBase));
+            lookupBase += 8;
+            lookupBase += lookupOffset;
+            startMode = *(volatile u32 *)lookupBase;
+        }
+        *(volatile u32 *)(channel + 64) = startMode;
+        i++;
+        channel += 80;
+        startMode = config[0];
+        if (i >= (s32)startMode)
+            goto data_tail;
+        stateLimit = state[8];
+        __asm__ volatile ("" : "+r"(stateLimit));
+        if (i < stateLimit)
+            goto data_loop;
+
+data_tail:
+    if (i >= state[8])
+        goto tail_done;
+    {
+        register u32 zeroIndex __asm__("r1") = 0;
+        __asm__ volatile ("" : "+r"(zeroIndex));
+        channelIndex = zeroIndex;
+    }
+    __asm__ volatile ("" : "+r"(channelIndex));
+    do {
+        _0802C11C((void *)state, (void *)channel);
+        channel[0] = (u8)channelIndex;
+        i++;
+        channel += 80;
+        stateLimit = state[8];
+        __asm__ volatile ("" : "+r"(stateLimit));
+    } while (i < stateLimit);
+
+tail_done:
+    flagTest = 128;
+    flagTest &= config[3];
+    if (flagTest != 0) {
+        startMode = config[3];
+        _0802CA34((void *)(uintptr_t)startMode);
+    }
+    *(volatile u32 *)(state + 52) = 0x68736D53u;
 }
 void _0802CC34(void *a, void *b) __attribute__((alias("SoundStart_2CC34")));
 void sub_0802CC34(void *a, void *b) __attribute__((alias("SoundStart_2CC34")));
@@ -1917,15 +1911,12 @@ void MenuInit_CFE4(void *rec) {
     void *obj = MCI_CALLEE(_08026948, _080026948)();
     *(volatile u32 *)(r4 + 28) = (u32)(uintptr_t)obj;
     {
-        register int arg1 __asm__("r1");
-        register int arg2 __asm__("r2");
-        __asm__ volatile(".code 16\n\t"
-                         "mov r2, #6\n\t"
-                         "ldrsh r1, [r4, r2]\n\t"
-                         "mov r3, #8\n\t"
-                         "ldrsh r2, [r4, r3]"
-                         : "=r"(arg1), "=r"(arg2)
-                         : "r"(r4) : "r3", "cc");
+        // Plain indexed reads: r4 (the record) stays live for the later
+        // field accesses, which is what makes agbcc take the index form
+        // (`movs rX,#imm / ldrsh rY,[r4,rX]`, oracle `_08001A74`) instead
+        // of folding the offset into the address.
+        register int arg1 __asm__("r1") = *(s16 *)((u8 *)r4 + 6);
+        register int arg2 __asm__("r2") = *(s16 *)((u8 *)r4 + 8);
         _08026A4C(obj, arg1, arg2);
     }
     _08026A58((void *)(uintptr_t)*(volatile u32 *)(r4 + 28), 1);
@@ -1933,12 +1924,7 @@ void MenuInit_CFE4(void *rec) {
     {
         register void *objAt28 __asm__("r0") =
             (void *)(uintptr_t)*(volatile u32 *)(r4 + 28);
-        register int arg1 __asm__("r1");
-        __asm__ volatile(".code 16\n\t"
-                         "mov r2, #6\n\t"
-                         "ldrsh r1, [r4, r2]"
-                         : "=r"(arg1) : "r"(r4), "r"(objAt28)
-                         : "r2", "cc");
+        register int arg1 __asm__("r1") = *(s16 *)((u8 *)r4 + 6);
     MCI_CALLEE(_08026938, _080026938)(objAt28, arg1);
     }
 }

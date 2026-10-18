@@ -39,20 +39,15 @@ void Award_BuildTierPacket(void)
             {
                 register volatile u8 *fieldBase __asm__("r4") = packet;
                 register s32 fieldIndex __asm__("r1");
-                __asm__ volatile (
-                    "movs r0, #0\n\t"
-                    "ldrsh %0, [%1, r0]"
-                    : "=r" (fieldIndex) : "r" (cursor) : "r0", "memory");
+                // This work-area value is RAM; plain s16 access emits the indexed ldrsh.
+                fieldIndex = *(s16 *)cursor;
                 *(volatile s16 *)(fieldBase + 26) =
                     (s8)*(volatile u8 *)(wa + fieldIndex * 12 + 48);
             }
             __asm__ volatile ("" ::: "memory");
             {
                 register s32 copyIndex __asm__("r1");
-                __asm__ volatile (
-                    "movs r4, #0\n\t"
-                    "ldrsh %0, [%1, r4]"
-                    : "=r" (copyIndex) : "r" (cursor) : "r4", "memory");
+                copyIndex = *(s16 *)cursor;
                 copySource = (volatile u8 *)(copyIndex * 12 +
                                              (u32)(uintptr_t)wa);
                 copyDestination = packet + 28;
@@ -62,17 +57,19 @@ void Award_BuildTierPacket(void)
             }
         }
     }
-    __asm__ volatile (
-        "ldmia %0!, {r2, r3, r4}\n\t"
-        "stmia %1!, {r2, r3, r4}"
-        : "+r" (copySource), "+r" (copyDestination)
-        : : "r2", "r3", "r4", "memory");
+    {
+        struct PacketWords3 { u32 word[3]; };
+        *(struct PacketWords3 *)(void *)copyDestination =
+            *(const struct PacketWords3 *)(const void *)copySource;
+    }
     __asm__ volatile ("" ::: "memory");
 
-    __asm__ volatile (
-        "movs r0, #0\n\t"
-        "mov r8, r0"
-        : "=r" (count0) : : "r0");
+    {
+        // The ROM builds zero in r0, then copies it into the r8 counter.
+        register u32 zeroCount __asm__("r0") = 0;
+        __asm__ volatile ("" : "+r" (zeroCount));
+        count0 = zeroCount;
+    }
     count1 = 0;
     for (row = 0; row <= 3; row = nextRow) {
         col = 0;
@@ -93,12 +90,10 @@ void Award_BuildTierPacket(void)
         register volatile u8 *layerBase __asm__("r0") = (volatile u8 *)0x03001780;
         register u32 layerOffset __asm__("r2") = 0xFF2;
         __asm__ volatile ("" : "+r" (layerBase), "+r" (layerOffset));
-        __asm__ volatile (
-            "add %0, %0, %1\n\t"
-            "movs r3, #0\n\t"
-            "ldrsh %2, [%0, r3]"
-            : "+r" (layerBase), "+r" (layerOffset), "=r" (layer)
-            : : "r3", "memory");
+        layerBase += layerOffset;
+        layer = *(s16 *)layerBase;
+        // Keep the r2 offset live and retain the ROM's r3 zero-index register.
+        __asm__ volatile ("" : "+r" (layerOffset) : : "r3", "memory");
     }
 
     if (layer != 0)

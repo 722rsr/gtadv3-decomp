@@ -32,6 +32,7 @@ extern void sub_0800D97C(void *a, int b);          // 0x0800D97C (menu_stage.c)
 // and the whole `ldr/adds` pair disappears. Same lever as src/ai_award_leaves.c
 // (Ai_SetOwnedFlag) and src/car_tick_helpers.c (CarTickWa).
 extern u8 Rec35Wa[] __asm__("Rec35Wa");
+extern u8 Rec35EventAWa[] __asm__("Rec35EventAWa");
 #define REC35_WA_BASE ((volatile u8 *)(uintptr_t)Rec35Wa)
 // The `.globl` DEFINITION is emitted inside Rec35_RecordClear2 -- see there.
 
@@ -71,109 +72,90 @@ void Rec35_CountdownDec(void *rec, int reload) {
 //   mode 64: [rec+140]-=1;  mode 128: [rec+140]+=1
 //   clamp s16[rec+140] to [0,1]; if u16[rec+140] changed: sound 2
 // ============================================================================
-__attribute__((naked)) void Rec35_EventA(void *rec, int unused, int mode) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, r7, lr}\n"
-        "adds r5, r0, #0\n"
-        "lsls r2, r2, #16\n"
-        "lsrs r6, r2, #16\n"
-        "adds r4, r5, #0\n"
-        "adds r4, #140\n"
-        "ldrh r7, [r4, #0]\n"
-        "cmp r6, #2\n"
-        "bne .L16004_mode1\n"
-        "movs r0, #4\n"
-        "bl 0x0802B368\n"
-        "movs r0, #10\n"
-        "str r0, [r5, #16]\n"
-        "movs r1, #0\n"
-        "strh r1, [r5, #20]\n"
-        "str r0, [r5, #48]\n"
-        "str r1, [r5, #44]\n"
-        "ldr r0, .L16004_wa0\n"
-        "ldr r2, .L16004_off0\n"
-        "adds r0, r0, r2\n"
-        "strh r1, [r0, #0]\n"
-        ".L16004_mode1:\n"
-        "cmp r6, #1\n"
-        "bne .L16004_after_mode1\n"
-        "movs r3, #0\n"
-        "ldrsh r4, [r4, r3]\n"
-        "cmp r4, #0\n"
-        "beq .L16004_cur0\n"
-        "cmp r4, #1\n"
-        "beq .L16004_cur1\n"
-        "b .L16004_after_mode1\n"
-        "movs r0, r0\n"
-        ".L16004_wa0: .word 0x03001780\n"
-        ".L16004_off0: .word 0x00001084\n"
-        ".L16004_cur0:\n"
-        "movs r0, #1\n"
-        "bl 0x0802B368\n"
-        "adds r0, r5, #0\n"
-        "adds r0, #144\n"
-        "strh r4, [r0, #0]\n"
-        "adds r0, #6\n"
-        "strh r6, [r0, #0]\n"
-        "b .L16004_after_mode1\n"
-        ".L16004_cur1:\n"
-        "movs r0, #1\n"
-        "bl 0x0802B368\n"
-        "movs r0, #10\n"
-        "str r0, [r5, #16]\n"
-        "movs r1, #0\n"
-        "strh r1, [r5, #20]\n"
-        "str r0, [r5, #48]\n"
-        "str r1, [r5, #44]\n"
-        "ldr r0, .L16004_wa1\n"
-        "ldr r2, .L16004_off1\n"
-        "adds r0, r0, r2\n"
-        "strh r1, [r0, #0]\n"
-        ".L16004_after_mode1:\n"
-        "adds r2, r5, #0\n"
-        "adds r2, #140\n"
-        "cmp r6, #64\n"
-        "bne .L16004_after_64\n"
-        "ldrh r0, [r2, #0]\n"
-        "subs r0, #1\n"
-        "strh r0, [r2, #0]\n"
-        ".L16004_after_64:\n"
-        "cmp r6, #128\n"
-        "bne .L16004_after_128\n"
-        "ldrh r0, [r2, #0]\n"
-        "adds r0, #1\n"
-        "strh r0, [r2, #0]\n"
-        ".L16004_after_128:\n"
-        "adds r1, r2, #0\n"
-        "movs r3, #0\n"
-        "ldrsh r0, [r1, r3]\n"
-        "cmp r0, #0\n"
-        "bge .L16004_nonnegative\n"
-        "movs r0, #0\n"
-        "strh r0, [r1, #0]\n"
-        ".L16004_nonnegative:\n"
-        "movs r3, #0\n"
-        "ldrsh r0, [r1, r3]\n"
-        "cmp r0, #1\n"
-        "ble .L16004_clamped\n"
-        "movs r0, #1\n"
-        "strh r0, [r1, #0]\n"
-        ".L16004_clamped:\n"
-        "ldrh r2, [r2, #0]\n"
-        "cmp r7, r2\n"
-        "beq .L16004_done\n"
-        "movs r0, #2\n"
-        "bl 0x0802B368\n"
-        ".L16004_done:\n"
-        "pop {r4, r5, r6, r7}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        ".L16004_wa1: .word 0x03001780\n"
-        ".L16004_off1: .word 0x00001084\n"
-        ".syntax divided\n"
-    );
+void Rec35_EventA(void *rec, int unused, int mode) {
+    register volatile u8 *record __asm__("r5") = (volatile u8 *)rec;
+    u32 event = (u16)mode;
+    register u32 stateBase __asm__("r4") = (u32)record;
+    u16 old;
+
+    // Keep the absolute base owned by this section for isolated source-slice links.
+    __asm__(".globl Rec35EventAWa\nRec35EventAWa = 0x03001780\n");
+    stateBase += 140;
+    old = *(u16 *)(uintptr_t)stateBase;
+    __asm__ volatile ("" : "+r"(old));
+
+    if (event == 2) {
+        _0802B368(4);
+        register u32 ten __asm__("r0") = 10;
+        register u32 zero __asm__("r1");
+        *(volatile u32 *)(record + 16) = ten;
+        __asm__ volatile ("" : "=r"(zero) : : "memory");
+        zero = 0;
+        *(volatile u16 *)(record + 20) = (u16)zero;
+        *(volatile u32 *)(record + 48) = ten;
+        *(volatile u32 *)(record + 44) = zero;
+        {
+            volatile u8 *wa = (volatile u8 *)(uintptr_t)Rec35EventAWa;
+            *(volatile u16 *)(wa + 0x1084u) = (u16)zero;
+        }
+    }
+    if (event == 1) {
+        register u32 modeIndex __asm__("r3") = 0;
+        s32 current = ((const s16 *)(const void *)(uintptr_t)stateBase)[modeIndex];
+        __asm__ volatile ("" : "=r"(modeIndex));
+        switch (current) {
+        case 0:
+            _0802B368(1);
+            *(volatile u16 *)(record + 144) = (u16)current;
+            *(volatile u16 *)(record + 150) = (u16)event;
+            break;
+        case 1:
+            _0802B368(1);
+            {
+                register u32 ten __asm__("r0") = 10;
+                register u32 zero __asm__("r1");
+                *(volatile u32 *)(record + 16) = ten;
+                __asm__ volatile ("" : "=r"(zero) : : "memory");
+                zero = 0;
+                *(volatile u16 *)(record + 20) = (u16)zero;
+                *(volatile u32 *)(record + 48) = ten;
+                *(volatile u32 *)(record + 44) = zero;
+                {
+                    volatile u8 *wa = (volatile u8 *)(uintptr_t)Rec35EventAWa;
+                    *(volatile u16 *)(wa + 0x1084u) = (u16)zero;
+                }
+            }
+            break;
+        default:
+            break;
+        }
+    }
+    __asm__ volatile ("" : "+r"(record));
+
+    {
+        register volatile u16 *fieldAfter __asm__("r2") = (volatile u16 *)(record + 140);
+        if (event == 64) *fieldAfter = (u16)(*fieldAfter - 1);
+        if (event == 128) *fieldAfter = (u16)(*fieldAfter + 1);
+        {
+            register volatile u16 *clampField __asm__("r1") = fieldAfter;
+            register u32 clampIndex __asm__("r3") = 0;
+            register s32 clampValue __asm__("r0");
+            clampValue = ((const s16 *)(const void *)(uintptr_t)clampField)[clampIndex];
+            __asm__ volatile ("" : "=r"(clampIndex));
+            if (clampValue < 0) *clampField = 0;
+            clampIndex = 0;
+            clampValue = ((const s16 *)(const void *)(uintptr_t)clampField)[clampIndex];
+            __asm__ volatile ("" : "=r"(clampIndex));
+            if (clampValue > 1) *clampField = 1;
+        }
+        {
+            register u16 finalState __asm__("r2") = *(u16 *)fieldAfter;
+            if (old != finalState) _0802B368(2);
+        }
+    }
 }
+// The ROM body ends with zero-filled alignment rather than gas's Thumb nop.
+__asm__(".align 2, 0");
 void _080016004(void *a, int b, int c) __attribute__((alias("Rec35_EventA")));
 void sub_080016004(void *a, int b, int c) __attribute__((alias("Rec35_EventA")));
 
@@ -182,97 +164,85 @@ void sub_080016004(void *a, int b, int c) __attribute__((alias("Rec35_EventA")))
 //   mode 2 does NOT clear WA+0x1084; mode 1 cur==0 writes [rec+148] not
 //   [rec+150]; mode 1 cur==1 does not clear WA+0x1084.
 // ============================================================================
-__attribute__((naked)) void Rec35_EventB(void *rec, int unused, int mode) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, r7, lr}\n"
-        "adds r5, r0, #0\n"
-        "lsls r2, r2, #16\n"
-        "lsrs r6, r2, #16\n"
-        "adds r4, r5, #0\n"
-        "adds r4, #140\n"
-        "ldrh r7, [r4, #0]\n"
-        "cmp r6, #2\n"
-        "bne .L160C4_mode1\n"
-        "movs r0, #4\n"
-        "bl 0x0802B368\n"
-        "movs r1, #10\n"
-        "str r1, [r5, #16]\n"
-        "movs r0, #0\n"
-        "strh r0, [r5, #20]\n"
-        "str r1, [r5, #48]\n"
-        "str r0, [r5, #44]\n"
-        ".L160C4_mode1:\n"
-        "cmp r6, #1\n"
-        "bne .L160C4_after_mode1\n"
-        "movs r0, #0\n"
-        "ldrsh r4, [r4, r0]\n"
-        "cmp r4, #0\n"
-        "beq .L160C4_cur0\n"
-        "cmp r4, #1\n"
-        "beq .L160C4_cur1\n"
-        "b .L160C4_after_mode1\n"
-        ".L160C4_cur0:\n"
-        "movs r0, #1\n"
-        "bl 0x0802B368\n"
-        "adds r0, r5, #0\n"
-        "adds r0, #144\n"
-        "strh r4, [r0, #0]\n"
-        "adds r0, #4\n"
-        "strh r6, [r0, #0]\n"
-        "b .L160C4_after_mode1\n"
-        ".L160C4_cur1:\n"
-        "movs r0, #1\n"
-        "bl 0x0802B368\n"
-        "movs r1, #10\n"
-        "str r1, [r5, #16]\n"
-        "movs r0, #0\n"
-        "strh r0, [r5, #20]\n"
-        "str r1, [r5, #48]\n"
-        "str r0, [r5, #44]\n"
-        ".L160C4_after_mode1:\n"
-        "adds r2, r5, #0\n"
-        "adds r2, #140\n"
-        "cmp r6, #64\n"
-        "bne .L160C4_after_64\n"
-        "ldrh r0, [r2, #0]\n"
-        "subs r0, #1\n"
-        "strh r0, [r2, #0]\n"
-        ".L160C4_after_64:\n"
-        "cmp r6, #128\n"
-        "bne .L160C4_after_128\n"
-        "ldrh r0, [r2, #0]\n"
-        "adds r0, #1\n"
-        "strh r0, [r2, #0]\n"
-        ".L160C4_after_128:\n"
-        "adds r1, r2, #0\n"
-        "movs r3, #0\n"
-        "ldrsh r0, [r1, r3]\n"
-        "cmp r0, #0\n"
-        "bge .L160C4_nonnegative\n"
-        "movs r0, #0\n"
-        "strh r0, [r1, #0]\n"
-        ".L160C4_nonnegative:\n"
-        "movs r3, #0\n"
-        "ldrsh r0, [r1, r3]\n"
-        "cmp r0, #1\n"
-        "ble .L160C4_clamped\n"
-        "movs r0, #1\n"
-        "strh r0, [r1, #0]\n"
-        ".L160C4_clamped:\n"
-        "ldrh r2, [r2, #0]\n"
-        "cmp r7, r2\n"
-        "beq .L160C4_done\n"
-        "movs r0, #2\n"
-        "bl 0x0802B368\n"
-        ".L160C4_done:\n"
-        "pop {r4, r5, r6, r7}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        ".align 2, 0\n"
-        ".syntax divided\n"
-    );
+void Rec35_EventB(void *rec, int unused, int mode) {
+    register volatile u8 *record __asm__("r5") = (volatile u8 *)rec;
+    u32 event = (u16)mode;
+    register u32 stateBase __asm__("r4") = (u32)record;
+    u16 old;
+
+    stateBase += 140;
+    old = *(u16 *)(uintptr_t)stateBase;
+    // Keep the entry state live across the event branches for the final comparison.
+    __asm__ volatile ("" : "+r"(old));
+
+    if (event == 2) {
+        _0802B368(4);
+        register u32 ten __asm__("r1") = 10;
+        register u32 zero __asm__("r0");
+        *(volatile u32 *)(record + 16) = ten;
+        // The zero is materialized after the first store, as in the ROM.
+        __asm__ volatile ("" : "=r"(zero) : : "memory");
+        zero = 0;
+        *(volatile u16 *)(record + 20) = (u16)zero;
+        *(volatile u32 *)(record + 48) = ten;
+        *(volatile u32 *)(record + 44) = zero;
+    }
+    if (event == 1) {
+        register u32 modeIndex __asm__("r0") = 0;
+        s32 current = ((const s16 *)(const void *)(uintptr_t)stateBase)[modeIndex];
+        // Keep r0 as the indexed-load operand through ldrsh, then discard it.
+        __asm__ volatile ("" : "=r"(modeIndex));
+        switch (current) {
+        case 0:
+            _0802B368(1);
+            *(volatile u16 *)(record + 144) = (u16)current;
+            *(volatile u16 *)(record + 148) = (u16)event;
+            break;
+        case 1:
+            _0802B368(1);
+            {
+                register u32 ten __asm__("r1") = 10;
+                register u32 zero __asm__("r0");
+                *(volatile u32 *)(record + 16) = ten;
+                // Same inter-store zero placement as mode 2 above.
+                __asm__ volatile ("" : "=r"(zero) : : "memory");
+                zero = 0;
+                *(volatile u16 *)(record + 20) = (u16)zero;
+                *(volatile u32 *)(record + 48) = ten;
+                *(volatile u32 *)(record + 44) = zero;
+            }
+            break;
+        default:
+            break;
+        }
+    }
+    __asm__ volatile ("" : "+r"(record));
+
+    {
+        register volatile u16 *fieldAfter __asm__("r2") = (volatile u16 *)(record + 140);
+        if (event == 64) *fieldAfter = (u16)(*fieldAfter - 1);
+        if (event == 128) *fieldAfter = (u16)(*fieldAfter + 1);
+        {
+            register volatile u16 *clampField __asm__("r1") = fieldAfter;
+            register u32 clampIndex __asm__("r3") = 0;
+            register s32 clampValue __asm__("r0");
+            clampValue = ((const s16 *)(const void *)(uintptr_t)clampField)[clampIndex];
+            // The output-only barrier keeps r3 live as the indexed offset through the load.
+            __asm__ volatile ("" : "=r"(clampIndex));
+            if (clampValue < 0) *clampField = 0;
+            clampIndex = 0;
+            clampValue = ((const s16 *)(const void *)(uintptr_t)clampField)[clampIndex];
+            __asm__ volatile ("" : "=r"(clampIndex));
+            if (clampValue > 1) *clampField = 1;
+        }
+        {
+            register u16 finalState __asm__("r2") = *(u16 *)fieldAfter;
+            if (old != finalState) _0802B368(2);
+        }
+    }
 }
+// Preserve the ROM's zero-filled trailing halfword instead of gas's Thumb nop.
+__asm__(".align 2, 0");
 void _0800160C4(void *a, int b, int c) __attribute__((alias("Rec35_EventB")));
 void sub_0800160C4(void *a, int b, int c) __attribute__((alias("Rec35_EventB")));
 

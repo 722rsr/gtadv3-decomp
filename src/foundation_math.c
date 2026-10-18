@@ -90,120 +90,96 @@ int MathHelper_05C58(int a,int b){
     return (a12 + (sign << 1) * off) & 0xFFF;
 }
 int _08005C58(int a,int b) __attribute__((alias("MathHelper_05C58")));
-__attribute__((naked)) int MathHelper_05CB4(void *p){
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, lr}\n"
-        "adds r6, r0, #0\n"
-        "ldr r3, [r6, #0]\n"
-        "cmp r3, #0\n"
-        "bne .L5cb4_nonzero\n"
-        "ldr r0, [r6, #4]\n"
-        "cmp r0, #0\n"
-        "beq .L5cb4_zero\n"
-        ".L5cb4_nonzero:\n"
-        "cmp r3, #0\n"
-        "bge .L5cb4_x_positive\n"
-        "negs r1, r3\n"
-        "b .L5cb4_x_abs_done\n"
-        ".L5cb4_x_positive:\n"
-        "adds r1, r3, #0\n"
-        ".L5cb4_x_abs_done:\n"
-        "ldr r5, [r6, #4]\n"
-        "cmp r5, #0\n"
-        "bge .L5cb4_y_positive\n"
-        "negs r2, r5\n"
-        "b .L5cb4_y_abs_done\n"
-        ".L5cb4_y_positive:\n"
-        "adds r2, r5, #0\n"
-        ".L5cb4_y_abs_done:\n"
-        "cmp r1, r2\n"
-        "ble .L5cb4_y_major\n"
-        "cmp r1, #0\n"
-        "beq .L5cb4_zero\n"
-        "ldr r4, .L5cb4_tbl_x\n"
-        "lsls r0, r2, #7\n"
-        "bl 0x0802DE04\n"
-        "lsls r0, r0, #1\n"
-        "adds r0, r0, r4\n"
-        "movs r2, #0\n"
-        "ldrsh r1, [r0, r2]\n"
-        "ldr r0, [r6, #0]\n"
-        "cmp r0, #0\n"
-        "bge .L5cb4_x_nonnegative\n"
-        "cmp r5, #0\n"
-        "bge .L5cb4_xneg_ypos\n"
-        "movs r2, #192\n"
-        "lsls r2, r2, #4\n"
-        "adds r0, r1, r2\n"
-        "b .L5cb4_signed_done\n"
-        ".L5cb4_tbl_x: .word 0x0805DAF0\n"
-        ".L5cb4_xneg_ypos:\n"
-        "movs r2, #192\n"
-        "lsls r2, r2, #4\n"
-        "b .L5cb4_subtract\n"
-        ".L5cb4_x_nonnegative:\n"
-        "cmp r5, #0\n"
-        "bge .L5cb4_both_positive\n"
-        "movs r2, #128\n"
-        "lsls r2, r2, #3\n"
-        "b .L5cb4_subtract\n"
-        ".L5cb4_both_positive:\n"
-        "movs r2, #128\n"
-        "lsls r2, r2, #3\n"
-        "adds r0, r1, r2\n"
-        "b .L5cb4_signed_done\n"
-        ".L5cb4_y_major:\n"
-        "cmp r2, #0\n"
-        "beq .L5cb4_zero\n"
-        "ldr r4, .L5cb4_tbl_y\n"
-        "lsls r0, r1, #7\n"
-        "adds r1, r2, #0\n"
-        "bl 0x0802DE04\n"
-        "lsls r0, r0, #1\n"
-        "adds r0, r0, r4\n"
-        "movs r2, #0\n"
-        "ldrsh r1, [r0, r2]\n"
-        "ldr r0, [r6, #0]\n"
-        "cmp r0, #0\n"
-        "bge .L5cb4_y_x_nonnegative\n"
-        "cmp r5, #0\n"
-        "bge .L5cb4_yneg_xpos\n"
-        "movs r2, #128\n"
-        "lsls r2, r2, #5\n"
-        "b .L5cb4_subtract\n"
-        "movs r0, r0\n"
-        ".L5cb4_tbl_y: .word 0x0805DAF0\n"
-        ".L5cb4_yneg_xpos:\n"
-        "movs r2, #128\n"
-        "lsls r2, r2, #4\n"
-        "adds r0, r1, r2\n"
-        "b .L5cb4_signed_done\n"
-        ".L5cb4_y_x_nonnegative:\n"
-        "cmp r5, #0\n"
-        "bge .L5cb4_y_both_positive\n"
-        "adds r0, r1, #0\n"
-        "b .L5cb4_signed_return\n"
-        ".L5cb4_y_both_positive:\n"
-        "movs r2, #128\n"
-        "lsls r2, r2, #4\n"
-        ".L5cb4_subtract:\n"
-        "adds r0, r2, #0\n"
-        "subs r0, r0, r1\n"
-        ".L5cb4_signed_done:\n"
-        "lsls r0, r0, #16\n"
-        "asrs r0, r0, #16\n"
-        "b .L5cb4_signed_return\n"
-        ".L5cb4_zero:\n"
-        "movs r0, #0\n"
-        ".L5cb4_signed_return:\n"
-        "pop {r4, r5, r6}\n"
-        "pop {r1}\n"
-        "bx r1\n"
-        "movs r0, r0\n"
-        ".syntax divided\n"
-    );
+extern s16 MathAngleTableX[];
+extern s16 MathAngleTableY[];
+extern s32 sub_0802DE04(s32 numerator, s32 denominator);
+int MathHelper_05CB4(void *p) {
+    register volatile s32 *base __asm__("r6") = (volatile s32 *)p;
+    register s32 x __asm__("r3");
+    register s32 y __asm__("r5");
+    register s32 ax __asm__("r1");
+    register s32 ay __asm__("r2");
+    register const s16 *table __asm__("r4");
+    register s32 tableValue __asm__("r1");
+    s32 ratio;
+    register s32 angle __asm__("r0");
+
+    __asm__ volatile (".globl MathAngleTableX\n"
+                      "MathAngleTableX = 0x0805DAF0\n"
+                      ".globl MathAngleTableY\n"
+                      "MathAngleTableY = 0x0805DAF0\n");
+    x = base[0];
+    if (x == 0 && base[1] == 0)
+        goto zero_result;
+    if (x < 0)
+        ax = (s32)(0u - (u32)x);
+    else
+        ax = x;
+    y = base[1];
+    if (y < 0)
+        ay = (s32)(0u - (u32)y);
+    else
+        ay = y;
+
+    if (ax > ay) {
+        if (ax == 0)
+            goto zero_result;
+        table = MathAngleTableX;
+        ratio = sub_0802DE04((s32)((u32)ay << 7), ax);
+        tableValue = table[ratio];
+        if (base[0] < 0) {
+            if (y < 0) {
+                ay = 3072;
+                angle = tableValue + ay;
+            } else {
+                ay = 3072;
+                goto subtract_offset;
+            }
+        } else {
+            if (y < 0) {
+                ay = 1024;
+                goto subtract_offset;
+            } else {
+                ay = 1024;
+                angle = tableValue + ay;
+            }
+        }
+    } else {
+        if (ay == 0)
+            goto zero_result;
+        table = MathAngleTableY;
+        ratio = sub_0802DE04((s32)((u32)ax << 7), ay);
+        tableValue = table[ratio];
+        if (base[0] < 0) {
+            if (y < 0) {
+                ay = 4096;
+                goto subtract_offset;
+            } else {
+                ay = 2048;
+                angle = tableValue + ay;
+            }
+        } else {
+            if (y < 0)
+                return tableValue;
+            ay = 2048;
+            goto subtract_offset;
+        }
+    }
+    goto signed_angle;
+
+subtract_offset:
+    angle = ay;
+    __asm__ volatile ("" : "+r"(angle));
+    angle -= tableValue;
+
+signed_angle:
+    return (s16)angle;
+zero_result:
+    return 0;
 }
+__asm__(".pushsection .text.MathHelper_05CB4,\"ax\",%progbits\n"
+        ".short 0\n"
+        ".popsection\n");
 int _08005CB4(void *a) __attribute__((alias("MathHelper_05CB4")));
 /*
  * 0x08005D74 (22 B) and 0x08005DA4 (34 B) are OWNED by src/code_5b3c_math.c

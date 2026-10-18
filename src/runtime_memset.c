@@ -6,9 +6,9 @@
 void *RuntimeMemcpy(void *dst, const void *src, u32 n) {
     register u8 *original asm("r5") = (u8 *)dst;
     register u8 *d asm("r4") = original;
-    register const u8 *s asm("r3") = (const u8 *)src;
+    register const u32 *s asm("r3") = (const u32 *)src;
     register u32 count asm("r2") = n;
-    register u8 *word_dst asm("r1");
+    register u32 *word_dst asm("r1");
     register u32 scratch asm("r0");
     if (count > 15) {
         scratch = (u32)s;
@@ -16,41 +16,31 @@ void *RuntimeMemcpy(void *dst, const void *src, u32 n) {
         scratch |= (u32)original;
         scratch &= 3u;
         if (scratch == 0) {
-            word_dst = original;
+            word_dst = (u32 *)original;
             do {
-                __asm__ volatile(
-                    ".code 16\n\t"
-                    "ldmia %0!, {r0}\n\t"
-                    "stmia %1!, {r0}\n\t"
-                    "ldmia %0!, {r0}\n\t"
-                    "stmia %1!, {r0}\n\t"
-                    "ldmia %0!, {r0}\n\t"
-                    "stmia %1!, {r0}\n\t"
-                    "ldmia %0!, {r0}\n\t"
-                    "stmia %1!, {r0}\n"
-                    : "+r"(s), "+r"(word_dst) : : "r0", "memory");
+                *word_dst++ = *s++;
+                *word_dst++ = *s++;
+                *word_dst++ = *s++;
+                *word_dst++ = *s++;
                 count -= 16;
             } while (count > 15);
             if (count > 3) {
                 do {
-                    __asm__ volatile(
-                        ".code 16\n\t"
-                        "ldmia %0!, {r0}\n\t"
-                        "stmia %1!, {r0}\n"
-                        : "+r"(s), "+r"(word_dst) : : "r0", "memory");
+                    *word_dst++ = *s++;
                     count -= 4;
                 } while (count > 3);
             }
-            d = word_dst;
+            d = (u8 *)word_dst;
         }
     }
     count--;
+    const u8 *s8 = (const u8 *)s;
     scratch = 1;
     scratch = -scratch;
     if (count != scratch) {
-        word_dst = (u8 *)scratch;
+        word_dst = (u32 *)scratch;
         do {
-            *d++ = *s++;
+            *d++ = *s8++;
             count--;
         } while (count != (u32)word_dst);
     }

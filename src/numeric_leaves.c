@@ -117,13 +117,13 @@ s16 sub_080258A8(int idx) __attribute__((alias("Code258A8_SimpleLookup")));
 
 // ---- 26F8 : IWRAM s16 at 0x03001780+108C/109C helpers ----
 // Reader at ROM 0x080026F8 (file offset 0x0026F8), 28 bytes including pools.
-// The in-section absolute base and named displacement retain the ROM's two
-// literal loads and base-plus-displacement addition before the grid offset.
+// The numeric C base and named displacement retain the ROM's two literal
+// loads and base-plus-displacement addition before the grid offset. An empty
+// compiler barrier keeps the base from folding into the displacement pool.
 // IWRAM work-area reads are ordinary s16 data, matching the ROM's ldrsh.
 s16 Code26F8_GetIWRAM_S16(int r0,int r1){
-    extern u8 GridRead_26F8_WA[];
-    __asm__(".globl GridRead_26F8_WA\nGridRead_26F8_WA = 0x03001780\n");
-    u32 base = (u32)(uintptr_t)GridRead_26F8_WA;
+    u32 base = 0x03001780u;
+    __asm__ volatile ("" : "+r"(base) : : "memory");
     u32 off = ((u32)r1 << 1) + ((u32)r0 << 3);
     u32 idx = 0;
     u32 disp = 0x108Cu;
@@ -259,23 +259,23 @@ s16 Sub_080258A8(int idx) __attribute__((alias("Code258A8_SimpleLookup")));
 // Round-six transcription ((consolidated/elsewhere) family; WA base 0x03001780).
 // All four are small pool leaves over the same grid cell region the
 // Code26F8/2730 helpers use.
+// Each body expresses the base as a C constant; the empty barrier preserves
+// the ROM's separate base and displacement pool loads without an asm symbol.
 //
 // ROM 0x080026DC (file offset 0x0026DC), 28-byte store: u16[WA + 0x108C + a*8 + b*2] = c.
 // ROM 0x08002714 (file offset 0x002714), 28-byte store: u16[WA + 0x109C + a*8 + b*2] = c (identical body,
 //   different pool base; save.c's rebuild loop clears both grids).
 void GridStore_26DC(int a, int b, int c) {
-    extern u8 GridStore_26DC_WA[];
-    __asm__(".globl GridStore_26DC_WA\nGridStore_26DC_WA = 0x03001780\n");
-    u32 base = (u32)(uintptr_t)GridStore_26DC_WA;
+    u32 base = 0x03001780u;
+    __asm__ volatile ("" : "+r"(base) : : "memory");
     u32 off = ((u32)b << 1) + ((u32)a << 3);
     u32 disp = 0x108Cu;
     u32 addr = off + (base + disp);
     *(volatile u16 *)addr = (u16)c;
 }
 void GridStore_2714(int a, int b, int c) {
-    extern u8 GridStore_2714_WA[];
-    __asm__(".globl GridStore_2714_WA\nGridStore_2714_WA = 0x03001780\n");
-    u32 base = (u32)(uintptr_t)GridStore_2714_WA;
+    u32 base = 0x03001780u;
+    __asm__ volatile ("" : "+r"(base) : : "memory");
     u32 off = ((u32)b << 1) + ((u32)a << 3);
     u32 disp = 0x109Cu;
     u32 addr = off + (base + disp);
@@ -291,9 +291,8 @@ void Sub_08002714(int a, int b, int c) __attribute__((alias("GridStore_2714")));
 // ROM 0x08002780 (file offset 0x002780), 28 bytes: s16 v = s16[WA + 0x1056]; return ((-v) | v) >> 31 —
 // 0 if the halfword is zero, else 1. (0x0800279C gates on it.)
 int GridFlagTest_2780(void) {
-    extern u8 GridFlagTest_2780_WA[];
-    __asm__(".globl GridFlagTest_2780_WA\nGridFlagTest_2780_WA = 0x03001780\n");
-    u32 base = (u32)(uintptr_t)GridFlagTest_2780_WA;
+    u32 base = 0x03001780u;
+    __asm__ volatile ("" : "+r"(base) : : "memory");
     s16 v = *(s16 *)(base + 0x1056u);
     return (int)(((u32)(-v) | (u32)v) >> 31);
 }
@@ -301,12 +300,11 @@ int _08002780(void) __attribute__((alias("GridFlagTest_2780")));
 int sub_08002780(void) __attribute__((alias("GridFlagTest_2780")));
 
 // ROM 0x080027EC (file offset 0x0027EC), 28 bytes: same test over
-// s16[WA + 0x105C]. Each flag reader defines its own absolute base inside
-// its function section so the symbol survives independent-slice substitution.
+// s16[WA + 0x105C]. The address and signed result are expressed in C, with an
+// empty barrier retaining the same two literal loads in the isolated slice.
 int GridFlagTest_27EC(void) {
-    extern u8 GridFlagTest_27EC_WA[];
-    __asm__(".globl GridFlagTest_27EC_WA\nGridFlagTest_27EC_WA = 0x03001780\n");
-    u32 base = (u32)(uintptr_t)GridFlagTest_27EC_WA;
+    u32 base = 0x03001780u;
+    __asm__ volatile ("" : "+r"(base) : : "memory");
     s16 v = *(s16 *)(base + 0x105Cu);
     return (int)(((u32)(-v) | (u32)v) >> 31);
 }

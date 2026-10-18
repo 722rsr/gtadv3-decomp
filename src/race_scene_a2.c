@@ -1622,9 +1622,12 @@ int _08001C340(void *p0) {
     if (_08018ACC(0x800000) != 0) // 128<<16
         return 0;
     {
-        register int signedByte __asm__("r0");
-        __asm__ volatile(".code 16\n\tmovs r0, #16\n\tldrsb r0, [r4, r0]"
-                         : "=r"(signedByte) : : "cc", "memory");
+        // Constant signed-byte read: Thumb `ldrsb` has no immediate form, so
+        // agbcc materialises the offset and -- per the extendqisi2 constant
+        // path -- reuses the destination as the index, giving the ROM's
+        // `movs r0,#16 / ldrsb r0,[r4,r0]` (0x0801C35A). p (r4) stays live
+        // for the later +12 word read, which keeps the base.
+        register int signedByte __asm__("r0") = *(s8 *)((u8 *)p + 16);
         if (signedByte <= 0)
             return 0;
     }
@@ -1636,8 +1639,12 @@ int _08001C340(void *p0) {
         __asm__ volatile("" : "+r"(waBase), "+r"(waOffset));
         waBase += waOffset;
         __asm__ volatile("" : "+r"(waBase));
-        __asm__ volatile(".code 16\n\tmovs r3, #0\n\tldrsh r2, [r0, r3]"
-                         : "=r"(threshold) : : "r3", "cc", "memory");
+        // Plain zero-index read: `movs r3,#0 / ldrsh r2,[r0,r3]` (0x0801C372).
+        // The barrier on waOffset holds r1 (the just-consumed offset) live
+        // through the load, so the freshly materialised zero index cannot
+        // reuse r1 and lands in the ROM's r3.
+        threshold = *(s16 *)(void *)waBase;
+        __asm__ volatile("" : "+r"(waOffset));
     }
     w = *(volatile u32 *)(p + 12);
     __asm__ volatile("" : "+r"(w));

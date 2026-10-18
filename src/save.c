@@ -136,30 +136,27 @@ int sub_08005758(u32 s) __attribute__((alias("SaveAllocFree")));
 //   * `v` is WORD-width. As a `u8` parameter agbcc emits a `lsls/lsrs`
 //     narrowing prologue the ROM does not have.
 void SaveAllocWriteByte(u32 off, u32 v) {
-    volatile u16 *cur = (volatile u16 *)SaveBumpBase;
+    volatile u16 *cur = (volatile u16 *)(uintptr_t)0x030002D8u;
     volatile u8 *p;
     register u32 s __asm__("r1");
-    // Repeated inside the body, like SaveAllocReadByte below: the per-body
-    // splice extracts only this function's brace-matched body, so the
-    // file-scope definition is absent from the spliced section and the
-    // reference would go undefined at link time.
+    // This absolute alias also serves the retained SaveAlloc/_08005758 ASM
+    // bodies in the independent full slice. Keep the definition inside a
+    // selected function body so the splicer carries it into its C section;
+    // the C byte helpers below use numeric bases to keep their own bodies C.
     __asm__(".globl SaveBumpBase\nSaveBumpBase = 0x030002D8\n");
+    __asm__ volatile ("" : "+r"(cur) : : "memory");
     p = (volatile u8 *)cur + 4;
-    *(volatile u8 *)(p + off) = (u8)*cur;
+    *(volatile u8 *)(uintptr_t)(off + (uintptr_t)p) = (u8)*cur;
     s = *cur + v;
     *cur = (u16)s;
 }
 void _08005768(u32 a, u32 b) __attribute__((alias("SaveAllocWriteByte")));
 
 u8 SaveAllocReadByte(u32 off) {
-    // Declared here, not at file scope: the per-body splice extracts only this
-    // function's brace-matched body, so a file-scope __asm__ defining the
-    // symbol is absent from the spliced section and the reference goes
-    // undefined at link time.
-    __asm__(".globl SaveBumpBase\nSaveBumpBase = 0x030002D8\n");
-    volatile u8 *base = (volatile u8 *)SaveBumpBase;
+    volatile u8 *base = (volatile u8 *)(uintptr_t)0x030002D8u;
+    __asm__ volatile ("" : "+r"(base) : : "memory");
     base += 4;
-    return base[off];
+    return *(volatile u8 *)(uintptr_t)(off + (uintptr_t)base);
 }
 u8 _08005780(u32 o) __attribute__((alias("SaveAllocReadByte")));
 
@@ -186,12 +183,11 @@ int SaveAllocFreeHigh(u32 size) {
     // the subtrahend.
     u32 b;
     volatile u16 *p;
-    RAM_DEF_030002D8;
-    // `b` is a u32, not a pointer: converting the symbol address to an integer
-    // first is what stops agbcc folding the +68 into the pool word's relocation
-    // addend (`.word RamBlock_030002D8+68`), which is 4 bytes shorter and has no
-    // `adds`. Measured: pointer arithmetic 1/20, integer base 20/20.
-    b = (u32)(uintptr_t)RAM_SYM_030002D8;
+    // Keep the numeric base opaque until after loading it so agbcc emits the
+    // ROM's separate `ldr 0x030002D8 / adds #68`, instead of folding +68 into
+    // the pool word. The barrier is load-bearing; the register is not pinned.
+    b = 0x030002D8u;
+    __asm__ volatile ("" : "+r"(b) : : "memory");
     p = (volatile u16 *)(b + 68);
     // The ROM's `subs r0,r2,r0` writes the difference back into the INCOMING
     // PARAMETER register and only then stores it, so the source accumulates
@@ -243,26 +239,28 @@ u32 SaveDescAppend(u32 byteSize) {
     off += (u32)(uintptr_t)b;
     register volatile u32 *slot __asm__("r0") = (volatile u32 *)(uintptr_t)off;
     u32 inc;
-    u32 dev;
+    s32 dev;
     slot[0] = ctrl[2];
     slot[1] = bs;
     inc = byteSize + 4;
-    dev = ctrl[1];
-    if ((s32)dev > 2)
-        goto div;
-    // Retain the ROM's signed `cmp #1; blt`; agbcc folds `< 1` into `<= 0`.
-    __asm__ volatile("cmp %0, #1\n\tblt 1f"
-                     : : "r" ((s32)dev) : "cc", "memory");
-    inc += 7;
-    {
-        u32 t = inc;
-        if ((s32)t < 0)
-            t = byteSize + 18;
-        inc = (u32)((s32)t >> 3);
-        inc <<= 3;
+    dev = (s32)ctrl[1];
+    // The ROM's range gate is `cmp #2; bgt` then `cmp #1; blt` to one shared
+    // continuation (0x0800582E). An if-chain cannot produce it: agbcc folds
+    // `dev < 1` into `<= 0` (`cmp #0; ble`). The switch over {1, 2} emits both
+    // signed case bounds in that order and needs no default arm (measured).
+    switch (dev) {
+    case 1:
+    case 2:
+        inc += 7;
+        {
+            u32 t = inc;
+            if ((s32)t < 0)
+                t = byteSize + 18;
+            inc = (u32)((s32)t >> 3);
+            inc <<= 3;
+        }
+        break;
     }
-div:
-    __asm__("1:");
     if ((s32)inc < 0)
         inc += 7;
     inc = (u32)((s32)inc >> 3);
@@ -413,7 +411,9 @@ int SaveSlotSave(u32 slotIdx, const void *src) {
     extern u8 SaveDst4[];
     extern u8 SaveDevPtr[];
     volatile u8 *e = SaveSlotTbl + ((slotIdx << 24) >> 21);
-    u32 cksum = SaveChecksum(src, *(volatile u32 *)(e + 4));
+    // Use the closure's retained ROM spelling here. SaveChecksum is a C alias
+    // at the same address, but the isolated slice keeps sub_08005860 from asm.
+    u32 cksum = sub_08005860(src, *(volatile u32 *)(e + 4));
     u32 stk = cksum;
     u8 *stage;
     __asm__ volatile("" : "+r" (e));
@@ -426,17 +426,17 @@ int SaveSlotSave(u32 slotIdx, const void *src) {
         sub_0802D974(src, d, words);
     }
     {
-        u32 devType = *(volatile u32 *)(*(volatile u32 *)SaveDevPtr + 4);
-        if ((s32)devType > 2)
-            goto done;
-        // Keep the ROM's `cmp #1; blt` form; agbcc canonicalizes `< 1` into
-        // `cmp #0; ble`, which is equivalent but changes two bytes.
-        __asm__ volatile("cmp %0, #1\n\tblt 1f"
-                         : : "r" ((s32)devType) : "cc", "memory");
-        sub_080058D0((void *)stage, *(volatile u32 *)e, *(volatile u32 *)(e + 4) + 4);
+        s32 devType = (s32)*(volatile u32 *)(*(volatile u32 *)SaveDevPtr + 4);
+        // Same switch lever as SaveDescAppend: the ROM's `cmp #2; bgt` /
+        // `cmp #1; blt` pair is the {1,2} case-bound test, not an if-chain
+        // (agbcc folds `devType < 1` into `cmp #0; ble`).
+        switch (devType) {
+        case 1:
+        case 2:
+            sub_080058D0((void *)stage, *(volatile u32 *)e, *(volatile u32 *)(e + 4) + 4);
+            break;
+        }
     }
-    __asm__("1:");
-done:
     return 1;
 }
 int _080059F0(u32 a, const void *b) __attribute__((alias("SaveSlotSave")));
@@ -450,20 +450,20 @@ int SaveSlotLoad(u32 slotIdx, void *dst) {
     extern u8 SaveDevPtr[];
     extern u8 SaveStage4[];
     volatile u8 *e = SaveSlotTbl + ((slotIdx << 24) >> 21);
-    u32 devType = *(volatile u32 *)(*(volatile u32 *)SaveDevPtr + 4);
-    if ((s32)devType > 2)
-        goto verify;
-    // Preserve the ROM's `cmp #1; blt` encoding; agbcc lowers `< 1` as
-    // `cmp #0; ble`, which is equivalent but changes the two instruction bytes.
-    __asm__ volatile("cmp %0, #1\n\tblt 1f"
-                     : : "r" ((s32)devType) : "cc", "memory");
+    s32 devType = (s32)*(volatile u32 *)(*(volatile u32 *)SaveDevPtr + 4);
+    // Same switch lever as SaveDescAppend/SaveSlotSave: the ROM's
+    // `cmp #2; bgt` / `cmp #1; blt` pair is the {1,2} case-bound test;
+    // an if-chain's `< 1` folds into `cmp #0; ble`.
+    switch (devType) {
+    case 1:
+    case 2:
     {
         u32 sec = *(volatile u32 *)e;
         u8 *d = (u8 *)0x02000000u;
         sub_08005884(sec, (void *)d, *(volatile u32 *)(e + 4) + 4);
     }
-verify:
-    __asm__("1:");
+        break;
+    }
     {
         register u8 *stage4 __asm__("r5") = SaveStage4;
         register u32 sz __asm__("r1") = *(volatile u32 *)(e + 4);
@@ -619,57 +619,50 @@ void sub_08005AE4(void) __attribute__((alias("SaveTimerQueueDrain")));
 // Trigger accessors (asm/save_trigger_accessors.s)
 // The ROM addresses the two trig tables through a *symbol* rather than a
 // folded integer constant: the literal pool holds the table address as its
-// first word and the 0x0FFE mask as its second, and the table `ldr` is issued
-// before the `ands`. agbcc only reproduces that order when the base is a
-// SYMBOL_REF leaf; with an integer literal in `tbl + (arg & 0x0FFE)` the
-// commutative-operand fold always expands the mask first, giving
-// `ldr r1,[mask]; ands; ldr r0,[tbl]; adds` — one byte different at +0 and
-// the pool words transposed. The absolute symbols below put the two table
-// addresses in the pool without allocating anything in the slice link.
-__asm__(".globl SaveTrigTblA\nSaveTrigTblA = 0x0805CAF0\n");
-__asm__(".globl SaveTrigTblB\nSaveTrigTblB = 0x0805BAF0\n");
-extern const s16 SaveTrigTblA[];
-extern const s16 SaveTrigTblB[];
+// The four trigger getters select a halfword with an even-masked byte offset.
+// The ROM loads the table base before the mask and adds the base into the
+// masked argument. Fixed r2/r1 values plus the empty memory barrier preserve
+// that pool-load order while keeping the table access itself in C.
 s16 SaveTriggerA(u32 arg) {
-    // The absolute symbol must be declared HERE, not at file scope: the
-    // per-body splice extracts only this function's brace-matched body,
-    // so a file-scope __asm__ that defines the symbol is simply absent
-    // from the spliced section and the reference becomes undefined.
-    __asm__(".globl SaveTrigTblA\nSaveTrigTblA = 0x0805CAF0\n");
-    return SaveTrigTblA[(arg & 0x0FFEu) >> 1];
+    register const u8 *base __asm__("r2") =
+        (const u8 *)(uintptr_t)0x0805CAF0u;
+    register u32 offset __asm__("r1") = arg & 0x0FFEu;
+    __asm__ volatile ("" : "+r" (base) : : "memory");
+    offset += (u32)(uintptr_t)base;
+    return *(const s16 *)(uintptr_t)offset;
 }
 s16 _08005F2C(u32 a) __attribute__((alias("SaveTriggerA")));
 s16 sub_08005F2C(u32 a) __attribute__((alias("SaveTriggerA")));
 
 s16 SaveTriggerB(u32 arg) {
-    // The absolute symbol must be declared HERE, not at file scope: the
-    // per-body splice extracts only this function's brace-matched body,
-    // so a file-scope __asm__ that defines the symbol is simply absent
-    // from the spliced section and the reference becomes undefined.
-    __asm__(".globl SaveTrigTblB\nSaveTrigTblB = 0x0805BAF0\n");
-    return SaveTrigTblB[(arg & 0x0FFEu) >> 1];
+    register const u8 *base __asm__("r2") =
+        (const u8 *)(uintptr_t)0x0805BAF0u;
+    register u32 offset __asm__("r1") = arg & 0x0FFEu;
+    __asm__ volatile ("" : "+r" (base) : : "memory");
+    offset += (u32)(uintptr_t)base;
+    return *(const s16 *)(uintptr_t)offset;
 }
 s16 _08005F44(u32 a) __attribute__((alias("SaveTriggerB")));
 s16 sub_08005F44(u32 a) __attribute__((alias("SaveTriggerB")));
 
 s16 SaveTriggerC(u32 arg) {
-    // The absolute symbol must be declared HERE, not at file scope: the
-    // per-body splice extracts only this function's brace-matched body,
-    // so a file-scope __asm__ that defines the symbol is simply absent
-    // from the spliced section and the reference becomes undefined.
-    __asm__(".globl SaveTrigTblA\nSaveTrigTblA = 0x0805CAF0\n");
-    return SaveTrigTblA[(arg & 0x0FFEu) >> 1];
+    register const u8 *base __asm__("r2") =
+        (const u8 *)(uintptr_t)0x0805CAF0u;
+    register u32 offset __asm__("r1") = arg & 0x0FFEu;
+    __asm__ volatile ("" : "+r" (base) : : "memory");
+    offset += (u32)(uintptr_t)base;
+    return *(const s16 *)(uintptr_t)offset;
 }
 s16 _08005F5C(u32 a) __attribute__((alias("SaveTriggerC")));
 s16 sub_08005F5C(u32 a) __attribute__((alias("SaveTriggerC")));
 
 s16 SaveTriggerD(u32 arg) {
-    // The absolute symbol must be declared HERE, not at file scope: the
-    // per-body splice extracts only this function's brace-matched body,
-    // so a file-scope __asm__ that defines the symbol is simply absent
-    // from the spliced section and the reference becomes undefined.
-    __asm__(".globl SaveTrigTblB\nSaveTrigTblB = 0x0805BAF0\n");
-    return SaveTrigTblB[(arg & 0x0FFEu) >> 1];
+    register const u8 *base __asm__("r2") =
+        (const u8 *)(uintptr_t)0x0805BAF0u;
+    register u32 offset __asm__("r1") = arg & 0x0FFEu;
+    __asm__ volatile ("" : "+r" (base) : : "memory");
+    offset += (u32)(uintptr_t)base;
+    return *(const s16 *)(uintptr_t)offset;
 }
 s16 _08005F74(u32 a) __attribute__((alias("SaveTriggerD")));
 s16 sub_08005F74(u32 a) __attribute__((alias("SaveTriggerD")));
@@ -1023,27 +1016,29 @@ void SaveGarageUnpack(void) {
     register u32 v __asm__("r0");
     register s16 *index_ptr __asm__("r0");
 
-    index_ptr = (s16 *)(work + 0x574);
-    __asm__ volatile ("" : "+r" (index_ptr) : : "memory");
+    record_offset = 0x574u;
+    index_ptr = (s16 *)(work + record_offset);
+    __asm__ volatile ("" : "+r" (index_ptr), "+r" (record_offset) : : "memory");
+    __asm__ volatile ("" : "=r" (block2));
     zero_index = 0;
-    __asm__ volatile ("ldrsh %0, [%1, %2]"
-                      : "=r" (record_index)
-                      : "r" (index_ptr), "r" (zero_index));
-    __asm__ volatile ("" : "+r" (record_index) : : "memory");
+    record_index = *(const s16 *)((const u8 *)index_ptr + (u32)zero_index);
+    __asm__ volatile ("" : "+r" (record_offset), "+r" (record_index),
+                             "+r" (block2) : : "memory");
 
-    v = SaveGarageMaskTest(0, 0);
+    /* Use the ROM closure spelling so the isolated slice resolves this C helper. */
+    v = _0802476C(0, 0);
     record_offset = (u32)record_index * 12;
     record = (volatile u8 *)(uintptr_t)(record_offset + (u32)(uintptr_t)work);
     record[48] = (u8)v;
-    v = SaveGarageMaskTest(0, 1);
+    v = _0802476C(0, 1);
     record[53] = (u8)v;
-    v = SaveGarageMaskTest(0, 2);
+    v = _0802476C(0, 2);
     record[51] = (u8)v;
-    v = SaveGarageMaskTest(0, 3);
+    v = _0802476C(0, 3);
     record[55] = (u8)v;
-    v = SaveGarageMaskTest(0, 4);
+    v = _0802476C(0, 4);
     record[56] = (u8)v;
-    v = SaveGarageMaskTest(0, 5);
+    v = _0802476C(0, 5);
     record[57] = (u8)v;
 
     block2 = (volatile u16 *)RAM_SYM_030013D0;
@@ -1073,7 +1068,9 @@ void SaveGarageUnpack(void) {
     register u32 blk __asm__("r2");
     m = *(const u8 *)masks8;
     __asm__ volatile ("" : "+r" (m));
-    __asm__ volatile ("ldrh %0, [%1, #46]" : "=r" (blk) : "r" (block2));
+    /* Non-volatile access lets agbcc load directly into the base/result r2. */
+    blk = *(const u16 *)((const u8 *)block2 + 46);
+    __asm__ volatile ("" : "+r" (blk));
     m = m & blk;
     d = record + 49;
     *d = (u8)m;

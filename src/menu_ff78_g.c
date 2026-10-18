@@ -16,6 +16,7 @@
 // ============================================================================
 
 #include "gba/types.h"
+#include "gtadv/ram_blocks.h"
 
 extern void Sub_08007B18(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h);
 extern void Sub_080011E10(void *a);
@@ -48,7 +49,6 @@ extern void Sub_0800D77C(void *a, int b, int c);
 
 #define MFFG_12990_B368 sub_0802B368
 #define MFFG_12990_24DA0 _08024DA0
-#define MFFG_12990_04BFC_ASM "sub_08004BFC"
 
 // ----------------------------------------------------------------------------
 // CALL-SITE SPELLING SPLIT for the two builder bodies below (sub_08001226C /
@@ -402,8 +402,7 @@ void MenuFF78_12990(void *rec_, int dead, u32 ev_) {
         (volatile u8 *)(uintptr_t)(rec + 128);
     if (ev == 1) {
         register int cell_s16 __asm__("r0");
-        __asm__ volatile(".code 16\n\tmovs r1, #0\n\tldrsh r0, [r6, r1]"
-                         : "=r"(cell_s16) : : "r1", "cc", "memory");
+        cell_s16 = *(const s16 *)(uintptr_t)cell;
         int v = MFFG_12990_24DA0(cell_s16);
         if (v != 0) {
             MFFG_12990_B368(1);
@@ -435,27 +434,21 @@ void MenuFF78_12990(void *rec_, int dead, u32 ev_) {
         u16 c = *(volatile u16 *)(uintptr_t)cell;
         *(volatile u16 *)(uintptr_t)cell = (u16)(c + 1);
     }
-    __asm__ volatile(
-        ".code 16\n\t"
-        "add r1, r6, #0\n\t"
-        "movs r2, #0\n\t"
-        "ldrsh r0, [r1, r2]\n\t"
-        "cmp r0, #0\n\t"
-        "bge 1f\n\t"
-        "movs r0, #9\n\t"
-        "strh r0, [r1, #0]\n"
-        "1:\n\t"
-        "movs r2, #0\n\t"
-        "ldrsh r0, [r1, r2]\n\t"
-        "cmp r0, #9\n\t"
-        "ble 2f\n\t"
-        "movs r0, #0\n\t"
-        "strh r0, [r1, #0]\n"
-        "2:\n\t"
-        "movs r1, #0\n\t"
-        "ldrsh r0, [r6, r1]\n\t"
-        "bl " MFFG_12990_04BFC_ASM
-        : : : "r0", "r1", "r2", "lr", "cc", "memory");
+    /* Signed non-volatile reads select ldrsh; keep the clamped stores volatile. */
+    register volatile s16 *clamp_cell __asm__("r1") = (volatile s16 *)cell;
+    register int clamp_value __asm__("r0");
+    clamp_value = *(const s16 *)(uintptr_t)clamp_cell;
+    if (clamp_value < 0) {
+        clamp_value = 9;
+        *clamp_cell = (s16)clamp_value;
+    }
+    clamp_value = *(const s16 *)(uintptr_t)clamp_cell;
+    if (clamp_value > 9) {
+        clamp_value = 0;
+        *clamp_cell = (s16)clamp_value;
+    }
+    clamp_value = *(const s16 *)(uintptr_t)cell;
+    sub_08004BFC(clamp_value);
 }
 // The ROM has a zero halfword after bx r0; use data-fill alignment instead
 // of the Thumb section's 0x46C0 nop filler.
@@ -471,102 +464,88 @@ void sub_080012990(void *a, int b, u32 c) __attribute__((alias("MenuFF78_12990")
 //   and s16[rec+134]==1: 7B18(rec, r1, entryW0, entryW1, 5,1,1,0) with
 //   entry from 0x080CB5D8 + r6*8.
 //   Table pick: s = s16[rec+128]; r6 = u32[tbl + s*8], r4 = u32[tbl+4+s*8].
-__attribute__((naked)) void MenuFF78_12C90(void *rec_)
+void MenuFF78_12C90(void *rec_)
 {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, r7, lr}\n"
-        "mov r7, r8\n"
-        "push {r7}\n"
-        "sub sp, #16\n"
-        "adds r7, r0, #0\n"
-        "movs r6, #0\n"
-        "ldr r0, .L12c90_p0\n"
-        "movs r1, #131\n"
-        "lsls r1, r1, #5\n"
-        "adds r1, r1, r0\n"
-        "mov r8, r1\n"
-        "ldr r5, .L12c90_p1\n"
-        ".L12c90_loop:\n"
-        "ldr r2, [r5, #0]\n"
-        "ldr r3, [r5, #4]\n"
-        "mov ip, r3\n"
-        "ldr r1, .L12c90_p2\n"
-        "lsls r0, r6, #1\n"
-        "adds r0, r0, r1\n"
-        "ldrh r1, [r0, #0]\n"
-        "mov r0, r8\n"
-        "ldrh r0, [r0, #0]\n"
-        "cmp r0, #1\n"
-        "bne .L12c90_next\n"
-        "adds r0, r7, #0\n"
-        "adds r0, #134\n"
-        "movs r3, #0\n"
-        "ldrsh r4, [r0, r3]\n"
-        "cmp r4, #1\n"
-        "bne .L12c90_next\n"
-        "movs r0, #5\n"
-        "str r0, [sp, #0]\n"
-        "str r4, [sp, #4]\n"
-        "str r4, [sp, #8]\n"
-        "movs r0, #0\n"
-        "str r0, [sp, #12]\n"
-        "adds r0, r7, #0\n"
-        "mov r3, ip\n"
-        "bl 0x08007B18\n"
-        ".L12c90_next:\n"
-        "movs r0, #2\n"
-        "add r8, r0\n"
-        "adds r5, #8\n"
-        "adds r6, #1\n"
-        "cmp r6, #9\n"
-        "ble .L12c90_loop\n"
-        "ldr r2, .L12c90_p1\n"
-        "adds r0, r7, #0\n"
-        "adds r0, #128\n"
-        "movs r1, #0\n"
-        "ldrsh r0, [r0, r1]\n"
-        "lsls r0, r0, #3\n"
-        "adds r1, r0, r2\n"
-        "ldr r6, [r1, #0]\n"
-        "adds r2, #4\n"
-        "adds r0, r0, r2\n"
-        "ldr r4, [r0, #0]\n"
-        "adds r5, r7, #0\n"
-        "adds r5, #140\n"
-        "ldr r2, [r5, #0]\n"
-        "adds r0, r7, #0\n"
-        "adds r1, r4, #0\n"
-        "bl 0x08012A44\n"
-        "ldr r3, [r5, #0]\n"
-        "adds r0, r7, #0\n"
-        "adds r1, r6, #0\n"
-        "adds r2, r4, #0\n"
-        "bl 0x08012AC0\n"
-        "adds r0, r7, #0\n"
-        "adds r1, r6, #0\n"
-        "adds r2, r4, #0\n"
-        "bl 0x08012B68\n"
-        "adds r0, r7, #0\n"
-        "bl 0x08012B34\n"
-        "adds r0, r7, #0\n"
-        "adds r0, #132\n"
-        "movs r1, #15\n"
-        "bl 0x0800D97C\n"
-        "adds r0, r7, #0\n"
-        "adds r0, #8\n"
-        "bl 0x0800DBE8\n"
-        "add sp, #16\n"
-        "pop {r3}\n"
-        "mov r8, r3\n"
-        "pop {r4, r5, r6, r7}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        ".L12c90_p0: .4byte 0x03001780\n"
-        ".L12c90_p1: .4byte 0x080CB5D8\n"
-        ".L12c90_p2: .4byte 0x080CB678\n"
-        ".syntax divided\n"
-    );
+    extern const u8 MenuFF78Records12C90[];
+    extern const u16 MenuFF78Index12C90[];
+    extern void MenuFF78_12AC0_4(void *a, u32 b, u32 c, u32 d)
+        __asm__("_080012AC0");
+    extern void MenuFF78_12B68_4(void *a, u32 b, u32 c)
+        __asm__("_080012B68");
+    extern void MenuFF78_12B34_4(void *a) __asm__("_080012B34");
+    extern void MenuFF78_0D97C_4(void *a, int b) __asm__("_0800D97C");
+    extern void MenuFF78_0DBE8_4(void *a) __asm__("_0800DBE8");
+    volatile u8 *rec = (volatile u8 *)rec_;
+    register volatile u8 *gate __asm__("r8");
+    register volatile u8 *work __asm__("r0");
+    register volatile u8 *entries __asm__("r5");
+    register s32 i __asm__("r6");
+    register u32 gateOffset __asm__("r1");
+
+    __asm__(".globl MenuFF78Records12C90\nMenuFF78Records12C90 = 0x080CB5D8\n"
+            ".globl MenuFF78Index12C90\nMenuFF78Index12C90 = 0x080CB678");
+    RAM_DEF_03001780;
+    i = 0;
+    work = RAM_SYM_03001780;
+    gateOffset = 131;
+    __asm__ volatile ("" : "+r" (gateOffset));
+    gateOffset <<= 5;
+    gate = (volatile u8 *)(uintptr_t)(gateOffset + (u32)(uintptr_t)work);
+    entries = (volatile u8 *)MenuFF78Records12C90;
+    do {
+        register u32 first __asm__("r2");
+        register u32 second __asm__("r3");
+        register u32 savedSecond __asm__("ip");
+        const u16 *indexTable;
+        register u32 kind __asm__("r1");
+        register s32 gateValue __asm__("r4");
+        first = *(volatile u32 *)(entries + 0);
+        second = *(volatile u32 *)(entries + 4);
+        __asm__ volatile ("" : "+r" (second));
+        savedSecond = second;
+        indexTable = MenuFF78Index12C90;
+        __asm__ volatile ("" : "+r" (indexTable));
+        kind = indexTable[i];
+        if (*(volatile u16 *)gate == 1) {
+            gateValue = *(const s16 *)(uintptr_t)(rec + 134);
+            __asm__ volatile ("" : "+r" (gateValue));
+            if (gateValue != 1) goto next_12c90;
+            _08007B18((void *)rec, (int)kind, (int)first,
+                      (int)savedSecond, 5, (u32)gateValue,
+                      (u32)gateValue, 0);
+        }
+next_12c90:
+        {
+            register u32 step __asm__("r0") = 2;
+            __asm__ volatile ("" : "+r" (step));
+            gate += step;
+        }
+        entries += 8;
+        i += 1;
+    } while (i <= 9);
+
+    {
+        const u8 *records = MenuFF78Records12C90;
+        s16 index = *(const s16 *)(uintptr_t)(rec + 128);
+        u32 offset = (u32)(s32)index << 3;
+        u32 r6 = *(const u32 *)(records + offset);
+        records += 4;
+        u32 r4 = *(const u32 *)(records + offset);
+        {
+            register u32 progress __asm__("r2");
+            progress = *(const u32 *)(uintptr_t)(rec + 140);
+            MenuFF78_12A44((void *)rec, r4, progress);
+        }
+        {
+            register u32 mode __asm__("r3");
+            mode = *(const u32 *)(uintptr_t)(rec + 140);
+            MenuFF78_12AC0_4((void *)rec, r6, r4, mode);
+        }
+        MenuFF78_12B68_4((void *)rec, r6, r4);
+    }
+    MenuFF78_12B34_4((void *)rec);
+    MenuFF78_0D97C_4((void *)(uintptr_t)(rec + 132), 15);
+    MenuFF78_0DBE8_4((void *)(uintptr_t)(rec + 8));
 }
 void _080012C90(void *a) __attribute__((alias("MenuFF78_12C90")));
 void sub_080012C90(void *a) __attribute__((alias("MenuFF78_12C90")));

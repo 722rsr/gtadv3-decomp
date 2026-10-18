@@ -459,7 +459,7 @@ void ObjList_03400(int sel, u32 x, u32 a2, u32 a3, const volatile u8 *str, u32 w
     u32 *rq;
     register u32 lane __asm__("r10");
     register u32 fnv  __asm__("r9");
-    const volatile u8 *p = str;
+    register const volatile u8 *p __asm__("r5") = str;
     register int adv __asm__("r1");
 
     uintptr_t base;
@@ -636,106 +636,64 @@ void ObjList_03560(int sel, u32 x, u32 a2, u32 a3, const volatile u8 *str)
         x += lane;
     }
 }
-// 0x08003FD4 — template 0x0802E250; obj[+12] = w6; the template fn is called
-// with two extra args (r1 = w6, r2 = u8 w7) which 0x315C-family fns ignore.
-__attribute__((naked)) void ObjList_03FD4(int sel, u32 x, u32 a2, u32 a3,
-                                           const volatile u8 *str, u16 w5,
-                                           u32 w6, u8 w7)
+// 0x08003FD4 — template 0x0802E250; obj[+12] = the sixth argument w5. The
+// template fn also receives w6 in r1 and zero-extended u8 w7 in r2.
+typedef u32 (*tmpl_fn_03fd4)(u32 *req, u32 w6, u32 w7);
+void ObjList_03FD4(int sel, u32 x, u32 a2, u32 a3,
+                   const volatile u8 * volatile str, u32 w5,
+                   u32 w6, volatile u32 w7)
 {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, r7, lr}\n"
-        "mov r7, sl\n"
-        "mov r6, r9\n"
-        "mov r5, r8\n"
-        "push {r5, r6, r7}\n"
-        "sub sp, #44\n"
-        "adds r6, r1, #0\n"
-        "mov r8, r2\n"
-        "mov ip, r3\n"
-        "ldr r5, [sp, #76]\n"
-        "ldr r1, [sp, #88]\n"
-        "lsls r1, r1, #24\n"
-        "lsrs r1, r1, #24\n"
-        "str r1, [sp, #40]\n"
-        "mov r4, sp\n"
-        "ldr r1, .L03FD4_template\n"
-        "ldmia r1!, {r2, r3, r7}\n"
-        "stmia r4!, {r2, r3, r7}\n"
-        "ldr r1, [r1, #0]\n"
-        "str r1, [r4, #0]\n"
-        "ldr r1, .L03FD4_lane_tbl\n"
-        "lsls r0, r0, #2\n"
-        "adds r1, r0, r1\n"
-        "ldr r1, [r1, #0]\n"
-        "mov sl, r1\n"
-        "mov r2, sp\n"
-        "adds r1, r2, r0\n"
-        "ldr r1, [r1, #0]\n"
-        "mov r9, r1\n"
-        "add r4, sp, #16\n"
-        "ldr r1, .L03FD4_req_tbl\n"
-        "adds r0, r0, r1\n"
-        "str r0, [r4, #16]\n"
-        "mov r3, r8\n"
-        "str r3, [r4, #8]\n"
-        "mov r7, ip\n"
-        "str r7, [r4, #20]\n"
-        "ldrb r0, [r5, #0]\n"
-        "mov r8, r4\n"
-        "cmp r0, #0\n"
-        "beq .L03FD4_done\n"
-        "mov r7, r8\n"
-        ".L03FD4_loop:\n"
-        "ldrb r1, [r5, #0]\n"
-        "lsls r0, r1, #1\n"
-        "ldr r2, .L03FD4_glyph_tbl\n"
-        "adds r0, r0, r2\n"
-        "movs r3, #0\n"
-        "ldrsh r1, [r0, r3]\n"
-        "subs r1, #1\n"
-        "ldr r0, .L03FD4_mask\n"
-        "ands r0, r6\n"
-        "str r0, [r7, #4]\n"
-        "str r1, [r7, #12]\n"
-        "cmp r1, #0\n"
-        "blt .L03FD4_advance\n"
-        "bl 0x08002BFC\n"
-        "adds r4, r0, #0\n"
-        "add r0, sp, #80\n"
-        "ldrh r0, [r0, #0]\n"
-        "strh r0, [r4, #12]\n"
-        "str r4, [sp, #16]\n"
-        "mov r0, r8\n"
-        "ldr r1, [sp, #84]\n"
-        "ldr r2, [sp, #40]\n"
-        "bl 0x0802DDEC\n"
-        "movs r0, #0\n"
-        "adds r1, r4, #0\n"
-        "bl 0x08002C34\n"
-        ".L03FD4_advance:\n"
-        "adds r5, #1\n"
-        "add r6, sl\n"
-        "ldrb r0, [r5, #0]\n"
-        "cmp r0, #0\n"
-        "bne .L03FD4_loop\n"
-        ".L03FD4_done:\n"
-        "add sp, #44\n"
-        "pop {r3, r4, r5}\n"
-        "mov r8, r3\n"
-        "mov r9, r4\n"
-        "mov sl, r5\n"
-        "pop {r4, r5, r6, r7}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        ".align 2, 0\n"
-        ".L03FD4_template: .word 0x0802E250\n"
-        ".L03FD4_lane_tbl: .word 0x080C4BA0\n"
-        ".L03FD4_req_tbl: .word 0x03000160\n"
-        ".L03FD4_glyph_tbl: .word 0x080C49A0\n"
-        ".L03FD4_mask: .word 0x000001FF\n"
-        ".syntax divided\n"
-    );
+    tmpl_tbl hdr;
+    u32 req[6];
+    u32 *rq;
+    register u32 lane __asm__("r10");
+    register u32 fnv __asm__("r9");
+    const volatile u8 *p = str;
+    register int adv __asm__("r1");
+    uintptr_t base;
+    u32 w7n;
+
+    w7n = (u8)w7;
+    hdr = *(const tmpl_tbl *)(uintptr_t)0x0802E250u;
+    { extern u8 HudLaneTbl[];
+      __asm__(".globl HudLaneTbl\nHudLaneTbl = 0x080C4BA0\n");
+      base = (uintptr_t)HudLaneTbl; }
+    lane = *(volatile u32 *)(uintptr_t)(base + (u32)sel * 4);
+    fnv = (u32)(uintptr_t)hdr.w[sel];
+    req[4] = (u32)sel * 4 +
+        ({ register u32 tbl_base __asm__("r1") = 0x03000160u;
+           __asm__("" : "+r"(tbl_base)); tbl_base; });
+    req[2] = a2;
+    req[5] = a3;
+    while (*p) {
+        rq = req;
+        extern u8 GlyphAdvTbl[];
+        __asm__(".globl GlyphAdvTbl\nGlyphAdvTbl = 0x080C49A0\n");
+        register u32 c __asm__("r1") = *p;
+        __asm__("" : "+r"(c));
+        register u32 off __asm__("r0") = c << 1;
+        __asm__("" : "+r"(off));
+        register const s16 *tbl __asm__("r2") = (const s16 *)GlyphAdvTbl;
+        __asm__("" : "+r"(tbl));
+        adv = *(const s16 *)(off + (uintptr_t)tbl) - 1;
+        __asm__("" : : "r"(tbl));
+        req[1] = x & 0x1FF;
+        req[3] = (u32)adv;
+        if (adv >= 0) {
+            u32 obj = (u32)(uintptr_t)_08002BFC(x & 0x1FF);
+            register const u16 *pw5 __asm__("r0") =
+                (const u16 *)(uintptr_t)&w5;
+            __asm__("" : "+r"(pw5));
+            *(volatile u16 *)(uintptr_t)(obj + 12) = *pw5;
+            req[0] = obj;
+            register u32 *tmplReq __asm__("r0") = rq;
+            __asm__("" : "+r"(tmplReq));
+            ((tmpl_fn_03fd4)(uintptr_t)fnv)(tmplReq, w6, w7n);
+            _08002C34(0, (void *)(uintptr_t)obj);
+        }
+        p++;
+        x += lane;
+    }
 }
 void _08003350(int a, u32 b, u32 c, u32 d, const volatile u8 *e, u16 f)
     __attribute__((alias("ObjList_03350")));
@@ -743,7 +701,7 @@ void sub_08003350(int a, u32 b, u32 c, u32 d, const volatile u8 *e, u32 f) __att
 void sub_08003400(int a, u32 b, u32 c, u32 d, const volatile u8 *e, u32 f, u32 g) __attribute__((alias("ObjList_03400")));
 void sub_080034B0(int a, u32 b, u32 c, u32 d, const volatile u8 *e, u32 f, u32 g) __attribute__((alias("_080034B0")));
 void sub_08003560(int a, u32 b, u32 c, u32 d, const volatile u8 *e) __attribute__((alias("ObjList_03560")));
-void sub_08003FD4(int a, u32 b, u32 c, u32 d, const volatile u8 *e, u16 f, u32 g, u8 h) __attribute__((alias("ObjList_03FD4")));
+void sub_08003FD4(int a, u32 b, u32 c, u32 d, const volatile u8 *e, u32 f, u32 g, u32 h) __attribute__((alias("ObjList_03FD4")));
 
 // ----------------------------------------------------------------------------
 // Centering wrappers (x adjusted by per-char width, then delegated).
@@ -2799,7 +2757,7 @@ void _08003104(void *handler) __attribute__((alias("TailDispatch_03104")));
 // target build must call THAT or the promoted body fails to link.
 #define HUD_CALLEE(friendly, closure) closure
 extern void sub_08003FD4(int sel, u32 x, u32 a2, u32 a3,
-                         const volatile u8 *str, u16 w5, u32 w6, u8 w7);
+                         const volatile u8 *str, u32 w5, u32 w6, u32 w7);
 void TextCenter_04090(int a, int b, const volatile u8 *c, u32 d, u8 e)
 {
     HUD_CALLEE(ObjList_03FD4, sub_08003FD4)(3, (u32)a, (u32)b, 0, c, 1, d, e);

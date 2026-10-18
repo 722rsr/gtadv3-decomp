@@ -655,8 +655,9 @@ void DMA3_RecolorRows(int slot, u32 src, int x, int y, volatile int width, volat
             (void)dma2[2];
             r5work += 64;
             stageSave = (u32)r5work;
-            __asm__ volatile("movs r5, #64\n\tadd %0, r5"
-                             : "+r" (dst) : : "r5");
+            r5work = 64;
+            __asm__ volatile ("" : "+r"(r5work));
+            dst += (u32)r5work;
         } while (--row != 0);
     }
 }
@@ -672,10 +673,11 @@ void sub_080052F0(int a, u32 b, int c, int d, int e, int f, int g, int h)
 // The volatile homes and fixed registers retain the observed stack and
 // loop state. `tileBase`/`palette` reach the ALU through order-pinned
 // reloads (see bodies); `tableIndex` is reused as the reload register once
-// its setup use is dead.
+// its setup use is dead. Keep `tileBase` volatile so its C read remains at
+// the ROM's in-loop stack-argument reload.
 void OAMGrid_Build(volatile int tableIdx, const volatile u8 *src,
                    int x0, int y0,
-                   int cols, int rows, int tileBase, int palette) {
+                   int cols, int rows, volatile int tileBase, int palette) {
     register int row __asm__("r0");
     register int col __asm__("r8");
     register int xArg __asm__("r2");
@@ -707,10 +709,13 @@ void OAMGrid_Build(volatile int tableIdx, const volatile u8 *src,
         rowStride = temp7;
         do {
         ip = source;
-        __asm__ volatile("movs r1, #0\n\tmov r8, r1" : "=r"(col) : : "r1");
+        // Keep zero in r1 so the C copy to r8 retains the ROM's register move.
+        register int zero __asm__("r1") = 0;
+        __asm__ volatile("" : : "r"(zero));
+        col = zero;
         temp7 = row + 1;
         nextRow = temp7;
-        __asm__ volatile("ldr %0, [sp, #56]" : "=r"(colBound));
+        colBound = cols;
         if (col < colBound) {
             volatile int rowPos;
             temp7 = yHome;
@@ -745,11 +750,15 @@ void OAMGrid_Build(volatile int tableIdx, const volatile u8 *src,
                         dst = *rowTab + hi + rowBytes;
                     }
                 }
-                __asm__ volatile("mov r7, %1\n\tldrh %0, [r7, #0]\n\tmovs r0, #2\n\tadd %1, r0"
-                                 : "=r"(h), "+r"(ip));
+                __asm__ volatile("mov r7, %1\n\tldrh %0, [r7, #0]"
+                                 : "=r"(h) : "r"(ip));
+                // Pin the byte step in r0; the pointer update is C.
+                register int two __asm__("r0") = 2;
+                __asm__ volatile("" : : "r"(two));
+                ip += two;
                 lo = h & 0x03FFu;
                 up = h & 0x0C00u;
-                __asm__ volatile("ldr %0, [sp, #64]" : "=r"(tableIndex));
+                tableIndex = (u32)tileBase;
                 lo += tableIndex;
                 {
                     u32 palShift;

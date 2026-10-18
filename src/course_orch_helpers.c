@@ -1,8 +1,9 @@
 // ============================================================================
-// course_orch_helpers.c — C lift of the 4 remaining course_orch.s functions
+// course_orch_helpers.c — implementations for four course_orch.s functions
 // (asm/course_orch.s, VMA 0x080061B8 / 0x0800628C / 0x08006468 / 0x080064EC).
 //
-// Transcribed instruction-for-instruction from the asm listing. All four are
+// The 0x061B8 and 0x064EC implementations are compiler-generated C lifts;
+// the other two preserve the remaining assembly bodies. All four are
 // resource-package loaders driven by the directory seeker _08006590
 // (already lifted as Course_SeekRes in src/course_orch.c):
 //   _080064EC — group-0 header parser -> IWRAM 0x030039D0 course struct
@@ -95,6 +96,7 @@ __asm__(".align 2, 0");
 
 // ----------------------------------------------------------------------------
 // _080061B8(arg0 unused, idx, base) — surface VARIANT gfx (groups 5/6/7).
+// Direct C lift; register pins preserve the compiler's byte-exact allocation.
 //   variant r5 from the s16[0x0203F758] pair:
 //     [+2]==0: [+0]==1 -> 1; [+0]==2 -> 2; else 0
 //     [+2]==1: [+0]==0 -> 3; [+0]==1 -> 4; [+0]==2 -> 5; else 0
@@ -103,118 +105,96 @@ __asm__(".align 2, 0");
 //   g5[v] LZ77 -> VRAM 0x06008000; g6[v] DMA3 -> pal 0x050001E0 (16 hw);
 //   g7[v] LZ77 -> VRAM 0x0600E000; DMA fill 0x0600E180 with 0 halfwords
 //   (0xC0 words, ctrl 0x810000C0).
-__attribute__((naked)) void CourseOrch_080061B8(void *unused, int idx, void *base)
+void CourseOrch_080061B8(void *unused, int idx, void *base)
 {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, lr}\n"
-        "sub sp, #4\n"
-        "adds r6, r2, #0\n"
-        "movs r5, #0\n"
-        "ldr r1, .L61b8_p0\n"
-        "movs r2, #2\n"
-        "ldrsh r0, [r1, r2]\n"
-        "cmp r0, #1\n"
-        "beq .L61b8_hi1\n"
-        "cmp r0, #1\n"
-        "bgt .L61b8_hi2\n"
-        "cmp r0, #0\n"
-        "beq .L61b8_hi0\n"
-        "b .L61b8_fetch\n"
-        ".align 2, 0\n"
-        ".L61b8_p0: .4byte 0x0203f758\n"
-        ".L61b8_hi2:\n"
-        "cmp r0, #2\n"
-        "beq .L61b8_set6\n"
-        "b .L61b8_fetch\n"
-        ".L61b8_hi0:\n"
-        "movs r2, #0\n"
-        "ldrsh r0, [r1, r2]\n"
-        "cmp r0, #1\n"
-        "beq .L61b8_set1\n"
-        "cmp r0, #1\n"
-        "ble .L61b8_fetch\n"
-        "cmp r0, #2\n"
-        "beq .L61b8_set2\n"
-        "b .L61b8_fetch\n"
-        ".L61b8_set1:\n"
-        "movs r5, #1\n"
-        "b .L61b8_fetch\n"
-        ".L61b8_set2:\n"
-        "movs r5, #2\n"
-        "b .L61b8_fetch\n"
-        ".L61b8_hi1:\n"
-        "movs r2, #0\n"
-        "ldrsh r0, [r1, r2]\n"
-        "cmp r0, #1\n"
-        "beq .L61b8_set4\n"
-        "cmp r0, #1\n"
-        "bgt .L61b8_hi1_gt1\n"
-        "cmp r0, #0\n"
-        "beq .L61b8_set3\n"
-        "b .L61b8_fetch\n"
-        ".L61b8_hi1_gt1:\n"
-        "cmp r0, #2\n"
-        "beq .L61b8_set5\n"
-        "b .L61b8_fetch\n"
-        ".L61b8_set3:\n"
-        "movs r5, #3\n"
-        "b .L61b8_fetch\n"
-        ".L61b8_set4:\n"
-        "movs r5, #4\n"
-        "b .L61b8_fetch\n"
-        ".L61b8_set5:\n"
-        "movs r5, #5\n"
-        "b .L61b8_fetch\n"
-        ".L61b8_set6:\n"
-        "movs r5, #6\n"
-        ".L61b8_fetch:\n"
-        "adds r0, r6, #0\n"
-        "movs r1, #5\n"
-        "adds r2, r5, #0\n"
-        "bl 0x08006590\n"
-        "ldr r1, .L61b8_p1\n"
-        "bl 0x0802d984\n"
-        "adds r0, r6, #0\n"
-        "movs r1, #6\n"
-        "adds r2, r5, #0\n"
-        "bl 0x08006590\n"
-        "ldr r4, .L61b8_p2\n"
-        "str r0, [r4, #0]\n"
-        "ldr r0, .L61b8_p3\n"
-        "str r0, [r4, #4]\n"
-        "ldr r0, .L61b8_p4\n"
-        "str r0, [r4, #8]\n"
-        "ldr r0, [r4, #8]\n"
-        "adds r0, r6, #0\n"
-        "movs r1, #7\n"
-        "adds r2, r5, #0\n"
-        "bl 0x08006590\n"
-        "ldr r1, .L61b8_p5\n"
-        "bl 0x0802d984\n"
-        "mov r1, sp\n"
-        "movs r0, #0\n"
-        "strh r0, [r1, #0]\n"
-        "str r1, [r4, #0]\n"
-        "ldr r0, .L61b8_p6\n"
-        "str r0, [r4, #4]\n"
-        "ldr r0, .L61b8_p7\n"
-        "str r0, [r4, #8]\n"
-        "ldr r0, [r4, #8]\n"
-        "add sp, #4\n"
-        "pop {r4, r5, r6}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        ".align 2, 0\n"
-        ".L61b8_p1: .4byte 0x06008000\n"
-        ".L61b8_p2: .4byte 0x040000d4\n"
-        ".L61b8_p3: .4byte 0x050001e0\n"
-        ".L61b8_p4: .4byte 0x80000010\n"
-        ".L61b8_p5: .4byte 0x0600e000\n"
-        ".L61b8_p6: .4byte 0x0600e180\n"
-        ".L61b8_p7: .4byte 0x810000c0\n"
-        ".syntax divided\n"
-    );
+    register void *resourceBase __asm__("r6") = base;
+    register int image __asm__("r5") = 0;
+    register s16 *variant __asm__("r1");
+    register volatile u32 *dma __asm__("r4");
+    int group;
+    int form;
+    void *src;
+    volatile u16 zero;
+
+    __asm__("" : "+r"(resourceBase));
+    __asm__("" : "+r"(image));
+    __asm__ volatile ("" : : : "r1");
+    variant = (s16 *)(uintptr_t)0x0203F758;
+    group = variant[1];
+
+    if (group == 1)
+        goto group1;
+    if (group > 1)
+        goto group2;
+    if (group == 0)
+        goto group0;
+    goto fetch;
+
+group2:
+    if (group == 2)
+        goto group2_set;
+    goto fetch;
+
+group0:
+    form = variant[0];
+    if (form == 1)
+        goto group0_set1;
+    if (form <= 1)
+        goto fetch;
+    if (form == 2)
+        goto group0_set2;
+    goto fetch;
+group0_set1:
+    image = 1;
+    goto fetch;
+group0_set2:
+    image = 2;
+    goto fetch;
+
+group1:
+    form = variant[0];
+    if (form == 1)
+        goto group1_set4;
+    if (form > 1)
+        goto group1_high;
+    if (form == 0)
+        goto group1_set3;
+    goto fetch;
+group1_high:
+    if (form == 2)
+        goto group1_set5;
+    goto fetch;
+group1_set3:
+    image = 3;
+    goto fetch;
+group1_set4:
+    image = 4;
+    goto fetch;
+group1_set5:
+    image = 5;
+    goto fetch;
+
+group2_set:
+    image = 6;
+
+fetch:
+
+    src = _08006590(resourceBase, 5, image);
+    sub_0802D984(src, (void *)(uintptr_t)0x06008000);
+    src = _08006590(resourceBase, 6, image);
+    dma = CO_DMA3;
+    dma[0] = (u32)(uintptr_t)src;
+    dma[1] = 0x050001E0;
+    dma[2] = 0x80000010;
+    (void)dma[2];
+
+    src = _08006590(resourceBase, 7, image);
+    sub_0802D984(src, (void *)(uintptr_t)0x0600E000);
+    zero = 0;
+    dma[0] = (u32)(uintptr_t)&zero;
+    dma[1] = 0x0600E180;
+    dma[2] = 0x810000C0;
+    (void)dma[2];
 }
 void _080061B8(void *a, int b, void *c) __attribute__((alias("CourseOrch_080061B8")));
 void sub_080061B8(void *a, int b, void *c) __attribute__((alias("CourseOrch_080061B8")));

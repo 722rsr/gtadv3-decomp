@@ -117,121 +117,96 @@ void sub_080012034(void *a) __attribute__((alias("MenuFF78_12034")));
 // ---- sub_0800120A8 — menu-item record builder B ---------------------------
 // sub_080011784/0E10/0D48/0B48/0FF0 fillers; then 3 sub_0800F778 calls with
 // table math + 2 sub_0800D97C/0DBE8 calls + sub_0800D97C + sub_080012574.
-__attribute__((naked)) void MenuFF78_120A8(void *rec_) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        ".L120a8_0800120A8:\n"
-        "	push	{r4, r5, r6, lr}\n"
-        "	mov	r6, r8\n"
-        "	push	{r6}\n"
-        "	sub	sp, #20\n"
-        "	adds	r5, r0, #0\n"
-        "	bl sub_080011784\n"
-        "	adds	r0, r5, #0\n"
-        "	bl sub_080011E10\n"
-        "	adds	r0, r5, #0\n"
-        "	bl sub_080011D48\n"
-        "	adds	r0, r5, #0\n"
-        "	bl sub_080011B48\n"
-        "	adds	r0, r5, #0\n"
-        "	bl sub_080011FF0\n"
-        "	ldr r4, .L120a8_080012198\n"
-        "	ldr r1, .L120a8_08001219C\n"
-        "	adds	r0, r4, r1\n"
-        "	movs	r2, #0\n"
-        "	ldrsh	r0, [r0, r2]\n"
-        "	ldr r3, .L120a8_0800121A0\n"
-        "	adds	r3, r3, r4\n"
-        "	mov	r8, r3\n"
-        "	movs	r2, #0\n"
-        "	ldrsh	r1, [r3, r2]\n"
-        "	ldr r3, .L120a8_0800121A4\n"
-        "	adds	r6, r4, r3\n"
-        "	movs	r3, #0\n"
-        "	ldrsh	r2, [r6, r3]\n"
-        "	bl 0x08025750\n"
-        "	adds	r2, r0, #0\n"
-        "	movs	r0, #168\n"
-        "	movs	r1, #52\n"
-        "	bl sub_0800F778\n"
-        "	movs	r0, #255\n"
-        "	lsls	r0, r0, #4\n"
-        "	adds	r4, r4, r0\n"
-        "	movs	r1, #0\n"
-        "	ldrsh	r0, [r4, r1]\n"
-        "	mov	r2, r8\n"
-        "	movs	r3, #0\n"
-        "	ldrsh	r1, [r2, r3]\n"
-        "	movs	r3, #0\n"
-        "	ldrsh	r2, [r6, r3]\n"
-        "	bl 0x08025E98\n"
-        "	adds	r2, r0, #0\n"
-        "	movs	r0, #168\n"
-        "	movs	r1, #76\n"
-        "	bl sub_0800F778\n"
-        "	adds	r0, r5, #0\n"
-        "	adds	r0, #40\n"
-        "	movs	r2, #150\n"
-        "	lsls	r2, r2, #1\n"
-        "	adds	r1, r5, r2\n"
-        "	ldr	r1, [r1, #0]\n"
-        "	movs	r3, #152\n"
-        "	lsls	r3, r3, #1\n"
-        "	adds	r2, r5, r3\n"
-        "	ldr	r2, [r2, #0]\n"
-        "	movs	r3, #44\n"
-        "	str	r3, [sp, #0]\n"
-        "	movs	r3, #3\n"
-        "	str	r3, [sp, #4]\n"
-        "	movs	r4, #1\n"
-        "	str	r4, [sp, #8]\n"
-        "	str	r4, [sp, #12]\n"
-        "	movs	r6, #0\n"
-        "	str	r6, [sp, #16]\n"
-        "	movs	r3, #8\n"
-        "	bl sub_08007BFC\n"
-        "	adds	r0, r5, #0\n"
-        "	adds	r0, #56\n"
-        "	movs	r2, #156\n"
-        "	lsls	r2, r2, #1\n"
-        "	adds	r1, r5, r2\n"
-        "	ldr	r1, [r1, #0]\n"
-        "	movs	r3, #158\n"
-        "	lsls	r3, r3, #1\n"
-        "	adds	r2, r5, r3\n"
-        "	ldr	r2, [r2, #0]\n"
-        "	movs	r3, #56\n"
-        "	str	r3, [sp, #0]\n"
-        "	movs	r3, #12\n"
-        "	str	r3, [sp, #4]\n"
-        "	str	r4, [sp, #8]\n"
-        "	str	r4, [sp, #12]\n"
-        "	str	r6, [sp, #16]\n"
-        "	movs	r3, #11\n"
-        "	bl sub_08007BFC\n"
-        "	adds	r0, r5, #0\n"
-        "	bl sub_080011CBC\n"
-        "	adds	r0, r5, #0\n"
-        "	adds	r0, #224\n"
-        "	movs	r1, #15\n"
-        "	bl sub_0800D97C\n"
-        "	adds	r0, r5, #0\n"
-        "	adds	r0, #64\n"
-        "	bl sub_0800DBE8\n"
-        "	adds	r0, r5, #0\n"
-        "	bl sub_080012574\n"
-        "	add	sp, #20\n"
-        "	pop	{r3}\n"
-        "	mov	r8, r3\n"
-        "	pop	{r4, r5, r6}\n"
-        "	pop	{r0}\n"
-        "	bx	r0\n"
-        ".L120a8_080012198: .word 0x03001780\n"
-        ".L120a8_08001219C: .word 0x00000FF2\n"
-        ".L120a8_0800121A0: .word 0x00000FF6\n"
-        ".L120a8_0800121A4: .word 0x0000103A\n"
-        ".syntax divided\n"
-    );
+void MenuFF78_120A8(void *rec_) {
+    extern void MenuFF78_07BFC_9(void *a, u32 b, u32 c, u32 d, u32 e,
+                                  u32 f, u32 g, u32 h, u32 i)
+        __asm__("sub_08007BFC");
+    register volatile u8 *rec __asm__("r5") = (volatile u8 *)rec_;
+    register volatile u8 *ram __asm__("r4");
+    register volatile u8 *fieldFF6 __asm__("r8");
+    register volatile u8 *field103A __asm__("r6");
+
+    _080011784((void *)rec);
+    _080011E10((void *)rec);
+    _080011D48((void *)rec);
+    _080011B48((void *)rec);
+    _080011FF0((void *)rec);
+
+    RAM_DEF_03001780;
+    ram = RAM_SYM_03001780;
+    {
+        register u32 first __asm__("r0");
+        {
+            register u32 offsetFF2 __asm__("r1") = 0xFF2;
+            __asm__ volatile ("" : "+r" (offsetFF2));
+            first = (u32)(uintptr_t)ram + offsetFF2;
+            __asm__ volatile ("" : "+r" (first));
+            first = (u32)*(const s16 *)(uintptr_t)first;
+            __asm__ volatile ("" : "+r" (offsetFF2));
+            __asm__ volatile ("" : "+r" (first));
+        }
+        {
+            register s32 second __asm__("r1");
+            register volatile u8 *cursor __asm__("r3");
+            cursor = (volatile u8 *)(uintptr_t)0xFF6;
+            __asm__ volatile ("" : "+r" (cursor));
+            cursor = (volatile u8 *)(uintptr_t)
+                     ((u32)(uintptr_t)cursor + (u32)(uintptr_t)ram);
+            fieldFF6 = cursor;
+            {
+                second = *(const s16 *)(uintptr_t)cursor;
+                __asm__ volatile ("" : "+r" (second));
+            }
+            cursor = (volatile u8 *)(uintptr_t)0x103A;
+            __asm__ volatile ("" : "+r" (cursor));
+            field103A = (volatile u8 *)(uintptr_t)
+                        ((u32)(uintptr_t)ram + (u32)(uintptr_t)cursor);
+            {
+                register s32 third __asm__("r2");
+                third = *(const s16 *)(uintptr_t)field103A;
+                __asm__ volatile ("" : "+r" (third));
+                _0800F778(168, 52,
+                          (u32)_08025750((s32)first, second, third));
+            }
+        }
+    }
+
+    ram += 0xFF0;
+    {
+        register s32 first __asm__("r0");
+        {
+            first = *(const s16 *)(uintptr_t)ram;
+            __asm__ volatile ("" : "+r" (first));
+        }
+        {
+            register s32 second __asm__("r1");
+            register volatile u8 *readFF6 __asm__("r2") = fieldFF6;
+            {
+                second = *(const s16 *)(uintptr_t)readFF6;
+                __asm__ volatile ("" : "+r" (second));
+            }
+            {
+                register s32 third __asm__("r2");
+                third = *(const s16 *)(uintptr_t)field103A;
+                __asm__ volatile ("" : "+r" (third));
+                _0800F778(168, 76,
+                          (u32)_08025E98(first, second, third));
+            }
+        }
+    }
+
+    MenuFF78_07BFC_9((void *)(rec + 40),
+                     *(volatile u32 *)(rec + 300),
+                     *(volatile u32 *)(rec + 304),
+                     8, 44, 3, 1, 1, 0);
+    MenuFF78_07BFC_9((void *)(rec + 56),
+                     *(volatile u32 *)(rec + 312),
+                     *(volatile u32 *)(rec + 316),
+                     11, 56, 12, 1, 1, 0);
+    _080011CBC((void *)rec);
+    _0800D97C((void *)(rec + 224), 15);
+    _0800DBE8((void *)(rec + 64));
+    _080012574((void *)rec);
 }
 
 void _0800120A8(void *a) __attribute__((alias("MenuFF78_120A8")));
