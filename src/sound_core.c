@@ -466,82 +466,71 @@ void Sub_0802CB20(void *s) __attribute__((alias("SoundCmdCommit")));
 extern int _08002DE04(int num, int den); // 0x08002DE04 s32 quotient (sound_extra.c)
 extern void sub_0802CB84(void *a); // 0x08002CB84 stop/clear (runtime_state_dispatch.c)
 
-__attribute__((naked)) void SoundControlInit(u32 rate) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, lr}\n"
-        "adds r2, r0, #0\n"
-        "ldr r0, 1f\n"
-        "ldr r4, [r0, #0]\n"
-        "movs r0, #240\n"
-        "lsls r0, r0, #12\n"
-        "ands r0, r2\n"
-        "lsrs r2, r0, #16\n"
-        "movs r6, #0\n"
-        "strb r2, [r4, #8]\n"
-        "ldr r1, 2f\n"
-        "subs r0, r2, #1\n"
-        "lsls r0, r0, #1\n"
-        "adds r0, r0, r1\n"
-        "ldrh r5, [r0, #0]\n"
-        "str r5, [r4, #16]\n"
-        "movs r0, #198\n"
-        "lsls r0, r0, #3\n"
-        "adds r1, r5, #0\n"
-        "bl _0802DE04\n"
-        "strb r0, [r4, #11]\n"
-        "ldr r0, 3f\n"
-        "muls r0, r5\n"
-        "ldr r1, 4f\n"
-        "adds r0, r0, r1\n"
-        "ldr r1, 5f\n"
-        "bl _0802DE04\n"
-        "adds r1, r0, #0\n"
-        "str r1, [r4, #20]\n"
-        "movs r0, #128\n"
-        "lsls r0, r0, #17\n"
-        "bl _0802DE04\n"
-        "adds r0, #1\n"
-        "asrs r0, r0, #1\n"
-        "str r0, [r4, #24]\n"
-        "ldr r0, 6f\n"
-        "strh r6, [r0, #0]\n"
-        "ldr r4, 7f\n"
-        "ldr r0, 8f\n"
-        "adds r1, r5, #0\n"
-        "bl _0802DE04\n"
-        "negs r0, r0\n"
-        "strh r0, [r4, #0]\n"
-        "bl sub_0802CB84\n"
-        "ldr r1, 9f\n"
-        ".Lscinit_wait_eq:\n"
-        "ldrb r0, [r1, #0]\n"
-        "cmp r0, #159\n"
-        "beq.n .Lscinit_wait_eq\n"
-        "ldr r1, 9f\n"
-        ".Lscinit_wait_ne:\n"
-        "ldrb r0, [r1, #0]\n"
-        "cmp r0, #159\n"
-        "bne.n .Lscinit_wait_ne\n"
-        "ldr r1, 6f\n"
-        "movs r0, #128\n"
-        "strh r0, [r1, #0]\n"
-        "pop {r4, r5, r6}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        ".short 0\n"
-        ".align 2\n"
-        "1: .word 0x03007FF0\n"
-        "2: .word 0x08061654\n"
-        "3: .word 0x00091D1B\n"
-        "4: .word 0x00001388\n"
-        "5: .word 0x00002710\n"
-        "6: .word 0x04000102\n"
-        "7: .word 0x04000100\n"
-        "8: .word 0x00044940\n"
-        "9: .word 0x04000006\n"
-        ".syntax divided\n"
-    );
+void SoundControlInit(u32 rate) {
+    __asm__(".globl SoundControlRootCell_2C990\n"
+            "SoundControlRootCell_2C990 = 0x03007FF0\n"
+            ".globl SoundControlRateTable_2C990\n"
+            "SoundControlRateTable_2C990 = 0x08061654\n");
+    extern u32 SoundControlRootCell_2C990[];
+    extern u16 SoundControlRateTable_2C990[];
+    extern s32 sub_0802DE04(s32 num, s32 den);
+    register volatile u8 *r4 __asm__("r4");
+    register u32 r5 __asm__("r5");
+    register u32 r6 __asm__("r6");
+    register u32 r0 __asm__("r0");
+    register u32 r1 __asm__("r1");
+    register u32 r2 __asm__("r2");
+
+    r2 = rate;
+    __asm__ volatile ("" : "+r" (r2));
+    r0 = (u32)(uintptr_t)SoundControlRootCell_2C990;
+    r4 = (volatile u8 *)(uintptr_t)*(volatile u32 *)(uintptr_t)r0;
+    r0 = 240;
+    r0 <<= 12;
+    r0 &= r2;
+    r2 = r0 >> 16;
+    r6 = 0;
+    r4[8] = (u8)r2;
+    r1 = (u32)(uintptr_t)SoundControlRateTable_2C990;
+    r0 = r2 - 1;
+    r0 <<= 1;
+    r0 += r1;
+    r5 = *(volatile u16 *)(uintptr_t)r0;
+    *(volatile u32 *)(uintptr_t)(r4 + 16) = r5;
+
+    r0 = 198;
+    r0 <<= 3;
+    r1 = r5;
+    r0 = (u32)sub_0802DE04((s32)r0, (s32)r1);
+    r4[11] = (u8)r0;
+    r0 = 0x00091D1B;
+    r0 *= r5;
+    r1 = 0x00001388;
+    r0 += r1;
+    r1 = 0x00002710;
+    r0 = (u32)sub_0802DE04((s32)r0, (s32)r1);
+    r1 = r0;
+    __asm__ volatile ("" : "+r" (r1));
+    *(volatile u32 *)(uintptr_t)(r4 + 20) = r1;
+    r0 = 128;
+    r0 <<= 17;
+    /* The ROM reuses the quotient copied to r1 (and +20) as this divisor. */
+    __asm__ volatile ("" : "=r" (r1));
+    r0 = (u32)sub_0802DE04((s32)r0, (s32)r1);
+    r0 = (u32)(((s32)r0 + 1) >> 1);
+    *(volatile u32 *)(uintptr_t)(r4 + 24) = r0;
+
+    *(volatile u16 *)0x04000102u = (u16)r6;
+    r4 = (volatile u8 *)0x04000100u;
+    r0 = 0x00044940;
+    r1 = r5;
+    r0 = (u32)sub_0802DE04((s32)r0, (s32)r1);
+    r0 = 0 - r0;
+    *(volatile u16 *)(uintptr_t)r4 = (u16)r0;
+    sub_0802CB84((void *)(uintptr_t)r0);
+    while (*(volatile u8 *)0x04000006u == 159) {}
+    while (*(volatile u8 *)0x04000006u != 159) {}
+    *(volatile u16 *)0x04000102u = 128;
 }
 void _0802C990(u32 r) __attribute__((alias("SoundControlInit")));
 void sub_0802C990(u32 r) __attribute__((alias("SoundControlInit")));
@@ -933,120 +922,118 @@ __attribute__((naked)) void SoundSeqInterpreter(void *state, void *cursor_) {
 void _0802D6F4(void *s, void *c) __attribute__((alias("SoundSeqInterpreter")));
 void sub_0802D6F4(void *s, void *c) __attribute__((alias("SoundSeqInterpreter")));
 
-// --- _0802CD58 fade tick, _0802C780 init, _0802C8C4 state etc. — minimal width-preserving stubs ---
-__attribute__((naked)) void SoundFadeTick(void *state) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "\tpush {r4, r5, r6, r7, lr}\n"
-        "\tadds r6, r0, #0\n"
-        "\tldrh r1, [r6, #36]\n"
-        "\tcmp r1, #0\n"
-        "\tbeq.n _0802CE1A\n"
-        "\tldrh r0, [r6, #38]\n"
-        "\tsubs r0, #1\n"
-        "\tstrh r0, [r6, #38]\n"
-        "\tldr r3, .Lsoundfade__0802CD98\n"
-        "\tadds r2, r3, #0\n"
-        "\tlsls r0, r0, #16\n"
-        "\tlsrs r3, r0, #16\n"
-        "\tcmp r3, #0\n"
-        "\tbne.n _0802CE1A\n"
-        "\tstrh r1, [r6, #38]\n"
-        "\tldrh r1, [r6, #40]\n"
-        "\tmovs r0, #2\n"
-        "\tands r0, r1\n"
-        "\tcmp r0, #0\n"
-        "\tbeq.n .Lsoundfade__0802CD9C\n"
-        "\tadds r0, r1, #0\n"
-        "\tadds r0, #16\n"
-        "\tstrh r0, [r6, #40]\n"
-        "\tands r0, r2\n"
-        "\tcmp r0, #255\n"
-        "\tbls.n .Lsoundfade__0802CDEE\n"
-        "\tmovs r0, #128\n"
-        "\tlsls r0, r0, #1\n"
-        "\tstrh r0, [r6, #40]\n"
-        "\tstrh r3, [r6, #36]\n"
-        "\tb.n .Lsoundfade__0802CDEE\n"
-        "\t.short 0\n"
-        ".Lsoundfade__0802CD98: .word 0x0000FFFF\n"
-        ".Lsoundfade__0802CD9C:\n"
-        "\tadds r0, r1, #0\n"
-        "\tsubs r0, #16\n"
-        "\tstrh r0, [r6, #40]\n"
-        "\tands r0, r2\n"
-        "\tlsls r0, r0, #16\n"
-        "\tcmp r0, #0\n"
-        "\tbgt.n .Lsoundfade__0802CDEE\n"
-        "\tldrb r5, [r6, #8]\n"
-        "\tldr r4, [r6, #44]\n"
-        "\tcmp r5, #0\n"
-        "\tble.n .Lsoundfade__0802CDCE\n"
-        ".Lsoundfade__0802CDB2:\n"
-        "\tadds r0, r6, #0\n"
-        "\tadds r1, r4, #0\n"
-        "\tbl 0x0802C11C\n"
-        "\tmovs r0, #1\n"
-        "\tldrh r7, [r6, #40]\n"
-        "\tands r0, r7\n"
-        "\tcmp r0, #0\n"
-        "\tbne.n .Lsoundfade__0802CDC6\n"
-        "\tstrb r0, [r4, #0]\n"
-        ".Lsoundfade__0802CDC6:\n"
-        "\tsubs r5, #1\n"
-        "\tadds r4, #80\n"
-        "\tcmp r5, #0\n"
-        "\tbgt.n .Lsoundfade__0802CDB2\n"
-        ".Lsoundfade__0802CDCE:\n"
-        "\tmovs r0, #1\n"
-        "\tldrh r1, [r6, #40]\n"
-        "\tands r0, r1\n"
-        "\tcmp r0, #0\n"
-        "\tbeq.n .Lsoundfade__0802CDE2\n"
-        "\tldr r0, [r6, #4]\n"
-        "\tmovs r1, #128\n"
-        "\tlsls r1, r1, #24\n"
-        "\torrs r0, r1\n"
-        "\tb.n .Lsoundfade__0802CDE6\n"
-        ".Lsoundfade__0802CDE2:\n"
-        "\tmovs r0, #128\n"
-        "\tlsls r0, r0, #24\n"
-        ".Lsoundfade__0802CDE6:\n"
-        "\tstr r0, [r6, #4]\n"
-        "\tmovs r0, #0\n"
-        "\tstrh r0, [r6, #36]\n"
-        "\tb.n _0802CE1A\n"
-        ".Lsoundfade__0802CDEE:\n"
-        "\tldrb r5, [r6, #8]\n"
-        "\tldr r4, [r6, #44]\n"
-        "\tcmp r5, #0\n"
-        "\tble.n _0802CE1A\n"
-        "\tmovs r3, #128\n"
-        "\tmovs r7, #0\n"
-        "\tmovs r2, #3\n"
-        ".Lsoundfade__0802CDFC:\n"
-        "\tldrb r1, [r4, #0]\n"
-        "\tadds r0, r3, #0\n"
-        "\tands r0, r1\n"
-        "\tcmp r0, #0\n"
-        "\tbeq.n _0802CE12\n"
-        "\tldrh r7, [r6, #40]\n"
-        "\tlsrs r0, r7, #2\n"
-        "\tstrb r0, [r4, #19]\n"
-        "\tadds r0, r1, #0\n"
-        "\torrs r0, r2\n"
-        "\tstrb r0, [r4, #0]\n"
-        "_0802CE12:\n"
-        "\tsubs r5, #1\n"
-        "\tadds r4, #80\n"
-        "\tcmp r5, #0\n"
-        "\tbgt.n .Lsoundfade__0802CDFC\n"
-        "_0802CE1A:\n"
-        "\tpop {r4, r5, r6, r7}\n"
-        "\tpop {r0}\n"
-        "\tbx r0\n"
-        ".syntax divided\n"
-    );
+// _0802CD58 — advance the master fade timer and visit voices when a fade step
+// completes. The state transitions, clamps, cleanup loop, and active-voice
+// updates are C. The halfword reads use ordinary RAM lvalues; empty read/write
+// barriers keep `current` live across each loop so agbcc assigns it to r7 and
+// emits the original loads and saved-register frame without instruction asm.
+void SoundFadeTick(void *state) {
+    register volatile u8 *s __asm__("r6");
+    register u32 delay __asm__("r1");
+    register u32 timer __asm__("r0");
+    register u32 fade __asm__("r1");
+    register s32 count __asm__("r5");
+    register volatile u8 *voice __asm__("r4");
+    u32 current;
+
+    s = (volatile u8 *)state;
+    delay = *(volatile u16 *)(s + 36);
+    if (delay == 0) goto fade_done;
+
+    timer = *(volatile u16 *)(s + 38);
+    timer -= 1;
+    *(volatile u16 *)(s + 38) = (u16)timer;
+    {
+        register u32 literalMask __asm__("r3") = 0xFFFFu;
+        register u32 mask __asm__("r2");
+        register u32 timer16 __asm__("r3");
+        __asm__ volatile ("" : "+r"(literalMask));
+        mask = literalMask;
+        __asm__ volatile ("" : "+r"(mask));
+        timer <<= 16;
+        timer16 = timer >> 16;
+        if (timer16 != 0) goto fade_done;
+        *(volatile u16 *)(s + 38) = (u16)delay;
+
+        fade = *(volatile u16 *)(s + 40);
+        if ((fade & 2u) != 0) {
+            register u32 updated __asm__("r0") = fade;
+            updated += 16;
+            *(volatile u16 *)(s + 40) = (u16)updated;
+            updated &= mask;
+            if (updated <= 255u) goto fade_voices;
+            updated = 256;
+            *(volatile u16 *)(s + 40) = (u16)updated;
+            *(volatile u16 *)(s + 36) = (u16)timer16;
+            goto fade_voices;
+        }
+        {
+            register u32 updated __asm__("r0") = fade;
+            updated -= 16;
+            *(volatile u16 *)(s + 40) = (u16)updated;
+            updated &= mask;
+            updated <<= 16;
+            if ((s32)updated > 0) goto fade_voices;
+        }
+    }
+
+fade_complete:
+    count = s[8];
+    voice = *(volatile u8 **)(s + 44);
+    if (count > 0) {
+        do {
+            _0802C11C((void *)s, (void *)voice);
+            register u32 one __asm__("r0") = 1;
+            current = *(u16 *)((u8 *)s + 40);
+            one &= current;
+            if (one == 0) voice[0] = (u8)one;
+            count -= 1;
+            voice += 80;
+        } while (count > 0);
+        __asm__ volatile ("" : "+r" (current));
+    }
+    {
+        register u32 one __asm__("r0") = 1;
+        register u32 flags __asm__("r0");
+        one &= *(volatile u16 *)(s + 40);
+        if (one != 0) {
+            flags = *(volatile u32 *)(s + 4);
+            register u32 sign __asm__("r1") = 128;
+            sign <<= 24;
+            flags |= sign;
+        } else {
+            flags = 128;
+            flags <<= 24;
+        }
+        *(volatile u32 *)(s + 4) = flags;
+        *(volatile u16 *)(s + 36) = 0;
+    }
+    goto fade_done;
+
+fade_voices:
+    count = s[8];
+    voice = *(volatile u8 **)(s + 44);
+    if (count <= 0) goto fade_done;
+    register u32 direction __asm__("r3") = 128;
+    current = 0;
+    register u32 control __asm__("r2") = 3;
+    do {
+        register u32 flags __asm__("r1") = voice[0];
+        register u32 active __asm__("r0") = direction & flags;
+        if (active != 0) {
+            current = *(u16 *)((u8 *)s + 40);
+            active = current >> 2;
+            voice[19] = (u8)active;
+            active = flags;
+            active |= control;
+            voice[0] = (u8)active;
+        }
+        count -= 1;
+        voice += 80;
+    } while (count > 0);
+    __asm__ volatile ("" : "+r" (current));
+fade_done:
+    return;
 }
 void _0802CD58(void *s) __attribute__((alias("SoundFadeTick")));
 void sub_0802CD58(void *s) __attribute__((alias("SoundFadeTick")));

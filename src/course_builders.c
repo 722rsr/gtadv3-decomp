@@ -527,8 +527,8 @@ void *_080088B0(void *a, int b) __attribute__((alias("Course_Build_Emit8C")));
 void *sub_080088B0(void *a, int b) __attribute__((alias("Course_Build_Emit8C")));
 
 // Return the end cursor consumed by the next course-emission step.
-// The body logic is C; the short asm constraints retain the ROM's indexed
-// halfword loads and shift form where old_agbcc otherwise lowers them apart.
+// The body is C; empty register barriers retain the compiler's ROM-matching
+// operand choices around the signed and halfword loads.
 void *Course_Build_Tail_089FC(void *out) {
     register volatile u16 *cursor __asm__("r2") = (volatile u16 *)out;
     register volatile u8 * volatile *root __asm__("r4") =
@@ -538,10 +538,7 @@ void *Course_Build_Tail_089FC(void *out) {
     register s32 value __asm__("r0");
     register u32 literal __asm__("r5");
 
-    reg1 = 16;
-    __asm__ volatile ("" : "+r"(reg1));
-    __asm__ volatile ("ldrsh %0, [%1, %2]"
-                      : "=r"(value) : "r"(rec), "r"(reg1));
+    value = *(s16 *)(uintptr_t)(rec + 16);
     if (value > 1) {
         value = *(volatile u32 *)(rec + 84);
         reg1 = 255;
@@ -578,10 +575,7 @@ void *Course_Build_Tail_089FC(void *out) {
         cursor[2] = (u16)value;
         cursor = (volatile u16 *)((volatile u8 *)cursor + 8);
 
-        reg1 = 16;
-        __asm__ volatile ("" : "+r"(reg1));
-        __asm__ volatile ("ldrsh %0, [%1, %2]"
-                          : "=r"(value) : "r"(rec), "r"(reg1));
+        value = *(s16 *)(uintptr_t)(rec + 16);
         if (value > 9) {
             cursor[0] = 74;
             literal = 0x8094;
@@ -590,10 +584,9 @@ void *Course_Build_Tail_089FC(void *out) {
             cursor[1] = (u16)value;
             value = *(volatile u16 *)(rec + 56);
             value += 16;
-            __asm__ volatile ("ldrh %0, [%0, #58]"
-                              : "+r"(rec) : : "memory");
-            __asm__ volatile ("lsl %0, %1, #12"
-                              : "=r"(reg1) : "r"(rec));
+            rec = (volatile u8 *)(uintptr_t)*(volatile u16 *)(rec + 58);
+            __asm__ volatile ("" : "+r"(rec));
+            reg1 = (u32)(uintptr_t)rec << 12;
             value |= reg1;
             cursor[2] = (u16)value;
             cursor = (volatile u16 *)((volatile u8 *)cursor + 8);
@@ -606,13 +599,10 @@ void *Course_Build_Tail_089FC(void *out) {
         cursor[1] = (u16)value;
         {
             register volatile u8 *rec2 __asm__("r1") = *root;
-            register u32 high __asm__("r3");
-            __asm__ volatile ("ldrh %0, [%1, #58]"
-                              : "=r"(high) : "r"(rec2) : "memory");
+            register u16 high __asm__("r3");
+            high = *(volatile u16 *)(rec2 + 58);
             value = high << 12;
-            __asm__ volatile ("ldrh %0, [%0, #56]"
-                              : "+r"(rec2) : : "memory");
-            value |= (u32)(uintptr_t)rec2;
+            value |= ((volatile u16 *)rec2)[28];
         }
     } else {
         literal = 0x404a;
@@ -626,9 +616,12 @@ void *Course_Build_Tail_089FC(void *out) {
         literal = *(volatile u16 *)(rec + 58);
         __asm__ volatile ("" : "+r"(literal));
         value = literal << 12;
-        __asm__ volatile ("ldrh %0, [%0, #56]"
-                          : "+r"(rec) : : "memory");
-        value |= (u32)(uintptr_t)rec;
+        {
+            register u32 hold1 __asm__("r1");
+            __asm__ volatile ("" : "=r"(hold1));
+            value |= ((volatile u16 *)rec)[28];
+            __asm__ volatile ("" : : "r"(hold1));
+        }
     }
     cursor[2] = (u16)value;
     cursor = (volatile u16 *)((volatile u8 *)cursor + 8);

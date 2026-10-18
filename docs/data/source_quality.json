@@ -123,11 +123,10 @@
    "size": 252
   },
   "0x08000bf0": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 64,
-    "naked": true
+    "barrier": 5,
+    "pin": 13
    },
    "file": "src/foundation_handlers.c",
    "name": "InstallEWRAMHandlers",
@@ -189,11 +188,10 @@
    "size": 36
   },
   "0x080013e0": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 75,
-    "naked": true
+    "barrier": 5,
+    "pin": 13
    },
    "file": "src/foundation_fa0.c",
    "name": "Helper_013E0",
@@ -217,11 +215,11 @@
    "size": 236
   },
   "0x080015a0": {
-   "class": "asm",
+   "class": "partial",
    "detail": {
-    "insn": 1,
-    "insn_lines": 12,
-    "naked": true
+    "insn": 2,
+    "insn_lines": 3,
+    "pin": 3
    },
    "file": "src/runtime_accessors.c",
    "name": "_080015A0",
@@ -342,11 +340,10 @@
    "size": 4
   },
   "0x08001758": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 78,
-    "naked": true
+    "directive": 1,
+    "pin": 10
    },
    "file": "src/state_block_a.c",
    "name": "StateA_CommitMode",
@@ -377,22 +374,18 @@
    "size": 32
   },
   "0x08001854": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 134,
-    "naked": true
+    "pin": 20
    },
    "file": "src/state_block_a.c",
    "name": "StateA_UpdateClockAndRecords",
    "size": 308
   },
   "0x08001988": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 99,
-    "naked": true
+    "pin": 14
    },
    "file": "src/idle_dispatch.c",
    "name": "Idle_Mode3Handler",
@@ -438,11 +431,9 @@
    "size": 44
   },
   "0x08001b7c": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 60,
-    "naked": true
+    "pin": 5
    },
    "file": "src/idle_dispatch.c",
    "name": "Idle_Dispatcher",
@@ -470,11 +461,9 @@
    "size": 20
   },
   "0x08001cd8": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 148,
-    "naked": true
+    "pin": 23
    },
    "file": "src/idle_dispatch.c",
    "name": "Idle_Ticker",
@@ -483,7 +472,8 @@
   "0x08001e14": {
    "class": "c_fakematch",
    "detail": {
-    "directive": 2
+    "barrier": 1,
+    "pin": 1
    },
    "file": "src/idle_dispatch.c",
    "name": "Idle_GetDescriptorWord",
@@ -911,7 +901,7 @@
   "0x080026dc": {
    "class": "c_fakematch",
    "detail": {
-    "directive": 1
+    "barrier": 1
    },
    "file": "src/numeric_leaves.c",
    "name": "GridStore_26DC",
@@ -920,7 +910,7 @@
   "0x080026f8": {
    "class": "c_fakematch",
    "detail": {
-    "directive": 1
+    "barrier": 1
    },
    "file": "src/numeric_leaves.c",
    "name": "Code26F8_GetIWRAM_S16",
@@ -929,7 +919,7 @@
   "0x08002714": {
    "class": "c_fakematch",
    "detail": {
-    "directive": 1
+    "barrier": 1
    },
    "file": "src/numeric_leaves.c",
    "name": "GridStore_2714",
@@ -957,7 +947,7 @@
   "0x08002780": {
    "class": "c_fakematch",
    "detail": {
-    "directive": 1
+    "barrier": 1
    },
    "file": "src/numeric_leaves.c",
    "name": "GridFlagTest_2780",
@@ -976,7 +966,7 @@
   "0x080027ec": {
    "class": "c_fakematch",
    "detail": {
-    "directive": 1
+    "barrier": 1
    },
    "file": "src/numeric_leaves.c",
    "name": "GridFlagTest_27EC",
@@ -1418,7 +1408,7 @@
    "detail": {
     "barrier": 6,
     "directive": 2,
-    "pin": 8
+    "pin": 9
    },
    "file": "src/runtime_hud.c",
    "name": "ObjList_03400",
@@ -1784,11 +1774,11 @@
    "size": 76
   },
   "0x08003fd4": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 81,
-    "naked": true
+    "barrier": 7,
+    "directive": 2,
+    "pin": 9
    },
    "file": "src/runtime_hud.c",
    "name": "ObjList_03FD4",
@@ -2199,7 +2189,7 @@
   "0x08004c78": {
    "class": "c_fakematch",
    "detail": {
-    "directive": 1
+    "barrier": 1
    },
    "file": "src/foundation_subsys.c",
    "name": "MgrStore94_04C78",
@@ -2518,10 +2508,10 @@
   "0x080053dc": {
    "class": "partial",
    "detail": {
-    "barrier": 2,
-    "insn": 5,
-    "insn_lines": 9,
-    "pin": 14
+    "barrier": 4,
+    "insn": 2,
+    "insn_lines": 3,
+    "pin": 16
    },
    "file": "src/event_dma_queue.c",
    "name": "OAMGrid_Build",
@@ -2660,6 +2650,7 @@
   "0x08005768": {
    "class": "c_fakematch",
    "detail": {
+    "barrier": 1,
     "directive": 1,
     "pin": 1
    },
@@ -2670,7 +2661,7 @@
   "0x08005780": {
    "class": "c_fakematch",
    "detail": {
-    "directive": 1
+    "barrier": 1
    },
    "file": "src/save.c",
    "name": "SaveAllocReadByte",
@@ -2679,7 +2670,7 @@
   "0x08005790": {
    "class": "c_fakematch",
    "detail": {
-    "directive": 1
+    "barrier": 1
    },
    "file": "src/save.c",
    "name": "SaveAllocFreeHigh",
@@ -2698,11 +2689,9 @@
    "size": 60
   },
   "0x0800580c": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
-    "directive": 2,
-    "insn": 1,
-    "insn_lines": 2,
+    "directive": 1,
     "pin": 2
    },
    "file": "src/save.c",
@@ -2732,11 +2721,9 @@
    "size": 184
   },
   "0x08005988": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
-    "directive": 4,
-    "insn": 1,
-    "insn_lines": 2,
+    "directive": 3,
     "pin": 3
    },
    "file": "src/save.c",
@@ -2744,12 +2731,10 @@
    "size": 104
   },
   "0x080059f0": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
     "barrier": 1,
-    "directive": 4,
-    "insn": 1,
-    "insn_lines": 2
+    "directive": 3
    },
    "file": "src/save.c",
    "name": "SaveSlotSave",
@@ -2862,11 +2847,11 @@
    "size": 92
   },
   "0x08005cb4": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 90,
-    "naked": true
+    "barrier": 1,
+    "directive": 1,
+    "pin": 8
    },
    "file": "src/foundation_math.c",
    "name": "MathHelper_05CB4",
@@ -2932,7 +2917,8 @@
   "0x08005f2c": {
    "class": "c_fakematch",
    "detail": {
-    "directive": 1
+    "barrier": 1,
+    "pin": 2
    },
    "file": "src/save.c",
    "name": "SaveTriggerA",
@@ -2941,7 +2927,8 @@
   "0x08005f44": {
    "class": "c_fakematch",
    "detail": {
-    "directive": 1
+    "barrier": 1,
+    "pin": 2
    },
    "file": "src/save.c",
    "name": "SaveTriggerB",
@@ -2950,7 +2937,8 @@
   "0x08005f5c": {
    "class": "c_fakematch",
    "detail": {
-    "directive": 1
+    "barrier": 1,
+    "pin": 2
    },
    "file": "src/save.c",
    "name": "SaveTriggerC",
@@ -2959,7 +2947,8 @@
   "0x08005f74": {
    "class": "c_fakematch",
    "detail": {
-    "directive": 1
+    "barrier": 1,
+    "pin": 2
    },
    "file": "src/save.c",
    "name": "SaveTriggerD",
@@ -3017,11 +3006,12 @@
    "size": 56
   },
   "0x08006050": {
-   "class": "asm",
+   "class": "partial",
    "detail": {
+    "barrier": 4,
     "insn": 1,
-    "insn_lines": 72,
-    "naked": true
+    "insn_lines": 2,
+    "pin": 11
    },
    "file": "src/course_collision.c",
    "name": "Course_Scan",
@@ -3056,11 +3046,10 @@
    "size": 128
   },
   "0x080061b8": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 85,
-    "naked": true
+    "barrier": 3,
+    "pin": 4
    },
    "file": "src/course_orch_helpers.c",
    "name": "CourseOrch_080061B8",
@@ -3162,11 +3151,13 @@
    "size": 380
   },
   "0x08006a50": {
-   "class": "asm",
+   "class": "partial",
    "detail": {
-    "insn": 1,
-    "insn_lines": 67,
-    "naked": true
+    "barrier": 1,
+    "directive": 4,
+    "insn": 2,
+    "insn_lines": 7,
+    "pin": 15
    },
    "file": "src/runtime_state_dispatch.c",
    "name": "CollectNearby_06A50",
@@ -3188,12 +3179,10 @@
    "size": 16
   },
   "0x08006b30": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "barrier": 19,
-    "insn": 8,
-    "insn_lines": 22,
-    "pin": 8
+    "barrier": 25,
+    "pin": 19
    },
    "file": "src/course_stream.c",
    "name": "Course_StreamMore_06B30",
@@ -3418,11 +3407,9 @@
    "size": 12
   },
   "0x08007664": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
     "barrier": 2,
-    "insn": 2,
-    "insn_lines": 2,
     "pin": 11
    },
    "file": "src/course_resource.c",
@@ -3720,22 +3707,20 @@
    "size": 112
   },
   "0x08008300": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 77,
-    "naked": true
+    "barrier": 2,
+    "pin": 10
    },
    "file": "src/course_records.c",
    "name": "Course_Build32Row",
    "size": 184
   },
   "0x080083b8": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "barrier": 1,
-    "insn": 1,
-    "insn_lines": 46
+    "barrier": 3,
+    "pin": 10
    },
    "file": "src/course_records.c",
    "name": "Course_Build16Row",
@@ -3783,12 +3768,10 @@
    "size": 332
   },
   "0x080089fc": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
-    "barrier": 16,
-    "insn": 7,
-    "insn_lines": 7,
-    "pin": 8
+    "barrier": 17,
+    "pin": 9
    },
    "file": "src/course_builders.c",
    "name": "Course_Build_Tail_089FC",
@@ -3806,11 +3789,9 @@
    "size": 268
   },
   "0x08008bb8": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
-    "barrier": 29,
-    "insn": 3,
-    "insn_lines": 3,
+    "barrier": 28,
     "pin": 10
    },
    "file": "src/course_dispatch.c",
@@ -3960,9 +3941,9 @@
   "0x08009bf8": {
    "class": "c_fakematch",
    "detail": {
-    "barrier": 3,
+    "barrier": 13,
     "directive": 1,
-    "pin": 5
+    "pin": 8
    },
    "file": "src/car_tick_helpers.c",
    "name": "_08009BF8",
@@ -4035,13 +4016,11 @@
    "size": 4
   },
   "0x0800a074": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
-    "barrier": 2,
+    "barrier": 3,
     "directive": 1,
-    "insn": 2,
-    "insn_lines": 5,
-    "pin": 3
+    "pin": 4
    },
    "file": "src/car_tick_helpers.c",
    "name": "CarTick_Rec_0A074",
@@ -4069,11 +4048,9 @@
    "size": 44
   },
   "0x0800a150": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
-    "barrier": 6,
-    "insn": 2,
-    "insn_lines": 6,
+    "barrier": 7,
     "pin": 10
    },
    "file": "src/car_tick_helpers.c",
@@ -4208,11 +4185,9 @@
    "size": 276
   },
   "0x0800a62c": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
-    "directive": 2,
-    "insn": 2,
-    "insn_lines": 3,
+    "directive": 1,
     "pin": 2
    },
    "file": "src/car_tick_helpers.c",
@@ -4330,12 +4305,10 @@
    "size": 312
   },
   "0x0800b0bc": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
-    "barrier": 11,
-    "insn": 5,
-    "insn_lines": 11,
-    "pin": 16
+    "barrier": 13,
+    "pin": 17
    },
    "file": "src/award_pkt.c",
    "name": "Award_BuildTierPacket",
@@ -4377,8 +4350,8 @@
   "0x0800b89c": {
    "class": "c_fakematch",
    "detail": {
-    "barrier": 4,
-    "pin": 6
+    "barrier": 9,
+    "pin": 11
    },
    "file": "src/car_physics_core.c",
    "name": "GoStart_Tick",
@@ -4439,11 +4412,11 @@
    "size": 204
   },
   "0x0800bcd4": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 2,
-    "insn_lines": 3,
-    "pin": 11
+    "barrier": 1,
+    "directive": 1,
+    "pin": 12
    },
    "file": "src/menus.c",
    "name": "MenuRecordUpdate_0800BCD4",
@@ -4596,11 +4569,9 @@
    "size": 4
   },
   "0x0800c4d0": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 127,
-    "naked": true
+    "pin": 2
    },
    "file": "src/scene_record_dispatch.c",
    "name": "MenuCtor20_0C4D0",
@@ -4770,11 +4741,10 @@
    "size": 92
   },
   "0x0800ced4": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 5,
-    "insn_lines": 6,
-    "pin": 13
+    "barrier": 1,
+    "pin": 14
    },
    "file": "src/menu_records.c",
    "name": "MenuRec_0800CED4",
@@ -4796,11 +4766,9 @@
    "size": 68
   },
   "0x0800cfe4": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
     "barrier": 1,
-    "insn": 2,
-    "insn_lines": 6,
     "pin": 7
    },
    "file": "src/runtime_state_dispatch.c",
@@ -5466,11 +5434,9 @@
    "size": 124
   },
   "0x0800f9a0": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 7,
-    "insn_lines": 7,
-    "pin": 19
+    "pin": 20
    },
    "file": "src/runtime_state_dispatch.c",
    "name": "MenuF9A0_Scatter",
@@ -5700,11 +5666,11 @@
    "size": 252
   },
   "0x080116dc": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 79,
-    "naked": true
+    "barrier": 5,
+    "directive": 1,
+    "pin": 28
    },
    "file": "src/menu_ff78_c.c",
    "name": "MenuFF78_116DC",
@@ -5737,13 +5703,11 @@
    "size": 124
   },
   "0x08011958": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
-    "barrier": 16,
+    "barrier": 18,
     "directive": 2,
-    "insn": 4,
-    "insn_lines": 4,
-    "pin": 20
+    "pin": 18
    },
    "file": "src/menu_ff78_l.c",
    "name": "MenuFF78_11958",
@@ -5833,11 +5797,11 @@
    "size": 116
   },
   "0x080120a8": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 105,
-    "naked": true
+    "barrier": 11,
+    "directive": 2,
+    "pin": 13
    },
    "file": "src/menu_ff78_e.c",
    "name": "MenuFF78_120A8",
@@ -5938,13 +5902,11 @@
    "size": 316
   },
   "0x08012990": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
     "barrier": 5,
     "directive": 1,
-    "insn": 2,
-    "insn_lines": 18,
-    "pin": 7
+    "pin": 9
    },
    "file": "src/menu_ff78_g.c",
    "name": "MenuFF78_12990",
@@ -5990,11 +5952,11 @@
    "size": 20
   },
   "0x08012c90": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 85,
-    "naked": true
+    "barrier": 5,
+    "directive": 7,
+    "pin": 13
    },
    "file": "src/menu_ff78_g.c",
    "name": "MenuFF78_12C90",
@@ -6217,12 +6179,10 @@
    "size": 148
   },
   "0x08014078": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
     "barrier": 9,
-    "insn": 3,
-    "insn_lines": 6,
-    "pin": 16
+    "pin": 17
    },
    "file": "src/menu_ff78_h.c",
    "name": "MenuFF78_14078",
@@ -6286,8 +6246,7 @@
    "class": "asm",
    "detail": {
     "insn": 1,
-    "insn_lines": 144,
-    "naked": true
+    "insn_lines": 144
    },
    "file": "src/menu_ff78_n.c",
    "name": "MenuFF78_1479C",
@@ -6455,24 +6414,24 @@
    "size": 68
   },
   "0x080154e0": {
-   "class": "asm",
+   "class": "partial",
    "detail": {
     "barrier": 18,
-    "insn": 18,
-    "insn_lines": 24,
-    "pin": 42
+    "insn": 2,
+    "insn_lines": 4,
+    "pin": 29
    },
    "file": "src/menu_ff78_o.c",
    "name": "MenuFF78_154E0",
    "size": 320
   },
   "0x08015620": {
-   "class": "asm",
+   "class": "partial",
    "detail": {
     "barrier": 14,
-    "insn": 18,
-    "insn_lines": 31,
-    "pin": 35
+    "insn": 2,
+    "insn_lines": 4,
+    "pin": 22
    },
    "file": "src/menu_ff78_p.c",
    "name": "MenuFF78_15620",
@@ -6597,22 +6556,21 @@
    "size": 156
   },
   "0x08016004": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 84,
-    "naked": true
+    "barrier": 7,
+    "directive": 1,
+    "pin": 12
    },
    "file": "src/rec35_16002.c",
    "name": "Rec35_EventA",
    "size": 192
   },
   "0x080160c4": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 75,
-    "naked": true
+    "barrier": 7,
+    "pin": 12
    },
    "file": "src/rec35_16002.c",
    "name": "Rec35_EventB",
@@ -6857,11 +6815,11 @@
   "0x080175bc": {
    "class": "partial",
    "detail": {
-    "barrier": 5,
-    "directive": 4,
-    "insn": 2,
-    "insn_lines": 6,
-    "pin": 5
+    "barrier": 8,
+    "directive": 2,
+    "insn": 1,
+    "insn_lines": 1,
+    "pin": 10
    },
    "file": "src/rec35_mid_region.c",
    "name": "Rec35_Input_175BC",
@@ -7332,8 +7290,8 @@
    "class": "partial",
    "detail": {
     "barrier": 7,
-    "insn": 5,
-    "insn_lines": 5,
+    "insn": 2,
+    "insn_lines": 2,
     "pin": 7
    },
    "file": "src/race_setup.c",
@@ -7341,22 +7299,19 @@
    "size": 84
   },
   "0x08018f14": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
-    "barrier": 1,
-    "insn": 3,
-    "insn_lines": 5,
-    "pin": 16
+    "barrier": 3,
+    "pin": 18
    },
    "file": "src/race_setup.c",
    "name": "Race_Setup_18F14",
    "size": 128
   },
   "0x08018f94": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 4,
-    "insn_lines": 5,
+    "barrier": 2,
     "pin": 16
    },
    "file": "src/race_setup_helpers.c",
@@ -7625,11 +7580,9 @@
    "size": 152
   },
   "0x0801a008": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
     "barrier": 4,
-    "insn": 2,
-    "insn_lines": 4,
     "pin": 13
    },
    "file": "src/race_cluster.c",
@@ -7746,12 +7699,10 @@
    "size": 68
   },
   "0x0801b068": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
-    "barrier": 2,
+    "barrier": 5,
     "directive": 5,
-    "insn": 3,
-    "insn_lines": 9,
     "pin": 9
    },
    "file": "src/race_scene_a1.c",
@@ -7916,11 +7867,9 @@
    "size": 196
   },
   "0x0801c340": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
-    "barrier": 4,
-    "insn": 2,
-    "insn_lines": 4,
+    "barrier": 5,
     "pin": 8
    },
    "file": "src/race_scene_a2.c",
@@ -8550,9 +8499,9 @@
   "0x08020198": {
    "class": "partial",
    "detail": {
-    "barrier": 19,
-    "insn": 2,
-    "insn_lines": 3,
+    "barrier": 20,
+    "insn": 1,
+    "insn_lines": 1,
     "pin": 22
    },
    "file": "src/race_scene_e.c",
@@ -8614,11 +8563,8 @@
    "size": 4
   },
   "0x0802087c": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
-    "directive": 1,
-    "insn": 1,
-    "insn_lines": 2,
     "pin": 1
    },
    "file": "src/race_scene_e.c",
@@ -8681,12 +8627,10 @@
    "size": 200
   },
   "0x08021018": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
-    "barrier": 3,
-    "insn": 1,
-    "insn_lines": 10,
-    "pin": 12
+    "barrier": 4,
+    "pin": 13
    },
    "file": "src/race_scene_e.c",
    "name": "_080021018",
@@ -8763,12 +8707,10 @@
    "size": 56
   },
   "0x08021860": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
     "barrier": 2,
     "directive": 1,
-    "insn": 2,
-    "insn_lines": 4,
     "pin": 7
    },
    "file": "src/race_scene_helpers.c",
@@ -8872,12 +8814,11 @@
    "size": 212
   },
   "0x0802205c": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
+    "barrier": 10,
     "directive": 1,
-    "insn": 8,
-    "insn_lines": 20,
-    "pin": 19
+    "pin": 21
    },
    "file": "src/race_phase_vms.c",
    "name": "RaceVM_02205C",
@@ -8984,11 +8925,11 @@
   "0x08022624": {
    "class": "partial",
    "detail": {
-    "barrier": 8,
+    "barrier": 6,
     "directive": 1,
-    "insn": 7,
-    "insn_lines": 11,
-    "pin": 19
+    "insn": 1,
+    "insn_lines": 1,
+    "pin": 16
    },
    "file": "src/race_phase_vms.c",
    "name": "RaceVM_022624",
@@ -9010,11 +8951,10 @@
    "size": 112
   },
   "0x080227c0": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 73,
-    "naked": true
+    "barrier": 6,
+    "pin": 24
    },
    "file": "src/race_phase_vms.c",
    "name": "RaceVM_0227C0",
@@ -9050,11 +8990,11 @@
    "size": 244
   },
   "0x08022a14": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 81,
-    "naked": true
+    "barrier": 7,
+    "directive": 1,
+    "pin": 17
    },
    "file": "src/race_phase_vms.c",
    "name": "RaceVM_022A14",
@@ -9249,10 +9189,9 @@
    "size": 116
   },
   "0x08023bd4": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 2,
-    "insn_lines": 3,
+    "directive": 1,
     "pin": 6
    },
    "file": "src/runtime_record_helpers.c",
@@ -9271,12 +9210,7 @@
    "size": 248
   },
   "0x08023d4c": {
-   "class": "asm",
-   "detail": {
-    "insn": 1,
-    "insn_lines": 82,
-    "naked": true
-   },
+   "class": "c",
    "file": "src/race_control_leaves.c",
    "name": "Code23D4C",
    "size": 192
@@ -9582,12 +9516,10 @@
    "size": 248
   },
   "0x0802488c": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
-    "barrier": 6,
+    "barrier": 8,
     "directive": 3,
-    "insn": 2,
-    "insn_lines": 2,
     "pin": 15
    },
    "file": "src/save.c",
@@ -9749,7 +9681,7 @@
   "0x08024c3c": {
    "class": "c_fakematch",
    "detail": {
-    "directive": 1
+    "barrier": 1
    },
    "file": "src/ai_catalog.c",
    "name": "Ai_CatalogA",
@@ -9758,7 +9690,7 @@
   "0x08024c58": {
    "class": "c_fakematch",
    "detail": {
-    "directive": 1
+    "barrier": 1
    },
    "file": "src/ai_catalog.c",
    "name": "Ai_CatalogB",
@@ -9767,7 +9699,7 @@
   "0x08024c74": {
    "class": "c_fakematch",
    "detail": {
-    "directive": 1
+    "barrier": 1
    },
    "file": "src/ai_catalog.c",
    "name": "Ai_CatalogC",
@@ -9776,6 +9708,7 @@
   "0x08024c90": {
    "class": "c_fakematch",
    "detail": {
+    "barrier": 1,
     "pin": 1
    },
    "file": "src/ai_catalog.c",
@@ -9783,13 +9716,19 @@
    "size": 64
   },
   "0x08024cd0": {
-   "class": "c",
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 1
+   },
    "file": "src/ai_catalog.c",
    "name": "Ai_CatalogIndexInGroup",
    "size": 60
   },
   "0x08024d0c": {
-   "class": "c",
+   "class": "c_fakematch",
+   "detail": {
+    "barrier": 1
+   },
    "file": "src/ai_catalog.c",
    "name": "Ai_CatalogOwnedIndexInGroup",
    "size": 64
@@ -9803,7 +9742,7 @@
   "0x08024d5c": {
    "class": "c_fakematch",
    "detail": {
-    "directive": 1
+    "barrier": 1
    },
    "file": "src/ai_catalog.c",
    "name": "Ai_CatalogGroupOfId",
@@ -9818,7 +9757,7 @@
   "0x08024d78": {
    "class": "c_fakematch",
    "detail": {
-    "directive": 1
+    "barrier": 1
    },
    "file": "src/ai_catalog.c",
    "name": "Ai_CatalogGroupSize",
@@ -9870,11 +9809,10 @@
    "size": 40
   },
   "0x08024e7c": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 62,
-    "naked": true
+    "barrier": 6,
+    "pin": 12
    },
    "file": "src/runtime_record_helpers.c",
    "name": "_080024E7C",
@@ -10190,7 +10128,8 @@
   "0x080258b8": {
    "class": "c_fakematch",
    "detail": {
-    "directive": 1
+    "barrier": 1,
+    "pin": 2
    },
    "file": "src/course_cal.c",
    "name": "Course_GetCup",
@@ -10199,7 +10138,8 @@
   "0x080258cc": {
    "class": "c_fakematch",
    "detail": {
-    "directive": 1
+    "barrier": 1,
+    "pin": 2
    },
    "file": "src/course_cal.c",
    "name": "Course_GetSeqnum",
@@ -10208,7 +10148,8 @@
   "0x080258e0": {
    "class": "c_fakematch",
    "detail": {
-    "directive": 1
+    "barrier": 1,
+    "pin": 2
    },
    "file": "src/course_cal.c",
    "name": "Course_GetSong",
@@ -10217,7 +10158,8 @@
   "0x080258f4": {
    "class": "c_fakematch",
    "detail": {
-    "directive": 1
+    "barrier": 1,
+    "pin": 2
    },
    "file": "src/course_cal.c",
    "name": "Course_GetCourseDefault",
@@ -10226,7 +10168,8 @@
   "0x08025908": {
    "class": "c_fakematch",
    "detail": {
-    "directive": 1
+    "barrier": 1,
+    "pin": 2
    },
    "file": "src/course_cal.c",
    "name": "Course_GetCourseVariant",
@@ -10235,19 +10178,19 @@
   "0x0802591c": {
    "class": "c_fakematch",
    "detail": {
-    "directive": 1
+    "barrier": 1,
+    "pin": 2
    },
    "file": "src/course_cal.c",
    "name": "Course_GetParam",
    "size": 20
   },
   "0x08025930": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
+    "barrier": 3,
     "directive": 4,
-    "insn": 2,
-    "insn_lines": 7,
-    "pin": 21
+    "pin": 23
    },
    "file": "src/code_25930.c",
    "name": "Code25930_BuildGrid",
@@ -10262,7 +10205,7 @@
   "0x08025a8c": {
    "class": "c_fakematch",
    "detail": {
-    "directive": 1
+    "barrier": 1
    },
    "file": "src/code_25930.c",
    "name": "Code25930_GetEntry",
@@ -10289,7 +10232,7 @@
   "0x08025b08": {
    "class": "c_fakematch",
    "detail": {
-    "directive": 1
+    "barrier": 1
    },
    "file": "src/code_25930.c",
    "name": "Code25930_GetSpecial",
@@ -10602,11 +10545,10 @@
    "size": 116
   },
   "0x080262a4": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 9,
-    "insn_lines": 37,
-    "pin": 13
+    "barrier": 2,
+    "pin": 19
    },
    "file": "src/runtime_record_helpers.c",
    "name": "_080262A4",
@@ -10689,12 +10631,10 @@
    "size": 24
   },
   "0x08026898": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
-    "barrier": 8,
+    "barrier": 10,
     "directive": 1,
-    "insn": 3,
-    "insn_lines": 3,
     "pin": 17
    },
    "file": "src/sprite_obj_263e0.c",
@@ -11001,11 +10941,11 @@
   "0x080278f0": {
    "class": "partial",
    "detail": {
-    "barrier": 6,
-    "directive": 2,
-    "insn": 9,
-    "insn_lines": 23,
-    "pin": 20
+    "barrier": 9,
+    "directive": 1,
+    "insn": 3,
+    "insn_lines": 5,
+    "pin": 23
    },
    "file": "src/garage.c",
    "name": "Garage_Ticker_278F0",
@@ -11392,12 +11332,10 @@
    "size": 112
   },
   "0x08028c54": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
-    "barrier": 3,
-    "insn": 3,
-    "insn_lines": 4,
-    "pin": 7
+    "barrier": 7,
+    "pin": 8
    },
    "file": "src/garage_records.c",
    "name": "_080028C54",
@@ -11589,12 +11527,10 @@
    "size": 636
   },
   "0x080299e0": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
-    "barrier": 1,
-    "insn": 4,
-    "insn_lines": 4,
-    "pin": 15
+    "barrier": 3,
+    "pin": 13
    },
    "file": "src/garage_records.c",
    "name": "_0800299E0",
@@ -11716,11 +11652,9 @@
    "size": 68
   },
   "0x0802a86c": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
-    "barrier": 1,
-    "insn": 3,
-    "insn_lines": 7,
+    "barrier": 2,
     "pin": 11
    },
    "file": "src/garage_records.c",
@@ -11829,11 +11763,10 @@
    "size": 28
   },
   "0x0802b098": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 116,
-    "naked": true
+    "barrier": 2,
+    "pin": 7
    },
    "file": "src/sound.c",
    "name": "SoundVCounter",
@@ -11985,22 +11918,22 @@
    "size": 120
   },
   "0x0802b500": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 84,
-    "naked": true
+    "barrier": 5,
+    "directive": 1,
+    "pin": 11
    },
    "file": "src/sound.c",
    "name": "SoundBankClaim_2B500",
    "size": 172
   },
   "0x0802b5ac": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 71,
-    "naked": true
+    "barrier": 2,
+    "directive": 1,
+    "pin": 9
    },
    "file": "src/sound.c",
    "name": "SoundBankSwap_2B5AC",
@@ -12233,7 +12166,8 @@
    "detail": {
     "insn": 1,
     "insn_lines": 4,
-    "naked": true
+    "naked": true,
+    "pin": 4
    },
    "file": "src/sound_seq_follow.c",
    "name": "SoundBCEA_FetchTail",
@@ -12252,9 +12186,10 @@
   "0x0802bd14": {
    "class": "asm",
    "detail": {
-    "insn": 1,
-    "insn_lines": 13,
-    "naked": true
+    "insn": 2,
+    "insn_lines": 7,
+    "naked": true,
+    "pin": 5
    },
    "file": "src/sound_seq_follow.c",
    "name": "SoundBD14_Dispatch",
@@ -12272,9 +12207,10 @@
   "0x0802bd44": {
    "class": "asm",
    "detail": {
-    "insn": 1,
-    "insn_lines": 22,
-    "naked": true
+    "insn": 7,
+    "insn_lines": 19,
+    "naked": true,
+    "pin": 4
    },
    "file": "src/sound_seq_follow.c",
    "name": "SoundBD44_LoopStart",
@@ -12283,9 +12219,10 @@
   "0x0802bd74": {
    "class": "asm",
    "detail": {
-    "insn": 1,
-    "insn_lines": 4,
-    "naked": true
+    "insn": 2,
+    "insn_lines": 6,
+    "naked": true,
+    "pin": 3
    },
    "file": "src/sound_channel_bd74.c",
    "name": "SoundBD74_Store",
@@ -12294,9 +12231,10 @@
   "0x0802bd80": {
    "class": "asm",
    "detail": {
-    "insn": 1,
-    "insn_lines": 9,
-    "naked": true
+    "insn": 3,
+    "insn_lines": 5,
+    "naked": true,
+    "pin": 3
    },
    "file": "src/sound_channel_bd80.c",
    "name": "SoundBD80_Scale",
@@ -12305,9 +12243,11 @@
   "0x0802bd94": {
    "class": "asm",
    "detail": {
-    "insn": 1,
-    "insn_lines": 8,
-    "naked": true
+    "barrier": 1,
+    "insn": 2,
+    "insn_lines": 5,
+    "naked": true,
+    "pin": 5
    },
    "file": "src/sound_channel_bd94.c",
    "name": "SoundBD94_Store",
@@ -12316,9 +12256,10 @@
   "0x0802bda8": {
    "class": "asm",
    "detail": {
-    "insn": 1,
-    "insn_lines": 20,
-    "naked": true
+    "insn": 6,
+    "insn_lines": 16,
+    "naked": true,
+    "pin": 9
    },
    "file": "src/sound_seq_follow.c",
    "name": "SoundBDA8_LoadRecord",
@@ -12327,9 +12268,11 @@
   "0x0802bdd8": {
    "class": "asm",
    "detail": {
-    "insn": 1,
-    "insn_lines": 8,
-    "naked": true
+    "barrier": 1,
+    "insn": 2,
+    "insn_lines": 5,
+    "naked": true,
+    "pin": 5
    },
    "file": "src/sound_channel_bdd8.c",
    "name": "SoundBDD8_Store",
@@ -12338,9 +12281,11 @@
   "0x0802bdec": {
    "class": "asm",
    "detail": {
-    "insn": 1,
-    "insn_lines": 9,
-    "naked": true
+    "barrier": 1,
+    "insn": 2,
+    "insn_lines": 4,
+    "naked": true,
+    "pin": 5
    },
    "file": "src/sound_channel_bdec.c",
    "name": "SoundBDEC_Store",
@@ -12349,9 +12294,11 @@
   "0x0802be00": {
    "class": "asm",
    "detail": {
-    "insn": 1,
-    "insn_lines": 9,
-    "naked": true
+    "barrier": 1,
+    "insn": 2,
+    "insn_lines": 4,
+    "naked": true,
+    "pin": 5
    },
    "file": "src/sound_channel_be00.c",
    "name": "SoundBE00_Store",
@@ -12360,9 +12307,11 @@
   "0x0802be14": {
    "class": "asm",
    "detail": {
-    "insn": 1,
-    "insn_lines": 8,
-    "naked": true
+    "barrier": 1,
+    "insn": 2,
+    "insn_lines": 5,
+    "naked": true,
+    "pin": 5
    },
    "file": "src/sound_channel_be14.c",
    "name": "SoundBE14_Store",
@@ -12371,9 +12320,10 @@
   "0x0802be28": {
    "class": "asm",
    "detail": {
-    "insn": 1,
-    "insn_lines": 4,
-    "naked": true
+    "insn": 2,
+    "insn_lines": 6,
+    "naked": true,
+    "pin": 3
    },
    "file": "src/sound_channel_be28.c",
    "name": "SoundBE28_Store",
@@ -12382,9 +12332,11 @@
   "0x0802be34": {
    "class": "asm",
    "detail": {
-    "insn": 1,
-    "insn_lines": 11,
-    "naked": true
+    "barrier": 2,
+    "insn": 2,
+    "insn_lines": 4,
+    "naked": true,
+    "pin": 6
    },
    "file": "src/sound_seq_follow.c",
    "name": "SoundBE34_TrackSel",
@@ -12393,9 +12345,11 @@
   "0x0802be4c": {
    "class": "asm",
    "detail": {
-    "insn": 1,
-    "insn_lines": 9,
-    "naked": true
+    "barrier": 1,
+    "insn": 2,
+    "insn_lines": 4,
+    "naked": true,
+    "pin": 5
    },
    "file": "src/sound_seq_follow.c",
    "name": "SoundBE4C_Volume",
@@ -12404,20 +12358,24 @@
   "0x0802be60": {
    "class": "asm",
    "detail": {
-    "insn": 1,
-    "insn_lines": 9,
-    "naked": true
+    "barrier": 2,
+    "insn": 3,
+    "insn_lines": 7,
+    "naked": true,
+    "pin": 6
    },
    "file": "src/sound_seq_follow.c",
    "name": "SoundBE60_PSGWrite",
    "size": 24
   },
   "0x0802be78": {
-   "class": "asm",
+   "class": "partial",
    "detail": {
-    "insn": 1,
-    "insn_lines": 26,
-    "naked": true
+    "barrier": 3,
+    "directive": 4,
+    "insn": 2,
+    "insn_lines": 2,
+    "pin": 9
    },
    "file": "src/sound_support.c",
    "name": "SoundPump",
@@ -12507,9 +12465,10 @@
   "0x0802c3f8": {
    "class": "asm",
    "detail": {
-    "insn": 1,
-    "insn_lines": 7,
-    "naked": true
+    "insn": 3,
+    "insn_lines": 8,
+    "naked": true,
+    "pin": 3
    },
    "file": "src/sound_seq_follow.c",
    "name": "SoundC3F8_NoteOn",
@@ -12518,9 +12477,10 @@
   "0x0802c40c": {
    "class": "asm",
    "detail": {
-    "insn": 1,
-    "insn_lines": 7,
-    "naked": true
+    "insn": 3,
+    "insn_lines": 8,
+    "naked": true,
+    "pin": 3
    },
    "file": "src/sound_seq_follow.c",
    "name": "SoundC40C_EnvByte",
@@ -12625,11 +12585,9 @@
    "size": 52
   },
   "0x0802c67c": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 2,
-    "insn_lines": 2,
-    "pin": 3
+    "directive": 1
    },
    "file": "src/sound_seq_follow.c",
    "name": "SoundC67C_StopAll",
@@ -12642,11 +12600,9 @@
    "size": 12
   },
   "0x0802c6b4": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 2,
-    "insn_lines": 2,
-    "pin": 3
+    "directive": 1
    },
    "file": "src/sound_seq_follow.c",
    "name": "SoundC6B4_PauseAll",
@@ -12725,11 +12681,11 @@
    "size": 204
   },
   "0x0802c990": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 67,
-    "naked": true
+    "barrier": 3,
+    "directive": 1,
+    "pin": 6
    },
    "file": "src/sound_core.c",
    "name": "SoundControlInit",
@@ -12773,11 +12729,10 @@
    "size": 120
   },
   "0x0802cc34": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 110,
-    "naked": true
+    "barrier": 11,
+    "pin": 15
    },
    "file": "src/runtime_state_dispatch.c",
    "name": "SoundStart_2CC34",
@@ -12790,22 +12745,20 @@
    "size": 64
   },
   "0x0802cd58": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 97,
-    "naked": true
+    "barrier": 4,
+    "pin": 19
    },
    "file": "src/sound_core.c",
    "name": "SoundFadeTick",
    "size": 200
   },
   "0x0802ce20": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 88,
-    "naked": true
+    "barrier": 3,
+    "pin": 23
    },
    "file": "src/runtime_state_dispatch.c",
    "name": "VoiceParamTick_2CE20",
@@ -13113,11 +13066,10 @@
    "size": 8
   },
   "0x0802d9b8": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 21,
-    "naked": true
+    "directive": 1,
+    "pin": 1
    },
    "file": "src/sound_deep.c",
    "name": "SoundD9BC_SelectorU16",
@@ -13139,11 +13091,11 @@
    "size": 56
   },
   "0x0802da58": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 60,
-    "naked": true
+    "barrier": 9,
+    "directive": 1,
+    "pin": 18
    },
    "file": "src/runtime_record_helpers.c",
    "name": "_0802DA58",
@@ -13168,8 +13120,9 @@
   "0x0802dba4": {
    "class": "partial",
    "detail": {
-    "insn": 4,
-    "insn_lines": 5,
+    "barrier": 2,
+    "insn": 2,
+    "insn_lines": 2,
     "pin": 17
    },
    "file": "src/sound_deep.c",
@@ -13427,11 +13380,9 @@
    "size": 192
   },
   "0x0802e0a4": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
     "barrier": 1,
-    "insn": 2,
-    "insn_lines": 10,
     "pin": 6
    },
    "file": "src/runtime_memset.c",
@@ -13447,20 +13398,20 @@
  },
  "totals": {
   "asm": {
-   "bytes": 88076,
-   "functions": 264
+   "bytes": 80536,
+   "functions": 225
   },
   "c": {
-   "bytes": 39606,
-   "functions": 860
+   "bytes": 39674,
+   "functions": 859
   },
   "c_fakematch": {
-   "bytes": 51598,
-   "functions": 503
+   "bytes": 64018,
+   "functions": 573
   },
   "partial": {
-   "bytes": 8856,
-   "functions": 48
+   "bytes": 3908,
+   "functions": 18
   }
  },
  "version": 1

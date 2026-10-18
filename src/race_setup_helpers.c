@@ -104,13 +104,11 @@ void sub_080018F94(void)
     {
         register volatile u8 *wa __asm__("r0") = (volatile u8 *)0x03001780u;
         register u32 countOffset __asm__("r2") = 0x10CA;
-        register volatile s16 *countp __asm__("r1");
-        __asm__ volatile ("add r1, r0, r2" : "=r"(countp)
-                          : "r"(wa), "r"(countOffset) : "memory");
-        register s32 zero __asm__("r2") = 0;
-        register s32 n __asm__("r0");
-        __asm__ volatile ("ldrsh r0, [r1, r2]" : "=r"(n)
-                          : "r"(countp), "r"(zero) : "memory");
+        __asm__ volatile ("" : "+r" (wa), "+r" (countOffset));
+        register volatile s16 *countp __asm__("r1") =
+            (volatile s16 *)((u32)wa + (u32)countOffset);
+        register s16 *plainCount __asm__("r1") = (s16 *)countp;
+        register s32 n __asm__("r0") = *plainCount;
         if (i >= n) goto finish;
         countTail = countp;
         stride = 142;
@@ -129,12 +127,12 @@ loop_records:
                 lapTotal++;
                 *lapCount = lapTotal;
             }
-            stride += 284;
+            register s32 strideStep __asm__("r0") = 142;
+            __asm__ volatile ("" : "+r" (strideStep));
+            strideStep <<= 1;
+            stride += strideStep;
             i++;
-            register s32 currentCount __asm__("r0");
-            __asm__ volatile ("mov r1, #0\n\tldrsh r0, [r7, r1]"
-                              : "=r"(currentCount) : "r"(countTail)
-                              : "r1", "memory");
+            s32 currentCount = *(s16 *)countTail;
             if (i < currentCount) goto loop_records;
         }
     }
@@ -144,10 +142,8 @@ finish:
             *(volatile u8 *volatile *)(uintptr_t)0x03004E20u;
         register volatile s16 *cnt __asm__("r1") =
             (volatile s16 *)(racectx + 70);
-        register s32 zero __asm__("r2") = 0;
-        register s32 value __asm__("r0");
-        __asm__ volatile ("ldrsh r0, [r1, r2]" : "=r"(value)
-                          : "r"(cnt), "r"(zero) : "memory");
+        register s16 *plainCnt __asm__("r1") = (s16 *)cnt;
+        register s32 value __asm__("r0") = *plainCnt;
         if (value > 3) {
             register u16 four __asm__("r0") = 4;
             *cnt = four;

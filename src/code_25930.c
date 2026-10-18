@@ -159,18 +159,20 @@ void Code25930_BuildGrid(void) {
             } else if (cnt <= 2) {
                 if (_08025D90(0) == r6) {
                     register int val __asm__("r0");
-                    __asm__("mov r2, %1\n\tmovs r3, #0\n\tldrsh %0, [r2, r3]" : "=r"(val) : "r"(r8) : "r2", "r3");
+                    register const s16 *base __asm__("r2") = r8;
+                    val = *base;
+                    __asm__ volatile("" : : "r"(base));
                     *r4++ = val;
                     count++;
                 }
             }
-            __asm__("movs r0, #132\n\tlsl r0, r0, #1\n\tadd %0, r0\n\tadd %1, %1, r0"
-                    : "+r"(r8), "+r"(r5) : : "r0");
+            register int stride __asm__("r0") = 132;
+            stride <<= 1;
+            __asm__ volatile("" : "+r"(stride));
+            r8 = (const s16 *)((const u8 *)r8 + stride);
+            r5 += stride;
             r6++;
         } while (r6 <= 3);
-    }
-
-    {
         int *cnt = C25_CountOut;
         int n = count - 1;
         *cnt = n;
@@ -181,6 +183,7 @@ void Code25930_BuildGrid(void) {
             *r1 = *(const s16 *)r0;
             *cnt = 0;
         }
+        __asm__ volatile("" : : "r"(r4));
     }
 }
 void _080025930(void) __attribute__((alias("Code25930_BuildGrid")));
@@ -200,11 +203,12 @@ int sub_080025A84(void) __attribute__((alias("Code25930_GetCount")));
 
 // ----------------------------------------------------------------------------
 // 0x08025A8C — word-array reader: s16[0x0203F9B0 + i*4].
-extern const s16 C25_EntryTbl[];
+// Offset-first addition puts the sum in r0; the empty barrier keeps the ROM's
+// base load ahead of the index shift. Both details are load-bearing for agbcc.
 int Code25930_GetEntry(int i) {
-    __asm__(".globl C25_EntryTbl\nC25_EntryTbl = 0x0203F9B0\n");
-    const s16 *base = C25_EntryTbl;
-    return *(const s16 *)((const u8 *)base + ((u32)i << 2));
+    u32 base = 0x0203F9B0u;
+    __asm__ volatile ("" : "+r"(base) : : "memory");
+    return *(const s16 *)(uintptr_t)(((u32)i << 2) + base);
 }
 int _080025A8C(int a) __attribute__((alias("Code25930_GetEntry")));
 int sub_080025A8C(int a) __attribute__((alias("Code25930_GetEntry")));
@@ -257,11 +261,11 @@ int Code25930_GetSpecialCount(void) {
 int _080025AFC(void) __attribute__((alias("Code25930_GetSpecialCount")));
 int sub_080025AFC(void) __attribute__((alias("Code25930_GetSpecialCount")));
 
-extern const s16 C25_SpecialTbl[];
+// Keep the same operand and load order as Code25930_GetEntry.
 int Code25930_GetSpecial(int i) {
-    __asm__(".globl C25_SpecialTbl\nC25_SpecialTbl = 0x0203FA30\n");
-    const s16 *base = C25_SpecialTbl;
-    return *(const s16 *)((const u8 *)base + ((u32)i << 2));
+    u32 base = 0x0203FA30u;
+    __asm__ volatile ("" : "+r"(base) : : "memory");
+    return *(const s16 *)(uintptr_t)(((u32)i << 2) + base);
 }
 int _080025B08(int a) __attribute__((alias("Code25930_GetSpecial")));
 int sub_080025B08(int a) __attribute__((alias("Code25930_GetSpecial")));

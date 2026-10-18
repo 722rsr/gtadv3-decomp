@@ -155,11 +155,11 @@ void MenuFF78_11958(volatile u8 *rec) {
         {
             u32 r1 = *(volatile u32 *)(uintptr_t)(rec + 396);
             u32 r2 = *(volatile u32 *)(uintptr_t)(rec + 400);
-            // The identical non-volatile copies must share a source line:
-            // agbcc then merges them into the ROM's single mov r4,r8 after
-            // storing 5 from r4. Separate lines or a named local do not merge.
+            register u32 scratch_one __asm__("r4");
             sub_08007BFC(emit_rec, (int)r1, (int)r2,
-                         56, 120, 5, ({ register u32 scratch_one __asm__("r4") = one; __asm__("mov %0, %1" : "=r"(scratch_one) : "r"(one)); scratch_one; }), ({ register u32 scratch_one __asm__("r4") = one; __asm__("mov %0, %1" : "=r"(scratch_one) : "r"(one)); scratch_one; }), zero);
+                         56, 120, 5,
+                         ({ scratch_one = one; __asm__ volatile ("" : "+r"(scratch_one)); scratch_one; }),
+                         scratch_one, zero);
         }
         sub_0800118DC((void *)rec, *(volatile u16 *)(uintptr_t)(rec + 192));
         register u32 selected2 __asm__("r4") = *(volatile u16 *)(uintptr_t)(rec + 192);
@@ -176,8 +176,11 @@ void MenuFF78_11958(volatile u8 *rec) {
             __asm__ volatile("" : "+r"(tbl_base));
             u32 w1 = *(volatile u32 *)(uintptr_t)(offset + tbl_base);
             register u32 final_zero __asm__("r0");
+            register u32 scratch_one __asm__("r4");
             sub_08007B18((void *)rec, 13, (int)w0, (int)w1,
-                         three, ({ register u32 scratch_one __asm__("r4") = one; __asm__("mov %0, %1" : "=r"(scratch_one) : "r"(one)); scratch_one; }), ({ register u32 scratch_one __asm__("r4") = one; __asm__("mov %0, %1" : "=r"(scratch_one) : "r"(one)); scratch_one; }), final_zero = zero);
+                         three,
+                         ({ scratch_one = one; __asm__ volatile ("" : "+r"(scratch_one)); scratch_one; }),
+                         scratch_one, final_zero = zero);
         }
         break;
     }

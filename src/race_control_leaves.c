@@ -310,101 +310,58 @@ void _0802381C(void *a, int b, int c) __attribute__((alias("Code2381C")));
 void sub_08002381C(void *a, int b, int c) __attribute__((alias("Code2381C")));
 // 23A34 / 23BD4 lifted elsewhere; no stubs here.
 // Owners: _08023A34 → code_23a34.c, _08023BD4 → runtime_record_helpers.c.
-// 0x08023D4C — 97 B, VMA 0x08023D4C, pure Thumb, pools 0x080CC178+140 s16 *8, 0x00000FFF, WA+0xFBC not needed, ctx+144/158 etc.
+// 0x08023D4C — 192-byte exact C lift, pools 0x080CC178 + s16[ctx+140]*8
+// and 0x00000FFF; WA+0xFBC is not needed, ctx+144/158 gate the phase work.
 // Proven via 6000-frame trace: race+140 s16 -26624..31650 (proves ldrsh), race+144 38912 (u16 38912, s16 -26624) etc., race+158 -1 (0xFFFF) proves s16 -1 vs u16 65535, so cmp #12 bne taken, cmp #1 bne taken, but full CFG preserved.
-__attribute__((naked)) void Code23D4C(void *ctx){
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, r7, lr}\n"
-        "adds r7, r0, #0\n"
-        "adds r0, #136\n"
-        "movs r1, #15\n"
-        "bl 0x0800D97C\n"
-        "ldr r4, .L23d4c_tbl\n"
-        "adds r5, r7, #0\n"
-        "adds r5, #140\n"
-        "movs r1, #0\n"
-        "ldrsh r0, [r5, r1]\n"
-        "lsls r0, r0, #3\n"
-        "adds r6, r4, #4\n"
-        "adds r0, r0, r6\n"
-        "ldr r1, [r0, #0]\n"
-        "adds r0, r7, #0\n"
-        "adds r0, #168\n"
-        "ldr r2, [r0, #0]\n"
-        "adds r0, r7, #0\n"
-        "bl 0x08023AE4\n"
-        "movs r2, #0\n"
-        "ldrsh r0, [r5, r2]\n"
-        "lsls r0, r0, #3\n"
-        "adds r4, r0, r4\n"
-        "ldr r1, [r4, #0]\n"
-        "adds r0, r0, r6\n"
-        "ldr r2, [r0, #0]\n"
-        "adds r0, r7, #0\n"
-        "bl 0x08023B60\n"
-        "adds r0, r7, #0\n"
-        "adds r0, #16\n"
-        "bl 0x0800DBE8\n"
-        "adds r0, r7, #0\n"
-        "adds r0, #144\n"
-        "ldrh r0, [r0, #0]\n"
-        "cmp r0, #1\n"
-        "bne .L23d4c_phase_done\n"
-        "adds r4, r7, #0\n"
-        "adds r4, #158\n"
-        "ldrh r0, [r4, #0]\n"
-        "cmp r0, #1\n"
-        "bne .L23d4c_draw\n"
-        "adds r0, r7, #0\n"
-        "adds r0, #166\n"
-        "movs r2, #0\n"
-        "ldrsh r1, [r0, r2]\n"
-        "adds r0, r7, #0\n"
-        "bl 0x08023C54\n"
-        ".L23d4c_draw:\n"
-        "adds r1, r7, #0\n"
-        "adds r1, #176\n"
-        "adds r0, r7, #0\n"
-        "movs r2, #64\n"
-        "bl 0x08022D44\n"
-        "ldrh r0, [r4, #0]\n"
-        "subs r0, #5\n"
-        "lsls r0, r0, #16\n"
-        "lsrs r0, r0, #16\n"
-        "cmp r0, #3\n"
-        "bhi .L23d4c_phase_done\n"
-        "bl 0x080022CC\n"
-        "movs r1, #100\n"
-        "muls r0, r1\n"
-        "cmp r0, #0\n"
-        "bge .L23d4c_nonnegative\n"
-        "ldr r2, .L23d4c_mask\n"
-        "adds r0, r0, r2\n"
-        ".L23d4c_nonnegative:\n"
-        "asrs r2, r0, #12\n"
-        "subs r2, r1, r2\n"
-        "movs r0, #128\n"
-        "movs r1, #96\n"
-        "bl 0x08003978\n"
-        ".L23d4c_phase_done:\n"
-        "adds r0, r7, #0\n"
-        "adds r0, #158\n"
-        "ldrh r0, [r0, #0]\n"
-        "cmp r0, #12\n"
-        "bne .L23d4c_tail\n"
-        "adds r0, r7, #0\n"
-        "bl sub_08023144\n"
-        ".L23d4c_tail:\n"
-        "adds r0, r7, #0\n"
-        "bl 0x08023E78\n"
-        "pop {r4, r5, r6, r7}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        ".L23d4c_tbl: .word 0x080CC178\n"
-        ".L23d4c_mask: .word 0x00000FFF\n"
-        ".syntax divided\n"
-    );
+void Code23D4C(void *ctx){
+    u8 *context = (u8 *)ctx;
+    u8 *slot158;
+    u32 value;
+    s32 product;
+
+    extern void _0800D97C(void *a, int b);
+    extern void sub_080023AE4(void *a, int b, int c);
+    extern void sub_080023B60(void *a, int b, int c);
+    extern void _0800DBE8(void *a);
+    extern void sub_080023C54(void *a, int b);
+    extern void _080022D44(void *a, void *b, int c);
+    extern int _080022CC(void);
+    extern void _08003978(int a, int b, int c);
+    extern void sub_08023144(void *a);
+    extern void sub_080023E78(void *a);
+
+    _0800D97C(context + 136, 15);
+    u8 *table = (u8 *)(uintptr_t)0x080CC178u;
+    u8 *record140 = context + 140;
+    int offset = ((s16 *)record140)[0] << 3;
+    u8 *table4 = table + 4;
+    u32 first = *(u32 *)(table4 + offset);
+    u32 second = *(u32 *)(context + 168);
+    sub_080023AE4(context, (int)first, (int)second);
+
+    int offset2 = ((s16 *)record140)[0] << 3;
+    u32 secondTableFirst = *(u32 *)(table + offset2);
+    u32 secondTableNext = *(u32 *)(table4 + offset2);
+    sub_080023B60(context, (int)secondTableFirst, (int)secondTableNext);
+    _0800DBE8(context + 16);
+
+    if (*(volatile u16 *)(context + 144) == 1) {
+        slot158 = context + 158;
+        if (*(volatile u16 *)slot158 == 1)
+            sub_080023C54(context, ((s16 *)(context + 166))[0]);
+        _080022D44(context, context + 176, 64);
+        value = (u16)(*(volatile u16 *)slot158 - 5);
+        if (value <= 3) {
+            product = _080022CC() * 100;
+            if (product < 0)
+                product += 0xFFF;
+            _08003978(128, 96, 100 - (product >> 12));
+        }
+    }
+
+    if (*(volatile u16 *)(context + 158) == 12)
+        sub_08023144(context);
+    sub_080023E78(context);
 }
 void _080023D4C(void *a) __attribute__((alias("Code23D4C")));
 void _08023D4C(void *a) __attribute__((alias("Code23D4C")));

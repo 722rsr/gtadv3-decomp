@@ -1308,150 +1308,78 @@ void sub_0800C010(void *r) __attribute__((alias("MenuCtor_0C010")));
 // bytes, twin memset blocks, template 0x0805F6D4, C454/C4AC pair, triple
 // resource lookup.
 // ============================================================================
-__attribute__((naked)) void MenuCtor20_0C4D0(void *rec) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "\tpush {r4, r5, r6, r7, lr}\n"
-        "\tmov r7, r8\n"
-        "\tpush {r7}\n"
-        "\tsub sp, #84\n"
-        "\tadds r5, r0, #0\n"
-        "\tmov r0, sp\n"
-        "\tmovs r2, #0\n"
-        "\tmovs r3, #0\n"
-        "\tstrh r3, [r0]\n"
-        "\tmovs r4, #1\n"
-        "\tmovs r6, #1\n"
-        "\tstrh r6, [r0, #2]\n"
-        "\tstrb r4, [r0, #4]\n"
-        "\tstrb r2, [r0, #5]\n"
-        "\tmovs r1, #29\n"
-        "\tstrb r1, [r0, #6]\n"
-        "\tstrb r2, [r0, #7]\n"
-        "\tstrb r4, [r0, #8]\n"
-        "\tstrb r4, [r0, #9]\n"
-        "\tstrb r2, [r0, #10]\n"
-        "\tstrb r2, [r0, #11]\n"
-        "\tstrh r3, [r0, #12]\n"
-        "\tstrh r3, [r0, #14]\n"
-        "\tldr r7, .Lmc4d0_c5d4\n"
-        "\tadds r1, r5, r7\n"
-        "\tstr r1, [sp, #16]\n"
-        "\tstrb r2, [r0, #20]\n"
-        "\tmovs r1, #3\n"
-        "\tstrb r1, [r0, #21]\n"
-        "\tmovs r1, #31\n"
-        "\tstrb r1, [r0, #22]\n"
-        "\tstrb r2, [r0, #23]\n"
-        "\tstrb r2, [r0, #24]\n"
-        "\tstrb r4, [r0, #25]\n"
-        "\tstrb r2, [r0, #26]\n"
-        "\tstrb r2, [r0, #27]\n"
-        "\tstrh r3, [r0, #28]\n"
-        "\tstrh r3, [r0, #30]\n"
-        "\tldr r1, .Lmc4d0_c5d8\n"
-        "\tadds r0, r5, r1\n"
-        "\tstr r0, [sp, #32]\n"
-        "\tadd r0, sp, #36\n"
-        "\tmovs r1, #0\n"
-        "\tmovs r2, #16\n"
-        "\tbl 0x0802E104\n"
-        "\tadd r0, sp, #52\n"
-        "\tmovs r1, #0\n"
-        "\tmovs r2, #16\n"
-        "\tbl 0x0802E104\n"
-        "\tadd r2, sp, #68\n"
-        "\tmov r8, r2\n"
-        "\tmov r1, r8\n"
-        "\tldr r0, .Lmc4d0_c5dc\n"
-        "\tldmia r0!, {r2, r3, r7}\n"
-        "\tstmia r1!, {r2, r3, r7}\n"
-        "\tldr r0, [r0]\n"
-        "\tstr r0, [r1]\n"
-        "\tadds r0, r5, #0\n"
-        "\tadds r0, #96\n"
-        "\tstrb r4, [r0]\n"
-        "\tbl 0x080056FC\n"
-        "\tldr r3, .Lmc4d0_c5e0\n"
-        "\tadds r0, r5, r3\n"
-        "\tmovs r1, #16\n"
-        "\tbl 0x080055D8\n"
-        "\tadds r0, r5, #0\n"
-        "\tadds r0, #92\n"
-        "\tstrh r6, [r0]\n"
-        "\tadds r4, r5, #0\n"
-        "\tadds r4, #8\n"
-        "\tldr r2, .Lmc4d0_c5e4\n"
-        "\tmov r0, sp\n"
-        "\tadds r1, r4, #0\n"
-        "\tbl 0x0802D974\n"
-        "\tadds r6, r5, #0\n"
-        "\tadds r6, #76\n"
-        "\tldr r2, .Lmc4d0_c5e8\n"
-        "\tmov r0, r8\n"
-        "\tadds r1, r6, #0\n"
-        "\tbl 0x0802D974\n"
-        "\tmovs r0, #2\n"
-        "\tadds r1, r4, #0\n"
-        "\tmovs r2, #0\n"
-        "\tbl 0x08004D4C\n"
-        "\tadds r0, r4, #0\n"
-        "\tmovs r1, #0\n"
-        "\tbl 0x080050E8\n"
-        "\tadds r0, r6, #0\n"
-        "\tbl 0x080032E0\n"
-        "\tbl 0x0800C454\n"
-        "\tbl 0x0800C4AC\n"
-        "\tadds r0, r5, #0\n"
-        "\tadds r0, #100\n"
-        "\tbl 0x08003104\n"
-        "\tldr r0, .Lmc4d0_c5ec\n"
-        "\tbl 0x08004DC8\n"
-        "\tldr r7, .Lmc4d0_c5f0\n"
-        "\tadds r1, r5, r7\n"
-        "\tstr r0, [r1]\n"
-        "\tldr r0, .Lmc4d0_c5f4\n"
-        "\tbl 0x08004DC8\n"
-        "\tldr r2, .Lmc4d0_c5f8\n"
-        "\tadds r1, r5, r2\n"
-        "\tstr r0, [r1]\n"
-        "\tldr r0, .Lmc4d0_c5fc\n"
-        "\tbl 0x08004DC8\n"
-        "\tldr r3, .Lmc4d0_c600\n"
-        "\tadds r5, r5, r3\n"
-        "\tstr r0, [r5]\n"
-        "\tadd sp, #84\n"
-        "\tpop {r3}\n"
-        "\tmov r8, r3\n"
-        "\tpop {r4, r5, r6, r7}\n"
-        "\tpop {r0}\n"
-        "\tbx r0\n"
-        ".Lmc4d0_c5d4:\n"
-        "\t.word 0x00000CE4\n"
-        ".Lmc4d0_c5d8:\n"
-        "\t.word 0x00001CE4\n"
-        ".Lmc4d0_c5dc:\n"
-        "\t.word 0x0805F6D4\n"
-        ".Lmc4d0_c5e0:\n"
-        "\t.word 0x000024E4\n"
-        ".Lmc4d0_c5e4:\n"
-        "\t.word 0x04000011\n"
-        ".Lmc4d0_c5e8:\n"
-        "\t.word 0x04000004\n"
-        ".Lmc4d0_c5ec:\n"
-        "\t.word 0x080CDFD0\n"
-        ".Lmc4d0_c5f0:\n"
-        "\t.word 0x000025E4\n"
-        ".Lmc4d0_c5f4:\n"
-        "\t.word 0x080CDFD8\n"
-        ".Lmc4d0_c5f8:\n"
-        "\t.word 0x000025E8\n"
-        ".Lmc4d0_c5fc:\n"
-        "\t.word 0x080CDFE0\n"
-        ".Lmc4d0_c600:\n"
-        "\t.word 0x000025EC\n"
-        ".syntax divided\n"
-    );
+void MenuCtor20_0C4D0(void *rec) {
+    u8 *r5 = (u8 *)rec;
+    u8 stk[84];
+    u8 *r0 = stk;
+    u8 *r8;
+    u8 *r4;
+    u8 *r6;
+    void *resource;
+    u8 *slot;
+    extern void sub_0800C454(void);
+    extern void sub_0800C4AC(void);
+
+    register u32 zero __asm__("r2");
+    zero = 0;
+    u16 zero16 = 0;
+    *(u16 *)(r0 + 0) = zero16;
+    register u8 one __asm__("r4");
+    one = 1;
+    u16 oneHalf = 1;
+    *(u16 *)(r0 + 2) = oneHalf;
+    *(r0 + 4) = one;
+    *(r0 + 5) = zero;
+    *(r0 + 6) = 29;
+    *(r0 + 7) = zero;
+    *(r0 + 8) = one;
+    *(r0 + 9) = one;
+    *(r0 + 10) = zero;
+    *(r0 + 11) = zero;
+    *(u16 *)(r0 + 12) = 0;
+    *(u16 *)(r0 + 14) = 0;
+    *(void **)(stk + 16) = r5 + 0xCE4;
+    *(r0 + 20) = zero;
+    *(r0 + 21) = 3;
+    *(r0 + 22) = 31;
+    *(r0 + 23) = zero;
+    *(r0 + 24) = zero;
+    *(r0 + 25) = one;
+    *(r0 + 26) = zero;
+    *(r0 + 27) = zero;
+    *(u16 *)(r0 + 28) = 0;
+    *(u16 *)(r0 + 30) = 0;
+    *(void **)(stk + 32) = r5 + 0x1CE4;
+
+    _0802E104(stk + 36, 0, 16);
+    _0802E104(stk + 52, 0, 16);
+    r8 = stk + 68;
+    *(MenuCtor_Tmpl *)(uintptr_t)r8 = *(const MenuCtor_Tmpl *)(uintptr_t)0x0805F6D4u;
+    *(r5 + 96) = one;
+    _080056FC();
+    _080055D8((u32)(uintptr_t)(r5 + 0x24E4), 16);
+    *(u16 *)(r5 + 92) = 1;
+
+    r4 = r5 + 8;
+    _08002D974(stk, r4, (u32)(uintptr_t)0x04000011);
+    r6 = r5 + 76;
+    _08002D974(r8, r6, (u32)(uintptr_t)0x04000004);
+    _08004D4C(2, (u32)(uintptr_t)r4, 0);
+    _080050E8(r4, 0);
+    _080032E0(r6);
+    sub_0800C454();
+    sub_0800C4AC();
+    _08003104(r5 + 100);
+
+    resource = _08004DC8((void *)(uintptr_t)0x080CDFD0);
+    slot = r5 + 0x25E4;
+    *(void **)slot = resource;
+    resource = _08004DC8((void *)(uintptr_t)0x080CDFD8);
+    slot = r5 + 0x25E8;
+    *(void **)slot = resource;
+    resource = _08004DC8((void *)(uintptr_t)0x080CDFE0);
+    r5 += 0x25EC;
+    *(void **)r5 = resource;
 }
 
 void _0800C4D0(void *r) __attribute__((alias("MenuCtor20_0C4D0")));

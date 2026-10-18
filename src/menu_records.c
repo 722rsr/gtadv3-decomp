@@ -49,6 +49,7 @@ extern int   _080022E4(int id);                         // 0x080022E4
 extern void  _080038A4(int a, int b, void *c);          // 0x080038A4
 extern void  _08003978(int a, u32 b, int c);            // 0x08003978 (runtime_hud.c)
 extern void *_08004B68(void);                           // 0x08004B68
+extern void *sub_08004B68(void);                        // 0x08004B68, focused-slice closure
 extern int   _08004CA8(int v);                          // 0x08004CA8
 extern void  _08004EA8(int v);                          // 0x08004EA8
 
@@ -109,11 +110,11 @@ void MenuRec_0800CED4(void *rec, int a1, int a2) {
     u16 r4 = (u16)a2;
     u16 r6 = r4;
 
-    _08004B68();
+    sub_08004B68();
     register u32 off6 __asm__("r1") = 6;
     register s32 previous __asm__("r0");
-    __asm__ volatile ("ldrsh %0, [%1, %2]"
-                      : "=r" (previous) : "r" (r5), "r" (off6));
+    /* Non-volatile s16 lvalues keep agbcc's register-indexed LDRSH form. */
+    previous = *(s16 *)(r5 + off6);
     s32 r8 = previous;
     s32 r7 = 0;
     register s32 two __asm__("r2") = 2;
@@ -127,23 +128,24 @@ void MenuRec_0800CED4(void *rec, int a1, int a2) {
         r7 = r7 + 1;
 
     register s32 sum __asm__("r0");
-    __asm__ volatile ("ldrh r1, [%1, #6]\n\tadd %0, r1, %2"
-                      : "=r" (sum) : "r" (r5), "r" (r7) : "r1", "cc");
+    register u32 oldSum __asm__("r1");
+    oldSum = *(volatile u16 *)(r5 + 6);
+    /* Keep the halfword in r1 for the following compiler-generated add. */
+    __asm__ volatile ("" : "+r"(oldSum));
+    sum = oldSum + r7;
     *(volatile u16 *)(r5 + 6) = (u16)sum;
     if ((s16)sum < 0)
         *(volatile u16 *)(r5 + 6) = (u16)0;
 
     register u32 clampOff __asm__("r2") = 6;
     register s32 clampValue __asm__("r0");
-    __asm__ volatile ("ldrsh %0, [%1, %2]"
-                      : "=r" (clampValue) : "r" (r5), "r" (clampOff));
+    clampValue = *(s16 *)(r5 + clampOff);
     if (clampValue > 2)
         *(volatile u16 *)(r5 + 6) = (u16)r9;
 
     register u32 currentOff __asm__("r2") = 6;
     register s32 cur __asm__("r1");
-    __asm__ volatile ("ldrsh %0, [%1, %2]"
-                      : "=r" (cur) : "r" (r5), "r" (currentOff));
+    cur = *(s16 *)(r5 + currentOff);
     if (cur != r8) {
         register volatile u32 *objSlot __asm__("r4") =
             (volatile u32 *)(r5 + 0x1018);
@@ -152,9 +154,8 @@ void MenuRec_0800CED4(void *rec, int a1, int a2) {
         void *obj2 = (void *)(uintptr_t)*objSlot;
         register u32 finalOff __asm__("r2") = 6;
         register s32 cur2 __asm__("r1");
-        __asm__ volatile ("ldrsh %0, [%1, %2]"
-                          : "=r" (cur2) : "r" (r5), "r" (finalOff));
-        _08026938(obj2, cur2);
+        cur2 = *(s16 *)(r5 + finalOff);
+        _080026938(obj2, cur2);
     }
 }
 void _0800CED4(void *a, int b, int c) __attribute__((alias("MenuRec_0800CED4")));

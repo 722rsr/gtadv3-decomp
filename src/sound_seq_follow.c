@@ -187,20 +187,23 @@ __attribute__((naked)) void SoundBCCE_ValidateFrag(void *s) {
 // ----------------------------------------------------------------------------
 // 0x0802BCEA — cursor advance + fetch + tail merge (10 bytes). The interior
 // entry `_0802BCE8` (whose first instruction is `ldr r2,[r1,#64]`) falls
-// through to here, and `_0802BE60` calls it directly by name. Its `b.n
-// _0802BCCE` is armcc's tail merge into the validator above: no sibling call
-// exists in agbcc (measured), so the branch itself is the wall.
-void _0802BCEA(void *a, void *s) __attribute__((alias("SoundBCEA_FetchTail")));
-__attribute__((naked)) void SoundBCEA_FetchTail(void *a, void *seq) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "adds r3, r2, #1\n"
-        "str  r3, [r1, #64]\n"
-        "ldrb r3, [r2, #0]\n"
-        "b.n  _0802BCCE\n"
-        ".hword 0x0000\n"
-        ".syntax divided\n"
-    );
+// through to here, and `_0802BE60` enters it with the cursor in r2. Model that
+// register as the third parameter: C emits the increment, cursor store, and
+// byte fetch exactly, leaving only the tail merge into the validator explicit.
+void _0802BCEA(void *a, void *s, u32 cursor)
+    __attribute__((alias("SoundBCEA_FetchTail")));
+void sub_0802BCEA(void *a, void *s, u32 cursor)
+    __attribute__((alias("SoundBCEA_FetchTail")));
+__attribute__((naked)) void SoundBCEA_FetchTail(void *a, void *seq, u32 cursor) {
+    register volatile u8 *channel __asm__("r1") = (volatile u8 *)seq;
+    register u32 current __asm__("r2") = cursor;
+    register u32 next __asm__("r3");
+    register u32 value __asm__("r3");
+    next = current + 1;
+    *(volatile u32 *)(channel + 64) = next;
+    value = *(volatile u8 *)(uintptr_t)current;
+    __asm__ volatile (".syntax unified\n\t@ %0\n\tb.n _0802BCCE\n\t.hword 0\n\t.syntax divided"
+                      : : "r"(value) : "cc", "memory");
 }
 
 // ----------------------------------------------------------------------------
@@ -236,29 +239,25 @@ void _0802BCF4(void *dummy, void *s) __attribute__((alias("SoundBCF4_FetchBE")))
 void sub_0802BCF4(void *dummy, void *s) __attribute__((alias("SoundBCF4_FetchBE")));
 
 // ----------------------------------------------------------------------------
-// 0x0802BD14 — loop stack push / tail-branch dispatcher
+// 0x0802BD14 — loop stack push / tail-branch dispatcher. C handles the slot
+// address, cursor update, and counter store; the compare and tail transfers
+// remain explicit to preserve the shared entries at BCF4 and BC84.
 void _0802BD14(void *a, void *b) __attribute__((alias("SoundBD14_Dispatch")));
 void sub_0802BD14(void *a, void *b) __attribute__((alias("SoundBD14_Dispatch")));
 __attribute__((naked)) void SoundBD14_Dispatch(void *a, void *chan) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "ldrb r2, [r1, #2]\n"
-        "cmp  r2, #3\n"
-        "bcs.n 1f\n"
-        "lsls r2, r2, #2\n"
-        "adds r3, r1, r2\n"
-        "ldr  r2, [r1, #64]\n"
-        "adds r2, #4\n"
-        "str  r2, [r3, #68]\n"
-        "ldrb r2, [r1, #2]\n"
-        "adds r2, #1\n"
-        "strb r2, [r1, #2]\n"
-        "b.n  _0802BCF4\n"
-        "1:\n"
-        "b.n  _0802BC84\n"
-        ".short 0x0000\n"
-        ".syntax divided\n"
-    );
+    register volatile u8 *channel __asm__("r1") = (volatile u8 *)chan;
+    register u32 slot __asm__("r2") = channel[2];
+    __asm__ volatile (".syntax unified\n\tcmp %0, #3\n\tbcs 1f\n\t.syntax divided"
+                      : : "r"(slot) : "cc");
+    register volatile u8 *record __asm__("r3") = channel + slot * 4;
+    register u32 cursor __asm__("r2") = *(volatile u32 *)(channel + 64);
+    cursor += 4;
+    *(volatile u32 *)(record + 68) = cursor;
+    register u32 count __asm__("r2") = channel[2];
+    count += 1;
+    channel[2] = (u8)count;
+    __asm__ volatile (".syntax unified\n\tb.n _0802BCF4\n1:\n\tb.n _0802BC84\n\t.short 0x0000\n\t.syntax divided"
+                      : : : "cc", "memory");
 }
 
 // ----------------------------------------------------------------------------
@@ -271,53 +270,46 @@ __attribute__((naked)) void SoundBD14_Dispatch(void *a, void *chan) {
 //     movs r3,#0 / strb r3,[r1,#3] / adds r2,#5 / str r2,[r1,#64] /
 //     pop {r0} / bx r0 / pad
 //   The two `b.n 0x0802BCF6` land INSIDE `_0802BCF4`, past its `push {lr}`;
-//   a C call re-enters at 0x0802BCF4 and therefore costs +2 bytes of frame per
-//   site, and a `bl` is 4 bytes where `b.n` is 2. That is +4 per site and the
-//   reason for the remaining instruction mismatch.
-// TRANSCRIBED VERBATIM. The body's shape is otherwise reachable
-// -- `push {lr}`... `pop {r0} / bx r0` is exactly agbcc's own frame for a
-// void function with calls -- but the two `b.n _0802BCF6` tail merges are not:
-// agbcc performs NO sibling call at all (measured: even a pure tail call
-// compiles to `push {lr} / bl / pop {r0} / bx r0`, so a C tail call costs +4
-// bytes per site against the ROM's 2-byte branch), and a hand-written `b` in
-// inline asm leaves the compiler's own epilogue as dead bytes after it. Same
-// register contract as the ROM: r1 = seq, r2 = cursor, r3 = byte, ip = loop
-// counter across the `bl`. The two branch sites are tail positions in C
-// (`...; Frag; return;`), so the semantics are a plain tail-share: the
-// fragment at `_0802BCF6` pops the lr this body pushed and returns to this
-// body's caller.
+//   a C call re-enters at 0x0802BCF4 and costs +2 bytes of frame per site,
+//   while `bl` costs 4 bytes where `b.n` is 2. Keep both tail transfers
+//   explicit. The matching C payload handles the cursor updates, loop counter,
+//   and reset path; the compare/branches, custom helper call, and push/pop
+//   return frame remain explicit. Register contract: r1 = seq, r2 = cursor,
+//   r3 = byte, ip = loop counter across the helper call. The shared BCF6
+//   fragment pops the lr this body pushed and returns to its caller.
 void _0802BD44(void *a, void *s) __attribute__((alias("SoundBD44_LoopStart")));
 void sub_0802BD44(void *a, void *s) __attribute__((alias("SoundBD44_LoopStart")));
 __attribute__((naked)) void SoundBD44_LoopStart(void *a, void *seq) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {lr}\n"
-        "ldr  r2, [r1, #64]\n"
-        "ldrb r3, [r2, #0]\n"
-        "cmp  r3, #0\n"
-        "bne.n 1f\n"
-        "adds r2, #1\n"
-        "str  r2, [r1, #64]\n"
-        "b.n  _0802BCF6\n"
-        "1:\n"
-        "ldrb r3, [r1, #3]\n"
-        "adds r3, #1\n"
-        "strb r3, [r1, #3]\n"
-        "mov  ip, r3\n"
-        "bl   _0802BCE8\n"
-        "cmp  ip, r3\n"
-        "bcs.n 2f\n"
-        "b.n  _0802BCF6\n"
-        "2:\n"
-        "movs r3, #0\n"
-        "strb r3, [r1, #3]\n"
-        "adds r2, #5\n"
-        "str  r2, [r1, #64]\n"
-        "pop  {r0}\n"
-        "bx   r0\n"
-        ".hword 0x0000\n"
-        ".syntax divided\n"
-    );
+    register volatile u8 *channel __asm__("r1");
+    register u32 cursor __asm__("r2");
+    register u32 value __asm__("r3");
+    register u32 loop_count __asm__("ip");
+    __asm__ volatile (".syntax unified\n\tpush {lr}\n\t.syntax divided" : : : "memory");
+    channel = (volatile u8 *)seq;
+    cursor = *(volatile u32 *)(channel + 64);
+    value = *(volatile u8 *)(uintptr_t)cursor;
+    __asm__ volatile (".syntax unified\n\tcmp %0, #0\n\tbne 1f\n\t.syntax divided"
+                      : : "r"(value) : "cc");
+    cursor += 1;
+    *(volatile u32 *)(channel + 64) = cursor;
+    __asm__ volatile (".syntax unified\n\tb.n _0802BCF6\n1:\n\t.syntax divided"
+                      : : : "cc", "memory");
+    value = channel[3];
+    value += 1;
+    channel[3] = (u8)value;
+    loop_count = value;
+    __asm__ volatile (".syntax unified\n\t@ %0, %1\n\tbl _0802BCE8\n\t.syntax divided"
+                      : "=r"(value), "+r"(cursor) : : "lr", "cc", "memory");
+    __asm__ volatile (".syntax unified\n\tcmp %0, %1\n\tbcs 2f\n\t.syntax divided"
+                      : : "r"(loop_count), "r"(value) : "cc");
+    __asm__ volatile (".syntax unified\n\tb.n _0802BCF6\n2:\n\t.syntax divided"
+                      : : : "cc", "memory");
+    value = 0;
+    channel[3] = (u8)value;
+    cursor += 5;
+    *(volatile u32 *)(channel + 64) = cursor;
+    __asm__ volatile (".syntax unified\n\tpop {r0}\n\tbx r0\n\t.hword 0x0000\n\t.syntax divided"
+                      : : : "cc", "memory");
 }
 
 // ----------------------------------------------------------------------------
@@ -326,42 +318,52 @@ __attribute__((naked)) void SoundBD44_LoopStart(void *a, void *seq) {
 //   rec = [seq+48] + b*12;
 //   [seq+36] = validate([rec+0]); [seq+40] = validate([rec+4]);
 //   [seq+44] = validate([rec+8]);
-// TRANSCRIBED VERBATIM. The three validation calls are plain
-// `bl`s and C-reachable, but the frame is armcc's `mov ip, lr` / `bx ip`,
-// which agbcc never emits for any call-bearing function at any opt level
-// (measured -O1/-O2/-Os/-O3: it emits `push {lr}`... `pop {r0} / bx r0`,
-// +2 bytes). The `bl` targets are the shared fragment `_0802BCCE` (an
-// interior fall-through of `_0802BCCC`, spelled by name so the probe can
-// resolve the branch at its ROM VMA). Register contract: r0 = seq (kept
-// untouched across the calls), r1 = seq copy, r2 = record pointer, r3 = byte.
-void _0802BDA8(void *s) __attribute__((alias("SoundBDA8_LoadRecord")));
-void sub_0802BDA8(void *s) __attribute__((alias("SoundBDA8_LoadRecord")));
-__attribute__((naked)) void SoundBDA8_LoadRecord(void *seq) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "mov  ip, lr\n"
-        "ldr  r2, [r1, #64]\n"
-        "ldrb r3, [r2, #0]\n"
-        "adds r2, #1\n"
-        "str  r2, [r1, #64]\n"
-        "lsls r2, r3, #1\n"
-        "adds r2, r2, r3\n"
-        "lsls r2, r2, #2\n"
-        "ldr  r3, [r0, #48]\n"
-        "adds r2, r2, r3\n"
-        "ldr  r3, [r2, #0]\n"
-        "bl   _0802BCCE\n"
-        "str  r3, [r1, #36]\n"
-        "ldr  r3, [r2, #4]\n"
-        "bl   _0802BCCE\n"
-        "str  r3, [r1, #40]\n"
-        "ldr  r3, [r2, #8]\n"
-        "bl   _0802BCCE\n"
-        "str  r3, [r1, #44]\n"
-        "bx   ip\n"
-        ".hword 0x0000\n"
-        ".syntax divided\n"
-    );
+// The record offset, three field loads/stores, and cursor update are C. The
+// validator's nonstandard r3 result and the ip return remain explicit; a
+// single `adds` pins the compiler's operand order for index * 3.
+void _0802BDA8(void *seq, void *chan)
+    __attribute__((alias("SoundBDA8_LoadRecord")));
+void sub_0802BDA8(void *seq, void *chan)
+    __attribute__((alias("SoundBDA8_LoadRecord")));
+__attribute__((naked)) void SoundBDA8_LoadRecord(void *seq, void *chan) {
+    register u32 frame __asm__("ip");
+    register volatile u8 *base __asm__("r0");
+    register volatile u8 *channel __asm__("r1");
+    register u32 cursor __asm__("r2");
+    register u32 index __asm__("r3");
+    register u32 offset __asm__("r2");
+    register u32 table_base __asm__("r3");
+    register volatile u32 *record __asm__("r2");
+    register u32 value __asm__("r3");
+    __asm__ volatile (".syntax unified\n\tmov %0, lr\n\t.syntax divided"
+                      : "=r"(frame) : : "cc", "memory");
+    base = (volatile u8 *)seq;
+    channel = (volatile u8 *)chan;
+    cursor = *(volatile u32 *)(channel + 64);
+    index = *(volatile u8 *)(uintptr_t)cursor;
+    cursor += 1;
+    *(volatile u32 *)(channel + 64) = cursor;
+    offset = index << 1;
+    __asm__ volatile (".syntax unified\n\tadds %0, %0, %1\n\t.syntax divided"
+                      : "+r"(offset) : "r"(index) : "cc");
+    offset <<= 2;
+    table_base = *(volatile u32 *)(base + 48);
+    offset += table_base;
+    record = (volatile u32 *)(uintptr_t)offset;
+    value = record[0];
+    __asm__ volatile (".syntax unified\n\t@ %0, %1\n\tbl _0802BCCE\n\t.syntax divided"
+                      : "+r"(value), "+r"(record) : : "lr", "cc", "memory");
+    ((volatile u32 *)channel)[9] = value;
+    value = record[1];
+    __asm__ volatile (".syntax unified\n\t@ %0, %1\n\tbl _0802BCCE\n\t.syntax divided"
+                      : "+r"(value), "+r"(record) : : "lr", "cc", "memory");
+    ((volatile u32 *)channel)[10] = value;
+    value = record[2];
+    __asm__ volatile (".syntax unified\n\t@ %0, %1\n\tbl _0802BCCE\n\t.syntax divided"
+                      : "+r"(value), "+r"(record) : : "lr", "cc", "memory");
+    ((volatile u32 *)channel)[11] = value;
+    __asm__ volatile (".syntax unified\n\tbx %0\n\t.hword 0\n\t.syntax divided"
+                      : : "r"(frame) : "cc");
 }
 
 // ----------------------------------------------------------------------------
@@ -378,15 +380,10 @@ __attribute__((naked)) void SoundBDA8_LoadRecord(void *seq) {
 //   0x0802C3EC: ldr r2,[r1,#64] / adds r3,r2,#1 / str r3,[r1,#64] /
 //               ldrb r3,[r2,#0] / bx lr
 //
-// What IS still unreachable, and was measured at -O1/-O2/-Os/-O3 with the
-// gate's own flags, is the FRAME ITSELF. agbcc never emits armcc's
-// `mov ip,lr... bx ip`: for every function with a call it emits
-// `push {lr}... pop {r0} / bx r0`, a sibling call included, so even a pure
-// tail call comes out framed. That is 2 bytes different at entry and 2 more
-// (plus 2 of length) at exit, and it is the entire residue of `_0802BE34`,
-// `_0802BE4C`, `_0802C3F8` and `_0802C40C`, whose bodies are otherwise
-// instruction-for-instruction the ROM's. It is not a codegen-shape problem and
-// no permutation of these bodies reaches it.
+// A regular C call cannot reproduce the helpers' `mov ip,lr ... bx ip` frame:
+// agbcc emits `push {lr} ... pop {r0} / bx r0`. The small handlers below keep
+// that custom call/return boundary explicit and use C for payload operations
+// whose exact Thumb forms agbcc can generate.
 //
 // `_0802BCE8` is blocked by a different, also structural, fact: its last
 // instruction is `b.n 0x0802BCCE`, a tail jump into an interior label of
@@ -401,32 +398,28 @@ __attribute__((naked)) void SoundBDA8_LoadRecord(void *seq) {
 // ROM: mov ip,lr / bl 0x0802BCE8 / ldrb r0,[r1,#24] / cmp r0,r3 / beq +12 /
 //      strb r3,[r1,#24] / ldrb r3,[r1,#0] / movs r2,#15 / orrs r3,r2 /
 //      strb r3,[r1,#0] / bx ip                                       (24 bytes)
-// The pins are `_0802BCF4`'s: r1 keeps `seq` out of a callee-saved copy, and
-// r3 carries the byte that `bl` leaves there. Measured 5/24 -> 16/24; the
-// residue is the armcc `mov ip,lr` / `bx ip` frame, which agbcc has no way to
-// emit (it produces `push {lr}` / `pop {r0} / bx r0`, +2 bytes overall).
-// TRANSCRIBED VERBATIM : the body minus the frame is
-// instruction-for-instruction the ROM's (measured 16/24 with pins), but the
-// `mov ip, lr` / `bx ip` frame is unreachable from C (see the group note).
+// r1 keeps `seq` in the ROM's argument register and r3 carries the helper's
+// nonstandard byte result. C expresses the comparison, conditional store, and
+// flag update; inline assembly preserves the measured custom frame.
 void _0802BE34(void *a, void *s) __attribute__((alias("SoundBE34_TrackSel")));
 void sub_0802BE34(void *a, void *s) __attribute__((alias("SoundBE34_TrackSel")));
 __attribute__((naked)) void SoundBE34_TrackSel(void *a, void *seq) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "mov  ip, lr\n"
-        "bl   _0802BCE8\n"
-        "ldrb r0, [r1, #24]\n"
-        "cmp  r0, r3\n"
-        "beq.n 1f\n"
-        "strb r3, [r1, #24]\n"
-        "ldrb r3, [r1, #0]\n"
-        "movs r2, #15\n"
-        "orrs r3, r2\n"
-        "strb r3, [r1, #0]\n"
-        "1:\n"
-        "bx   ip\n"
-        ".syntax divided\n"
-    );
+    register u32 frame __asm__("ip");
+    register u32 value __asm__("r3");
+    register volatile u8 *channel __asm__("r1") = (volatile u8 *)seq;
+    __asm__ volatile(".syntax unified\n\tmov %0, lr\n\tbl _0802BCE8\n\t.syntax divided"
+                     : "=r"(frame), "=r"(value) : : "lr", "cc", "memory");
+    register u32 current __asm__("r0") = channel[24];
+    __asm__ volatile("" : "+r"(current) : : "memory");
+    if (current != value) {
+        channel[24] = (u8)value;
+        register u32 flags __asm__("r3") = channel[0];
+        register u32 bits __asm__("r2") = 15;
+        __asm__ volatile("" : "+r"(flags), "+r"(bits) : : "cc", "memory");
+        flags |= bits;
+        channel[0] = (u8)flags;
+    }
+    __asm__ volatile("bx %0" : : "r"(frame) : "cc");
 }
 
 // ----------------------------------------------------------------------------
@@ -436,24 +429,24 @@ __attribute__((naked)) void SoundBE34_TrackSel(void *a, void *seq) {
 // ROM: mov ip,lr / bl 0x0802BCE8 / subs r3,#64 / strb r3,[r1,#12] /
 //      ldrb r3,[r1,#0] / movs r2,#12 / orrs r3,r2 / strb r3,[r1,#0] /
 //      bx ip                                                          (20 bytes)
-// Measured 0/20 -> 12/20; residue is the ip frame, same cause as `_0802BE34`.
-// TRANSCRIBED VERBATIM : same frame wall as `_0802BE34`.
+// The helper call and custom return stay in inline assembly; the subtraction,
+// byte stores, and flag update are expressed in C.
 void _0802BE4C(void *a, void *s) __attribute__((alias("SoundBE4C_Volume")));
 void sub_0802BE4C(void *a, void *s) __attribute__((alias("SoundBE4C_Volume")));
 __attribute__((naked)) void SoundBE4C_Volume(void *a, void *seq) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "mov  ip, lr\n"
-        "bl   _0802BCE8\n"
-        "subs r3, #64\n"
-        "strb r3, [r1, #12]\n"
-        "ldrb r3, [r1, #0]\n"
-        "movs r2, #12\n"
-        "orrs r3, r2\n"
-        "strb r3, [r1, #0]\n"
-        "bx   ip\n"
-        ".syntax divided\n"
-    );
+    register u32 frame __asm__("ip");
+    register u32 value __asm__("r3");
+    register volatile u8 *channel __asm__("r1") = (volatile u8 *)seq;
+    __asm__ volatile(".syntax unified\n\tmov %0, lr\n\tbl _0802BCE8\n\t.syntax divided"
+                     : "=r"(frame), "=r"(value) : : "lr", "cc", "memory");
+    value -= 64;
+    *(volatile u8 *)(channel + 12) = (u8)value;
+    register u32 flags __asm__("r3") = channel[0];
+    register u32 bits __asm__("r2") = 12;
+    __asm__ volatile("" : "+r"(flags), "+r"(bits) : : "cc", "memory");
+    flags |= bits;
+    channel[0] = (u8)flags;
+    __asm__ volatile("bx %0" : : "r"(frame) : "cc");
 }
 
 // ----------------------------------------------------------------------------
@@ -463,31 +456,34 @@ __attribute__((naked)) void SoundBE4C_Volume(void *a, void *seq) {
 // ROM: mov ip,lr / ldr r2,[r1,#64] / ldrb r3,[r2] / adds r2,#1 /
 //      ldr r0,[pc,#8] / adds r0,#0x60 / bl 0x0802BCEA / strb r3,[r0] /
 //      bx ip /.word 0x04000060                                     (24 bytes)
-// The `bl` target 0x0802BCEA is an INTERIOR label two bytes into
-// `_0802BCE8` (its first instruction, `adds r3,r2,#1`); it has no C entry of
-// its own, so this body cannot call it and the inlined spelling below costs
-// +8 bytes. See `_0802BCE8`'s note in src/sound_extra.c.
-// TRANSCRIBED VERBATIM : frame wall plus the `bl _0802BCEA`
-// interior call -- the call itself is C-reachable (a declaration renamed with
-// `__asm__("_0802BCEA")` emits the right operand), but any real call forces
-// agbcc's push/pop frame. The private pool word rides at the end of the span.
+// `_0802BCEA` is the interior cursor-fetch tail in this TU. Keep its call and
+// the custom ip return explicit: its byte result uses r3, and the tail merge
+// returns through the caller's lr. C expresses the cursor/index loads and the
+// volatile PSG byte store. Empty register barriers pin the MMIO base/index so
+// agbcc preserves the ROM's literal-load and add operand order.
 void _0802BE60(void *a, void *s) __attribute__((alias("SoundBE60_PSGWrite")));
 void sub_0802BE60(void *a, void *s) __attribute__((alias("SoundBE60_PSGWrite")));
 __attribute__((naked)) void SoundBE60_PSGWrite(void *a, void *seq) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "mov  ip, lr\n"
-        "ldr  r2, [r1, #64]\n"
-        "ldrb r3, [r2, #0]\n"
-        "adds r2, #1\n"
-        "ldr  r0, [pc, #8]\n"
-        "adds r0, r0, r3\n"
-        "bl   _0802BCEA\n"
-        "strb r3, [r0, #0]\n"
-        "bx   ip\n"
-        ".word 0x04000060\n"
-        ".syntax divided\n"
-    );
+    register u32 frame __asm__("ip");
+    register volatile u8 *channel __asm__("r1") = (volatile u8 *)seq;
+    register u32 cursor __asm__("r2");
+    register u32 index __asm__("r3");
+    register volatile u8 *address __asm__("r0");
+    register u32 value __asm__("r3");
+    __asm__ volatile (".syntax unified\n\tmov %0, lr\n\t.syntax divided"
+                      : "=r"(frame) : : "cc");
+    cursor = *(volatile u32 *)(channel + 64);
+    index = *(volatile u8 *)(uintptr_t)cursor;
+    __asm__ volatile ("" : "+r"(index) : : "cc");
+    cursor += 1;
+    address = (volatile u8 *)(uintptr_t)0x04000060u;
+    __asm__ volatile ("" : "+r"(address) : : "cc");
+    address += index;
+    __asm__ volatile (".syntax unified\n\t@ %0, %1\n\tbl _0802BCEA\n\t.syntax divided"
+                      : "=r"(value), "+r"(cursor) : : "lr", "cc", "memory");
+    *address = (u8)value;
+    __asm__ volatile (".syntax unified\n\tbx %0\n\t.syntax divided"
+                      : : "r"(frame) : "cc");
 }
 
 // ============================================================================
@@ -542,51 +538,43 @@ __asm__(".align 2, 0");
 //
 // ROM: mov ip,lr / bl 0x0802C3EC / strb r3,[r1,#25] / cmp r3,#0 / bne +8 /
 //      bl 0x0802C3D0 / bx ip / pad                                    (20 bytes)
-// The byte arrives in r3, so this body pins its own copy to r3 for the same
-// reason 0x0802C3EC does; the r1 pin keeps `seq` out of a callee-saved copy.
-// Measured 0/20 -> 15/20, candidate 20 bytes -- body length already exact, so
-// the whole residue is the ip frame.
-// TRANSCRIBED VERBATIM : body exact with pins (15/20), residue is
-// the `mov ip, lr` / `bx ip` frame only.
+// The helper's byte arrives in r3. Pinning it and the channel pointer to r3/r1
+// lets C emit the exact store and zero check; the custom frame and helper calls
+// stay explicit because this naked body has a nonstandard return boundary.
+// The pinned C payload, both calls, and the padded 20-byte body match exactly.
 void _0802C3F8(void *a, void *s) __attribute__((alias("SoundC3F8_NoteOn")));
 void sub_0802C3F8(void *a, void *s) __attribute__((alias("SoundC3F8_NoteOn")));
 __attribute__((naked)) void SoundC3F8_NoteOn(void *a, void *seq) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "mov  ip, lr\n"
-        "bl   _0802C3EC\n"
-        "strb r3, [r1, #25]\n"
-        "cmp  r3, #0\n"
-        "bne.n 1f\n"
-        "bl   _0802C3D0\n"
-        "1:\n"
-        "bx   ip\n"
-        ".hword 0x0000\n"
-        ".syntax divided\n"
-    );
+    register u32 frame __asm__("ip");
+    register u32 value __asm__("r3");
+    register volatile u8 *channel __asm__("r1") = (volatile u8 *)seq;
+    __asm__ volatile (".syntax unified\n\tmov %0, lr\n\tbl _0802C3EC\n\t.syntax divided"
+                      : "=r"(frame), "=r"(value) : : "lr", "cc", "memory");
+    channel[25] = (u8)value;
+    if (value == 0)
+        __asm__ volatile (".syntax unified\n\tbl _0802C3D0\n\t.syntax divided"
+                          : : : "lr", "cc", "memory");
+    __asm__ volatile (".syntax unified\n\tbx %0\n\t.hword 0\n\t.syntax divided"
+                      : : "r"(frame) : "cc");
 }
 
 // ----------------------------------------------------------------------------
 // 0x0802C40C — fetch byte -> [seq+23]; if 0 -> envelope-apply leaf (C3D0).
-// Same shape and same residue as `_0802C3F8`, one byte store target apart.
-// TRANSCRIBED VERBATIM : same shape and same frame wall as
-// `_0802C3F8`, one byte store target apart.
+// Same C payload and custom frame as `_0802C3F8`, storing at channel +23.
 void _0802C40C(void *a, void *s) __attribute__((alias("SoundC40C_EnvByte")));
 void sub_0802C40C(void *a, void *s) __attribute__((alias("SoundC40C_EnvByte")));
 __attribute__((naked)) void SoundC40C_EnvByte(void *a, void *seq) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "mov  ip, lr\n"
-        "bl   _0802C3EC\n"
-        "strb r3, [r1, #23]\n"
-        "cmp  r3, #0\n"
-        "bne.n 1f\n"
-        "bl   _0802C3D0\n"
-        "1:\n"
-        "bx   ip\n"
-        ".hword 0x0000\n"
-        ".syntax divided\n"
-    );
+    register u32 frame __asm__("ip");
+    register u32 value __asm__("r3");
+    register volatile u8 *channel __asm__("r1") = (volatile u8 *)seq;
+    __asm__ volatile (".syntax unified\n\tmov %0, lr\n\tbl _0802C3EC\n\t.syntax divided"
+                      : "=r"(frame), "=r"(value) : : "lr", "cc", "memory");
+    channel[23] = (u8)value;
+    if (value == 0)
+        __asm__ volatile (".syntax unified\n\tbl _0802C3D0\n\t.syntax divided"
+                          : : : "lr", "cc", "memory");
+    __asm__ volatile (".syntax unified\n\tbx %0\n\t.hword 0\n\t.syntax divided"
+                      : : "r"(frame) : "cc");
 }
 
 // ----------------------------------------------------------------------------
@@ -716,29 +704,29 @@ void sub_0802C648(void *a) __attribute__((alias("SoundC648_Unclaim")));
 
 // ----------------------------------------------------------------------------
 // 0x0802C67C — stop-all loop over 4 headers.
+// The 4-entry count and the table base both come from the function's own
+// pool (`ldr r0,=4` / `ldr r5,=0x08061F74`), so they read as
+// assembler-resolved absolutes the way SoundResetTabCount does
+// (docs/findings/track_car_26180_pool_order.md) instead of asm splices.
 void SoundC67C_StopAll(void) {
-    register u32 count __asm__("r0");
-    register u32 remaining __asm__("r4");
-    register u32 table __asm__("r5");
+    __asm__(".globl SoundC67C_Count\nSoundC67C_Count = 4\n"
+            ".globl SoundC67C_Table\nSoundC67C_Table = 0x08061F74\n");
+    u16 count;
+    extern u8 SoundC67C_Count[];
+    extern u8 SoundC67C_Table[];
 
-    __asm__ volatile ("ldr %0, .LSoundC67C_count" : "=r"(count));
-    count = (u16)count;
+    count = (u16)(uintptr_t)SoundC67C_Count;
     if (count != 0) {
-        __asm__ volatile ("ldr %0, .LSoundC67C_table" : "=r"(table));
-        remaining = count;
+        // Table base is the walking pointer (r5), the count copy is the
+        // down counter (r4): `adds r5,#12` / `subs r4,#1` / `bne`.
+        volatile u8 *tab = (volatile u8 *)(uintptr_t)SoundC67C_Table;
+        int n = count;
         do {
-            _0802CD18((void *)(uintptr_t)*(volatile u32 *)(uintptr_t)table);
-            table += 12;
-            remaining--;
-        } while (remaining != 0);
+            _0802CD18((void *)(uintptr_t)*(volatile u32 *)(uintptr_t)tab);
+            tab += 12;
+        } while (--n);
     }
 }
-__asm__(".pushsection .text.SoundC67C_StopAll,\"ax\",%progbits\n"
-        ".subsection 1\n"
-        ".align 2, 0\n"
-        ".LSoundC67C_count: .word 4\n"
-        ".LSoundC67C_table: .word 0x08061F74\n"
-        ".popsection");
 void _0802C67C(void) __attribute__((alias("SoundC67C_StopAll")));
 void sub_0802C67C(void) __attribute__((alias("SoundC67C_StopAll")));
 
@@ -752,29 +740,25 @@ void _0802C6A8(void *a) __attribute__((alias("SoundC6A8_PauseOff")));
 void sub_0802C6A8(void *a) __attribute__((alias("SoundC6A8_PauseOff")));
 
 // ----------------------------------------------------------------------------
+// 0x0802C6B4 — pause-all over the same 4-header table (pool order: 4,
+// 0x08061F74), same assembler-resolved absolute spelling as the stop twin.
 void SoundC6B4_PauseAll(void) {
-    register u32 count __asm__("r0");
-    register u32 remaining __asm__("r4");
-    register u32 table __asm__("r5");
+    __asm__(".globl SoundC6B4_Count\nSoundC6B4_Count = 4\n"
+            ".globl SoundC6B4_Table\nSoundC6B4_Table = 0x08061F74\n");
+    u16 count;
+    extern u8 SoundC6B4_Count[];
+    extern u8 SoundC6B4_Table[];
 
-    __asm__ volatile ("ldr %0, .LSoundC6B4_count" : "=r"(count));
-    count = (u16)count;
+    count = (u16)(uintptr_t)SoundC6B4_Count;
     if (count != 0) {
-        __asm__ volatile ("ldr %0, .LSoundC6B4_table" : "=r"(table));
-        remaining = count;
+        volatile u8 *tab = (volatile u8 *)(uintptr_t)SoundC6B4_Table;
+        int n = count;
         do {
-            _0802C488((void *)(uintptr_t)*(volatile u32 *)(uintptr_t)table);
-            table += 12;
-            remaining--;
-        } while (remaining != 0);
+            _0802C488((void *)(uintptr_t)*(volatile u32 *)(uintptr_t)tab);
+            tab += 12;
+        } while (--n);
     }
 }
-__asm__(".pushsection .text.SoundC6B4_PauseAll,\"ax\",%progbits\n"
-        ".subsection 1\n"
-        ".align 2, 0\n"
-        ".LSoundC6B4_count: .word 4\n"
-        ".LSoundC6B4_table: .word 0x08061F74\n"
-        ".popsection");
 void _0802C6B4(void) __attribute__((alias("SoundC6B4_PauseAll")));
 void sub_0802C6B4(void) __attribute__((alias("SoundC6B4_PauseAll")));
 

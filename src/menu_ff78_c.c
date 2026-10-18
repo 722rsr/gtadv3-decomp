@@ -798,97 +798,94 @@ void sub_0800115E0(void *a, int b, int c) __attribute__((alias("MenuFF78_115E0")
 // sub_0800116DC — small cursor handler w/ u16[rec+192] (clamped 0..2, 99→0),
 // mirrors to u16[rec+200], and the same epilogue 0x15C bind + s16[rec+212].
 // ============================================================================
-__attribute__((naked)) void MenuFF78_116DC(void *rec_, int a1, int a2) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, lr}\n"
-        "adds r4, r0, #0\n"
-        "lsls r2, r2, #16\n"
-        "lsrs r2, r2, #16\n"
-        "adds r1, r4, #0\n"
-        "adds r1, #192\n"
-        "ldrh r3, [r1, #0]\n"
-        "cmp r2, #32\n"
-        "bne .L116DC_mode16\n"
-        "subs r0, r3, #1\n"
-        "strh r0, [r1, #0]\n"
-        ".L116DC_mode16:\n"
-        "cmp r2, #16\n"
-        "bne .L116DC_check99\n"
-        "ldrh r0, [r1, #0]\n"
-        "adds r0, #1\n"
-        "strh r0, [r1, #0]\n"
-        ".L116DC_check99:\n"
-        "ldrh r0, [r1, #0]\n"
-        "cmp r0, #99\n"
-        "bne .L116DC_clamp\n"
-        "movs r0, #0\n"
-        "strh r0, [r1, #0]\n"
-        "movs r3, #0\n"
-        ".L116DC_clamp:\n"
-        "movs r2, #0\n"
-        "ldrsh r0, [r1, r2]\n"
-        "cmp r0, #2\n"
-        "ble .L116DC_nonnegative\n"
-        "cmp r0, #99\n"
-        "beq .L116DC_nonnegative\n"
-        "movs r0, #2\n"
-        "strh r0, [r1, #0]\n"
-        ".L116DC_nonnegative:\n"
-        "adds r0, r4, #0\n"
-        "adds r0, #192\n"
-        "movs r2, #0\n"
-        "ldrsh r1, [r0, r2]\n"
-        "adds r5, r0, #0\n"
-        "cmp r1, #0\n"
-        "bge .L116DC_mirror\n"
-        "movs r0, #0\n"
-        "strh r0, [r5, #0]\n"
-        ".L116DC_mirror:\n"
-        "ldrh r1, [r5, #0]\n"
-        "adds r0, r4, #0\n"
-        "adds r0, #200\n"
-        "strh r1, [r0, #0]\n"
-        "lsls r0, r3, #16\n"
-        "asrs r0, r0, #16\n"
-        "movs r3, #0\n"
-        "ldrsh r1, [r5, r3]\n"
-        "cmp r0, r1\n"
-        "beq .L116DC_end\n"
-        "cmp r1, #99\n"
-        "beq .L116DC_end\n"
-        "movs r0, #3\n"
-        "bl 0x0802B368\n"
-        "movs r0, #182\n"
-        "lsls r0, r0, #1\n"
-        "adds r2, r4, r0\n"
-        "ldr r1, .L116DC_table\n"
-        "movs r3, #0\n"
-        "ldrsh r0, [r5, r3]\n"
-        "lsls r0, r0, #1\n"
-        "adds r1, #20\n"
-        "adds r0, r0, r1\n"
-        "ldrh r1, [r0, #0]\n"
-        "str r1, [r2, #0]\n"
-        "ldr r0, [r4, #36]\n"
-        "movs r3, #180\n"
-        "lsls r3, r3, #1\n"
-        "adds r2, r4, r3\n"
-        "ldr r2, [r2, #0]\n"
-        "bl 0x08007ABC\n"
-        "adds r0, r4, #0\n"
-        "bl 0x0800F810\n"
-        ".L116DC_end:\n"
-        "ldrh r1, [r5, #0]\n"
-        "adds r0, r4, #0\n"
-        "adds r0, #212\n"
-        "strh r1, [r0, #0]\n"
-        "pop {r4, r5}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        ".L116DC_table: .4byte 0x080CB55C\n"
-        ".syntax divided\n"
-    );
+void MenuFF78_116DC(void *rec_, int unused, int a2) {
+    (void)unused;
+    __asm__(".globl MenuFF78Table116DC\nMenuFF78Table116DC = 0x080CB55C\n");
+    extern const u16 MenuFF78Table116DC[];
+    register u8 *r4 __asm__("r4") = (u8 *)rec_;
+    register u32 mode __asm__("r2") = (u32)a2;
+    mode = (u16)mode;
+    register volatile u8 *r1 __asm__("r1") = r4;
+    r1 += 192;
+    register u16 old __asm__("r3") = *(volatile u16 *)r1;
+
+    if (mode == 32) {
+        register u16 dec __asm__("r0") = (u16)(old - 1);
+        *(volatile u16 *)r1 = dec;
+    }
+    if (mode == 16) {
+        register u16 inc __asm__("r0") = *(volatile u16 *)r1;
+        inc = (u16)(inc + 1);
+        *(volatile u16 *)r1 = inc;
+    }
+    if (*(volatile u16 *)r1 == 99) {
+        *(volatile u16 *)r1 = 0;
+        old = 0;
+    }
+    {
+        register u32 zeroClamp __asm__("r2") = 0;
+        register s32 clampValue __asm__("r0");
+        clampValue = *(s16 *)((u8 *)r1 + zeroClamp);
+        if (clampValue > 2 && clampValue != 99)
+            *(volatile u16 *)r1 = 2;
+    }
+    {
+        register u8 *p0 __asm__("r0") = r4;
+        p0 += 192;
+        register u32 zeroCursor __asm__("r2") = 0;
+        register s32 signedValue __asm__("r1");
+        signedValue = *(s16 *)(p0 + zeroCursor);
+        register u8 *r5 __asm__("r5") = p0;
+        if (signedValue < 0)
+            *(volatile u16 *)r5 = 0;
+        register u16 mirror __asm__("r1") = *(volatile u16 *)r5;
+        register u8 *p200 __asm__("r0") = r4;
+        p200 += 200;
+        *(volatile u16 *)p200 = mirror;
+
+        register s32 previous __asm__("r0") = (s16)old;
+        register u32 zeroCompare __asm__("r3") = 0;
+        register s32 currentValue __asm__("r1");
+        currentValue = *(s16 *)(r5 + zeroCompare);
+        if (previous != currentValue && currentValue != 99) {
+            _0802B368(3);
+            register u32 destOffset __asm__("r0") = 182;
+            __asm__ volatile ("" : "+r"(destOffset));
+            destOffset <<= 1;
+            register u32 dest __asm__("r2") =
+                (u32)(uintptr_t)r4 + destOffset;
+            __asm__ volatile ("" : "+r"(dest));
+
+            register u32 tableBase __asm__("r1") =
+                (u32)(uintptr_t)MenuFF78Table116DC;
+            __asm__ volatile ("" : "+r"(tableBase));
+            register u32 tableZero __asm__("r3") = 0;
+            register s32 row __asm__("r0");
+            row = *(s16 *)(r5 + tableZero);
+            row <<= 1;
+            tableBase += 20;
+            row += tableBase;
+            register u32 selected __asm__("r1") =
+                *(volatile u16 *)(uintptr_t)row;
+            *(volatile u32 *)(uintptr_t)dest = selected;
+
+            register u32 firstArg __asm__("r0") =
+                *(volatile u32 *)(r4 + 36);
+            register u32 laneOffset __asm__("r3") = 180;
+            __asm__ volatile ("" : "+r"(laneOffset));
+            laneOffset <<= 1;
+            register u32 lane __asm__("r2") =
+                (u32)(uintptr_t)r4 + laneOffset;
+            __asm__ volatile ("" : "+r"(lane));
+            lane = *(volatile u32 *)(uintptr_t)lane;
+            _08007ABC((void *)(uintptr_t)firstArg, (int)selected, (int)lane);
+            _0800F810(r4);
+        }
+        register u16 finalValue __asm__("r1") = *(volatile u16 *)r5;
+        register u8 *endDest __asm__("r0") = r4;
+        endDest += 212;
+        *(volatile u16 *)endDest = finalValue;
+    }
 }
 void _0800116DC(void *a, int b, int c) __attribute__((alias("MenuFF78_116DC")));
 void sub_0800116DC(void *a, int b, int c) __attribute__((alias("MenuFF78_116DC")));

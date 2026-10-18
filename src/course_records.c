@@ -69,97 +69,78 @@ void Course_RecordInit(void *rec){
         dst_b += 64;
     } while (--count >= 0);
 }
-__attribute__((naked)) void Course_Build32Row(int sel){
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, r7, lr}\n"
-        "mov r7, sl\n"
-        "mov r6, r9\n"
-        "mov r5, r8\n"
-        "push {r5, r6, r7}\n"
-        "sub sp, #68\n"
-        "lsls r0, r0, #24\n"
-        "movs r5, #8\n"
-        "cmp r0, #0\n"
-        "beq .L8300_316\n"
-        "movs r5, #7\n"
-        ".L8300_316:\n"
-        "ldr r4, .L8300_3a4\n"
-        "ldr r2, .L8300_3a8\n"
-        "adds r0, r4, #0\n"
-        "adds r1, r5, #0\n"
-        "bl 0x080078EC\n"
-        "adds r0, r4, #0\n"
-        "adds r1, r5, #0\n"
-        "movs r2, #13\n"
-        "bl 0x08007938\n"
-        "adds r0, r4, #0\n"
-        "adds r1, r5, #0\n"
-        "bl 0x08007924\n"
-        "str r0, [sp, #64]\n"
-        "movs r4, #0\n"
-        "ldr r0, .L8300_3ac\n"
-        "mov sl, r0\n"
-        "movs r1, #192\n"
-        "lsls r1, r1, #4\n"
-        "mov r9, r1\n"
-        "ldr r0, .L8300_3b0\n"
-        "mov r8, r0\n"
-        "movs r1, #208\n"
-        "lsls r1, r1, #8\n"
-        "adds r7, r1, #0\n"
-        ".L8300_34c:\n"
-        "movs r0, #22\n"
-        "muls r0, r4\n"
-        "ldr r1, [sp, #64]\n"
-        "adds r0, r1, r0\n"
-        "mov r1, sp\n"
-        "movs r2, #11\n"
-        "bl 0x0802D974\n"
-        "mov r3, sp\n"
-        "adds r5, r4, #0\n"
-        "adds r5, #14\n"
-        "adds r6, r4, #1\n"
-        "movs r4, #31\n"
-        ".L8300_366:\n"
-        "ldrh r2, [r3, #0]\n"
-        "mov r1, sl\n"
-        "ands r1, r2\n"
-        "mov r0, r9\n"
-        "ands r0, r2\n"
-        "add r1, r8\n"
-        "orrs r0, r7\n"
-        "orrs r1, r0\n"
-        "strh r1, [r3, #0]\n"
-        "subs r4, #1\n"
-        "adds r3, #2\n"
-        "cmp r4, #0\n"
-        "bge .L8300_366\n"
-        "lsls r1, r5, #6\n"
-        "ldr r0, .L8300_3b4\n"
-        "adds r1, r1, r0\n"
-        "mov r0, sp\n"
-        "movs r2, #11\n"
-        "bl 0x0802D974\n"
-        "adds r4, r6, #0\n"
-        "cmp r4, #5\n"
-        "ble .L8300_34c\n"
-        "add sp, #68\n"
-        "pop {r3, r4, r5}\n"
-        "mov r8, r3\n"
-        "mov r9, r4\n"
-        "mov sl, r5\n"
-        "pop {r4, r5, r6, r7}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        ".align 2, 0\n"
-        ".L8300_3a4: .4byte 0x0828FF08\n"
-        ".L8300_3a8: .4byte 0x0600D520\n"
-        ".L8300_3ac: .4byte 0x000003FF\n"
-        ".L8300_3b0: .4byte 0x000002A9\n"
-        ".L8300_3b4: .4byte 0x0600F026\n"
-        ".syntax divided\n"
-    );
+void Course_Build32Row(int sel){
+    typedef struct { u16 pixels[32]; void *base; } Row32Frame;
+    extern void sub_080078EC(void *, void *, int);
+    extern void *sub_08007938(void *, int, int);
+    extern void *sub_08007924(void *, int);
+    extern void sub_0802D974(const void *, void *, u32);
+    Row32Frame frame;
+    void *template_base;
+    register int resource_id __asm__("r5");
+    register int row __asm__("r4");
+    register int next_row __asm__("r6");
+    register u32 mask __asm__("r10");
+    register u32 mask_hi __asm__("r9");
+    register u32 addend __asm__("r8");
+    u32 set_bits;
+    register u16 *pixel __asm__("r3");
+    register u32 value __asm__("r2");
+    register u32 low __asm__("r1");
+    register u32 high __asm__("r0");
+    // The ROM tests sel's low byte by shifting it into the sign bit.
+    high = sel << 24;
+    resource_id = 8;
+    if (high != 0)
+        resource_id = 7;
+    template_base = (void *)0x0828FF08u;
+    sub_080078EC(template_base, (void *)(uintptr_t)resource_id, 0x0600D520u);
+    sub_08007938(template_base, resource_id, 13);
+    frame.base = sub_08007924(template_base, resource_id);
+    // Preserve the observed register roles. Keep set_bits unpinned so its
+    // cross-block lifetime uses the saved r7 register.
+    row = 0;
+    mask = 0x000003FFu;
+    low = 192;
+    low <<= 4;
+    __asm__ volatile ("" : "+r" (low));
+    mask_hi = low;
+    high = 0x000002A9u;
+    addend = high;
+    low = 208;
+    low <<= 8;
+    __asm__ volatile ("" : "+r" (low));
+    set_bits = low;
+    // Each 22-byte source row feeds one 64-byte scratch row; six rows are sent
+    // to VRAM rows 14 through 19.
+    do {
+        high = row * 22;
+        low = (u32)(uintptr_t)frame.base;
+        high = low + high;
+        sub_0802D974((const void *)(uintptr_t)high, frame.pixels, 11);
+        pixel = frame.pixels;
+        resource_id = row + 14;
+        next_row = row + 1;
+        row = 31;
+        do {
+            value = *pixel;
+            low = value & mask;
+            high = value & mask_hi;
+            low += addend;
+            high |= set_bits;
+            // Add 0x2A9 to the low ten bits, preserve bits 10-11, and set
+            // the high palette bits before writing the halfword.
+            low |= high;
+            *pixel = (u16)low;
+            --row;
+            ++pixel;
+        } while (row >= 0);
+        low = (u32)resource_id << 6;
+        high = 0x0600F026u;
+        low += high;
+        sub_0802D974(frame.pixels, (void *)(uintptr_t)low, 11);
+        row = next_row;
+    } while (row <= 5);
 }
 void Course_Build16Row(int sel){
     typedef struct { u32 w[4]; } Row16Template;
@@ -183,62 +164,61 @@ void Course_Build16Row(int sel){
     sub_080078EC(template_base, (void *)(uintptr_t)r5, 0x0600DB60);
     sub_08007938(template_base, r5, 12);
     frame.base = sub_08007924(template_base, r5);
-    u32 r7_mask;
-    __asm__ volatile(
-        ".code 16\n\t"
-        "movs r4, #0\n\t"
-        "ldr r0, =0x000003FF\n\t"
-        "mov sl, r0\n\t"
-        "movs r1, #192\n\t"
-        "lsl r1, r1, #4\n\t"
-        "mov r9, r1\n\t"
-        "ldr r5, =0x000002DB\n\t"
-        "mov r8, r5\n\t"
-        "movs r6, #192\n\t"
-        "lsl r6, r6, #8\n\t"
-        "add r7, r6, #0\n"
-        "1:\n\t"
-        "lsl r0, r4, #4\n\t"
-        "sub r0, r0, r4\n\t"
-        "lsl r0, r0, #1\n\t"
-        "ldr r1, [sp, #80]\n\t"
-        "add r0, r1, r0\n\t"
-        "mov r1, sp\n\t"
-        "movs r2, #15\n\t"
-        "bl sub_0802D974\n\t"
-        "mov r3, sp\n\t"
-        "add r5, r4, #0\n\t"
-        "add r5, #18\n\t"
-        "add r6, r4, #1\n\t"
-        "movs r4, #31\n"
-        "2:\n\t"
-        "ldrh r2, [r3, #0]\n\t"
-        "mov r1, sl\n\t"
-        "and r1, r2\n\t"
-        "mov r0, r9\n\t"
-        "and r0, r2\n\t"
-        "add r1, r8\n\t"
-        "orr r0, r7\n\t"
-        "orr r1, r0\n\t"
-        "strh r1, [r3, #0]\n\t"
-        "sub r4, #1\n\t"
-        "add r3, #2\n\t"
-        "cmp r4, #0\n\t"
-        "bge 2b\n\t"
-        "lsl r1, r5, #6\n\t"
-        "ldr r4, =0x0600F000\n\t"
-        "add r1, r1, r4\n\t"
-        "mov r0, sp\n\t"
-        "movs r2, #15\n\t"
-        "bl sub_0802D974\n\t"
-        "add r4, r6, #0\n\t"
-        "cmp r4, #1\n\t"
-        "ble 1b\n"
-        : "=r"(r7_mask)
-        :
-        : "r0", "r1", "r2", "r3", "r4", "r5", "r6",
-          "r8", "r9", "r10", "r11", "r12", "lr", "cc", "memory");
-    __asm__ volatile("" : : "r"(r7_mask));
+    // The pins preserve the row builder's register roles. The empty barriers
+    // retain the compiler temporaries needed for the exact Thumb sequence.
+    register int row __asm__("r4");
+    register u32 mask __asm__("r10");
+    register u32 mask_hi __asm__("r9");
+    register u32 addend __asm__("r8");
+    u32 set_bits;
+    register u16 *pixel __asm__("r3");
+    register int dest_row __asm__("r5");
+    register int next_row __asm__("r6");
+    register u32 value __asm__("r2");
+    register u32 low __asm__("r1");
+    register u32 high __asm__("r0");
+    row = 0;
+    mask = 0x000003FFu;
+    // Build the palette masks and addend in the registers used by the row loop.
+    low = 192;
+    low <<= 4;
+    __asm__ volatile ("" : "+r" (low));
+    mask_hi = low;
+    dest_row = 0x000002DBu;
+    __asm__ volatile ("" : "+r" (dest_row));
+    addend = dest_row;
+    next_row = 192;
+    next_row <<= 8;
+    __asm__ volatile ("" : "+r" (next_row));
+    set_bits = next_row;
+    do {
+        high = row * 30;
+        low = (u32)(uintptr_t)frame.base;
+        high = low + high;
+        sub_0802D974((const void *)(uintptr_t)high, frame.pixels, 15);
+        pixel = frame.pixels;
+        dest_row = row + 18;
+        next_row = row + 1;
+        row = 31;
+        do {
+            value = *pixel;
+            low = value & mask;
+            high = value & mask_hi;
+            low += addend;
+            // Preserve source bits 10-11, add 0x2DB to the low ten bits,
+            // and force the high palette bits before storing the halfword.
+            high |= set_bits;
+            low |= high;
+            *pixel = (u16)low;
+            --row;
+            ++pixel;
+        } while (row >= 0);
+        low = (u32)dest_row << 6;
+        row = (int)0x0600F000u;
+        low += (u32)row;
+        sub_0802D974(frame.pixels, (void *)(uintptr_t)low, 15);
+        row = next_row;
+    } while (row <= 1);
 }
 __attribute__((naked)) void Course_BuildDispatch(int mode,int sel) {
     __asm__ volatile (

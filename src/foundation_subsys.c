@@ -808,10 +808,13 @@ u16 MgrGridGet_04C60(u32 idx, u32 field){
 u16 _08004C60(u32 a, u32 b) __attribute__((alias("MgrGridGet_04C60")));
 // 0x08004C78 — store a word into the manager block at +0x94.
 void MgrStore94_04C78(u32 v){
-    u32 b;
-    MGR_OBJ_DEFINE;
-    b = (u32)(uintptr_t)MGR_OBJ;
-    *(volatile u32 *)(uintptr_t)(b + 0x94) = v;
+    u32 b = 0x03000198u;
+    // Hold the literal base across C arithmetic; without this empty barrier,
+    // agbcc folds base + 0x94 into the pool word instead of emitting the ROM's
+    // separate load and add. r1 is selected naturally, so no register pin is needed.
+    __asm__ volatile ("" : "+r"(b) : : "memory");
+    b += 0x94u;
+    *(volatile u32 *)(uintptr_t)b = v;
 }
 void _08004C78(u32 v) __attribute__((alias("MgrStore94_04C78")));
 // 0x08004C84 — per-row grid halfword STORE (asm/code_4b9c.s:153-171).

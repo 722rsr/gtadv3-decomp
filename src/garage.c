@@ -2299,15 +2299,12 @@ void Garage_Ticker_278F0(void)
         __asm__ volatile("" : "+r"(current_base));
         register volatile u8 *node __asm__("r1") = current_base + off;
         register u32 count __asm__("r2");
-        __asm__ volatile("ldrh %0, [r1, #10]" : "=r"(count) : : "memory");
+        count = *(volatile u16 *)(node + 10);
         register int signed_count __asm__("r0");
-        __asm__ volatile("movs r3, #10\n\tldrsh %0, [r1, r3]"
-                         : "=r"(signed_count) : : "r3", "memory");
+        signed_count = *(s16 *)(node + 10);
         if (signed_count > 0) {
             register u32 dec_count __asm__("r0");
-            /* GNU as does not accept this Thumb-1 three-operand spelling. */
-            __asm__ volatile(".hword 0x1e50"
-                             : "=r"(dec_count) : "r"(count) : "cc");
+            dec_count = count - 1;
             *(volatile u16 *)(node + 10) = (u16)dec_count;
             *(volatile u16 *)(node + 8) = (u16)(*(volatile u16 *)(node + 8) + 1);
             _0800278DC((void *)(uintptr_t)node);
@@ -2321,24 +2318,30 @@ void Garage_Ticker_278F0(void)
     register volatile u8 *m __asm__("r2") = *tail_slot;
     __asm__ volatile("" : "+r"(m));
     register s32 status __asm__("r1");
-    __asm__ volatile("movs r5, #6\n\tldrsh %0, [r2, r5]"
-                     : "=r"(status) : : "r5", "memory");
+    // C keeps the ROM's r5=6 materialization; the signed indexed load stays asm.
+    register int statusOffset __asm__("r5") = 6;
+    __asm__ volatile("" : : "r"(statusOffset));
+    __asm__ volatile("ldrsh %0, [%1, %2]"
+                     : "=r"(status) : "r"(m), "r"(statusOffset) : "memory");
     if (status != 0) {
         u32 t = (u32)*(volatile u16 *)(m + 4) + 1;
         *(volatile u16 *)(m + 4) = (u16)t;
         int hi = ((s16)t > 50) ? 1 : 0;
-        register int idle __asm__("r3");
-        __asm__ volatile("movs r3, #0\n\tmovs r5, #8\n\tldrsh r0, [r2, r5]"
-                         "\n\tcmp r0, #0\n\tbne 1f\n\tmovs r3, #1\n1:"
-                         : "=r"(idle) : "r"(m) : "r0", "r5", "cc", "memory");
+        register int idle __asm__("r3") = 0;
+        __asm__ volatile("" : "+r"(idle));
+        register int idleOffset __asm__("r5") = 8;
+        __asm__ volatile("" : : "r"(idleOffset));
+        register s32 idleField __asm__("r0");
+        __asm__ volatile("ldrsh %0, [%1, %2]"
+                         : "=r"(idleField) : "r"(m), "r"(idleOffset) : "memory");
+        if (idleField == 0) idle = 1;
         if (hi & idle) {
             *(volatile u16 *)(m + 8) = 1u;
             {
                 volatile u8 *wa = (volatile u8 *)(uintptr_t)GarageTickerWa;
                 if (*(volatile u8 *)(wa + 0x10C2) == 0) {
                     register s32 arg0 __asm__("r0");
-                    __asm__ volatile("movs r3, #20\n\tldrsh %0, [r2, r3]"
-                                     : "=r"(arg0) : "r"(m) : "r3", "memory");
+                    arg0 = *(s16 *)(m + 20);
                     Garage_276F0(arg0, 0, 0);
                     register s32 arg1 __asm__("r0");
                     __asm__ volatile("ldr %0, [%1]\n\tmovs r5, #22\n\tldrsh %0, [%0, r5]"
@@ -2354,8 +2357,7 @@ void Garage_Ticker_278F0(void)
         *(volatile u16 *)(reset_base + 6) = 0;
     } else {
         register s32 elapsed __asm__("r0");
-        __asm__ volatile("movs r3, #4\n\tldrsh %0, [r2, r3]"
-                         : "=r"(elapsed) : "r"(m) : "r3", "memory");
+        elapsed = *(s16 *)(m + 4);
         if (elapsed > 0) {
             *(volatile u16 *)(m + 8) = (u16)status;
             *(volatile u16 *)(m + 4) = (u16)status;
@@ -2366,12 +2368,10 @@ void Garage_Ticker_278F0(void)
                 __asm__ volatile("" : "+r"(wa), "+r"(wa_off));
                 if (*(volatile u8 *)(wa + wa_off) == 0) {
                     register s32 arg0 __asm__("r0");
-                    __asm__ volatile("movs r1, #20\n\tldrsh %0, [r2, r1]"
-                                     : "=r"(arg0) : "r"(m) : "r1", "memory");
+                    arg0 = *(s16 *)(m + 20);
                     Garage_27788(arg0, 0, 0);
                     register s32 arg1 __asm__("r0");
-                    __asm__ volatile("ldr %0, [%1]\n\tmovs r3, #22\n\tldrsh %0, [%0, r3]"
-                                     : "=r"(arg1) : "r"(tail_slot) : "r3", "memory");
+                    arg1 = *(s16 *)(*tail_slot + 22);
                     Garage_27788(arg1, 1, 0);
                 }
             }

@@ -727,6 +727,14 @@ int _08001D750(int mode) {
 // `extra` must sit in r6 precisely because r7 is a transfer register.
 typedef struct { s32 w[12]; } RSB7B8_Tmpl;
 
+// Return shape: the epilogue pops the return address into r2, which agbcc
+// emits only for an 8-byte return value (thumb_exit: size 4 pops r1, size 8
+// pops r2 -- measured), so the signature stays `unsigned long long`. The ROM
+// writes only r0 (`adds r0,r5,#0` at 0x08001D842) and leaves r1 untouched;
+// C cannot express a half-undefined u64: `return (u64)out` zeroes r1, and
+// OR-ing a dead r1-pinned word makes agbcc build the u64 in r4:r5 and copy
+// BOTH halves (measured 2026-10-17, +2 instructions). The one-instruction
+// asm splice for the r0 half is therefore minimal.
 unsigned long long _08001D7B8(void *out_, int mode, int center, int extra) {
     register volatile u8 *out __asm__("r5") = (volatile u8 *)out_;
     register int m __asm__("r12") = mode;
@@ -743,6 +751,9 @@ unsigned long long _08001D7B8(void *out_, int mode, int center, int extra) {
         // either output store. Keep that otherwise-dead value through an asm
         // input so agbcc retains the `movs r3,#0` in the same position.
         __asm__ volatile("" : "+r" (e));
+        // Each stage leaves its sign value in r1 for the next statement's
+        // use; agbcc ICEs on an uninitialised r1-pinned high word here
+        // (measured 2026-10-17), so the spliced return copy stays.
         if ((u32)m <= 14u) {
             register int x0 __asm__("r0") = t.w[0];
             register int s0 __asm__("r1") = (int)((u32)x0 >> 31);

@@ -587,13 +587,14 @@ static void CarDisplay_21860(int a, int b, int course_row, int course_col, int m
         r1_lane_addr += (uintptr_t)r3_lane_table;
         lane = *(s16 *)(uintptr_t)r1_lane_addr;
         __asm__ volatile("" ::: "memory");
-        __asm__ volatile("movs r3, #2\n\tldrsh %0, [r5, r3]"
-                         : "=r"(c1) : : "r3", "memory");
+        // Plain indexed read: cursor (r5) stays live for the later reads, so
+        // agbcc takes the `movs rX,#2 / ldrsh` index form (0x080218AC). The
+        // ROM loads byte offset +2 at both sites, i.e. cursor[1].
+        c1 = cursor[1];
         __asm__ volatile("" ::: "memory");
         c0_for_emit = cursor[0];
         _08007570((void *)r0_sprite, lane, c1, c0_for_emit << 4, 16);
-        __asm__ volatile("movs r0, #2\n\tldrsh %0, [r5, r0]"
-                         : "=r"(c1) : : "r0", "memory");
+        c1 = cursor[1];
         _08002ED0((void *)(uintptr_t)r6_a, b, c1, mode,
                   1, 2, 1, 0, 0, 1);
     }

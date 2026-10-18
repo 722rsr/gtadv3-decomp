@@ -74,6 +74,8 @@ void Code22D44_SendPacket(void *arg0, void *rec, int arg2) {
 }
 void _08022D44(void *a, void *b, int c) __attribute__((alias("Code22D44_SendPacket")));
 void sub_08022D44(void *a, void *b, int c) __attribute__((alias("Code22D44_SendPacket")));
+void _080022D44(void *a, void *b, int c) __attribute__((alias("Code22D44_SendPacket")));
+void sub_080022D44(void *a, void *b, int c) __attribute__((alias("Code22D44_SendPacket")));
 
 // ----------------------------------------------------------------------------
 // sub_08022D74 — record equality: [a+0](u32)==[b+0](u32),

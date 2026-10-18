@@ -490,13 +490,13 @@ the case bodies.
 * Two pins aimed at the same register collapse: the second is silently ignored.
 * A pinned local whose value folds to a constant is copy-propagated away.
 * `agbcc` has no instruction scheduler (`thumb.md` has no `flag_schedule_insns`
-  consumers), so a reorder inside one basic block cannot be reached by respelling.
-  Reconfirmed on `_0800B89C`: the ROM's `adds r2,#2` bump and the
-  `wa+off` base materialisation sit *after* the `ldrsh`/`lsls` group while the
-  candidate lifts both above the load; statement order, an in-place
-  `selOff += 2` inside the address expression, and an operand-less
-  `__asm__("")` fence between the load and the bump all leave the emitted
-  order unchanged (220/244, parked).
+  consumers), so a reorder inside one basic block needs a source dependency that
+  forces the desired order. `_0800B89C` reaches 244/244 by materializing the
+  doubled index before incrementing `selOff`, keeping both values live across
+  empty barriers, then forming `scaledIndex + (wa + selOff)`. For stage 2, split
+  the stage test from the timer test and clobber `r2` across the branch so the
+  timer offset is loaded afterward; keep that offset live through its volatile
+  read to preserve the ROM's register choice.
 * A promoted function whose ROM span carries a 2-byte zero alignment pad can
   still be staged: `promotion_screen.alignment_only` accepts a `PARTIAL` with
   `cand_bytes == rom_bytes`, `prefix + 2 == rom_bytes` and an all-zero tail

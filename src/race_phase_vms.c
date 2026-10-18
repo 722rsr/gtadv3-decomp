@@ -76,6 +76,7 @@ void RaceVM_022320(void *ctx, int r1, u32 v);
 void RaceVM_022348(void *a);
 void RaceVM_02234C(u32 ev, u32 p1, u32 p2, void *p3);
 u32  RaceVM_0223C0(int n);
+u32  sub_0800223C0(int n);
 void RaceVM_0223F0(void *rec);
 int  RaceVM_022438(int x);
 void RaceVM_022454(void *ctx, void *rec);
@@ -389,8 +390,8 @@ __asm__(".align 2, 0");
 
 // ============================================================================
 // sub_080021F88 (0x080021F88, 0xD0 B) — results rows: for r6 in 0..3:
-// when r6 == s16[rec+156], r7 = {mode==0→1, 1/2/3→2, 4→0, else→2} (jump
-// table 0x08021FB8, slots {1,2,2,2,0}); sel = u16[0x080CC108 + (cur*3+r7)*2],
+// when r6 == s16[rec+156], r7 = {mode==0/2→1, 1/3→2, 4→0, else→2} (jump
+// table 0x08021FB8, slots {1,2,1,2,0}); sel = u16[0x080CC108 + (cur*3+r7)*2],
 // (w0,w1) = u32 pair at 0x080CC0A8 + (cur*3+r7)*8; else sel/pair at index
 // r6*3. Both arms: _08007B18(rec, w0, w1, 0, 6, 1, 0).
 __attribute__((naked)) void RaceVM_021F88(void *rec) {
@@ -531,14 +532,16 @@ void RaceVM_02205C(void *rec) {
     register s32 m0 __asm__("r5");
     r2_off <<= 4;
     r0_cell = r1_wa + r2_off;
-    __asm__ volatile("movs r3, #0\n\tldrsh %0, [r0, r3]"
-                     : "=r"(m0) : "r"(r0_cell) : "r3", "memory");
+    m0 = *(s16 *)r0_cell;
     if (m0 == 1) {
-        __asm__ volatile("add r2, #2" : "+r"(r2_off) : : "cc");
+        // The ROM rebuilds r3=0 inside this branch after its earlier load.
+        __asm__ volatile("" : : : "r3");
+        r2_off += 2;
+        __asm__ volatile("" : "+r"(r2_off));
         r0_cell = r1_wa + r2_off;
         register s32 c1 __asm__("r6");
-        __asm__ volatile("movs r3, #0\n\tldrsh %0, [r0, r3]"
-                         : "=r"(c1) : "r"(r0_cell) : "r3", "memory");
+        c1 = *(s16 *)(uintptr_t)r0_cell;
+        __asm__ volatile("" : : "r"(r1_wa), "r"(r2_off) : "memory");
         switch (c1) {
         case 0:
             _08007B18((void *)r7, 14, 8, 32, 7u, (u32)m0, (u32)c1, (u32)c1);
@@ -557,12 +560,14 @@ void RaceVM_02205C(void *rec) {
     r5_idx = 0;
     r8_limit = r7 + 158;
     r1_tmp = 156;
-    __asm__ volatile("add %0, %0, %1"
-                     : "+r"(r1_tmp) : "r"(r7) : "cc");
+    __asm__ volatile("" : "+r"(r1_tmp));
+    r1_tmp += (uintptr_t)r7;
+    __asm__ volatile("" : "+r"(r1_tmp));
     r9_index = (volatile u8 *)r1_tmp;
     r2_tmp = 8;
-    __asm__ volatile("add %0, %0, %1"
-                     : "+r"(r2_tmp) : "r"(r7) : "cc");
+    __asm__ volatile("" : "+r"(r2_tmp));
+    r2_tmp += (uintptr_t)r7;
+    __asm__ volatile("" : "+r"(r2_tmp));
     sl_rec8 = (void *)r2_tmp;
     r4_rows = (const volatile u32 *)0x080CC078u;
     r6_gates = (const volatile u16 *)0x080CC0A0u;
@@ -570,10 +575,11 @@ void RaceVM_02205C(void *rec) {
         register u32 word0 __asm__("r2") = r4_rows[0];
         register u32 word1_r3 __asm__("r3") = r4_rows[1];
         register u32 word1_ip __asm__("ip");
-        __asm__ volatile("mov ip, r3" : "=r"(word1_ip) : "r"(word1_r3));
+        word1_ip = word1_r3;
         register s32 cur __asm__("r0");
-        __asm__ volatile("mov r1, r8\n\tmovs r3, #0\n\tldrsh r0, [r1, r3]"
-                         : "=r"(cur) : "r"(r8_limit) : "r1", "r3", "memory");
+        register volatile u8 *loadBase __asm__("r1") = r8_limit;
+        __asm__ volatile("" : "+r"(loadBase));
+        cur = *(s16 *)(uintptr_t)loadBase;
         if (r5_idx > cur) {
             u16 gate = r6_gates[0];
             _08007B18((void *)r7, (int)gate, (int)word0, (int)word1_ip,
@@ -585,11 +591,15 @@ void RaceVM_02205C(void *rec) {
     } while (r5_idx <= 3);
     register u32 w0 __asm__("r1");
     register u32 w1 __asm__("r2") = 0x080CC078u;
-    __asm__ volatile(
-        "mov r1, r9\n\tmovs r3, #0\n\tldrsh r0, [r1, r3]\n\t"
-        "lsl r0, r0, #3\n\tadd r1, r0, r2\n\tldr r1, [r1]\n\t"
-        "add r2, #4\n\tadd r0, r0, r2\n\tldr r2, [r0]"
-        : "=r"(w0), "+r"(w1) : "r"(r9_index) : "r0", "r3", "memory");
+    w0 = (u32)(uintptr_t)r9_index;
+    __asm__ volatile("" : "+r"(w0));
+    register u32 scaledIndex __asm__("r0");
+    scaledIndex = *(s16 *)(uintptr_t)w0;
+    scaledIndex <<= 3;
+    w0 = *(volatile u32 *)(uintptr_t)(scaledIndex + w1);
+    w1 += 4;
+    __asm__ volatile("" : "+r"(w1));
+    w1 = *(volatile u32 *)(uintptr_t)(scaledIndex + w1);
     _080021F14((void *)r7, (int)w0, (int)w1);
     _080021F88((void *)r7);
     _0800DBE8(sl_rec8);
@@ -1089,13 +1099,11 @@ void RaceVM_022624(void *rec, int r1, u32 v) {
     register u8 *r5 asm("r5") = (u8 *)rec;
     register u32 raw asm("r2") = v;
     register u32 r6 asm("r6");
-    __asm__ volatile(".code 16\n\tlsl %0, %0, #16\n\tlsr %1, %0, #16"
-                     : "+r"(raw), "=&r"(r6));
+    r6 = (u16)raw;
     register volatile u16 *r4 asm("r4") =
         (volatile u16 *)(r5 + 132);
     u16 saved;
-    __asm__ volatile(".code 16\n\tldrh %0, [%1]"
-                     : "=l"(saved) : "r"(r4));
+    __asm__ volatile("" : "=l"(saved) : "0"(*r4));
     __asm__ volatile("" : "+r"(r5), "+r"(r6), "+r"(r4));
     if (r6 == 2) {
         _0802B368(4);
@@ -1107,11 +1115,8 @@ void RaceVM_022624(void *rec, int r1, u32 v) {
         *(volatile u32 *)(r5 + 36) = zero;
     }
     if (r6 == 1) {
-        register int zero_check asm("r1") = 0;
-        __asm__ volatile("" : "+r"(zero_check));
         register s32 cur asm("r0");
-        __asm__ volatile(".code 16\n\tldrsh %0, [%1, %2]"
-                         : "=r"(cur) : "r"(r4), "r"(zero_check));
+        cur = *(s16 *)r4;
         if (_08026068(cur) == 1) {
             register int zero_place asm("r2") = 0;
             __asm__ volatile("" : "+r"(zero_place));
@@ -1119,7 +1124,7 @@ void RaceVM_022624(void *rec, int r1, u32 v) {
             __asm__ volatile(".code 16\n\tldrsh %0, [%1, %2]"
                              : "=r"(cur_again)
                              : "r"(r4), "r"(zero_place));
-            u32 place = RaceVM_0223C0(cur_again);
+            u32 place = sub_0800223C0(cur_again);
             __asm__(".globl RaceVM_WA\nRaceVM_WA = 0x03001780\n");
             register u32 wa asm("r1") = (uintptr_t)RaceVM_WA;
             register u32 cell asm("r3") = 0x0FC2;
@@ -1150,25 +1155,17 @@ void RaceVM_022624(void *rec, int r1, u32 v) {
     }
     register u8 *p1 asm("r1") = (u8 *)r2;
     {
-        register int zero asm("r3") = 0;
-        __asm__ volatile("" : "+r"(zero));
         register s32 cur asm("r0");
-        __asm__ volatile(".code 16\n\tldrsh %0, [%1, %2]"
-                         : "=r"(cur) : "r"(p1), "r"(zero));
+        cur = *(s16 *)p1;
         if (cur < 0) *(volatile u16 *)p1 = 0;
     }
     {
-        register int zero asm("r3") = 0;
-        __asm__ volatile("" : "+r"(zero));
         register s32 cur asm("r0");
-        __asm__ volatile(".code 16\n\tldrsh %0, [%1, %2]"
-                         : "=r"(cur) : "r"(p1), "r"(zero));
+        cur = *(s16 *)p1;
         if (cur > 2) *(volatile u16 *)p1 = 2;
     }
     register u16 current asm("r2") = *r2;
-    __asm__ volatile(".code 16\n\tcmp %0, %1\n\tbeq 1f\n\tmovs r0, #2\n\tbl _0802B368\n1:"
-                     : : "r"(saved), "r"(current)
-                     : "r0", "r1", "r3", "lr", "cc");
+    if (saved != current) _0802B368(2);
 }
 void _080022624(void *a, int b, u32 c) __attribute__((alias("RaceVM_022624")));
 void sub_080022624(void *a, int b, u32 c) __attribute__((alias("RaceVM_022624")));
@@ -1249,90 +1246,97 @@ void _080022750(void *a, int b, int c) __attribute__((alias("RaceVM_022750")));
 void sub_080022750(void *a, int b, int c) __attribute__((alias("RaceVM_022750")));
 
 // ============================================================================
-// sub_0800227C0 (0x0800227C0, 0x94 B) — paint: dec s16[rec+128] (reload 15);
-// rows 0..2: (w1,w3) = u32 pair at rec+152+row*8 / rec+156+row*8 →
-// _08007B18(rec, w1, w3, 0, 6, 0, 0); then rows[s16[rec+132]] via 0x0226D4 +
-// 0x022750; _0800DBE8(rec+8).
-__attribute__((naked)) void RaceVM_0227C0(void *rec) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, r7, lr}\n"
-        "mov r7, r8\n"
-        "push {r7}\n"
-        "sub sp, #24\n"
-        "adds r5, r0, #0\n"
-        "adds r0, #128\n"
-        "movs r1, #15\n"
-        "bl 0x0800D97C\n"
-        "movs r4, #0\n"
-        "movs r0, #152\n"
-        "adds r0, r0, r5\n"
-        "mov r8, r0\n"
-        "adds r7, r5, #0\n"
-        "adds r7, #156\n"
-        "movs r6, #0\n"
-        ".L227c0_loop:\n"
-        "lsls r1, r4, #1\n"
-        "adds r0, r5, #0\n"
-        "adds r0, #144\n"
-        "adds r0, r0, r1\n"
-        "movs r2, #0\n"
-        "ldrsh r1, [r0, r2]\n"
-        "lsls r3, r4, #3\n"
-        "adds r0, r5, #0\n"
-        "adds r0, #152\n"
-        "adds r0, r0, r3\n"
-        "ldr r2, [r0, #0]\n"
-        "adds r0, r5, #0\n"
-        "adds r0, #156\n"
-        "adds r0, r0, r3\n"
-        "ldr r3, [r0, #0]\n"
-        "movs r0, #6\n"
-        "str r0, [sp, #0]\n"
-        "movs r0, #1\n"
-        "str r0, [sp, #4]\n"
-        "str r6, [sp, #8]\n"
-        "str r6, [sp, #12]\n"
-        "adds r0, r5, #0\n"
-        "bl 0x08007B18\n"
-        "adds r4, #1\n"
-        "cmp r4, #3\n"
-        "ble .L227c0_loop\n"
-        "adds r4, r5, #0\n"
-        "adds r4, #132\n"
-        "movs r1, #0\n"
-        "ldrsh r0, [r4, r1]\n"
-        "lsls r0, r0, #3\n"
-        "adds r0, r7, r0\n"
-        "ldr r1, [r0, #0]\n"
-        "adds r0, r5, #0\n"
-        "adds r0, #196\n"
-        "ldr r2, [r0, #0]\n"
-        "adds r0, r5, #0\n"
-        "bl sub_0800226D4\n"
-        "movs r2, #0\n"
-        "ldrsh r0, [r4, r2]\n"
-        "lsls r0, r0, #3\n"
-        "mov r2, r8\n"
-        "adds r1, r2, r0\n"
-        "ldr r1, [r1, #0]\n"
-        "adds r0, r7, r0\n"
-        "ldr r2, [r0, #0]\n"
-        "adds r0, r5, #0\n"
-        "bl sub_080022750\n"
-        "adds r0, r5, #0\n"
-        "adds r0, #8\n"
-        "bl 0x0800DBE8\n"
-        "add sp, #24\n"
-        "pop {r3}\n"
-        "mov r8, r3\n"
-        "pop {r4, r5, r6, r7}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        "movs r0, r0\n"
-        ".syntax divided\n"
-    );
+// sub_0800227C0 (0x0800227C0, 0x9C B) — paint: dec s16[rec+128] (reload 15);
+// rows 0..3: selector = s16[rec+144+row*2], words at rec+152/156+row*8 →
+// _08007B18(rec, selector, word0, word1, 6, 1, 0, 0); then indexed words via
+// 0x0226D4 and 0x022750; _0800DBE8(rec+8).
+void RaceVM_0227C0(void *rec) {
+    register volatile u8 *record __asm__("r5") = (volatile u8 *)rec;
+    register int i __asm__("r4");
+    register u32 rowsA __asm__("r8");
+    u32 rowsB;
+    register u32 zero __asm__("r6");
+    register u32 rowBase __asm__("r0");
+    register volatile s16 *phase __asm__("r4");
+    // The ROM reserves 24 bytes: 16 for outgoing arguments and 8 untouched.
+    u32 frameScratch[2];
+
+    __asm__ volatile ("" : "=m"(frameScratch));
+    _0800D97C((void *)((u8 *)rec + 128), 15);
+    i = 0;
+    rowBase = 152;
+    rowsA = rowBase + (u32)(uintptr_t)record;
+    // Keep this base unpinned so the allocator saves it in the ROM's r7 slot.
+    rowsB = (u32)(uintptr_t)record;
+    rowsB += 156;
+    zero = 0;
+
+    do {
+        register u32 selectorOffset __asm__("r1");
+        register u32 selectorAddress __asm__("r0");
+        register u32 indexZero __asm__("r2") = 0;
+        register s32 selector __asm__("r1");
+        register u32 rowOffset __asm__("r3");
+        register u32 wordA __asm__("r2");
+        register u32 rowAddress __asm__("r0");
+        register u32 wordB __asm__("r3");
+
+        selectorOffset = (u32)i << 1;
+        selectorAddress = (u32)(uintptr_t)record;
+        selectorAddress += 144;
+        selectorAddress += selectorOffset;
+        selector = ((const s16 *)(uintptr_t)selectorAddress)[indexZero];
+        __asm__ volatile ("" : "=r"(indexZero));
+
+        rowOffset = (u32)i << 3;
+        rowAddress = (u32)(uintptr_t)record;
+        rowAddress += 152;
+        rowAddress += rowOffset;
+        wordA = *(const u32 *)(uintptr_t)rowAddress;
+        rowAddress = (u32)(uintptr_t)record;
+        rowAddress += 156;
+        rowAddress += rowOffset;
+        wordB = *(const u32 *)(uintptr_t)rowAddress;
+        _08007B18((void *)record, selector, wordA, wordB, 6, 1, zero, zero);
+        i += 1;
+    } while (i <= 3);
+
+    phase = (volatile s16 *)(record + 132);
+    {
+        register u32 indexZero __asm__("r1") = 0;
+        register s32 index __asm__("r0");
+        register u32 wordB __asm__("r1");
+        register u32 recValue __asm__("r2");
+        index = ((const s16 *)(uintptr_t)phase)[indexZero];
+        __asm__ volatile ("" : "=r"(indexZero));
+        index <<= 3;
+        wordB = *(const u32 *)(uintptr_t)(rowsB + (u32)index);
+        recValue = *(const u32 *)(record + 196);
+        sub_0800226D4((void *)record, wordB, recValue);
+    }
+    {
+        register u32 indexZero __asm__("r2") = 0;
+        register s32 index __asm__("r0");
+        register u32 baseA __asm__("r2");
+        register u32 rowAddress __asm__("r1");
+        register u32 wordA __asm__("r1");
+        register u32 wordB __asm__("r2");
+        index = ((const s16 *)(uintptr_t)phase)[indexZero];
+        __asm__ volatile ("" : "=r"(indexZero));
+        index <<= 3;
+        baseA = rowsA;
+        // Preserve the ROM's copy in r2 and form the sum in r1.
+        __asm__ volatile ("" : "+r"(baseA));
+        rowAddress = baseA + (u32)index;
+        __asm__ volatile ("" : "+r"(baseA));
+        wordA = *(const u32 *)(uintptr_t)rowAddress;
+        wordB = *(const u32 *)(uintptr_t)(rowsB + (u32)index);
+        sub_080022750((void *)record, wordA, wordB);
+    }
+    _0800DBE8((void *)(record + 8));
 }
+// The ROM body ends with a zero-filled alignment halfword.
+__asm__(".align 2, 0");
 void _0800227C0(void *a) __attribute__((alias("RaceVM_0227C0")));
 void sub_0800227C0(void *a) __attribute__((alias("RaceVM_0227C0")));
 
@@ -1551,106 +1555,87 @@ void sub_080022920(void *a) __attribute__((alias("RaceVM_022920")));
 // bits): 2 = enter/reset; 1 = commit (variant cell select: 0→cell=v,
 // 1→cell=2; sound 1; u32[rec+136]=1; u16[rec+12]=0; u16[rec+116]=1;
 // u32[rec+36]=1); 64/128 dec/inc; clamp [0,1]; sound 2 on change.
-__attribute__((naked)) void RaceVM_022A14(void *rec, int r1, u32 v) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, r7, lr}\n"
-        "adds r4, r0, #0\n"
-        "lsls r2, r2, #16\n"
-        "lsrs r5, r2, #16\n"
-        "adds r6, r4, #0\n"
-        "adds r6, #132\n"
-        "ldrh r7, [r6, #0]\n"
-        "cmp r5, #2\n"
-        "bne .L22a14_after_two\n"
-        "movs r0, #4\n"
-        "bl 0x0802B368\n"
-        "movs r1, #10\n"
-        "str r1, [r4, #8]\n"
-        "movs r0, #0\n"
-        "strh r0, [r4, #12]\n"
-        "str r1, [r4, #40]\n"
-        "str r0, [r4, #36]\n"
-        ".L22a14_after_two:\n"
-        "cmp r5, #1\n"
-        "bne .L22a14_after_one\n"
-        "movs r1, #0\n"
-        "ldrsh r0, [r6, r1]\n"
-        "cmp r0, #0\n"
-        "beq .L22a14_cell_zero\n"
-        "cmp r0, #1\n"
-        "beq .L22a14_cell_one\n"
-        "b .L22a14_cell_done\n"
-        ".L22a14_cell_zero:\n"
-        "ldr r0, .L22a14_wa0\n"
-        "ldr r3, .L22a14_off0\n"
-        "adds r0, r0, r3\n"
-        "strh r5, [r0, #0]\n"
-        "b .L22a14_cell_done\n"
-        ".L22a14_wa0: .word 0x03001780\n"
-        ".L22a14_off0: .word 0x00001078\n"
-        ".L22a14_cell_one:\n"
-        "ldr r0, .L22a14_wa1\n"
-        "ldr r1, .L22a14_off1\n"
-        "adds r0, r0, r1\n"
-        "movs r1, #2\n"
-        "strh r1, [r0, #0]\n"
-        ".L22a14_cell_done:\n"
-        "movs r0, #1\n"
-        "bl 0x0802B368\n"
-        "adds r0, r4, #0\n"
-        "adds r0, #136\n"
-        "movs r1, #1\n"
-        "str r1, [r0, #0]\n"
-        "movs r0, #0\n"
-        "strh r0, [r4, #12]\n"
-        "adds r0, r4, #0\n"
-        "adds r0, #116\n"
-        "strh r1, [r0, #0]\n"
-        "str r1, [r4, #36]\n"
-        ".L22a14_after_one:\n"
-        "adds r2, r4, #0\n"
-        "adds r2, #132\n"
-        "cmp r5, #64\n"
-        "bne .L22a14_after_64\n"
-        "ldrh r0, [r2, #0]\n"
-        "subs r0, #1\n"
-        "strh r0, [r2, #0]\n"
-        ".L22a14_after_64:\n"
-        "cmp r5, #128\n"
-        "bne .L22a14_after_128\n"
-        "ldrh r0, [r2, #0]\n"
-        "adds r0, #1\n"
-        "strh r0, [r2, #0]\n"
-        ".L22a14_after_128:\n"
-        "adds r1, r2, #0\n"
-        "movs r3, #0\n"
-        "ldrsh r0, [r1, r3]\n"
-        "cmp r0, #0\n"
-        "bge .L22a14_nonnegative\n"
-        "movs r0, #0\n"
-        "strh r0, [r1, #0]\n"
-        ".L22a14_nonnegative:\n"
-        "movs r3, #0\n"
-        "ldrsh r0, [r1, r3]\n"
-        "cmp r0, #1\n"
-        "ble .L22a14_clamped\n"
-        "movs r0, #1\n"
-        "strh r0, [r1, #0]\n"
-        ".L22a14_clamped:\n"
-        "ldrh r2, [r2, #0]\n"
-        "cmp r7, r2\n"
-        "beq .L22a14_done\n"
-        "movs r0, #2\n"
-        "bl 0x0802B368\n"
-        ".L22a14_done:\n"
-        "pop {r4, r5, r6, r7}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        ".L22a14_wa1: .word 0x03001780\n"
-        ".L22a14_off1: .word 0x00001078\n"
-        ".syntax divided\n"
-    );
+void RaceVM_022A14(void *rec, int unused, u32 v) {
+    (void)unused;
+    register u8 *r4 __asm__("r4") = (u8 *)rec;
+    register u32 raw __asm__("r2") = v;
+    register u32 r5 __asm__("r5");
+    r5 = (u16)raw;
+    register volatile u16 *r6 __asm__("r6") =
+        (volatile u16 *)(r4 + 132);
+    u16 saved;
+    __asm__ volatile ("" : "=l"(saved) : "0"(*r6));
+    __asm__ volatile ("" : "+r"(r4), "+r"(r5), "+r"(r6));
+
+    if (r5 == 2) {
+        _0802B368(4);
+        u32 ten = 10;
+        *(volatile u32 *)(r4 + 8) = ten;
+        u16 zero = 0;
+        *(u16 *)(r4 + 12) = zero;
+        *(volatile u32 *)(r4 + 40) = ten;
+        *(volatile u32 *)(r4 + 36) = zero;
+    }
+    if (r5 == 1) {
+        register s32 cur __asm__("r0");
+        cur = *(s16 *)r6;
+        switch (cur) {
+        case 0: {
+            __asm__(".globl RaceVM_A14_WA\nRaceVM_A14_WA = 0x03001780\n");
+            extern u8 RaceVM_A14_WA[];
+            register u32 wa __asm__("r0") = (u32)(uintptr_t)RaceVM_A14_WA;
+            register u32 cell __asm__("r3") = 0x1078;
+            __asm__ volatile ("" : "+r"(wa), "+r"(cell));
+            register u32 addr __asm__("r0") = wa + cell;
+            __asm__ volatile ("" : "+r"(addr));
+            *(u16 *)addr = (u16)r5;
+            break;
+        }
+        case 1: {
+            extern u8 RaceVM_A14_WA[];
+            register u32 wa __asm__("r0") = (u32)(uintptr_t)RaceVM_A14_WA;
+            register u32 cell __asm__("r1") = 0x1078;
+            __asm__ volatile ("" : "+r"(wa), "+r"(cell));
+            register u32 addr __asm__("r0") = wa + cell;
+            __asm__ volatile ("" : "+r"(addr));
+            register u32 two __asm__("r1") = 2;
+            __asm__ volatile ("" : "+r"(two));
+            *(u16 *)addr = (u16)two;
+            break;
+        }
+        default:
+            break;
+        }
+        _0802B368(1);
+        *(volatile u32 *)(r4 + 136) = 1;
+        *(u16 *)(r4 + 12) = 0;
+        *(u16 *)(r4 + 116) = 1;
+        *(volatile u32 *)(r4 + 36) = 1;
+    }
+
+    register volatile u16 *r2 __asm__("r2") =
+        (volatile u16 *)(r4 + 132);
+    if (r5 == 64) {
+        u16 t = *r2;
+        *r2 = (u16)(t - 1);
+    }
+    if (r5 == 128) {
+        u16 t = *r2;
+        *r2 = (u16)(t + 1);
+    }
+    register u8 *p1 __asm__("r1") = (u8 *)r2;
+    {
+        register s32 cur __asm__("r0");
+        cur = *(s16 *)p1;
+        if (cur < 0) *(volatile u16 *)p1 = 0;
+    }
+    {
+        register s32 cur __asm__("r0");
+        cur = *(s16 *)p1;
+        if (cur > 1) *(volatile u16 *)p1 = 1;
+    }
+    register u16 current __asm__("r2") = *r2;
+    if (saved != current) _0802B368(2);
 }
 void _080022A14(void *a, int b, u32 c) __attribute__((alias("RaceVM_022A14")));
 void sub_080022A14(void *a, int b, u32 c) __attribute__((alias("RaceVM_022A14")));

@@ -250,19 +250,23 @@ u32 Course_ResourceSetup(void *ctx, void *X, int idx) {
     // 0x080056C4 = `ldr r1,=0x03000260; adds r0,r0,r1; ldrb r0,[r0,#5];
     // lsls r0,#14; ldr r1,=0x06000000; adds r0,r1; bx lr` — it *returns* a VRAM
     // char-block base in r0, so the ROM's `adds r1, r0, #0` after the call feeds
-    // the decompressor's destination. runtime_state_dispatch.c already declares it
-    // `int _080056C4(int)`; keep that shape and read the result.
-    extern u32 _080056C4(int a);
-    extern void _0802D984(const void *src, void *dst);
-    extern void _0802D988(const void *src, void *dst);
+    // the decompressor's destination. `sub_080056C4` is the assembly closure
+    // spelling needed by the independent source-only slice.
+    extern u32 sub_080056C4(int a);
+    extern void sub_0802D984(const void *src, void *dst);
+    extern void sub_0802D988(const void *src, void *dst);
+    extern void *sub_08007498(void *x, int i);
+    extern void *sub_0800748C(void *x);
+    extern u32 _08007658(void *x);
+    extern u32 _080074A8(void *x);
 
     register void *rctx __asm__("r8") = ctx;
-    register void *c0 __asm__("r4") = Course_Seek(X, idx);
-    register void *c1 __asm__("r5") = Course_Seek(c0, 0);
-    register void *c2 __asm__("sl") = Course_Seek(c0, 1);
-    register void *c3 __asm__("r9") = Course_Seek(c0, 2);
-    void *flags = Course_ArrBase(c0);
-    u32 r0_050D0 = (u32)_080050D0((int)(uintptr_t)rctx, (int)Course_Leaf_07658(c1));
+    register void *c0 __asm__("r4") = sub_08007498(X, idx);
+    register void *c1 __asm__("r5") = sub_08007498(c0, 0);
+    register void *c2 __asm__("sl") = sub_08007498(c0, 1);
+    register void *c3 __asm__("r9") = sub_08007498(c0, 2);
+    void *flags = sub_0800748C(c0);
+    u32 r0_050D0 = (u32)_080050D0((int)(uintptr_t)rctx, (int)_08007658(c1));
 
     register u32 flag __asm__("r6") = *(volatile u16 *)((u8 *)flags + 6);
     register u32 haddr __asm__("r7");
@@ -270,38 +274,37 @@ u32 Course_ResourceSetup(void *ctx, void *X, int idx) {
         // LZ77 arm: decompress c1's payload from _080056C4(ctx), then c3's into
         // 0x02000000 (EWRAM, built as 128<<18), then pass descriptor width and
         // height to the 8-argument _080052F0 (asm init.s:86-97).
-        _0802D984(Course_ArrBase(c1), (void *)(uintptr_t)_080056C4((int)(uintptr_t)rctx));
-        _0802D988(Course_ArrBase(c3), (void *)(uintptr_t)0x02000000u);
+    sub_0802D984(sub_0800748C(c1),
+                 (void *)(uintptr_t)sub_080056C4((int)(uintptr_t)rctx));
+        sub_0802D988(sub_0800748C(c3), (void *)(uintptr_t)0x02000000u);
         register u32 raw_tw __asm__("r1") = *(volatile u16 *)((u8 *)flags + 0);
         __asm__ volatile("" : "+r" (raw_tw));
         register int tw __asm__("r0") = (int)(raw_tw >> 3);
         _080052F0((int)(uintptr_t)rctx, 0x02000000, 0, 0,
                   tw, ({
-                      haddr = (u32)(uintptr_t)flags;
-                      __asm__ volatile("ldrh %0, [%0, #2]" : "+r"(haddr) : : "memory");
+                      haddr = *(u16 *)((u8 *)flags + 2);
                       (int)(haddr >> 3);
                   }), 0, 0);
     } else {
         // Raw arm: row-emit fill of c1 (len = _080074A8(c1), asm init.s:81-83)
         // then c3 with the same length.
-        _08005260(rctx, Course_ArrBase(c1), 0, (int)_080074A8(c1));
-        void *c3_base = Course_ArrBase(c3);
+        _08005260(rctx, sub_0800748C(c1), 0, (int)_080074A8(c1));
+        void *c3_base = sub_0800748C(c3);
         register u32 raw_tw __asm__("r2") = *(volatile u16 *)((u8 *)flags + 0);
         __asm__ volatile("" : "+r" (raw_tw));
         register int tw __asm__("r0") = (int)(raw_tw >> 3);
         _080052F0((int)(uintptr_t)rctx, (int)(uintptr_t)c3_base,
                   0, 0, tw,
                   ({
-                      haddr = (u32)(uintptr_t)flags;
-                      __asm__ volatile("ldrh %0, [%0, #2]" : "+r"(haddr) : : "memory");
+                      haddr = *(u16 *)((u8 *)flags + 2);
                       (int)(haddr >> 3);
                   }), flag, flag);
     }
     // Tail (0x08007738): DMA3 triple. r2 = (u32[c2+4] >> 2) | 0x84000000.
     volatile u32 *dma = (volatile u32 *)0x040000D4;
-    dma[0] = (u32)(uintptr_t)Course_ArrBase(c2);
+    dma[0] = (u32)(uintptr_t)sub_0800748C(c2);
     dma[1] = 0x05000000u;                    // 160 << 19
-    dma[2] = (Course_GetU32At4(c2) >> 2) | 0x84000000u;
+    dma[2] = (_080074A8(c2) >> 2) | 0x84000000u;
     (void)dma[2];                            // ROM re-reads DMA3CNT; harmless
     return r0_050D0;
 }
