@@ -669,6 +669,19 @@ int SessionVerify_080008F4(void *buf)
                 returnState[6] = (u8)recordBit;
             }
             {
+                // MEASURED WALL (2026-10-17): the ROM's in-place
+                // `ldrb r7, [r7, #1]` (0x08000A3A) is not reachable from C
+                // here. agbcc refuses to fold `reg+1` into the ldrb addressing
+                // mode when the base is an asm-pinned regvar, and without the
+                // pin `bit5Header = *(u8 *)(bit5Header + 1)` either copy-
+                // propagates the base into `record`'s pseudo and binds the
+                // result to the consumer (dest r1), or -- behind `+l`
+                // barriers that pin the home to r7 -- reload splits the
+                // load's destination into r0 and copies it back
+                // (`ldrb r0,[r7,#1]; adds r7,r0`). The plain self-reference
+                // only survives on a fresh local with a simple live range
+                // (scratch `build/scratch_ldrb*.c`); `record` is loop-carried.
+                // The one-instruction splice stays.
                 register u32 bit5Header __asm__("r7") =
                     (u32)(uintptr_t)record;
                 register u32 recordBit __asm__("r1");

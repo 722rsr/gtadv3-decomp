@@ -6,7 +6,8 @@
 
 // Idle dispatcher + handlers reference: asm/idle.s 0x08001988-0x080020E8
 // without duplicating idle_accessors.c (which owns the pure accessors).
-// Behavioral equivalence, not byte-matching.
+// Idle_Dispatcher, Idle_Mode3Handler, and Idle_Ticker below are C lifts with
+// exact ROM matches.
 
 extern void CpuSet_2D974(const void *src, void *dst, unsigned ctrl); // _08002D974 CpuSet (swi 0x0B)
 extern u32  DivRemU_02DFE4(u32 num, u32 den); // sub_0802DFE4 remainder (r0)
@@ -38,127 +39,103 @@ void StateA_SetPendingParam(u32 v);
 bool StateA_IsGameMode(int mode);
 bool StateA_IsSpecialMode(u32 mode);
 
-// _08001988 — mode 3 handler
-__attribute__((naked)) void Idle_Mode3Handler(void)
+// _08001988 — mode-3 handler, lifted to C with an exact 236-byte match.
+void Idle_Mode3Handler(void)
 {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, lr}\n"
-        "bl 0x08001680\n"
-        "lsls r0, r0, #16\n"
-        "ldr r1, .L1988_p0\n"
-        "cmp r0, r1\n"
-        "bne .L1988_increment\n"
-        "movs r0, #0\n"
-        "bl 0x08001698\n"
-        "lsls r0, r0, #16\n"
-        "lsrs r1, r0, #16\n"
-        "ldr r5, .L1988_p1\n"
-        "ldr r4, [r5, #0]\n"
-        "movs r2, #26\n"
-        "ldrsh r0, [r4, r2]\n"
-        "cmp r1, r0\n"
-        "bne .L1988_increment\n"
-        "cmp r1, #0\n"
-        "bne .L1988_nonzero\n"
-        "movs r0, #1\n"
-        "bl 0x08001698\n"
-        "ldr r1, [r5, #0]\n"
-        "lsls r0, r0, #16\n"
-        "lsrs r0, r0, #16\n"
-        "str r0, [r1, #44]\n"
-        "movs r0, #2\n"
-        "bl 0x08001698\n"
-        "ldr r1, [r5, #0]\n"
-        "strh r0, [r1, #22]\n"
-        "lsls r0, r0, #16\n"
-        "cmp r0, #0\n"
-        "bne .L1988_post_copy\n"
-        "ldr r0, .L1988_p2\n"
-        "movs r1, #0\n"
-        "bl 0x0800295c\n"
-        "b .L1988_post_copy\n"
-        ".align 2, 0\n"
-        ".L1988_p0: .4byte 0x03ed0000\n"
-        ".L1988_p1: .4byte 0x030000e4\n"
-        ".L1988_p2: .4byte 0x0802e1d0\n"
-        ".L1988_nonzero:\n"
-        "movs r2, #22\n"
-        "ldrsh r0, [r4, r2]\n"
-        "cmp r1, r0\n"
-        "bne .L1988_default_div\n"
-        "ldr r0, [r4, #44]\n"
-        "movs r1, #12\n"
-        "bl 0x0802dfe4\n"
-        "adds r5, r0, #0\n"
-        "cmp r5, #0\n"
-        "bne .L1988_have_div\n"
-        "movs r5, #12\n"
-        ".L1988_have_div:\n"
-        "movs r0, #5\n"
-        "strh r0, [r4, #18]\n"
-        "b .L1988_after_div\n"
-        ".L1988_default_div:\n"
-        "movs r5, #12\n"
-        ".L1988_after_div:\n"
-        "bl 0x080016b8\n"
-        "adds r0, #4\n"
-        "ldr r4, .L1988_p3\n"
-        "ldr r1, [r4, #0]\n"
-        "ldr r1, [r1, #32]\n"
-        "lsrs r2, r5, #31\n"
-        "adds r2, r5, r2\n"
-        "lsls r2, r2, #10\n"
-        "lsrs r2, r2, #11\n"
-        "bl 0x0802d974\n"
-        "ldr r2, [r4, #0]\n"
-        "lsrs r1, r5, #1\n"
-        "lsls r1, r1, #1\n"
-        "ldr r0, [r2, #32]\n"
-        "adds r0, r0, r1\n"
-        "str r0, [r2, #32]\n"
-        ".L1988_post_copy:\n"
-        "ldr r0, .L1988_p3\n"
-        "ldr r1, [r0, #0]\n"
-        "ldrh r0, [r1, #26]\n"
-        "adds r0, #1\n"
-        "strh r0, [r1, #26]\n"
-        ".L1988_increment:\n"
-        "movs r0, #252\n"
-        "lsls r0, r0, #2\n"
-        "bl 0x080016d0\n"
-        "ldr r4, .L1988_p3\n"
-        "ldr r0, [r4, #0]\n"
-        "ldrh r1, [r0, #26]\n"
-        "movs r0, #0\n"
-        "bl 0x08001e48\n"
-        "ldr r4, [r4, #0]\n"
-        "movs r1, #26\n"
-        "ldrsh r0, [r4, r1]\n"
-        "movs r2, #22\n"
-        "ldrsh r1, [r4, r2]\n"
-        "cmp r0, r1\n"
-        "ble .L1988_store_result\n"
-        "adds r0, r1, #0\n"
-        ".L1988_store_result:\n"
-        "adds r4, #208\n"
-        "lsls r0, r0, #12\n"
-        "bl 0x0802de04\n"
-        "str r0, [r4, #0]\n"
-        "cmp r0, #0\n"
-        "bge .L1988_done\n"
-        "movs r0, #0\n"
-        "str r0, [r4, #0]\n"
-        ".L1988_done:\n"
-        "pop {r4, r5}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        "movs r0, r0\n"
-        ".align 2, 0\n"
-        ".L1988_p3: .4byte 0x030000e4\n"
-        ".syntax divided\n"
-    );
+    extern u16 _08001698(int idx);
+    extern void *_080016B8(void);
+    extern void _08001E48(int id, u32 payload);
+    extern u32 sub_0802DFE4(u32 a, u32 b);
+    extern void sub_0802D974(const void *src, void *dst, u32 ctrl);
+    extern s32 sub_0802DE04(s32 a, s32 b);
+    register u32 slotOrBlocks __asm__("r5");
+    register volatile u8 *record __asm__("r4");
+    register s16 *minuteState __asm__("r4");
+    register s32 currentMinute __asm__("r0");
+    register u32 minute __asm__("r1");
+    if (_08001680() == 0x03ED) {
+        minute = _08001698(0);
+        slotOrBlocks = STATE_BLOCK_A_SLOT_ADDR;
+        record = (volatile u8 *)(uintptr_t)*(volatile u32 *)(uintptr_t)slotOrBlocks;
+        minuteState = (s16 *)record;
+        currentMinute = minuteState[13];
+        if (minute == currentMinute) {
+            if (minute == 0) {
+                *(volatile u32 *)((volatile u8 *)(uintptr_t)
+                    *(volatile u32 *)(uintptr_t)slotOrBlocks + 44) = _08001698(1);
+                {
+                    register u16 result __asm__("r0") = _08001698(2);
+                    *(volatile u16 *)((volatile u8 *)(uintptr_t)
+                        *(volatile u32 *)(uintptr_t)slotOrBlocks + 22) = result;
+                    if (((u32)result << 16) == 0)
+                        _0800295C(0x0802E1D0, 0);
+                }
+            } else {
+                minuteState = (s16 *)record;
+                currentMinute = minuteState[11];
+                if (minute == currentMinute) {
+                    slotOrBlocks = sub_0802DFE4(*(volatile u32 *)(record + 44), 12);
+                    if (slotOrBlocks == 0)
+                        slotOrBlocks = 12;
+                    *(volatile u16 *)(record + 18) = 5;
+                } else {
+                    slotOrBlocks = 12;
+                }
+                {
+                    u32 source = (u32)(uintptr_t)_080016B8() + 4;
+                    record = (volatile u8 *)(uintptr_t)STATE_BLOCK_A_SLOT_ADDR;
+                    {
+                        u32 destination = *(volatile u32 *)((volatile u8 *)(uintptr_t)
+                            *(volatile u32 *)record + 32);
+                        register u32 control __asm__("r2") = slotOrBlocks;
+                        control = (slotOrBlocks + (slotOrBlocks >> 31)) << 10;
+                        control >>= 11;
+                        sub_0802D974((const void *)(uintptr_t)source,
+                                     (void *)(uintptr_t)destination, control);
+                    }
+                    {
+                        register volatile u32 *advanceState __asm__("r2") =
+                            (volatile u32 *)(uintptr_t)*(volatile u32 *)record;
+                        register u32 evenCount __asm__("r1") = slotOrBlocks >> 1;
+                        evenCount <<= 1;
+                        advanceState[8] += evenCount;
+                    }
+                }
+            }
+            {
+                register volatile u8 *lateRecord __asm__("r1") =
+                    (volatile u8 *)(uintptr_t)*(volatile u32 *)(uintptr_t)STATE_BLOCK_A_SLOT_ADDR;
+                *(volatile u16 *)(lateRecord + 26) = *(volatile u16 *)(lateRecord + 26) + 1;
+            }
+        }
+    }
+    _080016D0(0x03F0);
+    {
+        register volatile u8 *state __asm__("r4") = (volatile u8 *)(uintptr_t)STATE_BLOCK_A_SLOT_ADDR;
+        register volatile u8 *eventState __asm__("r0") =
+            (volatile u8 *)(uintptr_t)*(volatile u32 *)state;
+        u16 eventMinute = *(volatile u16 *)(eventState + 26);
+        _08001E48(0, eventMinute);
+        state = (volatile u8 *)(uintptr_t)*(volatile u32 *)state;
+        {
+            register s32 current __asm__("r0");
+            register s32 limit __asm__("r1");
+            current = ((s16 *)state)[13];
+            limit = ((s16 *)state)[11];
+            if (current > limit)
+                current = limit;
+            state += 208;
+            current = (s32)((u32)current << 12);
+            {
+                s32 result = sub_0802DE04(current, limit);
+                *(volatile s32 *)state = result;
+                if (result < 0)
+                    *(volatile s32 *)state = 0;
+            }
+        }
+    }
 }
+
 void _08001988(void) __attribute__((alias("Idle_Mode3Handler")));
 
 // _08001A74 — mode 4 countdown
@@ -255,100 +232,71 @@ void Idle_Mode10Handler(void) {
 }
 void _08001B50(void) __attribute__((alias("Idle_Mode10Handler")));
 
-// _08001B7C — per-frame mode dispatcher
-__attribute__((naked)) void Idle_Dispatcher(void)
+// _08001B7C — snapshot/clear work buffers, then dispatch modes 1 through 10.
+// Special modes 8 and 11 can first redirect the pending mode to 1.
+void Idle_Dispatcher(void)
 {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, lr}\n"
-        "sub sp, #4\n"
-        "ldr r4, .L1b7c_p0\n"
-        "ldr r0, [r4, #0]\n"
-        "ldrh r0, [r0, #16]\n"
-        "bl 0x08001744\n"
-        "cmp r0, #0\n"
-        "beq.n .L1b7c_refresh\n"
-        "ldr r0, [r4, #0]\n"
-        "adds r0, #208\n"
-        "bl 0x08000CA0\n"
-        "cmp r0, #0\n"
-        "beq.n .L1b7c_refresh\n"
-        "ldr r1, [r4, #0]\n"
-        "movs r0, #1\n"
-        "strh r0, [r1, #18]\n"
-        ".L1b7c_refresh:\n"
-        "ldr r4, .L1b7c_p0\n"
-        "ldr r1, [r4, #0]\n"
-        "adds r0, r1, #0\n"
-        "adds r0, #48\n"
-        "adds r1, #112\n"
-        "ldr r2, .L1b7c_p1\n"
-        "bl 0x0802D974\n"
-        "movs r0, #0\n"
-        "str r0, [sp, #0]\n"
-        "ldr r1, [r4, #0]\n"
-        "adds r1, #48\n"
-        "ldr r2, .L1b7c_p2\n"
-        "mov r0, sp\n"
-        "bl 0x0802D974\n"
-        "ldr r0, [r4, #0]\n"
-        "ldrh r0, [r0, #16]\n"
-        "subs r0, #1\n"
-        "cmp r0, #9\n"
-        "bhi.n .L1b7c_done\n"
-        "lsls r0, r0, #2\n"
-        "ldr r1, .L1b7c_p3\n"
-        "adds r0, r0, r1\n"
-        "ldr r0, [r0, #0]\n"
-        "mov pc, r0\n"
-        ".align 2, 0\n"
-        ".L1b7c_p0: .4byte 0x030000E4\n"
-        ".L1b7c_p1: .4byte 0x04000010\n"
-        ".L1b7c_p2: .4byte 0x05000010\n"
-        ".L1b7c_p3: .4byte 0x08001BE4\n"
-        ".4byte 0x08001C0C\n"
-        ".4byte 0x08001C18\n"
-        ".4byte 0x08001C1E\n"
-        ".4byte 0x08001C24\n"
-        ".4byte 0x08001C2A\n"
-        ".4byte 0x08001C30\n"
-        ".4byte 0x08001C36\n"
-        ".4byte 0x08001C40\n"
-        ".4byte 0x08001C40\n"
-        ".4byte 0x08001C3C\n"
-        ".L1b7c_case0:\n"
-        "ldr r0, .L1b7c_case0_pool\n"
-        "bl 0x080016D0\n"
-        "b.n .L1b7c_done\n"
-        ".align 2, 0\n"
-        ".L1b7c_case0_pool: .4byte 0x000003EB\n"
-        ".L1b7c_case1:\n"
-        "bl 0x08001854\n"
-        "b.n .L1b7c_done\n"
-        ".L1b7c_case2:\n"
-        "bl 0x08001988\n"
-        "b.n .L1b7c_done\n"
-        ".L1b7c_case3:\n"
-        "bl 0x08001A74\n"
-        "b.n .L1b7c_done\n"
-        ".L1b7c_case4:\n"
-        "bl 0x08001AA0\n"
-        "b.n .L1b7c_done\n"
-        ".L1b7c_case5:\n"
-        "bl 0x08001ACC\n"
-        "b.n .L1b7c_done\n"
-        ".L1b7c_case6:\n"
-        "bl 0x08001B20\n"
-        "b.n .L1b7c_done\n"
-        ".L1b7c_case10:\n"
-        "bl 0x08001B50\n"
-        ".L1b7c_done:\n"
-        "add sp, #4\n"
-        "pop {r4}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        ".syntax divided\n"
-    );
+    extern int _08001744(u32 mode);
+    extern int sub_08000CA0(u32 state);
+    extern void sub_0802D974(const void *src, void *dst, u32 ctrl);
+    extern void _08001854(void);
+    extern void _08001988(void);
+    extern void _08001A74(void);
+    extern void _08001AA0(void);
+    extern void _08001ACC(void);
+    extern void _08001B20(void);
+    extern void _08001B50(void);
+    u32 zero;
+    register volatile u32 *slot __asm__("r4") =
+        (volatile u32 *)(uintptr_t)STATE_BLOCK_A_SLOT_ADDR;
+    if (_08001744(*(volatile u16 *)((volatile u8 *)(uintptr_t)*slot + 16))) {
+        register u32 modeState __asm__("r0") = (u32)(uintptr_t)*slot + 208;
+        if (sub_08000CA0(modeState)) {
+            register volatile u8 *writeState __asm__("r1") =
+                (volatile u8 *)(uintptr_t)*slot;
+            *(volatile u16 *)(writeState + 18) = 1;
+        }
+    }
+    slot = (volatile u32 *)(uintptr_t)STATE_BLOCK_A_SLOT_ADDR;
+    {
+        register volatile u8 *state __asm__("r1") =
+            (volatile u8 *)(uintptr_t)*slot;
+        sub_0802D974((const void *)(state + 48), (void *)(state + 112), 0x04000010);
+    }
+    zero = 0;
+    {
+        register volatile u8 *state __asm__("r1") =
+            (volatile u8 *)(uintptr_t)*slot;
+        sub_0802D974(&zero, (void *)(state + 48), 0x05000010);
+    }
+    switch (*(volatile u16 *)((volatile u8 *)(uintptr_t)*slot + 16)) {
+    case 1:
+        _080016D0(0x03EB);
+        break;
+    case 2:
+        _08001854();
+        break;
+    case 3:
+        _08001988();
+        break;
+    case 4:
+        _08001A74();
+        break;
+    case 5:
+        _08001AA0();
+        break;
+    case 6:
+        _08001ACC();
+        break;
+    case 7:
+        _08001B20();
+        break;
+    case 10:
+        _08001B50();
+        break;
+    default:
+        break;
+    }
 }
 void _08001B7C(void) __attribute__((alias("Idle_Dispatcher")));
 
@@ -382,178 +330,157 @@ void Idle_RefreshWorkArea(void) {
 }
 void _08001C48(void) __attribute__((alias("Idle_RefreshWorkArea")));
 
-// _08001CD8 — input/ticker
-__attribute__((naked)) void Idle_Ticker(void) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        ".Lidle1cd8_cd8:\n"
-        "push {r4, r5, lr}\n"
-        "ldr r4, .Lidle1cd8_d5c\n"
-        "ldr r1, [r4]\n"
-        "movs r0, #0\n"
-        "strh r0, [r1, #0xc]\n"
-        "ldrh r0, [r1, #0x10]\n"
-        "bl _08001730\n"
-        "cmp r0, #0\n"
-        "bne.n .Lidle1cd8_cee\n"
-        "b.n .Lidle1cd8_e0a\n"
-        ".Lidle1cd8_cee:\n"
-        "ldr r0, [r4]\n"
-        "adds r0, #0x30\n"
-        "bl _0800070C\n"
-        "ldr r1, [r4]\n"
-        "adds r1, #0xd8\n"
-        "str r0, [r1]\n"
-        "bl _080006A4\n"
-        "ldr r1, [r4]\n"
-        "ldrb r0, [r1, #2]\n"
-        "cmp r0, #0\n"
-        "beq.n .Lidle1cd8_d66\n"
-        "movs r3, #0\n"
-        "adds r0, r1, #0\n"
-        "adds r0, #0xd8\n"
-        "ldr r2, [r0]\n"
-        "movs r0, #0xc0\n"
-        "lsls r0, r0, #6\n"
-        "ands r0, r2\n"
-        "cmp r0, #0\n"
-        "bne.n .Lidle1cd8_d36\n"
-        "movs r0, #0x80\n"
-        "lsls r0, r0, #8\n"
-        "ands r0, r2\n"
-        "cmp r0, #0\n"
-        "beq.n .Lidle1cd8_d32\n"
-        "lsls r1, r2, #28\n"
-        "lsrs r1, r1, #28\n"
-        "lsls r0, r2, #20\n"
-        "lsrs r0, r0, #28\n"
-        "cmp r1, r0\n"
-        "beq.n .Lidle1cd8_d32\n"
-        "movs r3, #1\n"
-        ".Lidle1cd8_d32:\n"
-        "cmp r3, #0\n"
-        "beq.n .Lidle1cd8_d60\n"
-        ".Lidle1cd8_d36:\n"
-        "ldr r0, .Lidle1cd8_d5c\n"
-        "ldr r1, [r0]\n"
-        "ldrh r0, [r1, #0xe]\n"
-        "adds r0, #1\n"
-        "strh r0, [r1, #0xe]\n"
-        "lsls r0, r0, #16\n"
-        "lsrs r0, r0, #16\n"
-        "cmp r0, #60\n"
-        "bls.n .Lidle1cd8_d66\n"
-        "movs r0, #0\n"
-        "strh r0, [r1, #0xe]\n"
-        "adds r0, r1, #0\n"
-        "adds r0, #0xd8\n"
-        "ldr r1, [r0]\n"
-        "movs r0, #21\n"
-        "movs r2, #0\n"
-        "bl sub_08004D4C\n"
-        "b.n .Lidle1cd8_d66\n"
-        ".align 2, 0\n"
-        ".Lidle1cd8_d5c: .word 0x030000E4\n"
-        ".Lidle1cd8_d60:\n"
-        "ldr r0, .Lidle1cd8_e10\n"
-        "ldr r0, [r0]\n"
-        "strh r3, [r0, #0xe]\n"
-        ".Lidle1cd8_d66:\n"
-        "ldr r4, .Lidle1cd8_e10\n"
-        "ldr r1, [r4]\n"
-        "adds r0, r1, #0\n"
-        "adds r0, #0xd8\n"
-        "ldr r0, [r0]\n"
-        "movs r5, #0x80\n"
-        "ands r0, r5\n"
-        "cmp r0, #0\n"
-        "beq.n .Lidle1cd8_d82\n"
-        "ldrb r0, [r1, #1]\n"
-        "cmp r0, #0\n"
-        "bne.n .Lidle1cd8_db0\n"
-        "bl _080006A4\n"
-        ".Lidle1cd8_d82:\n"
-        "ldr r1, [r4]\n"
-        "ldrb r0, [r1, #1]\n"
-        "cmp r0, #0\n"
-        "bne.n .Lidle1cd8_db0\n"
-        "adds r0, r1, #0\n"
-        "adds r0, #0xd8\n"
-        "ldr r0, [r0]\n"
-        "ands r0, r5\n"
-        "cmp r0, #0\n"
-        "beq.n .Lidle1cd8_d9a\n"
-        "bl _080006A4\n"
-        ".Lidle1cd8_d9a:\n"
-        "ldr r2, [r4]\n"
-        "adds r0, r2, #0\n"
-        "adds r0, #0xd8\n"
-        "ldr r0, [r0]\n"
-        "movs r1, #0x80\n"
-        "lsls r1, r1, #1\n"
-        "ands r0, r1\n"
-        "cmp r0, #0\n"
-        "beq.n .Lidle1cd8_db0\n"
-        "movs r0, #1\n"
-        "strb r0, [r2, #1]\n"
-        ".Lidle1cd8_db0:\n"
-        "ldr r3, .Lidle1cd8_e10\n"
-        "ldr r2, [r3]\n"
-        "adds r0, r2, #0\n"
-        "adds r0, #0xd8\n"
-        "ldr r0, [r0]\n"
-        "movs r1, #1\n"
-        "ands r0, r1\n"
-        "cmp r0, #0\n"
-        "beq.n .Lidle1cd8_dc8\n"
-        "ldrh r0, [r2, #0xc]\n"
-        "adds r0, #1\n"
-        "strh r0, [r2, #0xc]\n"
-        ".Lidle1cd8_dc8:\n"
-        "ldr r2, [r3]\n"
-        "adds r0, r2, #0\n"
-        "adds r0, #0xd8\n"
-        "ldr r0, [r0]\n"
-        "movs r1, #2\n"
-        "ands r0, r1\n"
-        "cmp r0, #0\n"
-        "beq.n .Lidle1cd8_dde\n"
-        "ldrh r0, [r2, #0xc]\n"
-        "adds r0, #1\n"
-        "strh r0, [r2, #0xc]\n"
-        ".Lidle1cd8_dde:\n"
-        "ldr r2, [r3]\n"
-        "adds r0, r2, #0\n"
-        "adds r0, #0xd8\n"
-        "ldr r0, [r0]\n"
-        "movs r1, #4\n"
-        "ands r0, r1\n"
-        "cmp r0, #0\n"
-        "beq.n .Lidle1cd8_df4\n"
-        "ldrh r0, [r2, #0xc]\n"
-        "adds r0, #1\n"
-        "strh r0, [r2, #0xc]\n"
-        ".Lidle1cd8_df4:\n"
-        "ldr r2, [r3]\n"
-        "adds r0, r2, #0\n"
-        "adds r0, #0xd8\n"
-        "ldr r0, [r0]\n"
-        "movs r1, #8\n"
-        "ands r0, r1\n"
-        "cmp r0, #0\n"
-        "beq.n .Lidle1cd8_e0a\n"
-        "ldrh r0, [r2, #0xc]\n"
-        "adds r0, #1\n"
-        "strh r0, [r2, #0xc]\n"
-        ".Lidle1cd8_e0a:\n"
-        "pop {r4, r5}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        ".align 2, 0\n"
-        ".Lidle1cd8_e10: .word 0x030000E4\n"
-        ".syntax divided\n"
-    );
+// _08001CD8 — input/ticker processor, reconstructed in C with an exact 316-byte match.
+void Idle_Ticker(void)
+{
+    extern int _08001730(int mode);
+    extern u32 _0800070C(void *buffer);
+    extern void _080006A4(void);
+    extern void sub_08004D4C(u32 a, u32 b, u32 c);
+    register volatile u32 *slot __asm__("r4") =
+        (volatile u32 *)(uintptr_t)STATE_BLOCK_A_SLOT_ADDR;
+    u32 returned;
+    {
+        register volatile u8 *initialState __asm__("r1") =
+            (volatile u8 *)(uintptr_t)*slot;
+        *(volatile u16 *)(initialState + 12) = 0;
+        if (!_08001730(*(volatile u16 *)(initialState + 16)))
+            goto done;
+    }
+    returned = _0800070C((void *)((volatile u8 *)(uintptr_t)*slot + 48));
+    *(volatile u32 *)((volatile u8 *)(uintptr_t)*slot + 216) = returned;
+    _080006A4();
+    {
+        register volatile u8 *activeState __asm__("r1") =
+            (volatile u8 *)(uintptr_t)*slot;
+        if (*(volatile u8 *)(activeState + 2) != 0) {
+            register u32 trigger __asm__("r3") = 0;
+            register volatile u8 *flagsField __asm__("r0") = activeState;
+            flagsField += 216;
+            register u32 flags __asm__("r2") =
+                *(volatile u32 *)flagsField;
+            if ((flags & 0x3000) != 0)
+                goto update_timer;
+            if ((flags & 0x8000) != 0) {
+                register u32 lowNibble __asm__("r1") = (flags << 28) >> 28;
+                register u32 inputNibble __asm__("r0") = (flags << 20) >> 28;
+                if (lowNibble != inputNibble)
+                    trigger = 1;
+            }
+            if (trigger == 0)
+                goto reset_timer;
+update_timer:
+            {
+                register volatile u32 *timerSlot __asm__("r0") =
+                    (volatile u32 *)(uintptr_t)STATE_BLOCK_A_SLOT_ADDR;
+                activeState = (volatile u8 *)(uintptr_t)*timerSlot;
+            }
+            {
+                register u32 timer __asm__("r0") = *(volatile u16 *)(activeState + 14);
+                timer += 1;
+                *(volatile u16 *)(activeState + 14) = timer;
+                timer = (u16)timer;
+                if (timer <= 60)
+                    goto after_timer;
+                *(volatile u16 *)(activeState + 14) = 0;
+                {
+                    register volatile u8 *callField __asm__("r0") = activeState;
+                    register u32 context __asm__("r1");
+                    callField += 216;
+                    context = *(volatile u32 *)callField;
+                    sub_08004D4C(21, context, 0);
+                }
+                goto after_timer;
+            }
+reset_timer:
+            {
+                register volatile u32 *resetSlot __asm__("r0") =
+                    (volatile u32 *)(uintptr_t)STATE_BLOCK_A_SLOT_ADDR;
+                resetSlot = (volatile u32 *)(uintptr_t)*resetSlot;
+                *(volatile u16 *)((volatile u8 *)resetSlot + 14) = trigger;
+            }
+        }
+    }
+after_timer:
+    {
+        register volatile u32 *statusSlot __asm__("r4") =
+            (volatile u32 *)(uintptr_t)STATE_BLOCK_A_SLOT_ADDR;
+        register u32 statusMask __asm__("r5");
+        register u32 statusFlagMask __asm__("r1");
+        register volatile u8 *state __asm__("r1") =
+            (volatile u8 *)(uintptr_t)*statusSlot;
+        register u32 flags __asm__("r0") = *(volatile u32 *)(state + 216);
+        statusMask = 0x80;
+        if ((flags & statusMask) != 0) {
+            if (*(volatile u8 *)(state + 1) != 0)
+                goto status_done;
+            _080006A4();
+        }
+        state = (volatile u8 *)(uintptr_t)*statusSlot;
+        if (*(volatile u8 *)(state + 1) == 0) {
+            flags = (u32)(uintptr_t)state;
+            flags += 216;
+            flags = *(volatile u32 *)(uintptr_t)flags;
+            if ((flags & statusMask) != 0)
+                _080006A4();
+            {
+                register volatile u8 *flagState __asm__("r2") =
+                    (volatile u8 *)(uintptr_t)*statusSlot;
+                flags = (u32)(uintptr_t)flagState;
+                flags += 216;
+                flags = *(volatile u32 *)(uintptr_t)flags;
+                statusFlagMask = 0x100;
+                flags &= statusFlagMask;
+                if (flags != 0)
+                    *(volatile u8 *)(flagState + 1) = 1;
+            }
+        }
+    }
+status_done:
+    {
+        register volatile u32 *lateSlot __asm__("r3") =
+            (volatile u32 *)(uintptr_t)STATE_BLOCK_A_SLOT_ADDR;
+        register volatile u8 *counterState __asm__("r2");
+        register u32 flags __asm__("r0");
+        register u32 mask __asm__("r1");
+        counterState = (volatile u8 *)(uintptr_t)*lateSlot;
+        flags = (u32)(uintptr_t)counterState;
+        flags += 216;
+        flags = *(volatile u32 *)(uintptr_t)flags;
+        mask = 1;
+        if ((flags & mask) != 0) {
+            *(volatile u16 *)(counterState + 12) = *(volatile u16 *)(counterState + 12) + 1;
+        }
+        counterState = (volatile u8 *)(uintptr_t)*lateSlot;
+        flags = (u32)(uintptr_t)counterState;
+        flags += 216;
+        flags = *(volatile u32 *)(uintptr_t)flags;
+        mask = 2;
+        if ((flags & mask) != 0) {
+            *(volatile u16 *)(counterState + 12) = *(volatile u16 *)(counterState + 12) + 1;
+        }
+        counterState = (volatile u8 *)(uintptr_t)*lateSlot;
+        flags = (u32)(uintptr_t)counterState;
+        flags += 216;
+        flags = *(volatile u32 *)(uintptr_t)flags;
+        mask = 4;
+        if ((flags & mask) != 0) {
+            *(volatile u16 *)(counterState + 12) = *(volatile u16 *)(counterState + 12) + 1;
+        }
+        counterState = (volatile u8 *)(uintptr_t)*lateSlot;
+        flags = (u32)(uintptr_t)counterState;
+        flags += 216;
+        flags = *(volatile u32 *)(uintptr_t)flags;
+        mask = 8;
+        if ((flags & mask) != 0) {
+            *(volatile u16 *)(counterState + 12) = *(volatile u16 *)(counterState + 12) + 1;
+        }
+    }
+done:
+    return;
 }
+
+
 
 void _08001CD8(void) __attribute__((alias("Idle_Ticker")));
 
@@ -562,13 +489,12 @@ void _08001CD8(void) __attribute__((alias("Idle_Ticker")));
 //   ldr r2,=0x0802E190 / lsls r0,#2 / ldr r1,=0x030000E4 / ldr r1,[r1] /
 //   ldrh r1,[r1,#6] / lsls r1,#4 / adds r0,r0,r1 / adds r0,r0,r2 /
 //   ldr r0,[r0] / bx lr.
-// agbcc materialises each initialiser where its declaration stands, so both
-// intermediates are NAMED locals declared in the ROM's order: the table
-// pointer first, then the index shift, then the halfword load.
+// agbcc materialises each initialiser where its declaration stands, so the
+// table base, index shift, and halfword load stay in the ROM's order.
 u32 Idle_GetDescriptorWord(int idx) {
-    extern u8 RecDescTbl[] __asm__("RecDescTbl");
-    __asm__(".globl RecDescTbl\nRecDescTbl = 0x0802E190\n");
-    u32 tbl = (u32)(uintptr_t)RecDescTbl;
+    register u32 tbl __asm__("r2") = 0x0802E190;
+    /* Force the pinned table base into r2 before the index shift. */
+    __asm__ volatile ("" : "+r" (tbl));
     u32 off = (u32)idx << 2;
     u16 sel = *st16(6);
     u32 sum = off + ((u32)sel << 4);

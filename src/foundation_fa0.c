@@ -183,111 +183,92 @@ void Helper_013BC(void *p){
 }
 __asm__(".align 2, 0");
 void _080013BC(void *a) __attribute__((alias("Helper_013BC")));
-__attribute__((naked)) void Helper_013E0(void *a, void *b, u32 c, u32 d,
-                                          u32 stack20){
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, r7, lr}\n"
-        "adds r5, r0, #0\n"
-        "adds r6, r1, #0\n"
-        "ldr r0, [sp, #20]\n"
-        "lsls r3, r3, #24\n"
-        "lsrs r3, r3, #24\n"
-        "lsls r0, r0, #24\n"
-        "lsrs r7, r0, #24\n"
-        "ldrb r0, [r5, #24]\n"
-        "cmp r0, #0\n"
-        "bne .L013E0_dispatch\n"
-        "ldrb r0, [r5, #30]\n"
-        "cmp r0, #0\n"
-        "beq .L013E0_dispatch\n"
-        ".L013E0_check_v74:\n"
-        "adds r0, r5, #0\n"
-        "adds r0, #74\n"
-        "ldrb r0, [r0, #0]\n"
-        "cmp r0, #0\n"
-        "bne .L013E0_dispatch\n"
-        "str r6, [r5, #32]\n"
-        "adds r2, #15\n"
-        "movs r0, #16\n"
-        "negs r0, r0\n"
-        "ands r2, r0\n"
-        "subs r0, #240\n"
-        "adds r1, r2, r0\n"
-        "ldr r0, .L013E0_mask\n"
-        "cmp r1, r0\n"
-        "bls .L013E0_continue\n"
-        ".L013E0_dispatch:\n"
-        "adds r0, r5, #0\n"
-        "bl 0x08000F48\n"
-        "b .L013E0_done\n"
-        "movs r0, r0\n"
-        ".align 2, 0\n"
-        ".L013E0_mask: .word 0x0003FF00\n"
-        ".L013E0_continue:\n"
-        "adds r0, r6, r2\n"
-        "str r0, [r5, #36]\n"
-        "lsls r1, r7, #24\n"
-        "movs r2, #128\n"
-        "lsls r2, r2, #19\n"
-        "adds r0, r1, r2\n"
-        "asrs r0, r0, #24\n"
-        "adds r2, r1, #0\n"
-        "cmp r0, #8\n"
-        "bhi .L013E0_finish\n"
-        "lsls r0, r0, #2\n"
-        "ldr r1, .L013E0_jump_base\n"
-        "adds r0, r0, r1\n"
-        "ldr r0, [r0, #0]\n"
-        "mov pc, r0\n"
-        "movs r0, r0\n"
-        ".align 2, 0\n"
-        ".L013E0_jump_base: .word 0x0800144C\n"
-        ".word 0x08001470\n"
-        ".word 0x08001470\n"
-        ".word 0x08001470\n"
-        ".word 0x08001470\n"
-        ".word 0x0800147A\n"
-        ".word 0x08001480\n"
-        ".word 0x08001480\n"
-        ".word 0x08001480\n"
-        ".word 0x08001480\n"
-        ".L013E0_case_zero:\n"
-        "lsls r4, r3, #3\n"
-        "asrs r1, r2, #24\n"
-        "movs r0, #3\n"
-        "subs r0, r0, r1\n"
-        "b .L013E0_or\n"
-        ".L013E0_case_five:\n"
-        "movs r0, #56\n"
-        "adds r4, r3, #0\n"
-        "b .L013E0_or\n"
-        ".L013E0_case_high:\n"
-        "lsls r4, r3, #3\n"
-        "asrs r0, r2, #24\n"
-        "subs r0, #1\n"
-        ".L013E0_or:\n"
-        "orrs r4, r0\n"
-        ".L013E0_finish:\n"
-        "movs r0, #63\n"
-        "ands r4, r0\n"
-        "lsls r0, r4, #1\n"
-        "movs r2, #127\n"
-        "negs r2, r2\n"
-        "adds r1, r2, #0\n"
-        "orrs r0, r1\n"
-        "strb r0, [r5, #28]\n"
-        "movs r0, #208\n"
-        "strb r0, [r5, #24]\n"
-        ".L013E0_done:\n"
-        "pop {r4, r5, r6, r7}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        "movs r0, r0\n"
-        ".syntax divided\n"
-    );
+extern void sub_08000F48(void *p);
+void Helper_013E0(void *a, void *b, u32 c, u32 d, u32 stack20){
+    register volatile u8 *ctx __asm__("r5") = (volatile u8 *)a;
+    register u32 dest __asm__("r6") = (u32)(uintptr_t)b;
+    register u32 data __asm__("r3");
+    register u32 rawMode __asm__("r0") = stack20;
+    u32 modeByte;
+    register u32 scratch __asm__("r2") = c;
+    register u32 modeWord __asm__("r1");
+    register s32 selector __asm__("r0");
+    register u32 value __asm__("r4");
+    register u32 finalOutput __asm__("r0");
+    register u32 negative __asm__("r2");
+    register u32 negativeCopy __asm__("r1");
+    register s32 caseMode __asm__("r1");
+    register s32 defaultMode __asm__("r0");
+    u32 temp;
+
+    __asm__ volatile ("" : "+r"(rawMode));
+    data = (u8)d;
+    rawMode <<= 24;
+    modeByte = rawMode >> 24;
+    if (ctx[24] != 0 || ctx[30] == 0 || ctx[74] != 0)
+        goto dispatch;
+    *(volatile u32 *)(ctx + 32) = dest;
+    scratch += 15u;
+    scratch &= ~15u;
+    if (scratch - 256u <= 0x0003FF00u)
+        goto success;
+
+dispatch:
+    sub_08000F48((void *)ctx);
+    goto done;
+
+success:
+    *(volatile u32 *)(ctx + 36) = dest + scratch;
+    __asm__ volatile ("" : "+r"(scratch), "+r"(dest));
+    modeWord = modeByte << 24;
+    scratch = 128u;
+    scratch <<= 19;
+    selector = (s32)(modeWord + scratch) >> 24;
+    __asm__ volatile ("" : "+r"(modeByte));
+    scratch = modeWord;
+    switch (selector) {
+    case 0:
+    case 1:
+    case 2:
+    case 3:
+        value = data << 3;
+        caseMode = (s32)scratch >> 24;
+        temp = (u32)(3 - caseMode);
+        goto combine;
+    case 4:
+        temp = 56u;
+        value = data;
+        goto combine;
+    case 5:
+    case 6:
+    case 7:
+    case 8:
+        value = data << 3;
+        defaultMode = (s32)scratch >> 24;
+        temp = (u32)(defaultMode - 1);
+combine:
+        value |= temp;
+        break;
+    default:
+        goto finish;
+    }
+finish:
+    value &= 63u;
+    finalOutput = value << 1;
+    negative = 127u;
+    negative = -negative;
+    __asm__ volatile ("" : "+r"(negative));
+    negativeCopy = negative;
+    __asm__ volatile ("" : "+r"(negativeCopy));
+    finalOutput |= negativeCopy;
+    ctx[28] = (u8)finalOutput;
+    ctx[24] = 208u;
+
+done:
+    return;
 }
 void _080013E0(void *a,void *b,u32 c,u32 d,u32 e) __attribute__((alias("Helper_013E0")));
+__asm__(".align 2, 0");
 // 0x080015B8: r2=cnt=0; r3=0x04000128; if ((*r3 & 128)==0) skip loop.
 // Loop (r5=lim 0x795C pool, r4=bit 128): cnt++; signed bgt exit;
 // reload *r3, mask copy r4->r0, loop while bit set. Tail: r0 = 150<<2

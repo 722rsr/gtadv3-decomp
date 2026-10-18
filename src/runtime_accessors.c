@@ -165,25 +165,29 @@ int sub_08001370(void *ctx, u16 v) __attribute__((alias("_08001370")));
 //   r1 = (r2 == 2) ? 12 : (r2 == 8) ? 13 : 4
 //   do { delay -= r1 } while (delay > 0)
 // ----------------------------------------------------------------------------
-__attribute__((naked)) void _080015A0(int delay)
+void _080015A0(int delay)
 {
+    register u32 pc __asm__("r2");
+    register int step __asm__("r1");
+    register int remaining __asm__("r0") = delay;
+
+    /* The ROM selects a decrement from the executing address's high byte.
+       C expresses the selection; the PC read and flag-coupled delay loop are
+       kept as the two architectural operations C cannot request directly. */
+    __asm__ volatile ("mov %0, pc" : "=r"(pc));
+    pc >>= 24;
+    step = 12;
+    if (pc != 2) {
+        step = 13;
+        if (pc != 8)
+            step = 4;
+    }
     __asm__ volatile (
         ".syntax unified\n"
-        "mov r2, pc\n"
-        "lsrs r2, r2, #24\n"
-        "movs r1, #12\n"
-        "cmp r2, #2\n"
-        "beq 1f\n"
-        "movs r1, #13\n"
-        "cmp r2, #8\n"
-        "beq 1f\n"
-        "movs r1, #4\n"
-        "1:\n"
-        "subs r0, r0, r1\n"
+        "1: subs %0, %0, %1\n"
         "bgt 1b\n"
-        "bx lr\n"
         ".syntax divided\n"
-    );
+        : "+r"(remaining) : "r"(step) : "cc");
 }
 void sub_080015A0(int delay) __attribute__((alias("_080015A0")));
 

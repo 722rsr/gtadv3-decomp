@@ -21,8 +21,7 @@
                      : : "memory"); \
     wa_addr = wa_base + wa_offset; \
     __asm__ volatile("" : "+r"(wa_addr) : : "cc"); \
-    __asm__ volatile("strh %1, [%0]" : : "l"(wa_addr), "l"(wa_value) \
-                     : "memory"); \
+    *(volatile u16 *)(uintptr_t)wa_addr = (u16)wa_value; \
 } while (0)
 #define MENU_FF78_WA_STORE_R2(src) do { \
     register u32 wa_base asm("r0") = 0x03001780u; \
@@ -33,8 +32,7 @@
                      : : "memory"); \
     wa_addr = wa_base + wa_offset; \
     __asm__ volatile("" : "+r"(wa_addr) : : "cc"); \
-    __asm__ volatile("strh %1, [%0]" : : "l"(wa_addr), "l"(wa_value) \
-                     : "memory"); \
+    *(volatile u16 *)(uintptr_t)wa_addr = (u16)wa_value; \
 } while (0)
 #define MENU_FF78_WA_STORE_FROM_REC(rec) do { \
     register u32 wa_base asm("r0"); \
@@ -44,17 +42,17 @@
     register volatile u8 *wa_src asm("r2"); \
     wa_base = 0x03001780u; \
     __asm__ volatile("" : "+r"(wa_base)); \
-    __asm__ volatile("add r2, %1, #0\n\tadd r2, #144" \
-                     : "=r"(wa_src) : "l"(rec) : "cc"); \
+    wa_src = (rec) + 144; \
+    __asm__ volatile("" : "+r"(wa_src) : : "cc"); \
     wa_value = *(volatile u16 *)(uintptr_t)wa_src; \
     wa_offset = 0x107Cu; \
     __asm__ volatile("" : "+r"(wa_base), "+r"(wa_value), "+r"(wa_offset) \
                      : : "memory"); \
     wa_addr = wa_base + wa_offset; \
     __asm__ volatile("" : "+r"(wa_addr) : : "cc"); \
-    __asm__ volatile("strh %1, [%0]" : : "l"(wa_addr), "l"(wa_value) \
-                     : "memory"); \
-    __asm__ volatile("add r6, r2, #0" : : : "cc"); \
+    *(volatile u16 *)(uintptr_t)wa_addr = (u16)wa_value; \
+    tail_cell = wa_src; \
+    __asm__ volatile("" : "+r"(tail_cell) : : "cc"); \
 } while (0)
 
 extern void Sub_08002B368(u32 v);
@@ -89,9 +87,8 @@ void MenuFF78_15620(void *rec_, u32 dead, u32 ev_) {
     u16 entry = *(volatile u16 *)(uintptr_t)cell;
     if (ev == 2)
         _08001549C(rec_);
-    register volatile u8 *tail_cell asm("r6");
-    __asm__ volatile("add r6, r5, #0"
-                     : "=r"(tail_cell) : "r"(cell) : "cc");
+    register volatile u8 *tail_cell asm("r6") = cell;
+    __asm__ volatile("" : "+r"(tail_cell) : : "cc");
     if (ev == 1) {
         register s32 s asm("r5");
         __asm__ volatile("movs r2, #0\n\tldrsh %0, [%1, r2]"
@@ -143,37 +140,31 @@ state_common:
 state_done:;
     }
     if (ev == 64) {
-        register s32 c asm("r0");
-        __asm__ volatile("ldrh %0, [%1]\n\tsub %0, %0, #1\n\t"
-                         "strh %0, [%1]\n\tlsl %0, %0, #16\n\t"
-                         "asr %0, %0, #16"
-                         : "=&l"(c) : "l"(tail_cell) : "cc", "memory");
-        if (c == 2)
+        register u32 c asm("r0") = *(volatile u16 *)(uintptr_t)tail_cell - 1;
+        *(volatile u16 *)(uintptr_t)tail_cell = (u16)c;
+        __asm__ volatile("" : "+r"(c) : : "memory");
+        if ((s16)c == 2)
             *(volatile s16 *)(uintptr_t)tail_cell = 1;
     }
     if (ev == 128) {
-        register s32 c asm("r0");
-        __asm__ volatile("ldrh %0, [%1]\n\tadd %0, %0, #1\n\t"
-                         "strh %0, [%1]\n\tlsl %0, %0, #16\n\t"
-                         "asr %0, %0, #16"
-                         : "=&l"(c) : "l"(tail_cell) : "cc", "memory");
-        if (c == 2)
+        register u32 c asm("r0") = *(volatile u16 *)(uintptr_t)tail_cell + 1;
+        *(volatile u16 *)(uintptr_t)tail_cell = (u16)c;
+        __asm__ volatile("" : "+r"(c) : : "memory");
+        if ((s16)c == 2)
             *(volatile s16 *)(uintptr_t)tail_cell = 3;
     }
-    register volatile u8 *r1 asm("r1");
-    __asm__ volatile("add r1, r6, #0"
-                     : "=r"(r1) : "r"(tail_cell) : "cc");
+    register volatile u8 *r1 asm("r1") = tail_cell;
+    __asm__ volatile("" : "+r"(r1) : : "cc");
     register s32 cur asm("r0");
-    __asm__ volatile("movs r2, #0\n\tldrsh %0, [%1, r2]"
-                     : "=l"(cur) : "l"(r1) : "r2", "cc", "memory");
+    cur = *(s16 *)(uintptr_t)r1;
     if (cur < 0)
         *(volatile u16 *)(uintptr_t)r1 = 0;
     __asm__ volatile("movs r3, #0\n\tldrsh %0, [%1, r3]"
                      : "=l"(cur) : "l"(r1) : "r3", "cc", "memory");
     if (cur > 4)
         *(volatile u16 *)(uintptr_t)r1 = 4;
-    register u32 current asm("r6");
-    __asm__ volatile("ldrh r6, [r6]" : "=r"(current) : : "memory");
+    register u32 current asm("r6") = *(volatile u16 *)(uintptr_t)tail_cell;
+    __asm__ volatile("" : "+r"(current) : : "memory");
     if (entry != current)
         _0802B368(2);
 }

@@ -622,13 +622,13 @@ void Race_Setup_18EC0(void)
     register volatile u32 *field __asm__("r5");
     register volatile u8 **ctx_slot __asm__("r6");
 
-    __asm__ volatile ("movs %0, #0" : "=r" (i));
+    i = 0;
     base_limit = (s32)0x03001780u;
     scratch = 0x10CAu;
     __asm__ volatile ("" : "+r" (base_limit), "+r" (scratch) : : "memory");
     count_ptr = (volatile u8 *)base_limit + scratch;
     __asm__ volatile ("" : "+r" (count_ptr) : : "memory");
-    __asm__ volatile ("movs %0, #0" : "=l" (index));
+    index = 0;
     __asm__ volatile ("ldrsh %0, [%1, %2]"
                       : "=r" (base_limit) : "r" (count_ptr), "r" (index) : "memory");
     __asm__ volatile ("" : "+l" (index));
@@ -649,7 +649,7 @@ void Race_Setup_18EC0(void)
             *(volatile u32 *)scratch = zero;
             scratch += 4;
             i++;
-            __asm__ volatile ("movs %0, #0" : "=l" (index));
+            index = 0;
             __asm__ volatile ("ldrsh %0, [%1, %2]"
                               : "=r" (base_limit) : "r" (count_ptr), "r" (index) : "memory");
             __asm__ volatile ("" : "+l" (index));
@@ -839,6 +839,9 @@ void Race_Setup_18F14(void *a) {
     register u32 limit __asm__("r2") = *global;
     register u32 key __asm__("r0") = *keyp;
     volatile u32 *global_tail = global;
+    // Keep the tail pointer out of ip so the compiler carries it in r7, as
+    // the ROM does across the early return and insertion paths.
+    __asm__ volatile ("" : "+r"(global_tail) : : "r12");
     if ((s32)limit <= (s32)key) return;
 
     register s32 index __asm__("r4") = 0;
@@ -857,8 +860,7 @@ compare_records:
             (volatile u32 *)((volatile u8 *)record + 204);
         register s32 offset __asm__("r2") = index * 4;
         register volatile u32 *slotp __asm__("r0");
-        __asm__ volatile ("add r0, r2, r6" : "=r"(slotp)
-                          : "r"(offset), "r"(records) : "memory");
+        slotp = (volatile u32 *)((uintptr_t)offset + (uintptr_t)records);
         u32 slot = *slotp;
         register volatile u32 *slotKeyp __asm__("r0") =
             (volatile u32 *)((volatile u8 *)(uintptr_t)slot + 204);
@@ -874,8 +876,15 @@ compare_records:
                     move--;
                 } while (move >= index);
             }
-            __asm__ volatile ("add r0, r2, r6\n\tstr r5, [r0]"
-                              : : : "r0", "memory");
+            {
+                register volatile u32 *writep __asm__("r0");
+                // Keep this address calculation after the optional shift loop
+                // and make its result the ROM's r0 store base.
+                __asm__ volatile ("" : "+r"(offset), "+r"(records) : : "memory");
+                writep = (volatile u32 *)((uintptr_t)offset +
+                                           (uintptr_t)records);
+                *writep = (u32)(uintptr_t)record;
+            }
             goto tail;
         }
     }
@@ -883,9 +892,9 @@ compare_records:
     if (index > 2) goto tail;
     {
         register volatile u32 *nextp __asm__("r1");
-        __asm__ volatile ("lsl r0, r4, #2\n\tadd r1, r0, r6"
-                          : "=r"(nextp) : "r"(index), "r"(records)
-                          : "r0", "memory");
+        register u32 scaledIndex __asm__("r0") = (u32)index << 2;
+        nextp = (volatile u32 *)((uintptr_t)scaledIndex +
+                                  (uintptr_t)records);
         u32 next = *nextp;
         if (next != 0) goto compare_records;
         *nextp = (u32)(uintptr_t)record;

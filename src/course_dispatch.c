@@ -157,10 +157,7 @@ void *Course_Dispatch_08BB8(void *out) {
     register u32 temp7;
     register u32 mask8 __asm__("r8");
 
-    reg1 = 16;
-    __asm__ volatile ("" : "+r"(reg1));
-    __asm__ volatile ("ldrsh %0, [%1, %2]"
-                      : "=r"(value) : "r"(rec), "r"(reg1));
+    value = *(s16 *)(rec + 16);
     if (value > 1) {
         word5 = *(volatile u32 *)(rec + 84);
         word4 = 255;
@@ -203,10 +200,7 @@ void *Course_Dispatch_08BB8(void *out) {
         cursor[2] = (u16)value;
         cursor = (volatile u16 *)((volatile u8 *)cursor + 8);
 
-        reg1 = 16;
-        __asm__ volatile ("" : "+r"(reg1));
-        __asm__ volatile ("ldrsh %0, [%1, %2]"
-                          : "=r"(value) : "r"(rec), "r"(reg1));
+        value = *(s16 *)(rec + 16);
         if (value > 9) {
             value = word5 - 6;
             word7 = mask8;
@@ -225,8 +219,8 @@ void *Course_Dispatch_08BB8(void *out) {
 
             value = *(volatile u16 *)(rec + 56);
             value += 16;
-            __asm__ volatile ("ldrh %0, [%0, #58]"
-                              : "+r"(rec) : : "memory");
+            rec = (volatile u8 *)(uintptr_t)*(volatile u16 *)(rec + 58);
+            __asm__ volatile ("" : "+r"(rec) : : "memory");
             reg1 = (u32)(uintptr_t)rec << 12;
             value |= reg1;
             cursor[2] = (u16)value;

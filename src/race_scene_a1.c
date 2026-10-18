@@ -587,13 +587,14 @@ void _08001B068(int a) {
           rec = rec + off; }
         wb = (u32)(uintptr_t)WaBase;
         off = (u32)(uintptr_t)WaOffFE;
-        __asm__ volatile("add r1, r2, r3\n\tmovs r3, #0\n\tldrsh r1, [r1, r3]"
-                         : "=r"(a2), "+r"(wb), "+r"(off)
-                         : : "cc", "memory");
+        a2 = wb + off;
+        __asm__ volatile("" : "+r"(a2));
+        off = 0;
+        a2 = *(s16 *)(uintptr_t)(a2 + off);
         off = (u32)(uintptr_t)WaOffCA;
-        __asm__ volatile("add r4, r2, r3\n\tmovs r3, #0\n\tldrsh r2, [r4, r3]"
-                         : "+r"(wb), "=r"(pca), "+r"(off)
-                         : : "cc", "memory");
+        pca = (s16 *)(uintptr_t)(wb + off);
+        off = 0;
+        wb = (u32)*pca;
         _080026FF4((void *)(uintptr_t)rec, (int)a2, (int)wb, 0);
         /* Written as the rotated form the ROM carries EXACTLY: the entry
          * guard reads the bound through r4 (the register the bound pointer
@@ -606,15 +607,20 @@ void _08001B068(int a) {
         i = 0;
         if (i < (int)*pca) {
             s16 *cnt = pca;
+            s32 loopLimit;
             register u32 *q __asm__("r4") = (u32 *)0x03004E80u;
             do {
                 u32 x = *(volatile u32 *)(uintptr_t)q;
                 u32 y = *(volatile u32 *)(uintptr_t)((u8 *)q + 4);
                 _080270D8(x, y, i);
-                __asm__ volatile("movs r3, #142\n\tlsl r3, r3, #1\n\tadd r4, r4, r3"
-                                 : "+r"(q) : : "cc");
+                off = 142;
+                __asm__ volatile ("" : "+r"(off));
+                off <<= 1;
+                q = (u32 *)((u8 *)q + off);
                 i++;
-            } while (i < (int)*cnt);
+                loopLimit = (int)*cnt;
+                __asm__ volatile("" : : "r"(off));
+            } while (i < loopLimit);
         }
         {
             register u32 wa_base __asm__("r0") = (u32)(uintptr_t)WaBase;
@@ -1289,7 +1295,7 @@ __attribute__((naked)) void _08001B77C(void) {
 // Pools: {CTX}. s16[[ctx]+100] ticks up while <= 159; s16[[ctx]+104]
 // selects: 0 → ACC(32)-gated 19A2C(0); 1 → B77C + miteinander 79/ACC(32)
 // gate to 19A2C(0); 2 → B77C + ACC(64)-gated u16[[ctx]+68]=40 +
-// flag 0x100000; 3 → B77C + u16[[ctx]+68] tick-down or flag 0x8000.
+// flag 0x04000000; 3 → B77C + u16[[ctx]+68] tick-down or flag 0x00080000.
 // Every taken arm (except the pure tick-down) bumps u16[[ctx]+104].
 // ----------------------------------------------------------------------------
 __attribute__((naked)) void _08001B8DC(void) {

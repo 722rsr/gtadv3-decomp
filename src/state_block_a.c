@@ -250,118 +250,110 @@ bool _08001744(u32 mode) __attribute__((alias("StateA_IsSpecialMode")));
 
 // _08001758 — mode-change processor
 // Pseudocode documented in asm/blocka.s header and asm/blocka.s
-// Called spellings: the ROM's three calls are the real functions
-// _080005C0 / _080006BC / _08000BF0 (`bl 0x80005c0`, `bl 0x80006bc`,
-// `bl 0x8000bf0`); going through the file-local Session*Hook wrappers leaves
-// the relocations unresolved (the wrappers are static in this TU).
-// Naming the hooks would be right only if the closure exported them -- it does
-// not, so the probe reports UNRESOLVED_RELOCATION and the candidate loses the
-// match from +0x62 on.
-__attribute__((naked)) void StateA_CommitMode(void) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, r7, lr}\n"
-        "ldr r7, .L1758_slot0\n"
-        "ldr r0, [r7]\n"
-        "ldrh r1, [r0, #16]\n"
-        "ldrh r5, [r0, #18]\n"
-        "cmp r5, r1\n"
-        "beq .L1758_done\n"
-        "adds r0, r1, #0\n"
-        "bl 0x08001730\n"
-        "adds r6, r0, #0\n"
-        "adds r0, r5, #0\n"
-        "bl 0x08001730\n"
-        "adds r4, r0, #0\n"
-        "cmp r6, #0\n"
-        "bne .L1758_old_active\n"
-        "cmp r4, #0\n"
-        "beq .L1758_mode_switch\n"
-        "movs r0, #0\n"
-        "bl 0x080005C0\n"
-        "ldr r0, [r7]\n"
-        "strh r6, [r0, #8]\n"
-        "b .L1758_mode_switch\n"
-        "movs r0, r0\n"
-        ".align 2, 0\n"
-        ".L1758_slot0: .word 0x030000E4\n"
-        ".L1758_old_active:\n"
-        "cmp r4, #0\n"
-        "bne .L1758_mode_switch\n"
-        "bl 0x080006BC\n"
-        "ldr r0, [r7]\n"
-        "strb r4, [r0, #1]\n"
-        ".L1758_mode_switch:\n"
-        "cmp r5, #6\n"
-        "beq .L1758_clear_d0\n"
-        "cmp r5, #6\n"
-        "bgt .L1758_check_ten\n"
-        "cmp r5, #3\n"
-        "bgt .L1758_check_range_hi\n"
-        "cmp r5, #2\n"
-        "blt .L1758_check_range_hi\n"
-        "b .L1758_clear_d0\n"
-        ".L1758_check_ten:\n"
-        "cmp r5, #10\n"
-        "bne .L1758_check_range_hi\n"
-        ".L1758_clear_d0:\n"
-        "ldr r0, .L1758_slot1\n"
-        "ldr r0, [r0]\n"
-        "adds r0, #208\n"
-        "movs r1, #0\n"
-        "str r1, [r0]\n"
-        ".L1758_check_range_hi:\n"
-        "cmp r5, #8\n"
-        "beq .L1758_mode_eight\n"
-        "cmp r5, #8\n"
-        "bgt .L1758_mode_eleven_check\n"
-        "cmp r5, #1\n"
-        "beq .L1758_mode_one\n"
-        "b .L1758_store_mode\n"
-        "movs r0, r0\n"
-        ".align 2, 0\n"
-        ".L1758_slot1: .word 0x030000E4\n"
-        ".L1758_mode_eleven_check:\n"
-        "cmp r5, #11\n"
-        "beq .L1758_mode_eleven\n"
-        "b .L1758_store_mode\n"
-        ".L1758_mode_one:\n"
-        "ldr r0, .L1758_slot2\n"
-        "ldr r1, [r0]\n"
-        "ldr r0, .L1758_const_3eb\n"
-        "strh r0, [r1, #4]\n"
-        "b .L1758_store_mode\n"
-        ".align 2, 0\n"
-        ".L1758_slot2: .word 0x030000E4\n"
-        ".L1758_const_3eb: .word 0x000003EB\n"
-        ".L1758_mode_eight:\n"
-        "ldr r0, .L1758_slot3\n"
-        "ldr r0, [r0]\n"
-        "ldr r1, [r0, #36]\n"
-        "movs r0, #1\n"
-        "bl 0x08000BF0\n"
-        "b .L1758_store_mode\n"
-        "movs r0, r0\n"
-        ".align 2, 0\n"
-        ".L1758_slot3: .word 0x030000E4\n"
-        ".L1758_mode_eleven:\n"
-        "ldr r0, .L1758_slot4\n"
-        "ldr r0, [r0]\n"
-        "ldr r1, [r0, #40]\n"
-        "movs r0, #0\n"
-        "bl 0x08000BF0\n"
-        ".L1758_store_mode:\n"
-        "ldr r0, .L1758_slot4\n"
-        "ldr r0, [r0]\n"
-        "strh r5, [r0, #16]\n"
-        ".L1758_done:\n"
-        "pop {r4, r5, r6, r7}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        ".align 2, 0\n"
-        ".L1758_slot4: .word 0x030000E4\n"
-        ".syntax divided\n"
-    );
+// Calls use the ROM exports _080005C0 / _080006BC / _08000BF0 directly.
+// The Session*Hook wrappers above are friendly C entry points outside the
+// assembly closure used by the isolated linker, so naming them here leaves
+// unresolved relocations even though they delegate to the same ROM routines.
+void StateA_CommitMode(void) {
+    volatile u32 *slot = (volatile u32 *)STATE_BLOCK_A_SLOT_ADDR;
+    register volatile u32 *clearSlot __asm__("r0");
+    register volatile u8 *state __asm__("r0");
+    register u16 oldMode __asm__("r1");
+    register int requested __asm__("r5");
+    int wasGame;
+    int isGame;
+    extern void _080005C0(int);
+    extern void _080006BC(void);
+    extern void _08000BF0(int, u32);
+
+    state = (volatile u8 *)(uintptr_t)*slot;
+    oldMode = *(volatile u16 *)(state + 16);
+    requested = *(volatile u16 *)(state + 18);
+    if (requested == oldMode) {
+        return;
+    }
+    wasGame = _08001730(oldMode);
+    isGame = _08001730(requested);
+    if (!wasGame) {
+        if (isGame) {
+            _080005C0(0);
+            state = (volatile u8 *)(uintptr_t)*slot;
+            *(volatile u16 *)(state + 8) = wasGame;
+        }
+    } else if (!isGame) {
+        _080006BC();
+        state = (volatile u8 *)(uintptr_t)*slot;
+        *(volatile u8 *)(state + 1) = isGame;
+    }
+    if (requested == 6) {
+        goto clear_mode_data;
+    }
+    if (requested > 6) {
+        goto check_mode_ten;
+    }
+    switch (requested) {
+    case 2:
+    case 3:
+        goto clear_mode_data;
+    }
+    goto dispatch_special_mode;
+check_mode_ten:
+    if (requested != 10) {
+        goto dispatch_special_mode;
+    }
+clear_mode_data:
+    clearSlot = (volatile u32 *)STATE_BLOCK_A_SLOT_ADDR;
+    state = (volatile u8 *)(uintptr_t)*clearSlot;
+    *(volatile u32 *)(state + 208) = 0;
+dispatch_special_mode:
+    if (requested == 8) {
+        goto mode_eight;
+    }
+    if (requested > 8) {
+        goto check_mode_eleven;
+    }
+    if (requested == 1) {
+        goto mode_one;
+    }
+    goto store_mode;
+check_mode_eleven:
+    if (requested == 11) {
+        goto mode_eleven;
+    }
+    goto store_mode;
+mode_one: {
+    register volatile u32 *modeOneSlot __asm__("r0");
+    register volatile u8 *modeOneState __asm__("r1");
+    register u32 modeOneValue __asm__("r0");
+    modeOneSlot = (volatile u32 *)STATE_BLOCK_A_SLOT_ADDR;
+    modeOneState = (volatile u8 *)(uintptr_t)*modeOneSlot;
+    modeOneValue = 0x3EB;
+    *(volatile u16 *)(modeOneState + 4) = modeOneValue;
+    }
+    goto store_mode;
+mode_eight: {
+    register volatile u32 *blockSlot __asm__("r0");
+    volatile u8 *blockState;
+    blockSlot = (volatile u32 *)STATE_BLOCK_A_SLOT_ADDR;
+    blockState = (volatile u8 *)(uintptr_t)*blockSlot;
+    _08000BF0(1, *(volatile u32 *)(blockState + 36));
+    }
+    goto store_mode;
+    __asm__ volatile (".align 2, 0");
+mode_eleven: {
+    register volatile u32 *blockSlot __asm__("r0");
+    volatile u8 *blockState;
+    blockSlot = (volatile u32 *)STATE_BLOCK_A_SLOT_ADDR;
+    blockState = (volatile u8 *)(uintptr_t)*blockSlot;
+    _08000BF0(0, *(volatile u32 *)(blockState + 40));
+    }
+store_mode: {
+    register volatile u32 *blockSlot __asm__("r0");
+    volatile u8 *blockState;
+    blockSlot = (volatile u32 *)STATE_BLOCK_A_SLOT_ADDR;
+    blockState = (volatile u8 *)(uintptr_t)*blockSlot;
+    *(volatile u16 *)(blockState + 16) = requested;
+    }
 }
 //. The caller above names `_08001758`, the one spelling
 // asm/blocka.s declares. Adding a `sub_08001758` twin would NOT help: the
@@ -420,166 +412,145 @@ void CpuFastSet(const void *src, void *dst, u32 mode);
 // halfwords when on the last record, then drives three calls into
 // the helper at 0x8001E48 and a final CpuFastSet copy of a 6-word record.
 // See asm/blocka.s:0x1854 and asm/blocka.s.
-__attribute__((naked)) void StateA_UpdateClockAndRecords(void) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, r7, lr}\n"
-        "mov r7, r8\n"
-        "push {r7}\n"
-        "movs r6, #0\n"
-        "ldr r5, .Lstate1854__0800188C\n"
-        "movs r7, #1\n"
-        "movs r4, #1\n"
-        "ldr r0, .Lstate1854__08001890\n"
-        "ldr r1, [r0]\n"
-        "mov r8, r0\n"
-        "ldrh r1, [r1, #0xa]\n"
-        "cmp r7, r1\n"
-        "bge.n .Lstate1854__080018B2\n"
-        ".Lstate1854__0800186E:\n"
-        "adds r0, r4, #0\n"
-        "bl _080015F4\n"
-        "lsls r0, r0, #0x10\n"
-        "lsrs r1, r0, #0x10\n"
-        "movs r0, #0xfc\n"
-        "lsls r0, r0, #2\n"
-        "cmp r1, r0\n"
-        "beq.n .Lstate1854__08001894\n"
-        "adds r0, #1\n"
-        "cmp r1, r0\n"
-        "bne.n .Lstate1854__080018A6\n"
-        "adds r6, #1\n"
-        "b.n .Lstate1854__080018A6\n"
-        "movs r0, r0\n"
-        ".align 2, 0\n"
-        ".Lstate1854__0800188C: .4byte 0x00007FFF\n"
-        ".Lstate1854__08001890: .4byte 0x030000E4\n"
-        ".Lstate1854__08001894:\n"
-        "adds r0, r4, #0\n"
-        "movs r1, #0\n"
-        "bl _08001620\n"
-        "lsls r0, r0, #0x10\n"
-        "lsrs r0, r0, #0x10\n"
-        "cmp r0, r5\n"
-        "bge.n .Lstate1854__080018A6\n"
-        "adds r5, r0, #0\n"
-        ".Lstate1854__080018A6:\n"
-        "adds r4, #1\n"
-        "ldr r0, .Lstate1854__080018D8\n"
-        "ldr r0, [r0]\n"
-        "ldrh r0, [r0, #0xa]\n"
-        "cmp r4, r0\n"
-        "blt.n .Lstate1854__0800186E\n"
-        ".Lstate1854__080018B2:\n"
-        "mov r0, r8\n"
-        "ldr r1, [r0]\n"
-        "movs r2, #0x1c\n"
-        "ldrsh r0, [r1, r2]\n"
-        "cmp r0, r5\n"
-        "bne.n .Lstate1854__080018DC\n"
-        "ldrh r0, [r1, #0x1e]\n"
-        "adds r0, #1\n"
-        "strh r0, [r1, #0x1e]\n"
-        "lsls r0, r0, #0x10\n"
-        "asrs r0, r0, #0x10\n"
-        "cmp r0, #30\n"
-        "ble.n .Lstate1854__080018E2\n"
-        "movs r0, #0\n"
-        "strh r0, [r1, #0x1e]\n"
-        "strh r5, [r1, #0x18]\n"
-        "movs r7, #0\n"
-        "b.n .Lstate1854__080018E2\n"
-        "movs r0, r0\n"
-        ".align 2, 0\n"
-        ".Lstate1854__080018D8: .4byte 0x030000E4\n"
-        ".Lstate1854__080018DC:\n"
-        "movs r0, #0\n"
-        "strh r0, [r1, #0x1e]\n"
-        "strh r5, [r1, #0x1c]\n"
-        ".Lstate1854__080018E2:\n"
-        "ldr r4, .Lstate1854__08001930\n"
-        "ldr r1, [r4]\n"
-        "ldrh r0, [r1, #0xa]\n"
-        "subs r0, #1\n"
-        "cmp r6, r0\n"
-        "bne.n .Lstate1854__080018F6\n"
-        "movs r0, #4\n"
-        "strh r0, [r1, #0x12]\n"
-        "movs r0, #0xa\n"
-        "strh r0, [r1, #0x14]\n"
-        ".Lstate1854__080018F6:\n"
-        "cmp r7, #0\n"
-        "beq.n .Lstate1854__08001902\n"
-        "ldr r1, [r4]\n"
-        "ldrh r0, [r1, #0x18]\n"
-        "adds r0, #1\n"
-        "strh r0, [r1, #0x18]\n"
-        ".Lstate1854__08001902:\n"
-        "ldr r0, .Lstate1854__08001934\n"
-        "bl _080016D0\n"
-        "ldr r0, [r4]\n"
-        "ldrh r1, [r0, #0x18]\n"
-        "movs r0, #0\n"
-        "bl _08001E48\n"
-        "ldr r2, [r4]\n"
-        "movs r3, #0x18\n"
-        "ldrsh r0, [r2, r3]\n"
-        "cmp r0, #0\n"
-        "bne.n .Lstate1854__08001938\n"
-        "ldrh r1, [r2, #0x2c]\n"
-        "movs r0, #1\n"
-        "bl _08001E48\n"
-        "ldr r0, [r4]\n"
-        "ldrh r1, [r0, #0x16]\n"
-        "movs r0, #2\n"
-        "bl _08001E48\n"
-        "b.n .Lstate1854__08001952\n"
-        ".align 2, 0\n"
-        ".Lstate1854__08001930: .4byte 0x030000E4\n"
-        ".Lstate1854__08001934: .4byte 0x000003ED\n"
-        ".Lstate1854__08001938:\n"
-        "movs r1, #0x18\n"
-        "ldrsh r0, [r2, r1]\n"
-        "subs r0, #1\n"
-        "lsls r1, r0, #1\n"
-        "adds r1, r1, r0\n"
-        "lsls r1, r1, #2\n"
-        "ldr r0, [r2, #0x24]\n"
-        "adds r0, r0, r1\n"
-        "adds r1, r2, #0\n"
-        "adds r1, #0xc4\n"
-        "movs r2, #6\n"
-        "bl sub_0802D974\n"
-        ".Lstate1854__08001952:\n"
-        "ldr r0, .Lstate1854__08001984\n"
-        "ldr r2, [r0]\n"
-        "movs r3, #0x18\n"
-        "ldrsh r0, [r2, r3]\n"
-        "movs r3, #0x16\n"
-        "ldrsh r1, [r2, r3]\n"
-        "cmp r0, r1\n"
-        "ble.n .Lstate1854__08001964\n"
-        "adds r0, r1, #0\n"
-        ".Lstate1854__08001964:\n"
-        "adds r4, r2, #0\n"
-        "adds r4, #0xd0\n"
-        "lsls r0, r0, #12\n"
-        "bl sub_0802DE04\n"
-        "str r0, [r4]\n"
-        "cmp r0, #0\n"
-        "bge.n .Lstate1854__08001978\n"
-        "movs r0, #0\n"
-        "str r0, [r4]\n"
-        ".Lstate1854__08001978:\n"
-        "pop {r3}\n"
-        "mov r8, r3\n"
-        "pop {r4, r5, r6, r7}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        "movs r0, r0\n"
-        ".align 2, 0\n"
-        ".Lstate1854__08001984: .4byte 0x030000E4\n"
-        ".syntax divided\n"
-    );
+void StateA_UpdateClockAndRecords(void) {
+    register int recordIndex __asm__("r4");
+    register int matchCount __asm__("r6");
+    register int minimum __asm__("r5");
+    int advance;
+    register volatile u32 *slot __asm__("r0");
+    register volatile u32 *slotAddress __asm__("r8");
+    register volatile u8 *state __asm__("r1");
+    int recordCount;
+    u16 recordValue;
+    u16 candidate;
+    int seconds;
+    register int lastMinute __asm__("r0");
+    u32 source;
+    void *destination;
+    int result;
+    extern u16 _080015F4(int);
+    extern u16 _08001620(int, int);
+    extern void _080016D0(u32);
+    extern void _08001E48(int, u32);
+    extern void sub_0802D974(const void *, void *, u32);
+    extern int sub_0802DE04(int, int);
+
+    matchCount = 0;
+    minimum = 0x7FFF;
+    advance = 1;
+    recordIndex = 1;
+    slot = (volatile u32 *)STATE_BLOCK_A_SLOT_ADDR;
+    {
+        register volatile u8 *initialState __asm__("r1");
+        initialState = (volatile u8 *)(uintptr_t)*slot;
+        slotAddress = slot;
+        {
+            register u16 initialCount __asm__("r1");
+            initialCount = *(volatile u16 *)(initialState + 10);
+            if (advance < (int)initialCount) {
+        do {
+            register int marker __asm__("r0");
+            recordValue = _080015F4(recordIndex);
+            marker = 0xFC;
+            marker <<= 2;
+            if (recordValue == marker) {
+                goto min_record;
+            }
+            marker++;
+            if (recordValue != marker) {
+                goto after_record;
+            }
+            matchCount++;
+            goto after_record;
+min_record:
+            candidate = _08001620(recordIndex, 0);
+            if (candidate < minimum) {
+                minimum = candidate;
+            }
+after_record:
+            recordIndex++;
+            slot = (volatile u32 *)STATE_BLOCK_A_SLOT_ADDR;
+            recordCount = *(volatile u16 *)((volatile u8 *)(uintptr_t)*slot + 10);
+        } while (recordIndex < recordCount);
+            }
+        }
+    }
+    state = (volatile u8 *)(uintptr_t)*slotAddress;
+    {
+        register s16 *minuteState __asm__("r1");
+        minuteState = (s16 *)state;
+        lastMinute = minuteState[14];
+    }
+    if (lastMinute == minimum) {
+        seconds = *(volatile u16 *)(state + 30) + 1;
+        *(volatile u16 *)(state + 30) = seconds;
+        if ((s16)seconds > 30) {
+            *(volatile u16 *)(state + 30) = 0;
+            *(volatile u16 *)(state + 24) = minimum;
+            advance = 0;
+        }
+    } else {
+        *(volatile u16 *)(state + 30) = 0;
+        *(volatile u16 *)(state + 28) = minimum;
+    }
+    {
+        register volatile u32 *lateSlot __asm__("r4");
+        lateSlot = (volatile u32 *)STATE_BLOCK_A_SLOT_ADDR;
+    state = (volatile u8 *)(uintptr_t)*lateSlot;
+    recordCount = *(volatile u16 *)(state + 10) - 1;
+    if (matchCount == recordCount) {
+        *(volatile u16 *)(state + 18) = 4;
+        *(volatile u16 *)(state + 20) = 10;
+    }
+    if (advance != 0) {
+        state = (volatile u8 *)(uintptr_t)*lateSlot;
+        *(volatile u16 *)(state + 24) = *(volatile u16 *)(state + 24) + 1;
+    }
+    _080016D0(0x3ED);
+    {
+        register volatile u8 *eventState __asm__("r0");
+        eventState = (volatile u8 *)(uintptr_t)*lateSlot;
+        _08001E48(0, *(volatile u16 *)(eventState + 24));
+    }
+    register s16 *phaseMinutes __asm__("r2");
+    phaseMinutes = (s16 *)(uintptr_t)*lateSlot;
+    lastMinute = phaseMinutes[12];
+    if (lastMinute == 0) {
+        _08001E48(1, *(volatile u16 *)((volatile u8 *)phaseMinutes + 44));
+        {
+            register volatile u8 *secondEventState __asm__("r0");
+            secondEventState = (volatile u8 *)(uintptr_t)*lateSlot;
+            _08001E48(2, *(volatile u16 *)(secondEventState + 22));
+        }
+    } else {
+        lastMinute = phaseMinutes[12];
+        register int recordOffset __asm__("r0");
+        register int scaledOffset __asm__("r1");
+        recordOffset = lastMinute - 1;
+        scaledOffset = ((recordOffset << 1) + recordOffset) << 2;
+        source = *(volatile u32 *)((volatile u8 *)phaseMinutes + 36) + scaledOffset;
+        {
+            register void *copyDestination __asm__("r1");
+            copyDestination = (void *)((volatile u8 *)phaseMinutes + 196);
+            sub_0802D974((const void *)(uintptr_t)source, copyDestination, 6);
+        }
+    }
+    }
+    {
+        register s16 *ratioState __asm__("r2");
+        register int currentMinute __asm__("r1");
+        ratioState = (s16 *)(uintptr_t)*(volatile u32 *)STATE_BLOCK_A_SLOT_ADDR;
+        lastMinute = ratioState[12];
+        currentMinute = ratioState[11];
+        if (lastMinute > currentMinute) {
+            lastMinute = currentMinute;
+        }
+        destination = (void *)((volatile u8 *)ratioState + 208);
+        result = sub_0802DE04(lastMinute << 12, currentMinute);
+        *(volatile s32 *)destination = result;
+        if (result < 0) {
+            *(volatile s32 *)destination = 0;
+        }
+    }
 }
 void _08001854(void) __attribute__((alias("StateA_UpdateClockAndRecords")));

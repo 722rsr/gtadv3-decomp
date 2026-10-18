@@ -3481,7 +3481,7 @@
     "end_marker": ".type sub_08005790, %function",
     "end_vma": "0x08005790",
     "export": [
-      "SaveBumpBase"
+      "_08005780"
     ],
     "start_marker": ".type sub_08005780, %function"
   },
@@ -3840,7 +3840,6 @@
     "end_marker": ".type sub_08005F44, %function",
     "end_vma": "0x08005f44",
     "export": [
-      "SaveTrigTblA",
       "sub_08005F2C"
     ],
     "start_marker": ".type sub_08005F2C, %function"
@@ -3851,7 +3850,6 @@
     "end_marker": ".type sub_08005F5C, %function",
     "end_vma": "0x08005f5c",
     "export": [
-      "SaveTrigTblB",
       "sub_08005F44"
     ],
     "start_marker": ".type sub_08005F44, %function"
@@ -3861,9 +3859,6 @@
     "c_name": "_08005F5C",
     "end_marker": ".type sub_08005F74, %function",
     "end_vma": "0x08005f74",
-    "export": [
-      "SaveTrigTblA"
-    ],
     "start_marker": ".type sub_08005F5C, %function"
   },
   "0x08005f74": {
@@ -3871,9 +3866,6 @@
     "c_name": "_08005F74",
     "end_marker": "save_trigger_accessors_end:",
     "end_vma": "0x08005f8c",
-    "export": [
-      "SaveTrigTblB"
-    ],
     "start_marker": ".type sub_08005F74, %function"
   },
   "0x08005f8c": {
@@ -11545,6 +11537,10 @@
     "c_name": "_08022D44",
     "end_marker": ".type sub_080022D74, %function",
     "end_vma": "0x08022d74",
+    "export": [
+      "_080022D44",
+      "sub_080022D44"
+    ],
     "start_marker": ".type sub_080022D44, %function"
   },
   "0x08022d74": {

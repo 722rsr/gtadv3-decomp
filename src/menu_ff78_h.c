@@ -258,20 +258,18 @@ void MenuFF78_14078(void *rec_) {
             register const s16 *table0 asm("r2") =
                 (const s16 *)(uintptr_t)0x03002772u;
             register int gval asm("r0");
-            __asm__ volatile ("movs r1, #0\n\tldrsh r0, [r2, r1]"
-                              : "=r" (gval) : "r" (table0) : "r1", "memory");
+            gval = *table0;
             int g = _08025CF4(gval, outer, inner * 2);
             register const s16 *table1 asm("r2") =
                 (const s16 *)(uintptr_t)0x03002772u;
             register int hval asm("r0");
-            __asm__ volatile ("movs r1, #0\n\tldrsh r0, [r2, r1]"
-                              : "=r" (hval) : "r" (table1) : "r1", "memory");
+            hval = *table1;
             int h = _08025CF4(hval, outer, r8);
             u32 idx = (((u32)h) << 1) + (((u32)g) << 3);
             s16 v = *(s16 *)(uintptr_t)(spad + idx);
             *dst = (u32)(s32)v;
-            __asm__ volatile ("mov r2, %1\n\tldr %0, [r2, #28]"
-                              : "=r" (w0) : "r" (rec) : "r2", "memory");
+            register volatile u32 *rec_words asm("r2") = (volatile u32 *)rec;
+            w0 = rec_words[7];
             u32 w2 = *src;
             _08007ABC(w0, (u32)(s32)v, w2);
             src += 3;

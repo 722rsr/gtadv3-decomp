@@ -480,8 +480,8 @@ void _080020198(void *rec0, int a1, int a2) {
         v = (int)*(s16 *)(uintptr_t)(rec + 156);
         areaBase = 0x03001D64u + (u32)(v * 3) * 4u;
     } else {
-        register int off28 __asm__("r1") = 28;
         register int s28 __asm__("r0");
+        register int off28 __asm__("r1") = 28;
         __asm__ volatile("ldrsh %0, [%1, %2]"
                          : "=r"(s28) : "r"(rec), "r"(off28) : "memory");
         rowOff = (u32)s28 * 72u;
@@ -621,11 +621,10 @@ void _080020198(void *rec0, int a1, int a2) {
         }
         {
             register int row __asm__("r1");
-            __asm__ volatile(".code 16\n\t"
-                             "movs r0, #28\n\t"
-                             "ldrsh %0, [%1, r0]"
-                             : "=r"(row) : "r"(rec)
-                             : "r0", "cc", "memory");
+            row = *(s16 *)(uintptr_t)(rec + 28);
+            // Hold the preceding r3 offset through this signed read so agbcc
+            // uses r0 for the register offset, matching 0x080203B8.
+            __asm__ volatile("" : : "r"(offset));
             dst = (volatile u8 *)(uintptr_t)(
                 (u32)row * 72u + (u32)(uintptr_t)wa);
         }
@@ -1130,15 +1129,21 @@ void _08002087C(int ev, int b, int c, void *rec_) {
         if (state == 0) {
             _08001FFD4(rec_, (u16)b, (u16)c);
         } else {
+            // `state < 0` keeps `cmp #0; blt` (fold-const only rewrites
+            // comparisons with a positive constant), matching 0x080208AA.
             if (state < 0)
                 break;
-            if (state > 3)
+            // The final gate is the {2,3} switch's leaf range tests:
+            // emit_case_nodes emits `GT high -> default` then
+            // `LT low -> default` for a childless range node, giving the
+            // ROM's `cmp #3; bgt` / `cmp #2; blt` pair (0x080208AE/B2).
+            // An if-chain cannot: `state < 2` folds into `cmp #1; ble`.
+            switch (state) {
+            case 2:
+            case 3:
+                _080020198(rec_, (u16)b, (u16)c);
                 break;
-            // Preserve the ROM's `cmp r0,#2 / blt common_exit`. agbcc
-            // canonicalizes `state < 2` to the equivalent `cmp #1 / ble`.
-            __asm__ volatile ("cmp %0, #2\n\tblt .L2087c_exit"
-                              : : "l" (state) : "cc", "memory");
-            _080020198(rec_, (u16)b, (u16)c);
+            }
         }
         break;
     }
@@ -1151,7 +1156,6 @@ void _08002087C(int ev, int b, int c, void *rec_) {
     default:
         break;
     }
-    __asm__ volatile (".L2087c_exit:");
 }
 __asm__(".align 2, 0");
 
@@ -1902,28 +1906,22 @@ void _080021018(void *rec0, int a, int b, int c) {
     register int remaining __asm__("r5") = 0;
     __asm__ volatile("" : "+r" (remaining));
     if (remaining < n) {
+        /* These are the four stack arguments consumed by 7B18. Pinning the
+         * current outgoing area to SP lets C place them before the register
+         * arguments without reproducing the store instructions in asm. */
+        register volatile u32 *outgoing __asm__("sp");
         int one = 1;
         register int row __asm__("r4") = a_slot;
         remaining = n;
         do {
-            {
-                register volatile u8 *row_record __asm__("r0");
-                // Keep the outgoing stack arguments ahead of the r0 record
-                // address, as in the ROM's first call site. The four-register
-                // prototype lets the compiler supply r1-r3 and the BL while
-                // this small block fixes the stack stores and their order.
-                __asm__ volatile(
-                    ".syntax unified\n\t.code 16\n\t"
-                    "movs r0, #9\n\tstr r0, [sp, #0]\n\t"
-                    "str %1, [sp, #4]\n\tstr %1, [sp, #8]\n\t"
-                    "movs r0, #0\n\tstr r0, [sp, #12]\n\t"
-                    "mov r0, %2\n\tadds r0, #8\n\t.syntax divided"
-                    : "=&r"(row_record)
-                    : "r"(one), "r"(rec)
-                    : "cc", "memory");
-                ((void (*)(void *, int, int, int))_08007B18)(
-                    (void *)row_record, 6, row, breg);
-            }
+            outgoing[0] = 9;
+            outgoing[1] = one;
+            outgoing[2] = one;
+            outgoing[3] = 0;
+            __asm__ volatile ("" : "+r" (rec));
+            register volatile u8 *row_record __asm__("r0") = rec + 8;
+            ((void (*)(void *, int, int, int))_08007B18)(
+                (void *)row_record, 6, row, breg);
             row += 8;
             remaining--;
         } while (remaining != 0);

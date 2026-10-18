@@ -45,7 +45,7 @@ extern void  _08005DA4(void *a, void *b);
 extern int   _08005E14(void *a, void *b, void *c);
 extern void *_08007498(void *x, int i);
 extern void *_0800748C(void *x);
-extern void  _0802D988(const void *s, void *d);
+extern void  sub_0802D988(const void *s, void *d);
 extern void  _0802D970(const void *s, void *d, u32 c);
 extern void  _0802D974(const void *s, void *d, u32 c);
 extern s16   _080261B0(int a);
@@ -60,8 +60,8 @@ extern void  _0800D97C(void *a, int b);
 extern void  _080023AE4(void *a, int b, int c);
 extern void  _080023B60(void *a, int b, int c);
 extern void  _0800DBE8(void *a);
-extern void  _08022D44(void *a, void *b, int c);
-extern void  _08023E78(void *a);
+extern void  _080022D44(void *a, void *b, int c);
+extern void  _080023E78(void *a);
 extern void  _08002E0A4(void *d, const void *s, u32 n);
 extern void  _08003940(int a, u32 b);
 extern void  _080056B8(int a);                            // 0x080056B8
@@ -550,52 +550,53 @@ void _080262A4(void *rec, int sel)
     // bits[] entries while advancing the source cursor 0x900 per set
     // mask[] entry. Cursor is read-modify-written through r8 (rec+4).
     register u32 cursor asm("r8") = *(volatile u32 *)((u8 *)rec + 4);
-    u32 t0_slot;
-    _08007498((void *)(uintptr_t)0x083D7BE8u, sel);
-    __asm__ volatile(".code 16\n\tstr r0, %0" : "=m"(t0_slot));
+    // These volatile words occupy the ROM's two spill slots: the raw Seek
+    // result survives later calls at [sp], and the VRAM pointer is preserved
+    // at [sp, #4] across each CpuFastSet call.
+    volatile struct { u32 t0; u32 vram; } slots;
+    slots.t0 = (u32)(uintptr_t)_08007498(
+        (void *)(uintptr_t)0x083D7BE8u, sel);
     register void *mask asm("sl") =
         _0800748C(_08007498((void *)(uintptr_t)0x0879984Cu, 7));
     register void *bits asm("r9") =
         _0800748C(_08007498((void *)(uintptr_t)0x0879984Cu,
                             (int)*(volatile u32 *)rec));
     void *src0 = _0800748C(
-        _08007498((void *)(uintptr_t)t0_slot, 0));
-    _0802D988(src0, (void *)(uintptr_t)0x02000000u);
+        _08007498((void *)(uintptr_t)slots.t0, 0));
+    sub_0802D988(src0, (void *)(uintptr_t)0x02000000u);
 
     register u32 vram asm("r3") = 0x02000000u;
     u32 one;
-    u32 vram_save;
     register int i asm("r4") = 0;
     do {
         register int byte asm("r6");
         register int bit asm("r5");
         register u32 base asm("r1");
         register u32 cell asm("r0");
-        __asm__ volatile(".code 16\n\tadd r0, %1, #0\n\tcmp %1, #0\n\tbge 1f\n\tadd r0, %1, #7\n1:\n\tasr %0, r0, #3"
-                         : "=r"(byte) : "r"(i) : "r0", "cc");
+        cell = (u32)i;
+        if (i < 0)
+            cell = (u32)(i + 7);
+        byte = (s32)cell >> 3;
         base = (uintptr_t)bits;
         cell = base + (u32)byte;
-        __asm__ volatile(".code 16\n\tmov %0, #7\n\tand %0, %1"
-                         : "=r"(bit) : "r"(i) : "cc");
+        bit = 7;
+        bit &= i;
         cell = *(volatile u8 *)(uintptr_t)cell;
         cell = (int)cell >> bit;
-        __asm__ volatile(".code 16\n\tmov %0, #1" : "=l"(one));
+        one = 1;
         cell &= one;
         if (cell != 0) {
-            __asm__ volatile(
-                ".code 16\n\t"
-                "add r0, r3, #0\n\t"
-                "mov r1, r8\n\t"
-                "mov r2, #144\n\t"
-                "lsl r2, r2, #2\n\t"
-                "str r3, %2\n\t"
-                "bl _0802D970\n\t"
-                "mov r0, #144\n\t"
-                "lsl r0, r0, #4\n\t"
-                "add r8, r8, r0\n\t"
-                "ldr r3, %2"
-                : "+r"(cursor), "+r"(vram), "=m"(vram_save)
-                : : "r0", "r1", "r2", "lr", "cc", "memory");
+            register const void *copySource __asm__("r0") =
+                (const void *)(uintptr_t)vram;
+            register void *copyTarget __asm__("r1") =
+                (void *)(uintptr_t)cursor;
+            register u32 copyLength __asm__("r2") = 144u << 2;
+            __asm__ volatile("" : "+r"(copySource), "+r"(copyTarget),
+                                  "+r"(copyLength));
+            slots.vram = vram;
+            _0802D970(copySource, copyTarget, copyLength);
+            cursor += 144u << 4;
+            vram = slots.vram;
         }
         base = (uintptr_t)mask;
         cell = base + (u32)byte;
@@ -608,8 +609,8 @@ void _080262A4(void *rec, int sel)
     } while (i <= 127);
 
     void *src1 = _0800748C(
-        _08007498((void *)(uintptr_t)t0_slot, 1));
-    _0802D988(src1, (void *)(uintptr_t)0x02000000u);
+        _08007498((void *)(uintptr_t)slots.t0, 1));
+    sub_0802D988(src1, (void *)(uintptr_t)0x02000000u);
     vram = 0x02000000u;
     i = 128;
     do {
@@ -617,31 +618,30 @@ void _080262A4(void *rec, int sel)
         register int bit asm("r5");
         register u32 base asm("r1");
         register u32 cell asm("r0");
-        __asm__ volatile(".code 16\n\tadd r0, %1, #0\n\tcmp %1, #0\n\tbge 1f\n\tadd r0, %1, #7\n1:\n\tasr %0, r0, #3"
-                         : "=r"(byte) : "r"(i) : "r0", "cc");
+        cell = (u32)i;
+        if (i < 0)
+            cell = (u32)(i + 7);
+        byte = (s32)cell >> 3;
         base = (uintptr_t)bits;
         cell = base + (u32)byte;
-        __asm__ volatile(".code 16\n\tmov %0, #7\n\tand %0, %1"
-                         : "=r"(bit) : "r"(i) : "cc");
+        bit = 7;
+        bit &= i;
         cell = *(volatile u8 *)(uintptr_t)cell;
         cell = (int)cell >> bit;
-        __asm__ volatile(".code 16\n\tmov %0, #1" : "=l"(one));
+        one = 1;
         cell &= one;
         if (cell != 0) {
-            __asm__ volatile(
-                ".code 16\n\t"
-                "add r0, r3, #0\n\t"
-                "mov r1, r8\n\t"
-                "mov r2, #144\n\t"
-                "lsl r2, r2, #2\n\t"
-                "str r3, %2\n\t"
-                "bl _0802D970\n\t"
-                "mov r0, #144\n\t"
-                "lsl r0, r0, #4\n\t"
-                "add r8, r8, r0\n\t"
-                "ldr r3, %2"
-                : "+r"(cursor), "+r"(vram), "=m"(vram_save)
-                : : "r0", "r1", "r2", "lr", "cc", "memory");
+            register const void *copySource __asm__("r0") =
+                (const void *)(uintptr_t)vram;
+            register void *copyTarget __asm__("r1") =
+                (void *)(uintptr_t)cursor;
+            register u32 copyLength __asm__("r2") = 144u << 2;
+            __asm__ volatile("" : "+r"(copySource), "+r"(copyTarget),
+                                  "+r"(copyLength));
+            slots.vram = vram;
+            _0802D970(copySource, copyTarget, copyLength);
+            cursor += 144u << 4;
+            vram = slots.vram;
         }
         base = (uintptr_t)mask;
         cell = base + (u32)byte;
@@ -659,74 +659,91 @@ void sub_080262A4(void *a, int b) __attribute__((alias("_080262A4")));
 // sound_da20.s — IRQ/timer arm + disarm
 // ============================================================================
 
-__attribute__((naked)) void _0802DA58(volatile u16 *src)
+void _0802DA58(volatile u16 *src)
 {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, r7, lr}\n"
-        "mov r7, r9\n"
-        "mov r6, r8\n"
-        "push {r6, r7}\n"
-        "ldr r2, 1f\n"
-        "ldr r1, 2f\n"
-        "mov r9, r1\n"
-        "ldrh r1, [r1, #0]\n"
-        "strh r1, [r2, #0]\n"
-        "movs r6, #0\n"
-        "mov r2, r9\n"
-        "strh r6, [r2, #0]\n"
-        "ldr r3, 3f\n"
-        "mov r8, r3\n"
-        "ldr r5, [r3, #0]\n"
-        "strh r6, [r5, #2]\n"
-        "ldr r3, 4f\n"
-        "ldr r4, 5f\n"
-        "ldrb r1, [r4, #0]\n"
-        "movs r2, #8\n"
-        "adds r7, r2, #0\n"
-        "lsls r7, r1\n"
-        "adds r1, r7, #0\n"
-        "strh r1, [r3, #0]\n"
-        "subs r3, #2\n"
-        "ldrb r1, [r4, #0]\n"
-        "lsls r2, r1\n"
-        "ldrh r1, [r3, #0]\n"
-        "orrs r1, r2\n"
-        "strh r1, [r3, #0]\n"
-        "ldr r1, 6f\n"
-        "strb r6, [r1, #0]\n"
-        "ldr r2, 7f\n"
-        "ldrh r1, [r0, #0]\n"
-        "strh r1, [r2, #0]\n"
-        "adds r0, #2\n"
-        "ldrh r1, [r0, #0]\n"
-        "strh r1, [r5, #0]\n"
-        "adds r1, r5, #2\n"
-        "mov r2, r8\n"
-        "str r1, [r2, #0]\n"
-        "ldrh r0, [r0, #2]\n"
-        "strh r0, [r5, #2]\n"
-        "str r5, [r2, #0]\n"
-        "movs r0, #1\n"
-        "mov r3, r9\n"
-        "strh r0, [r3, #0]\n"
-        "pop {r3, r4}\n"
-        "mov r8, r3\n"
-        "mov r9, r4\n"
-        "pop {r4, r5, r6, r7}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        ".short 0x0000\n"
-        ".align 2\n"
-        "1: .word 0x03001774\n"
-        "2: .word 0x04000208\n"
-        "3: .word 0x03001770\n"
-        "4: .word 0x04000202\n"
-        "5: .word 0x03001768\n"
-        "6: .word 0x0300176C\n"
-        "7: .word 0x0300176A\n"
-        ".syntax divided\n"
-    );
+    extern volatile u16 DA58ImeCell[];
+    extern volatile u16 DA58ImeReg[];
+    extern volatile u32 DA58TimerCell[];
+    extern volatile u16 DA58IeReg[];
+    extern volatile u8 DA58Selector[];
+    extern volatile u8 DA58TimerFlag[];
+    extern volatile u16 DA58ReloadCell[];
+    register volatile u16 *imeCell __asm__("r2");
+    register volatile u16 *imeSource __asm__("r1");
+    register volatile u16 *imeReg __asm__("r9");
+    register volatile u32 *timerCell __asm__("r8");
+    register volatile u32 *timerSource __asm__("r3");
+    register volatile u16 *timer __asm__("r5");
+    register volatile u16 *ie __asm__("r3");
+    register volatile u8 *selector __asm__("r4");
+    register volatile u8 *flag __asm__("r1");
+    register volatile u16 *reloadCell __asm__("r2");
+    register volatile u16 *imeEnd __asm__("r3");
+    register volatile u32 *cellForStores __asm__("r2");
+    register u32 timerNext __asm__("r1");
+    register u32 one __asm__("r0");
+    register u32 zero __asm__("r6");
+    register u32 shift __asm__("r2");
+    register u32 selectorValue __asm__("r1");
+    u32 mask;
+
+    __asm__(".globl DA58ImeCell\nDA58ImeCell = 0x03001774\n"
+            ".globl DA58ImeReg\nDA58ImeReg = 0x04000208\n"
+            ".globl DA58TimerCell\nDA58TimerCell = 0x03001770\n"
+            ".globl DA58IeReg\nDA58IeReg = 0x04000202\n"
+            ".globl DA58Selector\nDA58Selector = 0x03001768\n"
+            ".globl DA58TimerFlag\nDA58TimerFlag = 0x0300176C\n"
+            ".globl DA58ReloadCell\nDA58ReloadCell = 0x0300176A\n");
+
+    imeCell = DA58ImeCell;
+    __asm__ volatile ("" : "+r"(imeCell));
+    imeSource = DA58ImeReg;
+    __asm__ volatile ("" : "+r"(imeSource));
+    imeReg = imeSource;
+    *imeCell = *imeReg;
+    zero = 0;
+    imeCell = imeReg;
+    *imeCell = (u16)zero;
+    timerSource = DA58TimerCell;
+    __asm__ volatile ("" : "+r"(timerSource));
+    timerCell = timerSource;
+    timer = (volatile u16 *)(uintptr_t)*timerSource;
+    timer[1] = (u16)zero;
+
+    ie = DA58IeReg;
+    __asm__ volatile ("" : "+r"(ie));
+    selector = DA58Selector;
+    __asm__ volatile ("" : "+r"(selector));
+    selectorValue = *selector;
+    __asm__ volatile ("" : "+r"(selectorValue));
+    shift = 8;
+    mask = shift;
+    mask <<= selectorValue;
+    {
+        register u32 maskStore __asm__("r1") = mask;
+        *ie = (u16)maskStore;
+    }
+    ie--;
+    shift <<= *selector;
+    *ie |= (u16)shift;
+
+    flag = DA58TimerFlag;
+    __asm__ volatile ("" : "+r"(flag));
+    *flag = (u8)zero;
+    reloadCell = DA58ReloadCell;
+    __asm__ volatile ("" : "+r"(reloadCell));
+    *reloadCell = src[0];
+    src++;
+    timer[0] = src[0];
+    timerNext = (u32)(uintptr_t)(timer + 1);
+    cellForStores = timerCell;
+    *cellForStores = timerNext;
+    timer[1] = src[1];
+    *cellForStores = (u32)(uintptr_t)timer;
+    one = 1;
+    __asm__ volatile ("" : "+r"(one));
+    imeEnd = imeReg;
+    *imeEnd = (u16)one;
 }
 void sub_0802DA58(volatile u16 *a) __attribute__((alias("_0802DA58")));
 
@@ -854,81 +871,62 @@ void sub_08002950(void) __attribute__((alias("Code2950_ObjFlush")));
 // code_24e54.s — table scan + IWRAM wipe
 // ============================================================================
 
-__attribute__((naked)) int _080024E7C(u16 key)
+int _080024E7C(u16 key)
 {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, r7, lr}\n"
-        "mov r7, r9\n"
-        "mov r6, r8\n"
-        "push {r6, r7}\n"
-        "sub sp, #28\n"
-        "lsls r0, r0, #16\n"
-        "lsrs r0, r0, #16\n"
-        "mov ip, r0\n"
-        "movs r7, #0\n"
-        "mov r1, sp\n"
-        "ldr r0, 1f\n"
-        "ldmia r0!, {r2, r3, r4}\n"
-        "stmia r1!, {r2, r3, r4}\n"
-        "ldmia r0!, {r2, r3, r6}\n"
-        "stmia r1!, {r2, r3, r6}\n"
-        "ldr r0, [r0, #0]\n"
-        "str r0, [r1, #0]\n"
-        "movs r4, #1\n"
-        "negs r4, r4\n"
-        "mov r8, r4\n"
-        "mov r5, sp\n"
-        ".L24e7c_outer:\n"
-        "ldr r1, [r5, #0]\n"
-        "ldrh r2, [r1, #0]\n"
-        "movs r6, #0\n"
-        "ldrsh r0, [r1, r6]\n"
-        "cmp r0, r8\n"
-        "beq.n .L24e7c_next\n"
-        "mov r3, ip\n"
-        "lsls r0, r3, #16\n"
-        "asrs r4, r0, #16\n"
-        "lsls r0, r7, #16\n"
-        "asrs r3, r0, #16\n"
-        "movs r6, #1\n"
-        "negs r6, r6\n"
-        "mov r9, r6\n"
-        ".L24e7c_inner:\n"
-        "lsls r0, r2, #16\n"
-        "asrs r0, r0, #16\n"
-        "cmp r0, r4\n"
-        "bne.n .L24e7c_advance\n"
-        "adds r0, r3, #0\n"
-        "b.n .L24e7c_return\n"
-        "movs r0, r0\n"
-        "1: .word 0x0805FC90\n"
-        ".L24e7c_advance:\n"
-        "adds r1, #2\n"
-        "ldrh r2, [r1, #0]\n"
-        "movs r6, #0\n"
-        "ldrsh r0, [r1, r6]\n"
-        "cmp r0, r9\n"
-        "bne.n .L24e7c_inner\n"
-        ".L24e7c_next:\n"
-        "adds r5, #4\n"
-        "adds r7, #1\n"
-        "cmp r7, #6\n"
-        "ble.n .L24e7c_outer\n"
-        "movs r0, #1\n"
-        "negs r0, r0\n"
-        ".L24e7c_return:\n"
-        "add sp, #28\n"
-        "pop {r3, r4}\n"
-        "mov r8, r3\n"
-        "mov r9, r4\n"
-        "pop {r4, r5, r6, r7}\n"
-        "pop {r1}\n"
-        "bx r1\n"
-        ".align 2, 0\n"
-        ".syntax divided\n"
-    );
+    typedef struct { u32 pointers[7]; } Code24E7C_Table;
+    register u32 saved_key asm("ip") = key;
+    register const Code24E7C_Table *source asm("r0") =
+        (const Code24E7C_Table *)(uintptr_t)0x0805FC90u;
+    int group = 0;
+    Code24E7C_Table table = *source;
+    register s32 neg_one asm("r4") = -1;
+    register s32 outer_end asm("r8") = neg_one;
+    u32 *entry = (u32 *)(uintptr_t)&table;
+    do {
+        volatile u16 *item =
+            (volatile u16 *)(uintptr_t)*entry;
+        register u32 raw asm("r2") = *item;
+        s16 end = *(s16 *)(uintptr_t)item;
+        if (end != outer_end) {
+            register u32 key_word asm("r3") = saved_key;
+            __asm__ volatile ("" : "+r" (key_word));
+            register s32 target __asm__("r4");
+            register s32 result __asm__("r3");
+            register s32 inner_end __asm__("r9");
+            register u32 shifted __asm__("r0");
+            register s32 negInner __asm__("r6");
+            // Keep the sign extensions as C shifts. Empty constraints retain
+            // the ROM's r0 staging register and r6 sentinel lifetime without
+            // embedding instructions; the first clobber also leaves the outer
+            // group counter in r7, matching the original live range.
+            __asm__ volatile ("" : : : "r0", "r6", "cc");
+            shifted = key_word << 16;
+            __asm__ volatile ("" : "+r" (shifted));
+            target = (s32)shifted >> 16;
+            shifted = (u32)group << 16;
+            __asm__ volatile ("" : "+r" (shifted));
+            result = (s32)shifted >> 16;
+            __asm__ volatile ("" : : : "r6");
+            negInner = 1;
+            __asm__ volatile ("" : "+r" (negInner));
+            negInner = -negInner;
+            inner_end = negInner;
+            do {
+                register u32 raw_high asm("r0") = raw << 16;
+                if ((s32)raw_high >> 16 == target)
+                    return result;
+                item++;
+                raw = *item;
+                end = *(s16 *)(uintptr_t)item;
+            } while (end != inner_end);
+        }
+        entry++;
+        group++;
+    } while (group <= 6);
+    return -1;
 }
+// The ROM ends this body with a zero halfword; GAS otherwise fills it with c0 46.
+__asm__(".align 2, 0");
 int sub_080024E7C(u16 k) __attribute__((alias("_080024E7C")));
 int Sub_080024E7C(u16 k) __attribute__((alias("_080024E7C")));
 
@@ -981,6 +979,10 @@ void sub_08002612C(void) __attribute__((alias("_08002612C")));
 // code_23bd4.s — race presentation tick + BG bind
 // ============================================================================
 
+extern const u8 g_rom_table_080CC178[];
+extern const u8 g_io_base_03001780[];
+extern const u8 g_io_offset_000010C3[];
+
 void _080023BD4(void *rec_)
 {
     u8 *rec = (u8 *)rec_;
@@ -993,8 +995,11 @@ void _080023BD4(void *rec_)
     register u32 wa __asm__("r0");
     register u32 flagoff __asm__("r1");
 
+    __asm__(".equ g_rom_table_080CC178, 0x080CC178\n"
+            ".equ g_io_base_03001780, 0x03001780\n"
+            ".equ g_io_offset_000010C3, 0x000010C3");
     _0800D97C(rec + 136, 15);
-    __asm__ volatile ("ldr %0, .L23bd4_table" : "=r"(table));
+    table = g_rom_table_080CC178;
     indexp = rec + 140;
     index = *(s16 *)indexp;
     scaled = index << 3;
@@ -1009,22 +1014,13 @@ void _080023BD4(void *rec_)
     _080023B60(rec, (int)c, (int)d);
     _0800DBE8(rec + 16);
 
-    __asm__ volatile (
-        "ldr %0, .L23bd4_wa\n"
-        "ldr %1, .L23bd4_flag\n"
-        : "=r"(wa), "=r"(flagoff));
+    wa = (uintptr_t)g_io_base_03001780;
+    flagoff = (uintptr_t)g_io_offset_000010C3;
     if (*(volatile u8 *)(uintptr_t)(wa + flagoff) == 0
         && *(u16 *)(rec + 144) == 1)
-        _08022D44(rec, rec + 176, 48);
-    _08023E78(rec);
+        _080022D44(rec, rec + 176, 48);
+    _080023E78(rec);
 }
-__asm__(".pushsection .text._080023BD4,\"ax\",%progbits\n"
-        ".subsection 1\n"
-        ".align 2, 0\n"
-        ".L23bd4_table: .word 0x080CC178\n"
-        ".L23bd4_wa: .word 0x03001780\n"
-        ".L23bd4_flag: .word 0x000010C3\n"
-        ".popsection");
 void sub_080023BD4(void *a) __attribute__((alias("_080023BD4")));
 void _08023BD4(void *a) __attribute__((alias("_080023BD4")));
 
