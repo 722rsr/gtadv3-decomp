@@ -34,7 +34,7 @@ extern s16 _0802572C(int a, int b);             // ROM call is the 2-arg wrapper
 //       r1 = s16[0x080CB776 + (sl-1)*2];
 //       7B18(rec+16, 11, r1, base+iter*48, 11,1,0,0)
 //       with iter*48 from -24 (sp28).
-void MenuFF78_1479C(void *rec_) {
+__attribute__((naked)) void MenuFF78_1479C(void *rec_) {
     __asm__ volatile (
         ".syntax unified\n"
         "push {r4, r5, r6, r7, lr}\n"
