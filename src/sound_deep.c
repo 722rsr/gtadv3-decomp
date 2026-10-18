@@ -20,49 +20,27 @@ int _0802D9B8(u32 s) __attribute__((alias("SoundD9BC_SelectorU16")));
 int sub_0802D9B8(u32 s) __attribute__((alias("SoundD9BC_SelectorU16")));
 int _0802D9BC(u32 s) __attribute__((alias("SoundD9BC_SelectorU16")));
 int sub_0802D9BC(u32 s) __attribute__((alias("SoundD9BC_SelectorU16")));
-__attribute__((naked)) int SoundD9BC_SelectorU16(u32 sel) {
-    (void)sel;
-    __asm__ volatile (
-        ".syntax unified\n"
-        "lsls r0, r0, #16\n"
-        "lsrs r0, r0, #16\n"
-        "movs r2, #0\n"
-        "cmp r0, #4\n"
-        "bne 1f\n"
-        "ldr r1, 2f\n"
-        "ldr r0, 3f\n"
-        "str r0, [r1]\n"
-        "b 4f\n"
-        ".short 0\n"
-        "2:\n"
-        ".word 0x0203FD54\n"
-        "3:\n"
-        ".word 0x080C4274\n"
-        "1:\n"
-        "cmp r0, #64\n"
-        "bne 5f\n"
-        "ldr r1, 6f\n"
-        "ldr r0, 7f\n"
-        "str r0, [r1]\n"
-        "b 4f\n"
-        "6:\n"
-        ".word 0x0203FD54\n"
-        "7:\n"
-        ".word 0x080C4280\n"
-        "5:\n"
-        "ldr r1, 8f\n"
-        "ldr r0, 9f\n"
-        "str r0, [r1]\n"
-        "movs r2, #1\n"
-        "4:\n"
-        "adds r0, r2, #0\n"
-        "bx lr\n"
-        "8:\n"
-        ".word 0x0203FD54\n"
-        "9:\n"
-        ".word 0x080C4274\n"
-        ".syntax divided\n"
-    );
+int SoundD9BC_SelectorU16(u32 sel) {
+    extern u32 SelectorCell4[];
+    extern u32 SelectorCell64[];
+    extern u32 SelectorCellDefault[];
+    register u32 result __asm__("r2");
+
+    __asm__(".globl SelectorCell4\nSelectorCell4 = 0x0203FD54\n"
+            ".globl SelectorCell64\nSelectorCell64 = 0x0203FD54\n"
+            ".globl SelectorCellDefault\nSelectorCellDefault = 0x0203FD54\n");
+
+    sel = (u16)sel;
+    result = 0;
+    if (sel == 4) {
+        *(volatile u32 *)SelectorCell4 = 0x080C4274u;
+    } else if (sel == 64) {
+        *(volatile u32 *)SelectorCell64 = 0x080C4280u;
+    } else {
+        *(volatile u32 *)SelectorCellDefault = 0x080C4274u;
+        result = 1;
+    }
+    return (int)result;
 }
 // D9BC spellings alias the entry: no caller references 0xD9BC directly.
 
@@ -150,15 +128,17 @@ void sub_0802DB24(u32 s, u32 d, u16 c) __attribute__((alias("SoundDB24_Setup")))
 //  - gate: the pool word must reach r0 (not r6) while the body loads it
 //    again for r6, so the base lives in a pinned r0 for the gate and in a
 //    pinned r6 (`descp`) for the loop reloads; `t` (r0) forces ldr/mov/ldr.
-//  - buf address: ROM adds `adds r2, r0, r4` (n*2 first, frame in r4). The
-//    pointer form `(u8*)buf + n*2 + 2` normalises the pointer to operand 1,
-//    so the sum is spelled in asm with na=r0 (n*2) and ba=r4.
+//  - buf address: ROM adds `adds r2, r0, r4` (n*2 first, frame in r4), then
+//    adds 2. The C sum and `p++` reproduce those adds; a register barrier
+//    keeps the second add after the sum.
 //  - the three counters are u32 whose `(u8)` narrowing is a separate step;
 //    an r0-pinned temp (`ti`/`tb`/`tr`) reproduces agbcc's
 //    adds r0,rX,#1 / lsls r0,#24 / lsrs rX,r0,#24 shape (a plain u32
 //    narrowing narrows in place; a u8 variable narrows into r0 instead).
-//  - row increment must be the asm form: when spelled as C, loop.c hoists
-//    the `+1` to the loop head and the row tail loses the add.
+//  - the destination-row advance is C (`d += 3`) with a register barrier
+//    immediately before it. Without that barrier, loop.c hoists the advance
+//    to the loop head and the row tail loses the add. The row counter's `+1`
+//    remains asm because the C form also moves it to the loop head.
 int SoundDBA4_Read(u32 sector, void *dst){
     register volatile u16 *d __asm__("r5") = (volatile u16 *)dst;
     register u32 sec __asm__("r3") = (u16)sector;
@@ -181,7 +161,9 @@ int SoundDBA4_Read(u32 sector, void *dst){
         n = ((volatile u8 *)*t)[8];
         na = (u32)n * 2u;
         ba = (u32)(uintptr_t)buf;
-        __asm__("add\t%0, %1, %2\n\tadd\t%0, #2" : "=r"(p) : "r"(na), "r"(ba));
+        p = (volatile u16 *)(uintptr_t)(na + ba);
+        __asm__ volatile ("" : "+r"(p));
+        p++;
         i = 0;
         if (i < n) {
             do {
@@ -199,11 +181,12 @@ int SoundDBA4_Read(u32 sector, void *dst){
         {
             u32 base = (u32)208 << 20;
             u8 m = ((volatile u8 *)*(volatile u32 *)0x0203FD54u)[8];
-            SoundDB24_Setup((u32)(uintptr_t)buf, base, (u16)((u32)m + 3u));
-            SoundDB24_Setup(base, (u32)(uintptr_t)buf, 0x44u);
+            sub_0802DB24((u32)(uintptr_t)buf, base, (u16)((u32)m + 3u));
+            sub_0802DB24(base, (u32)(uintptr_t)buf, 0x44u);
         }
         __asm__("add\t%0, sp, #8" : "=r"(p));
-        __asm__("add\t%0, %0, #6" : "+r"(d));
+        __asm__ volatile ("" : "+r"(d));
+        d += 3;
         {
             register u32 row __asm__("r4");
             register u32 acc __asm__("r1");

@@ -10,7 +10,10 @@ extern int _08005E14(void *a,void *b,void *c);
 extern int _08005B5C(int v);
 extern int _08005DA4(void *a,void *b);
 extern void _08005BA8(void *p, int angle);
-extern int _08018A6C(void *p);
+extern u8 _08018A6C(s16 idx);
+extern void _08006A50(int camX, int camY);
+extern void *_08006AEC(void);
+extern void *_08005F98(void);
 extern int _08006E70(void *a,void *b,void *c,void *d,void *e);
 
 // _08006E70 — 189 L, pool-free, 5 args (r0=sl, r1=r9, r2=ip, r3=?, [sp+68]=r8)
@@ -542,89 +545,81 @@ int Course_ProximityMore(void *a, void *b, void *c, void *d) {
     return 0;
 }
 
-// _08006050 — scan helper, 85 L, ARMCC high-reg, no pool — direct lift, widths s16 via ldrsh
-__attribute__((naked)) int Course_Scan(void *outPair, void *inPair) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, r7, lr}\n"
-        "mov r7, sl\n"
-        "mov r6, r9\n"
-        "mov r5, r8\n"
-        "push {r5, r6, r7}\n"
-        "mov r9, r0\n"
-        "mov sl, r1\n"
-        "ldr r0, [r0, #0]\n"
-        "mov r2, r9\n"
-        "ldr r1, [r2, #4]\n"
-        "bl 0x08006A50\n"
-        "b .L06050_next\n"
-        ".L06050_item:\n"
-        "mov r0, r8\n"
-        "movs r1, #4\n"
-        "ldrsh r5, [r0, r1]\n"
-        "movs r2, #6\n"
-        "ldrsh r0, [r0, r2]\n"
-        "cmp r0, r5\n"
-        "blt .L06050_next\n"
-        "lsls r0, r5, #1\n"
-        "adds r0, r0, r5\n"
-        "lsls r7, r0, #2\n"
-        ".L06050_scan:\n"
-        "bl 0x08005F98\n"
-        "ldr r0, [r0, #12]\n"
-        "adds r4, r0, r7\n"
-        "movs r1, #8\n"
-        "ldrsh r0, [r4, r1]\n"
-        "bl 0x08018A6C\n"
-        "lsls r0, r0, #24\n"
-        "cmp r0, #0\n"
-        "beq .L06050_advance\n"
-        "ldr r0, [r4, #0]\n"
-        "mov r2, r9\n"
-        "ldr r1, [r2, #0]\n"
-        "subs r0, r0, r1\n"
-        "mov r1, sl\n"
-        "str r0, [r1, #0]\n"
-        "bl 0x08005B5C\n"
-        "movs r6, #128\n"
-        "lsls r6, r6, #3\n"
-        "cmp r0, r6\n"
-        "bgt .L06050_advance\n"
-        "ldr r0, [r4, #4]\n"
-        "mov r2, r9\n"
-        "ldr r1, [r2, #4]\n"
-        "subs r0, r0, r1\n"
-        "mov r1, sl\n"
-        "str r0, [r1, #4]\n"
-        "bl 0x08005B5C\n"
-        "cmp r0, r6\n"
-        "bgt .L06050_advance\n"
-        "movs r0, #12\n"
-        "b .L06050_success\n"
-        ".L06050_advance:\n"
-        "adds r7, #12\n"
-        "adds r5, #1\n"
-        "mov r2, r8\n"
-        "movs r1, #6\n"
-        "ldrsh r0, [r2, r1]\n"
-        "cmp r0, r5\n"
-        "bge .L06050_scan\n"
-        ".L06050_next:\n"
-        "bl 0x08006AEC\n"
-        "mov r8, r0\n"
-        "cmp r0, #0\n"
-        "bne .L06050_item\n"
-        "movs r0, #0\n"
-        ".L06050_success:\n"
-        "pop {r3, r4, r5}\n"
-        "mov r8, r3\n"
-        "mov r9, r4\n"
-        "mov sl, r5\n"
-        "pop {r4, r5, r6, r7}\n"
-        "pop {r1}\n"
-        "bx r1\n"
-        ".syntax divided\n"
-    );
+// _08006050 — scan helper, 78 instructions, no pool. Record bounds and car
+// indices are signed 16-bit fields; the coordinate pair is in 20.12 units.
+int Course_Scan(void *outPair, void *inPair) {
+    register volatile u8 *out __asm__("r9") = (volatile u8 *)outPair;
+    register volatile u8 *delta __asm__("sl") = (volatile u8 *)inPair;
+    register volatile u8 *record __asm__("r8");
+    register volatile u8 *recordLow __asm__("r0");
+    register volatile u8 *entry __asm__("r4");
+    register volatile u8 *second __asm__("r2");
+    register volatile u8 *deltaLow __asm__("r1");
+    register s32 index __asm__("r5");
+    register s32 limit __asm__("r6");
+    register s32 absValue __asm__("r0");
+    register s32 last __asm__("r0");
+    s32 offset;
+    s32 camX;
+    s32 camY;
+    s32 dx;
+    s32 dy;
+
+    /* Keep the callee-save and loop registers aligned with the Thumb body. */
+    camX = *(volatile s32 *)(out + 0);
+    second = out;
+    camY = *(volatile s32 *)(second + 4);
+    _08006A50(camX, camY);
+    record = (volatile u8 *)_08006AEC();
+    while (record != 0) {
+        recordLow = record;
+        index = *(s16 *)(recordLow + 4);
+        /* C chooses r1 for both signed halfword offsets; the ROM uses r2 for
+         * the second one. Tie the signed result to r0 for the bound test. */
+        __asm__ volatile (
+            "movs r2, #6\n\t"
+            "ldrsh %0, [%1, r2]"
+            : "=r"(last)
+            : "0"(recordLow)
+            : "r2");
+        if (last >= index) {
+            offset = index * 12;
+            __asm__ volatile ("" : "+r"(offset));
+            do {
+                recordLow = (volatile u8 *)_08005F98();
+                recordLow = (volatile u8 *)*(volatile u32 *)(recordLow + 12);
+                __asm__ volatile ("" : "+r"(recordLow));
+                entry = recordLow + offset;
+                if (((u32)_08018A6C(*(s16 *)(entry + 8)) << 24) != 0u) {
+                    dx = *(volatile s32 *)(entry + 0);
+                    __asm__ volatile ("" : : : "memory");
+                    second = out;
+                    dx -= *(volatile s32 *)(second + 0);
+                    deltaLow = delta;
+                    *(volatile s32 *)(deltaLow + 0) = dx;
+                    absValue = _08005B5C(dx);
+                    limit = 128;
+                    limit <<= 3;
+                    if (absValue <= limit) {
+                        dy = *(volatile s32 *)(entry + 4);
+                        __asm__ volatile ("" : : : "memory");
+                        second = out;
+                        dy -= *(volatile s32 *)(second + 4);
+                        deltaLow = delta;
+                        *(volatile s32 *)(deltaLow + 4) = dy;
+                        absValue = _08005B5C(dy);
+                        if (absValue <= limit)
+                            return 12;
+                    }
+                }
+                offset += 12;
+                index++;
+                second = record;
+            } while (*(s16 *)(second + 6) >= index);
+        }
+        record = (volatile u8 *)_08006AEC();
+    }
+    return 0;
 }
 void Course_StreamTail(void) {
     // stream_more / tail_more placeholders — DMA tail helpers, not yet lifted

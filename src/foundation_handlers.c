@@ -260,89 +260,68 @@ __attribute__((naked)) void EWRAM_Handler_BlobB(void)
 }
 void _08000E80(void) __attribute__((alias("EWRAM_Handler_BlobB")));
 
-__attribute__((naked)) void InstallEWRAMHandlers(int checksumMode, u32 inputBase){
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, r7, lr}\n"
-        "mov r7, r8\n"
-        "push {r7}\n"
-        "sub sp, #4\n"
-        "adds r5, r0, #0\n"
-        "adds r7, r1, #0\n"
-        "movs r6, #0\n"
-        "ldr r3, .Lbf0_c74\n"
-        "strh r6, [r3, #0]\n"
-        "ldr r2, .Lbf0_c78\n"
-        "ldrh r1, [r2, #0]\n"
-        "ldr r0, .Lbf0_c7c\n"
-        "ands r0, r1\n"
-        "strh r0, [r2, #0]\n"
-        "movs r0, #1\n"
-        "mov r8, r0\n"
-        "strh r0, [r3, #0]\n"
-        "str r6, [sp, #0]\n"
-        "ldr r4, .Lbf0_c80\n"
-        "ldr r2, .Lbf0_c84\n"
-        "mov r0, sp\n"
-        "adds r1, r4, #0\n"
-        "bl 0x0802D974\n"
-        "ldr r0, .Lbf0_c88\n"
-        "ldr r1, .Lbf0_c8c\n"
-        "ldr r2, .Lbf0_c90\n"
-        "bl 0x0802D974\n"
-        "ldr r1, .Lbf0_c94\n"
-        "ldr r0, .Lbf0_c98\n"
-        "str r0, [r1, #0]\n"
-        "str r7, [r4, #4]\n"
-        "movs r0, #1\n"
-        "negs r0, r0\n"
-        "str r0, [r4, #8]\n"
-        "cmp r5, #0\n"
-        "beq .Lbf0_c68\n"
-        "ldr r0, .Lbf0_c9c\n"
-        "str r6, [r0, #0]\n"
-        "mov r2, r8\n"
-        "strb r2, [r4, #0]\n"
-        "adds r1, r7, #0\n"
-        "movs r2, #128\n"
-        "lsls r2, r2, #6\n"
-        ".Lbf0_c4a:\n"
-        "ldmia r1!, {r0}\n"
-        "adds r6, r6, r0\n"
-        "subs r2, #1\n"
-        "cmp r2, #0\n"
-        "bne .Lbf0_c4a\n"
-        "mvns r0, r6\n"
-        "str r0, [r4, #12]\n"
-        "ldr r1, .Lbf0_c94\n"
-        "movs r2, #128\n"
-        "lsls r2, r2, #5\n"
-        "adds r0, r2, #0\n"
-        "strh r0, [r1, #0]\n"
-        "adds r2, #1\n"
-        "adds r0, r2, #0\n"
-        "strh r0, [r1, #0]\n"
-        ".Lbf0_c68:\n"
-        "add sp, #4\n"
-        "pop {r3}\n"
-        "mov r8, r3\n"
-        "pop {r4, r5, r6, r7}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        ".align 2, 0\n"
-        ".Lbf0_c74: .4byte 0x04000208\n"
-        ".Lbf0_c78: .4byte 0x04000200\n"
-        ".Lbf0_c7c: .4byte 0x0000FF3F\n"
-        ".Lbf0_c80: .4byte 0x0203F150\n"
-        ".Lbf0_c84: .4byte 0x05000006\n"
-        ".Lbf0_c88: .4byte 0x08000E81\n"
-        ".Lbf0_c8c: .4byte 0x0203EE70\n"
-        ".Lbf0_c90: .4byte 0x04000048\n"
-        ".Lbf0_c94: .4byte 0x04000128\n"
-        ".Lbf0_c98: .4byte 0x00002003\n"
-        ".Lbf0_c9c: .4byte 0x0400010C\n"
-        ".syntax divided\n"
-    );
+void InstallEWRAMHandlers(int checksumMode, u32 inputBase) {
+    extern void sub_0802D974(const void *src, void *dst, u32 ctrl);
+    register int mode __asm__("r5") = checksumMode;
+    const volatile u32 *input;
+    register u32 sum __asm__("r6");
+    register u32 one __asm__("r8");
+    register volatile u16 *ime __asm__("r3");
+    register volatile u16 *ie __asm__("r2");
+    register volatile u32 *handlers __asm__("r4");
+    u32 zero;
+
+    __asm__ volatile ("" : "+r" (mode), "=r" (input)
+                      : "1" ((const volatile u32 *)(uintptr_t)inputBase));
+    sum = 0;
+    ime = (volatile u16 *)(uintptr_t)0x04000208u;
+    *ime = (u16)sum;
+    __asm__ volatile ("" ::: "memory");
+    ie = (volatile u16 *)(uintptr_t)0x04000200u;
+    *ie &= 0xFF3Fu;
+    one = 1;
+    *ime = 1;
+    zero = sum;
+    handlers = (volatile u32 *)(uintptr_t)0x0203F150u;
+    sub_0802D974(&zero, (void *)handlers, 0x05000006u);
+    sub_0802D974((const void *)(uintptr_t)0x08000E81u,
+                 (void *)(uintptr_t)0x0203EE70u, 0x04000048u);
+    *(volatile u32 *)(uintptr_t)0x04000128u = 0x00002003u;
+    handlers[1] = (u32)(uintptr_t)input;
+    handlers[2] = ~0u;
+    if (mode != 0) {
+        register volatile u32 *checksum __asm__("r0") =
+            (volatile u32 *)(uintptr_t)0x0400010Cu;
+        register u32 byteOne __asm__("r2");
+        *checksum = (u32)sum;
+        __asm__ volatile ("" ::: "r2", "memory");
+        byteOne = one;
+        *(volatile u8 *)handlers = (u8)byteOne;
+        {
+            register const volatile u32 *sumInput __asm__("r1") = input;
+            u32 count = 0x2000u;
+            do {
+                sum += *sumInput++;
+                count--;
+            } while (count != 0);
+        }
+        {
+            register u32 complement __asm__("r0") = ~sum;
+            register volatile u16 *vectorIE __asm__("r1");
+            register u32 vectorValue __asm__("r2");
+            register u32 vectorStore __asm__("r0");
+            handlers[3] = complement;
+            __asm__ volatile ("" ::: "r1", "r2", "memory");
+            vectorIE = (volatile u16 *)(uintptr_t)0x04000128u;
+            vectorValue = 0x1000u;
+            vectorStore = vectorValue;
+            *vectorIE = (u16)vectorStore;
+            vectorValue++;
+            __asm__ volatile ("" : "+r" (vectorValue));
+            vectorStore = vectorValue;
+            *vectorIE = (u16)vectorStore;
+        }
+    }
 }
 void _08000BF0(int checksumMode, u32 inputBase)
     __attribute__((alias("InstallEWRAMHandlers")));

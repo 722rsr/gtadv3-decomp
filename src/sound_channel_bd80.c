@@ -13,17 +13,16 @@
 void _0802BD80(void *a, void *b) __attribute__((alias("SoundBD80_Scale")));
 void sub_0802BD80(void *a, void *b) __attribute__((alias("SoundBD80_Scale")));
 __attribute__((naked)) void SoundBD80_Scale(void *state, void *chan) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "mov  ip, lr\n"
-        "bl   _0802BCE8\n"
-        "lsls r3, r3, #1\n"
-        "strh r3, [r0, #28]\n"
-        "ldrh r2, [r0, #30]\n"
-        "muls r3, r2\n"
-        "lsrs r3, r3, #8\n"
-        "strh r3, [r0, #32]\n"
-        "bx   ip\n"
-        ".syntax divided\n"
-    );
+    register u32 frame __asm__("ip");
+    register u32 value __asm__("r3");
+    register u32 scale __asm__("r2");
+    __asm__ volatile(".syntax unified\n\tmov %0, lr\n\tbl _0802BCE8\n\t.syntax divided"
+                     : "=r"(frame), "=r"(value) : : "lr", "cc", "memory");
+    value <<= 1;
+    *(volatile u16 *)((volatile u8 *)state + 28) = (u16)value;
+    __asm__ volatile("ldrh %0, [r0, #30]" : "=r"(scale) : : "memory");
+    value *= scale;
+    value >>= 8;
+    *(volatile u16 *)((volatile u8 *)state + 32) = (u16)value;
+    __asm__ volatile("bx %0" : : "r"(frame) : "cc");
 }

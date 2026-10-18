@@ -279,8 +279,10 @@ void *Course_StreamMore_06B30(void) {
             cursorValue <<= 16;
             {
             register u32 limitValue __asm__("r0");
-            __asm__ volatile("mov r5, r9\n\tldrh r5, [r5, #46]\n\tlsl r0, r5, #16"
-                             : "=r"(limitValue) : "r"(root) : "r5", "memory");
+            register u32 limitHalf __asm__("r5") = (u32)(uintptr_t)root;
+            limitHalf = *(volatile u16 *)((volatile u8 *)(uintptr_t)limitHalf + 46);
+            __asm__ volatile("" : "+r"(limitHalf));
+            limitValue = limitHalf << 16;
             if ((s32)limitValue <= (s32)cursorValue)
                 return NULL;
             // Keep the offset in the only remaining low register: r7. The
@@ -290,55 +292,65 @@ void *Course_StreamMore_06B30(void) {
             register u32 hold3 __asm__("r3");
             register u32 hold5 __asm__("r5");
             register u32 hold6 __asm__("r6");
-            register u32 zero;
             __asm__ volatile("" : "=r"(hold1), "=r"(hold2), "=r"(hold3),
                              "=r"(hold5), "=r"(hold6));
-            __asm__ volatile("movs %0, #0\n\tldrsh %1, [%2, %0]"
-                             : "=&l"(zero), "=r"(index)
-                             : "r"(cursorIter), "r"(hold1), "r"(hold2),
-                               "r"(hold3), "r"(hold5), "r"(hold6)
-                             : "memory");
+            index = *(s16 *)(uintptr_t)cursorIter;
+            __asm__ volatile("" : : "r"(hold1), "r"(hold2), "r"(hold3),
+                             "r"(hold5), "r"(hold6));
             }
         }
         index <<= 3;
         register u32 records COURSE_STREAM_REG("r1");
-        __asm__ volatile("mov r4, r9\n\tldr %0, [r4, #16]"
-                         : "=r"(records) : "r"(root) : "r4", "memory");
+        register volatile u32 *rootWords __asm__("r4") = (volatile u32 *)root;
+        records = rootWords[4];
         register volatile u8 *record COURSE_STREAM_REG("r6") =
             (volatile u8 *)(uintptr_t)(records + index);
         register volatile s32 *bounds COURSE_STREAM_REG("r1") = (volatile s32 *)(uintptr_t)0x0203F8B0u;
         register s32 x COURSE_STREAM_REG("r5");
-        __asm__ volatile("movs r7, #0\n\tldrsh r5, [r6, r7]"
-                         : "=r"(x) : : "r7", "memory");
+        // Keep the other available low registers live so agbcc uses r7 for
+        // the zero index implicit in its signed-halfword load pattern.
+        register u32 hold0 __asm__("r0");
+        register u32 hold2 __asm__("r2");
+        register u32 hold3 __asm__("r3");
+        register u32 hold4 __asm__("r4");
+        __asm__ volatile("" : "=r"(hold0), "=r"(hold2), "=r"(hold3), "=r"(hold4));
+        x = *(s16 *)(uintptr_t)record;
+        __asm__ volatile("" : : "r"(hold0), "r"(hold2), "r"(hold3), "r"(hold4));
         register s32 xBound COURSE_STREAM_REG("r0") = bounds[0];
         if (xBound > x)
             continue;
 
         register s32 y COURSE_STREAM_REG("r4");
-        __asm__ volatile("movs r7, #2\n\tldrsh r4, [r6, r7]"
-                         : "=r"(y) : : "r7", "memory");
+        {
+            register u32 hold2 __asm__("r2");
+            register u32 hold3 __asm__("r3");
+            __asm__ volatile("" : "=r"(hold2), "=r"(hold3));
+            y = *(s16 *)(uintptr_t)(record + 2);
+            __asm__ volatile("" : : "r"(hold2), "r"(hold3));
+        }
         register s32 yBound COURSE_STREAM_REG("r1") = bounds[1];
         if (yBound > y)
             continue;
         if (xBound + 16 <= x)
             continue;
         register s32 yUpperBound __asm__("r0");
-        __asm__ volatile("add r0, r1, #0\n\tadd r0, r0, #16"
-                         : "=r"(yUpperBound) : "r"(yBound) : "memory");
+        yUpperBound = yBound + 16;
         if (yUpperBound <= y)
             continue;
 
         register volatile s32 *center1 COURSE_STREAM_REG("r1") = center;
         register s32 dx COURSE_STREAM_REG("r2");
         register s32 dy COURSE_STREAM_REG("r3");
-        __asm__ volatile("ldr r0, [r1]\n\tsub r2, r5, r0\n\tldr r0, [r1, #4]\n\tsub r3, r4, r0"
-                         : "=r"(dx), "=r"(dy)
-                         : "r"(center1), "r"(x), "r"(y)
-                         : "r0", "memory");
+        register s32 centerX __asm__("r0") = center1[0];
+        dx = x - centerX;
+        register s32 centerY __asm__("r0") = center1[1];
+        dy = y - centerY;
         register s32 distanceSquared __asm__("r0");
-        __asm__ volatile("add r0, r2, #0\n\tmul r0, r0, r2\n\tadd r1, r3, #0\n\tmul r1, r1, r3\n\tadd r0, r0, r1"
-                         : "=r"(distanceSquared) : "r"(dx), "r"(dy)
-                         : "r1", "memory");
+        distanceSquared = dx;
+        distanceSquared *= dx;
+        register s32 dySquared __asm__("r1") = dy;
+        dySquared *= dy;
+        distanceSquared += dySquared;
         if (distanceSquared > 50)
             continue;
         return (void *)record;

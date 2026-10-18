@@ -85,6 +85,7 @@ HOST_STUB(void _080028B54(void *a));            // 0x080028B54
 HOST_STUB(void _08002D970(const void *s, void *d, u32 m)); // 0x08002D970 CpuFastSet
 extern void _0802D970(const void *s, void *d, u32 m);
 extern void _0802D974(const void *s, void *d, u32 m);
+extern void sub_0802D974(const void *s, void *d, u32 m);
 extern void _08004DEC(void *rec, u32 a, u32 b);
 HOST_STUB(int _08001E14(int a));                // 0x08001E14
 HOST_STUB(void _08005D74(void *a, int b, int c)); // 0x08005D74 3-arg form
@@ -562,21 +563,26 @@ void sub_080028BE4(int cmd, int x, int y, void *ctx) __attribute__((alias("_0800
 void _080028C54(int slot, int sel) {
     /* ROM keeps the masked selector in r1, copies it to r0, then shifts r1. */
     register u32 k __asm__("r1") = (u32)sel & 0xFFFu;
-    __asm__ volatile(".code 16\n\tadd r0, r1, #0\n\tasr r1, r0, #4" : "+r"(k) : : "r0", "cc");
+    __asm__ volatile("" : "+r"(k));
+    register s32 shiftedInput __asm__("r0");
+    shiftedInput = (s32)k;
+    __asm__ volatile("" : "+r"(shiftedInput));
+    k = (u32)(shiftedInput >> 4);
     register u32 tableBase __asm__("r2") = 0x02038000u;
     __asm__ volatile("" : "+r"(tableBase));
     register volatile u8 *tableAddr __asm__("r0") =
         (volatile u8 *)(uintptr_t)(k + tableBase);
     register u32 b __asm__("r1");
-    __asm__ volatile(".code 16\n\tldrb r1, [r0, #0]" : "=r"(b) : "r"(tableAddr) : "cc");
+    b = *tableAddr;
+    __asm__ volatile("" : "+r"(b) : : "memory");
     u32 base = ((b << 3) + b) << 8;
     /* r5 keeps slot unscaled until the ROM's first source address is formed. */
     register u32 lane __asm__("r5") = (u32)slot;
     register u32 firstSourceOffset __asm__("r2") = 0x02038100u;
     __asm__ volatile("" : "+r"(firstSourceOffset));
     register u32 firstSource __asm__("r0") = base + firstSourceOffset;
-    __asm__ volatile(".code 16\n\tlsl r5, r5, #12"
-                     : "+r"(lane) : "r"(firstSource) : "cc");
+    __asm__ volatile("" : : "r"(firstSource));
+    lane <<= 12;
     // The 12 lanes are UNROLLED, not tabled. The ROM emits one pool load and one
     // `adds` per operand at each of the 12 call sites (0x8028C78, 0x8028C86, ...
     // 0x8028D0E), so the source values are literals in the code; a `static const
@@ -597,7 +603,7 @@ void _080028C54(int slot, int sel) {
     _0802D970((const void *)(uintptr_t)(base + 0x020387C0u), (void *)(uintptr_t)(lane + 0x06010C20u), 48u);
     _0802D970((const void *)(uintptr_t)(base + 0x02038880u), (void *)(uintptr_t)(lane + 0x06010D20u), 48u);
     _0802D970((const void *)(uintptr_t)(base + 0x02038940u), (void *)(uintptr_t)(lane + 0x06010E20u), 48u);
-    _0802D974((const void *)0x0203C900u, (void *)0x05000200u, 0x04000008u);
+    sub_0802D974((const void *)0x0203C900u, (void *)0x05000200u, 0x04000008u);
     __asm__ volatile("" : : "r"(base));
 }
 void sub_080028C54(int slot, int sel) __attribute__((alias("_080028C54")));
@@ -1959,17 +1965,14 @@ __attribute__((naked)) void _080029764(void *rec) {
 void _0800299E0(void *rec_) {
     register u8 *rec __asm__("r4") = (u8 *)rec_;
     register u8 *status __asm__("r5") = rec + 159;
-    __asm__ volatile ("movs r6, #0" : : : "r6", "cc");
+    register u32 zero6 __asm__("r6") = 0;
+    __asm__ volatile ("" : : "r" (zero6) : "cc");
     register u32 clear __asm__("r0");
-    __asm__ volatile ("movs %0, #0" : "=r" (clear) : : "cc");
+    clear = 0;
+    __asm__ volatile ("" : : "r" (clear));
     *(volatile u8 *)status = (u8)clear;
     register int speed __asm__("r0");
-    {
-        register u8 *speed_ptr __asm__("r0") = rec + 140;
-        register u32 zero __asm__("r1") = 0;
-        __asm__ volatile ("ldrsh %0, [%1, %2]"
-                          : "=r" (speed) : "r" (speed_ptr), "r" (zero) : "memory");
-    }
+    speed = *(s16 *)(uintptr_t)(rec + 140);
     if (speed > 199) {
         int initial = _0800294C0(rec + 4, rec + 36, 1);
         register int delta __asm__("r1") =
@@ -1995,13 +1998,7 @@ void _0800299E0(void *rec_) {
                 register int maximum __asm__("r1") = 400;
                 if (signed_sum > maximum)
                     *heading = (u16)maximum;
-                int lower;
-                {
-                    register u32 zero_index __asm__("r1") = 0;
-                    __asm__ volatile ("ldrsh %0, [%1, %2]"
-                                      : "=r" (lower)
-                                      : "r" (heading), "r" (zero_index) : "memory");
-                }
+                int lower = *(s16 *)(uintptr_t)heading;
                 register int minimum __asm__("r1") = -400;
                 if (lower < minimum)
                     *heading = (u16)minimum;
@@ -3811,22 +3808,21 @@ void _08002A86C(void *rec_, u32 bits, u32 flag) {
         __asm__ volatile ("" ::: "memory");
         register volatile u16 *cell __asm__("r5") = (volatile u16 *)(rec + 104);
         register int current __asm__("r1");
-        __asm__ volatile ("ldrh %0, [%1]" : "=r" (current) : "r" (cell));
+        current = *cell;
+        __asm__ volatile ("" : "+r" (current));
         register u32 offset __asm__("r2") = (u32)-6501;
         register u32 shifted __asm__("r0") = ((u32)current + offset) << 16;
         register u32 threshold __asm__("r1") = 0x03E60000u;
         int value;
         if (shifted <= threshold) {
             register int result __asm__("r0") = _080029488(rec);
-            __asm__ volatile (".syntax unified\n\tlsls %0, %0, #16\n\tasrs %0, %0, #16\n\t.syntax divided"
-                              : "+r" (result) : : "cc");
+            result = (s16)result;
             register int after __asm__("r5") = *cell;
             int delta = (s16)(after - result);
             value = sub_0802DE04(delta, 12);
         } else {
             register int result __asm__("r0") = _080029488(rec);
-            __asm__ volatile (".syntax unified\n\tlsls %0, %0, #16\n\tasrs %0, %0, #16\n\t.syntax divided"
-                              : "+r" (result) : : "cc");
+            result = (s16)result;
             register int after __asm__("r5") = *cell;
             int delta = (s16)(after - result);
             value = delta >> 2;

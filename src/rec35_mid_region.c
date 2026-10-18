@@ -117,6 +117,8 @@ void Rec35_Dispatch_16F28(void *ctx);      // 0x08016F28 (rec35_runtime.c)
 void Rec35_Leaf_173E8(void *ctx);          // 0x080173E8 (rec35_runtime.c)
 void Rec35_Leaf_17414(void *ctx);          // 0x08017414 (rec35_runtime.c)
 extern void _080017414(void *ctx);         // same-address closure alias
+extern void sub_0800168B8(u32 a0);          // assembly closure spelling
+extern void sub_080017414(void *ctx);       // assembly closure spelling
 void Rec35_BxLr_17D50(void *rec);          // 0x08017D50 (rec35_runtime.c)
 void Rec35_BxLr_17F00(void);               // 0x08017F00 (rec35_runtime.c)
 
@@ -1295,7 +1297,7 @@ void Rec35_Input_175BC(void *rec) {
     if (RD16P((u8 *)rec + 188) == 2) {
         if ((u16)_08002178(0, 5) == 2 && (u16)_08002178(1, 5) == 2) {
             WR16((u8 *)rec + 190, 0);
-            Rec35_Leaf_17414(rec);
+            sub_080017414(rec);
         }
     }
     register u8 *statusp __asm__("r0") = (u8 *)rec + 188;
@@ -1317,7 +1319,7 @@ void Rec35_Input_175BC(void *rec) {
             slotp = (u16 *)r5;
             __asm__ volatile("" : "+r"(slotp));
             if (RD16P(slotp) == 1) {
-                Rec35_Leaf_168B8(1);
+                sub_0800168B8(1);
                 WR16((u8 *)rec + 340, zero);
             } else {
                 goto mode2_slot_fail;
@@ -1327,7 +1329,7 @@ void Rec35_Input_175BC(void *rec) {
             slotp = (u16 *)r6;
             __asm__ volatile("" : "+r"(slotp));
             if (RD16P(slotp) == 1) {
-                Rec35_Leaf_168B8(1);
+                sub_0800168B8(1);
                 /* ROM uses r2 for the scaled +340 offset. */
                 __asm__ volatile(".hword 0x22AA, 0x0052, 0x18A0, 0x8007");
             } else {
@@ -1335,11 +1337,13 @@ void Rec35_Input_175BC(void *rec) {
             }
             /* Fall through to the shared [+194]=3 update. */
 mode2_done:
-            /* movs r0,#3; mov r1,r8; strh r0,[r1] */
-            __asm__ volatile(".hword 0x2003, 0x4641, 0x8008");
+            register u16 state_value __asm__("r0") = 3;
+            register u16 *state_dest __asm__("r1") = (u16 *)r8;
+            __asm__ volatile("" : "+r"(state_value), "+r"(state_dest));
+            *state_dest = state_value;
             return;
 mode2_slot_fail:
-            Rec35_Leaf_168B8(10);
+            sub_0800168B8(10);
             return;
         case 3:
             goto mode2_sel3;
@@ -1347,31 +1351,33 @@ mode2_slot_fail:
             return;
         }
 mode2_sel3:
-        _080017414(rec);
+        sub_080017414(rec);
         return;
     case 4: {
         u8 *wa;
         if ((u16)_08002178(1, 4) != 4) return;
         register s32 sel __asm__("r0") =
             (s32)(uintptr_t)((u8 *)rec + 182);
-        __asm__ volatile("movs r2, #0\n\tldrsh %0, [%0, r2]"
-                         : "+r"(sel) : : "r2", "memory");
+        // C supplies the ROM's zero index in r2; the signed indexed load stays asm.
+        register int zeroIndex __asm__("r2") = 0;
+        __asm__ volatile("" : : "r"(zeroIndex));
+        __asm__ volatile("ldrsh %0, [%0, r2]"
+                         : "+r"(sel) : : "memory");
         switch (sel) {
         case 1:
-            Rec35_Leaf_168B8(1);
-            /* ROM uses r1 for the scaled +342 offset and r2 for zero. */
-            __asm__ volatile(".hword 0x21AB, 0x0049, 0x1860, 0x464A, 0x8002");
+            sub_0800168B8(1);
+            *(volatile u16 *)((u8 *)rec + 342) = zero;
             goto mode4_done;
         case 2:
-            Rec35_Leaf_168B8(1);
-            __asm__ volatile(
-                ".syntax unified\n"
-                "movs r2, #171\n"
-                "lsls r2, r2, #1\n"
-                "adds r0, %0, r2\n"
-                "strh %1, [r0]\n"
-                ".syntax divided\n"
-                : : "l"((u8 *)rec), "l"((u16)mode) : "r0", "r2");
+            sub_0800168B8(1);
+            {
+                register int byteOffset __asm__("r2") = 171;
+                byteOffset <<= 1;
+                __asm__ volatile("" : "+r"(byteOffset));
+                register volatile u16 *dest __asm__("r0") =
+                    (volatile u16 *)((u8 *)rec + byteOffset);
+                *dest = (u16)mode;
+            }
             /* Fall through to the shared mode-4 updates. */
 mode4_done:
         // Symbol form keeps the base in a register and adds the offset, like
@@ -1392,7 +1398,7 @@ mode4_done:
             return;
         }
 mode4_sel3:
-        Rec35_Leaf_17414(rec);
+        sub_080017414(rec);
         return;
     }
     default:

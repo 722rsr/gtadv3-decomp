@@ -32,12 +32,7 @@ void Race_Cluster_A(void) {
     register volatile s16 *countCell __asm__("r1") =
         (volatile s16 *)(waBase + countOffset);
     __asm__ volatile("" : "+r"(countCell));
-    register s32 count __asm__("r0");
-    __asm__ volatile(".code 16\n\t"
-                     "mov r2, #0\n\t"
-                     "ldrsh r0, [r1, r2]"
-                     : "=r"(count) : "r"(countCell)
-                     : "r2", "cc", "memory");
+    register s32 count __asm__("r0") = *(s16 *)(void *)countCell;
     if (i >= count)
         return;
 
@@ -76,12 +71,8 @@ loop:
         racers += stride;
     }
     {
-        register s32 nextCount __asm__("r0");
-        __asm__ volatile(".code 16\n\t"
-                         "mov r1, #0\n\t"
-                         "ldrsh r0, [r6, r1]"
-                         : "=r"(nextCount) : "r"(countTail)
-                         : "r1", "cc", "memory");
+        register s32 nextCount __asm__("r0") =
+            *(s16 *)(void *)countTail;
         if (i < nextCount)
             goto loop;
     }

@@ -144,51 +144,80 @@ int _08009BF8(void *ctx)
 
             record = (volatile u8 *)(uintptr_t)((s32)(*cursor) * 12 + slot);
             record += 48;
-            record[0] = 0;
+            result = 0;
+            record[0] = (u8)result;
             record = (volatile u8 *)(uintptr_t)((s32)(*cursor) * 12 + slot);
             recordByte = *(volatile u8 *)(uintptr_t)(slot + 0x1151u);
             record += 49;
             record[0] = recordByte;
             record = (volatile u8 *)(uintptr_t)((s32)(*cursor) * 12 + slot);
             record += 50;
-            record[0] = 0;
+            record[0] = (u8)result;
             record = (volatile u8 *)(uintptr_t)((s32)(*cursor) * 12 + slot);
             record += 51;
-            record[0] = 0;
+            record[0] = (u8)result;
             record = (volatile u8 *)(uintptr_t)((s32)(*cursor) * 12 + slot);
             record += 52;
-            record[0] = 0;
+            record[0] = (u8)result;
             record = (volatile u8 *)(uintptr_t)((s32)(*cursor) * 12 + slot);
             record += 53;
-            record[0] = 0;
+            record[0] = (u8)result;
             record = (volatile u8 *)(uintptr_t)((s32)(*cursor) * 12 + slot);
             record += 54;
-            record[0] = 0;
+            record[0] = (u8)result;
             record = (volatile u8 *)(uintptr_t)((s32)(*cursor) * 12 + slot);
             record += 55;
-            record[0] = 0;
+            record[0] = (u8)result;
             record = (volatile u8 *)(uintptr_t)((s32)(*cursor) * 12 + slot);
             record += 56;
-            record[0] = 0;
+            record[0] = (u8)result;
             record = (volatile u8 *)(uintptr_t)((s32)(*cursor) * 12 + slot);
             record += 57;
-            record[0] = 0;
+            // The key-0 path keeps result at zero until the shared epilogue.
+            record[0] = (u8)result;
         }
 
         *(u32 *)(packet + 56) = (u32)result;
         sub_0802D974(packet + 56, packet, 0x0500000Eu);
-        ((u16 *)packet)[0] = 0xFFFF;
-        ((u16 *)packet)[1] = *(volatile u16 *)(uintptr_t)(slot + 0x576u);
-        ((u16 *)packet)[5] = *(volatile u16 *)(uintptr_t)(slot + 0x113Eu);
-        ((u16 *)packet)[4] = *(volatile u16 *)(uintptr_t)(slot + 0x113Cu);
-        ((u16 *)packet)[12] = (u16)_08002340((int)(*cursor));
+        {
+            register u16 *packetWords __asm__("r1");
+            register u32 fieldOffset __asm__("r2");
+            register u32 fieldOffset113e __asm__("r3");
+            u32 headerWord;
+            u16 fieldValue;
+            u16 fieldValue113e;
+            u16 fieldId;
+            packetWords = (u16 *)packet;
+            headerWord = 0xFFFFu;
+            __asm__ volatile ("" : "+r" (headerWord));
+            packetWords[0] = (u16)headerWord;
+            fieldOffset = 0x576u;
+            __asm__ volatile ("" : "+r" (fieldOffset));
+            fieldValue = *(volatile u16 *)(uintptr_t)(slot + fieldOffset);
+            __asm__ volatile ("" : "+r" (fieldOffset));
+            packetWords[1] = fieldValue;
+            fieldOffset113e = 0x113Eu;
+            __asm__ volatile ("" : "+r" (fieldOffset113e));
+            fieldValue113e = *(volatile u16 *)(uintptr_t)(slot + fieldOffset113e);
+            __asm__ volatile ("" : "+r" (fieldOffset113e));
+            packetWords[5] = fieldValue113e;
+            packetWords[4] = *(volatile u16 *)(uintptr_t)(slot + 0x113Cu);
+            fieldId = (u16)_08002340((int)(*cursor));
+            packetWords = (u16 *)packet;
+            packetWords[12] = fieldId;
+        }
         {
             /* The ROM keeps the source in r0 for its three-word copy. */
             register const u32 *sourceWords __asm__("r0");
+            u32 *destWords;
 
-            sourceWords = (const u32 *)(uintptr_t)((s32)(*cursor) * 12 + slot + 48);
+            sourceWords = (const u32 *)(uintptr_t)((s32)(*cursor) * 12 + slot);
+            __asm__ volatile ("" : "+r" (sourceWords) : : "memory");
+            destWords = (u32 *)(packet + 28);
+            __asm__ volatile ("" : "+r" (destWords) : : "memory");
+            sourceWords += 12;
             __asm__ volatile ("" : : "r" (sourceWords) : "memory");
-            __builtin_memcpy(packet + 28, sourceWords, 3 * sizeof(u32));
+            __builtin_memcpy(destWords, sourceWords, 3 * sizeof(u32));
         }
         goto packet_epilogue;
     }
@@ -215,18 +244,25 @@ int _08009BF8(void *ctx)
         slot++;
     case 6: {
         s16 *cursor;
-        register const u32 *sourceWords __asm__("r0");
+        const u32 *sourceWords;
+        u32 *destWords;
 
         *(u32 *)(packet + 60) = 0;
         sub_0802D974(packet + 60, packet, 0x0500000Eu);
         ((u16 *)packet)[0] = 10;
         packet[23] = (u8)slot;
-        slot = (u32)CarTickWa;
-        cursor = (s16 *)(uintptr_t)(slot + 0x574u);
+        register u32 waBase __asm__("r5");
+        waBase = (u32)CarTickWa;
+        cursor = (s16 *)(uintptr_t)(waBase + 0x574u);
         ((u16 *)packet)[12] = (u16)_08002340((int)(*cursor));
-        sourceWords = (const u32 *)(uintptr_t)(slot + (s32)(*cursor) * 12 + 48);
+        sourceWords = (const u32 *)(uintptr_t)((s32)(*cursor) * 12 + waBase);
+        __asm__ volatile ("" : "+r" (sourceWords) : : "memory");
+        destWords = (u32 *)(packet + 28);
+        __asm__ volatile ("" : "+r" (destWords) : : "memory");
+        sourceWords += 12;
         __asm__ volatile ("" : : "r" (sourceWords) : "memory");
-        __builtin_memcpy(packet + 28, sourceWords, 3 * sizeof(u32));
+        __builtin_memcpy(destWords, sourceWords, 3 * sizeof(u32));
+        __asm__ volatile ("" : : "r" (waBase) : "memory");
         goto packet_epilogue;
     }
 packet_epilogue:
@@ -337,6 +373,8 @@ packet_epilogue:
     }
     return result;
 }
+// The ROM's 862-byte body ends with two zero padding bytes, not a Thumb nop.
+__asm__(".align 2, 0");
 // ----------------------------------------------------------------------------
 // 0x0800A228 _0800A228 — rec37 tick: reset LIFO, enqueue 13, racer tick.
 // ----------------------------------------------------------------------------
@@ -677,24 +715,26 @@ __asm__(".align 2, 0");
 //   key = [ctx+0x2C]: ==1 -> _08009B60, return 50;
 //   >1 -> return 0; ==0 -> request latch u16[WA+0x1086]:
 //   ==1 -> clear it, return 49; else return 14.
-//   The latch, helper call, and shared result path are C. Register pins keep
-//   the ROM's r0 key and r1 result; three inline instructions retain the
-//   initial zero result across the assembly branch and the second `cmp #1 /
-//   bcs`, which agbcc folds to `cmp #0` for equivalent C conditions. The ROM
-//   passes the key (now 1) rather than ctx; the callee only uses sp/WA
-//   (asm/menu_pkt.s), so the value is immaterial.
+//   The ROM's dispatch is `cmp #1; beq key_one` then `cmp #1; bcs exit`
+//   (0x0800A636/3C). That pair is the case tree of a switch over {0,1}
+//   carrying an EMPTY `case 2`: the empty right leaf makes emit_case_nodes
+//   branch to the shared exit on the >= form of the reused #1 compare.
+//   Measured alternatives: an if-chain's `key > 1` folds to `cmp #1; bhi`
+//   and `key >= 1` to `cmp #0; bhi`, and a plain {0,1} switch emits a
+//   `cmp #0` the ROM does not have (build/scratch_a62c.c). The ROM passes
+//   the key (now 1) rather than ctx to _08009B60; the callee only uses
+//   sp/WA (asm/menu_pkt.s), so the value is immaterial.
 // ----------------------------------------------------------------------------
 int _0800A62C(void *ctx) {
     register int result __asm__("r1");
     register u32 key __asm__("r0");
-    __asm__ volatile("movs r1, #0" : "=r" (result) : : "cc");
+    result = 0;
     key = *(const u32 *)((const u8 *)ctx + 0x2Cu);
 
-    if (key == 1u)
-        goto key_one;
-    __asm__ volatile("cmp r0, #1\n\tbcs 1f" ::: "cc");
-
-    {
+    switch (key) {
+    case 2:
+        break;
+    case 0: {
         extern u8 CarTickWa[];
         __asm__(".globl CarTickWa\nCarTickWa = 0x03001780\n");
         uintptr_t base = (uintptr_t)CarTickWa;
@@ -705,15 +745,13 @@ int _0800A62C(void *ctx) {
             *request = 0;
         } else
             result = 14;
+        break;
     }
-
-    goto done;
-
-key_one:
-    _08009B60((void *)(uintptr_t)key);
-    result = 50;
-done:
-    __asm__ volatile("1:" ::: "cc");
+    case 1:
+        _08009B60((void *)(uintptr_t)key);
+        result = 50;
+        break;
+    }
     return result;
 }
 
@@ -1007,18 +1045,16 @@ int CarTick_Rec_0A074(void *ctx)
         case 5:
             goto phase17;
         case 6:
-            _0800B190();
+            sub_0800B190();
             result = 49;
             break;
         case 7:
             base = (uintptr_t)CarTickWa;
             {
-                u32 selectorValue = (u32)(base + 0x1078u);
-                __asm__ volatile (".code 16\n\t"
-                                  "movs r3, #0\n\t"
-                                  "ldrsh %0, [%0, r3]"
-                                  : "+l" (selectorValue)
-                                  : : "r3", "cc", "memory");
+                register int selectorValue __asm__("r0");
+                selectorValue = (int)(base + 0x1078u);
+                selectorValue = *(const s16 *)(uintptr_t)selectorValue;
+                __asm__ volatile ("" : "+r" (result), "+r" (selectorValue));
                 if (selectorValue == 1)
                     goto phase17;
             }
@@ -1032,14 +1068,12 @@ int CarTick_Rec_0A074(void *ctx)
     case 1: {
         register u32 phaseBase __asm__("r0") = (u32)CarTickWa;
         register u32 phaseOffset __asm__("r1") = 0x0FBCu;
+
         __asm__ volatile ("" : "+r" (phaseBase), "+r" (phaseOffset));
-        __asm__ volatile (".code 16\n\t"
-                          "add r0, r0, r1\n\t"
-                          "movs r2, #19\n\t"
-                          "ldrh r0, [r0]"
-                          : "+r" (phaseBase), "+r" (phaseOffset), "=r" (result)
-                          : : "cc", "memory");
-        phase = phaseBase;
+        phaseBase += phaseOffset;
+
+        result = 19;
+        phase = *(const volatile u16 *)(uintptr_t)phaseBase;
         if (phase == 7)
             result = 20;
         break;
@@ -1096,12 +1130,9 @@ int CarTick_Rec_0A150(void *ctx)
     register u32 phaseOffset __asm__("r2") = 0x0FBCu;
     __asm__ volatile("" : "+r"(phaseBase), "+r"(phaseOffset));
     register int phase __asm__("r0");
-    __asm__ volatile(".code 16\n\t"
-                     "add r0, r0, r2\n\t"
-                     "movs r2, #0\n\t"
-                     "ldrsh r0, [r0, r2]"
-                     : "=r"(phase), "+r"(phaseOffset)
-                     : "0"(phaseBase) : "cc", "memory");
+    phaseBase += phaseOffset;
+    phaseOffset = 0;
+    phase = *(const s16 *)((const u8 *)(uintptr_t)phaseBase + phaseOffset);
 
     if (phase == 2) goto phase2;
     if (phase > 2) goto phase_above_2;
@@ -1131,12 +1162,9 @@ phase7:
         register u32 offset __asm__("r1") = 0x1078u;
         __asm__ volatile("" : "+r"(base), "+r"(offset));
         register int arg __asm__("r0");
-        __asm__ volatile(".code 16\n\t"
-                         "add r0, r0, r1\n\t"
-                         "movs r2, #0\n\t"
-                         "ldrsh r0, [r0, r2]"
-                         : "=r"(arg), "+r"(offset)
-                         : "0"(base) : "cc", "memory");
+        base += offset;
+        arg = *(const s16 *)(uintptr_t)base;
+        __asm__ volatile("" : "+r"(offset), "+r"(arg));
     }
 dispatch_once:
     {

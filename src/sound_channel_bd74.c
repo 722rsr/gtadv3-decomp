@@ -10,16 +10,17 @@
 // Caller ABI: channel in r1 (nonstandard r1), r0 ignored, r2/r3 temps. Proven via ROM table at 0x061504 (0x0802BD75 thumb entry) and pool at 0x02BCE4 (0x080614E0) not used here but leaf's r1 use is exact per listing.
 // Do not guess voice layout beyond +29 (u8) / +64 (u32) directly via strb/ldr, proven via objdump.
 
+// The helper's custom r3 result and ip return stay explicit; C performs the
+// byte store into the channel record.
 void _0802BD74(void *a, void *b) __attribute__((alias("SoundBD74_Store")));
 void sub_0802BD74(void *a, void *b) __attribute__((alias("SoundBD74_Store")));
 __attribute__((naked)) void SoundBD74_Store(void *a, void *chan) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "mov  ip, lr\n"
-        "bl   _0802BCE8\n"
-        "strb r3, [r1, #29]\n"
-        "bx   ip\n"
-        ".short 0x0000\n"
-        ".syntax divided\n"
-    );
+    register u32 frame __asm__("ip");
+    register u32 value __asm__("r3");
+    register volatile u8 *channel __asm__("r1") = (volatile u8 *)chan;
+    __asm__ volatile (".syntax unified\n\tmov %0, lr\n\tbl _0802BCE8\n\t.syntax divided"
+                      : "=r"(frame), "=r"(value) : : "lr", "cc", "memory");
+    channel[29] = (u8)value;
+    __asm__ volatile (".syntax unified\n\tbx %0\n\t.short 0x0000\n\t.syntax divided"
+                      : : "r"(frame) : "cc");
 }

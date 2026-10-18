@@ -682,7 +682,8 @@ void Sprite_EmitPair(void *unused0, int unused1, int x, int y,
     /* The ROM enters the allocator with r0 still holding the 0x400 mask. */
     extern void *Sprite_EmitAllocate(void) __asm__("sub_08002BFC");
     /* Keep the ROM's four-byte frame so its five stack arguments stay at the
-       original offsets; the matching compiler otherwise rounds this frame. */
+       original offsets. The empty output constraint reserves the C stack slot
+       while emitting no instructions. */
     struct SpritePairStack {
         u8 pad[36];
         volatile u32 a4;
@@ -691,7 +692,8 @@ void Sprite_EmitPair(void *unused0, int unused1, int x, int y,
         volatile u32 a7;
         volatile u32 a8;
     };
-    __asm__ volatile("sub sp, #4" : : : "memory");
+    u32 framePad;
+    __asm__ volatile("" : "=m"(framePad));
     register volatile struct SpritePairStack *args __asm__("sp");
     __asm__ volatile("" : "=r"(args));
     register int xreg __asm__("r5") = x;
@@ -716,10 +718,11 @@ void Sprite_EmitPair(void *unused0, int unused1, int x, int y,
     register int xpos __asm__("r0") = xreg;
     xpos -= 56;
     yreg = 0x1FFu;
+    /* Keep the high-register source opaque so C copies it into pinned r2;
+       otherwise agbcc reuses the low-register constant and drops the ROM move. */
+    __asm__ volatile("" : "+r"(yreg));
     register u32 maskcopy1 __asm__("r2") = yreg;
     __asm__ volatile("" : "+r"(maskcopy1));
-    /* Preserve the ROM's redundant copy before its mask; agbcc folds it out. */
-    __asm__ volatile("mov r2, r8" : : : "memory");
     *(volatile u16 *)(obj + 2) = (u16)(((u32)xpos & maskcopy1) | high);
     register u32 a5raw __asm__("r0") = args->a5;
     a5bits = a5raw << 12;
@@ -740,7 +743,6 @@ void Sprite_EmitPair(void *unused0, int unused1, int x, int y,
     register u32 zero2 __asm__("r0") = zero;
     *(volatile u16 *)(obj2 + 12) = (u16)zero2;
     _08002C34((int)args->a6, obj2);
-    __asm__ volatile("add sp, #4" : : : "memory");
 }
 void _080026898(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h, u32 i)
     __attribute__((alias("Sprite_EmitPair")));

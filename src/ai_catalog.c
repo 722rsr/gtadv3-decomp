@@ -38,35 +38,32 @@ int Sub_0800230C(int a) __attribute__((alias("Ai_IdRemap")));
 
 /* The catalog accessors narrow both the input and mapped index to signed
  * halfwords. The ROM deliberately indexes -1 when the mapper rejects an id.
- * Keep the shifted value before the absolute data symbol: agbcc then loads
- * the table between lsls #16 and asrs #14, matching the ROM instruction order.
- * These assembler declarations define data addresses, not executable code. */
+ * Keep the shifted value before the numeric C table base, and use an empty
+ * barrier so agbcc loads the table between lsls #16 and asrs #14, matching
+ * the ROM instruction order. */
 #define Catalog_IdMap _080022E4
 extern int _080022E4(int id);
 void *Ai_CatalogA(int id){
     int mapped = Catalog_IdMap((s16)id);
     s32 shifted = (u32)mapped << 16;
-    extern u8 CatalogTableA[];
-    __asm__(".globl CatalogTableA\nCatalogTableA = 0x080CC640\n");
-    uintptr_t base = (uintptr_t)CatalogTableA;
+    uintptr_t base = (uintptr_t)0x080CC640u;
+    __asm__ volatile ("" : "+r"(base) : : "memory");
     s32 offset = shifted >> 14;
     return (void *)(uintptr_t)*(const u32 *)(offset + base);
 }
 void *Ai_CatalogB(int id){
     int mapped = Catalog_IdMap((s16)id);
     s32 shifted = (u32)mapped << 16;
-    extern u8 CatalogTableB[];
-    __asm__(".globl CatalogTableB\nCatalogTableB = 0x080CC7C4\n");
-    uintptr_t base = (uintptr_t)CatalogTableB;
+    uintptr_t base = (uintptr_t)0x080CC7C4u;
+    __asm__ volatile ("" : "+r"(base) : : "memory");
     s32 offset = shifted >> 14;
     return (void *)(uintptr_t)*(const u32 *)(offset + base);
 }
 void *Ai_CatalogC(int id){
     int mapped = Catalog_IdMap((s16)id);
     s32 shifted = (u32)mapped << 16;
-    extern u8 CatalogTableC[];
-    __asm__(".globl CatalogTableC\nCatalogTableC = 0x080CC948\n");
-    uintptr_t base = (uintptr_t)CatalogTableC;
+    uintptr_t base = (uintptr_t)0x080CC948u;
+    __asm__ volatile ("" : "+r"(base) : : "memory");
     s32 offset = shifted >> 14;
     return (void *)(uintptr_t)*(const u32 *)(offset + base);
 }
@@ -76,15 +73,13 @@ void *_08024C58(int a) __attribute__((alias("Ai_CatalogB")));
 void *sub_08024C58(int a) __attribute__((alias("Ai_CatalogB")));
 void *_08024C74(int a) __attribute__((alias("Ai_CatalogC")));
 
-extern const u32 Table24D78[];
-__asm__(".globl Table24D78\nTable24D78 = 0x080CC518\n");
-
 int Ai_CatalogFlatIndex(int id){
     int flat = 0;
     register const s32 * const *groupTbl asm("r4");
     const s32 *list;
     int sentinel = -1;
-    groupTbl = (const s32 * const *)(uintptr_t)Table24D78;
+    groupTbl = (const s32 * const *)(uintptr_t)0x080CC518u;
+    __asm__ volatile ("" : "+r"(groupTbl) : : "memory");
     do {
         list = *groupTbl;
         if (*list != sentinel) {
@@ -105,7 +100,9 @@ int Sub_08024C90(int a) __attribute__((alias("Ai_CatalogFlatIndex")));
 
 int Ai_CatalogIndexInGroup(int id, int g){
     int idx = 0;
-    const s32 *list = (const s32 *)(uintptr_t)Table24D78[g];
+    const u32 *table = (const u32 *)(uintptr_t)0x080CC518u;
+    __asm__ volatile ("" : "+r"(table) : : "memory");
+    const s32 *list = (const s32 *)(uintptr_t)table[g];
     if (*list != -1) {
         do {
             if (id == *list) return idx;
@@ -120,7 +117,9 @@ int _08024CD0(int a,int b) __attribute__((alias("Ai_CatalogIndexInGroup")));
 
 int Ai_CatalogOwnedIndexInGroup(int id, int g){
     int ownedCnt = 0;
-    const s32 *list = (const s32 *)(uintptr_t)Table24D78[g];
+    const u32 *table = (const u32 *)(uintptr_t)0x080CC518u;
+    __asm__ volatile ("" : "+r"(table) : : "memory");
+    const s32 *list = (const s32 *)(uintptr_t)table[g];
     extern int _08025FAC(int);
     while (*list != -1) {
         if (_08025FAC(*list)) {
@@ -145,9 +144,8 @@ extern const u32 Table24D5C[];
 extern int _08024C90(int a);
 #define Call_FlatIndex _08024C90
 void *Ai_CatalogGroupOfId(int id){
-    const u32 *t;
-    __asm__(".globl Table24D5C\nTable24D5C = 0x080CC614\n");
-    t = Table24D5C;
+    const u32 *t = (const u32 *)(uintptr_t)0x080CC614u;
+    __asm__ volatile ("" : "+r"(t) : : "memory");
     return (void*)(uintptr_t)t[Call_FlatIndex(id)];
 }
 void *_08024D5C(int a) __attribute__((alias("Ai_CatalogGroupOfId")));
@@ -159,9 +157,8 @@ int Ai_CatalogGroupCount(void){ return 11; }
 int _08024DD8(void) __attribute__((alias("Ai_CatalogGroupCount")));
 
 int Ai_CatalogGroupSize(int g){
-    extern const u32 Table24D78[];
-    __asm__(".globl Table24D78\nTable24D78 = 0x080CC518\n");
-    const u32 *t = Table24D78;
+    const u32 *t = (const u32 *)(uintptr_t)0x080CC518u;
+    __asm__ volatile ("" : "+r"(t) : : "memory");
     const u32 *list=(const u32*)(uintptr_t)t[g];
     int c=0; while(*list!=(u32)~0u){ c++; list++; } return c;
 }

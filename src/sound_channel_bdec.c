@@ -13,17 +13,17 @@
 void _0802BDEC(void *a, void *b) __attribute__((alias("SoundBDEC_Store")));
 void sub_0802BDEC(void *a, void *b) __attribute__((alias("SoundBDEC_Store")));
 __attribute__((naked)) void SoundBDEC_Store(void *a, void *chan) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "mov  ip, lr\n"
-        "bl   _0802BCE8\n"
-        "subs r3, #64\n"
-        "strb r3, [r1, #20]\n"
-        "ldrb r3, [r1, #0]\n"
-        "movs r2, #3\n"
-        "orrs r3, r2\n"
-        "strb r3, [r1, #0]\n"
-        "bx   ip\n"
-        ".syntax divided\n"
-    );
+    register u32 frame __asm__("ip");
+    register u32 value __asm__("r3");
+    register volatile u8 *channel __asm__("r1") = (volatile u8 *)chan;
+    __asm__ volatile(".syntax unified\n\tmov %0, lr\n\tbl _0802BCE8\n\t.syntax divided"
+                     : "=r"(frame), "=r"(value) : : "lr", "cc", "memory");
+    value -= 64;
+    *(volatile u8 *)(channel + 20) = (u8)value;
+    register u32 flags __asm__("r3") = channel[0];
+    register u32 bits __asm__("r2") = 3;
+    __asm__ volatile("" : "+r"(flags), "+r"(bits) : : "cc", "memory");
+    flags |= bits;
+    channel[0] = (u8)flags;
+    __asm__ volatile("bx %0" : : "r"(frame) : "cc");
 }

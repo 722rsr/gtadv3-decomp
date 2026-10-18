@@ -4219,7 +4219,13 @@ void sub_0800BE20(void *c) __attribute__((alias("MenuRecordApply_0800BE20")));
 // menu_record_update.s 0x0800BCD4 — high-reg spill (ip/r8), pools 0x001BB0A9 etc., direct branch + helper ABI
 extern void sub_0800BA3C(void *a, void *b, void *c);
 void MenuRecordUpdate_0800BCD4(void *a0, u32 a1, void *a2, u32 a3, void *sp24, void *sp28, void *sp32, void *sp36) {
-    u8 *base = (u8 *)0x03001780u;
+    // Two assembler-resolved symbols keep the table base and its offset as
+    // two separate pool words; folding the constants would emit one summed
+    // word (0x03002868) and drop the runtime `adds r2, r0, r6`.
+    extern u8 BcdWaBase[];
+    extern u8 BcdWaOff10E8[];
+    __asm__(".globl BcdWaBase\nBcdWaBase = 0x03001780\n"
+            ".globl BcdWaOff10E8\nBcdWaOff10E8 = 0x10E8\n");
     const u32 C = 0x001BB0A9u;
     register void *arg0 __asm__("r12") = a0;
     register u32 *bestOut __asm__("r5") = (u32 *)a2;
@@ -4228,17 +4234,26 @@ void MenuRecordUpdate_0800BCD4(void *a0, u32 a1, void *a2, u32 a3, void *sp24, v
     register u32 best __asm__("r3") = C;
     register u16 bestIdx __asm__("r4") = 0;
     register s32 i __asm__("r1") = 0;
-    register volatile u8 *tableBase __asm__("r0") = (volatile u8 *)base;
-    register u32 tableOffset __asm__("r6") = 0x10E8;
+    register volatile u8 *tableBase __asm__("r0") = (volatile u8 *)BcdWaBase;
+    register u32 tableOffset __asm__("r6") = (u32)(uintptr_t)BcdWaOff10E8;
     register volatile u32 *table __asm__("r2");
-    __asm__ volatile("add %0, %1, %2"
-                     : "=r" (table) : "r" (tableBase), "r" (tableOffset));
+    table = (volatile u32 *)(uintptr_t)
+        ((uintptr_t)tableBase + (uintptr_t)tableOffset);
     do {
         register u32 value __asm__("r0") = *table;
         if (value < best && value != 0) {
             best = value;
-            __asm__ volatile("lsl r0, %1, #16\n\tlsr %0, r0, #16"
-                             : "=r" (bestIdx) : "r" (i) : "r0");
+            {
+                // The ROM's `lsls r0, r1, #16 / lsrs r4, r0, #16` needs an
+                // intermediate that is NOT coalesced with bestIdx: a plain
+                // `bestIdx = i` sinks the truncation into `strh`, and an
+                // unpinned intermediate coalesces into r4. Pinning it to the
+                // just-dead value register r0 reproduces the pair (measured
+                // in build/scratch_trunc*.c).
+                register u32 sh __asm__("r0") = (u32)i << 16;
+                bestIdx = sh >> 16;
+                __asm__ volatile ("" : "+r" (bestIdx));
+            }
         }
         table++;
         i++;
