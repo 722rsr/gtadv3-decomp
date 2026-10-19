@@ -97,62 +97,123 @@ void Award_CopyTwinB(int idx_, void *src_, void *unused) {
             ".globl AwardFlagFCA\nAwardFlagFCA = 0x00000FCA\n"
             ".globl AwardFlagFCC\nAwardFlagFCC = 0x00000FCC\n");
     u8 temp[60];
-    int idx = idx_;
-    (void)&idx;
+    volatile int idx = idx_;
     register void *src __asm__("ip") = src_;
-    u32 found = 0;
-    (void)&found;
-    u32 base = (u32)(uintptr_t)&AwardWaBase;
-    u8 *flag8 = (u8 *)(base + (u32)(uintptr_t)&AwardFlagFC8);
-    *(volatile u16 *)flag8 = (u16)found;
-    *(volatile u16 *)(base + (u32)(uintptr_t)&AwardFlagFCA) = (u16)found;
-    *(volatile u16 *)(base + (u32)(uintptr_t)&AwardFlagFCC) = (u16)found;
-    int count = 0;
-    u32 idx72 = (u32)(((idx << 3) + idx) << 3);
-    register u32 rowoff __asm__("r8");
-    rowoff = 0;
-    u8 *ptr = (u8 *)(idx72 + ((u32)(uintptr_t)&AwardRowOff + base));
-    u8 *dst = temp;
-    u8 *rowp;
+    volatile u32 found = 0;
+
+    register u32 base0 __asm__("r1") = (u32)(uintptr_t)&AwardWaBase;
+    register u32 fc8c __asm__("r2") = (u32)(uintptr_t)&AwardFlagFC8;
+    register u32 f8p __asm__("r4") = base0 + fc8c;
+    *(volatile u16 *)(uintptr_t)f8p = 0;
+    register u32 fcac __asm__("r5") = (u32)(uintptr_t)&AwardFlagFCA;
+    register u32 fap __asm__("r0") = base0 + fcac;
+    register u16 *f6 __asm__("r6") = (u16 *)((u8 *)&found);
+    register u16 f6v __asm__("r6") = *f6;
+    *(volatile u16 *)(uintptr_t)fap = f6v;
+    register u32 fccc __asm__("r7") = (u32)(uintptr_t)&AwardFlagFCC;
+    register u32 fccp __asm__("r3") = base0 + fccc;
+    *(volatile u16 *)(uintptr_t)fccp =
+        *(volatile u16 *)((u8 *)&found);
+
+    register int count __asm__("r5") = 0;
+    register u32 idxv __asm__("r2") = (u32)idx;
+    register u32 idx72 __asm__("r0") =
+        (u32)(((idxv << 3) + idxv) << 3);
+    register u32 baseoff __asm__("r6") =
+        (u32)(uintptr_t)&AwardRowOff;
+    baseoff += base0;
+    register u32 rowoff __asm__("r8") = 0;
+    register u8 *ptr __asm__("r3") = (u8 *)(idx72 + baseoff);
+    register u8 *dst __asm__("r2") = temp;
+    register u8 *flag8 __asm__("sl");
+    register u32 base __asm__("r9");
+    flag8 = (u8 *)(uintptr_t)f8p;
+    base = base0;
     u32 idx8;
+    u8 *rowp;
     u32 sum, ro;
     register int i __asm__("r4");
+
     do {
-        idx8 = (u32)(idx << 3);
-        if (found != 1 && *(u32 *)src > *(u32 *)ptr) {
-            *(Blk12 *)dst = *(Blk12 *)src;
-            *(volatile u16 *)(uintptr_t)&AwardCell4C = (u16)count;
-            if ((u16)count == 0)
-                *(volatile u16 *)flag8 = 1;
-            dst += 12;
-            count++;
-            found = 1;
+        register u32 t7 __asm__("r7") = (u32)idx;
+        t7 <<= 3;
+        idx8 = t7;
+        if (found != 1) {
+            register u8 *s4 __asm__("r4") = (u8 *)src;
+            if (*(u32 *)s4 > *(u32 *)ptr) {
+                register u8 *d __asm__("r0") = dst;
+                register u8 *sB __asm__("r1");
+                sB = (u8 *)src;
+                __asm__ volatile ("" : "+r" (sB));
+                *(Blk12 *)d = *(Blk12 *)sB;
+                register u16 *cell6 __asm__("r6") =
+                    (u16 *)(uintptr_t)&AwardCell4C;
+                *cell6 = (u16)count;
+                if ((u16)count == 0) {
+                    register u32 hold1 __asm__("r1");
+                    register u32 hold4 __asm__("r4");
+                    register u32 hold6 __asm__("r6");
+                    __asm__ volatile ("" : "=r" (hold1), "=r" (hold4),
+                                      "=r" (hold6));
+                    register u16 one __asm__("r0") = 1;
+                    *(volatile u16 *)flag8 = one;
+                    __asm__ volatile ("" : "+r" (hold1), "+r" (hold4),
+                                      "+r" (hold6));
+                }
+                dst += 12;
+                count++;
+                found = 1;
+            }
         }
         if (count <= 4) {
-            *(Blk12 *)dst = *(Blk12 *)(u8 *)(((idx8 + idx) << 3) + rowoff + base
-                                             + (u32)(uintptr_t)&AwardRowOff);
+            register u32 a1 __asm__("r1") = idx8;
+            __asm__ volatile ("" : "+r" (a1));
+            register u32 a4 __asm__("r4") = (u32)idx;
+            register u32 a0 __asm__("r0") = a1 + a4;
+            a0 <<= 3;
+            a0 += rowoff;
+            a0 += base;
+            register u8 *d1 __asm__("r1") = dst;
+            __asm__ volatile ("" : "+r" (d1));
+            register u32 off6 __asm__("r6") =
+                (u32)(uintptr_t)&AwardRowOff;
+            a0 += off6;
+            *(Blk12 *)d1 = *(Blk12 *)(uintptr_t)a0;
             dst += 12;
             count++;
         }
-        rowoff += 12;
+        register u32 twelve __asm__("r7") = 12;
+        rowoff += twelve;
         ptr += 12;
     } while (count <= 4);
+
+    // agbcc rematerialises the tail's temp pointer as an offset (movs r3,#12)
+    // after the pinned first loop, and folds the row offset into r0 instead of
+    // the ROM's r5. Pin the three instructions that differ; the rest is
+    // compiler output.
     {
-        register u8 *wb __asm__("r1");
-        wb = &AwardWaBase;
-        __asm__ volatile ("" : "+r" (wb));
-        sum = (u32)((idx8 + idx) << 3);
-        __asm__ volatile ("" : : "r" (idx));
-        dst = temp;
-        rowp = (u8 *)(sum + (u32)(uintptr_t)wb);
+        register u8 *wb __asm__("r1") = (u8 *)(uintptr_t)&AwardWaBase;
+        register u32 t2 __asm__("r2") = idx8;
+        __asm__ volatile ("" : "+r" (t2));
+        register u32 t3 __asm__("r3") = (u32)idx;
+        register u32 t0 __asm__("r0") = (u32)((t2 + t3) << 3);
+        register u8 *tsrc __asm__("r3");
+        __asm__ volatile ("mov %0, sp" : "=r" (tsrc));
+        u8 *trow = (u8 *)(t0 + (u32)(uintptr_t)wb);
+        register u32 offv __asm__("r4") = (u32)(uintptr_t)&AwardRowOff;
+        __asm__ volatile ("" : "+r" (offv));
+        register u32 ro8 __asm__("r8") = offv;
+        __asm__ volatile ("" : "+r" (ro8));
+        i = 4;
+        do {
+            register u8 *dstp __asm__("r1");
+            __asm__ volatile ("mov r5, %1\n\tadd %0, %2, r5"
+                              : "=r" (dstp) : "r" (ro8), "r" (trow));
+            *(Blk12 *)dstp = *(Blk12 *)tsrc;
+            tsrc += 12;
+            trow += 12;
+        } while (--i >= 0);
     }
-    ro = (u32)(uintptr_t)&AwardRowOff;
-    i = 4;
-    do {
-        *(Blk12 *)(rowp + ro) = *(Blk12 *)dst;
-        dst += 12;
-        rowp += 12;
-    } while (--i >= 0);
 }
 
 // Original aliases
