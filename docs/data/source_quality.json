@@ -9550,22 +9550,19 @@
    "size": 108
   },
   "0x08024a18": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 57,
-    "naked": true
+    "directive": 2
    },
    "file": "src/save.c",
    "name": "SaveBlock2PreSave",
    "size": 128
   },
   "0x08024a98": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 56,
-    "naked": true
+    "barrier": 2,
+    "directive": 2
    },
    "file": "src/save.c",
    "name": "SaveBlock2PostLoad",
@@ -13399,16 +13396,16 @@
  },
  "totals": {
   "asm": {
-   "bytes": 80536,
-   "functions": 225
+   "bytes": 80280,
+   "functions": 223
   },
   "c": {
    "bytes": 39674,
    "functions": 859
   },
   "c_fakematch": {
-   "bytes": 64018,
-   "functions": 573
+   "bytes": 64274,
+   "functions": 575
   },
   "partial": {
    "bytes": 3908,
