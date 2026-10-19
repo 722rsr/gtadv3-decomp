@@ -37,6 +37,9 @@ extern void sub_08007B18(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 
 #define Sub_0800F778 _0800F778
 #define Sub_0800D97C _0800D97C
 #define Sub_0800DBE8 _0800DBE8
+#define Sub_0800DC7C _0800DC7C
+#define Sub_080015930 _080015930
+#define Sub_0800159AC _0800159AC
 extern void Sub_08007BFC(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h, u32 i);
 extern void Sub_08007C68(void *a, u32 b, u32 c, int d, u32 e, u32 f, u32 g, u32 h, u32 i);
 extern void _08007C68(void *a, u32 b, u32 c, u32 d, u32 e, u32 f, u32 g, u32 h, u32 i); // faithful strong body
@@ -176,209 +179,86 @@ void sub_0800121A8(void *a) __attribute__((alias("MenuFF78_121A8")));
 // is NOT inlined by agbcc -O2, so each wrapper became a 32-byte call stub and
 // the call to the shared body could not be resolved to a ROM address at all
 // (the report read UNRESOLVED_RELOCATION with 1/164 matched).
-#define MENUFF78_15AX(rec_, tbl, tbl2, use_dc7c, s0) do { \
+#define MENUFF78_15AX(rec_, tblsym, tblval, tbl2sym, tbl2val, use_dc7c, s0) do { \
     volatile u8 *rec = (volatile u8 *)(rec_);                      \
+    /* The table base is a SYMBOL, not a literal: `(uintptr_t)0x080CB818 + 4`   \
+       folds into a second pool word, but the ROM loads tbl once and derives    \
+       tbl+4 at runtime (`adds r6,r4,#4`). Same recipe as MenuWa121A8 above. */ \
+    u32 *tblp = (u32 *)(uintptr_t)&tblsym;                         \
     /* NON-volatile `s16 *` read: a `volatile s16` READ lowers to             \
        `ldrh; lsls #16; asrs #16` where the ROM has one ldrsh               \
        (src/menus.c:838 documents the same recipe). */                      \
     s16 *sptr = (s16 *)(uintptr_t)(rec + 144);                     \
     int s = *sptr;                                                 \
     u32 off = ((u32)(s32)s) << 3;                                  \
-    Sub_080015930((rec_), *(volatile u32 *)(uintptr_t)((tbl) + 4 + off), \
-                  *(volatile u32 *)(uintptr_t)(rec + 164));        \
+    u32 *tbl4 = tblp + 1;                                          \
+    /* rec+164 is a POINTER VARIABLE read before and after the 15930 call:    \
+       that is what keeps it in r8 across the call (`mov r7,r8 / push {r7}`   \
+       prologue) once tbl, rec+144 and tbl+4 own r4/r5/r6. Its FIRST read is  \
+       an assignment inside the third argument so the address materializes    \
+       where the ROM does it: after the arg1 table load, in r0. */            \
+    u32 *p164;                                                     \
+    Sub_080015930((void *)rec, *(volatile u32 *)(uintptr_t)((uintptr_t)tbl4 + off), \
+                  *(p164 = (u32 *)(uintptr_t)(rec + 164)));        \
     {                                                              \
         int s1 = *sptr;                                            \
         u32 off1 = ((u32)(s32)s1) << 3;                           \
-        u32 r1 = *(volatile u32 *)(uintptr_t)((tbl) + off1);      \
-        u32 r2 = *(volatile u32 *)(uintptr_t)((tbl) + 4 + off1);  \
-        u32 r3 = *(volatile u16 *)(uintptr_t)((tbl2) + (((u32)(s32)s1) << 1)); \
+        u32 r1 = *(volatile u32 *)(uintptr_t)((uintptr_t)tblp + off1); \
+        u32 r2 = *(volatile u32 *)(uintptr_t)((uintptr_t)tbl4 + off1); \
+        /* The halfword table anchor is a SYMBOL pinned to r0 and bound        \
+           BEFORE the `lsls` index shift, mirroring MenuWa121A8's r2 anchor   \
+           recipe: the ROM reuses the dying offset register r0 for            \
+           `ldr r0,[pc]` here, while a literal base rematerializes into a     \
+           free register after the shift. */                                  \
+        register uintptr_t tbl2v __asm__("r0") = (uintptr_t)&tbl2sym; \
+        /* Sum spelled index + base so it accumulates into the dying index   \
+           register (`adds r3,r3,r0`); base + index adds into the pinned r0   \
+           instead. Same direction rule as MenuWa121A8's `off + wsum`. */      \
+        u32 r3 = *(volatile u16 *)(uintptr_t)((((u32)(s32)s1) << 1) + tbl2v); \
         /* FIFTH machine argument: the callee reads only r0-r3, but the ROM  \
            caller stores `*(u32*)(rec+164)` into the outgoing-arg slot at     \
            [sp] (0x080015A68) and keeps that ADDRESS in a callee-saved        \
            register across the first call. A four-parameter declaration drops \
            the store and the body measures 140 bytes. */                      \
-        Sub_0800159AC((rec_), r1, r2, r3,                          \
-                      *(volatile u32 *)(uintptr_t)(rec + 164));    \
+        Sub_0800159AC((void *)rec, r1, r2, r3, *p164);             \
     }                                                              \
     Sub_0800D97C((void *)(uintptr_t)(rec + 140), 15);              \
     if (use_dc7c)                                                  \
         Sub_0800DC7C((void *)(uintptr_t)(rec + 16), 1);            \
     else                                                           \
         Sub_0800DBE8((void *)(uintptr_t)(rec + 16));               \
-    if (*(volatile s16 *)(uintptr_t)(rec + 136) == 1) {            \
-        u32 r1 = *(volatile u32 *)(uintptr_t)(rec + 152);          \
-        u32 r2 = *(volatile u32 *)(uintptr_t)(rec + 156);          \
-        _08007C68((void *)(uintptr_t)(rec + 8), r1, r2, 20, (s0), 5, 1, 0, 0); \
+    {                                                              \
+        /* NON-volatile `s16 *` test for the same ldrsh reason. */ \
+        s16 *s136p = (s16 *)(uintptr_t)(rec + 136);                \
+        if (*s136p == 1) {                                         \
+            /* dst first: the ROM reuses r0 (still holding rec+136 from the  \
+               ldrsh) as `subs r0,#0x80`, so it cannot be occupied by the    \
+               chained source loads; those then rebuild from rec in r1/r2. */ \
+            void *dst = (void *)(uintptr_t)(rec + 8);              \
+            u32 r1 = *(volatile u32 *)(uintptr_t)(rec + 152);      \
+            u32 r2 = *(volatile u32 *)(uintptr_t)(rec + 156);      \
+            _08007C68(dst, r1, r2, 20, (s0), 5, 1, 0, 0);          \
+        }                                                          \
     }                                                              \
+    /* Trailing so the C89 transform keeps every declaration ahead of the   \
+       first statement; `.set` emits no bytes wherever it lands. */         \
+    __asm__(".globl " #tblsym "\n" #tblsym " = " #tblval "\n"              \
+            ".globl " #tbl2sym "\n" #tbl2sym " = " #tbl2val "\n");         \
 } while (0)
 
-__attribute__((naked)) void MenuFF78_15A0C(void *rec_) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, r7, lr}\n"
-        "mov r7, r8\n"
-        "push {r7}\n"
-        "sub sp, #20\n"
-        "adds r7, r0, #0\n"
-        "ldr r4, .L15a0c_tbl\n"
-        "adds r5, r7, #0\n"
-        "adds r5, #144\n"
-        "movs r1, #0\n"
-        "ldrsh r0, [r5, r1]\n"
-        "lsls r0, r0, #3\n"
-        "adds r6, r4, #4\n"
-        "adds r0, r0, r6\n"
-        "ldr r1, [r0, #0]\n"
-        "movs r0, #164\n"
-        "adds r0, r0, r7\n"
-        "mov r8, r0\n"
-        "ldr r2, [r0, #0]\n"
-        "adds r0, r7, #0\n"
-        "bl sub_080015930\n"
-        "movs r1, #0\n"
-        "ldrsh r3, [r5, r1]\n"
-        "lsls r0, r3, #3\n"
-        "adds r4, r0, r4\n"
-        "ldr r1, [r4, #0]\n"
-        "adds r0, r0, r6\n"
-        "ldr r2, [r0, #0]\n"
-        "ldr r0, .L15a0c_tbl2\n"
-        "lsls r3, r3, #1\n"
-        "adds r3, r3, r0\n"
-        "ldrh r3, [r3, #0]\n"
-        "mov r4, r8\n"
-        "ldr r0, [r4, #0]\n"
-        "str r0, [sp, #0]\n"
-        "adds r0, r7, #0\n"
-        "bl sub_0800159AC\n"
-        "adds r0, r7, #0\n"
-        "adds r0, #140\n"
-        "movs r1, #15\n"
-        "bl sub_0800D97C\n"
-        "adds r0, r7, #0\n"
-        "adds r0, #16\n"
-        "movs r1, #1\n"
-        "bl sub_0800DC7C\n"
-        "adds r0, r7, #0\n"
-        "adds r0, #136\n"
-        "movs r1, #0\n"
-        "ldrsh r4, [r0, r1]\n"
-        "cmp r4, #1\n"
-        "bne .L15a0c_done\n"
-        "subs r0, #128\n"
-        "adds r1, r7, #0\n"
-        "adds r1, #152\n"
-        "ldr r1, [r1, #0]\n"
-        "adds r2, r7, #0\n"
-        "adds r2, #156\n"
-        "ldr r2, [r2, #0]\n"
-        "movs r3, #126\n"
-        "str r3, [sp, #0]\n"
-        "movs r3, #5\n"
-        "str r3, [sp, #4]\n"
-        "str r4, [sp, #8]\n"
-        "movs r3, #0\n"
-        "str r3, [sp, #12]\n"
-        "str r3, [sp, #16]\n"
-        "movs r3, #20\n"
-        "bl sub_08007C68\n"
-        ".L15a0c_done:\n"
-        "add sp, #20\n"
-        "pop {r3}\n"
-        "mov r8, r3\n"
-        "pop {r4, r5, r6, r7}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        ".L15a0c_tbl: .word 0x080CB818\n"
-        ".L15a0c_tbl2: .word 0x080CB840\n"
-        ".syntax divided\n"
-    );
+extern u8 MenuFf78Tbl15A0C;
+extern u8 MenuFf78Tbl2_15A0C;
+void MenuFF78_15A0C(void *rec_) {
+    MENUFF78_15AX(rec_, MenuFf78Tbl15A0C, 0x080CB818, MenuFf78Tbl2_15A0C, 0x080CB840, 1, 126);
 }
 void _080015A0C(void *a) __attribute__((alias("MenuFF78_15A0C")));
 void Sub_080015A0C(void *a) __attribute__((alias("MenuFF78_15A0C")));
 void sub_080015A0C(void *a) __attribute__((alias("MenuFF78_15A0C")));
 
-__attribute__((naked)) void MenuFF78_15AB0(void *rec_) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, r7, lr}\n"
-        "mov r7, r8\n"
-        "push {r7}\n"
-        "sub sp, #20\n"
-        "adds r7, r0, #0\n"
-        "ldr r4, .L15ab0_tbl\n"
-        "adds r5, r7, #0\n"
-        "adds r5, #144\n"
-        "movs r1, #0\n"
-        "ldrsh r0, [r5, r1]\n"
-        "lsls r0, r0, #3\n"
-        "adds r6, r4, #4\n"
-        "adds r0, r0, r6\n"
-        "ldr r1, [r0, #0]\n"
-        "movs r0, #164\n"
-        "adds r0, r0, r7\n"
-        "mov r8, r0\n"
-        "ldr r2, [r0, #0]\n"
-        "adds r0, r7, #0\n"
-        "bl sub_080015930\n"
-        "movs r1, #0\n"
-        "ldrsh r3, [r5, r1]\n"
-        "lsls r0, r3, #3\n"
-        "adds r4, r0, r4\n"
-        "ldr r1, [r4, #0]\n"
-        "adds r0, r0, r6\n"
-        "ldr r2, [r0, #0]\n"
-        "ldr r0, .L15ab0_tbl2\n"
-        "lsls r3, r3, #1\n"
-        "adds r3, r3, r0\n"
-        "ldrh r3, [r3, #0]\n"
-        "mov r4, r8\n"
-        "ldr r0, [r4, #0]\n"
-        "str r0, [sp, #0]\n"
-        "adds r0, r7, #0\n"
-        "bl sub_0800159AC\n"
-        "adds r0, r7, #0\n"
-        "adds r0, #140\n"
-        "movs r1, #15\n"
-        "bl sub_0800D97C\n"
-        "adds r0, r7, #0\n"
-        "adds r0, #16\n"
-        "bl sub_0800DBE8\n"
-        "adds r0, r7, #0\n"
-        "adds r0, #136\n"
-        "movs r1, #0\n"
-        "ldrsh r4, [r0, r1]\n"
-        "cmp r4, #1\n"
-        "bne .L15ab0_done\n"
-        "subs r0, #128\n"
-        "adds r1, r7, #0\n"
-        "adds r1, #152\n"
-        "ldr r1, [r1, #0]\n"
-        "adds r2, r7, #0\n"
-        "adds r2, #156\n"
-        "ldr r2, [r2, #0]\n"
-        "movs r3, #112\n"
-        "str r3, [sp, #0]\n"
-        "movs r3, #5\n"
-        "str r3, [sp, #4]\n"
-        "str r4, [sp, #8]\n"
-        "movs r3, #0\n"
-        "str r3, [sp, #12]\n"
-        "str r3, [sp, #16]\n"
-        "movs r3, #20\n"
-        "bl sub_08007C68\n"
-        ".L15ab0_done:\n"
-        "add sp, #20\n"
-        "pop {r3}\n"
-        "mov r8, r3\n"
-        "pop {r4, r5, r6, r7}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        "movs r0, r0\n"
-        ".L15ab0_tbl: .word 0x080CB84C\n"
-        ".L15ab0_tbl2: .word 0x080CB874\n"
-        ".syntax divided\n"
-    );
+extern u8 MenuFf78Tbl15AB0;
+extern u8 MenuFf78Tbl2_15AB0;
+void MenuFF78_15AB0(void *rec_) {
+    MENUFF78_15AX(rec_, MenuFf78Tbl15AB0, 0x080CB84C, MenuFf78Tbl2_15AB0, 0x080CB874, 0, 112);
 }
 void _080015AB0(void *a) __attribute__((alias("MenuFF78_15AB0")));
 void Sub_080015AB0(void *a) __attribute__((alias("MenuFF78_15AB0")));

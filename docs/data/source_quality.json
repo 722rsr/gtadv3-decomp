@@ -6465,23 +6465,13 @@
    "size": 96
   },
   "0x08015a0c": {
-   "class": "asm",
-   "detail": {
-    "insn": 1,
-    "insn_lines": 73,
-    "naked": true
-   },
+   "class": "c",
    "file": "src/menu_ff78_i.c",
    "name": "MenuFF78_15A0C",
    "size": 164
   },
   "0x08015ab0": {
-   "class": "asm",
-   "detail": {
-    "insn": 1,
-    "insn_lines": 73,
-    "naked": true
-   },
+   "class": "c",
    "file": "src/menu_ff78_i.c",
    "name": "MenuFF78_15AB0",
    "size": 164
@@ -13396,12 +13386,12 @@
  },
  "totals": {
   "asm": {
-   "bytes": 80280,
-   "functions": 223
+   "bytes": 79952,
+   "functions": 221
   },
   "c": {
-   "bytes": 39674,
-   "functions": 859
+   "bytes": 40002,
+   "functions": 861
   },
   "c_fakematch": {
    "bytes": 64274,
