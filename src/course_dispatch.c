@@ -6,135 +6,210 @@
 
 extern int sub_08002BE8(void); // u32 random, s32
 
-__attribute__((naked)) void Course_Dispatch_08AAC(void *rec) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, r7, lr}\n"
-        "adds r4, r0, #0\n"
-        "bl 0x08002be8\n"
-        "lsls r0, r0, #16\n"
-        "asrs r5, r0, #16\n"
-        "bl 0x08002be8\n"
-        "lsls r0, r0, #16\n"
-        "asrs r6, r0, #16\n"
-        "ldr r1, 1f\n"
-        "ldr r7, 2f\n"
-        "ldr r0, [r7, #0]\n"
-        "movs r2, #22\n"
-        "ldrsh r0, [r0, r2]\n"
-        "lsls r0, r0, #1\n"
-        "adds r0, r0, r1\n"
-        "ldrh r1, [r0, #0]\n"
-        "adds r0, r5, #0\n"
-        "bl 0x08002c48\n"
-        "ldr r1, 3f\n"
-        "ldr r0, [r7, #0]\n"
-        "movs r3, #22\n"
-        "ldrsh r0, [r0, r3]\n"
-        "lsls r0, r0, #1\n"
-        "adds r0, r0, r1\n"
-        "ldrh r1, [r0, #0]\n"
-        "adds r0, r6, #0\n"
-        "bl 0x08002c48\n"
-        "ldr r2, [r7, #0]\n"
-        "movs r1, #16\n"
-        "ldrsh r0, [r2, r1]\n"
-        "cmp r0, #1\n"
-        "ble.n .L8aac_after_pool\n"
-        "ldr r0, [r2, #84]\n"
-        "subs r0, #16\n"
-        "movs r1, #255\n"
-        "ands r0, r1\n"
-        "movs r3, #134\n"
-        "lsls r3, r3, #7\n"
-        "adds r1, r3, #0\n"
-        "orrs r0, r1\n"
-        "strh r0, [r4, #0]\n"
-        "ldr r0, [r2, #80]\n"
-        "subs r0, #20\n"
-        "ldr r3, 4f\n"
-        "adds r1, r3, #0\n"
-        "ands r0, r1\n"
-        "ldr r3, 5f\n"
-        "adds r1, r3, #0\n"
-        "orrs r0, r1\n"
-        "lsls r1, r6, #9\n"
-        "orrs r0, r1\n"
-        "strh r0, [r4, #2]\n"
-        "ldrh r1, [r2, #58]\n"
-        "lsls r0, r1, #12\n"
-        "ldrh r3, [r2, #60]\n"
-        "orrs r0, r3\n"
-        "strh r0, [r4, #4]\n"
-        "adds r4, #8\n"
-        "movs r1, #16\n"
-        "ldrsh r0, [r2, r1]\n"
-        "lsls r3, r5, #9\n"
-        "cmp r0, #9\n"
-        "ble.n .L8aac_second\n"
-        "ldr r1, 6f\n"
-        "adds r0, r1, #0\n"
-        "strh r0, [r4, #0]\n"
-        "ldr r0, 7f\n"
-        "adds r1, r0, #0\n"
-        "adds r0, r3, #0\n"
-        "orrs r0, r1\n"
-        "strh r0, [r4, #2]\n"
-        "ldrh r0, [r2, #56]\n"
-        "adds r0, #16\n"
-        "ldrh r2, [r2, #58]\n"
-        "lsls r1, r2, #12\n"
-        "orrs r0, r1\n"
-        "strh r0, [r4, #4]\n"
-        "adds r4, #8\n"
-        ".L8aac_second:\n"
-        "ldr r1, 6f\n"
-        "adds r0, r1, #0\n"
-        "strh r0, [r4, #0]\n"
-        "ldr r2, 8f\n"
-        "adds r0, r2, #0\n"
-        "orrs r3, r0\n"
-        "strh r3, [r4, #2]\n"
-        "ldr r1, [r7, #0]\n"
-        "ldrh r3, [r1, #58]\n"
-        "lsls r0, r3, #12\n"
-        "ldrh r1, [r1, #56]\n"
-        "orrs r0, r1\n"
-        "b.n .L8aac_tail_store\n"
-        ".align 2, 0\n"
-        "1: .word 0x080cb110\n"
-        "2: .word 0x030003e0\n"
-        "3: .word 0x080cb132\n"
-        "4: .word 0x000001ff\n"
-        "5: .word 0xffffc000\n"
-        "6: .word 0x0000033a\n"
-        "7: .word 0xffff8084\n"
-        "8: .word 0xffff8098\n"
-        ".L8aac_after_pool:\n"
-        "ldr r1, 9f\n"
-        "adds r0, r1, #0\n"
-        "strh r0, [r4, #0]\n"
-        "lsls r0, r5, #9\n"
-        "ldr r3, 10f\n"
-        "adds r1, r3, #0\n"
-        "orrs r0, r1\n"
-        "strh r0, [r4, #2]\n"
-        "ldrh r1, [r2, #58]\n"
-        "lsls r0, r1, #12\n"
-        "ldrh r2, [r2, #56]\n"
-        "orrs r0, r2\n"
-        ".L8aac_tail_store:\n"
-        "strh r0, [r4, #4]\n"
-        "adds r4, #8\n"
-        "adds r0, r4, #0\n"
-        "pop {r4, r5, r6, r7}\n"
-        "pop {r1}\n"
-        "bx r1\n"
-        ".align 2, 0\n"
-        "9: .word 0x0000433a\n"
-        "10: .word 0xffffc088\n"
-        ".syntax divided\n"
-    );
+extern void _08002C48(int value, u16 course);
+__asm__(".set AAC_TBLLO, 0x080CB110");
+extern u16 AAC_TBLLO[];
+__asm__(".set AAC_TBLHI, 0x080CB132");
+extern u16 AAC_TBLHI[];
+__asm__(".set AAC_ROOT, 0x030003E0");
+extern u8 AAC_ROOT[];
+
+void *Course_Dispatch_08AAC(void *out_) {
+    __asm__(".globl AAC_TBLLO\nAAC_TBLLO = 0x080CB110\n"
+            ".globl AAC_TBLHI\nAAC_TBLHI = 0x080CB132\n"
+            ".globl AAC_ROOT\nAAC_ROOT = 0x030003E0\n");
+    register u8 *cursor __asm__("r4") = (u8 *)out_;
+    register int rnd1 __asm__("r5");
+    register int rnd2 __asm__("r6");
+    u8 **root;
+    u16 *tbl_lo;
+    u32 temp7;
+    register u32 t134 __asm__("r3");
+    u32 c134;
+    __asm__ volatile ("" : "+r" (cursor) : : "memory");
+    {
+        int t = sub_08002BE8();
+        rnd1 = (s16)t;
+    }
+    __asm__ volatile ("" : "+r" (rnd1) : : "memory");
+    {
+        int t = sub_08002BE8();
+        rnd2 = (s16)t;
+    }
+    __asm__ volatile ("" : "+r" (rnd2) : : "memory");
+    tbl_lo = AAC_TBLLO;
+    root = (u8 **)AAC_ROOT;
+    __asm__ volatile ("" : "+r" (root));
+    {
+        u8 *rec = *root;
+        int idx = *(s16 *)(rec + 22);
+        u16 lo = *(u16 *)(tbl_lo + idx);
+        _08002C48(rnd1, lo);
+        {
+            u16 *tbl_hi = AAC_TBLHI;
+            u8 *rec2 = *root;
+            // Hold r2 across the second table index so the ROM's
+            // `movs r3,#22; ldrsh r0,[r0,r3]` allocation is reproduced.
+            register u32 hold2 __asm__("r2");
+            __asm__ volatile ("" : "=r" (hold2));
+            int idx2 = *(s16 *)(rec2 + 22);
+            u16 hi = *(u16 *)(tbl_hi + idx2);
+            __asm__ volatile ("" : "+r" (hold2) : : "memory");
+            _08002C48(rnd2, hi);
+        }
+        {
+            u8 *rc = *root;
+            int mode = *(s16 *)(rc + 16);
+            if (mode > 1) {
+                u32 v0 = *(volatile u32 *)(rc + 84);
+                v0 -= 16;
+                v0 &= 255u;
+                t134 = 134u;
+                __asm__ volatile ("" : "+r" (t134));
+                t134 <<= 7;
+                __asm__ volatile ("" : "+r" (t134));
+                c134 = t134;
+                __asm__ volatile ("" : "+r" (c134));
+                __asm__ volatile ("" : "+r" (t134));
+                v0 |= c134;
+                *(volatile u16 *)(cursor + 0) = (u16)v0;
+                {
+                    u32 w = *(volatile u32 *)(rc + 80);
+                    w -= 20;
+                    t134 = 0x1FFu;
+                    __asm__ volatile ("" : "+r" (t134));
+                    c134 = t134;
+                    __asm__ volatile ("" : "+r" (c134));
+                    w &= c134;
+                    t134 = 0xFFFFC000u;
+                    __asm__ volatile ("" : "+r" (t134));
+                    c134 = t134;
+                    __asm__ volatile ("" : "+r" (c134));
+                    __asm__ volatile ("" : "+r" (t134));
+                    w |= c134;
+                    {
+                        register u32 sh1 __asm__("r1") = ((u32)rnd2 << 9);
+                        __asm__ volatile ("" : "+r" (sh1));
+                        w |= sh1;
+                    }
+                    *(volatile u16 *)(cursor + 2) = (u16)w;
+                }
+                {
+                    register u32 x58 __asm__("r1") = *(volatile u16 *)(rc + 58);
+                    register u32 p0 __asm__("r0");
+                    register u32 x60 __asm__("r3");
+                    __asm__ volatile ("" : "+r" (x58));
+                    p0 = x58 << 12;
+                    __asm__ volatile ("" : "+r" (p0));
+                    x60 = *(volatile u16 *)(rc + 60);
+                    __asm__ volatile ("" : "+r" (x60));
+                    p0 |= x60;
+                    *(volatile u16 *)(cursor + 4) = (u16)p0;
+                }
+                cursor += 8;
+                {
+                    // Hold r3 across the mode re-read so its index stays in
+                    // r1 (`movs r1,#16; ldrsh r0,[r2,r1]`) as in the ROM.
+                    register u32 hold3 __asm__("r3");
+                    __asm__ volatile ("" : "=r" (hold3));
+                    int m2 = *(s16 *)(rc + 16);
+                    __asm__ volatile ("" : "+r" (hold3) : : "memory");
+                    register u32 sh3 __asm__("r3") = ((u32)rnd1 << 9);
+                    __asm__ volatile ("" : "+r" (sh3));
+                    if (m2 > 9) {
+                        register u32 m0 __asm__("r0");
+                        register u32 cp1 __asm__("r1");
+                        *(volatile u16 *)(cursor + 0) = 0x33Au;
+                        {
+                            register u32 w2 __asm__("r0");
+                            m0 = 0xFFFF8084u;
+                            __asm__ volatile ("" : "+r" (m0));
+                            cp1 = m0;
+                            __asm__ volatile ("" : "+r" (cp1));
+                            w2 = sh3;
+                            __asm__ volatile ("" : "+r" (w2));
+                            w2 |= cp1;
+                            *(volatile u16 *)(cursor + 2) = (u16)w2;
+                        }
+                        {
+                            register u32 x56 __asm__("r0") = *(volatile u16 *)(rc + 56);
+                            __asm__ volatile ("" : "+r" (x56));
+                            x56 += 16;
+                            __asm__ volatile ("" : "+r" (x56));
+                            rc = (u8 *)(uintptr_t)*(volatile u16 *)(rc + 58);
+                            __asm__ volatile ("" : "+r" (rc));
+                            __asm__ volatile ("" : "+r" (cp1));
+                            {
+                                register u32 sh __asm__("r1") = (u32)(uintptr_t)rc << 12;
+                                __asm__ volatile ("" : "+r" (sh));
+                                x56 |= sh;
+                            }
+                            *(volatile u16 *)(cursor + 4) = (u16)x56;
+                        }
+                        cursor += 8;
+                    }
+                    *(volatile u16 *)(cursor + 0) = 0x33Au;
+                    __asm__ volatile ("" : "+r" (rc));
+                    {
+                            register u32 w3 __asm__("r3");
+                            register u32 mbase __asm__("r2") = 0xFFFF8098u;
+                            register u32 mcp __asm__("r0");
+                            __asm__ volatile ("" : "+r" (mbase));
+                            mcp = mbase;
+                            __asm__ volatile ("" : "+r" (mcp));
+                            w3 = sh3 | mcp;
+                        *(volatile u16 *)(cursor + 2) = (u16)w3;
+                    }
+                    {
+                        register u8 *rr __asm__("r1") = *root;
+                        register u32 x58 __asm__("r3") = *(volatile u16 *)(rr + 58);
+                        register u32 p0 __asm__("r0");
+                        __asm__ volatile ("" : "+r" (x58));
+                        p0 = x58 << 12;
+                        __asm__ volatile ("" : "+r" (p0));
+                        rr = (u8 *)(uintptr_t)*(volatile u16 *)(rr + 56);
+                        __asm__ volatile ("" : "+r" (rr));
+                        p0 |= (u32)(uintptr_t)rr;
+                        *(volatile u16 *)(cursor + 4) = (u16)p0;
+                    }
+                    cursor += 8;
+                    return (void *)cursor;
+                }
+            } else {
+                register u32 c0 __asm__("r1") = 0x433Au;
+                register u32 v0 __asm__("r0");
+                __asm__ volatile ("" : "+r" (c0));
+                v0 = c0;
+                __asm__ volatile ("" : "+r" (v0));
+                *(volatile u16 *)(cursor + 0) = (u16)v0;
+                {
+                    register u32 sh0 __asm__("r0") = ((u32)rnd1 << 9);
+                    __asm__ volatile ("" : "+r" (sh0));
+                    t134 = 0xFFFFC088u;
+                    __asm__ volatile ("" : "+r" (t134));
+                    c134 = t134;
+                    __asm__ volatile ("" : "+r" (c134));
+                    __asm__ volatile ("" : "+r" (t134));
+                    sh0 |= c134;
+                    *(volatile u16 *)(cursor + 2) = (u16)sh0;
+                }
+                {
+                    register u32 x58 __asm__("r1") = *(volatile u16 *)(rc + 58);
+                    register u32 p0 __asm__("r0");
+                    register u32 lo __asm__("r2");
+                    __asm__ volatile ("" : "+r" (x58));
+                    p0 = x58 << 12;
+                    __asm__ volatile ("" : "+r" (p0));
+                    lo = *(volatile u16 *)(rc + 56);
+                    __asm__ volatile ("" : "+r" (lo));
+                    p0 |= lo;
+                    *(volatile u16 *)(cursor + 4) = (u16)p0;
+                }
+                cursor += 8;
+                return (void *)cursor;
+            }
+        }
+    }
 }
 void _08008AAC(void *a) __attribute__((alias("Course_Dispatch_08AAC")));
 void sub_08008AAC(void *a) __attribute__((alias("Course_Dispatch_08AAC")));
@@ -288,12 +363,8 @@ void *Course_Dispatch_08BB8(void *out) {
 void *_08008BB8(void *a) __attribute__((alias("Course_Dispatch_08BB8")));
 void *sub_08008BB8(void *a) __attribute__((alias("Course_Dispatch_08BB8")));
 
-void Course_Dispatch_08CA0(void *rec) { // _08008CA0: phase dispatcher — 9-entry table at 0x08008EB4 vs audit 21, blocked on indirect MovPc
-    // lsls #2; ldr r0,[r1,r0]; mov pc,r0 — indirect table target not proven, leave blocked
-    (void)rec;
-    // Exact VMA 0x08008CA0, pool 0x08008EB4 u32 table 9×4, but dispatch index via s16 at +0x10FC not proven via ramwatch
-}
-// No alias for 08CA0 — indirect MovPc 21 vs 9 remains blocked, not guessed
+// The 0x08008CA0 phase machine (2384 bytes) is owned by
+// src/scene_record_dispatch.c as CoursePhaseMachine_08CA0.
 
 // ROM entry alias.
 void RomEmit8AAC(void *rec) __attribute__((alias("Course_Dispatch_08AAC")));

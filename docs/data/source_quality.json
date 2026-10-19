@@ -3778,11 +3778,11 @@
    "size": 176
   },
   "0x08008aac": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 119,
-    "naked": true
+    "barrier": 45,
+    "directive": 1,
+    "pin": 28
    },
    "file": "src/course_dispatch.c",
    "name": "Course_Dispatch_08AAC",
@@ -13386,16 +13386,16 @@
  },
  "totals": {
   "asm": {
-   "bytes": 79496,
-   "functions": 219
+   "bytes": 79228,
+   "functions": 218
   },
   "c": {
    "bytes": 40002,
    "functions": 861
   },
   "c_fakematch": {
-   "bytes": 64730,
-   "functions": 577
+   "bytes": 64998,
+   "functions": 578
   },
   "partial": {
    "bytes": 3908,
