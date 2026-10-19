@@ -188,11 +188,10 @@
    "size": 36
   },
   "0x080013e0": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 75,
-    "naked": true
+    "barrier": 5,
+    "pin": 13
    },
    "file": "src/foundation_fa0.c",
    "name": "Helper_013E0",
@@ -1409,7 +1408,7 @@
    "detail": {
     "barrier": 6,
     "directive": 2,
-    "pin": 8
+    "pin": 9
    },
    "file": "src/runtime_hud.c",
    "name": "ObjList_03400",
@@ -1775,11 +1774,11 @@
    "size": 76
   },
   "0x08003fd4": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 81,
-    "naked": true
+    "barrier": 7,
+    "directive": 2,
+    "pin": 9
    },
    "file": "src/runtime_hud.c",
    "name": "ObjList_03FD4",
@@ -5704,13 +5703,11 @@
    "size": 124
   },
   "0x08011958": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
-    "barrier": 16,
+    "barrier": 18,
     "directive": 2,
-    "insn": 4,
-    "insn_lines": 4,
-    "pin": 20
+    "pin": 18
    },
    "file": "src/menu_ff78_l.c",
    "name": "MenuFF78_11958",
@@ -5800,11 +5797,11 @@
    "size": 116
   },
   "0x080120a8": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 105,
-    "naked": true
+    "barrier": 11,
+    "directive": 2,
+    "pin": 13
    },
    "file": "src/menu_ff78_e.c",
    "name": "MenuFF78_120A8",
@@ -5955,11 +5952,11 @@
    "size": 20
   },
   "0x08012c90": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 85,
-    "naked": true
+    "barrier": 5,
+    "directive": 7,
+    "pin": 13
    },
    "file": "src/menu_ff78_g.c",
    "name": "MenuFF78_12C90",
@@ -9553,22 +9550,19 @@
    "size": 108
   },
   "0x08024a18": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 57,
-    "naked": true
+    "directive": 2
    },
    "file": "src/save.c",
    "name": "SaveBlock2PreSave",
    "size": 128
   },
   "0x08024a98": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 56,
-    "naked": true
+    "barrier": 2,
+    "directive": 2
    },
    "file": "src/save.c",
    "name": "SaveBlock2PostLoad",
@@ -11767,11 +11761,10 @@
    "size": 28
   },
   "0x0802b098": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 116,
-    "naked": true
+    "barrier": 2,
+    "pin": 7
    },
    "file": "src/sound.c",
    "name": "SoundVCounter",
@@ -12734,11 +12727,10 @@
    "size": 120
   },
   "0x0802cc34": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 110,
-    "naked": true
+    "barrier": 11,
+    "pin": 15
    },
    "file": "src/runtime_state_dispatch.c",
    "name": "SoundStart_2CC34",
@@ -12751,22 +12743,20 @@
    "size": 64
   },
   "0x0802cd58": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 97,
-    "naked": true
+    "barrier": 4,
+    "pin": 19
    },
    "file": "src/sound_core.c",
    "name": "SoundFadeTick",
    "size": 200
   },
   "0x0802ce20": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 88,
-    "naked": true
+    "barrier": 3,
+    "pin": 23
    },
    "file": "src/runtime_state_dispatch.c",
    "name": "VoiceParamTick_2CE20",
@@ -13406,20 +13396,20 @@
  },
  "totals": {
   "asm": {
-   "bytes": 82228,
-   "functions": 233
+   "bytes": 80280,
+   "functions": 223
   },
   "c": {
    "bytes": 39674,
    "functions": 859
   },
   "c_fakematch": {
-   "bytes": 61830,
-   "functions": 564
+   "bytes": 64274,
+   "functions": 575
   },
   "partial": {
-   "bytes": 4404,
-   "functions": 19
+   "bytes": 3908,
+   "functions": 18
   }
  },
  "version": 1
