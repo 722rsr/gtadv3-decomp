@@ -4,122 +4,79 @@
 
 
 // _0800BA3C(idx, pA, pB) — twin A, 76-byte frame, sorted 5+4 row copies.
-// The ROM's transfer loop and high-register frame are exact here; its C lift
-// remains described by the adjacent assembly for future source reconstruction.
-__attribute__((naked)) void Award_CopyTwinA(int idx, void *pA, void *pB) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, r7, lr}\n"
-        "mov r7, sl\n"
-        "mov r6, r9\n"
-        "mov r5, r8\n"
-        "push {r5, r6, r7}\n"
-        "sub sp, #76\n"
-        "adds r4, r0, #0\n"
-        "str r1, [sp, #64]\n"
-        "str r2, [sp, #60]\n"
-        "movs r0, #0\n"
-        "mov r8, r0\n"
-        "movs r2, #0\n"
-        "ldr r1, 8f\n"
-        "mov r9, r1\n"
-        "lsls r0, r4, #3\n"
-        "adds r0, r0, r4\n"
-        "lsls r0, r0, #3\n"
-        "ldr r5, 9f\n"
-        "mov sl, r5\n"
-        "mov ip, r2\n"
-        "add r1, sl\n"
-        "adds r0, r0, r1\n"
-        "str r0, [sp, #72]\n"
-        "mov r3, sp\n"
-        "1:\n"
-        "lsls r6, r4, #3\n"
-        "str r6, [sp, #68]\n"
-        "mov r7, r8\n"
-        "cmp r7, #1\n"
-        "beq.n 2f\n"
-        "ldr r0, [sp, #64]\n"
-        "ldr r1, [r0, #0]\n"
-        "ldr r5, [sp, #72]\n"
-        "ldr r0, [r5, #0]\n"
-        "cmp r1, r0\n"
-        "bcs.n 2f\n"
-        "adds r0, r3, #0\n"
-        "ldr r1, [sp, #64]\n"
-        "ldmia r1!, {r5, r6, r7}\n"
-        "stmia r0!, {r5, r6, r7}\n"
-        "ldr r6, 10f\n"
-        "strh r2, [r6, #0]\n"
-        "lsls r0, r2, #16\n"
-        "cmp r0, #0\n"
-        "bne.n 3f\n"
-        "movs r0, #1\n"
-        "ldr r7, [sp, #60]\n"
-        "str r0, [r7, #0]\n"
-        "3:\n"
-        "adds r3, #12\n"
-        "adds r2, #1\n"
-        "movs r0, #1\n"
-        "mov r8, r0\n"
-        "2:\n"
-        "cmp r2, #4\n"
-        "bgt.n 4f\n"
-        "5:\n"
-        "ldr r1, [sp, #68]\n"
-        "adds r0, r1, r4\n"
-        "lsls r0, r0, #3\n"
-        "add r0, ip\n"
-        "add r0, r9\n"
-        "adds r1, r3, #0\n"
-        "add r0, sl\n"
-        "ldmia r0!, {r5, r6, r7}\n"
-        "stmia r1!, {r5, r6, r7}\n"
-        "adds r3, #12\n"
-        "adds r2, #1\n"
-        "4:\n"
-        "movs r0, #12\n"
-        "add ip, r0\n"
-        "ldr r1, [sp, #72]\n"
-        "adds r1, #12\n"
-        "str r1, [sp, #72]\n"
-        "cmp r2, #4\n"
-        "ble.n 1b\n"
-        "6:\n"
-        "ldr r1, 8f\n"
-        "ldr r2, [sp, #68]\n"
-        "adds r0, r2, r4\n"
-        "lsls r0, r0, #3\n"
-        "mov r3, sp\n"
-        "adds r2, r0, r1\n"
-        "ldr r5, 9f\n"
-        "mov r8, r5\n"
-        "movs r4, #4\n"
-        "7:\n"
-        "mov r6, r8\n"
-        "adds r1, r2, r6\n"
-        "adds r0, r3, #0\n"
-        "ldmia r0!, {r5, r6, r7}\n"
-        "stmia r1!, {r5, r6, r7}\n"
-        "adds r3, #12\n"
-        "adds r2, #12\n"
-        "subs r4, #1\n"
-        "cmp r4, #0\n"
-        "bge.n 7b\n"
-        "add sp, #76\n"
-        "pop {r3, r4, r5}\n"
-        "mov r8, r3\n"
-        "mov r9, r4\n"
-        "mov sl, r5\n"
-        "pop {r4, r5, r6, r7}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        ".align 2\n"
-        "8: .word 0x03001780\n"
-        "9: .word 0x000005E4\n"
-        "10: .word 0x0300274C\n"
-        ".syntax divided\n"
-    );
+__asm__(".set AwardWaBase, 0x03001780");
+__asm__(".set AwardRowOff, 0x000005E4");
+__asm__(".set AwardCell4C, 0x0300274C");
+extern u8 AwardWaBase;
+extern u8 AwardRowOff;
+extern u8 AwardCell4C;
+// The `.globl` assignments must sit inside the promoted body: the slice linker
+// only sees this function's own section, and a file-scope `.set` alone leaves
+// the symbols file-local, failing the link with "undefined reference to
+// `AwardWaBase'" (same recipe as race_scene_b1.c's WA_SPLIT_DECL).
+void Award_CopyTwinA(int idx_, void *pA, void *pB) {
+    typedef struct { u32 w[3]; } Blk12;
+    __asm__(".globl AwardWaBase\nAwardWaBase = 0x03001780\n"
+            ".globl AwardRowOff\nAwardRowOff = 0x000005E4\n"
+            ".globl AwardCell4C\nAwardCell4C = 0x0300274C\n");
+    u8 temp[60];
+    register int idx __asm__("r4") = idx_;
+    volatile u8 *pa = (u8 *)pA;
+    volatile u8 *pb = (u8 *)pB;
+    register u32 found __asm__("r8") = 0;
+    int count = 0;
+    u32 idx8;
+    register u32 base __asm__("r9") = (u32)(uintptr_t)&AwardWaBase;
+    u32 idx72 = (u32)(((idx << 3) + idx) << 3);
+    register u32 off __asm__("sl") = (u32)(uintptr_t)&AwardRowOff;
+    u32 rowoff = 0;
+    u8 *ptr = (u8 *)(idx72 + (base + off));
+    u8 *dst = temp;
+    u8 *rowp;
+    u32 sum;
+    u32 ro;
+    register int i __asm__("r4");
+    do {
+        idx8 = (u32)(idx << 3);
+        if (found != 1 && *(u32 *)pa < *(u32 *)ptr) {
+            u8 *d = dst;
+            __asm__ volatile ("" : "+r" (d));
+            register u8 *sA __asm__("r1");
+            sA = (u8 *)pa;
+            __asm__ volatile ("" : "+r" (sA));
+            volatile u16 *cell = (volatile u16 *)(uintptr_t)&AwardCell4C;
+            *(Blk12 *)d = *(Blk12 *)sA;
+            *cell = (u16)count;
+            if ((u16)count == 0)
+                *(int *)pb = 1;
+            dst += 12;
+            count++;
+            found = 1;
+        }
+        if (count <= 4) {
+            *(Blk12 *)dst = *(Blk12 *)(u8 *)(((idx8 + idx) << 3) + rowoff + base + off);
+            dst += 12;
+            count++;
+        }
+        rowoff += 12;
+        ptr += 12;
+    } while (count <= 4);
+    {
+        register u8 *wb __asm__("r1");
+        wb = &AwardWaBase;
+        __asm__ volatile ("" : "+r" (wb));
+        sum = (u32)((idx8 + idx) << 3);
+        __asm__ volatile ("" : : "r" (idx));
+        dst = temp;
+        rowp = (u8 *)(sum + (u32)(uintptr_t)wb);
+    }
+    ro = (u32)(uintptr_t)&AwardRowOff;
+    i = 4;
+    do {
+        *(Blk12 *)(rowp + ro) = *(Blk12 *)dst;
+        dst += 12;
+        rowp += 12;
+    } while (--i >= 0);
 }
 
 // _0800BB0C(idx, src) — twin B, 72-byte frame and the three WA flag cells.
