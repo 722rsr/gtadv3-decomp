@@ -4384,11 +4384,13 @@
    "size": 208
   },
   "0x0800bb0c": {
-   "class": "c_fakematch",
+   "class": "partial",
    "detail": {
-    "barrier": 2,
+    "barrier": 8,
     "directive": 1,
-    "pin": 4
+    "insn": 2,
+    "insn_lines": 3,
+    "pin": 43
    },
    "file": "src/award_twins.c",
    "name": "Award_CopyTwinB",
@@ -13394,12 +13396,12 @@
    "functions": 861
   },
   "c_fakematch": {
-   "bytes": 64998,
-   "functions": 578
+   "bytes": 64750,
+   "functions": 577
   },
   "partial": {
-   "bytes": 3908,
-   "functions": 18
+   "bytes": 4156,
+   "functions": 19
   }
  },
  "version": 1
