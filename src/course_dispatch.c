@@ -4,7 +4,7 @@
 // Course dispatch — VMA 0x08008AAC–0x080095F0
 // Mechanical translation with opaque volatile byte pointers, exact widths, explicit stack args, table strides, direct helper ABIs.
 
-extern int sub_08002BE8(void); // u32 random, s32
+extern int _08002BE8(void); // u32 random, s32
 
 extern void _08002C48(int value, u16 course);
 __asm__(".set AAC_TBLLO, 0x080CB110");
@@ -28,12 +28,12 @@ void *Course_Dispatch_08AAC(void *out_) {
     u32 c134;
     __asm__ volatile ("" : "+r" (cursor) : : "memory");
     {
-        int t = sub_08002BE8();
+        int t = _08002BE8();
         rnd1 = (s16)t;
     }
     __asm__ volatile ("" : "+r" (rnd1) : : "memory");
     {
-        int t = sub_08002BE8();
+        int t = _08002BE8();
         rnd2 = (s16)t;
     }
     __asm__ volatile ("" : "+r" (rnd2) : : "memory");
