@@ -3778,11 +3778,11 @@
    "size": 176
   },
   "0x08008aac": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 119,
-    "naked": true
+    "barrier": 45,
+    "directive": 1,
+    "pin": 28
    },
    "file": "src/course_dispatch.c",
    "name": "Course_Dispatch_08AAC",
@@ -4384,11 +4384,11 @@
    "size": 208
   },
   "0x0800bb0c": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 117,
-    "naked": true
+    "barrier": 2,
+    "directive": 1,
+    "pin": 4
    },
    "file": "src/award_twins.c",
    "name": "Award_CopyTwinB",
@@ -13386,16 +13386,16 @@
  },
  "totals": {
   "asm": {
-   "bytes": 79744,
-   "functions": 220
+   "bytes": 79228,
+   "functions": 218
   },
   "c": {
    "bytes": 40002,
    "functions": 861
   },
   "c_fakematch": {
-   "bytes": 64482,
-   "functions": 576
+   "bytes": 64998,
+   "functions": 578
   },
   "partial": {
    "bytes": 3908,
