@@ -16,7 +16,7 @@ __attribute__((weak)) int EepromWriteSector(u32 sector, const void *src) { (void
 __attribute__((weak)) int EepromVerifySector(u32 sector, const void *src) { (void)sector; (void)src; return 0; }
 
 __attribute__((weak)) void sub_0802D974(const void *src, void *dst, u32 mode) { CpuSet(src, dst, mode); }
-__attribute__((weak)) void sub_0802E0A4(const void *src, void *dst, u32 n) { (void)src; (void)dst; (void)n; }
+__attribute__((weak)) void sub_0802E0A4(void *dst, const void *src, u32 n) { (void)dst; (void)src; (void)n; }
 __attribute__((weak)) void sub_0802B234(void) {}
 __attribute__((weak)) void sub_0802B190(void) {}
 __attribute__((weak)) void sub_0802B1B8(void) {}
@@ -1237,134 +1237,92 @@ loop:
 }
 void _080249AC(void) __attribute__((alias("SaveCarRecordsUnpack")));
 
-__attribute__((naked)) void SaveBlock2PreSave(void) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, lr}\n"
-        "ldr r4, 1f\n"
-        "ldr r5, 2f\n"
-        "adds r1, r4, #0\n"
-        "adds r0, r5, #0\n"
-        "ldmia r0!, {r2, r3, r6}\n"
-        "stmia r1!, {r2, r3, r6}\n"
-        "ldmia r0!, {r2, r3, r6}\n"
-        "stmia r1!, {r2, r3, r6}\n"
-        "ldmia r0!, {r2, r3}\n"
-        "stmia r1!, {r2, r3}\n"
-        "ldmia r0!, {r2, r3, r6}\n"
-        "stmia r1!, {r2, r3, r6}\n"
-        "ldrh r0, [r0, #0]\n"
-        "strh r0, [r1, #0]\n"
-        "movs r6, #174\n"
-        "lsls r6, r6, #3\n"
-        "adds r0, r5, r6\n"
-        "ldr r0, [r0, #0]\n"
-        "str r0, [r4, #48]\n"
-        "ldr r1, 3f\n"
-        "adds r0, r5, r1\n"
-        "ldrh r0, [r0, #0]\n"
-        "strh r0, [r4, #52]\n"
-        "ldr r2, 4f\n"
-        "adds r0, r5, r2\n"
-        "ldrh r0, [r0, #0]\n"
-        "strh r0, [r4, #54]\n"
-        "bl _08024794\n"
-        "movs r3, #175\n"
-        "lsls r3, r3, #3\n"
-        "adds r0, r5, r3\n"
-        "ldr r0, [r0, #0]\n"
-        "str r0, [r4, #56]\n"
-        "adds r0, r4, #0\n"
-        "adds r0, #60\n"
-        "adds r6, #12\n"
-        "adds r1, r5, r6\n"
-        "ldr r2, [r1, #0]\n"
-        "str r2, [r4, #60]\n"
-        "movs r2, #96\n"
-        "bl sub_0802E0A4\n"
-        "movs r0, #188\n"
-        "lsls r0, r0, #3\n"
-        "adds r5, r5, r0\n"
-        "ldrh r0, [r5, #0]\n"
-        "adds r4, #160\n"
-        "strh r0, [r4, #0]\n"
-        "bl _0802494C\n"
-        "pop {r4, r5, r6}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        "movs r0, r0\n"
-        ".align 2, 0\n"
-        "1: .word 0x030013D0\n"
-        "2: .word 0x03001780\n"
-        "3: .word 0x00000574\n"
-        "4: .word 0x00000576\n"
-        ".syntax divided\n"
-    );
+void SaveBlock2PreSave(void) {
+    // Two partial block copies spell the ROM's movstr chunk run: a 32-byte
+    // copy (12+12+8) then a 12-byte copy and one halfword. Advancing the C
+    // pointer variables with `+=` between the statements is what lets the
+    // compiler's own post-increment bookkeeping satisfy the increments, so
+    // no `adds` appears before the second copy (measured: recomputing
+    // `dst + 32` each time emits the two extra `adds`).
+    typedef struct { u32 w[8]; } Blk32;
+    typedef struct { u32 w[3]; } Blk12;    RAM_DEF_030013D0;
+    RAM_DEF_03001780;
+    u8 *dst = (u8 *)RAM_SYM_030013D0;
+    u8 *src = (u8 *)RAM_SYM_03001780;
+    u8 *d = dst;
+    u8 *s = src;
+    *(Blk32 *)d = *(Blk32 *)s;
+    d += 32; s += 32;
+    *(Blk12 *)d = *(Blk12 *)s;
+    d += 12; s += 12;
+    *(u16 *)d = *(u16 *)s;
+    *(u32 *)(dst + 48) = *(u32 *)(src + 1392);
+    *(u16 *)(dst + 52) = *(u16 *)(src + 0x574);
+    *(u16 *)(dst + 54) = *(u16 *)(src + 0x576);
+    SaveGaragePack();
+    *(u32 *)(dst + 56) = *(u32 *)(src + 1400);
+    {
+        u8 *dst60 = dst + 60;
+        *(u32 *)dst60 = *(u32 *)(src + 1404);
+        sub_0802E0A4(dst60, src + 1404, 96);
+    }
+    {
+        u16 tail = *(u16 *)(src + 1504);
+        *(u16 *)(dst + 160) = tail;
+    }
+    SaveCarRecordsPack();
 }
 void _08024A18(void) __attribute__((alias("SaveBlock2PreSave")));
 
-__attribute__((naked)) void SaveBlock2PostLoad(void) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, lr}\n"
-        "ldr r5, 1f\n"
-        "ldr r4, 2f\n"
-        "adds r1, r5, #0\n"
-        "adds r0, r4, #0\n"
-        "ldmia r0!, {r2, r3, r6}\n"
-        "stmia r1!, {r2, r3, r6}\n"
-        "ldmia r0!, {r2, r3, r6}\n"
-        "stmia r1!, {r2, r3, r6}\n"
-        "ldmia r0!, {r2, r3}\n"
-        "stmia r1!, {r2, r3}\n"
-        "ldmia r0!, {r2, r3, r6}\n"
-        "stmia r1!, {r2, r3, r6}\n"
-        "ldrh r0, [r0, #0]\n"
-        "strh r0, [r1, #0]\n"
-        "movs r6, #174\n"
-        "lsls r6, r6, #3\n"
-        "adds r1, r5, r6\n"
-        "ldr r0, [r4, #48]\n"
-        "str r0, [r1, #0]\n"
-        "ldrh r1, [r4, #52]\n"
-        "ldr r2, 3f\n"
-        "adds r0, r5, r2\n"
-        "strh r1, [r0, #0]\n"
-        "ldrh r1, [r4, #54]\n"
-        "ldr r3, 4f\n"
-        "adds r0, r5, r3\n"
-        "strh r1, [r0, #0]\n"
-        "bl _0802488C\n"
-        "adds r6, #8\n"
-        "adds r1, r5, r6\n"
-        "ldr r0, [r4, #56]\n"
-        "str r0, [r1, #0]\n"
-        "ldr r1, 5f\n"
-        "adds r0, r5, r1\n"
-        "adds r1, r4, #0\n"
-        "adds r1, #60\n"
-        "ldr r2, [r4, #60]\n"
-        "str r2, [r0, #0]\n"
-        "movs r2, #96\n"
-        "bl sub_0802E0A4\n"
-        "adds r4, #160\n"
-        "ldrh r0, [r4, #0]\n"
-        "movs r2, #188\n"
-        "lsls r2, r2, #3\n"
-        "adds r5, r5, r2\n"
-        "strh r0, [r5, #0]\n"
-        "bl _080249AC\n"
-        "pop {r4, r5, r6}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        ".align 2, 0\n"
-        "1: .word 0x03001780\n"
-        "2: .word 0x030013D0\n"
-        "3: .word 0x00000574\n"
-        "4: .word 0x00000576\n"
-        "5: .word 0x0000057C\n"
-        ".syntax divided\n"
-    );
+void SaveBlock2PostLoad(void) {
+    // The unpack direction of SaveBlock2PreSave: same movstr chunk run
+    // (32-byte copy then 12 then one halfword, pointer variables advanced
+    // with `+=` between statements) with the scratch block (0x03001780)
+    // as destination. Remaining fields land in the same offsets read back
+    // from the other direction; the 96-byte field is a word copy followed
+    // by a RuntimeMemcpy of the full span, and the trailing halfword is
+    // loaded before the destination constant is synthesized.
+    // The two empty asm barriers on the 96-byte-field pointers are load
+    // bearing: they force both address computations ahead of the word
+    // store so the store's value goes to the scratch register, which is
+    // the ROM's schedule (measured: without them the compiler sinks the
+    // source pointer setup past the store and the value reuses its reg).
+    typedef struct { u32 w[8]; } Blk32;
+    typedef struct { u32 w[3]; } Blk12;    RAM_DEF_030013D0;
+    RAM_DEF_03001780;
+    u8 *dst = (u8 *)RAM_SYM_03001780;
+    u8 *src = (u8 *)RAM_SYM_030013D0;
+    u8 *d = dst;
+    u8 *s = src;
+    *(Blk32 *)d = *(Blk32 *)s;
+    d += 32; s += 32;
+    *(Blk12 *)d = *(Blk12 *)s;
+    d += 12; s += 12;
+    *(u16 *)d = *(u16 *)s;
+    *(u32 *)(dst + 1392) = *(u32 *)(src + 48);
+    {
+        u16 v = *(u16 *)(src + 52);
+        *(u16 *)(dst + 0x574) = v;
+    }
+    {
+        u16 v = *(u16 *)(src + 54);
+        *(u16 *)(dst + 0x576) = v;
+    }
+    SaveGarageUnpack();
+    *(u32 *)(dst + 1400) = *(u32 *)(src + 56);
+    {
+        u8 *dst57c = dst + 0x57c;
+        u8 *src60 = src + 60;
+        __asm__ volatile ("" : "+r" (dst57c));
+        __asm__ volatile ("" : "+r" (src60));
+        *(u32 *)dst57c = *(u32 *)(src + 60);
+        sub_0802E0A4(dst57c, src60, 96);
+    }
+    {
+        u16 tail = *(u16 *)(src + 160);
+        *(u16 *)(dst + 1504) = tail;
+    }
+    SaveCarRecordsUnpack();
 }
 void _08024A98(void) __attribute__((alias("SaveBlock2PostLoad")));
 
