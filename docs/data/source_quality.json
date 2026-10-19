@@ -4373,11 +4373,11 @@
    "size": 76
   },
   "0x0800ba3c": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 101,
-    "naked": true
+    "barrier": 4,
+    "directive": 1,
+    "pin": 7
    },
    "file": "src/award_twins.c",
    "name": "Award_CopyTwinA",
@@ -13386,16 +13386,16 @@
  },
  "totals": {
   "asm": {
-   "bytes": 79952,
-   "functions": 221
+   "bytes": 79744,
+   "functions": 220
   },
   "c": {
    "bytes": 40002,
    "functions": 861
   },
   "c_fakematch": {
-   "bytes": 64274,
-   "functions": 575
+   "bytes": 64482,
+   "functions": 576
   },
   "partial": {
    "bytes": 3908,
