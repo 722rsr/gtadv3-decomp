@@ -173,6 +173,11 @@ See [candidate-length diagnostics](findings/oversized_plus4_class.md).
   and cast at the dereference. See
   [the 0x08013108 lift](findings/menu_ff78_13108_lift.md) for the measured
   recipes behind a 728-byte body that reaches 708 bytes in C.
+- A **pinned** base is copied before every load that uses it
+  (`adds r0,r7,#0 / movs r1,#0 / ldrsh r0,[r0,r1]`); an **unpinned** local is
+  read through directly (`movs r1,#0 / ldrsh r0,[r7,r1]`). A pinned variable
+  is a user variable and the load's address cannot reuse its register. See
+  [the 0x08002A764 lift](findings/garage_2a764_lift.md).
 - An assembler-resolved absolute base can preserve a pool load before address
   arithmetic. Keep its definition in the function section. See
   [the track-award example](findings/track_car_26180_pool_order.md).
