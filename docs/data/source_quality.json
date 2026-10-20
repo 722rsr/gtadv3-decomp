@@ -91,12 +91,10 @@
    "size": 172
   },
   "0x080008f4": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
     "barrier": 18,
-    "insn": 1,
-    "insn_lines": 1,
-    "pin": 38
+    "pin": 37
    },
    "file": "src/agbmain_session.c",
    "name": "SessionVerify_080008F4",
@@ -13396,12 +13394,12 @@
    "functions": 861
   },
   "c_fakematch": {
-   "bytes": 64750,
-   "functions": 577
+   "bytes": 65114,
+   "functions": 578
   },
   "partial": {
-   "bytes": 4156,
-   "functions": 19
+   "bytes": 3792,
+   "functions": 18
   }
  },
  "version": 1

@@ -669,27 +669,25 @@ int SessionVerify_080008F4(void *buf)
                 returnState[6] = (u8)recordBit;
             }
             {
-                // MEASURED WALL (2026-10-17): the ROM's in-place
-                // `ldrb r7, [r7, #1]` (0x08000A3A) is not reachable from C
-                // here. agbcc refuses to fold `reg+1` into the ldrb addressing
-                // mode when the base is an asm-pinned regvar, and without the
-                // pin `bit5Header = *(u8 *)(bit5Header + 1)` either copy-
-                // propagates the base into `record`'s pseudo and binds the
-                // result to the consumer (dest r1), or -- behind `+l`
-                // barriers that pin the home to r7 -- reload splits the
-                // load's destination into r0 and copies it back
-                // (`ldrb r0,[r7,#1]; adds r7,r0`). The plain self-reference
-                // only survives on a fresh local with a simple live range
-                // (scratch `build/scratch_ldrb*.c`); `record` is loop-carried.
-                // The one-instruction splice stays.
-                register u32 bit5Header __asm__("r7") =
-                    (u32)(uintptr_t)record;
+                // The ROM's in-place `ldrb r7, [r7, #1]` (0x080008F4 + 0x146)
+                // loads into the same register it reads from, and the base is
+                // dead straight after. agbcc emits that shape only for a
+                // NON-volatile lvalue: the front end then makes the access
+                // `(set REG (zero_extend (mem:QI ...)))` with REG the
+                // variable itself, so the result lands in `record`'s own
+                // register and the following shift reads it back from there
+                // (`lsls r1, r7, #27`). A `volatile` lvalue goes through
+                // `load_volatile`, which materialises a per-access pseudo and
+                // copies it out (`ldrb r0,[r7,#1]; adds r7,r0`), and an
+                // asm-pinned regvar base cannot fold `+1` into the addressing
+                // mode at all. See docs/findings/register_shaping_levers.md,
+                // "Non-volatile lvalues: the direct form loads into the
+                // register you pinned".
                 register u32 recordBit __asm__("r1");
                 register u32 stateMask __asm__("r0");
                 register u32 stateOld __asm__("r4");
-                __asm__ volatile ("ldrb %0, [%0, #1]"
-                                  : "+l" (bit5Header));
-                recordBit = bit5Header << 27;
+                record = (volatile u8 *)(uintptr_t)*(u8 *)(record + 1);
+                recordBit = (u32)(uintptr_t)record << 27;
                 recordBit >>= 31;
                 recordBit <<= 5;
                 stateMask = 33;
