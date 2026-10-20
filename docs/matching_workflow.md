@@ -167,6 +167,12 @@ See [candidate-length diagnostics](findings/oversized_plus4_class.md).
   consecutive constant-index loads the same register, and the ROM's compiler
   did not. Nine `partial` bodies (2,400 B) are gated on that one choice. See
   [the indexed halfword scratch](findings/indexed_halfword_scratch.md).
+- A pointer offset stays two instructions (`adds r1,r7,#0 / adds r1,#138`)
+  only while the address is a pointer; a `(uintptr_t)` cast turns it into an
+  integer sum and the compiler folds it to one instruction. Keep the pointer
+  and cast at the dereference. See
+  [the 0x08013108 lift](findings/menu_ff78_13108_lift.md) for the measured
+  recipes behind a 728-byte body that reaches 708 bytes in C.
 - An assembler-resolved absolute base can preserve a pool load before address
   arithmetic. Keep its definition in the function section. See
   [the track-award example](findings/track_car_26180_pool_order.md).
