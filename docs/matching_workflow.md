@@ -161,6 +161,12 @@ See [candidate-length diagnostics](findings/oversized_plus4_class.md).
   admits them only after reload, and nothing recreates them). `0x0802C160`
   keeps its one-instruction asm splice. See
   [register-indexed byte loads](findings/byte_ldrsb_register_index.md).
+- The *signed halfword* register-indexed load IS reachable from C -- a
+  non-volatile `*(s16 *)` lvalue gives the ROM's `movs rX,#k / ldrsh
+  rY,[base,rX]` -- but the scratch's hard register is not: agbcc gives two
+  consecutive constant-index loads the same register, and the ROM's compiler
+  did not. Nine `partial` bodies (2,400 B) are gated on that one choice. See
+  [the indexed halfword scratch](findings/indexed_halfword_scratch.md).
 - An assembler-resolved absolute base can preserve a pool load before address
   arithmetic. Keep its definition in the function section. See
   [the track-award example](findings/track_car_26180_pool_order.md).
