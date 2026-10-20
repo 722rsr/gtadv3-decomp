@@ -328,3 +328,89 @@ loads before calls or fold the address sum. The packet-send call uses
 owner now exports that spelling in the matching-slice manifest as well. The
 128-byte body has no instruction-bearing asm, matches exactly, and passes both
 the focused and aggregate source-only slice links.
+
+## A switch's default can share a case body
+
+`0x080022920` (`RaceVM_022920`, 244 B) dispatches on a work-area value with
+
+```
+cmp r1, #1
+beq case1
+cmp r1, #2
+beq case2
+case1:            <- the fall-through for every other value
+```
+
+so an unmatched value runs case 1's body. That is a `switch` whose `default`
+label sits on the same body as `case 1`, and the source order is `default`
+first:
+
+```c
+switch (value) {
+default:
+case 1:
+    *(volatile u16 *)(uintptr_t)(rec + 132) = 0;
+    break;
+case 2:
+    *(volatile u16 *)(uintptr_t)(rec + 132) = 1;
+    break;
+}
+```
+
+Written the other way round (`case 1:` then `default:`) the body is the same,
+but writing `default: break;` as a separate empty arm puts both bodies out of
+line and adds a branch to the end -- 241 of 244 bytes. The empty `default`
+also changes the source-order placement, so it is not interchangeable with an
+omitted `default` (an omitted one measures the same 241).
+
+## The switch's controlling value is copied explicitly
+
+The same body copies the value into r1 before the dispatch
+(`mov r1, r9 / cmp r1, #1`) because the case bodies want r0. Left to itself
+agbcc puts the copy in r0 -- the lowest free register -- and the comparison
+then reads the wrong register. Making the copy explicit and pinned fixes it:
+
+```c
+register s32 r1v __asm__("r1");
+r1v = r9v;
+switch (r1v) { ... }
+```
+
+An unpinned copy does not work (the same 241): the register has to be pinned,
+because the pinned variable's own home is the register the comparison reads.
+
+## A stack argument can be an assignment
+
+`0x080022920` passes a value that is also kept in another register, and the
+ROM materialises it once:
+
+```
+movs r0, #4
+str  r0, [sp, #0]
+movs r1, #1
+mov  sl, r1
+str  r1, [sp, #4]
+```
+
+The copy into sl and the stack store share one materialisation, so the
+argument is the assignment itself:
+
+```c
+rslv = 1;
+_08007770(0, (void *)(uintptr_t)r8v, 0, 0, 4, (rslv = 1));
+```
+
+Passing the variable instead stores sl, and passing the literal materialises
+the 1 twice (once for sl, once for the argument).
+
+## A pointer offset is two instructions only while the address stays a pointer
+
+`0x08002A764` (196 B, measured but not yet landed) is the clearest case:
+every `rec + N` in the ROM is `adds rX, r7, #0 / adds rX, #N`, and that is
+what a *pointer* expression gives. The same expression with a `(uintptr_t)`
+cast in the middle becomes an integer sum and the compiler folds it to
+`movs rX, #N / adds rX, rX, r7` -- one instruction fewer, and the body stops
+matching. The same applies to the signed reads: `*(s16 *)ptr` (a plain
+lvalue) is the form that gives the ROM's register-indexed
+`movs rX, #0 / ldrsh rY, [base, rX]`, and a `(uintptr_t)` cast turns it into
+a copy of the base plus the same index form.
