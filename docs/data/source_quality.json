@@ -8970,11 +8970,10 @@
    "size": 4
   },
   "0x08022920": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 103,
-    "naked": true
+    "directive": 1,
+    "pin": 9
    },
    "file": "src/race_phase_vms.c",
    "name": "RaceVM_022920",
@@ -13386,16 +13385,16 @@
  },
  "totals": {
   "asm": {
-   "bytes": 79228,
-   "functions": 218
+   "bytes": 78984,
+   "functions": 217
   },
   "c": {
    "bytes": 40002,
    "functions": 861
   },
   "c_fakematch": {
-   "bytes": 65114,
-   "functions": 578
+   "bytes": 65358,
+   "functions": 579
   },
   "partial": {
    "bytes": 3792,
