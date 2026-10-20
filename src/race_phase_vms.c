@@ -22,6 +22,7 @@
 // ============================================================================
 
 #include "gtadv/foundation.h"
+#include "gtadv/ram_blocks.h"
 
 // ---- external callees (C lifts or asm trampolines) -------------------------
 extern void *_08004B68(void);                       // car-record base getter
@@ -1428,123 +1429,76 @@ void sub_08002291C(void *rec) __attribute__((alias("RaceVM_02291C")));
 // base/dst; [rec+120]=rec+136, [rec+124]=rec+8, [rec+8]=0, [rec+12]=1;
 // D77C x2; {+16:6, +18:5}; u32[rec+136]=2; [0x030027F6]=0; u16[rec+132] =
 // (variant==2) ? 1 : 0.
-__attribute__((naked)) void RaceVM_022920(void *rec) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        ".L22920_080022920:\n"
-        "	push	{r4, r5, r6, r7, lr}\n"
-        "	mov	r7, sl\n"
-        "	mov	r6, r9\n"
-        "	mov	r5, r8\n"
-        "	push	{r5, r6, r7}\n"
-        "	sub	sp, #8\n"
-        "	adds	r7, r0, #0\n"
-        "	ldr r0, .L22920_0800229E8\n"
-        "	ldr r1, .L22920_0800229EC\n"
-        "	adds	r4, r0, r1\n"
-        "	movs	r1, #0\n"
-        "	ldrsh	r0, [r4, r1]\n"
-        "	mov	r9, r0\n"
-        "	movs	r0, #51\n"
-        "	bl 0x0802B214\n"
-        "	movs	r5, #0\n"
-        "	strh	r5, [r4, #0]\n"
-        "	ldr r0, .L22920_0800229F0\n"
-        "	mov	r8, r0\n"
-        "	movs	r0, #4\n"
-        "	str	r0, [sp, #0]\n"
-        "	movs	r1, #1\n"
-        "	mov	sl, r1\n"
-        "	str	r1, [sp, #4]\n"
-        "	movs	r0, #0\n"
-        "	mov	r1, r8\n"
-        "	movs	r2, #0\n"
-        "	movs	r3, #0\n"
-        "	bl 0x08007770\n"
-        "	movs	r0, #6\n"
-        "	str	r0, [r7, #80]\n"
-        "	movs	r0, #20\n"
-        "	str	r0, [r7, #92]\n"
-        "	mov	r1, sl\n"
-        "	str	r1, [r7, #104]\n"
-        "	adds	r6, r7, #0\n"
-        "	adds	r6, #8\n"
-        "	adds	r0, r6, #0\n"
-        "	bl 0x0800DAB8\n"
-        "	ldr r4, .L22920_0800229F4\n"
-        "	adds	r0, r4, #0\n"
-        "	movs	r1, #1\n"
-        "	movs	r2, #0\n"
-        "	movs	r3, #4\n"
-        "	bl 0x08007614\n"
-        "	adds	r0, r4, #0\n"
-        "	movs	r1, #1\n"
-        "	movs	r2, #1\n"
-        "	movs	r3, #5\n"
-        "	bl 0x08007614\n"
-        "	mov	r0, r8\n"
-        "	adds	r1, r7, #0\n"
-        "	bl 0x0800798C\n"
-        "	adds	r0, r7, #0\n"
-        "	bl 0x08007A58\n"
-        "	adds	r4, r7, #0\n"
-        "	adds	r4, #136\n"
-        "	str	r4, [r7, #120]\n"
-        "	str	r6, [r7, #124]\n"
-        "	str	r5, [r7, #8]\n"
-        "	mov	r0, sl\n"
-        "	strh	r0, [r7, #12]\n"
-        "	adds	r0, r7, #0\n"
-        "	adds	r0, #28\n"
-        "	movs	r2, #32\n"
-        "	negs	r2, r2\n"
-        "	movs	r1, #0\n"
-        "	bl 0x0800D77C\n"
-        "	adds	r0, r7, #0\n"
-        "	adds	r0, #20\n"
-        "	movs	r1, #0\n"
-        "	movs	r2, #160\n"
-        "	bl 0x0800D77C\n"
-        "	movs	r1, #6\n"
-        "	strh	r1, [r7, #16]\n"
-        "	movs	r0, #5\n"
-        "	strh	r0, [r7, #18]\n"
-        "	movs	r0, #2\n"
-        "	str	r0, [r4, #0]\n"
-        "	ldr r0, .L22920_0800229F8\n"
-        "	strh	r5, [r0, #0]\n"
-        "	mov	r1, r9\n"
-        "	cmp	r1, #1\n"
-        "	beq .L22920_0800229DE\n"
-        "	cmp	r1, #2\n"
-        "	beq .L22920_0800229FC\n"
-        ".L22920_0800229DE:\n"
-        "	adds	r0, r7, #0\n"
-        "	adds	r0, #132\n"
-        "	strh	r5, [r0, #0]\n"
-        "	b .L22920_080022A04\n"
-        "	movs	r0, r0\n"
-        ".L22920_0800229E8: .word 0x03001780\n"
-        ".L22920_0800229EC: .word 0x00001078\n"
-        ".L22920_0800229F0: .word 0x0839E9C0\n"
-        ".L22920_0800229F4: .word 0x082A798C\n"
-        ".L22920_0800229F8: .word 0x030027F6\n"
-        ".L22920_0800229FC:\n"
-        "	adds	r0, r7, #0\n"
-        "	adds	r0, #132\n"
-        "	mov	r1, sl\n"
-        "	strh	r1, [r0, #0]\n"
-        ".L22920_080022A04:\n"
-        "	add	sp, #8\n"
-        "	pop	{r3, r4, r5}\n"
-        "	mov	r8, r3\n"
-        "	mov	r9, r4\n"
-        "	mov	sl, r5\n"
-        "	pop	{r4, r5, r6, r7}\n"
-        "	pop	{r0}\n"
-        "	bx	r0\n"
-        ".syntax divided\n"
-    );
+// ============================================================================
+// code_241c8.s sub_080022920 (0x080022920, 0xF4 B) -- results constructor #2
+// (template 0x0839E9C0): work-area gate at WA+0x1078, then the same object
+// build the #1 constructor does. The gate value picks the cell written at
+// rec+132: 1 -> 0, 2 -> 1, anything else -> 0.
+//
+// The gate is a signed halfword at WA+0x1078; the ROM reads it with the
+// register-indexed form (`movs r1,#0 / ldrsh r0,[r4,r1]`), so the read is a
+// plain (non-volatile) s16 lvalue -- a volatile one becomes ldrh plus a
+// sign extension. The two pool words that build the address (0x03001780
+// and 0x1078) come from the RAM_SYM recipe and a separate offset variable;
+// two integer literals would fold into one pool word.
+void RaceVM_022920(void *rec) {
+    RAM_DEF_03001780;
+    register u32 wa_base __asm__("r0") = (u32)RAM_SYM_03001780;
+    register u32 wa_off __asm__("r1") = 0x1078u;
+    register u32 r4v __asm__("r4");
+    register u32 r5v __asm__("r5");
+    register u32 r6v __asm__("r6");
+    register s32 r9v __asm__("r9");
+    register s32 r1v __asm__("r1");
+    register u32 rslv __asm__("r10");
+    register volatile u32 *r8v __asm__("r8");
+    volatile u8 *r7 = (volatile u8 *)rec;
+
+    r4v = wa_base + wa_off;
+    r9v = (s32)*(s16 *)(uintptr_t)r4v;
+    _0802B214(51);
+    r5v = 0;
+    *(volatile u16 *)(uintptr_t)r4v = (u16)r5v;
+    r8v = (volatile u32 *)0x0839E9C0u;
+    // The sixth argument is the assignment: the ROM materialises the 1 in
+    // r1, copies it into sl and stores r1 to the stack, so the copy and
+    // the store share one materialisation.
+    _08007770(0, (void *)(uintptr_t)r8v, 0, 0, 4, (rslv = 1));
+    *(volatile u32 *)(uintptr_t)(r7 + 80) = 6;
+    *(volatile u32 *)(uintptr_t)(r7 + 92) = 20;
+    *(volatile u32 *)(uintptr_t)(r7 + 104) = rslv;
+    r6v = (u32)(uintptr_t)(r7 + 8);
+    _0800DAB8((void *)(uintptr_t)r6v);
+    r4v = 0x082A798Cu;
+    _08007614((void *)(uintptr_t)r4v, 1, 0, 4);
+    _08007614((void *)(uintptr_t)r4v, 1, 1, 5);
+    _0800798C((void *)(uintptr_t)r8v, (void *)(uintptr_t)r7);
+    _08007A58((void *)(uintptr_t)r7);
+    r4v = (u32)(uintptr_t)(r7 + 136);
+    *(volatile u32 *)(uintptr_t)(r7 + 120) = r4v;
+    *(volatile u32 *)(uintptr_t)(r7 + 124) = r6v;
+    *(volatile u32 *)(uintptr_t)(r7 + 8) = r5v;
+    *(volatile u16 *)(uintptr_t)(r7 + 12) = (u16)rslv;
+    _0800D77C((void *)(uintptr_t)(r7 + 28), 0, -32);
+    _0800D77C((void *)(uintptr_t)(r7 + 20), 0, 160);
+    *(volatile u16 *)(uintptr_t)(r7 + 16) = 6;
+    *(volatile u16 *)(uintptr_t)(r7 + 18) = 5;
+    *(volatile u32 *)(uintptr_t)r4v = 2;
+    *(volatile u16 *)(uintptr_t)0x030027F6u = (u16)r5v;
+    // The ROM copies the gate value into r1 before the dispatch and keeps
+    // the case bodies in r0, so the copy is explicit and pinned here.
+    r1v = r9v;
+    switch (r1v) {
+    // The ROM's dispatch tests 1 then 2 and falls through into the 1 arm
+    // for every other value, so the default shares case 1's body.
+    default:
+    case 1:
+        *(volatile u16 *)(uintptr_t)(r7 + 132) = (u16)r5v;
+        break;
+    case 2:
+        *(volatile u16 *)(uintptr_t)(r7 + 132) = (u16)rslv;
+        break;
+    }
 }
 
 void _080022920(void *a) __attribute__((alias("RaceVM_022920")));
