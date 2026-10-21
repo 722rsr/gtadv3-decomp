@@ -481,9 +481,12 @@ void _080020198(void *rec0, int a1, int a2) {
         areaBase = 0x03001D64u + (u32)(v * 3) * 4u;
     } else {
         register int s28 __asm__("r0");
-        register int off28 __asm__("r1") = 28;
-        __asm__ volatile("ldrsh %0, [%1, %2]"
-                         : "=r"(s28) : "r"(rec), "r"(off28) : "memory");
+        // Zero-cost liveness pin ("=r" before, "r" after): keeps r3 out of
+        // the extendhisi2 scratch set so the constant-index load takes r1.
+        register int hold __asm__("r3");
+        __asm__ volatile("" : "=r"(hold));
+        s28 = (int)*(s16 *)(uintptr_t)(rec + 28);
+        __asm__ volatile("" : : "r"(hold));
         rowOff = (u32)s28 * 72u;
         areaBase = 0x03001DA0u;
     }
@@ -513,7 +516,11 @@ void _080020198(void *rec0, int a1, int a2) {
         }
     }
     _0800D95C((void *)raw, (const void *)(uintptr_t)area, 3);
+    // Same liveness pin: the ROM's scratch is r3, so exclude r2.
+    register int hold2 __asm__("r2");
+    __asm__ volatile("" : "=r"(hold2));
     int c164 = (int)*(s16 *)(uintptr_t)(rec + 164);
+    __asm__ volatile("" : : "r"(hold2));
     if (c164 <= 2) {
         if (sel == 1) {
             RSE_CALLEE(_08002B368, sub_0802B368)(1);

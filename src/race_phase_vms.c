@@ -1119,12 +1119,12 @@ void RaceVM_022624(void *rec, int r1, u32 v) {
         register s32 cur asm("r0");
         cur = *(s16 *)r4;
         if (_08026068(cur) == 1) {
-            register int zero_place asm("r2") = 0;
-            __asm__ volatile("" : "+r"(zero_place));
             register s32 cur_again asm("r0");
-            __asm__ volatile(".code 16\n\tldrsh %0, [%1, %2]"
-                             : "=r"(cur_again)
-                             : "r"(r4), "r"(zero_place));
+            /* ROM's second zero-index load takes r2, not r1: keep r1 live. */
+            register int hold __asm__("r1");
+            __asm__ volatile("" : "=r"(hold));
+            cur_again = *(s16 *)r4;
+            __asm__ volatile("" : : "r"(hold));
             u32 place = sub_0800223C0(cur_again);
             __asm__(".globl RaceVM_WA\nRaceVM_WA = 0x03001780\n");
             register u32 wa asm("r1") = (uintptr_t)RaceVM_WA;
