@@ -11325,11 +11325,9 @@
    "size": 40
   },
   "0x08028f40": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 104,
-    "naked": true
+    "pin": 1
    },
    "file": "src/garage_records.c",
    "name": "_080028F40",
@@ -13346,16 +13344,16 @@
  },
  "totals": {
   "asm": {
-   "bytes": 73804,
-   "functions": 200
+   "bytes": 73544,
+   "functions": 199
   },
   "c": {
    "bytes": 41230,
    "functions": 865
   },
   "c_fakematch": {
-   "bytes": 70838,
-   "functions": 597
+   "bytes": 71098,
+   "functions": 598
   },
   "partial": {
    "bytes": 2264,

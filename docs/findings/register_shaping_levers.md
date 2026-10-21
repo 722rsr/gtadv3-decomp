@@ -425,6 +425,18 @@ unavailable for the callee-save staging, so agbcc emits
 `mov r7,r9 / mov r6,r8 / push {r6,r7}`. Unpinned, the allocator gives the
 pointer r7 on its own and the staging matches.
 
+The pin also decides the *address form* of every sub-word store. agbcc
+materialises the address of a pinned base -- `adds r1,r7,#0`, `adds r1,#20`,
+`movs r0,#1`, `strh r0,[r1]` -- and folds the offset only for word stores
+(`str r0,[r7,#88]`). So a `partial` body whose leftover splice is an
+immediate-offset `strh rX,[r7,#off]` cannot lose it while the record pointer
+stays pinned; measured on `MenuFF78_15304` (0x08015304), where replacing the
+three splices with plain C costs 2 instructions each, and unpinning instead
+restores the stores but re-stages the prologue (`mov r7,r9`, `mov r6,r8`,
+`push {r6,r7}`) and three other registers. A pinned *struct* pointer does not
+help either: the field store folds through the argument pseudo and uses the
+incoming register, not the pin.
+
 The same body also shows a wrong-code hazard worth recognising: with
 `int t = cond ? 1 : 0;` (a rematerialisable local), agbcc put `t` in **r7**
 while `rec` was pinned there, and reused r7 for `rec + 186` afterwards, so the
