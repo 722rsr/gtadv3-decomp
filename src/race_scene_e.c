@@ -10,7 +10,7 @@
 //   _080020498 (0x08020498) — 5-arg emit helper (mode 0: 01FADC; mode 1: 01FB58 loop)
 //   _080020518 (0x08020518) — scene setup A (03B9C path + 3x 7BFC + DBE8)
 //   _080020690 (0x08020690) — scene setup B (03B9C path + 7BFC + DBE8)
-//   _080020784 (0x08020784) — scene setup C (03954 path + 7BFC + DBE8)
+//   _080020784 (0x08020784) — scene setup C (03954 path + 7BFC + DBE8), C lift of the 20690 twin
 //   _08002087C (0x0802087C) — 12-way event dispatcher (table 0x08020894)
 //   _080020958 (0x08020958) — FBC-gated +84 store (5/6 via 04B68 +2)
 //   _0800209A0 (0x080209A0) — big record setup (templates, car walk, 8-way table)
@@ -977,124 +977,66 @@ void _080020690(void *rec0) {
 }
 
 // ---- 0x08020784 — scene setup C (03954 path, mode-1 area select) + pools {WA+0x5E4, 0x03001D64} ----
-__attribute__((naked)) void _080020784(void *rec0) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        ".L20784_080020784:\n"
-        "	push	{r4, r5, r6, r7, lr}\n"
-        "	sub	sp, #20\n"
-        "	adds	r5, r0, #0\n"
-        "	adds	r0, #172\n"
-        "	movs	r1, #5\n"
-        "	bl sub_0800D97C\n"
-        "	movs	r7, #0\n"
-        "	ldr r4, .L20784_08002080C\n"
-        "	movs	r0, #28\n"
-        "	ldrsh	r1, [r5, r0]\n"
-        "	lsls	r0, r1, #3\n"
-        "	adds	r0, r0, r1\n"
-        "	lsls	r0, r0, #3\n"
-        "	ldr r1, .L20784_080020810\n"
-        "	adds	r6, r4, r1\n"
-        "	adds	r0, r0, r6\n"
-        "	ldr	r2, [r0, #0]\n"
-        "	movs	r0, #120\n"
-        "	movs	r1, #74\n"
-        "	bl 0x08003954\n"
-        "	movs	r2, #28\n"
-        "	ldrsh	r1, [r5, r2]\n"
-        "	lsls	r0, r1, #3\n"
-        "	adds	r0, r0, r1\n"
-        "	lsls	r0, r0, #3\n"
-        "	adds	r0, r0, r4\n"
-        "	movs	r1, #189\n"
-        "	lsls	r1, r1, #3\n"
-        "	adds	r0, r0, r1\n"
-        "	movs	r2, #0\n"
-        "	ldrsh	r0, [r0, r2]\n"
-        "	bl sub_08002370\n"
-        "	adds	r2, r0, #0\n"
-        "	movs	r0, #128\n"
-        "	movs	r1, #78\n"
-        "	movs	r3, #3\n"
-        "	bl sub_08001FA64\n"
-        "	adds	r0, r5, #0\n"
-        "	adds	r0, #156\n"
-        "	movs	r1, #0\n"
-        "	ldrsh	r0, [r0, r1]\n"
-        "	cmp	r7, r0\n"
-        "	bne .L20784_080020814\n"
-        "	adds	r0, r5, #0\n"
-        "	adds	r0, #160\n"
-        "	movs	r2, #0\n"
-        "	ldrsh	r1, [r0, r2]\n"
-        "	cmp	r1, #1\n"
-        "	bne .L20784_080020814\n"
-        "	movs	r2, #28\n"
-        "	ldrsh	r0, [r5, r2]\n"
-        "	lsls	r3, r0, #3\n"
-        "	adds	r3, r3, r0\n"
-        "	lsls	r3, r3, #3\n"
-        "	adds	r3, r3, r6\n"
-        "	adds	r3, #8\n"
-        "	str	r1, [sp, #0]\n"
-        "	adds	r0, r5, #0\n"
-        "	movs	r1, #184\n"
-        "	movs	r2, #78\n"
-        "	bl sub_080020498\n"
-        "	b .L20784_080020836\n"
-        "	movs	r0, r0\n"
-        ".L20784_08002080C: .word 0x03001780\n"
-        ".L20784_080020810: .word 0x000005E4\n"
-        ".L20784_080020814:\n"
-        "	movs	r2, #2\n"
-        "	lsls	r2, r2, #4\n"
-        "	adds	r2, #46\n"
-        "	movs	r1, #28\n"
-        "	ldrsh	r0, [r5, r1]\n"
-        "	lsls	r3, r0, #3\n"
-        "	adds	r3, r3, r0\n"
-        "	lsls	r3, r3, #3\n"
-        "	ldr r0, .L20784_080020874\n"
-        "	adds	r3, r3, r0\n"
-        "	adds	r3, #8\n"
-        "	movs	r0, #0\n"
-        "	str	r0, [sp, #0]\n"
-        "	adds	r0, r5, #0\n"
-        "	movs	r1, #184\n"
-        "	bl sub_080020498\n"
-        ".L20784_080020836:\n"
-        "	adds	r0, r5, #0\n"
-        "	adds	r0, #8\n"
-        "	adds	r1, r5, #0\n"
-        "	adds	r1, #176\n"
-        "	ldr	r1, [r1, #0]\n"
-        "	adds	r2, r5, #0\n"
-        "	adds	r2, #180\n"
-        "	ldr	r2, [r2, #0]\n"
-        "	movs	r3, #33\n"
-        "	str	r3, [sp, #0]\n"
-        "	movs	r3, #6\n"
-        "	str	r3, [sp, #4]\n"
-        "	movs	r3, #1\n"
-        "	str	r3, [sp, #8]\n"
-        "	movs	r3, #0\n"
-        "	str	r3, [sp, #12]\n"
-        "	str	r3, [sp, #16]\n"
-        "	movs	r3, #24\n"
-        "	bl sub_08007BFC\n"
-        "	adds	r0, r5, #0\n"
-        "	adds	r0, #32\n"
-        "	bl sub_0800DBE8\n"
-        "	adds	r0, r5, #0\n"
-        "	bl sub_080020878\n"
-        "	add	sp, #20\n"
-        "	pop	{r4, r5, r6, r7}\n"
-        "	pop	{r0}\n"
-        "	bx	r0\n"
-        ".L20784_080020874: .word 0x03001D64\n"
-        ".syntax divided\n"
-    );
+// Same body as 0x08020690 with the text lane swapped (0x08003954, id 120); every
+// register-shaping note there applies verbatim.
+void _080020784(void *rec0) {
+    register volatile u8 *rec __asm__("r5");
+    extern u8 RaceSceneE_Wa_20784[];
+    extern u8 RaceSceneE_Offset_20784[];
+    extern u8 RaceSceneE_AltWa_20784[];
+    __asm__(".globl RaceSceneE_Wa_20784\nRaceSceneE_Wa_20784 = 0x03001780");
+    __asm__(".globl RaceSceneE_Offset_20784\nRaceSceneE_Offset_20784 = 0x000005E4");
+    __asm__(".globl RaceSceneE_AltWa_20784\nRaceSceneE_AltWa_20784 = 0x03001D64");
+
+    register uintptr_t wa __asm__("r4");
+    int zero;
+    uintptr_t table;
+
+    rec = (volatile u8 *)rec0;
+    _0800D97C((void *)((volatile u8 *)rec0 + 172), 5);
+    zero = 0;
+    wa = (uintptr_t)RaceSceneE_Wa_20784;
+    {
+        int rowIndex = RD16(rec, 28);
+        uintptr_t row = (uintptr_t)(rowIndex * 72);
+        register uintptr_t offset __asm__("r1") = (uintptr_t)RaceSceneE_Offset_20784;
+        __asm__ volatile ("" : "+r" (offset) : : "memory");
+        table = wa + offset;
+        __asm__ volatile ("" : "+r" (table));
+        row += table;
+        _08003954(120, 74, *(volatile u32 *)row);
+    }
+
+    {
+        int index = RD16(rec, 28);
+        s16 value = *(s16 *)(uintptr_t)(wa + (uintptr_t)(index * 72) + 1512u);
+        int transformed = _08002370(value);
+        _08001FA64(128, 78, transformed, 3);
+    }
+
+    if (zero == RD16(rec, 156) && RD16(rec, 160) == 1) {
+        int index = RD16(rec, 28);
+        uintptr_t area = (uintptr_t)(index * 72) + table + 8u;
+        _080020498((void *)rec, 184, 78, (void *)area, 1);
+    } else {
+        register u32 idParts __asm__("r2");
+        idParts = 2u;
+        __asm__ volatile ("" : "+r" (idParts));
+        idParts <<= 4;
+        __asm__ volatile ("" : "+r" (idParts));
+        idParts += 46u;
+        int index = RD16(rec, 28);
+        uintptr_t area = (uintptr_t)(index * 72) + (uintptr_t)RaceSceneE_AltWa_20784;
+        area += 8;
+        _080020498((void *)rec, 184, (int)idParts, (void *)area, 0);
+    }
+
+    _08007BFC((void *)(rec + 8),
+              *(volatile u32 *)(rec + 176), *(volatile u32 *)(rec + 180),
+              24, 33, 6, 1, 0, 0);
+    _0800DBE8((void *)(rec + 32));
+    _080020878((void *)rec);
+    __asm__ volatile ("" : "+r" (zero));
 }
 
 // ---- 0x0802087C — 12-way event dispatcher (ev-1 over table 0x08020894) ----

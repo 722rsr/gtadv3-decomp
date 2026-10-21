@@ -90,6 +90,28 @@ class FamilyTests(unittest.TestCase):
         result = families.nearest({'records': [base, sibling, alias, incomplete]}, base, recipes=True)
         self.assertEqual([r['name'] for r in result], ['b'])
 
+    def test_twins_restricts_to_assembly_bodies_with_a_decompiled_sibling(self):
+        import source_quality
+
+        def rec(name, vma, size, tokens):
+            return {'name': name, 'alias_of': None, 'source': f'src/{name}.c',
+                    'vma': hex(vma), 'end_vma': hex(vma + size), 'complete': True,
+                    'tokens': tokens, 'fingerprint': 'f', 'status': 'EXACT', 'promoted': False}
+        target = rec('a', BASE, 0x40, ['mov', 'bx'])
+        twin = rec('b', BASE + 0x100, 0x44, ['mov', 'bx'])
+        oversized = rec('c', BASE + 0x200, 0x40, ['mov', 'ldr', 'add', 'bx'])
+        index = {'records': [target, twin, oversized]}
+        classes = {BASE: 'asm', BASE + 0x100: 'c_fakematch', BASE + 0x200: 'c'}
+        with patch.object(source_quality, 'source_classes', return_value=classes):
+            rows = families.twins(index)
+        self.assertEqual([(r['asm'], r['twin'], r['twin_class']) for r in rows], [('a', 'b', 'c_fakematch')])
+
+        # Assembly siblings of assembly siblings are not a twin: the sweep only
+        # reports a body whose counterpart already produces its bytes from C.
+        with patch.object(source_quality, 'source_classes',
+                          return_value={BASE: 'asm', BASE + 0x100: 'asm', BASE + 0x200: 'asm'}):
+            self.assertEqual(families.twins(index), [])
+
     def test_recipe_never_reuses_a_failed_or_changed_probe(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

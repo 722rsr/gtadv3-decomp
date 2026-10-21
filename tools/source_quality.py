@@ -20,9 +20,19 @@ Classes, from least to most decompiled:
   c            Plain C. Counted as decompiled.
 
 The classifier is pure Python so the ROM- and toolchain-free CI can run it. It
-strips comments, keeps string literals intact, expands asm-bearing macros
-defined in the scanned files, and resolves each body to its ROM address through
-its own name, `alias` declarations, and the manifest's `c_name`/`export` lists.
+answers only one question -- did the compiler produce these bytes -- and never
+reads a byte-match score, because the only committed match data,
+`docs/data/report.json`, is a *projection of this classification* (see
+`tools/decomp_report.py`: a function is written at 100% exactly when its class is
+in `DECOMPILED`). Reading it back would make a freshly lifted body demote itself
+on the previous run's label and never return. Byte truth is a separate, measured
+fact: `make matching-ready` splices every selected body's *compiled output* and
+requires an identical code slice, and `make full-rom-match` requires an identical
+image, so a passing gate is the evidence that "this C reproduces the ROM". The
+scanner strips comments, keeps string literals intact,
+expands asm-bearing macros defined in the scanned files, and resolves each body
+to its ROM address through its own name, `alias` declarations, and the
+manifest's `c_name`/`export` lists.
 
 Usage: python3 tools/source_quality.py            # check committed snapshot
        python3 tools/source_quality.py --write    # refresh snapshot
@@ -394,7 +404,8 @@ def check(root: Path = ROOT) -> None:
 
 
 class SelfTest(unittest.TestCase):
-    def run_fixture(self, source: str, names: list[str]) -> dict:
+    def run_fixture(self, source: str, names: list[str],
+                    percent: list[float] | None = None) -> dict:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             (root / 'tools').mkdir()
@@ -404,6 +415,12 @@ class SelfTest(unittest.TestCase):
                 'c_name': name, 'end_vma': f'0x{0x08000110 + 0x10 * i:08x}'}
                 for i, name in enumerate(names)}
             (root / MANIFEST).write_text(json.dumps(manifest))
+            if percent is not None:
+                functions = [{'metadata': {'virtual_address': 0x08000100 + 0x10 * i},
+                              'fuzzy_match_percent': p} for i, p in enumerate(percent)]
+                report = root / 'docs/data/report.json'
+                report.parent.mkdir(parents=True, exist_ok=True)
+                report.write_text(json.dumps({'units': [{'functions': functions}]}))
             result = classify(root)
         return {row['name']: row['class'] for row in result['functions'].values()}
 
@@ -455,6 +472,18 @@ void _08000190(void) __attribute__((alias("Str")));
                   'int sub_08000100(void) __attribute__((alias("Strong")));\n')
         got = self.run_fixture(source, ['_08000100'])
         self.assertEqual(got, {'Strong': 'asm'})
+
+    def test_report_is_not_match_evidence(self):
+        # report.json is written *from* this classification, so its per-function
+        # percent carries no information about the bytes. A body must keep its
+        # source-form verdict even when the report beside it says 0%.
+        source = 'int Exact(void) { return 1; }\nint Wip(void) { return 2; }\n'
+        names = ['Exact', 'Wip']
+        self.assertEqual(self.run_fixture(source, names), {'Exact': 'c', 'Wip': 'c'})
+        self.assertEqual(self.run_fixture(source, names, [100.0, 0.0]),
+                         {'Exact': 'c', 'Wip': 'c'})
+        self.assertEqual(self.run_fixture(source, names, [100.0]),
+                         {'Exact': 'c', 'Wip': 'c'})
 
     def test_missing_definition_fails(self):
         with self.assertRaisesRegex(ValueError, 'no definition'):
