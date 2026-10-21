@@ -91,7 +91,7 @@ HOST_STUB(int _08001E14(int a));                // 0x08001E14
 HOST_STUB(void _08005D74(void *a, int b, int c)); // 0x08005D74 3-arg form
 HOST_STUB(void sub_08003104(void *h));          // 0x08003104
 HOST_STUB(void sub_0800473C(u32 v));            // 0x0800473C
-HOST_STUB(void _08004748(u32 a, u32 b, u16 c)); // 0x08004748
+HOST_STUB(void _08004748(u32 a, u32 b, u32 c)); // 0x08004748 (three full words, see runtime_hud.c CamSet_04748)
 HOST_STUB(void _080048D8(void));                // 0x080048D8
 HOST_STUB(int sub_08004818(volatile u8 *obj)); // 0x08004818
 HOST_STUB(int _08002BE8(int d));                // 0x08002BE8
@@ -106,7 +106,7 @@ HOST_STUB(void _0800207C(void *a, const void *b, u32 n)); // 0x0800207C
 HOST_STUB(void *_08005080(void *a, const void *b)); // 0x08005080
 HOST_STUB(void *_08002B7B4(void *a));           // 0x08002B7B4
 HOST_STUB(void *_08002B7B8(void *a, void *b));  // 0x08002B7B8
-HOST_STUB(void _08002B80C(void *a, u32 lo, u32 hi, u32 sl)); // 0x08002B80C (4th is a full word, not a halfword)
+HOST_STUB(void _0802B80C(void *a, u32 lo, u32 hi, u32 sl)); // 0x0802B80C (closure spelling; 4th is a full word, not a halfword)
 HOST_STUB(void _08004E1C(void *a));             // 0x08004E1C
 HOST_STUB(void _08002B50(void));                // 0x08002B50
 HOST_STUB(void _08002BB4(void));                // 0x08002BB4
@@ -739,123 +739,54 @@ __asm__(".align 2, 0");
 void sub_080028F18(void *rec) __attribute__((alias("_080028F18")));
 
 // ----------------------------------------------------------------------------
-// 0x08028F40 — frame tick.
+// 0x08028F40 — frame tick: state step, five halfword publishes, per-slot
+// packed-word camera publish, then the view offset write and camera set.
 // ----------------------------------------------------------------------------
-__attribute__((naked)) void _080028F40(void *ctx) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "\tpush\t{r4, r5, r6, r7, lr}\n"
-        "\tmov\tr7, r8\n"
-        "\tpush\t{r7}\n"
-        "\tsub\tsp, #8\n"
-        "\tmov\tr8, r0\n"
-        "\tbl sub_080028F18\n"
-        "\tldr r0, .Lgarage28f40__080028F98\n"
-        "\tadd\tr0, r8\n"
-        "\tldr\tr4, [r0, #0]\n"
-        "\tbl 0x08002494\n"
-        "\tadds\tr1, r0, #0\n"
-        "\tlsls\tr1, r1, #16\n"
-        "\tlsrs\tr1, r1, #16\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tbl sub_08002B818\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tbl sub_08002B7B4\n"
-        "\tadds\tr4, r0, #0\n"
-        "\tldrh\tr1, [r4, #2]\n"
-        "\tmovs\tr0, #0\n"
-        "\tbl 0x08001E48\n"
-        "\tldrh\tr1, [r4, #0]\n"
-        "\tmovs\tr0, #1\n"
-        "\tbl 0x08001E48\n"
-        "\tldrh\tr1, [r4, #6]\n"
-        "\tmovs\tr0, #2\n"
-        "\tbl 0x08001E48\n"
-        "\tldrh\tr1, [r4, #4]\n"
-        "\tmovs\tr0, #3\n"
-        "\tbl 0x08001E48\n"
-        "\tldrh\tr1, [r4, #8]\n"
-        "\tmovs\tr0, #4\n"
-        "\tbl 0x08001E48\n"
-        "\tmovs\tr7, #0\n"
-        "\tb .Lgarage28f40__080028FF4\n"
-        ".Lgarage28f40__080028F98: .word 0x00001AB4\n"
-        ".Lgarage28f40__080028F9C:\n"
-        "\tlsls\tr1, r7, #2\n"
-        "\tldr r0, .Lgarage28f40__08002903C\n"
-        "\tadd\tr0, r8\n"
-        "\tadds\tr0, r0, r1\n"
-        "\tldr\tr6, [r0, #0]\n"
-        "\tadds\tr0, r7, #0\n"
-        "\tmovs\tr1, #0\n"
-        "\tbl 0x08001E5C\n"
-        "\tadds\tr5, r0, #0\n"
-        "\tadds\tr0, r7, #0\n"
-        "\tmovs\tr1, #1\n"
-        "\tbl 0x08001E5C\n"
-        "\tlsls\tr5, r5, #16\n"
-        "\tlsls\tr0, r0, #16\n"
-        "\tlsrs\tr0, r0, #16\n"
-        "\torrs\tr5, r0\n"
-        "\tadds\tr0, r7, #0\n"
-        "\tmovs\tr1, #2\n"
-        "\tbl 0x08001E5C\n"
-        "\tadds\tr4, r0, #0\n"
-        "\tadds\tr0, r7, #0\n"
-        "\tmovs\tr1, #3\n"
-        "\tbl 0x08001E5C\n"
-        "\tlsls\tr4, r4, #16\n"
-        "\tlsls\tr0, r0, #16\n"
-        "\tlsrs\tr0, r0, #16\n"
-        "\torrs\tr4, r0\n"
-        "\tadds\tr0, r7, #0\n"
-        "\tmovs\tr1, #4\n"
-        "\tbl 0x08001E5C\n"
-        "\tadds\tr3, r0, #0\n"
-        "\tlsls\tr3, r3, #16\n"
-        "\tlsrs\tr3, r3, #16\n"
-        "\tadds\tr0, r6, #0\n"
-        "\tadds\tr1, r5, #0\n"
-        "\tadds\tr2, r4, #0\n"
-        "\tbl sub_0802B80C\n"
-        "\tadds\tr7, #1\n"
-        ".Lgarage28f40__080028FF4:\n"
-        "\tbl 0x08001F8C\n"
-        "\tcmp\tr7, r0\n"
-        "\tblt .Lgarage28f40__080028F9C\n"
-        "\tldr r0, .Lgarage28f40__08002903C\n"
-        "\tadd\tr0, r8\n"
-        "\tldr\tr0, [r0, #0]\n"
-        "\tbl sub_08002B7B4\n"
-        "\tadds\tr4, r0, #0\n"
-        "\tldr r1, .Lgarage28f40__080029040\n"
-        "\tmovs\tr0, #8\n"
-        "\tldrsh\tr2, [r4, r0]\n"
-        "\tmov\tr0, sp\n"
-        "\tbl 0x08005D74\n"
-        "\tldr\tr2, [r4, #8]\n"
-        "\tmov\tr0, r8\n"
-        "\tstr\tr2, [r0, #8]\n"
-        "\tldr\tr0, [r4, #0]\n"
-        "\tldr\tr1, [sp, #0]\n"
-        "\tadds\tr0, r0, r1\n"
-        "\tldr\tr1, [r4, #4]\n"
-        "\tldr\tr3, [sp, #4]\n"
-        "\tadds\tr1, r1, r3\n"
-        "\tbl 0x08004748\n"
-        "\tbl 0x080048D8\n"
-        "\tadd\tsp, #8\n"
-        "\tpop\t{r3}\n"
-        "\tmov\tr8, r3\n"
-        "\tpop\t{r4, r5, r6, r7}\n"
-        "\tpop\t{r0}\n"
-        "\tbx\tr0\n"
-        "\tmovs\tr0, r0\n"
-        ".Lgarage28f40__08002903C: .word 0x00001AC4\n"
-        ".Lgarage28f40__080029040: .word 0xFFFFE000\n"
-        ".syntax divided\n"
-    );
+void _080028F40(void *ctx_) {
+    u8 *ctx = (u8 *)ctx_;
+    u8 *rec;
+    u8 *p;
+    s32 out[2];
+    s32 i;
+    u32 w;
+
+    _080028F18(ctx_);
+    rec = *(u8 **)(ctx + 0x1AB4);
+    _08002B818(rec, _08002494());
+    p = (u8 *)_08002B7B4(rec);
+    _08001E48(0, *(u16 *)(p + 2));
+    _08001E48(1, *(u16 *)(p + 0));
+    _08001E48(2, *(u16 *)(p + 6));
+    _08001E48(3, *(u16 *)(p + 4));
+    _08001E48(4, *(u16 *)(p + 8));
+
+    // Two levers: the pinned scaled index is an asm operand, so the address
+    // stops being a giv (no `mov r9,r0 / ldmia r1!` pointer walk, and r8
+    // stays the only high-register save); the `at` local keeps the ROM's
+    // `ldr r0,=0x1AC4 / add r0,r8 / adds r0,r0,r1` order. Written as one
+    // `ctx + 0x1AC4 + off` expression the sum accumulates into the pinned r1.
+    for (i = 0; i < _08001F8C(); i++) {
+        register u32 off __asm__("r1") = (u32)i * 4u;
+        u8 *at = ctx + 0x1AC4;
+        u8 *cell = *(u8 **)(at + off);
+        u32 lo = ((u32)_08001E5C(i, 0) << 16) | (u32)_08001E5C(i, 1);
+        u32 hi = ((u32)_08001E5C(i, 2) << 16) | (u32)_08001E5C(i, 3);
+        _0802B80C(cell, lo, hi, (u32)_08001E5C(i, 4));
+    }
+
+    p = (u8 *)_08002B7B4(*(u8 **)(ctx + 0x1AC4));
+    _08005D74(out, -0x2000, *(s16 *)(p + 8));
+    // The ROM keeps this word in r2 across the camera call, so it must be a
+    // named local and _08004748's third parameter a full word (not u16).
+    w = *(u32 *)(p + 8);
+    *(u32 *)(ctx + 8) = w;
+    _08004748(*(u32 *)(p + 0) + (u32)out[0],
+              *(u32 *)(p + 4) + (u32)out[1],
+              w);
+    _080048D8();
 }
+void sub_080028F40(void *ctx) __attribute__((alias("_080028F40")));
+
 // ----------------------------------------------------------------------------
 // 0x08029044 — projection/object emission loop (stale-r5 idiom).
 // r5 slot == caller r8 on first iter; MUST stay first statement.
@@ -2011,17 +1942,6 @@ void sub_0800299E0(void *rec) __attribute__((alias("_0800299E0")));
 
 // ----------------------------------------------------------------------------
 // 0x08029A74 — surface-adaptive speed (rem/div + flag-159 lanes).
-//
-// Stays assembly. A full C lift was measured and is not reachable: the body is
-// otherwise reproducible (every other instruction, the calls and the layout
-// match), but it holds two armcc `adds Rd, Ra, Rb` forms with the destination
-// in the SECOND operand -- `adds r4,r4,r0` for base = idx + [rec+126] and
-// `adds r1,r0,r1` for the p76 + idx*2 field address. agbcc's add expansion
-// canonicalises the other way (`adds r4,r0,r4`): nine spellings were measured
-// (`idx + cell`, `cell + idx`, `idx += cell`, named cell, u16/s32 operands,
-// uintptr casts, `(u8 *)` pointer arithmetic, r0/r4 register pins, and an
-// empty `"+r"` barrier) and every one emits the load first. Two instructions
-// stay 2 bytes apart, so the body cannot be promoted.
 // ----------------------------------------------------------------------------
 __attribute__((naked)) void _080029A74(void *rec) {
     __asm__ volatile (
