@@ -32,7 +32,7 @@ extern void sub_0800376C(int a, u32 b, u32 c, u32 d, int e, u32 f);  /* defined 
 extern void sub_080037BC(int a, u32 b, u32 c, u32 d, int e, u32 f);  /* defined below, alias of ObjMeasure_037BC */
 extern void sub_0800385C(int a, u32 b, const volatile u8 *c);  /* defined below, alias of ObjLane_0385C */
 extern int sub_08003D4C(int a, volatile u8 *b);  /* defined below, alias of TimeStr_03D4C */
-extern int sub_08003E34(int a, volatile u8 *b);  /* defined below, alias of TimeStr_03E34 */
+extern void sub_08003E34(int a, volatile u8 *b);  /* defined below, alias of TimeStr_03E34 */
 
 // ----------------------------------------------------------------------------
 // runtime_2aac.s tail lift — HUD/object families 0x08003104–0x08004A28.
@@ -67,11 +67,11 @@ extern int _08005B5C(int v);
 extern void sub_08005BA8(void *p, int angle);
 extern void CpuFastSet(const void *src, void *dst, u32 mode); // bios_wrappers.c (swi 0x0C)
 extern int TimeStr_03D4C(int val, volatile u8 *buf);  // defined below in this file
-extern int TimeStr_03E34(int val, volatile u8 *buf);
+extern void TimeStr_03E34(int val, volatile u8 *buf);
 
 extern void *_08002BFC(int a);   // 16-byte object alloc (foundation_runtime.c)
 void _08003838(int a, u32 b, const volatile u8 *c);  // ObjLane_03838, aliased below
-int _08003E34(int a, volatile u8 *b);  // defining name of TimeStr_03E34, below
+void _08003E34(int a, volatile u8 *b);  // defining name of TimeStr_03E34, below
 int TimeStr_03D18(int val, volatile u8 *buf);  // defined below in this file
 
 // The ROM bodies at 0x080041E0 and 0x080041F8 issue `bl 0x0802DE04`, the
@@ -1165,7 +1165,7 @@ int Measure_03CB4(int val, volatile u8 *buf, int width)
     int n = val;
     int w = width;
     int digits = 0;
-    volatile u8 *p = buf;
+    u8 *p = (u8 *)buf;
     int v;
     if (n < 0) {
         *p = 45;
@@ -1231,7 +1231,8 @@ int _08003D18(int a, volatile u8 *b) __attribute__((alias("TimeStr_03D18")));
 // emitted it once as a file-local `t` symbol the probe's closure table cannot
 // resolve, so both wrappers read UNRESOLVED_RELOCATION and were unscorable.
 // The ROM bodies are self-contained apart from `bl`s to real BIOS wrappers, so
-// each body now spells its own stream out.
+// each body spells its own stream out: 0x3D4C below is still asm, 0x3E34 is C
+// (see the notes on its body).
 //
 // What the disassembly actually says (the old shared helper got these wrong):
 //  * Sign test is `ands r0,r6` against a 0x80000000 constant materialised as
@@ -1242,9 +1243,9 @@ int _08003D18(int a, volatile u8 *b) __attribute__((alias("TimeStr_03D18")));
 //  * Negative branch writes 8 chars buf[0..7] and a NUL at buf[8]
 //    (`movs r0,#0; strb r0,[r7,#1]` with r7 = buf+7). It is not a 9-byte
 //    copy from a table. Return value 0.
-//  * Positive branch writes buf[0..8] and NO terminator. Return value is
-//    r8 (`mov r0,r8; strb r0,[r7,#0]` is the last thing before the epilogue),
-//    i.e. 0 or 0x80.
+//  * Positive branch writes buf[0..8] and NO terminator; the ninth byte is
+//    the low byte of the mask (`mov r0,r8; strb r0,[r7,#0]`), i.e. always 0.
+//    Both branches return 0, which is why the lifted 0x3E34 is `void`.
 //  * `qa = Div(DivRem(val,300),3)` — DivRem leaves the REMAINDER in r0, so the
 //    nesting divides (val%300), not (val/300). Same for 18000/300.
 //  * Separators are literals, not a shared `sep` parameter: 0x3D4C writes 0x27
@@ -1367,132 +1368,77 @@ __attribute__((naked)) int TimeStr_03D4C(int val, volatile u8 *buf)
         ".syntax divided\n"
     );
 }
-// ROM 0x08003E34 (228 B). Byte-verified against the ROM stream, not inferred:
-// the NEGATIVE branch is  0x1A movs r1,#45 (0x2D '-')  0x24 movs r0,#39 (0x27
-// '\'')  0x32 movs r0,#34 (0x22 '"')  0x3E movs r0,#0 + `strb r0,[r7,#1]`,
-// which with p at buf+7 is buf[8]. So the eight stores are
-//   - - ' - - " - -   with NUL at buf[8];
-// and the POSITIVE branch's two separators are `movs r4,#36` = 0x24 '$'
-// (0x8E), NOT 0x2E '.'. The sibling _08003D4C above writes its own literal
-// separators ('\'' / '"'); this body writes '$' at both separator positions.
-// Measured  : the corrections COST score -- the
-// smaller immediates fold into fewer instructions -- so this went 36 -> 19.
-// ROM bytes win; the score is a proxy, the ROM is the oracle.
-__attribute__((naked)) int _08003E34(int val, volatile u8 *buf)
+// 0x08003E34 (228 B) — the '$' variant of the formatter above. NEGATIVE writes
+// eight chars (`- - ' - - " - -`) and a NUL at buf[8]; POSITIVE writes
+// hh'$'mm'$'ss (no terminator) and the sign byte. Both branches return 0, which
+// is why the body is `void`: an `int` return made agbcc keep r0 live through
+// the epilogue and emit `pop {r1}; bx r1` instead of the ROM's `pop {r0}`.
+//
+// Measured; each of these spells the body 4 bytes long:
+//  * NO register pins and NO pointer local: the parameter `buf` is incremented
+//    in place. `u8 *p = buf` (or a pinned `p`) adds a second copy at entry and
+//    a `adds r0,r7,#0` before every `strb`, because agbcc cannot address a
+//    store off a pinned register. Unpinned, agbcc homes the parameters itself
+//    and emits the ROM's `adds r6,r0` / `adds r7,r1` pair in that order, and
+//    `sign`/`qa` land in r8/r9, `qb`/`qc` in r5/r4, untouched.
+//  * `*buf++ = c;` is 4 bytes over: the post-increment form keeps the address
+//    in a temp. `*(volatile u8 *)buf = c; buf = buf + 1;` reproduces
+//    `strb rX,[r7]` / `adds r7,#1` exactly.
+//  * The 300 / 18000 / 10 constants must be literals at each call site; naming
+//    them hoists one into a register the ROM reuses for `qb`.
+
+
+void _08003E34(int val, volatile u8 *buf)
 {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, r7, lr}\n"
-        "mov r7, r9\n"
-        "mov r6, r8\n"
-        "push {r6, r7}\n"
-        "adds r6, r0, #0\n"
-        "adds r7, r1, #0\n"
-        "movs r0, #128\n"
-        "lsls r0, r0, #24\n"
-        "mov r8, r0\n"
-        "ands r0, r6\n"
-        "mov r8, r0\n"
-        "cmp r0, #0\n"
-        "beq.n .LTimeE34_positive\n"
-        "movs r1, #45\n"
-        "strb r1, [r7, #0]\n"
-        "adds r7, #1\n"
-        "strb r1, [r7, #0]\n"
-        "adds r7, #1\n"
-        "movs r0, #39\n"
-        "strb r0, [r7, #0]\n"
-        "adds r7, #1\n"
-        "strb r1, [r7, #0]\n"
-        "adds r7, #1\n"
-        "strb r1, [r7, #0]\n"
-        "adds r7, #1\n"
-        "movs r0, #34\n"
-        "strb r0, [r7, #0]\n"
-        "adds r7, #1\n"
-        "strb r1, [r7, #0]\n"
-        "adds r7, #1\n"
-        "strb r1, [r7, #0]\n"
-        "movs r0, #0\n"
-        "strb r0, [r7, #1]\n"
-        "b.n .LTimeE34_done\n"
-        ".LTimeE34_positive:\n"
-        "movs r5, #150\n"
-        "lsls r5, r5, #1\n"
-        "adds r0, r6, #0\n"
-        "adds r1, r5, #0\n"
-        "bl 0x0802d97c\n"
-        "movs r1, #3\n"
-        "bl 0x0802d978\n"
-        "mov r9, r0\n"
-        "ldr r4, 1f\n"
-        "adds r0, r6, #0\n"
-        "adds r1, r4, #0\n"
-        "bl 0x0802d97c\n"
-        "adds r1, r5, #0\n"
-        "bl 0x0802d978\n"
-        "adds r5, r0, #0\n"
-        "adds r0, r6, #0\n"
-        "adds r1, r4, #0\n"
-        "bl 0x0802d978\n"
-        "adds r4, r0, #0\n"
-        "movs r1, #10\n"
-        "bl 0x0802d978\n"
-        "adds r0, #48\n"
-        "strb r0, [r7, #0]\n"
-        "adds r7, #1\n"
-        "adds r0, r4, #0\n"
-        "movs r1, #10\n"
-        "bl 0x0802d97c\n"
-        "adds r0, #48\n"
-        "strb r0, [r7, #0]\n"
-        "adds r7, #1\n"
-        "movs r4, #36\n"
-        "strb r4, [r7, #0]\n"
-        "adds r7, #1\n"
-        "adds r0, r5, #0\n"
-        "movs r1, #10\n"
-        "bl 0x0802d978\n"
-        "adds r0, #48\n"
-        "strb r0, [r7, #0]\n"
-        "adds r7, #1\n"
-        "adds r0, r5, #0\n"
-        "movs r1, #10\n"
-        "bl 0x0802d97c\n"
-        "adds r0, #48\n"
-        "strb r0, [r7, #0]\n"
-        "adds r7, #1\n"
-        "strb r4, [r7, #0]\n"
-        "adds r7, #1\n"
-        "mov r0, r9\n"
-        "movs r1, #10\n"
-        "bl 0x0802d978\n"
-        "adds r0, #48\n"
-        "strb r0, [r7, #0]\n"
-        "adds r7, #1\n"
-        "mov r0, r9\n"
-        "movs r1, #10\n"
-        "bl 0x0802d97c\n"
-        "adds r0, #48\n"
-        "strb r0, [r7, #0]\n"
-        "adds r7, #1\n"
-        "mov r0, r8\n"
-        "strb r0, [r7, #0]\n"
-        ".LTimeE34_done:\n"
-        "pop {r3, r4}\n"
-        "mov r8, r3\n"
-        "mov r9, r4\n"
-        "pop {r4, r5, r6, r7}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        ".align 2, 0\n"
-        "1: .word 0x00004650\n"
-        ".syntax divided\n"
-    );
+    u32 sign = 0x80000000u;
+    int qa;
+    int qb;
+    int qc;
+
+    sign &= (u32)val;
+    if (sign != 0) {
+        *(volatile u8 *)buf = 45;
+        buf = buf + 1;
+        *(volatile u8 *)buf = 45;
+        buf = buf + 1;
+        *(volatile u8 *)buf = 39;
+        buf = buf + 1;
+        *(volatile u8 *)buf = 45;
+        buf = buf + 1;
+        *(volatile u8 *)buf = 45;
+        buf = buf + 1;
+        *(volatile u8 *)buf = 34;
+        buf = buf + 1;
+        *(volatile u8 *)buf = 45;
+        buf = buf + 1;
+        *(volatile u8 *)buf = 45;
+        *(volatile u8 *)(buf + 1) = 0;
+    } else {
+        qa = sub_0802D978(sub_0802D97C(val, 300), 3);
+        qb = sub_0802D978(sub_0802D97C(val, 18000), 300);
+        qc = sub_0802D978(val, 18000);
+        *(volatile u8 *)buf = (u8)(sub_0802D978(qc, 10) + 48);
+        buf = buf + 1;
+        *(volatile u8 *)buf = (u8)(sub_0802D97C(qc, 10) + 48);
+        buf = buf + 1;
+        *(volatile u8 *)buf = 36;
+        buf = buf + 1;
+        *(volatile u8 *)buf = (u8)(sub_0802D978(qb, 10) + 48);
+        buf = buf + 1;
+        *(volatile u8 *)buf = (u8)(sub_0802D97C(qb, 10) + 48);
+        buf = buf + 1;
+        *(volatile u8 *)buf = 36;
+        buf = buf + 1;
+        *(volatile u8 *)buf = (u8)(sub_0802D978(qa, 10) + 48);
+        buf = buf + 1;
+        *(volatile u8 *)buf = (u8)(sub_0802D97C(qa, 10) + 48);
+        buf = buf + 1;
+        *(volatile u8 *)buf = (u8)sign;
+    }
 }
 int sub_08003D4C(int a, volatile u8 *b) __attribute__((alias("TimeStr_03D4C")));
-int sub_08003E34(int a, volatile u8 *b) __attribute__((alias("_08003E34")));
-int TimeStr_03E34(int a, volatile u8 *b) __attribute__((alias("_08003E34")));
+void sub_08003E34(int a, volatile u8 *b) __attribute__((alias("_08003E34")));
+void TimeStr_03E34(int a, volatile u8 *b) __attribute__((alias("_08003E34")));
 
 // ----------------------------------------------------------------------------
 // 0x08003F18 — indexed pair: len = strlen(str); emit str at (2, x); itoa(idx)

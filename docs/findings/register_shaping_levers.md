@@ -414,3 +414,49 @@ matching. The same applies to the signed reads: `*(s16 *)ptr` (a plain
 lvalue) is the form that gives the ROM's register-indexed
 `movs rX, #0 / ldrsh rY, [base, rX]`, and a `(uintptr_t)` cast turns it into
 a copy of the base plus the same index form.
+
+## Leave the record pointer unpinned; a local must never land in its register
+
+`_080017788` (`Rec35_Input_17788`, 452 B) reached EXACT in C only with
+`rec` as a plain local, not `register u8 *rec __asm__("r7")`. The pin looks
+right -- the ROM's `adds r7, r0` is exactly a regvar copy -- but it makes r7
+unavailable for the callee-save staging, so agbcc emits
+`mov r6,r9 / mov r5,r8 / push {r5,r6}` instead of the ROM's
+`mov r7,r9 / mov r6,r8 / push {r6,r7}`. Unpinned, the allocator gives the
+pointer r7 on its own and the staging matches.
+
+The same body also shows a wrong-code hazard worth recognising: with
+`int t = cond ? 1 : 0;` (a rematerialisable local), agbcc put `t` in **r7**
+while `rec` was pinned there, and reused r7 for `rec + 186` afterwards, so the
+emitted body was not the C. Two safe spellings: keep the flag's two uses in
+per-arm duplicated calls (what the ROM does -- its shared second call is the
+compiler's own cross-jump), or make the local's register explicit. Pins on
+`r7` and rematerialisable locals do not mix; check the disassembly of any body
+that pins r7 before trusting its score.
+
+## Address constants: pinned steps plus a pinned pointer
+
+The ROM materialises `rec + 340/344/512` as `movs rX,#170 / lsls rX,rX,#1` and
+`movs rX,#128 / lsls rX,rX,#2`. Three statements on a pinned register with
+empty `"+r"` barriers between them (the constant-synthesis recipe above) give
+the ROM's scratch registers r2/r3/r1, but the *load* then deploys the address
+in that same register (`adds r2,r7,r2`). Pinning a second variable to r0 for
+the pointer does not help on its own: copy-coalescing merges it with the
+offset. The working shape keeps the offset register alive **through** the
+pointer's live range:
+
+```c
+register u32 k __asm__("r2");
+k = 170u; __asm__ volatile("" : "+r"(k));
+k <<= 1;  __asm__ volatile("" : "+r"(k));
+register u8 *p __asm__("r0");
+p = rec + k;
+__asm__ volatile("" : "+r"(p));
+sub_08002158(3, RD16P(p));
+__asm__ volatile("" : "+r"(k));
+```
+
+Both barrier pairs are load-bearing: without the first the constant folds,
+without the ones after `p = rec + k` and after the call the two variables
+coalesce and the ROM's `adds r0,r7,r2` / `ldrh r1,[r0]` pair becomes
+`adds r2,r7,r2` / `ldrh r1,[r2]`.

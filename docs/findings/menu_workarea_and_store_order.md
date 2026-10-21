@@ -434,3 +434,24 @@ With that plus the `volatile`→non-volatile `s16` reads (section 16), the body
 is byte-exact at 184/184 and was promoted. Its two-arm `if/else if` also had to
 become a `switch` (section 11) so both arms sit out-of-line behind the compare
 chain the ROM emits.
+
+## 20. `_080013850`: addend order, and a store offset that lands *after* the RHS load
+
+The last asm body in `src/menu_ff78_m.c` is now plain C (256/256). Three
+levers, all measured with `corpus_match_probe --diff`:
+
+* **`adds` operand order.** `wa + i * 12` emits `adds r0, r3, r0` (base first);
+  the ROM accumulates into the index register (`adds r0, r0, r3`). Writing the
+  sum as two `u32` casts with the index first flips it:
+  `(u8 *)(uintptr_t)((u32)(i * 12) + (u32)(uintptr_t)wa)`.
+* **A store's constant offset is folded into the address, before the RHS load.**
+  The ROM computes `wa + i*12`, loads `rec+172`, *then* `adds r0,#49`. Split the
+  store: `p = <addr>; t = *(u16*)(rec + 172); p += 49; *p = (u8)t;` — the
+  increment as its own statement is what defers the add.
+* **Two single-use pointers, not one reused pointer.** A pointer assigned twice
+  is a global allocno and takes the callee-saved `r6` (function grows to 260
+  bytes with a `push {r4,r5,r6,lr}`); separate `p1`/`p2`, each assigned and used
+  once, stay in the scratch register and keep the `{r4,r5,lr}` prologue.
+  Declaring `u32 off` before `u16 v` does not change the register pair the merge
+  keeps them in — only splitting the two `rec+176` loads into separate temps
+  (`t` for the stored value, `v` for the merged one) does.

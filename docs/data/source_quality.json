@@ -1735,12 +1735,7 @@
    "size": 232
   },
   "0x08003e34": {
-   "class": "asm",
-   "detail": {
-    "insn": 1,
-    "insn_lines": 102,
-    "naked": true
-   },
+   "class": "c",
    "file": "src/runtime_hud.c",
    "name": "_08003E34",
    "size": 228
@@ -3725,11 +3720,9 @@
    "size": 200
   },
   "0x08008480": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 160,
-    "naked": true
+    "directive": 1
    },
    "file": "src/course_records.c",
    "name": "Course_BuildDispatch",
@@ -4401,11 +4394,11 @@
    "size": 4
   },
   "0x0800bc08": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 73,
-    "naked": true
+    "barrier": 1,
+    "directive": 1,
+    "pin": 4
    },
    "file": "src/menus.c",
    "name": "MenuSetup_0800BC08",
@@ -5520,22 +5513,22 @@
    "size": 340
   },
   "0x08010644": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 177,
-    "naked": true
+    "barrier": 2,
+    "directive": 1,
+    "pin": 6
    },
    "file": "src/menu_ff78_a.c",
    "name": "MenuFF78_10644",
    "size": 392
   },
   "0x080107cc": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 111,
-    "naked": true
+    "barrier": 1,
+    "directive": 2,
+    "pin": 3
    },
    "file": "src/menu_ff78_a.c",
    "name": "MenuFF78_107CC",
@@ -5633,11 +5626,10 @@
    "size": 396
   },
   "0x080113a0": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 102,
-    "naked": true
+    "directive": 1,
+    "pin": 3
    },
    "file": "src/menu_ff78_b.c",
    "name": "MenuFF78_113A0",
@@ -5866,12 +5858,7 @@
    "size": 76
   },
   "0x080125c4": {
-   "class": "asm",
-   "detail": {
-    "insn": 1,
-    "insn_lines": 195,
-    "naked": true
-   },
+   "class": "c",
    "file": "src/menu_ff78_e.c",
    "name": "MenuFF78_125C4",
    "size": 560
@@ -6085,11 +6072,9 @@
    "size": 1132
   },
   "0x08013850": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 112,
-    "naked": true
+    "directive": 1
    },
    "file": "src/menu_ff78_m.c",
    "name": "MenuFF78_13850",
@@ -6826,11 +6811,11 @@
    "size": 60
   },
   "0x08017788": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 199,
-    "naked": true
+    "barrier": 24,
+    "directive": 1,
+    "pin": 24
    },
    "file": "src/rec35_mid_region.c",
    "name": "Rec35_Input_17788",
@@ -7397,11 +7382,11 @@
    "size": 12
   },
   "0x0801986c": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 58,
-    "naked": true
+    "barrier": 1,
+    "directive": 1,
+    "pin": 2
    },
    "file": "src/race_scene.c",
    "name": "Race_Scene_Dispatch_19_86C",
@@ -7781,12 +7766,7 @@
    "size": 352
   },
   "0x0801b8dc": {
-   "class": "asm",
-   "detail": {
-    "insn": 1,
-    "insn_lines": 92,
-    "naked": true
-   },
+   "class": "c",
    "file": "src/race_scene_a1.c",
    "name": "_08001B8DC",
    "size": 208
@@ -11546,11 +11526,9 @@
    "size": 384
   },
   "0x08029d48": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 112,
-    "naked": true
+    "barrier": 1
    },
    "file": "src/garage_records.c",
    "name": "_080029D48",
@@ -11573,11 +11551,10 @@
    "size": 228
   },
   "0x08029f44": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 258,
-    "naked": true
+    "barrier": 2,
+    "pin": 2
    },
    "file": "src/garage_records.c",
    "name": "_080029F44",
@@ -11622,11 +11599,10 @@
    "size": 36
   },
   "0x0802a764": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 97,
-    "naked": true
+    "barrier": 1,
+    "pin": 1
    },
    "file": "src/garage_records.c",
    "name": "_08002A764",
@@ -13385,16 +13361,16 @@
  },
  "totals": {
   "asm": {
-   "bytes": 78984,
-   "functions": 217
+   "bytes": 74620,
+   "functions": 203
   },
   "c": {
-   "bytes": 40002,
-   "functions": 861
+   "bytes": 40998,
+   "functions": 864
   },
   "c_fakematch": {
-   "bytes": 65358,
-   "functions": 579
+   "bytes": 68726,
+   "functions": 590
   },
   "partial": {
    "bytes": 3792,
