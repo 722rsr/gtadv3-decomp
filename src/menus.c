@@ -4271,108 +4271,78 @@ void MenuRecordUpdate_0800BCD4(void *a0, u32 a1, void *a2, u32 a3, void *sp24, v
 void _0800BCD4(void *a0, u32 a1, void *a2, u32 a3, void *s1, void *s2, void *s3, void *s4) __attribute__((alias("MenuRecordUpdate_0800BCD4")));
 void sub_0800BCD4(void *a0, u32 a1, void *a2, u32 a3, void *s1, void *s2, void *s3, void *s4) __attribute__((alias("MenuRecordUpdate_0800BCD4")));
 
-// menu_setup.s 0x0800BC08 — 4-arg leaf, pools 0x03001780 etc., exact s16/u16/u32 widths
-__attribute__((naked)) void MenuSetup_0800BC08(void *a0, void *a1, void *a2, void *a3) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, r7, lr}\n"
-        "adds r5, r1, #0\n"
-        "adds r4, r2, #0\n"
-        "adds r6, r3, #0\n"
-        "ldr r3, .Lbc08_wa\n"
-        "ldr r2, .Lbc08_fc8\n"
-        "adds r1, r3, r2\n"
-        "movs r2, #0\n"
-        "strh r2, [r1, #0]\n"
-        "ldr r7, .Lbc08_fca\n"
-        "adds r1, r3, r7\n"
-        "strh r2, [r1, #0]\n"
-        "adds r7, #2\n"
-        "adds r1, r3, r7\n"
-        "strh r2, [r1, #0]\n"
-        "lsls r1, r5, #3\n"
-        "adds r1, r1, r5\n"
-        "lsls r1, r1, #3\n"
-        "ldr r7, .Lbc08_5e4\n"
-        "adds r2, r3, r7\n"
-        "adds r1, r1, r2\n"
-        "ldr r1, [r1, #0]\n"
-        "str r1, [r0, #0]\n"
-        "ldr r1, .Lbc08_10f4\n"
-        "adds r0, r3, r1\n"
-        "ldr r0, [r0, #0]\n"
-        "str r0, [r4, #0]\n"
-        "ldr r2, .Lbc08_fbc\n"
-        "adds r0, r3, r2\n"
-        "ldrh r0, [r0, #0]\n"
-        "cmp r0, #7\n"
-        "bne .Lbc08_b6c\n"
-        "ldr r7, .Lbc08_fc2\n"
-        "adds r0, r3, r7\n"
-        "b .Lbc08_b70\n"
-        ".short 0\n"
-        ".align 2, 0\n"
-        ".Lbc08_wa: .word 0x03001780\n"
-        ".Lbc08_fc8: .word 0x00000FC8\n"
-        ".Lbc08_fca: .word 0x00000FCA\n"
-        ".Lbc08_5e4: .word 0x000005E4\n"
-        ".Lbc08_10f4: .word 0x000010F4\n"
-        ".Lbc08_fbc: .word 0x00000FBC\n"
-        ".Lbc08_fc2: .word 0x00000FC2\n"
-        ".Lbc08_b6c:\n"
-        "ldr r1, .Lbc08_574\n"
-        "adds r0, r3, r1\n"
-        ".Lbc08_b70:\n"
-        "ldrh r0, [r0, #0]\n"
-        "strh r0, [r4, #4]\n"
-        "adds r0, r4, #0\n"
-        "adds r0, #8\n"
-        "ldr r4, .Lbc08_2808\n"
-        "adds r1, r4, #0\n"
-        "movs r2, #3\n"
-        "bl sub_0800D95C\n"
-        "lsls r0, r5, #3\n"
-        "adds r0, r0, r5\n"
-        "lsls r0, r0, #3\n"
-        "ldr r2, .Lbc08_f598\n"
-        "adds r1, r4, r2\n"
-        "adds r0, r0, r1\n"
-        "ldr r0, [r0, #0]\n"
-        "str r0, [r6, #0]\n"
-        "adds r0, r4, #0\n"
-        "subs r0, #204\n"
-        "ldrh r0, [r0, #0]\n"
-        "cmp r0, #7\n"
-        "bne .Lbc08_bb0\n"
-        "adds r0, r4, #0\n"
-        "subs r0, #198\n"
-        "b .Lbc08_bb4\n"
-        ".short 0\n"
-        ".Lbc08_574: .word 0x00000574\n"
-        ".Lbc08_2808: .word 0x03002808\n"
-        ".Lbc08_f598: .word 0xFFFFF598\n"
-        ".Lbc08_bb0:\n"
-        "ldr r7, .Lbc08_f4ec\n"
-        "adds r0, r4, r7\n"
-        ".Lbc08_bb4:\n"
-        "ldrh r0, [r0, #0]\n"
-        "strh r0, [r6, #4]\n"
-        "adds r0, r6, #0\n"
-        "adds r0, #8\n"
-        "ldr r1, .Lbc08_2808_2\n"
-        "movs r2, #3\n"
-        "bl sub_0800D95C\n"
-        "pop {r4, r5, r6, r7}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        ".short 0\n"
-        ".Lbc08_f4ec: .word 0xFFFFF4EC\n"
-        ".Lbc08_2808_2: .word 0x03002808\n"
-        ".syntax divided\n"
-    );
+// menu_setup.s 0x0800BC08 — fill two setup blocks for row `row`; pools 0x03001780 etc.
+//  a0  <- u32[WA+0x05E4 + row*72]       a2[0] <- u32[WA+0x10F4]
+//  a2[2] <- u16[WA + (sel == 7 ? 0x0FC2 : 0x0574)]   (sel = u16[WA+0x0FBC])
+//  a2+8 <- three bytes from 0x03002808
+//  a3  <- u32[0x03001DA0 + row*72]      a3[2] <- u16[0x03002808 + (sel2 == 7 ? -0xC6 : -0xB14)]
+//  a3+8 <- three bytes from 0x03002808
+// Measured: the three zeroed halfwords need an offset variable (`0xFCA`, then
+// `+2`), otherwise the three stores collapse into `strh` with immediate
+// offsets. The four registers the ROM carries are pinned: row r5, a2 r4,
+// a3 r6, WA r3 (r3 stays live across both blocks, so it can never be spilt).
+// a2 is r4 so the later `0x03002808` base can reuse it once row is consumed;
+// `b2` + the empty `+r` barrier is what stops that constant folding into
+// `0x03002808 + 8`.
+void MenuSetup_0800BC08(void *a0_, u32 row_, void *a2_, void *a3_)
+{
+    register u32 row __asm__("r5");
+    register u8 *a2 __asm__("r4");
+    register u8 *a3 __asm__("r6");
+    extern u8 MenuBc08Wa[];
+    register u32 wa __asm__("r3");
+    u8 *base2;
+    u32 off;
+    u32 negOff;
+    u8 *p;
+    u8 *q;
+
+    __asm__(".globl MenuBc08Wa\nMenuBc08Wa = 0x03001780");
+    row = row_;
+    a2 = (u8 *)a2_;
+    a3 = (u8 *)a3_;
+    wa = (u32)(uintptr_t)MenuBc08Wa;
+    *(volatile u16 *)(uintptr_t)(wa + 0xFC8u) = 0;
+    off = 0xFCAu;
+    *(volatile u16 *)(uintptr_t)(wa + off) = 0;
+    off += 2u;
+    *(volatile u16 *)(uintptr_t)(wa + off) = 0;
+
+    off = 0x5E4u;
+    *(volatile u32 *)a0_ = *(volatile u32 *)(uintptr_t)((((row << 3) + row) << 3) + (uintptr_t)(wa + off));
+    *(volatile u32 *)a2 = *(volatile u32 *)(uintptr_t)(wa + 0x10F4u);
+    {
+        u32 testOff = 0xFBCu;
+        if (*(volatile u16 *)(uintptr_t)(wa + testOff) == 7u) {
+            off = 0xFC2u;
+            q = (u8 *)(uintptr_t)(wa + off);
+        } else
+            q = (u8 *)(uintptr_t)(wa + 0x574u);
+    }
+    *(volatile u16 *)(uintptr_t)(a2 + 4) = *(volatile u16 *)q;
+    {
+        u8 *arg2 = a2 + 8;
+        u32 b2 = 0x03002808u;
+        __asm__ volatile("" : "+r"(b2));
+        base2 = (u8 *)(uintptr_t)b2;
+        sub_0800D95C(arg2, base2, 3);
+    }
+
+    negOff = 0xFFFFF598u;
+    *(volatile u32 *)a3 = *(volatile u32 *)(uintptr_t)((((row << 3) + row) << 3) + (uintptr_t)(base2 + negOff));
+    negOff = 0xFFFFFF34u;
+    p = (u8 *)(uintptr_t)(base2 + negOff);
+    if (*(volatile u16 *)(uintptr_t)p == 7u)
+        q = (u8 *)(uintptr_t)(base2 - 0xC6u);
+    else {
+        negOff = 0xFFFFF4ECu;
+        q = (u8 *)(uintptr_t)(base2 + negOff);
+    }
+    *(volatile u16 *)(uintptr_t)(a3 + 4) = *(volatile u16 *)q;
+    sub_0800D95C(a3 + 8, (void *)(uintptr_t)0x03002808u, 3);
 }
-void _0800BC08(void *a0, void *a1, void *a2, void *a3) __attribute__((alias("MenuSetup_0800BC08")));
-void sub_0800BC08(void *a0, void *a1, void *a2, void *a3) __attribute__((alias("MenuSetup_0800BC08")));
+void _0800BC08(void *a0, u32 row, void *a2, void *a3) __attribute__((alias("MenuSetup_0800BC08")));
+void sub_0800BC08(void *a0, u32 row, void *a2, void *a3) __attribute__((alias("MenuSetup_0800BC08")));
 
 void MenuTick_080012D54(void *rec_) {
     // FINDING : the gate is a TWO-POOL-WORD add, not a folded

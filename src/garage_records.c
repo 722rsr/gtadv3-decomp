@@ -2011,6 +2011,17 @@ void sub_0800299E0(void *rec) __attribute__((alias("_0800299E0")));
 
 // ----------------------------------------------------------------------------
 // 0x08029A74 — surface-adaptive speed (rem/div + flag-159 lanes).
+//
+// Stays assembly. A full C lift was measured and is not reachable: the body is
+// otherwise reproducible (every other instruction, the calls and the layout
+// match), but it holds two armcc `adds Rd, Ra, Rb` forms with the destination
+// in the SECOND operand -- `adds r4,r4,r0` for base = idx + [rec+126] and
+// `adds r1,r0,r1` for the p76 + idx*2 field address. agbcc's add expansion
+// canonicalises the other way (`adds r4,r0,r4`): nine spellings were measured
+// (`idx + cell`, `cell + idx`, `idx += cell`, named cell, u16/s32 operands,
+// uintptr casts, `(u8 *)` pointer arithmetic, r0/r4 register pins, and an
+// empty `"+r"` barrier) and every one emits the load first. Two instructions
+// stay 2 bytes apart, so the body cannot be promoted.
 // ----------------------------------------------------------------------------
 __attribute__((naked)) void _080029A74(void *rec) {
     __asm__ volatile (
@@ -2402,137 +2413,110 @@ __attribute__((naked)) void _080029BC8(void *rec) {
     );
 }
 // ----------------------------------------------------------------------------
-// 0x08029D48 — decel/approach + 29488 + 134 nudge.
+// 0x08029D48 — decel/approach + 29488 + 134 nudge. 232 B, EXACT.
+//
+// `python3 tools/corpus_match_probe.py --function _080029D48 --c89
+// --require-exact` reports 232/232. Seven spellings are load-bearing; each was
+// swept one at a time against the ROM span.
+//
+//   * The guard is `A || (f = load) != 0` with an `else`, NOT a nested `if`.
+//     agbcc compiles `if (a || b) {...} else {...}` as `bne then` / `beq else`
+//     with the then-block inline and the else-block after it, which is exactly
+//     the ROM's layout: `bne 0x1E` ... `beq 0xD8` ... clear-block last. The
+//     assignment inside the condition is what keeps the loaded word in r1 for
+//     the clear path (`ands r1, r0` at 0xD8) instead of reloading it.
+//   * The five record-flag reads are `volatile`. Plain reads are CSE'd across
+//     the halfword stores: agbcc proves `*(u32 *)(r + 92)` and `*(u16 *)(r +
+//     106)` disjoint by offset, so it reuses one load for all five and the
+//     ROM's separate `ldr r0,[r5,#92]` at 0x2E / 0x4A / 0x92 / 0xAE vanish.
+//   * `*p132` is read twice instead of being latched into a local. The ROM
+//     keeps the pointer in r3 and reloads through it at 0x36 (`ldrh r3,[r3]`);
+//     a `base` local leaves the second read dead and forces the four-instruction
+//     `ldrh`/`subs` block into a different register pair.
+//   * The sum is a `u32`. With a `u16` local agbcc truncates at the assignment
+//     (`adds r0,r1,r0 / lsls r0,r0,#16 / lsrs r3,r0,#16`); the ROM sums into
+//     r3 directly (`adds r3,r1,r0 / strh r3`) and only truncates later, which
+//     is what a `u32` local plus the `(s16)` cast does.
+//   * The two clamps share ONE `limit` variable (400, then -400). That is what
+//     puts the bound in r1 and the reloaded field in r0: with two fresh
+//     constants agbcc materialises the bound in r0 and loads the field into r1,
+//     swapping every operand of the `cmp`/`strh` pair. Assigning -400 inside
+//     the comparison (`< (limit = -400)`) also keeps the pool load after the
+//     `ldrsh`, which is the ROM's order.
+//   * `__asm__ volatile("" : : : "r1")` after the 29488 store. The address of
+//     the +104 store is computed as `adds r1,r5,#0 / adds r1,#104` and left in
+//     r1; cse then folds the +110 address into `adds r1,#6` off that same
+//     register (4 bytes become 2). Clobbering r1 in an empty asm makes the
+//     compiler forget the relation, so the +110 base is rebuilt from r5 as the
+//     ROM has it. Zero instructions, and the only lever that reached this:
+//     pinning the pointer, laundering it through an asm tie, `volatile`
+//     accesses, a struct-member spelling and a `v104` temporary all still fold.
+//   * The +140 fast path reads +106 into its own `v106` temporary, and the +104
+//     store stays inline. Inline `*(u16 *)(r + 140) = *p106;` computes the
+//     destination address before the load; a `u16 *p104` local computes the
+//     +104 address before the call at 0x80 instead of after it (+0x7E).
 // ----------------------------------------------------------------------------
-__attribute__((naked)) void _080029D48(void *rec) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, lr}\n"
-        "adds r5, r0, #0\n"
-        "adds r1, r5, #0\n"
-        "adds r1, #159\n"
-        "movs r4, #2\n"
-        "adds r0, r4, #0\n"
-        "ldrb r1, [r1, #0]\n"
-        "ands r0, r1\n"
-        "cmp r0, #0\n"
-        "bne.n .L29d48_main\n"
-        "ldr r1, [r5, #92]\n"
-        "adds r0, r1, #0\n"
-        "ands r0, r4\n"
-        "cmp r0, #0\n"
-        "beq.n .L29d48_clear\n"
-        ".L29d48_main:\n"
-        "adds r2, r5, #0\n"
-        "adds r2, #106\n"
-        "adds r3, r5, #0\n"
-        "adds r3, #132\n"
-        "ldrh r0, [r2, #0]\n"
-        "ldrh r6, [r3, #0]\n"
-        "subs r1, r0, r6\n"
-        "strh r1, [r2, #0]\n"
-        "ldr r0, [r5, #92]\n"
-        "ands r0, r4\n"
-        "cmp r0, #0\n"
-        "beq.n .L29d48_no_extra_sub\n"
-        "ldrh r3, [r3, #0]\n"
-        "lsls r0, r3, #2\n"
-        "subs r0, r1, r0\n"
-        "strh r0, [r2, #0]\n"
-        ".L29d48_no_extra_sub:\n"
-        "movs r1, #0\n"
-        "ldrsh r0, [r2, r1]\n"
-        "cmp r0, #0\n"
-        "bge.n .L29d48_set_flag\n"
-        "movs r0, #0\n"
-        "strh r0, [r2, #0]\n"
-        ".L29d48_set_flag:\n"
-        "ldr r0, [r5, #92]\n"
-        "movs r1, #64\n"
-        "orrs r0, r1\n"
-        "str r0, [r5, #92]\n"
-        "ands r0, r4\n"
-        "cmp r0, #0\n"
-        "beq.n .L29d48_interp\n"
-        "ldrh r1, [r2, #0]\n"
-        "adds r0, r5, #0\n"
-        "adds r0, #140\n"
-        "strh r1, [r0, #0]\n"
-        "b.n .L29d48_after_interp\n"
-        ".L29d48_interp:\n"
-        "movs r6, #0\n"
-        "ldrsh r0, [r2, r6]\n"
-        "adds r4, r5, #0\n"
-        "adds r4, #140\n"
-        "movs r2, #0\n"
-        "ldrsh r1, [r4, r2]\n"
-        "adds r2, r5, #0\n"
-        "adds r2, #142\n"
-        "ldrh r2, [r2, #0]\n"
-        "lsls r2, r2, #16\n"
-        "asrs r2, r2, #22\n"
-        "bl 0x08029400\n"
-        "strh r0, [r4, #0]\n"
-        ".L29d48_after_interp:\n"
-        "adds r0, r5, #0\n"
-        "bl 0x08029488\n"
-        "adds r1, r5, #0\n"
-        "adds r1, #104\n"
-        "strh r0, [r1, #0]\n"
-        "adds r1, r5, #0\n"
-        "adds r1, #110\n"
-        "movs r6, #0\n"
-        "ldrsh r0, [r1, r6]\n"
-        "cmp r0, #0\n"
-        "bge.n .L29d48_abs_done\n"
-        "negs r0, r0\n"
-        ".L29d48_abs_done:\n"
-        "cmp r0, #32\n"
-        "ble.n .L29d48_done\n"
-        "adds r2, r5, #0\n"
-        "adds r2, #134\n"
-        "ldrh r1, [r1, #0]\n"
-        "lsls r0, r1, #16\n"
-        "asrs r0, r0, #21\n"
-        "ldrh r1, [r2, #0]\n"
-        "adds r3, r1, r0\n"
-        "strh r3, [r2, #0]\n"
-        "ldr r0, [r5, #92]\n"
-        "movs r1, #128\n"
-        "lsls r1, r1, #8\n"
-        "ands r0, r1\n"
-        "cmp r0, #0\n"
-        "bne.n .L29d48_done\n"
-        "lsls r0, r3, #16\n"
-        "asrs r0, r0, #16\n"
-        "movs r1, #200\n"
-        "lsls r1, r1, #1\n"
-        "cmp r0, r1\n"
-        "ble.n .L29d48_after_hi\n"
-        "strh r1, [r2, #0]\n"
-        ".L29d48_after_hi:\n"
-        "movs r6, #0\n"
-        "ldrsh r0, [r2, r6]\n"
-        "ldr r1, 1f\n"
-        "cmp r0, r1\n"
-        "bge.n .L29d48_done\n"
-        "strh r1, [r2, #0]\n"
-        "b.n .L29d48_done\n"
-        ".align 2, 0\n"
-        "1: .word 0xfffffe70\n"
-        ".L29d48_clear:\n"
-        "movs r0, #65\n"
-        "negs r0, r0\n"
-        "ands r1, r0\n"
-        "str r1, [r5, #92]\n"
-        ".L29d48_done:\n"
-        "pop {r4, r5, r6}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        ".align 2, 0\n"
-        ".syntax divided\n"
-    );
+void _080029D48(void *rec) {
+    u8 *r = (u8 *)rec;
+    u16 *p106;
+    u16 *p132;
+    u16 *p134;
+    u32 delta;
+    u32 flags;
+    u32 f;
+    s32 v;
+
+    if ((*(u8 *)(r + 159) & 2) != 0 ||
+        ((f = *(volatile u32 *)(r + 92)) & 2) != 0) {
+        p106 = (u16 *)(r + 106);
+        p132 = (u16 *)(r + 132);
+        delta = (u32)*p106 - (u32)*p132;
+        *p106 = (u16)delta;
+        if ((*(volatile u32 *)(r + 92) & 2) != 0)
+            *p106 = (u16)(delta - (u32)*p132 * 4);
+        if (*(s16 *)p106 < 0)
+            *p106 = 0;
+        flags = *(volatile u32 *)(r + 92);
+        flags |= 0x40u;
+        *(volatile u32 *)(r + 92) = flags;
+        if ((flags & 2) != 0) {
+            u16 v106 = *p106;
+            *(u16 *)(r + 140) = v106;
+        } else {
+            *(u16 *)(r + 140) = (u16)_080029400(
+                (u32)*(s16 *)p106,
+                (u32)*(s16 *)(r + 140),
+                (u32)(((s32)*(u16 *)(r + 142) << 16) >> 22));
+        }
+        *(u16 *)(r + 104) = (u16)_080029488(r);
+        __asm__ volatile("" : : : "r1");
+        {
+            u16 *p110 = (u16 *)(r + 110);
+            v = *(s16 *)p110;
+            if (v < 0)
+                v = -v;
+            if (v > 32) {
+                u32 sum;
+                p134 = (u16 *)(r + 134);
+                sum = (u32)*p134 + (u32)(((s32)*p110 << 16) >> 21);
+                *p134 = (u16)sum;
+                if ((*(volatile u32 *)(r + 92) & 0x8000u) == 0) {
+                    s32 s = (s16)sum;
+                    s32 limit = 400;
+                    if (s > limit)
+                        *p134 = (u16)limit;
+                    if ((s16)*p134 < (limit = -400))
+                        *p134 = (u16)limit;
+                }
+            }
+        }
+    } else {
+        *(volatile u32 *)(r + 92) = f & ~0x40u;
+    }
 }
+// The 232-byte body ends on `bx r0`; the ROM pads the next two bytes with
+// 00 00 where gas would close the Thumb section with the 0x46c0 nop.
+__asm__(".align 2, 0");
 
 // ----------------------------------------------------------------------------
 // 0x08029E30 — 140 decrement + 29488 refresh.
@@ -2611,297 +2595,116 @@ void _080029E60(void *rec) {
 
 // ----------------------------------------------------------------------------
 // 0x08029F44 — mode-158 lanes (2/3/5/4) + 29488 trims.
+//
+// A lane body is the same three steps with per-lane constants:
+//   if s16[106] > 16
+//     raise s16[142] to s16[144] + lim (200; 30 for lane 4)
+//     if s16[140] > s32[4] % 32 + K: s16[140] -= steps, s16[104] = 29488(rec)
+// `% 32` (not `& 31`) is what emits the ROM's adds #31 / asrs #5 / lsls #5 /
+// subs remainder sequence.
+//
+// Shapes the ROM decides, measured here:
+//  * The flag word rec+92 is loaded *inside each arm* and stored once after
+//    them: a `volatile` lvalue keeps both loads (a plain one is CSEd ahead of
+//    the test). `mode` stays plain — the volatile flag store between blocks is
+//    what makes the ROM reload it, and the lane-4 test reuses the lane-5 load
+//    because nothing separates them.
+//  * The first block sets its bit from two places (the 142/144 compare and
+//    the |s16[134]| test) and the ROM keeps one copy of the load/or/store, so
+//    the assignment is textually duplicated and agbcc cross-jumps it. `f` is
+//    pinned to r0: unpinned, the value/constant pair lands swapped (r1/r0).
+//  * Lane 5 and lane 4 set the same bit from byte-identical arms and their
+//    clamp tails are byte-identical too; agbcc cross-jumps the arms first and
+//    then the tails, 32 B the ROM keeps. One empty asm after lane 5's flag
+//    assignment stops the whole cascade -- see the comment at that barrier.
+//  * `mode = t` after a pinned r0 temp is the ROM's
+//    `adds r0,r4,#0 / adds r0,#158 / adds r5,r0`: agbcc otherwise coalesces
+//    the address straight into mode's callee-saved home.
 // ----------------------------------------------------------------------------
-__attribute__((naked)) void _080029F44(void *rec) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "\tpush\t{r4, r5, r6, lr}\n"
-        "\tadds\tr4, r0, #0\n"
-        "\tadds\tr1, r4, #0\n"
-        "\tadds\tr1, #142\n"
-        "\tadds\tr0, #144\n"
-        "\tmovs\tr2, #0\n"
-        "\tldrsh\tr1, [r1, r2]\n"
-        "\tmovs\tr5, #0\n"
-        "\tldrsh\tr0, [r0, r5]\n"
-        "\tcmp\tr1, r0\n"
-        "\tbgt .Lgarage080029F44__080029F6C\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tadds\tr0, #134\n"
-        "\tmovs\tr6, #0\n"
-        "\tldrsh\tr0, [r0, r6]\n"
-        "\tcmp\tr0, #0\n"
-        "\tbge .Lgarage080029F44__080029F68\n"
-        "\tnegs\tr0, r0\n"
-        ".Lgarage080029F44__080029F68:\n"
-        "\tcmp\tr0, #0\n"
-        "\tble .Lgarage080029F44__080029F76\n"
-        ".Lgarage080029F44__080029F6C:\n"
-        "\tldr\tr0, [r4, #92]\n"
-        "\tmovs\tr1, #128\n"
-        "\tlsls\tr1, r1, #3\n"
-        "\torrs\tr0, r1\n"
-        "\tb .Lgarage080029F44__080029F7C\n"
-        ".Lgarage080029F44__080029F76:\n"
-        "\tldr\tr0, [r4, #92]\n"
-        "\tldr r1, .Lgarage080029F44__080029FF0\n"
-        "\tands\tr0, r1\n"
-        ".Lgarage080029F44__080029F7C:\n"
-        "\tstr\tr0, [r4, #92]\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tadds\tr0, #158\n"
-        "\tadds\tr5, r0, #0\n"
-        "\tldrb\tr0, [r5, #0]\n"
-        "\tcmp\tr0, #2\n"
-        "\tbne .Lgarage080029F44__080029FF4\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tadds\tr0, #106\n"
-        "\tmovs\tr1, #0\n"
-        "\tldrsh\tr0, [r0, r1]\n"
-        "\tcmp\tr0, #16\n"
-        "\tble .Lgarage080029F44__080029FE6\n"
-        "\tadds\tr3, r4, #0\n"
-        "\tadds\tr3, #142\n"
-        "\tmovs\tr2, #0\n"
-        "\tldrsh\tr1, [r3, r2]\n"
-        "\tadds\tr2, r4, #0\n"
-        "\tadds\tr2, #144\n"
-        "\tmovs\tr6, #0\n"
-        "\tldrsh\tr0, [r2, r6]\n"
-        "\tadds\tr0, #200\n"
-        "\tcmp\tr1, r0\n"
-        "\tbge .Lgarage080029F44__080029FB2\n"
-        "\tldrh\tr0, [r2, #0]\n"
-        "\tadds\tr0, #200\n"
-        "\tstrh\tr0, [r3, #0]\n"
-        ".Lgarage080029F44__080029FB2:\n"
-        "\tadds\tr2, r4, #0\n"
-        "\tadds\tr2, #140\n"
-        "\tmovs\tr0, #0\n"
-        "\tldrsh\tr3, [r2, r0]\n"
-        "\tldr\tr1, [r4, #4]\n"
-        "\tadds\tr0, r1, #0\n"
-        "\tcmp\tr1, #0\n"
-        "\tbge .Lgarage080029F44__080029FC4\n"
-        "\tadds\tr0, #31\n"
-        ".Lgarage080029F44__080029FC4:\n"
-        "\tasrs\tr0, r0, #5\n"
-        "\tlsls\tr0, r0, #5\n"
-        "\tsubs\tr0, r1, r0\n"
-        "\tmovs\tr1, #250\n"
-        "\tlsls\tr1, r1, #1\n"
-        "\tadds\tr0, r0, r1\n"
-        "\tcmp\tr3, r0\n"
-        "\tble .Lgarage080029F44__080029FE6\n"
-        "\tldrh\tr0, [r2, #0]\n"
-        "\tsubs\tr0, #2\n"
-        "\tstrh\tr0, [r2, #0]\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tbl sub_080029488\n"
-        "\tadds\tr1, r4, #0\n"
-        "\tadds\tr1, #104\n"
-        "\tstrh\tr0, [r1, #0]\n"
-        ".Lgarage080029F44__080029FE6:\n"
-        "\tldr\tr0, [r4, #92]\n"
-        "\tmovs\tr1, #128\n"
-        "\tlsls\tr1, r1, #4\n"
-        "\torrs\tr0, r1\n"
-        "\tb .Lgarage080029F44__080029FFA\n"
-        ".Lgarage080029F44__080029FF0: .word 0xFFFFFBFF\n"
-        ".Lgarage080029F44__080029FF4:\n"
-        "\tldr\tr0, [r4, #92]\n"
-        "\tldr r1, .Lgarage080029F44__08002A068\n"
-        "\tands\tr0, r1\n"
-        ".Lgarage080029F44__080029FFA:\n"
-        "\tstr\tr0, [r4, #92]\n"
-        "\tldrb\tr2, [r5, #0]\n"
-        "\tcmp\tr2, #3\n"
-        "\tbne .Lgarage080029F44__08002A06C\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tadds\tr0, #106\n"
-        "\tmovs\tr6, #0\n"
-        "\tldrsh\tr0, [r0, r6]\n"
-        "\tcmp\tr0, #16\n"
-        "\tble .Lgarage080029F44__08002A05E\n"
-        "\tadds\tr3, r4, #0\n"
-        "\tadds\tr3, #142\n"
-        "\tmovs\tr0, #0\n"
-        "\tldrsh\tr1, [r3, r0]\n"
-        "\tadds\tr2, r4, #0\n"
-        "\tadds\tr2, #144\n"
-        "\tmovs\tr6, #0\n"
-        "\tldrsh\tr0, [r2, r6]\n"
-        "\tadds\tr0, #200\n"
-        "\tcmp\tr1, r0\n"
-        "\tbge .Lgarage080029F44__08002A02A\n"
-        "\tldrh\tr0, [r2, #0]\n"
-        "\tadds\tr0, #200\n"
-        "\tstrh\tr0, [r3, #0]\n"
-        ".Lgarage080029F44__08002A02A:\n"
-        "\tadds\tr2, r4, #0\n"
-        "\tadds\tr2, #140\n"
-        "\tmovs\tr0, #0\n"
-        "\tldrsh\tr3, [r2, r0]\n"
-        "\tldr\tr1, [r4, #4]\n"
-        "\tadds\tr0, r1, #0\n"
-        "\tcmp\tr1, #0\n"
-        "\tbge .Lgarage080029F44__08002A03C\n"
-        "\tadds\tr0, #31\n"
-        ".Lgarage080029F44__08002A03C:\n"
-        "\tasrs\tr0, r0, #5\n"
-        "\tlsls\tr0, r0, #5\n"
-        "\tsubs\tr0, r1, r0\n"
-        "\tmovs\tr1, #200\n"
-        "\tlsls\tr1, r1, #1\n"
-        "\tadds\tr0, r0, r1\n"
-        "\tcmp\tr3, r0\n"
-        "\tble .Lgarage080029F44__08002A05E\n"
-        "\tldrh\tr0, [r2, #0]\n"
-        "\tsubs\tr0, #7\n"
-        "\tstrh\tr0, [r2, #0]\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tbl sub_080029488\n"
-        "\tadds\tr1, r4, #0\n"
-        "\tadds\tr1, #104\n"
-        "\tstrh\tr0, [r1, #0]\n"
-        ".Lgarage080029F44__08002A05E:\n"
-        "\tldr\tr0, [r4, #92]\n"
-        "\tmovs\tr1, #128\n"
-        "\tlsls\tr1, r1, #5\n"
-        "\torrs\tr0, r1\n"
-        "\tb .Lgarage080029F44__08002A072\n"
-        ".Lgarage080029F44__08002A068: .word 0xFFFFF7FF\n"
-        ".Lgarage080029F44__08002A06C:\n"
-        "\tldr\tr0, [r4, #92]\n"
-        "\tldr r1, .Lgarage080029F44__08002A0E0\n"
-        "\tands\tr0, r1\n"
-        ".Lgarage080029F44__08002A072:\n"
-        "\tstr\tr0, [r4, #92]\n"
-        "\tldrb\tr0, [r5, #0]\n"
-        "\tcmp\tr0, #5\n"
-        "\tbne .Lgarage080029F44__08002A0E4\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tadds\tr0, #106\n"
-        "\tmovs\tr2, #0\n"
-        "\tldrsh\tr0, [r0, r2]\n"
-        "\tcmp\tr0, #16\n"
-        "\tble .Lgarage080029F44__08002A0D6\n"
-        "\tadds\tr3, r4, #0\n"
-        "\tadds\tr3, #142\n"
-        "\tmovs\tr5, #0\n"
-        "\tldrsh\tr1, [r3, r5]\n"
-        "\tadds\tr2, r4, #0\n"
-        "\tadds\tr2, #144\n"
-        "\tmovs\tr6, #0\n"
-        "\tldrsh\tr0, [r2, r6]\n"
-        "\tadds\tr0, #200\n"
-        "\tcmp\tr1, r0\n"
-        "\tbge .Lgarage080029F44__08002A0A2\n"
-        "\tldrh\tr0, [r2, #0]\n"
-        "\tadds\tr0, #200\n"
-        "\tstrh\tr0, [r3, #0]\n"
-        ".Lgarage080029F44__08002A0A2:\n"
-        "\tadds\tr2, r4, #0\n"
-        "\tadds\tr2, #140\n"
-        "\tmovs\tr0, #0\n"
-        "\tldrsh\tr3, [r2, r0]\n"
-        "\tldr\tr1, [r4, #4]\n"
-        "\tadds\tr0, r1, #0\n"
-        "\tcmp\tr1, #0\n"
-        "\tbge .Lgarage080029F44__08002A0B4\n"
-        "\tadds\tr0, #31\n"
-        ".Lgarage080029F44__08002A0B4:\n"
-        "\tasrs\tr0, r0, #5\n"
-        "\tlsls\tr0, r0, #5\n"
-        "\tsubs\tr0, r1, r0\n"
-        "\tmovs\tr1, #250\n"
-        "\tlsls\tr1, r1, #1\n"
-        "\tadds\tr0, r0, r1\n"
-        "\tcmp\tr3, r0\n"
-        "\tble .Lgarage080029F44__08002A0D6\n"
-        "\tldrh\tr0, [r2, #0]\n"
-        "\tsubs\tr0, #2\n"
-        "\tstrh\tr0, [r2, #0]\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tbl sub_080029488\n"
-        "\tadds\tr1, r4, #0\n"
-        "\tadds\tr1, #104\n"
-        "\tstrh\tr0, [r1, #0]\n"
-        ".Lgarage080029F44__08002A0D6:\n"
-        "\tldr\tr0, [r4, #92]\n"
-        "\tmovs\tr1, #128\n"
-        "\tlsls\tr1, r1, #12\n"
-        "\torrs\tr0, r1\n"
-        "\tb .Lgarage080029F44__08002A154\n"
-        ".Lgarage080029F44__08002A0E0: .word 0xFFFFEFFF\n"
-        ".Lgarage080029F44__08002A0E4:\n"
-        "\tcmp\tr0, #4\n"
-        "\tbne .Lgarage080029F44__08002A14E\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tadds\tr0, #106\n"
-        "\tmovs\tr2, #0\n"
-        "\tldrsh\tr0, [r0, r2]\n"
-        "\tcmp\tr0, #16\n"
-        "\tble .Lgarage080029F44__08002A144\n"
-        "\tadds\tr3, r4, #0\n"
-        "\tadds\tr3, #142\n"
-        "\tmovs\tr5, #0\n"
-        "\tldrsh\tr1, [r3, r5]\n"
-        "\tadds\tr2, r4, #0\n"
-        "\tadds\tr2, #144\n"
-        "\tmovs\tr6, #0\n"
-        "\tldrsh\tr0, [r2, r6]\n"
-        "\tadds\tr0, #30\n"
-        "\tcmp\tr1, r0\n"
-        "\tbge .Lgarage080029F44__08002A110\n"
-        "\tldrh\tr0, [r2, #0]\n"
-        "\tadds\tr0, #30\n"
-        "\tstrh\tr0, [r3, #0]\n"
-        ".Lgarage080029F44__08002A110:\n"
-        "\tadds\tr2, r4, #0\n"
-        "\tadds\tr2, #140\n"
-        "\tmovs\tr0, #0\n"
-        "\tldrsh\tr3, [r2, r0]\n"
-        "\tldr\tr1, [r4, #4]\n"
-        "\tadds\tr0, r1, #0\n"
-        "\tcmp\tr1, #0\n"
-        "\tbge .Lgarage080029F44__08002A122\n"
-        "\tadds\tr0, #31\n"
-        ".Lgarage080029F44__08002A122:\n"
-        "\tasrs\tr0, r0, #5\n"
-        "\tlsls\tr0, r0, #5\n"
-        "\tsubs\tr0, r1, r0\n"
-        "\tmovs\tr1, #225\n"
-        "\tlsls\tr1, r1, #2\n"
-        "\tadds\tr0, r0, r1\n"
-        "\tcmp\tr3, r0\n"
-        "\tble .Lgarage080029F44__08002A144\n"
-        "\tldrh\tr0, [r2, #0]\n"
-        "\tsubs\tr0, #2\n"
-        "\tstrh\tr0, [r2, #0]\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tbl sub_080029488\n"
-        "\tadds\tr1, r4, #0\n"
-        "\tadds\tr1, #104\n"
-        "\tstrh\tr0, [r1, #0]\n"
-        ".Lgarage080029F44__08002A144:\n"
-        "\tldr\tr0, [r4, #92]\n"
-        "\tmovs\tr1, #128\n"
-        "\tlsls\tr1, r1, #12\n"
-        "\torrs\tr0, r1\n"
-        "\tb .Lgarage080029F44__08002A154\n"
-        ".Lgarage080029F44__08002A14E:\n"
-        "\tldr\tr0, [r4, #92]\n"
-        "\tldr r1, .Lgarage080029F44__08002A15C\n"
-        "\tands\tr0, r1\n"
-        ".Lgarage080029F44__08002A154:\n"
-        "\tstr\tr0, [r4, #92]\n"
-        "\tpop\t{r4, r5, r6}\n"
-        "\tpop\t{r0}\n"
-        "\tbx\tr0\n"
-        ".Lgarage080029F44__08002A15C: .word 0xFFF7FFFF\n"
-        ".syntax divided\n"
-    );
+void _080029F44(void *rec) {
+    u8 *r = (u8 *)rec;
+    u8 *mode;
+    register u32 f asm("r0");
+    int d;
+
+    if (*(s16 *)(r + 142) > *(s16 *)(r + 144)) {
+        f = *(volatile u32 *)(r + 92) | 0x400;
+    } else {
+        d = *(s16 *)(r + 134);
+        if (d < 0)
+            d = -d;
+        if (d > 0)
+            f = *(volatile u32 *)(r + 92) | 0x400;
+        else
+            f = *(volatile u32 *)(r + 92) & ~0x400u;
+    }
+    *(volatile u32 *)(r + 92) = f;
+
+    {
+        register u8 *t asm("r0") = r + 158;
+        __asm__ volatile ("" : "+r" (t));
+        mode = t;
+    }
+    if (*mode == 2) {
+        if (*(s16 *)(r + 106) > 16) {
+            if (*(s16 *)(r + 142) < *(s16 *)(r + 144) + 200)
+                *(u16 *)(r + 142) = *(u16 *)(r + 144) + 200;
+            if (*(s16 *)(r + 140) > *(int *)(r + 4) % 32 + 500) {
+                *(u16 *)(r + 140) -= 2;
+                *(u16 *)(r + 104) = (u16)_080029488(r);
+            }
+        }
+        f = *(volatile u32 *)(r + 92) | 0x800;
+    } else {
+        f = *(volatile u32 *)(r + 92) & ~0x800u;
+    }
+    *(volatile u32 *)(r + 92) = f;
+
+    if (*mode == 3) {
+        if (*(s16 *)(r + 106) > 16) {
+            if (*(s16 *)(r + 142) < *(s16 *)(r + 144) + 200)
+                *(u16 *)(r + 142) = *(u16 *)(r + 144) + 200;
+            if (*(s16 *)(r + 140) > *(int *)(r + 4) % 32 + 400) {
+                *(u16 *)(r + 140) -= 7;
+                *(u16 *)(r + 104) = (u16)_080029488(r);
+            }
+        }
+        f = *(volatile u32 *)(r + 92) | 0x1000;
+    } else {
+        f = *(volatile u32 *)(r + 92) & ~0x1000u;
+    }
+    *(volatile u32 *)(r + 92) = f;
+
+    if (*mode == 5) {
+        if (*(s16 *)(r + 106) > 16) {
+            if (*(s16 *)(r + 142) < *(s16 *)(r + 144) + 200)
+                *(u16 *)(r + 142) = *(u16 *)(r + 144) + 200;
+            if (*(s16 *)(r + 140) > *(int *)(r + 4) % 32 + 500) {
+                *(u16 *)(r + 140) -= 2;
+                *(u16 *)(r + 104) = (u16)_080029488(r);
+            }
+        }
+        f = *(volatile u32 *)(r + 92) | 0x80000;
+        /* Lane 4 below sets the same bit from a byte-identical arm, so agbcc
+           cross-jumps the two and the body comes out 8 B short with a branch
+           into lane 4's copy. This barrier keeps them apart; with it in
+           place the clamp tails stop merging as well (measured: separating
+           those instead changes nothing, removing both loses 32 B). */
+        __asm__ volatile ("");
+    } else if (*mode == 4) {
+        if (*(s16 *)(r + 106) > 16) {
+            if (*(s16 *)(r + 142) < *(s16 *)(r + 144) + 30)
+                *(u16 *)(r + 142) = *(u16 *)(r + 144) + 30;
+            if (*(s16 *)(r + 140) > *(int *)(r + 4) % 32 + 900) {
+                *(u16 *)(r + 140) -= 2;
+                *(u16 *)(r + 104) = (u16)_080029488(r);
+            }
+        }
+        f = *(volatile u32 *)(r + 92) | 0x80000;
+    } else {
+        f = *(volatile u32 *)(r + 92) & ~0x80000u;
+    }
+    *(volatile u32 *)(r + 92) = f;
 }
 // Forward decls for frame-tick callees (defined in functions below).
 void _08002AACC(void *a, void *b, void *c, void *d);
@@ -3604,114 +3407,93 @@ void _08002A740(void *rec) {
 __asm__(".align 2, 0");
 
 // ----------------------------------------------------------------------------
-// 0x08002A764 — (src,dst) state copier (asrs#4 scales + DivSI/5).
+// 0x08002A764 — (src,dst) state copier: two `(value + scale) >> 4` lanes, a
+// flat u32/u16 field copy, a signed `/5` through DivSI, a +-200 clamp on the
+// 110/136 halfword sum, and a `(flag ? flag : 1)` latch. 196 B, EXACT.
+//
+// `python3 tools/corpus_match_probe.py --function _08002A764 --c89
+// --require-exact` reports 196/196. Six spellings are load-bearing; the last
+// one is the register tie the second half of this comment is about.
+//
+//   * the two `>> 4` lanes read the record through *signed* lvalues
+//     (`*(s32 *)`) even though the destination store is a plain `str`: with a
+//     `u32` read agbcc emits `lsrs` where the ROM has `asrs` (`+0x14`, `+0x30`).
+//   * `q136` is a declared-but-uninitialised pointer assigned *after* the
+//     first lane's store. An initialiser at the top hoists `adds r4,r6,#0 /
+//     adds r4,#136` above `str r0,[r5,#20]` and shifts every following block
+//     by two instructions.
+//   * the sum reads its operands right-to-left: `p110 + q136` in the source
+//     emits `ldrh r7,[r7]` then `ldrh r4,[r4]` (the ROM's order); the reversed
+//     spelling swaps the pair and the `adds` operand order.
+//   * the clamp is `sum <<= 16; sum >>= 16;`, not `(s16)sum`. A cast makes
+//     agbcc extend into a *fresh* register (`asrs r1,r0`), while the pair of
+//     assignments extends in place (`asrs r0,r0`) because `sum` is one
+//     variable with one live range. Reassigning `sum` is also what lets the
+//     two comparisons share the extension.
+//   * `sum` is pinned to r0. The in-place extension above still lands in the
+//     allocator's choice of scratch register, and that choice cascades into
+//     the whole clamp (`cmp r1,#200` vs `cmp r0,#200`, then `movs r1,#200 /
+//     negs r1` vs `movs r0,#200 / negs r0`). Pinning the *variable* (assigned,
+//     not initialised) fixes it without disturbing the `adds r0,r7,r4`
+//     operand order -- the usual "pinning the sum swaps the add operands"
+//     pitfall only bites the `register T v __asm__("rN") = a + b;` form.
+//   * the low clamp arm stores through an `s16` lvalue: `*(s16 *)(d + 44) =
+//     -200` keeps the ROM's `movs r1,#200 / negs r1,r1`, where `(u16)-200`
+//     becomes a pooled 0x0000FF38 load.
+//
+// The empty barrier in the high arm blocks agbcc's cross-jump tail merge.
+// Both arms store the clamped value to the same halfword, so without it the
+// two `strh rX,[r5,#44]` blocks merge into one shared store after the second
+// compare, which costs the arm's own store and its 2-byte branch. Same
+// mechanism as the `_08001B8DC` note, from the suppressing side: there the
+// ROM shared a tail and the source had to repeat it, here the ROM repeats and
+// the source has to keep the copies apart. The trailing `u8 flag` temporary
+// is the last one: writing `*(u8 *)(d + 49) = *(u8 *)(s + 158);` computes the
+// destination address first, the temporary reverses it to the ROM's
+// load-then-address order.
 // ----------------------------------------------------------------------------
-__attribute__((naked)) int _08002A764(void *src, void *dst) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, r7, lr}\n"
-        "adds r6, r0, #0\n"
-        "adds r5, r1, #0\n"
-        "adds r7, r6, #0\n"
-        "adds r7, #110\n"
-        "movs r0, #0\n"
-        "ldrsh r1, [r7, r0]\n"
-        "lsls r1, r1, #1\n"
-        "ldr r0, [r6, #28]\n"
-        "adds r0, r0, r1\n"
-        "asrs r0, r0, #4\n"
-        "str r0, [r5, #20]\n"
-        "adds r4, r6, #0\n"
-        "adds r4, #136\n"
-        "movs r1, #0\n"
-        "ldrsh r0, [r4, r1]\n"
-        "lsls r0, r0, #4\n"
-        "ldr r1, [r6, #32]\n"
-        "adds r1, r1, r0\n"
-        "movs r0, #0\n"
-        "ldrsh r2, [r7, r0]\n"
-        "lsls r0, r2, #3\n"
-        "adds r0, r0, r2\n"
-        "adds r1, r1, r0\n"
-        "asrs r1, r1, #4\n"
-        "str r1, [r5, #24]\n"
-        "ldr r0, [r6, #4]\n"
-        "str r0, [r5, #4]\n"
-        "ldr r0, [r6, #8]\n"
-        "str r0, [r5, #8]\n"
-        "ldr r0, [r6, #20]\n"
-        "str r0, [r5, #12]\n"
-        "ldr r0, [r6, #24]\n"
-        "str r0, [r5, #16]\n"
-        "adds r0, r6, #0\n"
-        "adds r0, #108\n"
-        "ldrh r0, [r0, #0]\n"
-        "strh r0, [r5, #36]\n"
-        "adds r0, r6, #0\n"
-        "adds r0, #36\n"
-        "str r0, [r5, #28]\n"
-        "ldr r0, [r6, #92]\n"
-        "str r0, [r5, #32]\n"
-        "adds r0, r6, #0\n"
-        "adds r0, #140\n"
-        "movs r1, #0\n"
-        "ldrsh r0, [r0, r1]\n"
-        "movs r1, #5\n"
-        "bl _08002DE04\n"
-        "strh r0, [r5, #40]\n"
-        "adds r0, r6, #0\n"
-        "adds r0, #128\n"
-        "ldrh r0, [r0, #0]\n"
-        "strh r0, [r5, #38]\n"
-        "adds r0, r6, #0\n"
-        "adds r0, #116\n"
-        "ldrh r0, [r0, #0]\n"
-        "strh r0, [r5, #42]\n"
-        "ldrh r7, [r7, #0]\n"
-        "ldrh r4, [r4, #0]\n"
-        "adds r0, r7, r4\n"
-        "strh r0, [r5, #44]\n"
-        "lsls r0, r0, #16\n"
-        "asrs r0, r0, #16\n"
-        "cmp r0, #200\n"
-        "ble .L2a764_low\n"
-        "movs r0, #200\n"
-        "strh r0, [r5, #44]\n"
-        "b .L2a764_flag\n"
-        ".L2a764_low:\n"
-        "movs r1, #200\n"
-        "negs r1, r1\n"
-        "cmp r0, r1\n"
-        "bge .L2a764_flag\n"
-        "strh r1, [r5, #44]\n"
-        ".L2a764_flag:\n"
-        "adds r0, r6, #0\n"
-        "adds r0, #156\n"
-        "ldrb r1, [r0, #0]\n"
-        "cmp r1, #0\n"
-        "bne .L2a764_flag_set\n"
-        "adds r1, r5, #0\n"
-        "adds r1, #48\n"
-        "movs r0, #1\n"
-        "strb r0, [r1, #0]\n"
-        "b .L2a764_tail\n"
-        ".L2a764_flag_set:\n"
-        "adds r0, r5, #0\n"
-        "adds r0, #48\n"
-        "strb r1, [r0, #0]\n"
-        ".L2a764_tail:\n"
-        "adds r0, r6, #0\n"
-        "adds r0, #158\n"
-        "ldrb r1, [r0, #0]\n"
-        "adds r0, r5, #0\n"
-        "adds r0, #49\n"
-        "strb r1, [r0, #0]\n"
-        "movs r0, #0\n"
-        "pop {r4, r5, r6, r7}\n"
-        "pop {r1}\n"
-        "bx r1\n"
-        ".syntax divided\n"
-    );
+int _08002A764(void *src, void *dst) {
+    u8 *s = (u8 *)src;
+    u8 *d = (u8 *)dst;
+    s16 *p110 = (s16 *)(s + 110);
+    s16 *q136;
+    int e;
+    register int sum __asm__("r0");
+
+    *(u32 *)(d + 20) = (u32)((*(s32 *)(s + 28) + (int)p110[0] * 2) >> 4);
+    q136 = (s16 *)(s + 136);
+    e = *(s32 *)(s + 32) + (int)q136[0] * 16;
+    e += (int)p110[0] * 9;
+    *(u32 *)(d + 24) = (u32)(e >> 4);
+    *(u32 *)(d + 4) = *(u32 *)(s + 4);
+    *(u32 *)(d + 8) = *(u32 *)(s + 8);
+    *(u32 *)(d + 12) = *(u32 *)(s + 20);
+    *(u32 *)(d + 16) = *(u32 *)(s + 24);
+    *(u16 *)(d + 36) = *(u16 *)(s + 108);
+    *(u32 *)(d + 28) = (u32)(uintptr_t)(s + 36);
+    *(u32 *)(d + 32) = *(u32 *)(s + 92);
+    *(u16 *)(d + 40) = (u16)_08002DE04(*(s16 *)(s + 140), 5);
+    *(u16 *)(d + 38) = *(u16 *)(s + 128);
+    *(u16 *)(d + 42) = *(u16 *)(s + 116);
+    sum = *(u16 *)p110 + *(u16 *)q136;
+    *(u16 *)(d + 44) = (u16)sum;
+    sum <<= 16;
+    sum >>= 16;
+    if (sum > 200) {
+        *(u16 *)(d + 44) = 200;
+        __asm__ volatile("");
+    } else if (sum < -200) {
+        *(s16 *)(d + 44) = -200;
+    }
+    if (*(u8 *)(s + 156) == 0)
+        *(u8 *)(d + 48) = 1;
+    else
+        *(u8 *)(d + 48) = *(u8 *)(s + 156);
+    {
+        u8 flag = *(u8 *)(s + 158);
+        *(u8 *)(d + 49) = flag;
+    }
+    return 0;
 }
 
 // ----------------------------------------------------------------------------
