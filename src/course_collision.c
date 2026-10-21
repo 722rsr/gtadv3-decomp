@@ -574,14 +574,12 @@ int Course_Scan(void *outPair, void *inPair) {
     while (record != 0) {
         recordLow = record;
         index = *(s16 *)(recordLow + 4);
-        /* C chooses r1 for both signed halfword offsets; the ROM uses r2 for
-         * the second one. Tie the signed result to r0 for the bound test. */
-        __asm__ volatile (
-            "movs r2, #6\n\t"
-            "ldrsh %0, [%1, r2]"
-            : "=r"(last)
-            : "0"(recordLow)
-            : "r2");
+        /* ROM gives the second signed halfword offset its own scratch (r2);
+         * keeping r1 live across the load keeps agbcc off it. */
+        register int hold __asm__("r1");
+        __asm__ volatile("" : "=r"(hold));
+        last = *(s16 *)(recordLow + 6);
+        __asm__ volatile("" : : "r"(hold));
         if (last >= index) {
             offset = index * 12;
             __asm__ volatile ("" : "+r"(offset));

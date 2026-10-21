@@ -91,9 +91,12 @@ void MenuFF78_15620(void *rec_, u32 dead, u32 ev_) {
     __asm__ volatile("" : "+r"(tail_cell) : : "cc");
     if (ev == 1) {
         register s32 s asm("r5");
-        __asm__ volatile("movs r2, #0\n\tldrsh %0, [%1, r2]"
-                         : "=l"(s) : "l"(tail_cell)
-                         : "r2", "cc", "memory");
+        /* ROM's scratch is r2 here; hold r0 and r1 live across the load. */
+        register int hold0 asm("r0");
+        register int hold1 asm("r1");
+        __asm__ volatile("" : "=r"(hold0), "=r"(hold1));
+        s = *(s16 *)(uintptr_t)tail_cell;
+        __asm__ volatile("" : : "r"(hold0), "r"(hold1));
         register int rv asm("r0");
         switch (s) {
         case 0:
@@ -156,11 +159,19 @@ state_done:;
     register volatile u8 *r1 asm("r1") = tail_cell;
     __asm__ volatile("" : "+r"(r1) : : "cc");
     register s32 cur asm("r0");
+    /* The ROM rereads the cell through two different zero-index scratches
+     * (r2 then r3). Holding the other one live across each load keeps agbcc
+     * off it, one load at a time. */
+    register int hold_r3 asm("r3");
+    __asm__ volatile("" : "=r"(hold_r3));
     cur = *(s16 *)(uintptr_t)r1;
+    __asm__ volatile("" : : "r"(hold_r3));
     if (cur < 0)
         *(volatile u16 *)(uintptr_t)r1 = 0;
-    __asm__ volatile("movs r3, #0\n\tldrsh %0, [%1, r3]"
-                     : "=l"(cur) : "l"(r1) : "r3", "cc", "memory");
+    register int hold_r2 asm("r2");
+    __asm__ volatile("" : "=r"(hold_r2));
+    cur = *(s16 *)(uintptr_t)r1;
+    __asm__ volatile("" : : "r"(hold_r2));
     if (cur > 4)
         *(volatile u16 *)(uintptr_t)r1 = 4;
     register u32 current asm("r6") = *(volatile u16 *)(uintptr_t)tail_cell;
