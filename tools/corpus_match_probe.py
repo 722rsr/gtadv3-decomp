@@ -1485,6 +1485,9 @@ def compare_function(rom: bytes, vma: int, name: str, blob: bytes, spans: dict[i
     from instruction_diff import analyze as instruction_diff
     rec["instruction_diff"] = instruction_diff(ref, blob, vma, rom_text, blob_text)
     rec["class"] = rec["instruction_diff"]["class"]
+    # Lifted to the top level so a reader (and the JSON) sees the cross-jump
+    # hint without unpacking the alignment record.
+    rec["cross_jump"] = rec["instruction_diff"]["cross_jump"]
     return rec
 
 
@@ -2003,8 +2006,136 @@ def self_test() -> int:
         finally:
             WORK = _real_work
 
+        # Cross-jump hint: a candidate branch that lands on a block the ROM
+        # keeps as its own copy. Fixtures are the _080029F44 lane merge
+        # reduced to four instructions, so the rule is pinned without
+        # depending on any live body's current spelling.
+        _CJ_VMA = 0x08003000
+        _CJ_OFF = _CJ_VMA - ROM_BASE
+        _CJ_SPAN = {_CJ_VMA: _CJ_VMA + 8}
+        _real_work = WORK
+        WORK = tdp / "crossjump"
+        try:
+            WORK.mkdir(exist_ok=True)
+            # ROM falls through 0->2->4->6; the candidate deletes the copy at
+            # +4 and branches forward into the ROM's own +6 slot.
+            _CJ_ROM = bytearray(_CJ_OFF + 8)
+            _CJ_ROM[_CJ_OFF:_CJ_OFF + 8] = bytes.fromhex("0120 0220 0320 7047")
+            merged = compare_function(bytes(_CJ_ROM), _CJ_VMA, "cj",
+                                      bytes.fromhex("0120 00e0 0320 7047"),
+                                      _CJ_SPAN, [], [])
+            check("a branch into a ROM fall-through block is flagged",
+                  merged is not None and merged["status"] != "EXACT"
+                  and [(h["candidate_offsets"], h["candidate_target"],
+                        h["reference_targets"]) for h in merged["cross_jump"]]
+                  == [([2], 6, [6])])
+            # Control: the same candidate shape, but the ROM itself branches to
+            # the block, so sharing it is correct and must not be flagged.
+            _CJ_ROM2 = bytearray(_CJ_ROM)
+            _CJ_ROM2[_CJ_OFF:_CJ_OFF + 8] = bytes.fromhex("0120 00e0 0220 7047")
+            shared = compare_function(bytes(_CJ_ROM2), _CJ_VMA, "cj2",
+                                      bytes.fromhex("0120 00e0 0320 7047"),
+                                      _CJ_SPAN, [], [])
+            check("a branch to a block the ROM also branches to is not flagged",
+                  shared is not None and shared["cross_jump"] == [])
+            # Second shape: the ROM sends two branches to two different blocks
+            # and the candidate sends both to one of them (lane 5's flag arm
+            # merging into lane 4's). Nothing is inserted, so (1) cannot see it.
+            _CJ_ROM3 = bytearray(_CJ_OFF + 16)
+            _CJ_ROM3[_CJ_OFF:_CJ_OFF + 16] = bytes.fromhex(
+                "0028 02d0 0120 01e0 0220 0320 0420 7047")
+            _CJ_SPAN3 = {_CJ_VMA: _CJ_VMA + 16}
+            collapsed = compare_function(bytes(_CJ_ROM3), _CJ_VMA, "cj3",
+                                         bytes.fromhex(
+                                             "0028 03d0 0120 01e0 0220 0320 0420 7047"),
+                                         _CJ_SPAN3, [], [])
+            check("branches the ROM sends to different blocks are flagged when merged",
+                  collapsed is not None
+                  and [(h["kind"], h["candidate_offsets"], h["reference_targets"])
+                       for h in collapsed["cross_jump"]]
+                  == [("merged copies", [2, 6], [10, 12])])
+        finally:
+            WORK = _real_work
+
     print(f"\nself-test: {passed}/{total} checks PASS")
     return 0 if passed == total else 1
+
+
+def _insn_text(row: dict) -> str:
+    args = row["args"]
+    return f"{row['op']} {args}".strip()
+
+
+def _print_cross_jump(rec: dict) -> None:
+    """Flag a branch into a block the ROM keeps as its own copy.
+
+    This is the cross-jump signature: agbcc merges two byte-identical blocks
+    (repeated arms, repeated lane bodies) into one, so the candidate branches
+    where the ROM falls through and comes out short. It is advisory -- the
+    whole-span bytes still decide -- but it names the one lever that undoes it
+    (an empty asm between the blocks) instead of leaving a bare byte deficit.
+    """
+    hits = rec.get("cross_jump") or []
+    if not hits:
+        return
+    size = f"cand {rec['cand_bytes']} B vs rom {rec['rom_bytes']} B"
+    for hit in hits:
+        sites = ", ".join(f"+0x{o:X}" for o in hit["candidate_offsets"][:4])
+        if len(hit["candidate_offsets"]) > 4:
+            sites += f", +{len(hit['candidate_offsets']) - 4} more"
+        copies = ", ".join(f"+0x{o:X}" for o in hit["reference_targets"][:4])
+        if hit["kind"] == "merged copies":
+            print(f"  cross-jump: {len(hit['candidate_offsets'])} branches ({sites}) share "
+                  f"+0x{hit['candidate_target']:X}, which the ROM keeps as "
+                  f"{len(hit['reference_targets'])} copies ({copies}); {size}")
+        else:
+            print(f"  cross-jump: {sites} -> +0x{hit['candidate_target']:X} reuses the ROM's "
+                  f"{copies} copy, which no ROM branch reaches; {size}")
+
+
+def _print_instruction_diff(rec: dict) -> None:
+    """Print the advisory alignment for one non-exact body.
+
+    The scorer already aligns both listings in `instruction_diff`; printing it
+    here is what turns a byte count into something a spelling can be steered
+    from. Offsets are relative to the function's VMA so they line up with the
+    ROM listing and with the candidate blob in the work dir.
+    """
+    info = rec.get("instruction_diff")
+    if not info:
+        return
+    vma = rec["vma"]
+    if isinstance(vma, str):
+        vma = int(vma, 16)
+    diffs = info.get("differences") or []
+    edits = info.get("edits") or []
+    if not diffs and not edits:
+        return
+    width = 44
+    print(f"  diff: {info.get('agreeing_instructions', 0)} aligned instructions agree, "
+          f"{len(diffs)} differ, {len(edits)} unmatched run(s)  [{info.get('class')}]")
+    if not info.get("complete", True):
+        # The flow walk gives up at an indirect branch, so everything past it is
+        # never compared. Say so: the byte score then covers a prefix only, and
+        # the missing bytes are not a spelling difference.
+        reasons = sorted({r for side in (info.get("limitations") or {}).values() for r in side})
+        print(f"  !! scoring stopped early ({'; '.join(reasons) or 'unknown'}): "
+              f"{info.get('reference_instructions', 0)} ROM / "
+              f"{info.get('candidate_instructions', 0)} candidate instruction(s) reached, "
+              f"the rest of both bodies is unscored")
+    for d in diffs:
+        x, y = d["reference"], d["candidate"]
+        mark = "reg" if d["kinds"] == ["register"] else ",".join(d["kinds"])
+        print(f"  !! rom +0x{x['pc']-vma:03X} {_insn_text(x):<{width}} | "
+              f"cand +0x{y['pc']-vma:03X} {_insn_text(y):<{width}} {mark}")
+    for e in edits:
+        for label, key in (("-- rom ", "reference"), ("++ cand", "candidate")):
+            rows = e.get(key) or []
+            if not rows:
+                continue
+            print(f"  {label} +0x{rows[0]['pc']-vma:03X}  ({e['kind']}, {len(rows)} instruction(s))")
+            for row in rows:
+                print(f"       +0x{row['pc']-vma:03X}  {_insn_text(row)}")
 
 
 def main() -> int:
@@ -2018,6 +2149,10 @@ def main() -> int:
     ap.add_argument("--work-dir", type=Path, help="private scratch directory for this run")
     ap.add_argument("--include-unknown", action="store_true", help="include source VMAs outside the known ASM function inventory")
     ap.add_argument("--c89", action="store_true", help="compile validated C89 copies of source TUs")
+    ap.add_argument("--diff", action="store_true",
+                    help="with --function: print the aligned instruction diff (ROM vs candidate) "
+                         "for every non-exact body, so a spelling can be steered from the listing "
+                         "instead of re-deriving it by hand")
     ap.add_argument("--require-all", action="store_true", help="fail if any selected TU cannot compile")
     ap.add_argument("--require-exact", action="store_true", help="fail unless every selected function is byte-exact")
     ap.add_argument("--self-test", action="store_true", help="run self-test suite")
@@ -2267,6 +2402,10 @@ def main() -> int:
         print("\nmiss classification:")
         for c, n in classes.most_common():
             print(f"  {c:<40} {n}")
+    hinted = [r for r in results if r.get("cross_jump")]
+    if hinted:
+        print(f"\n  cross-jump: {len(hinted)} candidate(s) branch into a block the ROM "
+              f"duplicates (run --function NAME for the offsets)")
 
     if args.function:
         for rec in results:
@@ -2280,6 +2419,9 @@ def main() -> int:
                       f"{call['target_vma'] or 'UNRESOLVED'}")
             for pool in rec["pool_words"]:
                 print(f"  pool +0x{pool['offset']:X}: {pool['symbol']} -> {pool['target_value']}")
+            _print_cross_jump(rec)
+            if args.diff:
+                _print_instruction_diff(rec)
     for skipped in skipped_reasons:
         print(f"  SKIPPED {skipped['source']}: {skipped['reason']}")
     if unscored:

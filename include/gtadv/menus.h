@@ -37,7 +37,7 @@ void MenuCE70_0800CE70(void *rec, void *ctx);     // menu_ce70.s mode-6 setter
 
 // Larger menu clusters (record/menu dispatchers — port after leaves)
 void MenuRecordUpdate_0800BCD4(void *a0, u32 a1, void *a2, u32 a3, void *sp24, void *sp28, void *sp32, void *sp36); // menu_record_update.s
-void MenuSetup_0800BC08(void *a0, void *a1, void *a2, void *a3); // menu_setup.s
+void MenuSetup_0800BC08(void *a0, u32 row, void *a2, void *a3); // menu_setup.s
 // The 0x0800BD40 / 0x0800BE74 bodies live in src/scene_record_dispatch.c under these
 // names (the earlier MenuProgress_0800BD40 / MenuPlace_0800BE74 spellings were
 // declarations with no definition, which silently became no-op link stubs).

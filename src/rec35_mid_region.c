@@ -1426,231 +1426,169 @@ __asm__(".align 2, 0");
 void _08001774C(void *a) __attribute__((alias("Rec35_Leaf_1774C")));
 
 // ---------------------------------------------------------------------------
-// _080017788(rec, a, id) — full-ctrl selection (see ROM register-plumbing note)
-__attribute__((naked)) void Rec35_Input_17788(void *rec, int a, int id) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push	{r4, r5, r6, r7, lr}\n"
-        "mov	r7, r9\n"
-        "mov	r6, r8\n"
-        "push	{r6, r7}\n"
-        "adds	r7, r0, #0\n"
-        "lsls	r1, r1, #16\n"
-        "lsrs	r1, r1, #16\n"
-        "mov	r9, r1\n"
-        "lsls	r2, r2, #16\n"
-        "lsrs	r2, r2, #16\n"
-        "mov	r8, r2\n"
-        "ldr r0, .Lr35i_pool_804\n"
-        "ldr r1, .Lr35i_pool_808\n"
-        "adds	r0, r0, r1\n"
-        "ldrb	r0, [r0, #0]\n"
-        "cmp	r0, #1\n"
-        "bne .Lr35i_80c\n"
-        "adds	r5, r7, #0\n"
-        "adds	r5, #194\n"
-        "ldrh	r1, [r5, #0]\n"
-        "movs	r0, #4\n"
-        "bl 0x08002158\n"
-        "adds	r0, r7, #0\n"
-        "adds	r0, #190\n"
-        "ldrh	r1, [r0, #0]\n"
-        "movs	r0, #5\n"
-        "bl 0x08002158\n"
-        "adds	r4, r7, #0\n"
-        "adds	r4, #184\n"
-        "ldrh	r1, [r4, #0]\n"
-        "movs	r0, #1\n"
-        "bl 0x08002158\n"
-        "movs	r2, #170\n"
-        "lsls	r2, r2, #1\n"
-        "adds	r0, r7, r2\n"
-        "ldrh	r1, [r0, #0]\n"
-        "movs	r0, #3\n"
-        "bl 0x08002158\n"
-        "movs	r3, #172\n"
-        "lsls	r3, r3, #1\n"
-        "adds	r0, r7, r3\n"
-        "ldrh	r1, [r0, #0]\n"
-        "movs	r0, #2\n"
-        "bl 0x08002158\n"
-        "movs	r1, #128\n"
-        "lsls	r1, r1, #2\n"
-        "adds	r0, r7, r1\n"
-        "ldrh	r1, [r0, #0]\n"
-        "movs	r0, #6\n"
-        "bl 0x08002158\n"
-        "adds	r6, r5, #0\n"
-        "adds	r1, r4, #0\n"
-        "subs	r5, #6\n"
-        "subs	r4, #2\n"
-        "b .Lr35i_85e\n"
-        "movs	r0, r0\n"
-        ".Lr35i_pool_804: .word 0x03001780\n"
-        ".Lr35i_pool_808: .word 0x000010C3\n"
-        ".Lr35i_80c:\n"
-        "adds	r6, r7, #0\n"
-        "adds	r6, #194\n"
-        "ldrh	r1, [r6, #0]\n"
-        "movs	r0, #4\n"
-        "bl 0x08002158\n"
-        "adds	r5, r7, #0\n"
-        "adds	r5, #188\n"
-        "ldrh	r1, [r5, #0]\n"
-        "movs	r0, #5\n"
-        "bl 0x08002158\n"
-        "adds	r4, r7, #0\n"
-        "adds	r4, #182\n"
-        "ldrh	r1, [r4, #0]\n"
-        "movs	r0, #1\n"
-        "bl 0x08002158\n"
-        "movs	r2, #170\n"
-        "lsls	r2, r2, #1\n"
-        "adds	r0, r7, r2\n"
-        "ldrh	r1, [r0, #0]\n"
-        "movs	r0, #3\n"
-        "bl 0x08002158\n"
-        "movs	r3, #172\n"
-        "lsls	r3, r3, #1\n"
-        "adds	r0, r7, r3\n"
-        "ldrh	r1, [r0, #0]\n"
-        "movs	r0, #2\n"
-        "bl 0x08002158\n"
-        "movs	r1, #128\n"
-        "lsls	r1, r1, #2\n"
-        "adds	r0, r7, r1\n"
-        "ldrh	r1, [r0, #0]\n"
-        "movs	r0, #6\n"
-        "bl 0x08002158\n"
-        "adds	r1, r7, #0\n"
-        "adds	r1, #184\n"
-        ".Lr35i_85e:\n"
-        "mov	r2, r8\n"
-        "cmp	r2, #1\n"
-        "bne .Lr35i_86a\n"
-        "adds	r0, r7, #0\n"
-        "adds	r0, #190\n"
-        "strh	r2, [r0, #0]\n"
-        ".Lr35i_86a:\n"
-        "mov	r3, r8\n"
-        "cmp	r3, #2\n"
-        "bne .Lr35i_876\n"
-        "adds	r0, r7, #0\n"
-        "adds	r0, #190\n"
-        "strh	r3, [r0, #0]\n"
-        ".Lr35i_876:\n"
-        "mov	r0, r8\n"
-        "cmp	r0, #64\n"
-        "bne .Lr35i_882\n"
-        "ldrh	r0, [r1, #0]\n"
-        "subs	r0, #1\n"
-        "strh	r0, [r1, #0]\n"
-        ".Lr35i_882:\n"
-        "mov	r2, r8\n"
-        "cmp	r2, #128\n"
-        "bne .Lr35i_88e\n"
-        "ldrh	r0, [r1, #0]\n"
-        "adds	r0, #1\n"
-        "strh	r0, [r1, #0]\n"
-        ".Lr35i_88e:\n"
-        "adds	r2, r1, #0\n"
-        "movs	r3, #0\n"
-        "ldrsh	r0, [r2, r3]\n"
-        "cmp	r0, #0\n"
-        "bgt .Lr35i_89c\n"
-        "movs	r0, #1\n"
-        "strh	r0, [r2, #0]\n"
-        ".Lr35i_89c:\n"
-        "movs	r2, #0\n"
-        "ldrsh	r0, [r1, r2]\n"
-        "cmp	r0, #3\n"
-        "ble .Lr35i_8a8\n"
-        "movs	r0, #3\n"
-        "strh	r0, [r1, #0]\n"
-        ".Lr35i_8a8:\n"
-        "ldr r0, .Lr35i_pool_8c4\n"
-        "ldr r3, .Lr35i_pool_8c8\n"
-        "adds	r0, r0, r3\n"
-        "ldrb	r0, [r0, #0]\n"
-        "cmp	r0, #0\n"
-        "bne .Lr35i_8cc\n"
-        "movs	r0, #1\n"
-        "movs	r1, #1\n"
-        "bl 0x08002178\n"
-        "strh	r0, [r4, #0]\n"
-        "movs	r0, #1\n"
-        "b .Lr35i_8d8\n"
-        "movs	r0, r0\n"
-        ".Lr35i_pool_8c4: .word 0x03001780\n"
-        ".Lr35i_pool_8c8: .word 0x000010C3\n"
-        ".Lr35i_8cc:\n"
-        "movs	r0, #0\n"
-        "movs	r1, #1\n"
-        "bl 0x08002178\n"
-        "strh	r0, [r4, #0]\n"
-        "movs	r0, #0\n"
-        ".Lr35i_8d8:\n"
-        "movs	r1, #5\n"
-        "bl 0x08002178\n"
-        "strh	r0, [r5, #0]\n"
-        "movs	r1, #0\n"
-        "ldrsh	r0, [r4, r1]\n"
-        "adds	r5, r7, #0\n"
-        "adds	r5, #186\n"
-        "cmp	r0, #0\n"
-        "bne .Lr35i_8f0\n"
-        "ldrh	r0, [r5, #0]\n"
-        "strh	r0, [r4, #0]\n"
-        ".Lr35i_8f0:\n"
-        "movs	r2, #0\n"
-        "ldrsh	r0, [r6, r2]\n"
-        "cmp	r0, #2\n"
-        "beq .Lr35i_8fc\n"
-        "cmp	r0, #4\n"
-        "bne .Lr35i_910\n"
-        ".Lr35i_8fc:\n"
-        "ldrh	r3, [r5, #0]\n"
-        "ldrh	r0, [r4, #0]\n"
-        "cmp	r3, r0\n"
-        "beq .Lr35i_910\n"
-        "adds	r0, r7, #0\n"
-        "bl sub_080016944\n"
-        "movs	r0, #2\n"
-        "bl sub_0800168B8\n"
-        ".Lr35i_910:\n"
-        "ldrh	r0, [r4, #0]\n"
-        "strh	r0, [r5, #0]\n"
-        "movs	r1, #0\n"
-        "ldrsh	r5, [r6, r1]\n"
-        "cmp	r5, #2\n"
-        "blt .Lr35i_93e\n"
-        "cmp	r5, #4\n"
-        "bgt .Lr35i_92c\n"
-        "adds	r0, r7, #0\n"
-        "mov	r1, r9\n"
-        "mov	r2, r8\n"
-        "bl sub_0800175BC\n"
-        "b .Lr35i_93e\n"
-        ".Lr35i_92c:\n"
-        "cmp	r5, #8\n"
-        "bgt .Lr35i_93e\n"
-        "cmp	r5, #6\n"
-        "blt .Lr35i_93e\n"
-        "adds	r0, r7, #0\n"
-        "mov	r1, r9\n"
-        "mov	r2, r8\n"
-        "bl sub_08001774C\n"
-        ".Lr35i_93e:\n"
-        "pop	{r3, r4}\n"
-        "mov	r8, r3\n"
-        "mov	r9, r4\n"
-        "pop	{r4, r5, r6, r7}\n"
-        "pop	{r0}\n"
-        "bx	r0\n"
-        "movs	r0, r0\n"
-        ".syntax divided\n"
-    );
+// _080017788(rec, a, id) — full-ctrl selection handler.
+// Two mirrored ingest blocks seed six keyboard-mirror fields (WA+0x10C3 picks
+// the +194/+190/+184 trio over +194/+188/+182); they converge on the same four
+// pointers (+194 in r6, +184 in r1, +188 in r5, +182 in r4) and a shared tail:
+// [190]=id for id 1/2, the 64/128 step and the 1..3 clamp on +184, a re-seed of
+// +184/+188 from _08002178(argId, ...), the +186 shadow copy, and a signed
+// dispatch on [194] (2..4 -> 175BC, 6..8 -> 1774C).
+extern void _0800175BC(void *a);
+void Rec35_Input_17788(void *rec0, int a, int id) {
+    extern int _08002158(int id, int v);
+    u8 *rec = (u8 *)rec0;
+    register int argA __asm__("r9") = (int)(u16)a;
+    register int argId __asm__("r8") = (int)(u16)id;
+    register u8 *p194 __asm__("r6");
+    register u8 *p184 __asm__("r1");
+    register u8 *p188 __asm__("r5");
+    register u8 *p182 __asm__("r4");
+    // Symbol form keeps the ROM's base-in-a-register pool pair instead of one
+    // folded 0x03002xxx word. The address is deliberately recomputed at the
+    // second site: the ROM carries two pool pairs, so nothing may hold it live.
+    u8 *wa;
+    { extern u8 Rec35Wa[]; __asm__(".globl Rec35Wa\nRec35Wa = 0x03001780\n"); wa = Rec35Wa; }
+    if (*(wa + 0x10C3) == 1) {
+        p188 = rec + 194;
+        _08002158(4, RD16P(p188));
+        _08002158(5, RD16P(rec + 190));
+        p182 = rec + 184;
+        _08002158(1, RD16P(p182));
+        // Constant synthesis in steps on a pinned register: the ROM materialises
+        // 170<<1, 172<<1 and 128<<2 rather than folded 340/344/512.
+        { register u32 k __asm__("r2");
+          k = 170u;
+          __asm__ volatile("" : "+r"(k));
+          k <<= 1;
+          __asm__ volatile("" : "+r"(k));
+          register u8 *p __asm__("r0");
+          p = rec + k;
+          __asm__ volatile("" : "+r"(p));
+          _08002158(3, RD16P(p));
+          __asm__ volatile("" : "+r"(k)); }
+        { register u32 k __asm__("r3");
+          k = 172u;
+          __asm__ volatile("" : "+r"(k));
+          k <<= 1;
+          __asm__ volatile("" : "+r"(k));
+          register u8 *p __asm__("r0");
+          p = rec + k;
+          __asm__ volatile("" : "+r"(p));
+          _08002158(2, RD16P(p));
+          __asm__ volatile("" : "+r"(k)); }
+        { register u32 k __asm__("r1");
+          k = 128u;
+          __asm__ volatile("" : "+r"(k));
+          k <<= 2;
+          __asm__ volatile("" : "+r"(k));
+          register u8 *p __asm__("r0");
+          p = rec + k;
+          __asm__ volatile("" : "+r"(p));
+          _08002158(6, RD16P(p));
+          __asm__ volatile("" : "+r"(k)); }
+        p194 = p188;
+        p184 = p182;
+        p188 = p188 - 6;
+        p182 = p182 - 2;
+    } else {
+        p194 = rec + 194;
+        _08002158(4, RD16P(p194));
+        p188 = rec + 188;
+        _08002158(5, RD16P(p188));
+        p182 = rec + 182;
+        _08002158(1, RD16P(p182));
+        // Constant synthesis in steps on a pinned register: the ROM materialises
+        // 170<<1, 172<<1 and 128<<2 rather than folded 340/344/512.
+        { register u32 k __asm__("r2");
+          k = 170u;
+          __asm__ volatile("" : "+r"(k));
+          k <<= 1;
+          __asm__ volatile("" : "+r"(k));
+          register u8 *p __asm__("r0");
+          p = rec + k;
+          __asm__ volatile("" : "+r"(p));
+          _08002158(3, RD16P(p));
+          __asm__ volatile("" : "+r"(k)); }
+        { register u32 k __asm__("r3");
+          k = 172u;
+          __asm__ volatile("" : "+r"(k));
+          k <<= 1;
+          __asm__ volatile("" : "+r"(k));
+          register u8 *p __asm__("r0");
+          p = rec + k;
+          __asm__ volatile("" : "+r"(p));
+          _08002158(2, RD16P(p));
+          __asm__ volatile("" : "+r"(k)); }
+        { register u32 k __asm__("r1");
+          k = 128u;
+          __asm__ volatile("" : "+r"(k));
+          k <<= 2;
+          __asm__ volatile("" : "+r"(k));
+          register u8 *p __asm__("r0");
+          p = rec + k;
+          __asm__ volatile("" : "+r"(p));
+          _08002158(6, RD16P(p));
+          __asm__ volatile("" : "+r"(k)); }
+        p184 = rec + 184;
+    }
+    // The ROM reloads the narrowed id into a fresh scratch for each test
+    // (r2/r3/r0/r2), so each compare owns a pinned copy.
+    { register u16 v __asm__("r2") = (u16)argId; if (v == 1) WR16(rec + 190, v); }
+    { register u16 v __asm__("r3") = (u16)argId; if (v == 2) WR16(rec + 190, v); }
+    { register u16 v __asm__("r0") = (u16)argId;
+      if (v == 64) { u16 w = RD16P(p184) - 1; WR16(p184, w); } }
+    { register u16 v __asm__("r2") = (u16)argId;
+      if (v == 128) { u16 w = RD16P(p184) + 1; WR16(p184, w); } }
+    // Same clamp shape as Rec35_Input_17528: the ROM copies the base to r2 for
+    // the low bound and re-reads through it with an r3=0 index scratch.
+    { register u8 *q __asm__("r2") = p184;
+      if (RS16(q) < 1) WR16(q, 1); }
+    if (RS16(p184) > 3) WR16(p184, 3);
+    {
+        extern u8 Rec35Wa[];
+        u8 *wa2 = Rec35Wa;
+        if (*(wa2 + 0x10C3) == 0) {
+            WR16(p182, (u16)_08002178(1, 1));
+            WR16(p188, (u16)_08002178(1, 5));
+        } else {
+            WR16(p182, (u16)_08002178(0, 1));
+            WR16(p188, (u16)_08002178(0, 5));
+        }
+    }
+    if (RS16(p182) == 0) WR16(p182, RD16P(rec + 186));
+    {
+        // The signed [194] read is a local (not a call argument), which is what
+        // gives it r0 as the load destination in the ROM.
+        int md = RS16(p194);
+        if (md == 2 || md == 4) {
+            if (RD16P(rec + 186) != RD16P(p182)) {
+                R35_CALLEE(Rec35_SyncRec_16944, _080016944)(rec);
+                sub_0800168B8(2);
+            }
+        }
+    }
+    WR16(rec + 186, RD16P(p182));
+    {
+        register int m __asm__("r5") = RS16(p194);
+        switch (m) {
+        case 2:
+        case 3:
+        case 4:
+            ((void (*)(void *, int, int))(void *)_0800175BC)(rec, argA, argId);
+            break;
+        case 6:
+        case 7:
+        case 8:
+            ((void (*)(void *, int, int))(void *)_08001774C)(rec, argA, argId);
+            break;
+        default:
+            break;
+        }
+    }
 }
+// The body is 450 bytes; the ROM's span is 452 with two zero pad bytes, where
+// gas would close the Thumb code section with the 0x46c0 alignment nop.
+__asm__(".align 2, 0");
 void _080017788(void *a, int b, int c) __attribute__((alias("Rec35_Input_17788")));
 
 // Call-site split for promoted bodies. `promotion_screen.py` only accepts a
