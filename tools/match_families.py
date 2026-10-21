@@ -425,6 +425,49 @@ def nearest(index, target, count=3, recipes=False):
     return sorted(candidates, key=lambda r: (-r['same_family'], -r['similarity'], r['vma']))[:count]
 
 
+def twins(index: dict, min_bytes: int = 48, cutoff: float = 0.60) -> list[dict]:
+    """Every still-assembly body whose best sibling is already decompiled C.
+
+    A body that is byte-exact as assembly but has a near-identical *decompiled*
+    sibling is the cheapest lift in the tree: the sibling's C already carries
+    every register-shaping decision, so the work is transcribing the constants
+    and the call that differ. Two lifts came from this list and both scored
+    EXACT on the first probe -- `_080020784` (244 B) from `_080020690` and
+    `TimeStr_03D4C` (232 B) from `_08003E34`.
+
+    `--function NAME --top N` shows one body's siblings; this is the sweep,
+    restricted to bodies whose source is still assembly (a `partial` body is a
+    candidate too: its C is nearly the whole body).
+    """
+    from source_quality import DECOMPILED, source_classes
+    source = source_classes()
+    decompiled = DECOMPILED | {'partial'}
+    rows = []
+    for target in index['records']:
+        vma = int(target['vma'], 16)
+        size = int(target['end_vma'], 16) - vma
+        if source.get(vma) != 'asm' or size < min_bytes or not target['complete']:
+            continue
+        best = None
+        for score, rec in _similarity_scores(index, target):
+            rec_class = source.get(int(rec['vma'], 16))
+            if rec_class not in decompiled:
+                continue
+            ratio = len(rec['tokens']) / max(1, len(target['tokens']))
+            if not 0.75 <= ratio <= 1.33 or score < cutoff:
+                continue
+            if best is None or score > best[0]:
+                best = (score, rec, rec_class)
+        if best:
+            score, rec, rec_class = best
+            rows.append({'asm': target['name'], 'asm_vma': target['vma'], 'asm_source': target['source'],
+                         'bytes': size, 'similarity': round(score, 4),
+                         'twin': rec['name'], 'twin_vma': rec['vma'], 'twin_source': rec['source'],
+                         'twin_class': rec_class,
+                         'twin_bytes': int(rec['end_vma'], 16) - int(rec['vma'], 16)})
+    return sorted(rows, key=lambda r: (-r['similarity'], -r['bytes']))
+
+
 def _run_probe_captured(name: str, work: Path, report: Path) -> tuple[int, str]:
     """Score one recipe in THIS process; `(status, combined output)`."""
     argv = ["corpus_match_probe.py", "--function", name, "--c89", "--require-all",
@@ -484,6 +527,11 @@ def main():
     ap.add_argument('--index', type=Path, default=DEFAULT_INDEX)
     ap.add_argument('--function')
     ap.add_argument('--top', type=int, default=10)
+    ap.add_argument('--twins', action='store_true',
+                    help='sweep: asm bodies whose best sibling is decompiled C')
+    ap.add_argument('--min-bytes', type=int, default=48)
+    ap.add_argument('--cutoff', type=float, default=0.60)
+    ap.add_argument('--json', type=Path)
     args = ap.parse_args()
     if args.top < 1:
         ap.error('--top must be positive')
@@ -492,8 +540,18 @@ def main():
         if args.function:
             target = find_record(index, args.function)
             print(json.dumps({'target': target, 'siblings': nearest(index, target, args.top)}, indent=2))
+        elif args.twins:
+            rows = twins(index, args.min_bytes, args.cutoff)
+            print(f'{len(rows)} assembly bodies with a decompiled twin')
+            for r in rows:
+                print(f"{r['similarity']:.4f}  {r['asm_source']}:{r['asm']} {r['asm_vma']} {r['bytes']:5d}B"
+                      f"  ~  {r['twin_class']:12s} {r['twin_source']}:{r['twin']} {r['twin_vma']}"
+                      f" {r['twin_bytes']:5d}B")
+            if args.json:
+                args.json.parent.mkdir(parents=True, exist_ok=True)
+                args.json.write_text(json.dumps(rows, indent=2) + '\n')
         elif not args.build:
-            ap.error('supply --build or --function')
+            ap.error('supply --build, --function or --twins')
     except (ValueError, OSError, subprocess.CalledProcessError) as exc:
         print(f'match_families: {exc}', file=sys.stderr)
         return 1

@@ -1724,14 +1724,9 @@
    "size": 52
   },
   "0x08003d4c": {
-   "class": "asm",
-   "detail": {
-    "insn": 1,
-    "insn_lines": 103,
-    "naked": true
-   },
+   "class": "c",
    "file": "src/runtime_hud.c",
-   "name": "TimeStr_03D4C",
+   "name": "_08003D4C",
    "size": 232
   },
   "0x08003e34": {
@@ -4274,10 +4269,11 @@
    "size": 244
   },
   "0x0800ae78": {
-   "class": "c_fakematch",
+   "class": "asm",
    "detail": {
-    "directive": 1,
-    "pin": 2
+    "insn": 1,
+    "insn_lines": 114,
+    "naked": true
    },
    "file": "src/race_progress.c",
    "name": "Race_AdvanceProgress",
@@ -8516,11 +8512,11 @@
    "size": 244
   },
   "0x08020784": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 107,
-    "naked": true
+    "barrier": 5,
+    "directive": 3,
+    "pin": 4
    },
    "file": "src/race_scene_e.c",
    "name": "_080020784",
@@ -13360,15 +13356,15 @@
  },
  "totals": {
   "asm": {
-   "bytes": 74352,
-   "functions": 202
+   "bytes": 74144,
+   "functions": 201
   },
   "c": {
-   "bytes": 40998,
-   "functions": 864
+   "bytes": 41230,
+   "functions": 865
   },
   "c_fakematch": {
-   "bytes": 68994,
+   "bytes": 68970,
    "functions": 591
   },
   "partial": {
