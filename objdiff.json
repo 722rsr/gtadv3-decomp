@@ -11669,7 +11669,7 @@
       }
     },
     {
-      "name": "garage_records/_080028F40",
+      "name": "garage_records/sub_080028F40",
       "target_path": "build/objdiff/08028f40/target.o",
       "base_path": "build/objdiff/08028f40/candidate.o",
       "metadata": {
