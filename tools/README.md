@@ -59,7 +59,7 @@ neither target replaces `make matching-ready`.
 | `derisk_probe.py` | Probe pool-free leaf instruction selection. |
 | `derisk_pool_probe.py` | Probe literal-pool placement at real ROM addresses. |
 | `match_context.py` | Gather a function's source, ROM instructions, callers, and fresh matching examples. |
-| `match_families.py` | Index instruction/control-flow siblings; reject stale indexes. |
+| `match_families.py` | Index instruction/control-flow siblings; reject stale indexes; `--twins` sweeps for assembly bodies whose nearest sibling is already decompiled C. |
 | `lift_scout.py` | Classify unmatched functions by diagnostic evidence. |
 | `strategy_router.py` | Select applicable diagnostics from measured function properties. |
 | `experiment_kit.py` | Shared candidate compiler, byte scorer, contracts, and output handling. |
@@ -80,6 +80,7 @@ neither target replaces `make matching-ready`.
 ```sh
 python3 tools/corpus_match_probe.py --function NAME --c89 --require-all --require-exact
 python3 tools/match_families.py --build
+python3 tools/match_families.py --twins --json build/matching-assist/twins.json
 python3 tools/match_context.py NAME
 python3 tools/leaf_synth.py _08024B18 --return-type u32 --memory ordinary --budget 32
 ```

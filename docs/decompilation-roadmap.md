@@ -44,7 +44,13 @@ the README's generated progress block with this ledger.
 
 The generated report in `docs/data/report.json` separates `matched_*` values
 (functions decompiled to C) from `complete_*` values (linked units/bytes). Padding is
-excluded from data progress. The function count is cross-checked by the
+excluded from data progress. A per-function `fuzzy_match_percent` there is a
+projection of the source class (100 for `c`/`c_fakematch`, 0 otherwise), not a
+measurement: it must never be read back as match evidence, because the class it
+encodes is what wrote it. Byte truth comes from the gates above -- `make
+matching-ready` splices every selected body's *compiled* output and requires an
+identical code slice, and `make full-rom-match` requires an identical image --
+so a passing gate is the evidence that the C reproduces the ROM. The function count is cross-checked by the
 independent census gate rather than treated as exhaustive merely because it
 comes from `.type`/`BL` labels. Keep those definitions alongside any progress
 number quoted elsewhere. The [ownership map](code_data_ownership.md),

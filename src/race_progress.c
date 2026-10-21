@@ -155,60 +155,149 @@ __attribute__((naked)) void Race_CommitCell(void) {
 //   s16[WA+0x0FF0]. Tail: vA == 3 && vB == 0 re-derives the index and arms
 //   WA+0x102A.
 //
-// The WA base is a SYMBOL so `wa + off` stays two instructions (`ldr`, `ldr`,
-// `adds`); a cast constant folds the offset into the pool word.
-void Race_AdvanceProgress(void) {
-    extern u8 RaceWA[];
-    extern u8 RaceOffFFA[];
-    extern u8 RaceOff102A[];
-    __asm__(".globl RaceWA\nRaceWA = 0x03001780\n"
-            ".globl RaceOffFFA\nRaceOffFFA = 0xFFA\n"
-            ".globl RaceOff102A\nRaceOff102A = 0x102A\n");
-    register u8 *wa __asm__("r2") = RaceWA;
-    register int base __asm__("r1") = *(s16 *)(wa + 0xFF8) * 2;
-    s16 *row = (s16 *)(wa + 0xFF2);
-    base += *row * 8;
-    u8 *pa = wa + (uintptr_t)&RaceOffFFA;
-    int vA = *(s16 *)(base + pa);
-    u8 *pb = wa + (uintptr_t)&RaceOff102A;
-    int vB = *(s16 *)(base + pb);
-    if (vA == 11) {
-        s16 *cell = (s16 *)(wa + 0x101A + base);
-        int cellv = *cell;
-        if (cellv == 0) {
-            *cell = 1;
-            *(u16 *)(wa + 0xFF6) += 1;
-            if ((s16)*(u16 *)(wa + 0xFF6) > 3) {
-                int g = *(s16 *)(wa + 0xFF0);
-                if (g == 1) {
-                    if (*row != 0) {
-                        *row = g;
-                        *(u16 *)(wa + 0xFF6) = 3;
-                    } else {
-                        *row = g;
-                        *(u16 *)(wa + 0xFF6) = (u16)cellv;
-                    }
-                } else {
-                    *row = cellv;
-                    *(u16 *)(wa + 0xFF6) = 3;
-                }
-            }
-        } else {
-            *cell = 1;
-            if (*(s16 *)(wa + 0xFF6) > 2) {
-                int g = *(s16 *)(wa + 0xFF0);
-                if (g == 1 && *row != 0)
-                    *row = g;
-                else
-                    *row = 0;
-                *(u16 *)(wa + 0xFF6) = 3;
-            }
-        }
-    }
-    if (vA == 3 && vB == 0) {
-        int j = *(s16 *)(wa + 0xFF8) * 2 + *row * 8;
-        *(s16 *)(wa + 0x102A + j) = 1;
-    }
+// Still assembly. C lifts stall at 85/268: the ROM keeps two copies of each
+// re-seed tail (the `WA+0x0FF6 = 3` stores land in r2 and r3) and derives
+// 0x101A (0x102A-16) and 0xFF0 (that -42) from one constant register, while
+// agbcc merges the tails and derives 0xFF6 instead. `tools/corpus_match_probe.py
+// --function _0800AE78 --c89` reports the current source-form score.
+__attribute__((naked)) void Race_AdvanceProgress(void) {
+    __asm__ volatile (
+        ".syntax unified\n"
+        "push {r4, r5, r6, r7, lr}\n"
+        "ldr r2, .Lae78_lit_0\n"
+        "ldr r1, .Lae78_lit_1\n"
+        "adds r0, r2, r1\n"
+        "movs r3, #0\n"
+        "ldrsh r1, [r0, r3]\n"
+        "lsls r1, r1, #1\n"
+        "ldr r5, .Lae78_lit_2\n"
+        "adds r4, r2, r5\n"
+        "movs r7, #0\n"
+        "ldrsh r0, [r4, r7]\n"
+        "lsls r0, r0, #3\n"
+        "adds r1, r1, r0\n"
+        "ldr r3, .Lae78_lit_3\n"
+        "adds r0, r2, r3\n"
+        "adds r0, r1, r0\n"
+        "movs r5, #0\n"
+        "ldrsh r6, [r0, r5]\n"
+        "ldr r7, .Lae78_lit_4\n"
+        "adds r0, r2, r7\n"
+        "adds r0, r1, r0\n"
+        "movs r5, #0\n"
+        "ldrsh r3, [r0, r5]\n"
+        "mov ip, r3\n"
+        "adds r5, r2, #0\n"
+        "cmp r6, #11\n"
+        "bne .Lae78_tail\n"
+        "subs r7, #16\n"
+        "adds r0, r5, r7\n"
+        "adds r1, r1, r0\n"
+        "movs r0, #0\n"
+        "ldrsh r3, [r1, r0]\n"
+        "cmp r3, #0\n"
+        "bne .Lae78_nonzero\n"
+        "movs r0, #1\n"
+        "strh r0, [r1, #0]\n"
+        "ldr r1, .Lae78_lit_5\n"
+        "adds r2, r5, r1\n"
+        "ldrh r0, [r2, #0]\n"
+        "adds r0, #1\n"
+        "strh r0, [r2, #0]\n"
+        "lsls r0, r0, #16\n"
+        "asrs r0, r0, #16\n"
+        "cmp r0, #3\n"
+        "ble .Lae78_tail\n"
+        "subs r7, #42\n"
+        "adds r0, r5, r7\n"
+        "movs r7, #0\n"
+        "ldrsh r1, [r0, r7]\n"
+        "cmp r1, #1\n"
+        "bne .Lae78_commit\n"
+        "movs r7, #0\n"
+        "ldrsh r0, [r4, r7]\n"
+        "cmp r0, #0\n"
+        "bne .Lae78_set3\n"
+        "strh r1, [r4, #0]\n"
+        "strh r3, [r2, #0]\n"
+        "b .Lae78_tail\n"
+        ".align 2, 0\n"
+        ".Lae78_lit_0: .word 0x03001780\n"
+        ".Lae78_lit_1: .word 0x00000FF8\n"
+        ".Lae78_lit_2: .word 0x00000FF2\n"
+        ".Lae78_lit_3: .word 0x00000FFA\n"
+        ".Lae78_lit_4: .word 0x0000102A\n"
+        ".Lae78_lit_5: .word 0x00000FF6\n"
+        ".Lae78_set3:\n"
+        "strh r1, [r4, #0]\n"
+        "b .Lae78_set3_done\n"
+        ".Lae78_commit:\n"
+        "strh r3, [r4, #0]\n"
+        ".Lae78_set3_done:\n"
+        "movs r0, #3\n"
+        "strh r0, [r2, #0]\n"
+        "b .Lae78_tail\n"
+        ".Lae78_nonzero:\n"
+        "movs r2, #0\n"
+        "movs r0, #1\n"
+        "strh r0, [r1, #0]\n"
+        "ldr r0, .Lae78_lit_6\n"
+        "adds r3, r5, r0\n"
+        "movs r1, #0\n"
+        "ldrsh r0, [r3, r1]\n"
+        "cmp r0, #2\n"
+        "ble .Lae78_tail\n"
+        "movs r7, #255\n"
+        "lsls r7, r7, #4\n"
+        "adds r0, r5, r7\n"
+        "movs r7, #0\n"
+        "ldrsh r1, [r0, r7]\n"
+        "cmp r1, #1\n"
+        "bne .Lae78_clear\n"
+        "movs r7, #0\n"
+        "ldrsh r0, [r4, r7]\n"
+        "cmp r0, #0\n"
+        "beq .Lae78_clear\n"
+        "strh r1, [r4, #0]\n"
+        "b .Lae78_set3_value\n"
+        ".align 2, 0\n"
+        ".Lae78_lit_6: .word 0x00000FF6\n"
+        ".Lae78_clear:\n"
+        "strh r2, [r4, #0]\n"
+        ".Lae78_set3_value:\n"
+        "movs r0, #3\n"
+        "strh r0, [r3, #0]\n"
+        ".Lae78_tail:\n"
+        "cmp r6, #3\n"
+        "bne .Lae78_done\n"
+        "mov r0, ip\n"
+        "cmp r0, #0\n"
+        "bne .Lae78_done\n"
+        "ldr r1, .Lae78_lit_7\n"
+        "adds r0, r5, r1\n"
+        "movs r2, #0\n"
+        "ldrsh r1, [r0, r2]\n"
+        "lsls r1, r1, #1\n"
+        "ldr r3, .Lae78_lit_8\n"
+        "adds r0, r5, r3\n"
+        "movs r7, #0\n"
+        "ldrsh r0, [r0, r7]\n"
+        "lsls r0, r0, #3\n"
+        "adds r1, r1, r0\n"
+        "ldr r2, .Lae78_lit_9\n"
+        "adds r0, r5, r2\n"
+        "adds r1, r1, r0\n"
+        "movs r0, #1\n"
+        "strh r0, [r1, #0]\n"
+        ".Lae78_done:\n"
+        "pop {r4, r5, r6, r7}\n"
+        "pop {r0}\n"
+        "bx r0\n"
+        "movs r0, r0\n"
+        ".align 2, 0\n"
+        ".Lae78_lit_7: .word 0x00000FF8\n"
+        ".Lae78_lit_8: .word 0x00000FF2\n"
+        ".Lae78_lit_9: .word 0x0000102A\n");
 }
 
 // _0800AF84 — the record-49 per-frame tail. Returns the *step id* the caller
