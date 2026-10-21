@@ -268,6 +268,13 @@ See [candidate-length diagnostics](findings/oversized_plus4_class.md).
   must not sit between two pool loads has to be a separate statement. Lifting
   all three of `ldr r0,=TABLE / ldr r5,=CELL / ldr r2,[r0] / adds r0,r5,#0` into
   one call expression or one statement loses one of the three.
+- Two arguments loaded from memory keep their source order only if the earlier
+  one is a named local: `u32 a0 = *(u32 *)(rec + 44); u32 v = *p; f(a0, v, ...)`
+  emits the two loads in that order, while the same call written inline lets
+  agbcc emit the *second* argument's load first and give the third argument's
+  address the register the first argument needed (`0x08010088`: inline 361/372,
+  split arguments 372/372). Every later call in that body matches inline; the
+  split is needed only at the one site.
 
 Compiler RTL dumps (`-da`) help distinguish instruction selection,
 scheduling, and register allocation. A failed finite search establishes a
