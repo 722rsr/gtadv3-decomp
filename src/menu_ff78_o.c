@@ -198,9 +198,11 @@ void MenuFF78_154E0(void *rec_, u32 dead, u32 ev_) {
     __asm__ volatile("" : "+r"(tail_cell) : : "cc");
     if (ev == 1) {
         register s32 s asm("r4");
-        __asm__ volatile("movs r1, #0\n\tldrsh %0, [%1, r1]"
-                         : "=l"(s) : "l"(tail_cell)
-                         : "r1", "cc", "memory");
+        /* Zero-index load: ROM's scratch is r1, so keep r0 live across it. */
+        register int hold asm("r0");
+        __asm__ volatile("" : "=r"(hold));
+        s = *(s16 *)(uintptr_t)tail_cell;
+        __asm__ volatile("" : : "r"(hold));
         switch (s) {
         case 0:
             *(volatile s16 *)(uintptr_t)(rec + 24) = (s16)ev;
@@ -292,8 +294,11 @@ state_done:;
     cur = *(s16 *)r1;
     if (cur < 0)
         *(volatile u16 *)(uintptr_t)r1 = 0;
-    __asm__ volatile("movs r3, #0\n\tldrsh %0, [%1, r3]"
-                     : "=l"(cur) : "l"(r1) : "r3", "cc", "memory");
+    /* ROM's clamp reread uses r3, so keep r2 live across it. */
+    register int hold2 asm("r2");
+    __asm__ volatile("" : "=r"(hold2));
+    cur = *(s16 *)r1;
+    __asm__ volatile("" : : "r"(hold2));
     if (cur > 4)
         *(volatile u16 *)(uintptr_t)r1 = 4;
     register u32 current asm("r6") = *(volatile u16 *)(uintptr_t)tail_cell;
