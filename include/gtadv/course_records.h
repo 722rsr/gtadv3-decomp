@@ -44,7 +44,7 @@ void Course_State_Store32(u32 v); // _08008284: strh [+32] u16
 void Course_RecordInit(void *rec); // _08008290 filler
 void Course_Build32Row(int sel); // _08008300 32-row
 void Course_Build16Row(int sel); // _080083B8 16-row
-void Course_BuildDispatch(int mode,int sel); // _08008480 dispatch via 0x03001780+0x10FC
+void Course_BuildDispatch(int mode,u8 sel); // _08008480 dispatch via 0x03001780+0x10FC; sel is narrowed at entry
 void Course_Emit8A(void *out,int w); // _0800861C
 void Course_Emit8B(void *out,int w); // _08008768
 void Course_Emit8C(void *out,int w); // _080088B0

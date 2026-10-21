@@ -47,6 +47,7 @@ HOST_STUB(void  _0802B280(void));                                  // 0x0802B280
 HOST_STUB(void  _080191BC(int v));                                 // 0x080191BC
 HOST_STUB(void  _08019AEC(int v));                                 // 0x08019AEC
 HOST_STUB(void  _08019A2C(int v));                                 // 0x08019A2C
+HOST_STUB(void  sub_080019A2C(int v));                             // 0x08019A2C (closure spelling)
 HOST_STUB(int   _080098C8(u16 a, u16 b));                          // 0x080098C8
 HOST_STUB(void  _080096A4(void *p));                               // 0x080096A4
 HOST_STUB(void  _0800821C(void));                                  // 0x0800821C timed reset
@@ -1297,117 +1298,79 @@ __attribute__((naked)) void _08001B77C(void) {
 // gate to 19A2C(0); 2 → B77C + ACC(64)-gated u16[[ctx]+68]=40 +
 // flag 0x04000000; 3 → B77C + u16[[ctx]+68] tick-down or flag 0x00080000.
 // Every taken arm (except the pure tick-down) bumps u16[[ctx]+104].
+//
+// Matching notes (measured with the pinned agbcc):
+//  * `cur = *(u16 *)p;` must stay non-volatile. A volatile lvalue goes
+//    through load_volatile, which materialises a per-access pseudo and copies
+//    it out (`ldrh r0,[r1]; adds r2,r0,#0`); the plain lvalue loads in place
+//    (`ldrh r2,[r1]`), which is what both tick sites need.
+//  * The +104 bump is written out in every arm even though the ROM shares one
+//    copy of it: agbcc merges the four identical blocks itself and the merged
+//    block then carries the ROM's r0/r1 split. A single trailing bump gets the
+//    opposite pair and also lets the case-3 `strh` merge into it.
+//  * Case 1 calls the same VMA through the `sub_080019A2C` closure spelling so
+//    the two `movs r0,#0; bl` tails are not merged; the ROM keeps both copies.
+//  * `p += 68` chains the pointer so the store reuses the register in place
+//    (`adds r1,#68 / movs r0,#40 / strh r0,[r1]`); re-deriving the address
+//    costs an extra copy.
 // ----------------------------------------------------------------------------
-__attribute__((naked)) void _08001B8DC(void) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, lr}\n"
-        "ldr r4, .L1b8dc_90c\n"
-        "ldr r0, [r4, #0]\n"
-        "adds r1, r0, #0\n"
-        "adds r1, #100\n"
-        "ldrh r2, [r1, #0]\n"
-        "movs r3, #0\n"
-        "ldrsh r0, [r1, r3]\n"
-        "cmp r0, #159\n"
-        "bgt .L1b8dc_8f4\n"
-        "adds r0, r2, #1\n"
-        "strh r0, [r1, #0]\n"
-        ".L1b8dc_8f4:\n"
-        "ldr r0, [r4, #0]\n"
-        "adds r0, #104\n"
-        "movs r1, #0\n"
-        "ldrsh r0, [r0, r1]\n"
-        "cmp r0, #1\n"
-        "beq .L1b8dc_92c\n"
-        "cmp r0, #1\n"
-        "bgt .L1b8dc_910\n"
-        "cmp r0, #0\n"
-        "beq .L1b8dc_91a\n"
-        "b .L1b8dc_9a4\n"
-        "movs r0, r0\n"
-        ".L1b8dc_90c: .4byte 0x03004E20\n"
-        ".L1b8dc_910:\n"
-        "cmp r0, #2\n"
-        "beq .L1b8dc_94e\n"
-        "cmp r0, #3\n"
-        "beq .L1b8dc_976\n"
-        "b .L1b8dc_9a4\n"
-        ".L1b8dc_91a:\n"
-        "movs r0, #32\n"
-        "bl 0x08018ACC\n"
-        "cmp r0, #0\n"
-        "beq .L1b8dc_99a\n"
-        "movs r0, #0\n"
-        "bl 0x08019A2C\n"
-        "b .L1b8dc_99a\n"
-        ".L1b8dc_92c:\n"
-        "bl 0x0801B77C\n"
-        "ldr r0, [r4, #0]\n"
-        "adds r0, #100\n"
-        "movs r2, #0\n"
-        "ldrsh r0, [r0, r2]\n"
-        "cmp r0, #79\n"
-        "ble .L1b8dc_9a4\n"
-        "movs r0, #32\n"
-        "bl 0x08018ACC\n"
-        "cmp r0, #0\n"
-        "bne .L1b8dc_99a\n"
-        "movs r0, #0\n"
-        "bl 0x08019A2C\n"
-        "b .L1b8dc_99a\n"
-        ".L1b8dc_94e:\n"
-        "bl 0x0801B77C\n"
-        "movs r0, #64\n"
-        "bl 0x08018ACC\n"
-        "cmp r0, #0\n"
-        "bne .L1b8dc_9a4\n"
-        "ldr r1, [r4, #0]\n"
-        "adds r0, r1, #0\n"
-        "adds r0, #100\n"
-        "movs r3, #0\n"
-        "ldrsh r0, [r0, r3]\n"
-        "cmp r0, #159\n"
-        "ble .L1b8dc_9a4\n"
-        "adds r1, #68\n"
-        "movs r0, #40\n"
-        "strh r0, [r1, #0]\n"
-        "movs r0, #128\n"
-        "lsls r0, r0, #19\n"
-        "b .L1b8dc_994\n"
-        ".L1b8dc_976:\n"
-        "bl 0x0801B77C\n"
-        "ldr r0, [r4, #0]\n"
-        "adds r1, r0, #0\n"
-        "adds r1, #68\n"
-        "ldrh r2, [r1, #0]\n"
-        "movs r3, #0\n"
-        "ldrsh r0, [r1, r3]\n"
-        "cmp r0, #0\n"
-        "ble .L1b8dc_990\n"
-        "subs r0, r2, #1\n"
-        "strh r0, [r1, #0]\n"
-        "b .L1b8dc_9a4\n"
-        ".L1b8dc_990:\n"
-        "movs r0, #128\n"
-        "lsls r0, r0, #12\n"
-        ".L1b8dc_994:\n"
-        "movs r1, #0\n"
-        "bl 0x08018AA8\n"
-        ".L1b8dc_99a:\n"
-        "ldr r0, [r4, #0]\n"
-        "adds r0, #104\n"
-        "ldrh r1, [r0, #0]\n"
-        "adds r1, #1\n"
-        "strh r1, [r0, #0]\n"
-        ".L1b8dc_9a4:\n"
-        "pop {r4}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        ".hword 0x0000\n"
-        ".syntax divided\n"
-    );
+void _08001B8DC(void)
+{
+    volatile u32 *cell = (volatile u32 *)0x03004E20;
+    u8 *p;
+    u32 cur;
+    s16 v;
+
+    p = (u8 *)(uintptr_t)*cell + 100;
+    cur = *(u16 *)p;
+    if (*(s16 *)p <= 159)
+        *(u16 *)p = (u16)(cur + 1);
+
+    v = *(s16 *)((u8 *)(uintptr_t)*cell + 104);
+    switch (v) {
+    case 0:
+        if (_08018ACC(32) != 0)
+            _08019A2C(0);
+        (*(u16 *)((u8 *)(uintptr_t)*cell + 104)) += 1;
+        return;
+    case 1:
+        _08001B77C();
+        if (*(s16 *)((u8 *)(uintptr_t)*cell + 100) <= 79)
+            return;
+        if (_08018ACC(32) == 0)
+            sub_080019A2C(0);
+        (*(u16 *)((u8 *)(uintptr_t)*cell + 104)) += 1;
+        return;
+    case 2:
+        _08001B77C();
+        if (_08018ACC(64) != 0)
+            return;
+        p = (u8 *)(uintptr_t)*cell;
+        if (*(s16 *)(p + 100) <= 159)
+            return;
+        p += 68;
+        *(u16 *)p = 40;
+        _08018AA8(0x04000000u, 0);
+        (*(u16 *)((u8 *)(uintptr_t)*cell + 104)) += 1;
+        return;
+    case 3:
+        _08001B77C();
+        p = (u8 *)(uintptr_t)*cell + 68;
+        cur = *(u16 *)p;
+        if (*(s16 *)p > 0) {
+            *(u16 *)p = (u16)(cur - 1);
+            return;
+        }
+        _08018AA8(0x00080000u, 0);
+        (*(u16 *)((u8 *)(uintptr_t)*cell + 104)) += 1;
+        return;
+    default:
+        return;
+    }
 }
+
+// The ROM span ends in a zero halfword; keep gas's Thumb nop fill out of it.
+__asm__(".align 2, 0");
 
 // ----------------------------------------------------------------------------
 // ---- 0x0801B9AC — 6-way scene-state dispatcher (table 0x0801B9D4) ----

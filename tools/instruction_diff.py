@@ -141,6 +141,52 @@ def analyze(reference, candidate, vma, reference_text, candidate_text):
                  and not differences)
     if reordered:
         klass = 'instruction order'
+    # Cross-jump: the candidate shares code the ROM keeps as separate copies,
+    # which leaves it short while every remaining instruction still matches.
+    # Both shapes are checked through the alignment, so the hint survives the
+    # very deletions that caused it (raw offsets are off by the removed bytes).
+    def in_span(target, blob):
+        return target is not None and vma <= target < vma + len(blob)
+
+    rom_targets = {r['target'] for r in a
+                   if r['target'] is not None and r['op'] != 'bl'
+                   and vma <= r['target'] < vma + len(reference)}
+    inverse = {bp: ap for ap, bp in mapping.items()}
+    hints = {}
+    # (1) A branch into a block no ROM branch reaches: the candidate inserted
+    # the edge, so it reuses a copy the ROM reaches only by fall-through.
+    for r in b:
+        if r['op'] in ('bl', 'blx', 'bx') or not in_span(r['target'], candidate):
+            continue
+        reference_target = inverse.get(r['target'], r['target'])
+        if (reference_target in rom_targets or reference_target == vma
+                or not vma <= reference_target < vma + len(reference)):
+            continue
+        hints[r['target'] - vma] = {
+            'candidate_target': r['target'] - vma,
+            'reference_targets': [reference_target - vma],
+            'candidate_offsets': [r['pc'] - vma],
+            'kind': 'shared block the ROM duplicates'}
+    # (2) Branches the ROM sends to different blocks that all land on one
+    # candidate block: the candidate collapsed copies instead of sharing one.
+    collapsed = {}
+    for i, j in pairs:
+        x, y = a[i], b[j]
+        if x['op'] in ('bl', 'blx', 'bx') or y['op'] in ('bl', 'blx', 'bx'):
+            continue
+        if not (in_span(x['target'], reference) and in_span(y['target'], candidate)):
+            continue
+        collapsed.setdefault(y['target'] - vma, []).append(
+            (y['pc'] - vma, x['target'] - vma))
+    for target, rows in collapsed.items():
+        if len({ref for _, ref in rows}) < 2:
+            continue
+        hints[target] = {
+            'candidate_target': target,
+            'reference_targets': sorted({ref for _, ref in rows}),
+            'candidate_offsets': sorted({site for site, _ in rows}),
+            'kind': 'merged copies'}
+    cross_jump = [hints[k] for k in sorted(hints, key=lambda t: min(hints[t]['candidate_offsets']))]
     if any('pool-value' in d['kinds'] for d in differences):
         klass = 'literal pool value'
     elif any('call-target' in d['kinds'] or 'branch-target' in d['kinds'] for d in differences):
@@ -155,6 +201,6 @@ def analyze(reference, candidate, vma, reference_text, candidate_text):
             'limitations': {'reference': fa, 'candidate': fb},
             'reference_instructions': len(a), 'candidate_instructions': len(b),
             'aligned_instructions': len(pairs), 'agreeing_instructions': agreeing,
-            'edits': edits, 'differences': differences,
+            'edits': edits, 'differences': differences, 'cross_jump': cross_jump,
             'noncode_differences': len(noncode), 'first_noncode_difference': noncode[0] if noncode else None,
             'scope': 'advisory alignment; whole-span linked bytes decide exactness'}

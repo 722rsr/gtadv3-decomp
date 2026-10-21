@@ -8,101 +8,97 @@ void sub_08001D218(void) __attribute__((alias("Race_Scene_Wrapper_1D218")));  /*
 // Reference: asm/race_scene.s 0x0801A294-0x0802135C (112 funcs)
 // Evidence-backed dispatchers and init/frame leaves with proven pools/caller offsets.
 
-// _08001986C: 10-way on s16[WA+0x10FC]-1 via table 0x080198E0
-// (VMA evidence: asm/race_setup_18adc.s _0800198E0.._080019904)
-extern void RaceScene_Leaf_318(void);  // 0x08019318 (bl sub_080019318 @0x08019908)
-extern void RaceScene_Leaf_5B8(void);  // 0x080195B8 (@0x0801990E)
-extern void RaceScene_Leaf_6E8(void);  // 0x080195F8 (@0x08019914)
-extern void RaceScene_Leaf_860(void);  // 0x080196E8 (@0x0801991A)
-__attribute__((naked)) void Race_Scene_Dispatch_19_86C(void) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, lr}\n"
-        "ldr r2, .L1986C_wa\n"
-        "ldr r1, .L1986C_flag_off\n"
-        "adds r0, r2, r1\n"
-        "ldr r0, [r0, #0]\n"
-        "movs r1, #1\n"
-        "ands r0, r1\n"
-        "cmp r0, #0\n"
-        "beq .L1986C_dispatch\n"
-        "movs r5, #0\n"
-        "ldr r0, .L1986C_count_off\n"
-        "adds r1, r2, r0\n"
-        "movs r2, #0\n"
-        "ldrsh r0, [r1, r2]\n"
-        "cmp r5, r0\n"
-        "bge .L1986C_dispatch\n"
-        "adds r6, r1, #0\n"
-        "ldr r4, .L1986C_records\n"
-        ".L1986C_loop:\n"
-        "ldr r0, [r4, #0]\n"
-        "ldr r1, [r4, #4]\n"
-        "adds r2, r5, #0\n"
-        "bl 0x080270D8\n"
-        "movs r0, #142\n"
-        "lsls r0, r0, #1\n"
-        "adds r4, r4, r0\n"
-        "adds r5, #1\n"
-        "movs r1, #0\n"
-        "ldrsh r0, [r6, r1]\n"
-        "cmp r5, r0\n"
-        "blt .L1986C_loop\n"
-        ".L1986C_dispatch:\n"
-        "ldr r0, .L1986C_wa\n"
-        "ldr r2, .L1986C_mode_off\n"
-        "adds r0, r0, r2\n"
-        "ldrh r0, [r0, #0]\n"
-        "subs r0, #1\n"
-        "lsls r0, r0, #16\n"
-        "asrs r0, r0, #16\n"
-        "cmp r0, #9\n"
-        "bhi .L1986C_return\n"
-        "lsls r0, r0, #2\n"
-        "ldr r1, .L1986C_jump_base\n"
-        "adds r0, r0, r1\n"
-        "ldr r0, [r0, #0]\n"
-        "mov pc, r0\n"
-        "movs r0, r0\n"
-        ".align 2, 0\n"
-        ".L1986C_wa: .word 0x03001780\n"
-        ".L1986C_flag_off: .word 0x000010DC\n"
-        ".L1986C_count_off: .word 0x000010CA\n"
-        ".L1986C_records: .word 0x03004E80\n"
-        ".L1986C_mode_off: .word 0x000010FC\n"
-        ".L1986C_jump_base: .word 0x080198E0\n"
-        ".word 0x08019908\n"
-        ".word 0x0801990E\n"
-        ".word 0x08019908\n"
-        ".word 0x08019908\n"
-        ".word 0x08019914\n"
-        ".word 0x08019924\n"
-        ".word 0x08019924\n"
-        ".word 0x0801991A\n"
-        ".word 0x08019924\n"
-        ".word 0x08019920\n"
-        ".L1986C_case0:\n"
-        "bl 0x08019318\n"
-        "b .L1986C_return\n"
-        ".L1986C_case1:\n"
-        "bl 0x080195B8\n"
-        "b .L1986C_return\n"
-        ".L1986C_case2:\n"
-        "bl 0x080195F8\n"
-        "b .L1986C_return\n"
-        ".L1986C_case3:\n"
-        "bl 0x080196E8\n"
-        "b .L1986C_return\n"
-        ".L1986C_case4:\n"
-        "bl 0x08019860\n"
-        ".L1986C_return:\n"
-        "pop {r4, r5, r6}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        "movs r0, r0\n"
-        ".syntax divided\n"
-    );
+// _08001986C (192 B): racer-row display pass + 10-way race-mode dispatch.
+//
+// Two halves, both carried by idioms already measured in this tree.
+//
+// 1. `if (u32[WA+0x10DC] & 1)` guards a `080270D8` walk over the 284-byte
+//    racer rows at 0x03004E80, bounded by the signed halfword at WA+0x10CA.
+//    This is the same walk as `_08001B068` in src/race_scene_a1.c: the runner
+//    is pinned to r4, the bound pointer is copied out of the guard pointer at
+//    entry (`adds r6,r1,#0`), and the 284-byte stride is formed inside the
+//    body as `142<<1` -- the `"+r"` barrier after `step = 142` is what keeps
+//    the constant in a register per iteration instead of hoisting it into the
+//    preheader. The bound is re-read through `loopLimit` so the back-edge test
+//    reloads it, as the ROM does.
+//
+// 2. The dispatch is an `ldr r0,[r0] / mov pc,r0` jump table at 0x080198E0,
+//    indexed by `(s16)(u16[WA+0x10FC] - 1)` and range-checked to 0..9. Case
+//    bodies are emitted in SOURCE order, so the arms are written in the ROM's
+//    block order (0x08019908, 1990E, 19914, 1991A, 19920): cases 0/2/3 share
+//    the 08019318 arm, then 1 -> 080195B8, 4 -> 080195F8, 7 -> 080196E8,
+//    9 -> 08019860; 5/6/8 and anything else fall to the shared epilogue.
+//    The narrowing cast is load-bearing: `lsls #16 / asrs #16` before
+//    `cmp #9 / bhi` is agbcc's s16 assignment, i.e. the index goes through a
+//    signed 16-bit temporary rather than the raw halfword.
+//
+// Register spellings measured individually against the pinned compiler (the
+// body is 192/192 only in this combination):
+//   * WA is a symbol (`WaBase`), so base and offset stay two pool words and
+//     the base is re-pooled after the walk (`ldr r2` at entry, `ldr r0` at the
+//     dispatch). A plain literal base lets agbcc rematerialize a single word
+//     and both loads collapse: 30/192.
+//   * The three WA offsets are plain literals -- not symbols, and not one
+//     shared variable. A symbol spelling puts the guard's offset in r0 (first
+//     difference +5); a shared variable keeps the guard's r1 live into the
+//     count address. 0x10DC wants r1 (`ldr r1,=0x10DC / adds r0,r2,r1`),
+//     0x10CA wants r0 (`ldr r0,=0x10CA / adds r1,r2,r0`) and 0x10FC wants r2;
+//     each literal materializes in exactly that register.
+//   * `p` is pinned to r1 so the walk's bound pointer is copied into r6 at
+//     entry (`adds r6,r1,#0`). Unpinned, agbcc coalesces both into one
+//     register and that copy disappears (188/192).
+extern void sub_080019318(void);            // 0x08019318, bl @0x08019908
+extern void _0800195B8(void);               // 0x080195B8, bl @0x0801990E
+extern void _0800195F8(void);               // 0x080195F8, bl @0x08019914
+extern void sub_0800196E8(void);            // 0x080196E8, bl @0x0801991A
+extern void sub_080019860(void);            // 0x08019860, bl @0x08019920
+extern void _080270D8(u32 x, u32 y, int i); // 0x080270D8 row XY store
+void Race_Scene_Dispatch_19_86C(void) {
+    extern u8 WaBase[];
+    u32 step;
+    __asm__(".globl WaBase\nWaBase = 0x03001780\n");
+    {
+        u32 wa = (u32)WaBase;
+        u32 off = 0x10DCu;
+        if ((*(u32 *)(wa + off) & 1) != 0) {
+            register s16 *p __asm__("r1");
+            s16 *cnt;
+            int i = 0;
+            u32 coff = 0x10CAu;
+            p = (s16 *)(wa + coff);
+            if (i < (int)*p) {
+                register u32 *q __asm__("r4");
+                s32 loopLimit;
+                cnt = p;
+                q = (u32 *)0x03004E80u;
+                do {
+                    u32 x = *(volatile u32 *)q;
+                    u32 y = *(volatile u32 *)((u8 *)q + 4);
+                    _080270D8(x, y, i);
+                    step = 142;
+                    __asm__ volatile("" : "+r"(step));
+                    step <<= 1;
+                    q = (u32 *)((u8 *)q + step);
+                    i++;
+                    loopLimit = (int)*cnt;
+                } while (i < loopLimit);
+            }
+        }
+    }
+    {
+        u32 wa = (u32)WaBase;
+        u32 off = 0x10FCu;
+        switch ((s16)(*(u16 *)(wa + off) - 1)) {
+        case 0: case 2: case 3: sub_080019318(); break;
+        case 1: _0800195B8(); break;
+        case 4: _0800195F8(); break;
+        case 7: sub_0800196E8(); break;
+        case 9: sub_080019860(); break;
+        default: break;
+        }
+    }
 }
+__asm__(".align 2, 0");
 void _08001986C(void) __attribute__((alias("Race_Scene_Dispatch_19_86C")));
 
 // _08001D6D0: bx lr stub

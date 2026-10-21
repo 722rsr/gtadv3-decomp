@@ -591,116 +591,62 @@ void sub_080011214(void *a, int b, int c) __attribute__((alias("MenuFF78_11214")
 // ============================================================================
 // sub_0800113A0 — apply-current-selection handler (0x109D4 tail; r1/r2 dead).
 // ============================================================================
-__attribute__((naked)) void MenuFF78_113A0(void *rec_, int a1, int a2) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "\tpush\t{r4, r5, r6, r7, lr}\n"
-        "\tmov\tr7, r8\n"
-        "\tpush\t{r7}\n"
-        "\tadds\tr5, r0, #0\n"
-        "\tadds\tr7, r5, #0\n"
-        "\tadds\tr7, #172\n"
-        "\tmovs\tr1, #0\n"
-        "\tldrsh\tr0, [r7, r1]\n"
-        "\tbl 0x080258B8\n"
-        "\tadds\tr6, r5, #0\n"
-        "\tadds\tr6, #188\n"
-        "\tstrh\tr0, [r6, #0]\n"
-        "\tmovs\tr2, #0\n"
-        "\tldrsh\tr0, [r6, r2]\n"
-        "\tbl sub_0800F744\n"
-        "\tmovs\tr3, #190\n"
-        "\tadds\tr3, r3, r5\n"
-        "\tmov\tr8, r3\n"
-        "\tstrh\tr0, [r3, #0]\n"
-        "\tmovs\tr0, #0\n"
-        "\tmovs\tr1, #2\n"
-        "\tbl 0x08002178\n"
-        "\tadds\tr4, r0, #0\n"
-        "\tmovs\tr0, #1\n"
-        "\tmovs\tr1, #2\n"
-        "\tbl 0x08002178\n"
-        "\tlsls\tr4, r4, #16\n"
-        "\tlsls\tr0, r0, #16\n"
-        "\tcmp\tr4, r0\n"
-        "\tbne .Lff113a0_080011474\n"
-        "\tadds\tr4, r5, #0\n"
-        "\tadds\tr4, #182\n"
-        "\tldrh\tr0, [r4, #0]\n"
-        "\tldrh\tr1, [r7, #0]\n"
-        "\tcmp\tr0, r1\n"
-        "\tbeq .Lff113a0_080011470\n"
-        "\tmovs\tr2, #0\n"
-        "\tldrsh\tr0, [r7, r2]\n"
-        "\tbl 0x080258A8\n"
-        "\tadds\tr1, r0, #0\n"
-        "\tadds\tr0, r5, #0\n"
-        "\tadds\tr0, #232\n"
-        "\tlsls\tr1, r1, #16\n"
-        "\tasrs\tr1, r1, #16\n"
-        "\tstr\tr1, [r0, #0]\n"
-        "\tldr\tr0, [r5, #28]\n"
-        "\tadds\tr2, r5, #0\n"
-        "\tadds\tr2, #228\n"
-        "\tldr\tr2, [r2, #0]\n"
-        "\tbl sub_08007ABC\n"
-        "\tadds\tr0, r5, #0\n"
-        "\tadds\tr0, #244\n"
-        "\tmovs\tr3, #0\n"
-        "\tldrsh\tr1, [r7, r3]\n"
-        "\tstr\tr1, [r0, #0]\n"
-        "\tsubs\tr0, #4\n"
-        "\tldr\tr0, [r0, #0]\n"
-        "\tmovs\tr2, #7\n"
-        "\tbl 0x08026F50\n"
-        "\tmovs\tr0, #170\n"
-        "\tlsls\tr0, r0, #1\n"
-        "\tadds\tr2, r5, r0\n"
-        "\tldr r1, .Lff113a0_080011480\n"
-        "\tmovs\tr3, #0\n"
-        "\tldrsh\tr0, [r6, r3]\n"
-        "\tlsls\tr0, r0, #1\n"
-        "\tadds\tr0, r0, r1\n"
-        "\tldrh\tr1, [r0, #0]\n"
-        "\tstr\tr1, [r2, #0]\n"
-        "\tldr\tr0, [r5, #36]\n"
-        "\tmovs\tr3, #168\n"
-        "\tlsls\tr3, r3, #1\n"
-        "\tadds\tr2, r5, r3\n"
-        "\tldr\tr2, [r2, #0]\n"
-        "\tbl sub_08007ABC\n"
-        "\tmovs\tr1, #0\n"
-        "\tldrsh\tr0, [r6, r1]\n"
-        "\tmov\tr2, r8\n"
-        "\tmovs\tr3, #0\n"
-        "\tldrsh\tr1, [r2, r3]\n"
-        "\tbl sub_0800F7EC\n"
-        "\tadds\tr1, r0, #0\n"
-        "\tmovs\tr2, #176\n"
-        "\tlsls\tr2, r2, #1\n"
-        "\tadds\tr0, r5, r2\n"
-        "\tlsls\tr1, r1, #16\n"
-        "\tasrs\tr1, r1, #16\n"
-        "\tstr\tr1, [r0, #0]\n"
-        "\tldr\tr0, [r5, #36]\n"
-        "\tmovs\tr3, #174\n"
-        "\tlsls\tr3, r3, #1\n"
-        "\tadds\tr2, r5, r3\n"
-        "\tldr\tr2, [r2, #0]\n"
-        "\tbl sub_08007ABC\n"
-        ".Lff113a0_080011470:\n"
-        "\tldrh\tr0, [r7, #0]\n"
-        "\tstrh\tr0, [r4, #0]\n"
-        ".Lff113a0_080011474:\n"
-        "\tpop\t{r3}\n"
-        "\tmov\tr8, r3\n"
-        "\tpop\t{r4, r5, r6, r7}\n"
-        "\tpop\t{r0}\n"
-        "\tbx\tr0\n"
-        "\tmovs\tr0, r0\n"
-        ".Lff113a0_080011480: .word 0x080CB55C\n"
-        ".syntax divided\n"
-    );
+void MenuFF78_113A0(void *rec_, int a1, int a2) {
+    u8 *rec = (u8 *)rec_;
+    u8 *p172 = rec + 172;
+    u8 *p188;
+    u16 t;
+
+    extern const u16 MenuFF78Table113A0[];
+    __asm__(".globl MenuFF78Table113A0\nMenuFF78Table113A0 = 0x080CB55C\n");
+    (void)a1;
+    (void)a2;
+
+    t = (u16)_080258B8(*(s16 *)p172);
+    p188 = rec + 188;
+    *(u16 *)p188 = t;
+    t = (u16)_0800F744(*(s16 *)p188);
+    *(u16 *)(rec + 190) = t;
+    // r1 is dead in the callee, so the high-nibble comparison is the u16 one.
+    if ((u16)((u16 (*)(int, int))_08002178)(0, 2) !=
+        (u16)((u16 (*)(int, int))_08002178)(1, 2))
+        return;
+    if (*(u16 *)(rec + 182) != *(u16 *)p172) {
+        // The ROM writes +244 and then reads back +240 through the same
+        // address register (`subs r0,#4`); keeping the destination in r0 and
+        // indexing it is what reproduces that instead of a second add.
+        register u32 *p244 __asm__("r0");
+        s16 v;
+        s16 r = (s16)_0800258A8(*(s16 *)p172);
+
+        *(u32 *)(rec + 232) = (u32)r;
+        _08007ABC(*(void **)(rec + 28), (int)r, *(u32 *)(rec + 228));
+        p244 = (u32 *)(rec + 244);
+        v = *(s16 *)p172;
+        *p244 = (u32)v;
+        ((void (*)(u32, u32, u32))_080026F50)(p244[-1], (u32)v, 7);
+        {
+            u32 *dst340 = (u32 *)(rec + 340);
+            // The ROM loads the table base into r1 *before* the index and
+            // takes r3 for the zero index; a pinned base plus a pinned r0
+            // offset is the pair that reproduces both registers.
+            register u32 tableBase __asm__("r1") =
+                (u32)(uintptr_t)MenuFF78Table113A0;
+            register u32 tblOff __asm__("r0") =
+                (u32)(s16)*(s16 *)p188;
+            u16 sel;
+            tblOff <<= 1;
+            sel = *(u16 *)(uintptr_t)(tblOff + tableBase);
+            *dst340 = (u32)sel;
+            _08007ABC(*(void **)(rec + 36), (int)sel, *(u32 *)(rec + 336));
+        }
+        {
+            s16 tail = (s16)_0800F7EC(*(s16 *)p188, *(s16 *)(rec + 190));
+            *(u32 *)(rec + 352) = (u32)tail;
+            _08007ABC(*(void **)(rec + 36), (int)tail, *(u32 *)(rec + 348));
+        }
+    }
+    *(u16 *)(rec + 182) = *(u16 *)p172;
 }
 
 void _0800113A0(void *a, int b, int c) __attribute__((alias("MenuFF78_113A0")));

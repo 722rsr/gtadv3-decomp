@@ -220,193 +220,136 @@ void Course_Build16Row(int sel){
         row = next_row;
     } while (row <= 1);
 }
-__attribute__((naked)) void Course_BuildDispatch(int mode,int sel) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, lr}\n"
-        "sub sp, #4\n"
-        "adds r3, r0, #0\n"
-        "lsls r4, r1, #24\n"
-        "lsrs r4, r4, #24\n"
-        "ldr r0, .Lcr08480_080084ac\n"
-        "str r3, [r0, #0]\n"
-        "movs r0, #0\n"
-        "str r0, [sp, #0]\n"
-        "ldr r2, .Lcr08480_080084b0\n"
-        "mov r0, sp\n"
-        "adds r1, r3, #0\n"
-        "bl sub_0802D974\n"
-        "lsls r4, r4, #24\n"
-        "asrs r4, r4, #24\n"
-        "cmp r4, #0\n"
-        "beq .Lcr08480_080084b4\n"
-        "cmp r4, #1\n"
-        "beq .Lcr08480_08008502\n"
-        "b .Lcr08480_0800850e\n"
-        ".align 2, 0\n"
-        ".Lcr08480_080084ac: .word 0x030003E0\n"
-        ".Lcr08480_080084b0: .word 0x0500001A\n"
-        ".Lcr08480_080084b4:\n"
-        "movs r0, #1\n"
-        "bl sub_08008300\n"
-        "ldr r0, .Lcr08480_080084d4\n"
-        "ldr r1, .Lcr08480_080084d8\n"
-        "adds r0, r0, r1\n"
-        "movs r1, #0\n"
-        "ldrsh r0, [r0, r1]\n"
-        "cmp r0, #2\n"
-        "beq .Lcr08480_080084ea\n"
-        "cmp r0, #2\n"
-        "bgt .Lcr08480_080084dc\n"
-        "cmp r0, #0\n"
-        "beq .Lcr08480_080084e2\n"
-        "b .Lcr08480_080084fa\n"
-        ".align 2, 0\n"
-        ".Lcr08480_080084d4: .word 0x03001780\n"
-        ".Lcr08480_080084d8: .word 0x000010FC\n"
-        ".Lcr08480_080084dc:\n"
-        "cmp r0, #5\n"
-        "beq .Lcr08480_080084f2\n"
-        "b .Lcr08480_080084fa\n"
-        ".Lcr08480_080084e2:\n"
-        "movs r0, #0\n"
-        "bl sub_080083B8\n"
-        "b .Lcr08480_0800850e\n"
-        ".Lcr08480_080084ea:\n"
-        "movs r0, #2\n"
-        "bl sub_080083B8\n"
-        "b .Lcr08480_0800850e\n"
-        ".Lcr08480_080084f2:\n"
-        "movs r0, #3\n"
-        "bl sub_080083B8\n"
-        "b .Lcr08480_0800850e\n"
-        ".Lcr08480_080084fa:\n"
-        "movs r0, #1\n"
-        "bl sub_080083B8\n"
-        "b .Lcr08480_0800850e\n"
-        ".Lcr08480_08008502:\n"
-        "movs r0, #0\n"
-        "bl sub_08008300\n"
-        "movs r0, #0\n"
-        "bl sub_080083B8\n"
-        ".Lcr08480_0800850e:\n"
-        "movs r0, #9\n"
-        "bl sub_080261B0\n"
-        "ldr r4, .Lcr08480_08008608\n"
-        "ldr r1, [r4, #0]\n"
-        "strh r0, [r1, #36]\n"
-        "movs r0, #9\n"
-        "bl 0x080261F8\n"
-        "ldr r1, [r4, #0]\n"
-        "strh r0, [r1, #38]\n"
-        "movs r0, #9\n"
-        "bl sub_080261B0\n"
-        "ldr r1, [r4, #0]\n"
-        "adds r0, #43\n"
-        "strh r0, [r1, #48]\n"
-        "movs r0, #9\n"
-        "bl sub_080261B0\n"
-        "ldr r1, [r4, #0]\n"
-        "adds r0, #47\n"
-        "strh r0, [r1, #50]\n"
-        "movs r0, #15\n"
-        "bl sub_080261B0\n"
-        "ldr r1, [r4, #0]\n"
-        "strh r0, [r1, #52]\n"
-        "movs r0, #15\n"
-        "bl 0x080261F8\n"
-        "ldr r1, [r4, #0]\n"
-        "strh r0, [r1, #54]\n"
-        "ldr r5, .Lcr08480_0800860c\n"
-        "adds r1, #88\n"
-        "adds r0, r5, #0\n"
-        "bl sub_0800798C\n"
-        "ldr r1, [r4, #0]\n"
-        "adds r0, r1, #0\n"
-        "adds r0, #88\n"
-        "ldrh r1, [r1, #36]\n"
-        "bl sub_08007A04\n"
-        "ldr r0, [r4, #0]\n"
-        "ldrh r2, [r0, #38]\n"
-        "adds r0, r5, #0\n"
-        "movs r1, #2\n"
-        "bl sub_080075E8\n"
-        "ldr r0, [r4, #0]\n"
-        "adds r0, #77\n"
-        "movs r1, #1\n"
-        "strb r1, [r0, #0]\n"
-        "ldr r0, [r4, #0]\n"
-        "adds r0, #76\n"
-        "strb r1, [r0, #0]\n"
-        "ldr r0, [r4, #0]\n"
-        "adds r0, #88\n"
-        "movs r1, #10\n"
-        "bl sub_08007EC4\n"
-        "adds r1, r0, #0\n"
-        "ldr r0, [r4, #0]\n"
-        "strh r1, [r0, #44]\n"
-        "adds r0, #88\n"
-        "movs r1, #11\n"
-        "bl sub_08007EC4\n"
-        "ldr r1, [r4, #0]\n"
-        "strh r0, [r1, #46]\n"
-        "ldr r0, .Lcr08480_08008610\n"
-        "ldr r1, .Lcr08480_08008614\n"
-        "adds r0, r0, r1\n"
-        "ldrh r0, [r0, #0]\n"
-        "cmp r0, #5\n"
-        "bne .Lcr08480_08008600\n"
-        "movs r0, #3\n"
-        "bl sub_080261B0\n"
-        "ldr r2, [r4, #0]\n"
-        "strh r0, [r2, #56]\n"
-        "adds r1, r0, #0\n"
-        "adds r1, #32\n"
-        "strh r1, [r2, #60]\n"
-        "adds r1, #32\n"
-        "strh r1, [r2, #40]\n"
-        "adds r0, #104\n"
-        "strh r0, [r2, #42]\n"
-        "movs r0, #2\n"
-        "bl sub_080261B0\n"
-        "ldr r1, [r4, #0]\n"
-        "strh r0, [r1, #62]\n"
-        "movs r0, #3\n"
-        "bl 0x080261F8\n"
-        "ldr r1, [r4, #0]\n"
-        "strh r0, [r1, #58]\n"
-        "ldr r0, .Lcr08480_08008618\n"
-        "adds r1, #96\n"
-        "bl sub_0800798C\n"
-        "ldr r1, [r4, #0]\n"
-        "ldr r0, [r1, #100]\n"
-        "ldrh r2, [r1, #60]\n"
-        "movs r1, #10\n"
-        "bl sub_08007ABC\n"
-        "ldr r0, [r4, #0]\n"
-        "ldrh r2, [r0, #40]\n"
-        "adds r0, r5, #0\n"
-        "movs r1, #0\n"
-        "bl sub_08007538\n"
-        "ldr r0, [r4, #0]\n"
-        "ldrh r2, [r0, #42]\n"
-        "adds r0, r5, #0\n"
-        "movs r1, #1\n"
-        "bl sub_08007538\n"
-        ".Lcr08480_08008600:\n"
-        "add sp, #4\n"
-        "pop {r4, r5}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        ".align 2, 0\n"
-        ".Lcr08480_08008608: .word 0x030003E0\n"
-        ".Lcr08480_0800860c: .word 0x0828FF08\n"
-        ".Lcr08480_08008610: .word 0x03001780\n"
-        ".Lcr08480_08008614: .word 0x000010FC\n"
-        ".Lcr08480_08008618: .word 0x0828C420\n"
-        ".syntax divided\n"
-    );
+// ----------------------------------------------------------------------------
+// 0x08008480 Course_BuildDispatch(mode, sel) — course-screen state setup.
+//
+// Writes `mode` to the EWRAM cell 0x030003E0 (which the rest of the body then
+// re-reads as the course-record pointer), clears 0x1A halfwords at `mode`
+// through the BIOS CpuSet wrapper, selects one of three course builders from
+// the narrowed `sel`, and then fills the record's award/sprite fields.
+//
+// Matching notes:
+//  * `sel` is declared `u8`: the ROM narrows it once at entry (lsls/lsrs #24)
+//    and again, sign-extended, at the dispatch.  A `u8` parameter reproduces
+//    both; an `int` parameter only the second.
+//  * The record pointer is a *non-volatile* cell.  Each post-call statement
+//    re-reads it (a call may store through it), while the two statements that
+//    are not separated by a call share one load.
+//  * `v36` exists to put the 0x030003E0 pool load *after* the first builder
+//    call.  Spelling that store as one assignment expression hoists the load
+//    above the call and costs 2 bytes.
+//  * Declaring the pointer cell after the builder dispatch (rather than at the
+//    top) is what lets agbcc give it r4, the same register `sel` used; with the
+//    declaration hoisted, `sel` and the cell are live at once and the body
+//    needs a third callee-saved register.
+// ----------------------------------------------------------------------------
+// Callees (closure spellings defined in asm/ or elsewhere in src/): the two
+// award reads, the sprite emitters 0x08007538/0x080075E8 and the resource
+// writers 0x0800798C/0x08007A04/0x08007ABC.  The award reads are declared
+// word-returning: the ROM uses each result directly in a `strh` or an `adds`
+// and never emits the lsls/asrs a `s16` return would add.
+extern int _080261B0(int a);
+extern int _080261F8(int a);
+extern void _08007538(void *base, int idx, int v);
+extern void _080075E8(void *base, int idx, int v);
+extern void _0800798C(void *a, void *b);
+extern void _08007A04(void *a, int b);
+extern void _08007ABC(void *a, int b, int c);
+extern void sub_0802D974(const void *a, void *b, u32 c);
+void _08008300(int a);
+void _080083B8(int a);
+u32 _08007EC4(void *a, int b);
+
+// Work-area 0x03001780 + 0x10FC is read as two pool words plus a runtime add,
+// so base and offset stay separate anchors instead of folding to 0x0300287C.
+__asm__(".set C84WABase, 0x03001780");
+extern u8 C84WABase;
+__asm__(".set C84WA10FC, 0x000010FC");
+extern u8 C84WA10FC;
+// The `.globl` + assignment must be emitted inside the body that uses them:
+// `match_c_slice.py` splices one section, so a file-scope .set never links.
+#define C84_WA_DECL \
+    __asm__(".globl C84WABase\nC84WABase = 0x03001780\n" \
+            ".globl C84WA10FC\nC84WA10FC = 0x000010FC\n")
+#define C84_WA(o) ((uintptr_t)o + (uintptr_t)&C84WABase)
+
+void Course_BuildDispatch(int mode, u8 sel) {
+    u32 zero;
+    u16 v44;
+
+    C84_WA_DECL;
+    *(u32 *)0x030003E0u = (u32)mode;
+    zero = 0;
+    sub_0802D974(&zero, (void *)(uintptr_t)mode, 0x0500001Au);
+    switch ((s8)sel) {
+    case 0:
+        _08008300(1);
+        switch (*(s16 *)C84_WA((uintptr_t)&C84WA10FC)) {
+        case 0:
+            _080083B8(0);
+            break;
+        case 2:
+            _080083B8(2);
+            break;
+        case 5:
+            _080083B8(3);
+            break;
+        default:
+            _080083B8(1);
+            break;
+        }
+        break;
+    case 1:
+        _08008300(0);
+        _080083B8(0);
+        break;
+    default:
+        break;
+    }
+
+    {
+        u16 v36 = (u16)_080261B0(9);
+        u32 *cellp = (u32 *)0x030003E0u;
+
+        *(u16 *)((u8 *)*cellp + 36) = v36;
+        *(u16 *)((u8 *)*cellp + 38) = (u16)_080261F8(9);
+        *(u16 *)((u8 *)*cellp + 48) = (u16)(_080261B0(9) + 43);
+        *(u16 *)((u8 *)*cellp + 50) = (u16)(_080261B0(9) + 47);
+        *(u16 *)((u8 *)*cellp + 52) = (u16)_080261B0(15);
+        *(u16 *)((u8 *)*cellp + 54) = (u16)_080261F8(15);
+
+        u8 *tpl = (u8 *)0x0828FF08u;
+
+        _0800798C(tpl, (u8 *)*cellp + 88);
+        _08007A04((u8 *)*cellp + 88, *(u16 *)((u8 *)*cellp + 36));
+        _080075E8(tpl, 2, *(u16 *)((u8 *)*cellp + 38));
+        *(u8 *)((u8 *)*cellp + 77) = 1;
+        *(u8 *)((u8 *)*cellp + 76) = 1;
+        v44 = (u16)_08007EC4((u8 *)*cellp + 88, 10);
+        *(u16 *)((u8 *)*cellp + 44) = v44;
+        *(u16 *)((u8 *)*cellp + 46) = (u16)_08007EC4((u8 *)*cellp + 88, 11);
+
+        if (*(u16 *)C84_WA((uintptr_t)&C84WA10FC) == 5) {
+            int a = _080261B0(3);
+            int b = a;
+
+            *(u16 *)((u8 *)*cellp + 56) = (u16)a;
+            b += 32;
+            *(u16 *)((u8 *)*cellp + 60) = (u16)b;
+            b += 32;
+            *(u16 *)((u8 *)*cellp + 40) = (u16)b;
+            *(u16 *)((u8 *)*cellp + 42) = (u16)(a + 104);
+            *(u16 *)((u8 *)*cellp + 62) = (u16)_080261B0(2);
+            *(u16 *)((u8 *)*cellp + 58) = (u16)_080261F8(3);
+            _0800798C((u8 *)0x0828C420u, (u8 *)*cellp + 96);
+            _08007ABC(*(void **)((u8 *)*cellp + 100), 10, *(u16 *)((u8 *)*cellp + 60));
+            _08007538(tpl, 0, *(u16 *)((u8 *)*cellp + 40));
+            _08007538(tpl, 1, *(u16 *)((u8 *)*cellp + 42));
+        }
+    }
 }
+
+
 void Course_Emit8A(void *out,int w){
     // _0800861C: base 300 (150<<1), s1=*0x4650, s2=*0x803C per ldr, then 8× {type, off, packed}
     // Packed: lsls #1, ldrh [slot+52]/[+54] (s16), adds, orrs y<<12
@@ -1044,7 +987,8 @@ void _08008290(void *a) __attribute__((alias("Course_RecordInit")));
 void sub_08008290(void *a) __attribute__((alias("Course_RecordInit")));
 void _08008300(int a) __attribute__((alias("Course_Build32Row")));
 void _080083B8(int a) __attribute__((alias("Course_Build16Row")));
-void _08008480(int a,int b) __attribute__((alias("Course_BuildDispatch")));
+void _08008480(int a,u8 b) __attribute__((alias("Course_BuildDispatch")));
+void sub_08008480(int a,u8 b) __attribute__((alias("Course_BuildDispatch")));
 u32 _08007EC4(void *a, int b) __attribute__((alias("Course_Math_SumU16")));
 u32 sub_08007EC4(void *a, int b) __attribute__((alias("Course_Math_SumU16")));
 int _08007EE0(int a,int b) __attribute__((alias("Course_Math_AbsRoundAvg")));

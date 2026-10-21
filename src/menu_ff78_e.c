@@ -244,272 +244,162 @@ void MenuFF78_12578(volatile u8 *rec) {
 void _080012578(volatile u8 *a) __attribute__((alias("MenuFF78_12578")));
 void sub_080012578(volatile u8 *a) __attribute__((alias("MenuFF78_12578")));
 
-// sub_0800125C4 — 12-way phase dispatcher (offsets 0x80 to 0x8B0 in table).
-// We model it as a no-op since the cases are leaf stubs that don't run in
-// our menu path. (The real 12 targets are lifted elsewhere or are no-ops.)
-__attribute__((naked)) void MenuFF78_125C4(void *rec_, int a1, int a2, int a3) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "\tpush\t{r4, r5, r6, r7, lr}\n"
-        "\tadds\tr5, r1, #0\n"
-        "\tadds\tr6, r2, #0\n"
-        "\tadds\tr4, r3, #0\n"
-        "\tsubs\tr0, #1\n"
-        "\tcmp\tr0, #11\n"
-        "\tbls .Lff125c4__0800125D4\n"
-        "\tb .Lff125c4__0800127EC\n"
-        ".Lff125c4__0800125D4:\n"
-        "\tlsls\tr0, r0, #2\n"
-        "\tldr r1, .Lff125c4__0800125E0\n"
-        "\tadds\tr0, r0, r1\n"
-        "\tldr\tr0, [r0, #0]\n"
-        "\tmov\tpc, r0\n"
-        "\tmovs\tr0, r0\n"
-        ".Lff125c4__0800125E0: .word 0x080125E4\n"
-        ".Lff125c4__0800125E4: .word 0x080127DE\n"
-        ".Lff125c4__0800125E8: .word 0x08012614\n"
-        ".Lff125c4__0800125EC: .word 0x080127EC\n"
-        ".Lff125c4__0800125F0: .word 0x080127EC\n"
-        ".Lff125c4__0800125F4: .word 0x0801261E\n"
-        ".Lff125c4__0800125F8: .word 0x08012694\n"
-        ".Lff125c4__0800125FC: .word 0x08012628\n"
-        ".Lff125c4__080012600: .word 0x080127EC\n"
-        ".Lff125c4__080012604: .word 0x080127EC\n"
-        ".Lff125c4__080012608: .word 0x080127EC\n"
-        ".Lff125c4__08001260C: .word 0x080127EC\n"
-        ".Lff125c4__080012610: .word 0x080127E6\n"
-        ".Lff125c4__080012614:\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tadds\tr1, r5, #0\n"
-        "\tbl sub_0800F924\n"
-        "\tb .Lff125c4__0800127EC\n"
-        ".Lff125c4__08001261E:\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tadds\tr0, #64\n"
-        "\tbl sub_0800D854\n"
-        "\tb .Lff125c4__0800127EC\n"
-        ".Lff125c4__080012628:\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tadds\tr0, #214\n"
-        "\tldrh\tr0, [r0, #0]\n"
-        "\tcmp\tr0, #7\n"
-        "\tbls .Lff125c4__080012634\n"
-        "\tb .Lff125c4__0800127EC\n"
-        ".Lff125c4__080012634:\n"
-        "\tlsls\tr0, r0, #2\n"
-        "\tldr r1, .Lff125c4__080012640\n"
-        "\tadds\tr0, r0, r1\n"
-        "\tldr\tr0, [r0, #0]\n"
-        "\tmov\tpc, r0\n"
-        "\tmovs\tr0, r0\n"
-        ".Lff125c4__080012640: .word 0x08012644\n"
-        ".Lff125c4__080012644: .word 0x08012664\n"
-        ".Lff125c4__080012648: .word 0x0801266C\n"
-        ".Lff125c4__08001264C: .word 0x0801268C\n"
-        ".Lff125c4__080012650: .word 0x08012674\n"
-        ".Lff125c4__080012654: .word 0x0801267C\n"
-        ".Lff125c4__080012658: .word 0x08012684\n"
-        ".Lff125c4__08001265C: .word 0x08012684\n"
-        ".Lff125c4__080012660: .word 0x0801268C\n"
-        ".Lff125c4__080012664:\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tbl sub_080012034\n"
-        "\tb .Lff125c4__0800127EC\n"
-        ".Lff125c4__08001266C:\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tbl sub_0800120A8\n"
-        "\tb .Lff125c4__0800127EC\n"
-        ".Lff125c4__080012674:\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tbl sub_08001226C\n"
-        "\tb .Lff125c4__0800127EC\n"
-        ".Lff125c4__08001267C:\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tbl sub_0800123D8\n"
-        "\tb .Lff125c4__0800127EC\n"
-        ".Lff125c4__080012684:\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tbl sub_0800124EC\n"
-        "\tb .Lff125c4__0800127EC\n"
-        ".Lff125c4__08001268C:\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tbl sub_0800121A8\n"
-        "\tb .Lff125c4__0800127EC\n"
-        ".Lff125c4__080012694:\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tbl sub_080012578\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tadds\tr0, #68\n"
-        "\tldrh\tr0, [r0, #0]\n"
-        "\tcmp\tr0, #0\n"
-        "\tbne .Lff125c4__0800126A6\n"
-        "\tb .Lff125c4__0800127EC\n"
-        ".Lff125c4__0800126A6:\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tadds\tr0, #214\n"
-        "\tldrh\tr0, [r0, #0]\n"
-        "\tcmp\tr0, #7\n"
-        "\tbls .Lff125c4__0800126B2\n"
-        "\tb .Lff125c4__0800127EC\n"
-        ".Lff125c4__0800126B2:\n"
-        "\tlsls\tr0, r0, #2\n"
-        "\tldr r1, .Lff125c4__0800126BC\n"
-        "\tadds\tr0, r0, r1\n"
-        "\tldr\tr0, [r0, #0]\n"
-        "\tmov\tpc, r0\n"
-        ".Lff125c4__0800126BC: .word 0x080126C0\n"
-        ".Lff125c4__0800126C0: .word 0x080127BE\n"
-        ".Lff125c4__0800126C4: .word 0x080127CE\n"
-        ".Lff125c4__0800126C8: .word 0x08012794\n"
-        ".Lff125c4__0800126CC: .word 0x080126E0\n"
-        ".Lff125c4__0800126D0: .word 0x0801270A\n"
-        ".Lff125c4__0800126D4: .word 0x0801271A\n"
-        ".Lff125c4__0800126D8: .word 0x08012742\n"
-        ".Lff125c4__0800126DC: .word 0x08012794\n"
-        ".Lff125c4__0800126E0:\n"
-        "\tlsls\tr0, r5, #16\n"
-        "\tlsrs\tr7, r0, #16\n"
-        "\tlsls\tr0, r6, #16\n"
-        "\tlsrs\tr5, r0, #16\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tadds\tr1, r7, #0\n"
-        "\tadds\tr2, r5, #0\n"
-        "\tbl sub_08001096C\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tadds\tr0, #168\n"
-        "\tmovs\tr1, #0\n"
-        "\tldrsh\tr0, [r0, r1]\n"
-        "\tcmp\tr0, #0\n"
-        "\tbne .Lff125c4__0800127EC\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tadds\tr1, r7, #0\n"
-        "\tadds\tr2, r5, #0\n"
-        "\tbl sub_0800110A0\n"
-        "\tb .Lff125c4__0800127EC\n"
-        ".Lff125c4__08001270A:\n"
-        "\tlsls\tr1, r5, #16\n"
-        "\tlsrs\tr1, r1, #16\n"
-        "\tlsls\tr2, r6, #16\n"
-        "\tlsrs\tr2, r2, #16\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tbl sub_0800109D4\n"
-        "\tb .Lff125c4__0800127EC\n"
-        ".Lff125c4__08001271A:\n"
-        "\tlsls\tr0, r5, #16\n"
-        "\tlsrs\tr5, r0, #16\n"
-        "\tlsls\tr0, r6, #16\n"
-        "\tlsrs\tr6, r0, #16\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tadds\tr1, r5, #0\n"
-        "\tadds\tr2, r6, #0\n"
-        "\tbl sub_080010CB8\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tadds\tr0, #168\n"
-        "\tmovs\tr1, #0\n"
-        "\tldrsh\tr0, [r0, r1]\n"
-        "\tcmp\tr0, #1\n"
-        "\tbeq .Lff125c4__08001277C\n"
-        "\tcmp\tr0, #1\n"
-        "\tble .Lff125c4__080012764\n"
-        "\tcmp\tr0, #2\n"
-        "\tbne .Lff125c4__0800127EC\n"
-        "\tb .Lff125c4__080012788\n"
-        ".Lff125c4__080012742:\n"
-        "\tlsls\tr0, r5, #16\n"
-        "\tlsrs\tr5, r0, #16\n"
-        "\tlsls\tr0, r6, #16\n"
-        "\tlsrs\tr6, r0, #16\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tadds\tr1, r5, #0\n"
-        "\tadds\tr2, r6, #0\n"
-        "\tbl sub_080010CB8\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tadds\tr0, #168\n"
-        "\tmovs\tr1, #0\n"
-        "\tldrsh\tr0, [r0, r1]\n"
-        "\tcmp\tr0, #1\n"
-        "\tbeq .Lff125c4__08001277C\n"
-        "\tcmp\tr0, #1\n"
-        "\tbgt .Lff125c4__08001276A\n"
-        ".Lff125c4__080012764:\n"
-        "\tcmp\tr0, #0\n"
-        "\tbeq .Lff125c4__080012770\n"
-        "\tb .Lff125c4__0800127EC\n"
-        ".Lff125c4__08001276A:\n"
-        "\tcmp\tr0, #2\n"
-        "\tbeq .Lff125c4__080012788\n"
-        "\tb .Lff125c4__0800127EC\n"
-        ".Lff125c4__080012770:\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tadds\tr1, r5, #0\n"
-        "\tadds\tr2, r6, #0\n"
-        "\tbl sub_080011484\n"
-        "\tb .Lff125c4__0800127EC\n"
-        ".Lff125c4__08001277C:\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tadds\tr1, r5, #0\n"
-        "\tadds\tr2, r6, #0\n"
-        "\tbl sub_0800115E0\n"
-        "\tb .Lff125c4__0800127EC\n"
-        ".Lff125c4__080012788:\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tadds\tr1, r5, #0\n"
-        "\tadds\tr2, r6, #0\n"
-        "\tbl sub_0800116DC\n"
-        "\tb .Lff125c4__0800127EC\n"
-        ".Lff125c4__080012794:\n"
-        "\tlsls\tr0, r5, #16\n"
-        "\tlsrs\tr7, r0, #16\n"
-        "\tlsls\tr0, r6, #16\n"
-        "\tlsrs\tr5, r0, #16\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tadds\tr1, r7, #0\n"
-        "\tadds\tr2, r5, #0\n"
-        "\tbl sub_08001096C\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tadds\tr0, #168\n"
-        "\tmovs\tr1, #0\n"
-        "\tldrsh\tr0, [r0, r1]\n"
-        "\tcmp\tr0, #0\n"
-        "\tbne .Lff125c4__0800127EC\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tadds\tr1, r7, #0\n"
-        "\tadds\tr2, r5, #0\n"
-        "\tbl sub_080010F3C\n"
-        "\tb .Lff125c4__0800127EC\n"
-        ".Lff125c4__0800127BE:\n"
-        "\tlsls\tr1, r5, #16\n"
-        "\tlsrs\tr1, r1, #16\n"
-        "\tlsls\tr2, r6, #16\n"
-        "\tlsrs\tr2, r2, #16\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tbl sub_080010914\n"
-        "\tb .Lff125c4__0800127EC\n"
-        ".Lff125c4__0800127CE:\n"
-        "\tlsls\tr1, r5, #16\n"
-        "\tlsrs\tr1, r1, #16\n"
-        "\tlsls\tr2, r6, #16\n"
-        "\tlsrs\tr2, r2, #16\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tbl sub_080010940\n"
-        "\tb .Lff125c4__0800127EC\n"
-        ".Lff125c4__0800127DE:\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tbl sub_0800FF78\n"
-        "\tb .Lff125c4__0800127EC\n"
-        ".Lff125c4__0800127E6:\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tbl sub_0800F9A0\n"
-        ".Lff125c4__0800127EC:\n"
-        "\tpop\t{r4, r5, r6, r7}\n"
-        "\tpop\t{r0}\n"
-        "\tbx\tr0\n"
-        "\tmovs\tr0, r0\n"
-        ".syntax divided\n"
-    );
+// Callees of the phase dispatcher, all with a (void *, int, int) or
+// (void *) arity; the two phase-6 arms also pass the raw key words.
+extern void _0800FF78(void *rec);
+extern void _0800F924(void *rec, int a);
+extern void _0800D854(void *p);
+extern void _0800F9A0(void *rec);
+extern void _080010914(void *rec, int a, int b);
+extern void _080010940(void *rec, int a, int b);
+extern void _08001096C(void *rec, int a, int b);
+extern void _080010F3C(void *rec, int a, int b);
+extern void _0800110A0(void *rec, int a, int b);
+extern void _0800109D4(void *rec, int a, int b);
+extern void _080010CB8(void *rec, int a, int b);
+extern void _080011484(void *rec, int a, int b);
+extern void _0800115E0(void *rec, int a, int b);
+extern void _0800116DC(void *rec, int a, int b);
+// Menu-item record builders owned by menu_ff78_g.c / menu_ff78_i.c.
+extern void _0800121A8(void *rec);
+extern void _08001226C(void *rec);
+extern void _0800123D8(void *rec);
+extern void _0800124EC(void *rec);
+
+// sub_0800125C4 — menu phase dispatcher (VMA 0x080125C4, 560 B, byte-exact).
+//
+// ABI: r0 = phase, r1/r2 = key words (read as u16 at each call), r3 = record.
+// Phases 1..12 index a 12-entry `ldr rN,[pc] / mov pc,rN` jump table over
+// `phase - 1`; only 1, 2, 5, 6, 7 and 12 have bodies. Phases 6 and 7 each
+// dispatch again on u16[rec+0xD6] (0..7), and phases 6's arms 5/6 dispatch a
+// third time on s16[rec+0xA8] (0..2).
+//
+// Three measured constraints, all load-bearing:
+//
+//  * THE ARM ORDER IS THE BLOCK ORDER. agbcc emits switch arms in source
+//    order, and the ROM's blocks are a record of that order, so the arms are
+//    written in the ROM's address order rather than numerically:
+//       outer   2, 5, 7, 6, 1, 12
+//       +0xD6   0, 1, 3, 4, 5/6, 2/7
+//       +0xD6   3, 4, 5, 6, 2/7, 0, 1      (phase 6's copy)
+//    Writing 1, 2, 5, 6, 7, 12 instead keeps every instruction identical but
+//    moves whole arm bodies, so the bytes never line up.
+//
+//  * PHASE 6 KEEPS TWO COPIES OF THE s16[+0xA8] SWITCH. Arms 5 and 6 of the
+//    phase-6 table carry the same statements, and writing them once as
+//    `case 5: case 6:` collapses the two dispatch trees into one. The ROM has
+//    two trees (one tests `ble` first at 0x0801271A, the other `bgt` at
+//    0x08012742) that share one copy of the case bodies -- agbcc merges the
+//    bodies itself and leaves the trees alone.
+//
+//  * The span ends in `00 00`, so the zero-fill `.align 2, 0` is required: gas
+//    would otherwise pad the section tail with the Thumb nop `46 c0`.
+//
+// No register pins or barriers are needed: with the arms in this order the
+// allocator lands rec/r1/r2 on r4/r5/r6 and the u16 truncations reuse them
+// exactly as the ROM does.
+void MenuFF78_125C4(int phase, int a1, int a2, void *rec_) {
+    u8 *rec = (u8 *)rec_;
+
+    switch (phase) {
+    case 2:
+        _0800F924(rec, a1);
+        break;
+    case 5:
+        _0800D854(rec + 64);
+        break;
+    case 7:
+        switch (*(u16 *)(rec + 214)) {
+        case 0:
+            _080012034(rec);
+            break;
+        case 1:
+            _0800120A8(rec);
+            break;
+        case 3:
+            _08001226C(rec);
+            break;
+        case 4:
+            _0800123D8(rec);
+            break;
+        case 5:
+        case 6:
+            _0800124EC(rec);
+            break;
+        case 2:
+        case 7:
+            _0800121A8(rec);
+            break;
+        }
+        break;
+    case 6:
+        _080012578(rec);
+        if (*(u16 *)(rec + 68) == 0)
+            break;
+        switch (*(u16 *)(rec + 214)) {
+        case 3:
+            _08001096C(rec, (u16)a1, (u16)a2);
+            if (*(s16 *)(rec + 168) == 0)
+                _0800110A0(rec, (u16)a1, (u16)a2);
+            break;
+        case 4:
+            _0800109D4(rec, (u16)a1, (u16)a2);
+            break;
+        case 5:
+            _080010CB8(rec, (u16)a1, (u16)a2);
+            switch (*(s16 *)(rec + 168)) {
+            case 0:
+                _080011484(rec, (u16)a1, (u16)a2);
+                break;
+            case 1:
+                _0800115E0(rec, (u16)a1, (u16)a2);
+                break;
+            case 2:
+                _0800116DC(rec, (u16)a1, (u16)a2);
+                break;
+            }
+            break;
+        case 6:
+            _080010CB8(rec, (u16)a1, (u16)a2);
+            switch (*(s16 *)(rec + 168)) {
+            case 0:
+                _080011484(rec, (u16)a1, (u16)a2);
+                break;
+            case 1:
+                _0800115E0(rec, (u16)a1, (u16)a2);
+                break;
+            case 2:
+                _0800116DC(rec, (u16)a1, (u16)a2);
+                break;
+            }
+            break;
+        case 2:
+        case 7:
+            _08001096C(rec, (u16)a1, (u16)a2);
+            if (*(s16 *)(rec + 168) == 0)
+                _080010F3C(rec, (u16)a1, (u16)a2);
+            break;
+        case 0:
+            _080010914(rec, (u16)a1, (u16)a2);
+            break;
+        case 1:
+            _080010940(rec, (u16)a1, (u16)a2);
+            break;
+        }
+        break;
+    case 1:
+        _0800FF78(rec);
+        break;
+    case 12:
+        _0800F9A0(rec);
+        break;
+    }
 }
-void _0800125C4(void *a, int b, int c, int d) __attribute__((alias("MenuFF78_125C4")));
-void sub_0800125C4(void *a, int b, int c, int d) __attribute__((alias("MenuFF78_125C4")));
+
+__asm__(".align 2, 0");
+
+void _0800125C4(int a, int b, int c, void *d) __attribute__((alias("MenuFF78_125C4")));
+void sub_0800125C4(int a, int b, int c, void *d) __attribute__((alias("MenuFF78_125C4")));
 
 // sub_080012DA0 — same pattern: 12-way phase dispatcher.
 extern void sub_0800127F4(int a, void *b);

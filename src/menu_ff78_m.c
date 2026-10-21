@@ -1,9 +1,8 @@
 // ============================================================================
 // menu_ff78_m.c — reconstructed C for asm/menu_ff78.s (2 functions).
 //
-// Bodies transcribed instruction-for-instruction from the asm listing.
-// External callees use the Sub_ spellings the asm closure defines,
-// so behavior is identical by construction.
+// Both bodies are C transcriptions; external callees use the Sub_ spellings
+// the asm closure defines, so behaviour is identical by construction.
 //
 //   sub_080013850 (0x080013850) — (rec, dead, ev) event handler.
 //   sub_080015BA0 (0x080015BA0) — (ev, a1, a2, rec) 12-way dispatcher.
@@ -11,7 +10,7 @@
 
 #include "gba/types.h"
 
-extern void Sub_08002B368(u32 v);
+extern void _0802B368(u16 v);   // 0x0802B368 sound entry
 extern void Sub_080015230(void *a, void *b);
 extern void Sub_0800D854(void *a);
 extern void Sub_0800D8E4(void *a);
@@ -38,138 +37,75 @@ extern void Sub_08001529C(void *a); // 1-arg caller ABI (adds r0, r4, #0)
 //   ev==2: 2B368(4); s16[rec+186]=0; u32[rec+144]=1.
 //   ev==32: 2B368(3); if s16[rec+178]==1: s16[rec+178]=0.
 //   ev==16: 2B368(3); if s16[rec+178]==0: s16[rec+178]=1.
-__attribute__((naked)) void MenuFF78_13850(void *rec_, u32 dead, u32 ev_) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        ".L13850_080013850:\n"
-        "	push	{r4, r5, lr}\n"
-        "	adds	r4, r0, #0\n"
-        "	lsls	r2, r2, #16\n"
-        "	lsrs	r5, r2, #16\n"
-        "	cmp	r5, #1\n"
-        "	bne .L13850_0800138F2\n"
-        "	movs	r0, #1\n"
-        "	bl 0x0802B368\n"
-        "	movs	r1, #10\n"
-        "	str	r1, [r4, #32]\n"
-        "	movs	r0, #0\n"
-        "	strh	r0, [r4, #36]\n"
-        "	str	r1, [r4, #64]\n"
-        "	adds	r0, r4, #0\n"
-        "	adds	r0, #138\n"
-        "	movs	r1, #0\n"
-        "	ldrsh	r0, [r0, r1]\n"
-        "	cmp	r0, #0\n"
-        "	beq .L13850_08001387E\n"
-        "	cmp	r0, #1\n"
-        "	beq .L13850_0800138A4\n"
-        "	b .L13850_0800138EA\n"
-        ".L13850_08001387E:\n"
-        "	ldr r3, .L13850_080013898\n"
-        "	adds	r0, r4, #0\n"
-        "	adds	r0, #176\n"
-        "	ldrh	r1, [r0, #0]\n"
-        "	ldr r2, .L13850_08001389C\n"
-        "	adds	r0, r3, r2\n"
-        "	strh	r1, [r0, #0]\n"
-        "	adds	r0, r4, #0\n"
-        "	adds	r0, #174\n"
-        "	ldrh	r0, [r0, #0]\n"
-        "	ldr r1, .L13850_0800138A0\n"
-        "	b .L13850_0800138BA\n"
-        "	movs	r0, r0\n"
-        ".L13850_080013898: .word 0x03001780\n"
-        ".L13850_08001389C: .word 0x00000FBE\n"
-        ".L13850_0800138A0: .word 0x00000FC2\n"
-        ".L13850_0800138A4:\n"
-        "	ldr r3, .L13850_080013944\n"
-        "	adds	r0, r4, #0\n"
-        "	adds	r0, #176\n"
-        "	ldrh	r1, [r0, #0]\n"
-        "	ldr r2, .L13850_080013948\n"
-        "	adds	r0, r3, r2\n"
-        "	strh	r1, [r0, #0]\n"
-        "	adds	r0, r4, #0\n"
-        "	adds	r0, #174\n"
-        "	ldrh	r0, [r0, #0]\n"
-        "	ldr r1, .L13850_08001394C\n"
-        ".L13850_0800138BA:\n"
-        "	adds	r2, r3, r1\n"
-        "	strh	r0, [r2, #0]\n"
-        "	movs	r0, #0\n"
-        "	ldrsh	r1, [r2, r0]\n"
-        "	lsls	r0, r1, #1\n"
-        "	adds	r0, r0, r1\n"
-        "	lsls	r0, r0, #2\n"
-        "	adds	r0, r0, r3\n"
-        "	adds	r1, r4, #0\n"
-        "	adds	r1, #172\n"
-        "	ldrh	r1, [r1, #0]\n"
-        "	adds	r0, #49\n"
-        "	strb	r1, [r0, #0]\n"
-        "	movs	r0, #0\n"
-        "	ldrsh	r1, [r2, r0]\n"
-        "	lsls	r0, r1, #1\n"
-        "	adds	r0, r0, r1\n"
-        "	lsls	r0, r0, #2\n"
-        "	adds	r0, r0, r3\n"
-        "	adds	r1, r4, #0\n"
-        "	adds	r1, #178\n"
-        "	ldrh	r1, [r1, #0]\n"
-        "	adds	r0, #48\n"
-        "	strb	r1, [r0, #0]\n"
-        ".L13850_0800138EA:\n"
-        "	movs	r0, #5\n"
-        "	strh	r0, [r4, #40]\n"
-        "	movs	r0, #1\n"
-        "	str	r0, [r4, #60]\n"
-        ".L13850_0800138F2:\n"
-        "	cmp	r5, #2\n"
-        "	bne .L13850_08001390A\n"
-        "	movs	r0, #4\n"
-        "	bl 0x0802B368\n"
-        "	adds	r1, r4, #0\n"
-        "	adds	r1, #186\n"
-        "	movs	r0, #0\n"
-        "	strh	r0, [r1, #0]\n"
-        "	subs	r1, #42\n"
-        "	movs	r0, #1\n"
-        "	str	r0, [r1, #0]\n"
-        ".L13850_08001390A:\n"
-        "	cmp	r5, #32\n"
-        "	bne .L13850_080013922\n"
-        "	movs	r0, #3\n"
-        "	bl 0x0802B368\n"
-        "	adds	r1, r4, #0\n"
-        "	adds	r1, #178\n"
-        "	ldrh	r2, [r1, #0]\n"
-        "	cmp	r2, #1\n"
-        "	bne .L13850_080013922\n"
-        "	movs	r0, #0\n"
-        "	strh	r0, [r1, #0]\n"
-        ".L13850_080013922:\n"
-        "	cmp	r5, #16\n"
-        "	bne .L13850_08001393C\n"
-        "	movs	r0, #3\n"
-        "	bl 0x0802B368\n"
-        "	adds	r1, r4, #0\n"
-        "	adds	r1, #178\n"
-        "	movs	r2, #0\n"
-        "	ldrsh	r0, [r1, r2]\n"
-        "	cmp	r0, #0\n"
-        "	bne .L13850_08001393C\n"
-        "	movs	r0, #1\n"
-        "	strh	r0, [r1, #0]\n"
-        ".L13850_08001393C:\n"
-        "	pop	{r4, r5}\n"
-        "	pop	{r0}\n"
-        "	bx	r0\n"
-        "	movs	r0, r0\n"
-        ".L13850_080013944: .word 0x03001780\n"
-        ".L13850_080013948: .word 0x00000FBE\n"
-        ".L13850_08001394C: .word 0x00000574\n"
-        ".syntax divided\n"
-    );
+void MenuFF78_13850(void *rec_, u32 dead, u32 ev_) {
+    u8 *rec = (u8 *)rec_;
+    u16 ev = (u16)ev_;
+
+    (void)dead;
+    if (ev == 1) {
+        // Assembler-resolved work-area base: keeps 0x03001780 and each offset
+        // as separate pool words (the ROM keeps them apart and adds at runtime).
+        extern u8 M13850_WA[];
+        u8 *wa;
+        u16 t;
+        u16 v;
+        u32 off;
+        u8 *p49;
+        u8 *p48;
+        __asm__(".globl M13850_WA\nM13850_WA = 0x03001780\n");
+
+        _0802B368(1);
+        *(u32 *)(rec + 32) = 10;
+        *(s16 *)(rec + 36) = 0;
+        *(u32 *)(rec + 64) = 10;
+        switch (*(s16 *)(rec + 138)) {
+        case 0:
+            wa = (u8 *)(uintptr_t)M13850_WA;
+            t = *(u16 *)(rec + 176);
+            *(u16 *)(wa + 0xFBE) = t;
+            v = *(u16 *)(rec + 174);
+            off = 0xFC2;
+            break;
+        case 1:
+            wa = (u8 *)(uintptr_t)M13850_WA;
+            t = *(u16 *)(rec + 176);
+            *(u16 *)(wa + 0xFBE) = t;
+            v = *(u16 *)(rec + 174);
+            off = 0x574;
+            break;
+        default:
+            goto tail;
+        }
+        *(u16 *)(wa + off) = v;
+        // The record base is the *second* addend (index*12 + wa) so the sum
+        // accumulates into the index register, as the ROM does.
+        p49 = (u8 *)(uintptr_t)((u32)(*(s16 *)(wa + off) * 12) + (u32)(uintptr_t)wa);
+        t = *(u16 *)(rec + 172);
+        p49 += 49;
+        *p49 = (u8)t;
+        p48 = (u8 *)(uintptr_t)((u32)(*(s16 *)(wa + off) * 12) + (u32)(uintptr_t)wa);
+        t = *(u16 *)(rec + 178);
+        p48 += 48;
+        *p48 = (u8)t;
+    tail:
+        *(s16 *)(rec + 40) = 5;
+        *(u32 *)(rec + 60) = 1;
+    }
+    if (ev == 2) {
+        _0802B368(4);
+        *(s16 *)(rec + 186) = 0;
+        *(u32 *)(rec + 144) = 1;
+    }
+    if (ev == 32) {
+        _0802B368(3);
+        if (*(u16 *)(rec + 178) == 1)
+            *(s16 *)(rec + 178) = 0;
+    }
+    if (ev == 16) {
+        _0802B368(3);
+        if (*(s16 *)(rec + 178) == 0)
+            *(s16 *)(rec + 178) = 1;
+    }
 }
 
 void _080013850(void *a, u32 b, u32 c) __attribute__((alias("MenuFF78_13850")));

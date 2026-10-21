@@ -35,6 +35,23 @@ python3 tools/corpus_match_probe.py --function NAME --c89 --require-all --requir
 make fast-check
 ```
 
+Add `--diff` to print the aligned ROM-vs-candidate listing for a body that is
+not exact: agreeing-instruction count, each differing pair with its offset and
+kind (`register`, `memory-offset`, `call-target`, ...), and the unmatched runs.
+The byte counts alone do not say *which* spelling to change; the listing does.
+
+A non-exact body also prints `cross-jump:` lines, without needing `--diff`, when
+a branch lands on a block the ROM keeps as its own copy. That is agbcc's
+cross-jump pass merging a duplicated arm or lane body; the line names the branch
+sites, the candidate target, the ROM copies it stands for and the byte
+shortfall, and the fix is the empty-asm lever described below.
+
+A body whose flow ends in an indirect branch (`mov pc,rX`, i.e. a jump table)
+can only be scored up to that branch, because the reachability walk does not
+follow the table. `--diff` then prints `scoring stopped early (...)` and the
+remaining bytes are unscored -- read a low prefix score as "unmeasured", not
+as "different".
+
 `fast-check` runs tool regressions and static audits. It does not replace the
 whole-image `full-rom-match`. On a fresh checkout, that target runs
 `matching-ready` first to generate the corpus report and assembled symbol
@@ -220,6 +237,15 @@ See [candidate-length diagnostics](findings/oversized_plus4_class.md).
   offset (`0x5E8`) is carried: as a running register in the ROM, rematerialised
   from the literal pool here.
 
+- Pinning the *destination of an assignment* is the fix when whole blocks come
+  out with two registers swapped: `f = flags | bit` gave value/constant as
+  r1/r0 across five copies where the ROM has r0/r1, and
+  `register u32 f asm("r0")` fixed all of them at once. And when the ROM
+  computes an address in a scratch and copies it into the variable's
+  callee-saved home (`adds r0,r4,#0 / adds r0,#158 / adds r5,r0`), agbcc
+  coalesces the two away; a pinned temp and a `"+r"` barrier in front of the
+  copy restore the split (`register u8 *t asm("r0") = r + 158;
+  __asm__ volatile ("" : "+r" (t)); mode = t;`), measured on `_080029F44`.
 - Two constants added at different levels do not always fuse, and the
   encoding depends on *which* level. `cell8 - 36 + 14` and
   `((u16 *)(cell8 - 36))[7]` both fold to one `sub #22 / ldrh [r0]`, but a
@@ -284,10 +310,49 @@ Two pitfalls:
 
 * Pinning the *sum* (`register uintptr_t wsum __asm__("r2") = a + b;`) makes
   agbcc encode the add with the operands swapped (`adds r2,r3,r2`). Pin the
-  first operand instead and leave the sum plain.
+  first operand instead and leave the sum plain. The **initialised** form is
+  what swaps: declaring the pin and assigning it later (`register int sum
+  __asm__("r0"); ... sum = a + b;`) keeps the ROM's operand order and is what
+  closed `_08002A764` (188 -> 196). The same pin also decides where a later
+  sign extension lands, because the sum keeps one live range
+  ([the 0x08002A764 lift](findings/garage_2a764_lift.md)).
 * Association controls which register receives the result. `off + (base +
   offs)` accumulates into the dead offset register (`adds r1,r1,r2`), while the
   left-associative `base + offs + off` overwrites the base (170 vs 172 bytes).
+
+A bare `__asm__ volatile("");` between two arms is a *layout* lever as well as
+an ordering one: it stops agbcc's cross-jump pass merging two identical
+stores, which is what keeps `_08002A764`'s +-200 clamp as two `strh` blocks.
+A `"memory"` clobber does not work there -- it also blocks the load the second
+comparison needs, so the arm grows a reload instead.
+
+The same lever applies to *repeated lane blocks*, not just the two arms of one
+`if`. `_080029F44` (five near-identical mode lanes, 540 B) is the measured
+cascade: with no barrier agbcc merges lanes 5 and 4 first on their identical
+`flags |= 0x80000` arms (8 B), and having done so it also merges the clamp tail
+below them (the same `-= 2` / `bl` / `strh` run after each lane's own constant
+add), for 32 B. ONE empty asm after the earlier lane's flag assignment stops
+both; separating only the clamp tails changes nothing. So place the barrier at
+the *first* block that merges and re-measure before adding a second -- the later
+merge is usually a consequence, not an independent defect. The probe's
+`cross-jump:` line names which block is involved (see above).
+
+An empty asm can also be a *register* lever, and that is a different tool: a
+**register clobber** (`__asm__ volatile("" : : : "r1");`) discards what cse
+knows about a register without emitting anything. When the ROM recomputes an
+address from its base (`adds r1,r5,#0 / adds r1,#110`) but agbcc folds it off
+the previous `base+offset` it left in the same register (`adds r1,#6`), the
+clobber is what breaks the relation; pins, `"+r"` launders and `volatile`
+accesses all keep the fold. Measured on
+[the 0x08029D48 lift](findings/garage_29d48_lift.md): 222 -> 232 of 232.
+
+Two guard shapes are worth trying before reshaping a body. `if (a || b)` with
+an `else` is what produces the ROM's `bne then` / `beq else` layout with the
+else-block last; a nested `if` hoists work above the first test. And a record
+field read several times around sub-word stores needs `volatile` to stay
+several reads -- agbcc's alias analysis proves `*(u32 *)(r + 92)` disjoint
+from `*(u16 *)(r + 106)` and CSEs the loads otherwise. Both are measured in
+[the 0x08029D48 lift](findings/garage_29d48_lift.md).
 
 ## Suppressing loop strength reduction (the address giv)
 
@@ -336,11 +401,25 @@ that is a 2-3 instruction difference:
 
 Same file, same body: symbol 116/116 exact, cast constant 104/116.
 
+A **work-area offset** is the mirror case: keep the base a symbol (so the two
+pool words stay separate) and write the offset as a plain literal. On
+`_08001986C` a symbol offset for `WA+0x10DC` is loaded into `r0` (188/192),
+while the literal `0x10DCu` is loaded into the ROM's `r1`; `0x10CAu` lands in
+`r0` and `0x10FCu` in `r2` the same way, and one shared offset variable keeps
+the first site's register alive into the next. The *value* is identical, so
+this is a pseudo-ownership choice, not a folding one — measure both spellings
+per site. The full measured spelling set for that body is in the `_08001986C`
+comment in `src/race_scene.c`.
+
 ## Switch dispatch shape
 
 * The dispatch tree over `{0,1,2,3}` is a balanced binary search; the arms are
   laid out in **source order**, so write `case 1: case 3:` before `case 0:
   case 2:` when the ROM has the {1,3} arm first.
+* A jump-table dispatch over a **narrowed** index keeps its `lsls #16 / asrs
+  #16` only when the value is assigned to a signed 16-bit temporary; the
+  `cmp #9 / bhi` is then an unsigned range test on that value
+  (`_08001986C`: `switch ((s16)(*(u16 *)(wa + 0x10FC) - 1))`).
 * The mode word's signedness is visible: `bgt` means the source read it as
   `s32`, `bcc` means `u32` (`_080021F14`: `*(s32 *)(rec + 160)`).
 * For a switch with a missing value, use an explicit empty case when arm
@@ -644,6 +723,16 @@ two-symbol anchor is likewise a regression on `_0800101FC` (see the comment abov
 `WA_S16` in `src/menu_ff78_a.c`) even though it is right for `_08001B410` in
 `src/race_scene_b1.c`. Measure per body; do not generalise either recipe.
 
+There is a third spelling that is right for a body that reads several work-area
+cells: keep the base in a **variable** (`u8 *wa = (u8 *)&WABase;`) and write the
+cell offsets as plain literals. Neither the folded constant nor the two-symbol
+`WA_SPLIT` form reproduces `ldr r4,=0x03001780 / ldr r1,=0x576 / adds r0,r4,r1`:
+the folded constant loses the second pool word, and the `.set` offset makes the
+allocator coalesce the offset with the sum's destination. `_0800107CC` (264 B)
+needed that spelling, `wa + 0xFEC - 2` for a cell with no pool word of its own,
+and a pinned `r0` seed pointer with an empty barrier to keep a third
+`adds r0,#2` alive. See [the 0x080107CC lift](findings/menu_ff78_107cc_lift.md).
+
 ## The jumptable switch lever
 
 A switch the ROM lowers with an `ldr r0,[r0] / mov pc,r0` jump table (the
@@ -671,6 +760,15 @@ The tail-anchor idiom also applies to a jumptable function: a zero halfword
 at the ROM span end reproduces the literal pool padding the assembler would
 otherwise fill with `46 c0`. Same `.pushsection .short 0` form as
 `Race_Setup_19200`.
+
+The jump table's *arms* follow the same rule as any other switch: agbcc emits
+case bodies in **source order**, so the ROM's block addresses are a record of
+that order and a numerically-ordered `switch` will not byte-align even when
+every instruction is right. `_0800125C4` (560 B, three nested jump tables) is
+the measured case, together with a second lever: two arms carrying textually
+identical statements must stay two arms when the ROM keeps two dispatch trees
+and shares only the case bodies. See
+[the 0x080125C4 lift](findings/menu_ff78_125c4_lift.md).
 
 ## Two shape levers measured on `_080011958` (496 B)
 
