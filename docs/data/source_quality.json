@@ -2994,12 +2994,10 @@
    "size": 56
   },
   "0x08006050": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
-    "barrier": 4,
-    "insn": 1,
-    "insn_lines": 2,
-    "pin": 11
+    "barrier": 6,
+    "pin": 12
    },
    "file": "src/course_collision.c",
    "name": "Course_Scan",
@@ -6395,24 +6393,20 @@
    "size": 68
   },
   "0x080154e0": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
-    "barrier": 18,
-    "insn": 2,
-    "insn_lines": 4,
-    "pin": 29
+    "barrier": 22,
+    "pin": 31
    },
    "file": "src/menu_ff78_o.c",
    "name": "MenuFF78_154E0",
    "size": 320
   },
   "0x08015620": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
-    "barrier": 14,
-    "insn": 2,
-    "insn_lines": 4,
-    "pin": 22
+    "barrier": 20,
+    "pin": 26
    },
    "file": "src/menu_ff78_p.c",
    "name": "MenuFF78_15620",
@@ -8463,12 +8457,10 @@
    "size": 452
   },
   "0x08020198": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
-    "barrier": 20,
-    "insn": 1,
-    "insn_lines": 1,
-    "pin": 22
+    "barrier": 24,
+    "pin": 23
    },
    "file": "src/race_scene_e.c",
    "name": "_080020198",
@@ -8889,12 +8881,10 @@
    "size": 424
   },
   "0x08022624": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
-    "barrier": 6,
+    "barrier": 7,
     "directive": 1,
-    "insn": 1,
-    "insn_lines": 1,
     "pin": 16
    },
    "file": "src/race_phase_vms.c",
@@ -13364,12 +13354,12 @@
    "functions": 865
   },
   "c_fakematch": {
-   "bytes": 69310,
-   "functions": 592
+   "bytes": 70838,
+   "functions": 597
   },
   "partial": {
-   "bytes": 3792,
-   "functions": 18
+   "bytes": 2264,
+   "functions": 13
   }
  },
  "version": 1

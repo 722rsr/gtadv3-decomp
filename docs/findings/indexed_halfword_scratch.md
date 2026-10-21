@@ -59,18 +59,71 @@ The zero-index variant of the same pattern *is* steerable: see
 indexed halfword loads" and "In-place halfword load in
 `Course_Dispatch_08BB8`" -- keeping the offset live with an empty `"+r"`
 barrier stops agbcc from reusing its register for the freshly materialised
-zero index. The lever was not enough for the bodies measured here: an
-output-only empty asm (`__asm__ volatile ("" : "=r"(t));`) does not keep a
-register busy across the load, and a hard-register clobber
-(`__asm__ volatile ("" : : : "r1");`) only forces the *clobbered* value out
-of its register, it does not remove the register from the scratch's
-candidate set.
+zero index. An output-only empty asm on its own (`__asm__ volatile ("" :
+"=r"(t));`) does not keep a register busy across the load, and a
+hard-register clobber (`__asm__ volatile ("" : : : "r1");`) only forces the
+*clobbered* value out of its register, it does not remove the register from
+the scratch's candidate set.
 
-**Consequence.** Nine `partial` bodies (2,400 bytes) are gated on this one
-register choice: `_08006050`, `_08006A50`, `_0800154E0`, `_080015620`,
-`_080022624`, `_0800175BC`, `_080020198`, `_0800278F0`, `_080018EC0`. They
-stay `partial` unless a spelling is found that puts the scratch where the
-ROM puts it.
+### The liveness pin removes a register from the scratch set
+
+`_080020198` (592 B) closes with a zero-byte pin: declare a dummy in the
+*unwanted* scratch register, define it with an output-only empty asm, put the
+load next, and consume it with an input-only empty asm afterwards.
+
+```c
+register int hold __asm__("r3");
+__asm__ volatile("" : "=r"(hold));
+s28 = *(s16 *)(rec + 28);      // ROM scratch is r1, agbcc picks r3
+__asm__ volatile("" : : "r"(hold));
+```
+
+The output operand starts `hold`'s live range and the later input ends it, so
+r3 is live *across* the load and `find_free_reg` cannot hand it to the
+scratch; agbcc takes the next free register, which is the ROM's r1. Both
+asms emit no bytes and the allocation shift is local to the load. Applying a
+second pin (dummy in r2, load of rec+164, whose ROM scratch is r3) then
+matched the rest of the body, 592/592, with no instruction splices. The class
+moved `partial` -> `c_fakematch`.
+
+The tick is that the pin must *bracket* the load. An output-only asm alone
+leaves `hold` dead immediately, and a clobber cannot reserve the register for
+a load that is emitted after it. Measure one scratch at a time: a pin at one
+site can move the scratch at the next, so iterate down the listing.
+
+One asm can hold several dummies (`"=r"(h0), "=r"(h1)`); `MenuFF78_15620`
+needs both r0 and r1 live to move its zero-index scratch to r2.
+
+The same bracket settles the *zero-index* form. `Course_Scan`'s ROM body
+loads `ldrsh r5,[r0,r1]` then `ldrsh r0,[r0,r2]`, and `RaceVM_022624` loads
+`[r4,r1]` then `[r4,r2]`; the pin on the first scratch (r1) reproduces the
+second. `MenuFF78_154E0` loads the zero index into r1 in a body whose plain
+form takes r0, so there the dummy sits in r0.
+
+A body can need a *sequence* of pins. `MenuFF78_15620`'s clamp rereads the
+cell twice, through r2 and then r3; pinning r2 around the second load alone
+pushes the *first* load to r3, because agbcc sees the later need. Bracket the
+first load with a dummy in r3 and the second with a dummy in r2, and both land
+where the ROM has them.
+
+**Consequence.** Four `partial` bodies (872 bytes) remain gated on this one
+register choice: `_08006A50`, `_0800175BC`, `_0800278F0`, `_080018EC0`. The
+liveness pin is the first thing to try on each; `_080020198`,
+`_08006050`, `_080022624`, `_0800154E0` and `_080015620` were among them.
+
+`_0800175BC` needs the pin *and* a second fix, and the second one is not a
+register choice. Once its four-instruction `+340` store moves to C, the body
+is byte-correct except that agbcc expands the far `if (... != 2) return;` at
++0x8C as `beq` over a `b` (`@long jump`, 4 bytes) where the ROM has one
+`bne`. That is `shorten_branches`, not allocation: the branch is 246 bytes
+from the epilogue, inside the +-254 Thumb range, but agbcc's length estimate
+for the span is inflated by its own asm statements (`asm_insn_count` counts
+2 bytes per logical line, emitted or not), so the estimate crosses 254
+first. The old `.hword` splice hid this: eight emitted bytes counted as two,
+a 6-byte *under*-estimate, which is why that body only matched with the
+splice. Adding two `.set dummy, 1` statements inside case 2 flips a matching
+body to the 4-byte form, so treat any far-conditional branch in a body with
+asm barriers as an estimate problem before re-spelling the condition.
 
 The same measurement was run against the comparison `agbcc` binary
 (`build/toolchains/agbcc/agbcc`): it allocates identically, so this is not a
@@ -144,15 +197,12 @@ twelve.
 | body | bytes | blocker |
 | --- | ---: | --- |
 | `_080015304` `MenuFF78_15304` | 408 | halfword immediate-offset store |
-| `_080020198` | 592 | indexed halfword scratch |
-| `_0800175BC` `Rec35_Input_175BC` | 400 | indexed halfword scratch |
+| `_0800175BC` `Rec35_Input_175BC` | 400 | indexed halfword scratch, plus a far branch agbcc turns into a 4-byte long jump |
 | `_0800278F0` `Garage_Ticker_278F0` | 232 | indexed halfword scratch, plus two naked bodies |
 | `_08000BB0C` `Award_CopyTwinB` | 248 | `mov r3,sp` and an add whose operand order the pointer normalisation forbids |
 | `_080053DC` `OAMGrid_Build` | 200 | the palette shift hoists out of the loop; 181/200 with the hoist suppressed |
 | `_08002DBA4` `SoundDBA4_Read` | 176 | frame-base cursor and the hoisted counter |
-| `_080022624` `RaceVM_022624` | 176 | indexed halfword scratch |
 | `_08006A50` `CollectNearby_06A50` | 156 | the argument copy wants r7 and the scratch wants r2 |
-| `_08006050` `Course_Scan` | 156 | indexed halfword scratch |
 | `_080018EC0` `Race_Setup_18EC0` | 84 | the zero index wants r7, an unpinned global allocno |
 | `_08002BE78` `SoundPump` | 60 | a literal-pool load and two flag-coupled branches |
 | `_08002C11C` `SoundVoiceCleanup` | 68 | `tst` is not in the compiler's repertoire |
