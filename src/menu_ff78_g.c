@@ -34,7 +34,7 @@ extern void Sub_080012A44(void *a, u32 b, u32 c);
 extern void Sub_080012AC0(void *a, u32 b, u32 c);
 extern void Sub_080012B68(void *a, u32 b, u32 c);
 extern void Sub_080012B34(void *a);
-extern void Sub_080012F18(void *a);
+extern void _080012F18(void *a);
 extern void Sub_08003954(int a, int b, u32 c);
 extern void Sub_0800F778(u32 a, u32 b, u32 c);
 extern void Sub_0800D97C(void *a, int b);
@@ -43,9 +43,9 @@ extern void sub_0802B368(u32 v);
 extern int _08024DA0(int v);
 extern void sub_08004BFC(int v);
 extern int Sub_0802581C(int v);
-extern int Sub_08024D0C(int a, int b);
-extern int Sub_080022E4(int v);
-extern void Sub_0800D77C(void *a, int b, int c);
+extern int _08024D0C(int a, int b);
+extern int _080022E4(int v);
+extern void _0800D77C(void *a, int b, int c);
 
 #define MFFG_12990_B368 sub_0802B368
 #define MFFG_12990_24DA0 _08024DA0
@@ -628,121 +628,78 @@ void sub_080012B68(void *a, u32 b, u32 c) __attribute__((alias("MenuFF78_12B68")
 //   s16[rec+172] = (s8)u8[WA + s16[rec+174]*12 + 49];
 //   s16[rec+178] = (s8)u8[WA + s16[rec+174]*12 + 48];
 //   u32[rec+144] = 2; s16[rec+186] = 0;
-//   u16[WA+0xFE0 + s16[rec+176]*2] = 0; D77C(rec+156, 0, -32).
-__attribute__((naked)) void MenuFF78_13024(void *rec_)
+//   u16[WA+0x1060 + s16[rec+176]*2] = 0; D77C(rec+156, 0, -32).
+// The pinned registers and the empty-asm `off` feed exist only to reproduce
+// agbcc's own operand choices (174 materialised in r1 before the base add,
+// rec+188 formed in r0 before the scaled index is folded in).
+void MenuFF78_13024(void *rec_)
 {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, r7, lr}\n"
-        "mov r7, r9\n"
-        "mov r6, r8\n"
-        "push {r6, r7}\n"
-        "adds r7, r0, #0\n"
-        "ldr r4, .L13024_p0\n"
-        "ldr r0, .L13024_p1\n"
-        "adds r5, r4, r0\n"
-        "ldrh r0, [r5, #0]\n"
-        "adds r6, r7, #0\n"
-        "adds r6, #176\n"
-        "movs r1, #0\n"
-        "mov r8, r1\n"
-        "strh r0, [r6, #0]\n"
-        "adds r0, r7, #0\n"
-        "bl 0x08012f18\n"
-        "ldr r2, .L13024_p2\n"
-        "adds r0, r4, r2\n"
-        "ldrh r0, [r0, #0]\n"
-        "movs r1, #174\n"
-        "adds r1, r1, r7\n"
-        "mov r9, r1\n"
-        "strh r0, [r1, #0]\n"
-        "ldrh r0, [r5, #0]\n"
-        "strh r0, [r6, #0]\n"
-        "movs r2, #0\n"
-        "ldrsh r0, [r1, r2]\n"
-        "movs r2, #0\n"
-        "ldrsh r1, [r6, r2]\n"
-        "bl 0x08024d0c\n"
-        "adds r1, r7, #0\n"
-        "adds r1, #136\n"
-        "strh r0, [r1, #0]\n"
-        "movs r0, #0\n"
-        "ldrsh r1, [r1, r0]\n"
-        "lsls r1, r1, #2\n"
-        "adds r0, r7, #0\n"
-        "adds r0, #188\n"
-        "adds r0, r0, r1\n"
-        "ldr r0, [r0, #0]\n"
-        "mov r1, r9\n"
-        "strh r0, [r1, #0]\n"
-        "movs r2, #0\n"
-        "ldrsh r0, [r1, r2]\n"
-        "bl 0x080022e4\n"
-        "adds r1, r7, #0\n"
-        "adds r1, #180\n"
-        "strh r0, [r1, #0]\n"
-        "mov r0, r9\n"
-        "movs r2, #0\n"
-        "ldrsh r1, [r0, r2]\n"
-        "lsls r0, r1, #1\n"
-        "adds r0, r0, r1\n"
-        "lsls r0, r0, #2\n"
-        "adds r0, r0, r4\n"
-        "adds r0, #49\n"
-        "movs r1, #0\n"
-        "ldrsb r1, [r0, r1]\n"
-        "adds r0, r7, #0\n"
-        "adds r0, #172\n"
-        "strh r1, [r0, #0]\n"
-        "mov r0, r9\n"
-        "movs r2, #0\n"
-        "ldrsh r1, [r0, r2]\n"
-        "lsls r0, r1, #1\n"
-        "adds r0, r0, r1\n"
-        "lsls r0, r0, #2\n"
-        "adds r0, r0, r4\n"
-        "adds r0, #48\n"
-        "ldrb r0, [r0, #0]\n"
-        "lsls r0, r0, #24\n"
-        "asrs r0, r0, #24\n"
-        "adds r1, r7, #0\n"
-        "adds r1, #178\n"
-        "strh r0, [r1, #0]\n"
-        "subs r1, #34\n"
-        "movs r0, #2\n"
-        "str r0, [r1, #0]\n"
-        "adds r0, r7, #0\n"
-        "adds r0, #186\n"
-        "mov r1, r8\n"
-        "strh r1, [r0, #0]\n"
-        "movs r2, #0\n"
-        "ldrsh r0, [r6, r2]\n"
-        "lsls r0, r0, #1\n"
-        "movs r1, #131\n"
-        "lsls r1, r1, #5\n"
-        "adds r4, r4, r1\n"
-        "adds r0, r0, r4\n"
-        "mov r2, r8\n"
-        "strh r2, [r0, #0]\n"
-        "adds r0, r7, #0\n"
-        "adds r0, #156\n"
-        "movs r2, #32\n"
-        "negs r2, r2\n"
-        "movs r1, #0\n"
-        "bl 0x0800d77c\n"
-        "pop {r3, r4}\n"
-        "mov r8, r3\n"
-        "mov r9, r4\n"
-        "pop {r4, r5, r6, r7}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        ".align 2, 0\n"
-        ".L13024_p0: .4byte 0x03001780\n"
-        ".L13024_p1: .4byte 0x00000fbe\n"
-        ".L13024_p2: .4byte 0x00000574\n"
-        ".syntax divided\n"
-    );
+    volatile u8 *rec = (volatile u8 *)rec_;
+    volatile u8 *wa;
+    register volatile u8 *pbe __asm__("r5");
+    register volatile u16 *p176 __asm__("r6");
+    register volatile u16 *p174 __asm__("r9");
+    register u32 zero __asm__("r8");
+    volatile u16 *p;
+    u16 h;
+    u16 h2;
+    s16 ti;
+    RAM_DEF_03001780;
+    wa = RAM_SYM_03001780;
+    pbe = (volatile u8 *)(uintptr_t)(wa + 0xFBEu);
+    h = *(volatile u16 *)pbe;
+    p176 = (volatile u16 *)(uintptr_t)(rec + 176);
+    zero = 0;
+    *p176 = h;
+    _080012F18(rec_);
+    h2 = *(volatile u16 *)(uintptr_t)(wa + 0x574u);
+    {
+        register u32 off __asm__("r1");
+        __asm__("" : "=r"(off) : "0"(174));
+        p = (volatile u16 *)(uintptr_t)(off + (uintptr_t)rec);
+    }
+    p174 = p;
+    *p = h2;
+    *p176 = *(volatile u16 *)pbe;
+    *(volatile u16 *)(uintptr_t)(rec + 136) =
+        (u16)_08024D0C((int)*(s16 *)(uintptr_t)p,
+                          (int)*(s16 *)(uintptr_t)p176);
+    {
+        register s32 idx4 __asm__("r1");
+        register volatile u8 *a188 __asm__("r0");
+        register u32 v __asm__("r0");
+        idx4 = (s32)*(s16 *)(uintptr_t)(rec + 136);
+        idx4 = idx4 * 4;
+        a188 = (volatile u8 *)(uintptr_t)(rec + 188);
+        v = *(volatile u32 *)(uintptr_t)(a188 + idx4);
+        *p174 = (u16)v;
+    }
+    {
+        register volatile u16 *q __asm__("r1");
+        q = p174;
+        *(volatile u16 *)(uintptr_t)(rec + 180) =
+            (u16)_080022E4((int)*(s16 *)(uintptr_t)q);
+    }
+    {
+        register s32 b1 __asm__("r1") = 0;
+        s32 b2;
+        b1 = *(s8 *)((u8 *)wa + ((int)*(s16 *)(uintptr_t)p174 * 3) * 4 + 49);
+        *(volatile u16 *)(uintptr_t)(rec + 172) = (u16)b1;
+        b2 = *(volatile s8 *)(uintptr_t)
+            ((u8 *)wa + ((int)*(s16 *)(uintptr_t)p174 * 3) * 4 + 48);
+        *(volatile u16 *)(uintptr_t)(rec + 178) = (u16)b2;
+    }
+    *(volatile u32 *)(uintptr_t)(rec + 144) = 2;
+    *(volatile u16 *)(uintptr_t)(rec + 186) = (u16)zero;
+    ti = *(s16 *)(uintptr_t)p176;
+    {
+        u32 off = (u32)(ti * 2);
+        wa = (volatile u8 *)(uintptr_t)((u8 *)wa + 0x1060);
+        *(volatile u16 *)(uintptr_t)((u8 *)wa + off) = (u16)zero;
+    }
+    _0800D77C((void *)(uintptr_t)(rec + 156), 0, -32);
 }
+
 void _080013024(void *a) __attribute__((alias("MenuFF78_13024")));
 void Sub_080013024(void *a) __attribute__((alias("MenuFF78_13024")));
 void sub_080013024(void *a) __attribute__((alias("MenuFF78_13024")));

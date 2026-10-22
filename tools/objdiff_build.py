@@ -97,7 +97,8 @@ def configured_unit(path: str) -> dict:
     raise ValueError(f"object is not a configured unit: {path}; run make objdiff-config")
 
 
-def probe_function(function: str, work: Path, report: Path) -> None:
+def probe_function(function: str, work: Path, report: Path,
+                   source: Path | None = None) -> None:
     """Score one function in-process, with the same entry point and flags.
 
     The old `[sys.executable, tools/corpus_match_probe.py, ...]` subprocess paid
@@ -107,9 +108,14 @@ def probe_function(function: str, work: Path, report: Path) -> None:
     imported here; `match_c_slice.run_probe` established the in-process
     pattern. Output still reaches the console as before, and a non-zero status
     still raises the same `CalledProcessError` the subprocess wrapper raised.
+
+    `source` is the configured owner of this unit. Passing it lets the probe
+    scan that one file instead of searching all of src/ for the name.
     """
     argv = ["corpus_match_probe.py", "--function", function, "--c89", "--require-all",
             "--work-dir", str(work), "--json", str(report)]
+    if source is not None:
+        argv += ["--source-file", str(source)]
     saved_argv = sys.argv
     try:
         sys.argv = argv
@@ -139,7 +145,9 @@ def build(unit: dict):
     with tempfile.TemporaryDirectory(prefix="work-", dir=directory) as tmp:
         work = Path(tmp)
         report = work / "probe.json"
-        probe_function(function, work / "probe", report)
+        owner = ROOT / unit["metadata"]["source_path"]
+        probe_function(function, work / "probe", report,
+                       owner if owner.is_file() else None)
         records = json.loads(report.read_text())["results"]
         if len(records) != 1 or int(records[0]["vma"], 16) != vma:
             raise ValueError("function inventory changed; run make objdiff-config")

@@ -128,7 +128,7 @@ void Garage_InitRecord(void *rec_, u32 a1_, u32 count_, u32 flagByte)
         else *(volatile u16 *)b = (u16)flag;
     }
     *(volatile u16 *)((u8 *)(uintptr_t)GARAGE_CUR + 2) = 16;
-    for (i = 0; i < count; i++) sub_080027104(i, 1);
+    for (i = 0; i < count; i++) Garage_ByteStore_27104((void *)(uintptr_t)i, 1);
     {
         u8 *tmpl = (u8 *)0x083A4374u;
         sub_08007538(tmpl, 2, (void *)(uintptr_t)*(s16 *)((u8 *)(uintptr_t)GARAGE_CUR + 4));

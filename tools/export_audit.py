@@ -378,7 +378,8 @@ def exterior_refs(refs: dict[str, set[tuple[Path, int]]], deleted: set[str],
     return out
 
 
-def mine_names(entry: dict, body: str, aliases: dict[str, set[str]]) -> set[str]:
+def mine_names(entry: dict, body: str, aliases: dict[str, set[str]],
+               by_body: dict[str, set[str]] | None = None) -> set[str]:
     """Every spelling the deleting entry's own C defines at the deleted address.
 
     Its `c_name`, its `export` list, its body, and every `alias(body)`
@@ -387,9 +388,18 @@ def mine_names(entry: dict, body: str, aliases: dict[str, set[str]]) -> set[str]
     `__attribute__((alias("_0802B64C")))` (src/runtime_record_helpers.c), which the
     splice binds at the body's address. An alias of a DIFFERENT body is not
     this entry's provision, so the membership test is on `body`.
+
+    `by_body` is the precomputed body -> alias-spellings index. `audit` builds
+    it once for the whole manifest; calling `mine_names` with only `aliases`
+    still works (the self-test does) but rebuilds the reverse lookup per entry.
     """
     mine = {entry["c_name"], *entry.get("export", ()), body}
-    mine |= {n for n, bodies in aliases.items() if body in bodies}
+    if by_body is None:
+        by_body = {}
+        for name, bodies in aliases.items():
+            for alias_body in bodies:
+                by_body.setdefault(alias_body, set()).add(name)
+    mine |= by_body.get(body, set())
     return mine
 
 
@@ -570,6 +580,11 @@ def audit() -> tuple[list[tuple[str, list[str]]], list[dict], int, list[dict]]:
     # One glob/read of src/ for both definition scans below.
     sources = src_files()
     aliases = alias_map(sources)
+    # body -> every spelling aliased to it, built once for the manifest loop.
+    alias_by_body: dict[str, set[str]] = {}
+    for alias_name, alias_bodies in aliases.items():
+        for alias_body in alias_bodies:
+            alias_by_body.setdefault(alias_body, set()).add(alias_name)
     files = closure_files()
     by_file = {p: p.read_text(errors="replace").splitlines() for p in files}
     closure_labels: set[str] = set()
@@ -646,7 +661,7 @@ def audit() -> tuple[list[tuple[str, list[str]]], list[dict], int, list[dict]]:
             continue
         deleted, _callees, bounds = got
         owner = ROOT / entry["asm_file"]
-        mine = mine_names(entry, body_of(entry), aliases)
+        mine = mine_names(entry, body_of(entry), aliases, alias_by_body)
         for name, sites in exterior_refs(refs, deleted, owner, bounds, mine).items():
             dangling.append({
                 "vma": vma, "name": name,
