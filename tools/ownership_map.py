@@ -426,6 +426,10 @@ def thumb_bl_target(data: bytes, offset: int) -> int | None:
     return offset + 4 + imm25
 
 
+_BL_FIRST = re.compile(rb"[\xf0-\xf7]")
+_ROM_WORD_HIGH_BYTE = re.compile(rb"\x08")
+
+
 def scan_raw_executable_references(
     rom: bytes, raw_records: list[dict[str, Any]]
 ) -> dict[str, dict[str, Any]]:
@@ -451,27 +455,31 @@ def scan_raw_executable_references(
                 return record
         return None
 
-    # Both sweeps below are the hot path (measured 1.43 s of the 2.02 s
-    # --check run) and the ROM is one contiguous buffer, so build native-width
-    # array views once instead of re-decoding bytes with struct.unpack_from on
-    # every iteration.  array uses the host's byte order, so a big-endian host
-    # must byteswap to keep the same little-endian Thumb/word decoding as the
-    # previous '<H'/'<I' struct formats.
+    # Both sweeps below used to walk every halfword/word in the 8 MiB image in
+    # Python.  Each instruction shape has a byte-level prefix test that the `re`
+    # engine can scan at C speed, so only the few thousand survivors reach the
+    # decoder.  The prefix tests are exact: a Thumb BL's first halfword is
+    # 0xF0xx-0xF7xx (high byte 0xF0-0xF7) and its second halfword satisfies
+    # `value & 0xD000 == 0xD000` (high byte 0xD0-0xDF or 0xF0-0xFF); a
+    # ROM-base literal word's top byte is 0x08.  Candidate starts are then
+    # decoded with the same little-endian views as before.
     halfwords = array.array("H")
     halfwords.frombytes(rom[: len(rom) & ~1])
     if sys.byteorder == "big":
         halfwords.byteswap()
 
-    for offset in range(0, len(rom) - 3, 2):
-        # Cheap reject first: only BL encodings start with 0xF000-0xF7FF, so
-        # ~15/16 of the halfwords skip the payload decode entirely.  The
-        # inline decode mirrors thumb_bl_target (kept as the reference reader).
-        first = halfwords[offset >> 1]
-        if (first & 0xF800) != 0xF000:
+    # Odd bytes are the high halves of 2-byte-aligned halfwords.  Scan for the
+    # first-halfword class only, then test the next byte in Python: the second
+    # class includes 0xF0-0xFF, so a two-byte regex would consume a byte that
+    # can begin the next candidate and silently skip back-to-back BLs.
+    odd = rom[1::2]
+    for match in _BL_FIRST.finditer(odd):
+        i = match.start()
+        if i + 1 >= len(odd) or (odd[i + 1] & 0xD0) != 0xD0:
             continue
-        second = halfwords[(offset >> 1) + 1]
-        if (second & 0xD000) != 0xD000:
-            continue
+        offset = i * 2
+        first = halfwords[i]
+        second = halfwords[i + 1]
         sign = (first >> 10) & 1
         imm10 = first & 0x3FF
         j1 = (second >> 13) & 1
@@ -496,7 +504,8 @@ def scan_raw_executable_references(
     if sys.byteorder == "big":
         words.byteswap()
 
-    for offset in range(0, len(rom) - 3, 4):
+    for match in _ROM_WORD_HIGH_BYTE.finditer(rom[3::4]):
+        offset = match.start() * 4
         value = words[offset >> 2]
         target = None
         if ROM_BASE <= value < ROM_BASE + ROM_SIZE:

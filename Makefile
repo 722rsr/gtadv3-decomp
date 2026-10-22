@@ -170,6 +170,7 @@ fast-check:
 	@python3 tools/match_c_slice.py --self-test
 	@python3 tools/corpus_match_probe.py --self-test
 	@python3 tools/lift_scout.py --self-test
+	@python3 tools/wall_census.py --self-test
 	@python3 tools/test_matching_assist.py
 	@python3 tools/export_audit.py --self-test
 	@python3 tools/export_audit.py

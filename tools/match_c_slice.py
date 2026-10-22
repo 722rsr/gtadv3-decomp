@@ -165,9 +165,8 @@ def _assert_owns_only(text: str, body: str, names: list[str], source: Path,
     only catches that when the address still has an assembly label, so a
     collision against a *C-only* name would link and quietly change meaning.
     """
-    defined = {m.group(1) for m in re.finditer(r"^\s*([A-Za-z_][A-Za-z_0-9]*):", text, re.M)}
-    defined |= {m.group(1) for m in re.finditer(r"^\s*\.globl\s+([A-Za-z_][A-Za-z_0-9]*)", text, re.M)}
-    defined |= {m.group(1) for m in re.finditer(r"^\s*\.thumb_set\s+([A-Za-z_][A-Za-z_0-9]*)", text, re.M)}
+    labelled, global_names, thumb_names, byte_free = _definition_sets(text)
+    defined = labelled | global_names | thumb_names
     # A name assigned to an absolute expression -- `.globl X` then
     # `X = 0x080CB68C` -- emits NO bytes in this section. It is a pure address
     # declaration, so it cannot be the over-wide-section hazard this check
@@ -177,9 +176,6 @@ def _assert_owns_only(text: str, body: str, names: list[str], source: Path,
     # folded integer (see docs/matching_workflow.md, "A C-emitted data symbol is
     # currently unstageable"). Exempt those, and only those: anything with a
     # real label still counts.
-    byte_free = {m.group(1) for m in
-                 re.finditer(r"^\s*([A-Za-z_][A-Za-z_0-9]*)\s*=\s*[^=]", text, re.M)}
-    labelled = {m.group(1) for m in re.finditer(r"^\s*([A-Za-z_][A-Za-z_0-9]*):", text, re.M)}
     # Naked, hand-matched bodies can contain named literal-pool labels whose
     # VMA is interior to the function span, e.g. `_080062B8: .word ...` inside
     # `_0800628C`. They are local assembler labels, not additional function
@@ -188,10 +184,6 @@ def _assert_owns_only(text: str, body: str, names: list[str], source: Path,
     # spelling places them strictly inside this entry's declared ROM span.
     # Keep `.globl` and `.thumb_set` names out of this exemption: those change
     # object-level ownership and must be explicitly listed in `names`.
-    global_names = {m.group(1) for m in
-                    re.finditer(r"^\s*\.globl\s+([A-Za-z_][A-Za-z_0-9]*)", text, re.M)}
-    thumb_names = {m.group(1) for m in
-                   re.finditer(r"^\s*\.thumb_set\s+([A-Za-z_][A-Za-z_0-9]*)", text, re.M)}
     interior_labels = set()
     if entry_vma is not None and end_vma is not None and entry_vma < end_vma:
         interior_labels = {
@@ -214,8 +206,8 @@ def _export_missing(text: str, lines: list[str], body: str, wanted: list[str],
     read back out of agbcc's own `.thumb_set`, never invented: if the compiled
     source does not alias this name to this body, the splice does not define it.
     """
-    defined = {m.group(1) for m in re.finditer(r"^\s*\.globl\s+([A-Za-z_][A-Za-z_0-9]*)", text, re.M)}
-    defined |= {m.group(1) for m in re.finditer(r"^\s*\.thumb_set\s+([A-Za-z_][A-Za-z_0-9]*)", text, re.M)}
+    _labels, globls, thumbs, _assigns = _definition_sets(text)
+    defined = globls | thumbs
     # Every `.thumb_set` pair in the section, collected once -- but only when
     # some wanted name is not already defined. Most bodies land here with
     # nothing pending, and the old name-specific scan still paid its
@@ -319,14 +311,54 @@ def _interior_label_vma(name: str) -> int | None:
     return _name_vma(stem)
 
 
+_ALIAS_GLOBL = re.compile(r"^\s*\.globl\s+([A-Za-z_][A-Za-z_0-9]*)\s*$")
+_ALIAS_THUMB_SET = re.compile(
+    r"^\s*\.thumb_set\s+([A-Za-z_][A-Za-z_0-9]*)\s*,\s*([A-Za-z_][A-Za-z_0-9]*)\s*$")
+
+# One pass over a spliced section yields every ownership-relevant line shape.
+# The previous form ran the same scans once per question (five or six passes
+# per manifest entry); this is the same information, collected together.
+_DEFINITION_LINE = re.compile(
+    r"^\s*(?:"
+    r"(?P<label>[A-Za-z_][A-Za-z_0-9]*):"
+    r"|\.globl\s+(?P<globl>[A-Za-z_][A-Za-z_0-9]*)"
+    r"|\.thumb_set\s+(?P<thumb>[A-Za-z_][A-Za-z_0-9]*)"
+    r"|(?P<assign>[A-Za-z_][A-Za-z_0-9]*)\s*=\s*[^=]"
+    r")", re.M)
+
+
+def _definition_sets(text: str) -> tuple[set[str], set[str], set[str], set[str]]:
+    """(labels, .globl names, .thumb_set names, absolute assignments) in `text`."""
+    labels: set[str] = set()
+    globls: set[str] = set()
+    thumbs: set[str] = set()
+    assigns: set[str] = set()
+    for match in _DEFINITION_LINE.finditer(text):
+        if (value := match.group("label")) is not None:
+            labels.add(value)
+        elif (value := match.group("globl")) is not None:
+            globls.add(value)
+        elif (value := match.group("thumb")) is not None:
+            thumbs.add(value)
+        else:
+            assigns.add(match.group("assign"))
+    return labels, globls, thumbs, assigns
+
+
 def _own_alias_glue(tail: list[str], body: str, names: list[str]) -> list[str]:
     """`.globl`/`.thumb_set` pairs that alias `body` under a name in `names`."""
     kept: list[str] = []
     i = 0
     while i < len(tail):
-        glob = re.match(r"^\s*\.globl\s+([A-Za-z_][A-Za-z_0-9]*)\s*$", tail[i])
-        thumb = re.match(r"^\s*\.thumb_set\s+([A-Za-z_][A-Za-z_0-9]*)\s*,\s*([A-Za-z_][A-Za-z_0-9]*)\s*$",
-                         tail[i + 1]) if i + 1 < len(tail) else None
+        line = tail[i]
+        # Literal-pool and body lines are the overwhelming majority of a tail
+        # and can neither pair nor be kept; skipping them before the regexes
+        # removes ~100k calls from a whole-slice build.
+        if ".globl" not in line and ".thumb_set" not in line:
+            i += 1
+            continue
+        glob = _ALIAS_GLOBL.match(line)
+        thumb = _ALIAS_THUMB_SET.match(tail[i + 1]) if i + 1 < len(tail) else None
         if glob and thumb and thumb.group(1) == glob.group(1) and thumb.group(2) == body:
             if thumb.group(1) in names or glob.group(1) == body:
                 kept += [tail[i], tail[i + 1]]
@@ -573,6 +605,28 @@ def pad_only(rom: bytes, start_vma: int, end_vma: int, base: int = 0) -> bool:
     return not any(rom[lo:hi])
 
 
+# Per-runtime-name patterns and the sorted binding table, built once instead of
+# per spliced section: `bind_runtime_calls` runs for every manifest entry, and
+# re-compiling 31 patterns there was 1.7 s of the whole-slice build.
+_RUNTIME_BIND_PATTERNS: dict[str, tuple[re.Pattern[str], ...]] = {}
+
+
+def _runtime_bind_patterns(name: str) -> tuple[re.Pattern[str], ...]:
+    cached = _RUNTIME_BIND_PATTERNS.get(name)
+    if cached is None:
+        escaped = re.escape(name)
+        cached = (
+            re.compile(rf"^\s*{escaped}\s*:", re.M),
+            re.compile(rf"^\s*\.globl\s+{escaped}\s*$", re.M),
+            re.compile(rf"\b(bl|blx|b)(\s+){escaped}\b"),
+        )
+        _RUNTIME_BIND_PATTERNS[name] = cached
+    return cached
+
+
+_RUNTIME_BINDINGS = tuple(sorted(probe.RUNTIME_VMAS.items()))
+
+
 def bind_runtime_calls(section: str) -> str:
     """Retarget compiler runtime branches to ROM labels in this section.
 
@@ -580,16 +634,21 @@ def bind_runtime_calls(section: str) -> str:
     rewritten. Decisions are section-local because the splice links one
     function section, not the complete translation-unit object.
     """
-    for name, vma in sorted(probe.RUNTIME_VMAS.items()):
+    for name, vma in _RUNTIME_BINDINGS:
         target = f"_{vma:08X}"
         if name.upper() == target.upper():
             continue
-        if re.search(rf"^\s*{re.escape(name)}\s*:", section, re.M):
+        # A name that never occurs cannot match any of the patterns below.
+        # Most sections mention zero or one runtime helper, so this substring
+        # guard removes ~104k regex scans from a whole-slice build.
+        if name not in section:
             continue
-        if re.search(rf"^\s*\.globl\s+{re.escape(name)}\s*$", section, re.M):
+        label_re, globl_re, call_re = _runtime_bind_patterns(name)
+        if label_re.search(section):
             continue
-        section = re.sub(rf"\b(bl|blx|b)(\s+){re.escape(name)}\b",
-                         rf"\1\2{target}", section)
+        if globl_re.search(section):
+            continue
+        section = call_re.sub(rf"\1\2{target}", section)
     return section
 
 
@@ -1109,7 +1168,8 @@ def self_test() -> int:
     return 0 if ok == total else 1
 
 
-def run_probe(tu_work: Path, report: Path, c_names: list[str]) -> dict:
+def run_probe(tu_work: Path, report: Path, c_names: list[str],
+              source_file: Path | None = None) -> dict:
     """Score one translation unit's bodies, in THIS process, into `tu_work`.
 
     `corpus_match_probe.main()` is the same entry point the old
@@ -1128,6 +1188,10 @@ def run_probe(tu_work: Path, report: Path, c_names: list[str]) -> dict:
     """
     argv = ["corpus_match_probe.py", "--c89", "--require-all",
             "--work-dir", str(tu_work), "--json", str(report)]
+    # The owning TU is already known here, so the probe need not re-scan all
+    # of src/ to find it for every batch.
+    if source_file is not None:
+        argv += ["--source-file", str(source_file)]
     for c_name in c_names:
         argv += ["--function", c_name]
     saved_argv = sys.argv
@@ -1245,8 +1309,10 @@ def main() -> int:
     # 275 times for 56 TUs and that, not compilation, was the 13-minute link;
     # grouping by TU fixed the redundancy, and one interpreter removes the rest.
     src_by_name: dict[str, Path] = {}
-    for src_path, name, _vma, _body, _weak in probe.src_functions():
+    src_vmas: set[int] = set()
+    for src_path, name, src_vma, _body, _weak in probe.src_functions():
         src_by_name.setdefault(name, Path(src_path))
+        src_vmas.add(src_vma)
     # `src_functions()` reports the VMA-shaped spelling of each body, so a
     # friendly c_name (`MenuStage_0800D77C`, aliased to `_0800D77C`) is not a
     # key here. Those still group, but only against themselves: the same VMA
@@ -1260,7 +1326,7 @@ def main() -> int:
             groups[src_by_name[c_name]].append(key)
             continue
         vma = probe.parse_vma_name(c_name)
-        if vma is None or not any(f[2] == vma for f in probe.src_functions()):
+        if vma is None or vma not in src_vmas:
             raise RuntimeError(f"{key}: c_name {c_name} has no definition in src/")
         groups[work / f"solo_{key[2:]}"].append(key)
     scored: dict[str, dict] = {}
@@ -1306,7 +1372,8 @@ def main() -> int:
         else:
             report = work / f"{src_path.stem}_tu_report.json"
             tu_work = work / f"{src_path.stem}_tu_work"
-            tu_report = run_probe(tu_work, report, c_names)
+            tu_report = run_probe(tu_work, report, c_names,
+                                  src_path if src_path.is_file() else None)
             for rec in tu_report["results"]:
                 scored[f"{int(rec['vma'], 16):#010x}"] = rec
             for k in group:
