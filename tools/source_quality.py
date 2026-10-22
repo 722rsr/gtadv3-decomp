@@ -67,36 +67,48 @@ ALIAS = re.compile(r'\b([A-Za-z_]\w*)\s*\([^;{}()]*\)\s*__attribute__\s*\(\(\s*'
 DEFINE = re.compile(r'^[ \t]*#[ \t]*define[ \t]+([A-Za-z_]\w*)(\([^)]*\))?(.*)$', re.M)
 KEYWORDS = frozenset({'if', 'while', 'for', 'switch', 'return', 'sizeof',
                       '__attribute__', '__asm__', 'asm', 'do', 'else'})
+_IDENTIFIER = re.compile(r'[A-Za-z_]\w*')
+
+
+_COMMENT_TOKEN = re.compile(r'\\\n|//|/\*|["\']')
 
 
 def strip_comments(text: str) -> str:
-    """Drop comments and join continued lines; string and char literals survive."""
-    out = []
-    i, n = 0, len(text)
-    while i < n:
-        c = text[i]
-        if c == '\\' and i + 1 < n and text[i + 1] == '\n':
+    """Drop comments and join continued lines; string and char literals survive.
+
+    Scans only for tokens that can open a comment, a continued line, or a
+    literal, copying the plain runs in between in one slice. The character-at-a-
+    time predecessor walked every byte of the corpus; this visits only the
+    tokens that change state.
+    """
+    out: list[str] = []
+    pos, n = 0, len(text)
+    for match in _COMMENT_TOKEN.finditer(text):
+        i = match.start()
+        if i < pos:
+            # Inside a literal or comment already consumed by an earlier token.
+            continue
+        out.append(text[pos:i])
+        token = match.group()
+        if token == '\\\n':
             out.append(' ')
-            i += 2
-        elif text.startswith('//', i):
-            while i < n and text[i] != '\n':
-                i += 1
-        elif text.startswith('/*', i):
+            pos = i + 2
+        elif token == '//':
+            newline = text.find('\n', i + 2)
+            pos = n if newline < 0 else newline
+        elif token == '/*':
             end = text.find('*/', i + 2)
-            end = n if end < 0 else end + 2
             # A single space, even for multi-line comments: a newline here would
             # cut a backslash-continued #define short.
             out.append(' ')
-            i = end
-        elif c in '"\'':
+            pos = n if end < 0 else end + 2
+        else:
             j = i + 1
-            while j < n and text[j] != c:
+            while j < n and text[j] != token:
                 j += 2 if text[j] == '\\' else 1
             out.append(text[i:j + 1])
-            i = j + 1
-        else:
-            out.append(c)
-            i += 1
+            pos = j + 1
+    out.append(text[pos:])
     return ''.join(out)
 
 
@@ -325,7 +337,12 @@ def classify(root: Path = ROOT) -> dict:
         aliases = defaultdict(set)
         for alias, target in ALIAS.findall(text):
             aliases[target].add(alias)
-        local = {k: v for k, v in macros.items() if re.search(r'\b' + re.escape(k) + r'\b', text)}
+        # A macro only matters to this TU when its name occurs as an identifier.
+        # Tokenising once per file replaces one regex scan per macro name
+        # (~19k whole-file scans over the corpus, measured as the largest
+        # remaining hot spot in `classify`).
+        identifiers = set(_IDENTIFIER.findall(text))
+        local = {k: v for k, v in macros.items() if k in identifiers}
         bodies = list(functions(text)) + list(macro_functions(text))
         for name, prefix, body in bodies:
             vma = None
