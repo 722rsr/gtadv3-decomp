@@ -87,120 +87,59 @@ void _080026FC4(int a0, void *a1, int a2, int a3, int a4, int a5) __attribute__(
 void _08026FC4(int a0, void *a1, int a2, int a3, int a4, int a5) __attribute__((alias("Garage_FC4")));
 
 void Garage_ByteStore_27104(void *idx, uint32_t val);
-// Substantiated: sub_080026FF4 (0x26FF4) — garage/course record init, high-reg spill, 0x03001678 pool
-// Preserves push {r4-r7,lr}+mov r7,r8+sub sp#4, lsls r3#24 flag byte, CpuSet via 0x0802D974 (0x05000015),
-// halfword stores via sub_080261B0/F8, loop count r6 via _080027104, template copies 0x083A4374 via sub_08007538/75E8.
-__attribute__((naked)) void Garage_InitRecord(void *rec, u32 a1, u32 count, u32 flagByte) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        ".Lgarage26ff4_ff4:\n"
-        "push\t{r4, r5, r6, r7, lr}\n"
-        "mov\tr7, r8\n"
-        "push\t{r7}\n"
-        "sub\tsp, #4\n"
-        "adds\tr5, r0, #0\n"
-        "mov\tr8, r1\n"
-        "adds\tr6, r2, #0\n"
-        "lsls\tr3, r3, #24\n"
-        "lsrs\tr7, r3, #24\n"
-        "ldr r4, .Lgarage26ff4_05c\n"
-        "str\tr5, [r4, #0]\n"
-        "movs\tr0, #0\n"
-        "str\tr0, [sp, #0]\n"
-        "ldr r2, .Lgarage26ff4_060\n"
-        "mov\tr0, sp\n"
-        "adds\tr1, r5, #0\n"
-        "bl 0x0802D974\n"
-        "ldr\tr0, [r4, #0]\n"
-        "strb\tr6, [r0, #16]\n"
-        "movs\tr0, #11\n"
-        "bl 0x080261B0\n"
-        "ldr\tr1, [r4, #0]\n"
-        "strh\tr0, [r1, #4]\n"
-        "movs\tr0, #11\n"
-        "bl 0x080261B0\n"
-        "ldr\tr1, [r4, #0]\n"
-        "adds\tr0, #1\n"
-        "strh\tr0, [r1, #6]\n"
-        "movs\tr0, #11\n"
-        "bl 0x080261F8\n"
-        "ldr\tr1, [r4, #0]\n"
-        "strh\tr0, [r1, #8]\n"
-        "movs\tr0, #10\n"
-        "bl 0x080261B0\n"
-        "ldr\tr1, [r4, #0]\n"
-        "strh\tr0, [r1, #10]\n"
-        "movs\tr0, #10\n"
-        "bl 0x080261F8\n"
-        "ldr\tr4, [r4, #0]\n"
-        "strh\tr0, [r4, #12]\n"
-        "cmp\tr7, #0\n"
-        "beq .Lgarage26ff4_068\n"
-        "ldr r0, .Lgarage26ff4_064\n"
-        "strh\tr0, [r4, #0]\n"
-        "b .Lgarage26ff4_06a\n"
-        "movs\tr0, r0\n"
-        ".Lgarage26ff4_05c: .word 0x03001678\n"
-        ".Lgarage26ff4_060: .word 0x05000015\n"
-        ".Lgarage26ff4_064: .word 0x0000FFC0\n"
-        ".Lgarage26ff4_068:\n"
-        "strh\tr7, [r4, #0]\n"
-        ".Lgarage26ff4_06a:\n"
-        "ldr r0, .Lgarage26ff4_0d0\n"
-        "ldr\tr1, [r0, #0]\n"
-        "movs\tr0, #16\n"
-        ".Lgarage26ff4_070:\n"
-        "strh\tr0, [r1, #2]\n"
-        "movs\tr4, #0\n"
-        "cmp\tr4, r6\n"
-        "bge .Lgarage26ff4_086\n"
-        ".Lgarage26ff4_078:\n"
-        "adds\tr0, r4, #0\n"
-        "movs\tr1, #1\n"
-        "bl _080027104\n"
-        "adds\tr4, #1\n"
-        "cmp\tr4, r6\n"
-        "blt .Lgarage26ff4_078\n"
-        ".Lgarage26ff4_086:\n"
-        "ldr r5, .Lgarage26ff4_0d4\n"
-        "ldr r4, .Lgarage26ff4_0d0\n"
-        "ldr\tr0, [r4, #0]\n"
-        "movs\tr1, #4\n"
-        "ldrsh\tr2, [r0, r1]\n"
-        "adds\tr0, r5, #0\n"
-        "movs\tr1, #2\n"
-        "bl sub_08007538\n"
-        "ldr\tr0, [r4, #0]\n"
-        "movs\tr3, #6\n"
-        "ldrsh\tr2, [r0, r3]\n"
-        "adds\tr0, r5, #0\n"
-        "movs\tr1, #3\n"
-        "bl sub_08007538\n"
-        "ldr\tr0, [r4, #0]\n"
-        "movs\tr1, #8\n"
-        "ldrsh\tr2, [r0, r1]\n"
-        "adds\tr0, r5, #0\n"
-        "movs\tr1, #0\n"
-        "bl sub_080075E8\n"
-        "ldr\tr1, [r4, #0]\n"
-        "movs\tr2, #10\n"
-        "ldrsh\tr0, [r1, r2]\n"
-        "movs\tr3, #12\n"
-        "ldrsh\tr2, [r1, r3]\n"
-        "mov\tr1, r8\n"
-        "bl sub_080026F50\n"
-        "add\tsp, #4\n"
-        "pop\t{r3}\n"
-        "mov\tr8, r3\n"
-        "pop\t{r4, r5, r6, r7}\n"
-        "pop\t{r0}\n"
-        "bx\tr0\n"
-        ".Lgarage26ff4_0d0: .word 0x03001678\n"
-        ".Lgarage26ff4_0d4: .word 0x083A4374\n"
-        ".syntax divided\n"
-    );
-}
+// 0x080026FF4 (228 B) — garage/course record init: zero-fill the record,
+// derive the halfword fields at +4..+12, arm the +0 word from flagByte, tick
+// _080027104 `count` times, then forward the fields to 0x083A4374's emitters.
+// The tail call passes three arguments (the 4-arg prototype above is for other
+// callers), so it gets its own declaration instead of a cast at the site.
+extern void sub_080026F50_3(u32 a, u32 b, u32 c) __asm__("sub_080026F50");
 
+// The current garage record lives behind a single RAM slot; the ROM reuses the
+// slot's *address constant* in a callee-saved register and re-dereferences it
+// per use, so each access is spelled through this macro rather than a pointer
+// local (a local pins the constant and shifts every later load).
+#define GARAGE_CUR (*(volatile u32 *)0x03001678u)
+
+void Garage_InitRecord(void *rec_, u32 a1_, u32 count_, u32 flagByte)
+{
+    u8 *rec = (u8 *)rec_;
+    u32 a1 = a1_;
+    s32 count = (s32)count_;
+    u32 flag = (u8)flagByte;
+    u32 zero;
+    s32 i;
+
+    GARAGE_CUR = (u32)(uintptr_t)rec;
+    zero = 0;
+    sub_0802D974(&zero, rec, 0x05000015u);
+    *(volatile u8 *)((u8 *)(uintptr_t)GARAGE_CUR + 16) = (u8)count;
+    *(volatile s16 *)((u8 *)(uintptr_t)GARAGE_CUR + 4) = sub_080261B0(11);
+    *(volatile s16 *)((u8 *)(uintptr_t)GARAGE_CUR + 6) = (s16)(sub_080261B0(11) + 1);
+    *(volatile s16 *)((u8 *)(uintptr_t)GARAGE_CUR + 8) = sub_080261F8(11);
+    *(volatile s16 *)((u8 *)(uintptr_t)GARAGE_CUR + 10) = sub_080261B0(10);
+    {
+        // r0 pin keeps the slot dereference after this call, as the ROM has it.
+        register s16 v __asm__("r0");
+        v = sub_080261F8(10);
+        u8 *b = (u8 *)(uintptr_t)GARAGE_CUR;
+        *(volatile s16 *)(b + 12) = v;
+        u16 w = 0xFFC0;                  // a literal here costs an extra copy
+        if (flag != 0) *(volatile u16 *)b = w;
+        else *(volatile u16 *)b = (u16)flag;
+    }
+    *(volatile u16 *)((u8 *)(uintptr_t)GARAGE_CUR + 2) = 16;
+    for (i = 0; i < count; i++) sub_080027104(i, 1);
+    {
+        u8 *tmpl = (u8 *)0x083A4374u;
+        sub_08007538(tmpl, 2, (void *)(uintptr_t)*(s16 *)((u8 *)(uintptr_t)GARAGE_CUR + 4));
+        sub_08007538(tmpl, 3, (void *)(uintptr_t)*(s16 *)((u8 *)(uintptr_t)GARAGE_CUR + 6));
+        sub_080075E8(tmpl, 0, *(s16 *)((u8 *)(uintptr_t)GARAGE_CUR + 8));
+        {
+            u8 *b = (u8 *)(uintptr_t)GARAGE_CUR;
+            sub_080026F50_3((u32)*(s16 *)(b + 10), a1, (u32)*(s16 *)(b + 12));
+        }
+    }
+}
 void sub_080026FF4(void *a, u32 b, u32 c, u32 d) __attribute__((alias("Garage_InitRecord")));
 void _080026FF4(void *a, u32 b, u32 c, u32 d) __attribute__((alias("Garage_InitRecord")));
 

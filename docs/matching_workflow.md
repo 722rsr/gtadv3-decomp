@@ -361,6 +361,43 @@ several reads -- agbcc's alias analysis proves `*(u32 *)(r + 92)` disjoint
 from `*(u16 *)(r + 106)` and CSEs the loads otherwise. Both are measured in
 [the 0x08029D48 lift](findings/garage_29d48_lift.md).
 
+A third shape decides *arm order* when one arm is a lone call. `MenuDFF0_0800DFF0`
+(`src/menus.c`, 204 B) is `if (mode == 1) { if (held != 1) A else sound10; }
+else if (held == 1) B;`. agbcc emits the inner then-block (`sound10`) directly
+after `A`; the ROM keeps it after `B` (`beq sound10` forward, `b after` over
+`B`). Reversing the inner test (`if (held != 1)`) fixes the `beq` direction but
+not the block order. A label plus `goto` is the spelling that reproduces the
+ROM: `else goto sound10;`, then `B`, then `goto after_mode;`, then `sound10:`.
+Related in the same body: the 0x080CB4EA note table needs the symbol anchor
+(`.globl` + `extern u8 Tbl[]`) so its pool load stays at the definition; a
+`(const u16 *)0x080CB4EAu` local rematerialises it after the index load.
+
+Two byte-identical `if` arms are not interchangeable with a `switch`. `MenuE310`
+(`src/menus.c`, 264 B) has two behaviorally identical selector arms (`sel` 2 and
+3). `if (sel == 3) ... else if (sel == 2) ...` tests 3 first and hoists the
+`u32[rec+0x18]` load above the test. `switch (sel) { case 3: ...; case 2: ... }`
+reproduces the ROM: the compare chain stays ascending (`cmp #2 / beq case2`,
+`cmp #3 / bne done`), the first-written case is emitted inline, and each case
+keeps its own load. The duplicated arms survive because they differ in register
+hoisting, so no empty-asm barrier is needed.
+
+The same pass merges *stores*, and it keeps the **last** copy. `MenuEF54`
+(`src/menus.c`, 236 B) has `case 0: u16[rec+236] = 2;` and a `u16[rec+232] = 2`
+inside case 2. Writing the cases 1, 2, 0 makes case 0 the last store, so agbcc
+moves the shared `movs r0,#2 / strh` behind the case-2 tail and adds a branch:
+238 B. Writing them 1, 0, 2 keeps case 2's copy inline where the ROM has
+`store2`/`write2`, and case 0's arm branches forward into it: 236 B.
+
+A 0/1 flag store is laid out differently as a ternary and as an `if`/`else`.
+`MenuDE50` (`src/menus.c`, 400 B) ends with `u16[rec+18] = count > 0`. The ternary
+`(u16)((s32)found > 0)` makes agbcc preload `movs r0,#0` *before* the compare and
+`ble` over a `movs r0,#1`; the ROM tests first, falls through to `movs r0,#1`,
+branches over the pool, and puts `movs r0,#0` last. An `if`/`else` pair storing
+the literal in each arm reproduces it. Same body: constants reused across the
+setup calls (`0` as the fifth argument, `9` for the music cell and `rec+104`)
+only stay in the ROM's callee-saved `r9`/`r4` copies when they are locals; a
+literal is rematerialised at each site.
+
 ## Suppressing loop strength reduction (the address giv)
 
 When a loop's body in the ROM *recomputes* an indexed address every iteration
