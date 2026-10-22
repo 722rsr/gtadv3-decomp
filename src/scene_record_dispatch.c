@@ -2420,6 +2420,17 @@ void sub_08025264(int a) __attribute__((alias("AiLineupBuilder_25264")));
 // code_23628.s 0x08023628 — race scene constructor: sound select, twin
 // resource setups, record wiring, award-grid alloc triple, car-record copy
 // loop (35×72 B via CpuSet), tail flags.
+//
+// MEASURED 2026-10-22: the C lift reaches 421/500 with candidate == 500 B; the
+// prologue, both _08007770 calls, the award-grid triple, the D77C/record wiring
+// and every tail store match. The residue is the 140-byte copy loop: the ROM
+// keeps the destination in r6, the IWRAM source base (0x03001D64) in r9 loaded
+// once before the loop, and re-derives `i * 72` per iteration, while agbcc
+// rematerialises the base and puts the destination in r9/r10. Spelling the
+// loop as rolling pointers (`s += 12; dst += 3`) reproduces the body but moves
+// the earlier register homes (rec+196 leaves r4 for r5, rec+16 leaves sl) and
+// loses the whole preamble, so it is not a local fix. The sixth copy per row
+// reads 0x03001DA0 + i*72 (a second pool word, not base+60).
 // ============================================================================
 __attribute__((naked)) void RaceSceneCtor_23628(void *rec) {
     __asm__ volatile (

@@ -482,127 +482,58 @@ void Race_Setup_195B8(void) {
 }
 void _0800195B8(void) __attribute__((alias("Race_Setup_195B8")));
 
-// _0800195F8: dual-flag handler at racectx+94 (flags 0x2000 and 0x40000)
-// Pools: _080019620/_0800196D8=0x03004E20, widths: ldrh/ldrsh/strh, flag tests
-__attribute__((naked)) void Race_Setup_195F8(void) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, lr}\n"
-        "movs r0, #128\n"
-        "lsls r0, r0, #6\n"
-        "bl 0x08018ACC\n"
-        "cmp r0, #0\n"
-        "beq .L195f8_624\n"
-        "ldr r0, .L195f8_620\n"
-        "ldr r0, [r0, #0]\n"
-        "adds r1, r0, #0\n"
-        "adds r1, #94\n"
-        "ldrh r0, [r1, #0]\n"
-        "adds r0, #1\n"
-        "strh r0, [r1, #0]\n"
-        "lsls r0, r0, #16\n"
-        "asrs r0, r0, #16\n"
-        "cmp r0, #120\n"
-        "ble .L195f8_63a\n"
-        "movs r0, #120\n"
-        "b .L195f8_638\n"
-        ".L195f8_620: .4byte 0x03004E20\n"
-        ".L195f8_624:\n"
-        "ldr r0, .L195f8_6d8\n"
-        "ldr r0, [r0, #0]\n"
-        "adds r1, r0, #0\n"
-        "adds r1, #94\n"
-        "ldrh r2, [r1, #0]\n"
-        "movs r3, #0\n"
-        "ldrsh r0, [r1, r3]\n"
-        "cmp r0, #0\n"
-        "ble .L195f8_63a\n"
-        "subs r0, r2, #3\n"
-        ".L195f8_638:\n"
-        "strh r0, [r1, #0]\n"
-        ".L195f8_63a:\n"
-        "movs r0, #128\n"
-        "lsls r0, r0, #11\n"
-        "bl 0x08018ACC\n"
-        "cmp r0, #0\n"
-        "beq .L195f8_652\n"
-        "ldr r0, .L195f8_6d8\n"
-        "ldr r0, [r0, #0]\n"
-        "adds r0, #94\n"
-        "ldrh r1, [r0, #0]\n"
-        "subs r1, #3\n"
-        "strh r1, [r0, #0]\n"
-        ".L195f8_652:\n"
-        "ldr r5, .L195f8_6d8\n"
-        "ldr r0, [r5, #0]\n"
-        "adds r1, r0, #0\n"
-        "adds r1, #94\n"
-        "movs r2, #0\n"
-        "ldrsh r0, [r1, r2]\n"
-        "cmp r0, #0\n"
-        "bgt .L195f8_67a\n"
-        "movs r0, #0\n"
-        "strh r0, [r1, #0]\n"
-        "movs r0, #128\n"
-        "lsls r0, r0, #22\n"
-        "movs r1, #1\n"
-        "bl 0x08018AA8\n"
-        "movs r0, #128\n"
-        "lsls r0, r0, #7\n"
-        "movs r1, #0\n"
-        "bl 0x08018AA8\n"
-        ".L195f8_67a:\n"
-        "movs r4, #128\n"
-        "lsls r4, r4, #22\n"
-        "adds r0, r4, #0\n"
-        "bl 0x08018ACC\n"
-        "cmp r0, #0\n"
-        "beq .L195f8_6a6\n"
-        "adds r0, r4, #0\n"
-        "movs r1, #0\n"
-        "bl 0x08018AA8\n"
-        "ldr r1, [r5, #0]\n"
-        "adds r0, r1, #0\n"
-        "adds r0, #94\n"
-        "movs r2, #0\n"
-        "strh r2, [r0, #0]\n"
-        "ldr r0, [r1, #48]\n"
-        "cmp r0, #0\n"
-        "ble .L195f8_6a6\n"
-        "str r2, [r1, #48]\n"
-        "bl 0x0800821C\n"
-        ".L195f8_6a6:\n"
-        "movs r0, #128\n"
-        "lsls r0, r0, #9\n"
-        "bl 0x08018ACC\n"
-        "cmp r0, #0\n"
-        "beq .L195f8_6dc\n"
-        "movs r0, #1\n"
-        "bl 0x08018ACC\n"
-        "cmp r0, #0\n"
-        "bne .L195f8_6dc\n"
-        "ldr r0, .L195f8_6d8\n"
-        "ldr r0, [r0, #0]\n"
-        "adds r0, #94\n"
-        "movs r3, #0\n"
-        "ldrsh r0, [r0, r3]\n"
-        "lsls r0, r0, #4\n"
-        "movs r1, #120\n"
-        "bl 0x0802DE04\n"
-        "lsls r0, r0, #16\n"
-        "lsrs r0, r0, #16\n"
-        "bl 0x08008284\n"
-        "b .L195f8_6e2\n"
-        ".L195f8_6d8: .4byte 0x03004E20\n"
-        ".L195f8_6dc:\n"
-        "movs r0, #0\n"
-        "bl 0x08008284\n"
-        ".L195f8_6e2:\n"
-        "pop {r4, r5}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        ".syntax divided\n"
-    );
+// 0x080195F8 — countdown/timing handshake for the race intro: the counter at
+// ctx+94 (the u16 at 0x03004E20's target) ramps up while flag 0x2000 is held and
+// drains under 0x40000; the transitions arm/clear 0x20000000 and 0x4000, then
+// publish the scaled progress through 0x08008284. The r1/r0/r2 pin in the
+// 0x20000000 block holds the ROM's single live zero across the compare load.
+extern void _0800821C(void);
+extern void _08008284(u32 a);
+void Race_Setup_195F8(void) {
+    if (Ghost_FlagTest(0x2000u)) {
+        u16 *p = (u16 *)(uintptr_t)(*(u32 *)0x03004E20u + 94);
+        int v = *p + 1;
+        *p = (u16)v;
+        if ((s16)v > 120) *p = 120;
+    } else {
+        u16 *p = (u16 *)(uintptr_t)(*(u32 *)0x03004E20u + 94);
+        u16 old = *p;
+        if (*(s16 *)p > 0) *p = (u16)(old - 3);
+    }
+    if (Ghost_FlagTest(0x40000u)) {
+        u16 *p = (u16 *)(uintptr_t)(*(u32 *)0x03004E20u + 94);
+        u16 v = *p;
+        *p = (u16)(v - 3);
+    }
+    {
+        u16 *p = (u16 *)(uintptr_t)(*(u32 *)0x03004E20u + 94);
+        if (*(s16 *)p <= 0) {
+            *p = 0;
+            Ghost_FlagOp(0x20000000u, 1);
+            Ghost_FlagOp(0x4000u, 0);
+        }
+        if (Ghost_FlagTest(0x20000000u)) {
+            register u8 *ctx __asm__("r1");
+            register u16 *p2 __asm__("r0");
+            register u32 zero __asm__("r2");
+            Ghost_FlagOp(0x20000000u, 0);
+            ctx = (u8 *)(uintptr_t)*(u32 *)0x03004E20u;
+            p2 = (u16 *)(void *)(ctx + 94);
+            zero = 0;
+            __asm__ volatile ("" : "+r" (zero));
+            *p2 = (u16)zero;
+            if (*(s32 *)(void *)(ctx + 48) > 0) {
+                *(s32 *)(void *)(ctx + 48) = (s32)zero;
+                _0800821C();
+            }
+        }
+    }
+    if (Ghost_FlagTest(0x10000u) && !Ghost_FlagTest(1)) {
+        s16 t = *(s16 *)(uintptr_t)(*(u32 *)0x03004E20u + 94);
+        _08008284((u16)((t << 4) / 120));
+    } else {
+        _08008284(0);
+    }
 }
 void _0800195F8(void) __attribute__((alias("Race_Setup_195F8")));
 

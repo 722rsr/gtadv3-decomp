@@ -27,8 +27,17 @@ a second) and reads the wall notes out of the C files. `--snapshot` uses the
 committed `docs/data/source_quality.json` instead, which is faster but can list
 bodies that have since been promoted.
 
+`--lift-screen` additionally reads the naked body's own instruction stream and
+drops the raw rows that are not agbcc output at all, so a full lift there can
+never reach an exact match. The markers are the documented non-agbcc idioms
+(see the matching guide): a `bl` with no `lr` save on the entry push, a
+`mov pc, lr` or `pop {..., pc}` return, a `mov ip, lr` / `bx ip` veneer, `tst`
+(agbcc lowers it to `and`+`cmp`), and `swi`. Most of the 137 raw bodies carry
+one of these; without the screen they read as "just a few hundred bytes".
+
     python3 tools/wall_census.py                 # ranked census
     python3 tools/wall_census.py --class unexplained --top 10
+    python3 tools/wall_census.py --lift-screen   # raw rows agbcc could emit
     python3 tools/wall_census.py --json build/wall_census.json
 """
 from __future__ import annotations
@@ -203,6 +212,69 @@ def classify(entry: dict, notes: list[str]) -> tuple[str, str]:
     return "unexplained", ""
 
 
+# Marker -> reason. Ordered: the first hit is the one reported.
+LIFT_MARKERS = (
+    ("mov pc,lr return", re.compile(r"^\s*movs?\s+pc\s*,\s*lr$")),
+    ("pop {...} pc return", re.compile(r"^\s*pop\s*\{[^}]*\bpc\b")),
+    ("ip/lr veneer", re.compile(r"^\s*(?:mov(?:s)?\s+ip\s*,\s*lr|bx\s+ip)$")),
+    # Interworking veneer: agbcc addresses a callee through its own call/long
+    # branch, never by materialising `pc + k` and branching to it.
+    ("pc veneer", re.compile(r"^\s*adds?\s+r\d+\s*,\s*pc\b")),
+    ("tst (lowers to and+cmp)", re.compile(r"^\s*tst\b")),
+    ("swi", re.compile(r"^\s*swi\b")),
+)
+ASM_STRING = re.compile(r'"((?:[^"\\]|\\.)*)"')
+ASM_DIRECTIVE = re.compile(r"^\s*\.")
+
+
+def _asm_instructions(path: Path, name: str) -> list[str] | None:
+    """Instruction strings of one naked body, or None when it has no body here.
+
+    A body that assembles from an `.include` carries no instruction literals, so
+    its stream cannot be screened from the C file; that returns None instead of
+    an empty list so callers can tell "unknown" from "empty".
+    """
+    import source_quality
+    try:
+        text = path.read_text(errors="replace")
+    except OSError:
+        return None
+    masked = mask_comments(text)
+    for func, prefix, body in source_quality.functions(masked):
+        if func != name:
+            continue
+        head = masked.find(prefix) if prefix else -1
+        if head < 0:
+            head = masked.find(name + "(")
+        if head < 0:
+            return None
+        start = head + len(prefix)
+        out: list[str] = []
+        for literal in ASM_STRING.finditer(text, start, start + len(body)):
+            # Bodies are written either with literal tabs or with `\t` escapes;
+            # both spellings have to reach the marker patterns the same way.
+            unescaped = literal.group(1).replace("\\t", " ").replace("\\r", "")
+            for line in unescaped.split("\\n"):
+                line = line.strip()
+                if line and not ASM_DIRECTIVE.match(line):
+                    out.append(line)
+        return out
+    return None
+
+
+def lift_blockers(instructions: list[str]) -> list[str]:
+    """Reasons this instruction stream cannot be agbcc output (empty = lift it)."""
+    reasons: list[str] = []
+    calls = any(re.match(r"bl\b", ins) for ins in instructions)
+    pushes = [ins for ins in instructions if re.match(r"push\b", ins)]
+    if calls and not any("lr" in push for push in pushes):
+        reasons.append("bl without an lr save")
+    for label, pattern in LIFT_MARKERS:
+        if any(pattern.match(ins) for ins in instructions):
+            reasons.append(label)
+    return reasons
+
+
 def census(snapshot: bool = False) -> list[dict]:
     entries = load_snapshot(snapshot)
     wanted: dict[Path, list[tuple[int, dict]]] = {}
@@ -229,13 +301,39 @@ def census(snapshot: bool = False) -> list[dict]:
     return rows
 
 
+def screen_lifts(rows: list[dict]) -> list[dict]:
+    """Annotate raw rows with the non-agbcc markers in their own instruction stream.
+
+    Rows keep a `lift` field: "liftable" when nothing blocks a full lift, else the
+    first reason. Bodies whose stream lives in an include stay "unknown" and are
+    not silently promoted to liftable.
+    """
+    for row in rows:
+        if row["wall"] != "raw":
+            continue
+        instructions = _asm_instructions(ROOT / row["file"], row["name"])
+        if not instructions:
+            row["lift"] = "unknown (no inline stream)"
+            continue
+        reasons = lift_blockers(instructions)
+        row["lift"] = reasons[0] if reasons else "liftable"
+    return rows
+
+
 def render(rows: list[dict]) -> str:
-    out = [f"{'size':>6}  {'srcc':<7}  {'wall':<12}  target"]
+    screened = any("lift" in r for r in rows)
+    head = f"{'size':>6}  {'srcc':<7}  {'wall':<12}  "
+    if screened:
+        head += f"{'lift':<28}  "
+    out = [head + "target"]
     for r in rows:
         out.append(f"{r['size']:>6}  {r['class']:<7}  {r['wall']:<12}  "
-                   f"0x{r['vma']:08x} {r['file']}:{r['name']}")
+                   + (f"{r.get('lift', ''):<28}  " if screened else "")
+                   + f"0x{r['vma']:08x} {r['file']}:{r['name']}")
         if r["note"]:
-            out.append(f"{'':>6}  {'':<7}  {'':<12}    {r['note'][:110]}")
+            out.append(f"{'':>6}  {'':<7}  {'':<12}  "
+                       + (" " * 30 if screened else "")
+                       + f"  {r['note'][:110]}")
     counts: dict[str, int] = {}
     for r in rows:
         counts[r["wall"]] = counts.get(r["wall"], 0) + 1
@@ -243,6 +341,13 @@ def render(rows: list[dict]) -> str:
     tally = ", ".join(f"{k} {counts[k]}" for k in sorted(counts, key=RANK.get))
     out.append("")
     out.append(f"{len(rows)} leftover bodies, {total} bytes: {tally}")
+    if screened:
+        lifts: dict[str, int] = {}
+        for r in rows:
+            if "lift" in r:
+                lifts[r["lift"]] = lifts.get(r["lift"], 0) + 1
+        lift_tally = ", ".join(f"{k} {v}" for k, v in sorted(lifts.items()))
+        out.append(f"lift screen: {lift_tally}")
     return "\n".join(out)
 
 
@@ -269,6 +374,25 @@ def self_test() -> None:
     assert classify({"detail": {"pin": 1}}, [])[0] == "regalloc"
     assert classify({"detail": {"naked": True}, "size": 24}, [])[0] == "raw"
     assert classify({"detail": {"naked": True}, "size": 4}, [])[0] == "veneer"
+    # The lift screen: the documented non-agbcc idioms, and a clean leaf.
+    assert lift_blockers(["push {r4, lr}", "bl sub_x", "bx lr"]) == []
+    assert lift_blockers(["push {r4}", "bl sub_x"]) == ["bl without an lr save"]
+    assert lift_blockers(["push {r4, lr}", "bl sub_x", "mov pc, lr"]) == [
+        "mov pc,lr return"]
+    assert lift_blockers(["mov ip, lr", "bx ip"]) == ["ip/lr veneer"]
+    assert lift_blockers(["add r2, pc, #0", "bx r2"]) == ["pc veneer"]
+    assert lift_blockers(["tst r0, r1"]) == ["tst (lowers to and+cmp)"]
+    assert lift_blockers(["swi 0"]) == ["swi"]
+    # `mov pc, r3` is a switch jump table, which agbcc does emit.
+    assert lift_blockers(["mov pc, r3"]) == []
+    with tempfile.TemporaryDirectory() as tmp:
+        path = Path(tmp) / "t.c"
+        path.write_text(
+            '__attribute__((naked)) void a(void) {\n'
+            '    __asm__ volatile ("\\tpush\\t{r4, lr}\\n" "\\tbl sub_x\\n");\n'
+            '}\n')
+        got = _asm_instructions(path, "a")
+    assert got == ["push {r4, lr}", "bl sub_x"], got
     # Ranking must float the actionable row even when it is the smaller one.
     rows = [{"wall": "measured", "size": 900}, {"wall": "unexplained", "size": 20}]
     rows.sort(key=lambda r: (RANK[r["wall"]], -r["size"]))
@@ -288,6 +412,8 @@ def main() -> None:
     parser.add_argument("--snapshot", action="store_true",
                         help="use the committed classification snapshot")
     parser.add_argument("--json", type=Path, help="write the census as JSON")
+    parser.add_argument("--lift-screen", action="store_true",
+                        help="screen the raw rows for non-agbcc instruction idioms")
     parser.add_argument("--self-test", action="store_true")
     args = parser.parse_args()
 
@@ -296,6 +422,9 @@ def main() -> None:
         return
 
     rows = census(args.snapshot)
+    if args.lift_screen:
+        rows = screen_lifts(rows)
+        rows = [r for r in rows if r["wall"] != "raw" or r["lift"] == "liftable"]
     if args.ascending:
         rows.sort(key=lambda r: (RANK[r["wall"]], r["size"], r["vma"]))
     if args.wall:
