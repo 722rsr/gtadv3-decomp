@@ -62,7 +62,7 @@ neither target replaces `make matching-ready`.
 | `match_families.py` | Index instruction/control-flow siblings; reject stale indexes; `--twins` sweeps for assembly bodies whose nearest sibling is already decompiled C. |
 | `lift_scout.py` | Triage unmatched functions by diagnostic evidence, and report the selected-but-still-assembly backlog the corpus report cannot rank. |
 | `strategy_router.py` | Select applicable diagnostics from measured function properties. |
-| `wall_census.py` | Sort the remaining asm-backed bodies into documented walls (`MEASURED`/unreachable/regalloc) and bodies that still need a lift, so a session opens a target that is not already walled. |
+| `wall_census.py` | Sort the remaining asm-backed bodies into documented walls (`MEASURED`/unreachable/regalloc) and bodies that still need a lift, so a session opens a target that is not already walled; `--lift-screen` drops raw bodies whose own instruction stream is not agbcc output. |
 | `experiment_kit.py` | Shared candidate compiler, byte scorer, contracts, and output handling. |
 | `matching_campaign.py` | Bounded, resumable full-TU variants and matrices; persistent failures, output deduplication, and best candidate. |
 | `instruction_diff.py` | Reachable Thumb instruction alignment, register/operand/target/pool diagnostics; advisory only. |

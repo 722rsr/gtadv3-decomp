@@ -246,6 +246,14 @@ See [candidate-length diagnostics](findings/oversized_plus4_class.md).
   coalesces the two away; a pinned temp and a `"+r"` barrier in front of the
   copy restore the split (`register u8 *t asm("r0") = r + 158;
   __asm__ volatile ("" : "+r" (t)); mode = t;`), measured on `_080029F44`.
+- A zero that the ROM keeps live across a branch has to be a pinned variable
+  behind an empty `"+r"` barrier. `_0800195F8` stores the same zero to a `u16`
+  and then to a `s32` (`movs r2,#0 / strh r2,[r0] / ... / str r2,[r1,#48]`).
+  Two literal `= 0` stores make agbcc re-materialise the second one into
+  whichever register the compare load just freed, and even
+  `register u32 z asm("r2") = 0;` folds back to a literal. Writing
+  `z = 0; __asm__ volatile ("" : "+r" (z));` keeps the value opaque, so both
+  stores read r2 and the body matches 240/240.
 - Two constants added at different levels do not always fuse, and the
   encoding depends on *which* level. `cell8 - 36 + 14` and
   `((u16 *)(cell8 - 36))[7]` both fold to one `sub #22 / ldrh [r0]`, but a
@@ -620,6 +628,15 @@ python3 tools/wall_census.py --class raw --ascending
 bodies by the evidence already written next to them (`measured`, unreachable,
 register pins) and lists the naked transcriptions separately, so a session does
 not re-open a body whose wall is already recorded inline.
+
+`--lift-screen` additionally reads each naked body's own instruction stream and
+drops the transcriptions that no C can match, because the ROM bytes are not
+agbcc output: a `bl` with no `lr` save on the entry push, a `mov pc, lr` or
+`pop {..., pc}` return, a `mov ip, lr` / `bx ip` or `add rN, pc` veneer, `tst`
+(agbcc lowers it to `and`+`cmp`), and `swi`. Those markers are the documented
+non-agbcc idioms below; a body carrying one is a wall, not a lift. Bodies whose
+stream assembles from an `.include` cannot be screened this way and are reported
+as unknown rather than liftable.
 
 Family matching compares instruction and branch patterns with consistent
 register normalization, while retaining load/store widths. It is a retrieval
