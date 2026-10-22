@@ -657,6 +657,16 @@ void sub_080011484(void *a, int b, int c) __attribute__((alias("MenuFF78_11484")
 // sub_0800115E0 — list-cursor handler w/ u16[rec+190] cursor over the record
 // list. Uses _0800F744/F700/F6D0 for clamp + select logic. Same epilogue shape
 // (s16[rec+212] = selected idx).
+// ROM frame: `push {r4,r5,r6,r7,lr}` + `mov r7,r8` / `push {r7}` /
+// `mov r8,r0` -- the u16[rec+190] cursor lives in r8. A plain C lift scores
+// 47/252, but `register u16 prev __asm__("r8")` reproduces that staging, and
+// the body then reaches 252/252 bytes of length with every instruction in the
+// ROM's order (199/252 equal bytes). What is left is only temp-register
+// numbering on the zero-index `ldrsh` reads: a signed halfword that must
+// survive a call compiles to `ldrh` + `lsls`/`asrs`, never `ldrsh`, so those
+// reads are spliced as `ldrsh %0,[%1,%2]`. The body stays asm until the
+// numbering is reachable; measurements in
+// docs/findings/register_shaping_levers.md.
 // ============================================================================
 extern u32 _0800F6D0(s32 idx);            // menus.c
 extern u32 _0800F700(s32 a, s32 b);       // menus.c

@@ -60,7 +60,7 @@ neither target replaces `make matching-ready`.
 | `derisk_pool_probe.py` | Probe literal-pool placement at real ROM addresses. |
 | `match_context.py` | Gather a function's source, ROM instructions, callers, and fresh matching examples. |
 | `match_families.py` | Index instruction/control-flow siblings; reject stale indexes; `--twins` sweeps for assembly bodies whose nearest sibling is already decompiled C. |
-| `lift_scout.py` | Classify unmatched functions by diagnostic evidence. |
+| `lift_scout.py` | Triage unmatched functions by diagnostic evidence, and report the selected-but-still-assembly backlog the corpus report cannot rank. |
 | `strategy_router.py` | Select applicable diagnostics from measured function properties. |
 | `experiment_kit.py` | Shared candidate compiler, byte scorer, contracts, and output handling. |
 | `matching_campaign.py` | Bounded, resumable full-TU variants and matrices; persistent failures, output deduplication, and best candidate. |

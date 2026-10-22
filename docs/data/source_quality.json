@@ -2007,12 +2007,7 @@
    "size": 192
   },
   "0x080048d8": {
-   "class": "asm",
-   "detail": {
-    "insn": 1,
-    "insn_lines": 96,
-    "naked": true
-   },
+   "class": "c",
    "file": "src/runtime_hud.c",
    "name": "PaletteFade_048D8",
    "size": 212
@@ -4762,11 +4757,10 @@
    "size": 100
   },
   "0x0800d048": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 113,
-    "naked": true
+    "barrier": 2,
+    "pin": 5
    },
    "file": "src/scene_record_dispatch.c",
    "name": "MenuRecordUpdater_0D048",
@@ -5105,11 +5099,9 @@
    "size": 4
   },
   "0x0800de50": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 162,
-    "naked": true
+    "directive": 1
    },
    "file": "src/menus.c",
    "name": "MenuDE50_0800DE50",
@@ -5122,11 +5114,9 @@
    "size": 16
   },
   "0x0800dff0": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 79,
-    "naked": true
+    "directive": 1
    },
    "file": "src/menus.c",
    "name": "MenuDFF0_0800DFF0",
@@ -5145,11 +5135,10 @@
    "size": 72
   },
   "0x0800e15c": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 169,
-    "naked": true
+    "directive": 1,
+    "pin": 1
    },
    "file": "src/menus.c",
    "name": "MenuE15C_0800E15C",
@@ -5162,22 +5151,15 @@
    "size": 44
   },
   "0x0800e310": {
-   "class": "asm",
-   "detail": {
-    "insn": 1,
-    "insn_lines": 128,
-    "naked": true
-   },
+   "class": "c",
    "file": "src/menus.c",
    "name": "MenuE310_0800E310",
    "size": 264
   },
   "0x0800e418": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 172,
-    "naked": true
+    "directive": 1
    },
    "file": "src/menus.c",
    "name": "MenuE418_0800E418",
@@ -5271,22 +5253,20 @@
    "size": 104
   },
   "0x0800ee00": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 154,
-    "naked": true
+    "barrier": 1,
+    "directive": 1,
+    "pin": 1
    },
    "file": "src/menus.c",
    "name": "MenuEE00_0800EE00",
    "size": 340
   },
   "0x0800ef54": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 103,
-    "naked": true
+    "directive": 1
    },
    "file": "src/menus.c",
    "name": "MenuEF54_0800EF54",
@@ -5451,11 +5431,9 @@
    "size": 232
   },
   "0x0800ff78": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 97,
-    "naked": true
+    "directive": 1
    },
    "file": "src/menus.c",
    "name": "MenuFF78_0800FF78",
@@ -10750,11 +10728,9 @@
    "size": 48
   },
   "0x08026ff4": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 93,
-    "naked": true
+    "pin": 1
    },
    "file": "src/garage.c",
    "name": "Garage_InitRecord",
@@ -13344,16 +13320,16 @@
  },
  "totals": {
   "asm": {
-   "bytes": 72800,
-   "functions": 197
+   "bytes": 69624,
+   "functions": 186
   },
   "c": {
-   "bytes": 41230,
-   "functions": 865
+   "bytes": 41706,
+   "functions": 867
   },
   "c_fakematch": {
-   "bytes": 71842,
-   "functions": 600
+   "bytes": 74542,
+   "functions": 609
   },
   "partial": {
    "bytes": 2264,

@@ -1024,140 +1024,72 @@ void sub_0800D3A4(void *r, u32 a, u32 b) __attribute__((alias("MenuSelectHandler
 // ============================================================================
 // menu_d048.s 0x0800D048 — menu record updater: key-bit lanes adjust the
 // +6/+8 cursors with clamp/relayout, persisting to WA+0x574/0x1151 on bit0.
-// (Second _08026A4C call passes s16[rec+8] explicitly = the value ROM's r2
-// still holds: the compiled Sprite_SetTenTwelve preserves r2, as does ROM.)
+// Three things are load-bearing for the match:
+//  * the WA store pins base/off/value/sum (r1/r3/r2/r0) — plain C folds the
+//    base+off add into the offset register; the second store reads the record
+//    halfword as `volatile` so agbcc keeps `ldrh` and truncates at the `strb`.
+//  * `v` keeps the +8 update's load/add ahead of the shared-zero `movs`, which
+//    ROM places between the add and the `strh`.
+//  * both clamps write the same `zero` local: ROM materialises one 0 constant
+//    in a caller-saved register and reuses it (`strh r1`) for both stores.
+// The second _08026A4C call passes s16[rec+8] explicitly because that is what
+// ROM's r2 still holds there.
 // ============================================================================
-__attribute__((naked)) void MenuRecordUpdater_0D048(void *rec, u32 dummy, u32 key) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, r7, lr}\n"
-        "mov r7, r9\n"
-        "mov r6, r8\n"
-        "push {r6, r7}\n"
-        "adds r4, r0, #0\n"
-        "lsls r2, r2, #16\n"
-        "lsrs r5, r2, #16\n"
-        "bl 0x08004b68\n"
-        "movs r1, #6\n"
-        "ldrsh r0, [r4, r1]\n"
-        "mov r8, r0\n"
-        "movs r7, #0\n"
-        "movs r6, #0\n"
-        "movs r3, #8\n"
-        "ldrsh r2, [r4, r3]\n"
-        "mov r9, r2\n"
-        "movs r0, #2\n"
-        "ands r0, r5\n"
-        "cmp r0, #0\n"
-        "beq.n .Ld048_after_bit2\n"
-        "movs r0, #1\n"
-        "bl 0x08004ea8\n"
-        ".Ld048_after_bit2:\n"
-        "movs r0, #1\n"
-        "ands r0, r5\n"
-        "cmp r0, #0\n"
-        "beq.n .Ld048_after_bit1\n"
-        "ldr r1, 1f\n"
-        "ldrh r2, [r4, #6]\n"
-        "ldr r3, 2f\n"
-        "adds r0, r1, r3\n"
-        "strh r2, [r0, #0]\n"
-        "ldrh r0, [r4, #8]\n"
-        "ldr r2, 3f\n"
-        "adds r1, r1, r2\n"
-        "strb r0, [r1, #0]\n"
-        "movs r0, #1\n"
-        "bl 0x08004ea8\n"
-        ".Ld048_after_bit1:\n"
-        "movs r0, #32\n"
-        "ands r0, r5\n"
-        "cmp r0, #0\n"
-        "beq.n .Ld048_bit16\n"
-        "subs r7, #1\n"
-        ".Ld048_bit16:\n"
-        "movs r0, #16\n"
-        "ands r0, r5\n"
-        "cmp r0, #0\n"
-        "beq.n .Ld048_bit64\n"
-        "adds r7, #1\n"
-        ".Ld048_bit64:\n"
-        "movs r0, #64\n"
-        "ands r0, r5\n"
-        "cmp r0, #0\n"
-        "beq.n .Ld048_bit128\n"
-        "subs r6, #1\n"
-        ".Ld048_bit128:\n"
-        "movs r0, #128\n"
-        "ands r0, r5\n"
-        "cmp r0, #0\n"
-        "beq.n .Ld048_cursor8\n"
-        "adds r6, #1\n"
-        ".Ld048_cursor8:\n"
-        "ldrh r3, [r4, #8]\n"
-        "adds r0, r3, r6\n"
-        "movs r1, #0\n"
-        "strh r0, [r4, #8]\n"
-        "lsls r0, r0, #16\n"
-        "cmp r0, #0\n"
-        "bge.n .Ld048_cursor8_nonnegative\n"
-        "movs r0, #4\n"
-        "strh r0, [r4, #8]\n"
-        ".Ld048_cursor8_nonnegative:\n"
-        "movs r2, #8\n"
-        "ldrsh r0, [r4, r2]\n"
-        "cmp r0, #4\n"
-        "ble.n .Ld048_cursor6\n"
-        "strh r1, [r4, #8]\n"
-        ".Ld048_cursor6:\n"
-        "ldrh r3, [r4, #6]\n"
-        "adds r0, r3, r7\n"
-        "strh r0, [r4, #6]\n"
-        "lsls r0, r0, #16\n"
-        "cmp r0, #0\n"
-        "bge.n .Ld048_cursor6_nonnegative\n"
-        "strh r1, [r4, #6]\n"
-        ".Ld048_cursor6_nonnegative:\n"
-        "movs r1, #6\n"
-        "ldrsh r0, [r4, r1]\n"
-        "cmp r0, #96\n"
-        "ble.n .Ld048_cursor6_done\n"
-        "movs r0, #96\n"
-        "strh r0, [r4, #6]\n"
-        ".Ld048_cursor6_done:\n"
-        "movs r2, #6\n"
-        "ldrsh r1, [r4, r2]\n"
-        "cmp r1, r8\n"
-        "beq.n .Ld048_after_obj6\n"
-        "ldr r0, [r4, #28]\n"
-        "movs r3, #8\n"
-        "ldrsh r2, [r4, r3]\n"
-        "bl 0x08026a4c\n"
-        "ldr r0, [r4, #28]\n"
-        "movs r2, #6\n"
-        "ldrsh r1, [r4, r2]\n"
-        "bl 0x08026938\n"
-        ".Ld048_after_obj6:\n"
-        "movs r3, #8\n"
-        "ldrsh r2, [r4, r3]\n"
-        "cmp r2, r9\n"
-        "beq.n .Ld048_done\n"
-        "ldr r0, [r4, #28]\n"
-        "movs r3, #6\n"
-        "ldrsh r1, [r4, r3]\n"
-        "bl 0x08026a4c\n"
-        ".Ld048_done:\n"
-        "pop {r3, r4}\n"
-        "mov r8, r3\n"
-        "mov r9, r4\n"
-        "pop {r4, r5, r6, r7}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        ".align 2, 0\n"
-        "1: .word 0x03001780\n"
-        "2: .word 0x00000574\n"
-        "3: .word 0x00001151\n"
-        ".syntax divided\n"
-    );
+void MenuRecordUpdater_0D048(u8 *r4, u32 dummy, u16 key) {
+    u16 k = key;
+    s32 dy;
+    s32 dx;
+    s32 old6;
+    s32 old8;
+    s32 zero;
+    s32 v;
+
+    _08004B68();
+    old6 = *(s16 *)(r4 + 6);
+    dy = 0;
+    dx = 0;
+    old8 = *(s16 *)(r4 + 8);
+    if (k & 2u)
+        _08004EA8(1);
+    if (k & 1u) {
+        register u32 waBase __asm__("r1") = 0x03001780u;
+        register u32 waVal __asm__("r2") = *(u16 *)(r4 + 6);
+        register u32 waOff __asm__("r3") = 0x574u;
+        register u32 waAddr __asm__("r0");
+        __asm__ volatile("" : "+r"(waBase), "+r"(waVal), "+r"(waOff));
+        waAddr = waBase + waOff;
+        *(volatile u16 *)(uintptr_t)waAddr = (u16)waVal;
+        register u32 v8 __asm__("r0") = *(volatile u16 *)(r4 + 8);
+        __asm__ volatile("" : "+r"(v8));
+        *(volatile u8 *)(uintptr_t)(waBase + 0x1151u) = (u8)v8;
+        _08004EA8(1);
+    }
+    if (k & 0x20u)
+        dy--;
+    if (k & 0x10u)
+        dy++;
+    if (k & 0x40u)
+        dx--;
+    if (k & 0x80u)
+        dx++;
+    v = *(u16 *)(r4 + 8) + dx;
+    zero = 0;
+    *(u16 *)(r4 + 8) = (u16)v;
+    if (*(s16 *)(r4 + 8) < 0)
+        *(u16 *)(r4 + 8) = 4;
+    if (*(s16 *)(r4 + 8) > 4)
+        *(u16 *)(r4 + 8) = zero;
+    *(u16 *)(r4 + 6) = (u16)(*(u16 *)(r4 + 6) + dy);
+    if (*(s16 *)(r4 + 6) < 0)
+        *(u16 *)(r4 + 6) = zero;
+    if (*(s16 *)(r4 + 6) > 96)
+        *(u16 *)(r4 + 6) = 96;
+    if (*(s16 *)(r4 + 6) != old6) {
+        _080026A4C((void *)(uintptr_t)*(u32 *)(r4 + 28), (int)*(s16 *)(r4 + 6), (int)*(s16 *)(r4 + 8));
+        _08026938((void *)(uintptr_t)*(u32 *)(r4 + 28), (int)*(s16 *)(r4 + 6));
+    }
+    if (*(s16 *)(r4 + 8) != old8)
+        _080026A4C((void *)(uintptr_t)*(u32 *)(r4 + 28), (int)*(s16 *)(r4 + 6), (int)*(s16 *)(r4 + 8));
 }
 void _0800D048(void *r, u32 d, u32 k) __attribute__((alias("MenuRecordUpdater_0D048")));
 void sub_0800D048(void *r, u32 d, u32 k) __attribute__((alias("MenuRecordUpdater_0D048")));
