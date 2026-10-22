@@ -33,6 +33,7 @@ ROM = ROOT / "baserom.gba"
 ROM_BASE = 0x08000000
 MANIFEST = ROOT / "tools/matching_slice_functions.json"
 DEFAULT_REPORT = ROOT / "build/era-corpus/ready-report.json"
+QUALITY_MANIFEST = ROOT / "docs/data/source_quality.json"
 
 # `coverage.asm_vmas()` is the repo's authority on what counts as a function
 # entry. Import it rather than re-deriving the rule: coverage.py:229-237
@@ -726,6 +727,51 @@ def print_table(rows: list[dict], top: int) -> None:
             print("  " + line)
 
 
+def source_backlog(only_source: str | None,
+                   path: Path = QUALITY_MANIFEST) -> list[dict]:
+    """Selected entries whose C is still assembly or carries splices.
+
+    `build()` can only rank bodies the corpus report scored as NON-exact. Once
+    every selected entry is byte-exact that queue is empty while this backlog
+    is not: a naked body compiles to the ROM bytes it transcribes, so the
+    report has nothing to say about it. Without this section the tool prints
+    "0 queued" over 196 remaining assembly bodies.
+    """
+    if not path.exists():
+        return []
+    doc = json.loads(path.read_text(encoding="utf-8"))
+    rows = []
+    for vma, rec in doc.get("functions", {}).items():
+        if rec.get("class") not in ("asm", "partial"):
+            continue
+        if only_source and only_source not in rec.get("file", ""):
+            continue
+        rows.append({"vma": vma, "cls": rec["class"], "rom_bytes": rec["size"],
+                     "source": rec.get("file", ""), "name": rec.get("name", "")})
+    rows.sort(key=lambda r: (-r["rom_bytes"], r["vma"]))
+    return rows
+
+
+def print_source_backlog(rows: list[dict], top: int, full: bool) -> None:
+    if not rows:
+        return
+    counts = collections.Counter(r["cls"] for r in rows)
+    print(f"selected entries still not decompiled to C: {len(rows)} bodies, "
+          f"{sum(r['rom_bytes'] for r in rows)} bytes "
+          f"({counts['asm']} asm, {counts['partial']} with instruction splices)")
+    print("  (byte-exact, so the corpus report ranks none of them; "
+          "`python3 tools/source_quality.py --list asm` is the full list)")
+    if not full:
+        return
+    print()
+    hdr = f"{'CLASS':8s} {'VMA':12s} {'ROM':>5s}  BODY"
+    print(hdr)
+    print("-" * len(hdr))
+    for r in rows[:top]:
+        print(f"{r['cls']:8s} {r['vma']:12s} {r['rom_bytes']:5d}  "
+              f"{r['source']}:{r['name']}")
+
+
 def _wrap(text: str, width: int) -> list[str]:
     words, out, cur = text.split(), [], ""
     for w in words:
@@ -1066,6 +1112,30 @@ def self_test() -> int:
         check("epilogue-void-pointer-is-not-void-return",
               "declared void" in classify(r_p1, valued, ptr_body)[1], False)
 
+    # The asm/partial backlog comes from the checked-in source-quality
+    # manifest, not the corpus report: a naked body scores EXACT, so the
+    # report has no row to rank and the queue alone reads as "nothing left".
+    with tempfile.TemporaryDirectory() as td:
+        q = Path(td) / "quality.json"
+        q.write_text(json.dumps({"functions": {
+            "0x08000100": {"class": "c", "file": "src/a.c", "name": "A",
+                            "size": 400},
+            "0x08000200": {"class": "asm", "file": "src/a.c", "name": "B",
+                            "size": 40},
+            "0x08000300": {"class": "partial", "file": "src/c.c", "name": "C",
+                            "size": 900},
+            "0x08000400": {"class": "asm", "file": "src/c.c", "name": "D",
+                            "size": 90},
+        }}), encoding="utf-8")
+        back = source_backlog(None, q)
+        check("backlog-drops-plain-c", [b["name"] for b in back], ["C", "D", "B"])
+        check("backlog-largest-first", [b["rom_bytes"] for b in back],
+              [900, 90, 40])
+        check("backlog-source-filter",
+              [b["name"] for b in source_backlog("src/c.c", q)], ["C", "D"])
+        check("backlog-missing-manifest", source_backlog(None, Path(td) / "no"),
+              [])
+
     ok = sum(1 for _, good, _, _ in checks if good)
     for name, good, got, want in checks:
         if not good:
@@ -1094,6 +1164,9 @@ def main() -> int:
     rows = build(report, manifest, rom, typed_vmas, bl_reached, args.source,
                  args.band)
     print_table(rows, args.top)
+    print()
+    backlog = source_backlog(args.source)
+    print_source_backlog(backlog, args.top, full=not rows)
     if args.json:
         args.json.parent.mkdir(parents=True, exist_ok=True)
         args.json.write_text(json.dumps({
@@ -1104,6 +1177,7 @@ def main() -> int:
                 cls: sum(r["rom_bytes"] for r in rows if r["cls"] == cls)
                 for cls in sorted({r["cls"] for r in rows})},
             "queue": rows,
+            "source_backlog": backlog,
         }, indent=2) + "\n", encoding="utf-8")
         print(f"\nJSON: {args.json}")
     return 0

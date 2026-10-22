@@ -52,7 +52,8 @@ void sub_0800E2E4(void *a, int b, u32 c) __attribute__((alias("MenuE2E4_0800E2E4
 
 // ----------------------------------------------------------------------------
 // sub_0800E598 — no-op leaf.
-void MenuE598_0800E598(void) {
+void MenuE598_0800E598(void *a) {
+    (void)a;
 }
 __asm__(".align 2, 0");
 void _0800E598(void) __attribute__((alias("MenuE598_0800E598")));

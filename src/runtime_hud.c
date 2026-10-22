@@ -2343,117 +2343,67 @@ void sub_080046D0(void) __attribute__((alias("BgRotDispatch_046D0")));
 void _080046D0(void) __attribute__((alias("BgRotDispatch_046D0")));
 
 // ----------------------------------------------------------------------------
-// Palette fade 0x080048D8. Each of 96 records at 0x080C4F64 is three words.
-// The first two words feed the two fixed-point offsets; the third is written
-// to both halfword fields. The ROM clears the first and last 16-byte entries
-// around the 96-entry span with separate CpuSet calls.
-extern s16 SaveTriggerA(u32 arg); // _08005F2C
-extern s16 SaveTriggerB(u32 arg); // _08005F44
+// Palette fade 0x080048D8. Each of 96 records at 0x080C4F64 is three words:
+// the first two are a vector rotated by the two 12-bit fractions the save
+// triggers return, the third scales into both halfword fields. The ROM clears
+// the 16-byte entry just before and just after the 96-record span with two
+// CpuSet fills, each sourced from its own 4-byte stack zero.
+//
+// Four levers, all measured on this body:
+//  * both triggers sign-extend their `ldrsh` in r0, so they are declared
+//    word-returning here; an `s16` return costs an `lsls/asrs` pair per call.
+//  * `ctrl2` is a second spelling of the control block so the head's pointer
+//    dies before the loop and the tail re-pool-loads it: the ROM has no live
+//    pointer across the loop, which is what frees r8/r9 for `cy`/`cx`.
+//  * `z1` is computed before the loop (the second fill's source address is
+//    live across it, `add r1,sp,#4 / mov sl,r1`) and `mode` is assigned only
+//    after it, so both get their ROM registers instead of the entry block's.
+//  * the third table word is loaded into `w0`, which is dead by then: agbcc
+//    then reuses its register instead of opening a third live temp.
+extern int SaveTriggerA(u32 arg); // _08005F2C
+extern int SaveTriggerB(u32 arg); // _08005F44
 extern void _0802D974(const void *src, void *dst, u32 ctrl);
-__attribute__((naked)) void PaletteFade_048D8(void)
+void PaletteFade_048D8(void)
 {
-    __asm__ volatile(
-        "push {r4, r5, r6, r7, lr}\n\t"
-        "mov r7, sl\n\t"
-        "mov r6, r9\n\t"
-        "mov r5, r8\n\t"
-        "push {r5, r6, r7}\n\t"
-        "sub sp, #8\n\t"
-        "ldr r4, .Lpal048d8_ctrl\n\t"
-        "movs r1, #8\n\t"
-        "ldrsh r0, [r4, r1]\n\t"
-        "bl SaveTriggerB\n\t"
-        "add r7, r0, #0\n\t"
-        "movs r1, #8\n\t"
-        "ldrsh r0, [r4, r1]\n\t"
-        "bl SaveTriggerA\n\t"
-        "add r6, r0, #0\n\t"
-        "ldr r0, .Lpal048d8_table\n\t"
-        "mov ip, r0\n\t"
-        "ldr r0, [r4, #12]\n\t"
-        "movs r1, #128\n\t"
-        "lsl r1, r1, #3\n\t"
-        "add r5, r0, r1\n\t"
-        "ldr r0, [r4, #0]\n\t"
-        "mov r9, r0\n\t"
-        "ldr r4, [r4, #4]\n\t"
-        "mov r8, r4\n\t"
-        "add r1, sp, #4\n\t"
-        "mov sl, r1\n\t"
-        "movs r4, #95\n"
-        ".Lpal048d8_loop:\n\t"
-        "mov r0, ip\n\t"
-        "ldmia r0!, {r3}\n\t"
-        "add r0, #4\n\t"
-        "mov ip, r0\n\t"
-        "sub r0, #4\n\t"
-        "ldmia r0!, {r2}\n\t"
-        "add r0, r2, #0\n\t"
-        "mul r0, r6\n\t"
-        "add r1, r3, #0\n\t"
-        "mul r1, r7\n\t"
-        "sub r0, r1\n\t"
-        "asr r0, r0, #12\n\t"
-        "add r0, r9\n\t"
-        "str r0, [r5, #8]\n\t"
-        "add r0, r3, #0\n\t"
-        "mul r0, r6\n\t"
-        "add r1, r2, #0\n\t"
-        "mul r1, r7\n\t"
-        "add r0, r1\n\t"
-        "asr r0, r0, #12\n\t"
-        "mov r1, r8\n\t"
-        "sub r0, r1, r0\n\t"
-        "str r0, [r5, #12]\n\t"
-        "mov r0, ip\n\t"
-        "add r0, #4\n\t"
-        "mov ip, r0\n\t"
-        "sub r0, #4\n\t"
-        "ldmia r0!, {r3}\n\t"
-        "add r0, r3, #0\n\t"
-        "mul r0, r7\n\t"
-        "asr r0, r0, #19\n\t"
-        "strh r0, [r5, #0]\n\t"
-        "add r0, r3, #0\n\t"
-        "mul r0, r6\n\t"
-        "asr r0, r0, #19\n\t"
-        "strh r0, [r5, #4]\n\t"
-        "sub r4, #1\n\t"
-        "add r5, #16\n\t"
-        "cmp r4, #0\n\t"
-        "bge .Lpal048d8_loop\n\t"
-        "movs r5, #0\n\t"
-        "str r5, [sp, #0]\n\t"
-        "ldr r4, .Lpal048d8_ctrl\n\t"
-        "ldr r1, [r4, #12]\n\t"
-        "movs r0, #159\n\t"
-        "lsl r0, r0, #4\n\t"
-        "add r1, r1, r0\n\t"
-        "ldr r6, .Lpal048d8_mode\n\t"
-        "mov r0, sp\n\t"
-        "add r2, r6, #0\n\t"
-        "bl _0802D974\n\t"
-        "str r5, [sp, #4]\n\t"
-        "ldr r1, [r4, #12]\n\t"
-        "movs r0, #128\n\t"
-        "lsl r0, r0, #3\n\t"
-        "add r1, r1, r0\n\t"
-        "mov r0, sl\n\t"
-        "add r2, r6, #0\n\t"
-        "bl _0802D974\n\t"
-        "add sp, #8\n\t"
-        "pop {r3, r4, r5}\n\t"
-        "mov r8, r3\n\t"
-        "mov r9, r4\n\t"
-        "mov sl, r5\n\t"
-        "pop {r4, r5, r6, r7}\n\t"
-        "pop {r0}\n\t"
-        "bx r0\n\t"
-        ".short 0\n"
-        ".balign 4\n"
-        ".Lpal048d8_ctrl: .word 0x03000188\n"
-        ".Lpal048d8_table: .word 0x080C4F64\n"
-        ".Lpal048d8_mode: .word 0x05000004\n");
+    s32 sb, ca;
+    const s32 *src;
+    u8 *dst;
+    s32 cx, cy;
+    u32 zero[2];
+    u32 *z1;
+    s32 i, w0, w1;
+    u8 *ctrl, *ctrl2;
+
+    ctrl = (u8 *)(uintptr_t)0x03000188;
+    sb = SaveTriggerB(*(const s16 *)(ctrl + 8));
+    ca = SaveTriggerA(*(const s16 *)(ctrl + 8));
+    src = (const s32 *)(uintptr_t)0x080C4F64;
+    dst = (u8 *)(uintptr_t)*(const u32 *)(ctrl + 12) + 0x400;
+    cx = *(const s32 *)(ctrl + 0);
+    cy = *(const s32 *)(ctrl + 4);
+    z1 = &zero[1];
+
+    i = 95;
+    while (i >= 0) {
+        w0 = *src++;
+        w1 = *src++;
+        *(u32 *)(dst + 8) = (u32)(cx + ((w1 * ca - w0 * sb) >> 12));
+        *(u32 *)(dst + 12) = (u32)(cy - ((w0 * ca + w1 * sb) >> 12));
+        w0 = *src++;
+        *(u16 *)(dst + 0) = (u16)((w0 * sb) >> 19);
+        *(u16 *)(dst + 4) = (u16)((w0 * ca) >> 19);
+        i--;
+        dst += 16;
+    }
+    zero[0] = 0;
+    ctrl2 = (u8 *)(uintptr_t)0x03000188;
+    _0802D974(&zero[0],
+              (void *)((u8 *)(uintptr_t)*(const u32 *)(ctrl2 + 12) + 0x9F0),
+              0x05000004u);
+    zero[1] = 0;
+    _0802D974(z1,
+              (void *)((u8 *)(uintptr_t)*(const u32 *)(ctrl2 + 12) + 0x400),
+              0x05000004u);
 }
 void _080048D8(void) __attribute__((alias("PaletteFade_048D8")));
 void sub_080048D8(void) __attribute__((alias("PaletteFade_048D8")));
