@@ -472,3 +472,255 @@ Both barrier pairs are load-bearing: without the first the constant folds,
 without the ones after `p = rec + k` and after the call the two variables
 coalesce and the ROM's `adds r0,r7,r2` / `ldrh r1,[r0]` pair becomes
 `adds r2,r7,r2` / `ldrh r1,[r2]`.
+
+## `Garage_InitRecord` (0x080026FF4, 228 B): three shapes worth reusing
+
+Measured 2026-10-21 (`--function _080026FF4 --c89 --require-exact` plus
+`match_c_slice.py`).
+
+* **Address constants re-dereferenced per use.** The ROM holds `0x03001678`
+  itself in a callee-saved register and reloads `[r4]` at each use. A pointer
+  *local* (`u32 *slot = (u32*)0x03001678u; *slot = …`) pins the constant for
+  the whole body and every later `*slot` becomes a register deref, shifting the
+  body. Spelling each access through a macro
+  (`#define GARAGE_CUR (*(volatile u32 *)0x03001678u)`) lets the allocator keep
+  the *address* and re-deref, which is what the ROM does.
+* **A constant store operand costs one extra copy.** `*(volatile u16 *)b =
+  0xFFC0;` emits `ldr r1,<pool>` + `adds r0,r1,#0` + `strh r0,[r4]`
+  (measured in a two-function scratch TU as well, so it is the store pattern,
+  not the surrounding pressure). A `u16 w = 0xFFC0;` local stored through
+  `strh r0,[r4]` is the ROM's shape; `w` must be a real variable, and the
+  `else` branch should store the flag variable itself (`strh r7,[r4]`).
+* **A trailing call's `r3` can be leftover, not an argument.** The ROM ends
+  `ldrsh r0,[r1,r2] / movs r3,#12 / ldrsh r2,[r1,r3] / mov r1,r8 / bl`. The
+  `12` in `r3` is the halfword index, *not* a fourth argument: declaring the
+  callee 3-arg (`extern void f3(u32,u32,u32) __asm__("target")`) is byte-exact,
+  while passing a literal `12` makes agbcc rematerialise `movs r3,#12` right
+  before the call (+4 B, `OVERSIZED`). Suspect a phantom trailing register
+  whenever the last argument equals a constant already used as a load index.
+
+## Leaves that save r4/r5 but not lr: not reachable from this toolchain
+
+`SoundVoiceFollow_NoteOff` (`0x0802C390`, 64 B) is a leaf whose ROM prologue
+is `push {r4,r5}` and whose epilogue is `pop {r4,r5}` / `bx lr`: it holds the
+`131`/`64` masks in r4/r5 across a linked-list walk and never touches lr.
+The C body is small and otherwise reachable (the abort-on-cursor and
+two-`tst` gates are a `if (id >= 128)` plus `if (flags & mask)` /
+`if (!(flags & busy))` shape), so the frame is the only blocker.
+
+Measured 2026-10-21 with a scratch TU compiled by both shipped compilers
+(`build/toolchains/agbcc/{old_agbcc,agbcc}`, `-O2 -ffunction-sections`):
+
+| options | prologue | epilogue |
+| --- | --- | --- |
+| `-mthumb-interwork` | `push {r4,r5,lr}` | `pop {r4,r5}` / `pop {r0}` / `bx r0` (+4 B) |
+| `-mno-thumb-interwork` | `push {r4,r5,lr}` | `pop {r4,r5,pc}` (no `bx lr`) |
+
+A minimal leaf (`u32 a = 131, b = 64;` + the same loop, no calls) reproduces
+the lr save, so this is not pressure from the surrounding body. Neither
+option set reaches `push {r4,r5}` + `bx lr` (the mechanism was not traced
+into the compiler source; the four emitted shapes above are the measurement),
+so a body of this class cannot leave its naked-asm owner even when every
+instruction in it is understood. Do not re-spend source permutations or
+register pins on it;
+`SoundVoiceFollow_NoteOff` keeps its asm body and the doc comment above it.
+
+The same limit applies to `Garage_CarPos_27120` (`0x08027120`, 240 B), whose
+ROM frame is `push {r4,r5,r6,r7,lr}` + `sub sp,#12` (so lr *is* saved there)
+but whose loop head and count reads stayed 16 bytes short of the ROM at
+224/240 in the best draft measured: the ROM duplicates the row-count test
+(`ldrb`+`lsls`/`asrs`, at both the entry and the back edge) and keeps the
+slot *address* in r7 while copying it to r6 for the loop, which agbcc folds
+into one register and one rotated test. It remains asm.
+
+## `Race_Setup_19250` (0x08019250, 200 B): the ARMCC r8 slot, measured
+
+Lifted 2026-10-21 as far as plain C goes; the best draft reached **93/200
+bytes (candidate 192 B, first diff +0x6)** and was reverted. Measured probe
+sequence, in order:
+
+* the two work-area gate reads must be spelled through `ram_blocks.h`
+  (`RAM_DEF_03001780;` in the body, `wa = RAM_SYM_03001780; off = 0x1111u;`
+  then `*(s8 *)(wa + off)`): with integer literals the address folded to one
+  pool word and the body scored 10/200; with the symbol it jumped to 93/200;
+* reading the first gate into an `s8` local is what produces the ROM's
+  `ldrb` + `lsls`/`asrs` pair; comparing `*(u8 *)gate != 0` folds the
+  extension away;
+* unlike `code_23a34.c`, this body must **share** one `wa` between both gate
+  reads. Giving the second gate its own fresh dead locals (`w2`/`o2`) drops
+  the score from 93/200 to 18/200 (188 B) because the shared `wa` is what
+  occupies r8 across the calls and therefore produces the ROM's
+  `mov r7,r8 / push {r7}` save staging at all.
+
+The residual is the frame. At 93/200 the staging exists but holds the wrong
+value: the ROM keeps `p` in r7, `q` in r8 and `d` in r6, whereas the draft
+keeps the work-area base constant in r8 (`mov r8,r0` + `add r0,r8`) and
+`p`/`q` in r5/r7. Measured alternates, all reverted: pinning `p` to r7 gives
+19/200 -- the frame shape returns but every `p + N` sub-word address is
+re-materialised (`adds r0,#22 / movs r1,#0 / ldrsh r0,[r0,r1]`); removing
+the `r4`/`r5` pins on `dx`/`dy` gives 19/200 with `push {r4,r5,r6,lr}` and
+no r7/r8 use at all. `d` pinned r6 is required in every variant. No spelling
+tried makes agbcc rank `q` above the work-area base. Re-tried 2026-10-21 with
+the explicit pins that worked on `MenuFF78_115E0` -- `register u8 *q
+__asm__("r8")` on its own reaches **42/200** (length exact at 200, frame
+`push {r4,r6,lr}`), and adding `register u8 *p __asm__("r7")` reaches
+**96/200**, still 200 bytes. The frame stays a three-register push because a
+pinned r7 is never saved (see "A pinned r7 is never saved") -- so the pins
+move the allocation but cannot reproduce the ROM's
+`push {r4,r5,r6,r7,lr}`. Treat
+96/200 as the ceiling for this body without a compiler-level allocation lever.
+
+## `MenuFF78_115E0` (0x080115E0, 252 B): three facts from a fresh lift
+
+Re-derived the cursor handler from its asm on 2026-10-21 and measured it, then
+reverted (`menu_ff78_c.c` keeps its asm body). The figure the body's comment
+carried for this function -- 246/252 with only the three zero-index `ldrsh`
+registers missing -- is **not reproduced by the draft kept on disk**, which
+scores **47/252**; the ROM prologue saves r8 (`4647` `mov r7,r8` / `b480`
+`push {r7}` / `4680` `mov r8,r0`) while that draft emits
+`push {r4,r5,r6,r7,lr}` and no r8 access at all.
+
+The earlier conclusion that this r8 slot is a dead live range the C cannot
+express is **wrong**. Pinning the value -- `register u16 prev __asm__("r8")`
+with `prev` assigned after the cursor load -- reproduces the ROM staging, and
+the body then reaches **252/252 bytes of length** with the same instructions
+in nearly the same order (199/252 equal bytes, `PARTIAL`; the one ordering
+difference is where the +198 store address is materialised). The size parity
+alone disproves the "frame is unreachable" reading; what is left is
+temp-register numbering.What made the difference, with only the measurements actually taken:
+
+* `prev` pinned to r8 (above) gives the frame and, with the rest of the draft
+  below in place, **106/252** at 260 bytes;
+* `s16 *selp` declared **without an initializer** and assigned right before
+  the 99 test: the address is no longer hoisted into the prologue, so r7 is
+  staged at +0x24 as the ROM does -- **201/252**, first diff +0x2A;
+* one `dst` pointer hoisted out of the final if/else removes a duplicated
+  `adds r1,#212` -- 256 -> **252** bytes (all the length in the ROM);
+* also required, without a score to attribute to each: `_0800F744`
+  redeclared `u32` in this TU (asm bodies call it by symbol) so the F700
+  argument is a bare `adds r1,r0,#0`; `_0800F6D0` declared `s32` so its
+  return is not re-extended before the `cmp`; and
+  `prev = *(volatile u16 *)curp` after the F700 store, because the reload
+  must not be forwarded into `mov r8,r0` (the ROM reloads through r3).
+
+The three ROM `ldrsh` reads into a call-crossing register cannot come from C:
+measured on a scratch TU, a signed halfword whose value survives a call (or
+whose destination is pinned) always compiles to `ldrh` + `lsls`/`asrs`, never
+`ldrsh`. They are emitted by a one-instruction splice,
+`__asm__ volatile ("ldrsh %0, [%1, %2]" : "=r"(v) : "r"(base), "r"(zero))`.
+With the length already at 252, the residual mismatch is only which register
+each loaded value and each splice's zero lands in; the instruction sequence
+is the ROM's. That register numbering is the only thing between this body and
+`EXACT`. Three further facts are worth keeping, because a wrong guess on any
+of them costs the whole body:
+
+* `_0800F744` is called with **r0 = 0**, not with the selected index: the ROM
+  loads `s16[rec+188]` into r4, zeroes r0 and calls. Spelling the call as
+  `_0800F744(sel)` shifts every following register;
+* the `_0800F700` second argument is the `_0800F744` return copied with a bare
+  `adds r1,r0,#0` -- no `lsls`/`asrs` pair. A 32-bit return type is therefore
+  the shape that matches; the file-wide `extern s16 _0800F744(s32)` is only
+  used by asm bodies in this TU, so redeclaring it costs nothing elsewhere.
+  (The measured 47/252 draft still carried an `lsls`/`asrs` pair, but on the
+  *selector* read: `s16 s = *selp;` compiled to `ldrh` + shifts instead of the
+  ROM's zero-index `ldrsh`, so that pair is a separate defect, not the call);
+* `prev = u16[rec+190]` is in **r8** in the ROM (`mov r8,r0`, then
+  `subs r0,#1` re-uses the load). A plain `register u16 prev;` leaves it in
+  r4 (agbcc's choice is correct at four live values), but the explicit pin
+  `__asm__("r8")` does move it and produces the ROM's `mov r7,r8` /
+  `push {r7}` staging -- so this body is not evidence for an unreachable
+  frame, only for one that needs an explicit pin.
+
+## A pinned r7 is never saved
+
+Measured 2026-10-21 with a scratch TU, one function per register: each holds
+the argument pointer across a call and dereferences it after the call.
+
+```c
+typedef unsigned char u8;
+int H(int);
+int p4(u8 *a) { register u8 *p __asm__("r4") = a; H(0); return p[22]; }
+int p5(u8 *a) { register u8 *p __asm__("r5") = a; H(0); return p[22]; }
+int p6(u8 *a) { register u8 *p __asm__("r6") = a; H(0); return p[22]; }
+int p7(u8 *a) { register u8 *p __asm__("r7") = a; H(0); return p[22]; }
+int p8(u8 *a) { register u8 *p __asm__("r8") = a; H(0); return p[22]; }
+int p9(u8 *a) { register u8 *p __asm__("r9") = a; H(0); return p[22]; }
+```
+
+```sh
+build/toolchains/agbcc/old_agbcc -O2 -mthumb-interwork -ffunction-sections \
+    -o /tmp/pin.s /tmp/pin.c   # cc1 reads C or preprocessed input; -S/-c are
+                                # not accepted by this binary
+```
+
+| pin | prologue / epilogue |
+| --- | --- |
+| `r4` | `push {r4,lr}` / `pop {r4}` |
+| `r5` | `push {r5,lr}` / `pop {r5}` |
+| `r6` | `push {r6,lr}` / `pop {r6}` |
+| `r7` | `push {lr}` / `pop {r1}` -- **no save, and r7 is read after the call** |
+| `r8` | `mov r3,r8` / `push {r3}` ... `pop {r3}` / `mov r8,r3` |
+| `r9` | same staging pair as r8 |
+
+So r4--r6 are saved normally, r8/r9 through the staging pair, and **r7 not at
+all**: `register u8 *p __asm__("r7") = a;` compiled with `p` live across a
+`bl` gives `add r7,r0,#0` ... `bl H` ... `add r0,r7,#0` with `push {lr}`
+only. That is an ABI-violating body, and the probe still reports a length and
+a partial score, so it is easy to miss.
+
+Consequence for this corpus: `Race_Setup_19250`'s ROM keeps `p` in r7 across
+both calls, so its `push {r4,r5,r6,r7,lr}` frame is not reproducible from C at
+all -- the register itself cannot be saved by a pin. The earlier reading (a
+parameter copy is not saved, a value assigned from a load is) was wrong: the
+discriminator is register identity, not where the value comes from.
+`MenuFF78_115E0`'s r8 pin saves correctly because r8 is a high register.
+
+## r8 needs five simultaneously live call-crossing values
+
+Two bodies this session stalled on an `r8` slot, `Race_Setup_19250` and
+`MenuFF78_115E0`. In both, at most **four** values are live across a call, so
+agbcc parks them in r4/r5/r6/r7 and never touches r8 -- four for the menu
+body, three for the race body (the two cases are separated below). (`SoundVoiceFollow_NoteOff`
+is a different limit -- it has no calls at all and is blocked on saving lr;
+see the leaf-frame section above.)
+
+Measured threshold on a scratch TU (`old_agbcc -O2 -mthumb-interwork
+-ffunction-sections`), each function accumulating `f(k)` results so every
+result stays live across the following calls:
+
+```c
+int n4(void) { int a=f(0), b=f(1), c=f(2), d=f(3);      return a+b+c+d; }
+int n5(void) { int a=f(0), b=f(1), c=f(2), d=f(3), e=f(4);          return a+b+c+d+e; }
+int n6(void) { int a=f(0), b=f(1), c=f(2), d=f(3), e=f(4), g=f(5);  return a+b+c+d+e+g; }
+```
+
+| body | prologue | r8 use |
+| --- | --- | --- |
+| `n4` (4 live) | `push {r4,r5,r6,lr}` | none |
+| `n5` (5 live) | `push {r4,r5,r6,lr}` / `mov r6,r8` / `push {r6}` | `mov r8,r0` for the second result |
+| `n6` (6 live) | `push {r4,r5,r6,lr}` / `mov r6,r9` / `mov r5,r8` / `push {r5,r6}` | r8 and r9 |
+
+Two consequences:
+
+* the staging scratch is not fixed: `n5` uses `mov r6,r8`, `n6` uses
+  `mov r5,r8`, and the ROM bodies that do reach r8 use `mov r7,r8`. The scratch
+  is whichever register is dead at that point, so a body that must show
+  `mov r7,r8` also needs r7 free at function entry;
+* a body whose ROM frame saves r8 but whose C has four call-crossing values
+  needs an **explicit pin** to reach that frame. `MenuFF78_115E0` is the
+  measured case: at the `_0800F744` call the ROM holds `rec` (r6),
+  `&s16[+188]` (r7), `&s16[+190]` (r5), the selector temp (r4) and `prev`
+  (r8) -- five -- but `prev`'s first value is dead there in C terms (the
+  enclosing arm reassigns it right after the branch, `mov r8,r0` at +0x44),
+  so the live C values are four and agbcc's r4 choice is correct. Declaring
+  `register u16 prev __asm__("r8")` still reproduces the ROM staging, which
+  shows the threshold is a default-allocation rule, not a hard limit: when
+  the ROM's live range is longer than the C's, the pin makes the frame
+  reachable and the body then lands at 252/252 bytes.
+
+`Race_Setup_19250` is *not* that case and must not be filed under it: at its
+`Sub_0802A8F0` call the ROM has only `p` (r7), `q` (r8) and `d` (r6) live --
+three -- and at `_08006C10` the same three plus a `ctx` that dies in the call.
+Three call-crossing values with two of them in r7/r8 is below the measured
+agbcc threshold, so no spelling reaches that frame: it is ARMCC allocation
+with a pointer-first preference, not a live-range difference.
