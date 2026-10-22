@@ -6004,11 +6004,11 @@
    "size": 140
   },
   "0x08013024": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 103,
-    "naked": true
+    "barrier": 1,
+    "directive": 1,
+    "pin": 10
    },
    "file": "src/menu_ff78_g.c",
    "name": "MenuFF78_13024",
@@ -13320,16 +13320,16 @@
  },
  "totals": {
   "asm": {
-   "bytes": 69624,
-   "functions": 186
+   "bytes": 69396,
+   "functions": 185
   },
   "c": {
    "bytes": 41706,
    "functions": 867
   },
   "c_fakematch": {
-   "bytes": 74542,
-   "functions": 609
+   "bytes": 74770,
+   "functions": 610
   },
   "partial": {
    "bytes": 2264,

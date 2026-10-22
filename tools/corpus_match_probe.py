@@ -296,6 +296,9 @@ def alias_targets() -> dict[str, str]:
     `int _0802D974(void) __attribute__((alias("CpuSet_2D974")));` makes the VMA
     name an alias of the friendly body, and agbcc emits the section under the
     friendly name. Without this map most VMA-named functions look missing.
+
+    Memoised for the process: `match_c_slice` runs the probe once per TU and
+    otherwise re-read all of src/ for the same map on every batch.
     """
     out: dict[str, str] = {}
     alias_re = re.compile(
@@ -556,10 +559,11 @@ def rom_functions() -> dict[int, int]:
     return dict(_rom_functions_cached())
 
 
-def src_functions(filter_wanted: list[str] | None = None) -> list[tuple[Path, str, int, int, bool]]:
+def src_functions(filter_wanted: list[str] | None = None,
+                  source_file: Path | None = None) -> list[tuple[Path, str, int, int, bool]]:
     """(file, name, vma, body_lines, weak) per VMA-named src/ function. Memoised."""
     if filter_wanted:
-        return _src_functions_filtered(filter_wanted)
+        return _src_functions_filtered(filter_wanted, source_file)
     return list(_src_functions_cached())
 
 
@@ -593,7 +597,40 @@ def _rom_functions_cached() -> dict[int, int]:
 
 @lru_cache(maxsize=1)
 def _src_functions_cached() -> list[tuple[Path, str, int, int, bool]]:
-    return _src_functions_scan()
+    """The src/ function inventory, memoised in-process and across processes.
+
+    Parsing all of src/ costs ~0.3 s and every matching tool pays it at least
+    once per `python3`. The disk cache mirrors `_rom_functions_cached`: a
+    fingerprint over file count, total size, summed mtimes and this tool's own
+    mtime, stored beside the report it feeds. Any edit to a source file changes
+    the fingerprint; a missing or unreadable cache just rescans.
+    """
+    cache_file = ROOT / "build/era-corpus/src_functions.json"
+    files = sorted((ROOT / "src").glob("*.c"))
+    try:
+        stats = [f.stat() for f in files]
+    except OSError:
+        return _src_functions_scan(files)
+    sig = (f"src-functions-v1:{len(files)}:{sum(s.st_size for s in stats)}:"
+           f"{sum(s.st_mtime_ns for s in stats)}:"
+           f"{Path(__file__).stat().st_mtime_ns}")
+    if cache_file.exists():
+        try:
+            cached = json.loads(cache_file.read_text(encoding="utf-8"))
+            if cached.get("sig") == sig:
+                return [(ROOT / row[0], row[1], int(row[2]), int(row[3]), bool(row[4]))
+                        for row in cached["functions"]]
+        except Exception:
+            pass
+    rows = _src_functions_scan(files)
+    try:
+        cache_file.parent.mkdir(parents=True, exist_ok=True)
+        cache_file.write_text(json.dumps({"sig": sig, "functions": [
+            [p.relative_to(ROOT).as_posix(), name, vma, body, weak]
+            for p, name, vma, body, weak in rows]}), encoding="utf-8")
+    except Exception:
+        pass
+    return rows
 
 
 ALIAS_DEF = re.compile(
@@ -642,58 +679,81 @@ def _src_functions_scan(files: list[Path] | None = None) -> list[tuple[Path, str
     holds a substantial function; those cannot byte-match by construction and
     would drag the hit rate down for a reason that says nothing about agbcc.
     """
-    out = []
     if files is None:
         files = sorted((ROOT / "src").glob("*.c"))
+    out: list[tuple[Path, str, int, int, bool]] = []
+    for f in files:
+        try:
+            stat = f.stat()
+        except OSError:
+            continue
+        out.extend(_src_functions_file(f, stat.st_mtime_ns, stat.st_size))
+    return out
+
+
+@lru_cache(maxsize=2048)
+def _src_functions_file(f: Path, mtime_ns: int, size: int) -> tuple[tuple[Path, str, int, int, bool], ...]:
+    """Scan one translation unit; memoised on its identity, mtime, and size.
+
+    `src_functions()` scans the whole corpus, and the probe's `--function` path
+    re-scans the owning TU for each batch. Caching per file turns every repeat
+    into a stat instead of a parse, and the mtime/size key keeps an edited file
+    from serving its pre-edit result inside a long-lived process.
+    """
+    out: list[tuple[Path, str, int, int, bool]] = []
     friendly_patterns = {
         name: (vma, re.compile(r"^[^\n;{}]*\b" + re.escape(name) + r"\s*\([^;{}]*\)\s*\{", re.M))
         for name, vma in FRIENDLY_SOURCE_VMAS.items()
     }
-    for f in files:
-        text = f.read_text(encoding="utf-8", errors="replace")
-        # 1. Alias definitions: void _0800B190(void) __attribute__((alias("Race_Dispatch")));
-        if "alias" in text:
-            target_cache: dict[str, int] = {}
-            for m in ALIAS_DEF.finditer(text):
-                vma_name = m.group(1)
-                target = m.group(2)
-                vma = parse_vma_name(vma_name)
-                if vma is not None and vma > ROM_BASE:
-                    if target in target_cache:
-                        bsize = target_cache[target]
-                    else:
-                        tend = _find_target_fast(text, target)
-                        bsize = _body_size(text, tend - 1) if tend is not None else 1
-                        target_cache[target] = bsize
-                    out.append((f, vma_name, vma, bsize, False))
+    text = f.read_text(encoding="utf-8", errors="replace")
+    # 1. Alias definitions: void _0800B190(void) __attribute__((alias("Race_Dispatch")));
+    if "alias" in text:
+        target_cache: dict[str, int] = {}
+        for m in ALIAS_DEF.finditer(text):
+            vma_name = m.group(1)
+            target = m.group(2)
+            vma = parse_vma_name(vma_name)
+            if vma is not None and vma > ROM_BASE:
+                if target in target_cache:
+                    bsize = target_cache[target]
+                else:
+                    tend = _find_target_fast(text, target)
+                    bsize = _body_size(text, tend - 1) if tend is not None else 1
+                    target_cache[target] = bsize
+                out.append((f, vma_name, vma, bsize, False))
 
-        # 2. Direct VMA function definitions
-        for m in VMA_DEF.finditer(text):
-            vma = parse_vma_name(m.group("name"))
-            if vma is None or vma == ROM_BASE:
-                continue
-            # Skip extern declarations
-            prefix_line = text[max(0, m.start() - 30):m.start()]
-            if "extern" in prefix_line:
-                continue
-            bsize = _body_size(text, m.end())
-            if bsize == 0:
-                continue
-            # VMA_DEF consumes leading attributes, so weak may be inside the
-            # match itself rather than in the preceding source window.
-            weak = bool(WEAK_DEF.search(text[max(0, m.start() - 80):m.end()]))
-            out.append((f, m.group("name"), vma, bsize, weak))
+    # 2. Direct VMA function definitions
+    for m in VMA_DEF.finditer(text):
+        vma = parse_vma_name(m.group("name"))
+        if vma is None or vma == ROM_BASE:
+            continue
+        # Skip extern declarations
+        prefix_line = text[max(0, m.start() - 30):m.start()]
+        if "extern" in prefix_line:
+            continue
+        bsize = _body_size(text, m.end())
+        if bsize == 0:
+            continue
+        # VMA_DEF consumes leading attributes, so weak may be inside the
+        # match itself rather than in the preceding source window.
+        weak = bool(WEAK_DEF.search(text[max(0, m.start() - 80):m.end()]))
+        out.append((f, m.group("name"), vma, bsize, weak))
 
-        # 3. Friendly names
-        for name, (vma, pattern) in friendly_patterns.items():
-            if name in text:
-                for m in pattern.finditer(text):
-                    bsize = _body_size(text, m.end() - 1)
-                    out.append((f, name, vma, bsize, False))
-    return out
+    # 3. Friendly names
+    for name, (vma, pattern) in friendly_patterns.items():
+        if name in text:
+            for m in pattern.finditer(text):
+                bsize = _body_size(text, m.end() - 1)
+                out.append((f, name, vma, bsize, False))
+    return tuple(out)
 
 
-def _src_functions_filtered(wanted: list[str]) -> list[tuple[Path, str, int, int, bool]]:
+def _src_functions_filtered(wanted: list[str],
+                            source_file: Path | None = None) -> list[tuple[Path, str, int, int, bool]]:
+    # A caller that already knows the owning TU (match_c_slice groups by file)
+    # can skip the corpus-wide needle scan entirely.
+    if source_file is not None:
+        return _src_functions_scan([source_file])
     aliases = alias_targets()
     inv_aliases = {v: k for k, v in aliases.items()}
     needles = set()
@@ -2146,6 +2206,7 @@ def main() -> int:
     ap.add_argument("--function", type=str, action="append",
                     help="target specific function name(s) (e.g. _08006C10); repeatable, so one "
                          "run can score every promoted body in a TU instead of one run each")
+    ap.add_argument("--source-file", type=Path, help=argparse.SUPPRESS)
     ap.add_argument("--work-dir", type=Path, help="private scratch directory for this run")
     ap.add_argument("--include-unknown", action="store_true", help="include source VMAs outside the known ASM function inventory")
     ap.add_argument("--c89", action="store_true", help="compile validated C89 copies of source TUs")
@@ -2188,7 +2249,7 @@ def main() -> int:
         wanted = list(args.function)
         requested = {parse_vma_name(n) for n in wanted}
         requested.discard(None)
-        funcs = src_functions(filter_wanted=wanted)
+        funcs = src_functions(filter_wanted=wanted, source_file=args.source_file)
         funcs = [f for f in funcs
                  if f[1] in wanted
                  or f[1].lstrip("_") in {n.lstrip("_") for n in wanted}

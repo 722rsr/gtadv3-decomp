@@ -613,7 +613,13 @@ not the blocker -- the frame/return idioms are.
 python3 tools/match_families.py --build
 python3 tools/match_context.py NAME
 python3 tools/strategy_router.py --function NAME
+python3 tools/wall_census.py --class raw --ascending
 ```
+
+`wall_census.py` answers "what is actually left": it sorts the asm-backed
+bodies by the evidence already written next to them (`measured`, unreachable,
+register pins) and lists the naked transcriptions separately, so a session does
+not re-open a body whose wall is already recorded inline.
 
 Family matching compares instruction and branch patterns with consistent
 register normalization, while retaining load/store widths. It is a retrieval
