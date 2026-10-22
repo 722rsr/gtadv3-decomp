@@ -7321,11 +7321,10 @@
    "size": 64
   },
   "0x080195f8": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 104,
-    "naked": true
+    "barrier": 1,
+    "pin": 3
    },
    "file": "src/race_setup.c",
    "name": "Race_Setup_195F8",
@@ -13320,16 +13319,16 @@
  },
  "totals": {
   "asm": {
-   "bytes": 69396,
-   "functions": 185
+   "bytes": 69156,
+   "functions": 184
   },
   "c": {
    "bytes": 41706,
    "functions": 867
   },
   "c_fakematch": {
-   "bytes": 74770,
-   "functions": 610
+   "bytes": 75010,
+   "functions": 611
   },
   "partial": {
    "bytes": 2264,

@@ -6,6 +6,16 @@ extern void sub_0802D4A8(void *state, u32 chsel, u32 wid);
 extern void sub_0802D510(void *state, u32 chsel, u32 wid);
 extern void sub_0802D584(void *state, u32 chsel, u32 wid);
 
+// MEASURED 2026-10-22: the C lift reaches 65/172 (candidate 168 B). The last
+// 13 instructions are: (1) the u16 volume compare — the ROM shifts both sides
+// (`lsls r3,sl,#16; cmp r3,#0x1000000`) while agbcc compares the already
+// zero-extended SImode value against a synthesised 0x100; (2) the corresponding
+// argument form (`lsrs r2,r3,#16` vs `mov r2,sl`); (3) the sign-extended s16 pan
+// (`asrs r3,r2,#16` vs `asrs r2,r2,#16`, a one-register difference that neither
+// `(s16)` on the parameter nor an r3 pin reproduces); (4) `lsls r1,r5,#3` is
+// scheduled between the two pool loads here but after both in the ROM, and only
+// the two-statement form `rec = SoundRecs; ... rec[id*4+2]` moves it, at the
+// cost of the id/sel/vol homes (id leaves r8 for r9).
 // --- _0802B66C(id, selmask, w_pan, w_vol, w_x) — combined multi-op applier, VMA 0x0802B66C–0x0802B700 ---
 // Exact: push {r4-r7,lr} + r8/r9/sl spill, ldr r4,[sp+32] w_x, lsls/lsrs #16 for id/selmask/w_vol u16, asrs #16 for s16 w_pan,
 // cmp #0 beq, then each non-zero section: ldr r2=0x08061F74, ldr r0=0x08061FA4, lsls r1=id*8, adds, ldrh gate [r1+4] u16, gate*12, adds, ldr state [r0], bl helper
