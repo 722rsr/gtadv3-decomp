@@ -1916,6 +1916,14 @@ void sub_08027114(int v) __attribute__((alias("Garage_DispSel_27114")));
 // s8[24] on, u16[20/22] x/y offset) and P1 = *(u32**)0x0300167C (state).
 // _08002DB8 sprite emitter: foundation_runtime.c Helper_02DB8 (7-arg).
 
+// MEASURED 2026-10-22: the C lift reaches 24/240 at best (candidate 228 B).
+// The ROM keeps the 0x03001678 slot *address* in r7 (`ldr r0,=cell` then
+// `adds r7,r0,#0`, which is why the entry pushes r7) and re-dereferences it at
+// every use; a `u32 *cell = (u32 *)0x03001678u;` local reproduces the reloads
+// but not the r7 home, and pinning it to r7 reaches 24/240 only. agbcc also
+// rotates the row loop's guard to the bottom (one test) where the ROM keeps a
+// copy at the top and the bottom, and strength-reduces `row = b + i*8` into an
+// incrementing pointer, so the loop body cannot be reached from `b + i*8`.
 // 0x08027120 (ROM 0x08027120-0x0802720E, transcribed from the raw image):
 // cursor-wrap on P0[17]; per row with s8[24] on, emit the row sprite at
 // (u16[P0]+u16[row+20], u16[P0+2]+u16[row+22]) via _08002DB8(..., s16[P0+4],
