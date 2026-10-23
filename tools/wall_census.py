@@ -32,8 +32,11 @@ drops the raw rows that are not agbcc output at all, so a full lift there can
 never reach an exact match. The markers are the documented non-agbcc idioms
 (see the matching guide): a `bl` with no `lr` save on the entry push, a
 `mov pc, lr` or `pop {..., pc}` return, a `mov ip, lr` / `bx ip` veneer, `tst`
-(agbcc lowers it to `and`+`cmp`), and `swi`. Most of the 137 raw bodies carry
-one of these; without the screen they read as "just a few hundred bytes".
+(agbcc lowers it to `and`+`cmp`), `swi`, an `.arm` body (the C corpus builds
+`-mthumb`), and a body whose last real instruction is not a return -- a guard
+or tail that falls through into the next function, e.g. 0x0802B898's Smsh check
+or the mixer tail at 0x0802BC28. Most raw bodies carry one of these; without the
+screen they read as "just a few hundred bytes".
 
     python3 tools/wall_census.py                 # ranked census
     python3 tools/wall_census.py --class unexplained --top 10
@@ -222,7 +225,27 @@ LIFT_MARKERS = (
     ("pc veneer", re.compile(r"^\s*adds?\s+r\d+\s*,\s*pc\b")),
     ("tst (lowers to and+cmp)", re.compile(r"^\s*tst\b")),
     ("swi", re.compile(r"^\s*swi\b")),
+    # The C corpus is compiled `-mthumb`, so a body that switches to ARM is a
+    # hand-written kernel or a misidentified data word, never a C lift target.
+    (".arm body (C corpus is Thumb)", re.compile(r"^\.arm$")),
 )
+# agbcc always ends a function with a return (or a `mov pc,rX` switch dispatch);
+# a body that simply stops is a mid-function continuation, e.g. the mixer tail
+# or the 0x0802B898 guard that falls through into the setup body.
+RETURN_INS = re.compile(
+    r"^(?:bx\s+(?:lr|ip|r\d+)|movs?\s+pc\s*,\s*(?:lr|r\d+)|pop\s*\{[^}]*\bpc\b)")
+# Transcriptions pad the last return with the section-fill nop and put pool
+# words behind labels; neither is the body's last instruction.
+PAD_INS = re.compile(r"^(?:movs?\s+r0\s*,\s*r0|nop)$")
+LABEL_LINE = re.compile(r"^[\w.$]+:\s*(?:$|\.)")
+
+
+def last_instruction(instructions: list[str]) -> str | None:
+    for ins in reversed(instructions):
+        if PAD_INS.match(ins) or LABEL_LINE.match(ins):
+            continue
+        return ins
+    return None
 ASM_STRING = re.compile(r'"((?:[^"\\]|\\.)*)"')
 ASM_DIRECTIVE = re.compile(r"^\s*\.")
 
@@ -256,8 +279,12 @@ def _asm_instructions(path: Path, name: str) -> list[str] | None:
             unescaped = literal.group(1).replace("\\t", " ").replace("\\r", "")
             for line in unescaped.split("\\n"):
                 line = line.strip()
-                if line and not ASM_DIRECTIVE.match(line):
-                    out.append(line)
+                if not line:
+                    continue
+                # Keep the ISA directives: the screen needs to see `.arm`.
+                if ASM_DIRECTIVE.match(line) and line not in (".arm", ".thumb"):
+                    continue
+                out.append(line)
         return out
     return None
 
@@ -272,6 +299,9 @@ def lift_blockers(instructions: list[str]) -> list[str]:
     for label, pattern in LIFT_MARKERS:
         if any(pattern.match(ins) for ins in instructions):
             reasons.append(label)
+    tail = last_instruction(instructions)
+    if tail is not None and not RETURN_INS.match(tail):
+        reasons.append("no return (mid-function continuation)")
     return reasons
 
 
@@ -320,7 +350,7 @@ def screen_lifts(rows: list[dict]) -> list[dict]:
     return rows
 
 
-def render(rows: list[dict]) -> str:
+def render(rows: list[dict], excluded: list[dict] | None = None) -> str:
     screened = any("lift" in r for r in rows)
     head = f"{'size':>6}  {'srcc':<7}  {'wall':<12}  "
     if screened:
@@ -348,6 +378,14 @@ def render(rows: list[dict]) -> str:
                 lifts[r["lift"]] = lifts.get(r["lift"], 0) + 1
         lift_tally = ", ".join(f"{k} {v}" for k, v in sorted(lifts.items()))
         out.append(f"lift screen: {lift_tally}")
+    if excluded:
+        # Say what the screen removed and why: excluded bodies are still in the
+        # tree, and a silent drop reads as "already lifted".
+        reasons: dict[str, int] = {}
+        for r in excluded:
+            reasons[r["lift"]] = reasons.get(r["lift"], 0) + 1
+        tally = ", ".join(f"{k} {v}" for k, v in sorted(reasons.items()))
+        out.append(f"screened out of raw ({len(excluded)}): {tally}")
     return "\n".join(out)
 
 
@@ -376,15 +414,27 @@ def self_test() -> None:
     assert classify({"detail": {"naked": True}, "size": 4}, [])[0] == "veneer"
     # The lift screen: the documented non-agbcc idioms, and a clean leaf.
     assert lift_blockers(["push {r4, lr}", "bl sub_x", "bx lr"]) == []
-    assert lift_blockers(["push {r4}", "bl sub_x"]) == ["bl without an lr save"]
+    assert lift_blockers(["push {r4}", "bl sub_x"]) == [
+        "bl without an lr save", "no return (mid-function continuation)"]
     assert lift_blockers(["push {r4, lr}", "bl sub_x", "mov pc, lr"]) == [
         "mov pc,lr return"]
     assert lift_blockers(["mov ip, lr", "bx ip"]) == ["ip/lr veneer"]
     assert lift_blockers(["add r2, pc, #0", "bx r2"]) == ["pc veneer"]
-    assert lift_blockers(["tst r0, r1"]) == ["tst (lowers to and+cmp)"]
-    assert lift_blockers(["swi 0"]) == ["swi"]
+    assert lift_blockers(["tst r0, r1", "bx lr"]) == ["tst (lowers to and+cmp)"]
+    assert lift_blockers(["swi 0", "bx lr"]) == ["swi"]
+    # A guard body that falls through into the next function is not a lift.
+    assert lift_blockers(["ldr r0, [pc, #4]", "str r3, [r0]"]) == [
+        "no return (mid-function continuation)"]
+    assert lift_blockers(["push {r4, lr}", "pop {r4}", "pop {r0}", "bx r0"]) == []
+    # The section-fill nop and a labelled pool word are not the last instruction.
+    assert lift_blockers(["bx r1", "movs r0, r0"]) == []
+    assert lift_blockers(["bx r1", ".Llit: .word 0x000005E4"]) == []
+    assert lift_blockers([".arm", "umull r2, r3, r0, r1", "bx lr"]) == [
+        ".arm body (C corpus is Thumb)"]
     # `mov pc, r3` is a switch jump table, which agbcc does emit.
     assert lift_blockers(["mov pc, r3"]) == []
+    # `movs rN, #0` + `ldrsh rX, [rBase, rN]` is NOT a wall: agbcc emits that
+    # pair for `p->field` / `p[0]` reads (measured with build/scratchcc.sh).
     with tempfile.TemporaryDirectory() as tmp:
         path = Path(tmp) / "t.c"
         path.write_text(
@@ -422,8 +472,10 @@ def main() -> None:
         return
 
     rows = census(args.snapshot)
+    excluded: list[dict] = []
     if args.lift_screen:
         rows = screen_lifts(rows)
+        excluded = [r for r in rows if r["wall"] == "raw" and r["lift"] != "liftable"]
         rows = [r for r in rows if r["wall"] != "raw" or r["lift"] == "liftable"]
     if args.ascending:
         rows.sort(key=lambda r: (RANK[r["wall"]], r["size"], r["vma"]))
@@ -433,7 +485,7 @@ def main() -> None:
         args.json.write_text(json.dumps(rows, indent=1) + "\n")
     if args.top:
         rows = rows[:args.top]
-    print(render(rows))
+    print(render(rows, excluded))
 
 
 if __name__ == "__main__":

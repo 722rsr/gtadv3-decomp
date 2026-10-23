@@ -10,7 +10,17 @@
 typedef struct { vu8 _00; vu8 fsm; vu8 _02; vu8 _03; vu8 ready; vu8 c5; vu8 flags; vu8 siocnt6; vu8 _08; vu8 latch9; vu8 _0A[4]; vu32 cnt14; vu32 cnt18; vu32 ptr1C; vu32 ptr20; vu32 ptr24; vu32 ptr28; } EwramSess;
 #define SESS ((EwramSess*)0x0203EF90)
 
-// Blob A — _08000AF4 (MultiSio 32-bit burst, timer3+serial)
+// Blob A — _08000AF4 (MultiSio 32-bit burst, timer3+serial).
+// MEASURED 2026-10-22: a full C lift reaches 163/252 with the candidate length
+// exact (`SioBlock` copy out of 0x04000120, non-volatile SIO halves so the
+// stores are plain `strh`, and a memory barrier between the row loop and the
+// `cnt24 == 9` re-read). Every remaining difference is a register choice:
+// the session pointer's first pseudo (ROM `r2`, then `adds r4,r2`), the zero
+// shared by three stores (ROM `movs r5,#0`), and the `cnt24`/`cnt20` reloads
+// (ROM `r0`, agbcc homes them in r5/r6 because the loop keeps them live).
+// Pinning the session pointer to r4 costs the `adds r4,r2` copy and drops the
+// score; pinning a zero-valued local is folded away. Leaving the body naked
+// until a shape splits those three homes.
 __attribute__((naked)) void EWRAM_Handler_BlobA(void)
 {
     __asm__ volatile (
@@ -152,6 +162,12 @@ void _08000AF4(void) __attribute__((alias("EWRAM_Handler_BlobA")));
 // Blob B — _08000E80 (SIO-normal polling, 0x0203F150 state)
 typedef struct { vu8 f00; vu8 _01[3]; vu32 p04; vu32 _08; vu32 cnt08; vu32 _0C; } EwramF150;
 #define F150 ((EwramF150*)0x0203F150)
+// MEASURED 2026-10-22: the C lift reaches 192/200; every remaining difference
+// is a store agbcc cross-jumps and the ROM keeps. Both modes end by writing
+// SIODATA32 (`str r0,[r2]` at +0x3C, +0x56, +0x60) and the three blocks are
+// identical in that last instruction, so agbcc merges them into one shared
+// copy and skips 8 bytes. Nothing in the C spelling separates them: the stored
+// values differ, the destination does not.
 __attribute__((naked)) void EWRAM_Handler_BlobB(void)
 {
     __asm__ volatile (

@@ -184,11 +184,15 @@ int SoundDBA4_Read(u32 sector, void *dst){
             sub_0802DB24((u32)(uintptr_t)buf, base, (u16)((u32)m + 3u));
             sub_0802DB24(base, (u32)(uintptr_t)buf, 0x44u);
         }
+        // `p = buf + 4` is the same instruction (`add r2,sp,#8`), but global
+        // CSE hoists the constant to the top of the frame setup and keeps it
+        // in a callee-saved r7 across the two DMA calls (measured: prologue
+        // gains r7, 176 B body, 54/176). The splice pins it at its use.
         __asm__("add\t%0, sp, #8" : "=r"(p));
         __asm__ volatile ("" : "+r"(d));
         d += 3;
         {
-            register u32 row __asm__("r4");
+            u32 row;
             register u32 acc __asm__("r1");
             register u32 bit __asm__("r3");
             register u32 one __asm__("r6");
@@ -205,8 +209,8 @@ int SoundDBA4_Read(u32 sector, void *dst){
                 } while (bit <= 15);
                 *d = (u16)acc;
                 d--;
-                __asm__("add\t%0, %1, #1" : "=r"(tr) : "r"(row));
-                row = (u8)tr;
+                __asm__ volatile ("" : "+r"(row));
+                row = (u8)(row + 1u);
             } while (row <= 3);
         }
     }
@@ -215,127 +219,111 @@ int SoundDBA4_Read(u32 sector, void *dst){
 int _0802DBA4(u32 s, void *d) __attribute__((alias("SoundDBA4_Read")));
 int sub_0802DBA4(u32 s, void *d) __attribute__((alias("SoundDBA4_Read")));
 
-__attribute__((naked)) int SoundDC54_Write(u32 sector, void *src) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "\tpush {r4, r5, lr}\n"
-        "\tsub sp, #164\n"
-        "\tadds r5, r1, #0\n"
-        "\tlsls r0, #16\n"
-        "\tlsrs r4, r0, #16\n"
-        "\tldr r0, .Lsounddc54_dc6c\n"
-        "\tldr r0, [r0]\n"
-        "\tldrh r0, [r0, #4]\n"
-        "\tcmp r4, r0\n"
-        "\tbcc .Lsounddc54_dc74\n"
-        "\tldr r0, .Lsounddc54_dc70\n"
-        "\tb .Lsounddc54_dd18\n"
-        ".Lsounddc54_dc6c:\n"
-        "\t.word 0x0203FD54\n"
-        ".Lsounddc54_dc70:\n"
-        "\t.word 0x000080FF\n"
-        ".Lsounddc54_dc74:\n"
-        "\tldr r0, .Lsounddc54_dcb4\n"
-        "\tldr r0, [r0]\n"
-        "\tldrb r0, [r0, #8]\n"
-        "\tlsls r0, #1\n"
-        "\tmov r1, sp\n"
-        "\tadds r3, r0, r1\n"
-        "\tadds r3, #132\n"
-        "\tmovs r0, #0\n"
-        "\tstrh r0, [r3]\n"
-        "\tsubs r3, #2\n"
-        "\tmovs r1, #0\n"
-        ".Lsounddc54_dc8a:\n"
-        "\tldrh r2, [r5]\n"
-        "\tadds r5, #2\n"
-        "\tmovs r0, #0\n"
-        ".Lsounddc54_dc90:\n"
-        "\tstrh r2, [r3]\n"
-        "\tsubs r3, #2\n"
-        "\tlsrs r2, #1\n"
-        "\tadds r0, #1\n"
-        "\tlsls r0, #24\n"
-        "\tlsrs r0, #24\n"
-        "\tcmp r0, #15\n"
-        "\tbls .Lsounddc54_dc90\n"
-        "\tadds r0, r1, #1\n"
-        "\tlsls r0, #24\n"
-        "\tlsrs r1, r0, #24\n"
-        "\tcmp r1, #3\n"
-        "\tbls .Lsounddc54_dc8a\n"
-        "\tmovs r1, #0\n"
-        "\tldr r0, .Lsounddc54_dcb4\n"
-        "\tadds r2, r0, #0\n"
-        "\tldr r0, [r0]\n"
-        "\tb .Lsounddc54_dcc6\n"
-        ".Lsounddc54_dcb4:\n"
-        "\t.word 0x0203FD54\n"
-        ".Lsounddc54_dcb8:\n"
-        "\tstrh r4, [r3]\n"
-        "\tsubs r3, #2\n"
-        "\tlsrs r4, #1\n"
-        "\tadds r0, r1, #1\n"
-        "\tlsls r0, #24\n"
-        "\tlsrs r1, r0, #24\n"
-        "\tldr r0, [r2]\n"
-        ".Lsounddc54_dcc6:\n"
-        "\tldrb r0, [r0, #8]\n"
-        "\tcmp r1, r0\n"
-        "\tbcc .Lsounddc54_dcb8\n"
-        "\tmovs r0, #0\n"
-        "\tstrh r0, [r3]\n"
-        "\tsubs r3, #2\n"
-        "\tmovs r0, #1\n"
-        "\tstrh r0, [r3]\n"
-        "\tmovs r1, #208\n"
-        "\tlsls r1, #20\n"
-        "\tldr r0, .Lsounddc54_dd20\n"
-        "\tldr r0, [r0]\n"
-        "\tldrb r2, [r0, #8]\n"
-        "\tadds r2, #67\n"
-        "\tmov r0, sp\n"
-        "\tbl sub_0802DB24\n"
-        "\tldr r0, .Lsounddc54_dd24\n"
-        "\tbl sub_0802DA58\n"
-        "\tmovs r4, #0\n"
-        ".Lsounddc54_dcf0:\n"
-        "\tmovs r1, #208\n"
-        "\tlsls r1, #20\n"
-        "\tmovs r3, #1\n"
-        "\tldr r2, .Lsounddc54_dd28\n"
-        ".Lsounddc54_dcf8:\n"
-        "\tldrh r0, [r1]\n"
-        "\tands r0, r3\n"
-        "\tcmp r0, #0\n"
-        "\tbne .Lsounddc54_dd12\n"
-        "\tldrb r0, [r2]\n"
-        "\tcmp r0, #0\n"
-        "\tbeq .Lsounddc54_dcf8\n"
-        "\tldrh r0, [r1]\n"
-        "\tmovs r1, #1\n"
-        "\tands r0, r1\n"
-        "\tcmp r0, #0\n"
-        "\tbne .Lsounddc54_dd12\n"
-        "\tldr r4, .Lsounddc54_dd2c\n"
-        ".Lsounddc54_dd12:\n"
-        "\tbl sub_0802DAE0\n"
-        "\tadds r0, r4, #0\n"
-        ".Lsounddc54_dd18:\n"
-        "\tadd sp, #164\n"
-        "\tpop {r4, r5}\n"
-        "\tpop {r1}\n"
-        "\tbx r1\n"
-        ".Lsounddc54_dd20:\n"
-        "\t.word 0x0203FD54\n"
-        ".Lsounddc54_dd24:\n"
-        "\t.word 0x080C428C\n"
-        ".Lsounddc54_dd28:\n"
-        "\t.word 0x0300176C\n"
-        ".Lsounddc54_dd2c:\n"
-        "\t.word 0x0000C001\n"
-        ".syntax divided\n"
-    );
+extern void sub_0802DA58(volatile u16 *src);   // runtime_record_helpers.c
+extern void sub_0802DAE0(void);                // runtime_record_helpers.c
+
+// EEPROM sector writer — write twin of SoundDBA4_Read. The bit stream is built
+// DOWNWARD from sp + n, so the halfword at sp is the start bit the DMA reads
+// first: one seed zero, four input halfwords each expanded to 16 shifted
+// copies, n sector bits, then `*p = 0; p--; *p = 1; p--;`. The DMA count is
+// n + 67 because the stream spans 2*(n + 67) bytes from sp. The tail spins on
+// the EEPROM status cell until bit 0 sets and returns 0xC001 if the arming
+// flag at 0x0300176C went off meanwhile.
+//
+// Three shapes hold the bytes (all verified by single-function probe):
+//  - an empty `"+r"` barrier in front of each wrap-around increment keeps
+//    loop.c from moving the `+1` to the loop head;
+//  - `dp = *t; goto test;` gives the ROM's rotated sector-bit loop (test at
+//    the bottom, `b` over the body) instead of a duplicated top test;
+//  - the second masked read is a fresh `two` pinned to r1 with its own load,
+//    so agbcc re-materialises `movs r1,#1` instead of hoisting the constant
+//    into a callee-saved register (that also frees r5, dropping it from the
+//    prologue, and lands the mask in r1 as the ROM has it).
+int SoundDC54_Write(u32 sector, void *src){
+    register volatile u16 *d __asm__("r5") = (volatile u16 *)src;
+    register u32 sec __asm__("r4") = (u16)sector;
+    register u32 *g0 __asm__("r0") = (u32 *)0x0203FD54u;
+    if (sec >= *(volatile u16 *)((volatile u8 *)*g0 + 4)) return 0x80FF;
+    {
+        u16 buf[82];
+        register u32 *t __asm__("r0");
+        register u32 *descp __asm__("r2");
+        register volatile u16 *p __asm__("r3");
+        register u32 na __asm__("r0");
+        register u32 ba __asm__("r1");
+        register u32 nb __asm__("r0");
+        register u32 dp __asm__("r0");
+        u32 i;
+        u32 n;
+
+        t = (u32 *)0x0203FD54u;
+        na = ((volatile u8 *)*t)[8] * 2u;
+        ba = (u32)(uintptr_t)buf;
+        p = (volatile u16 *)(uintptr_t)(na + ba);
+        __asm__ volatile ("" : "+r"(p));
+        p += 66;
+        *p = 0;
+        p--;
+        i = 0;
+        do {
+            register u32 w __asm__("r2") = *d;
+            d++;
+            nb = 0;
+            do {
+                *p = (u16)w;
+                p--;
+                w >>= 1;
+                nb = (u8)(nb + 1u);
+            } while (nb <= 15);
+            __asm__ volatile ("" : "+r"(i));
+            i = (u8)(i + 1u);
+        } while (i <= 3);
+
+        i = 0;
+        t = (u32 *)0x0203FD54u;
+        descp = t;
+        dp = *t;
+        goto sector_test;
+        do {
+            *p = (u16)sec;
+            p--;
+            sec >>= 1;
+            __asm__ volatile ("" : "+r"(i));
+            i = (u8)(i + 1u);
+            dp = *descp;
+sector_test:
+            ;
+        } while (i < ((volatile u8 *)(uintptr_t)dp)[8]);
+        *p = 0;
+        p--;
+        *p = 1;
+        p--;
+        {
+            register u32 base __asm__("r1") = (u32)208 << 20;
+            u8 m = ((volatile u8 *)*(volatile u32 *)0x0203FD54u)[8];
+            sub_0802DB24((u32)(uintptr_t)buf, base, (u16)((u32)m + 67u));
+        }
+        sub_0802DA58((volatile u16 *)0x080C428Cu);
+
+        {
+            register u32 rc __asm__("r4") = 0;
+            register volatile u16 *stat __asm__("r1") = (volatile u16 *)0x0D000000u;
+            register u32 one __asm__("r3") = 1;
+            register volatile u8 *flag __asm__("r2") = (volatile u8 *)0x0300176Cu;
+            for (;;) {
+                if ((*stat & one) != 0) break;
+                if (*flag != 0) {
+                    u16 v = *stat;
+                    register u32 two __asm__("r1") = 1;
+                    if ((v & two) != 0) break;
+                    rc = 0xC001u;
+                    break;
+                }
+            }
+            sub_0802DAE0();
+            return (int)rc;
+        }
+    }
 }
 int _0802DC54(u32 s, void *d) __attribute__((alias("SoundDC54_Write")));
 int sub_0802DC54(u32 s, void *d) __attribute__((alias("SoundDC54_Write")));

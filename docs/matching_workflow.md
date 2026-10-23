@@ -633,10 +633,14 @@ not re-open a body whose wall is already recorded inline.
 drops the transcriptions that no C can match, because the ROM bytes are not
 agbcc output: a `bl` with no `lr` save on the entry push, a `mov pc, lr` or
 `pop {..., pc}` return, a `mov ip, lr` / `bx ip` or `add rN, pc` veneer, `tst`
-(agbcc lowers it to `and`+`cmp`), and `swi`. Those markers are the documented
-non-agbcc idioms below; a body carrying one is a wall, not a lift. Bodies whose
-stream assembles from an `.include` cannot be screened this way and are reported
-as unknown rather than liftable.
+(agbcc lowers it to `and`+`cmp`), `swi`, an `.arm` body (the C corpus builds
+`-mthumb`), and a stream whose last real instruction (past the section-fill
+`movs r0, r0` and labelled pool words) is not a return -- a guard or tail that
+falls through into the next function, such as 0x0802B898's Smsh check before the
+mixer setup. Those markers are the documented non-agbcc idioms below; a body
+carrying one is a wall, not a lift. Bodies whose stream assembles from an
+`.include` cannot be screened this way and are reported as unknown rather than
+liftable.
 
 Family matching compares instruction and branch patterns with consistent
 register normalization, while retaining load/store widths. It is a retrieval
