@@ -42,11 +42,10 @@
    "size": 48
   },
   "0x080005c0": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 82,
-    "naked": true
+    "barrier": 2,
+    "pin": 6
    },
    "file": "src/foundation_agbmain.c",
    "name": "SessionHook_005C0",
@@ -3398,12 +3397,7 @@
    "size": 268
   },
   "0x08007770": {
-   "class": "asm",
-   "detail": {
-    "insn": 1,
-    "insn_lines": 100,
-    "naked": true
-   },
+   "class": "c",
    "file": "src/course_resource_helpers.c",
    "name": "Course_0x08007770",
    "size": 236
@@ -5420,11 +5414,10 @@
    "size": 1132
   },
   "0x0800fe90": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 84,
-    "naked": true
+    "directive": 1,
+    "pin": 1
    },
    "file": "src/runtime_state_dispatch.c",
    "name": "MenuFE90",
@@ -7230,12 +7223,10 @@
    "size": 152
   },
   "0x08018ec0": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
     "barrier": 7,
-    "insn": 2,
-    "insn_lines": 2,
-    "pin": 7
+    "pin": 10
    },
    "file": "src/race_setup.c",
    "name": "Race_Setup_18EC0",
@@ -8122,12 +8113,7 @@
    "size": 68
   },
   "0x0801e5b0": {
-   "class": "asm",
-   "detail": {
-    "insn": 1,
-    "insn_lines": 106,
-    "naked": true
-   },
+   "class": "c",
    "file": "src/race_scene_c.c",
    "name": "_08001E5B0",
    "size": 220
@@ -8662,11 +8648,9 @@
    "size": 216
   },
   "0x080219d0": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 138,
-    "naked": true
+    "directive": 1
    },
    "file": "src/race_scene_helpers.c",
    "name": "CarDisplay_219D0",
@@ -13041,21 +13025,20 @@
   "0x0802dba4": {
    "class": "partial",
    "detail": {
-    "barrier": 2,
-    "insn": 2,
-    "insn_lines": 2,
-    "pin": 17
+    "barrier": 3,
+    "insn": 1,
+    "insn_lines": 1,
+    "pin": 16
    },
    "file": "src/sound_deep.c",
    "name": "SoundDBA4_Read",
    "size": 176
   },
   "0x0802dc54": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 100,
-    "naked": true
+    "barrier": 3,
+    "pin": 17
    },
    "file": "src/sound_deep.c",
    "name": "SoundDC54_Write",
@@ -13319,20 +13302,20 @@
  },
  "totals": {
   "asm": {
-   "bytes": 69156,
-   "functions": 184
+   "bytes": 67720,
+   "functions": 178
   },
   "c": {
-   "bytes": 41706,
-   "functions": 867
+   "bytes": 42162,
+   "functions": 869
   },
   "c_fakematch": {
-   "bytes": 75010,
-   "functions": 611
+   "bytes": 76074,
+   "functions": 616
   },
   "partial": {
-   "bytes": 2264,
-   "functions": 13
+   "bytes": 2180,
+   "functions": 12
   }
  },
  "version": 1

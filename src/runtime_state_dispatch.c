@@ -30,6 +30,7 @@
 // ============================================================================
 
 #include "gba/types.h"
+#include "gtadv/ram_blocks.h"
 // 0x08026230 / 0x080262A4 are renamed from `_08026230` / `_080262A4`: the slice
 // closure defines only the `sub_` spelling (promotion rule 1).
 extern void *sub_08026230(int a, void *b);
@@ -1038,124 +1039,44 @@ void sub_0802C574(int a) __attribute__((alias("SoundC574_Replace")));
 static inline int WA16s(int off) { return (int)*(volatile s16 *)(0x03001780 + off); }
 static inline volatile u16 *WA16p(int off) { return (volatile u16 *)(0x03001780 + off); }
 
-__attribute__((naked)) void MenuFE90(void *rec) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, lr}\n"
-        "sub sp, #8\n"
-        "adds r3, r0, #0\n"
-        "ldr r1, .Lfe90_feb0\n"
-        "ldr r4, .Lfe90_feb4\n"
-        "adds r0, r1, r4\n"
-        "movs r4, #0\n"
-        "ldrsh r0, [r0, r4]\n"
-        "adds r4, r1, #0\n"
-        "cmp r0, #7\n"
-        "bhi .Lfe90_ff54\n"
-        "lsls r0, r0, #2\n"
-        "ldr r1, .Lfe90_feb8\n"
-        "adds r0, r0, r1\n"
-        "ldr r0, [r0, #0]\n"
-        "mov pc, r0\n"
-        ".align 2, 0\n"
-        ".Lfe90_feb0: .4byte 0x03001780\n"
-        ".Lfe90_feb4: .4byte 0x00000FBC\n"
-        ".Lfe90_feb8: .4byte .Lfe90_febc\n"
-        ".Lfe90_febc: .4byte .Lfe90_fedc\n"
-        ".4byte .Lfe90_ff0a\n"
-        ".4byte .Lfe90_ff14\n"
-        ".4byte .Lfe90_ff1e\n"
-        ".4byte .Lfe90_ff54\n"
-        ".4byte .Lfe90_ff00\n"
-        ".4byte .Lfe90_ff54\n"
-        ".4byte .Lfe90_ff28\n"
-        ".Lfe90_fedc:\n"
-        "movs r2, #4\n"
-        "ldr r1, .Lfe90_fef4\n"
-        "adds r0, r4, r1\n"
-        "movs r4, #0\n"
-        "ldrsh r0, [r0, r4]\n"
-        "cmp r0, #2\n"
-        "bgt .Lfe90_fef8\n"
-        "adds r1, r3, #0\n"
-        "adds r1, #214\n"
-        "movs r0, #1\n"
-        "b .Lfe90_ff52\n"
-        ".align 2, 0\n"
-        ".Lfe90_fef4: .4byte 0x0000103A\n"
-        ".Lfe90_fef8:\n"
-        "adds r1, r3, #0\n"
-        "adds r1, #214\n"
-        "movs r0, #0\n"
-        "b .Lfe90_ff52\n"
-        ".Lfe90_ff00:\n"
-        "movs r2, #3\n"
-        "adds r1, r3, #0\n"
-        "adds r1, #214\n"
-        "movs r0, #5\n"
-        "b .Lfe90_ff52\n"
-        ".Lfe90_ff0a:\n"
-        "movs r2, #4\n"
-        "adds r1, r3, #0\n"
-        "adds r1, #214\n"
-        "movs r0, #2\n"
-        "b .Lfe90_ff52\n"
-        ".Lfe90_ff14:\n"
-        "movs r2, #4\n"
-        "adds r1, r3, #0\n"
-        "adds r1, #214\n"
-        "movs r0, #3\n"
-        "b .Lfe90_ff52\n"
-        ".Lfe90_ff1e:\n"
-        "movs r2, #4\n"
-        "adds r0, r3, #0\n"
-        "adds r0, #214\n"
-        "strh r2, [r0, #0]\n"
-        "b .Lfe90_ff54\n"
-        ".Lfe90_ff28:\n"
-        "ldr r1, .Lfe90_ff3c\n"
-        "adds r0, r4, r1\n"
-        "movs r4, #0\n"
-        "ldrsh r0, [r0, r4]\n"
-        "cmp r0, #1\n"
-        "beq .Lfe90_ff40\n"
-        "cmp r0, #2\n"
-        "beq .Lfe90_ff4a\n"
-        "b .Lfe90_ff54\n"
-        ".align 2, 0\n"
-        ".Lfe90_ff3c: .4byte 0x00001078\n"
-        ".Lfe90_ff40:\n"
-        "movs r2, #3\n"
-        "adds r1, r3, #0\n"
-        "adds r1, #214\n"
-        "movs r0, #6\n"
-        "b .Lfe90_ff52\n"
-        ".Lfe90_ff4a:\n"
-        "movs r2, #4\n"
-        "adds r1, r3, #0\n"
-        "adds r1, #214\n"
-        "movs r0, #7\n"
-        ".Lfe90_ff52:\n"
-        "strh r0, [r1, #0]\n"
-        ".Lfe90_ff54:\n"
-        "ldr r1, .Lfe90_ff74\n"
-        "lsls r2, r2, #16\n"
-        "asrs r2, r2, #16\n"
-        "movs r0, #4\n"
-        "str r0, [sp, #0]\n"
-        "movs r0, #1\n"
-        "str r0, [sp, #4]\n"
-        "movs r0, #0\n"
-        "movs r3, #0\n"
-        "bl _08007770\n"
-        "add sp, #8\n"
-        "pop {r4}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        ".align 2, 0\n"
-        ".Lfe90_ff74: .4byte 0x082D9EF8\n"
-        ".syntax divided\n"
-    );
+// 0x0800FE90 — s16[WA+0xFBC] state table: writes rec+214 and passes the state
+// word as the third argument of _08007770.
+// Two spellings the allocator needs: the dispatch load is written off the
+// symbol with the offset in a local *before* `wa` is bound, which is what makes
+// agbcc load the base into r1 and the offset into r4 (then copy the base down
+// to r4 after the indexed load, as the ROM does); binding `wa` first gives the
+// two pool loads in the opposite registers and drops the copy. The state word
+// is pinned to r2 because agbcc otherwise homes it in r4.
+void MenuFE90(void *rec) {
+    u8 *r = (u8 *)rec;
+    register s16 n __asm__("r2");
+    volatile u8 *wa;
+    s32 sel;
+    u32 off;
+
+    RAM_DEF_03001780;
+    off = 0xFBC;
+    sel = *(s16 *)(RAM_SYM_03001780 + off);
+    wa = RAM_SYM_03001780;
+    switch (sel) {
+    case 0:
+        n = 4;
+        if (*(s16 *)(wa + 0x103A) <= 2) *(volatile u16 *)(r + 214) = 1;
+        else *(volatile u16 *)(r + 214) = 0;
+        break;
+    case 5: n = 3; *(volatile u16 *)(r + 214) = 5; break;
+    case 1: n = 4; *(volatile u16 *)(r + 214) = 2; break;
+    case 2: n = 4; *(volatile u16 *)(r + 214) = 3; break;
+    case 3: n = 4; *(volatile u16 *)(r + 214) = n; break;
+    case 7:
+        switch (*(s16 *)(wa + 0x1078)) {
+        case 1: n = 3; *(volatile u16 *)(r + 214) = 6; break;
+        case 2: n = 4; *(volatile u16 *)(r + 214) = 7; break;
+        }
+        break;
+    default: break;
+    }
+    _08007770(0, (void *)0x082D9EF8, n, 0, 4, 1);
 }
 void _0800FE90(void *a) __attribute__((alias("MenuFE90")));
 void sub_0800FE90(void *a) __attribute__((alias("MenuFE90")));

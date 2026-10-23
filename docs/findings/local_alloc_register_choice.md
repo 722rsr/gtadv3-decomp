@@ -117,6 +117,20 @@ that conflicts with r0-r6:
   and `find_reg` then propagates the taken register to every conflicting
   allocno.
 
+### A pinned r7 in a framed body can miscompile an array read
+
+The pin is only a *spelling* lever, and in the one case where it is the only
+route to r7 it is also unsafe. `_08027234` (`Garage_Place_27234`,
+`src/garage.c`) needs `adds r7,r7,r0` for its first lane, which the allocator
+only produces for a pinned r7 (see the rule above: a local allocno never takes
+r7). With the pin in place and a `s32 pos[2]` frame array filled by a call,
+agbcc reads the *first* element from `[sp,#0]` and the *second* from `[r4,#4]`,
+where r4 is the argument copy -- `a+4` instead of `sp+4`. A 12-line scratch TU
+reproduces it (`build/r7pin_probe.c`); routing the array through a pointer
+local instead makes agbcc materialise `mov r4, sp`, which is correct but not
+what the ROM has. Always read the emitted body for a pinned r7 in a framed
+function; a byte score near the length target can hide wrong code.
+
 Value-known-constant temps interact with this: `reg_equiv_constant` lets
 reload rematerialise a constant per use instead of keeping its register live,
 which is how a ROM can hold a zero in r2 through a loop and free r2 again for
@@ -508,3 +522,38 @@ the case bodies.
   export" even though `0x08005ba8` is promoted, because the manifest exports
   `sub_08005BA8`. Use the `RM_CALLEE(friendly, closure)` idiom that already
   exists in `src/runtime_hud.c`.
+
+## A hoisted base and a 16-bit selector pull in opposite directions
+
+`MenuFE90` (`0x0800FE90`, 232 B, `src/runtime_state_dispatch.c`) reads the same
+IWRAM base (`0x03001780`) in three switch arms and keeps the arm's selector in a
+register across the whole body. The ROM wants both of these at once:
+
+```asm
+ldr  r1, =0x03001780     @ base into a scratch first
+ldr  r4, =0x00000FBC     @ offset into r4
+adds r0, r1, r4
+movs r4, #0
+ldrsh r0, [r0, r4]
+adds r4, r1, #0          @ then the CSE home r4 gets a *copy* of the base
+...
+movs r2, #4              @ selector (r2) assigned per arm, never zeroed at entry
+...
+lsls r2, r2, #16         @ 16-bit selector sign-extended in place at the call
+asrs r2, r2, #16
+```
+
+Measured source shapes (probe `--function _0800FE90 --c89 --diff`):
+
+| shape | result |
+| --- | --- |
+| `int/u16/s16 sel;` uninitialised, base as a plain local or an asm symbol | base's CSE home becomes `r2` and the load goes straight there (no `adds r4,r1,#0`); `sel` gets `r4` and is copied into `r2` at the call. 102-105/232 |
+| `int sel = 0;` (also `u16/s16 sel = 0`) | base lands in `r4` and `sel` in `r2`, but the entry `movs r2,#0` appears and the known value range lets agbcc fold the call's `lsls/asrs` away: 121-122/232 |
+| `register u8 *wa __asm__("r4")` (pin) | `ldr r4` direct, the ROM's `adds r4,r1,#0` is gone: 108/232 |
+| `u8 *const`, `const u8 *const`, `u8 *volatile`, `volatile u8 *` | 32-35/232 (pool/frame changes) |
+
+A zeroed selector is what makes `local-alloc` hand `r2` to `sel` and `r4` to the
+base, and the zeroing is also what removes the sign-extend; an uninitialised
+16-bit selector restores the sign-extend and hands `r4` to `sel` instead. Both
+routes stop short, so this body stays naked until a shape is found that splits
+the two effects.

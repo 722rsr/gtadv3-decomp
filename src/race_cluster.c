@@ -169,6 +169,14 @@ void Race_Cluster_D(void) {
 // halfword. Emit that in its function section instead of gas's Thumb nop fill.
 __asm__(".align 2, 0");
 
+// MEASURED 2026-10-22: the C lift reaches 186/216 with the length exact and the
+// dispatch table, arms and loop all in the ROM's shape. The remainder is one
+// allocation: the ROM loads the WA base for the loop into r2 and the 0x10CA
+// delta into r3, then copies them to r7/r6 for the body, while agbcc homes the
+// base in r1 and the delta in r3. Spelling the dispatch read off RAM_SYM with
+// the delta in a local that is reassigned later (0x10FC then 0x10CA) is what
+// keeps the delta out of the pool word; binding `wa` before that read returns
+// the body to 140/216.
 __attribute__((naked)) void Race_Cluster_Dispatch(void) {
     __asm__ volatile (
         ".syntax unified\n"

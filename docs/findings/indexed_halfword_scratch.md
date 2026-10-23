@@ -106,10 +106,20 @@ pushes the *first* load to r3, because agbcc sees the later need. Bracket the
 first load with a dummy in r3 and the second with a dummy in r2, and both land
 where the ROM has them.
 
-**Consequence.** Four `partial` bodies (872 bytes) remain gated on this one
-register choice: `_08006A50`, `_0800175BC`, `_0800278F0`, `_080018EC0`. The
+**Consequence.** Three `partial` bodies (788 bytes) remain gated on this one
+register choice: `_08006A50`, `_0800175BC`, `_0800278F0`. The
 liveness pin is the first thing to try on each; `_080020198`,
-`_08006050`, `_080022624`, `_0800154E0` and `_080015620` were among them.
+`_08006050`, `_080022624`, `_0800154E0`, `_080015620` and `_080018EC0` were
+among them.
+
+A scratch in a *high* register needs one dummy per free register below it, and
+they can share a single bracket. `_080018EC0` (84 B) wants `movs r7,#0` before
+its first `ldrsh`; agbcc takes r3, then r4, r5, r6 as each is pinned, so the
+bracket names all four (`"=r"` on `scratch`/r3 plus three dummies in r4/r5/r6,
+one input-only asm after the load). The holders may be the body's *own*
+pinned regvars as long as their live ranges start after the load: r5/r6 there
+belong to the `field`/`ctx_slot` pointers, which are only assigned below it.
+Dropping any one of the four dummies returns the scratch to r3-r6, 82/84.
 
 `_0800175BC` needs the pin *and* a second fix, and the second one is not a
 register choice. Once its four-instruction `+340` store moves to C, the body
@@ -154,23 +164,24 @@ This is the "Non-volatile lvalues" lever from
 [register-shaping levers](register_shaping_levers.md), applied to a byte
 load with a self-referential base.
 
-## `_0802DBA4` `SoundDBA4_Read`: two documented walls
+## `_0802DBA4` `SoundDBA4_Read`: one remaining wall
 
-Both of its splices are blocked, and the reasons are different.
-
-* `add r2, sp, #8` (0x0802DBA4 + 0x70) materialises the read cursor from the
-  frame base. Spelling it in C as `(u8 *)buf + 8` makes `buf`'s address a
-  value the allocator keeps live across the two calls, so it becomes a global
-  allocno and takes r7 -- the ROM rematerialises `sp` at each of its four
-  uses and never spends a register on it. The body grows by 4 bytes and the
-  prologue changes.
 * `adds r0, r4, #1` (0x0802DBA4 + 0x96) is the row counter. `tr = row + 1u;`
   is the documented pinned-temp spelling, but `loop.c` hoists the add to the
   head of the do-while back edge and leaves only the narrowing in the tail
-  (`adds r4,#1` at the head, `lsls/lsrs` in the tail). The do-while
-  counter-hoist rule in
-  [local allocation notes](local_alloc_register_choice.md) is the governing
-  constraint; only an opaque statement keeps the add in place.
+  (`adds r4,#1` at the head, `lsls/lsrs` in the tail). **An empty `"+r"`
+  barrier placed *before* the update is what keeps it in place**:
+  `__asm__ volatile ("" : "+r"(row)); row = (u8)(row + 1u);` reproduces
+  `adds r0,r4,#1 / lsls r0,#24 / lsrs r4,r0,#24` with no splice. Placing the
+  barrier after the update (the mirrored order) does not -- that form is what
+  was measured as blocked. The same shape closed `SoundDC54_Write`'s two
+  wrap-around counters.
+* `add r2, sp, #8` (0x0802DBA4 + 0x70) materialises the read cursor from the
+  frame base. Spelling it in C as `buf + 4` makes the address a global cse
+  target: agbcc hoists it to the top of the frame setup and keeps it in a
+  callee-saved r7 across the two DMA calls, so the prologue gains r7 and the
+  body scores 54/176. Empty barriers, `&buf[4]`, `(u8 *)buf + 8` and a
+  `volatile` local all reproduce the hoist; the splice stays.
 
 ## A halfword store never gets the immediate-offset form
 
@@ -201,7 +212,7 @@ twelve.
 | `_0800278F0` `Garage_Ticker_278F0` | 232 | indexed halfword scratch, plus two naked bodies |
 | `_08000BB0C` `Award_CopyTwinB` | 248 | `mov r3,sp` and an add whose operand order the pointer normalisation forbids |
 | `_080053DC` `OAMGrid_Build` | 200 | the palette shift hoists out of the loop; 181/200 with the hoist suppressed |
-| `_08002DBA4` `SoundDBA4_Read` | 176 | frame-base cursor and the hoisted counter |
+| `_08002DBA4` `SoundDBA4_Read` | 176 | frame-base cursor (the counter landed) |
 | `_08006A50` `CollectNearby_06A50` | 156 | the argument copy wants r7 and the scratch wants r2 |
 | `_080018EC0` `Race_Setup_18EC0` | 84 | the zero index wants r7, an unpinned global allocno |
 | `_08002BE78` `SoundPump` | 60 | a literal-pool load and two flag-coupled branches |

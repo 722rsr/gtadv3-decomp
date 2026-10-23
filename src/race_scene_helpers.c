@@ -616,153 +616,41 @@ void CarDisplay_218F8(void *inst_)
     _080021860(48, 88, *(s16 *)(inst + 188), *(s16 *)(inst + 190), 8);
 }
 
-__attribute__((naked)) void CarDisplay_219D0(void *inst_) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "\tpush\t{r4, r5, r6, r7, lr}\n"
-        "\tsub\tsp, #20\n"
-        "\tadds\tr5, r0, #0\n"
-        "\tadds\tr0, #92\n"
-        "\tmovs\tr1, #5\n"
-        "\tstr\tr1, [sp, #0]\n"
-        "\tmovs\tr1, #3\n"
-        "\tstr\tr1, [sp, #4]\n"
-        "\tmovs\tr6, #1\n"
-        "\tstr\tr6, [sp, #8]\n"
-        "\tmovs\tr7, #0\n"
-        "\tstr\tr7, [sp, #12]\n"
-        "\tmovs\tr1, #8\n"
-        "\tmovs\tr2, #56\n"
-        "\tmovs\tr3, #104\n"
-        "\tbl 0x08007B18\n"
-        "\tadds\tr0, r5, #0\n"
-        "\tadds\tr0, #204\n"
-        "\tldr\tr0, [r0, #0]\n"
-        "\tmovs\tr1, #104\n"
-        "\tmovs\tr2, #72\n"
-        "\tbl 0x08026A2C\n"
-        "\tldr r2, .Lrh_0800219d0_080021AF8\n"
-        "\tadds\tr0, r5, #0\n"
-        "\tadds\tr0, #182\n"
-        "\tmovs\tr3, #0\n"
-        "\tldrsh\tr1, [r0, r3]\n"
-        "\tlsls\tr0, r1, #2\n"
-        "\tadds\tr0, r0, r1\n"
-        "\tlsls\tr0, r0, #2\n"
-        "\tadds\tr0, r0, r2\n"
-        "\tldrb\tr0, [r0, #8]\n"
-        "\tcmp\tr0, #1\n"
-        "\tbne .Lrh_0800219d0_080021A2E\n"
-        "\tmovs\tr0, #10\n"
-        "\tstr\tr0, [sp, #0]\n"
-        "\tstr\tr6, [sp, #4]\n"
-        "\tstr\tr6, [sp, #8]\n"
-        "\tstr\tr7, [sp, #12]\n"
-        "\tadds\tr0, r5, #0\n"
-        "\tmovs\tr1, #15\n"
-        "\tmovs\tr2, #112\n"
-        "\tmovs\tr3, #120\n"
-        "\tbl 0x08007B18\n"
-        ".Lrh_0800219d0_080021A2E:\n"
-        "\tmovs\tr4, #4\n"
-        "\tstr\tr4, [sp, #0]\n"
-        "\tstr\tr6, [sp, #4]\n"
-        "\tstr\tr6, [sp, #8]\n"
-        "\tstr\tr7, [sp, #12]\n"
-        "\tadds\tr0, r5, #0\n"
-        "\tmovs\tr1, #13\n"
-        "\tmovs\tr2, #152\n"
-        "\tmovs\tr3, #72\n"
-        "\tbl 0x08007B18\n"
-        "\tstr\tr4, [sp, #0]\n"
-        "\tstr\tr6, [sp, #4]\n"
-        "\tstr\tr6, [sp, #8]\n"
-        "\tstr\tr7, [sp, #12]\n"
-        "\tadds\tr0, r5, #0\n"
-        "\tmovs\tr1, #14\n"
-        "\tmovs\tr2, #152\n"
-        "\tmovs\tr3, #88\n"
-        "\tbl 0x08007B18\n"
-        "\tstr\tr4, [sp, #0]\n"
-        "\tstr\tr6, [sp, #4]\n"
-        "\tstr\tr6, [sp, #8]\n"
-        "\tstr\tr7, [sp, #12]\n"
-        "\tadds\tr0, r5, #0\n"
-        "\tmovs\tr1, #14\n"
-        "\tmovs\tr2, #152\n"
-        "\tmovs\tr3, #112\n"
-        "\tbl 0x08007B18\n"
-        "\tadds\tr0, r5, #0\n"
-        "\tadds\tr0, #24\n"
-        "\tadds\tr1, r5, #0\n"
-        "\tadds\tr1, #220\n"
-        "\tldr\tr1, [r1, #0]\n"
-        "\tadds\tr2, r5, #0\n"
-        "\tadds\tr2, #224\n"
-        "\tldr\tr2, [r2, #0]\n"
-        "\tmovs\tr3, #80\n"
-        "\tstr\tr3, [sp, #0]\n"
-        "\tmovs\tr4, #6\n"
-        "\tstr\tr4, [sp, #4]\n"
-        "\tstr\tr6, [sp, #8]\n"
-        "\tstr\tr6, [sp, #12]\n"
-        "\tstr\tr7, [sp, #16]\n"
-        "\tmovs\tr3, #155\n"
-        "\tbl 0x08007BFC\n"
-        "\tadds\tr0, r5, #0\n"
-        "\tadds\tr0, #32\n"
-        "\tadds\tr1, r5, #0\n"
-        "\tadds\tr1, #244\n"
-        "\tldr\tr1, [r1, #0]\n"
-        "\tadds\tr2, r5, #0\n"
-        "\tadds\tr2, #248\n"
-        "\tldr\tr2, [r2, #0]\n"
-        "\tmovs\tr3, #96\n"
-        "\tstr\tr3, [sp, #0]\n"
-        "\tstr\tr4, [sp, #4]\n"
-        "\tstr\tr6, [sp, #8]\n"
-        "\tstr\tr6, [sp, #12]\n"
-        "\tstr\tr7, [sp, #16]\n"
-        "\tmovs\tr3, #155\n"
-        "\tbl 0x08007BFC\n"
-        "\tadds\tr0, r5, #0\n"
-        "\tadds\tr0, #40\n"
-        "\tmovs\tr2, #128\n"
-        "\tlsls\tr2, r2, #1\n"
-        "\tadds\tr1, r5, r2\n"
-        "\tldr\tr1, [r1, #0]\n"
-        "\tmovs\tr3, #130\n"
-        "\tlsls\tr3, r3, #1\n"
-        "\tadds\tr2, r5, r3\n"
-        "\tldr\tr2, [r2, #0]\n"
-        "\tmovs\tr3, #120\n"
-        "\tstr\tr3, [sp, #0]\n"
-        "\tstr\tr4, [sp, #4]\n"
-        "\tstr\tr6, [sp, #8]\n"
-        "\tstr\tr6, [sp, #12]\n"
-        "\tstr\tr7, [sp, #16]\n"
-        "\tmovs\tr3, #155\n"
-        "\tbl 0x08007BFC\n"
-        "\tmovs\tr0, #7\n"
-        "\tstr\tr0, [sp, #0]\n"
-        "\tstr\tr6, [sp, #4]\n"
-        "\tstr\tr6, [sp, #8]\n"
-        "\tstr\tr7, [sp, #12]\n"
-        "\tadds\tr0, r5, #0\n"
-        "\tmovs\tr1, #10\n"
-        "\tmovs\tr2, #8\n"
-        "\tmovs\tr3, #56\n"
-        "\tbl 0x08007B18\n"
-        "\tadd\tsp, #20\n"
-        "\tpop\t{r4, r5, r6, r7}\n"
-        "\tpop\t{r0}\n"
-        "\tbx\tr0\n"
-        "\tmovs\tr0, r0\n"
-        ".Lrh_0800219d0_080021AF8: .word 0x080CCEEC\n"
-        ".syntax divided\n"
-    );
-}
+// 20-byte row of the car-display table at 0x080CCEEC; the sprite selector is
+// the byte at +8. Spelling it as a row struct is what keeps the ROM's
+// `ldrb r0,[r0,#8]`: a flat `tbl[idx*20 + 8]` folds the +8 into the index.
+typedef struct {
+    u8 pad[8];
+    u8 sprite;
+    u8 rest[11];
+} CarDispRow219D0;
 
+// The table base is a named pointer assigned in its own statement BEFORE the
+// index read, so its pool load stays ahead of the `ldrsh` and takes r2 -- that
+// is also what pushes the zero index scratch to r3. Writing the cast inline in
+// the `if` sinks the load after the index (296/300).
+void CarDisplay_219D0(void *inst_) {
+    __asm__(".globl CarDispTbl219D0\nCarDispTbl219D0 = 0x080CCEEC\n");
+    extern const u8 CarDispTbl219D0[];
+    volatile u8 *inst = (volatile u8 *)inst_;
+    const CarDispRow219D0 *row;
+
+    _08007B18((void *)(inst + 92), 8, 56, 104, 5, 3, 1, 0);
+    _080026A2C((void *)(uintptr_t)*(volatile u32 *)(inst + 204), 104, 72);
+    row = (const CarDispRow219D0 *)CarDispTbl219D0;
+    if (row[*(s16 *)(inst + 182)].sprite == 1)
+        _08007B18((void *)inst, 15, 112, 120, 10, 1, 1, 0);
+    _08007B18((void *)inst, 13, 152, 72, 4, 1, 1, 0);
+    _08007B18((void *)inst, 14, 152, 88, 4, 1, 1, 0);
+    _08007B18((void *)inst, 14, 152, 112, 4, 1, 1, 0);
+    _08007BFC((void *)(inst + 24), *(volatile u32 *)(inst + 220),
+              *(volatile u32 *)(inst + 224), 155, 80, 6, 1, 1, 0);
+    _08007BFC((void *)(inst + 32), *(volatile u32 *)(inst + 244),
+              *(volatile u32 *)(inst + 248), 155, 96, 6, 1, 1, 0);
+    _08007BFC((void *)(inst + 40), *(volatile u32 *)(inst + 256),
+              *(volatile u32 *)(inst + 260), 155, 120, 6, 1, 1, 0);
+    _08007B18((void *)inst, 10, 8, 56, 7, 1, 1, 0);
+}
 void CarDisplay_21AFC(void *inst_)
 {
     volatile u8 *inst = (volatile u8 *)inst_;

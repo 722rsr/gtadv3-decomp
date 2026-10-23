@@ -51,6 +51,29 @@ splice; do not re-spend source permutations or register pins on it. Pins can
 move which register plays which role, but not the destination-is-index
 structure of the constant path.
 
+## A plain `if (*(s8 *)p == 0)` collapses to the shift pair
+
+A signed byte read used only in a zero test is folded to a QImode compare, so
+agbcc emits `ldrb r0,[p] / lsls r0,#24 / asrs r0,#24 / cmp r0,#0` where the
+ROM (armcc) has the shorter `movs r0,#0 / ldrsb r0,[p,r0] / cmp r0,#0`.
+Spelling the load into an `int`, an `s8`, a `!(...)`, a `volatile` or an empty
+`"+r"` barrier on the value all still produce the shift pair.
+
+What flips it is **pinning the base pointer** so it stays live across the
+load. Measured on `_0800BD40` (224 B, results progress updater), whose two
+`*(s8 *)(wa + 0x10E4)` flag checks need the ROM form:
+
+```c
+register u8 *p __asm__("r3") = wa + 0x10E4;   /* ROM's address register */
+rec = p;                                      /* keeps the pointer live */
+if (*(s8 *)p == 0) goto clear;
+```
+
+That emits `mov r3, ... / add r3, r8 / mov r9, r3 / movs r0, #0 / ldrsb
+r0, [r3, r0]`. Without the pin, the address is a throwaway pseudo and the
+load keeps the shift pair. The index is the destination here, so this is the
+same destination-is-index path as above, not the distinct-destination case.
+
 ## Reproduction
 
 ```sh

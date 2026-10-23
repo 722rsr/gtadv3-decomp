@@ -24,8 +24,21 @@ extern void MenuProgressUpdate_0BD40(void);            // scene_record_dispatch.
 extern void MenuRecordApply_0800BE20(void *rec);       // menus.c
 extern void MenuPlaceUpdate_0BE74(void);               // scene_record_dispatch.c
 
-// _0800AD84 — commit selected grid cell.  The register saves, signed loads,
-// packed-grid calls, and literal pool are emitted in the ROM's original order.
+// _0800AD84 — commit the selected grid cell into the two lane tables.
+// MEASURED 2026-10-22: a full C lift reaches 237/244 (candidate length exact)
+// and stops on the indexed-halfword *scratch* register at three sites. The ROM
+// takes r7 at each (`movs r7,#0` for the 0x0FF2 load's zero index, the second
+// 0x0FF6 load's zero index, and the 0x100A base materialisation); agbcc takes
+// r4 / r6 / r0 there. The rest of the body, including the 0x103A counter
+// derived as `0x0FF2 + 72` (the ROM has no 0x103A pool word) and the
+// `row*2 + col*8` accumulation order, reproduces exactly with
+//   register u8 *wa asm("r2"), *rowc asm("r3"), *colc asm("r5"), *rowm asm("r6");
+//   register u32 colo asm("r6"); register s32 idx asm("r1");
+// plus liveness pins ("=r"/"r" bracketing) on r6/r7/r0 around the first
+// 0x0FF6 load. Pinning r4 at the 0x0FF2 load or r6/r0 at the second 0x0FF6
+// load moves the *destination* instead of the scratch, and pinning r0+r4
+// together makes agbcc abort (internal compiler error), so the three r7
+// scratches are the wall. See findings/indexed_halfword_scratch.md.
 __attribute__((naked)) void Race_CommitCell(void) {
     __asm__ volatile (
         ".syntax unified\n"

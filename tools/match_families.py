@@ -124,11 +124,55 @@ def mode_at(modes, pc):
     return modes[pos][1] if pos >= 0 else None
 
 
-def flow(blob, start, end):
+def jump_table_targets(blob, pc, start, end, window=12):
+    """Case targets of a `mov pc, rX` dispatch, or [] when it is not a table.
+
+    Every Thumb-1 switch in this tree is dispatched the same way: a pool word
+    holds the table's address, `lsls rX, #2` / `adds` / `ldr r0, [rY]` indexes
+    it, and `mov pc, r0` enters the case. The table itself is data, so the
+    entries cannot be found by decoding; they are read from the blob as words
+    and taken while they still point inside the body. Resolving them is what
+    lets an advisory diff cross the dispatcher and compare the arms -- without
+    it the walk stops at the first `mov pc` and only the prologue is scored.
+    """
+    def half(at):
+        off = at - probe.ROM_BASE
+        return int.from_bytes(blob[off:off + 2], 'little')
+    for back in range(2, window * 2 + 2, 2):
+        at = pc - back
+        if at < start or at - probe.ROM_BASE < 0 or at + 2 > end:
+            break
+        h = half(at)
+        if h & 0xF800 != 0x4800:      # ldr rY,[pc,#imm] -- the table base
+            continue
+        pool = ((at + 4) & ~3) + (h & 255) * 4
+        off = pool - probe.ROM_BASE
+        if not start <= pool < end or off < 0 or off + 4 > len(blob):
+            continue
+        table = int.from_bytes(blob[off:off + 4], 'little')
+        if not start <= table < end:
+            continue
+        targets, at_entry = [], table
+        while at_entry + 4 <= end:
+            entry = at_entry - probe.ROM_BASE
+            word = int.from_bytes(blob[entry:entry + 4], 'little')
+            if not start <= (word & ~1) < end:
+                break
+            targets.append(word & ~1)
+            at_entry += 4
+        if targets:
+            return targets
+    return []
+
+
+def flow(blob, start, end, jump_tables=False):
     """Conservative Thumb-1 reachability; pools are never walked after returns.
 
     Unknown indirect transfers, out-of-span branches and non-Thumb-1 opcodes
     make a record ineligible for grouping, rather than guessing a boundary.
+    `jump_tables=True` resolves `mov pc, rX` through its literal table (see
+    `jump_table_targets`) and walks the case arms instead of giving up there;
+    fingerprints keep the default so their identity does not change.
     """
     pending, seen, edges, pools = [start], {}, [], set()
     failures = []
@@ -172,8 +216,11 @@ def flow(blob, start, end):
         elif h & 0xFF00 == 0xBD00:
             kind, targets = 'return', []
         elif h & 0xFC00 == 0x4400 and ((h & 7) | ((h >> 4) & 8)) == 15 and ((h >> 8) & 3) != 1:
-            failures.append(f'write to PC: {pc:#x}')
-            continue
+            table = jump_table_targets(blob, pc, start, end) if jump_tables else []
+            if not table:
+                failures.append(f'write to PC: {pc:#x}')
+                continue
+            kind, targets = 'jumptable', table
         elif h >= 0xE800 or h & 0xFF00 in (0xBE00, 0xBF00) or h & 0xFF80 == 0x4780:
             failures.append(f'unsupported instruction: {pc:#x}')
             continue

@@ -2478,6 +2478,18 @@ void *sub_08002BFC(int a) __attribute__((alias("ObjAlloc_02BFC")));
 void *_08002BFC(int a) __attribute__((alias("ObjAlloc_02BFC")));
 
 // 0x08002C98 — OAM flush: for each of *(0x03000144) entries, walk the linked
+// MEASURED 2026-10-22: the C lift (twin of Wrap_02D3C) reaches 76/164 with the
+// length exact; everything but five instructions reproduces. The wall is one
+// allocation: the ROM homes the entry pointer in r5 and *parks* it in ip across
+// the inner walk (`mov ip,r5` / `mov r5,ip`) because the inner loop wants r5 for
+// the 0x030035C0 base, and it spills the index to [sp] because the 0x1FF mask
+// reuses r4. agbcc instead homes the table in ip from the start (adding
+// `mov r0,ip / adds r0,#4 / mov ip,r0 / subs r0,#4` for the post-increment) and
+// keeps the index in r7, which costs the `sub sp,#4` frame. Forcing either with
+// pins makes the body 4 bytes longer; pinning the 0x030035C0 delta to r7 does
+// reproduce `ldrh r7,[r5,#12]` but moves the mask to r3. Pinning `b` to r5
+// (which is what parks the table) is self-defeating: the pin reserves r5 for the
+// whole body, so there is nothing to park.
 __attribute__((naked)) void ObjFlush_02C98(void) {
     __asm__ volatile (
         ".syntax unified\n"
