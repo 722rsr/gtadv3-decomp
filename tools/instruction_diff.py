@@ -54,7 +54,11 @@ def analyze(reference, candidate, vma, reference_text, candidate_text):
     from match_families import flow
     def decode(blob, listing):
         image = b'\0' * (vma - 0x08000000) + blob
-        reachable, _, failures = flow(image, vma, vma + len(blob))
+        # Walk switch arms past their `mov pc, rX` dispatch: a menu body that
+        # dispatches through a literal table is otherwise scored only up to
+        # the dispatcher, and the arms -- the part that needs steering -- are
+        # never compared.
+        reachable, _, failures = flow(image, vma, vma + len(blob), jump_tables=True)
         rows = instructions(listing, reachable)
         for row in rows:
             pc, op = row['pc'], row['op']

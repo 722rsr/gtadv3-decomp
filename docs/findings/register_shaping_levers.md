@@ -724,3 +724,15 @@ three -- and at `_08006C10` the same three plus a `ctx` that dies in the call.
 Three call-crossing values with two of them in r7/r8 is below the measured
 agbcc threshold, so no spelling reaches that frame: it is ARMCC allocation
 with a pointer-first preference, not a live-range difference.
+
+## A dead stack spill comes back inside a nested block
+
+`0x08007770` (236 B, `src/course_resource_helpers.c`) keeps its DMA3 triple in
+a nested block: `volatile u32 *dma = CRH_DMA3;` plus a local `lane` there. The
+ROM stores the computed `s1 << 5` to `[sp,#20]` and never reloads it -- a dead
+spill -- and agbcc reproduces that store only while the offset has its own block
+scope. At function scope the store disappears and the body is 228 B with a 24-byte
+frame instead of 28. The rest of the body is the plain 6-arg form of the
+`0x0800785C` sibling (same lookup chain, 0748C/074A8 pair per lane, same DMA
+triple), so lift a family from its already-matched member before writing one
+from scratch.

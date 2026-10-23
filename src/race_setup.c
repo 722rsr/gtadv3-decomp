@@ -543,15 +543,32 @@ void Race_Setup_19860(void) { _080027FCC(); }
 __asm__(".align 2, 0");
 void _080019860(void) __attribute__((alias("Race_Setup_19860")));
 
+// _080018EC0 — clear the 0x03000598 word table up to s16[WA+0x10CA]-1, then
+// publish the 0x00FFFFFF cell and the ctx+70 flag. The loop re-reads the limit
+// through the byte pointer each iteration (the ROM reloads the `ldrsh` at the
+// back edge instead of caching it).
+//
+// Two measured spellings hold the ROM's registers:
+//   * the count is only ever reached through `count_ptr`, a pinned r2, so the
+//     `ldrsh` destination and the `base_limit--` stay in r0/r1.
+//   * the zero-index scratch. agbcc hands the first `ldrsh`'s `movs rX,#0` the
+//     first free register, which is r3 here; the ROM has r7. Bracketing the
+//     load with empty asms that keep r3, r4, r5 and r6 live (`scratch` is r3,
+//     `hold4/5/6` the next three; r5/r6 are also `field`/`ctx_slot`, whose live
+//     ranges start after the load) removes them from the candidate set, and the
+//     scratch lands in r7 for 84/84. Dropping any one of the four puts it back
+//     to r3-r6 and costs 2 bytes.
 void Race_Setup_18EC0(void)
 {
     register s32 base_limit __asm__("r0");
     register u32 scratch __asm__("r3");
     register volatile u8 *count_ptr __asm__("r2");
     register s32 i __asm__("r1");
-    u32 index;
     register volatile u32 *field __asm__("r5");
     register volatile u8 **ctx_slot __asm__("r6");
+    register int hold4 __asm__("r4");
+    register int hold5 __asm__("r5");
+    register int hold6 __asm__("r6");
 
     i = 0;
     base_limit = (s32)0x03001780u;
@@ -559,10 +576,9 @@ void Race_Setup_18EC0(void)
     __asm__ volatile ("" : "+r" (base_limit), "+r" (scratch) : : "memory");
     count_ptr = (volatile u8 *)base_limit + scratch;
     __asm__ volatile ("" : "+r" (count_ptr) : : "memory");
-    index = 0;
-    __asm__ volatile ("ldrsh %0, [%1, %2]"
-                      : "=r" (base_limit) : "r" (count_ptr), "r" (index) : "memory");
-    __asm__ volatile ("" : "+l" (index));
+    __asm__ volatile ("" : "=r" (scratch), "=r" (hold4), "=r" (hold5), "=r" (hold6));
+    base_limit = *(s16 *)count_ptr;
+    __asm__ volatile ("" : : "r" (scratch), "r" (hold4), "r" (hold5), "r" (hold6));
     base_limit--;
     field = (volatile u32 *)(uintptr_t)0x03005E48u;
     ctx_slot = (volatile u8 **)(uintptr_t)0x03004E20u;
@@ -580,10 +596,7 @@ void Race_Setup_18EC0(void)
             *(volatile u32 *)scratch = zero;
             scratch += 4;
             i++;
-            index = 0;
-            __asm__ volatile ("ldrsh %0, [%1, %2]"
-                              : "=r" (base_limit) : "r" (count_ptr), "r" (index) : "memory");
-            __asm__ volatile ("" : "+l" (index));
+            base_limit = *(s16 *)count_ptr;
             base_limit--;
         } while (i < base_limit);
     }
