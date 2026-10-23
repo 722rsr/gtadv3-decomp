@@ -61,6 +61,31 @@ class FamilyTests(unittest.TestCase):
     def test_pool_code_overlap_rejected(self):
         self.assertTrue(families.flow(blob(0x4800, 0x2000, 0x4770, 0), BASE, BASE+8)[2])
 
+    # A switch dispatch: `lsls r0,#2` / `ldr r1,=table` / `adds r0,r1` /
+    # `ldr r0,[r0]` / `mov pc,r0` at BASE..BASE+8, the table at BASE+0x14 and
+    # two `movs r0,#k; bx lr` arms at BASE+0x1C and BASE+0x20.
+    SWITCH = blob(0x0080, 0x4802, 0x1840, 0x6800, 0x4687, 0,      # dispatch
+                  0x0014, 0x0800, 0, 0,                       # pool: table at +0x14
+                  0x001C, 0x0800, 0x0020, 0x0800,              # table entries
+                  0x2001, 0x4770, 0x2002, 0x4770)              # arms at +0x1C/+0x20
+
+    def test_jump_table_dispatch_fails_closed_by_default(self):
+        _, _, errors = families.flow(self.SWITCH, BASE, BASE + len(self.SWITCH))
+        self.assertIn(f'write to PC: {BASE + 8:#x}', errors)
+
+    def test_jump_table_dispatch_walks_the_arms(self):
+        seen, _, errors = families.flow(self.SWITCH, BASE, BASE + len(self.SWITCH),
+                                        jump_tables=True)
+        self.assertFalse(errors)
+        self.assertEqual(sorted(seen), [BASE, BASE + 2, BASE + 4, BASE + 6, BASE + 8,
+                                        BASE + 0x1C, BASE + 0x1E, BASE + 0x20, BASE + 0x22])
+
+    def test_jump_table_entries_outside_the_body_are_not_targets(self):
+        # Same dispatch, but the pool word holds an address outside the span, so
+        # there is no table to read and the walk must still refuse the body.
+        data = blob(0x0080, 0x4802, 0x1840, 0x6800, 0x4687, 0, 0x0090, 0x0200)
+        self.assertTrue(families.flow(data, BASE, BASE + len(data), jump_tables=True)[2])
+
     def test_stale_rom_or_report_rejected(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

@@ -2071,6 +2071,17 @@ void _08027120(void) __attribute__((alias("Garage_CarPos_27120")));
 // 0x1FF) | 0xC000 | (u16[record+52] << 9), attr2 = wide | u16[P1+14] |
 // u16[P1+18]<<12, attr12 = 0; wide = *(u8*)(0x03001780+0x10BC) ? 0x800 : 0x400;
 // [record+52] = s16(_08002BE8) and Store_02C48 drives it before the fills.
+// MEASURED 2026-10-22: the C lift reaches 134/212 (candidate 212 B) and stops on
+// one allocation. The ROM keeps the first lane in r7 and accumulates in place
+// (`adds r7,r7,r0 / str r7,[r6,#4]`); unpinned, `a + pos[0]` picks r0 ("the
+// suggested register wins the first find_free_reg pass"), and a LOCAL allocno
+// can never be r7, so the pin `register u32 pa asm("r7")` is the only spelling
+// that reaches r7 -- and it then emits `ldr r0,[r4,#4]` for `pos[1]`, reading
+// a+4 instead of sp+4 (reproduced in a 12-line scratch TU: a pinned r7 plus a
+// stack array plus an in-place accumulate miscompiles the second element).
+// Everything else follows: the flag byte must be a named local before `wide`
+// is initialised, the rand store must precede the zero materialisation, and
+// `0xFFFFC000` narrows to 0xC000 unless the OR is kept 32-bit-wide.
 __attribute__((naked)) void Garage_Place_27234(u32 a, u32 b, s16 c, void *d)
 {
     __asm__ volatile (

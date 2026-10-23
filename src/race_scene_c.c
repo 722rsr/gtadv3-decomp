@@ -304,125 +304,28 @@ void _08001E56C(void *rec_) {
 
 // ----------------------------------------------------------------------------
 // ---- 0x08001E5B0 — dual-path double record emit (high-reg prologue) ----
-// No pools. v=(u16)(u16[rec+146]-1): v<=2 requires s16[rec+150]==1,
-// v in 3..8 takes the second arm. NOTE: both arms emit the same two
-// calls ((168,104,7,1,1,0) + (184,112,7,1,1,0)); only the armcc
-// high-register staging differs, so the arms share one tail here.
+// No pools. v=(u16)(u16[rec+146]-1): v<=2 requires s16[rec+150]==1, v in 3..8
+// takes the second arm; both arms emit (168,104,7,1,1,0) + (184,112,7,1,1,0)
+// off rec[192]/[196] and rec[204]/[208] with the payload at rec+8.
 // ----------------------------------------------------------------------------
-__attribute__((naked)) void _08001E5B0(void *rec_) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, r7, lr}\n"
-        "mov r7, sl\n"
-        "mov r6, r9\n"
-        "mov r5, r8\n"
-        "push {r5, r6, r7}\n"
-        "sub sp, #20\n"
-        "adds r7, r0, #0\n"
-        "adds r0, #146\n"
-        "ldrh r1, [r0, #0]\n"
-        "subs r0, r1, #1\n"
-        "lsls r0, r0, #16\n"
-        "lsrs r0, r0, #16\n"
-        "cmp r0, #2\n"
-        "bhi .L1E5B0_arm2\n"
-        "adds r0, r7, #0\n"
-        "adds r0, #150\n"
-        "movs r1, #0\n"
-        "ldrsh r6, [r0, r1]\n"
-        "cmp r6, #1\n"
-        "bne .L1E5B0_done\n"
-        "adds r5, r7, #0\n"
-        "adds r5, #8\n"
-        "adds r0, #42\n"
-        "ldr r1, [r0, #0]\n"
-        "adds r0, #4\n"
-        "ldr r2, [r0, #0]\n"
-        "movs r0, #104\n"
-        "str r0, [sp, #0]\n"
-        "movs r0, #7\n"
-        "mov r8, r0\n"
-        "str r0, [sp, #4]\n"
-        "str r6, [sp, #8]\n"
-        "str r6, [sp, #12]\n"
-        "movs r4, #0\n"
-        "str r4, [sp, #16]\n"
-        "adds r0, r5, #0\n"
-        "movs r3, #168\n"
-        "bl 0x08007BFC\n"
-        "adds r0, r7, #0\n"
-        "adds r0, #204\n"
-        "ldr r1, [r0, #0]\n"
-        "adds r0, #4\n"
-        "ldr r2, [r0, #0]\n"
-        "movs r0, #112\n"
-        "str r0, [sp, #0]\n"
-        "mov r0, r8\n"
-        "str r0, [sp, #4]\n"
-        "str r6, [sp, #8]\n"
-        "str r6, [sp, #12]\n"
-        "str r4, [sp, #16]\n"
-        "adds r0, r5, #0\n"
-        "movs r3, #184\n"
-        "bl 0x08007BFC\n"
-        "b .L1E5B0_done\n"
-        ".L1E5B0_arm2:\n"
-        "subs r0, r1, #3\n"
-        "lsls r0, r0, #16\n"
-        "lsrs r0, r0, #16\n"
-        "cmp r0, #5\n"
-        "bhi .L1E5B0_done\n"
-        "movs r1, #8\n"
-        "adds r1, r1, r7\n"
-        "mov r8, r1\n"
-        "adds r0, r7, #0\n"
-        "adds r0, #192\n"
-        "ldr r1, [r0, #0]\n"
-        "adds r0, #4\n"
-        "ldr r2, [r0, #0]\n"
-        "movs r0, #104\n"
-        "str r0, [sp, #0]\n"
-        "movs r0, #7\n"
-        "mov sl, r0\n"
-        "str r0, [sp, #4]\n"
-        "movs r4, #1\n"
-        "str r4, [sp, #8]\n"
-        "str r4, [sp, #12]\n"
-        "movs r0, #0\n"
-        "mov r9, r0\n"
-        "str r0, [sp, #16]\n"
-        "mov r0, r8\n"
-        "movs r3, #168\n"
-        "bl 0x08007BFC\n"
-        "adds r0, r7, #0\n"
-        "adds r0, #204\n"
-        "ldr r1, [r0, #0]\n"
-        "adds r0, #4\n"
-        "ldr r2, [r0, #0]\n"
-        "movs r0, #112\n"
-        "str r0, [sp, #0]\n"
-        "mov r0, sl\n"
-        "str r0, [sp, #4]\n"
-        "str r4, [sp, #8]\n"
-        "str r4, [sp, #12]\n"
-        "mov r0, r9\n"
-        "str r0, [sp, #16]\n"
-        "mov r0, r8\n"
-        "movs r3, #184\n"
-        "bl 0x08007BFC\n"
-        ".L1E5B0_done:\n"
-        "add sp, #20\n"
-        "pop {r3, r4, r5}\n"
-        "mov r8, r3\n"
-        "mov r9, r4\n"
-        "mov sl, r5\n"
-        "pop {r4, r5, r6, r7}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        "movs r0, r0\n"
-        ".syntax divided\n"
-    );
+void _08001E5B0(void *rec_) {
+    u16 v = *(u16 *)((u8 *)rec_ + 146);
+    if ((u16)(v - 1) <= 2u) {
+        s16 m = *(s16 *)((u8 *)rec_ + 150);
+        if (m != 1)
+            return;
+        sub_08007BFC((void *)((u8 *)rec_ + 8), *(volatile u32 *)((u8 *)rec_ + 192),
+                     *(volatile u32 *)((u8 *)rec_ + 196), 168, 104, 7, m, m, 0);
+        sub_08007BFC((void *)((u8 *)rec_ + 8), *(volatile u32 *)((u8 *)rec_ + 204),
+                     *(volatile u32 *)((u8 *)rec_ + 208), 184, 112, 7, m, m, 0);
+    } else if ((u16)(v - 3) <= 5u) {
+        sub_08007BFC((void *)((u8 *)rec_ + 8), *(volatile u32 *)((u8 *)rec_ + 192),
+                     *(volatile u32 *)((u8 *)rec_ + 196), 168, 104, 7, 1, 1, 0);
+        sub_08007BFC((void *)((u8 *)rec_ + 8), *(volatile u32 *)((u8 *)rec_ + 204),
+                     *(volatile u32 *)((u8 *)rec_ + 208), 184, 112, 7, 1, 1, 0);
+    }
 }
+__asm__(".align 2, 0");
 
 // ----------------------------------------------------------------------------
 // ---- 0x08001E68C — scene composite: emits + lanes + D97C/DBE8/E9D8 tail ----

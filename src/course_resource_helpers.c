@@ -32,113 +32,35 @@ extern void _080054A4(int a, int b, int c, int d, int e);                       
 // DMA3 channel register base (byte-exact pools _08007858/_080078E8/_08007920/_08007974):
 #define CRH_DMA3 ((volatile u32 *)(uintptr_t)0x040000D4)
 
-__attribute__((naked)) u32 Course_0x08007770(int ctx, void *X, int r2in, int r3in, u32 s0, u32 s1) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, r7, lr}\n"
-        "mov r7, sl\n"
-        "mov r6, r9\n"
-        "mov r5, r8\n"
-        "push {r5, r6, r7}\n"
-        "sub sp, #28\n"
-        "mov sl, r0\n"
-        "adds r0, r1, #0\n"
-        "adds r1, r2, #0\n"
-        "str r3, [sp, #16]\n"
-        "bl _08007498\n"
-        "adds r4, r0, #0\n"
-        "movs r1, #0\n"
-        "bl _08007498\n"
-        "adds r5, r0, #0\n"
-        "adds r0, r4, #0\n"
-        "movs r1, #1\n"
-        "bl _08007498\n"
-        "adds r6, r0, #0\n"
-        "adds r0, r4, #0\n"
-        "movs r1, #2\n"
-        "bl _08007498\n"
-        "adds r7, r0, #0\n"
-        "adds r0, r4, #0\n"
-        "bl _0800748C\n"
-        "mov r8, r0\n"
-        "adds r0, r5, #0\n"
-        "bl _08007658\n"
-        "adds r1, r0, #0\n"
-        "mov r0, sl\n"
-        "bl _080050D0\n"
-        "mov r9, r0\n"
-        "adds r0, r5, #0\n"
-        "bl _0800748C\n"
-        "adds r4, r0, #0\n"
-        "adds r0, r5, #0\n"
-        "bl _080074A8\n"
-        "adds r3, r0, #0\n"
-        "mov r0, sl\n"
-        "adds r1, r4, #0\n"
-        "mov r2, r9\n"
-        "bl _08005260\n"
-        "adds r0, r7, #0\n"
-        "bl _0800748C\n"
-        "adds r1, r0, #0\n"
-        "mov r2, r8\n"
-        "ldrh r2, [r2, #0]\n"
-        "lsrs r0, r2, #3\n"
-        "str r0, [sp, #0]\n"
-        "mov r3, r8\n"
-        "ldrh r3, [r3, #2]\n"
-        "lsrs r0, r3, #3\n"
-        "str r0, [sp, #4]\n"
-        "mov r0, r9\n"
-        "str r0, [sp, #8]\n"
-        "ldr r2, [sp, #64]\n"
-        "str r2, [sp, #12]\n"
-        "mov r0, sl\n"
-        "ldr r2, [sp, #16]\n"
-        "ldr r3, [sp, #60]\n"
-        "bl _080053DC\n"
-        "ldr r4, .L07770_dma\n"
-        "adds r0, r6, #0\n"
-        "bl _0800748C\n"
-        "str r0, [r4, #0]\n"
-        "ldr r3, [sp, #64]\n"
-        "lsls r3, r3, #5\n"
-        "str r3, [sp, #20]\n"
-        "movs r0, #160\n"
-        "lsls r0, r0, #19\n"
-        "adds r0, r3, r0\n"
-        "str r0, [r4, #4]\n"
-        "adds r0, r6, #0\n"
-        "bl _080074A8\n"
-        "lsrs r0, r0, #2\n"
-        "movs r1, #132\n"
-        "lsls r1, r1, #24\n"
-        "orrs r0, r1\n"
-        "str r0, [r4, #8]\n"
-        "ldr r0, [r4, #8]\n"
-        "mov r1, r8\n"
-        "ldrh r1, [r1, #0]\n"
-        "lsrs r3, r1, #3\n"
-        "mov r2, r8\n"
-        "ldrh r2, [r2, #2]\n"
-        "lsrs r0, r2, #3\n"
-        "str r0, [sp, #0]\n"
-        "mov r0, sl\n"
-        "ldr r1, [sp, #16]\n"
-        "ldr r2, [sp, #60]\n"
-        "bl _080054A4\n"
-        "mov r0, r9\n"
-        "add sp, #28\n"
-        "pop {r3, r4, r5}\n"
-        "mov r8, r3\n"
-        "mov r9, r4\n"
-        "mov sl, r5\n"
-        "pop {r4, r5, r6, r7}\n"
-        "pop {r1}\n"
-        "bx r1\n"
-        ".short 0\n"
-        ".L07770_dma: .word 0x040000D4\n"
-        ".syntax divided\n"
-    );
+// 0x08007770 — the 6-arg sibling of 0x0800785C below: same lookup chain
+// (X -> rec -> 0/1/2), the 0748C/074A8 pair per lane, and the DMA3 triple, but
+// it also drives the 053DC grid blit and the 054A4 row copy before returning
+// the 050D0 bank slot.
+u32 Course_0x08007770(int ctx, void *X, int rec_arg, int r3in, u32 s0, u32 s1) {
+    void *r4 = _08007498(X, rec_arg);
+    void *r5 = _08007498(r4, 0);
+    void *r6 = _08007498(r4, 1);
+    void *r7 = _08007498(r4, 2);
+    void *r8 = _0800748C(r4);
+    int r9 = _080050D0((int)(uintptr_t)ctx, (int)_08007658(r5));
+    u32 r4v = (u32)(uintptr_t)_0800748C(r5);
+    _08005260((void *)(uintptr_t)ctx, (void *)(uintptr_t)r4v, r9, (int)_080074A8(r5));
+    _080053DC(ctx, (void *)(uintptr_t)_0800748C(r7), r3in, (int)s0,
+              (int)((u32)(*(u16 *)((u8 *)r8 + 0)) >> 3),
+              (int)((u32)(*(u16 *)((u8 *)r8 + 2)) >> 3), r9, (int)s1);
+    {
+        volatile u32 *dma = CRH_DMA3;
+        u32 lane;
+        dma[0] = (u32)(uintptr_t)_0800748C(r6);
+        lane = s1 << 5;
+        dma[1] = 0x05000000u + lane;
+        dma[2] = (_080074A8(r6) >> 2) | 0x84000000u;
+        (void)dma[2];
+    }
+    _080054A4(ctx, r3in, (int)s0,
+              (int)((u32)(*(u16 *)((u8 *)r8 + 0)) >> 3),
+              (int)((u32)(*(u16 *)((u8 *)r8 + 2)) >> 3));
+    return (u32)r9;
 }
 u32 _08007770(int a, void *b, int c, int d, u32 e, u32 f) __attribute__((alias("Course_0x08007770")));
 u32 sub_08007770(int a, void *b, int c, int d, u32 e, u32 f) __attribute__((alias("Course_0x08007770")));
