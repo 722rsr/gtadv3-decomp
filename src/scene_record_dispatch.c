@@ -557,6 +557,15 @@ static inline void CourseIter7BFC_Static(void *rec, int kind, int dx3,
 // menu_progress_update.s 0x0800BD40 — results progress updater. Seat fill via
 // _0800BC08, conditional record apply via _0800BCD4, 12-byte award copy on
 // the sv==1 path, WA+0x10F4 clear otherwise, WA+0xFCE latch at the tail.
+//
+// MEASURED 2026-10-23: a C lift reaches 48/224 (candidate 220 B). The structure
+// is settled (frame 60 with the seat/record buffers at sp+16/28/40/44/48/52/56,
+// the shared `clear` block, and the 12-byte copy as a struct assignment so it
+// emits `ldmia!/stmia!`); what is left is allocation: the ROM keeps v40's
+// address in r4 and `sel` in r5, while every spelling tried homes v40's address
+// in r8 and sel in r4, and the s8 flag read comes out `ldrb + lsls/asrs` where
+// the ROM has the `movs r0,#0 / ldrsb r0,[rX,r0]` index form (a named s8 local
+// does not change it). Candidate is also 4 bytes short.
 // ============================================================================
 __attribute__((naked)) void MenuProgressUpdate_0BD40(void)
 {

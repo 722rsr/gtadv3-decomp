@@ -606,6 +606,226 @@ __attribute__((naked)) void _0800B4A8(void) {
     );
 }
 
+// _0800B4A8 — readable C reconstruction of the collection-manager tick above.
+//
+// Structure was recovered from the ROM body and checked statement by statement
+// against asm/ai_collect.s (and against the transcribed asm above): part 1
+// reads the descriptor triple T[A][B][C..C+2] at 0x080CCACC through
+// _08024F4C/_08024F74/_08024F9C, gated by the +10E5 tier byte and the +1054
+// limit, updates the +1046/+1048 selection and fires scene event 27; part 2
+// grants the view-2 record through _08024FC4/_08024FE8 when it is unowned and
+// its tag is within tier, writing the +1058/+1060/bookkeeping state and firing
+// event 28; the four 4x11 zone-grid scans then award cars 94/95/96 on full
+// coverage and finally the +FF0 one-shot fires scene event 29.
+//
+// NOT byte-exact, so it is deliberately NOT aliased onto the ROM span: the
+// recorded asm above stays the source of the 0x0800B4A8..0x0800B82C bytes and
+// keeps the matching slice green. Latest corpus-probe measurement: 880 bytes
+// against the ROM's 900, 277/900 bytes identical. Both part-1 paths and the
+// whole head are now instruction-for-instruction identical to the ROM; the
+// shortcuts that got them there are each backed by a diff:
+//
+//  * Small-id path first. The ROM's `cmp r6,#2; bhi` jumps to the large-id
+//    path, so the small path is the fall-through. Writing
+//    `if ((u16)id1 > 2) { large } else { small }` makes agbcc emit the layouts
+//    the other way round and moves the first literal pool to the function end;
+//    the condition has to be inverted (`if (id1 <= 2) { small } else { large }`)
+//    to get the ROM's layout, its mid-function pool and its split small path.
+//  * `id1` is a u32. The ROM compares it with a bare `cmp r6,#2; bhi` and with
+//    `movs r0,#1; negs r0,r0; cmp r6,r0` for -1, i.e. an unsigned 32-bit value
+//    holding a sign-extended s16. With a signed `int` agbcc inserts
+//    `lsls #16; lsrs #16` before the compare and every later offset shifts.
+//  * `count` is derived *after* the sub_08025F20 call and `&+1048` is computed
+//    then too, which is what puts the selection pointer in r4 and the counter
+//    pointer in r2 like the ROM.
+//  * Register pins, in the ROM's own homes: wa r7 (initialised in the
+//    declaration - a body assignment to a pinned pointer is dropped and
+//    silently produces broken code), aIdx r4, bIdx r5, sel r8, id1 r6, id2 r9,
+//    idx r3, and in the branches pick(r3 for the large path) / pa r5 / pb r4.
+//
+// What is still wrong (20 bytes):
+//
+//  * The selector load goes to r6 where the ROM uses r2, which costs one extra
+//    `mov r2, r8` before the first call. Every pin/declaration-order variant
+//    tried for it lands on r6; the temp choice is agbcc's own.
+//  * agbcc folds `base + displacement` into a single pool constant in part 2
+//    and in the three bonus awards (`ldr r2,=0x030027BE`), where the ROM keeps
+//    the base in a register and adds the displacement
+//    (`ldr r1,=0x03001780; ldr r6,=0x00001076; adds r2,r1,r6`). Pinning a
+//    caller-saved register (r1) to force that shape compiles to *incorrect*
+//    code here - the pinned base is used after a call without being reloaded -
+//    so that route is closed.
+//  * One cross-jump tail remains: agbcc merges the three bonus-award tails.
+//
+// Keep the asm until those land.
+extern s16 sub_08024F4C(int a, int b, int c);
+extern s16 sub_08024F74(int a, int b, int c);
+extern s16 sub_08024F9C(int a, int b, int c);
+extern s16 sub_08024FC4(int a, int b, int c);
+extern s16 sub_08024FE8(int a, int b, int c);
+extern int sub_08025F20(int a);
+extern void _08023FF8(int id, int arg);
+extern int sub_08024C90(int v);
+extern int sub_08025CF4(int type, int row, int col);
+extern void sub_08025EC0(u32 a, u32 b);
+extern void sub_08025F78(int id);
+extern int sub_08025FAC(int id);
+extern void sub_08026020(int slot);
+void Ai_CollectTick(void) {
+    register u8 *wa __asm__("r7") = (u8 *)(uintptr_t)0x03001780u;
+    u8 *w2;
+    register s16 *aIdx __asm__("r4");
+    register s16 *bIdx __asm__("r5");
+    s16 *pick, *count;
+    register s16 *pa __asm__("r5");
+    register s16 *pb __asm__("r4");
+    int a, b;
+    register int sel __asm__("r8");
+    register u32 id1 __asm__("r6");
+    register int id2 __asm__("r9");
+    int id3;
+    int limit;
+    int gid, gtag;
+    s8 tier;
+    int n, pos;
+    register u32 idx __asm__("r3");
+    u32 off;
+    int row, col;
+    int cnt0, cnt1, cnt_max;
+
+    off = 0xFF8u;
+    bIdx = (s16 *)(wa + off);
+    b = *bIdx;
+    idx = b * 2;
+    off = 0xFF2u;
+    aIdx = (s16 *)(wa + off);
+    a = *aIdx;
+    idx += a * 8;
+    off += 24u;
+    sel = *(s16 *)(idx + (wa + off));
+
+    id1 = (s16)sub_08024F4C(a, b, sel);
+    id2 = (s16)sub_08024F74(*aIdx, *bIdx, sel);
+    id3 = (s16)sub_08024F9C(*aIdx, *bIdx, sel);
+    limit = *(s16 *)(wa + 0x1054);
+
+    if (id1 == -1)
+        goto part2;
+    tier = *(s8 *)(wa + 0x10E5);
+    if (tier < id3)
+        goto part2;
+    if (limit >= id3)
+        goto part2;
+
+    if (id1 <= 2) {
+        pick = (s16 *)(wa + 0x1046);
+        *pick = id1;
+        n = sub_08025F20(id1) + 1;
+        count = (s16 *)(wa + 0x1048);
+        *count = (s16)n;
+        if ((s16)n > 3) {
+            *count = 3;
+            goto part2;
+        }
+        *(volatile s16 *)(wa + 0x105A) = 1;
+        sub_08025EC0(*pick, *count);
+        _08023FF8(27, 0);
+    } else {
+        if ((s16)sub_08025F20(id1) >= id2)
+            goto part2;
+        register s16 *pickL __asm__("r3");
+        pickL = (s16 *)(wa + 0x1046);
+        *pickL = id1;
+        count = (s16 *)(wa + 0x1048);
+        *count = id2;
+        *(s16 *)(wa + 0x105A) = 1;
+        sub_08025EC0(*pickL, *count);
+        _08023FF8(27, 0);
+    }
+
+part2:
+    w2 = (u8 *)(uintptr_t)0x03001780u;
+    pa = (s16 *)(w2 + 0xFF2);
+    pb = (s16 *)(w2 + 0xFF8);
+    gid = (s16)sub_08024FC4(*pa, *pb, sel);
+    gtag = (s16)sub_08024FE8(*pa, *pb, sel);
+    if (gid != -1 && (u16)sub_08025FAC(gid) == 0 &&
+        *(s8 *)(w2 + 0x10E5) >= gtag) {
+        *(s16 *)(w2 + 0x1058) = 1;
+        idx = sub_08024C90(gid) << 1;
+        *(s16 *)(w2 + 0x1060 + idx) = 1;
+        pos = *(s16 *)(w2 + 0x103C);
+        *(u8 *)(w2 + 0x103E + pos) = (u8)gid;
+        sub_08025F78(gid);
+        _08023FF8(28, 0);
+        *(u16 *)(w2 + 0x103C) = *(u16 *)(w2 + 0x103C) + 1;
+    }
+
+    cnt0 = 0;
+    cnt1 = 0;
+    for (row = 0; row <= 3; row++) {
+        for (col = 0; col <= 10; col++) {
+            if (sub_08025CF4(0, row, col) != 0 && (u8)sub_08025CF4(0, row, col) <= 3)
+                cnt0++;
+            if (sub_08025CF4(1, row, col) != 0 && (u8)sub_08025CF4(1, row, col) <= 3)
+                cnt1++;
+        }
+    }
+
+    if (cnt0 > 43 && (u16)sub_08025FAC(94) == 0) {
+        int base = 0x03001780;
+        sub_08026020(0);
+        *(s16 *)((u8 *)(uintptr_t)base + 0x1076) = 1;
+        pos = *(s16 *)((u8 *)(uintptr_t)base + 0x103C);
+        *(u8 *)((u8 *)(uintptr_t)base + 0x103E + pos) = 94;
+        sub_08025F78(94);
+        _08023FF8(28, 0);
+        *(u16 *)((u8 *)(uintptr_t)base + 0x103C) = *(u16 *)((u8 *)(uintptr_t)base + 0x103C) + 1;
+    }
+    if (cnt1 > 43 && (u16)sub_08025FAC(95) == 0) {
+        int base = 0x03001780;
+        sub_08026020(1);
+        *(s16 *)((u8 *)(uintptr_t)base + 0x1076) = 1;
+        pos = *(s16 *)((u8 *)(uintptr_t)base + 0x103C);
+        *(u8 *)((u8 *)(uintptr_t)base + 0x103E + pos) = 95;
+        sub_08025F78(95);
+        _08023FF8(28, 0);
+        *(u16 *)((u8 *)(uintptr_t)base + 0x103C) = *(u16 *)((u8 *)(uintptr_t)base + 0x103C) + 1;
+    }
+
+    cnt_max = 0;
+    for (row = 0; row <= 3; row++) {
+        for (col = 0; col <= 10; col++) {
+            if ((u8)sub_08025CF4(1, row, col) == 3)
+                cnt_max++;
+        }
+    }
+    if (cnt_max > 43 && (u16)sub_08025FAC(96) == 0) {
+        int base = 0x03001780;
+        int off3;
+        sub_08026020(2);
+        off3 = 0x1076;
+        *(s16 *)((u8 *)(uintptr_t)base + off3) = 1;
+        pos = *(s16 *)((u8 *)(uintptr_t)base + 0x103C);
+        off3 -= 56;
+        *(u8 *)((u8 *)(uintptr_t)base + off3 + pos) = 96;
+        sub_08025F78(96);
+        _08023FF8(28, 0);
+        *(u16 *)((u8 *)(uintptr_t)base + 0x103C) = *(u16 *)((u8 *)(uintptr_t)base + 0x103C) + 1;
+    }
+
+    cnt0 = 0;
+    for (row = 0; row <= 3; row++) {
+        for (col = 0; col <= 10; col++) {
+            if ((u8)sub_08025CF4(0, row, col) == 3)
+                cnt0++;
+        }
+    }
+    if (cnt0 > 43 && *(s16 *)((u8 *)(uintptr_t)0x03001780u + 0xFF0) == 0) {
+        *(s16 *)((u8 *)(uintptr_t)0x03001780u + 0xFF0) = 1;
+        _08023FF8(29, 0);
+    }
+}
 
 // Leaf proved for wa+0x1054 s16 adjacency to _0800B4A8 — exact asm plus ramwatch
 // Asm: ldr r3,=0x00001054; adds r0, r7, r3; movs r3,#0; ldrsh r2,[r0,r3] (s16, offset 0) then cmp r2,r1 (id2 s16 via lsls16/asrs16) with bge (signed)

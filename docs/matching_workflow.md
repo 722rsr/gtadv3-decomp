@@ -361,6 +361,17 @@ clobber is what breaks the relation; pins, `"+r"` launders and `volatile`
 accesses all keep the fold. Measured on
 [the 0x08029D48 lift](findings/garage_29d48_lift.md): 222 -> 232 of 232.
 
+A **load-scheduling** barrier is the third empty-asm shape: passing a ROM
+symbol's address to an asm operand (`__asm__ volatile("" : : "r"((u32)(uintptr_t)T));`)
+forces the `ldr rX,<pool>` for that symbol to be issued at the barrier's
+position. `_080021F88` needed it twice -- the ROM issues each table base load
+*before* the index arithmetic that follows it, while agbcc otherwise schedules
+`lsls`/`adds` first and the pool load after. The same body also shows the
+`+r` launder used for two distinct jobs: on a pointer it forces the address
+arithmetic (`adds r0,#4` instead of a folded `ldr r0,[r0,#4]`), and on a
+repeated index expression it stops cse sharing the value so the second table
+access re-adds the term (`adds r3,r3,r7`) like the ROM.
+
 Two guard shapes are worth trying before reshaping a body. `if (a || b)` with
 an `else` is what produces the ROM's `bne then` / `beq else` layout with the
 else-block last; a nested `if` hoists work above the first test. And a record

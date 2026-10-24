@@ -817,6 +817,22 @@ void sub_080019A2C(int mode)
 //     d = [0x03004E20 + 28 + (i+1)*4] - [0x03004E20 + 28 + i*4]
 //     [0x03002868 + i*4] = d
 //     if d < [rc+44]: [rc+44] = d
+//
+// MEASURED 2026-10-23: a C lift reaches 104/268 (candidate 248 B) and stops on
+// four separate shapes; keep the asm until one body explains all of them.
+//   * the work area needs the two-pool anchor (`.globl` base + literal offset),
+//     and the base must be re-loaded *per arm* -- a `u8 *wa` bound before the
+//     arm gives one pool load where the ROM has two;
+//   * the 0x03004E20 cell is read through a volatile pointer (arm 1 and the
+//     loop reload it, arm 2 reuses the cached value), which is what keeps the
+//     two `if (u16[WA+0x10FC] == 5)` blocks from cross-jumping into one;
+//   * `count++` on a `u16` emits `adds/lsls/lsrs`, while the ROM adds 0x10000
+//     to the *shifted* value (`lsls #16 / adds #0x10000 / lsrs #16`);
+//     neither `count++`, `count += 1` nor `count = (u16)(count + 1)` gives it;
+//   * the diff loop is the un-reduced `base + i*4` form (the ROM keeps `i` and
+//     scales it every iteration); agbcc always turns it into a decrementing
+//     pointer walk. Pinning the scaled index changed the body but not into the
+//     ROM's shape.
 // ----------------------------------------------------------------------------
 __attribute__((naked)) void sub_080019AEC(int mode) {
     __asm__ volatile (
