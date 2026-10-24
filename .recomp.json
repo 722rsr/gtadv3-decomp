@@ -1,0 +1,12 @@
+{
+  "$schema": "https://recomp.fyi/schema/v1.json",
+  "game": "GT Advance 3: Pro Concept Racing",
+  "system": "GBA",
+  "type": "decomp",
+  "original": {
+    "region": "USA",
+    "serial": "AGB-A2GE-USA"
+  },
+  "project": "GT Advance 3 decompilation",
+  "status": "in-progress"
+}

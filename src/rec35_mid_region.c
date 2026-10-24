@@ -1285,6 +1285,11 @@ void _080017528(void *a, int b, int c) __attribute__((alias("Rec35_Input_17528")
 //       if u8[WA+0x10C3]==0 { r0=(u16)_08002178(1,3); [rec+340]=r0; }
 //       [+194]=5; [rec+198]=r9(0); [rec+344]=r7; }
 void Rec35_Input_175BC(void *rec) {
+    // The WA anchor sits at the top of the body on purpose: `shorten_branches`
+    // prices every asm statement at 2 bytes per logical line (emitted or not),
+    // and the far `bne` to the epilogue at +0x8C has only ~8 bytes of slack.
+    // Anchors and barriers inside that span flip it to a 4-byte long jump.
+    __asm__(".globl Rec35Wa\nRec35Wa = 0x03001780");
     // ROM parks the two ghost-slot pointers in r5/r6 and the later state in
     // r7/r8/r9; agbcc prefers the high callee-saved pair for them, so pin.
     register void *r5 __asm__("r5") = Rec35GhostSlot(0);
@@ -1330,17 +1335,23 @@ void Rec35_Input_175BC(void *rec) {
             __asm__ volatile("" : "+r"(slotp));
             if (RD16P(slotp) == 1) {
                 sub_0800168B8(1);
-                /* ROM uses r2 for the scaled +340 offset. */
-                __asm__ volatile(".hword 0x22AA, 0x0052, 0x18A0, 0x8007");
+                {
+                    // The pinned offset keeps the ROM's
+                    // `movs r2,#170 / lsls r2,#1 / adds r0,r4,r2`; the barrier
+                    // keeps cse from folding 340 past the pin at the add.
+                    register int byteOffset __asm__("r2");
+                    byteOffset = 340;
+                    __asm__ volatile("" : "+r"(byteOffset));
+                    register volatile u16 *dest __asm__("r0") =
+                        (volatile u16 *)((u8 *)rec + byteOffset);
+                    *dest = (u16)mode;
+                }
             } else {
                 goto mode2_slot_fail;
             }
             /* Fall through to the shared [+194]=3 update. */
 mode2_done:
-            register u16 state_value __asm__("r0") = 3;
-            register u16 *state_dest __asm__("r1") = (u16 *)r8;
-            __asm__ volatile("" : "+r"(state_value), "+r"(state_dest));
-            *state_dest = state_value;
+            WR16(r8, 3);
             return;
 mode2_slot_fail:
             sub_0800168B8(10);
@@ -1355,14 +1366,11 @@ mode2_sel3:
         return;
     case 4: {
         u8 *wa;
+        int sel;
         if ((u16)_08002178(1, 4) != 4) return;
-        register s32 sel __asm__("r0") =
-            (s32)(uintptr_t)((u8 *)rec + 182);
-        // C supplies the ROM's zero index in r2; the signed indexed load stays asm.
-        register int zeroIndex __asm__("r2") = 0;
-        __asm__ volatile("" : : "r"(zeroIndex));
-        __asm__ volatile("ldrsh %0, [%0, r2]"
-                         : "+r"(sel) : : "memory");
+        {
+            sel = RS16((u8 *)rec + 182);
+        }
         switch (sel) {
         case 1:
             sub_0800168B8(1);
@@ -1371,8 +1379,8 @@ mode2_sel3:
         case 2:
             sub_0800168B8(1);
             {
-                register int byteOffset __asm__("r2") = 171;
-                byteOffset <<= 1;
+                register int byteOffset __asm__("r2");
+                byteOffset = 342;
                 __asm__ volatile("" : "+r"(byteOffset));
                 register volatile u16 *dest __asm__("r0") =
                     (volatile u16 *)((u8 *)rec + byteOffset);
@@ -1383,7 +1391,6 @@ mode4_done:
         // Symbol form keeps the base in a register and adds the offset, like
         // the ROM's two pool words (`ldr r0,=0x03001780; ldr r1,=0x10C3`).
         { extern u8 Rec35Wa[];
-          __asm__(".globl Rec35Wa\nRec35Wa = 0x03001780\n");
           wa = Rec35Wa; }
         if (*(wa + 0x10C3) == 0) {
             WR16((u8 *)rec + 340, (u16)_08002178(1, 3));

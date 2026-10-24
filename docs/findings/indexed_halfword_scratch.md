@@ -106,8 +106,8 @@ pushes the *first* load to r3, because agbcc sees the later need. Bracket the
 first load with a dummy in r3 and the second with a dummy in r2, and both land
 where the ROM has them.
 
-**Consequence.** Three `partial` bodies (788 bytes) remain gated on this one
-register choice: `_08006A50`, `_0800175BC`, `_0800278F0`. The
+**Consequence.** Two `partial` bodies remain gated on this one
+register choice: `_08006A50`, `_0800278F0`. The
 liveness pin is the first thing to try on each; `_080020198`,
 `_08006050`, `_080022624`, `_0800154E0`, `_080015620` and `_080018EC0` were
 among them.
@@ -121,19 +121,29 @@ pinned regvars as long as their live ranges start after the load: r5/r6 there
 belong to the `field`/`ctx_slot` pointers, which are only assigned below it.
 Dropping any one of the four dummies returns the scratch to r3-r6, 82/84.
 
-`_0800175BC` needs the pin *and* a second fix, and the second one is not a
-register choice. Once its four-instruction `+340` store moves to C, the body
-is byte-correct except that agbcc expands the far `if (... != 2) return;` at
-+0x8C as `beq` over a `b` (`@long jump`, 4 bytes) where the ROM has one
-`bne`. That is `shorten_branches`, not allocation: the branch is 246 bytes
-from the epilogue, inside the +-254 Thumb range, but agbcc's length estimate
-for the span is inflated by its own asm statements (`asm_insn_count` counts
-2 bytes per logical line, emitted or not), so the estimate crosses 254
-first. The old `.hword` splice hid this: eight emitted bytes counted as two,
-a 6-byte *under*-estimate, which is why that body only matched with the
-splice. Adding two `.set dummy, 1` statements inside case 2 flips a matching
-body to the 4-byte form, so treat any far-conditional branch in a body with
-asm barriers as an estimate problem before re-spelling the condition.
+`_0800175BC` (400/400, 2026-10-24) closed **without** a liveness pin; the
+scratch was never its own blocker. Two measured facts from the landing are
+worth keeping:
+
+* The case-2 `+340`/`+342` stores need the constant synthesis in r2
+  (`movs r2,#170 / lsls r2,#1`), which a pinned `byteOffset __asm__("r2")`
+  with one `"+r"` barrier delivers. The pin binds only through an asm
+  operand -- the same spelling without a barrier lets cse fold the constant
+  past the pin and re-synthesise it in a free register. Removing those two
+  constant reloads then moved reload's round-robin `last_spill_reg` cursor,
+  and the state-store copy (`mov r1,r8`), the second pool word (`ldr r1`)
+  and the ldrsh zero-scratch all fell into place with no further spelling.
+  When one register choice is off by a cursor position, fix the *first* wrong
+  site and re-measure the rest before pinning each one.
+* The far `if (... != 2) return;` at +0x8C is 246 bytes from the epilogue,
+  and `shorten_branches` prices every asm statement at 2 bytes per logical
+  line (`asm_insn_count`, emitted or not), so its span holds at most **4**
+  one-line asm statements (246 + 8 = 254). The old `.hword` splices hid
+  this: eight emitted bytes counted as two, a 6-byte *under*-estimate, which
+  is why the body only matched with the splice. Adding two `.set dummy, 1`
+  statements inside case 2 flips a matching body to the 4-byte `beq` over a
+  `b` form, so treat any far-conditional branch in a body with asm barriers
+  as an estimate problem before re-spelling the condition.
 
 The same measurement was run against the comparison `agbcc` binary
 (`build/toolchains/agbcc/agbcc`): it allocates identically, so this is not a
@@ -189,39 +199,57 @@ load with a self-referential base.
   address is parked in a callee-saved across calls; it should also unblock
   hoist walls like `OAMGrid_Build`'s palette shift.
 
-## A halfword store never gets the immediate-offset form
+## A pinned r7 base can never fold a sub-word store (or load) offset
 
 `src/menu_ff78_o.c` `MenuFF78_15304` stores three halfwords with the ROM's
-immediate-offset forms (`movs r0,#1 / strh r0,[r7,#20]`). The C equivalent
-`*(volatile u16 *)(rec + 20) = 1;` expands to
+immediate-offset forms (`movs r0,#1 / strh r0,[r7,#20]`). This section first
+recorded the symptom as "a halfword store never gets the immediate-offset
+form"; that diagnosis was wrong and led nowhere. The real mechanism, read out
+of the compiler (`thumb.h:808` `GO_IF_LEGITIMATE_ADDRESS`): the first clause
+rejects **every HImode/QImode address mentioning the frame pointer** (r7 is
+`FRAME_POINTER_REGNUM`) until reload starts, and `movhi`/`movqi`'s expands
+answer an illegitimate address with `copy_to_reg` -- which is the
+`adds r1,r7,#0 / adds r1,#20` pair. SImode skips that clause, so the same
+spelling through a `u32` lvalue folds to `str r0,[r7,#20]` and halfwords do
+not. Casting the base to `u16 *`, or making the lvalue non-volatile, changes
+nothing: it is the **pin** that is fatal. A pinned r7 regvar is hard-reg r7 at
+expand time; an *unpinned* pseudo passes the check, survives to reload with
+its offset folded, and reload keeps the fold when the pseudo's home is r7.
+So a ROM body containing `strh r0,[r7,#off]` (off <= 62) is proof the base
+was a pseudo that global-alloc gave r7 -- never a regvar spelling.
 
-```
-adds r1, r7, #0
-adds r1, #20
-movs r0, #1
-strh r0, [r1, #0]
-```
+`MenuFF78_15304` (408/408, 2026-10-24) lands exactly that way, and with no
+instruction-bearing asm:
 
-while the same store through a `u32` lvalue keeps the immediate form
-(`str r0, [r7, #20]`). The address is copied into a scratch before the
-offset is added, and the halfword pattern then has no offsettable address to
-print. Casting the base to `u16 *` does not change it, and neither does
-making the lvalue non-volatile. Four bytes per store, so the body grows by
-twelve.
+* `rec` is a plain local. Global-alloc gives it r7 on its own (the
+  [r7 recipe](register_shaping_levers.md#r7-wants-an-unpinned-global-allocno));
+  every `rec + N` copy form (`adds rX,r7,#0 / adds rX,#N`) still appears, and
+  `mark_home_live` restores the `push {r4,r5,r6,r7,lr}` prologue.
+* The three late `rec_` arguments are spelled `rec`, not `rec_`: the ROM
+  re-derives them from the r7 copy (`adds r1,r7,#0` before `bl`), and keeping
+  the incoming argument pseudo alive stages it in a callee-saved (measured:
+  r5, which in turn pushed the shared zero constant from r5 into r9 and cost
+  a `mov r6,r8 / push {r6,r7}` high-save).
+* The last store's source is the r8-pinned `sixhi`, and `strh` sources must
+  be low registers, so reload inserts `mov r1,r8`. A liveness pin holding r0
+  across the store (output-only empty asm before, input-only after) moves that
+  copy to the ROM's r1; without it reload reuses r0.
 
 ## What is left, by size
 
+The liveness pin closed `Race_Setup_18EC0` (84 B) as described above, and the
+unpinned-global-allocno route closed `MenuFF78_15304` (408 B). What is left
+of the `partial` class, by size (2026-10-24, from
+`python3 tools/source_quality.py --list partial`):
+
 | body | bytes | blocker |
 | --- | ---: | --- |
-| `_080015304` `MenuFF78_15304` | 408 | halfword immediate-offset store |
-| `_0800175BC` `Rec35_Input_175BC` | 400 | indexed halfword scratch, plus a far branch agbcc turns into a 4-byte long jump |
-| `_0800278F0` `Garage_Ticker_278F0` | 232 | indexed halfword scratch, plus two naked bodies |
 | `_08000BB0C` `Award_CopyTwinB` | 248 | `mov r3,sp` and an add whose operand order the pointer normalisation forbids |
+| `_0800278F0` `Garage_Ticker_278F0` | 232 | indexed halfword scratch, plus two naked bodies |
 | `_080053DC` `OAMGrid_Build` | 200 | the palette shift hoists out of the loop; 181/200 with the hoist suppressed |
-| `_08006A50` `CollectNearby_06A50` | 156 | the argument copy wants r7 and the scratch wants r2 |
-| `_080018EC0` `Race_Setup_18EC0` | 84 | the zero index wants r7, an unpinned global allocno |
-| `_08002BE78` `SoundPump` | 60 | a literal-pool load and two flag-coupled branches |
-| `_08002C11C` `SoundVoiceCleanup` | 68 | `tst` is not in the compiler's repertoire |
-| `_08002C160` `VoiceEnvelopeApply_2C160` | 48 | register-indexed `ldrsb` |
 | `_08001D7B8` | 160 | a half-defined `u64` return |
+| `_08006A50` `CollectNearby_06A50` | 156 | the argument copy wants r7 and the scratch wants r2 |
+| `_08002C11C` `SoundVoiceCleanup` | 68 | `tst` is not in the compiler's repertoire |
+| `_08002BE78` `SoundPump` | 60 | a literal-pool load and two flag-coupled branches |
+| `_08002C160` `VoiceEnvelopeApply_2C160` | 48 | register-indexed `ldrsb` |
 | `_080015A0` | 24 | `mov r0,pc` |

@@ -12,11 +12,16 @@ Usage:
     python3 tools/body_diff.py --vma 0x08027308 --len 0x158
     python3 tools/body_diff.py --vma 0x08027308        # range auto-detected
     python3 tools/body_diff.py --vma 0x08027308 --len 0x158 --all
+    python3 tools/body_diff.py --vma 0x08007110 --cand build/probe/_08007110_cand.bin
 
 With no `--len` it scans the two images for differing bytes, which only works
 when the change under test is the only edit in the tree (the usual case for a
 single-body lift). `--all` prints every row instead of the first mismatch
 window. Exit status is 0 when the range is byte-identical.
+
+`--cand` compares the ROM span against a bare function blob (the probe's
+`<name>_cand.bin` in its `--work-dir`) instead of `build/gtadv3.gba`, so one
+body can be inspected without relinking the whole image.
 """
 import argparse
 import subprocess
@@ -79,6 +84,8 @@ def main(argv=None):
     ap.add_argument('--len', type=lambda s: int(s, 0), default=None)
     ap.add_argument('--base', default='baserom.gba')
     ap.add_argument('--build', default='build/gtadv3.gba')
+    ap.add_argument('--cand', default=None,
+                    help='bare candidate blob for this body, instead of --build')
     ap.add_argument('--all', action='store_true')
     ap.add_argument('--window', type=int, default=6,
                     help='rows of context each side of the first mismatch')
@@ -86,6 +93,12 @@ def main(argv=None):
 
     ref, cand = load(args.base), load(args.build)
     vma = args.vma
+    if args.cand is not None:
+        cand = load(args.cand)
+        if args.len is None:
+            args.len = len(cand)
+        # A bare blob is addressed from 0, so slide it onto the ROM VMA.
+        cand = b'\0' * (vma & MASK) + cand
     if args.len is not None:
         start, end = vma, vma + args.len
     else:

@@ -77,8 +77,11 @@ Treemap sections represent non-function bytes rather than invented function
 boundaries. `objdiff.json` remains the per-function comparison viewer; regenerate
 it with `make objdiff-config` when function names, owners, or boundaries change.
 
-## decomp.dev
+## recomp.fyi
 
-decomp.dev has shut down, so nothing consumes the uploaded `us_report`
-artifact. The report stays in objdiff v2 format so any objdiff-compatible
-viewer can read it.
+The default-branch workflow uploads the objdiff v2 report as the `us_report`
+artifact. [recomp.fyi](https://recomp.fyi/game/gt-advance-3-pro-concept-racing-gba)
+reads this report for the project's matched-code progress. The root
+[`.recomp.json`](../.recomp.json) records the game, platform, release, project
+name, and current status; the board reads it daily. See the
+[manifest specification](https://recomp.fyi/spec) for the available fields.
