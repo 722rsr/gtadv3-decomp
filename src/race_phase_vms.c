@@ -390,117 +390,94 @@ void sub_080021F14(void *a, int b, int c) __attribute__((alias("RaceVM_021F14"))
 __asm__(".align 2, 0");
 
 // ============================================================================
-// sub_080021F88 (0x080021F88, 0xD0 B) — results rows: for r6 in 0..3:
-// when r6 == s16[rec+156], r7 = {mode==0/2→1, 1/3→2, 4→0, else→2} (jump
-// table 0x08021FB8, slots {1,2,1,2,0}); sel = u16[0x080CC108 + (cur*3+r7)*2],
-// (w0,w1) = u32 pair at 0x080CC0A8 + (cur*3+r7)*8; else sel/pair at index
-// r6*3. Both arms: _08007B18(rec, w0, w1, 0, 6, 1, 0).
-__attribute__((naked)) void RaceVM_021F88(void *rec) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, r7, lr}\n"
-        "sub sp, #16\n"
-        "adds r5, r0, #0\n"
-        "movs r7, #0\n"
-        "movs r6, #0\n"
-        ".L21f88_loop:\n"
-        "adds r0, r5, #0\n"
-        "adds r0, #156\n"
-        "movs r2, #0\n"
-        "ldrsh r1, [r0, r2]\n"
-        "adds r2, r0, #0\n"
-        "cmp r6, r1\n"
-        "bne .L21f88_other\n"
-        "adds r0, #4\n"
-        "ldr r0, [r0, #0]\n"
-        "cmp r0, #4\n"
-        "bhi .L21f88_mode_default\n"
-        "lsls r0, r0, #2\n"
-        "ldr r1, .L21f88_jumpptr\n"
-        "adds r0, r0, r1\n"
-        "ldr r0, [r0, #0]\n"
-        "mov pc, r0\n"
-        "movs r0, r0\n"
-        ".L21f88_jumpptr: .4byte 0x08021FB8\n"
-        ".L21f88_jumptable_1: .4byte 0x08021FD0\n"
-        ".L21f88_jumptable_2: .4byte 0x08021FD4\n"
-        ".L21f88_jumptable_3: .4byte 0x08021FD0\n"
-        ".L21f88_jumptable_4: .4byte 0x08021FD4\n"
-        ".L21f88_jumptable_5: .4byte 0x08021FCC\n"
-        ".L21f88_mode_zero:\n"
-        "movs r7, #0\n"
-        "b .L21f88_mode_default\n"
-        ".L21f88_mode_one:\n"
-        "movs r7, #1\n"
-        "b .L21f88_mode_default\n"
-        ".L21f88_mode_two:\n"
-        "movs r7, #2\n"
-        ".L21f88_mode_default:\n"
-        "ldr r1, .L21f88_sel_table\n"
-        "movs r3, #0\n"
-        "ldrsh r0, [r2, r3]\n"
-        "lsls r3, r0, #1\n"
-        "adds r3, r3, r0\n"
-        "adds r0, r3, r7\n"
-        "lsls r0, r0, #1\n"
-        "adds r0, r0, r1\n"
-        "ldrh r1, [r0, #0]\n"
-        "ldr r4, .L21f88_pair_table\n"
-        "adds r3, r3, r7\n"
-        "lsls r3, r3, #3\n"
-        "adds r0, r3, r4\n"
-        "ldr r2, [r0, #0]\n"
-        "adds r4, #4\n"
-        "adds r3, r3, r4\n"
-        "ldr r3, [r3, #0]\n"
-        "movs r0, #6\n"
-        "str r0, [sp, #0]\n"
-        "movs r0, #1\n"
-        "str r0, [sp, #4]\n"
-        "movs r0, #0\n"
-        "str r0, [sp, #8]\n"
-        "str r0, [sp, #12]\n"
-        "adds r0, r5, #0\n"
-        "bl 0x08007B18\n"
-        "b .L21f88_after_call\n"
-        "movs r0, r0\n"
-        ".L21f88_sel_table: .4byte 0x080CC108\n"
-        ".L21f88_pair_table: .4byte 0x080CC0A8\n"
-        ".L21f88_other:\n"
-        "ldr r1, .L21f88_other_sel\n"
-        "lsls r3, r6, #1\n"
-        "adds r3, r3, r6\n"
-        "lsls r0, r3, #1\n"
-        "adds r0, r0, r1\n"
-        "ldrh r1, [r0, #0]\n"
-        "ldr r4, .L21f88_other_pair\n"
-        "lsls r3, r3, #3\n"
-        "adds r0, r3, r4\n"
-        "ldr r2, [r0, #0]\n"
-        "adds r4, #4\n"
-        "adds r3, r3, r4\n"
-        "ldr r3, [r3, #0]\n"
-        "movs r0, #6\n"
-        "str r0, [sp, #0]\n"
-        "movs r0, #1\n"
-        "str r0, [sp, #4]\n"
-        "movs r0, #0\n"
-        "str r0, [sp, #8]\n"
-        "str r0, [sp, #12]\n"
-        "adds r0, r5, #0\n"
-        "bl 0x08007B18\n"
-        ".L21f88_after_call:\n"
-        "adds r6, #1\n"
-        "cmp r6, #3\n"
-        "ble .L21f88_loop\n"
-        "add sp, #16\n"
-        "pop {r4, r5, r6, r7}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        ".L21f88_other_sel: .4byte 0x080CC108\n"
-        ".L21f88_other_pair: .4byte 0x080CC0A8\n"
-        ".syntax divided\n"
-    );
+// sub_080021F88 (0x080021F88, 0xD4 B incl. padding) — results rows: for i in
+// 0..3, when i == s16[rec+156] the sub-slot is {mode 0/2 -> 1, 1/3 -> 2, 4 -> 0,
+// any other mode keeps the previous slot} (jump table at 0x08021FB8, slots
+// {1,2,1,2,0}); the row is u16[0x080CC108 + (cur*3+slot)*2] plus the u32 pair
+// at 0x080CC0A8 + (cur*3+slot)*8. Otherwise the row is plain index i*3. Both
+// arms emit _08007B18(rec, row, w0, w1, 6, 1, 0, 0).
+//
+// Shaping (each measured, all needed for the byte match):
+//   * `row`/`saved` pins give the ROM's r0 = rec+156, r2 = the copy taken
+//     before `row` is bumped, which is what makes the second `row[0]` read a
+//     `ldrsh r0,[r2,r3]` and the 4-byte pointer bump `adds r0,#4` instead of a
+//     folded `ldr r0,[r0,#4]`.
+//   * `c3`/`d3` pinned to r3 is the index accumulator; without the pin agbcc
+//     gives r4 to the index and r3 to the pair-table base, i.e. swaps every
+//     later register.
+//   * the `+r` launder on `sel` stops cse sharing the `cur*3+slot` value, so
+//     the sel row and the pair row are each indexed by their own add. The
+//     two `"r"` barriers force the table-base pool loads to be issued *before*
+//     the index arithmetic, which is the ROM's schedule.
+//   * the two table bases must stay SYMBOLS: a pool-loaded pointer variable
+//     loses the ROM's `adds r4,#4 / adds r3,r3,r4 / ldr r3,[r3]` second-word
+//     access (it becomes a folded `ldr r3,[r3,#4]`).
+void RaceVM_021F88(void *rec) {
+    __asm__(".globl RaceVMSel_CC108\nRaceVMSel_CC108 = 0x080CC108\n");
+    __asm__(".globl RaceVMPr_CC0A8\nRaceVMPr_CC0A8 = 0x080CC0A8\n");
+    extern u16 RaceVMSel_CC108[];
+    extern u32 RaceVMPr_CC0A8[];
+    register void *base __asm__("r5") = rec;
+    int slot = 0;
+    int i;
+
+    for (i = 0; i <= 3; i++) {
+        register s16 *row __asm__("r0") = (s16 *)((u8 *)base + 156);
+        register s16 *saved __asm__("r2");
+        int cur = row[0];
+
+        saved = row;
+        if (i == cur) {
+            uintptr_t mode_p = (uintptr_t)row + 4;
+            u16 *selTab;
+            int c;
+            int sel;
+            int pairIdx;
+            u16 rowSel;
+            register int c3 __asm__("r3");
+
+            __asm__ volatile("" : "+r"(mode_p));
+            switch (*(u32 *)mode_p) {
+            case 4:
+                slot = 0;
+                break;
+            case 0:
+            case 2:
+                slot = 1;
+                break;
+            case 1:
+            case 3:
+                slot = 2;
+                break;
+            }
+            selTab = RaceVMSel_CC108;
+            c = saved[0];
+            c3 = c * 3;
+            sel = c3 + slot;
+            __asm__ volatile("" : "+r"(sel));
+            rowSel = selTab[sel];
+            __asm__ volatile("" : : "r"((u32)(uintptr_t)RaceVMPr_CC0A8));
+            pairIdx = c3 + slot;
+            _08007B18(base, (int)rowSel,
+                      (int)*(u32 *)((u8 *)RaceVMPr_CC0A8 + pairIdx * 8),
+                      (int)*(u32 *)((u8 *)RaceVMPr_CC0A8 + pairIdx * 8 + 4),
+                      6u, 1u, 0u, 0u);
+        } else {
+            int pairOff;
+            u16 rowSel;
+            register int d3 __asm__("r3");
+
+            __asm__ volatile("" : : "r"((u32)(uintptr_t)RaceVMSel_CC108));
+            d3 = i * 3;
+            rowSel = RaceVMSel_CC108[d3];
+            __asm__ volatile("" : : "r"((u32)(uintptr_t)RaceVMPr_CC0A8));
+            pairOff = d3 * 8;
+            _08007B18(base, (int)rowSel,
+                      (int)*(u32 *)((u8 *)RaceVMPr_CC0A8 + pairOff),
+                      (int)*(u32 *)((u8 *)RaceVMPr_CC0A8 + pairOff + 4),
+                      6u, 1u, 0u, 0u);
+        }
+    }
 }
 void _080021F88(void *a) __attribute__((alias("RaceVM_021F88")));
 void sub_080021F88(void *a) __attribute__((alias("RaceVM_021F88")));

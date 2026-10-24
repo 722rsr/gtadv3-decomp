@@ -228,6 +228,12 @@ void _080026554(void *a, int b, void *c) __attribute__((alias("Sprite_PlacePair"
 void sub_080026554(void *a, int b, void *c) __attribute__((alias("Sprite_PlacePair")));
 
 // 0x08026550 shares the same pair-emitter body, with one ignored r3 input.
+// 0x08026554 is NOT an entry (it is four bytes into this span), so the
+// Sprite_PlacePair body above -- whose aliases are named _080026554 -- has
+// never been scored. MEASURED 2026-10-23: lifting this span reaches 74/292 with
+// the exact length once the 0x03001780 / 0x000010BC pair is written as two
+// anchors; the residue is the flag/sp0 homes (ROM keeps flag in r8 and sp0 on
+// the stack) and agbcc reusing one emitter block across the two objects.
 __attribute__((naked)) void Sprite_PlacePairEntry_26550(void *rec, int x, void *spr, int unused) {
     __asm__ volatile (
         ".syntax unified\n"
@@ -1116,6 +1122,11 @@ void sub_08026B30(void *a) __attribute__((alias("Sprite_Init")));
 //   [entry+20] = u16[rec+4+cur*2]; [entry+22] = u16[rec+8+cur*2];
 //   _08007538(0x083A2100, table1[ev], s16[entry+20]);
 //   _080075E8(0x083A2100, table2[ev], s16[entry+22]).
+// MEASURED 2026-10-23: a C lift reaches 178/260 with the prologue, the ev==8
+// arm and the 0x03001674 address CSE exact. Give each phase its own record
+// variable -- one shared `rec` gives the branch arm r3 and costs the r6
+// save; the residue is then the base/constant homes (ROM r5/r3/r2 vs agbcc
+// r3/r6/r0) and the operand order of the three `adds r0,r3,r0` entries.
 // ============================================================================
 __attribute__((naked)) void Sprite_MenuEvent(int ev) {
     __asm__ volatile (

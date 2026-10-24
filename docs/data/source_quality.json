@@ -5455,11 +5455,9 @@
    "size": 372
   },
   "0x08010370": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 170,
-    "naked": true
+    "directive": 1
    },
    "file": "src/menu_ff78_a.c",
    "name": "MenuFF78_10370",
@@ -7055,11 +7053,9 @@
    "size": 56
   },
   "0x08018540": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 138,
-    "naked": true
+    "pin": 1
    },
    "file": "src/rec35_setup_tail.c",
    "name": "Rec35_Cascade_18540",
@@ -8722,11 +8718,11 @@
    "size": 116
   },
   "0x08021f88": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 84,
-    "naked": true
+    "barrier": 5,
+    "directive": 2,
+    "pin": 5
    },
    "file": "src/race_phase_vms.c",
    "name": "RaceVM_021F88",
@@ -9115,12 +9111,7 @@
    "size": 128
   },
   "0x08023c54": {
-   "class": "asm",
-   "detail": {
-    "insn": 1,
-    "insn_lines": 110,
-    "naked": true
-   },
+   "class": "c",
    "file": "src/runtime_record_helpers.c",
    "name": "_080023C54",
    "size": 248
@@ -13023,11 +13014,9 @@
    "size": 128
   },
   "0x0802dba4": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
-    "barrier": 3,
-    "insn": 1,
-    "insn_lines": 1,
+    "barrier": 4,
     "pin": 16
    },
    "file": "src/sound_deep.c",
@@ -13302,20 +13291,20 @@
  },
  "totals": {
   "asm": {
-   "bytes": 67720,
-   "functions": 178
+   "bytes": 66516,
+   "functions": 174
   },
   "c": {
-   "bytes": 42162,
-   "functions": 869
+   "bytes": 42410,
+   "functions": 870
   },
   "c_fakematch": {
-   "bytes": 76074,
-   "functions": 616
+   "bytes": 77206,
+   "functions": 620
   },
   "partial": {
-   "bytes": 2180,
-   "functions": 12
+   "bytes": 2004,
+   "functions": 11
   }
  },
  "version": 1

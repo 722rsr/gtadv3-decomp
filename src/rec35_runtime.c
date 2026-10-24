@@ -769,13 +769,14 @@ void _080018344(void *a) __attribute__((alias("Rec35_Leaf_18344")));
 // _0800184F0: push {lr}; _08026020(0) Vu32; _08026020(1); _08026020(2) — pool 0x08060D4C Vu32 94/95/96 via 0x0802E0A4 6B copy, strb Vu8 at 0x03001CFC+slot, ldrsh Vs16 94/95/96 → bl 0x08025F78 Vu32
 // Pools: 0x08060D4C Vu32 ROM 94/95/96 (6B), 0x03001780 Vu32 base, 0x5C offset, helper ABI proven via ai_award_tail.s + ai_collect.s + runtime_mem.s 0x0802E0A4 6B memcpy
 extern void _08026020(int slot);   // slice-closure spelling; body + Sub_ alias in src/ai_award_leaves.c
-void Rec35_Leaf_184F0(void) {
+void Rec35_Leaf_184F0(void *ctx) {
+    (void)ctx;
     _08026020(0);
     _08026020(1);
     _08026020(2);
 }
-void _0800184F0(void) __attribute__((alias("Rec35_Leaf_184F0")));
-void sub_0800184F0(void) __attribute__((alias("Rec35_Leaf_184F0")));
+void _0800184F0(void *ctx) __attribute__((alias("Rec35_Leaf_184F0")));
+void sub_0800184F0(void *ctx) __attribute__((alias("Rec35_Leaf_184F0")));
 
 // _08001881C — canonical body: rec35_dispatch_tail.c `Rec35_Setup_1881C`
 // (identical to 0x08001876C except `sub_08007664(..., 10)`). Duplicate body
@@ -837,7 +838,8 @@ void _080018210(void *a, void *b, int c) __attribute__((alias("Rec35_Leaf_18210"
 // _080018434: push {r4,lr}; loop r4=1..98 skip 54/94/95/96; Sub_08025F78(r4) Vu32 0x03001780 pool 0x03001780 etc.
 // Pools: none (movs #1 Vu32 etc.), helper Sub_08025F78 Vu32 bitset at 0x030017A0 + 0x080CD9D4 pool proven via ai_award_bitset.s
 extern void _08025F78(int v); // asm/ai_award_bitset.s spells it this way
-void Rec35_Leaf_18434(void) {
+void Rec35_Leaf_18434(void *ctx) {
+    (void)ctx;
     for (int r4 = 1; r4 <= 98; r4++) {
         if (r4 == 54) continue;
         if (r4 == 94) continue;
@@ -847,7 +849,7 @@ void Rec35_Leaf_18434(void) {
     }
 }
 __asm__(".align 2, 0");
-void _080018434(void) __attribute__((alias("Rec35_Leaf_18434")));
+void _080018434(void *ctx) __attribute__((alias("Rec35_Leaf_18434")));
 
 // ---- : rec35_runtime.s 0x08018230-0x080183D8 dispatcher family (8 VMAs) ----
 // Evidence: instruction-for-instruction from asm/rec35_runtime.s; pool words
