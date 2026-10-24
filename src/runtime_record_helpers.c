@@ -1024,128 +1024,41 @@ void _080023BD4(void *rec_)
 void sub_080023BD4(void *a) __attribute__((alias("_080023BD4")));
 void _08023BD4(void *a) __attribute__((alias("_080023BD4")));
 
-__attribute__((naked)) void _080023C54(void *rec, int mode) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push	{r4, r5, r6, r7, lr}\n"
-        "mov	r7, sl\n"
-        "mov	r6, r9\n"
-        "mov	r5, r8\n"
-        "push	{r5, r6, r7}\n"
-        "sub	sp, #32\n"
-        "mov	r9, r0\n"
-        "adds	r7, r1, #0\n"
-        "ldr r1, .L23c54_d3c\n"
-        "add	r0, sp, #20\n"
-        "movs	r2, #4\n"
-        "bl 0x0802E0A4\n"
-        "add	r6, sp, #24\n"
-        "ldr r1, .L23c54_d40\n"
-        "adds	r0, r6, #0\n"
-        "movs	r2, #4\n"
-        "bl 0x0802E0A4\n"
-        "cmp	r7, #2\n"
-        "bne .L23c54_c80\n"
-        "movs	r7, #0\n"
-        ".L23c54_c80:\n"
-        "ldr r0, .L23c54_d44\n"
-        "ldr	r0, [r0, #0]\n"
-        "cmp	r7, r0\n"
-        "bne .L23c54_ca2\n"
-        "ldr r0, .L23c54_d48\n"
-        "ldr	r0, [r0, #0]\n"
-        "mov	r5, r9\n"
-        "adds	r5, #212\n"
-        "mov	r1, r9\n"
-        "adds	r1, #224\n"
-        "str	r1, [sp, #28]\n"
-        "subs	r1, #16\n"
-        "movs	r2, #220\n"
-        "add	r2, r9\n"
-        "mov	sl, r2\n"
-        "cmp	r0, #0\n"
-        "bne .L23c54_ce4\n"
-        ".L23c54_ca2:\n"
-        "mov	r5, r9\n"
-        "adds	r5, #212\n"
-        "lsls	r1, r7, #1\n"
-        "mov	r0, sp\n"
-        "adds	r0, r0, r1\n"
-        "adds	r0, #20\n"
-        "ldrh	r0, [r0, #0]\n"
-        "str	r0, [r5, #0]\n"
-        "mov	r4, r9\n"
-        "adds	r4, #224\n"
-        "adds	r1, r6, r1\n"
-        "ldrh	r0, [r1, #0]\n"
-        "str	r0, [r4, #0]\n"
-        "mov	r3, r9\n"
-        "ldr	r0, [r3, #12]\n"
-        "ldr	r1, [r5, #0]\n"
-        "movs	r2, #208\n"
-        "add	r2, r9\n"
-        "mov	r8, r2\n"
-        "ldr	r2, [r2, #0]\n"
-        "bl 0x08007ABC\n"
-        "mov	r3, r9\n"
-        "ldr	r0, [r3, #12]\n"
-        "ldr	r1, [r4, #0]\n"
-        "mov	r6, r9\n"
-        "adds	r6, #220\n"
-        "ldr	r2, [r6, #0]\n"
-        "bl 0x08007ABC\n"
-        "str	r4, [sp, #28]\n"
-        "mov	r1, r8\n"
-        "mov	sl, r6\n"
-        ".L23c54_ce4:\n"
-        "movs	r0, #8\n"
-        "add	r9, r0\n"
-        "ldr	r1, [r1, #0]\n"
-        "ldr	r2, [r5, #0]\n"
-        "movs	r3, #96\n"
-        "mov	r8, r3\n"
-        "str	r3, [sp, #0]\n"
-        "movs	r6, #6\n"
-        "str	r6, [sp, #4]\n"
-        "movs	r5, #1\n"
-        "str	r5, [sp, #8]\n"
-        "movs	r4, #0\n"
-        "str	r4, [sp, #12]\n"
-        "str	r4, [sp, #16]\n"
-        "mov	r0, r9\n"
-        "movs	r3, #168\n"
-        "bl 0x08007BFC\n"
-        "mov	r0, sl\n"
-        "ldr	r1, [r0, #0]\n"
-        "ldr	r3, [sp, #28]\n"
-        "ldr	r2, [r3, #0]\n"
-        "mov	r0, r8\n"
-        "str	r0, [sp, #0]\n"
-        "str	r6, [sp, #4]\n"
-        "str	r5, [sp, #8]\n"
-        "str	r4, [sp, #12]\n"
-        "str	r4, [sp, #16]\n"
-        "mov	r0, r9\n"
-        "movs	r3, #40\n"
-        "bl 0x08007BFC\n"
-        "ldr r0, .L23c54_d44\n"
-        "str	r7, [r0, #0]\n"
-        "ldr r0, .L23c54_d48\n"
-        "str	r5, [r0, #0]\n"
-        "add	sp, #32\n"
-        "pop	{r3, r4, r5}\n"
-        "mov	r8, r3\n"
-        "mov	r9, r4\n"
-        "mov	sl, r5\n"
-        "pop	{r4, r5, r6, r7}\n"
-        "pop	{r0}\n"
-        "bx	r0\n"
-        ".L23c54_d3c: .4byte 0x0805FC84\n"
-        ".L23c54_d40: .4byte 0x0805FC88\n"
-        ".L23c54_d44: .4byte 0x030005AC\n"
-        ".L23c54_d48: .4byte 0x080CC198\n"
-        ".syntax divided\n"
-    );
+// _080023C54 (0x080023C54, 248 B) — refresh two sprite pairs on `rec`:
+// (0xD0 size, 0xD4 lane) and (0xDC size, 0xE0 lane). The 4-byte row templates
+// at 0x0805FC84/0x0805FC88 are copied to the stack and indexed by the mode
+// (2 normalises to 0); the pair is only re-bound through _08007ABC when the
+// mode differs from the cached 0x030005AC value or the 0x080CC198 flag is
+// clear. Both _08007BFC emits (0xA8 and 0x28) always run, then the mode is
+// cached and the flag set.
+//
+// `mode` must be unsigned. As `int`, agbcc homes it in sl and gives p2 (rec+220)
+// r7; as `u32` the mode takes r7 itself, p2 lands in sl and p1 in r5, which is
+// the ROM's frame — that one word is the whole difference (110/248 -> 248/248).
+// No pins: the field addresses stay expressions, so the two arms each compute
+// them once and the common tail reuses the arm's registers.
+void _080023C54(void *rec_, u32 mode_) {
+    u8 *rec = (u8 *)rec_;
+    u32 mode = mode_;
+    u16 rowsA[2];
+    u16 rowsB[2];
+
+    _08002E0A4(rowsA, (const void *)0x0805FC84u, 4);
+    _08002E0A4(rowsB, (const void *)0x0805FC88u, 4);
+    if (mode == 2)
+        mode = 0;
+    if (mode != *(u32 *)0x030005ACu || *(u32 *)0x080CC198u == 0) {
+        *(u32 *)(rec + 212) = rowsA[mode];
+        *(u32 *)(rec + 224) = rowsB[mode];
+        _08007ABC((void *)*(u32 *)(rec + 12), *(u32 *)(rec + 212),
+                  *(u32 *)(rec + 208));
+        _08007ABC((void *)*(u32 *)(rec + 12), *(u32 *)(rec + 224),
+                  *(u32 *)(rec + 220));
+    }
+    _08007BFC(rec + 8, *(u32 *)(rec + 208), *(u32 *)(rec + 212), 168, 96, 6, 1, 0, 0);
+    _08007BFC(rec + 8, *(u32 *)(rec + 220), *(u32 *)(rec + 224), 40, 96, 6, 1, 0, 0);
+    *(u32 *)0x030005ACu = (u32)mode;
+    *(u32 *)0x080CC198u = 1;
 }
 void sub_080023C54(void *a, int b) __attribute__((alias("_080023C54")));
 void _08023C54(void *a, int b) __attribute__((alias("_080023C54")));

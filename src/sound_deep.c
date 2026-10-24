@@ -184,11 +184,14 @@ int SoundDBA4_Read(u32 sector, void *dst){
             sub_0802DB24((u32)(uintptr_t)buf, base, (u16)((u32)m + 3u));
             sub_0802DB24(base, (u32)(uintptr_t)buf, 0x44u);
         }
-        // `p = buf + 4` is the same instruction (`add r2,sp,#8`), but global
-        // CSE hoists the constant to the top of the frame setup and keeps it
-        // in a callee-saved r7 across the two DMA calls (measured: prologue
-        // gains r7, 176 B body, 54/176). The splice pins it at its use.
-        __asm__("add\t%0, sp, #8" : "=r"(p));
+        // `p = buf + 4` lowers to the ROM's `add r2, sp, #8`, but gcse hoists the
+        // loop-invariant frame-base address into a callee-saved r7 across the two
+        // DMA calls (prologue gains r7, body 54/176). The empty r7 register-clobber
+        // discards that cse fact without emitting bytes, so the add is computed
+        // fresh here into p's pinned r2. An instruction-splicing `add r2,sp,#8` was
+        // previously required here; see docs/findings/indexed_halfword_scratch.md.
+        __asm__ volatile ("" : : : "r7");
+        p = buf + 4;
         __asm__ volatile ("" : "+r"(d));
         d += 3;
         {
