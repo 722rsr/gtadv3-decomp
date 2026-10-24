@@ -89,7 +89,7 @@ extern void _0802B368(u32 v);
 //   s16[rec+148]=0; s16[rec+150]=0; 02124(0x1392);
 //   if s16[rec+138]==1: 152A8(rec).
 void MenuFF78_15304(void *rec_) {
-    register volatile u8 *rec __asm__("r7") = (volatile u8 *)rec_;
+    volatile u8 *rec = (volatile u8 *)rec_;
     register u32 sixlo __asm__("r0");
     register u32 sixhi __asm__("r8");
     {
@@ -136,8 +136,10 @@ void MenuFF78_15304(void *rec_) {
         sub_08007614(tile, 1, 0, 3);
         sub_08007614(tile, 1, 1, 4);
     }
-    sub_0800798C((void *)(uintptr_t)0x082FA8E4u, rec_);
-    sub_08007A58(rec_);
+    // The ROM re-derives these rec arguments from the r7 copy, never from the
+    // incoming r0: keeping rec_ alive would stage it in a callee-saved.
+    sub_0800798C((void *)(uintptr_t)0x082FA8E4u, (void *)rec);
+    sub_08007A58((void *)rec);
     {
         void *tm2 = (void *)(uintptr_t)0x082B7410u;
         sub_0800798C(tm2, (void *)(uintptr_t)(rec + 8));
@@ -150,22 +152,27 @@ void MenuFF78_15304(void *rec_) {
     *(volatile u32 *)(uintptr_t)(rec + 128) = (u32)(uintptr_t)(rec + 164);
     *(volatile u32 *)(uintptr_t)(rec + 132) = (u32)(uintptr_t)(rec + 16);
     *(volatile u32 *)(uintptr_t)(rec + 16) = 0;
-    // The ROM uses immediate r7-based STRH forms here; agbcc expands the
-    // equivalent byte-offset volatile lvalues into pointer arithmetic.
-    __asm__ volatile(".code 16\n\tmovs r0, #1\n\tstrh r0, [r7, #20]"
-                     : : : "r0", "cc", "memory");
+    // The ROM's immediate r7-based STRH forms need rec as an *unpinned*
+    // global allocno in r7: GO_IF_LEGITIMATE_ADDRESS rejects HImode FP-based
+    // addresses before reload, so a pinned r7 base can never fold the offset.
+    *(volatile u16 *)(rec + 20) = 1;
     sub_0800D77C((void *)(uintptr_t)(rec + 36), 0, -32);
     sub_0800D77C((void *)(uintptr_t)(rec + 28), 0, 160);
-    __asm__ volatile(".code 16\n\tmovs r0, #5\n\tstrh r0, [r7, #24]"
-                     : : : "r0", "cc", "memory");
-    __asm__ volatile(".code 16\n\tmov r1, %0\n\tstrh r1, [r7, #26]"
-                     : : "r"(sixhi) : "r1", "cc", "memory");
+    *(volatile u16 *)(rec + 24) = 5;
+    // Hold r0 across the store so reload's low-reg copy of the r8 value takes
+    // r1 (`mov r1, r8`), as in the ROM.
+    {
+        register int hold0 __asm__("r0");
+        __asm__ volatile("" : "=r"(hold0));
+        *(volatile u16 *)(rec + 26) = sixhi;
+        __asm__ volatile("" : : "r"(hold0));
+    }
     *(volatile u32 *)(uintptr_t)(rec + 164) = 2;
     *(volatile s16 *)(uintptr_t)(rec + 148) = 0;
     *(volatile s16 *)(uintptr_t)(rec + 150) = 0;
     _08002124(0x1392u);
     if (*(volatile s16 *)(uintptr_t)(rec + 138) == 1)
-        sub_0800152A8(rec_);
+        sub_0800152A8((void *)rec);
 }
 void _080015304(void *a) __attribute__((alias("MenuFF78_15304")));
 void Sub_080015304(void *a) __attribute__((alias("MenuFF78_15304")));
