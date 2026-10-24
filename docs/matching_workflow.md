@@ -182,7 +182,8 @@ See [candidate-length diagnostics](findings/oversized_plus4_class.md).
   non-volatile `*(s16 *)` lvalue gives the ROM's `movs rX,#k / ldrsh
   rY,[base,rX]` -- but the scratch's hard register is not: agbcc gives two
   consecutive constant-index loads the same register, and the ROM's compiler
-  did not. Nine `partial` bodies (2,400 B) are gated on that one choice. See
+  did not. A liveness pin recovers the ROM's scratch register (see below);
+  three `partial` bodies are still gated on that choice. See
   [the indexed halfword scratch](findings/indexed_halfword_scratch.md).
 - A pointer offset stays two instructions (`adds r1,r7,#0 / adds r1,#138`)
   only while the address is a pointer; a `(uintptr_t)` cast turns it into an

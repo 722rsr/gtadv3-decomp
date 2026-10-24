@@ -81,7 +81,7 @@ HOST_STUB(void  _08004EC0(int v));
 HOST_STUB(u16   _080024A0(void));
 HOST_STUB(int   _0800A9E0(int t, int r));
 HOST_STUB(int   _0800A9A0(int t, int r));HOST_STUB(u32   _08002140(void));
-HOST_STUB(u16   _08002178(int i));
+HOST_STUB(u16   _08002178(int i, int hw));                            // true arity: ROM sets r1 before every bl
 HOST_STUB(void  _08002158(int a, int b));
 HOST_STUB(void  _080016D0(int v));
 HOST_STUB(u16   _08001E8C(int a, int b));
@@ -91,7 +91,7 @@ HOST_STUB(void  _08001E48(int a, int b));
 HOST_STUB(int   _08001F8C(void));  // 32-bit contract: ROM caller does a bare `cmp r6,r0` (no zero-extend), as in garage_records.c/_080028EB0
 HOST_STUB(void  _08001F80(u16 v));
 HOST_STUB(void  _08003940(int a, u32 b));
-HOST_STUB(u16   _08002044(void));
+HOST_STUB(u32   _08002044(void));                                    // word ABI: callers pass it unmasked (see idle.h)
 HOST_STUB(void  _08003F18(u32 a, u32 b, const volatile u8 *c, int d));
 HOST_STUB(u16   _0800206C(int a));
 HOST_STUB(u16   _08001E5C(int a, int b));
@@ -1330,155 +1330,62 @@ void sub_0800C4D0(void *r) __attribute__((alias("MenuCtor20_0C4D0")));
 // menu_cae4.s 0x0800CAE4 — menu/results detail renderer: template blit,
 // four-column car lanes, template word lane, indexed text lookups.
 // ============================================================================
-__attribute__((naked)) void MenuDetailRender_0CAE4(void *rec) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        ".Lmcae4_0800cae4:\n"
-        "\tpush {r4, r5, r6, r7, lr}\n"
-        "\tsub sp, #56\n"
-        "\tadds r7, r0, #0\n"
-        "\tadd r5, sp, #28\n"
-        "\tadds r1, r5, #0\n"
-        "\tldr r0, .Lmcae4_0800cc08\n"
-        "\tldmia r0!, {r2, r3, r4}\n"
-        "\tstmia r1!, {r2, r3, r4}\n"
-        "\tldmia r0!, {r2, r3, r4}\n"
-        "\tstmia r1!, {r2, r3, r4}\n"
-        "\tldr r0, [r0, #0]\n"
-        "\tstr r0, [r1, #0]\n"
-        "\tldr r1, .Lmcae4_0800cc0c\n"
-        "\tmovs r0, #4\n"
-        "\tbl 0x08003940\n"
-        "\tldr r4, .Lmcae4_0800cc10\n"
-        "\tbl 0x08002044\n"
-        "\tadds r3, r0, #0\n"
-        "\tmovs r0, #20\n"
-        "\tmovs r1, #20\n"
-        "\tadds r2, r4, #0\n"
-        "\tbl 0x08003F18\n"
-        "\tmovs r6, #0\n"
-        ".Lmcae4_0800cb18:\n"
-        "\tmovs r0, #50\n"
-        "\tadds r4, r6, #0\n"
-        "\tmuls r4, r0\n"
-        "\tadds r4, #50\n"
-        "\tadds r0, r6, #0\n"
-        "\tbl 0x0800206C\n"
-        "\tadds r2, r0, #0\n"
-        "\tlsls r2, r2, #16\n"
-        "\tlsrs r2, r2, #16\n"
-        "\tadds r0, r4, #0\n"
-        "\tmovs r1, #30\n"
-        "\tbl 0x08003978\n"
-        "\tadds r0, r6, #0\n"
-        "\tmovs r1, #0\n"
-        "\tbl 0x08001E5C\n"
-        "\tadds r2, r0, #0\n"
-        "\tlsls r2, r2, #16\n"
-        "\tlsrs r2, r2, #16\n"
-        "\tadds r0, r4, #0\n"
-        "\tmovs r1, #40\n"
-        "\tbl 0x08003978\n"
-        "\tadds r0, r6, #0\n"
-        "\tmovs r1, #0\n"
-        "\tbl 0x08002178\n"
-        "\tadds r2, r0, #0\n"
-        "\tlsls r2, r2, #16\n"
-        "\tlsrs r2, r2, #16\n"
-        "\tadds r0, r4, #0\n"
-        "\tmovs r1, #50\n"
-        "\tbl 0x08003978\n"
-        "\tadds r6, #1\n"
-        "\tcmp r6, #3\n"
-        "\tble.n .Lmcae4_0800cb18\n"
-        "\tmovs r4, #70\n"
-        "\tmovs r6, #6\n"
-        ".Lmcae4_0800cb6a:\n"
-        "\tldmia r5!, {r2}\n"
-        "\tmovs r0, #100\n"
-        "\tadds r1, r4, #0\n"
-        "\tbl 0x08003838\n"
-        "\tadds r4, #10\n"
-        "\tsubs r6, #1\n"
-        "\tcmp r6, #0\n"
-        "\tbge.n .Lmcae4_0800cb6a\n"
-        "\tmovs r1, #0\n"
-        "\tldrsh r0, [r7, r1]\n"
-        "\tlsls r1, r0, #2\n"
-        "\tadds r1, r1, r0\n"
-        "\tlsls r1, r1, #1\n"
-        "\tadds r1, #70\n"
-        "\tldr r2, .Lmcae4_0800cc14\n"
-        "\tmovs r0, #90\n"
-        "\tbl 0x08003838\n"
-        "\tldr r1, .Lmcae4_0800cc18\n"
-        "\tldr r4, .Lmcae4_0800cc1c\n"
-        "\tldr r2, .Lmcae4_0800cc20\n"
-        "\tadds r0, r4, r2\n"
-        "\tmovs r3, #0\n"
-        "\tldrsh r0, [r0, r3]\n"
-        "\tlsls r0, r0, #2\n"
-        "\tadds r0, r0, r1\n"
-        "\tldr r2, [r0, #0]\n"
-        "\tmovs r0, #144\n"
-        "\tmovs r1, #70\n"
-        "\tbl 0x08003838\n"
-        "\tldr r1, .Lmcae4_0800cc24\n"
-        "\tadds r0, r4, r1\n"
-        "\tmovs r3, #0\n"
-        "\tldrsh r2, [r0, r3]\n"
-        "\tmovs r0, #160\n"
-        "\tmovs r1, #80\n"
-        "\tbl 0x08003954\n"
-        "\tldr r1, .Lmcae4_0800cc28\n"
-        "\tldr r2, .Lmcae4_0800cc2c\n"
-        "\tadds r0, r4, r2\n"
-        "\tmovs r3, #0\n"
-        "\tldrsh r0, [r0, r3]\n"
-        "\tlsls r0, r0, #2\n"
-        "\tadds r0, r0, r1\n"
-        "\tldr r2, [r0, #0]\n"
-        "\tmovs r0, #184\n"
-        "\tmovs r1, #70\n"
-        "\tbl 0x08003838\n"
-        "\tldr r1, .Lmcae4_0800cc30\n"
-        "\tldr r0, .Lmcae4_0800cc34\n"
-        "\tadds r4, r4, r0\n"
-        "\tmovs r2, #0\n"
-        "\tldrsh r0, [r4, r2]\n"
-        "\tlsls r0, r0, #2\n"
-        "\tadds r0, r0, r1\n"
-        "\tldr r2, [r0, #0]\n"
-        "\tmovs r0, #184\n"
-        "\tmovs r1, #80\n"
-        "\tbl 0x08003838\n"
-        "\tmovs r2, #29\n"
-        "\tldrsb r2, [r7, r2]\n"
-        "\tmovs r0, #160\n"
-        "\tmovs r1, #130\n"
-        "\tbl 0x08003954\n"
-        "\tldrh r1, [r7, #0]\n"
-        "\tmovs r0, #0\n"
-        "\tbl 0x08002158\n"
-        "\tadd sp, #56\n"
-        "\tpop {r4, r5, r6, r7}\n"
-        "\tpop {r0}\n"
-        "\tbx r0\n"
-        "\t.short 0\n"
-        ".Lmcae4_0800cc08: .word 0x0805F850\n"
-        ".Lmcae4_0800cc0c: .word 0x0805F86C\n"
-        ".Lmcae4_0800cc10: .word 0x0805F87C\n"
-        ".Lmcae4_0800cc14: .word 0x0805F888\n"
-        ".Lmcae4_0800cc18: .word 0x080CB2C0\n"
-        ".Lmcae4_0800cc1c: .word 0x03001780\n"
-        ".Lmcae4_0800cc20: .word 0x00000576\n"
-        ".Lmcae4_0800cc24: .word 0x00000574\n"
-        ".Lmcae4_0800cc28: .word 0x080CB3B8\n"
-        ".Lmcae4_0800cc2c: .word 0x0000113C\n"
-        ".Lmcae4_0800cc30: .word 0x080CB3C4\n"
-        ".Lmcae4_0800cc34: .word 0x0000113E\n"
-        ".syntax divided\n"
-    );
+struct MenuCae4Template { u32 w[7]; };
+
+// The ROM frame is 56 bytes and the 28-byte template lands at sp+28, so the
+// local is 14 words and the blit targets the upper half. Both loops are
+// do-while in the ROM (test at the bottom); `for` emits the test at the top.
+void MenuDetailRender_0CAE4(void *rec)
+{
+    u8 *r = (u8 *)rec;
+    u32 tmpl[14];
+    u32 *lane = &tmpl[7];
+    const struct MenuCae4Template *src =
+        (const struct MenuCae4Template *)0x0805F850;
+    register s32 i asm("r6");
+    s32 y;
+
+    *(struct MenuCae4Template *)lane = *src;
+    _08003940(4, 0x0805F86Cu);
+    _08003F18(20, 20, (const volatile u8 *)0x0805F87Cu, _08002044());
+    i = 0;
+    do {
+        s32 x = i * 50 + 50;
+        _08003978(x, 30, _0800206C(i));
+        _08003978(x, 40, _08001E5C(i, 0));
+        _08003978(x, 50, _08002178(i, 0));
+    } while (++i <= 3);
+    y = 70;
+    i = 6;
+    do {
+        sub_08003838(100, y, (const volatile u8 *)*lane++);
+        y += 10;
+    } while (--i >= 0);
+    {
+        s32 sel = *(s16 *)r;
+        sub_08003838(90, sel * 10 + 70, (const volatile u8 *)0x0805F888u);
+    }
+    // Each table base must be pooled *before* the WA offset arithmetic that
+    // feeds its index; the empty operand pins that position. Folding
+    // `(u8 *)0x03001780 + off` into one literal would also lose the runtime add.
+    {
+        u32 *t1;
+        u32 *t2;
+        u8 *wa;
+        t1 = (u32 *)(uintptr_t)0x080CB2C0u;
+        wa = (u8 *)0x03001780;
+        __asm__ volatile ("" : : "r"(t1));
+        sub_08003838(144, 70, (const volatile u8 *)t1[*(s16 *)(wa + 0x576)]);
+        sub_08003954(160, 80, *(s16 *)(wa + 0x574));
+        t2 = (u32 *)(uintptr_t)0x080CB3B8u;
+        __asm__ volatile ("" : : "r"(t2));
+        sub_08003838(184, 70, (const volatile u8 *)t2[*(s16 *)(wa + 0x113C)]);
+        t2 = (u32 *)(uintptr_t)0x080CB3C4u;
+        __asm__ volatile ("" : : "r"(t2));
+        sub_08003838(184, 80, (const volatile u8 *)t2[*(s16 *)(wa + 0x113E)]);
+    }
+    sub_08003954(160, 130, *(s8 *)(r + 29));
+    _08002158(0, *(u16 *)r);
 }
 
 void _0800CAE4(void *r) __attribute__((alias("MenuDetailRender_0CAE4")));

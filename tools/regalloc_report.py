@@ -38,8 +38,10 @@ def run(argv, **kwargs):
     return subprocess.run([str(a) for a in argv], check=True, **kwargs)
 
 
-def function_source_path(name: str) -> tuple[Path, str]:
-    """Resolve a body name (VMA alias aware) to its src file and C name."""
+def function_source_path(name: str) -> tuple[Path, str, list[str]]:
+    """Resolve a body name (VMA alias aware) to its src file, C name, and
+    every name a `;; Function` dump region may carry for it (definition plus
+    aliases, in lookup order)."""
     aliases = probe.alias_targets()
     probe_name = next((alias for alias, target in aliases.items()
                        if target == name and probe.parse_vma_name(alias)), name)
@@ -54,7 +56,12 @@ def function_source_path(name: str) -> tuple[Path, str]:
     # Same tie-break as corpus_match_probe: the strong body wins over a weak
     # stub, and a longer body wins over a shorter one at the same strength.
     best = max(funcs, key=lambda f: (0 if f[4] else 1, f[3]))
-    return best[0], best[1]
+    cname = best[1]
+    group = {name, probe_name, cname,
+             aliases.get(name, name), aliases.get(cname, cname)}
+    group.update(a for a, t in aliases.items() if t in group or a in group)
+    order = [cname, name, *sorted(group - {cname, name})]
+    return best[0], cname, order
 
 
 def compile_with_dumps(path: Path, work: Path) -> Path:
@@ -77,21 +84,28 @@ def compile_with_dumps(path: Path, work: Path) -> Path:
     return pre
 
 
-def function_section(text: str, name: str) -> str:
-    """The `;; Function NAME` region of a dump file."""
+def function_section(text: str, names) -> str:
+    """The `;; Function NAME` region of a dump file.
+
+    agbcc names the region after the C definition while callers usually ask
+    for the VMA alias, so a candidate list is tried in order.
+    """
+    if isinstance(names, str):
+        names = [names]
     pattern = re.compile(r"^;; Function (\S+)\s*$", re.M)
     marks = [(m.start(), m.group(1)) for m in pattern.finditer(text)]
-    for i, (start, fname) in enumerate(marks):
-        if fname == name:
-            end = marks[i + 1][0] if i + 1 < len(marks) else len(text)
-            return text[start:end]
-    raise ValueError(f"no `;; Function {name}` region in dump")
+    for want in names:
+        for i, (start, fname) in enumerate(marks):
+            if fname == want:
+                end = marks[i + 1][0] if i + 1 < len(marks) else len(text)
+                return text[start:end]
+    raise ValueError(f"no `;; Function {'/'.join(names)}` region in dump")
 
 
-def parse_dump(greg: str, lreg: str, name: str):
+def parse_dump(greg: str, lreg: str, names):
     """Pseudo metadata, final hard registers, and per-insn death notes."""
-    section = function_section(greg, name)
-    lsection = function_section(lreg, name)
+    section = function_section(greg, names)
+    lsection = function_section(lreg, names)
 
     pseudos = {}
     for m in re.finditer(
@@ -192,13 +206,13 @@ def main() -> int:
         print("regalloc_report: agbcc missing; run make toolchain", file=sys.stderr)
         return 1
     try:
-        path, cname = function_source_path(args.function)
+        path, cname, names = function_source_path(args.function)
         work = args.work_dir / args.function
         work.mkdir(parents=True, exist_ok=True)
         pre = compile_with_dumps(path, work)
         greg = (work / (pre.name + ".greg")).read_text(encoding="utf-8")
         lreg = (work / (pre.name + ".lreg")).read_text(encoding="utf-8")
-        pseudos, dispositions, insns = parse_dump(greg, lreg, cname)
+        pseudos, dispositions, insns = parse_dump(greg, lreg, names)
     except (ValueError, OSError, subprocess.CalledProcessError) as exc:
         print(f"regalloc_report: {exc}", file=sys.stderr)
         return 1
