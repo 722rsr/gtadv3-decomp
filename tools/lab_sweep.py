@@ -12,7 +12,9 @@ next variant (and on exit). Nothing is staged or promoted.
         --end 'void _08026B80(int a)' variants/*.c
 
 Prints one line per variant: matched bytes, status, candidate length, first
-difference offset, then the best variant.
+difference offset, then the best variant. With `--diff` it re-installs the
+best variant and prints the probe's aligned instruction listing for it, which
+is otherwise a manual swap-in/swap-out round trip.
 """
 from __future__ import annotations
 
@@ -26,13 +28,16 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 
 
-def score(function: str, work: Path) -> dict:
+def score(function: str, work: Path, diff: bool = False) -> dict:
     out = work / "score.json"
-    subprocess.run(
-        [sys.executable, str(ROOT / "tools/corpus_match_probe.py"),
-         "--c89", "--function", function, "--work-dir", str(work / "probe"),
-         "--json", str(out)],
-        cwd=ROOT, capture_output=True, text=True)
+    cmd = [sys.executable, str(ROOT / "tools/corpus_match_probe.py"),
+           "--c89", "--function", function, "--work-dir", str(work / "probe"),
+           "--json", str(out)]
+    if diff:
+        cmd.append("--diff")
+    res = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True)
+    if diff:
+        print(res.stdout)
     if not out.exists():
         return {}
     data = json.loads(out.read_text())
@@ -48,6 +53,8 @@ def main() -> int:
     ap.add_argument("--function", required=True)
     ap.add_argument("--start", required=True)
     ap.add_argument("--end", required=True)
+    ap.add_argument("--diff", action="store_true",
+                    help="re-install the best variant and print the probe listing")
     ap.add_argument("variants", nargs="+")
     args = ap.parse_args()
 
@@ -71,6 +78,11 @@ def main() -> int:
                     (row.get("cand_bytes") or 0) - (row.get("rom_bytes") or 0)))
                 if best is None or key > best[0]:
                     best = (key, vpath)
+            if args.diff and best is not None:
+                path.write_text(original[:start] + Path(best[1]).read_text()
+                                + "\n" + original[end:])
+                print("=== best: %s ===" % best[1])
+                score(args.function, work, diff=True)
     finally:
         path.write_text(original)
     print("best:", best[1] if best else None)

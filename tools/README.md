@@ -65,7 +65,8 @@ neither target replaces `make matching-ready`.
 | `wall_census.py` | Sort the remaining asm-backed bodies into documented walls (`MEASURED`/unreachable/regalloc) and bodies that still need a lift, so a session opens a target that is not already walled; `--lift-screen` drops raw bodies whose own instruction stream is not agbcc output. |
 | `experiment_kit.py` | Shared candidate compiler, byte scorer, contracts, and output handling. |
 | `matching_campaign.py` | Bounded, resumable full-TU variants and matrices; persistent failures, output deduplication, and best candidate. |
-| `lab_sweep.py` | Score several spellings of one body in place: each variant file replaces the span between two markers, the probe scores it, and the original bytes are restored on exit. Use it for the edit-probe-repeat loop instead of hand-editing the TU. |
+| `lab_sweep.py` | Score several spellings of one body in place: each variant file replaces the span between two markers, the probe scores it, and the original bytes are restored on exit. Use it for the edit-probe-repeat loop instead of hand-editing the TU; `--diff` re-installs the best variant and prints the probe listing. |
+| `body_diff.py` | Instruction-level diff of one body: reference vs the linked image, or (`--cand`) vs a probe's `<name>_cand.bin`, so a body can be inspected without relinking the whole ROM. |
 | `instruction_diff.py` | Reachable Thumb instruction alignment, register/operand/target/pool diagnostics; advisory only. |
 | `compiler_microscope.py` | Chronological RTL comparison plus a separate register-note/allocator-prose channel. |
 | `fixtures/agbcc_recipes/` | Reproduce selected upstream matching motifs; see the [recipe cookbook](../docs/findings/agbcc_matching_recipes.md) for applicability and local results. |
