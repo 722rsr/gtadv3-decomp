@@ -1,128 +1,143 @@
 #!/usr/bin/env python3
-"""Minimal Thumb decoder for a ROM slice (works around local objdump
-invocation flakiness). Decodes common instructions well enough to
-follow control flow; unknown halfwords print as .hword with raw bits.
+"""Disassemble a ROM address range.
 
-Usage: python3 tools/mini_dis.py 0x080019500 0x080019560
+Prefers `arm-none-eabi-objdump` on a byte slice of baserom.gba: the local
+windowing makes addresses exact and keeps objdump's own decoder (the previous
+hand-rolled table mis-decoded `adds rd, rn, #imm`, the high-register ops and
+every PC-relative literal, which made control flow hard to follow).
+
+Usage:
+    python3 tools/mini_dis.py 0x08021F88 0x0802205C        # [start, end)
+    python3 tools/mini_dis.py 0x08021F88 --len 0xD4
+
+`--pools` re-labels any `ldr rX, [pc, #n]` target word as `.word` data so the
+literal pool stops looking like instruction garbage.
 """
+import shutil
 import struct
+import subprocess
 import sys
+import tempfile
 
-rom = open('baserom.gba', 'rb').read()
+ROM = 'baserom.gba'
 MASK = 0x00FFFFFF
 
 
-def rd2(a):
+def rom_bytes():
+    with open(ROM, 'rb') as f:
+        return f.read()
+
+
+def rd2(rom, a):
     o = a & MASK
     return struct.unpack('<H', rom[o:o + 2])[0]
 
 
-def reg(n):
-    return f"r{n}"
+def rd4(rom, a):
+    o = a & MASK
+    return struct.unpack('<I', rom[o:o + 4])[0]
 
 
-def dec_one(a):
-    hw = rd2(a)
-    op = hw >> 12
-    if (hw >> 11) == 0b11110:
-        off = rd2(a + 2)
-        disp = ((hw & 0x7FF) << 11) | (off & 0x7FF)
-        if disp & 0x100000:
-            disp -= 0x200000
-        return 4, f"bl {a + 4 + disp * 2:#x}"
-    if (hw & 0xFF87) == 0x4700:
-        rm = (hw >> 3) & 0xF
-        return 2, f"bx r{rm}"
-    if (hw & 0xFF00) == 0x4600:
-        rd = (hw >> 0) & 7 | ((hw >> 4) & 8)
-        rm = (hw >> 3) & 0xF
-        return 2, f"mov r{rd}, r{rm}"
-    if (hw & 0xFE00) == 0x1800 or (hw & 0xE000) == 0x1000:
-        # data-processing register
-        ops = {0: 'lsls', 1: 'lsrs', 2: 'asrs', 3: 'adds?', }
-        return 2, f"alu {hw:04x}"
-    if op == 0x2:
-        rd = (hw >> 8) & 7
-        imm = hw & 0xFF
-        return 2, f"movs r{rd}, #{imm:#x}"
-    if op == 0x3:
-        rd = (hw >> 8) & 7
-        imm = hw & 0xFF
-        kind = (hw >> 11) & 3
-        nm = {0: 'cmp', 1: 'adds', 2: 'subs'}.get(kind, 'op')
-        return 2, f"{nm} r{rd}, #{imm:#x}"
-    if op == 0x4 and (hw >> 10) != 0b010001:
-        return 2, f"aluhi {hw:04x}"
-    if op == 0x5:
-        rd = hw & 7
-        rn = (hw >> 3) & 7
-        rm = (hw >> 6) & 7
-        kind = (hw >> 9) & 3
-        nm = ['str', 'strh', 'strb', 'ldrsb'][kind]
-        return 2, f"{nm} r{rd}, [r{rn}, r{rm}]"
-    if op in (6, 7, 8):
-        rd = hw & 7
-        rn = (hw >> 3) & 7
-        imm = (hw >> 6) & 0x1F
-        ld = (hw >> 11) & 1
-        if op == 6:
-            nm, sc = ('ldr' if ld else 'str'), 4
-        elif op == 7:
-            nm, sc = ('ldrb' if ld else 'strb'), 1
-        else:
-            nm, sc = ('ldrh' if ld else 'strh'), 2
-        return 2, f"{nm} r{rd}, [r{rn}, #{imm * sc}]"
-    if op == 0x9:
-        rd = (hw >> 8) & 7
-        imm = hw & 0xFF
-        ld = (hw >> 11) & 1
-        if ld:
-            return 2, f"ldr r{rd}, [pc, #{imm * 4}]"
-        return 2, f"str r{rd}, [sp, #{imm * 4}]"
-    if op == 0xA:
-        rd = (hw >> 8) & 7
-        imm = hw & 0xFF
-        sp = (hw >> 11) & 1
-        return 2, f"{'add' if sp else 'add'} r{rd}, {'sp' if sp else 'pc'}, #{imm * 4}"
-    if op == 0xB:
-        kind = (hw >> 8) & 0xF
-        if kind == 5:
-            return 2, f"push {{{hw:04x}}}"
-        if kind in (0xC, 0xD):
-            return 2, f"pop {hw:04x}"
-        return 2, f"misc{kind:x} {hw:04x}"
-    if op == 0xC:
-        return 2, f"ldmia/stmia {hw:04x}"
-    if op == 0xD:
-        cond = (hw >> 8) & 0xF
-        if cond == 0xE:
-            return 2, f"swi {hw:04x}"
-        off = hw & 0xFF
-        if off & 0x80:
-            off -= 0x100
-        names = ['beq', 'bne', 'bcs', 'bcc', 'bmi', 'bpl', 'bvs', 'bvc',
-                 'bls', 'bhi', 'bge', 'blt', 'bgt', 'ble', 'bal']
-        nm = names[cond] if cond < len(names) else f"b{cond:x}"
-        return 2, f"{nm} {a + 4 + off * 2:#x}"
-    if op == 0xE and (hw >> 11) == 0b11100:
-        off = hw & 0x7FF
-        if off & 0x400:
-            off -= 0x800
-        return 2, f"b {a + 4 + off * 2:#x}"
-    if op == 0xF:
-        return 4, f".word {hw:04x}"
-    return 2, f".hword {hw:04x}"
+def objdump(start, end):
+    rom = rom_bytes()
+    size = end - start
+    blob = rom[start & MASK:(start & MASK) + size]
+    with tempfile.NamedTemporaryFile(suffix='.bin', delete=False) as fh:
+        fh.write(blob)
+        path = fh.name
+    cmd = ['arm-none-eabi-objdump', '-D', '-b', 'binary', '-m', 'armv4t',
+           '-M', 'force-thumb', f'--adjust-vma={start:#x}', path]
+    out = subprocess.run(cmd, capture_output=True, text=True).stdout
+    lines = []
+    for line in out.splitlines():
+        line = line.rstrip()
+        if not line or line.endswith(':') or line.lstrip().startswith('...'):
+            continue
+        head = line.split('\t')[0].strip().rstrip(':')
+        try:
+            addr = int(head, 16)
+        except ValueError:
+            continue
+        parts = [p for p in line.split('\t') if p.strip()]
+        text = '\t'.join(p.strip() for p in parts[2:]) if len(parts) > 2 else ''
+        lines.append((addr, text))
+    return lines, rom
 
 
-def main():
-    start = int(sys.argv[1], 0)
-    end = int(sys.argv[2], 0)
-    a = start
-    while a < end:
-        n, s = dec_one(a)
-        print(f"{a:08x}: {s}")
-        a += n
+def pool_target(addr, text):
+    """Resolve the literal a `ldr rX, [pc, #n]` reads.
+
+    objdump >= 2.38 appends the resolved address as `@ (0x...)`; older ones do
+    not, so fall back to `(addr + 4 & ~3) + n`. The resolved form has to win:
+    parsing the operand alone trips over that trailing comment.
+    """
+    if ', [pc, #' not in text:
+        return None
+    for token in text.split():
+        if token.startswith('(') and hexish(token.lstrip('(').rstrip(')')):
+            return int(token.lstrip('(').rstrip(')'), 16)
+    try:
+        off = int(text.split('#')[1].split(']')[0], 0)
+    except (IndexError, ValueError):
+        return None
+    return ((addr + 4) & ~3) + off
 
 
-if __name__ == "__main__":
-    main()
+def hexish(s):
+    try:
+        int(s, 16)
+    except ValueError:
+        return False
+    return s.startswith('0x')
+
+
+def annotate_pools(lines, rom):
+    """Mark words referenced by `ldr rX, [pc, #n]` as literal-pool data."""
+    out = []
+    pending = set()
+    i = 0
+    while i < len(lines):
+        a, t = lines[i]
+        if a in pending:
+            val = rd4(rom, a)
+            out.append((a, f'.word {val:#010x}'))
+            pending.discard(a)
+            i += 1
+            # skip the raw halves of that word
+            while i < len(lines) and lines[i][0] < a + 4:
+                i += 1
+            continue
+        out.append((a, t))
+        lit = pool_target(a, t)
+        if lit is not None:
+            pending.add(lit)
+        i += 1
+    return out
+
+
+def main(argv):
+    if len(argv) < 2 or argv[1] in ('-h', '--help'):
+        print(__doc__)
+        return 2
+    start = int(argv[1], 0)
+    if len(argv) > 2 and argv[2] == '--len':
+        end = start + int(argv[3], 0)
+        rest = argv[4:]
+    else:
+        end = int(argv[2], 0) if len(argv) > 2 else start + 2
+        rest = argv[3:]
+    pools = '--pools' in rest
+    lines, rom = objdump(start, end)
+    if not lines:
+        print('mini_dis: objdump produced no output (is arm-none-eabi-objdump '
+              'on PATH?)', file=sys.stderr)
+        return 1
+    if pools:
+        lines = annotate_pools(lines, rom)
+    for a, t in lines:
+        print(f'{a:08x}: {t}')
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main(sys.argv))

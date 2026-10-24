@@ -164,7 +164,7 @@ This is the "Non-volatile lvalues" lever from
 [register-shaping levers](register_shaping_levers.md), applied to a byte
 load with a self-referential base.
 
-## `_0802DBA4` `SoundDBA4_Read`: one remaining wall
+## `_0802DBA4` `SoundDBA4_Read`: fully decompiled
 
 * `adds r0, r4, #1` (0x0802DBA4 + 0x96) is the row counter. `tr = row + 1u;`
   is the documented pinned-temp spelling, but `loop.c` hoists the add to the
@@ -181,7 +181,13 @@ load with a self-referential base.
   target: agbcc hoists it to the top of the frame setup and keeps it in a
   callee-saved r7 across the two DMA calls, so the prologue gains r7 and the
   body scores 54/176. Empty barriers, `&buf[4]`, `(u8 *)buf + 8` and a
-  `volatile` local all reproduce the hoist; the splice stays.
+  `volatile` local all reproduce the hoist. An **empty register-clobber** just
+  before the assignment does not: `__asm__ volatile ("" : : : "r7");` discards
+  cse's fact that r7 holds the frame base without emitting any bytes, so the
+  `add` is computed fresh into the pinned `r2` and the body is 176/176 with no
+  instruction splice. Prefer this over an `add r2,sp,#8` splice whenever an
+  address is parked in a callee-saved across calls; it should also unblock
+  hoist walls like `OAMGrid_Build`'s palette shift.
 
 ## A halfword store never gets the immediate-offset form
 
@@ -212,7 +218,6 @@ twelve.
 | `_0800278F0` `Garage_Ticker_278F0` | 232 | indexed halfword scratch, plus two naked bodies |
 | `_08000BB0C` `Award_CopyTwinB` | 248 | `mov r3,sp` and an add whose operand order the pointer normalisation forbids |
 | `_080053DC` `OAMGrid_Build` | 200 | the palette shift hoists out of the loop; 181/200 with the hoist suppressed |
-| `_08002DBA4` `SoundDBA4_Read` | 176 | frame-base cursor (the counter landed) |
 | `_08006A50` `CollectNearby_06A50` | 156 | the argument copy wants r7 and the scratch wants r2 |
 | `_080018EC0` `Race_Setup_18EC0` | 84 | the zero index wants r7, an unpinned global allocno |
 | `_08002BE78` `SoundPump` | 60 | a literal-pool load and two flag-coupled branches |

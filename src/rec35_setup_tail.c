@@ -16,7 +16,8 @@ extern void Sub_08025C84(int a, int b, int c, int d); // 0x08025C84
 extern void sub_08025C84(int a, int b, int c, int d);
 extern void sub_08025FF0(int a); // 0x08025FF0
 extern void sub_08025DBC(int a, int b); // 0x08025DBC
-void Rec35_GridFill_1845C(void) {
+void Rec35_GridFill_1845C(void *ctx) {
+    (void)ctx;
     // The ROM materializes the constant 1 once (`movs r7,#1`) and passes it
     // via `adds r3,r7,#0` / `adds r1,r7,#0` at both use sites; a shared named
     // local keeps it in the callee-saved r7 instead of re-issuing `movs`.
@@ -37,15 +38,16 @@ void Rec35_GridFill_1845C(void) {
 // lands after the body's `.size`, still inside its own function section, so it
 // pads with the 0 fill argument instead. No body byte changes.
 __asm__(".align 2, 0");
-void _08001845C(void) __attribute__((alias("Rec35_GridFill_1845C")));
+void _08001845C(void *ctx) __attribute__((alias("Rec35_GridFill_1845C")));
 // asm/rec35_runtime.s:4116 branches here by the `sub_08001845C` spelling.
-void sub_08001845C(void) __attribute__((alias("Rec35_GridFill_1845C")));
+void sub_08001845C(void *ctx) __attribute__((alias("Rec35_GridFill_1845C")));
 
 // ---------------------------------------------------------------------------
 // _0800184A8: const fills via 25EC0: (0..2,3),(3..7,1).
 // (Called from the 18540-cascade 0x242 arm.)
 extern void _08025EC0(int a, int b); // 0x08025EC0; asm/ai_grid_more4.s spells it this way
-void Rec35_ConstFill_184A8(void) {
+void Rec35_ConstFill_184A8(void *ctx) {
+    (void)ctx;
     _08025EC0(0, 3);
     _08025EC0(1, 3);
     _08025EC0(2, 3);
@@ -62,7 +64,7 @@ void Rec35_ConstFill_184A8(void) {
 // section -- so it pads with the `0` fill argument instead. No body byte
 // changes; only the two filler halfwords.
 __asm__(".align 2, 0");
-void _0800184A8(void) __attribute__((alias("Rec35_ConstFill_184A8")));
+void _0800184A8(void *ctx) __attribute__((alias("Rec35_ConstFill_184A8")));
 
 // ---------------------------------------------------------------------------
 // _080018508: rows 0..3 x cols 0..10: 25C84(0,row,col,3);
@@ -74,7 +76,8 @@ void _0800184A8(void) __attribute__((alias("Rec35_ConstFill_184A8")));
 // be named through an absolute symbol and indexed as a u16 array, which is what
 // reproduces the two-step form.
 extern u16 Rec35_WA18[];
-void Rec35_GridFill3_18508(void) {
+void Rec35_GridFill3_18508(void *ctx) {
+    (void)ctx;
     int r5, r4;
     for (r5 = 0; r5 <= 3; r5++) {
         for (r4 = 0; r4 <= 10; r4++)
@@ -92,7 +95,7 @@ void Rec35_GridFill3_18508(void) {
     // byte-free alias case is.
     __asm__(".globl Rec35_WA18\nRec35_WA18 = 0x03001780\n");
 }
-void _080018508(void) __attribute__((alias("Rec35_GridFill3_18508")));
+void _080018508(void *ctx) __attribute__((alias("Rec35_GridFill3_18508")));
 
 // ---------------------------------------------------------------------------
 // _080018540: conditional cascade on (u16 r1 & 0x3FF) with bit tests on
@@ -110,172 +113,84 @@ void _080018508(void) __attribute__((alias("Rec35_GridFill3_18508")));
 // Pools: 0x3FF/0x222/0x212/0x242/0x282 immediates, 0x03001780+0x1086.
 // Called from the 186F0-dispatcher slot7 (r0=r3, r1/r2 u16-truncated).
 extern void *Sub_08004B68(void *a);
+extern void *_08004B68(void);
 extern void _08004BFC(int v);
+extern void sub_0800274C(int a);
+extern void sub_08004EC0(int v);
+extern void sub_080241C8(void);
+extern void sub_0800B0BC(void);
 extern void Sub_08004EC0(int v); // 0x08004EC0
 extern void Sub_0802B214(int v);
 extern void Sub_0800274C(int a); // 0x0800274C
-extern void _080018434(void);
-extern void _0800184F0(void);
+extern void _080018434(void *ctx);
+extern void _0800184F0(void *ctx);
 extern void Sub_080241C8(void); // 0x080241C8
 extern void Sub_0800B0BC(void); // 0x0800B0BC
-__attribute__((naked)) void Rec35_Cascade_18540(void *ctx, int a, int b) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push	{r4, r5, r6, lr}\n"
-        "adds	r6, r0, #0\n"
-        "lsls	r1, r1, #16\n"
-        "lsrs	r4, r1, #16\n"
-        "lsls	r2, r2, #16\n"
-        "lsrs	r5, r2, #16\n"
-        "bl 0x08004B68\n"
-        "ldr r0, .L18540_59c\n"
-        "ands	r4, r0\n"
-        "cmp	r5, #0\n"
-        "beq .L18540_55c\n"
-        "movs	r0, #0\n"
-        "strh	r0, [r6, #16]\n"
-        ".L18540_55c:\n"
-        "ldrh	r0, [r6, #16]\n"
-        "adds	r0, #1\n"
-        "strh	r0, [r6, #16]\n"
-        "lsls	r0, r0, #16\n"
-        "movs	r1, #150\n"
-        "lsls	r1, r1, #19\n"
-        "cmp	r0, r1\n"
-        "ble .L18540_578\n"
-        "movs	r0, #1\n"
-        "bl 0x08004BFC\n"
-        "movs	r0, #1\n"
-        "bl 0x08004EC0\n"
-        ".L18540_578:\n"
-        "ldr r0, .L18540_5a0\n"
-        "cmp	r4, r0\n"
-        "bne .L18540_5a4\n"
-        "movs	r0, #32\n"
-        "ands	r0, r5\n"
-        "cmp	r0, #0\n"
-        "beq .L18540_5a4\n"
-        "movs	r0, #1\n"
-        "bl 0x0800274C\n"
-        "movs	r0, #1\n"
-        "bl 0x0802B368\n"
-        "adds	r0, r6, #0\n"
-        "bl 0x08018434\n"
-        "b .L18540_6a2\n"
-        "movs	r0, r0\n"
-        ".L18540_59c: .4byte 0x000003FF\n"
-        ".L18540_5a0: .4byte 0x00000222\n"
-        ".L18540_5a4:\n"
-        "ldr r0, .L18540_5cc\n"
-        "cmp	r4, r0\n"
-        "bne .L18540_5d0\n"
-        "movs	r0, #16\n"
-        "ands	r0, r5\n"
-        "cmp	r0, #0\n"
-        "beq .L18540_5d0\n"
-        "movs	r0, #1\n"
-        "bl 0x0800274C\n"
-        "movs	r0, #1\n"
-        "bl 0x0802B368\n"
-        "adds	r0, r6, #0\n"
-        "bl 0x0801845C\n"
-        "bl 0x080241C8\n"
-        "b .L18540_6a2\n"
-        "movs	r0, r0\n"
-        ".L18540_5cc: .4byte 0x00000212\n"
-        ".L18540_5d0:\n"
-        "ldr r0, .L18540_5f4\n"
-        "cmp	r4, r0\n"
-        "bne .L18540_5f8\n"
-        "movs	r0, #64\n"
-        "ands	r0, r5\n"
-        "cmp	r0, #0\n"
-        "beq .L18540_5f8\n"
-        "movs	r0, #1\n"
-        "bl 0x0800274C\n"
-        "movs	r0, #1\n"
-        "bl 0x0802B368\n"
-        "adds	r0, r6, #0\n"
-        "bl 0x080184A8\n"
-        "b .L18540_6a2\n"
-        "movs	r0, r0\n"
-        ".L18540_5f4: .4byte 0x00000242\n"
-        ".L18540_5f8:\n"
-        "ldr r0, .L18540_61c\n"
-        "cmp	r4, r0\n"
-        "bne .L18540_620\n"
-        "movs	r0, #128\n"
-        "ands	r0, r5\n"
-        "cmp	r0, #0\n"
-        "beq .L18540_620\n"
-        "movs	r0, #1\n"
-        "bl 0x0800274C\n"
-        "movs	r0, #1\n"
-        "bl 0x0802B368\n"
-        "adds	r0, r6, #0\n"
-        "bl 0x080184F0\n"
-        "b .L18540_6a2\n"
-        "movs	r0, r0\n"
-        ".L18540_61c: .4byte 0x00000282\n"
-        ".L18540_620:\n"
-        "movs	r0, #145\n"
-        "lsls	r0, r0, #2\n"
-        "cmp	r4, r0\n"
-        "bne .L18540_648\n"
-        "movs	r0, #4\n"
-        "ands	r0, r5\n"
-        "cmp	r0, #0\n"
-        "beq .L18540_648\n"
-        "movs	r0, #1\n"
-        "bl 0x0800274C\n"
-        "movs	r0, #1\n"
-        "bl 0x0802B368\n"
-        "adds	r0, r6, #0\n"
-        "bl 0x08018508\n"
-        "bl 0x080241C8\n"
-        "b .L18540_6a2\n"
-        ".L18540_648:\n"
-        "movs	r0, #161\n"
-        "lsls	r0, r0, #2\n"
-        "cmp	r4, r0\n"
-        "bne .L18540_688\n"
-        "movs	r0, #4\n"
-        "ands	r0, r5\n"
-        "cmp	r0, #0\n"
-        "beq .L18540_688\n"
-        "movs	r0, #1\n"
-        "bl 0x0800274C\n"
-        "movs	r0, #1\n"
-        "bl 0x0802B368\n"
-        "ldr r0, .L18540_680\n"
-        "ldr r1, .L18540_684\n"
-        "adds	r0, r0, r1\n"
-        "movs	r1, #1\n"
-        "strh	r1, [r0, #0]\n"
-        "bl 0x0800B0BC\n"
-        "movs	r0, #0\n"
-        "bl 0x08004BFC\n"
-        "movs	r0, #1\n"
-        "bl 0x08004EC0\n"
-        "b .L18540_6a2\n"
-        ".L18540_680: .4byte 0x03001780\n"
-        ".L18540_684: .4byte 0x00001086\n"
-        ".L18540_688:\n"
-        "movs	r0, #8\n"
-        "ands	r0, r5\n"
-        "cmp	r0, #0\n"
-        "beq .L18540_6a2\n"
-        "movs	r0, #1\n"
-        "bl 0x0802B368\n"
-        "movs	r0, #0\n"
-        "bl 0x08004BFC\n"
-        "movs	r0, #1\n"
-        "bl 0x08004EC0\n"
-        ".L18540_6a2:\n"
-        "pop	{r4, r5, r6}\n"
-        "pop	{r0}\n"
-        "bx	r0\n"
-        ".syntax divided\n"
-    );
+extern void _0802B368(int v); // 0x0802B368
+void Rec35_Cascade_18540(void *p, int a, int b) {
+    register void *ctx __asm__("r6");
+    u16 sel, bits;
+    int cnt;
+
+    ctx = p;
+    sel = (u16)a;
+    bits = (u16)b;
+    _08004B68();
+        sel &= 0x3FF;
+    if (bits != 0)
+        *(u16 *)((u8 *)ctx + 16) = 0;
+    cnt = *(u16 *)((u8 *)ctx + 16) + 1;
+    *(u16 *)((u8 *)ctx + 16) = cnt;
+    if ((cnt << 16) > (150 << 19)) {
+        _08004BFC(1);
+        sub_08004EC0(1);
+    }
+    if (sel == 0x222 && (bits & 32)) {
+        sub_0800274C(1);
+        _0802B368(1);
+        _080018434(ctx);
+        return;
+    }
+    if (sel == 0x212 && (bits & 16)) {
+        sub_0800274C(1);
+        _0802B368(1);
+        _08001845C(ctx);
+        sub_080241C8();
+        return;
+    }
+    if (sel == 0x242 && (bits & 64)) {
+        sub_0800274C(1);
+        _0802B368(1);
+        _0800184A8(ctx);
+        return;
+    }
+    if (sel == 0x282 && (bits & 128)) {
+        sub_0800274C(1);
+        _0802B368(1);
+        _0800184F0(ctx);
+        return;
+    }
+    if (sel == (145 << 2) && (bits & 4)) {
+        sub_0800274C(1);
+        _0802B368(1);
+        _080018508(ctx);
+        sub_080241C8();
+        return;
+    }
+    if (sel == (161 << 2) && (bits & 4)) {
+        sub_0800274C(1);
+        _0802B368(1);
+        Rec35_WA18[0x1086 / 2] = 1;
+        sub_0800B0BC();
+        _08004BFC(0);
+        sub_08004EC0(1);
+        return;
+    }
+    if (bits & 8) {
+        _0802B368(1);
+        _08004BFC(0);
+        sub_08004EC0(1);
+    }
 }
 void _080018540(void *c, int a, int b) __attribute__((alias("Rec35_Cascade_18540")));
+void sub_080018540(void *c, int a, int b) __attribute__((alias("Rec35_Cascade_18540")));
