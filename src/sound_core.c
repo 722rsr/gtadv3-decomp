@@ -701,224 +701,129 @@ void sub_0802D584(void *s, u32 c, u32 w) __attribute__((alias("SoundVoiceWalkerC
 
 // --- _0802D6F4 sequence interpreter (jump-table 0x0802D724, 18 entries) ---
 //
-// Machine state for the interpreter: r4 = seq (arg1), r6 = cursor object
-// (arg2), and the cursor's +0x40 word is the program counter. Each step:
+// One bytecode step per call. c8[pc] is the opcode, c8[pc+1] the target byte
+// offset into the data region at *(u32*)(seq+24), c8[pc+2] the operand. The
+// program counter is the +0x40 word of the cursor object and is stored back
+// after each byte is consumed.
 //
-//   op     = c8[pc];    pc = pc+1 (r5 = op)
-//   a      = c8[pc+1];  pc = pc+1
-//   b      = c8[pc+2];  pc = pc+1
-//   addr   = *(u32*)(seq+24)      -- data region base (mutated +a in prologue)
-//   dst    = (u8*)(seq[24] + b);
-//   instr  = op;      arg2 for the tail call = a.
-//   cmp op,17; bhi default;  word-jump tab[op] via `mov pc, r0`.
+//   op 0-2   *dst = b / b + *dst / *dst - b
+//   op 3-5   *dst = data[b] / *dst + data[b] / *dst - data[b]
+//   op 6-11  if (*dst REL b) call handler, else cursor += 4
+//            REL = == != > >= <= <   (unsigned; bhi/bcs/bls/bcc)
+//   op 12-17 the same six relations against data[b]
+//   default  nothing (falls straight to the epilogue)
 //
-//   tab[0]  (0x0802D770): *dst = r2(=b)                ; goto done
-//   tab[1]  (D774):       *dst += r2(=b)               ; done
-//   tab[2]  (D77C):       *dst -= r2(=b)               ; done
-//   tab[3]  (D784):       *dst = u8[seq[24]+b]         ; done
-//   tab[4]  (D78E):       *dst += u8[seq[24]+b]        ; done
-//   tab[5]  (D79C):       *dst -= u8[seq[24]+b]        ; done
-//   tab[6]  (D7AA):       if (*dst == b) skipNext      ; done  (fall to D840)
-//   tab[7]  (D7B2):       if (*dst != b) skipNext      ; done
-//   tab[8]  (D7BA):       if (*dst > b) skipNext       ; done (bhi unsigned)
-//   tab[9]  (D7C2):       if (*dst >= b) skipNext      ; done (bcs unsigned)
-//   tab[10] (D7CA):       if (*dst <= b) skipNext      ; done (bls unsigned)
-//   tab[11] (D7D2):       if (*dst < b) skipNext       ; done (bcc unsigned)
-//   tab[12] (D7DA):       if (*dst == u8[seq24+b]) skipNext ; done
-//   tab[13] (D7E8):       if (*dst != u8[seq24+b]) skipNext ; done
-//   tab[14] (D7F6):       if (*dst >  u8[seq24+b]) skipNext ; done
-//   tab[15] (D804):       if (*dst >= u8[seq24+b]) skipNext ; done
-//   tab[16] (D812):       if (*dst <= u8[seq24+b]) skipNext ; done
-//   tab[17] (D820):       if (*dst <  u8[seq24+b]) skipNext ; done
-//   default:              c8[pc] += 4; (skip the whole 4-byte instr)
-//   done:                 pop {r4,r5,r6}, pop {r0}, bx r0.
+// "call handler" (0x0802D82C) is _0802DDD0(seq, cursor, *(u32*)0x0203EBB4):
+// the third argument is the sequence handler installed in EWRAM, so this is a
+// real indirect call, not a veneer stub.
 //
-// `skipNext` (0x0802D82C) calls _0802DDD0(seq, cursor, *(PTR_AT_0x0203EBB4)) --
-// a call-veneer dispatch (`bl` with target in r2); the tail-to-call target
-// comes from fixed EWRAM at 0x0203EBB4, which is the sequence handler pointer.
-// Any
-// skip-next TAIL CALLS into whatever function was set up at the WRAM slot;
-// it is a real call, not a stub.
-__attribute__((naked)) void SoundSeqInterpreter(void *state, void *cursor_) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "\tpush {r4, r5, r6, lr}\n"
-        "\tadds r4, r0, #0\n"
-        "\tadds r6, r1, #0\n"
-        "\tldr r1, [r6, #64]\n"
-        "\tldrb r5, [r1, #0]\n"
-        "\tadds r2, r1, #1\n"
-        "\tstr r2, [r6, #64]\n"
-        "\tldr r0, [r4, #24]\n"
-        "\tldrb r1, [r1, #1]\n"
-        "\tadds r3, r1, r0\n"
-        "\tadds r0, r2, #1\n"
-        "\tstr r0, [r6, #64]\n"
-        "\tldrb r2, [r2, #1]\n"
-        "\tadds r0, #1\n"
-        "\tstr r0, [r6, #64]\n"
-        "\tcmp r5, #17\n"
-        "\tbls.n .L2d718\n"
-        "\tb.n .L2d846\n"
-        ".L2d718:\n"
-        "\tlsls r0, r5, #2\n"
-        "\tldr r1, .L2d724\n"
-        "\tadds r0, r0, r1\n"
-        "\tldr r0, [r0, #0]\n"
-        "\tmov pc, r0\n"
-        "\t.short 0\n"
-        ".L2d724:\n"
-        "\t.4byte 0x0802D728\n"
-        "\t.4byte 0x0802D770\n"
-        "\t.4byte 0x0802D774\n"
-        "\t.4byte 0x0802D77C\n"
-        "\t.4byte 0x0802D784\n"
-        "\t.4byte 0x0802D78E\n"
-        "\t.4byte 0x0802D79C\n"
-        "\t.4byte 0x0802D7AA\n"
-        "\t.4byte 0x0802D7B2\n"
-        "\t.4byte 0x0802D7BA\n"
-        "\t.4byte 0x0802D7C2\n"
-        "\t.4byte 0x0802D7CA\n"
-        "\t.4byte 0x0802D7D2\n"
-        "\t.4byte 0x0802D7DA\n"
-        "\t.4byte 0x0802D7E8\n"
-        "\t.4byte 0x0802D7F6\n"
-        "\t.4byte 0x0802D804\n"
-        "\t.4byte 0x0802D812\n"
-        "\t.4byte 0x0802D820\n"
-        ".L2d770:\n"
-        "\tstrb r2, [r3, #0]\n"
-        "\tb.n .L2d846\n"
-        ".L2d774:\n"
-        "\tldrb r1, [r3, #0]\n"
-        "\tadds r0, r1, r2\n"
-        "\tstrb r0, [r3, #0]\n"
-        "\tb.n .L2d846\n"
-        ".L2d77c:\n"
-        "\tldrb r1, [r3, #0]\n"
-        "\tsubs r0, r1, r2\n"
-        "\tstrb r0, [r3, #0]\n"
-        "\tb.n .L2d846\n"
-        ".L2d784:\n"
-        "\tldr r0, [r4, #24]\n"
-        "\tadds r0, r0, r2\n"
-        "\tldrb r0, [r0, #0]\n"
-        "\tstrb r0, [r3, #0]\n"
-        "\tb.n .L2d846\n"
-        ".L2d78e:\n"
-        "\tldr r0, [r4, #24]\n"
-        "\tadds r0, r0, r2\n"
-        "\tldrb r1, [r3, #0]\n"
-        "\tldrb r0, [r0, #0]\n"
-        "\tadds r0, r1, r0\n"
-        "\tstrb r0, [r3, #0]\n"
-        "\tb.n .L2d846\n"
-        ".L2d79c:\n"
-        "\tldr r0, [r4, #24]\n"
-        "\tadds r0, r0, r2\n"
-        "\tldrb r1, [r3, #0]\n"
-        "\tldrb r0, [r0, #0]\n"
-        "\tsubs r0, r1, r0\n"
-        "\tstrb r0, [r3, #0]\n"
-        "\tb.n .L2d846\n"
-        ".L2d7aa:\n"
-        "\tldrb r3, [r3, #0]\n"
-        "\tcmp r3, r2\n"
-        "\tbeq.n .L2d82c\n"
-        "\tb.n .L2d840\n"
-        ".L2d7b2:\n"
-        "\tldrb r3, [r3, #0]\n"
-        "\tcmp r3, r2\n"
-        "\tbne.n .L2d82c\n"
-        "\tb.n .L2d840\n"
-        ".L2d7ba:\n"
-        "\tldrb r3, [r3, #0]\n"
-        "\tcmp r3, r2\n"
-        "\tbhi.n .L2d82c\n"
-        "\tb.n .L2d840\n"
-        ".L2d7c2:\n"
-        "\tldrb r3, [r3, #0]\n"
-        "\tcmp r3, r2\n"
-        "\tbcs.n .L2d82c\n"
-        "\tb.n .L2d840\n"
-        ".L2d7ca:\n"
-        "\tldrb r3, [r3, #0]\n"
-        "\tcmp r3, r2\n"
-        "\tbls.n .L2d82c\n"
-        "\tb.n .L2d840\n"
-        ".L2d7d2:\n"
-        "\tldrb r3, [r3, #0]\n"
-        "\tcmp r3, r2\n"
-        "\tbcc.n .L2d82c\n"
-        "\tb.n .L2d840\n"
-        ".L2d7da:\n"
-        "\tldr r0, [r4, #24]\n"
-        "\tadds r0, r0, r2\n"
-        "\tldrb r3, [r3, #0]\n"
-        "\tldrb r0, [r0, #0]\n"
-        "\tcmp r3, r0\n"
-        "\tbeq.n .L2d82c\n"
-        "\tb.n .L2d840\n"
-        ".L2d7e8:\n"
-        "\tldr r0, [r4, #24]\n"
-        "\tadds r0, r0, r2\n"
-        "\tldrb r3, [r3, #0]\n"
-        "\tldrb r0, [r0, #0]\n"
-        "\tcmp r3, r0\n"
-        "\tbne.n .L2d82c\n"
-        "\tb.n .L2d840\n"
-        ".L2d7f6:\n"
-        "\tldr r0, [r4, #24]\n"
-        "\tadds r0, r0, r2\n"
-        "\tldrb r3, [r3, #0]\n"
-        "\tldrb r0, [r0, #0]\n"
-        "\tcmp r3, r0\n"
-        "\tbhi.n .L2d82c\n"
-        "\tb.n .L2d840\n"
-        ".L2d804:\n"
-        "\tldr r0, [r4, #24]\n"
-        "\tadds r0, r0, r2\n"
-        "\tldrb r3, [r3, #0]\n"
-        "\tldrb r0, [r0, #0]\n"
-        "\tcmp r3, r0\n"
-        "\tbcs.n .L2d82c\n"
-        "\tb.n .L2d840\n"
-        ".L2d812:\n"
-        "\tldr r0, [r4, #24]\n"
-        "\tadds r0, r0, r2\n"
-        "\tldrb r3, [r3, #0]\n"
-        "\tldrb r0, [r0, #0]\n"
-        "\tcmp r3, r0\n"
-        "\tbls.n .L2d82c\n"
-        "\tb.n .L2d840\n"
-        ".L2d820:\n"
-        "\tldr r0, [r4, #24]\n"
-        "\tadds r0, r0, r2\n"
-        "\tldrb r3, [r3, #0]\n"
-        "\tldrb r0, [r0, #0]\n"
-        "\tcmp r3, r0\n"
-        "\tbcs.n .L2d840\n"
-        ".L2d82c:\n"
-        "\tldr r0, .L2d83c\n"
-        "\tldr r2, [r0, #0]\n"
-        "\tadds r0, r4, #0\n"
-        "\tadds r1, r6, #0\n"
-        "\tbl 0x0802DDD0\n"
-        "\tb.n .L2d846\n"
-        "\t.short 0\n"
-        ".L2d83c: .4byte 0x0203EBB4\n"
-        ".L2d840:\n"
-        "\tldr r0, [r6, #64]\n"
-        "\tadds r0, #4\n"
-        "\tstr r0, [r6, #64]\n"
-        ".L2d846:\n"
-        "\tpop {r4, r5, r6}\n"
-        "\tpop {r0}\n"
-        "\tbx r0\n"
-        ".syntax divided\n"
-    );
+// Register contract: pc0 -> r1 and dst -> r3 must be pinned, and the three
+// program-counter stores must chain through p1/p2/p3 (each the previous value
+// plus one). Re-deriving pc0+2 / pc0+3 from pc0 instead makes agbcc rematerialise
+// the addresses and the frame comes out 16 bytes long.
+void _0802DDD0(void *state, void *cursor, u32 handler);
+
+void SoundSeqInterpreter(void *state_, void *cursor_) {
+    u8 *seq = (u8 *)state_;
+    u8 *cur = (u8 *)cursor_;
+    register u8 *pc0 __asm__("r1") = *(u8 **)(cur + 64);
+    register u8 *dst __asm__("r3");
+    u32 b;
+    u32 op = pc0[0];
+    u8 *p1, *p2, *p3;
+    register u8 *data __asm__("r0");
+    u8 a;
+
+    p1 = pc0 + 1;
+    *(u32 *)(cur + 64) = (u32)p1;
+    data = *(u8 **)(seq + 24);
+    a = pc0[1];
+    dst = data + a;
+    p2 = p1 + 1;
+    *(u32 *)(cur + 64) = (u32)p2;
+    b = p1[1];
+    p3 = p2 + 1;
+    *(u32 *)(cur + 64) = (u32)p3;
+
+    switch (op) {
+    case 0:
+        *dst = (u8)b;
+        break;
+    case 1:
+        *dst = (u8)(*dst + b);
+        break;
+    case 2:
+        *dst = (u8)(*dst - b);
+        break;
+    case 3:
+        *dst = (*(u8 **)(seq + 24))[b];
+        break;
+    case 4:
+        *dst = (u8)(*dst + (*(u8 **)(seq + 24))[b]);
+        break;
+    case 5:
+        *dst = (u8)(*dst - (*(u8 **)(seq + 24))[b]);
+        break;
+    case 6:
+        if (*dst == (u8)b)
+            goto skipnext;
+        goto skip4;
+    case 7:
+        if (*dst != (u8)b)
+            goto skipnext;
+        goto skip4;
+    case 8:
+        if (*dst > (u8)b)
+            goto skipnext;
+        goto skip4;
+    case 9:
+        if (*dst >= (u8)b)
+            goto skipnext;
+        goto skip4;
+    case 10:
+        if (*dst <= (u8)b)
+            goto skipnext;
+        goto skip4;
+    case 11:
+        if (*dst < (u8)b)
+            goto skipnext;
+        goto skip4;
+    case 12:
+        if (*dst == (*(u8 **)(seq + 24))[b])
+            goto skipnext;
+        goto skip4;
+    case 13:
+        if (*dst != (*(u8 **)(seq + 24))[b])
+            goto skipnext;
+        goto skip4;
+    case 14:
+        if (*dst > (*(u8 **)(seq + 24))[b])
+            goto skipnext;
+        goto skip4;
+    case 15:
+        if (*dst >= (*(u8 **)(seq + 24))[b])
+            goto skipnext;
+        goto skip4;
+    case 16:
+        if (*dst <= (*(u8 **)(seq + 24))[b])
+            goto skipnext;
+        goto skip4;
+    case 17:
+        if (*dst < (*(u8 **)(seq + 24))[b])
+            goto skipnext;
+        goto skip4;
+    default:
+        break;
+    }
+    return;
+
+skipnext:
+    _0802DDD0(seq, cur, *(u32 *)(uintptr_t)0x0203EBB4u);
+    return;
+skip4:
+    *(u32 *)(cur + 64) += 4;
 }
+
 void _0802D6F4(void *s, void *c) __attribute__((alias("SoundSeqInterpreter")));
 void sub_0802D6F4(void *s, void *c) __attribute__((alias("SoundSeqInterpreter")));
 
