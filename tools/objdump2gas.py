@@ -291,8 +291,13 @@ def strip_comment(text):
     return text
 
 
-def gas_text(text, vma, start, end, func_set, converted):
-    """Convert one objdump instruction to gas, resolving labels."""
+def gas_text(text, vma, start, end, func_set, converted, prefix="_0800"):
+    """Convert one objdump instruction to gas, resolving labels.
+
+    `prefix` names in-span labels; the default is this tool's own
+    `_0800<offset>` convention (body_segments.py passes `seg_0800` so its
+    segments get C-identifier label names).
+    """
     # branch -> label (strip .n).  NOTE: exclude only the exact `bl`
     # mnemonic -- `ble`/`bls`/`blt` also start with "bl" but are
     # conditional branches.
@@ -302,7 +307,7 @@ def gas_text(text, vma, start, end, func_set, converted):
         tgt = int(m.group(2), 16)
         f = tgt - 0x08000000
         if start <= f < end:
-            return f"{op} _0800{f:04X}"
+            return f"{op} {prefix}{f:04X}"
         return f"{op} 0x{tgt:08X}"
     # bl -> function symbol / interior label / numeric
     m = re.match(r"^bl\s+(0x[0-9a-f]+)$", text)
@@ -310,6 +315,8 @@ def gas_text(text, vma, start, end, func_set, converted):
         tgt = int(m.group(1), 16)
         f = tgt - 0x08000000
         if start <= f < end:
+            if prefix != "_0800":
+                return f"bl {prefix}{f:04X}"
             if f in func_set:
                 return f"bl sub_0800{f:04X}"
             return f"bl _0800{f:04X}"
@@ -324,7 +331,7 @@ def gas_text(text, vma, start, end, func_set, converted):
                  text)
     if m:
         tgt = int(m.group(2), 16)
-        return f"ldr {m.group(1)}, _0800{tgt - 0x08000000:04X}"
+        return f"ldr {m.group(1)}, {prefix}{tgt - 0x08000000:04X}"
     return text
 
 

@@ -310,186 +310,111 @@ u16 OAMSlotAttrAdd(int slot, u16 add) {
 u16 _080050E4(int a, u16 b) __attribute__((alias("OAMSlotAttrAdd")));
 u16 sub_080050E4(int a, u16 b) __attribute__((alias("OAMSlotAttrAdd")));
 
-__attribute__((naked)) void BG2Matrix_Update(const volatile u8 *rec, u32 mode) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "	push	{r4, r5, r6, r7, lr}\n"
-        "	mov	r7, sl\n"
-        "	mov	r6, r9\n"
-        "	mov	r5, r8\n"
-        "	push	{r5, r6, r7}\n"
-        "	sub	sp, #48\n"
-        "	adds	r7, r0, #0\n"
-        "	mov	sl, r1\n"
-        "	add	r4, sp, #8\n"
-        "	ldr r1, .L50e8_08005248\n"
-        "	adds	r0, r4, #0\n"
-        "	movs	r2, #12\n"
-        "	bl 0x0802E0A4\n"
-        "	add	r0, sp, #20\n"
-        "	mov	r8, r0\n"
-        "	ldr r1, .L50e8_0800524C\n"
-        "	movs	r2, #8\n"
-        "	bl 0x0802E0A4\n"
-        "	add	r6, sp, #28\n"
-        "	ldr r1, .L50e8_08005250\n"
-        "	adds	r0, r6, #0\n"
-        "	movs	r2, #8\n"
-        "	bl 0x0802E0A4\n"
-        "	add	r5, sp, #36\n"
-        "	ldr r1, .L50e8_08005254\n"
-        "	adds	r0, r5, #0\n"
-        "	movs	r2, #8\n"
-        "	bl 0x0802E0A4\n"
-        "	movs	r0, #128\n"
-        "	lsls	r0, r0, #19\n"
-        "	ldrh	r0, [r0, #0]\n"
-        "	movs	r1, #64\n"
-        "	mov	r9, r1\n"
-        "	ldrh	r1, [r7, #0]\n"
-        "	lsls	r0, r1, #1\n"
-        "	adds	r4, r4, r0\n"
-        "	ldrh	r4, [r4, #0]\n"
-        "	mov	r0, r9\n"
-        "	orrs	r4, r0\n"
-        "	mov	r9, r4\n"
-        "	mov	r3, r8\n"
-        "	adds	r2, r7, #0\n"
-        "	movs	r4, #3\n"
-        ".L50e8_08005146:\n"
-        "	ldrb	r0, [r2, #4]\n"
-        "	cmp	r0, #0\n"
-        "	beq .L50e8_08005154\n"
-        "	ldrh	r1, [r3, #0]\n"
-        "	mov	r0, r9\n"
-        "	orrs	r1, r0\n"
-        "	mov	r9, r1\n"
-        ".L50e8_08005154:\n"
-        "	adds	r3, #2\n"
-        "	adds	r2, #16\n"
-        "	subs	r4, #1\n"
-        "	cmp	r4, #0\n"
-        "	bge .L50e8_08005146\n"
-        "	ldrh	r1, [r7, #2]\n"
-        "	mov	r8, r1\n"
-        "	ldrh	r0, [r7, #12]\n"
-        "	mov	ip, r0\n"
-        "	str	r6, [sp, #44]\n"
-        "	mov	r3, sp\n"
-        "	adds	r2, r7, #0\n"
-        "	movs	r4, #3\n"
-        ".L50e8_0800516E:\n"
-        "	ldrb	r6, [r2, #9]\n"
-        "	lsls	r1, r6, #1\n"
-        "	adds	r1, r5, r1\n"
-        "	ldrb	r6, [r2, #8]\n"
-        "	lsls	r0, r6, #1\n"
-        "	ldr	r6, [sp, #44]\n"
-        "	adds	r0, r6, r0\n"
-        "	ldrh	r1, [r1, #0]\n"
-        "	ldrh	r0, [r0, #0]\n"
-        "	orrs	r1, r0\n"
-        "	movs	r0, #64\n"
-        "	orrs	r1, r0\n"
-        "	ldrb	r0, [r2, #7]\n"
-        "	cmp	r0, #0\n"
-        "	beq .L50e8_08005190\n"
-        "	movs	r0, #128\n"
-        "	orrs	r1, r0\n"
-        ".L50e8_08005190:\n"
-        "	ldrb	r6, [r2, #5]\n"
-        "	lsls	r0, r6, #2\n"
-        "	orrs	r1, r0\n"
-        "	ldrb	r6, [r2, #6]\n"
-        "	lsls	r0, r6, #8\n"
-        "	orrs	r1, r0\n"
-        "	strh	r1, [r3, #0]\n"
-        "	adds	r3, #2\n"
-        "	adds	r2, #16\n"
-        "	subs	r4, #1\n"
-        "	cmp	r4, #0\n"
-        "	bge .L50e8_0800516E\n"
-        "	mov	r1, r8\n"
-        "	lsls	r0, r1, #16\n"
-        "	cmp	r0, #0\n"
-        "	beq .L50e8_080051C0\n"
-        "	movs	r6, #128\n"
-        "	lsls	r6, r6, #5\n"
-        "	adds	r0, r6, #0\n"
-        "	mov	r1, r9\n"
-        "	orrs	r1, r0\n"
-        "	lsls	r0, r1, #16\n"
-        "	lsrs	r0, r0, #16\n"
-        "	mov	r9, r0\n"
-        ".L50e8_080051C0:\n"
-        "	movs	r0, #0\n"
-        "	mov	r1, ip\n"
-        "	bl _080050A4\n"
-        "	ldrh	r1, [r7, #28]\n"
-        "	movs	r0, #1\n"
-        "	bl _080050A4\n"
-        "	ldrh	r1, [r7, #44]\n"
-        "	movs	r0, #2\n"
-        "	bl _080050A4\n"
-        "	ldrh	r1, [r7, #60]\n"
-        "	movs	r0, #3\n"
-        "	bl _080050A4\n"
-        "	ldr	r1, [r7, #16]\n"
-        "	movs	r0, #0\n"
-        "	bl _080050C0\n"
-        "	ldr	r1, [r7, #32]\n"
-        "	movs	r0, #1\n"
-        "	bl _080050C0\n"
-        "	ldr	r1, [r7, #48]\n"
-        "	movs	r0, #2\n"
-        "	bl _080050C0\n"
-        "	ldr	r1, [r7, #64]\n"
-        "	movs	r0, #3\n"
-        "	bl _080050C0\n"
-        "	mov	r6, sl\n"
-        "	cmp	r6, #0\n"
-        "	beq .L50e8_0800522E\n"
-        "	ldr r1, .L50e8_08005258\n"
-        "	mov	r0, sp\n"
-        "	ldrh	r0, [r0, #0]\n"
-        "	strh	r0, [r1, #0]\n"
-        "	adds	r1, #2\n"
-        "	mov	r0, sp\n"
-        "	ldrh	r0, [r0, #2]\n"
-        "	strh	r0, [r1, #0]\n"
-        "	adds	r1, #2\n"
-        "	mov	r0, sp\n"
-        "	ldrh	r0, [r0, #4]\n"
-        "	strh	r0, [r1, #0]\n"
-        "	adds	r1, #2\n"
-        "	mov	r0, sp\n"
-        "	ldrh	r0, [r0, #6]\n"
-        "	strh	r0, [r1, #0]\n"
-        "	movs	r0, #128\n"
-        "	lsls	r0, r0, #19\n"
-        "	mov	r1, r9\n"
-        "	strh	r1, [r0, #0]\n"
-        ".L50e8_0800522E:\n"
-        "	ldr r0, .L50e8_0800525C\n"
-        "	adds	r1, r7, #0\n"
-        "	movs	r2, #68\n"
-        "	bl 0x0802E0A4\n"
-        "	add	sp, #48\n"
-        "	pop	{r3, r4, r5}\n"
-        "	mov	r8, r3\n"
-        "	mov	r9, r4\n"
-        "	mov	sl, r5\n"
-        "	pop	{r4, r5, r6, r7}\n"
-        "	pop	{r0}\n"
-        "	bx	r0\n"
-        ".L50e8_08005248: .word 0x0805BA80\n"
-        ".L50e8_0800524C: .word 0x0805BA8C\n"
-        ".L50e8_08005250: .word 0x0805BA94\n"
-        ".L50e8_08005254: .word 0x0805BA9C\n"
-        ".L50e8_08005258: .word 0x04000008\n"
-        ".L50e8_0800525C: .word 0x03000260\n"
-        ".syntax divided\n"
-    );
+// ----------------------------------------------------------------------------
+// 0x080050E8 (0x178 B) — apply a display/OAM configuration record.
+//
+// Record layout (68 B, the last RuntimeMemcpy's length):
+//   u16 bg_mode@0    DISPCNT BG mode, indexes the {0,1,2,3,4,5} table
+//   u16 obj_on@2     nonzero -> DISPCNT OBJ enable (bit 12)
+//   4 x 16 B slots from +4:
+//     +0 u8 enable, +1 u8 frac, +2 u8 whole, +3 u8 half,
+//     +4 u8 tile, +5 u8 scale, +6 u8[2] pad,
+//     +8 u16 OAM attr  -> 0x080050A4 (attr word at 0x03000260+84+slot*2)
+//     +12 u32 OAM param -> 0x080050C0 (param word at 0x03000260+68+slot*4)
+// The four ROM tables copied to the stack: 0x0805BA80 = DISPCNT BG modes
+// {0..5}, 0x0805BA8C = per-slot BG enable bits {0x100,0x200,0x400,0x800},
+// 0x0805BA94 = affine fraction addends {0,1,2,3}, 0x0805BA9C = 8.8 integer
+// parts {0,0x4000,0x8000,0xC000} (0/+64/-128/-64, sign bits in place).
+//
+// out[i] is one BG2PA..PD 8.8 affine parameter: fraction from the `scales`
+// entry, `frac << 2`, 0x40 and (when `half`) 0x80; integer byte from `whole`;
+// plus the `tiles` entry for the sign/magnitude bits.
+//
+// Matching levers, each measured (376/376 needs all of them):
+//   * `dispcnt = 0x40;` must be its own statement. The constant is then
+//     materialised into dispcnt's home (r9) before the table load, which is
+//     the ROM's `movs r1,#64 / mov r9,r1`; the single-expression spelling
+//     leaves 0x40 in a scratch and swaps the OR's operands.
+//   * both slot loops index `rec[i * 16 + n]`. A walking pointer gives the
+//     same body but reverses the latch (`adds r2,#16` before `adds r3,#2`).
+//   * `tp = tiles` is a pointer variable and it is what the ROM keeps
+//     spilled at [sp,#44]: the loop needs r6 for the slot byte, so the table
+//     base cannot stay in a register. The scaled byte offset is written out
+//     (`(u8 *)tp + (p[8] << 1)`) because `tp[p[8]]` adds the operands the
+//     other way round (`adds r0,r0,r6` vs the ROM's `adds r0,r6,r0`).
+//   * `obj` is a u32 behind an empty asm barrier, tested as `(u16)obj`. That
+//     reproduces the ROM's narrowing test `mov r1,r8 / lsls r0,r1,#16 /
+//     cmp r0,#0`; a u16 local (or a plain shift of a known-16-bit value)
+//     folds to a bare `cmp`, and testing the lvalue directly would read it
+//     again after the slot loop instead of reusing the earlier load.
+//   * the store pointer is pinned to r1. Without the pin the pointer and the
+//     out[] temporary come out as r0/r1 rather than r1/r0 (all other
+//     spellings measured 360-371/376: `q[k]`, `q += 1`, a u32 address local,
+//     a symbol anchor, a `"+r"` barrier).
+// ----------------------------------------------------------------------------
+void BG2Matrix_Update(const u8 *rec, u32 apply) {
+    const u8 *p;
+    u16 *o;
+    u16 *tp;
+    u16 out[4];
+    u16 modes[6];
+    u16 bg_bits[4];
+    u16 tiles[4];
+    u16 scales[4];
+    u16 dispcnt;
+    u16 v;
+    u32 obj;
+    u16 attr0;
+    int i;
+
+    RuntimeMemcpy(modes, (const void *)0x0805BA80, 12);
+    RuntimeMemcpy(bg_bits, (const void *)0x0805BA8C, 8);
+    RuntimeMemcpy(tiles, (const void *)0x0805BA94, 8);
+    RuntimeMemcpy(scales, (const void *)0x0805BA9C, 8);
+
+    (void)*(volatile u16 *)0x04000000;   // the ROM reads DISPCNT and drops it
+
+    dispcnt = 0x40;                      // OBJ 1-D character mapping
+    dispcnt |= modes[*(const u16 *)rec];
+    for (i = 0; i < 4; i++) {
+        if (rec[i * 16 + 4])
+            dispcnt |= bg_bits[i];
+    }
+
+    obj = *(const u16 *)(rec + 2);
+    __asm__ volatile ("" : "+r" (obj));
+    attr0 = *(const u16 *)(rec + 12);
+    tp = tiles;
+    for (o = out, p = rec, i = 0; i < 4; i++) {
+        v = (u16)(scales[p[9]] | *(const u16 *)((const u8 *)tp + (p[8] << 1)) | 0x40);
+        if (p[7])
+            v |= 0x80;
+        v |= (u16)(p[5] << 2);
+        v |= (u16)(p[6] << 8);
+        *o++ = v;
+        p += 16;
+    }
+    if ((u16)obj)
+        dispcnt = (u16)(dispcnt | 0x1000);
+
+    _080050A4(0, attr0);
+    _080050A4(1, *(const u16 *)(rec + 28));
+    _080050A4(2, *(const u16 *)(rec + 44));
+    _080050A4(3, *(const u16 *)(rec + 60));
+    _080050C0(0, *(const u32 *)(rec + 16));
+    _080050C0(1, *(const u32 *)(rec + 32));
+    _080050C0(2, *(const u32 *)(rec + 48));
+    _080050C0(3, *(const u32 *)(rec + 64));
+
+    if (apply) {
+        register volatile u16 *q __asm__("r1") = (volatile u16 *)0x04000008;
+        *q++ = out[0];
+        *q++ = out[1];
+        *q++ = out[2];
+        *q++ = out[3];
+        *(volatile u16 *)0x04000000 = dispcnt;
+    }
+    RuntimeMemcpy((void *)0x03000260, rec, 68);
 }
 
 void _080050E8(const volatile u8 *a, u32 b) __attribute__((alias("BG2Matrix_Update")));

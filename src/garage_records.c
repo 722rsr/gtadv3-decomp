@@ -1942,6 +1942,23 @@ void sub_0800299E0(void *rec) __attribute__((alias("_0800299E0")));
 
 // ----------------------------------------------------------------------------
 // 0x08029A74 — surface-adaptive speed (rem/div + flag-159 lanes).
+//
+// MEASURED: the C lift reaches 207/340 bytes (cand 336 B). Layout that matches:
+//   a = (u16)(rec[118] + (rec[148] << 2)); b likewise from rec[120];
+//   delta = (s16)(rec[126] + rec[148]) + _0802DE9C(rec[4], 12)   (12 = `% 12`);
+//   two-level clamp vs (s16)rec[140] setting a=0xFFFE/1 (b=0), else the
+//   table entry (s16 *)(rec + 76)[rec[156]] scales a,b by 32-entry or halves
+//   them;
+//   then flag byte 159 lane 0 (with !(rec[92] & 2)) adds a then b to speed
+//   field 104, clamping at (s16)rec[122] -> 260 down, else subtracts a/|b| and
+//   floors at 0.
+// Remaining miss: the ROM re-reads the table entry in the then-block
+// (`movs r3,#0 / ldrsh r1,[r1,r3]`) where agbcc keeps the value from the `if`
+// test live across the branch. `volatile s16 *` forces the reload but turns
+// both loads into `ldrh`+`lsls` instead of `ldrsh`; plain, `"+r"`, "memory"
+// and register-clobber barriers all still CSE. Also the second speed add is
+// `(s16)b + speed` (dest = b's register) and the entry base is materialised
+// before the index (`adds r0,r5,#0 / adds r0,#76 / adds r1,r0,r1`).
 // ----------------------------------------------------------------------------
 __attribute__((naked)) void _080029A74(void *rec) {
     __asm__ volatile (
@@ -2127,210 +2144,80 @@ __attribute__((naked)) void _080029A74(void *rec) {
 }
 // ----------------------------------------------------------------------------
 // 0x08029BC8 — gear/step selector (157 sign + flag lanes + 29488/2944C).
+//
+// Byte-exact only with *non-volatile* reads: the ROM CSEs them (one address
+// register reused for 159/160, one +92 load shared by the entry test and the
+// flag-1 gate), and folds `x < 161` / `x > 1` around the increment so `x` is
+// loaded once. The `x > 0` (not `<= 0`) spelling is what makes agbcc fully
+// sign-extend 157 (`lsls`/`asrs`), and hoisting `idx * 2` into its own s32
+// before adding the 76 table base gives the ROM's r1/r0 split.
 // ----------------------------------------------------------------------------
-__attribute__((naked)) void _080029BC8(void *rec) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "\tpush\t{r4, r5, r6, lr}\n"
-        "\tadds\tr5, r0, #0\n"
-        "\tmovs\tr6, #0\n"
-        "\tadds\tr0, #157\n"
-        "\tldrb\tr0, [r0, #0]\n"
-        "\tlsls\tr0, r0, #24\n"
-        "\tasrs\tr0, r0, #24\n"
-        "\tcmp\tr0, #0\n"
-        "\tble .Lgarage080029BC8__080029C24\n"
-        "\tldr\tr1, [r5, #92]\n"
-        "\tmovs\tr0, #4\n"
-        "\tands\tr0, r1\n"
-        "\tadds\tr2, r1, #0\n"
-        "\tcmp\tr0, #0\n"
-        "\tbne .Lgarage080029BC8__080029C24\n"
-        "\tadds\tr1, r5, #0\n"
-        "\tadds\tr1, #159\n"
-        "\tmovs\tr4, #16\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tldrb\tr3, [r1, #0]\n"
-        "\tands\tr0, r3\n"
-        "\tadds\tr3, r1, #0\n"
-        "\tcmp\tr0, #0\n"
-        "\tbeq .Lgarage080029BC8__080029C08\n"
-        "\tadds\tr1, #1\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tldrb\tr1, [r1, #0]\n"
-        "\tands\tr0, r1\n"
-        "\tcmp\tr0, #0\n"
-        "\tbne .Lgarage080029BC8__080029C08\n"
-        "\tmovs\tr6, #16\n"
-        "\tb .Lgarage080029BC8__080029C84\n"
-        ".Lgarage080029BC8__080029C08:\n"
-        "\tmovs\tr4, #32\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tldrb\tr3, [r3, #0]\n"
-        "\tands\tr0, r3\n"
-        "\tcmp\tr0, #0\n"
-        "\tbeq .Lgarage080029BC8__080029C84\n"
-        "\tadds\tr1, r5, #0\n"
-        "\tadds\tr1, #160\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tldrb\tr1, [r1, #0]\n"
-        "\tands\tr0, r1\n"
-        "\tcmp\tr0, #0\n"
-        "\tbne .Lgarage080029BC8__080029C84\n"
-        "\tb .Lgarage080029BC8__080029C82\n"
-        ".Lgarage080029BC8__080029C24:\n"
-        "\tadds\tr1, r5, #0\n"
-        "\tadds\tr1, #159\n"
-        "\tmovs\tr0, #1\n"
-        "\tldrb\tr4, [r1, #0]\n"
-        "\tands\tr0, r4\n"
-        "\tadds\tr3, r1, #0\n"
-        "\tadds\tr2, r5, #0\n"
-        "\tadds\tr2, #104\n"
-        "\tcmp\tr0, #0\n"
-        "\tbeq .Lgarage080029BC8__080029C4E\n"
-        "\tmovs\tr0, #0\n"
-        "\tldrsh\tr1, [r2, r0]\n"
-        "\tadds\tr0, r5, #0\n"
-        "\tadds\tr0, #124\n"
-        "\tmovs\tr4, #0\n"
-        "\tldrsh\tr0, [r0, r4]\n"
-        "\tldr r4, .Lgarage080029BC8__080029C6C\n"
-        "\tadds\tr0, r0, r4\n"
-        "\tcmp\tr1, r0\n"
-        "\tble .Lgarage080029BC8__080029C4E\n"
-        "\tmovs\tr6, #16\n"
-        ".Lgarage080029BC8__080029C4E:\n"
-        "\tmovs\tr0, #2\n"
-        "\tldrb\tr3, [r3, #0]\n"
-        "\tands\tr0, r3\n"
-        "\tcmp\tr0, #0\n"
-        "\tbeq .Lgarage080029BC8__080029C70\n"
-        "\tmovs\tr0, #0\n"
-        "\tldrsh\tr1, [r2, r0]\n"
-        "\tadds\tr0, r5, #0\n"
-        "\tadds\tr0, #122\n"
-        "\tmovs\tr2, #0\n"
-        "\tldrsh\tr0, [r0, r2]\n"
-        "\tmovs\tr3, #250\n"
-        "\tlsls\tr3, r3, #3\n"
-        "\tadds\tr0, r0, r3\n"
-        "\tb .Lgarage080029BC8__080029C7C\n"
-        ".Lgarage080029BC8__080029C6C: .word 0xFFFFFE0C\n"
-        ".Lgarage080029BC8__080029C70:\n"
-        "\tadds\tr0, r5, #0\n"
-        "\tadds\tr0, #122\n"
-        "\tmovs\tr4, #0\n"
-        "\tldrsh\tr1, [r2, r4]\n"
-        "\tmovs\tr2, #0\n"
-        "\tldrsh\tr0, [r0, r2]\n"
-        ".Lgarage080029BC8__080029C7C:\n"
-        "\tldr\tr2, [r5, #92]\n"
-        "\tcmp\tr1, r0\n"
-        "\tbge .Lgarage080029BC8__080029C84\n"
-        ".Lgarage080029BC8__080029C82:\n"
-        "\tmovs\tr6, #32\n"
-        ".Lgarage080029BC8__080029C84:\n"
-        "\tmovs\tr0, #1\n"
-        "\tands\tr0, r2\n"
-        "\tadds\tr4, r5, #0\n"
-        "\tadds\tr4, #156\n"
-        "\tcmp\tr0, #0\n"
-        "\tbne .Lgarage080029BC8__080029CBE\n"
-        "\tcmp\tr6, #16\n"
-        "\tbne .Lgarage080029BC8__080029CA4\n"
-        "\tadds\tr1, r5, #0\n"
-        "\tadds\tr1, #161\n"
-        "\tldrb\tr0, [r4, #0]\n"
-        "\tldrb\tr1, [r1, #0]\n"
-        "\tcmp\tr0, r1\n"
-        "\tbcs .Lgarage080029BC8__080029CBE\n"
-        "\tadds\tr0, #1\n"
-        "\tb .Lgarage080029BC8__080029CB0\n"
-        ".Lgarage080029BC8__080029CA4:\n"
-        "\tcmp\tr6, #32\n"
-        "\tbne .Lgarage080029BC8__080029CBE\n"
-        "\tldrb\tr0, [r4, #0]\n"
-        "\tcmp\tr0, #1\n"
-        "\tbls .Lgarage080029BC8__080029CBE\n"
-        "\tsubs\tr0, #1\n"
-        ".Lgarage080029BC8__080029CB0:\n"
-        "\tstrb\tr0, [r4, #0]\n"
-        "\tadds\tr0, r5, #0\n"
-        "\tbl sub_080029488\n"
-        "\tadds\tr1, r5, #0\n"
-        "\tadds\tr1, #104\n"
-        "\tstrh\tr0, [r1, #0]\n"
-        ".Lgarage080029BC8__080029CBE:\n"
-        "\tadds\tr0, r5, #0\n"
-        "\tbl sub_08002944C\n"
-        "\tadds\tr2, r5, #0\n"
-        "\tadds\tr2, #106\n"
-        "\tstrh\tr0, [r2, #0]\n"
-        "\tldrb\tr4, [r4, #0]\n"
-        "\tlsls\tr1, r4, #1\n"
-        "\tadds\tr0, r5, #0\n"
-        "\tadds\tr0, #76\n"
-        "\tadds\tr0, r0, r1\n"
-        "\tmovs\tr3, #0\n"
-        "\tldrsh\tr0, [r0, r3]\n"
-        "\tadds\tr6, r5, #0\n"
-        "\tadds\tr6, #142\n"
-        "\tcmp\tr0, #0\n"
-        "\tble .Lgarage080029BC8__080029D1E\n"
-        "\tmovs\tr4, #0\n"
-        "\tldrsh\tr0, [r2, r4]\n"
-        "\tadds\tr4, r5, #0\n"
-        "\tadds\tr4, #140\n"
-        "\tmovs\tr2, #0\n"
-        "\tldrsh\tr1, [r4, r2]\n"
-        "\tldrh\tr3, [r6, #0]\n"
-        "\tlsls\tr2, r3, #16\n"
-        "\tasrs\tr2, r2, #21\n"
-        "\tbl _080029400\n"
-        "\tstrh\tr0, [r4, #0]\n"
-        "\tmovs\tr4, #0\n"
-        "\tldrsh\tr1, [r6, r4]\n"
-        "\tmovs\tr0, #150\n"
-        "\tlsls\tr0, r0, #1\n"
-        "\tcmp\tr1, r0\n"
-        "\tble .Lgarage080029BC8__080029D1E\n"
-        "\tadds\tr0, r5, #0\n"
-        "\tbl sub_080029488\n"
-        "\tlsls\tr0, r0, #16\n"
-        "\tasrs\tr0, r0, #16\n"
-        "\tadds\tr4, r5, #0\n"
-        "\tadds\tr4, #104\n"
-        "\tmovs\tr2, #0\n"
-        "\tldrsh\tr1, [r4, r2]\n"
-        "\tmovs\tr2, #40\n"
-        "\tbl _080029400\n"
-        "\tstrh\tr0, [r4, #0]\n"
-        ".Lgarage080029BC8__080029D1E:\n"
-        "\tadds\tr4, r5, #0\n"
-        "\tadds\tr4, #144\n"
-        "\tldrh\tr2, [r6, #0]\n"
-        "\tmovs\tr3, #0\n"
-        "\tldrsh\tr1, [r6, r3]\n"
-        "\tmovs\tr3, #0\n"
-        "\tldrsh\tr0, [r4, r3]\n"
-        "\tcmp\tr1, r0\n"
-        "\tble .Lgarage080029BC8__080029D42\n"
-        "\tadds\tr0, r2, #0\n"
-        "\tsubs\tr0, #12\n"
-        "\tstrh\tr0, [r6, #0]\n"
-        "\tlsls\tr0, r0, #16\n"
-        "\tldrh\tr2, [r4, #0]\n"
-        "\tlsls\tr1, r2, #16\n"
-        "\tcmp\tr0, r1\n"
-        "\tbge .Lgarage080029BC8__080029D42\n"
-        "\tstrh\tr2, [r6, #0]\n"
-        ".Lgarage080029BC8__080029D42:\n"
-        "\tpop\t{r4, r5, r6}\n"
-        "\tpop\t{r0}\n"
-        "\tbx\tr0\n"
-        ".syntax divided\n"
-    );
+void _080029BC8(void *rec) {
+    u8 *r = (u8 *)rec;
+    s32 step;
+    s32 idx;
+
+    step = 0;
+    if (*(s8 *)(r + 157) > 0) {
+        if ((*(u32 *)(r + 92) & 4) == 0) {
+            if ((*(u8 *)(r + 159) & 16) != 0 &&
+                (*(u8 *)(r + 160) & 16) == 0) {
+                step = 16;
+                goto apply;
+            }
+            if ((*(u8 *)(r + 159) & 32) != 0 &&
+                (*(u8 *)(r + 160) & 32) == 0)
+                step = 32;
+            goto apply;
+        }
+    }
+
+select:
+    if ((*(u8 *)(r + 159) & 1) != 0) {
+        if (*(s16 *)(r + 104) > *(s16 *)(r + 124) - 500)
+            step = 16;
+    }
+    if ((*(u8 *)(r + 159) & 2) != 0) {
+        if (*(s16 *)(r + 104) < *(s16 *)(r + 122) + 2000)
+            step = 32;
+    } else if (*(s16 *)(r + 104) < *(s16 *)(r + 122)) {
+        step = 32;
+    }
+
+apply:
+    if ((*(u32 *)(r + 92) & 1) == 0) {
+        if (step == 16) {
+            if (*(u8 *)(r + 156) < *(u8 *)(r + 161)) {
+                (*(u8 *)(r + 156))++;
+                *(u16 *)(r + 104) = (u16)_080029488(r);
+            }
+        } else if (step == 32) {
+            if (*(u8 *)(r + 156) > 1) {
+                (*(u8 *)(r + 156))--;
+                *(u16 *)(r + 104) = (u16)_080029488(r);
+            }
+        }
+    }
+    *(u16 *)(r + 106) = (u16)_08002944C(r);
+    idx = *(u8 *)(r + 156);
+    {
+        s32 i2 = idx * 2;
+        const s16 *pt = (const s16 *)(r + 76);
+        if (*(const s16 *)((const u8 *)pt + i2) > 0) {
+            *(u16 *)(r + 140) = (u16)_080029400(
+                (u32)*(s16 *)(r + 106), (u32)*(s16 *)(r + 140),
+                (u32)(((s32)*(u16 *)(r + 142) << 16) >> 21));
+            if (*(s16 *)(r + 142) > 300) {
+                *(u16 *)(r + 104) = (u16)_080029400(
+                    (u32)(s16)_080029488(r), (u32)*(s16 *)(r + 104), 40);
+            }
+        }
+        if (*(s16 *)(r + 142) > *(s16 *)(r + 144)) {
+            *(u16 *)(r + 142) = (u16)(*(u16 *)(r + 142) - 12);
+            if (*(s16 *)(r + 142) < *(s16 *)(r + 144))
+                *(u16 *)(r + 142) = *(u16 *)(r + 144);
+        }
+    }
 }
 // ----------------------------------------------------------------------------
 // 0x08029D48 — decel/approach + 29488 + 134 nudge. 232 B, EXACT.

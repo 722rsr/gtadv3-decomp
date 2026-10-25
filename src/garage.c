@@ -2526,6 +2526,16 @@ void sub_08027308(int a0, int a1, void *rec) __attribute__((alias("Garage_27308"
 // the 0x083BC048 template and then a third whose selector is 13 or 12 depending
 // on whether Course_GetCup(0x0300287E) returns 4.
 // ============================================================================
+// MEASURED 2026-10-24: the full C lift reaches only 117/344 and stops on two
+// allocator choices, not on a source detail. (a) The three table bases are live
+// across the rotate calls: armcc keeps `i` in r8 and spills the third base
+// (`str r2,[sp,#12]`); agbcc has r10 and keeps all seven values. (b) agbcc's
+// loop optimiser turns `base + (i << 3)` into three rolling pointers (`adds
+// rN,#8` in the loop) where the ROM reloads each base per iteration. Pinning
+// the scaled index, a `+r` loop note on the counter, `(uintptr_t)` address
+// locals, per-table `+r` launders and `"r"` load barriers were all measured and
+// none drops the biv. Reverted to the transcription.
+
 __attribute__((naked)) void Garage_27460(void *a0) {
     __asm__ volatile (
         ".syntax unified\n"

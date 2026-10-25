@@ -1,148 +1,94 @@
 #include "gba/types.h"
 #include "gtadv/memory.h"
-// Reference: asm/rec35_driver.s 0x080163B8-0x080164D4
-// Runtime-registered dispatcher _080163B8 on event id via table at 0x08016400 approx, 12 entries
-// Evidence: literal pools 0x03004E20 etc., phase table dispatch via mov pc.
-extern void Rec35_StageA(void *c);
-extern void Rec35_StageB(void *c);
-__attribute__((naked)) void Rec35_Driver(void *c, int e, int a, int b) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "\tpush\t{r4, r5, lr}\n"
-        "\tadds\tr5, r1, #0\n"
-        "\tadds\tr4, r3, #0\n"
-        "\tsubs\tr0, #1\n"
-        "\tcmp\tr0, #11\n"
-        "\tbls.n\t_L080163C6\n"
-        "\tb.n\t.Lr_080163b8_080164CC\n"
-        "_L080163C6:\n"
-        "\tlsls\tr0, r0, #2\n"
-        "\tldr\tr1, .Lr_080163b8_080163D0\n"
-        "\tadds\tr0, r0, r1\n"
-        "\tldr\tr0, [r0, #0]\n"
-        "\tmov\tpc, r0\n"
-        ".align 2, 0\n"
-        ".Lr_080163b8_080163D0:\n"
-        "\t.word\t0x080163D4\n"
-        "\t.word\t0x080164BE\n"
-        "\t.word\t0x08016404\n"
-        "\t.word\t0x080164CC\n"
-        "\t.word\t0x080164CC\n"
-        "\t.word\t0x0801640E\n"
-        "\t.word\t0x08016448\n"
-        "\t.word\t0x08016440\n"
-        "\t.word\t0x080164CC\n"
-        "\t.word\t0x080164CC\n"
-        "\t.word\t0x080164CC\n"
-        "\t.word\t0x080164CC\n"
-        "\t.word\t0x080164C6\n"
-        "_L08016404:\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tadds\tr1, r5, #0\n"
-        "\tbl\t0x08015C9C\n"
-        "\tb.n\t.Lr_080163b8_080164CC\n"
-        "_L0801640E:\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tadds\tr0, #16\n"
-        "\tbl\t0x0800D854\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tadds\tr0, #120\n"
-        "\tbl\t0x0800D8E4\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tadds\tr0, #142\n"
-        "\tmovs\tr1, #0\n"
-        "\tldrsh\tr0, [r0, r1]\n"
-        "\tcmp\tr0, #0\n"
-        "\tbeq.n\t_L08016430\n"
-        "\tcmp\tr0, #1\n"
-        "\tbeq.n\t_L08016438\n"
-        "\tb.n\t.Lr_080163b8_080164CC\n"
-        "_L08016430:\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tbl\t0x08015ED0\n"
-        "\tb.n\t.Lr_080163b8_080164CC\n"
-        "_L08016438:\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tbl\t0x08015F68\n"
-        "\tb.n\t.Lr_080163b8_080164CC\n"
-        "_L08016440:\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tbl\t0x080162E0\n"
-        "\tb.n\t.Lr_080163b8_080164CC\n"
-        "_L08016448:\n"
-        "\tldrh\tr0, [r4, #20]\n"
-        "\tcmp\tr0, #0\n"
-        "\tbeq.n\t.Lr_080163b8_080164CC\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tadds\tr0, #144\n"
-        "\tmovs\tr1, #0\n"
-        "\tldrsh\tr0, [r0, r1]\n"
-        "\tcmp\tr0, #0\n"
-        "\tbne.n\t_L0801648C\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tadds\tr0, #142\n"
-        "\tmovs\tr1, #0\n"
-        "\tldrsh\tr0, [r0, r1]\n"
-        "\tcmp\tr0, #0\n"
-        "\tbeq.n\t_L0801646C\n"
-        "\tcmp\tr0, #1\n"
-        "\tbeq.n\t_L0801647C\n"
-        "\tb.n\t.Lr_080163b8_080164CC\n"
-        "_L0801646C:\n"
-        "\tlsls\tr1, r5, #16\n"
-        "\tlsrs\tr1, r1, #16\n"
-        "\tlsls\tr2, r2, #16\n"
-        "\tlsrs\tr2, r2, #16\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tbl\t0x080160C4\n"
-        "\tb.n\t.Lr_080163b8_080164CC\n"
-        "_L0801647C:\n"
-        "\tlsls\tr1, r5, #16\n"
-        "\tlsrs\tr1, r1, #16\n"
-        "\tlsls\tr2, r2, #16\n"
-        "\tlsrs\tr2, r2, #16\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tbl\t0x08016004\n"
-        "\tb.n\t.Lr_080163b8_080164CC\n"
-        "_L0801648C:\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tadds\tr0, #142\n"
-        "\tmovs\tr1, #0\n"
-        "\tldrsh\tr0, [r0, r1]\n"
-        "\tcmp\tr0, #0\n"
-        "\tbeq.n\t_L0801649E\n"
-        "\tcmp\tr0, #1\n"
-        "\tbeq.n\t_L080164AE\n"
-        "\tb.n\t.Lr_080163b8_080164CC\n"
-        "_L0801649E:\n"
-        "\tlsls\tr1, r5, #16\n"
-        "\tlsrs\tr1, r1, #16\n"
-        "\tlsls\tr2, r2, #16\n"
-        "\tlsrs\tr2, r2, #16\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tbl\t0x08016164\n"
-        "\tb.n\t.Lr_080163b8_080164CC\n"
-        "_L080164AE:\n"
-        "\tlsls\tr1, r5, #16\n"
-        "\tlsrs\tr1, r1, #16\n"
-        "\tlsls\tr2, r2, #16\n"
-        "\tlsrs\tr2, r2, #16\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tbl\t0x080161A0\n"
-        "\tb.n\t.Lr_080163b8_080164CC\n"
-        "_L080164BE:\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tbl\t0x08015CB4\n"
-        "\tb.n\t.Lr_080163b8_080164CC\n"
-        "_L080164C6:\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tbl\t0x08015CB0\n"
-        ".Lr_080163b8_080164CC:\n"
-        "\tpop\t{r4, r5}\n"
-        "\tpop\t{r0}\n"
-        "\tbx\tr0\n"
-        ".short\t0x0000\n"
-        ".syntax divided\n"
-    );
+
+// 0x080163B8 (284 B) — rec35 runtime-registered event driver.
+// _080163B8(ev, arg_b, arg_c, ctx): `idx = ev - 1`, ev > 12 falls to the shared
+// epilogue. Slots 2/3 (ev 3/4) and 7..10 (ev 8..11) are empty. armcc puts the
+// jump-table base literal in word[0] of the table block and the 12 absolute
+// slot addresses in words[1..12]; agbcc's thumb.md switch expansion emits the
+// same base-literal-then-entries layout, so this is a plain `switch`.
+// _080015C9C's own prototype reads (dead, rec) -- at this call site r1 is
+// arg_b, so the second parameter is the one that carries a record pointer.
+extern void _08015CB4(void *ctx);                      // 0x08015CB4 rec35_init.c
+extern void _080015C9C(void *dead, int arg);           // 0x08015C9C menu_ff78_f.c
+extern void _0800D854(void *p);                        // 0x0800D854 menu_stage.c
+extern void _0800D8E4(void *p);                        // 0x0800D8E4 menu_stage.c
+extern void _08015ED0(void *ctx);                      // 0x08015ED0 rec35_stage.c
+extern void _08015F68(void *ctx);                      // 0x08015F68 rec35_stage.c
+extern void sub_0800160C4(void *ctx, int a, int b);    // 0x080160C4 rec35_16002.c
+extern void sub_080016004(void *ctx, int a, int b);    // 0x08016004 rec35_16002.c
+extern void sub_080016164(void *ctx, int a, int b);    // 0x08016164 rec35_16002.c
+extern void sub_0800161A0(void *ctx, int a, int b);    // 0x080161A0 rec35_16002.c
+extern void sub_0800162E0(void *ctx);                  // 0x080162E0 rec35_16002.c
+extern void sub_080015CB0(void *ctx);                  // 0x08015CB0 menu_ff78_c.c (callee takes none)
+
+void Rec35_Driver(int ev, int arg_b, int arg_c, void *ctx_)
+{
+    u8 *ctx = (u8 *)ctx_;
+
+    // Arm order below is the ROM's body order (2, 5, 7, 6, 1, 12): agbcc
+    // emits switch arms in source order and the table slots stay index-ordered.
+    switch (ev) {
+    case 2:
+        _080015C9C(ctx, arg_b);
+        break;
+    case 3:
+    case 4:
+        break;
+    case 5:
+        _0800D854(ctx + 16);
+        _0800D8E4(ctx + 120);
+        switch (*(s16 *)(ctx + 142)) {
+        case 0:
+            _08015ED0(ctx);
+            break;
+        case 1:
+            _08015F68(ctx);
+            break;
+        }
+        break;
+    case 7:
+        sub_0800162E0(ctx);
+        break;
+    case 6:
+        if (*(u16 *)(ctx + 20) != 0) {
+            if (*(s16 *)(ctx + 144) == 0) {
+                switch (*(s16 *)(ctx + 142)) {
+                case 0:
+                    sub_0800160C4(ctx, (u16)arg_b, (u16)arg_c);
+                    break;
+                case 1:
+                    sub_080016004(ctx, (u16)arg_b, (u16)arg_c);
+                    break;
+                }
+            } else {
+                switch (*(s16 *)(ctx + 142)) {
+                case 0:
+                    sub_080016164(ctx, (u16)arg_b, (u16)arg_c);
+                    break;
+                case 1:
+                    sub_0800161A0(ctx, (u16)arg_b, (u16)arg_c);
+                    break;
+                }
+            }
+        }
+        break;
+    case 8:
+    case 9:
+    case 10:
+    case 11:
+        break;
+    case 1:
+        _08015CB4(ctx);
+        break;
+    case 12:
+        sub_080015CB0(ctx);
+        break;
+    }
 }
-void _080163B8(void *c,int e,int a,int b) __attribute__((alias("Rec35_Driver")));
+
+// The ROM pads the 282-byte body with two zero bytes; without this the section
+// ends 2-mod-4 and `as` pads it with a Thumb `nop` (0xC046) instead. Must sit
+// before the alias declarations or agbcc drops it (same as Race_Setup_19200).
+__asm__(".pushsection .text.Rec35_Driver,\"ax\",%progbits\n\t.short 0\n\t.popsection");
+void _080163B8(int ev, int arg_b, int arg_c, void *ctx) __attribute__((alias("Rec35_Driver")));

@@ -35,141 +35,110 @@ int Helper_014A4(void *p){
 // `.size`, still inside its own section, so it pads with the explicit `0` fill.
 __asm__(".align 2, 0");
 int _080014A4(void *a) __attribute__((alias("Helper_014A4")));
-__attribute__((naked)) void Helper_014B4(void *p){
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, lr}\n"
-        "adds r3, r0, #0\n"
-        "ldrb r0, [r3, #24]\n"
-        "cmp r0, #224\n"
-        "beq .L014B4_mode224\n"
-        "cmp r0, #224\n"
-        "blt .L014B4_mode_range\n"
-        "cmp r0, #232\n"
-        "bgt .L014B4_mode_range\n"
-        "cmp r0, #231\n"
-        "blt .L014B4_mode_range\n"
-        "movs r4, #3\n"
-        "ldrb r5, [r3, #30]\n"
-        "b .L014B4_loop2\n"
-        ".L014B4_mode224:\n"
-        "movs r1, #0\n"
-        "movs r0, #225\n"
-        "strb r0, [r3, #24]\n"
-        "str r1, [r3, #4]\n"
-        "movs r0, #128\n"
-        "lsls r0, r0, #13\n"
-        "str r0, [r3, #0]\n"
-        "b .L014B4_update\n"
-        ".L014B4_mode_range:\n"
-        "movs r4, #3\n"
-        "ldrb r5, [r3, #30]\n"
-        "movs r6, #1\n"
-        "ldr r1, .L014B4_table1\n"
-        ".L014B4_loop1:\n"
-        "ldrh r0, [r1, #0]\n"
-        "adds r2, r0, #0\n"
-        "adds r0, r5, #0\n"
-        "asrs r0, r4\n"
-        "ands r0, r6\n"
-        "cmp r0, #0\n"
-        "beq .L014B4_after_bit1\n"
-        "ldr r0, [r3, #4]\n"
-        "cmp r2, r0\n"
-        "bne .L014B4_mode224\n"
-        ".L014B4_after_bit1:\n"
-        "subs r1, #2\n"
-        "subs r4, #1\n"
-        "cmp r4, #0\n"
-        "bne .L014B4_loop1\n"
-        "ldrb r0, [r3, #24]\n"
-        "adds r0, #1\n"
-        "strb r0, [r3, #24]\n"
-        "ldr r1, [r3, #0]\n"
-        "ldrh r0, [r3, #0]\n"
-        "str r0, [r3, #4]\n"
-        "cmp r1, #0\n"
-        "bne .L014B4_shift\n"
-        "ldr r0, [r3, #40]\n"
-        "adds r1, r0, #0\n"
-        "adds r1, #172\n"
-        "adds r0, #173\n"
-        "ldrb r0, [r0, #0]\n"
-        "lsls r0, r0, #8\n"
-        "ldrb r1, [r1, #0]\n"
-        "orrs r0, r1\n"
-        "str r0, [r3, #4]\n"
-        "lsls r0, r0, #5\n"
-        "str r0, [r3, #0]\n"
-        ".L014B4_shift:\n"
-        "ldr r0, [r3, #0]\n"
-        "lsrs r0, r0, #5\n"
-        "str r0, [r3, #0]\n"
-        ".L014B4_read_update:\n"
-        "ldrh r1, [r3, #0]\n"
-        ".L014B4_update:\n"
-        "adds r0, r3, #0\n"
-        "bl 0x08001370\n"
-        "b .L014B4_common_return\n"
-        "movs r0, r0\n"
-        ".align 2, 0\n"
-        ".L014B4_table1: .word 0x04000126\n"
-        ".L014B4_loop2:\n"
-        "lsls r0, r4, #1\n"
-        "ldr r1, .L014B4_table2\n"
-        "adds r0, r0, r1\n"
-        "ldrh r0, [r0, #0]\n"
-        "adds r2, r0, #0\n"
-        "adds r0, r5, #0\n"
-        "asrs r0, r4\n"
-        "movs r1, #1\n"
-        "ands r0, r1\n"
-        "cmp r0, #0\n"
-        "beq .L014B4_after_bit2\n"
-        "ldr r0, [r3, #4]\n"
-        "cmp r2, r0\n"
-        "bne .L014B4_call_fallback\n"
-        ".L014B4_after_bit2:\n"
-        "subs r4, #1\n"
-        "cmp r4, #0\n"
-        "bne .L014B4_loop2\n"
-        "ldrb r0, [r3, #24]\n"
-        "adds r0, #1\n"
-        "strb r0, [r3, #24]\n"
-        "lsls r0, r0, #24\n"
-        "lsrs r0, r0, #24\n"
-        "cmp r0, #233\n"
-        "beq .L014B4_zero\n"
-        "ldr r0, [r3, #40]\n"
-        "adds r1, r0, #0\n"
-        "adds r1, #174\n"
-        "adds r0, #175\n"
-        "ldrb r0, [r0, #0]\n"
-        "lsls r0, r0, #8\n"
-        "ldrb r1, [r1, #0]\n"
-        "orrs r0, r1\n"
-        "str r0, [r3, #0]\n"
-        "str r0, [r3, #4]\n"
-        "b .L014B4_read_update\n"
-        "movs r0, r0\n"
-        ".align 2, 0\n"
-        ".L014B4_table2: .word 0x04000120\n"
-        ".L014B4_call_fallback:\n"
-        "adds r0, r3, #0\n"
-        "bl 0x08000F48\n"
-        "movs r0, #113\n"
-        "b .L014B4_common_return\n"
-        ".L014B4_zero:\n"
-        "movs r0, #0\n"
-        ".L014B4_common_return:\n"
-        "pop {r4, r5, r6}\n"
-        "pop {r1}\n"
-        "bx r1\n"
-        "movs r0, r0\n"
-        ".syntax divided\n"
-    );
+// 0x080014B4 (236 B) — link-cable transfer step, driven by ctx[24].
+// The wait loop polls SIOCNT (0x04000126, counting the byte lanes down) or
+// SIODATA (0x04000120 + n*2). A set transfer bit (ctx[30] >> n & 1) makes the
+// loop compare the hardware word against the mirror at ctx+4; a mismatch falls
+// into the shared 0xE1 re-arm block, which is the 0xE0 case body itself (the
+// ROM's `bne` at 0x080014FA targets 0x080014D0). The {0xE0, 0xE7:0xE8}
+// dispatch is a switch -- the leading `cmp #224 / blt` with the positive
+// constant only comes from the case tree.
+extern u32 _08001370(void *ctx, u32 hw);            // 0x08001370
+extern void sub_08000F48(void *p);                  // 0x08000F48
+
+u32 Helper_014B4(void *p)
+{
+    volatile u8 *ctx = (volatile u8 *)p;
+    u32 n;
+    u8 mask;
+    u32 r;
+    u32 w;
+    u32 hw;
+    volatile u16 *rp;
+    register u8 *base __asm__("r0");
+    u32 v;
+
+    switch (*(volatile u8 *)(ctx + 24)) {
+    case 0xE0:
+    rearm:
+        hw = 0;
+        *(volatile u8 *)(ctx + 24) = 0xE1;
+        *(volatile u32 *)(ctx + 4) = 0;
+        *(volatile u32 *)(ctx + 0) = 0x100000u;
+        goto call;
+
+    default:
+        n = 3;
+        mask = *(u8 *)((u8 *)ctx + 30);
+        {
+        u32 one = 1;
+        rp = (volatile u16 *)0x04000126u;
+        do {
+            r = *rp;
+            if (((mask >> n) & one) != 0) {
+                if (r != *(volatile u32 *)(ctx + 4))
+                    goto rearm;
+            }
+            rp--;
+        } while (--n != 0);
+        *(volatile u8 *)(ctx + 24) = *(volatile u8 *)(ctx + 24) + 1;
+        w = *(volatile u32 *)(ctx + 0);
+        *(volatile u32 *)(ctx + 4) = *(volatile u16 *)(ctx + 0);
+        if (w == 0) {
+            base = (u8 *)(uintptr_t)*(volatile u32 *)(ctx + 40);
+            {
+                u8 *lo = (u8 *)(base + 172);
+                u8 *hi = (u8 *)(base + 173);
+                v = ((u32)*hi << 8) | *lo;
+            }
+            *(volatile u32 *)(ctx + 4) = v;
+            *(volatile u32 *)(ctx + 0) = v << 5;
+        }
+        *(volatile u32 *)(ctx + 0) = *(volatile u32 *)(ctx + 0) >> 5;
+        hw = *(u16 *)((u8 *)ctx + 0);
+        }
+    call:
+        return _08001370((void *)ctx, hw);
+
+    case 0xE7:
+    case 0xE8:
+        n = 3;
+        mask = *(u8 *)((u8 *)ctx + 30);
+        do {
+            r = *(volatile u16 *)(0x04000120u + (n << 1));
+            if (((mask >> n) & 1) != 0) {
+                if (r != *(volatile u32 *)(ctx + 4)) {
+                    sub_08000F48((void *)ctx);
+                    return 113;
+                }
+            }
+        } while (--n != 0);
+        v = *(volatile u8 *)(ctx + 24) + 1;
+        *(volatile u8 *)(ctx + 24) = (u8)v;
+        if ((u8)v == 0xE9)
+            return 0;
+        base = (u8 *)(uintptr_t)*(volatile u32 *)(ctx + 40);
+        {
+            u8 *lo = (u8 *)(base + 174);
+            u8 *hi = (u8 *)(base + 175);
+            v = ((u32)*hi << 8) | *lo;
+        }
+        *(volatile u32 *)(ctx + 0) = v;
+        *(volatile u32 *)(ctx + 4) = v;
+        hw = *(u16 *)((u8 *)ctx + 0);
+        goto call;
+    }
 }
-void _080014B4(void *a) __attribute__((alias("Helper_014B4")));
+// Two spellings carry this body. `base` is pinned to r0: unpinned, agbcc picks
+// the other order for the two pointer temporaries (203/236). In the default arm
+// the AND constant is a local (`one`) rather than a literal, which makes agbcc
+// materialise it before the pool load (0x080014E4 `movs r6,#1`) exactly as the
+// ROM does -- with a literal it lands after (230/236). The 0xE7/0xE8 loop keeps
+// the literal so it re-materialises into r1 every iteration, as in the ROM.
+// The body ends 2 bytes short of the 4-byte boundary; gas would close it with
+// a `46c0` nop where the ROM holds `00 00` (same situation as 0x080014B2).
+__asm__(".align 2, 0");
+u32 _080014B4(void *a) __attribute__((alias("Helper_014B4")));
 void Helper_013BC(void *p){
     extern void _08000F48(void*);
     u8 v = *(volatile u8*)((u8*)p+24);
