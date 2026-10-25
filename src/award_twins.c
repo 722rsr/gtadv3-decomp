@@ -183,32 +183,40 @@ void Award_CopyTwinB(int idx_, void *src_, void *unused) {
             count++;
         }
         register u32 twelve __asm__("r7") = 12;
+        /* r7 is agbcc's frame pointer: once cse learns `r7 == 12` it folds
+           every later frame-address materialisation (the tail's
+           `tsrc = temp`) to a constant. The barrier keeps twelve opaque. */
+        __asm__ volatile ("" : "+r" (twelve));
         rowoff += twelve;
         ptr += 12;
     } while (count <= 4);
 
-    // agbcc rematerialises the tail's temp pointer as an offset (movs r3,#12)
-    // after the pinned first loop, and folds the row offset into r0 instead of
-    // the ROM's r5. Pin the three instructions that differ; the rest is
-    // compiler output.
+    // The tail's shape is all pins/barriers now (no spliced instructions):
+    // cse folds `tsrc = temp` to a constant unless twelve's r7 is opaque
+    // (r7 is agbcc's frame pointer -- see the barrier in the first loop),
+    // trow must land in r2 and the row-offset copy/add in r5/r1 or agbcc
+    // coalesces them into the dead t0/wb registers.
     {
         register u8 *wb __asm__("r1") = (u8 *)(uintptr_t)&AwardWaBase;
         register u32 t2 __asm__("r2") = idx8;
         __asm__ volatile ("" : "+r" (t2));
         register u32 t3 __asm__("r3") = (u32)idx;
         register u32 t0 __asm__("r0") = (u32)((t2 + t3) << 3);
-        register u8 *tsrc __asm__("r3");
-        __asm__ volatile ("mov %0, sp" : "=r" (tsrc));
-        u8 *trow = (u8 *)(t0 + (u32)(uintptr_t)wb);
+        register u8 *tsrc __asm__("r3") = temp;
+        __asm__ volatile ("" : "+r" (tsrc));
+        register u8 *trow __asm__("r2") = (u8 *)(t0 + (u32)(uintptr_t)wb);
         register u32 offv __asm__("r4") = (u32)(uintptr_t)&AwardRowOff;
         __asm__ volatile ("" : "+r" (offv));
         register u32 ro8 __asm__("r8") = offv;
         __asm__ volatile ("" : "+r" (ro8));
         i = 4;
         do {
-            register u8 *dstp __asm__("r1");
-            __asm__ volatile ("mov r5, %1\n\tadd %0, %2, r5"
-                              : "=r" (dstp) : "r" (ro8), "r" (trow));
+            /* ROM: `mov r5, r8 / adds r1, r2, r5` -- r8 is high, so the
+               3-operand Thumb add needs the offset copied down first. */
+            register u32 ro __asm__("r5") = ro8;
+            __asm__ volatile ("" : "+r" (ro));
+            register u8 *dstp __asm__("r1") = trow + ro;
+            __asm__ volatile ("" : "+r" (dstp));
             *(Blk12 *)dstp = *(Blk12 *)tsrc;
             tsrc += 12;
             trow += 12;

@@ -607,15 +607,24 @@ temp-register numbering.What made the difference, with only the measurements act
   `prev = *(volatile u16 *)curp` after the F700 store, because the reload
   must not be forwarded into `mov r8,r0` (the ROM reloads through r3).
 
-The three ROM `ldrsh` reads into a call-crossing register cannot come from C:
-measured on a scratch TU, a signed halfword whose value survives a call (or
-whose destination is pinned) always compiles to `ldrh` + `lsls`/`asrs`, never
-`ldrsh`. They are emitted by a one-instruction splice,
-`__asm__ volatile ("ldrsh %0, [%1, %2]" : "=r"(v) : "r"(base), "r"(zero))`.
-With the length already at 252, the residual mismatch is only which register
-each loaded value and each splice's zero lands in; the instruction sequence
-is the ROM's. That register numbering is the only thing between this body and
-`EXACT`. Three further facts are worth keeping, because a wrong guess on any
+**Correction (measured 2026-10-25).** The ROM `ldrsh` reads into a call-crossing
+register *do* come from plain C; the discriminator is the local's declared
+width, not the call. `python3 tools/expr_probe.py --snippet` on
+`int q = *(s16 *)(p + 0); H(0); return q;` emits
+`movs r1,#0 / ldrsh r4,[r0,r1] / movs r0,#0 / bl H / adds r0,r4,#0`, while
+declaring the same local `s16` emits `ldrh r4,[r0,#0]` and the
+`lsls #16`/`asrs #16` pair. An earlier reading of this body concluded the
+`ldrsh` was unreachable and spliced it; it is not, and no splice is needed.
+A natural draft with `int` locals reaches **117/252** at 244 bytes. What is
+left is the register each zero-index `ldrsh`'s constant lands in: the ROM
+uses a rotating r2/r0/r1/r3 and agbcc always prefers the next free low
+register. Pinning that constant does not help (`register u32 z __asm__("r2") = 0`
+still allocates r0/r1 -- cse keeps the value, not the home), and a `"+r"`
+barrier on the zero adds an `adds rX, base, rX` address computation the ROM
+does not have (`ldrsh` then reads `[rX, r0]`). That numbering, not instruction
+selection, is what still separates this body from `EXACT`.
+
+Three further facts are worth keeping, because a wrong guess on any
 of them costs the whole body:
 
 * `_0800F744` is called with **r0 = 0**, not with the selected index: the ROM
@@ -740,3 +749,56 @@ frame instead of 28. The rest of the body is the plain 6-arg form of the
 `0x0800785C` sibling (same lookup chain, 0748C/074A8 pair per lane, same DMA
 triple), so lift a family from its already-matched member before writing one
 from scratch.
+
+## A whole-body asm skeleton gets the prologue for free from four `"l"` locals
+
+Measured on `_08001C3E0` (3640 B, `src/race_scene_b2.c`, 2026-10-24), the first
+large body in the tree lifted as *skeleton + asm* rather than as a naked block.
+While the whole body is still one asm statement the compiler can own the
+prologue and epilogue exactly:
+
+```c
+u32 v0, v1, v2, v3;                 /* never defined, never read */
+__asm__ volatile ("..." : : "l"(v0), "l"(v1), "l"(v2), "l"(v3)
+        : "r0", "r1", "r2", "r3", "r8", "r9", "sl", "lr", "cc", "memory");
+```
+
+* the four `"l"` inputs are four low-register allocnos; with r0-r3 clobbered the
+  allocator takes r4-r7, which is what `regs_ever_live[7]` needs (pins and
+  clobbers alone never set it, see "r7 wants an unpinned global allocno"). The
+  prologue comes out as the ROM's `push {r4,r5,r6,r7,lr}` / `mov r7,sl` /
+  `mov r6,r9` / `mov r5,r8` / `push {r5,r6,r7}`, and the epilogue as
+  `pop {r3,r4,r5}` + `mov r8,r3` / `mov r9,r4` / `mov sl,r5` +
+  `pop {r4,r5,r6,r7}` / `pop {r0}` / `bx r0`.
+* the r8/r9/sl clobbers alone already select the high-register save; the
+  operands emit no instruction of their own.
+* a compiled frame is *not* free: any local the asm addresses costs a
+  `mov r0, sp` before the block, even when the template never mentions it. Keep
+  the compiler frame at 0 and put `sub sp,#136` / `add sp,#136` as the block's
+  first and last instructions -- the `add sp` then sits immediately before the
+  compiler's `pop {r3,...}`, which is where the ROM has it. Both statements
+  leave the block by themselves once real C locals produce the frame.
+
+## `SoundSeqInterpreter` (0x0802D6F4, 344 B): two pins and chained stores
+
+A dense 18-way switch (jump table with the base word before the entries, the
+arm order = case order) lifted to exact C. Four things decide the body, all
+measured in the owning TU:
+
+* pin the pointer that holds the opcode address (`pc0` -> r1) and the byte
+  target (`dst` -> r3); `b` needs no pin and lands in r2. Pinning `b` as well
+  (`register u32 b __asm__("r2")`) makes the body 360 B.
+* leave the `*(u8 **)(seq + 24)` data base as a *reloaded inline expression* in
+  each case rather than a cached local. A store through `dst` may alias that
+  field, so the ROM reloads it per case; caching it in a local drops those
+  loads.
+* chain the three program-counter stores: `p1 = pc0 + 1`, `p2 = p1 + 1`,
+  `p3 = p2 + 1`, storing each before the next operand byte is read. Writing
+  `pc0 + 2` / `pc0 + 3` lets agbcc fold both off `pc0`, which rematerialises
+  the addresses, moves the operand reads to the base pointer and makes the
+  body 16 B long.
+* keep `default:` empty (it falls straight to the epilogue) and send the
+  comparison arms to two shared tails with `goto` -- one `_0802DDD0(seq, cur,
+  *(u32 *)0x0203EBB4)` call, one `cursor += 4`. That block order is what
+  produces the `cmp #17 / bls table / b done` dispatch smoothing; duplicating
+  the tails per arm or ordering the cases differently changes it.

@@ -201,11 +201,9 @@
    "size": 16
   },
   "0x080014b4": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 112,
-    "naked": true
+    "pin": 1
    },
    "file": "src/foundation_fa0.c",
    "name": "Helper_014B4",
@@ -2450,11 +2448,10 @@
    "size": 24
   },
   "0x080050e8": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 163,
-    "naked": true
+    "barrier": 1,
+    "pin": 1
    },
    "file": "src/event_dma_queue.c",
    "name": "BG2Matrix_Update",
@@ -4357,13 +4354,11 @@
    "size": 208
   },
   "0x0800bb0c": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
-    "barrier": 8,
+    "barrier": 12,
     "directive": 1,
-    "insn": 2,
-    "insn_lines": 3,
-    "pin": 43
+    "pin": 45
    },
    "file": "src/award_twins.c",
    "name": "Award_CopyTwinB",
@@ -6554,12 +6549,7 @@
    "size": 4
   },
   "0x080163b8": {
-   "class": "asm",
-   "detail": {
-    "insn": 1,
-    "insn_lines": 116,
-    "naked": true
-   },
+   "class": "c",
    "file": "src/rec35_driver.c",
    "name": "Rec35_Driver",
    "size": 284
@@ -7808,8 +7798,7 @@
    "class": "asm",
    "detail": {
     "insn": 1,
-    "insn_lines": 1450,
-    "naked": true
+    "insn_lines": 1554
    },
    "file": "src/race_scene_b2.c",
    "name": "_08001C3E0",
@@ -11443,12 +11432,7 @@
    "size": 340
   },
   "0x08029bc8": {
-   "class": "asm",
-   "detail": {
-    "insn": 1,
-    "insn_lines": 185,
-    "naked": true
-   },
+   "class": "c",
    "file": "src/garage_records.c",
    "name": "_080029BC8",
    "size": 384
@@ -12750,11 +12734,9 @@
    "size": 116
   },
   "0x0802d6f4": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 150,
-    "naked": true
+    "pin": 3
    },
    "file": "src/sound_core.c",
    "name": "SoundSeqInterpreter",
@@ -13286,20 +13268,20 @@
  },
  "totals": {
   "asm": {
-   "bytes": 66176,
-   "functions": 173
+   "bytes": 64552,
+   "functions": 168
   },
   "c": {
-   "bytes": 42410,
-   "functions": 870
+   "bytes": 43078,
+   "functions": 872
   },
   "c_fakematch": {
-   "bytes": 78354,
-   "functions": 623
+   "bytes": 79558,
+   "functions": 627
   },
   "partial": {
-   "bytes": 1196,
-   "functions": 9
+   "bytes": 948,
+   "functions": 8
   }
  },
  "version": 1

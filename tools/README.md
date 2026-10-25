@@ -67,6 +67,8 @@ neither target replaces `make matching-ready`.
 | `matching_campaign.py` | Bounded, resumable full-TU variants and matrices; persistent failures, output deduplication, and best candidate. |
 | `lab_sweep.py` | Score several spellings of one body in place: each variant file replaces the span between two markers, the probe scores it, and the original bytes are restored on exit. Use it for the edit-probe-repeat loop instead of hand-editing the TU; `--diff` re-installs the best variant and prints the probe listing. |
 | `body_diff.py` | Instruction-level diff of one body: reference vs the linked image, or (`--cand`) vs a probe's `<name>_cand.bin`, so a body can be inspected without relinking the whole ROM. |
+| `body_segments.py` | Split one body into labelled code/data/pad segments so each can become C on its own; each segment carries a `yes`/`asm-only` swap verdict, and `--check` reassembles the fragments and recompiles the scaffold against the ROM span. |
+| `expr_probe.py` | Answer "what does agbcc emit for this spelling?" in one command: compile a snippet through the pinned compiler and print each function's instructions. Replaces the hand-built scratch TU (`build/foldprobe.c`) loop; `--self-test` pins the measured operand-order rules. |
 | `instruction_diff.py` | Reachable Thumb instruction alignment, register/operand/target/pool diagnostics; advisory only. |
 | `compiler_microscope.py` | Chronological RTL comparison plus a separate register-note/allocator-prose channel. |
 | `fixtures/agbcc_recipes/` | Reproduce selected upstream matching motifs; see the [recipe cookbook](../docs/findings/agbcc_matching_recipes.md) for applicability and local results. |
@@ -82,6 +84,7 @@ neither target replaces `make matching-ready`.
 
 ```sh
 python3 tools/corpus_match_probe.py --function NAME --c89 --require-all --require-exact
+python3 tools/expr_probe.py --snippet 'int f(u8*a){return *(u16*)(a+148);}'
 python3 tools/match_families.py --build
 python3 tools/match_families.py --twins --json build/matching-assist/twins.json
 python3 tools/match_context.py NAME
