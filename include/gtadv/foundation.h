@@ -72,7 +72,7 @@ void SoftIrqKicker(void); // _08000A60
 // code_c668 / ce2c / fa0 — c668/ce2c SUBSTANTIATED, fa0 entry SUBSTANTIATED, remainder TODO
 void IntrMain_Dispatch(void *ctx); // _08000F84
 int Helper_014A4(void *p); // _080014A4
-void Helper_014B4(void *p); // _080014B4
+u32 Helper_014B4(void *p); // _080014B4 — link transfer step, returns 0/113/0x08001370()
 void Helper_013BC(void *p); // _080013BC
 void Helper_030CC(void); // _080030CC
 // runtime_2aac small stores + placement helpers — SUBSTANTIATED

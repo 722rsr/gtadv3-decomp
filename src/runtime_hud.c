@@ -2477,19 +2477,32 @@ void *ObjAlloc_02BFC(int a)
 void *sub_08002BFC(int a) __attribute__((alias("ObjAlloc_02BFC")));
 void *_08002BFC(int a) __attribute__((alias("ObjAlloc_02BFC")));
 
-// 0x08002C98 — OAM flush: for each of *(0x03000144) entries, walk the linked
-// MEASURED 2026-10-22: the C lift (twin of Wrap_02D3C) reaches 76/164 with the
-// length exact; everything but five instructions reproduces. The wall is one
-// allocation: the ROM homes the entry pointer in r5 and *parks* it in ip across
-// the inner walk (`mov ip,r5` / `mov r5,ip`) because the inner loop wants r5 for
-// the 0x030035C0 base, and it spills the index to [sp] because the 0x1FF mask
-// reuses r4. agbcc instead homes the table in ip from the start (adding
-// `mov r0,ip / adds r0,#4 / mov ip,r0 / subs r0,#4` for the post-increment) and
-// keeps the index in r7, which costs the `sub sp,#4` frame. Forcing either with
-// pins makes the body 4 bytes longer; pinning the 0x030035C0 delta to r7 does
-// reproduce `ldrh r7,[r5,#12]` but moves the mask to r3. Pinning `b` to r5
-// (which is what parks the table) is self-defeating: the pin reserves r5 for the
-// whole body, so there is nothing to park.
+// 0x08002C98 — OAM flush (`Wrap_02D3C`'s twin plus a 9-bit field rewrite at
+// entry+2): for each of *(0x03000144) entries, walk the linked list at
+// *(0x03000140), copying 8 bytes per node, then CpuFastSet the result to
+// 0x07000000.
+// MEASURED 2026-10-25, C lift at 156/164 B (ROM 164): the Wrap_02D3C recipe
+// (src/foundation_runtime.c) reproduces the whole loop — the pre-guard
+// `if (idx < cnt)` with a `do`/`while (idx < *cntSaved)` bottom test, the SIGNED
+// compares, the `int cnt = *cntPtr` + separate `cntSaved` reload, and the
+// `__asm__("" : : "r"(src) : "r0")` pool split — so only allocation is left.
+// These pins reproduce the ROM's homes exactly (prologue, `mov sl`/`mov r9`,
+// tail `mov r0,sl`): src r5, dst r6, `p134` sl, `cntPtr` r9, `fields` r8; idx
+// stays unpinned (r7 instead of the ROM's r4). The field rewrite needs the
+// extract as `raw & 0x1FF` and the merge as two explicit statements
+// `hi = (raw >> 9) << 9` / `*wt = hi | (lo & 0x1FF)` — a bitfield struct store
+// emits `and 0xFE00` instead of the shifts, and a union of `w`/`b.idx` emits
+// `lsls #23 / lsrs #23` for the extract. `((const struct ... *)fields)->shift`
+// (a 12-byte pad then s16) is what keeps the table load at `mov rX,r8` +
+// `ldrh rX,[rX,#12]` rather than mov+add+ldrh. The two deltas left: (1) the ROM
+// spills the index (`sub sp,#4` / `str r4,[sp]` / `ldr r4,[sp]`, mask 0x1FF
+// reloaded into r4 inside the inner loop) where agbcc gives idx its own
+// callee-saved r7 and puts the mask in r4 — 8 B, and pinning idx to r4 just
+// moves the mask to r6, so the spill has to come from pressure, not a pin;
+// (2) `cntPtr`'s pool is load-loaded when it is pinned, because `ldr r0,[r0]`
+// clobbers the address before `mov r9,r0`, so the constant is fetched twice.
+// The permuter now runs on this body (tools/run_permuter.py accepts the sl pin)
+// and got to 1535 without closing it.
 __attribute__((naked)) void ObjFlush_02C98(void) {
     __asm__ volatile (
         ".syntax unified\n"

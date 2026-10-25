@@ -164,6 +164,17 @@ See [candidate-length diagnostics](findings/oversized_plus4_class.md).
   [register-shaping levers](findings/register_shaping_levers.md); the compiler
   rules are in the r7 section of
   [how agbcc picks a register](findings/local_alloc_register_choice.md#r7-is-reachable-through-global-alloc-not-through-pins).
+- A pinned u32 *constant* in r7 poisons every later frame-address
+  materialisation. r7 is agbcc's Thumb frame pointer, so once cse knows
+  `r7 == K`, a later `register u8 *p __asm__("rN") = local_array;` folds to
+  `movs rN, #(slot + K)` instead of `mov rN, sp` (frame-slot spills survive
+  because elimination rewrites them structurally; a direct frame-base read
+  does not). An empty `"+r"` barrier on the constant right after its
+  materialisation makes cse forget the value and the `mov rX, sp` returns.
+  Measured on `Award_CopyTwinB` (0x0800BB0C): `twelve = 12` turned the tail's
+  `tsrc = temp` into `movs r3, #12` and `= &found` (slot 64) into `#76`;
+  twelve as u16 or a plain local also dodges it but loses the first loop's
+  `mov r7, #12 / add r8, r8, r7`.
 - agbcc cannot emit the Thumb `tst` instruction at all: its thumb.md
   `tstsi` pattern expands to `cmp %0, #0`, so `if (flags & mask)` always
   lowers to `and` + `cmp #0` + `beq` (3 instructions where armcc has
@@ -264,7 +275,18 @@ See [candidate-length diagnostics](findings/oversized_plus4_class.md).
   default. Eight spellings were measured on the pinned compiler in a scratch
   TU (`build/foldprobe.c`, the same `-O2 -mthumb-interwork` pipeline the probe
   uses) before touching the real body: replicate that when a single expression
-  has to produce a specific two-instruction pair.
+  has to produce a specific two-instruction pair. `python3 tools/expr_probe.py
+  --snippet '...'` runs that scratch-TU loop in one command and prints the
+  emitted instructions, so the spelling search does not need a hand-built TU.
+- Thumb `add` operand order is decided by whether the destination is a
+  *separate* pseudo. With a pinned destination (`register int base
+  asm("r4"); base = a + b;`) agbcc keeps the source order (`adds r4, r1, r0`);
+  once the destination is coalesced with one operand -- which is what an
+  accumulate (`base += b`) always does -- it commutes, so the added value is
+  encoded first (`adds r4, r0, r4`). A ROM `adds r4, r4, r0` therefore cannot
+  come from `+=`; it needs a distinct destination variable that the allocator
+  later places in the first operand's register. Both shapes are pinned by
+  `tools/expr_probe.py --self-test`.
 - Absolute literals that the ROM derives from a value already in a register
   must be written as that value plus an offset, not as a fresh constant. The
   `0x08001D288` pool holds neither `0x03004E80` nor `0x03004E8E`: the first is
@@ -388,6 +410,19 @@ after `A`; the ROM keeps it after `B` (`beq sound10` forward, `b after` over
 `B`). Reversing the inner test (`if (held != 1)`) fixes the `beq` direction but
 not the block order. A label plus `goto` is the spelling that reproduces the
 ROM: `else goto sound10;`, then `B`, then `goto after_mode;`, then `sound10:`.
+
+A dense Thumb `switch` needs no special spelling: agbcc's arm.md/thumb.md
+expansion already emits armcc's dispatch, `lsls r0,r0,#2 / ldr r1,<pool> /
+adds r0,r0,r1 / ldr r0,[r0] / mov pc,r0`, with the base literal in the word
+*before* the absolute slot entries and the slot order fixed by case value.
+What differs is the *body* order: agbcc emits arms in source order, so write
+the cases in the ROM's body order (measured on `_080163B8`: 2, 5, 7, 6, 1, 12;
+the table stays index-ordered and the comparison chain is unaffected). The
+same body also shows the arity trap -- a callee that ignores a parameter still
+has to receive it. `sub_080015CB0(ctx)` declared and called as `f()` emitted
+`bl` alone, and agbcc cross-jumped the arm into the previous arm's `adds
+r0,r4,#0`, so the jump-table slot landed *inside* a block and the body came
+out 4 B short; passing `ctx` restored the duplicated prefix.
 Related in the same body: the 0x080CB4EA note table needs the symbol anchor
 (`.globl` + `extern u8 Tbl[]`) so its pool load stays at the definition; a
 `(const u16 *)0x080CB4EAu` local rematerialises it after the index load.
@@ -511,6 +546,29 @@ comment in `src/race_scene.c`.
 sign-extend at each use (twice, when both switch arms pass it)
 (`_080022750`).
 
+## A 16-bit non-zero test, seeded constants, and spilled table bases
+
+Three shapes from `_080050E8` (376/376, `src/event_dma_queue.c`) that apply to
+other bodies:
+
+* **The narrowing test.** `u16 v` (or `v << 16`, or `v & 0xFFFF`) folds to a
+  bare `cmp` whenever agbcc can prove the upper bits are clear, so the ROM's
+  `mov r1,r8 / lsls r0,r1,#16 / cmp r0,#0` cannot come from a u16 local. It
+  needs a 32-bit local behind an empty barrier: assign the `ldrh` result to a
+  `u32`, launder it with `__asm__ volatile ("" : "+r" (v));`, and test
+  `(u16)v`. The same `lsls #16 / cmp #0` shape is the sign test
+  `(s16)(u16)t < 0` in `_08002955C`.
+* **Constant seeding needs its own statement.** `dispcnt = 0x40; dispcnt |=
+  modes[..];` materialises the constant into the destination's home register
+  (`movs r1,#64 / mov r9,r1`) before the lookup; the single expression
+  `0x40 | modes[..]` leaves it in a scratch and swaps that OR's operands.
+* **A spilled table base is a pointer variable.** `tp = tiles;` reproduces a
+  base stored to its own stack slot where the source assigns it and reloaded
+  per iteration, because the loop body's byte loads need the register back.
+  It also fixes the address-add operand order: `tp[i]` emits `adds r0,r0,r6`
+  where the ROM has `adds r0,r6,r0`, and writing the scaled byte offset out
+  (`(const u16 *)((const u8 *)tp + (i << 1))`) restores it.
+
 ## Indexed halfword loads (`movs rX,#imm` + `ldrsh rY,[rZ,rX]`)
 
 agbcc has two spellings for `*(s16 *)((u8 *)base + imm)` and the ROM picks one:
@@ -552,6 +610,66 @@ A promoted span that ends in `00 00` right after `bx lr` needs
 `__asm__(".align 2, 0");` after the body: gas otherwise fills the tail with the
 2-byte Thumb NOP (`46 c0`) and the last two bytes never match
 (`_080021F14`, `_080022B48`; same trick as `Course_Iter_07CD0`).
+
+## A labelled pool that sits *after* the epilogue
+
+When the ROM's last pool words follow `bx r0` (`_08001C3E0`: 0xD208-0xD214,
+loaded from 0xD1BA onward), C cannot place them there from inside the body, so
+they go in a toplevel `__asm__` that appends to the function's own section:
+`".pushsection .text.<fn>,\"ax\",%progbits\n.subsection 1\n\t.align 2, 0\n"`
+then the `.word`s, then `.popsection`. Two details are load-bearing:
+
+* `.subsection 1` is what keeps them after the code. A toplevel asm is emitted
+  *ahead of* the function by the modern compiler, and `.pushsection` alone then
+  puts the words at the section start -- the `ldr`s fail with "invalid offset,
+  value too big" (measured: -3588 on the 0xD208 site). Subsections are laid out
+  in numeric order at assembly end, so subsection 1 follows the function.
+* `.align 2, 0` supplies the ROM's `00 00` pad after `bx r0`. Every *in-body*
+  pool label needs its own `.align 2, 0` as well whenever the prologue is
+  compiler-generated, because the ROM's halfword parity to the first pool came
+  from *its* prologue, not from yours -- the agbcc build inserts nothing
+  (parity already matches) and the modern-ARM control stops failing to
+  assemble.
+
+## Splitting a body into swappable segments (measured 2026-10-24)
+
+A 3-4 kB body cannot be lifted in one sitting, and one monolithic `__asm__`
+block gives nowhere to stand: the first converted statement would have to
+reproduce the whole function. `tools/body_segments.py` cuts the span at its real
+control-flow boundaries so each piece can become C on its own:
+
+```sh
+python3 tools/body_segments.py --function _08001C3E0 --out-dir build/segments/c3e0
+python3 tools/body_segments.py --function _08001C3E0 --check
+```
+
+Every segment carries two labels at the same address -- `seg_08001C4A8:` as a C
+label and `seg_08001C4A8:` inside its asm string -- so a neighbour still reaches
+it after a swap: `b`/`beq` through the assembler symbol, `goto` through the C
+label. Segments stay in ROM order, and pools and jump tables keep their offsets.
+On `_08001C3E0` the tool finds 227 segments (186 code, 28 data, 13 pad) and
+`--check` reassembles them to all 3640 bytes, then compiles the same segments
+through `clang -E` and the pinned `old_agbcc` and compares those bytes too.
+
+**Not every segment can become C, and the reason is the compiler, not the
+bytes.** agbcc keeps a block's asm only while C can still reach it. Swapping a
+`cond` segment for C control flow removed exactly its own `cmp`/`bge` and left
+the other 226 labels and 1437 instructions intact. Swapping a 2-byte `b` for
+`goto` deleted **233 instructions belonging to 30 other segments**: the
+unconditional jump makes everything up to the next C label unreachable from C,
+and the asm statements in between go with it. So a segment is convertible when
+it falls through (C keeps a sequential edge) or when nothing lies between it and
+its target; the tool prints that verdict (`c  yes` / `--`) per segment, records
+it as `c_swap` in the JSON, and marks each block in the scaffold. A segment that
+ends in `b`/`bx`/`mov pc` has to stay asm until the control flow around it
+converts as a group.
+
+Two smaller facts the tool depends on: every block brackets its own `.syntax
+unified` / `.syntax divided`, because objdump prints unified mnemonics while
+agbcc restores divided syntax for the instructions it emits itself; and the
+asm-only scaffold compiles with no prologue of its own, since the compiler has
+nothing to allocate. That is also why a block that has become C must declare the
+registers it touches on the blocks that remain asm.
 
 ## Absolute anchors and raw-region symbol names
 

@@ -41,9 +41,25 @@ def score(function: str, work: Path, diff: bool = False) -> dict:
     if not out.exists():
         return {}
     data = json.loads(out.read_text())
-    for row in data.get("results", []):
+    # The probe reports the ROM's own symbol, which may be the weak `sub_` alias
+    # of the C entry (and the C name may carry a leading underscore), so compare
+    # on the bare address digits instead of the exact spelling.
+    def digits(name: str) -> str:
+        return name.lstrip("_").removeprefix("sub_").lstrip("_").lower()
+
+    rows = data.get("results", [])
+    for row in rows:
         if row["name"] == function:
             return row
+    for row in rows:
+        if digits(row["name"]) == digits(function):
+            return row
+    # A --function filter normally yields one row. Some ROM entries carry an
+    # extra leading zero (`_0800115E0` for 0x080115E0), so a digit compare can
+    # still miss; with a single result there is nothing to disambiguate and
+    # returning {} would print a silent `0 ? cand=None` for every variant.
+    if len(rows) == 1:
+        return rows[0]
     return {}
 
 

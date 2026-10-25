@@ -158,7 +158,7 @@ def prepare_source(source: str, name: str) -> tuple[str, str, str]:
             # so the constraint survives every mutation, and publish a
             # type-only declaration to the randomizer's pretend context.
             name = re.search(r"([A-Za-z_]\w*)\s*$", previous)
-            reg = re.match(r'\s*__asm__\s*\(\s*"r\d+"\s*\)', body[lo:hi])
+            reg = re.match(r'\s*__asm__\s*\(\s*"(?:r\d+|sl|fp|ip|sp|lr)"\s*\)', body[lo:hi])
             if not name or not reg:
                 raise ValueError("unsupported target: asm declarator (e.g. pinned register)")
             decl_start, decl_end = declaration_bounds(masked, lo)
