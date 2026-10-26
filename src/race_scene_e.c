@@ -733,184 +733,115 @@ void _080020498(void *rec0, int a, int b, void *area0, int mode) {
 }
 __asm__(".align 2, 0");
 
-// ---- 0x08020518 — scene setup A (03B9C path) + pools {WA+0x5E4, 0x080CBC74 via FA64} ----
-__attribute__((naked)) void _080020518(void *rec0) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        ".L20518_080020518:\n"
-        "	push	{r4, r5, r6, r7, lr}\n"
-        "	mov	r7, r9\n"
-        "	mov	r6, r8\n"
-        "	push	{r6, r7}\n"
-        "	sub	sp, #20\n"
-        "	adds	r7, r0, #0\n"
-        "	adds	r0, #172\n"
-        "	movs	r1, #15\n"
-        "	bl sub_0800D97C\n"
-        "	movs	r1, #28\n"
-        "	ldrsh	r0, [r7, r1]\n"
-        "	cmp	r0, #31\n"
-        "	bgt .L20518_08002059C\n"
-        "	movs	r6, #0\n"
-        "	ldr r4, .L20518_080020594\n"
-        "	adds	r1, r0, #0\n"
-        "	lsls	r0, r1, #3\n"
-        "	adds	r0, r0, r1\n"
-        "	lsls	r0, r0, #3\n"
-        "	ldr r1, .L20518_080020598\n"
-        "	adds	r5, r4, r1\n"
-        "	adds	r0, r0, r5\n"
-        "	ldr	r2, [r0, #0]\n"
-        "	movs	r0, #56\n"
-        "	movs	r1, #74\n"
-        "	bl 0x08003B9C\n"
-        "	movs	r3, #28\n"
-        "	ldrsh	r1, [r7, r3]\n"
-        "	lsls	r0, r1, #3\n"
-        "	adds	r0, r0, r1\n"
-        "	lsls	r0, r0, #3\n"
-        "	adds	r0, r0, r4\n"
-        "	movs	r1, #189\n"
-        "	lsls	r1, r1, #3\n"
-        "	adds	r0, r0, r1\n"
-        "	movs	r3, #0\n"
-        "	ldrsh	r0, [r0, r3]\n"
-        "	bl sub_08002370\n"
-        "	adds	r2, r0, #0\n"
-        "	movs	r0, #128\n"
-        "	movs	r1, #78\n"
-        "	movs	r3, #3\n"
-        "	bl sub_08001FA64\n"
-        "	movs	r1, #28\n"
-        "	ldrsh	r0, [r7, r1]\n"
-        "	lsls	r3, r0, #3\n"
-        "	adds	r3, r3, r0\n"
-        "	lsls	r3, r3, #3\n"
-        "	adds	r3, r3, r5\n"
-        "	adds	r3, #8\n"
-        "	str	r6, [sp, #0]\n"
-        "	adds	r0, r7, #0\n"
-        "	movs	r1, #184\n"
-        "	movs	r2, #78\n"
-        "	bl sub_080020498\n"
-        "	b .L20518_0800205FA\n"
-        "	movs	r0, r0\n"
-        ".L20518_080020594: .word 0x03001780\n"
-        ".L20518_080020598: .word 0x000005E4\n"
-        ".L20518_08002059C:\n"
-        "	movs	r6, #0\n"
-        "	ldr r4, .L20518_080020688\n"
-        "	movs	r3, #28\n"
-        "	ldrsh	r1, [r7, r3]\n"
-        "	lsls	r0, r1, #3\n"
-        "	adds	r0, r0, r1\n"
-        "	lsls	r0, r0, #3\n"
-        "	ldr r1, .L20518_08002068C\n"
-        "	adds	r5, r4, r1\n"
-        "	adds	r0, r0, r5\n"
-        "	ldr	r2, [r0, #0]\n"
-        "	movs	r0, #120\n"
-        "	movs	r1, #74\n"
-        "	bl 0x08003954\n"
-        "	movs	r3, #28\n"
-        "	ldrsh	r1, [r7, r3]\n"
-        "	lsls	r0, r1, #3\n"
-        "	adds	r0, r0, r1\n"
-        "	lsls	r0, r0, #3\n"
-        "	adds	r0, r0, r4\n"
-        "	movs	r1, #189\n"
-        "	lsls	r1, r1, #3\n"
-        "	adds	r0, r0, r1\n"
-        "	movs	r3, #0\n"
-        "	ldrsh	r0, [r0, r3]\n"
-        "	bl sub_08002370\n"
-        "	adds	r2, r0, #0\n"
-        "	movs	r0, #128\n"
-        "	movs	r1, #78\n"
-        "	movs	r3, #3\n"
-        "	bl sub_08001FA64\n"
-        "	movs	r1, #28\n"
-        "	ldrsh	r0, [r7, r1]\n"
-        "	lsls	r3, r0, #3\n"
-        "	adds	r3, r3, r0\n"
-        "	lsls	r3, r3, #3\n"
-        "	adds	r3, r3, r5\n"
-        "	adds	r3, #8\n"
-        "	str	r6, [sp, #0]\n"
-        "	adds	r0, r7, #0\n"
-        "	movs	r1, #184\n"
-        "	movs	r2, #78\n"
-        "	bl sub_080020498\n"
-        ".L20518_0800205FA:\n"
-        "	adds	r0, r7, #0\n"
-        "	bl sub_0800203E8\n"
-        "	adds	r0, r7, #0\n"
-        "	adds	r0, #8\n"
-        "	adds	r1, r7, #0\n"
-        "	adds	r1, #176\n"
-        "	ldr	r1, [r1, #0]\n"
-        "	adds	r2, r7, #0\n"
-        "	adds	r2, #180\n"
-        "	ldr	r2, [r2, #0]\n"
-        "	movs	r3, #33\n"
-        "	mov	r8, r3\n"
-        "	str	r3, [sp, #0]\n"
-        "	movs	r6, #6\n"
-        "	str	r6, [sp, #4]\n"
-        "	movs	r5, #1\n"
-        "	str	r5, [sp, #8]\n"
-        "	movs	r4, #0\n"
-        "	str	r4, [sp, #12]\n"
-        "	str	r4, [sp, #16]\n"
-        "	movs	r3, #24\n"
-        "	bl sub_08007BFC\n"
-        "	movs	r0, #16\n"
-        "	adds	r0, r0, r7\n"
-        "	mov	r9, r0\n"
-        "	adds	r0, r7, #0\n"
-        "	adds	r0, #188\n"
-        "	ldr	r1, [r0, #0]\n"
-        "	adds	r0, #4\n"
-        "	ldr	r2, [r0, #0]\n"
-        "	mov	r3, r8\n"
-        "	str	r3, [sp, #0]\n"
-        "	str	r6, [sp, #4]\n"
-        "	str	r5, [sp, #8]\n"
-        "	str	r4, [sp, #12]\n"
-        "	str	r4, [sp, #16]\n"
-        "	mov	r0, r9\n"
-        "	movs	r3, #136\n"
-        "	bl sub_08007BFC\n"
-        "	adds	r0, r7, #0\n"
-        "	adds	r0, #200\n"
-        "	ldr	r1, [r0, #0]\n"
-        "	adds	r0, #4\n"
-        "	ldr	r2, [r0, #0]\n"
-        "	mov	r0, r8\n"
-        "	str	r0, [sp, #0]\n"
-        "	str	r6, [sp, #4]\n"
-        "	str	r5, [sp, #8]\n"
-        "	str	r4, [sp, #12]\n"
-        "	str	r4, [sp, #16]\n"
-        "	mov	r0, r9\n"
-        "	movs	r3, #184\n"
-        "	bl sub_08007BFC\n"
-        "	adds	r0, r7, #0\n"
-        "	adds	r0, #32\n"
-        "	bl sub_0800DBE8\n"
-        "	adds	r0, r7, #0\n"
-        "	bl sub_080020878\n"
-        "	add	sp, #20\n"
-        "	pop	{r3, r4}\n"
-        "	mov	r8, r3\n"
-        "	mov	r9, r4\n"
-        "	pop	{r4, r5, r6, r7}\n"
-        "	pop	{r0}\n"
-        "	bx	r0\n"
-        ".L20518_080020688: .word 0x03001780\n"
-        ".L20518_08002068C: .word 0x000005E4\n"
-        ".syntax divided\n"
-    );
+// ---- 0x08020518 — scene setup A (lane select on idx<=31, 3x 7BFC + DBE8) ----
+// Twin of 0x08020690/0x08020784 (same lane call, transform block and
+// _080020498 tail) with two differences: the lane test is `idx > 31` (not the
+// mode select) and the tail emits THREE 7BFC lanes before DBE8. Load-bearing
+// spellings, each measured on the pinned compiler:
+//  * `rec` is UNPINNED so the allocator lands it in r7: the ROM reads it with
+//    the indexed form `movs rN,#28 / ldrsh rX,[r7,rN]`, which a pinned r7 never
+//    takes (docs/findings/indexed_halfword_scratch.md).
+//  * `rowIndex` and `row` are shared by both arms (one pseudo across the
+//    if/else); with block-local copies the else arm gives the loaded value r0
+//    and the row r2 instead of the ROM's r1/r0. The `"+r"` on rowIndex also
+//    stops local-alloc coalescing cse's copy into the test's register, which
+//    is what keeps arm 1's `adds r1,r0,#0`.
+//  * the else arm must not reuse the test's loaded value (the ROM reloads
+//    `[rec+28]` after the branch), hence the memory clobber there; its second
+//    `index` read wants scratch r3 where agbcc takes the freed r0, hence the
+//    r0/r2 liveness bracket (docs/findings/indexed_halfword_scratch.md).
+void _080020518(void *rec0) {
+    extern u8 RaceSceneE_Wa_20518[];
+    extern u8 RaceSceneE_Offset_20518[];
+    volatile u8 *rec = (volatile u8 *)rec0;
+    register uintptr_t wa __asm__("r4");
+    uintptr_t table;
+    uintptr_t row;
+    int rowIndex;
+    int zero;
+
+    __asm__(".globl RaceSceneE_Wa_20518\nRaceSceneE_Wa_20518 = 0x03001780");
+    __asm__(".globl RaceSceneE_Offset_20518\nRaceSceneE_Offset_20518 = 0x000005E4");
+
+    _0800D97C((void *)((volatile u8 *)rec0 + 172), 15);
+    if (RD16(rec, 28) <= 31) {
+        zero = 0;
+        wa = (uintptr_t)RaceSceneE_Wa_20518;
+        {
+            rowIndex = RD16(rec, 28);
+            __asm__ volatile ("" : "+r" (rowIndex));
+            row = (uintptr_t)(rowIndex * 72);
+            register uintptr_t offset __asm__("r1") = (uintptr_t)RaceSceneE_Offset_20518;
+            __asm__ volatile ("" : "+r" (offset) : : "memory");
+            table = wa + offset;
+            __asm__ volatile ("" : "+r" (table));
+            row += table;
+            _08003B9C(56, 74, *(volatile u32 *)row);
+        }
+        {
+            int index = RD16(rec, 28);
+            s16 value = *(s16 *)(uintptr_t)(wa + (uintptr_t)(index * 72) + 1512u);
+            int transformed = _08002370(value);
+            _08001FA64(128, 78, transformed, 3);
+        }
+        {
+            int index = RD16(rec, 28);
+            uintptr_t area = (uintptr_t)(index * 72) + table + 8u;
+            _080020498((void *)rec, 184, 78, (void *)area, zero);
+        }
+    } else {
+        __asm__ volatile ("" : : : "memory");
+        zero = 0;
+        wa = (uintptr_t)RaceSceneE_Wa_20518;
+        {
+            rowIndex = RD16(rec, 28);
+            __asm__ volatile ("" : "+r" (rowIndex));
+            row = (uintptr_t)(rowIndex * 72);
+            register uintptr_t offset __asm__("r1") = (uintptr_t)RaceSceneE_Offset_20518;
+            __asm__ volatile ("" : "+r" (offset) : : "memory");
+            table = wa + offset;
+            __asm__ volatile ("" : "+r" (table));
+            row += table;
+            _08003954(120, 74, *(volatile u32 *)row);
+        }
+        {
+            register int hold0 __asm__("r0");
+            register int hold2 __asm__("r2");
+            int index;
+            s16 value;
+            int transformed;
+            __asm__ volatile ("" : "=r" (hold0), "=r" (hold2));
+            index = RD16(rec, 28);
+            __asm__ volatile ("" : : "r" (hold0), "r" (hold2));
+            value = *(s16 *)(uintptr_t)(wa + (uintptr_t)(index * 72) + 1512u);
+            transformed = _08002370(value);
+            _08001FA64(128, 78, transformed, 3);
+        }
+        {
+            int index = RD16(rec, 28);
+            uintptr_t area = (uintptr_t)(index * 72) + table + 8u;
+            _080020498((void *)rec, 184, 78, (void *)area, zero);
+        }
+    }
+
+    _0800203E8((void *)rec);
+    {
+        volatile u8 *p8 = rec + 8;
+        u32 v1 = R32(rec, 176);
+        u32 v2 = R32(rec, 180);
+        _08007BFC((void *)p8, v1, v2, 24, 33, 6, 1, 0, 0);
+    }
+    {
+        volatile u8 *p16 = rec + 16;
+        u32 v3 = R32(rec, 188);
+        u32 v4 = R32(rec, 192);
+        _08007BFC((void *)p16, v3, v4, 136, 33, 6, 1, 0, 0);
+        v3 = R32(rec, 200);
+        v4 = R32(rec, 204);
+        _08007BFC((void *)p16, v3, v4, 184, 33, 6, 1, 0, 0);
+    }
+    _0800DBE8((void *)(rec + 32));
+    _080020878((void *)rec);
 }
 
 // ---- 0x08020690 — scene setup B (03B9C path, mode-1 area select) + pools {WA+0x5E4, 0x03001D64} ----
@@ -1890,193 +1821,60 @@ void _080021018(void *rec0, int a, int b, int c) {
 }
 __asm__(".align 2, 0");
 
-// ---- 0x080210BC — scene assembly: 7B18/7BFC/D28/F50/1018 chain + pools below ----
-// Pools: 0x08349754, WA+0xFC0 gate, 0x080CBEB0, 0x080CBEF0, 0x080CBF30,
-//   0x0203F990 not touched here (see 0209A0/020D28).
-__attribute__((naked)) void _0800210BC(void *rec0) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "\tpush\t{r4, r5, r6, r7, lr}\n"
-        "\tmov\tr7, r8\n"
-        "\tpush\t{r7}\n"
-        "\tsub\tsp, #16\n"
-        "\tadds\tr6, r0, #0\n"
-        "\tadds\tr0, #68\n"
-        "\tmovs\tr1, #6\n"
-        "\tstr\tr1, [sp, #0]\n"
-        "\tmovs\tr5, #3\n"
-        "\tstr\tr5, [sp, #4]\n"
-        "\tmovs\tr1, #1\n"
-        "\tmov\tr8, r1\n"
-        "\tstr\tr1, [sp, #8]\n"
-        "\tmovs\tr7, #0\n"
-        "\tstr\tr7, [sp, #12]\n"
-        "\tmovs\tr1, #8\n"
-        "\tmovs\tr2, #112\n"
-        "\tmovs\tr3, #64\n"
-        "\tbl sub_08007B18\n"
-        "\tadds\tr0, r6, #0\n"
-        "\tadds\tr0, #204\n"
-        "\tldr\tr0, [r0, #0]\n"
-        "\tmovs\tr1, #160\n"
-        "\tmovs\tr2, #32\n"
-        "\tbl 0x08026A2C\n"
-        "\tldr r0, .Lrace_0800210bc_080021124\n"
-        "\tmovs\tr1, #252\n"
-        "\tlsls\tr1, r1, #4\n"
-        "\tadds\tr0, r0, r1\n"
-        "\tmovs\tr1, #0\n"
-        "\tldrsh\tr0, [r0, r1]\n"
-        "\tcmp\tr0, #2\n"
-        "\tbgt .Lrace_0800210bc_080021128\n"
-        "\tcmp\tr0, #0\n"
-        "\tblt .Lrace_0800210bc_080021128\n"
-        "\tadds\tr4, r6, #0\n"
-        "\tadds\tr4, #8\n"
-        "\tstr\tr5, [sp, #0]\n"
-        "\tstr\tr5, [sp, #4]\n"
-        "\tmov\tr0, r8\n"
-        "\tstr\tr0, [sp, #8]\n"
-        "\tstr\tr7, [sp, #12]\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tmovs\tr1, #2\n"
-        "\tmovs\tr2, #0\n"
-        "\tmovs\tr3, #32\n"
-        "\tbl sub_08007B18\n"
-        "\tb .Lrace_0800210bc_080021146\n"
-        "\tmovs\tr0, r0\n"
-        ".Lrace_0800210bc_080021124: .word 0x03001780\n"
-        ".Lrace_0800210bc_080021128:\n"
-        "\tadds\tr4, r6, #0\n"
-        "\tadds\tr4, #8\n"
-        "\tmovs\tr0, #3\n"
-        "\tstr\tr0, [sp, #0]\n"
-        "\tstr\tr0, [sp, #4]\n"
-        "\tmovs\tr0, #1\n"
-        "\tstr\tr0, [sp, #8]\n"
-        "\tmovs\tr0, #0\n"
-        "\tstr\tr0, [sp, #12]\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tmovs\tr1, #4\n"
-        "\tmovs\tr2, #0\n"
-        "\tmovs\tr3, #32\n"
-        "\tbl sub_08007B18\n"
-        ".Lrace_0800210bc_080021146:\n"
-        "\tadds\tr1, r4, #0\n"
-        "\tmovs\tr0, #3\n"
-        "\tstr\tr0, [sp, #0]\n"
-        "\tstr\tr0, [sp, #4]\n"
-        "\tmovs\tr4, #1\n"
-        "\tstr\tr4, [sp, #8]\n"
-        "\tmovs\tr5, #0\n"
-        "\tstr\tr5, [sp, #12]\n"
-        "\tadds\tr0, r1, #0\n"
-        "\tmovs\tr1, #3\n"
-        "\tmovs\tr2, #0\n"
-        "\tmovs\tr3, #56\n"
-        "\tbl sub_08007B18\n"
-        "\tadds\tr7, r6, #0\n"
-        "\tadds\tr7, #142\n"
-        "\tmovs\tr1, #0\n"
-        "\tldrsh\tr3, [r7, r1]\n"
-        "\tmovs\tr0, #7\n"
-        "\tstr\tr0, [sp, #0]\n"
-        "\tadds\tr0, r6, #0\n"
-        "\tmovs\tr1, #24\n"
-        "\tmovs\tr2, #56\n"
-        "\tbl sub_080020D28\n"
-        "\tadds\tr0, r6, #0\n"
-        "\tadds\tr0, #172\n"
-        "\tldr\tr1, [r0, #0]\n"
-        "\tmovs\tr0, #4\n"
-        "\tstr\tr0, [sp, #0]\n"
-        "\tstr\tr4, [sp, #4]\n"
-        "\tstr\tr4, [sp, #8]\n"
-        "\tstr\tr5, [sp, #12]\n"
-        "\tadds\tr0, r6, #0\n"
-        "\tmovs\tr2, #32\n"
-        "\tmovs\tr3, #40\n"
-        "\tbl sub_08007B18\n"
-        "\tadds\tr0, r6, #0\n"
-        "\tadds\tr0, #16\n"
-        "\tadds\tr1, r6, #0\n"
-        "\tadds\tr1, #184\n"
-        "\tldr\tr1, [r1, #0]\n"
-        "\tmovs\tr2, #5\n"
-        "\tstr\tr2, [sp, #0]\n"
-        "\tstr\tr4, [sp, #4]\n"
-        "\tstr\tr4, [sp, #8]\n"
-        "\tstr\tr5, [sp, #12]\n"
-        "\tmovs\tr2, #8\n"
-        "\tmovs\tr3, #96\n"
-        "\tbl sub_08007B18\n"
-        "\tldrh\tr1, [r7, #0]\n"
-        "\tadds\tr0, r6, #0\n"
-        "\tbl sub_080020F50\n"
-        "\tsubs\tr7, #4\n"
-        "\tmovs\tr1, #0\n"
-        "\tldrsh\tr0, [r7, r1]\n"
-        "\tbl 0x08025500\n"
-        "\tadds\tr4, r0, #0\n"
-        "\tadds\tr5, r6, #0\n"
-        "\tadds\tr5, #152\n"
-        "\tadds\tr0, r5, #0\n"
-        "\tbl 0x08025548\n"
-        "\tadds\tr4, r4, r0\n"
-        "\tlsls\tr4, r4, #24\n"
-        "\tasrs\tr4, r4, #24\n"
-        "\tadds\tr0, r6, #0\n"
-        "\tmovs\tr1, #103\n"
-        "\tmovs\tr2, #104\n"
-        "\tadds\tr3, r4, #0\n"
-        "\tbl sub_080021018\n"
-        "\tmovs\tr1, #0\n"
-        "\tldrsh\tr0, [r7, r1]\n"
-        "\tbl 0x08025518\n"
-        "\tadds\tr4, r0, #0\n"
-        "\tadds\tr0, r5, #0\n"
-        "\tbl 0x080255C4\n"
-        "\tadds\tr4, r4, r0\n"
-        "\tlsls\tr4, r4, #24\n"
-        "\tasrs\tr4, r4, #24\n"
-        "\tadds\tr0, r6, #0\n"
-        "\tmovs\tr1, #103\n"
-        "\tmovs\tr2, #120\n"
-        "\tadds\tr3, r4, #0\n"
-        "\tbl sub_080021018\n"
-        "\tmovs\tr1, #0\n"
-        "\tldrsh\tr0, [r7, r1]\n"
-        "\tbl 0x08025530\n"
-        "\tadds\tr4, r0, #0\n"
-        "\tadds\tr0, r5, #0\n"
-        "\tbl 0x08025640\n"
-        "\tadds\tr4, r4, r0\n"
-        "\tlsls\tr4, r4, #24\n"
-        "\tasrs\tr4, r4, #24\n"
-        "\tadds\tr0, r6, #0\n"
-        "\tmovs\tr1, #103\n"
-        "\tmovs\tr2, #136\n"
-        "\tadds\tr3, r4, #0\n"
-        "\tbl sub_080021018\n"
-        "\tadds\tr0, r6, #0\n"
-        "\tadds\tr0, #164\n"
-        "\tmovs\tr1, #15\n"
-        "\tbl sub_0800D97C\n"
-        "\tadds\tr0, r6, #0\n"
-        "\tbl sub_080021248\n"
-        "\tadds\tr0, r6, #0\n"
-        "\tadds\tr0, #32\n"
-        "\tbl sub_0800DBE8\n"
-        "\tadd\tsp, #16\n"
-        "\tpop\t{r3}\n"
-        "\tmov\tr8, r3\n"
-        "\tpop\t{r4, r5, r6, r7}\n"
-        "\tpop\t{r0}\n"
-        "\tbx\tr0\n"
-        "\tmovs\tr0, r0\n"
-        ".syntax divided\n"
-    );
+// ---- 0x080210BC — scene assembly: 7B18/D28/F50/1018 chain ----
+// EXACT 396/396. Four spellings carry the body; the rest is forced call setup.
+//  * WA+0xFC0 gate: same idiom as _080020F50 (symbol in a pointer VARIABLE, so
+//    agbcc emits the two-word `Wa` + `movs #252 / lsls #4` add instead of
+//    folding the offset into one pool word).
+//  * the gate is two gotos, not `idx >= 0 && idx <= 2`: the connected range
+//    test collapses into one unsigned `cmp #2 / bhi`, while the ROM keeps the
+//    signed `cmp #2 / bgt` + `cmp #0 / blt` pair.
+//  * `s` is ONE s8 shared by all three 1018 blocks, so it takes a callee-saved
+//    home (r4), accumulates the sum there, sign-extends in place and copies to
+//    r3 at each call. A per-block local instead lands the sign-extend directly
+//    in r3 and drops the three `adds r3,r4,#0`.
+//  * `rec+16` is bound before `R32(rec,184)` is read: as a single expression
+//    agbcc derives rec+16 from the loaded pointer (`subs r0,#168`) instead of
+//    forming it first, which the ROM does.
+void _0800210BC(void *rec0) {
+    volatile u8 *rec = (volatile u8 *)rec0;
+    volatile u8 *wa;
+    int idx;
+    s8 s;
+
+    _08007B18((void *)(uintptr_t)(rec + 68), 8, 112, 64, 6, 3, 1, 0);
+    _080026A2C((void *)R32(rec, 204), 160, 32);
+    __asm__(".globl RaceSceneWa210BC\nRaceSceneWa210BC = 0x03001780\n");
+    wa = (volatile u8 *)RaceSceneWa210BC;
+    idx = (int)RD16(wa, 0xFC0);
+    if (idx > 2)
+        goto alt;
+    if (idx < 0)
+        goto alt;
+    _08007B18((void *)(uintptr_t)(rec + 8), 2, 0, 32, 3, 3, 1, 0);
+    goto join;
+alt:
+    _08007B18((void *)(uintptr_t)(rec + 8), 4, 0, 32, 3, 3, 1, 0);
+join:
+    _08007B18((void *)(uintptr_t)(rec + 8), 3, 0, 56, 3, 3, 1, 0);
+    _080020D28((void *)(uintptr_t)rec, 24, 56, (int)RD16(rec, 142), 7);
+    _08007B18((void *)(uintptr_t)rec, R32(rec, 172), 32, 40, 4, 1, 1, 0);
+    {
+        volatile u8 *p16 = rec + 16;
+        _08007B18((void *)(uintptr_t)p16, R32(rec, 184), 8, 96, 5, 1, 1, 0);
+    }
+    _080020F50((void *)(uintptr_t)rec, (int)R16(rec, 142));
+    s = (s8)(_08025500((int)RD16(rec, 138)) + _08025548((const void *)(rec + 152)));
+    _080021018((void *)(uintptr_t)rec, 103, 104, s);
+    s = (s8)(_08025518((int)RD16(rec, 138)) + _080255C4((const void *)(rec + 152)));
+    _080021018((void *)(uintptr_t)rec, 103, 120, s);
+    s = (s8)(_08025530((int)RD16(rec, 138)) + _08025640((const void *)(rec + 152)));
+    _080021018((void *)(uintptr_t)rec, 103, 136, s);
+    _0800D97C((void *)(uintptr_t)(rec + 164), 15);
+    ((void (*)(void *))_080021248)((void *)(uintptr_t)rec);
+    _0800DBE8((void *)(uintptr_t)(rec + 32));
 }
+__asm__(".align 2, 0");
 
 // ---- 0x08021260 — FBC-gated frame counter (event 21 past 180) + pools {WA+0xFBC} ----
 void _080021260(void *rec_) {

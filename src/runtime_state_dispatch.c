@@ -206,391 +206,153 @@ void _0802D9FC(void) __attribute__((alias("SoundD9FC_Latch")));
 void sub_0802D9FC(void) __attribute__((alias("SoundD9FC_Latch")));
 
 // ============================================================================
-// handlers.s 0x08000CA0 — block-B special-mode state stepper (modes 8/11).
-// Scratch record D0 = block A +0xD0: word[0] = FSM state, word[1] = param,
-// word[4] = acc, word[5] = idx, word[6] = max.
-// Transcribed instruction-for-instruction from objdump @0x08000CA0..0x08000E80
-// (literals: 0x0300F150 base, 0x04000128 IE, 0x04000120 SIOCNT,
-//  0x0400010C TM3CNT_H, 0x04000202 IF, 0x04000130 RCNT, 0x0203F150 slice,
-//  0xC0000000 serial slice, 0x00000040 multiboot gate, 0x080000C0 IE gate).
-// NOTE: partial disassembly (objdump high/low halves); modes≠0..4 tail to
-// the default path — semantic equivalence confirmed against the decoded
-// five arms in the C switch below.
-// ============================================================================
-static volatile u8 *D0_rec(void) {
-    volatile u32 *slotA = (volatile u32 *)0x030000E4;
-    u8 *stA = (u8 *)(uintptr_t)*slotA;
-    return (volatile u8 *)(stA + 0xD0);
-}
-
-static int CA0_default_tail(volatile u8 *d0) {
-    d0[2] = (u8)(d0[2] + 1);
-    return 0;
-}
-
-int CA0_State0(volatile u8 *d0) { // 0x08000CC4 — C0 gate
-    u8 v = d0[1];
-    if (v > 4) return CA0_default_tail(d0);
-    volatile u32 *IE = (volatile u32 *)0x04000128;
-    *IE = (*IE & ~0x40u) | ((u32)v << 6);
-    d0[1] = 1;
-    return 0;
-}
-
-int CA0_State1(volatile u8 *d0) { // 0x08000CD8 — header poll
-    u16 w = *(volatile u16 *)(d0 + 0);
-    u32 v = (u32)(w & 0x00FFu);
-    if (v == 0) { d0[1] = 1; return 0; }
-    volatile u32 *rc = (volatile u32 *)0x04000130;
-    if (d0[0] == 1) {
-        *rc = 0x1000;
-        return 0; // 0x08000E72: d0[2]++
-    }
-    *rc = 0x1000;
-    volatile u32 *siocnt = (volatile u32 *)0x04000120;
-    *siocnt = (*siocnt & ~0x2000u) | 0x2000u;
-    return 0;
-}
-
-int CA0_State2(volatile u8 *d0) { // 0x08000CF0 — boot-mode branch
-    if (d0[0] != 1) { *(volatile u32 *)0x04000128 = 0x1000; }
-    volatile u32 *siocnt = (volatile u32 *)0x04000120;
-    u32 v = *siocnt & ~0x2000u;
-    *siocnt = v;
-    d0[4] = 0;
-    d0[5] = 0;
-    d0[2] = 0;
-    d0[1] = 2;
-    return 0;
-}
-
-int CA0_State3(volatile u8 *d0, u32 arg) { // 0x08000D8C — byte streaming
-    u32 m = arg & 0x2000u;
-    u32 n = (0x2000u >> m) - 1;
-    s32 target = (s32)(n << 19);
-    s32 v = (s32)d0[6];
-    if (v > target) v = target;
-    if (v < 0) v = 0;
-    if (arg != 0) d0[6] = (u32)v;
-    if (d0[0] == 1) {
-        volatile u32 *siocnt = (volatile u32 *)0x04000120;
-        u32 w = *siocnt | 0x2000u;
-        *siocnt = w;
-        volatile u32 *tm3 = (volatile u32 *)0x0400010C;
-        *tm3 = 0x0000C000u;
-        *(volatile u16 *)(d0 + 0xAC) &= (u16)~0x0080u;
-        volatile u32 *iflags = (volatile u32 *)0x04000202;
-        *iflags = 0x2000u;
-    } else {
-        volatile u32 *siocnt = (volatile u32 *)0x04000120;
-        u32 w = *siocnt | 0x4080u;
-        *siocnt = w;
-        *(volatile u16 *)(d0 + 0xAC) &= (u16)~0x0080u;
-        *(volatile u16 *)(d0 + 0xAC) = 0x0001u;
-    }
-    d0[2] = 0;
-    d0[1] = 2;
-    return 2;
-}
-
-int CA0_State4(volatile u8 *d0) { // 0x08000DFE — teardown
-    volatile u32 *iflags = (volatile u32 *)0x04000202;
-    *iflags = 0;
-    volatile u32 *ie = (volatile u32 *)0x04000128;
-    *ie &= ~0x40u;
-    *ie |= 0x40u;
-    volatile u32 *siocnt = (volatile u32 *)0x04000120;
-    *siocnt = 0x1000;
-    *siocnt = 0x20000083u;
-    *siocnt = 0x20000086u;
-    volatile u32 *t = (volatile u32 *)0x0203F150;
-    t[0] = 0;
-    t[1] = 0;
-    u8 bm = d0[0];
-    if (bm != 0) { *(volatile u32 *)0x04000130 = 0; }
-    *(volatile u32 *)0x04000120 = 0xC0000000u;
-    if (bm != 0) {
-        d0[2] = 0;
-        d0[1] = 4;
-        return 4;
-    }
-    u8 chk = d0[2];
-    if (chk > 2) return 1;
-    d0[2] = chk + 1;
-    return 0;
-}
-
-// SessionStep _08000CA0 (480 B): the five state bodies are INLINE (the ROM's
-// jump table at 0x08000CC0 targets 0x08000CC4/CD8/CF0/D8C/DFE, all inside this
-// span) with a shared tail at 0x08000E72 (d0[2]++ / return 0) and a separate
-// final return-1 exit at 0x08000E6E. Same jumptable-switch lowering as
-// MenuDD9C: `cmp r1,#4 / bhi`, `lsls r0,r1,#2 / ldr r1,[pc] / adds / ldr
-// r0,[r0,#0] / mov pc,r0`.
+// handlers.s 0x08000CA0 (480 B) -- SIO multiboot session stepper.
+// Record 0x0203F150: +0 mode, +1 state (jump table over 0..4, inline at +0x24),
+// +2 tick count, +3 done flag, +4 u32 *step table, +8 s32 level, +12 s32 acc,
+// +16 s32 sum, +20 s32 index.  The lone argument is state 2's level-out pointer.
+// Every arm falls into the shared `count++ / return 0` tail; states 3 and 4
+// share the `return 1` exit.
 //
-// Dispatch reg conventions: r5 = d0 (record), r4 = d0[0] in states that need
-// it. The incoming arg (r0) is saved to r2 and only state 3's body uses it
-// (`cmp r2,#0 / beq skip / str r4,[r2,#0]` -- that is the `0x03003F150` slice
-// write guarded by a nonzero arg, NOT the body-return path). Every state body
-// ends in `b 0x08000E72`.
-__attribute__((naked)) int SessionStep_CA0(u32 arg) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push	{r4, r5, r6, r7, lr}\n"
-        "adds	r2, r0, #0\n"
-        "ldr r0, .Lca0_08000CBC\n"
-        "ldrb	r1, [r0, #1]\n"
-        "adds	r5, r0, #0\n"
-        "cmp	r1, #4\n"
-        "bls .Lca0_08000CB0\n"
-        "b .Lca0_08000E72\n"
-        ".Lca0_08000CB0:\n"
-        "lsls	r0, r1, #2\n"
-        "ldr r1, .Lca0_08000CC0\n"
-        "adds	r0, r0, r1\n"
-        "ldr	r0, [r0, #0]\n"
-        "mov	pc, r0\n"
-        "movs	r0, r0\n"
-        ".Lca0_08000CBC: .word 0x0203F150\n"
-        ".Lca0_08000CC0: .word 0x08000CC4\n"
-        ".Lca0_08000CC4: .word 0x08000CD8\n"
-        ".Lca0_08000CC8: .word 0x08000CF0\n"
-        ".Lca0_08000CCC: .word 0x08000D8C\n"
-        ".Lca0_08000CD0: .word 0x08000DFE\n"
-        ".Lca0_08000CD4: .word 0x08000E68\n"
-        ".Lca0_08000CD8:\n"
-        "ldr	r0, [r5, #0]\n"
-        "ldr r1, .Lca0_08000CEC\n"
-        "ands	r0, r1\n"
-        "cmp	r0, #0\n"
-        "bne .Lca0_08000CE4\n"
-        "b .Lca0_08000E72\n"
-        ".Lca0_08000CE4:\n"
-        "movs	r0, #1\n"
-        "strb	r0, [r5, #1]\n"
-        "b .Lca0_08000E72\n"
-        "movs	r0, r0\n"
-        ".Lca0_08000CEC: .word 0x00FF00FF\n"
-        ".Lca0_08000CF0:\n"
-        "ldrb	r0, [r5, #0]\n"
-        "cmp	r0, #1\n"
-        "bne .Lca0_08000D00\n"
-        "ldrb	r2, [r5, #2]\n"
-        "cmp	r2, #5\n"
-        "bhi .Lca0_08000CFE\n"
-        "b .Lca0_08000E72\n"
-        ".Lca0_08000CFE:\n"
-        "b .Lca0_08000D0A\n"
-        ".Lca0_08000D00:\n"
-        "ldr r1, .Lca0_08000D40\n"
-        "movs	r3, #128\n"
-        "lsls	r3, r3, #5\n"
-        "adds	r0, r3, #0\n"
-        "strh	r0, [r1, #0]\n"
-        ".Lca0_08000D0A:\n"
-        "ldr r0, .Lca0_08000D44\n"
-        "movs	r6, #0\n"
-        "str	r6, [r0, #0]\n"
-        "ldr r1, .Lca0_08000D48\n"
-        "movs	r0, #192\n"
-        "strh	r0, [r1, #0]\n"
-        "ldrb	r4, [r5, #0]\n"
-        "cmp	r4, #1\n"
-        "bne .Lca0_08000D58\n"
-        "ldr r2, .Lca0_08000D40\n"
-        "ldrh	r0, [r2, #0]\n"
-        "movs	r1, #128\n"
-        "orrs	r0, r1\n"
-        "strh	r0, [r2, #0]\n"
-        "ldr r1, .Lca0_08000D4C\n"
-        "ldr r0, .Lca0_08000D50\n"
-        "str	r0, [r1, #0]\n"
-        "ldr r3, .Lca0_08000D54\n"
-        "strh	r6, [r3, #0]\n"
-        "adds	r2, #216\n"
-        "ldrh	r0, [r2, #0]\n"
-        "movs	r1, #64\n"
-        "orrs	r0, r1\n"
-        "strh	r0, [r2, #0]\n"
-        "strh	r4, [r3, #0]\n"
-        "b .Lca0_08000D78\n"
-        "movs	r0, r0\n"
-        ".Lca0_08000D40: .word 0x04000128\n"
-        ".Lca0_08000D44: .word 0x04000120\n"
-        ".Lca0_08000D48: .word 0x04000202\n"
-        ".Lca0_08000D4C: .word 0x0400010C\n"
-        ".Lca0_08000D50: .word 0x00C0F318\n"
-        ".Lca0_08000D54: .word 0x04000208\n"
-        ".Lca0_08000D58:\n"
-        "ldr r2, .Lca0_08000D84\n"
-        "ldrh	r0, [r2, #0]\n"
-        "movs	r3, #129\n"
-        "lsls	r3, r3, #7\n"
-        "adds	r1, r3, #0\n"
-        "orrs	r0, r1\n"
-        "strh	r0, [r2, #0]\n"
-        "ldr r3, .Lca0_08000D88\n"
-        "strh	r6, [r3, #0]\n"
-        "adds	r2, #216\n"
-        "ldrh	r0, [r2, #0]\n"
-        "movs	r1, #128\n"
-        "orrs	r0, r1\n"
-        "strh	r0, [r2, #0]\n"
-        "movs	r0, #1\n"
-        "strh	r0, [r3, #0]\n"
-        ".Lca0_08000D78:\n"
-        "movs	r0, #0\n"
-        "strb	r0, [r5, #2]\n"
-        "movs	r0, #2\n"
-        "strb	r0, [r5, #1]\n"
-        "b .Lca0_08000E72\n"
-        "movs	r0, r0\n"
-        ".Lca0_08000D84: .word 0x04000128\n"
-        ".Lca0_08000D88: .word 0x04000208\n"
-        ".Lca0_08000D8C:\n"
-        "ldr	r6, [r5, #8]\n"
-        "adds	r4, r6, #0\n"
-        "movs	r0, #128\n"
-        "lsls	r0, r0, #6\n"
-        "cmp	r6, r0\n"
-        "ble .Lca0_08000D9C\n"
-        "adds	r4, r0, #0\n"
-        "b .Lca0_08000DA2\n"
-        ".Lca0_08000D9C:\n"
-        "cmp	r6, #0\n"
-        "bge .Lca0_08000DA2\n"
-        "movs	r4, #0\n"
-        ".Lca0_08000DA2:\n"
-        "cmp	r2, #0\n"
-        "beq .Lca0_08000DA8\n"
-        "str	r4, [r2, #0]\n"
-        ".Lca0_08000DA8:\n"
-        "ldrb	r0, [r5, #0]\n"
-        "cmp	r0, #1\n"
-        "beq .Lca0_08000DEA\n"
-        "ldr	r0, [r5, #20]\n"
-        "cmp	r0, r4\n"
-        "bge .Lca0_08000DCE\n"
-        "adds	r3, r5, #0\n"
-        "ldr	r7, [r5, #4]\n"
-        ".Lca0_08000DB8:\n"
-        "ldr	r2, [r3, #20]\n"
-        "lsls	r0, r2, #2\n"
-        "adds	r0, r0, r7\n"
-        "ldr	r1, [r3, #16]\n"
-        "ldr	r0, [r0, #0]\n"
-        "adds	r1, r1, r0\n"
-        "str	r1, [r3, #16]\n"
-        "adds	r2, #1\n"
-        "str	r2, [r3, #20]\n"
-        "cmp	r2, r4\n"
-        "blt .Lca0_08000DB8\n"
-        ".Lca0_08000DCE:\n"
-        "movs	r0, #128\n"
-        "lsls	r0, r0, #6\n"
-        "cmp	r6, r0\n"
-        "ble .Lca0_08000DF2\n"
-        "ldr	r0, [r5, #12]\n"
-        "ldr	r1, [r5, #16]\n"
-        "adds	r0, r0, r1\n"
-        "str	r0, [r5, #12]\n"
-        "movs	r1, #1\n"
-        "negs	r1, r1\n"
-        "cmp	r0, r1\n"
-        "bne .Lca0_08000DEA\n"
-        "movs	r0, #1\n"
-        "strb	r0, [r5, #3]\n"
-        ".Lca0_08000DEA:\n"
-        "movs	r0, #128\n"
-        "lsls	r0, r0, #6\n"
-        "cmp	r6, r0\n"
-        "bgt .Lca0_08000DF8\n"
-        ".Lca0_08000DF2:\n"
-        "ldrb	r2, [r5, #2]\n"
-        "cmp	r2, #140\n"
-        "bne .Lca0_08000E72\n"
-        ".Lca0_08000DF8:\n"
-        "movs	r0, #3\n"
-        "strb	r0, [r5, #1]\n"
-        "b .Lca0_08000E72\n"
-        ".Lca0_08000DFE:\n"
-        "ldr r3, .Lca0_08000E50\n"
-        "movs	r4, #0\n"
-        "strh	r4, [r3, #0]\n"
-        "ldr r2, .Lca0_08000E54\n"
-        "ldrh	r1, [r2, #0]\n"
-        "ldr r0, .Lca0_08000E58\n"
-        "ands	r0, r1\n"
-        "strh	r0, [r2, #0]\n"
-        "movs	r0, #1\n"
-        "strh	r0, [r3, #0]\n"
-        "ldr r1, .Lca0_08000E5C\n"
-        "movs	r3, #128\n"
-        "lsls	r3, r3, #5\n"
-        "adds	r0, r3, #0\n"
-        "strh	r0, [r1, #0]\n"
-        "movs	r0, #128\n"
-        "lsls	r0, r0, #6\n"
-        "str	r0, [r1, #0]\n"
-        "adds	r0, #3\n"
-        "str	r0, [r1, #0]\n"
-        "subs	r2, #224\n"
-        "movs	r0, #0\n"
-        "movs	r1, #0\n"
-        "str	r0, [r2, #0]\n"
-        "str	r1, [r2, #4]\n"
-        "ldrb	r0, [r5, #0]\n"
-        "cmp	r0, #0\n"
-        "beq .Lca0_08000E3C\n"
-        "ldr r1, .Lca0_08000E60\n"
-        "movs	r0, #0\n"
-        "str	r0, [r1, #0]\n"
-        ".Lca0_08000E3C:\n"
-        "ldr r0, .Lca0_08000E64\n"
-        "movs	r1, #192\n"
-        "strh	r1, [r0, #0]\n"
-        "ldrb	r0, [r5, #0]\n"
-        "cmp	r0, #0\n"
-        "beq .Lca0_08000E6E\n"
-        "strb	r4, [r5, #2]\n"
-        "movs	r0, #4\n"
-        "strb	r0, [r5, #1]\n"
-        "b .Lca0_08000E72\n"
-        ".Lca0_08000E50: .word 0x04000208\n"
-        ".Lca0_08000E54: .word 0x04000200\n"
-        ".Lca0_08000E58: .word 0x0000FF3F\n"
-        ".Lca0_08000E5C: .word 0x04000128\n"
-        ".Lca0_08000E60: .word 0x0400010C\n"
-        ".Lca0_08000E64: .word 0x04000202\n"
-        ".Lca0_08000E68:\n"
-        "ldrb	r0, [r5, #2]\n"
-        "cmp	r0, #2\n"
-        "bls .Lca0_08000E72\n"
-        ".Lca0_08000E6E:\n"
-        "movs	r0, #1\n"
-        "b .Lca0_08000E7A\n"
-        ".Lca0_08000E72:\n"
-        "ldrb	r0, [r5, #2]\n"
-        "adds	r0, #1\n"
-        "strb	r0, [r5, #2]\n"
-        "movs	r0, #0\n"
-        ".Lca0_08000E7A:\n"
-        "pop	{r4, r5, r6, r7}\n"
-        "pop	{r1}\n"
-        "bx	r1\n"
-        ".syntax divided\n"
-    );
+// Load-bearing spellings (each measured; the rest is plain C):
+//  * the record is a pinned r5 reached through a pinned-r0 base load, so the
+//    entry reads state through r0 and only then copies it to r5;
+//  * state 1 reads `mode` twice -- once as the scratch test and once into r4,
+//    which is also what `IME = mode` stores;
+//  * REG_IE in state 1 is SIOCNT + 216 and the two SIODATA32 words in state 3
+//    are REG_IE - 224; spelling either as its own constant adds a pool word;
+//  * the +16/+20 field pair must be volatile: the ROM reloads the index once
+//    per iteration and stores it back through the base copy in r3, while the
+//    back-edge test keeps the incremented register (`subs r2,#224` and the
+//    `do` form below are what stop agbcc rolling the loop into one register);
+//  * the two zeroed words need one pinned zero each (r0, then r1).
+// ============================================================================
+int SessionStep_CA0(u32 *levelOut) {
+    register u8 *base __asm__("r0") = (u8 *)0x0203F150;
+    register u8 *rec __asm__("r5");
+    register s32 v __asm__("r6");
+    register s32 cl __asm__("r4");
+    s32 i;
+    register s32 mode __asm__("r4");
+    u8 state;
+
+    state = base[1];
+    rec = base;
+    switch (state) {
+    case 0:
+        if ((*(u32 *)rec & 0xFF00FFu) != 0)
+            rec[1] = 1;
+        break;
+    case 1:
+        if (rec[0] == 1) {
+            if (rec[2] <= 5)
+                break;
+        } else {
+            *(volatile u16 *)0x04000128u = 0x1000;
+        }
+        *(volatile u32 *)0x04000120u = 0;
+        *(volatile u16 *)0x04000202u = 0xC0;
+        mode = rec[0];
+        if (mode == 1) {
+            *(volatile u16 *)0x04000128u |= 0x80;
+            *(volatile u32 *)0x0400010Cu = 0x00C0F318u;
+            *(volatile u16 *)0x04000208u = 0;
+            *(volatile u16 *)((u8 *)0x04000128u + 216) |= 0x40;
+            *(volatile u16 *)0x04000208u = mode;
+        } else {
+            *(volatile u16 *)0x04000128u |= 0x4080;
+            *(volatile u16 *)0x04000208u = 0;
+            *(volatile u16 *)((u8 *)0x04000128u + 216) |= 0x80;
+            *(volatile u16 *)0x04000208u = 1;
+        }
+        rec[2] = 0;
+        rec[1] = 2;
+        break;
+    case 2:
+        v = *(s32 *)(rec + 8);
+        cl = v;
+        if (v > 0x2000)
+            cl = 0x2000;
+        else if (v < 0)
+            cl = 0;
+        if (levelOut != 0)
+            *levelOut = cl;
+        if (rec[0] != 1) {
+        {
+            register s32 pre __asm__("r0") = *(volatile s32 *)(rec + 20);
+            if (pre < cl) {
+                register u8 *rc __asm__("r3") = rec;
+                s32 *tbl = *(s32 **)(rec + 4);
+                do {
+                    i = *(volatile s32 *)(rc + 20);
+                    *(volatile s32 *)(rc + 16) += tbl[i];
+                    i = i + 1;
+                    *(volatile s32 *)(rc + 20) = i;
+                } while (i < cl);
+            }
+        }
+            if (v > 0x2000) {
+                if ((*(s32 *)(rec + 12) += *(s32 *)(rec + 16)) == -1)
+                    rec[3] = 1;
+            }
+        }
+        if (v > 0x2000 || rec[2] == 0x8Cu)
+            rec[1] = 3;
+        break;
+    case 3:
+        *(volatile u16 *)0x04000208u = 0;
+        {
+            u8 *ie = (u8 *)0x04000200u;
+            register s32 z __asm__("r0");
+            *(volatile u16 *)ie &= 0xFF3F;
+            *(volatile u16 *)0x04000208u = 1;
+            *(volatile u16 *)0x04000128u = 0x1000;
+            z = 0x2000;
+            *(volatile u32 *)0x04000128u = z;
+            z += 3;
+            *(volatile u32 *)0x04000128u = z;
+            volatile u32 *buf = (volatile u32 *)(ie - 224);
+            register u32 b0 __asm__("r0") = 0;
+            __asm__ volatile("" : "+r"(b0));
+            register u32 b1 __asm__("r1") = 0;
+            __asm__ volatile("" : "+r"(b1));
+            buf[0] = b0;
+            buf[1] = b1;
+            if (rec[0] != 0)
+                *(volatile u32 *)0x0400010Cu = 0;
+            *(volatile u16 *)0x04000202u = 0xC0;
+        }
+        if (rec[0] == 0)
+            return 1;
+        rec[2] = 0;
+        rec[1] = 4;
+        break;
+    case 4:
+        if (rec[2] > 2)
+            return 1;
+        break;
+    }
+    rec[2]++;
+    return 0;
 }
 int _08000CA0(u32 a) __attribute__((alias("SessionStep_CA0")));
 int SubCA0(u32 a) __attribute__((alias("SessionStep_CA0")));
 int sub_08000CA0(u32 a) __attribute__((alias("SessionStep_CA0")));
 
-void CollectNearby_06A50(int camX, int camY) {
+// 0x08006A50 (156 B) — nearby-record collector: clear the count/cursor cells,
+// scale both tile coordinates, then walk the course root's record array.
+// Plain C, no instruction splices. Two measured spellings (2026-10-26):
+//  * The tile coordinates are the *parameters*: the ROM's entry copies
+//    (`adds r7,r0,#0` / `adds r6,r1,#0`) are the allocator's homes for values
+//    live across the loop's calls. A local `tileX = camX` leaves the pre-shift
+//    value a short-lived local pseudo and it lands in r3/r4 instead.
+//  * The loop-tail `movs r2,#46 / ldrsh r0,[r0,r2]` scratch is a liveness pin:
+//    a dummy in r3, output-only before the load and input-only after, moves
+//    the scratch off r3 onto the ROM's r2.
+void CollectNearby_06A50(int tileX, int tileY) {
     extern volatile u32 NearbyCountCell_06A50[];
     extern volatile u16 NearbyCursorCell_06A50[];
     extern volatile u32 CourseRootCell_06A50[];
     extern volatile u32 NearbyRecordArray_06A50[];
-    register s32 tileX;
-    register s32 tileY __asm__("r6");
     register s32 index __asm__("r5");
     register volatile u8 *record __asm__("r4");
     register volatile u8 *table __asm__("r0");
@@ -610,8 +372,6 @@ void CollectNearby_06A50(int camX, int camY) {
     s32 shifted;
     s32 slot;
 
-    tileX = camX;
-    tileY = camY;
     __asm__(".globl NearbyCountCell_06A50\nNearbyCountCell_06A50 = 0x0203F8A8\n");
     __asm__(".globl NearbyCursorCell_06A50\nNearbyCursorCell_06A50 = 0x0203F874\n");
     __asm__(".globl CourseRootCell_06A50\nCourseRootCell_06A50 = 0x0203F760\n");
@@ -623,14 +383,7 @@ void CollectNearby_06A50(int camX, int camY) {
     cursorCell = (volatile u16 *)NearbyCursorCell_06A50;
     *cursorCell = (u16)zero;
 
-    __asm__ volatile (
-        "asr r0, %0, #11\n\t"
-        "cmp r0, #0\n\t"
-        "bge 1f\n\t"
-        "add r0, #15\n"
-        "1:\n\t"
-        "asr %0, r0, #4"
-        : "+l"(tileX) : : "r0", "cc");
+    tileX = (tileX >> 11) / 16;
     {
         register s32 tileShiftedY __asm__("r0") = tileY >> 11;
         if (tileShiftedY < 0) tileShiftedY += 15;
@@ -651,10 +404,7 @@ void CollectNearby_06A50(int camX, int camY) {
             record = table + offset;
             dx = tileX - *(s16 *)(record + 0);
             if (_08005B5C(dx) <= 1) {
-                __asm__ volatile (
-                    "movs r2, #2\n\t"
-                    "ldrsh %0, [%1, r2]"
-                    : "=r"(recordY) : "r"(record) : "r2", "memory");
+                recordY = *(s16 *)(record + 2);
                 dy = tileY - recordY;
                 if (_08005B5C(dy) <= 1) {
                     countTemp = activeCount;
@@ -666,7 +416,12 @@ void CollectNearby_06A50(int camX, int camY) {
             index++;
             rootCell = CourseRootCell_06A50;
             loopBound = *rootCell;
-            loopBound = *(s16 *)((u8 *)(uintptr_t)loopBound + 46);
+            {
+                register u32 hold3 __asm__("r3");
+                __asm__ volatile("" : "=r"(hold3));
+                loopBound = *(s16 *)((u8 *)(uintptr_t)loopBound + 46);
+                __asm__ volatile("" : : "r"(hold3));
+            }
             count = loopBound;
         } while (index < count);
     }

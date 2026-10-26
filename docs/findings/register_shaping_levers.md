@@ -574,6 +574,19 @@ move the allocation but cannot reproduce the ROM's
 `push {r4,r5,r6,r7,lr}`. Treat
 96/200 as the ceiling for this body without a compiler-level allocation lever.
 
+**Resolved 2026-10-26: EXACT 200/200, no instruction splice.** The lever is not
+a pin on `p`/`q` at all -- it is leaving `a` *unpinned* so that it becomes a
+global allocno. Pin `d`->r6, `dx`->r4, `dy`->r5 and hold r4/r5 live from entry
+with an empty `+r` barrier; the allocator then has no low register for `a` and
+gives it r7, which also makes r7 the r8 save slot (`mov r7,r8` / `push {r7}`)
+and restores `pop {r4,r5,r6,r7}`. Because that r7 is an ordinary pseudo rather
+than a pinned `frame_pointer_rtx` reference, the field reads come out in the
+ROM's indexed form (`movs r0,#22 / ldrsh r1,[r7,r0]`) from plain C -- the
+`adds`-form re-materialisation that capped the pinned drafts never appears. The
+second operand needs one more lever: hold the r8->low copy live with a barrier
+(`u8 *q = pb; __asm__("" : "+r"(q));`) so the offset is not folded into it, and
+pin the homes (`hi`->r1, `q`->r2, `lo`->r0).
+
 ## `MenuFF78_115E0` (0x080115E0, 252 B): three facts from a fresh lift
 
 Re-derived the cursor handler from its asm on 2026-10-21 and measured it, then
@@ -802,3 +815,25 @@ measured in the owning TU:
   *(u32 *)0x0203EBB4)` call, one `cursor += 4`. That block order is what
   produces the `cmp #17 / bls table / b done` dispatch smoothing; duplicating
   the tails per arm or ordering the cases differently changes it.
+
+## `_0800210BC` (0x080210BC, 396 B): three shapes in a call chain
+
+A call-heavy body (14 `bl`s, four of them `_08007B18` with four stack
+arguments) whose setup is otherwise forced. Only three spellings mattered:
+
+* **One `s8` shared by the three repeating blocks.** `s = (s8)(f(a) + g(b));`
+  written three times against a single function-scope `s8 s` gives that
+  pseudo a callee-saved home (r4), accumulates the sum there, sign-extends in
+  place (`asrs r4,r4,#24`) and copies to the argument register at each call
+  (`adds r3,r4,#0`). A per-block local instead coalesces with the argument, so
+  the sign-extend lands directly in r3 and all three copies disappear.
+* **A connected range test needs two `goto`s.** `if (idx >= 0 && idx <= 2)`
+  collapses to the unsigned `cmp #2 / bhi`, while the ROM keeps
+  `cmp #2 / bgt` + `cmp #0 / blt`. Two separate `if (idx > 2) goto alt;` /
+  `if (idx < 0) goto alt;` statements reproduce the signed pair.
+* **Bind the base before the field read.** For
+  `_08007B18(rec + 16, *(u32 *)(rec + 184), ...)` agbcc derives `rec + 16`
+  from the loaded field (`adds r0,#184 / subs r0,#168`); naming the base first
+  (`volatile u8 *p16 = rec + 16;`) forms it in r0 before the load, as the ROM
+  does. Same lever as "a pointer offset is two instructions only while the
+  address stays a pointer" above.

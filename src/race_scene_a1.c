@@ -36,6 +36,7 @@ HOST_STUB(void  _080270D8(u32 a, u32 b, int c));                   // 0x080270D8
 HOST_STUB(void  _08027114(int v));                                 // 0x08027114
 HOST_STUB(void  _08027210(int v));                                 // 0x08027210
 HOST_STUB(void  _08002B500(int a, int b, int c));                  // 0x08002B500 sound select
+HOST_STUB(void  _0802B500(int a, int b, int c));                   // 0x0802B500 sound select, in-slice spelling
 HOST_STUB(void  _08002B368(int v));                                // 0x08002B368 sound cue
 HOST_STUB(void  _08002B44C(void));                                 // 0x08002B44C
 HOST_STUB(void  _08002B234(void));                                 // 0x08002B234
@@ -45,6 +46,7 @@ HOST_STUB(void  _0802B25C(void));                                  // 0x0802B25C
 HOST_STUB(void  _0802B474(void));                                  // 0x0802B474
 HOST_STUB(void  _0802B280(void));                                  // 0x0802B280
 HOST_STUB(void  _080191BC(int v));                                 // 0x080191BC
+HOST_STUB(void  _0800191BC(int v));                                // 0x080191BC, in-slice spelling
 HOST_STUB(void  _08019AEC(int v));                                 // 0x08019AEC
 HOST_STUB(void  _08019A2C(int v));                                 // 0x08019A2C
 HOST_STUB(void  sub_080019A2C(int v));                             // 0x08019A2C (closure spelling)
@@ -1374,187 +1376,157 @@ __asm__(".align 2, 0");
 
 // ----------------------------------------------------------------------------
 // ---- 0x0801B9AC — 6-way scene-state dispatcher (table 0x0801B9D4) ----
-// Pools: {CTX}. No incoming args; returns out (1 only when case 0 finds
-// non-positive s16[[ctx]+68]). s16[[ctx]+76] picks the arm; arms 1/2/3
-// share the decrement-vs-sound shape (100/60/60 via B410 for case 1),
-// arm 4 falls into the arm-5 store shape on empty, arm 5 stores 40.
-// The LBB02 store path also ticks u16[[ctx]+76] down by one.
+// ctx = *CTX; s16[[ctx]+76] picks the arm.  Arms 0..4 test the u16[[ctx]+68]
+// timer: while it is positive they tick it down and return 0.  Otherwise arm 1
+// runs the B410 transition, arms 1..4 re-arm the timer (100 / 60 / 60 / 60)
+// and arm 5 stores 40; the shared tail then ticks u16[[ctx]+76] down.  Only
+// arm 0 reports 1.
+//
+// Measured spelling notes (360/360, `corpus_match_probe --c89`):
+//  * `int state`, not `s16`: an `s16` local gives the load a HImode result, so
+//    the entry block's `adds r4,r1,#0` ctx-cell copy is scheduled *before* the
+//    `ldrsh` and the zero index takes r1 (354/360, first diff +0xA).  The
+//    `int` local makes the load and its sign-extend one set, so the copy waits
+//    until after the `ldrsh` (r1 still live) and the index takes r2.
+//  * Registers are pinned to the ROM's assignment: result r5, ctx cell r4
+//    (arms 1..5) or the r1 pool word (arm 0), record pointer r0, +68 cell r1
+//    (timer test) / r2 (re-arm store), u16 timer r2, store value r1.
+//  * The shared tick-down is written once, as case 4's fallthrough
+//    (`if (timer <= 0) goto arm4; dec: ...`), with the other arms jumping to
+//    it.  A copy per arm makes agbcc cross-jump into case 0's copy instead.
 // ----------------------------------------------------------------------------
-__attribute__((naked)) int _08001B9AC(void) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push	{r4, r5, lr}\n"
-        "movs	r5, #0\n"
-        "ldr r1, .Lrs1b9_9cc\n"
-        "ldr	r0, [r1, #0]\n"
-        "adds	r0, #76\n"
-        "movs	r2, #0\n"
-        "ldrsh	r0, [r0, r2]\n"
-        "adds	r4, r1, #0\n"
-        "cmp	r0, #5\n"
-        "bls .Lrs1b9_9c2\n"
-        "b .Lrs1b9_b0c\n"
-        ".Lrs1b9_9c2:\n"
-        "lsls	r0, r0, #2\n"
-        "ldr r1, .Lrs1b9_9d0\n"
-        "adds	r0, r0, r1\n"
-        "ldr	r0, [r0, #0]\n"
-        "mov	pc, r0\n"
-        ".Lrs1b9_9cc: .word 0x03004E20\n"
-        ".Lrs1b9_9d0: .word 0x0801B9D4\n"
-        ".Lrs1b9_9d4: .word 0x0801B9EC\n"
-        ".Lrs1b9_9d8: .word 0x0801BA18\n"
-        ".Lrs1b9_9dc: .word 0x0801BA58\n"
-        ".Lrs1b9_9e0: .word 0x0801BA94\n"
-        ".Lrs1b9_9e4: .word 0x0801BAD0\n"
-        ".Lrs1b9_9e8: .word 0x0801BAFA\n"
-        ".Lrs1b9_9ec:\n"
-        "movs	r0, #32\n"
-        "bl 0x08018ACC\n"
-        "cmp	r0, #0\n"
-        "bne .Lrs1b9_9fc\n"
-        "movs	r0, #3\n"
-        "bl 0x080191BC\n"
-        ".Lrs1b9_9fc:\n"
-        "ldr r0, .Lrs1b9_a14\n"
-        "ldr	r0, [r0, #0]\n"
-        "adds	r1, r0, #0\n"
-        "adds	r1, #68\n"
-        "ldrh	r2, [r1, #0]\n"
-        "movs	r3, #0\n"
-        "ldrsh	r0, [r1, r3]\n"
-        "cmp	r0, #0\n"
-        "bgt .Lrs1b9_ae0\n"
-        "movs	r5, #1\n"
-        "b .Lrs1b9_b0c\n"
-        "movs	r0, r0\n"
-        ".Lrs1b9_a14: .word 0x03004E20\n"
-        ".Lrs1b9_a18:\n"
-        "movs	r0, #32\n"
-        "bl 0x08018ACC\n"
-        "cmp	r0, #0\n"
-        "bne .Lrs1b9_a28\n"
-        "movs	r0, #2\n"
-        "bl 0x080191BC\n"
-        ".Lrs1b9_a28:\n"
-        "ldr r4, .Lrs1b9_a54\n"
-        "ldr	r0, [r4, #0]\n"
-        "adds	r1, r0, #0\n"
-        "adds	r1, #68\n"
-        "ldrh	r2, [r1, #0]\n"
-        "movs	r3, #0\n"
-        "ldrsh	r0, [r1, r3]\n"
-        "cmp	r0, #0\n"
-        "bgt .Lrs1b9_ae0\n"
-        "movs	r0, #8\n"
-        "movs	r1, #255\n"
-        "movs	r2, #0\n"
-        "bl 0x0802B500\n"
-        "bl sub_08001B410\n"
-        "ldr	r0, [r4, #0]\n"
-        "adds	r2, r0, #0\n"
-        "adds	r2, #68\n"
-        "movs	r1, #100\n"
-        "b .Lrs1b9_b02\n"
-        "movs	r0, r0\n"
-        ".Lrs1b9_a54: .word 0x03004E20\n"
-        ".Lrs1b9_a58:\n"
-        "movs	r0, #32\n"
-        "bl 0x08018ACC\n"
-        "cmp	r0, #0\n"
-        "bne .Lrs1b9_a68\n"
-        "movs	r0, #1\n"
-        "bl 0x080191BC\n"
-        ".Lrs1b9_a68:\n"
-        "ldr r4, .Lrs1b9_a90\n"
-        "ldr	r0, [r4, #0]\n"
-        "adds	r1, r0, #0\n"
-        "adds	r1, #68\n"
-        "ldrh	r2, [r1, #0]\n"
-        "movs	r3, #0\n"
-        "ldrsh	r0, [r1, r3]\n"
-        "cmp	r0, #0\n"
-        "bgt .Lrs1b9_ae0\n"
-        "movs	r0, #7\n"
-        "movs	r1, #255\n"
-        "movs	r2, #0\n"
-        "bl 0x0802B500\n"
-        "ldr	r0, [r4, #0]\n"
-        "adds	r2, r0, #0\n"
-        "adds	r2, #68\n"
-        "movs	r1, #60\n"
-        "b .Lrs1b9_b02\n"
-        "movs	r0, r0\n"
-        ".Lrs1b9_a90: .word 0x03004E20\n"
-        ".Lrs1b9_a94:\n"
-        "movs	r0, #32\n"
-        "bl 0x08018ACC\n"
-        "cmp	r0, #0\n"
-        "bne .Lrs1b9_aa4\n"
-        "movs	r0, #0\n"
-        "bl 0x080191BC\n"
-        ".Lrs1b9_aa4:\n"
-        "ldr r4, .Lrs1b9_acc\n"
-        "ldr	r0, [r4, #0]\n"
-        "adds	r1, r0, #0\n"
-        "adds	r1, #68\n"
-        "ldrh	r2, [r1, #0]\n"
-        "movs	r3, #0\n"
-        "ldrsh	r0, [r1, r3]\n"
-        "cmp	r0, #0\n"
-        "bgt .Lrs1b9_ae0\n"
-        "movs	r0, #6\n"
-        "movs	r1, #255\n"
-        "movs	r2, #0\n"
-        "bl 0x0802B500\n"
-        "ldr	r0, [r4, #0]\n"
-        "adds	r2, r0, #0\n"
-        "adds	r2, #68\n"
-        "movs	r1, #60\n"
-        "b .Lrs1b9_b02\n"
-        "movs	r0, r0\n"
-        ".Lrs1b9_acc: .word 0x03004E20\n"
-        ".Lrs1b9_ad0:\n"
-        "ldr	r0, [r4, #0]\n"
-        "adds	r1, r0, #0\n"
-        "adds	r1, #68\n"
-        "ldrh	r2, [r1, #0]\n"
-        "movs	r3, #0\n"
-        "ldrsh	r0, [r1, r3]\n"
-        "cmp	r0, #0\n"
-        "ble .Lrs1b9_ae6\n"
-        ".Lrs1b9_ae0:\n"
-        "subs	r0, r2, #1\n"
-        "strh	r0, [r1, #0]\n"
-        "b .Lrs1b9_b0c\n"
-        ".Lrs1b9_ae6:\n"
-        "movs	r0, #5\n"
-        "movs	r1, #255\n"
-        "movs	r2, #0\n"
-        "bl 0x0802B500\n"
-        "ldr	r0, [r4, #0]\n"
-        "adds	r2, r0, #0\n"
-        "adds	r2, #68\n"
-        "movs	r1, #60\n"
-        "b .Lrs1b9_b02\n"
-        ".Lrs1b9_afa:\n"
-        "ldr	r0, [r4, #0]\n"
-        "adds	r2, r0, #0\n"
-        "adds	r2, #68\n"
-        "movs	r1, #40\n"
-        ".Lrs1b9_b02:\n"
-        "strh	r1, [r2, #0]\n"
-        "adds	r0, #76\n"
-        "ldrh	r1, [r0, #0]\n"
-        "subs	r1, #1\n"
-        "strh	r1, [r0, #0]\n"
-        ".Lrs1b9_b0c:\n"
-        "adds	r0, r5, #0\n"
-        "pop	{r4, r5}\n"
-        "pop	{r1}\n"
-        "bx	r1\n"
-        ".syntax divided\n"
-    );
+int _08001B9AC(void) {
+    register int out __asm__("r5") = 0;
+    register u8 *q __asm__("r1");
+    register u8 *p __asm__("r0");
+    register volatile u32 *cell __asm__("r4");
+    register u32 cur __asm__("r2");
+    int state;
+
+    q = (u8 *)(uintptr_t)CTX;
+    p = (u8 *)(uintptr_t)*(volatile u32 *)q + 76;
+    state = *(s16 *)p;
+    cell = (volatile u32 *)q;
+    switch (state) {
+    case 0: {
+        if (_08018ACC(32) == 0)
+            _0800191BC(3);
+        p = (u8 *)(uintptr_t)*(volatile u32 *)CTX;
+        q = p + 68;
+        cur = *(u16 *)q;
+        if (*(s16 *)q > 0)
+            goto dec;
+        out = 1;
+        return out;
+    }
+    case 1: {
+        register u8 *qp __asm__("r2");
+        register u32 k __asm__("r1");
+        if (_08018ACC(32) == 0)
+            _0800191BC(2);
+        cell = (volatile u32 *)CTX;
+        p = (u8 *)(uintptr_t)*(volatile u32 *)CTX;
+        q = p + 68;
+        cur = *(u16 *)q;
+        if (*(s16 *)q > 0)
+            goto dec;
+        _0802B500(8, 255, 0);
+        _08001B410();
+        p = (u8 *)(uintptr_t)*(volatile u32 *)CTX;
+        qp = p + 68;
+        k = 100;
+        *(u16 *)qp = (u16)k;
+        p += 76;
+        k = *(u16 *)p;
+        k = k - 1;
+        *(u16 *)p = (u16)k;
+        return out;
+    }
+    case 2: {
+        register u8 *qp __asm__("r2");
+        register u32 k __asm__("r1");
+        if (_08018ACC(32) == 0)
+            _0800191BC(1);
+        cell = (volatile u32 *)CTX;
+        p = (u8 *)(uintptr_t)*(volatile u32 *)CTX;
+        q = p + 68;
+        cur = *(u16 *)q;
+        if (*(s16 *)q > 0)
+            goto dec;
+        _0802B500(7, 255, 0);
+        p = (u8 *)(uintptr_t)*(volatile u32 *)CTX;
+        qp = p + 68;
+        k = 60;
+        *(u16 *)qp = (u16)k;
+        p += 76;
+        k = *(u16 *)p;
+        k = k - 1;
+        *(u16 *)p = (u16)k;
+        return out;
+    }
+    case 3: {
+        register u8 *qp __asm__("r2");
+        register u32 k __asm__("r1");
+        if (_08018ACC(32) == 0)
+            _0800191BC(0);
+        cell = (volatile u32 *)CTX;
+        p = (u8 *)(uintptr_t)*(volatile u32 *)CTX;
+        q = p + 68;
+        cur = *(u16 *)q;
+        if (*(s16 *)q > 0)
+            goto dec;
+        _0802B500(6, 255, 0);
+        p = (u8 *)(uintptr_t)*(volatile u32 *)CTX;
+        qp = p + 68;
+        k = 60;
+        *(u16 *)qp = (u16)k;
+        p += 76;
+        k = *(u16 *)p;
+        k = k - 1;
+        *(u16 *)p = (u16)k;
+        return out;
+    }
+    case 4: {
+        register u8 *qp __asm__("r2");
+        register u32 k __asm__("r1");
+        p = (u8 *)(uintptr_t)*cell;
+        q = p + 68;
+        cur = *(u16 *)q;
+        if (*(s16 *)q <= 0)
+            goto arm4;
+    dec: {
+        register u32 t __asm__("r0");
+        t = cur - 1;
+        *(u16 *)q = (u16)t;
+        return out;
+    }
+    arm4:
+        _0802B500(5, 255, 0);
+        p = (u8 *)(uintptr_t)*cell;
+        qp = p + 68;
+        k = 60;
+        *(u16 *)qp = (u16)k;
+        p += 76;
+        k = *(u16 *)p;
+        k = k - 1;
+        *(u16 *)p = (u16)k;
+        return out;
+    }
+    case 5: {
+        register u8 *qp __asm__("r2");
+        register u32 k __asm__("r1");
+        p = (u8 *)(uintptr_t)*cell;
+        qp = p + 68;
+        k = 40;
+        *(u16 *)qp = (u16)k;
+        p += 76;
+        k = *(u16 *)p;
+        k = k - 1;
+        *(u16 *)p = (u16)k;
+        return out;
+    }
+    }
+    return out;
 }
 
 // ROM entry alias.

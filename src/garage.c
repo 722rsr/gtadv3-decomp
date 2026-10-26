@@ -1915,6 +1915,7 @@ void sub_08027114(int v) __attribute__((alias("Garage_DispSel_27114")));
 // screen y, s8[16]=row count, s8[17]=cursor, s8[18]=phase; rows at +24, 24B each:
 // s8[24] on, u16[20/22] x/y offset) and P1 = *(u32**)0x0300167C (state).
 // _08002DB8 sprite emitter: foundation_runtime.c Helper_02DB8 (7-arg).
+extern void sub_08002DB8(void *a, int b, int c, int d, int e, int f, int g);
 
 // 0x08027120 (240 B) — per-frame car-position record draw. The record lives
 // behind the single RAM slot 0x03001678; the ROM re-dereferences that slot per
@@ -2138,8 +2139,8 @@ void Garage_ListWalk_27828(void *a)
 }
 void _08027828(void *a) __attribute__((alias("Garage_ListWalk_27828")));
 
-// 0x080278F0 (ROM 0x080278F0-0x080279CE, transcribed from the raw image):
-// clears the [P1+0x90] list head, ticks six 24B-strided (do-while from 5)
+// 0x080278F0 (ROM 0x080278F0-0x080279D8, 232 B) — C lift.
+// Clears the [P1+0x90] list head, ticks six 24B-strided (do-while from 5)
 // embedded nodes at P1+24 (decrement s16[n+10]; when it hits 0 bump s16[n+8]
 // and push via _0800278DC), then the m = P1 pair:
 //   s16[m+6] != 0: t = ++u16[m+4]; if (s16 t > 50 && s16[m+8] == 0)
@@ -2148,22 +2149,24 @@ void _08027828(void *a) __attribute__((alias("Garage_ListWalk_27828")));
 //   else if s16[m+4] > 0: u16[m+8] = u16[m+4] = 0; gate clear ->
 //     27788(s16[m+20],0,0), 27788(s16[m+22],1,0);
 // finally u16[m+6] = 0.
+// The six indexed signed-halfword scratch registers the ROM reuses (`ldrsh`
+// takes a register index) fall out of plain `*(s16 *)` loads; the pins left
+// hold values the ROM keeps across a call or a dead register. Measured in
+// findings/indexed_halfword_scratch.md, `_0800278F0`.
 void Garage_Ticker_278F0(void)
 {
     extern void _0800278DC(void *rec);                   // list push (garage_records.c)
     extern u8 GarageTickerWa[];
     __asm__(".globl GarageTickerWa\nGarageTickerWa = 0x03001780\n");
-    register volatile u8 *volatile *slot0 __asm__("r0") =
+    volatile u8 *volatile *slot0 =
         (volatile u8 *volatile *)(uintptr_t)0x0300167C;
     volatile u8 *initial = *slot0;
     *(volatile u32 *)(initial + 144) = 0;                // [P1+0x90] = NULL
-    register volatile u8 *volatile *P1slot __asm__("r6") = slot0;
-    __asm__ volatile("" : "+r"(P1slot));
+    volatile u8 *volatile *P1slot = slot0;
     u32 off = 24;
     int i = 5;
     do {
         register volatile u8 *current_base __asm__("r0") = *P1slot;
-        __asm__ volatile("" : "+r"(current_base));
         register volatile u8 *node __asm__("r1") = current_base + off;
         register u32 count __asm__("r2");
         count = *(volatile u16 *)(node + 10);
@@ -2181,49 +2184,32 @@ void Garage_Ticker_278F0(void)
     } while (i >= 0);
     register volatile u8 *volatile *tail_slot __asm__("r4") =
         (volatile u8 *volatile *)(uintptr_t)0x0300167C;
-    __asm__ volatile("" : "+r"(tail_slot));
     register volatile u8 *m __asm__("r2") = *tail_slot;
-    __asm__ volatile("" : "+r"(m));
-    register s32 status __asm__("r1");
-    // C keeps the ROM's r5=6 materialization; the signed indexed load stays asm.
-    register int statusOffset __asm__("r5") = 6;
-    __asm__ volatile("" : : "r"(statusOffset));
-    __asm__ volatile("ldrsh %0, [%1, %2]"
-                     : "=r"(status) : "r"(m), "r"(statusOffset) : "memory");
+    s32 status;
+    status = *(s16 *)(m + 6);
     if (status != 0) {
         u32 t = (u32)*(volatile u16 *)(m + 4) + 1;
         *(volatile u16 *)(m + 4) = (u16)t;
         int hi = ((s16)t > 50) ? 1 : 0;
-        register int idle __asm__("r3") = 0;
-        __asm__ volatile("" : "+r"(idle));
-        register int idleOffset __asm__("r5") = 8;
-        __asm__ volatile("" : : "r"(idleOffset));
-        register s32 idleField __asm__("r0");
-        __asm__ volatile("ldrsh %0, [%1, %2]"
-                         : "=r"(idleField) : "r"(m), "r"(idleOffset) : "memory");
+        int idle = 0;
+        s32 idleField = *(s16 *)(m + 8);
         if (idleField == 0) idle = 1;
         if (hi & idle) {
             *(volatile u16 *)(m + 8) = 1u;
             {
                 volatile u8 *wa = (volatile u8 *)(uintptr_t)GarageTickerWa;
                 if (*(volatile u8 *)(wa + 0x10C2) == 0) {
-                    register s32 arg0 __asm__("r0");
-                    arg0 = *(s16 *)(m + 20);
-                    Garage_276F0(arg0, 0, 0);
-                    register s32 arg1 __asm__("r0");
-                    __asm__ volatile("ldr %0, [%1]\n\tmovs r5, #22\n\tldrsh %0, [%0, r5]"
-                                     : "=r"(arg1) : "r"(tail_slot) : "r5", "memory");
-                    Garage_276F0(arg1, 1, 0);
+                    Garage_276F0(*(s16 *)(m + 20), 0, 0);
+                    Garage_276F0(*(s16 *)(*tail_slot + 22), 1, 0);
                 }
             }
         }
         register volatile u8 *volatile *reset_slot __asm__("r0") =
             (volatile u8 *volatile *)(uintptr_t)0x0300167C;
         register volatile u8 *reset_base __asm__("r1") = *reset_slot;
-        __asm__ volatile("" : "+r"(reset_slot), "+r"(reset_base));
         *(volatile u16 *)(reset_base + 6) = 0;
     } else {
-        register s32 elapsed __asm__("r0");
+        s32 elapsed;
         elapsed = *(s16 *)(m + 4);
         if (elapsed > 0) {
             *(volatile u16 *)(m + 8) = (u16)status;
@@ -2232,14 +2218,14 @@ void Garage_Ticker_278F0(void)
                 register volatile u8 *wa __asm__("r0") =
                     (volatile u8 *)(uintptr_t)GarageTickerWa;
                 register u32 wa_off __asm__("r5") = 0x10C2;
-                __asm__ volatile("" : "+r"(wa), "+r"(wa_off));
                 if (*(volatile u8 *)(wa + wa_off) == 0) {
                     register s32 arg0 __asm__("r0");
+                    register int hold5b __asm__("r5");
+                    __asm__ volatile("" : "=r"(hold5b));
                     arg0 = *(s16 *)(m + 20);
+                    __asm__ volatile("" : : "r"(hold5b));
                     Garage_27788(arg0, 0, 0);
-                    register s32 arg1 __asm__("r0");
-                    arg1 = *(s16 *)(*tail_slot + 22);
-                    Garage_27788(arg1, 1, 0);
+                    Garage_27788(*(s16 *)(*tail_slot + 22), 1, 0);
                 }
             }
         }
