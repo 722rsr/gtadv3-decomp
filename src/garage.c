@@ -1916,147 +1916,56 @@ void sub_08027114(int v) __attribute__((alias("Garage_DispSel_27114")));
 // s8[24] on, u16[20/22] x/y offset) and P1 = *(u32**)0x0300167C (state).
 // _08002DB8 sprite emitter: foundation_runtime.c Helper_02DB8 (7-arg).
 
-// MEASURED 2026-10-22: the C lift reaches 24/240 at best (candidate 228 B).
-// The ROM keeps the 0x03001678 slot *address* in r7 (`ldr r0,=cell` then
-// `adds r7,r0,#0`, which is why the entry pushes r7) and re-dereferences it at
-// every use; a `u32 *cell = (u32 *)0x03001678u;` local reproduces the reloads
-// but not the r7 home, and pinning it to r7 reaches 24/240 only. agbcc also
-// rotates the row loop's guard to the bottom (one test) where the ROM keeps a
-// copy at the top and the bottom, and strength-reduces `row = b + i*8` into an
-// incrementing pointer, so the loop body cannot be reached from `b + i*8`.
-// 0x08027120 (ROM 0x08027120-0x0802720E, transcribed from the raw image):
-// cursor-wrap on P0[17]; per row with s8[24] on, emit the row sprite at
-// (u16[P0]+u16[row+20], u16[P0+2]+u16[row+22]) via _08002DB8(..., s16[P0+4],
-// s16[P0+6], 0, 0, 1); then the cursor row unconditionally; then the phase
-// sprite via _08026F80(s16[P0+10], s16[P0], s16[P0+2], s16[P0+12], (s8)P0[18], 1).
-__attribute__((naked)) void Garage_CarPos_27120(void) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "\tpush\t{r4, r5, r6, r7, lr}\n"
-        "\tsub\tsp, #12\n"
-        "\tldr r0, .Lgarage27120__08002715C\n"
-        "\tldr\tr5, [r0, #0]\n"
-        "\tmovs\tr2, #17\n"
-        "\tldrsb\tr2, [r5, r2]\n"
-        "\tadds\tr7, r0, #0\n"
-        "\tcmp\tr2, #0\n"
-        "\tbeq .Lgarage27120__080027166\n"
-        "\tcmp\tr2, #0\n"
-        "\tble .Lgarage27120__08002713E\n"
-        "\tmovs\tr1, #0\n"
-        "\tldrsh\tr0, [r5, r1]\n"
-        "\tcmp\tr0, #0\n"
-        "\tblt .Lgarage27120__08002714E\n"
-        ".Lgarage27120__08002713E:\n"
-        "\tcmp\tr2, #0\n"
-        "\tbge .Lgarage27120__080027160\n"
-        "\tmovs\tr2, #0\n"
-        "\tldrsh\tr1, [r5, r2]\n"
-        "\tmovs\tr0, #64\n"
-        "\tnegs\tr0, r0\n"
-        "\tcmp\tr1, r0\n"
-        "\tble .Lgarage27120__080027160\n"
-        ".Lgarage27120__08002714E:\n"
-        "\tldr\tr1, [r7, #0]\n"
-        "\tmovs\tr0, #17\n"
-        "\tldrsb\tr0, [r1, r0]\n"
-        "\tldrh\tr3, [r1, #0]\n"
-        "\tadds\tr0, r3, r0\n"
-        "\tstrh\tr0, [r1, #0]\n"
-        "\tb .Lgarage27120__080027166\n"
-        ".Lgarage27120__08002715C: .word 0x03001678\n"
-        ".Lgarage27120__080027160:\n"
-        "\tldr\tr1, [r7, #0]\n"
-        "\tmovs\tr0, #0\n"
-        "\tstrb\tr0, [r1, #17]\n"
-        ".Lgarage27120__080027166:\n"
-        "\tmovs\tr5, #1\n"
-        "\tldr\tr0, [r7, #0]\n"
-        "\tldrb\tr0, [r0, #16]\n"
-        "\tlsls\tr0, r0, #24\n"
-        "\tasrs\tr0, r0, #24\n"
-        "\tcmp\tr5, r0\n"
-        "\tbge .Lgarage27120__0800271BC\n"
-        "\tadds\tr6, r7, #0\n"
-        ".Lgarage27120__080027176:\n"
-        "\tldr\tr3, [r6, #0]\n"
-        "\tlsls\tr0, r5, #3\n"
-        "\tadds\tr1, r3, r0\n"
-        "\tmovs\tr0, #24\n"
-        "\tldrsb\tr0, [r1, r0]\n"
-        "\tcmp\tr0, #0\n"
-        "\tbeq .Lgarage27120__0800271AE\n"
-        "\tldrh\tr4, [r3, #0]\n"
-        "\tldrh\tr2, [r1, #20]\n"
-        "\tadds\tr0, r4, r2\n"
-        "\tldrh\tr4, [r3, #2]\n"
-        "\tldrh\tr1, [r1, #22]\n"
-        "\tadds\tr1, r4, r1\n"
-        "\tlsls\tr0, r0, #16\n"
-        "\tasrs\tr0, r0, #16\n"
-        "\tlsls\tr1, r1, #16\n"
-        "\tasrs\tr1, r1, #16\n"
-        "\tmovs\tr4, #6\n"
-        "\tldrsh\tr2, [r3, r4]\n"
-        "\tmovs\tr4, #8\n"
-        "\tldrsh\tr3, [r3, r4]\n"
-        "\tmovs\tr4, #0\n"
-        "\tstr\tr4, [sp, #0]\n"
-        "\tstr\tr4, [sp, #4]\n"
-        "\tmovs\tr4, #1\n"
-        "\tstr\tr4, [sp, #8]\n"
-        "\tbl 0x08002DB8\n"
-        ".Lgarage27120__0800271AE:\n"
-        "\tadds\tr5, #1\n"
-        "\tldr\tr0, [r6, #0]\n"
-        "\tldrb\tr0, [r0, #16]\n"
-        "\tlsls\tr0, r0, #24\n"
-        "\tasrs\tr0, r0, #24\n"
-        "\tcmp\tr5, r0\n"
-        "\tblt .Lgarage27120__080027176\n"
-        ".Lgarage27120__0800271BC:\n"
-        "\tldr\tr3, [r7, #0]\n"
-        "\tldrh\tr6, [r3, #0]\n"
-        "\tldrh\tr1, [r3, #20]\n"
-        "\tadds\tr0, r6, r1\n"
-        "\tldrh\tr2, [r3, #2]\n"
-        "\tldrh\tr4, [r3, #22]\n"
-        "\tadds\tr1, r2, r4\n"
-        "\tlsls\tr0, r0, #16\n"
-        "\tasrs\tr0, r0, #16\n"
-        "\tlsls\tr1, r1, #16\n"
-        "\tasrs\tr1, r1, #16\n"
-        "\tmovs\tr6, #4\n"
-        "\tldrsh\tr2, [r3, r6]\n"
-        "\tmovs\tr4, #8\n"
-        "\tldrsh\tr3, [r3, r4]\n"
-        "\tmovs\tr4, #0\n"
-        "\tstr\tr4, [sp, #0]\n"
-        "\tstr\tr4, [sp, #4]\n"
-        "\tmovs\tr5, #1\n"
-        "\tstr\tr5, [sp, #8]\n"
-        "\tbl 0x08002DB8\n"
-        "\tldr\tr4, [r7, #0]\n"
-        "\tmovs\tr6, #10\n"
-        "\tldrsh\tr0, [r4, r6]\n"
-        "\tmovs\tr2, #0\n"
-        "\tldrsh\tr1, [r4, r2]\n"
-        "\tmovs\tr3, #2\n"
-        "\tldrsh\tr2, [r4, r3]\n"
-        "\tmovs\tr6, #12\n"
-        "\tldrsh\tr3, [r4, r6]\n"
-        "\tstr\tr5, [sp, #0]\n"
-        "\tldrb\tr4, [r4, #18]\n"
-        "\tlsls\tr4, r4, #24\n"
-        "\tasrs\tr4, r4, #24\n"
-        "\tstr\tr4, [sp, #4]\n"
-        "\tbl sub_080026F80\n"
-        "\tadd\tsp, #12\n"
-        "\tpop\t{r4, r5, r6, r7}\n"
-        "\tpop\t{r0}\n"
-        "\tbx\tr0\n"
-        ".syntax divided\n"
-    );
+// 0x08027120 (240 B) — per-frame car-position record draw. The record lives
+// behind the single RAM slot 0x03001678; the ROM re-dereferences that slot per
+// use and holds its address in three registers (r0 at the first deref, r7 for
+// the whole body, r6 for the row loop), so each level is pinned here. The row
+// count goes through a volatile ldrb plus sign-extend, which is also why the
+// loop keeps both its entry guard and its tail test.
+void Garage_CarPos_27120(void) {
+    register u32 *slot __asm__("r0") = (u32 *)0x03001678u;
+    register u8 *rec __asm__("r5") = (u8 *)*slot;
+    register s32 cur __asm__("r2") = *(s8 *)(rec + 17);
+    u32 *cell = slot;
+    if (cur != 0) {
+        if ((cur > 0 && *(s16 *)(rec + 0) < 0)
+            || (cur < 0 && *(s16 *)(rec + 0) > -64))
+            *(u16 *)((u8 *)*cell + 0) += *(s8 *)((u8 *)*cell + 17);
+        else
+            *(u8 *)((u8 *)*cell + 17) = 0;
+    }
+    {
+        s32 i = 1;
+        if (i >= (s8)*(volatile u8 *)((u8 *)*cell + 16)) goto after_loop;
+        {
+            u32 *cp = cell;
+            do {
+                u8 *rp = (u8 *)*cp;
+                u8 *row = rp + i * 8;
+                s16 x, y;
+                if (*(s8 *)(row + 24) != 0) {
+                    x = (s16)((u16)*(s16 *)(rp + 0) + (u16)*(u16 *)(row + 20));
+                    y = (s16)((u16)*(s16 *)(rp + 2) + (u16)*(u16 *)(row + 22));
+                    sub_08002DB8((void *)(uintptr_t)x, y, *(s16 *)(rp + 6),
+                                 *(s16 *)(rp + 8), 0, 0, 1);
+                }
+                i++;
+            } while (i < (s8)*(volatile u8 *)((u8 *)*cp + 16));
+        }
+after_loop: ;
+    }
+    {
+        u8 *rp = (u8 *)*cell;
+        s16 x = (s16)((u16)*(s16 *)(rp + 0) + (u16)*(u16 *)(rp + 20));
+        s16 y = (s16)((u16)*(s16 *)(rp + 2) + (u16)*(u16 *)(rp + 22));
+        sub_08002DB8((void *)(uintptr_t)x, y, *(s16 *)(rp + 4),
+                     *(s16 *)(rp + 8), 0, 0, 1);
+    }
+    {
+        u8 *rp = (u8 *)*cell;
+        sub_080026F80(*(s16 *)(rp + 10), *(s16 *)(rp + 0), *(s16 *)(rp + 2),
+                      *(s16 *)(rp + 12), 1, (s8)*(u8 *)(rp + 18));
+    }
 }
 void _08027120(void) __attribute__((alias("Garage_CarPos_27120")));
 

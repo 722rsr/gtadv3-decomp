@@ -131,6 +131,38 @@ local instead makes agbcc materialise `mov r4, sp`, which is correct but not
 what the ROM has. Always read the emitted body for a pinned r7 in a framed
 function; a byte score near the length target can hide wrong code.
 
+**Re-measured 2026-10-25, and the earlier "barrier makes `a` global" claim is
+wrong.** In the whole-body C the allocno disposition table
+(`build/regalloc/Garage_Place_27234/garage.i.greg`, "Registers to be allocated")
+lists only five globals (`54 29 35 34 36`) -- pseudo 22 (`a`) is **local**, and
+`tools/regalloc_report.py --function Garage_Place_27234` shows it as
+`22 -> r4, refs 2, live 4..50`. So `a` is chosen by local-alloc's per-block
+first-free scan, not by priority: `b`(23), `rec`(29) and the `a + off[0]` temp
+(45) are the only other allocnos in that block, and r4 really is free when
+`a`'s def (insn 4) is scanned, because 23 is born at 6, 29 at 16 and 45 at 50.
+The ROM's `adds r7,r0,#0` therefore needs a *preference* for r7 at insn 4, and
+no source spelling produces one: the barrier sweep (below) covered 88
+(register, statement-boundary) placements and none moved `a`; parameter copies
+(`u32 x = a;`), all four parameter type spellings, and the `zero`/`wide`
+statement orders measure identical.
+
+The pin was re-tried the same day with the frame array behind a pointer local
+(`s32 buf[2]; s32 *off = buf;`), which the earlier note said was the *correct*
+route. It reproduces `a` in r7 and passes 78/99 instructions, but the emitted
+listing has **no `mov r0, sp`** before `_08005D74` -- the buffer address is
+never set up -- so that spelling miscompiles too, just differently. The pinned
+route is closed; do not spend another session on it.
+
+Measured shapes for the whole body: 198-212 B against the ROM's 212/212, with
+`a`, `wide` and the zero temp cycling through each other's registers. The
+zero/wide pair is a second, separate problem: `wide` is born before `zero` in
+program order but *after* the `_08002C34` call, so local-alloc gives `zero`
+the r4 that `a` dropped and global-alloc then puts `wide` in r8 -- the ROM has
+the reverse (`wide`=r4, `zero`=r8). Adding a separate `zero` variable, moving
+its assignment, inlining the literal, and accumulating `wide` through a temp
+all measure the same 188-200 B. The body stays an asm splice until the r7
+preference is explained.
+
 Value-known-constant temps interact with this: `reg_equiv_constant` lets
 reload rematerialise a constant per use instead of keeping its register live,
 which is how a ROM can hold a zero in r2 through a loop and free r2 again for

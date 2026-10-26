@@ -4611,11 +4611,9 @@
    "size": 112
   },
   "0x0800c884": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 269,
-    "naked": true
+    "barrier": 4
    },
    "file": "src/scene_record_dispatch.c",
    "name": "MenuRecordHandler_0C884",
@@ -10713,11 +10711,9 @@
    "size": 12
   },
   "0x08027120": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 115,
-    "naked": true
+    "pin": 3
    },
    "file": "src/garage.c",
    "name": "Garage_CarPos_27120",
@@ -13268,16 +13264,16 @@
  },
  "totals": {
   "asm": {
-   "bytes": 64552,
-   "functions": 168
+   "bytes": 63704,
+   "functions": 166
   },
   "c": {
    "bytes": 43078,
    "functions": 872
   },
   "c_fakematch": {
-   "bytes": 79558,
-   "functions": 627
+   "bytes": 80406,
+   "functions": 629
   },
   "partial": {
    "bytes": 948,

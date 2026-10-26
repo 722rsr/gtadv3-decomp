@@ -141,6 +141,12 @@ See [candidate-length diagnostics](findings/oversized_plus4_class.md).
   non-volatile read emits `mov rN,#0; ldrsh`. Distinguish a volatile pointer
   cell from a volatile pointee. IWRAM work areas are not hardware registers;
   preserve actual hardware volatility and access counts.
+- `*p = *p + n` on a `u16 *` stores before the narrow compare
+  (`ldrh; add; strh; lsls; asrs; cmp`), which is the ROM's usual clamp shape.
+  Naming the sum first (`u16 v = *p + n; *p = v; if ((s16)v > k)`) truncates
+  before the store and inserts a second zero-extend pair (`lsls; lsrs; strh`),
+  costing 4 bytes per clamp. Measured on `MenuRecordHandler_0C884`
+  (0x0800C884, five clamps).
 - Parameter widths follow the ROM. A narrow C parameter can introduce
   truncation absent from an already word-width calling convention.
 - Named locals and their declaration positions can preserve load ordering.
@@ -993,6 +999,83 @@ three steps, none of which changed behaviour:
 
 Everything after 0x76 is register permutation only (same operations, `r0/r2/r3`
 vs the ROM's `r3/r4/r1`), so the body is allocation-bound from there.
+
+## Wide OR masks and the constant-copy idiom (measured 2026-10-25)
+
+Three separate rules govern an expression like
+`(x & 0x1FF) | 0xFFFFC000 | (y << 9)` stored to a `u16`:
+
+* **Keep the OR 32-bit-wide.** Writing the whole thing as one expression
+  inside the `(u16)` store lets agbcc narrow it, and `0xFFFFC000` collapses to
+  `movs r3,#192 / lsls r3,r3,#8` (`0xC000`). Splitting it into statements that
+  all target a `u32` temp (`v &= 0x1FF; v = 0xFFFFC000 | v; v |= y << 9;`)
+  keeps the pool word and still reaches 4 instructions per term.
+* **Statement order sets pool order.** The split form above emits exactly the
+  ROM's sequence -- `ldr r1,=0x1FF / ands`, `ldr r1,=0xFFFFC000 / orrs`,
+  `ldrh / lsls / orrs` -- whereas the nested form pre-loads both pool words
+  before the `ands`.
+* **The `ldr r2,=C / adds r1,r2,#0` copy is not reachable from a constant
+  expression at -O2.** Assigning the constant to a local (`v = 0xFFFFC000;`
+  then `... | v`) makes the pool word land in r2 instead of r1, but the
+  `adds r1,r2,#0` hop needs the constant's pseudo to *spill*, i.e. the
+  function must already be out of call-preserved registers. A body that is
+  otherwise allocation-clean gets `ldr r1,=C / ands r0,r1` instead. Both
+  `0x08027234` and `0x080275B8` are gated on this and stay as asm splice.
+
+## `find_reg` reuses before it fills (why short-lived values get low regs)
+
+agbcc's global allocator (`global.c`, "CYGNUS LOCAL live range") runs three
+passes: pass 1 accepts only registers **already in `regs_used_so_far`**, pass
+2 accepts any register in the preferred class without a conflict, pass 3 only
+avoids hard conflicts. So an allocno is offered a *reuse* of an existing home
+before a fresh register, which is why a value whose live range ends early
+still comes out in the low register a dead temp left behind. Consequences
+worth knowing when steering a body:
+
+* The reported "first free register" is not what a body gets. Read
+  `build/ra/<fn>/*.greg` ("Registers to be allocated in sorted order", then
+  the per-allocno `conflicts`/`preferences` lines) rather than reasoning from
+  source order; `tools/regalloc_report.py` prints the disposition table.
+* `allocno_calls_crossed > 0` removes r0-r3 outright
+  (`HARD_REGNO_CALL_PART_CLOBBERED`), so every value live across a call
+  competes for r4-r7 only, then r8-r10.
+* A register is only reachable for a *global* allocno. `local-alloc` marks all
+  eliminable registers used, so a pseudo born and dead inside one basic block
+  can never take r7; see
+  [r7 through global alloc](findings/local_alloc_register_choice.md#r7-is-reachable-through-global-alloc-not-through-pins).
+* An `__asm__ volatile("" : "+r"(x))` barrier *does* promote `x` to a global
+  allocno, but that only helps when the value's priority is on your side. On
+  `0x08027234` the existing allocator already leaves `a` **local**, so no
+  placement changes its register (see the correction in
+  [that finding](findings/local_alloc_register_choice.md#a-pinned-r7-in-a-framed-body-can-miscompile-an-array-read)).
+  Check which allocator owns the value (`.greg` "Registers to be allocated")
+  before spending shapes on it: a local allocno is decided by the per-block
+  first-free scan and cannot be steered by source order at all.
+
+`tools/lift_loop.py` compiles one body out of its real TU in about a second and
+prints the ROM and candidate listings side by side; `--asm` prints just the
+candidate. It also reports whether the candidate is a **pure register
+permutation** of the ROM, which is the check that separates "the C is wrong"
+from "the C is right and only the allocation differs". `--raw-tu` lifts a TU
+that is already past the C89 transform, i.e. a saved sweep winner.
+
+`--sweep REG[,REG...]` is the automated version of the barrier search: it
+inserts `__asm__ volatile("" : "+r"(REG));` after every statement boundary of
+the body, compiles the placements in parallel, and ranks them by exact /
+permutation / aligned count. On `0x08027234` all 88 placements measured and
+none improved on the baseline's 200 B / 70 aligned, which is what "this value
+is not global" looks like. Do not add a shared scratch path to a parallel
+compile helper: the first version of `disasm` wrote one `build/lift/blob.bin`
+for every thread and the scores were garbage that still looked plausible.
+
+Measured with it on 2026-10-25: `0x08027234` (212 B) bottoms out at 198-212 B
+with `a`/`wide`/the zero temp shuffled, and `0x080275B8` (312 B) at 308 B. The
+latter needs seven call-preserved homes at once (`r4`=tbl[3], `r5`=tbl[4],
+`r6`=wide, `r7`=obj, `r8`=rnd2, `r9`=rec, `sl`=tbl, with `cw` and `rnd1`
+spilled), which is exactly the count that makes the constant copies reappear --
+but pinning the high homes (`rec`->r9, `tbl`->sl) costs more than it buys,
+because a pinned `d` parameter that is also read after a call routes through
+r9 (`mov r9,r3 / mov r6,r9`) instead of the ROM's single `mov r9,r0`.
 
 ## Promoting a body whose asm region has no end marker
 

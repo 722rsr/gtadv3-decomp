@@ -74,7 +74,7 @@ extern void  sub_08003104(void *handler);
 #define _08003104 sub_08003104
 HOST_STUB(void *_08004DC8(void *a));
 HOST_STUB(void  _08004EF0(void *a));
-HOST_STUB(void *_08004B68(void));
+HOST_STUB(void *sub_08004B68(void));   // the closure spells this one `sub_`
 HOST_STUB(void  _08004BFC(int v));
 HOST_STUB(void  _08004EA8(int v));
 HOST_STUB(void  _08004EC0(int v));
@@ -89,7 +89,7 @@ HOST_STUB(u16   _08001EA4(int a));
 HOST_STUB(int   _08001E30(void));
 HOST_STUB(void  _08001E48(int a, int b));
 HOST_STUB(int   _08001F8C(void));  // 32-bit contract: ROM caller does a bare `cmp r6,r0` (no zero-extend), as in garage_records.c/_080028EB0
-HOST_STUB(void  _08001F80(u16 v));
+HOST_STUB(void  _08001F80(u32 v));   // word ABI: callers pass it unmasked (idle_accessors.c)
 HOST_STUB(void  _08003940(int a, u32 b));
 HOST_STUB(u32   _08002044(void));                                    // word ABI: callers pass it unmasked (see idle.h)
 HOST_STUB(void  _08003F18(u32 a, u32 b, const volatile u8 *c, int d));
@@ -1053,7 +1053,7 @@ void MenuRecordUpdater_0D048(u8 *r4, u32 dummy, u16 key) {
     s32 zero;
     s32 v;
 
-    _08004B68();
+    sub_08004B68();
     old6 = *(s16 *)(r4 + 6);
     dy = 0;
     dx = 0;
@@ -1392,321 +1392,135 @@ void _0800CAE4(void *r) __attribute__((alias("MenuDetailRender_0CAE4")));
 void sub_0800CAE4(void *r) __attribute__((alias("MenuDetailRender_0CAE4")));
 
 // ============================================================================
-// menu_c884.s 0x0800C884 — menu record handler: key-scan gate (provably
-// always r6=0 — transcribed literally regardless), continue-path packet,
-// bit-lane transitions, cursor walks, WA counter lanes, final HSL dispatch
-// to the _08002158 packet sink.
+// menu_c884.s 0x0800C884 — menu record handler: key-scan gate, continue-path
+// packet, bit-lane transitions, cursor walks, three WA lanes, final HSL
+// dispatch to the _08002158 packet sink.
+//
+// Three spellings are load-bearing for the match:
+//  * the selector is read as `*(s16 *)rec`, never `(s16)*(u16 *)rec` -- the
+//    signed lvalue gives the ROM's `movs rX,#0 / ldrsh rY,[rec,rX]`.
+//  * each WA lane updates in place (`*p = *p + n`) so the `strh` precedes the
+//    sign-extend of the just-stored value; a named `u16 v` truncates first and
+//    inserts a second `lsls/lsrs` pair before the store.
+//  * the WA base is pinned with an empty `"r"` operand, which is what keeps
+//    the base and each lane offset as two pool words with a runtime `adds`
+//    instead of one folded literal.
+// The body is 0x25E bytes, so the file-scope `.align 2, 0` below is needed too.
 // ============================================================================
-__attribute__((naked)) void MenuRecordHandler_0C884(void *rec, u32 a1, u32 a2) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        ".Lmc884_0800c884:\n"
-        "\tpush {r4, r5, r6, r7, lr}\n"
-        "\tmov r7, sl\n"
-        "\tmov r6, r9\n"
-        "\tmov r5, r8\n"
-        "\tpush {r5, r6, r7}\n"
-        "\tadds r5, r0, #0\n"
-        "\tlsls r1, r1, #16\n"
-        "\tlsrs r1, r1, #16\n"
-        "\tmov r9, r1\n"
-        "\tlsls r2, r2, #16\n"
-        "\tlsrs r7, r2, #16\n"
-        "\tbl 0x080024A0\n"
-        "\tlsls r0, r0, #16\n"
-        "\tlsrs r0, r0, #16\n"
-        "\tmov sl, r0\n"
-        "\tmovs r0, #0\n"
-        "\tmov r8, r0\n"
-        "\tmovs r6, #1\n"
-        "\tbl 0x08004B68\n"
-        "\tbl 0x08002140\n"
-        "\tcmp r0, #1\n"
-        "\tble.n .Lmc884_0800c8e8\n"
-        "\tmovs r4, #0\n"
-        "\tb.n .Lmc884_0800c8de\n"
-        ".Lmc884_0800c8ba:\n"
-        "\tadds r0, r4, #0\n"
-        "\tmovs r1, #2\n"
-        "\tbl 0x08002178\n"
-        "\tlsls r0, r0, #16\n"
-        "\tlsrs r0, r0, #16\n"
-        "\tcmp r0, #5\n"
-        "\tbeq.n .Lmc884_0800c8cc\n"
-        "\tmovs r6, #0\n"
-        ".Lmc884_0800c8cc:\n"
-        "\tadds r0, r4, #0\n"
-        "\tmovs r1, #3\n"
-        "\tbl 0x08002178\n"
-        "\tlsls r0, r0, #16\n"
-        "\tcmp r0, #0\n"
-        "\tbeq.n .Lmc884_0800c8dc\n"
-        "\tmovs r6, #0\n"
-        ".Lmc884_0800c8dc:\n"
-        "\tadds r4, #1\n"
-        ".Lmc884_0800c8de:\n"
-        "\tbl 0x08002140\n"
-        "\tcmp r4, r0\n"
-        "\tblt.n .Lmc884_0800c8ba\n"
-        "\tb.n .Lmc884_0800c8ea\n"
-        ".Lmc884_0800c8e8:\n"
-        "\tmovs r6, #0\n"
-        ".Lmc884_0800c8ea:\n"
-        "\tcmp r6, #0\n"
-        "\tbeq.n .Lmc884_0800c906\n"
-        "\tldrh r1, [r5, #4]\n"
-        "\tmovs r2, #4\n"
-        "\tldrsh r0, [r5, r2]\n"
-        "\tcmp r0, #0\n"
-        "\tble.n .Lmc884_0800c8fe\n"
-        "\tsubs r0, r1, #1\n"
-        "\tstrh r0, [r5, #4]\n"
-        "\tb.n .Lmc884_0800c990\n"
-        ".Lmc884_0800c8fe:\n"
-        "\tadds r0, r5, #0\n"
-        "\tbl 0x0800C814\n"
-        "\tb.n .Lmc884_0800c990\n"
-        ".Lmc884_0800c906:\n"
-        "\tcmp r7, #1\n"
-        "\tbne.n .Lmc884_0800c926\n"
-        "\tldrh r3, [r5, #0]\n"
-        "\tcmp r3, #6\n"
-        "\tbne.n .Lmc884_0800c926\n"
-        "\tmovs r1, #0\n"
-        "\tldrsh r0, [r5, r1]\n"
-        "\tmovs r1, #29\n"
-        "\tldrsb r1, [r5, r1]\n"
-        "\tadds r0, r0, r1\n"
-        "\tbl 0x08004BFC\n"
-        "\tmovs r0, #1\n"
-        "\tbl 0x08004EC0\n"
-        "\tb.n .Lmc884_0800c982\n"
-        ".Lmc884_0800c926:\n"
-        "\tmovs r0, #1\n"
-        "\tands r0, r7\n"
-        "\tcmp r0, #0\n"
-        "\tbeq.n .Lmc884_0800c982\n"
-        "\tmovs r2, #0\n"
-        "\tldrsh r0, [r5, r2]\n"
-        "\tcmp r0, #5\n"
-        "\tbeq.n .Lmc884_0800c982\n"
-        "\tcmp r0, #1\n"
-        "\tbeq.n .Lmc884_0800c982\n"
-        "\tmovs r0, #128\n"
-        "\tlsls r0, r0, #2\n"
-        "\tmov r3, r9\n"
-        "\tands r0, r3\n"
-        "\tcmp r0, #0\n"
-        "\tbeq.n .Lmc884_0800c94e\n"
-        "\tmovs r0, #100\n"
-        "\tbl 0x08004BFC\n"
-        "\tb.n .Lmc884_0800c96a\n"
-        ".Lmc884_0800c94e:\n"
-        "\tmovs r0, #128\n"
-        "\tlsls r0, r0, #1\n"
-        "\tmov r1, r9\n"
-        "\tands r0, r1\n"
-        "\tcmp r0, #0\n"
-        "\tbeq.n .Lmc884_0800c962\n"
-        "\tmovs r0, #101\n"
-        "\tbl 0x08004BFC\n"
-        "\tb.n .Lmc884_0800c96a\n"
-        ".Lmc884_0800c962:\n"
-        "\tmovs r2, #0\n"
-        "\tldrsh r0, [r5, r2]\n"
-        "\tbl 0x08004BFC\n"
-        ".Lmc884_0800c96a:\n"
-        "\tmovs r3, #0\n"
-        "\tldrsh r1, [r5, r3]\n"
-        "\tmovs r0, #0\n"
-        "\tbl 0x08004C84\n"
-        "\tbl 0x08002044\n"
-        "\tbl 0x08001F80\n"
-        "\tmovs r0, #1\n"
-        "\tbl 0x08004EC0\n"
-        ".Lmc884_0800c982:\n"
-        "\tmovs r0, #2\n"
-        "\tands r0, r7\n"
-        "\tcmp r0, #0\n"
-        "\tbeq.n .Lmc884_0800c990\n"
-        "\tmovs r0, #1\n"
-        "\tbl 0x08004EA8\n"
-        ".Lmc884_0800c990:\n"
-        "\tmovs r0, #64\n"
-        "\tands r0, r7\n"
-        "\tcmp r0, #0\n"
-        "\tbeq.n .Lmc884_0800c9a6\n"
-        "\tldrh r1, [r5, #0]\n"
-        "\tmovs r2, #0\n"
-        "\tldrsh r0, [r5, r2]\n"
-        "\tcmp r0, #0\n"
-        "\tble.n .Lmc884_0800c9a6\n"
-        "\tsubs r0, r1, #1\n"
-        "\tstrh r0, [r5, #0]\n"
-        ".Lmc884_0800c9a6:\n"
-        "\tmovs r0, #128\n"
-        "\tands r0, r7\n"
-        "\tcmp r0, #0\n"
-        "\tbeq.n .Lmc884_0800c9bc\n"
-        "\tldrh r1, [r5, #0]\n"
-        "\tmovs r3, #0\n"
-        "\tldrsh r0, [r5, r3]\n"
-        "\tcmp r0, #5\n"
-        "\tbgt.n .Lmc884_0800c9bc\n"
-        "\tadds r0, r1, #1\n"
-        "\tstrh r0, [r5, #0]\n"
-        ".Lmc884_0800c9bc:\n"
-        "\tmovs r0, #32\n"
-        "\tmov r1, sl\n"
-        "\tands r0, r1\n"
-        "\tcmp r0, #0\n"
-        "\tbeq.n .Lmc884_0800c9cc\n"
-        "\tmovs r2, #1\n"
-        "\tnegs r2, r2\n"
-        "\tadd r8, r2\n"
-        ".Lmc884_0800c9cc:\n"
-        "\tmovs r0, #16\n"
-        "\tmov r3, sl\n"
-        "\tands r0, r3\n"
-        "\tcmp r0, #0\n"
-        "\tbeq.n .Lmc884_0800c9da\n"
-        "\tmovs r0, #1\n"
-        "\tadd r8, r0\n"
-        ".Lmc884_0800c9da:\n"
-        "\tmovs r0, #128\n"
-        "\tlsls r0, r0, #2\n"
-        "\tands r0, r7\n"
-        "\tcmp r0, #0\n"
-        "\tbeq.n .Lmc884_0800ca02\n"
-        "\tmovs r1, #0\n"
-        "\tldrsh r2, [r5, r1]\n"
-        "\tcmp r2, #0\n"
-        "\tbne.n .Lmc884_0800ca02\n"
-        "\tldr r0, .Lmc884_0800ca3c\n"
-        "\tldr r3, .Lmc884_0800ca40\n"
-        "\tadds r1, r0, r3\n"
-        "\tldrh r0, [r1, #0]\n"
-        "\tadds r0, #1\n"
-        "\tstrh r0, [r1, #0]\n"
-        "\tlsls r0, r0, #16\n"
-        "\tasrs r0, r0, #16\n"
-        "\tcmp r0, #2\n"
-        "\tble.n .Lmc884_0800ca02\n"
-        "\tstrh r2, [r1, #0]\n"
-        ".Lmc884_0800ca02:\n"
-        "\tmovs r0, #128\n"
-        "\tlsls r0, r0, #1\n"
-        "\tands r0, r7\n"
-        "\tcmp r0, #0\n"
-        "\tbeq.n .Lmc884_0800ca2a\n"
-        "\tmovs r0, #0\n"
-        "\tldrsh r2, [r5, r0]\n"
-        "\tcmp r2, #0\n"
-        "\tbne.n .Lmc884_0800ca2a\n"
-        "\tldr r0, .Lmc884_0800ca3c\n"
-        "\tldr r3, .Lmc884_0800ca44\n"
-        "\tadds r1, r0, r3\n"
-        "\tldrh r0, [r1, #0]\n"
-        "\tadds r0, #1\n"
-        "\tstrh r0, [r1, #0]\n"
-        "\tlsls r0, r0, #16\n"
-        "\tasrs r0, r0, #16\n"
-        "\tcmp r0, #2\n"
-        "\tble.n .Lmc884_0800ca2a\n"
-        "\tstrh r2, [r1, #0]\n"
-        ".Lmc884_0800ca2a:\n"
-        "\tmovs r0, #0\n"
-        "\tldrsh r1, [r5, r0]\n"
-        "\tcmp r1, #1\n"
-        "\tbeq.n .Lmc884_0800ca6c\n"
-        "\tcmp r1, #1\n"
-        "\tbgt.n .Lmc884_0800ca48\n"
-        "\tcmp r1, #0\n"
-        "\tbeq.n .Lmc884_0800ca4e\n"
-        "\tb.n .Lmc884_0800cab4\n"
-        ".Lmc884_0800ca3c: .word 0x03001780\n"
-        ".Lmc884_0800ca40: .word 0x0000113C\n"
-        ".Lmc884_0800ca44: .word 0x0000113E\n"
-        ".Lmc884_0800ca48:\n"
-        "\tcmp r1, #6\n"
-        "\tbeq.n .Lmc884_0800ca98\n"
-        "\tb.n .Lmc884_0800cab4\n"
-        ".Lmc884_0800ca4e:\n"
-        "\tldr r0, .Lmc884_0800ca64\n"
-        "\tldr r3, .Lmc884_0800ca68\n"
-        "\tadds r2, r0, r3\n"
-        "\tldrh r0, [r2, #0]\n"
-        "\tadd r0, r8\n"
-        "\tstrh r0, [r2, #0]\n"
-        "\tlsls r0, r0, #16\n"
-        "\tcmp r0, #0\n"
-        "\tbge.n .Lmc884_0800cab4\n"
-        "\tstrh r1, [r2, #0]\n"
-        "\tb.n .Lmc884_0800cab4\n"
-        ".Lmc884_0800ca64: .word 0x03001780\n"
-        ".Lmc884_0800ca68: .word 0x00000576\n"
-        ".Lmc884_0800ca6c:\n"
-        "\tldr r0, .Lmc884_0800ca90\n"
-        "\tldr r2, .Lmc884_0800ca94\n"
-        "\tadds r1, r0, r2\n"
-        "\tldrh r0, [r1, #0]\n"
-        "\tadd r0, r8\n"
-        "\tstrh r0, [r1, #0]\n"
-        "\tlsls r0, r0, #16\n"
-        "\tcmp r0, #0\n"
-        "\tbge.n .Lmc884_0800ca82\n"
-        "\tmovs r0, #0\n"
-        "\tstrh r0, [r1, #0]\n"
-        ".Lmc884_0800ca82:\n"
-        "\tmovs r3, #0\n"
-        "\tldrsh r0, [r1, r3]\n"
-        "\tcmp r0, #96\n"
-        "\tble.n .Lmc884_0800cab4\n"
-        "\tmovs r0, #96\n"
-        "\tstrh r0, [r1, #0]\n"
-        "\tb.n .Lmc884_0800cab4\n"
-        ".Lmc884_0800ca90: .word 0x03001780\n"
-        ".Lmc884_0800ca94: .word 0x00000574\n"
-        ".Lmc884_0800ca98:\n"
-        "\tldrb r0, [r5, #29]\n"
-        "\tadd r0, r8\n"
-        "\tstrb r0, [r5, #29]\n"
-        "\tlsls r0, r0, #24\n"
-        "\tcmp r0, #0\n"
-        "\tbge.n .Lmc884_0800caa8\n"
-        "\tmovs r0, #0\n"
-        "\tstrb r0, [r5, #29]\n"
-        ".Lmc884_0800caa8:\n"
-        "\tmovs r0, #29\n"
-        "\tldrsb r0, [r5, r0]\n"
-        "\tcmp r0, #4\n"
-        "\tble.n .Lmc884_0800cab4\n"
-        "\tmovs r0, #4\n"
-        "\tstrb r0, [r5, #29]\n"
-        ".Lmc884_0800cab4:\n"
-        "\tmovs r0, #0\n"
-        "\tmov r1, r9\n"
-        "\tbl 0x08002158\n"
-        "\tmovs r0, #1\n"
-        "\tadds r1, r7, #0\n"
-        "\tbl 0x08002158\n"
-        "\tldrh r1, [r5, #0]\n"
-        "\tmovs r0, #2\n"
-        "\tbl 0x08002158\n"
-        "\tldrb r1, [r5, #28]\n"
-        "\tmovs r0, #3\n"
-        "\tbl 0x08002158\n"
-        "\tpop {r3, r4, r5}\n"
-        "\tmov r8, r3\n"
-        "\tmov r9, r4\n"
-        "\tmov sl, r5\n"
-        "\tpop {r4, r5, r6, r7}\n"
-        "\tpop {r0}\n"
-        "\tbx r0\n"
-        "\t.short 0\n"
-        ".syntax divided\n"
-    );
+void MenuRecordHandler_0C884(void *rec_, u32 a1_, u32 a2_)
+{
+    u8 *rec = (u8 *)rec_;
+    u16 a1 = (u16)a1_;
+    u16 a2 = (u16)a2_;
+    u16 keys = _080024A0();
+    int delta = 0;
+    int ok = 1;
+    int i;
+
+    sub_08004B68();
+    if ((s32)_08002140() > 1) {
+        for (i = 0; i < (s32)_08002140(); i++) {
+            if ((u16)_08002178(i, 2) != 5u) ok = 0;
+            if ((u16)_08002178(i, 3) != 0u) ok = 0;
+        }
+    } else {
+        ok = 0;
+    }
+    if (ok) {
+        u16 c4 = *(u16 *)(rec + 4);
+        if ((s16)c4 > 0)
+            *(u16 *)(rec + 4) = (u16)(c4 - 1u);
+        else
+            _0800C814(rec);
+    } else {
+        if (a2 == 1u && *(u16 *)rec == 6u) {
+            _08004BFC(*(s16 *)rec + (s8)*(rec + 29));
+            _08004EC0(1);
+        } else if (a2 & 1u) {
+            if (*(s16 *)rec != 5 && *(s16 *)rec != 1) {
+                if (a1 & 0x200u)
+                    _08004BFC(100);
+                else if (a1 & 0x100u)
+                    _08004BFC(101);
+                else
+                    _08004BFC(*(s16 *)rec);
+                _08004C84(0u, (u32)*(s16 *)rec);
+                _08001F80(_08002044());
+                _08004EC0(1);
+            }
+        }
+        if (a2 & 2u)
+            _08004EA8(1);
+    }
+    if (a2 & 0x40u) {
+        u16 sel = *(u16 *)rec;
+        if (*(s16 *)rec > 0)
+            *(u16 *)rec = (u16)(sel - 1u);
+    }
+    if (a2 & 0x80u) {
+        u16 sel = *(u16 *)rec;
+        if (*(s16 *)rec <= 5)
+            *(u16 *)rec = (u16)(sel + 1u);
+    }
+    if (keys & 0x20u)
+        delta -= 1;
+    if (keys & 0x10u)
+        delta += 1;
+    // The WA base and each lane offset are two separate pool words with a
+    // runtime `adds`: the pin stops the base from being folded into one
+    // literal (agbcc has no constant propagation, the pin restores that).
+    if ((a2 & 0x200u) && *(s16 *)rec == 0) {
+        u8 *wa = (u8 *)0x03001780;
+        u16 *p;
+        __asm__ volatile ("" : : "r"(wa));
+        p = (u16 *)(wa + 0x113C);
+        *p = *p + 1u;
+        if (*(s16 *)p > 2) *p = 0;
+    }
+    if ((a2 & 0x100u) && *(s16 *)rec == 0) {
+        u8 *wa = (u8 *)0x03001780;
+        u16 *p;
+        __asm__ volatile ("" : : "r"(wa));
+        p = (u16 *)(wa + 0x113E);
+        *p = *p + 1u;
+        if (*(s16 *)p > 2) *p = 0;
+    }
+    switch (*(s16 *)rec) {
+    case 0: {
+        u8 *wa = (u8 *)0x03001780;
+        u16 *p;
+        __asm__ volatile ("" : : "r"(wa));
+        p = (u16 *)(wa + 0x576);
+        *p = *p + delta;
+        if (*(s16 *)p < 0) *p = 0;
+        break;
+    }
+    case 1: {
+        u8 *wa = (u8 *)0x03001780;
+        u16 *p;
+        __asm__ volatile ("" : : "r"(wa));
+        p = (u16 *)(wa + 0x574);
+        *p = *p + delta;
+        if (*(s16 *)p < 0) *p = 0;
+        if (*(s16 *)p > 96) *p = 96;
+        break;
+    }
+    case 6: {
+        *(u8 *)(rec + 29) = *(u8 *)(rec + 29) + delta;
+        if ((s8)*(rec + 29) < 0) *(u8 *)(rec + 29) = 0;
+        if ((s8)*(rec + 29) > 4) *(u8 *)(rec + 29) = 4;
+        break;
+    }
+    }
+    _08002158(0, (int)a1);
+    _08002158(1, (int)a2);
+    _08002158(2, (int)*(u16 *)rec);
+    _08002158(3, (int)*(u8 *)(rec + 28));
 }
+
+// The body is 0x25E long, so gas would close the Thumb section with its
+// 0x46C0 nop where the ROM holds 00 00.
+__asm__(".align 2, 0");
 
 void _0800C884(void *r, u32 a, u32 b) __attribute__((alias("MenuRecordHandler_0C884")));
 void sub_0800C884(void *r, u32 a, u32 b) __attribute__((alias("MenuRecordHandler_0C884")));
