@@ -49,6 +49,32 @@ so the suggested pass fails and the fallback lands on `r0`. For the second read
 -- so r1 wins and the load reads `[r1, r2]`, two bytes off. The same walk is why
 the zero index materialises in r1 without a live range to block it.
 
+`reg_alloc_order` (arm.h:833) is `{3, 2, 1, 0, 12, 14, 4, 5, 6, 7, 8, 10, 9, 11,
+13, 15}`, not `{0, 1, 2, 3, ...}`; r7 is only reachable for an allocno because
+find_free_reg marks every eliminable register used (see below).
+
+## A rematerialised constant's scratch is reload's, not local-alloc's
+
+When a pivot the body keeps reading is a constant with `REG_EQUIV` (a mask such
+as `0xFF`, or the zero index of a `ldrsh`/`ldrsb`), it gets **no home register**
+and every use re-materialises it where reload wants it -- so the same `0xFF` can
+come out in `r2` at one site and `r1` at the next, and no pin reaches it: a pin
+on the constant is copy-propagated away, and a pin on the *destination* only
+moves the destination. `reload1.c`'s `order_regs_for_reload` builds
+`potential_reload_regs` from the registers that hold no live pseudo at that
+insn (in `reg_alloc_order`), then the used ones by increasing use count;
+`bad_spill_regs` excludes whatever the insn chain has live. The scratch is thus
+a function of *what is live there*, which is why the lever is a liveness change
+(an empty `"+r"` barrier on a neighbouring value, or a pinned copy that keeps a
+register busy), never a pin on the constant.
+
+Measured: `Garage_275B8` (`src/garage.c`) reaches 285/312 this way -- both
+`(obj[10] & 0xFF)` masks CSE into one allocno, so the ROM's r2/r1 pair cannot
+come from it; two separate constant pseudos need the two `& 0xFF` uses to be
+different RTL, which no C spelling in that body produces. `Race_CommitCell`
+(`build/ad84_base.c`, 111/118) is the same shape at the three `movs r7,#0`
+sites, and a 406-placement barrier sweep over its live values beats neither.
+
 ## The lever: extend the live range with a zero-instruction asm use
 
 `r1` only has to be busy at the second address computation, so keep it live
@@ -582,10 +608,150 @@ Measured source shapes (probe `--function _0800FE90 --c89 --diff`):
 | `int/u16/s16 sel;` uninitialised, base as a plain local or an asm symbol | base's CSE home becomes `r2` and the load goes straight there (no `adds r4,r1,#0`); `sel` gets `r4` and is copied into `r2` at the call. 102-105/232 |
 | `int sel = 0;` (also `u16/s16 sel = 0`) | base lands in `r4` and `sel` in `r2`, but the entry `movs r2,#0` appears and the known value range lets agbcc fold the call's `lsls/asrs` away: 121-122/232 |
 | `register u8 *wa __asm__("r4")` (pin) | `ldr r4` direct, the ROM's `adds r4,r1,#0` is gone: 108/232 |
-| `u8 *const`, `const u8 *const`, `u8 *volatile`, `volatile u8 *` | 32-35/232 (pool/frame changes) |
-
-A zeroed selector is what makes `local-alloc` hand `r2` to `sel` and `r4` to the
-base, and the zeroing is also what removes the sign-extend; an uninitialised
+| `u8 *const`, `const u8 *const`, `u8 *volatile`, `volatile u8 *` | 32-35/232 (pool/frame changes) |A zeroed selector is what makes `local-alloc` hand `r2` to `sel` and `r4` to
+the base, and the zeroing is also what removes the sign-extend; an uninitialised
 16-bit selector restores the sign-extend and hands `r4` to `sel` instead. Both
 routes stop short, so this body stays naked until a shape is found that splits
 the two effects.
+
+## Two aliases of one displacement: keep a repeated pool word from collapsing
+
+`_0800AE78` (`Race_AdvanceProgress`, 268 B, `src/race_progress.c`, EXACT
+2026-10-26) repeats the same work-area displacements in its tail. With one
+symbol per value agbcc treats the tail's `wa + 0xFF2` as the already-live `pb`
+and drops the second pool word (-4 bytes). Declaring the same value a *second*
+time under a different name and using that alias in the tail (`RPOffFF2T`,
+both `.set` to 0x00000FF2) gives each site its own SYMBOL_REF, so the pool word
+is emitted again, exactly as the ROM has it. Same trick works for any body that
+materialises one displacement twice.
+
+## Derived displacements: launder the carrier before subtracting
+
+The same body has one `0x102A` pool word and derives `0x101A` and `0xFF0` from
+it in-register (`subs r7,#16`, `subs r7,#42`). Spelled as plain constants agbcc
+re-materialises them (`movs r0,#0xFF; lsls r0,#4`, +2 bytes each) even with
+`0x102A` still live. Carrying the value in an ordinary local and subtracting
+from it is not enough either -- cse folds `o4 - 16` straight back into a literal.
+The first subtraction is what needs the empty `"+r"` barrier **in front of it**:
+
+```c
+o4 = 0x102A;
+__asm__ volatile("" : "+r"(o4));   /* o4 is now an opaque register value */
+pa = wa + o4;
+...
+o4 = o4 - 16u;
+pa = w2 + o4;
+__asm__("" : "+r"(o4), "+r"(pa));  /* and keep the result pinned-off constants */
+```
+
+Without the leading barrier the body is 272 B (one extra pool word); with it,
+268/268 exact.
+
+
+## A base that dies into the product: the `"0"` tie
+
+`_080019250` (`Race_Setup_19250`, 200 B, `src/race_setup.c`, EXACT 2026-10-26)
+held at 96/98 on this one instruction for a long time; the lever that closes it
+is general. (The body's other splice -- the field pair -- turned out to be
+unnecessary once the base was the allocator's r7; see the next section.)
+
+The ROM's tie-case band test is
+
+```asm
+movs r2, #20
+ldrsh r1, [r0, r2]
+muls r1, r5
+movs r3, #22          @ <- the byte C never produced
+ldrsh r0, [r0, r3]    @ p dies here, its register is reused for the product
+muls r0, r4
+subs r1, r1, r0
+```
+
+`p[10] * dy - p[11] * dx` reproduces every instruction but the 22: the second
+index's constant is a rematerialised `REG_EQUIV`, so (per the section above) its
+scratch is reload's pick and reload always hands it **r2**, the register 20 just
+vacated. Pins on the constant are copy-propagated away, a barrier on it produces
+`adds r0,r0,r3 / movs r2,#0 / ldrsh` (address-add form, +4 bytes), and pinning
+either product to r1/r0 only moves the product.
+
+What works is splicing the *pair* and **tying the base to the output**:
+
+```c
+register s32 e1 __asm__("r1") = (s32)p[10] * dy;
+register s32 e2 __asm__("r0");
+__asm__ volatile (
+    "movs r3, #22\n\t"
+    "ldrsh %0, [%1, r3]\n\t"
+    "mul %0, %2"
+    : "=&l"(e2) : "0"((s32)(uintptr_t)p), "l"(dx) : "r3", "memory");
+v = e1 - e2;
+```
+
+`"0"` puts the base in the output's register, which is what the ROM has
+(`ldrsh r0,[r0,r3]`): the base's dying home becomes the product's home instead
+of reload choosing r2 for it. Without the tie, gcc gives the output r2 and the
+`mul` result has to be copied back to r0 (+4 bytes). Old GCC (2.95) accepts
+`"0"`, and pins *do* bind asm outputs (`register int r __asm__("r1")` +
+`"=&l"(r)` emits `adds r1,r0,#1`) -- it is only *arithmetic destinations* that
+ignore them.
+
+**But re-measure it: on the finished body the tie is not needed.** Once the
+field pair above was rewritten in C, the plain expression
+`(s32)p[10] * dy - (s32)p[11] * dx` produced the ROM's `movs r3,#22` on its own
+and the body went to EXACT with no splice at all. The splice's own clobbers
+(`r0`, `r1`, `r2`, `r3`) and its register homes were what left r2 free for
+reload to take in the first place. So the general rule is: **an inline-asm
+splice's clobber list and homes leak into the allocation of everything after
+it** -- finish the C on either side of a splice, then re-measure the splice
+before believing it is load-bearing.
+
+## r7: a pin is never saved, and a pinned r7 is not an addressable base
+
+Two measured consequences, both cheap to trip over, and one earlier version of
+this section over-generalised the second -- the pinned and allocator r7 are not
+the same register to the backend.
+
+* **A pinned r7 is never pushed** (see the r7 section above): `regs_ever_live[7]`
+  stays clear, so the body's uses assemble against a caller's r7.
+* **A pinned r7 is also not used as an indexed base.** With `q` pinned to r7,
+  `*(s16 *)((char *)q + 22)` compiles to `adds r0,q,#22 / movs r1,#0 /
+  ldrsh r0,[r0,r1]`; the same expression with `q` in r5 or r6 compiles to the
+  ROM's `movs r1,#22 / ldrsh r0,[r0,r1]`. That is a property of the *pin*, not
+  of r7: the pinned value is a raw `frame_pointer_rtx` reference, while an
+  **allocator-assigned** r7 is an ordinary pseudo and takes the indexed form.
+  `_080019250` is the proof -- once `a` was left unpinned (landing in r7
+  through global-alloc) the field pair `*(s16 *)(pa + 22) - *(s16 *)(pb + 22)`
+  compiled to the ROM's `movs r0,#22 / ldrsh r1,[r7,r0]` with no help. So do
+  not splice a read off r7 until the base is unpinned and the register is
+  really the allocator's; a pinned r7 is the one case that cannot express it.
+
+The rest of that body's field pair is the same lever as the `"0"` tie below,
+applied to a copy instead of a constant: `pb` lives in r8, so reading `b+22`
+needs a low-register copy, and from one expression agbcc folds the offset into
+it (`mov r0,r8 / adds r0,#22 / movs r2,#0 / ldrsh r6,[r0,r2]`). Splitting the
+statement and holding the copy live with an empty barrier keeps the ROM's
+`mov r2,r8 / movs r3,#22 / ldrsh r0,[r2,r3]`:
+
+```c
+register s32 hi __asm__("r1") = *(s16 *)(pa + 22);
+register u8 *q __asm__("r2") = pb;
+__asm__ volatile("" : "+r"(q));        /* copy emitted here, not folded */
+register s32 lo __asm__("r0") = *(s16 *)(q + 22);
+d = hi - lo;
+```
+
+## Hand-written asm splices: this tree's `as` rejects `subs`/`muls` three-forms
+
+The pinned binutils is 2.47, and in Thumb16 (`-mthumb`, divided syntax) it
+refuses the two-address mnemonics the ROM disassembles as:
+
+| written | assembles? |
+| --- | --- |
+| `subs r6, r1, r0` (Rd != Rn) | no -- "instruction not supported in Thumb16 mode" |
+| `sub r6, r1, r0` | yes, same bytes |
+| `muls r1, r5` | no |
+| `mul r1, r5` | yes, same bytes |
+
+agbcc-generated `.s` is unaffected (it emits its own spellings); this only
+bites asm splices written by hand, where the working spelling is the one without
+the trailing `s` for a three-register subtract or a two-register multiply.

@@ -16,17 +16,31 @@ disassembles both streams so the rows can be compared directly.
     python3 tools/lift_loop.py src/garage.c _08027234 --asm
     python3 tools/lift_loop.py src/garage.c _08027234 --sweep a,b,wide
 
-`--sweep REG[,REG...]` inserts an `__asm__ volatile("" : "+r"(REG))`
-barrier at every statement boundary of the body, one (register, boundary)
+`--sweep VAR[,VAR...]` inserts an `__asm__ volatile("" : "+r"(VAR))`
+barrier at every statement boundary of the body, one (variable, boundary)
 pair per iteration, and ranks the results. That barrier is the only lever that
 promotes a pseudo to a *global* allocno, which is the precondition for r7 and
 for a constant-copy spill; the placement decides how far the range stretches
 and therefore its `allocno_compare` priority, so the worthwhile placements are
 a sweep rather than a guess. The best variant is written to
-`build/lift/sweep_best.c` for pasting back.
+`build/lift/sweep_best.c` for pasting back, and the winning placements to
+`build/lift/sweep_best.barriers` with the statement each one follows.
+
+`--sweep-rounds N` (default 1) stacks barriers: each round sweeps again on top
+of the current winner, so placements that only pay off *together* are
+reachable. `--beam K` carries the K best variants of a round into the next
+instead of one; a single greedy step often has two equally-scored children and
+only one of them can be extended. Bodies that needed two barriers (`_0800AF84`:
+`p09/wa` then `p42/t`) are exactly the ones a one-shot sweep reports as "no
+placement beat the baseline".
 
 `--all` prints every aligned row instead of the first mismatch window.
 `--asm` prints only the candidate listing (no ROM rows).
+
+The ROM window is the ownership manifest's span for the VMA (`--len` overrides,
+the candidate length is only the fallback for a body the manifest does not
+list). It must never track the candidate: a body that grows otherwise runs the
+comparison into the next function's prologue and reports those bytes as aligned.
 
 The scratch TU keeps the whole file's prologue and the requested function, so
 the surrounding declarations, includes and `__attribute__((alias))` lines are
@@ -38,6 +52,7 @@ from __future__ import annotations
 
 import argparse
 import difflib
+import json
 import os
 import re
 import subprocess
@@ -53,6 +68,35 @@ from agbcc_c89_transform import strip_noncode  # noqa: E402
 ROOT = Path(__file__).resolve().parents[1]
 WORK = ROOT / "build/lift"
 ROM = ROOT / "baserom.gba"
+MANIFEST = ROOT / "tools/matching_slice_functions.json"
+
+_SPANS: dict[int, int] | None = None
+
+
+def span_len(vma: int) -> int | None:
+    """ROM span length for `vma` from the ownership manifest.
+
+    The span must never be taken from the candidate: a body that grows by a few
+    bytes otherwise drags the ROM window along with it, which silently scores
+    the *next* function's prologue as if it were this body's tail and makes a
+    grown variant read as "aligned" over instructions the ROM does not have
+    here. `--len` overrides; otherwise the manifest's own end boundary wins and
+    the candidate length is only the last resort (a body the manifest does not
+    list).
+    """
+    global _SPANS
+    if _SPANS is None:
+        try:
+            raw = json.loads(MANIFEST.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            raw = {}
+        _SPANS = {}
+        for key, ent in raw.items():
+            try:
+                _SPANS[int(key, 16)] = int(ent["end_vma"], 16) - int(key, 16)
+            except (KeyError, TypeError, ValueError):
+                continue
+    return _SPANS.get(vma)
 
 FUNC_RE = re.compile(
     r"^(?P<ret>[A-Za-z_][\w \*]*?)\s+(?P<name>[A-Za-z_]\w*)\s*\((?P<args>[^;{]*)\)\s*\{",
@@ -326,11 +370,14 @@ def evaluate(tu: str, source: Path, function: str, vma: int, size: int,
                 "blob": b"", "tu": tu}
     n = size or len(blob)
     ref = rom_slice(vma, n)
-    if blob == ref:
+    # Every grade below has to be measured against the fixed span, so a body
+    # that ran long cannot be "exact-calls" merely by matching its own length.
+    sized = len(blob) == n
+    if sized and blob == ref:
         kind = "exact"
-    elif mask_calls(blob) == mask_calls(rom_slice(vma, len(blob))):
+    elif sized and mask_calls(blob) == mask_calls(ref):
         kind = "exact-calls"
-    elif permuted(rom_slice(vma, len(blob)), blob) is not None:
+    elif sized and permuted(ref, blob) is not None:
         kind = "permuted"
     else:
         kind = "differs"
@@ -352,73 +399,143 @@ def statement_points(tu: str, span: tuple[int, int]) -> list[int]:
     return pts
 
 
-def barrier_variants(tu: str, span: tuple[int, int], regs: list[str]) -> list[tuple[str, str]]:
-    """(label, tu) for every (register, insertion point) barrier placement."""
+BARRIER_SIG = '__asm__ volatile(""'
+
+
+def _barrier_stmt(reg: str) -> str:
+    return '\n__asm__ volatile("" : "+r"(%s));' % reg
+
+
+def _preceding_stmt(tu: str, at: int) -> str:
+    """One-line tail of the statement a barrier at `at` follows.
+
+    Printed with the winner so the placement can be reproduced in the real
+    source: the sweep runs on the C89-transformed TU, whose line numbers mean
+    nothing to the file on disk, but the statement text does.
+    """
+    text = " ".join(tu[max(0, at - 160):at].split())
+    return text[-78:]
+
+
+def barrier_variants(tu: str, span: tuple[int, int], regs: list[str],
+                     tag: str = "") -> list[tuple[str, str, tuple[int, str, str]]]:
+    """(label, tu, (point, reg, preceding statement)) per barrier placement.
+
+    A boundary that already carries a barrier is skipped: the barriered text
+    adds its own `;`, so without this every stacked round would spend a
+    compile re-testing placements that exist already.
+    """
     out = []
     seen = set()
     for idx, at in enumerate(statement_points(tu, span)):
+        if BARRIER_SIG in tu[max(0, at - 48):at]:
+            continue
         for reg in regs:
-            stmt = '\n__asm__ volatile("" : "+r"(%s));' % reg
-            cand = tu[:at] + stmt + tu[at:]
+            cand = tu[:at] + _barrier_stmt(reg) + tu[at:]
             if cand in seen:
                 continue
             seen.add(cand)
-            out.append((f"p{idx:02d}/{reg}", cand))
+            out.append((f"{tag}p{idx:02d}/{reg}", cand, (idx, reg, _preceding_stmt(tu, at))))
     return out
+
+
+RANK = {"exact": 0, "exact-calls": 1, "permuted": 2, "differs": 3, "error": 9}
+
+
+def _score(item, size: int) -> tuple:
+    """Grade for comparing a variant with the baseline (no label tiebreak)."""
+    _label, res, _meta = item
+    return (RANK[res["kind"]], -res["aligned"],
+            abs(res["size"] - size) if size else 0)
+
+
+def _rank(item, size: int) -> tuple:
+    """Sort key: the grade, then the shorter barrier chain (stable, and a
+    shorter chain is the easier one to paste back into the source)."""
+    return _score(item, size) + (len(item[2]), item[0])
 
 
 def run_sweep(a, tu: str, span, vma: int, size: int) -> int:
     regs = [r.strip() for r in a.sweep.split(",") if r.strip()]
-    variants = barrier_variants(tu, span, regs)
-    if a.points:
-        keep = {int(p.strip().lstrip("p")) for p in a.points.split(",") if p.strip()}
-        variants = [v for v in variants if int(v[0].split("/")[0][1:]) in keep]
-    print(f"sweep: {len(variants)} variants x {regs}", file=sys.stderr)
+    rounds = max(1, a.sweep_rounds)
+    beam = max(1, a.beam)
+    points = ({int(p.strip().lstrip("p")) for p in a.points.split(",") if p.strip()}
+              if a.points else None)
     base = evaluate(tu, a.source, a.function, vma, size, WORK / "sweep/base")
-    results = []
-    base_dir = WORK / "sweep"
-    with ThreadPoolExecutor(max_workers=a.jobs) as pool:
-        futs = {pool.submit(evaluate, cand, a.source, a.function, vma, size,
-                            base_dir / f"v{i:03d}"): label
-                for i, (label, cand) in enumerate(variants)}
-        for fut in as_complete(futs):
-            label = futs[fut]
-            try:
-                res = fut.result()
-            except Exception as exc:  # noqa: BLE001 - one bad variant must not end the sweep
-                res = {"kind": "error", "msg": repr(exc), "size": 0,
-                       "aligned": -1, "blob": b"", "tu": ""}
-            results.append((label, res))
-
-    def key(item):
-        rank = {"exact": 0, "exact-calls": 1, "permuted": 2, "differs": 3,
-                "error": 9}[item[1]["kind"]]
-        return (rank, -item[1]["aligned"], abs(item[1]["size"] - size) if size else 0)
-
-    results.sort(key=key)
-    pad = f"{'variant':<12} {'kind':<11} {'size':>5} {'aligned':>7}"
-    print(pad)
+    base_item = ("baseline", base, [])
+    print(f"{'variant':<12} {'kind':<11} {'size':>5} {'aligned':>7}  barriers")
     print(f"{'baseline':<12} {base['kind']:<11} {base['size']:>5} {base['aligned']:>7}")
-    for label, res in results[:a.top]:
-        extra = "" if not res["msg"] else "  " + res["msg"].splitlines()[0][:70]
-        print(f"{label:<12} {res['kind']:<11} {res['size']:>5} {res['aligned']:>7}{extra}")
 
-    if not results:
-        return 1
-    rank = {"exact": 0, "exact-calls": 1, "permuted": 2, "differs": 3, "error": 9}
-    label, best = results[0]
-    improved = rank[best["kind"]] < rank[base["kind"]] or (
-        best["kind"] == base["kind"] and best["aligned"] > base["aligned"])
-    if improved and best["tu"]:
+    best = base_item
+    frontier = [("", tu, [])]
+    for rnd in range(1, rounds + 1):
+        tag = "" if rnd == 1 else f"r{rnd}"
+        variants = []
+        seen = set()
+        for _path, cur, meta in frontier:
+            for label, cand, m in barrier_variants(cur, span, regs, tag):
+                if points is not None and rnd == 1 and m[0] not in points:
+                    continue
+                if cand in seen:
+                    continue
+                seen.add(cand)
+                variants.append((label, cand, meta + [m]))
+        if not variants:
+            break
+        print(f"\nround {rnd}: {len(variants)} variants x {regs}"
+              f" (frontier {len(frontier)})", file=sys.stderr)
+        base_dir = WORK / "sweep" / f"r{rnd}"
+        results = []
+        with ThreadPoolExecutor(max_workers=a.jobs) as pool:
+            futs = {pool.submit(evaluate, cand, a.source, a.function, vma, size,
+                                base_dir / f"v{i:03d}"): (label, meta)
+                    for i, (label, cand, meta) in enumerate(variants)}
+            for fut in as_complete(futs):
+                label, meta = futs[fut]
+                try:
+                    res = fut.result()
+                except Exception as exc:  # noqa: BLE001 - one bad variant must not end the sweep
+                    res = {"kind": "error", "msg": repr(exc), "size": 0,
+                           "aligned": -1, "blob": b"", "tu": ""}
+                results.append((label, res, meta))
+        results.sort(key=lambda item: _rank(item, size))
+        head = f"{'variant':<12} {'kind':<11} {'size':>5} {'aligned':>7}  barriers"
+        print(head)
+        for label, res, meta in results[:a.top]:
+            chain = " + ".join(f"p{m[0]:02d}/{m[1]}" for m in meta)
+            print(f"{label:<12} {res['kind']:<11} {res['size']:>5} {res['aligned']:>7}"
+                  f"  {chain}")
+        top = results[0]
+        if _score(top, size) < _score(best, size):
+            best = top
+            if best[1]["kind"] == "exact":
+                break
+            frontier = [(label, res["tu"], meta) for label, res, meta in results[:beam]]
+        else:
+            print(f"\nround {rnd}: no variant on the frontier improved", file=sys.stderr)
+            break
+
+    label, res, meta = best
+    if meta and res["tu"]:
         best_path = WORK / "sweep_best.c"
-        best_path.write_text(best["tu"], encoding="utf-8")
+        best_path.write_text(res["tu"], encoding="utf-8")
         # The variant is already past the C89 transform, so its real TU origin
         # has to travel with it for `--raw-tu` to compile it the same way.
         (WORK / "sweep_best.origin").write_text(str(a.source.resolve()))
-        print(f"\nbest: {label} -> {best_path}")
+        lines = [f"# {a.function}: {res['kind']}, {res['size']} B, "
+                 f"{res['aligned']} aligned",
+                 "# barrier/statement, in insertion order -> ",
+                 "#   build/lift/sweep_best.c (--raw-tu), then paste into the source"]
+        for r_i, (idx, reg, stmt) in enumerate(meta, 1):
+            lines.append(f"{r_i}. +r({reg})  after p{idx:02d}: ...{stmt}")
+        (WORK / "sweep_best.barriers").write_text("\n".join(lines) + "\n",
+                                                  encoding="utf-8")
+        print(f"\nbest: {label} ({res['kind']}, {res['aligned']} aligned) -> {best_path}")
+        for r_i, (idx, reg, stmt) in enumerate(meta, 1):
+            print(f"  barrier {r_i}: +r({reg}) after p{idx:02d}: ...{stmt}")
     else:
         print("\nno placement beat the baseline")
-    return 0 if best["kind"] == "exact" else 1
+    return 0 if res["kind"] == "exact" else 1
 
 
 def main() -> int:
@@ -429,10 +546,14 @@ def main() -> int:
     ap.add_argument("--asm", action="store_true")
     ap.add_argument("--len", type=lambda s: int(s, 0))
     ap.add_argument("--vma", type=lambda s: int(s, 0))
-    ap.add_argument("--sweep", metavar="REG[,REG...]",
-                    help="insert a +r barrier at every statement boundary and rank")
+    ap.add_argument("--sweep", metavar="VAR[,VAR...]",
+                    help="insert a +r barrier on each variable at every statement boundary and rank")
     ap.add_argument("--points", metavar="P[,P...]",
                     help="restrict the sweep to these statement indices")
+    ap.add_argument("--sweep-rounds", type=int, default=1,
+                    help="stack this many barriers (each round sweeps on the winner)")
+    ap.add_argument("--beam", type=int, default=1,
+                    help="frontier width carried into the next sweep round")
     ap.add_argument("--jobs", type=int, default=0, help="parallel sweeps (0 = cpu count)")
     ap.add_argument("--top", type=int, default=10)
     ap.add_argument("--raw-tu", action="store_true",
@@ -459,7 +580,7 @@ def main() -> int:
 
     if a.sweep:
         tu, span = build_tu(a.source, a.function, want_span=True)
-        return run_sweep(a, tu, span, vma, a.len or 0)
+        return run_sweep(a, tu, span, vma, a.len or span_len(vma) or 0)
 
     tu = (a.source.read_text(encoding="utf-8") if a.raw_tu
           else build_tu(a.source, a.function))
@@ -471,7 +592,7 @@ def main() -> int:
     obj = compile_tu(tu, origin)
     blob = section_blob(obj, a.function)
 
-    size = a.len or len(blob)
+    size = a.len or span_len(vma) or len(blob)
     ref = disasm(rom_slice(vma, size), vma)
     cand = disasm(blob, vma)
 
@@ -488,15 +609,19 @@ def main() -> int:
             same += i2 - i1
     print(f"{a.function}: rom {len(ref)} insns / {size} B, cand {len(cand)} insns / "
           f"{len(blob)} B, {same} aligned equal")
-    if blob == rom_slice(vma, len(blob)):
+    if len(blob) != size:
+        print(f"LENGTH {len(blob) - size:+d} B against the {size} B span "
+              f"({vma:#010x}-{vma + size:#010x}); the ROM window is fixed")
+    sized = len(blob) == size
+    if sized and blob == rom_slice(vma, size):
         print("BYTE-EXACT")
         return 0
 
-    if mask_calls(blob) == mask_calls(rom_slice(vma, len(blob))):
+    if sized and mask_calls(blob) == mask_calls(rom_slice(vma, size)):
         print("BYTE-EXACT apart from unresolved call targets")
         return 0
 
-    m = permuted(rom_slice(vma, len(blob)), blob)
+    m = permuted(rom_slice(vma, size), blob) if sized else None
     if m is not None:
         pairs = " ".join(f"r{k}->r{v}" for k, v in sorted(m.items()))
         print(f"PURE REGISTER PERMUTATION ({pairs}) -- the C is right; only "

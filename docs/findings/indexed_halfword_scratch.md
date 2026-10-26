@@ -106,8 +106,9 @@ pushes the *first* load to r3, because agbcc sees the later need. Bracket the
 first load with a dummy in r3 and the second with a dummy in r2, and both land
 where the ROM has them.
 
-**Consequence.** Two `partial` bodies remain gated on this one
-register choice: `_08006A50`, `_0800278F0`. The
+**Consequence.** Both bodies that were gated on this one register choice are
+now closed (`_0800278F0` and `_08006A50`, described at the end of this file).
+The
 liveness pin is the first thing to try on each; `_080020198`,
 `_08006050`, `_080022624`, `_0800154E0`, `_080015620` and `_080018EC0` were
 among them.
@@ -235,20 +236,67 @@ instruction-bearing asm:
   across the store (output-only empty asm before, input-only after) moves that
   copy to the ROM's r1; without it reload reuses r0.
 
+## `_0800278F0` `Garage_Ticker_278F0`: closed by removing pins, not adding them
+
+232 B, `partial` -> `c_fakematch` (2026-10-26), 232/232. The three instruction
+splices were two indexed `ldrsh` loads and one `ldr / movs / ldrsh` triple, all
+of which are plain non-volatile `*(s16 *)` reads. What made the body read as a
+scratch wall is that it needs **six** scratch choices in one function, and each
+one is a register the ROM had just freed:
+
+| site | ROM scratch |
+| --- | --- |
+| `*(s16 *)(m + 6)` then `... + 8` | r5, r5 -- the loop's `off` register, dead after the loop |
+| `*(s16 *)(m + 4)`, else lane | r3 |
+| `*(s16 *)(m + 20)`, if lane | r3 |
+| `*(s16 *)(m + 20)`, else lane | r1 -- r1/r2 are being loaded with the call's `1`/`0` arguments around it |
+| `*(s16 *)(*P1 + 22)` | r3 |
+
+The heavily pinned version of this body (loop base/node/counts, `m` in r2, the
+P1 slot in r4) needed three liveness brackets to place the first three loads
+and still mismatched the rest. Removing pins one at a time -- every removal
+re-rolls *all* of the choices, because the scratch is picked against the whole
+live set -- ended with a single bracket left (an r5 dummy around the else-lane
+`m+20` load) and every site matching. So on a body with a scratch *ladder*,
+sweep removals as well as additions: the leaner body is the one that reproduces
+the ROM.
+
+What the body still pins, and why: the loop base r0 / node r1 / count r2 (the
+ROM re-reads the slot per iteration and adds `off` at run time), the P1 slot in
+r4 across the tail, `m` in r2, and the reset pair r0/r1 (`movs r0,#0` must
+survive as the store's source). The P1 slot pin at the top of the body, its
+`"+r"` barriers and the status/idle/argument pins were all removable.
+
+## `_08006A50` `CollectNearby_06A50`: closed (156 B, 2026-10-26)
+
+Both halves of the recorded blocker ("the argument copy wants r7 and the
+scratch wants r2") fall to existing levers:
+
+* **The copy is a parameter home, not an assignment.** The ROM's entry copies
+  (`adds r7,r0,#0` / `adds r6,r1,#0`) belong to values live across the loop's
+  calls, so they are the allocator's homes for the *parameters*. Writing
+  `tileX = camX` into a local instead leaves the pre-shift value a short-lived
+  local pseudo, and agbcc hands it the lowest free caller-saved register
+  (`adds r3,r0,#0`; r4 with r2/r3 held live; r8 plus a reload with r2-r6
+  held). Declaring the coordinates as the parameters themselves reproduces
+  both entry copies, and the tileX sign-correction then reads and writes the
+  parameter's home in place (`asrs r0,r7,#11 ... asrs r7,r0,#4`). The
+  sign-correction spelling is not load-bearing: `(tileX >> 11) / 16` and a
+  pinned temp with `if (t < 0) t += 15;` measured the same copy register.
+* **The scratch is the r3 liveness pin** from the section above.
+
 ## What is left, by size
 
-The liveness pin closed `Race_Setup_18EC0` (84 B) as described above, and the
-unpinned-global-allocno route closed `MenuFF78_15304` (408 B). What is left
-of the `partial` class, by size (2026-10-24, from
+The liveness pin closed `Race_Setup_18EC0` (84 B) as described above, the
+unpinned-global-allocno route closed `MenuFF78_15304` (408 B), and the pin
+sweep above closed `Garage_Ticker_278F0` (232 B). What is left of the
+`partial` class, by size (2026-10-26, from
 `python3 tools/source_quality.py --list partial`):
 
 | body | bytes | blocker |
 | --- | ---: | --- |
-| `_08000BB0C` `Award_CopyTwinB` | 248 | `mov r3,sp` and an add whose operand order the pointer normalisation forbids |
-| `_0800278F0` `Garage_Ticker_278F0` | 232 | indexed halfword scratch, plus two naked bodies |
-| `_080053DC` `OAMGrid_Build` | 200 | the palette shift hoists out of the loop; 181/200 with the hoist suppressed |
-| `_08001D7B8` | 160 | a half-defined `u64` return |
-| `_08006A50` `CollectNearby_06A50` | 156 | the argument copy wants r7 and the scratch wants r2 |
+| `_080053DC` `OAMGrid_Build` | 200 | `volatile` on `cols`/`rows`/`palette` keeps the shift and the reloads in the loop; with both splices replaced the body re-rolls (81/99): `rowTab`(r6)/`rowBytes`(r5)/the r7 `ip` copy and the `lo`/`up`/`palShift` tail (r2/r0/r1) still differ |
+| `_08001D7B8` | 160 | a half-defined `u64` return: plain `(u64)out` costs a `movs r1,#0`; `\|`-ing a pinned r1 word builds the pair in r4:r5 (+6); a 2-word struct return takes the memory-return path (frame copy, no match) |
 | `_08002C11C` `SoundVoiceCleanup` | 68 | `tst` is not in the compiler's repertoire |
 | `_08002BE78` `SoundPump` | 60 | a literal-pool load and two flag-coupled branches |
 | `_08002C160` `VoiceEnvelopeApply_2C160` | 48 | register-indexed `ldrsb` |

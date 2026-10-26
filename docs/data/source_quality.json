@@ -130,11 +130,10 @@
    "size": 176
   },
   "0x08000ca0": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 196,
-    "naked": true
+    "barrier": 2,
+    "pin": 10
    },
    "file": "src/runtime_state_dispatch.c",
    "name": "SessionStep_CA0",
@@ -3128,12 +3127,10 @@
    "size": 380
   },
   "0x08006a50": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
-    "barrier": 1,
+    "barrier": 3,
     "directive": 4,
-    "insn": 2,
-    "insn_lines": 7,
     "pin": 15
    },
    "file": "src/runtime_state_dispatch.c",
@@ -4253,22 +4250,22 @@
    "size": 244
   },
   "0x0800ae78": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 114,
-    "naked": true
+    "barrier": 12,
+    "directive": 1,
+    "pin": 18
    },
    "file": "src/race_progress.c",
    "name": "Race_AdvanceProgress",
    "size": 268
   },
   "0x0800af84": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 118,
-    "naked": true
+    "barrier": 3,
+    "directive": 1,
+    "pin": 4
    },
    "file": "src/race_progress.c",
    "name": "Race_PerFrameTail",
@@ -7263,11 +7260,11 @@
    "size": 80
   },
   "0x08019250": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 92,
-    "naked": true
+    "barrier": 4,
+    "directive": 1,
+    "pin": 13
    },
    "file": "src/race_setup.c",
    "name": "Race_Setup_19250",
@@ -7708,11 +7705,9 @@
    "size": 208
   },
   "0x0801b9ac": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 143,
-    "naked": true
+    "pin": 16
    },
    "file": "src/race_scene_a1.c",
    "name": "_08001B9AC",
@@ -8423,11 +8418,11 @@
    "size": 128
   },
   "0x08020518": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 165,
-    "naked": true
+    "barrier": 9,
+    "directive": 2,
+    "pin": 5
    },
    "file": "src/race_scene_e.c",
    "name": "_080020518",
@@ -8536,11 +8531,9 @@
    "size": 164
   },
   "0x080210bc": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 175,
-    "naked": true
+    "directive": 1
    },
    "file": "src/race_scene_e.c",
    "name": "_0800210BC",
@@ -10821,13 +10814,11 @@
    "size": 20
   },
   "0x080278f0": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
-    "barrier": 9,
+    "barrier": 2,
     "directive": 1,
-    "insn": 3,
-    "insn_lines": 5,
-    "pin": 23
+    "pin": 13
    },
    "file": "src/garage.c",
    "name": "Garage_Ticker_278F0",
@@ -13264,20 +13255,20 @@
  },
  "totals": {
   "asm": {
-   "bytes": 63704,
-   "functions": 166
+   "bytes": 61312,
+   "functions": 159
   },
   "c": {
    "bytes": 43078,
    "functions": 872
   },
   "c_fakematch": {
-   "bytes": 80406,
-   "functions": 629
+   "bytes": 83186,
+   "functions": 638
   },
   "partial": {
-   "bytes": 948,
-   "functions": 8
+   "bytes": 560,
+   "functions": 6
   }
  },
  "version": 1

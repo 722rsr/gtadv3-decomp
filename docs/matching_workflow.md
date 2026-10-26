@@ -312,6 +312,16 @@ See [candidate-length diagnostics](findings/oversized_plus4_class.md).
   address the register the first argument needed (`0x08010088`: inline 361/372,
   split arguments 372/372). Every later call in that body matches inline; the
   split is needed only at the one site.
+- A loop that keeps a *memory field* in sync while testing a register wants the
+  guard read once, then a `do { ... } while` on the local: `i = *p; if (i < lim)
+  do { i = *p; sum += tbl[i]; i = i + 1; *p = i; } while (i < lim);` reproduces
+  the ROM's per-iteration reload of `*p` with the back-edge `cmp` on the
+  incremented register. The natural `while (*p < lim) { sum += tbl[*p]; (*p)++; }`
+  also reloads `*p` for the test, and without `volatile` on the pair agbcc rolls
+  the whole loop into one register and drops the store. Measured on
+  `_08000CA0` (480 B, `src/runtime_state_dispatch.c`), where the same body also
+  needs the loop's base copy pinned to r3 (the ROM reloads through a copy, not
+  through the record home in r5).
 
 Compiler RTL dumps (`-da`) help distinguish instruction selection,
 scheduling, and register allocation. A failed finite search establishes a
@@ -400,6 +410,19 @@ position. `_080021F88` needed it twice -- the ROM issues each table base load
 arithmetic (`adds r0,#4` instead of a folded `ldr r0,[r0,#4]`), and on a
 repeated index expression it stops cse sharing the value so the second table
 access re-adds the term (`adds r3,r3,r7`) like the ROM.
+
+A **memory clobber at the head of one arm** is a fourth shape, and it is about
+cse rather than scheduling. When a field read feeds the selecting test and one
+arm reuses the test's loaded value while the other re-reads the field (the
+ROM's `ldrsh r0,[r7,r1] / cmp / bgt arm2`, arm1 continuing from r0 but arm2
+reloading), cse carries the value along the *fall-through* edge and copies it
+into the branch arm too. `__asm__ volatile ("" : : : "memory");` as the first
+statement of that arm forgets the memory value there and restores the reload.
+Measured on `_080020518` (376 B, `src/race_scene_e.c`), which also needed the
+value and its scaled row declared at *function* scope so both arms share one
+pseudo's register homes (block-local copies gave the else arm r0/r2 where the
+ROM keeps r1/r0 for the value/row pair, and the `"+r"` on the value is what
+stops local-alloc coalescing the fall-through copy away).
 
 Two guard shapes are worth trying before reshaping a body. `if (a || b)` with
 an `else` is what produces the ROM's `bne then` / `beq else` layout with the
@@ -552,6 +575,19 @@ comment in `src/race_scene.c`.
 sign-extend at each use (twice, when both switch arms pass it)
 (`_080022750`).
 
+The width choice is also a *scheduling* lever, not only an instruction count.
+With an `int` local the load dominates the 32-bit value directly; with an `s16`
+local the load produces a HImode pseudo and a neighbouring register copy (a
+table base saved to a frame cell, an index copied out) gets scheduled in front
+of the load instead of behind it. `_08001B9AC` (`src/race_scene_a1.c`, 360 B)
+is the measured case: the ROM has `ldr r1,=0x03004E20 / ldr r0,[r1] / adds
+r0,#76 / movs r2,#0 / ldrsh r0,[r0,r2] / adds r4,r1,#0` -- the ctx-cell copy
+lands *after* the load. `int state` reproduces it; `s16 state` puts `add
+r4,r1,#0` before the `ldrsh` and moves the zero index from r2 to r1 (354/360,
+first difference +0xA). The extend itself is unchanged in this body, so a byte
+score alone reads as "one instruction misplaced" -- check the width before
+touching pins when the failing instruction is unrelated to the read.
+
 ## A 16-bit non-zero test, seeded constants, and spilled table bases
 
 Three shapes from `_080050E8` (376/376, `src/event_dma_queue.c`) that apply to
@@ -598,6 +634,15 @@ through the argument pseudo. Measured on `_080019250`: 6 spellings (pinned
 offset, `s16 *` pointer variables, `s16[]` indexing, `u8 *` temporaries,
 `+r` barriers, `"r0"` clobber barriers) all stay at 45/200; the barrier forms
 also add a `adds r0,r7,#0` copy that the ROM does not have.
+
+**Resolved 2026-10-26:** the fold was not about the pin at all. A *pinned* r7 is
+a raw `frame_pointer_rtx` reference and never takes the index form, while an
+**allocator-assigned** r7 is an ordinary pseudo and does. Leave the base
+unpinned, take `r4`/`r5`/`r6` with pins and an entry barrier so the allocator
+has to give the base r7, and `*(s16 *)(pa + 22)` emits the ROM's
+`movs r0,#22 / ldrsh r1,[r7,r0]` with no help. The body is EXACT 200/200 in
+plain C; the six spellings above were all variations on forcing the register
+instead of letting the allocator reach it.
 
 ## Loop-invariant hoisting (keep the ROM's per-iteration recompute)
 
@@ -849,8 +894,7 @@ the table above. Pointing the C at `_08002DE04` resolves both relocations;
   `stmia`+`str` triples).
 * **`static` helper the ROM inlined.** The body calls a file-local function that
   is a real ROM span only as inlined code, so the symbol has no VMA:
-  `_080002C4` (`AgbMain_Run`), `_08000CA0` (`D0_rec` + `CA0_State0..4`),
-  `_08008CA0` (`phase_case*`, 2384 B), `_0800AA40` (`race_lap_tail`,
+  `_080002C4` (`AgbMain_Run`), `_08008CA0` (`phase_case*`, 2384 B), `_0800AA40` (`race_lap_tail`,
   `race_progress_check`), `_08023628` (`CourseSetup7770_Static`), `_08001758`
   (`SessionEnter*`/`Exit*`/`Mode8Hook`), `_0802B898` (`MixerEnter`). Either
   inline the helper into the caller or accept the miss.
@@ -1062,7 +1106,16 @@ that is already past the C89 transform, i.e. a saved sweep winner.
 `--sweep REG[,REG...]` is the automated version of the barrier search: it
 inserts `__asm__ volatile("" : "+r"(REG));` after every statement boundary of
 the body, compiles the placements in parallel, and ranks them by exact /
-permutation / aligned count. On `0x08027234` all 88 placements measured and
+permutation / aligned count. `--sweep-rounds N` re-sweeps on top of the winner
+so placements that only pay off *together* are reachable, and `--beam K` carries
+the K best variants into the next round (a one-step winner often has a sibling
+that is the only extendable one). The winner's placements and the statement
+each one follows are written to `build/lift/sweep_best.barriers`; boundaries
+that already carry a barrier are skipped, so round 2 does not re-test round 1.
+Measured on `0x0800AF84`: a one-shot sweep reports "no placement beat the
+baseline" at 125/146, while `--sweep-rounds 3` walks `+r(wa)` -> 125,
+`+r(oc)` -> 140, `+r(t)` -> 146 EXACT. Bodies that need two pins are the normal
+case, not the exception: budget rounds before giving up on a body. On `0x08027234` all 88 placements measured and
 none improved on the baseline's 200 B / 70 aligned, which is what "this value
 is not global" looks like. Do not add a shared scratch path to a parallel
 compile helper: the first version of `disasm` wrote one `build/lift/blob.bin`
@@ -1076,6 +1129,64 @@ spilled), which is exactly the count that makes the constant copies reappear --
 but pinning the high homes (`rec`->r9, `tbl`->sl) costs more than it buys,
 because a pinned `d` parameter that is also read after a call routes through
 r9 (`mov r9,r3 / mov r6,r9`) instead of the ROM's single `mov r9,r0`.
+
+## One pool word, one alias: counting the ROM's anchors before choosing a spelling
+
+The three spellings above (folded constant, `WA_SPLIT` two-symbol, base in a
+variable) are really one rule: **the source needs exactly as many distinct
+expressions as the ROM has pool words.** `_0800AF84` (312 B) pools
+`0x03001780` three times -- once per half, each read into a different register,
+because the middle one is live across the `_08025CF4` call (r4) and the other
+two are not (r2, r0). One shared anchor lets agbcc CSE the base into a single
+value that then lives across everything, and the body grows two callee-saved
+registers (`push {r4,r5,r6,lr}` instead of `push {r4,lr}`). Three `.set`
+aliases of one address, one per use site, is what reproduces it.
+
+The same count applies to displacements, in both directions:
+
+* `0x103C` and `0x104A` are plain literals in the source and each pools itself,
+  because the delta between them (14) is small enough that agbcc would rather
+  `adds #14` and it still chooses the separate word.
+* `0x1074` and `0x0FF2` **must** be symbols: as literals agbcc re-derives them
+  from a displacement still in a register (`0x104A+42`, `0x103C-74`), which
+  drops two pool words and 4 B of the body.
+* `0x10C0` must stay a literal -- it is `0x86 << 5`, so agbcc materialises it
+  with `movs/lsls` and the ROM has no word for it. A symbol there adds one.
+
+So read the ROM's pool first and map each word to a use site; the split falls
+out of that count, not out of taste. `_0800AE78`'s tail is the same recipe
+(`RPOffFF2T` exists only because one symbol for both makes the tail collapse
+onto the live `pb`).
+
+## Pinned registers in a framed body, and the barrier that only extends a range
+
+A `register T x __asm__("rN")` pin is usable here even though it outranks any
+allocation argument -- but only while `x` is genuinely busier than what it
+displaces. On `_0800AF84` the accepted pins are `wa`->r2, the 0x10BE/0x10C0 cell
+pointer->r3 and the 0x10E5 cell pointer->r1 (the ROM keeps three different
+homes for what one C variable would coalesce into).
+
+**The failure to watch for:** when a pinned value's last use is early, agbcc
+stops treating the register as reserved and reuses it as an arithmetic
+destination. Pinning `sel`->r3 without also pinning `wa` compiled the third
+block to `adds r2,r2,r1` -- the sum written over the pinned base. It is valid
+code (the base is dead there) and it is not the ROM's code, so a pin that
+"mostly works" has to be re-measured against the full body, never just the
+block it was aimed at.
+
+**The other barrier use:** `__asm__ volatile("" : "+r"(t))` *after* the last
+read of `t` is not a promotion lever, it is a range-extension lever. Without
+it agbcc coalesced the pooled displacement into the sum's destination
+(`ldr r0,=0x0FF2 / adds r0,r4,r0`) and moved the indexed-load zero to r1; with
+it the ROM's `ldr r1,=0x0FF2 / adds r0,r4,r1 / movs r2,#0 / ldrsh r0,[r0,r2]`
+comes back. Barriers are cheap and local -- when one placement in the body is
+wrong while everything else matches, try a barrier after the value's last use
+before rebuilding the source shape.
+
+Two smaller ones from the same body: a dispatch value pinned to `r0` lets a
+`case` hand it straight to a callee (without the pin agbcc emits an extra
+`movs r0,#2`), and a narrowing that must happen *before* a pool load needs a
+named `u8` temp (`rb = (u8)r;`) rather than an inline cast.
 
 ## Promoting a body whose asm region has no end marker
 

@@ -13,6 +13,7 @@ extern int _08002BE8(void);
 extern void _08002C48(int value, u16 course);
 // The assembler entry is spelled _080026550; it takes the three live inputs.
 extern void _080026550(void *source, u32 delta, volatile u32 *record);
+extern int _0802A8F0(void *a, int v);   // 0x0802A8F0 s16 store/clamp
 extern void _080023AC(int slot, void *handler);
 extern void Course_0x080263E0(u8 *a, int b); // ROM: (r0 = buf, r1 = s16[racectx+132])
 // ROM call shapes (asm/race_setup_18adc.s _08018B18/_08018B4A):
@@ -653,122 +654,103 @@ __asm__(".pushsection .text.Race_Setup_19200,\"ax\",%progbits\n\t.short 0\n\t.po
 int _080019200(void *a, void *b) __attribute__((alias("Race_Setup_19200")));
 
 // _080019250 — 200 B (asm/race_setup_18adc.s:943-1041). Delta-angle helper:
-// d = s16[a+22] - s16[b+22]; if the work-area flag at 0x03001780+0x1111 is
-// set, push a clamped `-d << 3` (0..36, passed as s16) into a+36; then the
-// race context's +130 latch decides, and the d == 0 tie case runs the
-// 0x08006C10 projection to derive t = (s16[p+20]*dy - s16[p+22]*dx) >> 16 and
-// returns 1 for t < 0 outside the +-40 band, else gates on the +0x10C3 flag.
+// d = s16[a+22] - s16[b+22]; the 0x03001780+0x1111 flag pushes a clamped
+// `-d << 3` (0..36) into a+36; the race context's +130 latch then decides, and
+// the d == 0 tie case projects 0x08006C10 to get
+// t = (s16[p+20]*dy - s16[p+22]*dx) >> 16, returning 1 outside the +-40 band.
 //
-// The ARMCC body has a register-offset halfword pair, two interleaved literal
-// pools, and an r8 save slot that cannot be recovered from ordinary C allocation.
-// Keep the ROM-derived body exact until a source lift can preserve all three.
-__attribute__((naked)) int Race_Setup_19250(void *a, void *b) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, r7, lr}\n"
-        "mov r7, r8\n"
-        "push {r7}\n"
-        "adds r7, r0, #0\n"
-        "mov r8, r1\n"
-        "movs r0, #22\n"
-        "ldrsh r1, [r7, r0]\n"
-        "mov r2, r8\n"
-        "movs r3, #22\n"
-        "ldrsh r0, [r2, r3]\n"
-        "subs r6, r1, r0\n"
-        "ldr r0, 8f\n"
-        "ldr r1, 9f\n"
-        "adds r0, r0, r1\n"
-        "ldrb r0, [r0, #0]\n"
-        "lsls r0, r0, #24\n"
-        "asrs r0, r0, #24\n"
-        "cmp r0, #0\n"
-        "beq.n 1f\n"
-        "negs r0, r6\n"
-        "lsls r1, r0, #3\n"
-        "cmp r1, #36\n"
-        "ble.n 2f\n"
-        "movs r1, #36\n"
-        "2:\n"
-        "cmp r1, #0\n"
-        "bge.n 3f\n"
-        "movs r1, #0\n"
-        "3:\n"
-        "adds r0, r7, #0\n"
-        "adds r0, #36\n"
-        "lsls r1, r1, #16\n"
-        "asrs r1, r1, #16\n"
-        "bl Sub_0802A8F0\n"
-        "1:\n"
-        "ldr r0, 10f\n"
-        "ldr r2, [r0, #0]\n"
-        "adds r1, r2, #0\n"
-        "adds r1, #130\n"
-        "ldrb r0, [r1, #0]\n"
-        "cmp r0, #0\n"
-        "beq.n 4f\n"
-        "movs r0, #0\n"
-        "strb r0, [r1, #0]\n"
-        "b.n 14f\n"
-        "movs r0, r0\n"
-        ".align 2\n"
-        "8: .word 0x03001780\n"
-        "9: .word 0x00001111\n"
-        "10: .word 0x03004E20\n"
-        "4:\n"
-        "cmp r6, #0\n"
-        "bgt.n 5f\n"
-        "cmp r6, #0\n"
-        "bne.n 15f\n"
-        "ldr r3, 11f\n"
-        "adds r0, r2, r3\n"
-        "movs r1, #0\n"
-        "bl _08006C10\n"
-        "ldr r2, [r7, #0]\n"
-        "mov r3, r8\n"
-        "ldr r1, [r3, #0]\n"
-        "subs r4, r2, r1\n"
-        "ldr r2, [r7, #4]\n"
-        "ldr r1, [r3, #4]\n"
-        "subs r5, r2, r1\n"
-        "movs r2, #20\n"
-        "ldrsh r1, [r0, r2]\n"
-        "muls r1, r5\n"
-        "movs r3, #22\n"
-        "ldrsh r0, [r0, r3]\n"
-        "muls r0, r4\n"
-        "subs r1, r1, r0\n"
-        "asrs r1, r1, #16\n"
-        "adds r0, r1, #0\n"
-        "adds r0, #40\n"
-        "cmp r0, #79\n"
-        "bhi.n 6f\n"
-        "ldr r0, 12f\n"
-        "ldr r1, 13f\n"
-        "adds r0, r0, r1\n"
-        "ldrb r0, [r0, #0]\n"
-        "cmp r0, #0\n"
-        "beq.n 15f\n"
-        "5:\n"
-        "movs r0, #1\n"
-        "b.n 14f\n"
-        ".align 2\n"
-        "11: .word 0x000004FC\n"
-        "12: .word 0x03001780\n"
-        "13: .word 0x000010C3\n"
-        "6:\n"
-        "cmp r1, #0\n"
-        "blt.n 5b\n"
-        "15:\n"
-        "movs r0, #0\n"
-        "14:\n"
-        "pop {r3}\n"
-        "mov r8, r3\n"
-        "pop {r4, r5, r6, r7}\n"
-        "pop {r1}\n"
-        "bx r1\n"
-        ".syntax divided\n"
-    );
+// Measured spellings (see docs/findings/local_alloc_register_choice.md,
+// "r7 is the frame pointer twice over"):
+//  * `a` is NOT pinned -- agbcc's prologue ignores __asm__ pins of r7, so a
+//    pinned r7 is used but never pushed. Held off by taking r4/r5/r6 below, the
+//    allocator puts `a` in r7 and the r8 save slot becomes r7, as the ROM has;
+//    an allocator r7 also keeps the ROM's `[r7, r0]` indexed load, which a
+//    pinned r7 does not.
+//  * the second operand is read through a copy of `b` held live by a barrier,
+//    so the copy lands after the first load (`mov r2, r8`) instead of being
+//    folded into `adds` on the r8 copy; the homes are pinned to keep the index
+//    in r3 and the difference in r0.
+//  * the two flag reads pool separately (one alias per use site) and the second
+//    one is a byte compare, not s8.
+__asm__(".set RS19250_WA1, 0x03001780");
+extern u8 RS19250_WA1;
+__asm__(".set RS19250_WA2, 0x03001780");
+extern u8 RS19250_WA2;
+__asm__(".set RS19250_O1111, 0x00001111");
+extern u8 RS19250_O1111;
+__asm__(".set RS19250_O10C3, 0x000010C3");
+extern u8 RS19250_O10C3;
+int Race_Setup_19250(void *a, void *b) {
+    __asm__(".globl RS19250_WA1\nRS19250_WA1 = 0x03001780\n"
+            ".globl RS19250_WA2\nRS19250_WA2 = 0x03001780\n"
+            ".globl RS19250_O1111\nRS19250_O1111 = 0x00001111\n"
+            ".globl RS19250_O10C3\nRS19250_O10C3 = 0x000010C3\n");
+    register u8 *pb __asm__("r8");
+    register int d __asm__("r6");
+    register int dx __asm__("r4");
+    register int dy __asm__("r5");
+    u8 *pa;
+    u8 *ctx;
+    s16 *p;
+    int t, v;
+    pa = (u8 *)a;
+    pb = (u8 *)b;
+    /* r4/r5 live from entry: keeps them off `pa`, which then lands in r7. */
+    __asm__ volatile("" : "+r"(dx), "+r"(dy));
+    {
+        register s32 hi __asm__("r1") = *(s16 *)(pa + 22);
+        register u8 *q __asm__("r2") = pb;
+        __asm__ volatile("" : "+r"(q));
+        register s32 lo __asm__("r0") = *(s16 *)(q + 22);
+        d = hi - lo;
+    }
+    if (*(s8 *)(uintptr_t)((u32)(uintptr_t)&RS19250_O1111
+                           + (u32)(uintptr_t)&RS19250_WA1) != 0) {
+        t = (-d) << 3;
+        if (t > 36)
+            t = 36;
+        if (t < 0)
+            t = 0;
+        _0802A8F0(pa + 36, (s16)t);
+    }
+    ctx = *(u8 **)(uintptr_t)0x03004E20u;
+    if (*(ctx + 130) != 0) {
+        s8 z = 0;
+        *(ctx + 130) = z;
+        return z;
+    }
+    if (d > 0)
+        return 1;
+    if (d != 0)
+        return 0;
+    {
+        register u32 off4fc __asm__("r3") = 0x4FCu;
+        __asm__ volatile("" : "+r"(off4fc));
+        p = (s16 *)_08006C10(ctx + off4fc, 0);
+    }
+    {
+        /* `b` is re-materialised into a low register after the call and
+           indexed twice; without the barrier agbcc hoists the copy above the
+           `bl` and walks the pointer with `adds r1, #4`. */
+        register s32 ax __asm__("r2") = *(s32 *)pa;
+        register u8 *q __asm__("r3") = pb;
+        __asm__ volatile("" : "+r"(q));
+        register s32 bx __asm__("r1") = *(s32 *)q;
+        dx = ax - bx;
+        register s32 ay __asm__("r2") = *(s32 *)(pa + 4);
+        register s32 by __asm__("r1") = *(s32 *)(q + 4);
+        dy = ay - by;
+    }
+    v = (s32)p[10] * dy - (s32)p[11] * dx;
+    v >>= 16;
+    if ((u32)(v + 40) <= 79u) {
+        if (*(u8 *)(uintptr_t)((u32)(uintptr_t)&RS19250_O10C3
+                               + (u32)(uintptr_t)&RS19250_WA2) != 0)
+            return 1;
+    } else if (v < 0) {
+        return 1;
+    }
+    return 0;
 }
 int _080019250(void *a, void *b) __attribute__((alias("Race_Setup_19250")));
 
