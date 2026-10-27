@@ -2151,244 +2151,120 @@ void sub_08025264(int a) __attribute__((alias("AiLineupBuilder_25264")));
 // resource setups, record wiring, award-grid alloc triple, car-record copy
 // loop (35×72 B via CpuSet), tail flags.
 //
-// MEASURED 2026-10-22: the C lift reaches 421/500 with candidate == 500 B; the
-// prologue, both _08007770 calls, the award-grid triple, the D77C/record wiring
-// and every tail store match. The residue is the 140-byte copy loop: the ROM
-// keeps the destination in r6, the IWRAM source base (0x03001D64) in r9 loaded
-// once before the loop, and re-derives `i * 72` per iteration, while agbcc
-// rematerialises the base and puts the destination in r9/r10. Spelling the
-// loop as rolling pointers (`s += 12; dst += 3`) reproduces the body but moves
-// the earlier register homes (rec+196 leaves r4 for r5, rec+16 leaves sl) and
-// loses the whole preamble, so it is not a local fix. The sixth copy per row
-// reads 0x03001DA0 + i*72 (a second pool word, not base+60).
+// MEASURED 2026-10-27: plain C, byte-exact 500/500 including the pool (no
+// register pins, no asm). The spellings the register homes depend on:
+//  * the three frame literals (0x0839F5FC / 0x082B7410 / 0x082A798C) are left
+//    inline at every call site; CSE then materialises each lazily at its first
+//    use and parks it in r8 / r5 / r4. Naming them as locals hoists all three
+//    loads into the prologue and shifts the whole body.
+//  * the six pointers live across the copy loop take their stack slots in
+//    declaration order, so they are declared in the ROM's slot order
+//    (146, 240, 156, 158, 160, 168 -> [sp+8..28]); p142 is declared between
+//    them and still wins sl because it holds the only non-spilled slot.
+//  * `car` (rec+196) stays live from 0x080236BE to the rec+128 store, so the
+//    rec+168 target folds to `subs r4,#28` off the live car value instead of a
+//    fresh `adds r7,#168` (which would also lose r4's home in the loop).
+//  * the rec+168 pointer used by the tail is assigned *after* `dst`/`row = 0`,
+//    which places its spill `str r4,[sp,#28]` at the loop preheader
+//    (0x0802375A) rather than at the definition.
+//  * the copy loop keeps `row` (r3), the destination (r6) and the IWRAM base
+//    (r9) live and re-derives `row * 72` per iteration, as the ROM does; the
+//    sixth copy per row reads 0x03001DA0 + row*72 (a second pool word, not
+//    base+60), so that address is spelled with its own literal.
+//  * the tail's shared zero is a `u16` local assigned before the u32 store, so
+//    `movs r1,#0` precedes `movs r0,#2` and r1 is reused by the five u16
+//    stores; writing the bare constants reorders the pair and flips the
+//    reload phase of the last four stores.
 // ============================================================================
-__attribute__((naked)) void RaceSceneCtor_23628(void *rec) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "\tpush\t{r4, r5, r6, r7, lr}\n"
-        "\tmov\tr7, sl\n"
-        "\tmov\tr6, r9\n"
-        "\tmov\tr5, r8\n"
-        "\tpush\t{r5, r6, r7}\n"
-        "\tsub\tsp, #36\n"
-        "\tadds\tr7, r0, #0\n"
-        "\tmovs\tr0, #51\n"
-        "\tbl 0x0802B214\n"
-        "\tldr r0, .Lrace_ctor_23628_0800237F8\n"
-        "\tmov\tr8, r0\n"
-        "\tmovs\tr0, #4\n"
-        "\tstr\tr0, [sp, #0]\n"
-        "\tmovs\tr6, #1\n"
-        "\tstr\tr6, [sp, #4]\n"
-        "\tmovs\tr0, #0\n"
-        "\tmov\tr1, r8\n"
-        "\tmovs\tr2, #0\n"
-        "\tmovs\tr3, #0\n"
-        "\tbl 0x08007770\n"
-        "\tldr r5, .Lrace_ctor_23628_0800237FC\n"
-        "\tmovs\tr1, #0\n"
-        "\tstr\tr1, [sp, #0]\n"
-        "\tmovs\tr0, #3\n"
-        "\tstr\tr0, [sp, #4]\n"
-        "\tmovs\tr0, #1\n"
-        "\tadds\tr1, r5, #0\n"
-        "\tmovs\tr2, #3\n"
-        "\tmovs\tr3, #0\n"
-        "\tbl 0x08007770\n"
-        "\tmovs\tr2, #6\n"
-        "\tstr\tr2, [r7, #88]\n"
-        "\tmovs\tr0, #21\n"
-        "\tmov\tr9, r0\n"
-        "\tstr\tr0, [r7, #100]\n"
-        "\tstr\tr6, [r7, #112]\n"
-        "\tmovs\tr1, #16\n"
-        "\tadds\tr1, r1, r7\n"
-        "\tmov\tsl, r1\n"
-        "\tmov\tr0, sl\n"
-        "\tbl 0x0800DAB8\n"
-        "\tldr r4, .Lrace_ctor_23628_080023800\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tmovs\tr1, #1\n"
-        "\tmovs\tr2, #0\n"
-        "\tmovs\tr3, #4\n"
-        "\tbl 0x08007614\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tmovs\tr1, #1\n"
-        "\tmovs\tr2, #1\n"
-        "\tmovs\tr3, #5\n"
-        "\tbl 0x08007614\n"
-        "\tmov\tr0, r8\n"
-        "\tadds\tr1, r7, #0\n"
-        "\tbl 0x0800798C\n"
-        "\tadds\tr0, r7, #0\n"
-        "\tbl 0x08007A58\n"
-        "\tadds\tr1, r7, #0\n"
-        "\tadds\tr1, #8\n"
-        "\tadds\tr0, r5, #0\n"
-        "\tbl 0x0800798C\n"
-        "\tadds\tr0, r5, #0\n"
-        "\tmovs\tr1, #0\n"
-        "\tmovs\tr2, #6\n"
-        "\tbl 0x080075E8\n"
-        "\tadds\tr4, r7, #0\n"
-        "\tadds\tr4, #196\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tmovs\tr1, #5\n"
-        "\tbl 0x08025BC8\n"
-        "\tldr\tr0, [r7, #12]\n"
-        "\tadds\tr1, r7, #0\n"
-        "\tadds\tr1, #200\n"
-        "\tldr\tr1, [r1, #0]\n"
-        "\tldr\tr2, [r4, #0]\n"
-        "\tbl 0x08007ABC\n"
-        "\tmovs\tr0, #8\n"
-        "\tbl 0x0800572C\n"
-        "\tadds\tr2, r7, #0\n"
-        "\tadds\tr2, #208\n"
-        "\tstr\tr0, [r2, #0]\n"
-        "\tadds\tr1, r7, #0\n"
-        "\tadds\tr1, #212\n"
-        "\tmovs\tr0, #22\n"
-        "\tstr\tr0, [r1, #0]\n"
-        "\tldr\tr0, [r7, #12]\n"
-        "\tldr\tr2, [r2, #0]\n"
-        "\tmovs\tr1, #22\n"
-        "\tbl 0x08007ABC\n"
-        "\tmovs\tr0, #8\n"
-        "\tbl 0x0800572C\n"
-        "\tadds\tr1, r7, #0\n"
-        "\tadds\tr1, #220\n"
-        "\tstr\tr0, [r1, #0]\n"
-        "\tadds\tr0, r7, #0\n"
-        "\tadds\tr0, #224\n"
-        "\tmov\tr2, r9\n"
-        "\tstr\tr2, [r0, #0]\n"
-        "\tldr\tr0, [r7, #12]\n"
-        "\tldr\tr2, [r1, #0]\n"
-        "\tmovs\tr1, #21\n"
-        "\tbl 0x08007ABC\n"
-        "\tadds\tr0, r7, #0\n"
-        "\tadds\tr0, #128\n"
-        "\tsubs\tr4, #28\n"
-        "\tstr\tr4, [r0, #0]\n"
-        "\tadds\tr0, #4\n"
-        "\tmov\tr1, sl\n"
-        "\tstr\tr1, [r0, #0]\n"
-        "\tmovs\tr2, #0\n"
-        "\tstr\tr2, [r7, #16]\n"
-        "\tstrh\tr6, [r7, #20]\n"
-        "\tsubs\tr0, #96\n"
-        "\tsubs\tr2, #32\n"
-        "\tmovs\tr1, #0\n"
-        "\tbl 0x0800D77C\n"
-        "\tadds\tr0, r7, #0\n"
-        "\tadds\tr0, #28\n"
-        "\tmovs\tr1, #0\n"
-        "\tmovs\tr2, #160\n"
-        "\tbl 0x0800D77C\n"
-        "\tmovs\tr0, #6\n"
-        "\tstrh\tr0, [r7, #24]\n"
-        "\tmovs\tr0, #5\n"
-        "\tstrh\tr0, [r7, #26]\n"
-        "\tadds\tr2, r7, #0\n"
-        "\tadds\tr2, #148\n"
-        "\tldr r0, .Lrace_ctor_23628_080023804\n"
-        "\tstr\tr0, [r2, #0]\n"
-        "\tadds\tr1, r7, #0\n"
-        "\tadds\tr1, #152\n"
-        "\tldr r0, .Lrace_ctor_23628_080023808\n"
-        "\tstr\tr0, [r1, #0]\n"
-        "\tldr\tr6, [r2, #0]\n"
-        "\tmovs\tr3, #0\n"
-        "\tstr\tr4, [sp, #28]\n"
-        "\tmovs\tr1, #142\n"
-        "\tadds\tr1, r1, r7\n"
-        "\tmov\tsl, r1\n"
-        "\tadds\tr2, #8\n"
-        "\tstr\tr2, [sp, #16]\n"
-        "\tadds\tr0, r7, #0\n"
-        "\tadds\tr0, #158\n"
-        "\tstr\tr0, [sp, #20]\n"
-        "\tadds\tr1, r7, #0\n"
-        "\tadds\tr1, #160\n"
-        "\tstr\tr1, [sp, #24]\n"
-        "\tsubs\tr2, #10\n"
-        "\tstr\tr2, [sp, #8]\n"
-        "\tadds\tr7, #240\n"
-        "\tstr\tr7, [sp, #12]\n"
-        "\tldr r0, .Lrace_ctor_23628_08002380C\n"
-        "\tmov\tr9, r0\n"
-        ".Lrace_ctor_23628_08002377E:\n"
-        "\tlsls\tr7, r3, #3\n"
-        "\tadds\tr1, r3, #1\n"
-        "\tmov\tr8, r1\n"
-        "\tadds\tr0, r7, r3\n"
-        "\tlsls\tr0, r0, #3\n"
-        "\tmovs\tr4, #4\n"
-        "\tmov\tr2, r9\n"
-        "\tadds\tr5, r2, r0\n"
-        ".Lrace_ctor_23628_08002378E:\n"
-        "\tadds\tr0, r5, #0\n"
-        "\tadds\tr1, r6, #0\n"
-        "\tldr r2, .Lrace_ctor_23628_080023810\n"
-        "\tstr\tr3, [sp, #32]\n"
-        "\tbl 0x0802D974\n"
-        "\tadds\tr6, #12\n"
-        "\tadds\tr5, #12\n"
-        "\tsubs\tr4, #1\n"
-        "\tldr\tr3, [sp, #32]\n"
-        "\tcmp\tr4, #0\n"
-        "\tbge .Lrace_ctor_23628_08002378E\n"
-        "\tadds\tr0, r7, r3\n"
-        "\tlsls\tr0, r0, #3\n"
-        "\tldr r1, .Lrace_ctor_23628_080023814\n"
-        "\tadds\tr0, r0, r1\n"
-        "\tadds\tr1, r6, #0\n"
-        "\tldr r2, .Lrace_ctor_23628_080023810\n"
-        "\tbl 0x0802D974\n"
-        "\tadds\tr6, #12\n"
-        "\tmov\tr3, r8\n"
-        "\tcmp\tr3, #34\n"
-        "\tble .Lrace_ctor_23628_08002377E\n"
-        "\tmovs\tr1, #0\n"
-        "\tmovs\tr0, #2\n"
-        "\tldr\tr2, [sp, #28]\n"
-        "\tstr\tr0, [r2, #0]\n"
-        "\tmov\tr0, sl\n"
-        "\tstrh\tr1, [r0, #0]\n"
-        "\tldr\tr2, [sp, #16]\n"
-        "\tstrh\tr1, [r2, #0]\n"
-        "\tldr\tr0, [sp, #20]\n"
-        "\tstrh\tr1, [r0, #0]\n"
-        "\tldr\tr2, [sp, #24]\n"
-        "\tstrh\tr1, [r2, #0]\n"
-        "\tldr\tr0, [sp, #8]\n"
-        "\tstrh\tr1, [r0, #0]\n"
-        "\tldr r0, .Lrace_ctor_23628_080023818\n"
-        "\tbl 0x08002124\n"
-        "\tmovs\tr0, #1\n"
-        "\tldr\tr1, [sp, #12]\n"
-        "\tstr\tr0, [r1, #0]\n"
-        "\tadd\tsp, #36\n"
-        "\tpop\t{r3, r4, r5}\n"
-        "\tmov\tr8, r3\n"
-        "\tmov\tr9, r4\n"
-        "\tmov\tsl, r5\n"
-        "\tpop\t{r4, r5, r6, r7}\n"
-        "\tpop\t{r0}\n"
-        "\tbx\tr0\n"
-        "\tmovs\tr0, r0\n"
-        ".Lrace_ctor_23628_0800237F8: .word 0x0839F5FC\n"
-        ".Lrace_ctor_23628_0800237FC: .word 0x082B7410\n"
-        ".Lrace_ctor_23628_080023800: .word 0x082A798C\n"
-        ".Lrace_ctor_23628_080023804: .word 0x02024EC0\n"
-        ".Lrace_ctor_23628_080023808: .word 0x02020000\n"
-        ".Lrace_ctor_23628_08002380C: .word 0x03001D64\n"
-        ".Lrace_ctor_23628_080023810: .word 0x04000003\n"
-        ".Lrace_ctor_23628_080023814: .word 0x03001DA0\n"
-        ".Lrace_ctor_23628_080023818: .word 0x0000138D\n"
-        ".syntax divided\n"
-    );
+void RaceSceneCtor_23628(void *rec_) {
+    u8 *rec = (u8 *)rec_;
+    u8 *f16;
+    u8 *car;
+    u8 *p142;
+    u8 *p146;
+    u8 *p240;
+    u8 *p156;
+    u8 *p158;
+    u8 *p160;
+    u8 *p168;
+    u8 *dst;
+    u8 *base;
+    int row;
+    u16 z;
+
+    _0802B214(51);
+    _08007770(0, (void *)(uintptr_t)0x0839F5FCu, 0, 0, 4, 1);
+    _08007770(1, (void *)(uintptr_t)0x082B7410u, 3, 0, 0, 3);
+    *(u32 *)(rec + 88) = 6;
+    *(u32 *)(rec + 100) = 21;
+    *(u32 *)(rec + 112) = 1;
+    f16 = rec + 16;
+    _0800DAB8(f16);
+    _08007614((void *)(uintptr_t)0x082A798Cu, 1, 0, 4);
+    _08007614((void *)(uintptr_t)0x082A798Cu, 1, 1, 5);
+    _0800798C((void *)(uintptr_t)0x0839F5FCu, rec);
+    _08007A58(rec);
+    _0800798C((void *)(uintptr_t)0x082B7410u, rec + 8);
+    _080075E8((void *)(uintptr_t)0x082B7410u, 0, 6);
+    car = rec + 196;
+    _08025BC8(car, 5);
+    _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 12), (void *)(uintptr_t)*(u32 *)(rec + 200),
+               (int)*(u32 *)car);
+    *(u32 *)(rec + 208) = (u32)_0800572C(8);
+    *(u32 *)(rec + 212) = 22;
+    _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 12), (void *)(uintptr_t)22,
+               (int)*(u32 *)(rec + 208));
+    *(u32 *)(rec + 220) = (u32)_0800572C(8);
+    *(u32 *)(rec + 224) = 21;
+    _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 12), (void *)(uintptr_t)21,
+               (int)*(u32 *)(rec + 220));
+    *(u32 *)(rec + 128) = (u32)(uintptr_t)(car - 28);
+    *(u32 *)(rec + 132) = (u32)(uintptr_t)f16;
+    *(u32 *)(rec + 16) = 0;
+    *(u16 *)(rec + 20) = 1;
+    _0800D77C(rec + 36, 0, -32);
+    _0800D77C(rec + 28, 0, 160);
+    *(u16 *)(rec + 24) = 6;
+    *(u16 *)(rec + 26) = 5;
+    *(u32 *)(rec + 148) = 0x02024EC0u;
+    *(u32 *)(rec + 152) = 0x02020000u;
+    dst = *(u8 **)(rec + 148);
+    row = 0;
+    p168 = car - 28;
+    p142 = rec + 142;
+    p156 = rec + 156;
+    p158 = rec + 158;
+    p160 = rec + 160;
+    p146 = rec + 146;
+    p240 = rec + 240;
+    base = (u8 *)(uintptr_t)0x03001D64u;
+    do {
+        u32 r8v = row * 8;
+        int nxt = row + 1;
+        u32 off = (r8v + row) * 8;
+        int n;
+        u8 *src;
+        n = 4;
+        src = base + off;
+        for (; n >= 0; n--) {
+            _0802D974((const void *)(uintptr_t)src, (void *)(uintptr_t)dst, 0x04000003u);
+            dst += 12;
+            src += 12;
+        }
+        _0802D974((const void *)(uintptr_t)(0x03001DA0u + (r8v + row) * 8),
+                  (void *)(uintptr_t)dst, 0x04000003u);
+        dst += 12;
+        row = nxt;
+    } while (row <= 34);
+    z = 0;
+    *(u32 *)(uintptr_t)p168 = 2;
+    *(u16 *)(uintptr_t)p142 = z;
+    *(u16 *)(uintptr_t)p156 = z;
+    *(u16 *)(uintptr_t)p158 = z;
+    *(u16 *)(uintptr_t)p160 = z;
+    *(u16 *)(uintptr_t)p146 = z;
+    _08002124(0x138D);
+    *(u32 *)(uintptr_t)p240 = 1;
 }
 void _08023628(void *r) __attribute__((alias("RaceSceneCtor_23628")));
 void sub_08023628(void *r) __attribute__((alias("RaceSceneCtor_23628")));
