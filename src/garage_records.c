@@ -1941,206 +1941,110 @@ void _0800299E0(void *rec_) {
 void sub_0800299E0(void *rec) __attribute__((alias("_0800299E0")));
 
 // ----------------------------------------------------------------------------
-// 0x08029A74 — surface-adaptive speed (rem/div + flag-159 lanes).
+// 0x08029A74 — surface-adaptive speed (rem/div + flag-159 lanes). 340 B, EXACT.
 //
-// MEASURED: the C lift reaches 207/340 bytes (cand 336 B). Layout that matches:
+// `python3 tools/corpus_match_probe.py --function _080029A74 --c89
+// --require-all --require-exact` reports 340/340. Layout:
 //   a = (u16)(rec[118] + (rec[148] << 2)); b likewise from rec[120];
-//   delta = (s16)(rec[126] + rec[148]) + _0802DE9C(rec[4], 12)   (12 = `% 12`);
+//   delta = (s16)(rec[148] + rec[126]) + _0802DE9C(rec[4], 12)   (12 = `% 12`);
 //   two-level clamp vs (s16)rec[140] setting a=0xFFFE/1 (b=0), else the
 //   table entry (s16 *)(rec + 76)[rec[156]] scales a,b by 32-entry or halves
 //   them;
 //   then flag byte 159 lane 0 (with !(rec[92] & 2)) adds a then b to speed
 //   field 104, clamping at (s16)rec[122] -> 260 down, else subtracts a/|b| and
 //   floors at 0.
-// Remaining miss: the ROM re-reads the table entry in the then-block
-// (`movs r3,#0 / ldrsh r1,[r1,r3]`) where agbcc keeps the value from the `if`
-// test live across the branch. `volatile s16 *` forces the reload but turns
-// both loads into `ldrh`+`lsls` instead of `ldrsh`; plain, `"+r"`, "memory"
-// and register-clobber barriers all still CSE. Also the second speed add is
-// `(s16)b + speed` (dest = b's register) and the entry base is materialised
-// before the index (`adds r0,r5,#0 / adds r0,#76 / adds r1,r0,r1`).
+//
+// Four spellings are load-bearing, all measured against the ROM span:
+//   * The ROM re-reads the speed at +140 in the second test and the table
+//     entry in the then-block (`movs rX,#0 / ldrsh rY,[base,rX]`). cse
+//     otherwise keeps the tested value live across the branch (336 B), so each
+//     arm that re-reads opens with an empty `"memory"` clobber.
+//   * `(s16)a` is evaluated before the entry reload and the table base is
+//     materialised after the scaled index, so the add is `adds r1,r0,r1`; the
+//     `"+r"` launder on `tp` stops the base folding into `rec + 76 + idx`.
+//   * `delta` stays SImode: `(s16)dbase + call` keeps the sign extension the
+//     ROM has at +0x36 and re-truncates at +0x40. A `s16` delta folds the
+//     intermediate extension away.
+//   * `f148`/`v126` are SImode pins in r4/r0. regmove merges the
+//     `(set p (plus f148 v126))` / `(set r4 p)` pair into `(set r4 ...)`; with
+//     either operand a HImode pseudo the merged add commutes and the entry
+//     reads `adds r4,r0,r4` instead of the ROM's `adds r4,r4,r0` (338/340).
+//     The second speed add needs `(s16)b` as the left operand for the same
+//     reason (`adds r0,r0,r2`).
 // ----------------------------------------------------------------------------
-__attribute__((naked)) void _080029A74(void *rec) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "\tpush\t{r4, r5, r6, r7, lr}\n"
-        "\tadds\tr5, r0, #0\n"
-        "\tadds\tr2, r5, #0\n"
-        "\tadds\tr2, #118\n"
-        "\tadds\tr0, #148\n"
-        "\tldrh\tr4, [r0, #0]\n"
-        "\tlsls\tr1, r4, #2\n"
-        "\tldrh\tr2, [r2, #0]\n"
-        "\tadds\tr0, r2, r1\n"
-        "\tlsls\tr0, r0, #16\n"
-        "\tlsrs\tr6, r0, #16\n"
-        "\tadds\tr0, r5, #0\n"
-        "\tadds\tr0, #120\n"
-        "\tldrh\tr0, [r0, #0]\n"
-        "\tadds\tr1, r0, r1\n"
-        "\tlsls\tr1, r1, #16\n"
-        "\tlsrs\tr7, r1, #16\n"
-        "\tadds\tr0, r5, #0\n"
-        "\tadds\tr0, #126\n"
-        "\tldrh\tr0, [r0, #0]\n"
-        "\tadds\tr4, r4, r0\n"
-        "\tlsls\tr4, r4, #16\n"
-        "\tlsrs\tr4, r4, #16\n"
-        "\tldr\tr0, [r5, #4]\n"
-        "\tmovs\tr1, #12\n"
-        "\tbl 0x0802DE9C\n"
-        "\tlsls\tr4, r4, #16\n"
-        "\tasrs\tr4, r4, #16\n"
-        "\tadds\tr4, r4, r0\n"
-        "\tadds\tr2, r5, #0\n"
-        "\tadds\tr2, #140\n"
-        "\tlsls\tr4, r4, #16\n"
-        "\tasrs\tr1, r4, #16\n"
-        "\tmovs\tr3, #0\n"
-        "\tldrsh\tr0, [r2, r3]\n"
-        "\tcmp\tr1, r0\n"
-        "\tbge .Lgarage080029A74__080029ACC\n"
-        "\tldr r6, .Lgarage080029A74__080029AC8\n"
-        "\tmovs\tr7, #0\n"
-        "\tb .Lgarage080029A74__080029B24\n"
-        "\tmovs\tr0, r0\n"
-        ".Lgarage080029A74__080029AC8: .word 0x0000FFFE\n"
-        ".Lgarage080029A74__080029ACC:\n"
-        "\tsubs\tr1, #50\n"
-        "\tmovs\tr4, #0\n"
-        "\tldrsh\tr0, [r2, r4]\n"
-        "\tcmp\tr1, r0\n"
-        "\tbge .Lgarage080029A74__080029ADC\n"
-        "\tmovs\tr6, #1\n"
-        "\tmovs\tr7, #0\n"
-        "\tb .Lgarage080029A74__080029B24\n"
-        ".Lgarage080029A74__080029ADC:\n"
-        "\tadds\tr0, r5, #0\n"
-        "\tadds\tr0, #156\n"
-        "\tldrb\tr0, [r0, #0]\n"
-        "\tlsls\tr1, r0, #1\n"
-        "\tadds\tr0, r5, #0\n"
-        "\tadds\tr0, #76\n"
-        "\tadds\tr1, r0, r1\n"
-        "\tmovs\tr2, #0\n"
-        "\tldrsh\tr0, [r1, r2]\n"
-        "\tcmp\tr0, #0\n"
-        "\tble .Lgarage080029A74__080029B14\n"
-        "\tlsls\tr0, r6, #16\n"
-        "\tasrs\tr0, r0, #16\n"
-        "\tmovs\tr3, #0\n"
-        "\tldrsh\tr1, [r1, r3]\n"
-        "\tmovs\tr4, #32\n"
-        "\tsubs\tr4, r4, r1\n"
-        "\tadds\tr1, r4, #0\n"
-        "\tbl 0x0802DE04\n"
-        "\tlsls\tr0, r0, #16\n"
-        "\tlsrs\tr6, r0, #16\n"
-        "\tlsls\tr0, r7, #16\n"
-        "\tasrs\tr0, r0, #16\n"
-        "\tadds\tr1, r4, #0\n"
-        "\tbl 0x0802DE04\n"
-        "\tb .Lgarage080029A74__080029B20\n"
-        ".Lgarage080029A74__080029B14:\n"
-        "\tlsls\tr0, r6, #16\n"
-        "\tasrs\tr0, r0, #17\n"
-        "\tlsls\tr0, r0, #16\n"
-        "\tlsrs\tr6, r0, #16\n"
-        "\tlsls\tr0, r7, #16\n"
-        "\tasrs\tr0, r0, #17\n"
-        ".Lgarage080029A74__080029B20:\n"
-        "\tlsls\tr0, r0, #16\n"
-        "\tlsrs\tr7, r0, #16\n"
-        ".Lgarage080029A74__080029B24:\n"
-        "\tadds\tr1, r5, #0\n"
-        "\tadds\tr1, #159\n"
-        "\tmovs\tr0, #1\n"
-        "\tldrb\tr1, [r1, #0]\n"
-        "\tands\tr0, r1\n"
-        "\tcmp\tr0, #0\n"
-        "\tbeq .Lgarage080029A74__080029B80\n"
-        "\tldr\tr0, [r5, #92]\n"
-        "\tmovs\tr1, #2\n"
-        "\tands\tr0, r1\n"
-        "\tcmp\tr0, #0\n"
-        "\tbne .Lgarage080029A74__080029B80\n"
-        "\tadds\tr3, r5, #0\n"
-        "\tadds\tr3, #104\n"
-        "\tlsls\tr0, r6, #16\n"
-        "\tasrs\tr0, r0, #16\n"
-        "\tldrh\tr4, [r3, #0]\n"
-        "\tadds\tr2, r4, r0\n"
-        "\tstrh\tr2, [r3, #0]\n"
-        "\tadds\tr0, r5, #0\n"
-        "\tadds\tr0, #122\n"
-        "\tlsls\tr1, r2, #16\n"
-        "\tldrh\tr0, [r0, #0]\n"
-        "\tlsls\tr0, r0, #16\n"
-        "\tcmp\tr1, r0\n"
-        "\tble .Lgarage080029A74__080029B60\n"
-        "\tlsls\tr0, r7, #16\n"
-        "\tasrs\tr0, r0, #16\n"
-        "\tadds\tr0, r0, r2\n"
-        "\tstrh\tr0, [r3, #0]\n"
-        ".Lgarage080029A74__080029B60:\n"
-        "\tadds\tr0, r5, #0\n"
-        "\tadds\tr0, #124\n"
-        "\tldrh\tr2, [r3, #0]\n"
-        "\tmovs\tr4, #0\n"
-        "\tldrsh\tr1, [r3, r4]\n"
-        "\tmovs\tr4, #0\n"
-        "\tldrsh\tr0, [r0, r4]\n"
-        "\tcmp\tr1, r0\n"
-        "\tble .Lgarage080029A74__080029BC2\n"
-        "\tldr r1, .Lgarage080029A74__080029B7C\n"
-        "\tadds\tr0, r2, r1\n"
-        "\tstrh\tr0, [r3, #0]\n"
-        "\tb .Lgarage080029A74__080029BC2\n"
-        "\tmovs\tr0, r0\n"
-        ".Lgarage080029A74__080029B7C: .word 0xFFFFFEFC\n"
-        ".Lgarage080029A74__080029B80:\n"
-        "\tlsls\tr0, r6, #16\n"
-        "\tasrs\tr0, r0, #16\n"
-        "\tcmp\tr0, #1\n"
-        "\tbgt .Lgarage080029A74__080029B8C\n"
-        "\tmovs\tr6, #2\n"
-        "\tmovs\tr7, #2\n"
-        ".Lgarage080029A74__080029B8C:\n"
-        "\tadds\tr1, r5, #0\n"
-        "\tadds\tr1, #104\n"
-        "\tlsls\tr0, r6, #16\n"
-        "\tasrs\tr0, r0, #16\n"
-        "\tldrh\tr2, [r1, #0]\n"
-        "\tsubs\tr3, r2, r0\n"
-        "\tstrh\tr3, [r1, #0]\n"
-        "\tadds\tr0, r5, #0\n"
-        "\tadds\tr0, #122\n"
-        "\tlsls\tr2, r3, #16\n"
-        "\tldrh\tr0, [r0, #0]\n"
-        "\tlsls\tr0, r0, #16\n"
-        "\tcmp\tr2, r0\n"
-        "\tble .Lgarage080029A74__080029BB6\n"
-        "\tlsls\tr0, r7, #16\n"
-        "\tasrs\tr0, r0, #16\n"
-        "\tcmp\tr0, #0\n"
-        "\tbge .Lgarage080029A74__080029BB2\n"
-        "\tnegs\tr0, r0\n"
-        ".Lgarage080029A74__080029BB2:\n"
-        "\tsubs\tr0, r3, r0\n"
-        "\tstrh\tr0, [r1, #0]\n"
-        ".Lgarage080029A74__080029BB6:\n"
-        "\tmovs\tr3, #0\n"
-        "\tldrsh\tr0, [r1, r3]\n"
-        "\tcmp\tr0, #0\n"
-        "\tbge .Lgarage080029A74__080029BC2\n"
-        "\tmovs\tr0, #0\n"
-        "\tstrh\tr0, [r1, #0]\n"
-        ".Lgarage080029A74__080029BC2:\n"
-        "\tpop\t{r4, r5, r6, r7}\n"
-        "\tpop\t{r0}\n"
-        "\tbx\tr0\n"
-        ".syntax divided\n"
-    );
+void _080029A74(void *rec_) {
+    u8 *rec = (u8 *)rec_;
+    u16 *p118 = (u16 *)(rec + 118);
+    u16 *p148 = (u16 *)(rec + 148);
+    register s32 f148 __asm__("r4");
+    u16 dbase;
+    register s32 v126 __asm__("r0");
+    u16 a;
+    u16 b;
+    s32 scaled;
+    s32 delta;
+
+    f148 = *p148;
+    scaled = f148 << 2;
+    a = (u16)(*p118 + scaled);
+    b = (u16)(*(u16 *)(rec + 120) + scaled);
+    v126 = *(u16 *)(rec + 126);
+    dbase = (u16)(f148 + v126);
+    delta = (s16)dbase + _0802DE9C(*(u32 *)(rec + 4), 12);
+    if ((s16)delta < *(s16 *)(rec + 140)) {
+        a = 0xFFFE;
+        b = 0;
+    } else {
+        __asm__ volatile ("" : : : "memory");
+        if ((s16)delta - 50 < *(s16 *)(rec + 140)) {
+            a = 1;
+            b = 0;
+        } else {
+            s32 off = *(u8 *)(rec + 156) * 2;
+            u8 *tp = rec + 76;
+            s16 *entry;
+            __asm__ volatile ("" : "+r"(tp));
+            entry = (s16 *)(tp + off);
+            if (*(s16 *)entry > 0) {
+                s32 av = (s16)a;
+                s32 scale;
+                __asm__ volatile ("" : "+r"(av) : : "memory");
+                scale = 32 - *(s16 *)entry;
+                a = (u16)sub_0802DE04(av, scale);
+                b = (u16)sub_0802DE04((s16)b, scale);
+            } else {
+                a = (u16)((s16)a >> 1);
+                b = (u16)((s16)b >> 1);
+            }
+        }
+    }
+    if ((*(u8 *)(rec + 159) & 1) != 0 && (*(u32 *)(rec + 92) & 2) == 0) {
+        s32 cur = *(u16 *)(rec + 104) + (s16)a;
+        *(u16 *)(rec + 104) = (u16)cur;
+        if ((s16)cur > (s16)*(u16 *)(rec + 122)) {
+            s32 up = (s16)b + cur;
+            *(u16 *)(rec + 104) = (u16)up;
+        }
+        if (*(s16 *)(rec + 104) > *(s16 *)(rec + 124))
+            *(u16 *)(rec + 104) = (u16)(*(u16 *)(rec + 104) - 260);
+    } else {
+        s32 cur;
+        s32 mag;
+        if ((s16)a <= 1) {
+            a = 2;
+            b = 2;
+        }
+        cur = *(u16 *)(rec + 104) - (s16)a;
+        *(u16 *)(rec + 104) = (u16)cur;
+        if ((s16)cur > (s16)*(u16 *)(rec + 122)) {
+            mag = (s16)b;
+            if (mag < 0)
+                mag = -mag;
+            *(u16 *)(rec + 104) = (u16)(cur - mag);
+        }
+        if (*(s16 *)(rec + 104) < 0)
+            *(u16 *)(rec + 104) = 0;
+    }
 }
 // ----------------------------------------------------------------------------
 // 0x08029BC8 — gear/step selector (157 sign + flag lanes + 29488/2944C).
