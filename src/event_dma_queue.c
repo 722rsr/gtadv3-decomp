@@ -596,13 +596,28 @@ void sub_080052F0(int a, u32 b, int c, int d, int e, int f, int g, int h)
 // 31, the original still updates the destination through the far-column
 // term; only when both are outside does it carry the old r9 value forward.
 // The volatile homes and fixed registers retain the observed stack and
-// loop state. `tileBase`/`palette` reach the ALU through order-pinned
-// reloads (see bodies); `tableIndex` is reused as the reload register once
-// its setup use is dead. Keep `tileBase` volatile so its C read remains at
-// the ROM's in-loop stack-argument reload.
+// loop state. `tableIndex` is reused as the reload register once its setup
+// use is dead. Keep `tileBase` volatile so its C read remains at the ROM's
+// in-loop stack-argument reload.
+//
+// The cell read is `mov r7, ip / ldrh r1, [r7]`. That `mov` is a copy
+// global-alloc gives r7, so `cell` must be a cross-block allocno whose live
+// range never reaches r7's later scratch uses: assigning it in every arm of
+// the x/y test lets cross-jump merge the copies into the single ROM move at
+// the join. r7 is the only register left once r0-r6 conflict over that
+// range: `hold2` keeps r2 busy, the empty use after `ip += two` keeps the
+// post-load r0/r1 values inside the range, and `rowTab`/`rowBytes` are
+// pinned so `cell` cannot take their r6/r5.
+//
+// The palette shift is plain C. `volatile` on `palette` keeps the load and
+// shift inside the loop (a non-volatile read is hoisted), the r7-pinned
+// `pal` reproduces the ROM's reload of the stack argument, and pinning `up`
+// to r0 keeps `orrs r0, r1 / orrs r0, r2` in that order. `rb` is pinned to
+// r0 so `rowBytes = rowPos * 64` loads rowPos into r0 and shifts into the
+// r5-pinned destination.
 void OAMGrid_Build(volatile int tableIdx, const volatile u8 *src,
                    int x0, int y0,
-                   int cols, int rows, volatile int tileBase, int palette) {
+                   volatile int cols, volatile int rows, volatile int tileBase, volatile int palette) {
     register int row __asm__("r0");
     register int col __asm__("r8");
     register int xArg __asm__("r2");
@@ -618,8 +633,13 @@ void OAMGrid_Build(volatile int tableIdx, const volatile u8 *src,
     register const volatile u8 *source __asm__("r10");
     register const volatile u8 *ip __asm__("r12");
     register u32 dst __asm__("r9");
-    volatile u32 *rowTab;
-    u32 rowBytes, h, lo, up;
+    register volatile u32 *rowTab __asm__("r6");
+    register u32 rowBytes __asm__("r5");
+    u32 h, lo, palShift;
+    register u32 up __asm__("r0");
+    register int hold2 __asm__("r2");
+    register u32 rb __asm__("r0");
+    const volatile u8 *cell;
     source = src;
     __asm__ volatile("" : "+r"(source));
     xArg = x0;
@@ -655,39 +675,49 @@ void OAMGrid_Build(volatile int tableIdx, const volatile u8 *src,
             // When y is outside the grid but x is inside, the original still
             // updates the destination through the far-column term; only when
             // both are outside does it carry the old r9 value forward.
-            rowBytes = (u32)rowPos * 64;
+            rb = (u32)rowPos;
+            rowBytes = rb * 64;
             xTerm = xHome;
             colTerm = (u32)xTerm * 2;
             temp7 = 248;
             temp7 <<= 3;
             hi = colTerm + (u32)temp7;
             do {
+                __asm__ volatile("" : "=r"(hold2));
                 colPos = xHome + col;
                 if (colPos <= 31) {
                     if (rowPos <= 31) {
                         dst = *rowTab + colTerm + rowBytes;
+                        cell = ip;
                     } else {
                         dst = *rowTab + hi + rowBytes;
+                        cell = ip;
                     }
                 } else {
                     xTerm = rowPos;
                     if (xTerm <= 31) {
                         dst = *rowTab + hi + rowBytes;
+                        cell = ip;
+                    } else {
+                        cell = ip;
                     }
                 }
-                __asm__ volatile("mov r7, %1\n\tldrh %0, [r7, #0]"
-                                 : "=r"(h) : "r"(ip));
+                h = *(u16 *)(uintptr_t)cell;
+                __asm__ volatile("" : : "r"(hold2));
+
                 // Pin the byte step in r0; the pointer update is C.
                 register int two __asm__("r0") = 2;
                 __asm__ volatile("" : : "r"(two));
                 ip += two;
+                __asm__ volatile("" : : "r"(cell));
                 lo = h & 0x03FFu;
                 up = h & 0x0C00u;
                 tableIndex = (u32)tileBase;
                 lo += tableIndex;
                 {
-                    u32 palShift;
-                    __asm__ volatile("lsl %0, %1, #12" : "=l"(palShift) : "l"((u32)palette));
+                    register u32 pal __asm__("r7");
+                    pal = (u32)palette;
+                    palShift = pal << 12;
                     up |= palShift;
                 }
                 up |= lo;
