@@ -13,7 +13,8 @@
 // -> u32[rec+0x154]; _0800F7EC(s16[0xBC], s16[0xBE]) -> u32[rec+0x160];
 // resource binds via _08007ABC; final u16[rec+0xB6] = u16[rec+0xAC].
 //
-// Transcribed instruction-for-instruction from asm/menu_ff78.s.
+// sub_080010CB8 is C (see its comment); the other two bodies are still
+// transcribed instruction-for-instruction from asm/menu_ff78.s.
 // ============================================================================
 
 #include "gba/types.h"
@@ -25,7 +26,7 @@ HOST_STUB(void _08007ABC(void *rec, int id, int lane));     // 0x08007ABC resour
 extern void _0800108D4(void *rec);            // menus.c Menu108D4
 extern void _0800108F0(void *rec);            // menus.c Menu108F0
 extern void _0802B368(u16 v);                 // sound.c SoundDeferredVol
-extern s16  _0800F744(s32 c);                 // menus.c
+extern int  _0800F744(s32 c);                 // menus.c
 extern u32  _0800F6D0(s32 c);                 // menus.c
 extern u32  _0800F700(s32 a, s32 b);          // menus.c
 extern s16  _0800F7EC(s32 a, s32 b);          // menus.c
@@ -36,6 +37,16 @@ extern int  _08025E1C(int id);                // ai_grid_leaves.c Ai_GridGetPack
 extern s16  _0800258A8(int idx);              // numeric_leaves.c 0x080CD7D0 lookup
 extern u16  _08002178(int i);                 // block_b.c BlockB_DispatchIfLess
 extern void _080026F50(u32 a, u32 b, u32 c, void *d); // garage.c Garage_PlaceRecord
+
+// Record layout for the two field-to-field copies below. The ROM materialises
+// a store's destination address only when the store itself is emitted, which is
+// what a struct-field assignment produces; a raw `*(u16 *)(rec + N)` store
+// expands the address before the right-hand side, two instructions early.
+struct MenuFF78Rec10CB8 {
+    u8  pad0[0xBE];
+    s16 fBe;                     // 0xBE
+    s16 fC0;                     // 0xC0
+};
 
 #define CB55C 0x080CB55Cu
 
@@ -49,336 +60,173 @@ static inline u16  tbl16(int off, s16 idx) {
 }
 
 // ============================================================================
-// sub_080010CB8 — car-select input handler.
+// sub_080010CB8 — car-select input handler: mode machine 0..3, then a
+// cursor-apply mode machine 0/1/2 with the 12-byte resource-row loop.
+// ----------------------------------------------------------------------------
+// EXACT 644/644 bytes, no instruction-bearing asm. The body was steered from
+// the `--diff` listing; each spelling below was measured on its own.
+//
+//  * Both machines are `switch`es. The first one keeps four *separate* case
+//    labels (case 1 and case 2 carry identical bodies), which is what makes
+//    agbcc build the ROM's four-node tree (`cmp #1 / beq / cmp #1 / bgt / ...`);
+//    `case 1: case 2:` instead folds into a range node and pivots at 2.
+//  * `key` and `old` are `int` locals holding the u16 truncations. As `u16`
+//    agbcc keeps a second, zero-extended copy of the key for case 3
+//    (`adds r6,r5,#0`) and parks `old` in r8; as `int` they land in r5/r6.
+//  * The two `*dst = *src` halfword copies go through `struct
+//    MenuFF78Rec10CB8`. A struct-field assignment defers the destination
+//    address to the store, so the ROM's load-then-address order falls out and
+//    the following `== 99` test picks up the `lsls/asrs` pair; a raw
+//    `*(u16 *)(rec + N)` store expands the address first and drops it.
+//  * The row loop recomputes `off = i * 12` in the body, which loop.c turns
+//    into the ROM's `adds r4,#12` biv, and keeps each record base in a
+//    statement variable (`pa = rec + 376; pb = pa - 4;`). Through a plain
+//    `rec + 376 + off` expression agbcc instead strength-reduces the address
+//    into a pointer the loop walks by 12 (`[r4,#4]`-style stores).
+//    `tb` (0x080CB566 = the +10 table column) must be a variable too, or the
+//    pool load stays inside the loop instead of the ROM's `mov sl`.
+//  * `lt = _0800F700(...)` is its own statement: the call must precede the
+//    store address, while the row address must still precede the table load.
+//    The store itself is the chained `*pa = v = ...`, which keeps the address
+//    first and leaves the value in r1 for the `_08007ABC` argument.
+//  * `port = *(u32 *)(rec + 36)` is loaded before `pb = pa - 4`, which puts the
+//    resource-port load in the ROM's slot between store and lane pointer.
+//  * Case 2's table read needs the ROM's `dest-address, pool base, index,
+//    lsls, base+20, add, ldrh` sequence; that comes from the statement order
+//    `out, tb, off2, row`, then `*out = v = *(u16 *)(off2 + row)`.
+//  * `_0800F744` is declared returning `int` in this TU: the ROM feeds its
+//    result straight to `_0800F700` without the `lsls/asrs` an `s16`
+//    declaration would emit.
 // ============================================================================
-__attribute__((naked)) void MenuFF78_10CB8(void *rec_, int a1, int a2) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "\tpush\t{r4, r5, r6, r7, lr}\n"
-        "\tmov\tr7, sl\n"
-        "\tmov\tr6, r9\n"
-        "\tmov\tr5, r8\n"
-        "\tpush\t{r5, r6, r7}\n"
-        "\tadds\tr7, r0, #0\n"
-        "\tlsls\tr2, r2, #16\n"
-        "\tlsrs\tr5, r2, #16\n"
-        "\tadds\tr4, r7, #0\n"
-        "\tadds\tr4, #168\n"
-        "\tldrh\tr6, [r4, #0]\n"
-        "\tmovs\tr1, #0\n"
-        "\tldrsh\tr0, [r4, r1]\n"
-        "\tcmp\tr0, #1\n"
-        "\tbeq .Lff10cb8_080010d26\n"
-        "\tcmp\tr0, #1\n"
-        "\tbgt .Lff10cb8_080010ce0\n"
-        "\tcmp\tr0, #0\n"
-        "\tbeq .Lff10cb8_080010cea\n"
-        "\tb .Lff10cb8_080010d5e\n"
-        ".Lff10cb8_080010ce0:\n"
-        "\tcmp\tr0, #2\n"
-        "\tbeq .Lff10cb8_080010d26\n"
-        "\tcmp\tr0, #3\n"
-        "\tbeq .Lff10cb8_080010d46\n"
-        "\tb .Lff10cb8_080010d5e\n"
-        ".Lff10cb8_080010cea:\n"
-        "\tcmp\tr5, #2\n"
-        "\tbne .Lff10cb8_080010cf4\n"
-        "\tadds\tr0, r7, #0\n"
-        "\tbl sub_0800108D4\n"
-        ".Lff10cb8_080010cf4:\n"
-        "\tcmp\tr5, #1\n"
-        "\tbne .Lff10cb8_080010d5e\n"
-        "\tldrh\tr0, [r4, #0]\n"
-        "\tadds\tr0, #1\n"
-        "\tstrh\tr0, [r4, #0]\n"
-        "\tmovs\tr0, #1\n"
-        "\tbl 0x0802B368\n"
-        "\tadds\tr2, r7, #0\n"
-        "\tadds\tr2, #172\n"
-        "\tadds\tr3, r7, #0\n"
-        "\tadds\tr3, #176\n"
-        "\tldrh\tr0, [r2, #0]\n"
-        "\tldrh\tr1, [r3, #0]\n"
-        "\tcmp\tr0, r1\n"
-        "\tbeq .Lff10cb8_080010d20\n"
-        "\tadds\tr0, r7, #0\n"
-        "\tadds\tr0, #198\n"
-        "\tmovs\tr1, #99\n"
-        "\tstrh\tr1, [r0, #0]\n"
-        "\tadds\tr0, #2\n"
-        "\tstrh\tr1, [r0, #0]\n"
-        ".Lff10cb8_080010d20:\n"
-        "\tldrh\tr0, [r2, #0]\n"
-        "\tstrh\tr0, [r3, #0]\n"
-        "\tb .Lff10cb8_080010d5e\n"
-        ".Lff10cb8_080010d26:\n"
-        "\tcmp\tr5, #2\n"
-        "\tbne .Lff10cb8_080010d34\n"
-        "\tsubs\tr0, r6, #1\n"
-        "\tstrh\tr0, [r4, #0]\n"
-        "\tmovs\tr0, #4\n"
-        "\tbl 0x0802B368\n"
-        ".Lff10cb8_080010d34:\n"
-        "\tcmp\tr5, #1\n"
-        "\tbne .Lff10cb8_080010d5e\n"
-        "\tldrh\tr0, [r4, #0]\n"
-        "\tadds\tr0, #1\n"
-        "\tstrh\tr0, [r4, #0]\n"
-        "\tmovs\tr0, #1\n"
-        "\tbl 0x0802B368\n"
-        "\tb .Lff10cb8_080010d5e\n"
-        ".Lff10cb8_080010d46:\n"
-        "\tcmp\tr5, #2\n"
-        "\tbne .Lff10cb8_080010d54\n"
-        "\tsubs\tr0, r6, #1\n"
-        "\tstrh\tr0, [r4, #0]\n"
-        "\tmovs\tr0, #4\n"
-        "\tbl 0x0802B368\n"
-        ".Lff10cb8_080010d54:\n"
-        "\tcmp\tr5, #1\n"
-        "\tbne .Lff10cb8_080010d5e\n"
-        "\tadds\tr0, r7, #0\n"
-        "\tbl sub_0800108F0\n"
-        ".Lff10cb8_080010d5e:\n"
-        "\tadds\tr1, r7, #0\n"
-        "\tadds\tr1, #168\n"
-        "\tmovs\tr2, #0\n"
-        "\tldrsh\tr0, [r1, r2]\n"
-        "\tcmp\tr0, #4\n"
-        "\tble .Lff10cb8_080010d6e\n"
-        "\tmovs\tr0, #4\n"
-        "\tstrh\tr0, [r1, #0]\n"
-        ".Lff10cb8_080010d6e:\n"
-        "\tldrh\tr3, [r1, #0]\n"
-        "\tcmp\tr3, r6\n"
-        "\tbne .Lff10cb8_080010d76\n"
-        "\tb .Lff10cb8_080010f2a\n"
-        ".Lff10cb8_080010d76:\n"
-        "\tmovs\tr2, #0\n"
-        "\tldrsh\tr0, [r1, r2]\n"
-        "\tcmp\tr0, #1\n"
-        "\tbeq .Lff10cb8_080010d9c\n"
-        "\tcmp\tr0, #1\n"
-        "\tbgt .Lff10cb8_080010d88\n"
-        "\tcmp\tr0, #0\n"
-        "\tbeq .Lff10cb8_080010d8e\n"
-        "\tb .Lff10cb8_080010f2a\n"
-        ".Lff10cb8_080010d88:\n"
-        "\tcmp\tr0, #2\n"
-        "\tbeq .Lff10cb8_080010e84\n"
-        "\tb .Lff10cb8_080010f2a\n"
-        ".Lff10cb8_080010d8e:\n"
-        "\tadds\tr0, r7, #0\n"
-        "\tadds\tr0, #190\n"
-        "\tmovs\tr1, #99\n"
-        "\tstrh\tr1, [r0, #0]\n"
-        "\tadds\tr0, #2\n"
-        "\tstrh\tr1, [r0, #0]\n"
-        "\tb .Lff10cb8_080010e7c\n"
-        ".Lff10cb8_080010d9c:\n"
-        "\tadds\tr1, r7, #0\n"
-        "\tadds\tr1, #172\n"
-        "\tadds\tr0, r7, #0\n"
-        "\tadds\tr0, #176\n"
-        "\tldrh\tr1, [r1, #0]\n"
-        "\tldrh\tr0, [r0, #0]\n"
-        "\tcmp\tr1, r0\n"
-        "\tbne .Lff10cb8_080010de0\n"
-        "\tadds\tr0, r7, #0\n"
-        "\tadds\tr0, #198\n"
-        "\tldrh\tr0, [r0, #0]\n"
-        "\tadds\tr1, r7, #0\n"
-        "\tadds\tr1, #190\n"
-        "\tstrh\tr0, [r1, #0]\n"
-        "\tlsls\tr0, r0, #16\n"
-        "\tasrs\tr0, r0, #16\n"
-        "\tmov\tr9, r1\n"
-        "\tmovs\tr3, #188\n"
-        "\tadds\tr3, r3, r7\n"
-        "\tmov\tr8, r3\n"
-        "\tcmp\tr0, #99\n"
-        "\tbne .Lff10cb8_080010e00\n"
-        "\tmovs\tr0, #0\n"
-        "\tldrsh\tr4, [r3, r0]\n"
-        "\tmovs\tr0, #0\n"
-        "\tbl sub_0800F744\n"
-        "\tadds\tr1, r0, #0\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tbl sub_0800F700\n"
-        "\tmov\tr1, r9\n"
-        "\tstrh\tr0, [r1, #0]\n"
-        "\tb .Lff10cb8_080010e00\n"
-        ".Lff10cb8_080010de0:\n"
-        "\tadds\tr5, r7, #0\n"
-        "\tadds\tr5, #188\n"
-        "\tmovs\tr2, #0\n"
-        "\tldrsh\tr4, [r5, r2]\n"
-        "\tmovs\tr0, #0\n"
-        "\tbl sub_0800F744\n"
-        "\tadds\tr1, r0, #0\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tbl sub_0800F700\n"
-        "\tadds\tr1, r7, #0\n"
-        "\tadds\tr1, #190\n"
-        "\tstrh\tr0, [r1, #0]\n"
-        "\tmov\tr9, r1\n"
-        "\tmov\tr8, r5\n"
-        ".Lff10cb8_080010e00:\n"
-        "\tmovs\tr6, #0\n"
-        "\tmov\tr5, r8\n"
-        "\tldr r3, .Lff10cb8_080010e0c\n"
-        "\tmov\tsl, r3\n"
-        "\tmovs\tr4, #0\n"
-        "\tb .Lff10cb8_080010e3c\n"
-        ".Lff10cb8_080010e0c: .word 0x080CB566\n"
-        ".Lff10cb8_080010e10:\n"
-        "\tmovs\tr1, #0\n"
-        "\tldrsh\tr0, [r5, r1]\n"
-        "\tadds\tr1, r6, #0\n"
-        "\tbl sub_0800F700\n"
-        "\tmovs\tr3, #188\n"
-        "\tlsls\tr3, r3, #1\n"
-        "\tadds\tr2, r7, r3\n"
-        "\tadds\tr2, r2, r4\n"
-        "\tlsls\tr0, r0, #1\n"
-        "\tadd\tr0, sl\n"
-        "\tldrh\tr1, [r0, #0]\n"
-        "\tstr\tr1, [r2, #0]\n"
-        "\tldr\tr0, [r7, #36]\n"
-        "\tsubs\tr3, #4\n"
-        "\tadds\tr2, r7, r3\n"
-        "\tadds\tr2, r2, r4\n"
-        "\tldr\tr2, [r2, #0]\n"
-        "\tbl sub_08007ABC\n"
-        "\tadds\tr4, #12\n"
-        "\tadds\tr6, #1\n"
-        ".Lff10cb8_080010e3c:\n"
-        "\tmovs\tr1, #0\n"
-        "\tldrsh\tr0, [r5, r1]\n"
-        "\tbl sub_0800F6D0\n"
-        "\tcmp\tr6, r0\n"
-        "\tblt .Lff10cb8_080010e10\n"
-        "\tmov\tr2, r9\n"
-        "\tldrh\tr2, [r2, #0]\n"
-        "\tcmp\tr2, #99\n"
-        "\tbeq .Lff10cb8_080010e7c\n"
-        "\tmov\tr3, r8\n"
-        "\tmovs\tr1, #0\n"
-        "\tldrsh\tr0, [r3, r1]\n"
-        "\tmov\tr2, r9\n"
-        "\tmovs\tr3, #0\n"
-        "\tldrsh\tr1, [r2, r3]\n"
-        "\tbl sub_0800F7EC\n"
-        "\tadds\tr1, r0, #0\n"
-        "\tmovs\tr2, #176\n"
-        "\tlsls\tr2, r2, #1\n"
-        "\tadds\tr0, r7, r2\n"
-        "\tlsls\tr1, r1, #16\n"
-        "\tasrs\tr1, r1, #16\n"
-        "\tstr\tr1, [r0, #0]\n"
-        "\tldr\tr0, [r7, #36]\n"
-        "\tmovs\tr3, #174\n"
-        "\tlsls\tr3, r3, #1\n"
-        "\tadds\tr2, r7, r3\n"
-        "\tldr\tr2, [r2, #0]\n"
-        "\tbl sub_08007ABC\n"
-        ".Lff10cb8_080010e7c:\n"
-        "\tadds\tr0, r7, #0\n"
-        "\tbl sub_0800F810\n"
-        "\tb .Lff10cb8_080010f2a\n"
-        ".Lff10cb8_080010e84:\n"
-        "\tadds\tr1, r7, #0\n"
-        "\tadds\tr1, #172\n"
-        "\tadds\tr0, r7, #0\n"
-        "\tadds\tr0, #176\n"
-        "\tldrh\tr1, [r1, #0]\n"
-        "\tldrh\tr0, [r0, #0]\n"
-        "\tcmp\tr1, r0\n"
-        "\tbne .Lff10cb8_080010eaa\n"
-        "\tadds\tr0, r7, #0\n"
-        "\tadds\tr0, #200\n"
-        "\tldrh\tr0, [r0, #0]\n"
-        "\tadds\tr1, r7, #0\n"
-        "\tadds\tr1, #192\n"
-        "\tstrh\tr0, [r1, #0]\n"
-        "\tlsls\tr0, r0, #16\n"
-        "\tasrs\tr0, r0, #16\n"
-        "\tcmp\tr0, #99\n"
-        "\tbne .Lff10cb8_080010eb2\n"
-        "\tb .Lff10cb8_080010eae\n"
-        ".Lff10cb8_080010eaa:\n"
-        "\tadds\tr1, r7, #0\n"
-        "\tadds\tr1, #192\n"
-        ".Lff10cb8_080010eae:\n"
-        "\tmovs\tr0, #0\n"
-        "\tstrh\tr0, [r1, #0]\n"
-        ".Lff10cb8_080010eb2:\n"
-        "\tmovs\tr0, #182\n"
-        "\tlsls\tr0, r0, #1\n"
-        "\tadds\tr2, r7, r0\n"
-        "\tldr r4, .Lff10cb8_080010f38\n"
-        "\tmovs\tr3, #0\n"
-        "\tldrsh\tr0, [r1, r3]\n"
-        "\tlsls\tr0, r0, #1\n"
-        "\tadds\tr1, r4, #0\n"
-        "\tadds\tr1, #20\n"
-        "\tadds\tr0, r0, r1\n"
-        "\tldrh\tr1, [r0, #0]\n"
-        "\tstr\tr1, [r2, #0]\n"
-        "\tldr\tr0, [r7, #36]\n"
-        "\tmovs\tr3, #180\n"
-        "\tlsls\tr3, r3, #1\n"
-        "\tadds\tr2, r7, r3\n"
-        "\tldr\tr2, [r2, #0]\n"
-        "\tbl sub_08007ABC\n"
-        "\tmovs\tr0, #188\n"
-        "\tlsls\tr0, r0, #1\n"
-        "\tadds\tr1, r7, r0\n"
-        "\tldrh\tr0, [r4, #20]\n"
-        "\tstr\tr0, [r1, #0]\n"
-        "\tmovs\tr2, #194\n"
-        "\tlsls\tr2, r2, #1\n"
-        "\tadds\tr5, r7, r2\n"
-        "\tldrh\tr0, [r4, #22]\n"
-        "\tstr\tr0, [r5, #0]\n"
-        "\tmovs\tr3, #200\n"
-        "\tlsls\tr3, r3, #1\n"
-        "\tadds\tr6, r7, r3\n"
-        "\tldrh\tr0, [r4, #24]\n"
-        "\tstr\tr0, [r6, #0]\n"
-        "\tldr\tr0, [r7, #36]\n"
-        "\tldr\tr1, [r1, #0]\n"
-        "\tsubs\tr3, #28\n"
-        "\tadds\tr2, r7, r3\n"
-        "\tldr\tr2, [r2, #0]\n"
-        "\tbl sub_08007ABC\n"
-        "\tldr\tr0, [r7, #36]\n"
-        "\tldr\tr1, [r5, #0]\n"
-        "\tmovs\tr3, #192\n"
-        "\tlsls\tr3, r3, #1\n"
-        "\tadds\tr2, r7, r3\n"
-        "\tldr\tr2, [r2, #0]\n"
-        "\tbl sub_08007ABC\n"
-        "\tldr\tr0, [r7, #36]\n"
-        "\tldr\tr1, [r6, #0]\n"
-        "\tmovs\tr3, #198\n"
-        "\tlsls\tr3, r3, #1\n"
-        "\tadds\tr2, r7, r3\n"
-        "\tldr\tr2, [r2, #0]\n"
-        "\tbl sub_08007ABC\n"
-        "\tadds\tr0, r7, #0\n"
-        "\tbl sub_0800F810\n"
-        ".Lff10cb8_080010f2a:\n"
-        "\tpop\t{r3, r4, r5}\n"
-        "\tmov\tr8, r3\n"
-        "\tmov\tr9, r4\n"
-        "\tmov\tsl, r5\n"
-        "\tpop\t{r4, r5, r6, r7}\n"
-        "\tpop\t{r0}\n"
-        "\tbx\tr0\n"
-        ".Lff10cb8_080010f38: .word 0x080CB55C\n"
-        ".syntax divided\n"
-    );
+extern const u16 MenuFF78Tbl10CB8[];
+void MenuFF78_10CB8(void *rec_, int a1, int a2) {
+    __asm__(".globl MenuFF78Tbl10CB8\nMenuFF78Tbl10CB8 = 0x080CB55C\n");
+    u8 *rec = (u8 *)rec_;
+    int key = (u16)a2;
+    int old = *(u16 *)(rec + 168);
+    (void)a1;
+
+    switch (*(s16 *)(rec + 168)) {
+    case 0:
+        if (key == 2) _0800108D4(rec);
+        if (key == 1) {
+            *(u16 *)(rec + 168) = *(u16 *)(rec + 168) + 1;
+            _0802B368(1);
+            if (*(u16 *)(rec + 172) != *(u16 *)(rec + 176)) {
+                *(u16 *)(rec + 198) = 99;
+                *(u16 *)(rec + 200) = 99;
+            }
+            *(u16 *)(rec + 176) = *(u16 *)(rec + 172);
+        }
+        break;
+    case 1:
+        if (key == 2) {
+            *(u16 *)(rec + 168) = old - 1;
+            _0802B368(4);
+        }
+        if (key == 1) {
+            *(u16 *)(rec + 168) = *(u16 *)(rec + 168) + 1;
+            _0802B368(1);
+        }
+        break;
+    case 2:
+        if (key == 2) {
+            *(u16 *)(rec + 168) = old - 1;
+            _0802B368(4);
+        }
+        if (key == 1) {
+            *(u16 *)(rec + 168) = *(u16 *)(rec + 168) + 1;
+            _0802B368(1);
+        }
+        break;
+    case 3:
+        if (key == 2) {
+            *(u16 *)(rec + 168) = old - 1;
+            _0802B368(4);
+        }
+        if (key == 1) _0800108F0(rec);
+        break;
+    }
+    if (*(s16 *)(rec + 168) > 4) *(u16 *)(rec + 168) = 4;
+    if (*(u16 *)(rec + 168) == old) return;
+    switch (*(s16 *)(rec + 168)) {
+    case 0:
+        *(u16 *)(rec + 190) = 99;
+        *(u16 *)(rec + 192) = 99;
+        _0800F810(rec);
+        break;
+    case 1:
+        if (*(u16 *)(rec + 172) == *(u16 *)(rec + 176)) {
+            ((struct MenuFF78Rec10CB8 *)rec)->fBe = *(u16 *)(rec + 198);
+            if (((struct MenuFF78Rec10CB8 *)rec)->fBe == 99)
+                *(u16 *)(rec + 190) = (u16)_0800F700(*(s16 *)(rec + 188),
+                                                     _0800F744(0));
+        } else {
+            *(u16 *)(rec + 190) = (u16)_0800F700(*(s16 *)(rec + 188),
+                                                 _0800F744(0));
+        }
+        {
+            int i = 0;
+            s16 *p188;
+            u32 tb;
+            u32 off;
+            u16 v;
+            u32 lt;
+            u8 *pa;
+            u8 *pb;
+            p188 = (s16 *)(rec + 188);
+            tb = 0x080CB566u;
+            for (; i < (s32)_0800F6D0(*p188); i++) {
+                u32 port;
+                off = i * 12;
+                lt = _0800F700(*p188, i);
+                pa = rec + 376;
+                *(u32 *)(pa + off) = v = *(u16 *)(uintptr_t)(lt * 2 + tb);
+                port = *(u32 *)(rec + 36);
+                pb = pa - 4;
+                _08007ABC((void *)(uintptr_t)port, v, *(u32 *)(pb + off));
+            }
+        }
+        if (*(u16 *)(rec + 190) != 99) {
+            s16 tail = _0800F7EC(*(s16 *)(rec + 188), *(s16 *)(rec + 190));
+            *(u32 *)(rec + 352) = (u32)tail;
+            _08007ABC(*(void **)(rec + 36), tail, *(u32 *)(rec + 348));
+        }
+        _0800F810(rec);
+        break;
+    case 2:
+        if (*(u16 *)(rec + 172) == *(u16 *)(rec + 176)) {
+            ((struct MenuFF78Rec10CB8 *)rec)->fC0 = *(u16 *)(rec + 200);
+            if (((struct MenuFF78Rec10CB8 *)rec)->fC0 == 99)
+                ((struct MenuFF78Rec10CB8 *)rec)->fC0 = 0;
+        } else {
+            ((struct MenuFF78Rec10CB8 *)rec)->fC0 = 0;
+        }
+        {
+            const u16 *tb;
+            u16 *row;
+            u32 *out;
+            u16 v;
+            s32 off2;
+            out = (u32 *)(rec + 364);
+            tb = MenuFF78Tbl10CB8;
+            off2 = *(s16 *)(rec + 192) * 2;
+            row = (u16 *)(uintptr_t)(tb + 10);
+            *out = v = *(u16 *)(uintptr_t)((u32)off2 + (u32)(uintptr_t)row);
+            _08007ABC(*(void **)(rec + 36), v, *(u32 *)(rec + 360));
+            *(u32 *)(rec + 376) = tb[10];
+            *(u32 *)(rec + 388) = tb[11];
+            *(u32 *)(rec + 400) = tb[12];
+        }
+        _08007ABC(*(void **)(rec + 36), *(u32 *)(rec + 376),
+                  *(u32 *)(rec + 372));
+        _08007ABC(*(void **)(rec + 36), *(u32 *)(rec + 388),
+                  *(u32 *)(rec + 384));
+        _08007ABC(*(void **)(rec + 36), *(u32 *)(rec + 400),
+                  *(u32 *)(rec + 396));
+        _0800F810(rec);
+        break;
+    }
 }
 
 void _080010CB8(void *a, int b, int c) __attribute__((alias("MenuFF78_10CB8")));
