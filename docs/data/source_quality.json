@@ -1195,11 +1195,10 @@
    "size": 20
   },
   "0x08002c98": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 71,
-    "naked": true
+    "barrier": 1,
+    "pin": 10
    },
    "file": "src/runtime_hud.c",
    "name": "ObjFlush_02C98",
@@ -2484,12 +2483,10 @@
    "size": 236
   },
   "0x080053dc": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
-    "barrier": 4,
-    "insn": 2,
-    "insn_lines": 3,
-    "pin": 16
+    "barrier": 7,
+    "pin": 22
    },
    "file": "src/event_dma_queue.c",
    "name": "OAMGrid_Build",
@@ -4406,11 +4403,11 @@
    "size": 84
   },
   "0x0800be74": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 171,
-    "naked": true
+    "barrier": 4,
+    "directive": 1,
+    "pin": 13
    },
    "file": "src/scene_record_dispatch.c",
    "name": "MenuPlaceUpdate_0BE74",
@@ -5521,22 +5518,19 @@
    "size": 104
   },
   "0x080109d4": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 324,
-    "naked": true
+    "directive": 1,
+    "pin": 3
    },
    "file": "src/menu_ff78_a.c",
    "name": "MenuFF78_109D4",
    "size": 740
   },
   "0x08010cb8": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 297,
-    "naked": true
+    "directive": 1
    },
    "file": "src/menu_ff78_b.c",
    "name": "MenuFF78_10CB8",
@@ -5656,12 +5650,7 @@
    "size": 496
   },
   "0x08011b48": {
-   "class": "asm",
-   "detail": {
-    "insn": 1,
-    "insn_lines": 162,
-    "naked": true
-   },
+   "class": "c",
    "file": "src/menu_ff78_l.c",
    "name": "MenuFF78_11B48",
    "size": 372
@@ -5994,11 +5983,11 @@
    "size": 228
   },
   "0x08013108": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 296,
-    "naked": true
+    "barrier": 12,
+    "directive": 1,
+    "pin": 8
    },
    "file": "src/menu_ff78_r.c",
    "name": "MenuFF78_13108",
@@ -7523,11 +7512,11 @@
    "size": 68
   },
   "0x0801a12c": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 64,
-    "naked": true
+    "barrier": 1,
+    "directive": 2,
+    "pin": 6
    },
    "file": "src/race_cluster.c",
    "name": "Race_Cluster_Dispatch",
@@ -7667,11 +7656,11 @@
    "size": 136
   },
   "0x0801b498": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 233,
-    "naked": true
+    "barrier": 7,
+    "directive": 6,
+    "pin": 17
    },
    "file": "src/race_scene_a1.c",
    "name": "_08001B498",
@@ -9015,12 +9004,7 @@
    "size": 52
   },
   "0x08023628": {
-   "class": "asm",
-   "detail": {
-    "insn": 1,
-    "insn_lines": 211,
-    "naked": true
-   },
+   "class": "c",
    "file": "src/scene_record_dispatch.c",
    "name": "RaceSceneCtor_23628",
    "size": 500
@@ -10611,11 +10595,10 @@
    "size": 80
   },
   "0x08026b80": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 118,
-    "naked": true
+    "barrier": 2,
+    "pin": 12
    },
    "file": "src/sprite_obj_263e0.c",
    "name": "Sprite_MenuEvent",
@@ -10869,11 +10852,10 @@
    "size": 84
   },
   "0x08027d84": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 193,
-    "naked": true
+    "barrier": 5,
+    "pin": 22
    },
    "file": "src/garage.c",
    "name": "Garage_27D84",
@@ -11407,11 +11389,10 @@
    "size": 148
   },
   "0x08029a74": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 163,
-    "naked": true
+    "barrier": 3,
+    "pin": 2
    },
    "file": "src/garage_records.c",
    "name": "_080029A74",
@@ -13254,20 +13235,20 @@
  },
  "totals": {
   "asm": {
-   "bytes": 61068,
-   "functions": 158
+   "bytes": 55552,
+   "functions": 146
   },
   "c": {
-   "bytes": 43078,
-   "functions": 872
+   "bytes": 43950,
+   "functions": 874
   },
   "c_fakematch": {
-   "bytes": 83430,
-   "functions": 639
+   "bytes": 88274,
+   "functions": 650
   },
   "partial": {
-   "bytes": 560,
-   "functions": 6
+   "bytes": 360,
+   "functions": 5
   }
  },
  "version": 1
