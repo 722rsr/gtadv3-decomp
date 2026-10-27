@@ -23,11 +23,12 @@ HOST_STUB(void _08002B368(u16 v));                                              
 HOST_STUB(void sub_0802B368(u16 v));
 HOST_STUB(int _08024068(void));                                                 // 0x08024068 record-kind probe
 HOST_STUB(void _08002158(int id, u16 payload));                                 // 0x08002158 block-B forward
-HOST_STUB(u16 _08002178(int x));                                                // 0x08002178 block-B dispatch-if-less
+HOST_STUB(u16 _08002178(int x, int hwIndex));                                   // 0x08002178 block-B dispatch-if-less
 HOST_STUB(void _08002618(int a, int b));                                        // 0x08002618 scene event
 HOST_STUB(void _08007B18(void *r, int k, int x, int y, u32 a, u32 b, u32 c, u32 d)); // 0x08007B18 8-arg emit
 HOST_STUB(void Sub_08007BFC(void *a, int b, int c, int d, int e, int f, int g, int h, int i)); // 0x08007BFC exact ROM
 HOST_STUB(void sub_08007BFC(void *a, int b, int c, int d, int e, int f, int g, int h, int i)); // 0x08007BFC exact ROM (closure spelling)
+HOST_STUB(void _08007BFC(void *a, int b, int c, int d, int e, int f, int g, int h, int i)); // 0x08007BFC direct spelling (course_records.c)
 HOST_STUB(void Sub_08007C68(void *a, u32 b, u32 c, int d, int e, int f, int g, int h, int i)); // 0x08007C68 exact ROM (kept for unconverted sites)
 extern void _08007C68(void *a, u32 b, u32 c, u32 d, u32 e, u32 f, u32 g, u32 h, u32 i); // faithful strong body (course_records.c)
 HOST_STUB(void _08001D910(int a0, int a1, u32 a2, int a3, int a4));              // 0x08001D910 attr/param lane
@@ -139,7 +140,7 @@ void _08001E230(volatile u8 *rec, u16 b, u16 c) {
             sel = 1;
         else
             sel = 0;
-        *(volatile u16 *)r4 = ((u16 (*)(int, int))_08002178)(sel, 4);
+        *(volatile u16 *)r4 = _08002178(sel, 4);
     }
     if ((u16)(c - 1) <= 1u)
         *(volatile u16 *)(rec + 170) = 1;
@@ -382,171 +383,67 @@ void _08001E718(void *rec_) {
 // record+16 base; pair kind 56/132 when count>9 else 40/140; tail emit
 // carries u32[rec+264/268/276/280] + (11,1,1,0).
 // ----------------------------------------------------------------------------
-__attribute__((naked)) void _08001E764(void *rec_) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        ".L1e764_08001E764:\n"
-        "	push	{r4, r5, r6, r7, lr}\n"
-        "	mov	r7, r9\n"
-        "	mov	r6, r8\n"
-        "	push	{r6, r7}\n"
-        "	sub	sp, #20\n"
-        "	adds	r7, r0, #0\n"
-        "	bl sub_08001E390\n"
-        "	ldr r4, .L1e764_08001E7E8\n"
-        "	ldr r0, .L1e764_08001E7EC\n"
-        "	adds	r4, r4, r0\n"
-        "	ldr	r2, [r4, #0]\n"
-        "	movs	r0, #120\n"
-        "	movs	r1, #64\n"
-        "	movs	r3, #10\n"
-        "	bl sub_08001DA70\n"
-        "	ldr	r0, [r4, #0]\n"
-        "	cmp	r0, #9\n"
-        "	bhi .L1e764_08001E7F0\n"
-        "	movs	r3, #72\n"
-        "	movs	r1, #80\n"
-        "	mov	r9, r1\n"
-        "	adds	r5, r7, #0\n"
-        "	adds	r5, #16\n"
-        "	movs	r2, #146\n"
-        "	lsls	r2, r2, #1\n"
-        "	adds	r0, r7, r2\n"
-        "	ldr	r1, [r0, #0]\n"
-        "	movs	r4, #148\n"
-        "	lsls	r4, r4, #1\n"
-        "	adds	r0, r7, r4\n"
-        "	ldr	r2, [r0, #0]\n"
-        "	str	r3, [sp, #0]\n"
-        "	movs	r0, #10\n"
-        "	mov	r8, r0\n"
-        "	str	r0, [sp, #4]\n"
-        "	movs	r4, #1\n"
-        "	str	r4, [sp, #8]\n"
-        "	str	r4, [sp, #12]\n"
-        "	movs	r6, #0\n"
-        "	str	r6, [sp, #16]\n"
-        "	adds	r0, r5, #0\n"
-        "	movs	r3, #56\n"
-        "	bl sub_08007BFC\n"
-        "	movs	r1, #152\n"
-        "	lsls	r1, r1, #1\n"
-        "	adds	r0, r7, r1\n"
-        "	ldr	r1, [r0, #0]\n"
-        "	movs	r2, #154\n"
-        "	lsls	r2, r2, #1\n"
-        "	adds	r0, r7, r2\n"
-        "	ldr	r2, [r0, #0]\n"
-        "	mov	r3, r9\n"
-        "	str	r3, [sp, #0]\n"
-        "	mov	r0, r8\n"
-        "	str	r0, [sp, #4]\n"
-        "	str	r4, [sp, #8]\n"
-        "	str	r4, [sp, #12]\n"
-        "	str	r6, [sp, #16]\n"
-        "	adds	r0, r5, #0\n"
-        "	movs	r3, #132\n"
-        "	bl sub_08007BFC\n"
-        "	b .L1e764_08001E84A\n"
-        ".L1e764_08001E7E8: .word 0x03001780\n"
-        ".L1e764_08001E7EC: .word 0x000010F8\n"
-        ".L1e764_08001E7F0:\n"
-        "	movs	r3, #72\n"
-        "	movs	r1, #80\n"
-        "	mov	r9, r1\n"
-        "	adds	r5, r7, #0\n"
-        "	adds	r5, #16\n"
-        "	movs	r2, #146\n"
-        "	lsls	r2, r2, #1\n"
-        "	adds	r0, r7, r2\n"
-        "	ldr	r1, [r0, #0]\n"
-        "	movs	r4, #148\n"
-        "	lsls	r4, r4, #1\n"
-        "	adds	r0, r7, r4\n"
-        "	ldr	r2, [r0, #0]\n"
-        "	str	r3, [sp, #0]\n"
-        "	movs	r0, #10\n"
-        "	mov	r8, r0\n"
-        "	str	r0, [sp, #4]\n"
-        "	movs	r4, #1\n"
-        "	str	r4, [sp, #8]\n"
-        "	str	r4, [sp, #12]\n"
-        "	movs	r6, #0\n"
-        "	str	r6, [sp, #16]\n"
-        "	adds	r0, r5, #0\n"
-        "	movs	r3, #40\n"
-        "	bl sub_08007BFC\n"
-        "	movs	r1, #152\n"
-        "	lsls	r1, r1, #1\n"
-        "	adds	r0, r7, r1\n"
-        "	ldr	r1, [r0, #0]\n"
-        "	movs	r2, #154\n"
-        "	lsls	r2, r2, #1\n"
-        "	adds	r0, r7, r2\n"
-        "	ldr	r2, [r0, #0]\n"
-        "	mov	r3, r9\n"
-        "	str	r3, [sp, #0]\n"
-        "	mov	r0, r8\n"
-        "	str	r0, [sp, #4]\n"
-        "	str	r4, [sp, #8]\n"
-        "	str	r4, [sp, #12]\n"
-        "	str	r6, [sp, #16]\n"
-        "	adds	r0, r5, #0\n"
-        "	movs	r3, #140\n"
-        "	bl sub_08007BFC\n"
-        ".L1e764_08001E84A:\n"
-        "	movs	r1, #132\n"
-        "	lsls	r1, r1, #1\n"
-        "	adds	r0, r7, r1\n"
-        "	ldr	r1, [r0, #0]\n"
-        "	movs	r2, #134\n"
-        "	lsls	r2, r2, #1\n"
-        "	adds	r0, r7, r2\n"
-        "	ldr	r2, [r0, #0]\n"
-        "	movs	r3, #138\n"
-        "	lsls	r3, r3, #1\n"
-        "	adds	r0, r7, r3\n"
-        "	ldr	r3, [r0, #0]\n"
-        "	movs	r4, #140\n"
-        "	lsls	r4, r4, #1\n"
-        "	adds	r0, r7, r4\n"
-        "	ldr	r0, [r0, #0]\n"
-        "	str	r0, [sp, #0]\n"
-        "	movs	r0, #11\n"
-        "	str	r0, [sp, #4]\n"
-        "	movs	r0, #1\n"
-        "	str	r0, [sp, #8]\n"
-        "	str	r0, [sp, #12]\n"
-        "	movs	r0, #0\n"
-        "	str	r0, [sp, #16]\n"
-        "	adds	r0, r5, #0\n"
-        "	bl sub_08007BFC\n"
-        "	adds	r0, r7, #0\n"
-        "	adds	r0, #162\n"
-        "	movs	r2, #0\n"
-        "	ldrsh	r1, [r0, r2]\n"
-        "	adds	r0, r7, #0\n"
-        "	bl sub_08001DBC0\n"
-        "	adds	r0, r7, #0\n"
-        "	adds	r0, #148\n"
-        "	movs	r1, #15\n"
-        "	bl sub_0800D97C\n"
-        "	adds	r0, r7, #0\n"
-        "	adds	r0, #40\n"
-        "	bl sub_0800DBE8\n"
-        "	adds	r0, r7, #0\n"
-        "	bl sub_08001E9D8\n"
-        "	add	sp, #20\n"
-        "	pop	{r3, r4}\n"
-        "	mov	r8, r3\n"
-        "	mov	r9, r4\n"
-        "	pop	{r4, r5, r6, r7}\n"
-        "	pop	{r0}\n"
-        "	bx	r0\n"
-        ".syntax divided\n"
-    );
-}
+void _08001E764(void *rec_) {
+    volatile u8 *rec = (volatile u8 *)rec_;
+    extern u8 RaceSceneCWa1F8[];
+    extern u8 RaceSceneCO10F8[];
+    __asm__(".globl RaceSceneCWa1F8\nRaceSceneCWa1F8 = 0x03001780\n"
+            ".globl RaceSceneCO10F8\nRaceSceneCO10F8 = 0x000010F8\n");
+    register void *dst __asm__("r5");
+    register u32 a72 __asm__("r3");
+    register u32 a80 __asm__("r9");
+    register u32 t80 __asm__("r1");
+    register u32 off1 __asm__("r2");
+    register u32 off2 __asm__("r4");
+    register uintptr_t addr __asm__("r0");
+    uintptr_t a;
+    u32 r1;
+    u32 r2;
 
+    _08001E390(rec_);
+    a = (uintptr_t)RaceSceneCWa1F8 + (uintptr_t)RaceSceneCO10F8;
+    _08001DA70(120, 64, *(volatile u32 *)a, 10);
+    if (*(volatile u32 *)a <= 9u) {
+        a72 = 72;
+        t80 = 80;
+        __asm__ volatile("" : "+r"(t80));
+        a80 = t80;
+        dst = (void *)(rec + 16);
+        {
+            register u32 v1 __asm__("r1");
+            u32 v2;
+            off1 = 292;
+            __asm__ volatile("" : "+r"(off1));
+            addr = (uintptr_t)rec + off1;
+            v1 = *(volatile u32 *)addr;
+            off2 = 296;
+            __asm__ volatile("" : "+r"(off2));
+            addr = (uintptr_t)rec + off2;
+            v2 = *(volatile u32 *)addr;
+            sub_08007BFC(dst, (int)v1, (int)v2, 56, a72, 10, 1, 1, 0);
+        }
+        r1 = *(volatile u32 *)(rec + 304);
+        r2 = *(volatile u32 *)(rec + 308);
+        sub_08007BFC(dst, (int)r1, (int)r2, 132, a80, 10, 1, 1, 0);
+    } else {
+        a72 = 72;
+        a80 = 80;
+        dst = (void *)(rec + 16);
+        r1 = *(volatile u32 *)(rec + 292);
+        r2 = *(volatile u32 *)(rec + 296);
+        sub_08007BFC(dst, (int)r1, (int)r2, 40, a72, 10, 1, 1, 0);
+        r1 = *(volatile u32 *)(rec + 304);
+        r2 = *(volatile u32 *)(rec + 308);
+        sub_08007BFC(dst, (int)r1, (int)r2, 140, a80, 10, 1, 1, 0);
+    }
+    _08007BFC(dst, (int)*(volatile u32 *)(rec + 264), (int)*(volatile u32 *)(rec + 268),
+              (int)*(volatile u32 *)(rec + 276), *(volatile u32 *)(rec + 280),
+              11, 1, 1, 0);
+    _08001DBC0((void *)rec, *(s16 *)(rec + 162));
+    _0800D97C((void *)(rec + 148), 15);
+    _0800DBE8((void *)(rec + 40));
+    _08001E9D8((void *)rec);
+}
 // ----------------------------------------------------------------------------
 // ---- 0x08001E8B4 — E4C0 + E56C + guarded emit + DBC0/D97C/DBE8/E9D8 tail ----
 // No pools. NOTE: the E56C call is load-bearing: the ROM emits
