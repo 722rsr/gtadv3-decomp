@@ -1,7 +1,8 @@
 // ============================================================================
 // menu_ff78_r.c — reconstructed C for asm/menu_ff78.s (1 function).
 //
-// Body transcribed instruction-for-instruction from the asm listing.
+// Body transcribed from the asm listing, then shaped until agbcc reproduces
+// it byte for byte (728/728 bytes including the literal pool).
 // External callees use the Sub_ spellings the asm closure defines,
 // so behavior is identical by construction.
 //
@@ -9,6 +10,7 @@
 // ============================================================================
 
 #include "gba/types.h"
+#include "gtadv/ram_blocks.h"
 
 extern void Sub_08007770(int a, void *b, int c, int d, u32 e, u32 f);
 extern void _08007770(int a, void *b, int c, int d, u32 e, u32 f); // R2-faithful strong body
@@ -52,333 +54,159 @@ extern void Sub_0800D9A4(void *a, int b, int c);
 //   DMA: for k in 1..5: [0x040000D4] = (u32)(0x080CD7A8 +
 //     (s8)u8[0x080CCEEC + s16[174]*20 + k]*2);
 //     [..+4] = 0x05000280+k*2; [..+8] = 0x80000001 (+ dummy read).
-__attribute__((naked)) void MenuFF78_13108(void *rec_) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        ".L13108_080013108:\n"
-        "	push	{r4, r5, r6, r7, lr}\n"
-        "	mov	r7, r9\n"
-        "	mov	r6, r8\n"
-        "	push	{r6, r7}\n"
-        "	sub	sp, #8\n"
-        "	adds	r7, r0, #0\n"
-        "	ldr r0, .L13108_080013134\n"
-        "	ldr r1, .L13108_080013138\n"
-        "	adds	r4, r0, r1\n"
-        "	ldrh	r2, [r4, #0]\n"
-        "	cmp	r2, #3\n"
-        "	bne .L13108_080013126\n"
-        "	ldr r0, .L13108_08001313C\n"
-        "	bl 0x08002124\n"
-        ".L13108_080013126:\n"
-        "	ldrh	r4, [r4, #0]\n"
-        "	cmp	r4, #7\n"
-        "	bne .L13108_080013140\n"
-        "	adds	r1, r7, #0\n"
-        "	adds	r1, #138\n"
-        "	movs	r0, #0\n"
-        "	b .L13108_080013146\n"
-        ".L13108_080013134: .word 0x03001780\n"
-        ".L13108_080013138: .word 0x00000FBC\n"
-        ".L13108_08001313C: .word 0x00001393\n"
-        ".L13108_080013140:\n"
-        "	adds	r1, r7, #0\n"
-        "	adds	r1, #138\n"
-        "	movs	r0, #1\n"
-        ".L13108_080013146:\n"
-        "	strh	r0, [r1, #0]\n"
-        "	mov	r8, r1\n"
-        "	movs	r0, #49\n"
-        "	bl 0x0802B214\n"
-        "	ldr r5, .L13108_0800131CC\n"
-        "	movs	r4, #4\n"
-        "	str	r4, [sp, #0]\n"
-        "	movs	r6, #1\n"
-        "	str	r6, [sp, #4]\n"
-        "	movs	r0, #0\n"
-        "	adds	r1, r5, #0\n"
-        "	movs	r2, #3\n"
-        "	movs	r3, #0\n"
-        "	bl sub_08007770\n"
-        "	movs	r0, #6\n"
-        "	str	r0, [r7, #104]\n"
-        "	str	r4, [r7, #116]\n"
-        "	adds	r0, r7, #0\n"
-        "	adds	r0, #128\n"
-        "	str	r6, [r0, #0]\n"
-        "	subs	r0, #96\n"
-        "	bl sub_0800DAB8\n"
-        "	ldr r4, .L13108_0800131D0\n"
-        "	adds	r0, r4, #0\n"
-        "	movs	r1, #0\n"
-        "	movs	r2, #3\n"
-        "	bl sub_080075E8\n"
-        "	adds	r0, r4, #0\n"
-        "	movs	r1, #2\n"
-        "	movs	r2, #7\n"
-        "	bl sub_080075E8\n"
-        "	adds	r0, r5, #0\n"
-        "	adds	r1, r7, #0\n"
-        "	bl sub_0800798C\n"
-        "	adds	r0, r5, #0\n"
-        "	movs	r1, #0\n"
-        "	movs	r2, #4\n"
-        "	bl sub_080075E8\n"
-        "	adds	r0, r5, #0\n"
-        "	movs	r1, #1\n"
-        "	movs	r2, #6\n"
-        "	bl sub_080075E8\n"
-        "	adds	r0, r5, #0\n"
-        "	movs	r1, #2\n"
-        "	movs	r2, #8\n"
-        "	bl sub_080075E8\n"
-        "	adds	r0, r7, #0\n"
-        "	bl sub_08007A58\n"
-        "	mov	r3, r8\n"
-        "	movs	r0, #0\n"
-        "	ldrsh	r1, [r3, r0]\n"
-        "	cmp	r1, #0\n"
-        "	beq .L13108_0800131D4\n"
-        "	cmp	r1, #1\n"
-        "	beq .L13108_0800131DC\n"
-        "	b .L13108_0800131E2\n"
-        "	movs	r0, r0\n"
-        ".L13108_0800131CC: .word 0x082EE524\n"
-        ".L13108_0800131D0: .word 0x082A798C\n"
-        ".L13108_0800131D4:\n"
-        "	adds	r0, r7, #0\n"
-        "	bl sub_080012F98\n"
-        "	b .L13108_0800131E2\n"
-        ".L13108_0800131DC:\n"
-        "	adds	r0, r7, #0\n"
-        "	bl sub_080013024\n"
-        ".L13108_0800131E2:\n"
-        "	ldr r0, .L13108_0800133AC\n"
-        "	movs	r1, #0\n"
-        "	movs	r2, #5\n"
-        "	bl sub_080075E8\n"
-        "	ldr r0, .L13108_0800133B0\n"
-        "	adds	r1, r7, #0\n"
-        "	adds	r1, #8\n"
-        "	bl sub_0800798C\n"
-        "	adds	r4, r7, #0\n"
-        "	adds	r4, #176\n"
-        "	movs	r1, #0\n"
-        "	ldrsh	r0, [r4, r1]\n"
-        "	bl sub_080012E5C\n"
-        "	movs	r0, #16\n"
-        "	bl sub_0800572C\n"
-        "	movs	r2, #146\n"
-        "	lsls	r2, r2, #2\n"
-        "	adds	r5, r7, r2\n"
-        "	str	r0, [r5, #0]\n"
-        "	movs	r3, #0\n"
-        "	ldrsh	r0, [r4, r3]\n"
-        "	bl sub_080012E74\n"
-        "	adds	r1, r0, #0\n"
-        "	movs	r2, #147\n"
-        "	lsls	r2, r2, #2\n"
-        "	adds	r0, r7, r2\n"
-        "	str	r1, [r0, #0]\n"
-        "	ldr	r0, [r7, #12]\n"
-        "	ldr	r2, [r5, #0]\n"
-        "	bl sub_08007ABC\n"
-        "	ldr r0, .L13108_0800133B4\n"
-        "	adds	r1, r7, #0\n"
-        "	adds	r1, #16\n"
-        "	bl sub_0800798C\n"
-        "	movs	r0, #14\n"
-        "	bl sub_0800572C\n"
-        "	movs	r3, #149\n"
-        "	lsls	r3, r3, #2\n"
-        "	adds	r5, r7, r3\n"
-        "	str	r0, [r5, #0]\n"
-        "	movs	r0, #150\n"
-        "	lsls	r0, r0, #2\n"
-        "	adds	r0, r0, r7\n"
-        "	mov	r9, r0\n"
-        "	movs	r6, #5\n"
-        "	str	r6, [r0, #0]\n"
-        "	ldr	r0, [r7, #20]\n"
-        "	ldr	r2, [r5, #0]\n"
-        "	movs	r1, #5\n"
-        "	bl sub_08007ABC\n"
-        "	ldr r0, .L13108_0800133B8\n"
-        "	adds	r1, r7, #0\n"
-        "	adds	r1, #24\n"
-        "	bl sub_0800798C\n"
-        "	movs	r0, #7\n"
-        "	bl sub_0800572C\n"
-        "	movs	r1, #152\n"
-        "	lsls	r1, r1, #2\n"
-        "	adds	r4, r7, r1\n"
-        "	str	r0, [r4, #0]\n"
-        "	movs	r2, #153\n"
-        "	lsls	r2, r2, #2\n"
-        "	adds	r2, r2, r7\n"
-        "	mov	r8, r2\n"
-        "	movs	r0, #50\n"
-        "	str	r0, [r2, #0]\n"
-        "	ldr	r0, [r7, #28]\n"
-        "	ldr	r2, [r4, #0]\n"
-        "	movs	r1, #50\n"
-        "	bl sub_08007ABC\n"
-        "	movs	r0, #0\n"
-        "	str	r0, [r7, #32]\n"
-        "	movs	r0, #1\n"
-        "	strh	r0, [r7, #36]\n"
-        "	adds	r0, r7, #0\n"
-        "	adds	r0, #52\n"
-        "	movs	r2, #32\n"
-        "	negs	r2, r2\n"
-        "	movs	r1, #0\n"
-        "	bl sub_0800D77C\n"
-        "	adds	r0, r7, #0\n"
-        "	adds	r0, #44\n"
-        "	movs	r1, #0\n"
-        "	movs	r2, #160\n"
-        "	bl sub_0800D77C\n"
-        "	movs	r0, #6\n"
-        "	strh	r0, [r7, #40]\n"
-        "	strh	r6, [r7, #42]\n"
-        "	movs	r3, #145\n"
-        "	lsls	r3, r3, #2\n"
-        "	adds	r0, r7, r3\n"
-        "	adds	r6, r7, #0\n"
-        "	adds	r6, #174\n"
-        "	movs	r2, #0\n"
-        "	ldrsh	r1, [r6, r2]\n"
-        "	adds	r2, r7, #0\n"
-        "	adds	r2, #172\n"
-        "	movs	r3, #0\n"
-        "	ldrsh	r2, [r2, r3]\n"
-        "	bl sub_0800D9A4\n"
-        "	movs	r1, #0\n"
-        "	ldrsh	r0, [r6, r1]\n"
-        "	bl 0x08024C3C\n"
-        "	adds	r1, r0, #0\n"
-        "	mov	r2, r9\n"
-        "	str	r1, [r2, #0]\n"
-        "	ldr	r0, [r7, #20]\n"
-        "	ldr	r2, [r5, #0]\n"
-        "	bl sub_08007ABC\n"
-        "	movs	r3, #0\n"
-        "	ldrsh	r0, [r6, r3]\n"
-        "	bl 0x08024C58\n"
-        "	adds	r1, r0, #0\n"
-        "	mov	r0, r8\n"
-        "	str	r1, [r0, #0]\n"
-        "	ldr	r0, [r7, #28]\n"
-        "	ldr	r2, [r4, #0]\n"
-        "	bl sub_08007ABC\n"
-        "	ldr r2, .L13108_0800133BC\n"
-        "	ldr r5, .L13108_0800133C0\n"
-        "	movs	r3, #0\n"
-        "	ldrsh	r1, [r6, r3]\n"
-        "	lsls	r0, r1, #2\n"
-        "	adds	r0, r0, r1\n"
-        "	lsls	r0, r0, #2\n"
-        "	adds	r0, r0, r5\n"
-        "	ldrb	r0, [r0, #1]\n"
-        "	lsls	r0, r0, #24\n"
-        "	asrs	r0, r0, #24\n"
-        "	lsls	r0, r0, #1\n"
-        "	ldr r4, .L13108_0800133C4\n"
-        "	adds	r0, r0, r4\n"
-        "	str	r0, [r2, #0]\n"
-        "	ldr r0, .L13108_0800133C8\n"
-        "	str	r0, [r2, #4]\n"
-        "	ldr r3, .L13108_0800133CC\n"
-        ".L13108_080013318:\n"
-        "	str	r3, [r2, #8]\n"
-        "	ldr	r0, [r2, #8]\n"
-        "	movs	r0, #0\n"
-        "	ldrsh	r1, [r6, r0]\n"
-        "	lsls	r0, r1, #2\n"
-        "	adds	r0, r0, r1\n"
-        "	lsls	r0, r0, #2\n"
-        "	adds	r0, r0, r5\n"
-        "	ldrb	r0, [r0, #2]\n"
-        "	lsls	r0, r0, #24\n"
-        "	asrs	r0, r0, #24\n"
-        "	lsls	r0, r0, #1\n"
-        "	adds	r0, r0, r4\n"
-        "	str	r0, [r2, #0]\n"
-        "	ldr r0, .L13108_0800133D0\n"
-        "	str	r0, [r2, #4]\n"
-        "	str	r3, [r2, #8]\n"
-        "	ldr	r0, [r2, #8]\n"
-        "	movs	r0, #0\n"
-        "	ldrsh	r1, [r6, r0]\n"
-        "	lsls	r0, r1, #2\n"
-        "	adds	r0, r0, r1\n"
-        "	lsls	r0, r0, #2\n"
-        "	adds	r0, r0, r5\n"
-        "	ldrb	r0, [r0, #3]\n"
-        "	lsls	r0, r0, #24\n"
-        "	asrs	r0, r0, #24\n"
-        "	lsls	r0, r0, #1\n"
-        "	adds	r0, r0, r4\n"
-        "	str	r0, [r2, #0]\n"
-        "	ldr r0, .L13108_0800133D4\n"
-        "	str	r0, [r2, #4]\n"
-        "	str	r3, [r2, #8]\n"
-        "	ldr	r0, [r2, #8]\n"
-        "	movs	r0, #0\n"
-        "	ldrsh	r1, [r6, r0]\n"
-        "	lsls	r0, r1, #2\n"
-        "	adds	r0, r0, r1\n"
-        "	lsls	r0, r0, #2\n"
-        "	adds	r0, r0, r5\n"
-        "	ldrb	r0, [r0, #4]\n"
-        "	lsls	r0, r0, #24\n"
-        "	asrs	r0, r0, #24\n"
-        "	lsls	r0, r0, #1\n"
-        "	adds	r0, r0, r4\n"
-        "	str	r0, [r2, #0]\n"
-        "	ldr r0, .L13108_0800133D8\n"
-        "	str	r0, [r2, #4]\n"
-        "	str	r3, [r2, #8]\n"
-        "	ldr	r0, [r2, #8]\n"
-        "	movs	r0, #0\n"
-        "	ldrsh	r1, [r6, r0]\n"
-        "	lsls	r0, r1, #2\n"
-        "	adds	r0, r0, r1\n"
-        "	lsls	r0, r0, #2\n"
-        "	adds	r0, r0, r5\n"
-        "	ldrb	r0, [r0, #5]\n"
-        "	lsls	r0, r0, #24\n"
-        "	asrs	r0, r0, #24\n"
-        "	lsls	r0, r0, #1\n"
-        "	adds	r0, r0, r4\n"
-        "	str	r0, [r2, #0]\n"
-        "	ldr r0, .L13108_0800133DC\n"
-        "	str	r0, [r2, #4]\n"
-        "	str	r3, [r2, #8]\n"
-        "	ldr	r0, [r2, #8]\n"
-        "	add	sp, #8\n"
-        "	pop	{r3, r4}\n"
-        "	mov	r8, r3\n"
-        "	mov	r9, r4\n"
-        "	pop	{r4, r5, r6, r7}\n"
-        "	pop	{r0}\n"
-        "	bx	r0\n"
-        "	movs	r0, r0\n"
-        ".L13108_0800133AC: .word 0x082C4228\n"
-        ".L13108_0800133B0: .word 0x082ECAE4\n"
-        ".L13108_0800133B4: .word 0x082C5040\n"
-        ".L13108_0800133B8: .word 0x082D0DC0\n"
-        ".L13108_0800133BC: .word 0x040000D4\n"
-        ".L13108_0800133C0: .word 0x080CCEEC\n"
-        ".L13108_0800133C4: .word 0x080CD7A8\n"
-        ".L13108_0800133C8: .word 0x05000282\n"
-        ".L13108_0800133CC: .word 0x80000001\n"
-        ".L13108_0800133D0: .word 0x05000284\n"
-        ".L13108_0800133D4: .word 0x05000286\n"
-        ".L13108_0800133D8: .word 0x05000288\n"
-        ".L13108_0800133DC: .word 0x0500028A\n"
-        ".syntax divided\n"
-    );
+//
+// Shaping notes (the last walls, measured with corpus_match_probe --diff):
+//
+// * The DMA control word is the ROM's pooled 0x80000001, written from r3 with
+//   one `ldr r3,[pc,..]` hoisted ahead of the five unrolled stores.  Writing
+//   the literal in each step lets agbcc rematerialise a `movs r3,#1`-style
+//   immediate instead; spelling the full 0x80000001 (which no Thumb immediate
+//   can build) makes it pool the word and CSE the five loads into the ROM's
+//   single hoisted load + five stores.  `(void)dma[2]` keeps the ROM's dummy
+//   read-back after each store.
+// * The rec+600 pointer (`r9v`) must land in r9, but its address is computed
+//   and used inside one basic block, so local-alloc allocates it — and takes
+//   r8, the first free register at that point — giving `mov r8,r0` where the
+//   ROM has `mov r9,r0` and pushing rec+612 (the ROM's r8) to r9.  The two
+//   empty barriers around the definition occupy r8 for exactly the window in
+//   which local-alloc scores that quantity (`ghost8` is a pinned dummy; no
+//   template text, so no bytes), which makes the first free register r9.  The
+//   window closes before rec+612's definition, so global-alloc can still give
+//   rec+612 = r8, as the ROM does.
+//   (Measured alternatives: pinning either pointer to r8/r9 adds a copy and
+//   changes the tail scratch rotation; extending r9v's liveness instead makes
+//   it sort ahead of the rec+138 pointer and swaps r8/r9 the other way.)
+// * `rec + N` addresses stay pointer arithmetic (`*(volatile u8 *)(rec + N)`),
+//   never `(uintptr_t)(rec + N)`: the pointer form keeps the ROM's separate
+//   `adds rX,r7,#0 / adds rX,#N` pair.
+// ----------------------------------------------------------------------------
+#define FF78_DMA_STEP(K, DEST)                                             \
+    do {                                                                   \
+        volatile u8 *row_;                                                 \
+        s32 byte_;                                                         \
+        __asm__ volatile ("" : : : "memory");                              \
+        idx_ = (s32)*(s16 *)(uintptr_t)r6v;                                \
+        row_ = (volatile u8 *)(uintptr_t)((u32)(idx_ * 5) * 4 + r5v);      \
+        byte_ = (s32)((volatile s8 *)row_)[K];                             \
+        __asm__ volatile ("" : "+r"(byte_));                               \
+        dma[0] = 0x080CD7A8u + (u32)(byte_ * 2);                           \
+        dma[1] = (DEST);                                                   \
+        dma[2] = 0x80000001u;                                              \
+        (void)dma[2];                                                      \
+    } while (0)
+
+void MenuFF78_13108(void *rec_) {
+    RAM_DEF_03001780;
+    register u32 r4v __asm__("r4");
+    register u32 r5v __asm__("r5");
+    register u32 r6v __asm__("r6");
+    volatile u8 *rec;
+    volatile u32 *r9v;
+    volatile u32 *r8v;
+    register u32 ghost8 __asm__("r8");
+    register u32 wa_base __asm__("r0");
+    register u32 wa_off __asm__("r1");
+    register u32 mode __asm__("r2");
+    register u32 val;
+    register s32 idx_ __asm__("r1");
+    volatile u32 *dma;
+
+    rec = (volatile u8 *)rec_;
+
+    wa_base = (u32)RAM_SYM_03001780;
+    wa_off = 0x0FBCu;
+    r4v = wa_base + wa_off;
+    mode = (u32)*(u16 *)(uintptr_t)r4v;
+    if (mode == 3)
+        Sub_08002124(0x1393u);
+    r4v = (u32)*(u16 *)(uintptr_t)r4v;
+    if (r4v == 7)
+        *(volatile s16 *)(uintptr_t)(rec + 138) = 0;
+    else
+        *(volatile s16 *)(uintptr_t)(rec + 138) = 1;
+
+    Sub_08002B214(49);
+
+    r5v = 0x082EE524u;
+    Sub_08007770(0, (void *)(uintptr_t)r5v, 3, 0, 4, 1);
+
+    *(volatile u32 *)(uintptr_t)(rec + 104) = 6;
+    *(volatile u32 *)(uintptr_t)(rec + 116) = 4;
+    { volatile u8 *p1 = rec + 128; *(volatile u32 *)(uintptr_t)p1 = 1; }
+    { volatile u8 *p2 = rec + 32; Sub_0800DAB8((void *)(uintptr_t)p2); }
+
+    r4v = 0x082A798Cu;
+    Sub_080075E8((void *)(uintptr_t)r4v, 0, 3);
+    Sub_080075E8((void *)(uintptr_t)r4v, 2, 7);
+    Sub_0800798C((void *)(uintptr_t)r5v, (void *)(uintptr_t)rec);
+    Sub_080075E8((void *)(uintptr_t)r5v, 0, 4);
+    Sub_080075E8((void *)(uintptr_t)r5v, 1, 6);
+    Sub_080075E8((void *)(uintptr_t)r5v, 2, 8);
+    Sub_08007A58((void *)(uintptr_t)rec);
+
+    r8v = (volatile u32 *)(uintptr_t)(rec + 138);
+    switch ((int)*(s16 *)(uintptr_t)r8v) {
+    case 0: Sub_080012F98((void *)(uintptr_t)rec); break;
+    case 1: Sub_080013024((void *)(uintptr_t)rec); break;
+    default: break;
+    }
+
+    Sub_080075E8((void *)(uintptr_t)0x082C4228u, 0, 5);
+    Sub_0800798C((void *)(uintptr_t)0x082ECAE4u, (void *)(uintptr_t)(rec + 8));
+
+    r4v = (u32)(uintptr_t)(rec + 176);
+    Sub_080012E5C((int)*(s16 *)(uintptr_t)r4v);
+    *(volatile u32 *)(uintptr_t)(rec + 584) = Sub_0800572C(16);
+    val = (u32)Sub_080012E74((int)*(s16 *)(uintptr_t)r4v);
+    *(volatile u32 *)(uintptr_t)(rec + 588) = val;
+    Sub_08007ABC(*(volatile u32 *)(uintptr_t)(rec + 12), val,
+                 *(volatile u32 *)(uintptr_t)(rec + 584));
+
+    Sub_0800798C((void *)(uintptr_t)0x082C5040u, (void *)(uintptr_t)(rec + 16));
+    *(volatile u32 *)(uintptr_t)(rec + 596) = Sub_0800572C(14);
+    // Pinned-r8 window around the rec+600 pointer: keeps local-alloc off r8 so
+    // the address lands in r9 as in the ROM.  Emits no instructions.
+    __asm__ volatile ("" : "=r"(ghost8));
+    r9v = (volatile u32 *)(uintptr_t)(rec + 600);
+    *r9v = 5;
+    __asm__ volatile ("" : : "r"(ghost8));
+    Sub_08007ABC(*(volatile u32 *)(uintptr_t)(rec + 20), 5,
+                 *(volatile u32 *)(uintptr_t)(rec + 596));
+
+    Sub_0800798C((void *)(uintptr_t)0x082D0DC0u, (void *)(uintptr_t)(rec + 24));
+    *(volatile u32 *)(uintptr_t)(rec + 608) = Sub_0800572C(7);
+    r8v = (volatile u32 *)(uintptr_t)(rec + 612);
+    *r8v = 50;
+    Sub_08007ABC(*(volatile u32 *)(uintptr_t)(rec + 28), 50,
+                 *(volatile u32 *)(uintptr_t)(rec + 608));
+
+    *(volatile u32 *)(uintptr_t)(rec + 32) = 0;
+    *(volatile s16 *)(uintptr_t)(rec + 36) = 1;
+    Sub_0800D77C((void *)(uintptr_t)(rec + 52), 0, -32);
+    Sub_0800D77C((void *)(uintptr_t)(rec + 44), 0, 160);
+    *(volatile s16 *)(uintptr_t)(rec + 40) = 6;
+    *(volatile s16 *)(uintptr_t)(rec + 42) = 5;
+
+    { volatile u8 *p3 = rec + 580;
+      r6v = (u32)(uintptr_t)(rec + 174);
+      Sub_0800D9A4((void *)(uintptr_t)p3, (int)*(s16 *)(uintptr_t)r6v,
+                   (int)*(s16 *)(uintptr_t)(rec + 172)); }
+    val = (u32)Sub_08024C3C((int)*(s16 *)(uintptr_t)r6v);
+    *r9v = val;
+    Sub_08007ABC(*(volatile u32 *)(uintptr_t)(rec + 20), val,
+                 *(volatile u32 *)(uintptr_t)(rec + 596));
+    val = (u32)Sub_08024C58((int)*(s16 *)(uintptr_t)r6v);
+    *r8v = val;
+    Sub_08007ABC(*(volatile u32 *)(uintptr_t)(rec + 28), val,
+                 *(volatile u32 *)(uintptr_t)(rec + 608));
+
+    dma = (volatile u32 *)0x040000D4u;
+    r5v = 0x080CCEECu;
+    FF78_DMA_STEP(1, 0x05000282u);
+    FF78_DMA_STEP(2, 0x05000284u);
+    FF78_DMA_STEP(3, 0x05000286u);
+    FF78_DMA_STEP(4, 0x05000288u);
+    FF78_DMA_STEP(5, 0x0500028Au);
 }
 
 void _080013108(void *a) __attribute__((alias("MenuFF78_13108")));
