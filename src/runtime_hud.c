@@ -2481,114 +2481,96 @@ void *_08002BFC(int a) __attribute__((alias("ObjAlloc_02BFC")));
 // entry+2): for each of *(0x03000144) entries, walk the linked list at
 // *(0x03000140), copying 8 bytes per node, then CpuFastSet the result to
 // 0x07000000.
-// MEASURED 2026-10-25, C lift at 156/164 B (ROM 164): the Wrap_02D3C recipe
-// (src/foundation_runtime.c) reproduces the whole loop — the pre-guard
-// `if (idx < cnt)` with a `do`/`while (idx < *cntSaved)` bottom test, the SIGNED
-// compares, the `int cnt = *cntPtr` + separate `cntSaved` reload, and the
-// `__asm__("" : : "r"(src) : "r0")` pool split — so only allocation is left.
-// These pins reproduce the ROM's homes exactly (prologue, `mov sl`/`mov r9`,
-// tail `mov r0,sl`): src r5, dst r6, `p134` sl, `cntPtr` r9, `fields` r8; idx
-// stays unpinned (r7 instead of the ROM's r4). The field rewrite needs the
-// extract as `raw & 0x1FF` and the merge as two explicit statements
-// `hi = (raw >> 9) << 9` / `*wt = hi | (lo & 0x1FF)` — a bitfield struct store
-// emits `and 0xFE00` instead of the shifts, and a union of `w`/`b.idx` emits
-// `lsls #23 / lsrs #23` for the extract. `((const struct ... *)fields)->shift`
-// (a 12-byte pad then s16) is what keeps the table load at `mov rX,r8` +
-// `ldrh rX,[rX,#12]` rather than mov+add+ldrh. The two deltas left: (1) the ROM
-// spills the index (`sub sp,#4` / `str r4,[sp]` / `ldr r4,[sp]`, mask 0x1FF
-// reloaded into r4 inside the inner loop) where agbcc gives idx its own
-// callee-saved r7 and puts the mask in r4 — 8 B, and pinning idx to r4 just
-// moves the mask to r6, so the spill has to come from pressure, not a pin;
-// (2) `cntPtr`'s pool is load-loaded when it is pinned, because `ldr r0,[r0]`
-// clobbers the address before `mov r9,r0`, so the constant is fetched twice.
-// The permuter now runs on this body (tools/run_permuter.py accepts the sl pin)
-// and got to 1535 without closing it.
-__attribute__((naked)) void ObjFlush_02C98(void) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push	{r4, r5, r6, r7, lr}\n"
-        "mov	r7, sl\n"
-        "mov	r6, r9\n"
-        "mov	r5, r8\n"
-        "push	{r5, r6, r7}\n"
-        "sub	sp, #4\n"
-        "ldr r0, .L2c98_d28\n"
-        "ldr	r5, [r0, #0]\n"
-        "ldr r2, .L2c98_d2c\n"
-        "ldr	r6, [r2, #0]\n"
-        "movs	r4, #0\n"
-        "ldr r0, .L2c98_d30\n"
-        "ldr	r1, [r0, #0]\n"
-        "mov	sl, r2\n"
-        "mov	r9, r0\n"
-        "cmp	r4, r1\n"
-        "bge .L2c98_d08\n"
-        "ldr r0, .L2c98_d34\n"
-        "mov	r8, r0\n"
-        ".L2c98_cbe:\n"
-        "ldmia	r5!, {r3}\n"
-        "adds	r4, #1\n"
-        "str	r4, [sp, #0]\n"
-        "mov	ip, r5\n"
-        "cmp	r3, #0\n"
-        "beq .L2c98_cfc\n"
-        "ldr r4, .L2c98_d38\n"
-        "mov	r5, r8\n"
-        ".L2c98_cce:\n"
-        "ldrh	r1, [r3, #12]\n"
-        "cmp	r1, #1\n"
-        "bne .L2c98_cec\n"
-        "ldrh	r2, [r3, #2]\n"
-        "adds	r1, r4, #0\n"
-        "ands	r1, r2\n"
-        "ldrh	r7, [r5, #12]\n"
-        "lsls	r0, r7, #16\n"
-        "asrs	r0, r0, #19\n"
-        "subs	r1, r1, r0\n"
-        "lsrs	r2, r2, #9\n"
-        "lsls	r2, r2, #9\n"
-        "ands	r1, r4\n"
-        "orrs	r2, r1\n"
-        "strh	r2, [r3, #2]\n"
-        ".L2c98_cec:\n"
-        "ldr	r0, [r3, #0]\n"
-        "str	r0, [r6, #0]\n"
-        "ldrh	r0, [r3, #4]\n"
-        "strh	r0, [r6, #4]\n"
-        "adds	r6, #8\n"
-        "ldr	r3, [r3, #8]\n"
-        "cmp	r3, #0\n"
-        "bne .L2c98_cce\n"
-        ".L2c98_cfc:\n"
-        "ldr	r4, [sp, #0]\n"
-        "mov	r5, ip\n"
-        "mov	r1, r9\n"
-        "ldr	r0, [r1, #0]\n"
-        "cmp	r4, r0\n"
-        "blt .L2c98_cbe\n"
-        ".L2c98_d08:\n"
-        "mov	r7, sl\n"
-        "ldr	r0, [r7, #0]\n"
-        "movs	r1, #224\n"
-        "lsls	r1, r1, #19\n"
-        "movs	r2, #128\n"
-        "lsls	r2, r2, #1\n"
-        "bl 0x0802D970\n"
-        "add	sp, #4\n"
-        "pop	{r3, r4, r5}\n"
-        "mov	r8, r3\n"
-        "mov	r9, r4\n"
-        "mov	sl, r5\n"
-        "pop	{r4, r5, r6, r7}\n"
-        "pop	{r0}\n"
-        "bx	r0\n"
-        ".L2c98_d28: .4byte 0x03000140\n"
-        ".L2c98_d2c: .4byte 0x03000134\n"
-        ".L2c98_d30: .4byte 0x03000144\n"
-        ".L2c98_d34: .4byte 0x030035C0\n"
-        ".L2c98_d38: .4byte 0x000001FF\n"
-        ".syntax divided\n"
-    );
+// MEASURED 2026-10-27: EXACT 164/164 B (whole body + pool). The Wrap_02D3C
+// recipe (src/foundation_runtime.c) carries the loop: the pre-guard
+// `if (idx < cnt)` with a `do`/`while` bottom test, the SIGNED compares, and
+// the `__asm__("" : : "r"(src) : "r0")` pool split. The register homes are all
+// forced here, and two of them cannot come from pins:
+//   * r7 must be a NATURAL allocno: agbcc never sets `regs_ever_live` for a
+//     `register ... asm("r7")` variable, so a pinned r7 produces the loop's
+//     `ldrh r7` but NOT the ROM's `push {r4,r5,r6,r7,lr}` /
+//     `mov r7,sl; mov r6,r9; mov r5,r8; push {r5,r6,r7}` prologue. The lever is
+//     `u32 kv = 0;` at function scope with the keypad word assigned inside the
+//     `ty == 1` branch: the dead initialiser is dropped, `kv` becomes a
+//     block-crossing (global) allocno homed in r7, which both saves r7 and
+//     makes the table read `ldrh r7,[r5,#12]` (r0 stays free for the shift).
+//   * the index spill is source-level, not allocator pressure: a `volatile int
+//     sv` home written after the increment and reloaded before the bottom test
+//     emits the ROM's `sub sp,#4` / `str r4,[sp]` / `ldr r4,[sp]`. idx keeps
+//     r4 because the named `maskv` (declared inside the `entry != 0` block,
+//     BEFORE the `f` pin) is what the inner loop reloads into r4, and it also
+//     orders the preheader as `ldr r4,=0x1FF` / `mov r5,r8`.
+//   * `idx = sv;` must precede `src = cur;`: that is the last 2-byte delta, and
+//     it also puts the `beq` target on the `ldr r4,[sp]` block head.
+//   * src/`f` share r5 with disjoint live ranges: the `cur` (ip) dance
+//     `cur = src` / `src = cur` vacates r5 for `f` (`mov ip,r5` ... `mov r5,ip`)
+//     so the table base is `mov r5,r8` and the pinned `f` keeps the load out of
+//     the merged `mov rX,r8` / `ldrh rX,[rX,#12]` form.
+//   * remaining homes are ordinary pins: dst r6, `p134` sl, `cntPtr` r9,
+//     `fields` r8, the `ty` compare in r1, the bottom count reload as
+//     address r1 / value r0 (`mov r1,r9; ldr r0,[r1]`), and the tail cell
+//     copy in r7 (`mov r7,sl; ldr r0,[r7]`).
+// The field rewrite keeps the extract as `raw & maskv` and the merge as two
+// explicit statements `hi = (raw >> 9) << 9` / `*wt = hi | (lo & maskv)`; a
+// bitfield store emits `and 0xFE00`, and `(u32)f->of_kp_shift` must land in
+// `kv` before `sh = kv << 16` so the pair is not merged into one register.
+typedef struct { u8 of_kp_pad[12]; u16 of_kp_shift; } ObjFlushKp;
+void ObjFlush_02C98(void){
+    volatile int sv;
+    register u32 *src __asm__("r5") = (u32 *)(uintptr_t)*(volatile u32 *)(uintptr_t)0x03000140u;
+    __asm__("" : : "r"(src) : "r0");
+    volatile u32 *cell = (volatile u32 *)(uintptr_t)0x03000134u;
+    register u8 *dst __asm__("r6") = (u8 *)(uintptr_t)*cell;
+    register u32 *cur __asm__("ip");
+    int idx = 0;
+    u32 kv = 0;
+    register volatile int *cp2 __asm__("r1");
+    int cntv;
+    volatile int *cp = (volatile int *)(uintptr_t)0x03000144u;
+    int cnt = *cp;
+    register volatile int *p134 __asm__("sl") = (volatile int *)cell;
+    register volatile int *cntPtr __asm__("r9") = cp;
+    extern void _0802D970(const void *, void *, u32);
+    if (idx < cnt) {
+        register const ObjFlushKp *fields __asm__("r8") = (const ObjFlushKp *)(uintptr_t)0x030035C0u;
+        do {
+            u8 *entry = (u8 *)(uintptr_t)*src;
+            src++;
+            idx++;
+            sv = idx;
+            cur = src;
+            if (entry != (u8 *)0) {
+                u32 maskv = 0x1FF;
+                register const ObjFlushKp *f __asm__("r5") = fields;
+                do {
+                    register u16 ty __asm__("r1") = *(volatile u16 *)(entry + 12);
+                    if (ty == 1) {
+                        u16 raw = *(volatile u16 *)(entry + 2);
+                        int lo = raw & maskv;
+                        kv = (u32)f->of_kp_shift;
+                        u32 sh = kv << 16;
+                        lo -= (s32)sh >> 19;
+                        {
+                            u16 hi = (u16)((raw >> 9) << 9);
+                            *(volatile u16 *)(entry + 2) = hi | (lo & maskv);
+                        }
+                    }
+                    *(volatile u32 *)dst = *(volatile u32 *)entry;
+                    *(volatile u16 *)(dst + 4) = *(volatile u16 *)(entry + 4);
+                    dst += 8;
+                    entry = *(u8 **)(entry + 8);
+                } while (entry != (u8 *)0);
+            }
+            idx = sv;
+            src = cur;
+            cp2 = cntPtr;
+            cntv = *cp2;
+        } while (idx < cntv);
+    }
+    register volatile int *cellp __asm__("r7") = p134;
+    u32 oamSrc = *(volatile u32 *)cellp;
+    _0802D970((const void *)(uintptr_t)oamSrc,
+              (void *)(uintptr_t)((u32)224 << 19), (u32)((u32)128 << 1));
 }
 void sub_08002C98(void) __attribute__((alias("ObjFlush_02C98")));
 void _08002C98(void) __attribute__((alias("ObjFlush_02C98")));
