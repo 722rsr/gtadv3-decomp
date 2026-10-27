@@ -284,6 +284,7 @@ still require the matching workflow above. Adapter regressions run with
 | `extract_assets.py` | Extract track resources, compressed data, sound tables, and PCM samples. |
 | `asset_pipeline.py` | Generate editable data for supported families and verify complete owned spans. |
 | `mini_dis.py` | Minimal Thumb decoder; cross-check significant results with ARM objdump. |
+| `thumb_idiom_scan.py` | List leftover bodies containing a Thumb instruction idiom (literal pools decoded as data). |
 | `objdump2gas.py` | Convert Thumb listings to source assembly with pools and labels. |
 | `objdump2gas_mixed.py` | Convert mixed ARM/Thumb spans. |
 | `mk_passthrough.py` | Generate include/range manifests from file-offset symbol lists. |
