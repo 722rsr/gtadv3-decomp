@@ -169,108 +169,100 @@ void Race_Cluster_D(void) {
 // halfword. Emit that in its function section instead of gas's Thumb nop fill.
 __asm__(".align 2, 0");
 
-// MEASURED 2026-10-22: the C lift reaches 186/216 with the length exact and the
-// dispatch table, arms and loop all in the ROM's shape. The remainder is one
-// allocation: the ROM loads the WA base for the loop into r2 and the 0x10CA
-// delta into r3, then copies them to r7/r6 for the body, while agbcc homes the
-// base in r1 and the delta in r3. Spelling the dispatch read off RAM_SYM with
-// the delta in a local that is reassigned later (0x10FC then 0x10CA) is what
-// keeps the delta out of the pool word; binding `wa` before that read returns
-// the body to 140/216.
-__attribute__((naked)) void Race_Cluster_Dispatch(void) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, r7, lr}\n"
-        "ldr r0, .L1a12c_158\n"
-        "ldr r1, .L1a12c_15c\n"
-        "bl 0x0802620C\n"
-        "bl 0x08026220\n"
-        "ldr r0, .L1a12c_160\n"
-        "ldr r1, .L1a12c_164\n"
-        "adds r0, r0, r1\n"
-        "ldrh r0, [r0, #0]\n"
-        "subs r0, #1\n"
-        "lsls r0, r0, #16\n"
-        "asrs r0, r0, #16\n"
-        "cmp r0, #7\n"
-        "bhi .L1a12c_19e\n"
-        "lsls r0, r0, #2\n"
-        "ldr r1, .L1a12c_168\n"
-        "adds r0, r0, r1\n"
-        "ldr r0, [r0, #0]\n"
-        "mov pc, r0\n"
-        "movs r0, r0\n"
-        ".L1a12c_158: .4byte 0x03004E30\n"
-        ".L1a12c_15c: .4byte 0x02010000\n"
-        ".L1a12c_160: .4byte 0x03001780\n"
-        ".L1a12c_164: .4byte 0x000010FC\n"
-        ".L1a12c_168: .4byte 0x0801A16C\n"
-        ".L1a12c_16c: .4byte 0x0801A18C\n"
-        ".L1a12c_170: .4byte 0x0801A19E\n"
-        ".L1a12c_174: .4byte 0x0801A192\n"
-        ".L1a12c_178: .4byte 0x0801A18C\n"
-        ".L1a12c_17c: .4byte 0x0801A198\n"
-        ".L1a12c_180: .4byte 0x0801A19E\n"
-        ".L1a12c_184: .4byte 0x0801A19E\n"
-        ".L1a12c_188: .4byte 0x0801A192\n"
-        ".L1a12c_18c:\n"
-        "bl 0x0801A008\n"
-        "b .L1a12c_1a2\n"
-        ".L1a12c_192:\n"
-        "bl 0x0801A070\n"
-        "b .L1a12c_1a2\n"
-        ".L1a12c_198:\n"
-        "bl 0x0801A0BC\n"
-        "b .L1a12c_1a2\n"
-        ".L1a12c_19e:\n"
-        "bl 0x0801A0E8\n"
-        ".L1a12c_1a2:\n"
-        "movs r4, #0\n"
-        "ldr r2, .L1a12c_1f0\n"
-        "ldr r3, .L1a12c_1f4\n"
-        "adds r1, r2, r3\n"
-        "movs r3, #0\n"
-        "ldrsh r0, [r1, r3]\n"
-        "cmp r4, r0\n"
-        "bge .L1a12c_1ea\n"
-        "adds r7, r2, #0\n"
-        "adds r6, r1, #0\n"
-        "movs r5, #0\n"
-        ".L1a12c_1b8:\n"
-        "ldr r0, .L1a12c_1f8\n"
-        "adds r0, r5, r0\n"
-        "ldrh r0, [r0, #26]\n"
-        "lsls r1, r4, #1\n"
-        "ldr r3, .L1a12c_1fc\n"
-        "adds r2, r7, r3\n"
-        "adds r1, r1, r2\n"
-        "movs r2, #0\n"
-        "ldrsh r1, [r1, r2]\n"
-        "bl 0x08026520\n"
-        "lsls r1, r4, #5\n"
-        "ldr r2, .L1a12c_200\n"
-        "adds r1, r1, r2\n"
-        "movs r2, #8\n"
-        "bl 0x0802D970\n"
-        "movs r3, #142\n"
-        "lsls r3, r3, #1\n"
-        "adds r5, r5, r3\n"
-        "adds r4, #1\n"
-        "movs r1, #0\n"
-        "ldrsh r0, [r6, r1]\n"
-        "cmp r4, r0\n"
-        "blt .L1a12c_1b8\n"
-        ".L1a12c_1ea:\n"
-        "pop {r4, r5, r6, r7}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        ".L1a12c_1f0: .4byte 0x03001780\n"
-        ".L1a12c_1f4: .4byte 0x000010CA\n"
-        ".L1a12c_1f8: .4byte 0x03004E80\n"
-        ".L1a12c_1fc: .4byte 0x00001DE4\n"
-        ".L1a12c_200: .4byte 0x03005780\n"
-        ".syntax divided\n"
-    );
+// EXACT 216/216 (whole body + pool), measured 2026-10-27. The previous lift
+// stopped at 186/216 on the loop preheader allocation; the spellings below are
+// the ones that closed it.
+//
+// Dispatch half: the read is spelled off the WA symbol with the delta in a
+// local that is reassigned for the loop (0x10FC then 0x10CA), which keeps the
+// delta out of the pool word. Binding `wa` before that read returns the body to
+// 140/216, so `wa` is only bound after the switch.
+//
+// Loop half: `wa` pinned to r2 and `p` to r1 give the ROM preheader
+// (`ldr r2,=WA / ldr r3,=0x10CA / adds r1,r2,r3 / ldrsh r0,[r1,r3]`), and the
+// copies `wb = wa` / `cnt = p` are what emit `adds r7,r2,#0` /
+// `adds r6,r1,#0` into the callee-saved homes the two BLs need. `racer` (r5) is
+// the running 284-byte row offset, `i` (r4) the index. Three more spellings:
+//   * the row speed is a struct member at +26; with `RacerBase` a symbol the
+//     pool keeps 0x03004E80 and the member offset stays the load's
+//     displacement, whereas `RacerBase + racer + 26` puts 0x03004E9A in the
+//     pool word and loads `[r0,#0]`.
+//   * the indexed halfword needs the index and the base in separate locals
+//     (`sidx = i << 1; sbase = wb + 0x1DE4;` then `sidx + sbase`) to emit
+//     `lsls r1,r4,#1 / ldr r3,=0x1DE4 / adds r2,r7,r3 / adds r1,r1,r2`; the
+//     single-expression forms fold the two terms the other way round.
+//   * `racer += 284` (no shared `step` local) is the ROM's in-loop
+//     `movs r3,#142 / lsls r3,r3,#1 / adds r5,r5,r3`. A `step` local moved the
+//     constant to r0 and pushed the back-edge zero index from r1 to r3.
+//   * the destination base is a barrier-laundered constant pinned to r2
+//     (`dbase = 0x03005780; "" : "+r"(dbase)`); a bare constant rematerialises
+//     into r3 and the `lsls r1,r4,#5 / adds r1,r1,rN` pair then uses r3.
+extern void _0802620C(void *a, void *b);
+extern void _08026220(void);
+extern void _0801A008(void);
+extern void _0801A070(void);
+extern void _0801A0BC(void);
+extern void _0801A0E8(void);
+struct RaceRacerRow {
+    u8 pad[26];
+    u16 speed;
+};
+void Race_Cluster_Dispatch(void) {
+    extern u8 WaBase[];
+    extern u8 RacerBase[];
+    u32 off;
+    s16 phase;
+    __asm__(".globl WaBase\nWaBase = 0x03001780\n");
+    __asm__(".globl RacerBase\nRacerBase = 0x03004E80\n");
+    _0802620C((void *)0x03004E30u, (void *)0x02010000u);
+    _08026220();
+    off = 0x10FCu;
+    phase = (s16)(*(u16 *)((u32)WaBase + off) - 1);
+    switch (phase) {
+    case 0: case 3: _0801A008(); break;
+    case 2: case 7: _0801A070(); break;
+    case 4: _0801A0BC(); break;
+    default: _0801A0E8(); break;
+    }
+    {
+        register u32 wa __asm__("r2");
+        register s16 *p __asm__("r1");
+        s16 *cnt;
+        register s32 i __asm__("r4");
+        register u32 racer __asm__("r5");
+        s32 loopLimit;
+        off = 0x10CAu;
+        i = 0;
+        wa = (u32)WaBase;
+        p = (s16 *)(wa + off);
+        if (i < (int)*p) {
+            u32 wb = wa;
+            register u32 dst __asm__("r1");
+            register u32 dbase __asm__("r2");
+            cnt = p;
+            racer = 0;
+            do {
+                u16 v;
+                void *src;
+                u32 sidx;
+                u32 sbase;
+                s16 sel;
+                v = ((struct RaceRacerRow *)(RacerBase + racer))->speed;
+                sidx = (u32)(i << 1);
+                sbase = wb + 0x1DE4u;
+                sel = *(s16 *)(uintptr_t)(sidx + sbase);
+                src = Course_0x08026520((int)v, (int)sel);
+                dst = (u32)(i << 5);
+                dbase = 0x03005780u;
+                __asm__ volatile("" : "+r"(dbase));
+                dst = dst + dbase;
+                _0802D970((const void *)src, (void *)(uintptr_t)dst, 8);
+                racer += 284;
+                i++;
+                loopLimit = (int)*cnt;
+            } while (i < loopLimit);
+        }
+    }
 }
 
 void _0801A008(void) __attribute__((alias("Race_Cluster_A")));
