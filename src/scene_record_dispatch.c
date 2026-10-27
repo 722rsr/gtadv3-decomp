@@ -36,13 +36,17 @@ HOST_STUB(void  _0800BC04(void));                                    // bx-lr st
 HOST_STUB(void  _0800BC08(void *a0, void *a1, void *a2, void *a3));
 HOST_STUB(void  _0800BCD4(void *a0, void *a1, void *a2, void *a3, void *s1, void *s2, void *s3, void *s4));
 HOST_STUB(int   _08002581C(int a));
+HOST_STUB(int   _0802581C(int a));                                    // 8-digit call spelling
 HOST_STUB(int   _080025750(int a, int b, int c));
+HOST_STUB(int   _08025750(int a, int b, int c));                        // 8-digit call spelling
 HOST_STUB(u32   _080025E98(u32 a, int b, int c));
+HOST_STUB(u32   _08025E98(u32 a, int b, int c));                        // 8-digit call spelling
 HOST_STUB(void  _080025E70(u32 a, int b, int c, u32 d));
+HOST_STUB(void  _08025E70(u32 a, int b, int c, u32 d));                    // 8-digit call spelling
 HOST_STUB(int   _080025E1C(int a));
 HOST_STUB(void  _080025DBC(int a, int b));
 HOST_STUB(int   _08002DE04(int n, int d));
-HOST_STUB(u32   _08002DF6C(u32 n, u32 d));
+HOST_STUB(u32   _0802DF6C(u32 n, u32 d));
 HOST_STUB(void  _08002DE98(void));                                   // no-op leaf (mov pc,lr)
 HOST_STUB(int   _08002D978(int a, int b));                           // swi Div (quotient)
 HOST_STUB(int   _08002D97C(int a, int b));                           // swi DivRem (remainder)
@@ -53,6 +57,7 @@ extern void *_0802E104(void *a, int b, u32 c);
 extern void  sub_0802D974(const void *src, void *dst, u32 ctrl);
 #define _08002E104 _0802E104
 #define _08002D974 sub_0802D974
+#define _0802D974 sub_0802D974
 HOST_STUB(void  _08004C84(u32 a, u32 b));                            // trampoline -> ROM
 HOST_STUB(void *_08007498(void *x, int i));
 HOST_STUB(void *_0800748C(void *x));
@@ -134,7 +139,9 @@ HOST_STUB(s8    _08025518(int a));
 HOST_STUB(s8    _08025530(int a));
 HOST_STUB(s8    _080254E8(int a));
 HOST_STUB(void  _08002B214(int v));
+HOST_STUB(void  _0802B214(int v));                                    // 8-digit call spelling
 HOST_STUB(void  _080025BC8(void *a, int b));
+HOST_STUB(void  sub_080025BC8(void *a, int b));
 HOST_STUB(void  _08002124(u16 v));
 HOST_STUB(u32   _08003130(void));
 HOST_STUB(int   _08003D18(int a, volatile u8 *b));
@@ -739,9 +746,9 @@ void MenuPlaceUpdate_0BE74(void) {
     sum += _08002DE04(_08002DE9C(val, 300), 3);
 
     cur = *(const u32 *)&buf[0];
-    sum2 = (s32)(_08002DF6C(cur, 0x4650u) * 0x1770u);
-    sum2 += (s32)(_08002DF6C(_08002DFE4(cur, 0x4650u), 300u) * 100u);
-    sum2 += (s32)_08002DF6C(_08002DFE4(cur, 300u), 3u);
+    sum2 = (s32)(_0802DF6C(cur, 0x4650u) * 0x1770u);
+    sum2 += (s32)(_0802DF6C(_08002DFE4(cur, 0x4650u), 300u) * 100u);
+    sum2 += (s32)_0802DF6C(_08002DFE4(cur, 300u), 3u);
 
     diff = sum - sum2;
     if (*(const s8 *)(wa + 0x10E4) != 0) {
@@ -2118,7 +2125,7 @@ void RaceSceneCtor_23628(void *rec_) {
     _0800798C((void *)(uintptr_t)0x082B7410u, rec + 8);
     _080075E8((void *)(uintptr_t)0x082B7410u, 0, 6);
     car = rec + 196;
-    _08025BC8(car, 5);
+    sub_080025BC8(car, 5);
     _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 12), (void *)(uintptr_t)*(u32 *)(rec + 200),
                (int)*(u32 *)car);
     *(u32 *)(rec + 208) = (u32)_0800572C(8);

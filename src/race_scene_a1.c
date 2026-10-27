@@ -38,16 +38,20 @@ HOST_STUB(void  _08027210(int v));                                 // 0x08027210
 HOST_STUB(void  _08002B500(int a, int b, int c));                  // 0x08002B500 sound select
 HOST_STUB(void  _0802B500(int a, int b, int c));                   // 0x0802B500 sound select, in-slice spelling
 HOST_STUB(void  _08002B368(int v));                                // 0x08002B368 sound cue
+HOST_STUB(void  _0802B368(int v));                                 // 8-digit call spelling
 HOST_STUB(void  _08002B44C(void));                                 // 0x08002B44C
+HOST_STUB(void  _0802B44C(void));                                  // 8-digit call spelling
 HOST_STUB(void  _08002B234(void));                                 // 0x08002B234
+HOST_STUB(void  _0802B234(void));                                  // 8-digit call spelling
 HOST_STUB(void  _08002B3A4(void));                                 // 0x08002B3A4
+HOST_STUB(void  _0802B3A4(void));                                  // 8-digit call spelling
 HOST_STUB(void  _0802B460(void));                                  // 0x0802B460
 HOST_STUB(void  _0802B25C(void));                                  // 0x0802B25C
 HOST_STUB(void  _0802B474(void));                                  // 0x0802B474
 HOST_STUB(void  _0802B280(void));                                  // 0x0802B280
 HOST_STUB(void  _080191BC(int v));                                 // 0x080191BC
 HOST_STUB(void  _0800191BC(int v));                                // 0x080191BC, in-slice spelling
-HOST_STUB(void  _08019AEC(int v));                                 // 0x08019AEC
+HOST_STUB(void  sub_080019AEC(int v));                                 // 0x08019AEC
 HOST_STUB(void  _08019A2C(int v));                                 // 0x08019A2C
 HOST_STUB(void  sub_080019A2C(int v));                             // 0x08019A2C (closure spelling)
 HOST_STUB(int   _080098C8(u16 a, u16 b));                          // 0x080098C8
@@ -903,9 +907,9 @@ void _08001B498(int sel) {
             __asm__ volatile ("" : "=r" (hold));
             v = *(s16 *)(prev + 14);
             __asm__ volatile ("" : : "r" (hold));
-            _08019AEC(v);
+            sub_080019AEC(v);
         } else {
-            _08019AEC(1);
+            sub_080019AEC(1);
         }
         wa = RsWa;
         {
@@ -964,7 +968,7 @@ void _08001B498(int sel) {
         _0802B44C();
         _0802B234();
         _08027114(-2);
-        _08019AEC(1);
+        sub_080019AEC(1);
         _0802B368(0x40);
         return;
     case 2:
@@ -972,7 +976,7 @@ void _08001B498(int sel) {
         _08002A86C((void *)RsRec, 2, 1);
         _0802B44C();
         _0802B234();
-        _08019AEC(-1);
+        sub_080019AEC(-1);
         return;
     case 4: {
         u8 *rec = RsRec;
@@ -986,7 +990,7 @@ void _08001B498(int sel) {
         prev = rec - 36;
         v = 1;
         *(volatile u16 *)(prev + 14) = (u16)v;
-        _08019AEC(v);
+        sub_080019AEC(v);
         return;
     }
     case 5: {
@@ -1003,7 +1007,7 @@ void _08001B498(int sel) {
         zero = 0;
         v = 2;
         *(volatile u16 *)(prev + 14) = (u16)v;
-        _08019AEC(v);
+        sub_080019AEC(v);
         {
             register u32 base __asm__("r0") = (u32)(uintptr_t)RsWa;
             register u32 offc __asm__("r2") = (u32)(uintptr_t)RsOffF0;

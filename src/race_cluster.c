@@ -18,7 +18,7 @@ extern void *sub_080263C4(int a, void *b, int c);
 // ROM tail call shape (asm/race_cluster.s _0801A1B8): (u16[racer+26],
 // s16[WA+0x1DE4+2i]); its return is a 32-byte tile row copied by _0802D970
 // (CpuFastSet, ctrl 8 = 8 words) to 0x03005780 + i*32.
-extern void *Course_0x08026520(int a, int b); // 0x08026520
+extern void *_080026520(int a, int b); // 0x08026520
 extern void _0802D970(const void *a, void *b, u32 c); // swi 0x0C CpuFastSet
 
 void Race_Cluster_A(void) {
@@ -251,7 +251,7 @@ void Race_Cluster_Dispatch(void) {
                 sidx = (u32)(i << 1);
                 sbase = wb + 0x1DE4u;
                 sel = *(s16 *)(uintptr_t)(sidx + sbase);
-                src = Course_0x08026520((int)v, (int)sel);
+                src = _080026520((int)v, (int)sel);
                 dst = (u32)(i << 5);
                 dbase = 0x03005780u;
                 __asm__ volatile("" : "+r"(dbase));

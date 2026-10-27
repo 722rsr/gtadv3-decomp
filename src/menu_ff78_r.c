@@ -3,36 +3,36 @@
 //
 // Body transcribed from the asm listing, then shaped until agbcc reproduces
 // it byte for byte (728/728 bytes including the literal pool).
-// External callees use the Sub_ spellings the asm closure defines,
+// External callees use the sub_ spellings the asm closure defines,
 // so behavior is identical by construction.
 //
-//   sub_080013108 (0x080013108) — (rec) full setup + DMA table fill.
+//   MenuFF78_13108 (0x080013108) — (rec) full setup + DMA table fill.
 // ============================================================================
 
 #include "gba/types.h"
 #include "gtadv/ram_blocks.h"
 
-extern void Sub_08007770(int a, void *b, int c, int d, u32 e, u32 f);
+extern void _08007770(int a, void *b, int c, int d, u32 e, u32 f);
 extern void _08007770(int a, void *b, int c, int d, u32 e, u32 f); // R2-faithful strong body
-extern void Sub_0800DAB8(void *a);
-extern void Sub_080075E8(void *a, int b, int c);
-extern void Sub_0800798C(void *a, void *b);
-extern void Sub_08007A58(void *a);
-extern void Sub_08007ABC(u32 a, u32 b, u32 c);
-extern void Sub_0800D77C(void *a, int b, int c);
-extern int Sub_08002124(u32 v);
-extern void Sub_08002B214(int v);
-extern void Sub_080012E5C(int v);
-extern int Sub_080012E74(int v);
-extern void Sub_080012F98(void *a);
-extern void Sub_080013024(void *a);
-extern u32 Sub_0800572C(int v);
-extern int Sub_08024C3C(int v);
-extern int Sub_08024C58(int v);
-extern void Sub_0800D9A4(void *a, int b, int c);
+extern void _0800DAB8(void *a);
+extern void _080075E8(void *a, int b, int c);
+extern void _0800798C(void *a, void *b);
+extern void sub_08007A58(void *a);
+extern void sub_08007ABC(u32 a, u32 b, u32 c);
+extern void _0800D77C(void *a, int b, int c);
+extern int _08002124(u32 v);
+extern void sub_0802B214(int v);
+extern void sub_080012E5C(int v);
+extern int sub_080012E74(int v);
+extern void sub_080012F98(void *a);
+extern void sub_080013024(void *a);
+extern u32 sub_0800572C(int v);
+extern int _08024C3C(int v);
+extern int _08024C58(int v);
+extern void _0800D9A4(void *a, int b, int c);
 
 // ----------------------------------------------------------------------------
-// sub_080013108 — (rec):
+// MenuFF78_13108 — (rec):
 //   [u16[WA+0xFBC]==3] 02124(0x1393); s16[rec+138] = (u16==7) ? 0 : 1.
 //   2B214(49); 07770(0, 0x082EE524, 3, 0, 4, 1);
 //   u32[104]=6; u32[116]=4; u32[128]=1; DAB8(rec+32);
@@ -118,86 +118,86 @@ void MenuFF78_13108(void *rec_) {
     r4v = wa_base + wa_off;
     mode = (u32)*(u16 *)(uintptr_t)r4v;
     if (mode == 3)
-        Sub_08002124(0x1393u);
+        _08002124(0x1393u);
     r4v = (u32)*(u16 *)(uintptr_t)r4v;
     if (r4v == 7)
         *(volatile s16 *)(uintptr_t)(rec + 138) = 0;
     else
         *(volatile s16 *)(uintptr_t)(rec + 138) = 1;
 
-    Sub_08002B214(49);
+    sub_0802B214(49);
 
     r5v = 0x082EE524u;
-    Sub_08007770(0, (void *)(uintptr_t)r5v, 3, 0, 4, 1);
+    _08007770(0, (void *)(uintptr_t)r5v, 3, 0, 4, 1);
 
     *(volatile u32 *)(uintptr_t)(rec + 104) = 6;
     *(volatile u32 *)(uintptr_t)(rec + 116) = 4;
     { volatile u8 *p1 = rec + 128; *(volatile u32 *)(uintptr_t)p1 = 1; }
-    { volatile u8 *p2 = rec + 32; Sub_0800DAB8((void *)(uintptr_t)p2); }
+    { volatile u8 *p2 = rec + 32; _0800DAB8((void *)(uintptr_t)p2); }
 
     r4v = 0x082A798Cu;
-    Sub_080075E8((void *)(uintptr_t)r4v, 0, 3);
-    Sub_080075E8((void *)(uintptr_t)r4v, 2, 7);
-    Sub_0800798C((void *)(uintptr_t)r5v, (void *)(uintptr_t)rec);
-    Sub_080075E8((void *)(uintptr_t)r5v, 0, 4);
-    Sub_080075E8((void *)(uintptr_t)r5v, 1, 6);
-    Sub_080075E8((void *)(uintptr_t)r5v, 2, 8);
-    Sub_08007A58((void *)(uintptr_t)rec);
+    _080075E8((void *)(uintptr_t)r4v, 0, 3);
+    _080075E8((void *)(uintptr_t)r4v, 2, 7);
+    _0800798C((void *)(uintptr_t)r5v, (void *)(uintptr_t)rec);
+    _080075E8((void *)(uintptr_t)r5v, 0, 4);
+    _080075E8((void *)(uintptr_t)r5v, 1, 6);
+    _080075E8((void *)(uintptr_t)r5v, 2, 8);
+    sub_08007A58((void *)(uintptr_t)rec);
 
     r8v = (volatile u32 *)(uintptr_t)(rec + 138);
     switch ((int)*(s16 *)(uintptr_t)r8v) {
-    case 0: Sub_080012F98((void *)(uintptr_t)rec); break;
-    case 1: Sub_080013024((void *)(uintptr_t)rec); break;
+    case 0: sub_080012F98((void *)(uintptr_t)rec); break;
+    case 1: sub_080013024((void *)(uintptr_t)rec); break;
     default: break;
     }
 
-    Sub_080075E8((void *)(uintptr_t)0x082C4228u, 0, 5);
-    Sub_0800798C((void *)(uintptr_t)0x082ECAE4u, (void *)(uintptr_t)(rec + 8));
+    _080075E8((void *)(uintptr_t)0x082C4228u, 0, 5);
+    _0800798C((void *)(uintptr_t)0x082ECAE4u, (void *)(uintptr_t)(rec + 8));
 
     r4v = (u32)(uintptr_t)(rec + 176);
-    Sub_080012E5C((int)*(s16 *)(uintptr_t)r4v);
-    *(volatile u32 *)(uintptr_t)(rec + 584) = Sub_0800572C(16);
-    val = (u32)Sub_080012E74((int)*(s16 *)(uintptr_t)r4v);
+    sub_080012E5C((int)*(s16 *)(uintptr_t)r4v);
+    *(volatile u32 *)(uintptr_t)(rec + 584) = sub_0800572C(16);
+    val = (u32)sub_080012E74((int)*(s16 *)(uintptr_t)r4v);
     *(volatile u32 *)(uintptr_t)(rec + 588) = val;
-    Sub_08007ABC(*(volatile u32 *)(uintptr_t)(rec + 12), val,
+    sub_08007ABC(*(volatile u32 *)(uintptr_t)(rec + 12), val,
                  *(volatile u32 *)(uintptr_t)(rec + 584));
 
-    Sub_0800798C((void *)(uintptr_t)0x082C5040u, (void *)(uintptr_t)(rec + 16));
-    *(volatile u32 *)(uintptr_t)(rec + 596) = Sub_0800572C(14);
+    _0800798C((void *)(uintptr_t)0x082C5040u, (void *)(uintptr_t)(rec + 16));
+    *(volatile u32 *)(uintptr_t)(rec + 596) = sub_0800572C(14);
     // Pinned-r8 window around the rec+600 pointer: keeps local-alloc off r8 so
     // the address lands in r9 as in the ROM.  Emits no instructions.
     __asm__ volatile ("" : "=r"(ghost8));
     r9v = (volatile u32 *)(uintptr_t)(rec + 600);
     *r9v = 5;
     __asm__ volatile ("" : : "r"(ghost8));
-    Sub_08007ABC(*(volatile u32 *)(uintptr_t)(rec + 20), 5,
+    sub_08007ABC(*(volatile u32 *)(uintptr_t)(rec + 20), 5,
                  *(volatile u32 *)(uintptr_t)(rec + 596));
 
-    Sub_0800798C((void *)(uintptr_t)0x082D0DC0u, (void *)(uintptr_t)(rec + 24));
-    *(volatile u32 *)(uintptr_t)(rec + 608) = Sub_0800572C(7);
+    _0800798C((void *)(uintptr_t)0x082D0DC0u, (void *)(uintptr_t)(rec + 24));
+    *(volatile u32 *)(uintptr_t)(rec + 608) = sub_0800572C(7);
     r8v = (volatile u32 *)(uintptr_t)(rec + 612);
     *r8v = 50;
-    Sub_08007ABC(*(volatile u32 *)(uintptr_t)(rec + 28), 50,
+    sub_08007ABC(*(volatile u32 *)(uintptr_t)(rec + 28), 50,
                  *(volatile u32 *)(uintptr_t)(rec + 608));
 
     *(volatile u32 *)(uintptr_t)(rec + 32) = 0;
     *(volatile s16 *)(uintptr_t)(rec + 36) = 1;
-    Sub_0800D77C((void *)(uintptr_t)(rec + 52), 0, -32);
-    Sub_0800D77C((void *)(uintptr_t)(rec + 44), 0, 160);
+    _0800D77C((void *)(uintptr_t)(rec + 52), 0, -32);
+    _0800D77C((void *)(uintptr_t)(rec + 44), 0, 160);
     *(volatile s16 *)(uintptr_t)(rec + 40) = 6;
     *(volatile s16 *)(uintptr_t)(rec + 42) = 5;
 
     { volatile u8 *p3 = rec + 580;
       r6v = (u32)(uintptr_t)(rec + 174);
-      Sub_0800D9A4((void *)(uintptr_t)p3, (int)*(s16 *)(uintptr_t)r6v,
+      _0800D9A4((void *)(uintptr_t)p3, (int)*(s16 *)(uintptr_t)r6v,
                    (int)*(s16 *)(uintptr_t)(rec + 172)); }
-    val = (u32)Sub_08024C3C((int)*(s16 *)(uintptr_t)r6v);
+    val = (u32)_08024C3C((int)*(s16 *)(uintptr_t)r6v);
     *r9v = val;
-    Sub_08007ABC(*(volatile u32 *)(uintptr_t)(rec + 20), val,
+    sub_08007ABC(*(volatile u32 *)(uintptr_t)(rec + 20), val,
                  *(volatile u32 *)(uintptr_t)(rec + 596));
-    val = (u32)Sub_08024C58((int)*(s16 *)(uintptr_t)r6v);
+    val = (u32)_08024C58((int)*(s16 *)(uintptr_t)r6v);
     *r8v = val;
-    Sub_08007ABC(*(volatile u32 *)(uintptr_t)(rec + 28), val,
+    sub_08007ABC(*(volatile u32 *)(uintptr_t)(rec + 28), val,
                  *(volatile u32 *)(uintptr_t)(rec + 608));
 
     dma = (volatile u32 *)0x040000D4u;
