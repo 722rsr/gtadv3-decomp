@@ -681,198 +681,109 @@ void _0800BD40(void) __attribute__((alias("MenuProgressUpdate_0BD40")));
 void sub_0800BD40(void) __attribute__((alias("MenuProgressUpdate_0BD40")));
 
 // ============================================================================
-// menu_place.s 0x0800BE74 — placement/tier updater. Signed (sl) vs unsigned
-// (r4) mixed-radix decomposition of two related cells (//3 exact), tiered on
-// the unsigned difference, then grid-record resolve via _080025E98/_080025E70
-// and tier store to WA+0x10E5. (Proves _08002DE9C/_08002DFE4 = remainders:
-// quotient readings degenerate the decomposition.)
+// menu_place.s 0x0800BE74 — placement/tier updater.
+//
+// Packet build (WA = 0x03001780): probe the lineup with _0802581C, read the
+// three placement cells through _08025750, then fill a 16-byte stack context
+// { u32 WA+0x10F4, u16 WA+0x574, three bytes copied from WA+0x1088, tier at
+// +12 }. Both placement cells are decomposed in mixed radix (divisors
+// 18000/300/3, weights 6000/100/1): the signed one via _08002DE04 /
+// _08002DE9C, the unsigned packet word via _08002DF6C / _08002DFE4. The
+// unsigned difference selects tier 1/2/3 (0..99, 100..199, >199) and the
+// grid record at WA+0xFF2/0xFF6/0x103A is resolved through _080025E98 /
+// _080025E70. Everything under the WA+0x10E4 flag is skipped when it is
+// clear, and the tier byte lands in WA+0x10E5. The remainder readings are
+// load-bearing: reading quotients instead degenerates the decomposition.
+//
+// Measured levers (all required for the byte match):
+//  * `wa`, `val`, `cur` are pinned to r6/r4/r5. Unpinned, the base takes r7
+//    and every later value shifts up one register (140/412).
+//  * the packet word is read back from the stack slot into `cur` only after
+//    the signed sum instead of being kept live. That spill is what frees the
+//    registers so 18000/300/100 land in the ROM's r9/r8/r7 and the signed
+//    accumulator in sl.
+//  * the tier chain is a positive `<=` cascade; the inverted `>` form lays
+//    the three arms out backwards. The empty asm after the tier-1 and tier-2
+//    stores stops cross-jump merging them into one shared store.
+//  * the grid addresses are built from a barriered runtime `off`, so the
+//    second address is the ROM's `adds r3,#4` off the first, and the three
+//    are assigned inside the comparison so the address arithmetic and the
+//    four `ldrsh` loads interleave exactly as in the ROM. The p/q/r pins
+//    choose r6/r5/r4.
+//  * the final store reloads the base through a pinned r0, and the byte pair
+//    is pinned to r2 to reproduce `mov r2,sp / ldrb r2,[r2,#12]`.
 // ============================================================================
-__attribute__((naked)) void MenuPlaceUpdate_0BE74(void) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        ".Lmp_be74_0800be74:\n"
-        "\tpush {r4, r5, r6, r7, lr}\n"
-        "\tmov r7, sl\n"
-        "\tmov r6, r9\n"
-        "\tmov r5, r8\n"
-        "\tpush {r5, r6, r7}\n"
-        "\tsub sp, #16\n"
-        "\tmovs r0, #0\n"
-        "\tstr r0, [sp, #12]\n"
-        "\tldr r6, .Lmp_be74_0800bf58\n"
-        "\tldr r1, .Lmp_be74_0800bf5c\n"
-        "\tadds r0, r6, r1\n"
-        "\tmovs r2, #0\n"
-        "\tldrsh r0, [r0, r2]\n"
-        "\tbl 0x0802581C\n"
-        "\tldr r3, .Lmp_be74_0800bf60\n"
-        "\tadds r0, r6, r3\n"
-        "\tmovs r1, #0\n"
-        "\tldrsh r0, [r0, r1]\n"
-        "\tldr r2, .Lmp_be74_0800bf64\n"
-        "\tadds r1, r6, r2\n"
-        "\tmovs r3, #0\n"
-        "\tldrsh r1, [r1, r3]\n"
-        "\tldr r3, .Lmp_be74_0800bf68\n"
-        "\tadds r2, r6, r3\n"
-        "\tmovs r3, #0\n"
-        "\tldrsh r2, [r2, r3]\n"
-        "\tbl 0x08025750\n"
-        "\tadds r4, r0, #0\n"
-        "\tldr r1, .Lmp_be74_0800bf6c\n"
-        "\tadds r0, r6, r1\n"
-        "\tldr r0, [r0, #0]\n"
-        "\tstr r0, [sp, #0]\n"
-        "\tmov r1, sp\n"
-        "\tldr r2, .Lmp_be74_0800bf70\n"
-        "\tadds r0, r6, r2\n"
-        "\tldrh r0, [r0, #0]\n"
-        "\tstrh r0, [r1, #4]\n"
-        "\tadd r0, sp, #8\n"
-        "\tldr r3, .Lmp_be74_0800bf74\n"
-        "\tadds r1, r6, r3\n"
-        "\tmovs r2, #3\n"
-        "\tbl 0x0800D95C\n"
-        "\tldr r0, .Lmp_be74_0800bf78\n"
-        "\tmov r9, r0\n"
-        "\tadds r0, r4, #0\n"
-        "\tmov r1, r9\n"
-        "\tbl 0x0802DE04\n"
-        "\tldr r2, .Lmp_be74_0800bf7c\n"
-        "\tadds r1, r0, #0\n"
-        "\tmuls r1, r2\n"
-        "\tmov sl, r1\n"
-        "\tadds r0, r4, #0\n"
-        "\tmov r1, r9\n"
-        "\tbl 0x0802DE9C\n"
-        "\tmovs r3, #150\n"
-        "\tlsls r3, r3, #1\n"
-        "\tmov r8, r3\n"
-        "\tmov r1, r8\n"
-        "\tbl 0x0802DE04\n"
-        "\tmovs r7, #100\n"
-        "\tmuls r0, r7\n"
-        "\tadd sl, r0\n"
-        "\tadds r0, r4, #0\n"
-        "\tmov r1, r8\n"
-        "\tbl 0x0802DE9C\n"
-        "\tmovs r1, #3\n"
-        "\tbl 0x0802DE04\n"
-        "\tadd sl, r0\n"
-        "\tldr r5, [sp, #0]\n"
-        "\tadds r0, r5, #0\n"
-        "\tmov r1, r9\n"
-        "\tbl 0x0802DF6C\n"
-        "\tldr r1, .Lmp_be74_0800bf7c\n"
-        "\tadds r4, r0, #0\n"
-        "\tmuls r4, r1\n"
-        "\tadds r0, r5, #0\n"
-        "\tmov r1, r9\n"
-        "\tbl 0x0802DFE4\n"
-        "\tmov r1, r8\n"
-        "\tbl 0x0802DF6C\n"
-        "\tmuls r0, r7\n"
-        "\tadds r4, r4, r0\n"
-        "\tadds r0, r5, #0\n"
-        "\tmov r1, r8\n"
-        "\tbl 0x0802DFE4\n"
-        "\tmovs r1, #3\n"
-        "\tbl 0x0802DF6C\n"
-        "\tadds r4, r4, r0\n"
-        "\tmov r2, sl\n"
-        "\tsubs r1, r2, r4\n"
-        "\tldr r3, .Lmp_be74_0800bf80\n"
-        "\tadds r6, r6, r3\n"
-        "\tmovs r0, #0\n"
-        "\tldrsb r0, [r6, r0]\n"
-        "\tcmp r0, #0\n"
-        "\tbeq.n .Lmp_be74_0800bfe4\n"
-        "\tcmp r1, #99\n"
-        "\tbhi.n .Lmp_be74_0800bf84\n"
-        "\tmovs r0, #1\n"
-        "\tstr r0, [sp, #12]\n"
-        "\tb.n .Lmp_be74_0800bf9a\n"
-        "\t.Lmp_be74_0800bf58: .word 0x03001780\n"
-        "\t.Lmp_be74_0800bf5c: .word 0x00000576\n"
-        "\t.Lmp_be74_0800bf60: .word 0x00000FF2\n"
-        "\t.Lmp_be74_0800bf64: .word 0x00000FF6\n"
-        "\t.Lmp_be74_0800bf68: .word 0x0000103A\n"
-        "\t.Lmp_be74_0800bf6c: .word 0x000010F4\n"
-        "\t.Lmp_be74_0800bf70: .word 0x00000574\n"
-        "\t.Lmp_be74_0800bf74: .word 0x00001088\n"
-        "\t.Lmp_be74_0800bf78: .word 0x00004650\n"
-        "\t.Lmp_be74_0800bf7c: .word 0x00001770\n"
-        "\t.Lmp_be74_0800bf80: .word 0x000010E4\n"
-        ".Lmp_be74_0800bf84:\n"
-        "\tadds r0, r1, #0\n"
-        "\tsubs r0, #100\n"
-        "\tcmp r0, #99\n"
-        "\tbhi.n .Lmp_be74_0800bf92\n"
-        "\tmovs r1, #2\n"
-        "\tstr r1, [sp, #12]\n"
-        "\tb.n .Lmp_be74_0800bf9a\n"
-        ".Lmp_be74_0800bf92:\n"
-        "\tcmp r1, #199\n"
-        "\tble.n .Lmp_be74_0800bf9a\n"
-        "\tmovs r2, #3\n"
-        "\tstr r2, [sp, #12]\n"
-        ".Lmp_be74_0800bf9a:\n"
-        "\tldr r2, .Lmp_be74_0800c000\n"
-        "\tldr r3, .Lmp_be74_0800c004\n"
-        "\tadds r6, r2, r3\n"
-        "\tmovs r1, #0\n"
-        "\tldrsh r0, [r6, r1]\n"
-        "\tadds r3, #4\n"
-        "\tadds r5, r2, r3\n"
-        "\tmovs r3, #0\n"
-        "\tldrsh r1, [r5, r3]\n"
-        "\tldr r3, .Lmp_be74_0800c008\n"
-        "\tadds r4, r2, r3\n"
-        "\tmovs r3, #0\n"
-        "\tldrsh r2, [r4, r3]\n"
-        "\tbl 0x08025E98\n"
-        "\tldr r1, [sp, #0]\n"
-        "\tcmp r0, r1\n"
-        "\tbhi.n .Lmp_be74_0800bfd2\n"
-        "\tmovs r1, #0\n"
-        "\tldrsh r0, [r6, r1]\n"
-        "\tmovs r2, #0\n"
-        "\tldrsh r1, [r5, r2]\n"
-        "\tmovs r3, #0\n"
-        "\tldrsh r2, [r4, r3]\n"
-        "\tbl 0x08025E98\n"
-        "\tcmp r0, #0\n"
-        "\tbne.n .Lmp_be74_0800bfe4\n"
-        ".Lmp_be74_0800bfd2:\n"
-        "\tmovs r1, #0\n"
-        "\tldrsh r0, [r6, r1]\n"
-        "\tmovs r2, #0\n"
-        "\tldrsh r1, [r5, r2]\n"
-        "\tmovs r3, #0\n"
-        "\tldrsh r2, [r4, r3]\n"
-        "\tldr r3, [sp, #0]\n"
-        "\tbl 0x08025E70\n"
-        ".Lmp_be74_0800bfe4:\n"
-        "\tldr r0, .Lmp_be74_0800c000\n"
-        "\tldr r1, .Lmp_be74_0800c00c\n"
-        "\tadds r0, r0, r1\n"
-        "\tmov r2, sp\n"
-        "\tldrb r2, [r2, #12]\n"
-        "\tstrb r2, [r0, #0]\n"
-        "\tadd sp, #16\n"
-        "\tpop {r3, r4, r5}\n"
-        "\tmov r8, r3\n"
-        "\tmov r9, r4\n"
-        "\tmov sl, r5\n"
-        "\tpop {r4, r5, r6, r7}\n"
-        "\tpop {r0}\n"
-        "\tbx r0\n"
-        ".Lmp_be74_0800c000: .word 0x03001780\n"
-        ".Lmp_be74_0800c004: .word 0x00000FF2\n"
-        ".Lmp_be74_0800c008: .word 0x0000103A\n"
-        ".Lmp_be74_0800c00c: .word 0x000010E5\n"
-        ".syntax divided\n"
-    );
+void MenuPlaceUpdate_0BE74(void) {
+    extern u8 MenuPlaceWa[];
+    __asm__(".globl MenuPlaceWa\nMenuPlaceWa = 0x03001780\n");
+    register u8 *wa __asm__("r6");
+    register s32 val __asm__("r4");
+    register u32 cur __asm__("r5");
+    u8 buf[16];
+    s32 sum;
+    s32 sum2;
+    s32 diff;
+
+    *(u32 *)&buf[12] = 0;
+    wa = (u8 *)(uintptr_t)MenuPlaceWa;
+    _0802581C((int)*(const s16 *)(wa + 0x576));
+    val = _08025750((int)*(const s16 *)(wa + 0xFF2),
+                    (int)*(const s16 *)(wa + 0xFF6),
+                    (int)*(const s16 *)(wa + 0x103A));
+    *(u32 *)&buf[0] = *(const u32 *)(wa + 0x10F4);
+    *(u16 *)&buf[4] = *(const u16 *)(wa + 0x574);
+    _0800D95C((void *)&buf[8], (void *)(wa + 0x1088), 3);
+
+    sum = _08002DE04(val, 0x4650) * 0x1770;
+    sum += _08002DE04(_08002DE9C(val, 0x4650), 300) * 100;
+    sum += _08002DE04(_08002DE9C(val, 300), 3);
+
+    cur = *(const u32 *)&buf[0];
+    sum2 = (s32)(_08002DF6C(cur, 0x4650u) * 0x1770u);
+    sum2 += (s32)(_08002DF6C(_08002DFE4(cur, 0x4650u), 300u) * 100u);
+    sum2 += (s32)_08002DF6C(_08002DFE4(cur, 300u), 3u);
+
+    diff = sum - sum2;
+    if (*(const s8 *)(wa + 0x10E4) != 0) {
+        if ((u32)diff <= 99u) {
+            *(u32 *)&buf[12] = 1;
+            __asm__ volatile("");
+        } else if ((u32)(diff - 100) <= 99u) {
+            register u32 t2 __asm__("r1") = 2;
+            *(u32 *)&buf[12] = t2;
+            __asm__ volatile("");
+        } else if (diff > 199) {
+            register u32 t3 __asm__("r2") = 3;
+            *(u32 *)&buf[12] = t3;
+        }
+        {
+            register u8 *wb __asm__("r2") = (u8 *)(uintptr_t)MenuPlaceWa;
+            register u32 off __asm__("r3");
+            register s16 *p __asm__("r6");
+            register s16 *q __asm__("r5");
+            register s16 *r __asm__("r4");
+            u32 offq;
+
+            off = 0xFF2;
+            __asm__ volatile("" : "+r"(off));
+            if (_08025E98((u32)*(const s16 *)(p = (s16 *)(wb + off)),
+                          (int)*(const s16 *)(q = (s16 *)(wb + (offq = off + 4))),
+                          (int)*(const s16 *)(r = (s16 *)(wb + 0x103A))) > *(const u32 *)&buf[0] ||
+                _08025E98((u32)p[0], (int)q[0], (int)r[0]) == 0)
+                _08025E70((u32)p[0], (int)q[0], (int)r[0], *(const u32 *)&buf[0]);
+        }
+    }
+    {
+        register u8 *wc __asm__("r0") = (u8 *)(uintptr_t)MenuPlaceWa;
+        register u8 *bp __asm__("r2");
+        register u8 tier __asm__("r2");
+        u8 *dst = wc + 0x10E5;
+
+        __asm__ volatile("" : "+r"(dst));
+        bp = buf;
+        tier = bp[12];
+        *dst = tier;
+    }
 }
 
 void _0800BE74(void) __attribute__((alias("MenuPlaceUpdate_0BE74")));
