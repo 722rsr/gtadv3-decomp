@@ -790,288 +790,230 @@ void sub_08001B364(u32 a, u32 b) __attribute__((alias("_08001B364")));
 // flag 1; ACC(1) nonzero returns; else flag 1/128/8 arms, two 2A86C claims
 // (8/16), [[ctx]+78]=0, WA+0x10FC==5 with positive [ctx+48] timed reset,
 // then sel 0..5 dispatches (switch = table 0x0801B550).
+//
+// Frame: r6=sel (live to the dispatch), r7=ACC(1) result, r5=CTX cell (kept
+// across the four claim calls, dereferenced only at [[ctx]+78]), then r4=rec
+// (cases 0/4/5), r6=WA base and r7/r5=ghost_a/ghost_p in case 0.
+//
+// Levers, all measured with the corpus probe (664/664 incl. pool):
+// - WORK_AREA and every WA cell offset are separate absolute symbols, so each
+//   site emits two pool words plus `adds base,off`; a folded WA+off constant
+//   pools one word and loses the adds (docs/findings/track_car_26180_pool_order.md).
+// - The entry guard reuses the loaded 0x10FC offset for WA+0x10C3
+//   (`subs r2,#57`), and the second address needs its own destination (the r0
+//   `p2` pin) or agbcc writes the sum over the r1 base.
+// - Case 0 pins the WA base to r6 (live across the ghost calls) and gives each
+//   offset its own register (r1 for 0x10FC, r2 for 0x10FE/0x1114) with the sum
+//   in r0. The `offc` `"+r"` barrier after the add keeps the constant out of
+//   the add's destination register.
+// - `prev[7]` and the ghost compare land their sign-extend/halfword scratch in
+//   r2 only with a liveness pin: a hard-register dummy (r1 for the load, r2 for
+//   the compare) bracketed by empty asms, so the register is live across the
+//   access and cannot be picked (docs/findings/indexed_halfword_scratch.md).
+// - Cases 4/5 store a value and hand the same value to 0x08019AEC; agbcc emits
+//   one `movs` only when it is a variable (`v`), not two literals. Case 5's
+//   `zero` must likewise be assigned before the u16 store, which is what puts
+//   `movs r5,#0` ahead of the 0x08019AEC call.
 // ----------------------------------------------------------------------------
-__attribute__((naked)) void _08001B498(int sel) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push	{r4, r5, r6, r7, lr}\n"
-        "adds	r6, r0, #0\n"
-        "ldr r1, .Lrs1b4_53c\n"
-        "ldr r2, .Lrs1b4_540\n"
-        "adds	r0, r1, r2\n"
-        "ldrh	r0, [r0, #0]\n"
-        "cmp	r0, #8\n"
-        "bne .Lrs1b4_4ca\n"
-        "subs	r2, #57\n"
-        "adds	r0, r1, r2\n"
-        "ldrb	r0, [r0, #0]\n"
-        "cmp	r0, #0\n"
-        "bne .Lrs1b4_4ca\n"
-        "cmp	r6, #5\n"
-        "bne .Lrs1b4_4ca\n"
-        "ldr r0, .Lrs1b4_544\n"
-        "ldr	r0, [r0, #0]\n"
-        "adds	r0, #128\n"
-        "ldrb	r0, [r0, #0]\n"
-        "cmp	r0, #0\n"
-        "bne .Lrs1b4_4ca\n"
-        "movs	r0, #1\n"
-        "movs	r1, #0\n"
-        "bl 0x08018AA8\n"
-        ".Lrs1b4_4ca:\n"
-        "movs	r0, #1\n"
-        "bl 0x08018ACC\n"
-        "adds	r7, r0, #0\n"
-        "cmp	r7, #0\n"
-        "beq .Lrs1b4_4d8\n"
-        "b .Lrs1b4_71a\n"
-        ".Lrs1b4_4d8:\n"
-        "ldr r5, .Lrs1b4_544\n"
-        "ldr	r0, [r5, #0]\n"
-        "adds	r0, #88\n"
-        "strh	r6, [r0, #0]\n"
-        "movs	r0, #1\n"
-        "movs	r1, #1\n"
-        "bl 0x08018AA8\n"
-        "movs	r0, #128\n"
-        "movs	r1, #0\n"
-        "bl 0x08018AA8\n"
-        "movs	r0, #8\n"
-        "movs	r1, #0\n"
-        "bl 0x08018AA8\n"
-        "ldr r4, .Lrs1b4_548\n"
-        "adds	r0, r4, #0\n"
-        "movs	r1, #8\n"
-        "movs	r2, #0\n"
-        "bl sub_08002A86C\n"
-        "adds	r0, r4, #0\n"
-        "movs	r1, #16\n"
-        "movs	r2, #0\n"
-        "bl sub_08002A86C\n"
-        "ldr	r5, [r5, #0]\n"
-        "adds	r0, r5, #0\n"
-        "adds	r0, #78\n"
-        "strh	r7, [r0, #0]\n"
-        "ldr r0, .Lrs1b4_53c\n"
-        "ldr r1, .Lrs1b4_540\n"
-        "adds	r0, r0, r1\n"
-        "ldrh	r0, [r0, #0]\n"
-        "cmp	r0, #5\n"
-        "bne .Lrs1b4_52c\n"
-        "ldr	r0, [r5, #48]\n"
-        "cmp	r0, #0\n"
-        "ble .Lrs1b4_52c\n"
-        "bl sub_0800821C\n"
-        ".Lrs1b4_52c:\n"
-        "cmp	r6, #5\n"
-        "bls .Lrs1b4_532\n"
-        "b .Lrs1b4_71a\n"
-        ".Lrs1b4_532:\n"
-        "lsls	r0, r6, #2\n"
-        "ldr r1, .Lrs1b4_54c\n"
-        "adds	r0, r0, r1\n"
-        "ldr	r0, [r0, #0]\n"
-        "mov	pc, r0\n"
-        ".Lrs1b4_53c: .word 0x03001780\n"
-        ".Lrs1b4_540: .word 0x000010FC\n"
-        ".Lrs1b4_544: .word 0x03004E20\n"
-        ".Lrs1b4_548: .word 0x03004EA4\n"
-        ".Lrs1b4_54c: .word 0x0801B550\n"
-        ".Lrs1b4_550: .word 0x0801B568\n"
-        ".Lrs1b4_554: .word 0x0801B658\n"
-        ".Lrs1b4_558: .word 0x0801B698\n"
-        ".Lrs1b4_55c: .word 0x0801B698\n"
-        ".Lrs1b4_560: .word 0x0801B6B8\n"
-        ".Lrs1b4_564: .word 0x0801B6E4\n"
-        ".Lrs1b4_568:\n"
-        "ldr r4, .Lrs1b4_5c0\n"
-        "adds	r0, r4, #0\n"
-        "movs	r1, #4\n"
-        "movs	r2, #1\n"
-        "bl sub_08002A86C\n"
-        "movs	r0, #32\n"
-        "bl 0x08018ACC\n"
-        "cmp	r0, #0\n"
-        "beq .Lrs1b4_580\n"
-        "b .Lrs1b4_71a\n"
-        ".Lrs1b4_580:\n"
-        "movs	r0, #128\n"
-        "lsls	r0, r0, #2\n"
-        "movs	r1, #1\n"
-        "bl 0x08018AA8\n"
-        "bl 0x0802B44C\n"
-        "bl 0x0802B234\n"
-        "movs	r0, #64\n"
-        "bl 0x0802B368\n"
-        "movs	r0, #2\n"
-        "negs	r0, r0\n"
-        "bl 0x08027114\n"
-        "ldr r0, .Lrs1b4_5c4\n"
-        "ldr r2, .Lrs1b4_5c8\n"
-        "adds	r0, r0, r2\n"
-        "movs	r1, #0\n"
-        "ldrsh	r0, [r0, r1]\n"
-        "cmp	r0, #1\n"
-        "beq .Lrs1b4_5b2\n"
-        "cmp	r0, #4\n"
-        "bne .Lrs1b4_5cc\n"
-        ".Lrs1b4_5b2:\n"
-        "adds	r0, r4, #0\n"
-        "subs	r0, #36\n"
-        "movs	r2, #14\n"
-        "ldrsh	r0, [r0, r2]\n"
-        "bl 0x08019AEC\n"
-        "b .Lrs1b4_5d2\n"
-        ".Lrs1b4_5c0: .word 0x03004EA4\n"
-        ".Lrs1b4_5c4: .word 0x03001780\n"
-        ".Lrs1b4_5c8: .word 0x000010FC\n"
-        ".Lrs1b4_5cc:\n"
-        "movs	r0, #1\n"
-        "bl 0x08019AEC\n"
-        ".Lrs1b4_5d2:\n"
-        "ldr r6, .Lrs1b4_644\n"
-        "ldr r1, .Lrs1b4_648\n"
-        "adds	r0, r6, r1\n"
-        "ldrh	r0, [r0, #0]\n"
-        "cmp	r0, #3\n"
-        "beq .Lrs1b4_5e0\n"
-        "b .Lrs1b4_71a\n"
-        ".Lrs1b4_5e0:\n"
-        "movs	r0, #128\n"
-        "lsls	r0, r0, #5\n"
-        "bl 0x08018ACC\n"
-        "cmp	r0, #0\n"
-        "beq .Lrs1b4_5ee\n"
-        "b .Lrs1b4_71a\n"
-        ".Lrs1b4_5ee:\n"
-        "bl 0x080240C4\n"
-        "adds	r7, r0, #0\n"
-        "bl 0x080240D0\n"
-        "adds	r5, r0, #0\n"
-        "ldr r2, .Lrs1b4_64c\n"
-        "adds	r0, r6, r2\n"
-        "movs	r1, #0\n"
-        "ldrsh	r0, [r0, r1]\n"
-        "bl 0x08024104\n"
-        "ldr r4, .Lrs1b4_650\n"
-        "ldr	r0, [r4, #0]\n"
-        "ldr	r0, [r0, #24]\n"
-        "bl 0x080240F8\n"
-        "ldr	r0, [r4, #0]\n"
-        "ldr	r0, [r0, #44]\n"
-        "bl 0x080240EC\n"
-        "ldr r2, .Lrs1b4_654\n"
-        "adds	r0, r6, r2\n"
-        "bl 0x08024110\n"
-        "ldrh	r0, [r5, #0]\n"
-        "cmp	r0, #0\n"
-        "beq .Lrs1b4_636\n"
-        "ldrh	r0, [r7, #2]\n"
-        "ldrh	r1, [r5, #2]\n"
-        "cmp	r0, r1\n"
-        "bne .Lrs1b4_636\n"
-        "ldr	r1, [r7, #4]\n"
-        "ldr	r0, [r5, #4]\n"
-        "cmp	r1, r0\n"
-        "bge .Lrs1b4_71a\n"
-        ".Lrs1b4_636:\n"
-        "movs	r0, #128\n"
-        "lsls	r0, r0, #8\n"
-        "movs	r1, #1\n"
-        "bl 0x08018AA8\n"
-        "b .Lrs1b4_71a\n"
-        "movs	r0, r0\n"
-        ".Lrs1b4_644: .word 0x03001780\n"
-        ".Lrs1b4_648: .word 0x000010FC\n"
-        ".Lrs1b4_64c: .word 0x000010FE\n"
-        ".Lrs1b4_650: .word 0x03004E20\n"
-        ".Lrs1b4_654: .word 0x00001114\n"
-        ".Lrs1b4_658:\n"
-        "ldr r0, .Lrs1b4_694\n"
-        "movs	r1, #2\n"
-        "movs	r2, #1\n"
-        "bl sub_08002A86C\n"
-        "movs	r0, #32\n"
-        "bl 0x08018ACC\n"
-        "cmp	r0, #0\n"
-        "bne .Lrs1b4_71a\n"
-        "movs	r0, #128\n"
-        "lsls	r0, r0, #2\n"
-        "movs	r1, #1\n"
-        "bl 0x08018AA8\n"
-        "bl 0x0802B44C\n"
-        "bl 0x0802B234\n"
-        "movs	r0, #2\n"
-        "negs	r0, r0\n"
-        "bl 0x08027114\n"
-        "movs	r0, #1\n"
-        "bl 0x08019AEC\n"
-        "movs	r0, #64\n"
-        "bl 0x0802B368\n"
-        "b .Lrs1b4_71a\n"
-        ".Lrs1b4_694: .word 0x03004EA4\n"
-        ".Lrs1b4_698:\n"
-        "ldr r0, .Lrs1b4_6b4\n"
-        "movs	r1, #2\n"
-        "movs	r2, #1\n"
-        "bl sub_08002A86C\n"
-        "bl 0x0802B44C\n"
-        "bl 0x0802B234\n"
-        "movs	r0, #1\n"
-        "negs	r0, r0\n"
-        "bl 0x08019AEC\n"
-        "b .Lrs1b4_71a\n"
-        ".Lrs1b4_6b4: .word 0x03004EA4\n"
-        ".Lrs1b4_6b8:\n"
-        "ldr r4, .Lrs1b4_6e0\n"
-        "adds	r0, r4, #0\n"
-        "movs	r1, #4\n"
-        "movs	r2, #1\n"
-        "bl sub_08002A86C\n"
-        "bl 0x0802B44C\n"
-        "bl 0x0802B234\n"
-        "movs	r0, #64\n"
-        "bl 0x0802B368\n"
-        "subs	r4, #36\n"
-        "movs	r0, #1\n"
-        "strh	r0, [r4, #14]\n"
-        "bl 0x08019AEC\n"
-        "b .Lrs1b4_71a\n"
-        "movs	r0, r0\n"
-        ".Lrs1b4_6e0: .word 0x03004EA4\n"
-        ".Lrs1b4_6e4:\n"
-        "ldr r4, .Lrs1b4_720\n"
-        "adds	r0, r4, #0\n"
-        "movs	r1, #2\n"
-        "movs	r2, #1\n"
-        "bl sub_08002A86C\n"
-        "bl 0x0802B44C\n"
-        "bl 0x0802B234\n"
-        "bl 0x0802B3A4\n"
-        "subs	r4, #36\n"
-        "movs	r5, #0\n"
-        "movs	r0, #2\n"
-        "strh	r0, [r4, #14]\n"
-        "bl 0x08019AEC\n"
-        "ldr r0, .Lrs1b4_724\n"
-        "ldr r2, .Lrs1b4_728\n"
-        "adds	r0, r0, r2\n"
-        "str	r5, [r0, #0]\n"
-        "ldr r0, .Lrs1b4_72c\n"
-        "ldr	r0, [r0, #0]\n"
-        "adds	r0, #128\n"
-        "movs	r1, #1\n"
-        "strb	r1, [r0, #0]\n"
-        ".Lrs1b4_71a:\n"
-        "pop	{r4, r5, r6, r7}\n"
-        "pop	{r0}\n"
-        "bx	r0\n"
-        ".Lrs1b4_720: .word 0x03004EA4\n"
-        ".Lrs1b4_724: .word 0x03001780\n"
-        ".Lrs1b4_728: .word 0x000010F0\n"
-        ".Lrs1b4_72c: .word 0x03004E20\n"
-        ".syntax divided\n"
-    );
+void _08001B498(int sel) {
+    extern u8 RsWa[], RsOffFC[], RsOffFE[], RsOff114[], RsOffF0[], RsRec[];
+    u32 r;
+    u8 *ctx;
+
+    __asm__(".globl RsWa\nRsWa = 0x03001780\n");
+    __asm__(".globl RsOffFC\nRsOffFC = 0x10FC\n");
+    __asm__(".globl RsOffFE\nRsOffFE = 0x10FE\n");
+    __asm__(".globl RsOff114\nRsOff114 = 0x1114\n");
+    __asm__(".globl RsOffF0\nRsOffF0 = 0x10F0\n");
+    __asm__(".globl RsRec\nRsRec = 0x03004EA4\n");
+
+    /* WA+0x10FC holds the race mode; the WA+0x10C3 byte is the "no ghosts"
+     * marker and [ctx+128] the pending-scene byte. All three must line up
+     * with sel==5 before the flag-1 clear. The 0x10C3 address is the 0x10FC
+     * offset minus 57, which is why the ROM reuses the loaded offset. */
+    {
+        register u8 *wa __asm__("r1") = RsWa;
+        register u32 off __asm__("r2") = (u32)(uintptr_t)RsOffFC;
+        register u8 *p2 __asm__("r0");
+
+        if (*(volatile u16 *)(wa + off) == 8) {
+            off -= 57u;
+            p2 = wa + off;
+            if (*(volatile u8 *)p2 == 0
+                && sel == 5
+                && *(volatile u8 *)(uintptr_t)(*(u32 *)(uintptr_t)CTX + 128u) == 0)
+                _08018AA8(1u, 0);
+        }
+    }
+
+    r = (u32)_08018ACC(1u);
+    if (r != 0)
+        return;
+
+    {
+        u32 *ctxp = (u32 *)(uintptr_t)CTX;
+
+        *(volatile u16 *)(uintptr_t)(*ctxp + 88u) = (u16)sel;
+        _08018AA8(1u, 1);
+        _08018AA8(0x80u, 0);
+        _08018AA8(8u, 0);
+        _08002A86C((void *)RsRec, 8, 0);
+        _08002A86C((void *)RsRec, 16, 0);
+        /* Re-read the cell after the claims: the ROM's r5 keeps the CTX
+         * address across them and dereferences it here. */
+        ctx = (u8 *)(uintptr_t)*ctxp;
+    }
+    *(volatile u16 *)(ctx + 78u) = (u16)r;
+    {
+        u8 *wa = RsWa;
+
+        if (*(volatile u16 *)(uintptr_t)((u32)(uintptr_t)wa + (u32)(uintptr_t)RsOffFC) == 5
+            && *(volatile s32 *)(ctx + 48u) > 0)
+            _0800821C();
+    }
+
+    switch (sel) {
+    case 0: {
+        u8 *rec = RsRec;
+        u8 *wa;
+        s16 mode;
+        u8 *ghost_a;
+        u8 *ghost_p;
+        u32 *ctxp;
+
+        _08002A86C(rec, 4, 1);
+        if (_08018ACC(0x20u) != 0)
+            return;
+        _08018AA8(0x200u, 1);
+        _0802B44C();
+        _0802B234();
+        _0802B368(0x40);
+        _08027114(-2);
+        {
+            register u32 base __asm__("r0") = (u32)(uintptr_t)RsWa;
+            register u32 offc __asm__("r2") = (u32)(uintptr_t)RsOffFC;
+
+            mode = *(s16 *)(uintptr_t)(base + offc);
+        }
+        if (mode == 1 || mode == 4) {
+            register int hold __asm__("r1");
+            u8 *prev = rec - 36;
+            int v;
+
+            __asm__ volatile ("" : "=r" (hold));
+            v = *(s16 *)(prev + 14);
+            __asm__ volatile ("" : : "r" (hold));
+            _08019AEC(v);
+        } else {
+            _08019AEC(1);
+        }
+        wa = RsWa;
+        {
+            register u8 *base __asm__("r6") = wa;
+            u32 offc = (u32)(uintptr_t)RsOffFC;
+            register u8 *p __asm__("r0");
+
+            p = base + offc;
+            __asm__ volatile ("" : "+r" (offc));
+            if (*(volatile u16 *)p != 3)
+                return;
+        }
+        if (_08018ACC(0x1000u) != 0)
+            return;
+        ghost_a = (u8 *)_080240C4();
+        ghost_p = (u8 *)_080240D0();
+        {
+            register u8 *base __asm__("r6") = wa;
+            register u32 offc __asm__("r2") = (u32)(uintptr_t)RsOffFE;
+            register u8 *p __asm__("r0");
+
+            p = base + offc;
+            __asm__ volatile ("" : "+r" (offc));
+            _08024104((u32)*(s16 *)p);
+        }
+        ctxp = (u32 *)(uintptr_t)CTX;
+        _080240F8(*(u32 *)(uintptr_t)(*ctxp + 24u));
+        _080240EC(*(u32 *)(uintptr_t)(*ctxp + 44u));
+        {
+            register u8 *base __asm__("r6") = wa;
+            register u32 offc __asm__("r2") = (u32)(uintptr_t)RsOff114;
+            register u8 *p __asm__("r0");
+
+            p = base + offc;
+            __asm__ volatile ("" : "+r" (offc));
+            _08024110((const void *)p);
+        }
+        {
+            register int hold2 __asm__("r2");
+
+            __asm__ volatile ("" : "=r" (hold2));
+            if (*(u16 *)ghost_p != 0
+                && *(u16 *)(ghost_a + 2) == *(u16 *)(ghost_p + 2)
+                && *(s32 *)(ghost_a + 4) >= *(s32 *)(ghost_p + 4))
+                return;
+            __asm__ volatile ("" : : "r" (hold2));
+        }
+        _08018AA8(0x8000u, 1);
+        return;
+    }
+    case 1:
+        _08002A86C((void *)RsRec, 2, 1);
+        if (_08018ACC(0x20u) != 0)
+            return;
+        _08018AA8(0x200u, 1);
+        _0802B44C();
+        _0802B234();
+        _08027114(-2);
+        _08019AEC(1);
+        _0802B368(0x40);
+        return;
+    case 2:
+    case 3:
+        _08002A86C((void *)RsRec, 2, 1);
+        _0802B44C();
+        _0802B234();
+        _08019AEC(-1);
+        return;
+    case 4: {
+        u8 *rec = RsRec;
+        u8 *prev;
+        int v;
+
+        _08002A86C(rec, 4, 1);
+        _0802B44C();
+        _0802B234();
+        _0802B368(0x40);
+        prev = rec - 36;
+        v = 1;
+        *(volatile u16 *)(prev + 14) = (u16)v;
+        _08019AEC(v);
+        return;
+    }
+    case 5: {
+        u8 *rec = RsRec;
+        u8 *prev;
+        int v;
+        u32 zero;
+
+        _08002A86C(rec, 2, 1);
+        _0802B44C();
+        _0802B234();
+        _0802B3A4();
+        prev = rec - 36;
+        zero = 0;
+        v = 2;
+        *(volatile u16 *)(prev + 14) = (u16)v;
+        _08019AEC(v);
+        {
+            register u32 base __asm__("r0") = (u32)(uintptr_t)RsWa;
+            register u32 offc __asm__("r2") = (u32)(uintptr_t)RsOffF0;
+
+            *(volatile u32 *)(uintptr_t)(base + offc) = zero;
+        }
+        *(volatile u8 *)(uintptr_t)(*(u32 *)(uintptr_t)CTX + 128u) = 1;
+        return;
+    }
+    }
 }
 
 // Spelling aliases for the 0x08001B498 event dispatcher (race_scene.c uses
