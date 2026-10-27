@@ -13,6 +13,7 @@
 // `_08025C84` is 4-arg (same three plus the 2-bit value) — the earlier 3-arg
 // `Ai_GridSet` decl here silently dropped the value (see the ROM call signatures).
 extern int  Ai_GridGet(int type, int row, int col);   // _08025CF4
+extern int  _08025CF4(int a, int b, int c);        // same body, closure spelling
 extern void _08025C84(int a, int b, int c, int value); // grid set (code_25930.c)
 // asm/race_progress.s:87-88 — the ROM loads r0 = 1 immediately before the call
 // (`movs r0, #1; bl sub_0800279C`), so the argument is part of the contract.
@@ -39,125 +40,65 @@ extern void MenuPlaceUpdate_0BE74(void);               // scene_record_dispatch.
 // load moves the *destination* instead of the scratch, and pinning r0+r4
 // together makes agbcc abort (internal compiler error), so the three r7
 // scratches are the wall. See findings/indexed_halfword_scratch.md.
-__attribute__((naked)) void Race_CommitCell(void) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, r7, lr}\n"
-        "mov r7, r9\n"
-        "mov r6, r8\n"
-        "push {r6, r7}\n"
-        "ldr r2, .Lad84_lit_0\n"
-        "ldr r0, .Lad84_lit_1\n"
-        "adds r3, r2, r0\n"
-        "movs r4, #0\n"
-        "ldrsh r1, [r3, r4]\n"
-        "lsls r1, r1, #1\n"
-        "ldr r6, .Lad84_lit_2\n"
-        "adds r5, r2, r6\n"
-        "movs r7, #0\n"
-        "ldrsh r0, [r5, r7]\n"
-        "lsls r0, r0, #3\n"
-        "adds r1, r1, r0\n"
-        "ldr r0, .Lad84_lit_3\n"
-        "adds r0, r0, r2\n"
-        "mov r9, r0\n"
-        "add r1, r9\n"
-        "adds r6, #72\n"
-        "adds r4, r2, r6\n"
-        "ldrh r0, [r4, #0]\n"
-        "strh r0, [r1, #0]\n"
-        "movs r7, #0\n"
-        "ldrsh r1, [r3, r7]\n"
-        "lsls r1, r1, #1\n"
-        "movs r6, #0\n"
-        "ldrsh r0, [r5, r6]\n"
-        "lsls r0, r0, #3\n"
-        "adds r1, r1, r0\n"
-        "ldr r7, .Lad84_lit_4\n"
-        "adds r7, r7, r2\n"
-        "mov r8, r7\n"
-        "add r1, r8\n"
-        "ldrh r0, [r4, #0]\n"
-        "strh r0, [r1, #0]\n"
-        "ldrh r0, [r3, #0]\n"
-        "ldr r1, .Lad84_lit_5\n"
-        "adds r6, r2, r1\n"
-        "strh r0, [r6, #0]\n"
-        "ldrh r1, [r5, #0]\n"
-        "ldr r3, .Lad84_lit_6\n"
-        "adds r0, r2, r3\n"
-        "strh r1, [r0, #0]\n"
-        "ldr r0, .Lad84_lit_7\n"
-        "adds r7, r2, r0\n"
-        "ldrb r0, [r7, #0]\n"
-        "subs r0, #1\n"
-        "lsls r0, r0, #24\n"
-        "lsrs r0, r0, #24\n"
-        "cmp r0, #2\n"
-        "bhi .Lad84_done\n"
-        "movs r1, #0\n"
-        "ldrsh r0, [r5, r1]\n"
-        "movs r2, #0\n"
-        "ldrsh r1, [r6, r2]\n"
-        "movs r3, #0\n"
-        "ldrsh r2, [r4, r3]\n"
-        "bl _08025CF4\n"
-        "lsls r0, r0, #24\n"
-        "lsrs r0, r0, #24\n"
-        "movs r3, #0\n"
-        "ldrsb r3, [r7, r3]\n"
-        "cmp r0, r3\n"
-        "bge .Lad84_store\n"
-        "movs r7, #0\n"
-        "ldrsh r0, [r5, r7]\n"
-        "movs r2, #0\n"
-        "ldrsh r1, [r6, r2]\n"
-        "movs r7, #0\n"
-        "ldrsh r2, [r4, r7]\n"
-        "bl _08025C84\n"
-        "movs r0, #1\n"
-        "bl Event_Post1\n"
-        ".Lad84_store:\n"
-        "movs r0, #0\n"
-        "ldrsh r1, [r6, r0]\n"
-        "lsls r1, r1, #1\n"
-        "movs r2, #0\n"
-        "ldrsh r0, [r5, r2]\n"
-        "lsls r0, r0, #3\n"
-        "adds r1, r1, r0\n"
-        "add r1, r8\n"
-        "ldrh r0, [r4, #0]\n"
-        "strh r0, [r1, #0]\n"
-        "ldrh r2, [r4, #0]\n"
-        "adds r2, #1\n"
-        "strh r2, [r4, #0]\n"
-        "movs r3, #0\n"
-        "ldrsh r0, [r6, r3]\n"
-        "lsls r0, r0, #1\n"
-        "movs r4, #0\n"
-        "ldrsh r1, [r5, r4]\n"
-        "lsls r1, r1, #3\n"
-        "adds r0, r0, r1\n"
-        "add r0, r9\n"
-        "strh r2, [r0, #0]\n"
-        ".Lad84_done:\n"
-        "pop {r3, r4}\n"
-        "mov r8, r3\n"
-        "mov r9, r4\n"
-        "pop {r4, r5, r6, r7}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        ".align 2, 0\n"
-        ".Lad84_lit_0: .word 0x03001780\n"
-        ".Lad84_lit_1: .word 0x00000FF6\n"
-        ".Lad84_lit_2: .word 0x00000FF2\n"
-        ".Lad84_lit_3: .word 0x00000FFA\n"
-        ".Lad84_lit_4: .word 0x0000100A\n"
-        ".Lad84_lit_5: .word 0x00000FF8\n"
-        ".Lad84_lit_6: .word 0x00000FF4\n"
-        ".Lad84_lit_7: .word 0x000010E5\n"
-        ".syntax divided\n"
-    );
+void Race_CommitCell(void)
+{
+    register u8 *wa __asm__("r2");
+    register u8 *rowc __asm__("r3");
+    register u8 *colc __asm__("r5");
+    u8 *cnt;
+    u8 *dst, *laneA, *laneB;
+    register u8 *rowm __asm__("r6");
+    u8 *colm, *flag;
+    register u32 colo __asm__("r6");
+    register s32 idx __asm__("r1");
+    s32 idx2;
+    register int hold6 __asm__("r6");
+    u32 cell, vrow, vcol;
+    u8 g;
+    s8 cur;
+
+    wa = (u8 *)0x03001780;
+    rowc = wa + 0x0FF6;
+    idx = *(s16 *)rowc * 2;
+    colo = 0x0FF2;
+    colc = wa + colo;
+    idx += *(s16 *)colc * 8;
+    laneA = wa + 0x0FFA;
+    dst = laneA + idx;
+    cnt = wa + (colo + 72);
+    *(u16 *)dst = *(u16 *)cnt;
+
+    __asm__ volatile ("" : "=r" (hold6));
+    idx = *(s16 *)rowc * 2;
+    __asm__ volatile ("" : : "r" (hold6));
+    idx += *(s16 *)colc * 8;
+    laneB = wa + 0x100A;
+    dst = laneB + idx;
+    *(u16 *)dst = *(u16 *)cnt;
+
+    vrow = *(u16 *)rowc;
+    rowm = wa + 0x0FF8;
+    *(u16 *)rowm = vrow;
+    vcol = *(u16 *)colc;
+    colm = wa + 0x0FF4;
+    *(u16 *)colm = vcol;
+    flag = wa + 0x10E5;
+    if ((u8)(*(u8 *)flag - 1) > 2)
+        return;
+    g = (u8)_08025CF4(*(s16 *)colc, *(s16 *)rowm, *(s16 *)cnt);
+    cur = *(s8 *)flag;
+    if ((s32)g < (s32)cur) {
+        _08025C84(*(s16 *)colc, *(s16 *)rowm, *(s16 *)cnt, cur);
+        Event_Post1(1);
+    }
+    idx = *(s16 *)rowm * 2;
+    idx += *(s16 *)colc * 8;
+    *(u16 *)(laneB + idx) = *(u16 *)cnt;
+    cell = *(u16 *)cnt + 1;
+    *(u16 *)cnt = cell;
+    idx2 = *(s16 *)rowm * 2;
+    idx2 += *(s16 *)colc * 8;
+    *(u16 *)(laneA + idx2) = cell;
 }
 
 // _0800AE78 — advance the committed grid/row state (WA = 0x03001780):

@@ -4239,11 +4239,10 @@
    "size": 836
   },
   "0x0800ad84": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 103,
-    "naked": true
+    "barrier": 2,
+    "pin": 7
    },
    "file": "src/race_progress.c",
    "name": "Race_CommitCell",
@@ -13255,16 +13254,16 @@
  },
  "totals": {
   "asm": {
-   "bytes": 61312,
-   "functions": 159
+   "bytes": 61068,
+   "functions": 158
   },
   "c": {
    "bytes": 43078,
    "functions": 872
   },
   "c_fakematch": {
-   "bytes": 83186,
-   "functions": 638
+   "bytes": 83430,
+   "functions": 639
   },
   "partial": {
    "bytes": 560,
