@@ -5,13 +5,13 @@
     "complete_data": "7873388",
     "complete_data_percent": 100.0,
     "complete_units": 279,
-    "fuzzy_match_percent": 99.29874767865834,
-    "matched_code": "132224",
-    "matched_code_percent": 70.04873913964823,
+    "fuzzy_match_percent": 99.32122307851456,
+    "matched_code": "134036",
+    "matched_code_percent": 71.00868828141556,
     "matched_data": "7873388",
     "matched_data_percent": 100.0,
-    "matched_functions": 1524,
-    "matched_functions_percent": 90.98507462686567,
+    "matched_functions": 1529,
+    "matched_functions_percent": 91.28358208955224,
     "total_code": "188760",
     "total_data": "7873388",
     "total_functions": 1675,
@@ -12320,7 +12320,7 @@
           "size": "644"
         },
         {
-          "fuzzy_match_percent": 0.0,
+          "fuzzy_match_percent": 100.0,
           "metadata": {
             "virtual_address": "134287164"
           },
@@ -12328,7 +12328,7 @@
           "size": "356"
         },
         {
-          "fuzzy_match_percent": 0.0,
+          "fuzzy_match_percent": 100.0,
           "metadata": {
             "virtual_address": "134287520"
           },
@@ -13166,13 +13166,13 @@
         "complete_data": "0",
         "complete_data_percent": 0.0,
         "complete_units": 1,
-        "fuzzy_match_percent": 76.26948215183509,
-        "matched_code": "18204",
-        "matched_code_percent": 76.26948215183509,
+        "fuzzy_match_percent": 79.31959108429696,
+        "matched_code": "18932",
+        "matched_code_percent": 79.31959108429696,
         "matched_data": "0",
         "matched_data_percent": 0.0,
-        "matched_functions": 107,
-        "matched_functions_percent": 89.91596638655462,
+        "matched_functions": 109,
+        "matched_functions_percent": 91.59663865546219,
         "total_code": "23868",
         "total_data": "0",
         "total_functions": 119,
@@ -14137,7 +14137,7 @@
           "size": "76"
         },
         {
-          "fuzzy_match_percent": 0.0,
+          "fuzzy_match_percent": 100.0,
           "metadata": {
             "virtual_address": "134342500"
           },
@@ -14583,13 +14583,13 @@
         "complete_data": "0",
         "complete_data_percent": 0.0,
         "complete_units": 1,
-        "fuzzy_match_percent": 44.74923801607093,
-        "matched_code": "12920",
-        "matched_code_percent": 44.74923801607093,
+        "fuzzy_match_percent": 45.91299528955389,
+        "matched_code": "13256",
+        "matched_code_percent": 45.91299528955389,
         "matched_data": "0",
         "matched_data_percent": 0.0,
-        "matched_functions": 104,
-        "matched_functions_percent": 85.24590163934427,
+        "matched_functions": 105,
+        "matched_functions_percent": 86.06557377049181,
         "total_code": "28872",
         "total_data": "0",
         "total_functions": 122,
@@ -14708,7 +14708,7 @@
           "size": "240"
         },
         {
-          "fuzzy_match_percent": 0.0,
+          "fuzzy_match_percent": 100.0,
           "metadata": {
             "virtual_address": "134321896"
           },
@@ -14898,13 +14898,13 @@
         "complete_data": "0",
         "complete_data_percent": 0.0,
         "complete_units": 1,
-        "fuzzy_match_percent": 52.25092250922509,
-        "matched_code": "2832",
-        "matched_code_percent": 52.25092250922509,
+        "fuzzy_match_percent": 59.18819188191882,
+        "matched_code": "3208",
+        "matched_code_percent": 59.18819188191882,
         "matched_data": "0",
         "matched_data_percent": 0.0,
-        "matched_functions": 30,
-        "matched_functions_percent": 83.33333333333333,
+        "matched_functions": 31,
+        "matched_functions_percent": 86.11111111111111,
         "total_code": "5420",
         "total_data": "0",
         "total_functions": 36,
@@ -15088,7 +15088,7 @@
     {
       "functions": [
         {
-          "fuzzy_match_percent": 0.0,
+          "fuzzy_match_percent": 100.0,
           "metadata": {
             "virtual_address": "134306996"
           },
@@ -15102,13 +15102,13 @@
         "complete_data": "0",
         "complete_data_percent": 0.0,
         "complete_units": 1,
-        "fuzzy_match_percent": 0.0,
-        "matched_code": "0",
-        "matched_code_percent": 0.0,
+        "fuzzy_match_percent": 100.0,
+        "matched_code": "372",
+        "matched_code_percent": 100.0,
         "matched_data": "0",
         "matched_data_percent": 0.0,
-        "matched_functions": 0,
-        "matched_functions_percent": 0.0,
+        "matched_functions": 1,
+        "matched_functions_percent": 100.0,
         "total_code": "372",
         "total_data": "0",
         "total_functions": 1,

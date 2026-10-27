@@ -5537,22 +5537,20 @@
    "size": 644
   },
   "0x08010f3c": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 164,
-    "naked": true
+    "directive": 1,
+    "pin": 3
    },
    "file": "src/menu_ff78_c.c",
    "name": "MenuFF78_10F3C",
    "size": 356
   },
   "0x080110a0": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 172,
-    "naked": true
+    "directive": 1,
+    "pin": 3
    },
    "file": "src/menu_ff78_c.c",
    "name": "MenuFF78_110A0",
@@ -6422,12 +6420,7 @@
    "size": 4
   },
   "0x08015cb4": {
-   "class": "asm",
-   "detail": {
-    "insn": 1,
-    "insn_lines": 164,
-    "naked": true
-   },
+   "class": "c",
    "file": "src/rec35_init.c",
    "name": "Rec35_Init",
    "size": 372
@@ -7286,11 +7279,10 @@
    "size": 240
   },
   "0x080196e8": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 153,
-    "naked": true
+    "directive": 1,
+    "pin": 2
    },
    "file": "src/race_setup_helpers.c",
    "name": "sub_0800196E8",
@@ -8098,11 +8090,11 @@
    "size": 76
   },
   "0x0801e764": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 153,
-    "naked": true
+    "barrier": 3,
+    "directive": 1,
+    "pin": 8
    },
    "file": "src/race_scene_c.c",
    "name": "_08001E764",
@@ -13235,16 +13227,16 @@
  },
  "totals": {
   "asm": {
-   "bytes": 55552,
-   "functions": 146
+   "bytes": 53740,
+   "functions": 141
   },
   "c": {
-   "bytes": 43950,
-   "functions": 874
+   "bytes": 44322,
+   "functions": 875
   },
   "c_fakematch": {
-   "bytes": 88274,
-   "functions": 650
+   "bytes": 89714,
+   "functions": 654
   },
   "partial": {
    "bytes": 360,
