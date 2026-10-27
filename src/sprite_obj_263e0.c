@@ -1122,145 +1122,129 @@ void sub_08026B30(void *a) __attribute__((alias("Sprite_Init")));
 //   [entry+20] = u16[rec+4+cur*2]; [entry+22] = u16[rec+8+cur*2];
 //   _08007538(0x083A2100, table1[ev], s16[entry+20]);
 //   _080075E8(0x083A2100, table2[ev], s16[entry+22]).
-// MEASURED 2026-10-23: a C lift reaches 178/260 with the prologue, the ev==8
-// arm and the 0x03001674 address CSE exact. Give each phase its own record
-// variable -- one shared `rec` gives the branch arm r3 and costs the r6
-// save; the residue is then the base/constant homes (ROM r5/r3/r2 vs agbcc
-// r3/r6/r0) and the operand order of the three `adds r0,r3,r0` entries.
-// ============================================================================
-__attribute__((naked)) void Sprite_MenuEvent(int ev) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push\t{r4, r5, r6, lr}\n"
-        "adds\tr4, r0, #0\n"
-        "cmp\tr4, #8\n"
-        "bne .Lspr__080026BA0\n"
-        "ldr r0, .Lspr__080026B9C\n"
-        "ldr\tr1, [r0, #0]\n"
-        "movs\tr2, #0\n"
-        "movs\tr0, #1\n"
-        "strh\tr0, [r1, #2]\n"
-        "strh\tr2, [r1, #30]\n"
-        "strh\tr2, [r1, #12]\n"
-        "strh\tr2, [r1, #50]\n"
-        "strh\tr2, [r1, #32]\n"
-        "b .Lspr__080026C6C\n"
-        ".Lspr__080026B9C: .4byte 0x03001674\n"
-        ".Lspr__080026BA0:\n"
-        "ldr r2, .Lspr__080026C74\n"
-        "ldr\tr5, [r2, #0]\n"
-        "movs\tr0, #0\n"
-        "strh\tr0, [r5, #2]\n"
-        "movs\tr0, #0\n"
-        "ldrsh\tr1, [r5, r0]\n"
-        "lsls\tr0, r1, #2\n"
-        "adds\tr0, r0, r1\n"
-        "lsls\tr0, r0, #2\n"
-        "adds\tr1, r5, r0\n"
-        "movs\tr3, #30\n"
-        "ldrsh\tr0, [r1, r3]\n"
-        "adds\tr6, r2, #0\n"
-        "cmp\tr0, #0\n"
-        "beq .Lspr__080026BD0\n"
-        "movs\tr0, #12\n"
-        "strh\tr0, [r1, #12]\n"
-        "movs\tr1, #0\n"
-        "movs\tr2, #0\n"
-        "ldrsh\tr0, [r5, r2]\n"
-        "cmp\tr0, #0\n"
-        "bne .Lspr__080026BCE\n"
-        "movs\tr1, #1\n"
-        ".Lspr__080026BCE:\n"
-        "strh\tr1, [r5, #0]\n"
-        ".Lspr__080026BD0:\n"
-        "ldr\tr3, [r6, #0]\n"
-        "movs\tr0, #0\n"
-        "ldrsh\tr1, [r3, r0]\n"
-        "lsls\tr0, r1, #2\n"
-        "adds\tr0, r0, r1\n"
-        "lsls\tr0, r0, #2\n"
-        "adds\tr0, r3, r0\n"
-        "movs\tr1, #1\n"
-        "strh\tr1, [r0, #30]\n"
-        "movs\tr2, #0\n"
-        "ldrsh\tr1, [r3, r2]\n"
-        "lsls\tr0, r1, #2\n"
-        "adds\tr0, r0, r1\n"
-        "lsls\tr0, r0, #2\n"
-        "adds\tr0, r3, r0\n"
-        "movs\tr1, #120\n"
-        "strh\tr1, [r0, #12]\n"
-        "movs\tr0, #0\n"
-        "ldrsh\tr1, [r3, r0]\n"
-        "lsls\tr0, r1, #2\n"
-        "adds\tr0, r0, r1\n"
-        "lsls\tr0, r0, #2\n"
-        "adds\tr0, r3, r0\n"
-        "strh\tr4, [r0, #18]\n"
-        "movs\tr0, #0\n"
-        "ldrsh\tr2, [r3, r0]\n"
-        "lsls\tr1, r2, #2\n"
-        "adds\tr1, r1, r2\n"
-        "lsls\tr1, r1, #2\n"
-        "adds\tr1, r3, r1\n"
-        "lsls\tr2, r2, #1\n"
-        "adds\tr0, r3, #4\n"
-        "adds\tr0, r0, r2\n"
-        "ldrh\tr0, [r0, #0]\n"
-        "strh\tr0, [r1, #20]\n"
-        "movs\tr0, #0\n"
-        "ldrsh\tr2, [r3, r0]\n"
-        "lsls\tr1, r2, #2\n"
-        "adds\tr1, r1, r2\n"
-        "lsls\tr1, r1, #2\n"
-        "adds\tr1, r3, r1\n"
-        "lsls\tr2, r2, #1\n"
-        "adds\tr0, r3, #0\n"
-        "adds\tr0, #8\n"
-        "adds\tr0, r0, r2\n"
-        "ldrh\tr0, [r0, #0]\n"
-        "strh\tr0, [r1, #22]\n"
-        "ldr r5, .Lspr__080026C78\n"
-        "ldr r0, .Lspr__080026C7C\n"
-        "lsls\tr4, r4, #2\n"
-        "adds\tr0, r4, r0\n"
-        "ldr\tr1, [r0, #0]\n"
-        "movs\tr0, #0\n"
-        "ldrsh\tr2, [r3, r0]\n"
-        "lsls\tr0, r2, #2\n"
-        "adds\tr0, r0, r2\n"
-        ".Lspr__080026C40:\n"
-        "lsls\tr0, r0, #2\n"
-        "adds\tr3, r3, r0\n"
-        "movs\tr0, #20\n"
-        "ldrsh\tr2, [r3, r0]\n"
-        "adds\tr0, r5, #0\n"
-        "bl 0x08007538\n"
-        "ldr r0, .Lspr__080026C80\n"
-        "adds\tr4, r4, r0\n"
-        "ldr\tr1, [r4, #0]\n"
-        "ldr\tr2, [r6, #0]\n"
-        "movs\tr0, #0\n"
-        "ldrsh\tr3, [r2, r0]\n"
-        "lsls\tr0, r3, #2\n"
-        "adds\tr0, r0, r3\n"
-        "lsls\tr0, r0, #2\n"
-        "adds\tr2, r2, r0\n"
-        "movs\tr3, #22\n"
-        "ldrsh\tr2, [r2, r3]\n"
-        "adds\tr0, r5, #0\n"
-        "bl 0x080075E8\n"
-        ".Lspr__080026C6C:\n"
-        "pop\t{r4, r5, r6}\n"
-        "pop\t{r0}\n"
-        "bx\tr0\n"
-        "movs\tr0, r0\n"
-        ".Lspr__080026C74: .4byte 0x03001674\n"
-        ".Lspr__080026C78: .4byte 0x083A2100\n"
-        ".Lspr__080026C7C: .4byte 0x080CDAE0\n"
-        ".Lspr__080026C80: .4byte 0x080CDB2C\n"
-        ".syntax divided\n"
-    );
+// MEASURED 2026-10-27: EXACT 260/260 (byte-for-byte, pool included).  The
+// levers, in the order they were needed:
+//   - one record variable per phase (`rec` is reloaded from the cell for each
+//     of the three phases, and `cell` itself is a pinned register, r6): a
+//     single shared `rec` gives the ev==8 arm r3 and drops the r6 save;
+//   - the ev==8 arm needs an explicit `z = 0` local: the four zero stores then
+//     share r2 and agbcc materialises it ahead of the one-store's r0, which is
+//     the ROM's `movs r2,#0 / movs r0,#1` order;
+//   - `cell = tmp` sits *after* the armed-field load, which is where the ROM
+//     copies the cell address into r6 (`adds r6,r2,#0`) -- before the branch,
+//     not at the top of the block;
+//   - each of the three phase-2 stores gets its own block-scoped pinned
+//     `q` in r0 and the base in r3: the pair produces the ROM's
+//     `adds r0,r3,r0` (destination coalesced with the dying offset register,
+//     base first), which a plain named/unnamed destination does not;
+//   - the x/y stores pin the index in r2, the slot in r1, and reach the
+//     template through `t = (u16 *)(rec + 4)` plus `s = (u8 *)t + c2`; the
+//     separate `c2 = c3 * 2` is what keeps the ROM's
+//     `lsls r2,r2,#1 / adds r0,r3,#4 / adds r0,r0,r2` order (the template
+//     base is materialised at run time, never folded into the load offset);
+//   - the two table bases are `u8 *` locals with an input-only register
+//     barrier (`__asm__ volatile ("" : : "r"((u32)(uintptr_t)tp))`): that
+//     pins the `ldr rX,<pool>` ahead of the `ev*4` scale, as the ROM has it.
+//     The `+r` form launders the value and flips the add's operand order,
+//     which costs the `adds r0,r4,r0` / `adds r4,r4,r0` pair; the input form
+//     leaves cse alone, so the first add's destination still coalesces with
+//     the base (r0) and the second with the dead index (r4).
+void Sprite_MenuEvent(int ev) {
+    register void **cell __asm__("r6");
+    if (ev == 8) {
+        u16 *m = (u16 *)(uintptr_t)SPR_MENU_REC;
+        u16 z = 0;
+        m[1] = 1;
+        m[15] = z;
+        m[6] = z;
+        m[25] = z;
+        m[16] = z;
+        return;
+    }
+    {
+        register void **tmp __asm__("r2");
+        register u8 *rec __asm__("r5");
+        u8 *e;
+        int cur;
+        int armed;
+        tmp = (void **)(uintptr_t)0x03001674u;
+        rec = (u8 *)(uintptr_t)*tmp;
+        *(u16 *)(rec + 2) = 0;
+        cur = *(s16 *)(rec + 0);
+        e = rec + cur * 20;
+        armed = *(s16 *)(e + 30);
+        cell = tmp;
+        if (armed != 0) {
+            *(u16 *)(e + 12) = 12;
+            *(u16 *)(rec + 0) = (u16)(*(s16 *)(rec + 0) == 0);
+        }
+    }
+    {
+        register u8 *rec __asm__("r3");
+        u8 *e3;
+        rec = (u8 *)(uintptr_t)*cell;
+        {
+            register u8 *q __asm__("r0");
+            q = rec + *(s16 *)(rec + 0) * 20;
+            *(u16 *)(q + 30) = 1;
+        }
+        {
+            register u8 *q __asm__("r0");
+            q = rec + *(s16 *)(rec + 0) * 20;
+            *(u16 *)(q + 12) = 120;
+        }
+        {
+            register u8 *q __asm__("r0");
+            q = rec + *(s16 *)(rec + 0) * 20;
+            *(u16 *)(q + 18) = (u16)ev;
+        }
+        {
+            register int c3 __asm__("r2");
+            register u8 *q __asm__("r1");
+            int c2;
+            u16 *t;
+            u8 *s;
+            c3 = *(s16 *)(rec + 0);
+            q = rec + c3 * 20;
+            c2 = c3 * 2;
+            t = (u16 *)(rec + 4);
+            s = (u8 *)t + c2;
+            *(u16 *)(q + 20) = *(u16 *)s;
+        }
+        {
+            register int c3 __asm__("r2");
+            register u8 *q __asm__("r1");
+            int c2;
+            u16 *t;
+            u8 *s;
+            c3 = *(s16 *)(rec + 0);
+            q = rec + c3 * 20;
+            c2 = c3 * 2;
+            t = (u16 *)(rec + 8);
+            s = (u8 *)t + c2;
+            *(u16 *)(q + 22) = *(u16 *)s;
+        }
+        {
+            void *tbl = (void *)(uintptr_t)0x083A2100u;
+            u8 *tp = (u8 *)(uintptr_t)0x080CDAE0u;
+            u32 idx;
+            __asm__ volatile("" : : "r"((u32)(uintptr_t)tp));
+            idx = (u32)ev * 4;
+            _08007538(tbl, *(int *)((u32)idx + (u32)(uintptr_t)tp),
+                      (void *)(intptr_t)*(s16 *)((e3 = rec + *(s16 *)(rec + 0) * 20) + 20));
+        }
+    }
+    {
+        register u8 *rec __asm__("r2");
+        u8 *e4;
+        void *tbl2 = (void *)(uintptr_t)0x083A2100u;
+        u8 *tp2 = (u8 *)(uintptr_t)0x080CDB2Cu;
+        u32 idx2;
+        __asm__ volatile("" : : "r"((u32)(uintptr_t)tp2));
+        idx2 = (u32)ev * 4;
+        _080075E8(tbl2, *(int *)((u32)idx2 + (u32)(uintptr_t)tp2),
+                  *(s16 *)((e4 = (rec = (u8 *)(uintptr_t)*cell) + *(s16 *)(rec + 0) * 20) + 22));
+    }
 }
 void _08026B80(int a) __attribute__((alias("Sprite_MenuEvent")));
 void sub_08026B80(int a) __attribute__((alias("Sprite_MenuEvent")));
