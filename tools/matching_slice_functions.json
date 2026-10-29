@@ -13594,7 +13594,10 @@
     "c_name": "_080026880",
     "end_marker": ".type sub_080026898, %function",
     "end_vma": "0x08026898",
-    "start_marker": ".type sub_08026880, %function"
+    "start_marker": ".type sub_08026880, %function",
+    "export": [
+      "sub_08026880"
+    ]
   },
   "0x08026898": {
     "asm_file": "asm/code_263e0.s",
@@ -13784,11 +13787,21 @@
     "c_name": "_08026D48",
     "asm_file": "asm/code_263e0.s",
     "start_marker": ".type _080026D48, %function",
-    "end_marker": "code_263e0_end:",
-    "end_vma": "0x08026f30",
+    "end_marker": ".type _080026F2C, %function",
+    "end_vma": "0x08026f2c",
     "export": [
       "_080026D48"
     ]
+  },
+  "0x08026f2c": {
+    "asm_file": "asm/code_263e0.s",
+    "c_name": "_080026F2C",
+    "end_marker": "code_263e0_end:",
+    "end_vma": "0x08026f30",
+    "export": [
+      "_080026F2C"
+    ],
+    "start_marker": ".type _080026F2C, %function"
   },
   "0x08026f30": {
     "asm_file": "asm/code_26f30.s",

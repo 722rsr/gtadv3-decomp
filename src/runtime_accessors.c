@@ -172,8 +172,11 @@ void _080015A0(int delay)
     register int remaining __asm__("r0") = delay;
 
     /* The ROM selects a decrement from the executing address's high byte.
-       C expresses the selection; the PC read and flag-coupled delay loop are
-       kept as the two architectural operations C cannot request directly. */
+       Both remaining asm pieces are architectural: the PC read, and the
+       `subs` / `bgt` loop -- thumb.md's `cmpsi` always materialises a separate
+       `cmp` and there is no compare-from-subtract pattern, so the plain C
+       `do { remaining -= step; } while (remaining > 0);` measures +2 bytes
+       (`sub` / `cmp` / `bgt`) in every spelling tried. */
     __asm__ volatile ("mov %0, pc" : "=r"(pc));
     pc >>= 24;
     step = 12;

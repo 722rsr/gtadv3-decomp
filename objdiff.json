@@ -11013,6 +11013,14 @@
       }
     },
     {
+      "name": "sprite_obj_263e0/_080026F2C",
+      "target_path": "build/objdiff/08026f2c/target.o",
+      "base_path": "build/objdiff/08026f2c/candidate.o",
+      "metadata": {
+        "source_path": "src/sprite_obj_263e0.c"
+      }
+    },
+    {
       "name": "numeric_leaves/_080026F30",
       "target_path": "build/objdiff/08026f30/target.o",
       "base_path": "build/objdiff/08026f30/candidate.o",

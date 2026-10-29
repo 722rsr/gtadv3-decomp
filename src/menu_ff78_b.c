@@ -35,7 +35,7 @@ extern s16  _080258B8(int idx);               // course_cal.c Course_GetCup
 extern int  _08025A8C(int i);                 // code_25930.c GetEntry
 extern int  _08025E1C(int id);                // ai_grid_leaves.c Ai_GridGetPacked
 extern s16  _0800258A8(int idx);              // numeric_leaves.c 0x080CD7D0 lookup
-extern u16  _08002178(int i);                 // block_b.c BlockB_DispatchIfLess
+extern u32  _08002178(int a, int b);           // block_b.c BlockB_DispatchIfLess
 extern void _080026F50(u32 a, u32 b, u32 c, void *d); // garage.c Garage_PlaceRecord
 
 // Record layout for the two field-to-field copies below. The ROM materialises
@@ -235,202 +235,76 @@ void sub_080010CB8(void *a, int b, int c) __attribute__((alias("MenuFF78_10CB8")
 // ============================================================================
 // sub_080011214 — cursor-move handler (keymask 0x20 = down, 0x10 = up).
 // ============================================================================
-__attribute__((naked)) void MenuFF78_11214(void *rec_, int a1, int a2) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "\tpush\t{r4, r5, r6, r7, lr}\n"
-        "\tmov\tr7, r9\n"
-        "\tmov\tr6, r8\n"
-        "\tpush\t{r6, r7}\n"
-        "\tadds\tr5, r0, #0\n"
-        "\tlsls\tr1, r1, #16\n"
-        "\tlsrs\tr3, r1, #16\n"
-        "\tmovs\tr0, #32\n"
-        "\tands\tr0, r3\n"
-        "\tcmp\tr0, #0\n"
-        "\tbeq .Lff11214_080011244\n"
-        "\tadds\tr2, r5, #0\n"
-        "\tadds\tr2, #186\n"
-        "\tmovs\tr1, #0\n"
-        "\tldrsh\tr0, [r2, r1]\n"
-        "\tcmp\tr0, #0\n"
-        "\tbgt .Lff11214_080011244\n"
-        "\tadds\tr0, r5, #0\n"
-        "\tadds\tr0, #180\n"
-        "\tldrh\tr1, [r0, #0]\n"
-        "\tsubs\tr1, #1\n"
-        "\tstrh\tr1, [r0, #0]\n"
-        "\tmovs\tr0, #10\n"
-        "\tstrh\tr0, [r2, #0]\n"
-        ".Lff11214_080011244:\n"
-        "\tmovs\tr0, #16\n"
-        "\tands\tr0, r3\n"
-        "\tadds\tr1, r5, #0\n"
-        "\tadds\tr1, #186\n"
-        "\tadds\tr6, r5, #0\n"
-        "\tadds\tr6, #180\n"
-        "\tcmp\tr0, #0\n"
-        "\tbeq .Lff11214_080011266\n"
-        "\tmovs\tr2, #0\n"
-        "\tldrsh\tr0, [r1, r2]\n"
-        "\tcmp\tr0, #0\n"
-        "\tbgt .Lff11214_080011266\n"
-        "\tldrh\tr0, [r6, #0]\n"
-        "\tadds\tr0, #1\n"
-        "\tstrh\tr0, [r6, #0]\n"
-        "\tmovs\tr0, #10\n"
-        "\tstrh\tr0, [r1, #0]\n"
-        ".Lff11214_080011266:\n"
-        "\tldrh\tr0, [r1, #0]\n"
-        "\tsubs\tr0, #1\n"
-        "\tmovs\tr3, #0\n"
-        "\tmov\tr8, r3\n"
-        "\tstrh\tr0, [r1, #0]\n"
-        "\tlsls\tr0, r0, #16\n"
-        "\tcmp\tr0, #0\n"
-        "\tbgt .Lff11214_08001127a\n"
-        "\tmov\tr4, r8\n"
-        "\tstrh\tr4, [r1, #0]\n"
-        ".Lff11214_08001127a:\n"
-        "\tadds\tr2, r6, #0\n"
-        "\tadds\tr0, r5, #0\n"
-        "\tadds\tr0, #184\n"
-        "\tmovs\tr3, #0\n"
-        "\tldrsh\tr1, [r2, r3]\n"
-        "\tldrh\tr3, [r0, #0]\n"
-        "\tmovs\tr4, #0\n"
-        "\tldrsh\tr0, [r0, r4]\n"
-        "\tcmp\tr1, r0\n"
-        "\tblt .Lff11214_080011290\n"
-        "\tstrh\tr3, [r2, #0]\n"
-        ".Lff11214_080011290:\n"
-        "\tmovs\tr1, #0\n"
-        "\tldrsh\tr0, [r2, r1]\n"
-        "\tcmp\tr0, #0\n"
-        "\tbge .Lff11214_08001129c\n"
-        "\tmov\tr3, r8\n"
-        "\tstrh\tr3, [r2, #0]\n"
-        ".Lff11214_08001129c:\n"
-        "\tmovs\tr4, #0\n"
-        "\tldrsh\tr0, [r6, r4]\n"
-        "\tbl sub_08025A8C\n"
-        "\tadds\tr1, r5, #0\n"
-        "\tadds\tr1, #178\n"
-        "\tstrh\tr0, [r1, #0]\n"
-        "\tmovs\tr0, #0\n"
-        "\tmovs\tr1, #2\n"
-        "\tbl 0x08002178\n"
-        "\tadds\tr4, r0, #0\n"
-        "\tmovs\tr0, #1\n"
-        "\tmovs\tr1, #2\n"
-        "\tbl 0x08002178\n"
-        "\tlsls\tr4, r4, #16\n"
-        "\tlsls\tr0, r0, #16\n"
-        "\tcmp\tr4, r0\n"
-        "\tbne .Lff11214_08001138e\n"
-        "\tmovs\tr0, #182\n"
-        "\tadds\tr0, r0, r5\n"
-        "\tmov\tr9, r0\n"
-        "\tadds\tr7, r5, #0\n"
-        "\tadds\tr7, #172\n"
-        "\tldrh\tr1, [r0, #0]\n"
-        "\tldrh\tr2, [r7, #0]\n"
-        "\tcmp\tr1, r2\n"
-        "\tbeq .Lff11214_080011388\n"
-        "\tmovs\tr0, #3\n"
-        "\tbl 0x0802B368\n"
-        "\tmovs\tr3, #0\n"
-        "\tldrsh\tr0, [r6, r3]\n"
-        "\tbl sub_08025A8C\n"
-        "\tstrh\tr0, [r7, #0]\n"
-        "\tmovs\tr4, #0\n"
-        "\tldrsh\tr0, [r7, r4]\n"
-        "\tbl 0x080258B8\n"
-        "\tadds\tr4, r5, #0\n"
-        "\tadds\tr4, #188\n"
-        "\tstrh\tr0, [r4, #0]\n"
-        "\tmovs\tr1, #0\n"
-        "\tldrsh\tr0, [r4, r1]\n"
-        "\tbl sub_0800F744\n"
-        "\tadds\tr6, r5, #0\n"
-        "\tadds\tr6, #190\n"
-        "\tstrh\tr0, [r6, #0]\n"
-        "\tadds\tr0, r5, #0\n"
-        "\tadds\tr0, #194\n"
-        "\tmov\tr2, r8\n"
-        "\tstrh\tr2, [r0, #0]\n"
-        "\tmovs\tr3, #0\n"
-        "\tldrsh\tr0, [r7, r3]\n"
-        "\tbl 0x080258A8\n"
-        "\tadds\tr1, r0, #0\n"
-        "\tadds\tr0, r5, #0\n"
-        "\tadds\tr0, #232\n"
-        "\tlsls\tr1, r1, #16\n"
-        "\tasrs\tr1, r1, #16\n"
-        "\tstr\tr1, [r0, #0]\n"
-        "\tldr\tr0, [r5, #28]\n"
-        "\tadds\tr2, r5, #0\n"
-        "\tadds\tr2, #228\n"
-        "\tldr\tr2, [r2, #0]\n"
-        "\tbl sub_08007ABC\n"
-        "\tadds\tr0, r5, #0\n"
-        "\tadds\tr0, #244\n"
-        "\tmovs\tr2, #0\n"
-        "\tldrsh\tr1, [r7, r2]\n"
-        "\tstr\tr1, [r0, #0]\n"
-        "\tsubs\tr0, #4\n"
-        "\tldr\tr0, [r0, #0]\n"
-        "\tmovs\tr2, #7\n"
-        "\tbl 0x08026F50\n"
-        "\tmovs\tr3, #170\n"
-        "\tlsls\tr3, r3, #1\n"
-        "\tadds\tr2, r5, r3\n"
-        "\tldr r1, .Lff11214_08001139c\n"
-        "\tmovs\tr3, #0\n"
-        "\tldrsh\tr0, [r4, r3]\n"
-        "\tlsls\tr0, r0, #1\n"
-        "\tadds\tr0, r0, r1\n"
-        "\tldrh\tr1, [r0, #0]\n"
-        "\tstr\tr1, [r2, #0]\n"
-        "\tldr\tr0, [r5, #36]\n"
-        "\tmovs\tr3, #168\n"
-        "\tlsls\tr3, r3, #1\n"
-        "\tadds\tr2, r5, r3\n"
-        "\tldr\tr2, [r2, #0]\n"
-        "\tbl sub_08007ABC\n"
-        "\tmovs\tr1, #0\n"
-        "\tldrsh\tr0, [r4, r1]\n"
-        "\tmovs\tr2, #0\n"
-        "\tldrsh\tr1, [r6, r2]\n"
-        "\tbl sub_0800F7EC\n"
-        "\tadds\tr1, r0, #0\n"
-        "\tmovs\tr3, #176\n"
-        "\tlsls\tr3, r3, #1\n"
-        "\tadds\tr0, r5, r3\n"
-        "\tlsls\tr1, r1, #16\n"
-        "\tasrs\tr1, r1, #16\n"
-        "\tstr\tr1, [r0, #0]\n"
-        "\tldr\tr0, [r5, #36]\n"
-        "\tmovs\tr4, #174\n"
-        "\tlsls\tr4, r4, #1\n"
-        "\tadds\tr2, r5, r4\n"
-        "\tldr\tr2, [r2, #0]\n"
-        "\tbl sub_08007ABC\n"
-        ".Lff11214_080011388:\n"
-        "\tldrh\tr0, [r7, #0]\n"
-        "\tmov\tr1, r9\n"
-        "\tstrh\tr0, [r1, #0]\n"
-        ".Lff11214_08001138e:\n"
-        "\tpop\t{r3, r4}\n"
-        "\tmov\tr8, r3\n"
-        "\tmov\tr9, r4\n"
-        "\tpop\t{r4, r5, r6, r7}\n"
-        "\tpop\t{r0}\n"
-        "\tbx\tr0\n"
-        "\tmovs\tr0, r0\n"
-        ".Lff11214_08001139c: .word 0x080CB55C\n"
-        ".syntax divided\n"
-    );
+// C lift. Cursor arms + delay/limit clamp as in 0x11484, then the 0x178 row
+// sample, the _08002178(0,2)/(1,2) gate (a mismatch returns early), and the
+// apply lane gated on u16[rec+0xB6] != u16[rec+0xAC]. The lane tail mirrors
+// 0x11484's but indexes the 0x080CB55C table straight from s16[rec+0xBC], so
+// the scale is a plain lsls #1 rather than the fused asrs #15.
+void MenuFF78_11214(void *rec_, int a1, int a2) {
+    extern const u16 MenuFF78Table11214[];
+    __asm__(".globl MenuFF78Table11214\nMenuFF78Table11214 = 0x080CB55C\n");
+    u8 *rec = (u8 *)rec_;
+    u16 keys = (u16)a1;
+    int d;
+
+    // Keeps rec in a register from function entry: otherwise the two +0xBA/
+    // +0xB4 addresses in the 0x10 arm are hoisted in the opposite order.
+    __asm__ volatile("" : "+r"(rec));
+    (void)a2;
+
+    if (keys & 32) {
+        if (*(s16 *)(rec + 186) <= 0) {
+            *(u16 *)(rec + 180) = (u16)(*(u16 *)(rec + 180) - 1);
+            *(u16 *)(rec + 186) = 10;
+        }
+    }
+    if (keys & 16) {
+        if (*(s16 *)(rec + 186) <= 0) {
+            *(u16 *)(rec + 180) = (u16)(*(u16 *)(rec + 180) + 1);
+            *(u16 *)(rec + 186) = 10;
+        }
+    }
+    d = *(u16 *)(rec + 186) - 1;
+    {
+        u16 zero;
+        s16 cur;
+        u16 limit;
+
+        zero = 0;
+        *(u16 *)(rec + 186) = (u16)d;
+        if (*(s16 *)(rec + 186) <= 0)
+            *(u16 *)(rec + 186) = zero;
+        cur = *(s16 *)(rec + 180);
+        limit = *(u16 *)(rec + 184);
+        if (cur >= *(s16 *)(rec + 184))
+            *(u16 *)(rec + 180) = limit;
+        if (*(s16 *)(rec + 180) < 0)
+            *(u16 *)(rec + 180) = zero;
+    }
+    *(u16 *)(rec + 178) = (u16)_08025A8C(*(s16 *)(rec + 180));
+    if ((s16)_08002178(0, 2) != (s16)_08002178(1, 2))
+        return;
+    if (*(u16 *)(rec + 182) != *(u16 *)(rec + 172)) {
+        _0802B368(3);
+        *(u16 *)(rec + 172) = (u16)_08025A8C(*(s16 *)(rec + 180));
+        *(u16 *)(rec + 188) = (u16)_080258B8(*(s16 *)(rec + 172));
+        *(u16 *)(rec + 190) = (u16)_0800F744(*(s16 *)(rec + 188));
+        *(u16 *)(rec + 194) = 0;
+        *(u32 *)(rec + 232) = (u32)(s16)_0800258A8(*(s16 *)(rec + 172));
+        _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 28),
+                   *(u32 *)(rec + 232), *(u32 *)(rec + 228));
+        *(u32 *)(rec + 244) = (u32)*(s16 *)(rec + 172);
+        ((void (*)(u32, u32, u32))_080026F50)(*(u32 *)(rec + 240),
+                                               *(u32 *)(rec + 244), 7);
+        *(u32 *)(rec + 340) = (u32)MenuFF78Table11214[*(s16 *)(rec + 188)];
+        _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 36),
+                   *(u32 *)(rec + 340), *(u32 *)(rec + 336));
+        *(u32 *)(rec + 352) =
+            (u32)(s16)_0800F7EC(*(s16 *)(rec + 188), *(s16 *)(rec + 190));
+        _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 36),
+                   *(u32 *)(rec + 352), *(u32 *)(rec + 348));
+    }
+    *(u16 *)(rec + 182) = *(u16 *)(rec + 172);
 }
 
 void _080011214(void *a, int b, int c) __attribute__((alias("MenuFF78_11214")));

@@ -173,179 +173,91 @@ void sub_080021CC4(void *a) __attribute__((alias("RaceVM_021CC4")));
 // v or 6), 64/128 = counter dec/inc at rec+156, 32/16 = WA+0x0FD2 cursor
 // resets + rows-full stamp at rec+158, sound 3 on cursor change; tail
 // clamps rec+156 to [0, rec+158] and beeps 2 twice on any change.
-__attribute__((naked)) void RaceVM_021DC0(void *rec, int r1, u32 v) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "\tpush\t{r4, r5, r6, r7, lr}\n"
-        "\tmov\tr7, r9\n"
-        "\tmov\tr6, r8\n"
-        "\tpush\t{r6, r7}\n"
-        "\tsub\tsp, #4\n"
-        "\tadds\tr4, r0, #0\n"
-        "\tlsls\tr2, r2, #16\n"
-        "\tlsrs\tr5, r2, #16\n"
-        "\tadds\tr6, r4, #0\n"
-        "\tadds\tr6, #156\n"
-        "\tldrh\tr0, [r6, #0]\n"
-        "\tmov\tr9, r0\n"
-        "\tcmp\tr5, #2\n"
-        "\tbne .Lx_080021dc0_080021DEE\n"
-        "\tmovs\tr0, #4\n"
-        "\tbl 0x0802B368\n"
-        "\tmovs\tr1, #10\n"
-        "\tstr\tr1, [r4, #8]\n"
-        "\tmovs\tr0, #0\n"
-        "\tstrh\tr0, [r4, #12]\n"
-        "\tstr\tr1, [r4, #40]\n"
-        "\tstr\tr0, [r4, #36]\n"
-        ".Lx_080021dc0_080021DEE:\n"
-        "\tcmp\tr5, #1\n"
-        "\tbne .Lx_080021dc0_080021E50\n"
-        "\tmovs\tr0, #1\n"
-        "\tbl 0x0802B368\n"
-        "\tmovs\tr0, #0\n"
-        "\tstrh\tr0, [r4, #12]\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tadds\tr0, #116\n"
-        "\tstrh\tr5, [r0, #0]\n"
-        "\tldr r2, .Lx_080021dc0_080021E3C\n"
-        "\tldr r1, .Lx_080021dc0_080021E40\n"
-        "\tmovs\tr3, #0\n"
-        "\tldrsh\tr0, [r6, r3]\n"
-        "\tlsls\tr0, r0, #1\n"
-        "\tadds\tr0, r0, r1\n"
-        "\tldrh\tr1, [r0, #0]\n"
-        "\tldr r3, .Lx_080021dc0_080021E44\n"
-        "\tadds\tr0, r2, r3\n"
-        "\tstrh\tr1, [r0, #0]\n"
-        "\tmovs\tr3, #0\n"
-        "\tldrsh\tr1, [r0, r3]\n"
-        "\tlsls\tr1, r1, #1\n"
-        "\tldr r3, .Lx_080021dc0_080021E48\n"
-        "\tadds\tr0, r2, r3\n"
-        "\tmovs\tr3, #0\n"
-        "\tldrsh\tr0, [r0, r3]\n"
-        "\tlsls\tr0, r0, #3\n"
-        "\tadds\tr1, r1, r0\n"
-        "\tmovs\tr0, #253\n"
-        "\tlsls\tr0, r0, #4\n"
-        "\tadds\tr2, r2, r0\n"
-        "\tadds\tr1, r1, r2\n"
-        "\tmovs\tr2, #0\n"
-        "\tldrsh\tr0, [r1, r2]\n"
-        "\tcmp\tr0, #0\n"
-        "\tbne .Lx_080021dc0_080021E4C\n"
-        "\tstrh\tr5, [r4, #16]\n"
-        "\tb .Lx_080021dc0_080021E50\n"
-        ".Lx_080021dc0_080021E3C: .word 0x03001780\n"
-        ".Lx_080021dc0_080021E40: .word 0x080CC120\n"
-        ".Lx_080021dc0_080021E44: .word 0x00000FF6\n"
-        ".Lx_080021dc0_080021E48: .word 0x00000FF2\n"
-        ".Lx_080021dc0_080021E4C:\n"
-        "\tmovs\tr0, #6\n"
-        "\tstrh\tr0, [r4, #16]\n"
-        ".Lx_080021dc0_080021E50:\n"
-        "\tadds\tr6, r4, #0\n"
-        "\tadds\tr6, #156\n"
-        "\tcmp\tr5, #64\n"
-        "\tbne .Lx_080021dc0_080021E5E\n"
-        "\tldrh\tr0, [r6, #0]\n"
-        "\tsubs\tr0, #1\n"
-        "\tstrh\tr0, [r6, #0]\n"
-        ".Lx_080021dc0_080021E5E:\n"
-        "\tcmp\tr5, #128\n"
-        "\tbne .Lx_080021dc0_080021E68\n"
-        "\tldrh\tr0, [r6, #0]\n"
-        "\tadds\tr0, #1\n"
-        "\tstrh\tr0, [r6, #0]\n"
-        ".Lx_080021dc0_080021E68:\n"
-        "\tldr r2, .Lx_080021dc0_080021F0C\n"
-        "\tmovs\tr3, #255\n"
-        "\tlsls\tr3, r3, #4\n"
-        "\tadds\tr0, r2, r3\n"
-        "\tmovs\tr1, #0\n"
-        "\tldrsh\tr0, [r0, r1]\n"
-        "\tadds\tr4, #158\n"
-        "\tcmp\tr0, #0\n"
-        "\tbeq .Lx_080021dc0_080021EBE\n"
-        "\tadds\tr3, #2\n"
-        "\tadds\tr7, r2, r3\n"
-        "\tldrh\tr0, [r7, #0]\n"
-        "\tmov\tr8, r0\n"
-        "\tcmp\tr5, #32\n"
-        "\tbne .Lx_080021dc0_080021E9A\n"
-        "\tmovs\tr0, #0\n"
-        "\tstrh\tr0, [r7, #0]\n"
-        "\tadds\tr3, #4\n"
-        "\tadds\tr1, r2, r3\n"
-        "\tstrh\tr0, [r1, #0]\n"
-        "\tstr\tr2, [sp, #0]\n"
-        "\tbl 0x08025D90\n"
-        "\tstrh\tr0, [r4, #0]\n"
-        "\tldr\tr2, [sp, #0]\n"
-        ".Lx_080021dc0_080021E9A:\n"
-        "\tcmp\tr5, #16\n"
-        "\tbne .Lx_080021dc0_080021EB2\n"
-        "\tmovs\tr1, #0\n"
-        "\tmovs\tr0, #1\n"
-        "\tstrh\tr0, [r7, #0]\n"
-        "\tldr r5, .Lx_080021dc0_080021F10\n"
-        "\tadds\tr0, r2, r5\n"
-        "\tstrh\tr1, [r0, #0]\n"
-        "\tmovs\tr0, #1\n"
-        "\tbl 0x08025D90\n"
-        "\tstrh\tr0, [r4, #0]\n"
-        ".Lx_080021dc0_080021EB2:\n"
-        "\tldrh\tr7, [r7, #0]\n"
-        "\tcmp\tr8, r7\n"
-        "\tbeq .Lx_080021dc0_080021EBE\n"
-        "\tmovs\tr0, #3\n"
-        "\tbl 0x0802B368\n"
-        ".Lx_080021dc0_080021EBE:\n"
-        "\tadds\tr2, r6, #0\n"
-        "\tmovs\tr1, #0\n"
-        "\tldrsh\tr0, [r2, r1]\n"
-        "\tcmp\tr0, #0\n"
-        "\tbge .Lx_080021dc0_080021ECC\n"
-        "\tmovs\tr0, #0\n"
-        "\tstrh\tr0, [r2, #0]\n"
-        ".Lx_080021dc0_080021ECC:\n"
-        "\tmovs\tr3, #0\n"
-        "\tldrsh\tr1, [r2, r3]\n"
-        "\tldrh\tr3, [r4, #0]\n"
-        "\tmovs\tr5, #0\n"
-        "\tldrsh\tr0, [r4, r5]\n"
-        "\tcmp\tr1, r0\n"
-        "\tble .Lx_080021dc0_080021EDC\n"
-        "\tstrh\tr3, [r2, #0]\n"
-        ".Lx_080021dc0_080021EDC:\n"
-        "\tmov\tr1, r9\n"
-        "\tlsls\tr0, r1, #16\n"
-        "\tasrs\tr4, r0, #16\n"
-        "\tmovs\tr2, #0\n"
-        "\tldrsh\tr0, [r6, r2]\n"
-        "\tcmp\tr4, r0\n"
-        "\tbeq .Lx_080021dc0_080021EFE\n"
-        "\tmovs\tr0, #2\n"
-        "\tbl 0x0802B368\n"
-        "\tmovs\tr3, #0\n"
-        "\tldrsh\tr0, [r6, r3]\n"
-        "\tcmp\tr4, r0\n"
-        "\tbeq .Lx_080021dc0_080021EFE\n"
-        "\tmovs\tr0, #2\n"
-        "\tbl 0x0802B368\n"
-        ".Lx_080021dc0_080021EFE:\n"
-        "\tadd\tsp, #4\n"
-        "\tpop\t{r3, r4}\n"
-        "\tmov\tr8, r3\n"
-        "\tmov\tr9, r4\n"
-        "\tpop\t{r4, r5, r6, r7}\n"
-        "\tpop\t{r0}\n"
-        "\tbx\tr0\n"
-        ".Lx_080021dc0_080021F0C: .word 0x03001780\n"
-        ".Lx_080021dc0_080021F10: .word 0x00000FF6\n"
-        ".syntax divided\n"
-    );
+//
+// Shaping (each measured):
+//   * the reset stores need `ten`/`zero` pinned to r1/r0 and interleaved with
+//     their uses. Unpinned, agbcc materialises both constants before the first
+//     store and swaps them into r0/r1.
+//   * 0x080CC120 must be a SYMBOL, not a cast constant: a constant is
+//     rematerialised after the index shift, while the symbol keeps the ROM's
+//     `ldr r1,[pc]` before `movs r3,#0` / `ldrsh`.
+//   * the cursor re-read at +0x1EB2 is a plain `*cur`, not a volatile read: a
+//     volatile read gets its own HI temp in r0, while the plain read reuses the
+//     dying r7 pointer as the `ldrh r7,[r7]` destination.
+void RaceVM_021DC0(void *rec_, int a1, u32 v) {
+    volatile u8 *rec = (volatile u8 *)rec_;
+    u32 ev = (u16)v;
+    u16 old = *(u16 *)(rec + 156);
+    (void)a1;
+    RAM_DEF_03001780;
+
+    if (ev == 2) {
+        register u32 ten __asm__("r1");
+        register u32 zero __asm__("r0");
+        _0802B368(4);
+        ten = 10;
+        *(volatile u32 *)(rec + 8) = ten;
+        zero = 0;
+        *(volatile u16 *)(rec + 12) = (u16)zero;
+        *(volatile u32 *)(rec + 40) = ten;
+        *(volatile u32 *)(rec + 36) = zero;
+    }
+    if (ev == 1) {
+        __asm__(".globl RaceVMRow_CC120\nRaceVMRow_CC120 = 0x080CC120\n");
+        extern u16 RaceVMRow_CC120[];
+        volatile u8 *wa;
+        u8 *cells;
+        s32 off;
+        u16 t;
+        _0802B368(1);
+        *(volatile u16 *)(rec + 12) = 0;
+        *(volatile u16 *)(rec + 116) = (u16)ev;
+        wa = RAM_SYM_03001780;
+        t = RaceVMRow_CC120[*(s16 *)(rec + 156)];
+        *(volatile u16 *)(wa + 0xFF6) = t;
+        off = *(s16 *)(wa + 0xFF6) * 2 + *(s16 *)(wa + 0xFF2) * 8;
+        cells = (u8 *)(wa + 0xFD0);
+        if (*(s16 *)(cells + off) == 0)
+            *(volatile u16 *)(rec + 16) = (u16)ev;
+        else
+            *(volatile u16 *)(rec + 16) = 6;
+    }
+    if (ev == 64)
+        *(volatile u16 *)(rec + 156) = *(u16 *)(rec + 156) - 1;
+    if (ev == 128)
+        *(volatile u16 *)(rec + 156) = *(u16 *)(rec + 156) + 1;
+    {
+        volatile u8 *wa = RAM_SYM_03001780;
+        if (*(s16 *)(wa + 0xFF0) != 0) {
+            u16 *cur = (u16 *)(wa + 0xFF2);
+            u16 oldcur = *(volatile u16 *)cur;
+            if (ev == 32) {
+                u16 z = 0;
+                *(volatile u16 *)cur = z;
+                *(volatile u16 *)(wa + 0xFF6) = z;
+                *(volatile u16 *)(rec + 158) = (u16)_08025D90(z);
+            }
+            if (ev == 16) {
+                u16 z = 0;
+                *(volatile u16 *)cur = 1;
+                *(volatile u16 *)(wa + 0xFF6) = z;
+                *(volatile u16 *)(rec + 158) = (u16)_08025D90(1);
+            }
+            {
+                u16 now = *cur;
+                if (oldcur != now)
+                    _0802B368(3);
+            }
+        }
+    }
+    if (*(s16 *)(rec + 156) < 0)
+        *(volatile u16 *)(rec + 156) = 0;
+    if (*(s16 *)(rec + 156) > *(s16 *)(rec + 158))
+        *(volatile u16 *)(rec + 156) = *(u16 *)(rec + 158);
+    if ((s16)old != *(s16 *)(rec + 156))
+        _0802B368(2);
+    if ((s16)old != *(s16 *)(rec + 156))
+        _0802B368(2);
 }
 void _080021DC0(void *a, int b, u32 c) __attribute__((alias("RaceVM_021DC0")));
 void sub_080021DC0(void *a, int b, u32 c) __attribute__((alias("RaceVM_021DC0")));

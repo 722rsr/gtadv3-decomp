@@ -5557,11 +5557,10 @@
    "size": 372
   },
   "0x08011214": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 183,
-    "naked": true
+    "barrier": 1,
+    "directive": 1
    },
    "file": "src/menu_ff78_b.c",
    "name": "MenuFF78_11214",
@@ -5578,22 +5577,21 @@
    "size": 228
   },
   "0x08011484": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 160,
-    "naked": true
+    "directive": 1,
+    "pin": 2
    },
    "file": "src/menu_ff78_c.c",
    "name": "MenuFF78_11484",
    "size": 348
   },
   "0x080115e0": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 116,
-    "naked": true
+    "barrier": 7,
+    "directive": 1,
+    "pin": 21
    },
    "file": "src/menu_ff78_c.c",
    "name": "MenuFF78_115E0",
@@ -7526,11 +7524,10 @@
    "size": 144
   },
   "0x0801a294": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 148,
-    "naked": true
+    "barrier": 1,
+    "directive": 2
    },
    "file": "src/race_scene.c",
    "name": "Race_Scene_Init_1A294",
@@ -7844,12 +7841,10 @@
    "size": 104
   },
   "0x0801d7b8": {
-   "class": "partial",
+   "class": "c_fakematch",
    "detail": {
-    "barrier": 1,
-    "insn": 1,
-    "insn_lines": 1,
-    "pin": 20
+    "barrier": 3,
+    "pin": 21
    },
    "file": "src/race_scene_b1.c",
    "name": "_08001D7B8",
@@ -8653,11 +8648,10 @@
    "size": 252
   },
   "0x08021dc0": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 151,
-    "naked": true
+    "directive": 2,
+    "pin": 2
    },
    "file": "src/race_phase_vms.c",
    "name": "RaceVM_021DC0",
@@ -10613,15 +10607,21 @@
    "size": 156
   },
   "0x08026d48": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 231,
-    "naked": true
+    "barrier": 16,
+    "directive": 1,
+    "pin": 27
    },
    "file": "src/sprite_obj_263e0.c",
    "name": "Sprite_TickRecords",
-   "size": 488
+   "size": 484
+  },
+  "0x08026f2c": {
+   "class": "c",
+   "file": "src/sprite_obj_263e0.c",
+   "name": "Sprite_TickRecordsEnd",
+   "size": 4
   },
   "0x08026f30": {
    "class": "c",
@@ -13227,20 +13227,20 @@
  },
  "totals": {
   "asm": {
-   "bytes": 53740,
-   "functions": 141
+   "bytes": 51476,
+   "functions": 135
   },
   "c": {
-   "bytes": 44322,
-   "functions": 875
+   "bytes": 44326,
+   "functions": 876
   },
   "c_fakematch": {
-   "bytes": 89714,
-   "functions": 654
+   "bytes": 92134,
+   "functions": 661
   },
   "partial": {
-   "bytes": 360,
-   "functions": 5
+   "bytes": 200,
+   "functions": 4
   }
  },
  "version": 1
