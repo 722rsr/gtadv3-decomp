@@ -730,11 +730,12 @@ typedef struct { s32 w[12]; } RSB7B8_Tmpl;
 // Return shape: the epilogue pops the return address into r2, which agbcc
 // emits only for an 8-byte return value (thumb_exit: size 4 pops r1, size 8
 // pops r2 -- measured), so the signature stays `unsigned long long`. The ROM
-// writes only r0 (`adds r0,r5,#0` at 0x08001D842) and leaves r1 untouched;
-// C cannot express a half-undefined u64: `return (u64)out` zeroes r1, and
-// OR-ing a dead r1-pinned word makes agbcc build the u64 in r4:r5 and copy
-// BOTH halves (measured 2026-10-17, +2 instructions). The one-instruction
-// asm splice for the r0 half is therefore minimal.
+// writes only r0 (`adds r0,r5,#0` at 0x08001D842) and leaves r1 untouched,
+// which no ordinary DI expression reproduces: `return (u64)out` appends
+// `mov r1,#0`, and OR-ing a dead r1-pinned word makes agbcc build the pair in
+// r4:r5 and copy both halves (measured). Two EMPTY barriers close it instead
+// -- one names r0 as `out`, one claims the r0:r1 pair as the result -- so the
+// low half keeps the ROM's move and the high half is never written.
 unsigned long long _08001D7B8(void *out_, int mode, int center, int extra) {
     register volatile u8 *out __asm__("r5") = (volatile u8 *)out_;
     register int m __asm__("r12") = mode;
@@ -742,7 +743,6 @@ unsigned long long _08001D7B8(void *out_, int mode, int center, int extra) {
     register int ext __asm__("r6") = extra;
     register int r __asm__("r2");
     register int e __asm__("r3");
-    register unsigned long long ret_val __asm__("r0");
     {
         RSB7B8_Tmpl t = *(const RSB7B8_Tmpl *)(uintptr_t)0x0805FBECu;
         r = 0;
@@ -792,8 +792,20 @@ unsigned long long _08001D7B8(void *out_, int mode, int center, int extra) {
     e = ext;
     *(volatile u32 *)(out + 0u) = (u32)r;
     *(volatile u32 *)(out + 4u) = (u32)e;
-    __asm__("add r0, r5, #0" : "=r" (ret_val) : "r" (out));
-    return ret_val;
+    {
+        // The 8-byte return mode is what selects the ROM's `pop {r2}` / `bx r2`
+        // epilogue, and the ROM defines only the low half (`add r0, r5, #0`),
+        // leaving r1 as whatever the last stage wrote. Spelling the pointer as
+        // a DI value makes agbcc emit `mov r1, #0` (+2 bytes), and any DI
+        // construction costs more; the two empty barriers instead give r0 and
+        // r1 names so the low half keeps the ROM's move and the high half is
+        // never written.
+        register void *lo __asm__("r0") = out;
+        register unsigned long long rv __asm__("r0");
+        __asm__ volatile("" : : "r"(lo));
+        __asm__ volatile("" : "=r"(rv));
+        return rv;
+    }
 }
 // ----------------------------------------------------------------------------
 // ---- 0x08001D858 — record-lane reset leaf ----

@@ -1420,6 +1420,8 @@ _080026F20:
 	pop	{r0}
 	bx	r0
 _080026F28: .4byte 0x03001674
+	.type _080026F2C, %function
+_080026F2C:
 	bx	lr
 	.hword 0x0000
 code_263e0_end:

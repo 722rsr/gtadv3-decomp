@@ -285,180 +285,87 @@ void sub_0800110A0(void *a, int b, int c) __attribute__((alias("MenuFF78_110A0")
 // + 0x154/0x160/0x168 from 0x080CB55C, etc.).
 // ============================================================================
 extern int  _0802581C(int a);             // ai_line_more.c Ai_LineFindCourse
-__attribute__((naked)) void MenuFF78_11484(void *rec_, int a1, int a2) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "\tpush\t{r4, r5, r6, r7, lr}\n"
-        "\tmov\tr7, r8\n"
-        "\tpush\t{r7}\n"
-        "\tadds\tr7, r0, #0\n"
-        "\tlsls\tr1, r1, #16\n"
-        "\tlsrs\tr1, r1, #16\n"
-        "\tadds\tr3, r7, #0\n"
-        "\tadds\tr3, #180\n"
-        "\tldrh\tr6, [r3, #0]\n"
-        "\tmovs\tr0, #32\n"
-        "\tands\tr0, r1\n"
-        "\tcmp\tr0, #0\n"
-        "\tbeq .Lff11484_0800114b2\n"
-        "\tadds\tr2, r7, #0\n"
-        "\tadds\tr2, #186\n"
-        "\tmovs\tr4, #0\n"
-        "\tldrsh\tr0, [r2, r4]\n"
-        "\tcmp\tr0, #0\n"
-        "\tbgt .Lff11484_0800114b2\n"
-        "\tsubs\tr0, r6, #1\n"
-        "\tstrh\tr0, [r3, #0]\n"
-        "\tmovs\tr0, #10\n"
-        "\tstrh\tr0, [r2, #0]\n"
-        ".Lff11484_0800114b2:\n"
-        "\tmovs\tr0, #16\n"
-        "\tands\tr0, r1\n"
-        "\tadds\tr5, r7, #0\n"
-        "\tadds\tr5, #180\n"
-        "\tadds\tr1, r7, #0\n"
-        "\tadds\tr1, #186\n"
-        "\tcmp\tr0, #0\n"
-        "\tbeq .Lff11484_0800114d4\n"
-        "\tmovs\tr2, #0\n"
-        "\tldrsh\tr0, [r1, r2]\n"
-        "\tcmp\tr0, #0\n"
-        "\tbgt .Lff11484_0800114d4\n"
-        "\tldrh\tr0, [r5, #0]\n"
-        "\tadds\tr0, #1\n"
-        "\tstrh\tr0, [r5, #0]\n"
-        "\tmovs\tr0, #10\n"
-        "\tstrh\tr0, [r1, #0]\n"
-        ".Lff11484_0800114d4:\n"
-        "\tldrh\tr0, [r1, #0]\n"
-        "\tsubs\tr0, #1\n"
-        "\tmovs\tr4, #0\n"
-        "\tstrh\tr0, [r1, #0]\n"
-        "\tlsls\tr0, r0, #16\n"
-        "\tcmp\tr0, #0\n"
-        "\tbgt .Lff11484_0800114e4\n"
-        "\tstrh\tr4, [r1, #0]\n"
-        ".Lff11484_0800114e4:\n"
-        "\tadds\tr2, r5, #0\n"
-        "\tadds\tr0, r7, #0\n"
-        "\tadds\tr0, #184\n"
-        "\tmovs\tr3, #0\n"
-        "\tldrsh\tr1, [r2, r3]\n"
-        "\tldrh\tr3, [r0, #0]\n"
-        "\tmov\tr8, r3\n"
-        "\tmovs\tr3, #0\n"
-        "\tldrsh\tr0, [r0, r3]\n"
-        "\tcmp\tr1, r0\n"
-        "\tblt .Lff11484_0800114fe\n"
-        "\tmov\tr0, r8\n"
-        "\tstrh\tr0, [r2, #0]\n"
-        ".Lff11484_0800114fe:\n"
-        "\tmovs\tr1, #0\n"
-        "\tldrsh\tr0, [r2, r1]\n"
-        "\tcmp\tr0, #0\n"
-        "\tbge .Lff11484_080011508\n"
-        "\tstrh\tr4, [r2, #0]\n"
-        ".Lff11484_080011508:\n"
-        "\tmovs\tr2, #0\n"
-        "\tldrsh\tr0, [r5, r2]\n"
-        "\tbl sub_08025A8C\n"
-        "\tadds\tr4, r7, #0\n"
-        "\tadds\tr4, #172\n"
-        "\tstrh\tr0, [r4, #0]\n"
-        "\tmovs\tr3, #0\n"
-        "\tldrsh\tr0, [r4, r3]\n"
-        "\tbl 0x080258B8\n"
-        "\tadds\tr1, r7, #0\n"
-        "\tadds\tr1, #188\n"
-        "\tstrh\tr0, [r1, #0]\n"
-        "\tmovs\tr1, #0\n"
-        "\tldrsh\tr0, [r4, r1]\n"
-        "\tbl 0x0802581C\n"
-        "\tlsls\tr0, r0, #16\n"
-        "\tasrs\tr0, r0, #16\n"
-        "\tbl 0x08025E1C\n"
-        "\tadds\tr1, r7, #0\n"
-        "\tadds\tr1, #194\n"
-        "\tstrh\tr0, [r1, #0]\n"
-        "\tlsls\tr0, r6, #16\n"
-        "\tasrs\tr0, r0, #16\n"
-        "\tmovs\tr3, #0\n"
-        "\tldrsh\tr2, [r5, r3]\n"
-        "\tmov\tr8, r4\n"
-        "\tadds\tr4, r1, #0\n"
-        "\tcmp\tr0, r2\n"
-        "\tbeq .Lff11484_08001155a\n"
-        "\tcmp\tr2, #99\n"
-        "\tbeq .Lff11484_08001155a\n"
-        "\tmovs\tr0, #3\n"
-        "\tbl 0x0802B368\n"
-        "\tadds\tr0, r7, #0\n"
-        "\tbl sub_0800F810\n"
-        ".Lff11484_08001155a:\n"
-        "\tldrh\tr1, [r4, #0]\n"
-        "\tsubs\tr1, #1\n"
-        "\tlsls\tr1, r1, #16\n"
-        "\tasrs\tr1, r1, #16\n"
-        "\tadds\tr0, r7, #0\n"
-        "\tbl sub_0800F8B4\n"
-        "\tmov\tr4, r8\n"
-        "\tmovs\tr1, #0\n"
-        "\tldrsh\tr0, [r4, r1]\n"
-        "\tbl 0x080258A8\n"
-        "\tadds\tr4, r7, #0\n"
-        "\tadds\tr4, #232\n"
-        "\tlsls\tr0, r0, #16\n"
-        "\tasrs\tr0, r0, #16\n"
-        "\tstr\tr0, [r4, #0]\n"
-        "\tmov\tr2, r8\n"
-        "\tmovs\tr3, #0\n"
-        "\tldrsh\tr0, [r2, r3]\n"
-        "\tbl 0x080258B8\n"
-        "\tmovs\tr1, #170\n"
-        "\tlsls\tr1, r1, #1\n"
-        "\tadds\tr5, r7, r1\n"
-        "\tldr r1, .Lff11484_0800115dc\n"
-        "\tlsls\tr0, r0, #16\n"
-        "\tasrs\tr0, r0, #15\n"
-        "\tadds\tr0, r0, r1\n"
-        "\tldrh\tr0, [r0, #0]\n"
-        "\tstr\tr0, [r5, #0]\n"
-        "\tadds\tr6, r7, #0\n"
-        "\tadds\tr6, #244\n"
-        "\tmov\tr2, r8\n"
-        "\tmovs\tr3, #0\n"
-        "\tldrsh\tr0, [r2, r3]\n"
-        "\tstr\tr0, [r6, #0]\n"
-        "\tldr\tr0, [r7, #28]\n"
-        "\tldr\tr1, [r4, #0]\n"
-        "\tadds\tr2, r7, #0\n"
-        "\tadds\tr2, #228\n"
-        "\tldr\tr2, [r2, #0]\n"
-        "\tbl sub_08007ABC\n"
-        "\tldr\tr0, [r7, #36]\n"
-        "\tldr\tr1, [r5, #0]\n"
-        "\tmovs\tr4, #168\n"
-        "\tlsls\tr4, r4, #1\n"
-        "\tadds\tr2, r7, r4\n"
-        "\tldr\tr2, [r2, #0]\n"
-        "\tbl sub_08007ABC\n"
-        "\tadds\tr0, r7, #0\n"
-        "\tadds\tr0, #240\n"
-        "\tldr\tr0, [r0, #0]\n"
-        "\tldr\tr1, [r6, #0]\n"
-        "\tmovs\tr2, #7\n"
-        "\tbl 0x08026F50\n"
-        "\tpop\t{r3}\n"
-        "\tmov\tr8, r3\n"
-        "\tpop\t{r4, r5, r6, r7}\n"
-        "\tpop\t{r0}\n"
-        "\tbx\tr0\n"
-        "\tmovs\tr0, r0\n"
-        ".Lff11484_0800115dc: .word 0x080CB55C\n"
-        ".syntax divided\n"
-    );
-}
+// C lift (EXACT 348/348). Same cursor/delay clamp as 0x10F3C, then re-derives
+// the row (0x172 <- _08025A8C, 0x188 <- _080258B8, 0x194 <- _08025E1C(0x2581C))
+// and refreshes the 232/340/244 lanes. Plain (non-volatile) field accesses are
+// load-bearing, as in 0x10F3C: a volatile s16 read compiles to ldrh/lsls/asrs
+// where the ROM has movs #0 / ldrsh.
+void MenuFF78_11484(void *rec_, int a1, int a2) {
+    extern const u16 MenuFF78Table11484[];
+    __asm__(".globl MenuFF78Table11484\nMenuFF78Table11484 = 0x080CB55C\n");
+    u8 *rec = (u8 *)rec_;
+    u16 keys = (u16)a1;
+    u16 old = *(u16 *)(rec + 180);
+    int d;
+    (void)a2;
 
+    if (keys & 32) {
+        if (*(s16 *)(rec + 186) <= 0) {
+            *(u16 *)(rec + 180) = (u16)(old - 1);
+            *(u16 *)(rec + 186) = 10;
+        }
+    }
+    if (keys & 16) {
+        if (*(s16 *)(rec + 186) <= 0) {
+            *(u16 *)(rec + 180) = (u16)(*(u16 *)(rec + 180) + 1);
+            *(u16 *)(rec + 186) = 10;
+        }
+    }
+    d = *(u16 *)(rec + 186) - 1;
+    {
+        u16 zero;
+        s16 cur;
+        u16 limit;
+
+        zero = 0;
+        *(u16 *)(rec + 186) = (u16)d;
+        if (*(s16 *)(rec + 186) <= 0)
+            *(u16 *)(rec + 186) = zero;
+        cur = *(s16 *)(rec + 180);
+        limit = *(u16 *)(rec + 184);
+        if (cur >= *(s16 *)(rec + 184))
+            *(u16 *)(rec + 180) = limit;
+        if (*(s16 *)(rec + 180) < 0)
+            *(u16 *)(rec + 180) = zero;
+    }
+    *(u16 *)(rec + 172) = (u16)_08025A8C(*(s16 *)(rec + 180));
+    *(u16 *)(rec + 188) = (u16)_080258B8(*(s16 *)(rec + 172));
+    *(u16 *)(rec + 194) =
+        (u16)_08025E1C((s16)_0802581C(*(s16 *)(rec + 172)));
+    if ((s16)old != *(s16 *)(rec + 180) && *(s16 *)(rec + 180) != 99) {
+        _0802B368(3);
+        _0800F810(rec);
+    }
+    _0800F8B4(rec, (s16)(*(u16 *)(rec + 194) - 1));
+    {
+        s16 r = (s16)_0800258A8(*(s16 *)(rec + 172));
+        register u32 tableBase __asm__("r1");
+        register u32 tblOff __asm__("r0");
+        u16 sel;
+        u32 *p340;
+
+        *(u32 *)(rec + 232) = (u32)r;
+        /* Statement order is load-bearing: the call comes first, then the +340
+           address takes r1 (movs #170 / lsls / adds), and only then may the
+           table base load r1. A folded `Table[call()]` lets the base load
+           hoist ahead of the address and shifts the whole lane. */
+        tblOff = (u32)(s16)_080258B8(*(s16 *)(rec + 172));
+        p340 = (u32 *)(rec + 340);
+        tableBase = (u32)(uintptr_t)MenuFF78Table11484;
+        /* The scale is fused with the sign extension: asrs #15, not
+           lsls #16 / asrs #16 / lsls #1. */
+        tblOff = ((s32)tblOff << 16) >> 15;
+        sel = *(u16 *)(uintptr_t)(tblOff + tableBase);
+        *p340 = (u32)sel;
+        *(u32 *)(rec + 244) = (u32)*(s16 *)(rec + 172);
+        _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 28),
+                   *(u32 *)(rec + 232), *(u32 *)(rec + 228));
+        _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 36),
+                   *(u32 *)(rec + 340), *(u32 *)(rec + 336));
+        ((void (*)(u32, u32, u32))_080026F50)(*(u32 *)(rec + 240),
+                                               *(u32 *)(rec + 244), 7);
+    }
+}
 void _080011484(void *a, int b, int c) __attribute__((alias("MenuFF78_11484")));
 void sub_080011484(void *a, int b, int c) __attribute__((alias("MenuFF78_11484")));
 
@@ -466,148 +373,98 @@ void sub_080011484(void *a, int b, int c) __attribute__((alias("MenuFF78_11484")
 // sub_0800115E0 — list-cursor handler w/ u16[rec+190] cursor over the record
 // list. Uses _0800F744/F700/F6D0 for clamp + select logic. Same epilogue shape
 // (s16[rec+212] = selected idx).
-// ROM frame: `push {r4,r5,r6,r7,lr}` + `mov r7,r8` / `push {r7}` /
-// `mov r8,r0` -- the u16[rec+190] cursor lives in r8. `register u16 prev
-// __asm__("r8")` reproduces that staging; with it a natural draft scores
-// 117/252 at 244 bytes. The `ldrsh` reads need no splice: a signed halfword
-// read into an `int` local compiles to `ldrsh` even when the value crosses a
-// call (only an `s16` local gets `ldrh` + `lsls`/`asrs`). What is left is the
-// register each zero-index `ldrsh`'s constant lands in -- the ROM rotates
-// r2/r0/r1/r3 while agbcc takes the next free low register, and pinning that
-// constant does not move it. The body stays asm until that numbering is
-// reachable; measurements in docs/findings/register_shaping_levers.md.
 // ============================================================================
-extern u32 _0800F6D0(s32 idx);            // menus.c
-extern u32 _0800F700(s32 a, s32 b);       // menus.c
-__attribute__((naked)) void MenuFF78_115E0(void *rec_, int a1, int a2) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "\tpush\t{r4, r5, r6, r7, lr}\n"
-        "\tmov\tr7, r8\n"
-        "\tpush\t{r7}\n"
-        "\tadds\tr6, r0, #0\n"
-        "\tlsls\tr2, r2, #16\n"
-        "\tlsrs\tr2, r2, #16\n"
-        "\tadds\tr5, r6, #0\n"
-        "\tadds\tr5, #190\n"
-        "\tldrh\tr0, [r5, #0]\n"
-        "\tmov\tr8, r0\n"
-        "\tcmp\tr2, #32\n"
-        "\tbne .Lff115e0_0800115fc\n"
-        "\tsubs\tr0, #1\n"
-        "\tstrh\tr0, [r5, #0]\n"
-        ".Lff115e0_0800115fc:\n"
-        "\tcmp\tr2, #16\n"
-        "\tbne .Lff115e0_080011606\n"
-        "\tldrh\tr0, [r5, #0]\n"
-        "\tadds\tr0, #1\n"
-        "\tstrh\tr0, [r5, #0]\n"
-        ".Lff115e0_080011606:\n"
-        "\tadds\tr7, r6, #0\n"
-        "\tadds\tr7, #188\n"
-        "\tldrh\tr1, [r5, #0]\n"
-        "\tcmp\tr1, #99\n"
-        "\tbne .Lff115e0_080011628\n"
-        "\tmovs\tr2, #0\n"
-        "\tldrsh\tr4, [r7, r2]\n"
-        "\tmovs\tr0, #0\n"
-        "\tbl sub_0800F744\n"
-        "\tadds\tr1, r0, #0\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tbl sub_0800F700\n"
-        "\tstrh\tr0, [r5, #0]\n"
-        "\tldrh\tr3, [r5, #0]\n"
-        "\tmov\tr8, r3\n"
-        ".Lff115e0_080011628:\n"
-        "\tmovs\tr0, #0\n"
-        "\tldrsh\tr4, [r5, r0]\n"
-        "\tmovs\tr1, #0\n"
-        "\tldrsh\tr0, [r7, r1]\n"
-        "\tbl sub_0800F6D0\n"
-        "\tcmp\tr4, r0\n"
-        "\tblt .Lff115e0_08001164a\n"
-        "\tldrh\tr2, [r5, #0]\n"
-        "\tcmp\tr2, #99\n"
-        "\tbeq .Lff115e0_08001164a\n"
-        "\tmovs\tr3, #0\n"
-        "\tldrsh\tr0, [r7, r3]\n"
-        "\tbl sub_0800F6D0\n"
-        "\tsubs\tr0, #1\n"
-        "\tstrh\tr0, [r5, #0]\n"
-        ".Lff115e0_08001164a:\n"
-        "\tadds\tr0, r6, #0\n"
-        "\tadds\tr0, #190\n"
-        "\tmovs\tr2, #0\n"
-        "\tldrsh\tr1, [r0, r2]\n"
-        "\tadds\tr4, r0, #0\n"
-        "\tcmp\tr1, #0\n"
-        "\tbge .Lff115e0_08001165c\n"
-        "\tmovs\tr0, #0\n"
-        "\tstrh\tr0, [r4, #0]\n"
-        ".Lff115e0_08001165c:\n"
-        "\tldrh\tr0, [r4, #0]\n"
-        "\tadds\tr1, r6, #0\n"
-        "\tadds\tr1, #198\n"
-        "\tstrh\tr0, [r1, #0]\n"
-        "\tmov\tr3, r8\n"
-        "\tlsls\tr0, r3, #16\n"
-        "\tasrs\tr0, r0, #16\n"
-        "\tmovs\tr2, #0\n"
-        "\tldrsh\tr1, [r4, r2]\n"
-        "\tcmp\tr0, r1\n"
-        "\tbeq .Lff115e0_0800116a8\n"
-        "\tcmp\tr1, #99\n"
-        "\tbeq .Lff115e0_0800116a8\n"
-        "\tmovs\tr0, #3\n"
-        "\tbl 0x0802B368\n"
-        "\tmovs\tr3, #0\n"
-        "\tldrsh\tr0, [r7, r3]\n"
-        "\tmovs\tr2, #0\n"
-        "\tldrsh\tr1, [r4, r2]\n"
-        "\tbl sub_0800F7EC\n"
-        "\tadds\tr1, r0, #0\n"
-        "\tmovs\tr3, #176\n"
-        "\tlsls\tr3, r3, #1\n"
-        "\tadds\tr0, r6, r3\n"
-        "\tlsls\tr1, r1, #16\n"
-        "\tasrs\tr1, r1, #16\n"
-        "\tstr\tr1, [r0, #0]\n"
-        "\tldr\tr0, [r6, #36]\n"
-        "\tsubs\tr3, #4\n"
-        "\tadds\tr2, r6, r3\n"
-        "\tldr\tr2, [r2, #0]\n"
-        "\tbl sub_08007ABC\n"
-        "\tadds\tr0, r6, #0\n"
-        "\tbl sub_0800F810\n"
-        ".Lff115e0_0800116a8:\n"
-        "\tadds\tr0, r7, #0\n"
-        "\tldrh\tr1, [r0, #0]\n"
-        "\tcmp\tr1, #1\n"
-        "\tbne .Lff115e0_0800116c0\n"
-        "\tmovs\tr2, #0\n"
-        "\tldrsh\tr0, [r0, r2]\n"
-        "\tmovs\tr3, #0\n"
-        "\tldrsh\tr1, [r4, r3]\n"
-        "\tbl sub_0800F700\n"
-        "\tsubs\tr0, #1\n"
-        "\tb .Lff115e0_0800116cc\n"
-        ".Lff115e0_0800116c0:\n"
-        "\tmovs\tr1, #0\n"
-        "\tldrsh\tr0, [r7, r1]\n"
-        "\tmovs\tr2, #0\n"
-        "\tldrsh\tr1, [r4, r2]\n"
-        "\tbl sub_0800F700\n"
-        ".Lff115e0_0800116cc:\n"
-        "\tadds\tr1, r6, #0\n"
-        "\tadds\tr1, #212\n"
-        "\tstrh\tr0, [r1, #0]\n"
-        "\tpop\t{r3}\n"
-        "\tmov\tr8, r3\n"
-        "\tpop\t{r4, r5, r6, r7}\n"
-        "\tpop\t{r0}\n"
-        "\tbx\tr0\n"
-        ".syntax divided\n"
-    );
+extern u32 _0800F6D0(s32 idx);
+extern u32 _0800F700(s32 a, s32 b);
+void MenuFF78_115E0(void *rec_, int a1, int a2) {
+    /* The ROM helper returns a sign-extended word in r0. */
+    extern int MenuF744_WordReturn(int) __asm__("_0800F744");
+    register u8 *rec __asm__("r6") = rec_;
+    register u16 *cursor __asm__("r4");
+    register u16 *first __asm__("r5");
+    s16 *group;
+    u16 input = (u16)a2;
+    register u16 old __asm__("r8");
+    __asm__ volatile("" : "+r"(input));
+    first = (u16 *)(rec + 190);
+    old = *first;
+    (void)a1;
+    if (input == 32) *first -= 1;
+    if (input == 16) *first += 1;
+    group = (s16 *)(rec + 188);
+    if (*first == 99) {
+        int g = *group;
+        *first = _0800F700(g, MenuF744_WordReturn(0));
+        old = *(volatile u16 *)first;
+    }
+    if (*(s16 *)first >= (int)_0800F6D0(*group) && *first != 99)
+        *first = _0800F6D0(*group) - 1;
+    {
+        register u8 *p __asm__("r0") = rec;
+        register u32 zero __asm__("r2") = 0;
+        register s32 cv __asm__("r1");
+        p += 190;
+        cv = *(s16 *)(p + zero);
+        cursor = (u16 *)p;
+        if (cv < 0) *cursor = 0;
+    }
+    {
+        register u16 v __asm__("r0") = *cursor;
+        register u8 *dest __asm__("r1") = rec;
+        dest += 198;
+        *(u16 *)dest = v;
+    }
+    {
+        register s32 prev __asm__("r0") = (s16)old;
+        register u32 zero __asm__("r2") = 0;
+        register s32 cur __asm__("r1") = *(s16 *)((u8 *)cursor + zero);
+        if (prev != cur && cur != 99) {
+            int v;
+            _0802B368(3);
+            v = _0800F7EC(*group, *(s16 *)cursor);
+            *(s32 *)(rec + 352) = (s16)v;
+            _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 36),
+                       (s16)v, *(u32 *)(rec + 348));
+            _0800F810(rec);
+        }
+    }
+    {
+        int v;
+        register u8 *gp __asm__("r0") = (u8 *)group;
+        register u16 gv __asm__("r1") = *(u16 *)gp;
+        /* Bracket the reads to reserve the ROM's ldrsh scratch registers. */
+        if (gv == 1) {
+            register u32 hold __asm__("r1");
+            register s32 arg0;
+            __asm__ volatile("" : "=r"(hold));
+            arg0 = *(s16 *)gp;
+            __asm__ volatile("" : : "r"(hold));
+            {
+                register s32 arg1 __asm__("r1");
+                register u32 hold2 __asm__("r2");
+                __asm__ volatile("" : "=r"(hold2));
+                arg1 = *(s16 *)cursor;
+                __asm__ volatile("" : : "r"(hold2));
+                v = _0800F700(arg0, arg1) - 1;
+            }
+        } else {
+            register s32 arg0 __asm__("r0");
+            register s32 arg1 __asm__("r1");
+            {
+                register u32 hold3 __asm__("r3");
+                __asm__ volatile("" : "=r"(hold3));
+                arg0 = *(s16 *)group;
+                __asm__ volatile("" : : "r"(hold3));
+            }
+            arg1 = *(s16 *)cursor;
+            v = _0800F700(arg0, arg1);
+        }
+        {
+            register u8 *dest __asm__("r1") = rec;
+            dest += 212;
+            *(u16 *)dest = v;
+        }
+    }
 }
 
 void _0800115E0(void *a, int b, int c) __attribute__((alias("MenuFF78_115E0")));

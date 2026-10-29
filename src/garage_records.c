@@ -3353,6 +3353,14 @@ __asm__(".align 2, 0");
 // NOTE: _08005D74 call uses 3rd arg 0 — TU decl is the 3-arg form while
 // ROM sets r0/r1 only (r2 stale); the 2A90C<-2A160<-2A740 chain has no
 // static callers so the lane is headless-orphaned; revisit if exercised.
+//
+// C-lift status (2026-10-28): a full C body reaches +4 B / 70 diff bytes and
+// is NOT promoted. Pinning `ctxx`->r4 and `ctxy`->r5 reproduces the ROM's
+// r4/r5 uses and grows the frame 16 -> 20 with `extra` landing at sp+16, but
+// `outp` then folds into r7 instead of taking the ROM's sp+20 slot, and pinning
+// the 1500 bound to r7 (so `extra` has no register left) miscompiles: agbcc
+// then clobbers r7 with the constant and reads `extra` through the same
+// register. The unsolved piece is the second spill, not the arithmetic.
 // ----------------------------------------------------------------------------
 __attribute__((naked)) void _08002A90C(void *acc, void *pos, void *extra, void *unused) {
     __asm__ volatile (

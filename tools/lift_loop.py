@@ -16,6 +16,11 @@ disassembles both streams so the rows can be compared directly.
     python3 tools/lift_loop.py src/garage.c _08027234 --asm
     python3 tools/lift_loop.py src/garage.c _08027234 --sweep a,b,wide
 
+`--variant FILE...` grades whole-body replacement files inside the same scratch
+TU, so composed spelling grids run at scratch-compile speed instead of full-TU
+probe speed. The ranking orders by grade, aligned instruction count, length
+drift, then file name.
+
 `--sweep VAR[,VAR...]` inserts an `__asm__ volatile("" : "+r"(VAR))`
 barrier at every statement boundary of the body, one (variable, boundary)
 pair per iteration, and ranks the results. That barrier is the only lever that
@@ -63,7 +68,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import corpus_match_probe as probe  # noqa: E402
-from agbcc_c89_transform import strip_noncode  # noqa: E402
+from agbcc_c89_transform import strip_noncode, transform_file  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 WORK = ROOT / "build/lift"
@@ -154,7 +159,7 @@ def blank_attrs(masked: str) -> str:
     return ATTR_RE.sub(lambda m: " " * (m.end() - m.start()), masked)
 
 
-def build_tu(path: Path, name: str, want_span: bool = False):
+def build_tu(path: Path, name: str, want_span: bool = False, raw: bool = False):
     """The whole file with every function body but `name` blanked out.
 
     Keeping the file intact means typedefs, macros, `__asm__` symbol bindings
@@ -164,10 +169,18 @@ def build_tu(path: Path, name: str, want_span: bool = False):
 
     `want_span` returns the kept body's `{ ... }` range as well, which is what
     the barrier sweep needs to know where it may insert.
+
+    `raw` returns the file untransformed, so a caller can splice raw C into it
+    and then run the C89 transform over the whole result. A `--variant` file is
+    ordinary source, and splicing it into the already-transformed text would
+    leave its declarations after a statement.
     """
-    # C89 needs every declaration ahead of the first statement; the project
-    # applies that transform before agbcc, so the scratch TU must too.
-    text, _stats = probe.cached_transform_file(path)
+    if raw:
+        text = path.read_text(encoding="utf-8", errors="replace")
+    else:
+        # C89 needs every declaration ahead of the first statement; the project
+        # applies that transform before agbcc, so the scratch TU must too.
+        text, _stats = probe.cached_transform_file(path)
     # Comments and literals are blanked (same indices) so neither the brace scan
     # nor the signature lookback can mistake prose for code -- a doc comment
     # directly above a definition otherwise wins the greedy name match.
@@ -186,7 +199,13 @@ def build_tu(path: Path, name: str, want_span: bool = False):
             continue
         if m.group(1) == name:
             found = True
-            span = (start - delta, end - delta)
+            # The span covers the whole signature line: a `--variant` body
+            # file is a whole replacement starting at the return type, and
+            # SIG_RE's match begins at the name, after `void `. The sweep's
+            # statement points ignore the extra text since a signature holds
+            # no `;`/`{` to report a boundary from.
+            line_start = masked.rfind("\n", 0, m.start()) + 1
+            span = (line_start - delta, end - delta)
             continue
         # Replace the body with a declaration-only `;` so the signature stays.
         pieces.append(text[prev:start])
@@ -538,6 +557,69 @@ def run_sweep(a, tu: str, span, vma: int, size: int) -> int:
     return 0 if res["kind"] == "exact" else 1
 
 
+def byte_score(blob: bytes, ref: bytes) -> tuple[int, int | None]:
+    """Byte-match count in the probe's sense, with unresolved windows out.
+
+    The linked scratch object leaves every `bl` displacement as the
+    assembler's placeholder, so those byte pairs can never compare equal.
+    Masking the BL displacement pairs (mask_calls) before the comparison
+    reproduces the probe's decision to exclude unresolved windows, at
+    ranking fidelity.
+    """
+    a, b = mask_calls(blob), mask_calls(ref)
+    compared = min(len(a), len(b))
+    diffs = [i for i in range(compared) if a[i] != b[i]]
+    matched = sum(1 for i in range(compared) if a[i] == b[i])
+    return matched, (diffs[0] if diffs else
+                     (None if len(a) == len(b) else compared))
+
+
+def first_diff(res: dict, vma: int, size: int) -> int | None:
+    """Byte offset of the first candidate/ROM difference inside the span."""
+    ref = rom_slice(vma, size)
+    return next((i for i, (x, y) in enumerate(zip(res["blob"], ref)) if x != y),
+                None)
+
+
+def run_variants(a, tu: str, span: tuple[int, int], vma: int, size: int) -> int:
+    """Grade whole-body replacement files in the scratch TU.
+
+    Each `--variant FILE` is spliced over the kept body's span and graded like
+    lab_sweep, but at the scratch TU's compile cost (a second or two instead of
+    a full-TU probe). Ranking counts probe-sense matched bytes (`byte_score`),
+    so the fast sweep ranks the way the acceptance gate will. The splice runs on
+    the raw source and the whole file is then C89-transformed, so a variant may
+    declare locals after statements like any other source file.
+    """
+    raw_tu, raw_span = build_tu(a.source, a.function, want_span=True, raw=True)
+    results = []
+    for vfile in a.variant:
+        body = Path(vfile).read_text(encoding="utf-8")
+        cand = raw_tu[:raw_span[0]] + body + raw_tu[raw_span[1]:]
+        workdir = WORK / "variant" / Path(vfile).stem
+        workdir.mkdir(parents=True, exist_ok=True)
+        scratch = workdir / "variant_raw.c"
+        scratch.write_text(cand, encoding="utf-8")
+        cand, _stats = transform_file(scratch)
+        res = evaluate(cand, a.source, a.function, vma, size, workdir)
+        n = size or len(res["blob"])
+        res["bytes"], res["first"] = byte_score(res["blob"],
+                                                rom_slice(vma, n))
+        if res["kind"] == "error":
+            res["msg"] = res["msg"].splitlines()[0][:160] if res["msg"] else "?"
+        results.append((vfile, res))
+    results.sort(key=lambda it: (RANK[it[1]["kind"]], -it[1]["bytes"],
+                                 abs(it[1]["size"] - size), it[0]))
+    print(f"{'variant':<56} {'kind':<11} {'size':>5} {'bytes':>6}  first")
+    for vfile, res in results:
+        print(f"{Path(vfile).name:<56} {res['kind']:<11} {res['size']:>5} "
+              f"{res['bytes']:>6}  {res['first'] if res['first'] is not None else '-'}"
+              + (f"  {res['msg']}" if res["kind"] == "error" else ""))
+    if not results:
+        return 1
+    return 0 if results[0][1]["kind"] == "exact" else 1
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("source", type=Path)
@@ -546,6 +628,8 @@ def main() -> int:
     ap.add_argument("--asm", action="store_true")
     ap.add_argument("--len", type=lambda s: int(s, 0))
     ap.add_argument("--vma", type=lambda s: int(s, 0))
+    ap.add_argument("--variant", nargs="+", metavar="FILE",
+                    help="grade whole-body replacement files from a scratch TU")
     ap.add_argument("--sweep", metavar="VAR[,VAR...]",
                     help="insert a +r barrier on each variable at every statement boundary and rank")
     ap.add_argument("--points", metavar="P[,P...]",
@@ -572,11 +656,19 @@ def main() -> int:
         if alias:
             vma = 0x08000000 + int(alias.group(1), 16)
         else:
-            m = re.fullmatch(r"_?(080[0-9A-Fa-f]{5})", a.function)
+            m = re.fullmatch(r"_?080([0-9A-Fa-f]{5,6})", a.function)
             if m:
-                vma = int(m.group(1), 16)
+                # The trailing hex digits are the offset inside ROM: the
+                # base-prefixed spelling `_08002A90C` carries one extra zero
+                # after the `080*` prefix, so never int() the whole name.
+                vma = 0x08000000 + int(m.group(1), 16)
     if not vma:
         raise SystemExit("pass --vma (or use an _0802xxxx symbol name)")
+
+    if a.variant:
+        tu, span = build_tu(a.source, a.function, want_span=True)
+        return run_variants(a, tu, span, vma,
+                            a.len or span_len(vma) or 0)
 
     if a.sweep:
         tu, span = build_tu(a.source, a.function, want_span=True)

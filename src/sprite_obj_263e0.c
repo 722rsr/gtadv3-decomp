@@ -26,6 +26,8 @@ extern void _0802D970(const void *a, void *b, u32 c);   // swi 0x0C CpuFastSet (
 extern void _0802D974(const void *a, void *b, u32 c);   // swi 0x0B CpuSet (bios_wrappers.c)
 extern int _0802D978(int a, int b);                     // swi 0x06 Div (bios_wrappers.c)
 extern int _0802D97C(int a, int b);                     // swi 0x06 DivRem (bios_wrappers.c)
+extern int sub_0802D978(int a, int b);
+extern int sub_0802D97C(int a, int b);
 extern void _0802D988(const void *a, void *b);          // swi 0x11 LZ77UnCompWram (bios_wrappers.c)
 extern void *_08007498(void *X, int i);                 // Course_Seek (course_records.c)
 extern void *_0800748C(void *X);                        // Course_ArrBase (course_records.c)
@@ -670,6 +672,7 @@ void *Sprite_CourseRecord3(void) {
 }
 void *_080026880(void) __attribute__((alias("Sprite_CourseRecord3")));
 void *sub_080026880(void) __attribute__((alias("Sprite_CourseRecord3")));
+void *sub_08026880(void) __attribute__((alias("Sprite_CourseRecord3")));
 
 // ============================================================================
 // sub_080026898 (0x08026898, 0x9C B) — 9-arg emitter pair (r0/r1 unused by
@@ -1318,268 +1321,178 @@ void sub_08026CAC(void *a, int b, int c, int d) __attribute__((alias("Sprite_Emi
 //         EmitRecord(104, 24, s16[entry+20], s16[entry+22], 256)
 //     if s16[entry+12] == 0: [entry+30] = 0
 // ============================================================================
-__attribute__((naked)) void Sprite_TickRecords(int car) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push\t{r4, r5, r6, r7, lr}\n"
-        "sub\tsp, #4\n"
-        "ldr r6, .Lspr__080026D70\n"
-        "ldr\tr3, [r6, #0]\n"
-        "movs\tr1, #2\n"
-        "ldrsh\tr0, [r3, r1]\n"
-        "cmp\tr0, #0\n"
-        "beq .Lspr__080026D74\n"
-        "movs\tr4, #4\n"
-        "ldrsh\tr2, [r3, r4]\n"
-        "movs\tr5, #8\n"
-        "ldrsh\tr3, [r3, r5]\n"
-        "movs\tr0, #84\n"
-        "movs\tr1, #28\n"
-        "bl sub_080026CAC\n"
-        "ldr\tr1, [r6, #0]\n"
-        "movs\tr0, #0\n"
-        "strh\tr0, [r1, #2]\n"
-        "b .Lspr__080026F20\n"
-        ".Lspr__080026D70: .4byte 0x03001674\n"
-        ".Lspr__080026D74:\n"
-        "movs\tr7, #30\n"
-        "ldrsh\tr0, [r3, r7]\n"
-        "cmp\tr0, #0\n"
-        "bne .Lspr__080026D7E\n"
-        "b .Lspr__080026EA0\n"
-        ".Lspr__080026D7E:\n"
-        "movs\tr1, #50\n"
-        "ldrsh\tr0, [r3, r1]\n"
-        "cmp\tr0, #0\n"
-        "bne .Lspr__080026D88\n"
-        "b .Lspr__080026EA0\n"
-        ".Lspr__080026D88:\n"
-        "movs\tr2, #0\n"
-        "ldrsh\tr0, [r3, r2]\n"
-        "movs\tr1, #0\n"
-        "cmp\tr0, #0\n"
-        "bne .Lspr__080026D94\n"
-        "movs\tr1, #20\n"
-        ".Lspr__080026D94:\n"
-        "adds\tr0, r3, r1\n"
-        "movs\tr4, #12\n"
-        "ldrsh\tr0, [r0, r4]\n"
-        "cmp\tr0, #0\n"
-        "ble .Lspr__080026E72\n"
-        "movs\tr5, #0\n"
-        "ldrsh\tr0, [r3, r5]\n"
-        "lsls\tr1, r0, #2\n"
-        "adds\tr1, r1, r0\n"
-        "lsls\tr1, r1, #2\n"
-        "adds\tr1, r3, r1\n"
-        "ldrh\tr0, [r1, #12]\n"
-        "subs\tr0, #1\n"
-        "strh\tr0, [r1, #12]\n"
-        "movs\tr7, #0\n"
-        "ldrsh\tr0, [r3, r7]\n"
-        "movs\tr1, #0\n"
-        "cmp\tr0, #0\n"
-        "bne .Lspr__080026DBC\n"
-        "movs\tr1, #20\n"
-        ".Lspr__080026DBC:\n"
-        "adds\tr2, r3, r1\n"
-        "movs\tr1, #0\n"
-        "cmp\tr0, #0\n"
-        "bne .Lspr__080026DC6\n"
-        "movs\tr1, #20\n"
-        ".Lspr__080026DC6:\n"
-        "adds\tr0, r3, r1\n"
-        "ldrh\tr0, [r0, #12]\n"
-        "subs\tr0, #1\n"
-        "strh\tr0, [r2, #12]\n"
-        "movs\tr0, #0\n"
-        "ldrsh\tr1, [r3, r0]\n"
-        "movs\tr0, #0\n"
-        "cmp\tr1, #0\n"
-        "bne .Lspr__080026DDA\n"
-        "movs\tr0, #20\n"
-        ".Lspr__080026DDA:\n"
-        "adds\tr0, r3, r0\n"
-        "movs\tr2, #12\n"
-        "ldrsh\tr0, [r0, r2]\n"
-        "adds\tr5, r0, #0\n"
-        "adds\tr5, #12\n"
-        "movs\tr0, #0\n"
-        "cmp\tr1, #0\n"
-        "bne .Lspr__080026DEC\n"
-        "movs\tr0, #20\n"
-        ".Lspr__080026DEC:\n"
-        "adds\tr0, r3, r0\n"
-        "movs\tr4, #20\n"
-        "ldrsh\tr2, [r0, r4]\n"
-        "movs\tr0, #0\n"
-        "cmp\tr1, #0\n"
-        "bne .Lspr__080026DFA\n"
-        "movs\tr0, #20\n"
-        ".Lspr__080026DFA:\n"
-        "adds\tr0, r3, r0\n"
-        "movs\tr7, #22\n"
-        "ldrsh\tr4, [r0, r7]\n"
-        "movs\tr0, #0\n"
-        "cmp\tr1, #0\n"
-        "bne .Lspr__080026E08\n"
-        "movs\tr0, #20\n"
-        ".Lspr__080026E08:\n"
-        "adds\tr0, r3, r0\n"
-        "movs\tr3, #12\n"
-        "ldrsh\tr1, [r0, r3]\n"
-        "movs\tr0, #12\n"
-        "subs\tr0, r0, r1\n"
-        "lsls\tr0, r0, #4\n"
-        "movs\tr7, #128\n"
-        "lsls\tr7, r7, #1\n"
-        "adds\tr0, r0, r7\n"
-        "str\tr0, [sp, #0]\n"
-        "movs\tr0, #104\n"
-        "adds\tr1, r5, #0\n"
-        "adds\tr3, r4, #0\n"
-        "bl sub_080026C84\n"
-        "ldr\tr2, [r6, #0]\n"
-        "movs\tr4, #0\n"
-        "ldrsh\tr3, [r2, r4]\n"
-        "movs\tr0, #0\n"
-        "cmp\tr3, #0\n"
-        "bne .Lspr__080026E34\n"
-        "movs\tr0, #20\n"
-        ".Lspr__080026E34:\n"
-        "adds\tr0, r2, r0\n"
-        "movs\tr5, #12\n"
-        "ldrsh\tr0, [r0, r5]\n"
-        "adds\tr6, r0, #0\n"
-        "adds\tr6, #24\n"
-        "movs\tr0, #0\n"
-        "ldrsh\tr1, [r2, r0]\n"
-        "lsls\tr0, r1, #2\n"
-        "adds\tr0, r0, r1\n"
-        "lsls\tr0, r0, #2\n"
-        "adds\tr0, r2, r0\n"
-        "movs\tr1, #20\n"
-        "ldrsh\tr4, [r0, r1]\n"
-        "movs\tr1, #22\n"
-        "ldrsh\tr5, [r0, r1]\n"
-        "movs\tr0, #0\n"
-        "cmp\tr3, #0\n"
-        "bne .Lspr__080026E5A\n"
-        "movs\tr0, #20\n"
-        ".Lspr__080026E5A:\n"
-        "adds\tr0, r2, r0\n"
-        "movs\tr2, #12\n"
-        "ldrsh\tr0, [r0, r2]\n"
-        "lsls\tr0, r0, #4\n"
-        "adds\tr0, r0, r7\n"
-        "str\tr0, [sp, #0]\n"
-        "movs\tr0, #104\n"
-        "adds\tr1, r6, #0\n"
-        "adds\tr2, r4, #0\n"
-        "adds\tr3, r5, #0\n"
-        "bl sub_080026C84\n"
-        ".Lspr__080026E72:\n"
-        "ldr r0, .Lspr__080026E9C\n"
-        "ldr\tr1, [r0, #0]\n"
-        "movs\tr4, #0\n"
-        "ldrsh\tr3, [r1, r4]\n"
-        "movs\tr0, #0\n"
-        "cmp\tr3, #0\n"
-        "bne .Lspr__080026E82\n"
-        "movs\tr0, #20\n"
-        ".Lspr__080026E82:\n"
-        "adds\tr0, r1, r0\n"
-        "movs\tr5, #12\n"
-        "ldrsh\tr2, [r0, r5]\n"
-        "cmp\tr2, #0\n"
-        "bne .Lspr__080026F20\n"
-        "movs\tr0, #0\n"
-        "cmp\tr3, #0\n"
-        "bne .Lspr__080026E94\n"
-        "movs\tr0, #20\n"
-        ".Lspr__080026E94:\n"
-        "adds\tr0, r1, r0\n"
-        "strh\tr2, [r0, #30]\n"
-        "b .Lspr__080026F20\n"
-        "movs\tr0, r0\n"
-        ".Lspr__080026E9C: .4byte 0x03001674\n"
-        ".Lspr__080026EA0:\n"
-        "ldr r4, .Lspr__080026F28\n"
-        "ldr\tr2, [r4, #0]\n"
-        "movs\tr7, #0\n"
-        "ldrsh\tr0, [r2, r7]\n"
-        "lsls\tr1, r0, #2\n"
-        "adds\tr1, r1, r0\n"
-        "lsls\tr1, r1, #2\n"
-        "adds\tr1, r2, r1\n"
-        "ldrh\tr3, [r1, #12]\n"
-        "movs\tr5, #12\n"
-        "ldrsh\tr0, [r1, r5]\n"
-        "cmp\tr0, #0\n"
-        "ble .Lspr__080026F06\n"
-        "subs\tr0, r3, #1\n"
-        "strh\tr0, [r1, #12]\n"
-        "movs\tr7, #0\n"
-        "ldrsh\tr1, [r2, r7]\n"
-        "lsls\tr0, r1, #2\n"
-        "adds\tr0, r0, r1\n"
-        "lsls\tr0, r0, #2\n"
-        "adds\tr1, r2, r0\n"
-        "movs\tr2, #12\n"
-        "ldrsh\tr0, [r1, r2]\n"
-        "cmp\tr0, #80\n"
-        "ble .Lspr__080026EE2\n"
-        "movs\tr1, #10\n"
-        "bl 0x0802D978\n"
-        "movs\tr1, #2\n"
-        "bl 0x0802D97C\n"
-        "cmp\tr0, #0\n"
-        "beq .Lspr__080026F06\n"
-        ".Lspr__080026EE2:\n"
-        "ldr\tr1, [r4, #0]\n"
-        "movs\tr4, #0\n"
-        "ldrsh\tr2, [r1, r4]\n"
-        "lsls\tr0, r2, #2\n"
-        "adds\tr0, r0, r2\n"
-        "lsls\tr0, r0, #2\n"
-        "adds\tr1, r1, r0\n"
-        "movs\tr5, #20\n"
-        "ldrsh\tr2, [r1, r5]\n"
-        "movs\tr7, #22\n"
-        "ldrsh\tr3, [r1, r7]\n"
-        "movs\tr0, #128\n"
-        "lsls\tr0, r0, #1\n"
-        "str\tr0, [sp, #0]\n"
-        "movs\tr0, #104\n"
-        "movs\tr1, #24\n"
-        "bl sub_080026C84\n"
-        ".Lspr__080026F06:\n"
-        "ldr r0, .Lspr__080026F28\n"
-        "ldr\tr2, [r0, #0]\n"
-        "movs\tr0, #0\n"
-        "ldrsh\tr1, [r2, r0]\n"
-        "lsls\tr0, r1, #2\n"
-        "adds\tr0, r0, r1\n"
-        "lsls\tr0, r0, #2\n"
-        "adds\tr2, r2, r0\n"
-        "movs\tr1, #12\n"
-        "ldrsh\tr0, [r2, r1]\n"
-        "cmp\tr0, #0\n"
-        "bne .Lspr__080026F20\n"
-        "strh\tr0, [r2, #30]\n"
-        ".Lspr__080026F20:\n"
-        "add\tsp, #4\n"
-        "pop\t{r4, r5, r6, r7}\n"
-        "pop\t{r0}\n"
-        "bx\tr0\n"
-        ".Lspr__080026F28: .4byte 0x03001674\n"
-        "bx\tlr\n"
-        ".hword 0x0000\n"
-        ".syntax divided\n"
-    );
+/* 0x03001674 menu record: a s16 index at +0 selects one of two 20-byte rows;
+   the ROM re-reads the record pointer and re-evaluates the `cur ? 0 : 20`
+   row offset at each use, so both stay macros instead of locals. */
+#define SPR_CUR_IDX (((s16 *)rec)[0])
+#define SPR_ROW_OFF (SPR_CUR_IDX ? 0 : 20)
+extern u8 SprTickCellAddress[];
+#define SPR_REC_NOW ((u8 *)(uintptr_t)*(volatile void **)SprTickCellAddress)
+extern void sub_080026CAC(void *base, int id, int x, int y);
+extern void sub_080026C84(int a, int b, int c, int d, int e);
+void Sprite_TickRecords(int car) {
+    register void **cell __asm__("r6");
+    u8 *rec;
+    (void)car;
+
+    __asm__(".globl SprTickCellAddress\nSprTickCellAddress = 0x03001674\n");
+    cell = (void **)SprTickCellAddress;
+    rec = (u8 *)(uintptr_t)*cell;
+    if (((s16 *)rec)[1] != 0) {
+        sub_080026CAC((void *)84, 28, ((s16 *)rec)[2], ((s16 *)rec)[4]);
+        {
+            register u8 *p __asm__("r1") = (u8 *)*cell;
+            __asm__ volatile("" : "+r"(p));
+            *(u16 *)(p + 2) = 0;
+        }
+        return;
+    }
+    if (((s16 *)rec)[15] != 0 && ((s16 *)rec)[25] != 0) {
+        int scale;
+        register int ot __asm__("r0");
+        register int b __asm__("r5");
+        int off = SPR_ROW_OFF;
+        if (((s16 *)(rec + off))[6] > 0) {
+            {
+                register u8 *addr __asm__("r1");
+                addr = rec + ((s16 *)rec)[0] * 20;
+                __asm__ volatile("" : "+r"(addr));
+                ((u16 *)addr)[6]--;
+            }
+            {
+                u16 *dst;
+                u16 *src;
+                off = SPR_ROW_OFF;
+                dst = (u16 *)(rec + off);
+                off = SPR_ROW_OFF;
+                src = (u16 *)(rec + off);
+                dst[6] = (u16)(src[6] - 1);
+            }
+            {
+                register int idx __asm__("r1") = SPR_CUR_IDX;
+                register int offset __asm__("r0");
+                register int x __asm__("r2");
+                register int y __asm__("r4");
+                register int alpha __asm__("r0");
+                __asm__ volatile("" : "+r"(idx));
+                offset = 0;
+                if (!idx) offset = 20;
+                ot = ((s16 *)(rec + offset))[6];
+                __asm__ volatile("" : "+r"(ot));
+                b = ot;
+                b += 12;
+                offset = 0;
+                if (!idx) offset = 20;
+                x = ((s16 *)(rec + offset))[10];
+                __asm__ volatile("" : "+r"(x));
+                offset = 0;
+                if (!idx) offset = 20;
+                y = ((s16 *)(rec + offset))[11];
+                __asm__ volatile("" : "+r"(y));
+                offset = 0;
+                if (!idx) offset = 20;
+                alpha = 12 - ((s16 *)(rec + offset))[6];
+                alpha <<= 4;
+                scale = 256;
+                __asm__ volatile("" : "+r"(scale));
+                alpha += scale;
+                sub_080026C84(104, b, x, y, alpha);
+            }
+            {
+                register int b2 __asm__("r6");
+                u8 *row;
+                register int ot2 __asm__("r0");
+                int x;
+                int y;
+                {
+                    register u8 *rr __asm__("r2") = (u8 *)*cell;
+                    register int ix __asm__("r3") = *(s16 *)rr;
+                    register int oo __asm__("r0");
+                    __asm__ volatile("" : "+r"(rr), "+r"(ix));
+                    oo = 0;
+                    if (!ix) oo = 20;
+                    off = oo;
+                    rec = rr;
+                    ot2 = ((s16 *)(rec + off))[6];
+                    __asm__ volatile("" : "+r"(ot2));
+                    b2 = ot2;
+                    b2 += 24;
+                    row = rr + ((s16 *)rr)[0] * 20;
+                    x = ((s16 *)row)[10];
+                    y = ((s16 *)row)[11];
+                    oo = 0;
+                    if (!ix) oo = 20;
+                    off = oo;
+                    sub_080026C84(104, b2, x, y,
+                                      (((s16 *)(rr + off))[6] << 4) + scale);
+                }
+            }
+        }
+        {
+            register u8 *p __asm__("r1") = SPR_REC_NOW;
+            register int idx __asm__("r3") = *(s16 *)p;
+            register int offset __asm__("r0");
+            register int v __asm__("r2");
+            __asm__ volatile("" : "+r"(p), "+r"(idx));
+            offset = 0;
+            if (!idx) offset = 20;
+            v = *(s16 *)(p + offset + 12);
+            if (v == 0) {
+                offset = 0;
+                if (!idx) offset = 20;
+                *(u16 *)(p + offset + 30) = v;
+            }
+        }
+    } else {
+        u8 *row;
+        register u8 *p __asm__("r2") = SPR_REC_NOW;
+        register u16 t __asm__("r3");
+        __asm__ volatile("" : "+r"(p));
+        row = p + ((s16 *)p)[0] * 20;
+        t = ((u16 *)row)[6];
+        if (((s16 *)row)[6] > 0) {
+            {
+                register u32 dec __asm__("r0") = (u32)t - 1;
+                __asm__ volatile("" : "+r"(dec));
+                ((u16 *)row)[6] = dec;
+            }
+            {
+                register int ix __asm__("r1") = *(s16 *)p;
+                __asm__ volatile("" : "+r"(ix));
+                row = p + ix * 20;
+            }
+            if (((s16 *)row)[6] <= 80
+                || sub_0802D97C(sub_0802D978((int)((s16 *)row)[6], 10), 2) != 0) {
+                register u8 *emit_rec __asm__("r1") = SPR_REC_NOW;
+                register int ix __asm__("r2") = *(s16 *)emit_rec;
+                __asm__ volatile("" : "+r"(emit_rec), "+r"(ix));
+                row = emit_rec + ix * 20;
+                sub_080026C84(104, 24, ((s16 *)row)[10],
+                                  ((s16 *)row)[11], 256);
+            }
+        }
+        {
+            register u8 *end_rec __asm__("r2") = SPR_REC_NOW;
+            register u8 *end_row __asm__("r2");
+            __asm__ volatile("" : "+r"(end_rec));
+            end_row = end_rec + ((s16 *)end_rec)[0] * 20;
+            __asm__ volatile("" : "+r"(end_row));
+            if (((s16 *)end_row)[6] == 0)
+                ((u16 *)end_row)[15] = 0;
+        }
+    }
 }
 void _08026D48(int a) __attribute__((alias("Sprite_TickRecords")));
 void sub_08026D48(int a) __attribute__((alias("Sprite_TickRecords")));
+
+// ----------------------------------------------------------------------------
+// The 2-byte `bx lr` stub that closes the cluster at 0x08026F2C, followed by
+// the ROM's two alignment bytes. Nothing references it, so it is a dead leaf
+// in the literal-pool tail of Sprite_TickRecords; the span split is what keeps
+// that function's compiled body at its real 484 bytes.
+void Sprite_TickRecordsEnd(void) {}
+__asm__(".align 2, 0");
+void _080026F2C(void) __attribute__((alias("Sprite_TickRecordsEnd")));
 
 // ROM entry alias.
 void Sub_080026A2C(void *mgr, u32 x, u32 y) __attribute__((alias("Sprite_SetXYRel")));
