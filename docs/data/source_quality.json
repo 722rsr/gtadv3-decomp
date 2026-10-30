@@ -11355,11 +11355,10 @@
    "size": 368
   },
   "0x08029764": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 313,
-    "naked": true
+    "barrier": 1,
+    "pin": 1
    },
    "file": "src/garage_records.c",
    "name": "_080029764",
@@ -13222,16 +13221,16 @@
  },
  "totals": {
   "asm": {
-   "bytes": 49952,
-   "functions": 130
+   "bytes": 49316,
+   "functions": 129
   },
   "c": {
    "bytes": 44326,
    "functions": 876
   },
   "c_fakematch": {
-   "bytes": 93658,
-   "functions": 666
+   "bytes": 94294,
+   "functions": 667
   },
   "partial": {
    "bytes": 200,

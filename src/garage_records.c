@@ -1488,344 +1488,143 @@ u32 _0800295F4(void *rec) {
 // store wants r5 (pin costs 53); two `movs rX,#0` index scratches differ; and
 // the tail's v110/p140 pair is emitted two slots late (cross-jump at +0x23A;
 // empty-asm and clobber barriers there cost 200+ bytes).
-__attribute__((naked)) void _080029764(void *rec) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "\tpush\t{r4, r5, r6, r7, lr}\n"
-        "\tmov\tr7, r8\n"
-        "\tpush\t{r7}\n"
-        "\tadds\tr4, r0, #0\n"
-        "\tadds\tr0, #159\n"
-        "\tldrb\tr1, [r0, #0]\n"
-        "\tmovs\tr0, #8\n"
-        "\tands\tr0, r1\n"
-        "\tlsls\tr0, r0, #24\n"
-        "\tlsrs\tr0, r0, #24\n"
-        "\tmov\tr8, r0\n"
-        "\tcmp\tr0, #0\n"
-        "\tbeq .Lgarage080029764__08002985E\n"
-        "\tadds\tr1, r4, #0\n"
-        "\tadds\tr1, #110\n"
-        "\tmovs\tr0, #112\n"
-        "\tadds\tr0, r0, r4\n"
-        "\tmov\tip, r0\n"
-        "\tldrh\tr2, [r1, #0]\n"
-        "\tldrh\tr3, [r0, #0]\n"
-        "\tadds\tr7, r2, r3\n"
-        "\tstrh\tr7, [r1, #0]\n"
-        "\tmovs\tr5, #0\n"
-        "\tldrsh\tr2, [r1, r5]\n"
-        "\tadds\tr3, r4, #0\n"
-        "\tadds\tr3, #134\n"
-        "\tldrh\tr5, [r3, #0]\n"
-        "\tlsls\tr0, r5, #16\n"
-        "\tasrs\tr0, r0, #17\n"
-        "\tadds\tr2, r2, r0\n"
-        "\tmovs\tr0, #32\n"
-        "\tnegs\tr0, r0\n"
-        "\tadds\tr6, r1, #0\n"
-        "\tadds\tr5, r3, #0\n"
-        "\tcmp\tr2, r0\n"
-        "\tbge .Lgarage080029764__0800297B4\n"
-        "\tmov\tr1, ip\n"
-        "\tldrh\tr1, [r1, #0]\n"
-        "\tadds\tr0, r1, r7\n"
-        "\tstrh\tr0, [r6, #0]\n"
-        ".Lgarage080029764__0800297B4:\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tadds\tr0, #114\n"
-        "\tmovs\tr2, #0\n"
-        "\tldrsh\tr1, [r6, r2]\n"
-        "\tldrh\tr2, [r0, #0]\n"
-        "\tmovs\tr3, #0\n"
-        "\tldrsh\tr0, [r0, r3]\n"
-        "\tcmp\tr1, r0\n"
-        "\tble .Lgarage080029764__080029854\n"
-        "\tstrh\tr2, [r6, #0]\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tadds\tr0, #150\n"
-        "\tldrh\tr1, [r0, #0]\n"
-        "\tadds\tr1, #1\n"
-        "\tstrh\tr1, [r0, #0]\n"
-        "\tadds\tr7, r4, #0\n"
-        "\tadds\tr7, #144\n"
-        "\tldrh\tr3, [r7, #0]\n"
-        "\tlsls\tr2, r3, #16\n"
-        "\tlsls\tr1, r1, #16\n"
-        "\tasrs\tr1, r1, #16\n"
-        "\tasrs\tr2, r2, #17\n"
-        "\tadds\tr3, r0, #0\n"
-        "\tcmp\tr1, r2\n"
-        "\tble .Lgarage080029764__080029814\n"
-        "\tldrh\tr1, [r5, #0]\n"
-        "\tmovs\tr2, #0\n"
-        "\tldrsh\tr0, [r5, r2]\n"
-        "\tcmp\tr0, #199\n"
-        "\tbgt .Lgarage080029764__080029814\n"
-        "\tldrh\tr2, [r6, #0]\n"
-        "\tlsls\tr0, r2, #16\n"
-        "\tasrs\tr0, r0, #20\n"
-        "\tadds\tr0, r1, r0\n"
-        "\tstrh\tr0, [r5, #0]\n"
-        "\tlsls\tr0, r0, #16\n"
-        "\tasrs\tr0, r0, #16\n"
-        "\tcmp\tr0, #200\n"
-        "\tble .Lgarage080029764__080029814\n"
-        "\tmovs\tr0, #0\n"
-        "\tldrsh\tr1, [r3, r0]\n"
-        "\tmovs\tr2, #0\n"
-        "\tldrsh\tr0, [r7, r2]\n"
-        "\tlsls\tr0, r0, #2\n"
-        "\tcmp\tr1, r0\n"
-        "\tbge .Lgarage080029764__080029814\n"
-        "\tmovs\tr0, #200\n"
-        "\tstrh\tr0, [r5, #0]\n"
-        ".Lgarage080029764__080029814:\n"
-        "\tmovs\tr7, #0\n"
-        "\tldrsh\tr0, [r3, r7]\n"
-        "\tadds\tr1, r4, #0\n"
-        "\tadds\tr1, #154\n"
-        "\tadds\tr7, r4, #0\n"
-        "\tadds\tr7, #140\n"
-        "\tldrh\tr1, [r1, #0]\n"
-        "\tcmp\tr0, r1\n"
-        "\tbgt .Lgarage080029764__080029828\n"
-        "\tb .Lgarage080029764__0800299A2\n"
-        ".Lgarage080029764__080029828:\n"
-        "\tldrh\tr1, [r6, #0]\n"
-        "\tlsls\tr0, r1, #5\n"
-        "\tldrh\tr2, [r5, #0]\n"
-        "\tadds\tr0, r2, r0\n"
-        "\tstrh\tr0, [r5, #0]\n"
-        "\tmovs\tr3, #0\n"
-        "\tldrsh\tr0, [r7, r3]\n"
-        "\tcmp\tr0, #0\n"
-        "\tble .Lgarage080029764__080029842\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tmovs\tr1, #20\n"
-        "\tbl sub_080029E30\n"
-        ".Lgarage080029764__080029842:\n"
-        "\tmovs\tr1, #0\n"
-        "\tldrsh\tr0, [r5, r1]\n"
-        "\tmovs\tr1, #250\n"
-        "\tlsls\tr1, r1, #3\n"
-        "\tcmp\tr0, r1\n"
-        "\tbgt .Lgarage080029764__080029850\n"
-        "\tb .Lgarage080029764__0800299A2\n"
-        ".Lgarage080029764__080029850:\n"
-        "\tstrh\tr1, [r5, #0]\n"
-        "\tb .Lgarage080029764__0800299A2\n"
-        ".Lgarage080029764__080029854:\n"
-        "\tadds\tr1, r4, #0\n"
-        "\tadds\tr1, #150\n"
-        "\tmovs\tr0, #0\n"
-        "\tstrh\tr0, [r1, #0]\n"
-        "\tb .Lgarage080029764__08002994C\n"
-        ".Lgarage080029764__08002985E:\n"
-        "\tmovs\tr0, #4\n"
-        "\tands\tr0, r1\n"
-        "\tlsls\tr0, r0, #24\n"
-        "\tlsrs\tr2, r0, #24\n"
-        "\tcmp\tr2, #0\n"
-        "\tbeq .Lgarage080029764__080029952\n"
-        "\tadds\tr2, r4, #0\n"
-        "\tadds\tr2, #110\n"
-        "\tmovs\tr3, #112\n"
-        "\tadds\tr3, r3, r4\n"
-        "\tmov\tip, r3\n"
-        "\tldrh\tr5, [r2, #0]\n"
-        "\tldrh\tr0, [r3, #0]\n"
-        "\tsubs\tr7, r5, r0\n"
-        "\tstrh\tr7, [r2, #0]\n"
-        "\tmovs\tr3, #0\n"
-        "\tldrsh\tr1, [r2, r3]\n"
-        "\tadds\tr3, r4, #0\n"
-        "\tadds\tr3, #134\n"
-        "\tldrh\tr5, [r3, #0]\n"
-        "\tlsls\tr0, r5, #16\n"
-        "\tasrs\tr0, r0, #17\n"
-        "\tadds\tr1, r1, r0\n"
-        "\tadds\tr6, r2, #0\n"
-        "\tadds\tr5, r3, #0\n"
-        "\tcmp\tr1, #32\n"
-        "\tble .Lgarage080029764__08002989C\n"
-        "\tmov\tr1, ip\n"
-        "\tldrh\tr1, [r1, #0]\n"
-        "\tsubs\tr0, r7, r1\n"
-        "\tstrh\tr0, [r6, #0]\n"
-        ".Lgarage080029764__08002989C:\n"
-        "\tmovs\tr2, #0\n"
-        "\tldrsh\tr1, [r6, r2]\n"
-        "\tadds\tr2, r4, #0\n"
-        "\tadds\tr2, #114\n"
-        "\tmovs\tr3, #0\n"
-        "\tldrsh\tr0, [r2, r3]\n"
-        "\tcmn\tr1, r0\n"
-        "\tbge .Lgarage080029764__080029944\n"
-        "\tldrh\tr2, [r2, #0]\n"
-        "\tnegs\tr0, r2\n"
-        "\tstrh\tr0, [r6, #0]\n"
-        "\tadds\tr2, r4, #0\n"
-        "\tadds\tr2, #150\n"
-        "\tldrh\tr0, [r2, #0]\n"
-        "\tadds\tr0, #1\n"
-        "\tstrh\tr0, [r2, #0]\n"
-        "\tmovs\tr7, #144\n"
-        "\tadds\tr7, r7, r4\n"
-        "\tmov\tr8, r7\n"
-        "\tldrh\tr3, [r7, #0]\n"
-        "\tlsls\tr1, r3, #16\n"
-        "\tlsls\tr0, r0, #16\n"
-        "\tasrs\tr0, r0, #16\n"
-        "\tasrs\tr1, r1, #17\n"
-        "\tadds\tr3, r2, #0\n"
-        "\tcmp\tr0, r1\n"
-        "\tble .Lgarage080029764__080029906\n"
-        "\tldrh\tr1, [r5, #0]\n"
-        "\tmovs\tr7, #0\n"
-        "\tldrsh\tr0, [r5, r7]\n"
-        "\tmovs\tr2, #200\n"
-        "\tnegs\tr2, r2\n"
-        "\tcmp\tr0, r2\n"
-        "\tble .Lgarage080029764__080029906\n"
-        "\tldrh\tr7, [r6, #0]\n"
-        "\tlsls\tr0, r7, #16\n"
-        "\tasrs\tr0, r0, #20\n"
-        "\tadds\tr0, r1, r0\n"
-        "\tstrh\tr0, [r5, #0]\n"
-        "\tlsls\tr0, r0, #16\n"
-        "\tasrs\tr0, r0, #16\n"
-        "\tcmp\tr0, r2\n"
-        "\tbge .Lgarage080029764__080029906\n"
-        "\tmovs\tr1, #0\n"
-        "\tldrsh\tr0, [r3, r1]\n"
-        "\tmov\tip, r0\n"
-        "\tmov\tr7, r8\n"
-        "\tmovs\tr1, #0\n"
-        "\tldrsh\tr0, [r7, r1]\n"
-        "\tlsls\tr0, r0, #2\n"
-        "\tcmp\tip, r0\n"
-        "\tbge .Lgarage080029764__080029906\n"
-        "\tstrh\tr2, [r5, #0]\n"
-        ".Lgarage080029764__080029906:\n"
-        "\tmovs\tr2, #0\n"
-        "\tldrsh\tr0, [r3, r2]\n"
-        "\tadds\tr1, r4, #0\n"
-        "\tadds\tr1, #154\n"
-        "\tadds\tr7, r4, #0\n"
-        "\tadds\tr7, #140\n"
-        "\tldrh\tr1, [r1, #0]\n"
-        "\tcmp\tr0, r1\n"
-        "\tble .Lgarage080029764__0800299A2\n"
-        "\tldrh\tr3, [r6, #0]\n"
-        "\tlsls\tr0, r3, #5\n"
-        "\tldrh\tr1, [r5, #0]\n"
-        "\tadds\tr0, r1, r0\n"
-        "\tstrh\tr0, [r5, #0]\n"
-        "\tmovs\tr2, #0\n"
-        "\tldrsh\tr0, [r7, r2]\n"
-        "\tcmp\tr0, #0\n"
-        "\tble .Lgarage080029764__080029932\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tmovs\tr1, #20\n"
-        "\tbl sub_080029E30\n"
-        ".Lgarage080029764__080029932:\n"
-        "\tmovs\tr3, #0\n"
-        "\tldrsh\tr0, [r5, r3]\n"
-        "\tldr r1, .Lgarage080029764__080029940\n"
-        "\tcmp\tr0, r1\n"
-        "\tbge .Lgarage080029764__0800299A2\n"
-        "\tstrh\tr1, [r5, #0]\n"
-        "\tb .Lgarage080029764__0800299A2\n"
-        ".Lgarage080029764__080029940: .word 0xFFFFF830\n"
-        ".Lgarage080029764__080029944:\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tadds\tr0, #150\n"
-        "\tmov\tr5, r8\n"
-        "\tstrh\tr5, [r0, #0]\n"
-        ".Lgarage080029764__08002994C:\n"
-        "\tadds\tr7, r4, #0\n"
-        "\tadds\tr7, #140\n"
-        "\tb .Lgarage080029764__0800299A2\n"
-        ".Lgarage080029764__080029952:\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tadds\tr0, #150\n"
-        "\tstrh\tr2, [r0, #0]\n"
-        "\tsubs\tr0, #40\n"
-        "\tldrh\tr3, [r0, #0]\n"
-        "\tmovs\tr7, #0\n"
-        "\tldrsh\tr1, [r0, r7]\n"
-        "\tadds\tr6, r0, #0\n"
-        "\tcmp\tr1, #0\n"
-        "\tble .Lgarage080029764__08002997E\n"
-        "\tadds\tr0, #2\n"
-        "\tldrh\tr0, [r0, #0]\n"
-        "\tlsls\tr0, r0, #16\n"
-        "\tasrs\tr0, r0, #17\n"
-        "\tsubs\tr0, r3, r0\n"
-        "\tstrh\tr0, [r6, #0]\n"
-        "\tlsls\tr0, r0, #16\n"
-        "\tadds\tr7, r4, #0\n"
-        "\tadds\tr7, #140\n"
-        "\tcmp\tr0, #0\n"
-        "\tbge .Lgarage080029764__0800299A2\n"
-        "\tstrh\tr2, [r6, #0]\n"
-        ".Lgarage080029764__08002997E:\n"
-        "\tldrh\tr1, [r6, #0]\n"
-        "\tmovs\tr3, #0\n"
-        "\tldrsh\tr0, [r6, r3]\n"
-        "\tadds\tr7, r4, #0\n"
-        "\tadds\tr7, #140\n"
-        "\tcmp\tr0, #0\n"
-        "\tbge .Lgarage080029764__0800299A2\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tadds\tr0, #112\n"
-        "\tldrh\tr0, [r0, #0]\n"
-        "\tlsls\tr0, r0, #16\n"
-        "\tasrs\tr0, r0, #17\n"
-        "\tadds\tr0, r1, r0\n"
-        "\tstrh\tr0, [r6, #0]\n"
-        "\tlsls\tr0, r0, #16\n"
-        "\tcmp\tr0, #0\n"
-        "\tble .Lgarage080029764__0800299A2\n"
-        "\tstrh\tr2, [r6, #0]\n"
-        ".Lgarage080029764__0800299A2:\n"
-        "\tmovs\tr5, #0\n"
-        "\tldrsh\tr2, [r6, r5]\n"
-        "\tadds\tr1, r7, #0\n"
-        "\tmovs\tr3, #0\n"
-        "\tldrsh\tr0, [r1, r3]\n"
-        "\tlsls\tr0, r0, #1\n"
-        "\tcmp\tr2, r0\n"
-        "\tble .Lgarage080029764__0800299B8\n"
-        "\tldrh\tr1, [r1, #0]\n"
-        "\tlsls\tr0, r1, #1\n"
-        "\tb .Lgarage080029764__0800299C2\n"
-        ".Lgarage080029764__0800299B8:\n"
-        "\tcmn\tr2, r0\n"
-        "\tbge .Lgarage080029764__0800299C4\n"
-        "\tldrh\tr7, [r7, #0]\n"
-        "\tlsls\tr0, r7, #1\n"
-        "\tnegs\tr0, r0\n"
-        ".Lgarage080029764__0800299C2:\n"
-        "\tstrh\tr0, [r6, #0]\n"
-        ".Lgarage080029764__0800299C4:\n"
-        "\tmovs\tr5, #0\n"
-        "\tldrsh\tr1, [r6, r5]\n"
-        "\tldr\tr0, [r4, #32]\n"
-        "\tadds\tr0, r0, r1\n"
-        "\tstr\tr0, [r4, #32]\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tbl sub_0800295F4\n"
-        "\tpop\t{r3}\n"
-        "\tmov\tr8, r3\n"
-        "\tpop\t{r4, r5, r6, r7}\n"
-        "\tpop\t{r0}\n"
-        "\tbx\tr0\n"
-        "\tmovs\tr0, r0\n"
-        ".syntax divided\n"
-    );
+void _080029764(void *rec_)
+{
+  u8 *r = (u8 *) rec_;
+  u16 new_var;
+
+    register u8 flags __asm__("r1") = *(volatile u8 *)(r + 159);
+  u8 m = (u8) (flags & 8u);
+
+    u16 f8 = m;
+  if (m != 0)
+  {
+    int sum;
+    *((u16 *) (r + 110)) = (sum = (*((u16 *) (r + 112))) + (*((u16 *) (r + 110))));
+    if (((*((s16 *) (r + 110))) + (((s16) (*((u16 *) (r + 134)))) >> 1)) < (-32))
+    {
+      *((u16 *) (r + 110)) = (u16) ((*((u16 *) (r + 112))) + sum);
+    }
+    if ((*((s16 *) (r + 110))) > (*((s16 *) (r + 114))))
+    {
+      *((u16 *) (r + 110)) = *((u16 *) (r + 114));
+      *((u16 *) (r + 150)) += 1;
+      if ((*((s16 *) (r + 150))) > (((s16) (*((u16 *) (r + 144)))) >> 1))
+      {
+        if ((*((s16 *) (r + 134))) <= 199)
+        {
+          *((u16 *) (r + 134)) += ((s16) (*((u16 *) (r + 110)))) >> 4;
+          if ((*((s16 *) (r + 134))) > 200)
+          {
+            if ((*((s16 *) (r + 150))) < ((*((s16 *) (r + 144))) << 2))
+            {
+              *((u16 *) (r + 134)) = 200;
+            }
+          }
+        }
+      }
+      if ((*((s16 *) (r + 150))) > ((s32) (*((u16 *) (r + 154)))))
+      {
+        *((u16 *) (r + 134)) += ((s16) (*((u16 *) (r + 110)))) << 5;
+        if ((*((s16 *) (r + 140))) > 0)
+        {
+          _080029E30(r, 20);
+        }
+        if ((*((s16 *) (r + 134))) > 2000)
+        {
+          *((u16 *) (r + 134)) = 2000;
+        }
+      }
+    }
+    else
+    {
+      *((u16 *) (r + 150)) = 0;
+    }
+  }
+  else
+    if (((u8) (flags & 4u)) != 0)
+  {
+    int d = (*((u16 *) (r + 110))) - (*((u16 *) (r + 112)));
+    *((u16 *) (r + 110)) = d;
+    if (((*((s16 *) (r + 110))) + (((s16) (*((u16 *) (r + 134)))) >> 1)) > 32)
+    {
+      *((u16 *) (r + 110)) = (u16) (d - (*((u16 *) (r + 112))));
+    }
+    if ((*((s16 *) (r + 110))) < (-(*((s16 *) (r + 114)))))
+    {
+      *((u16 *) (r + 110)) = (u16) (-((s32) (*((u16 *) (r + 114)))));
+      *((u16 *) (r + 150)) += 1;
+      if ((*((s16 *) (r + 150))) > (((s16) (*((u16 *) (r + 144)))) >> 1))
+      {
+        if ((*((s16 *) (r + 134))) > (-200))
+        {
+          *((u16 *) (r + 134)) += ((s16) (*((u16 *) (r + 110)))) >> 4;
+          if ((*((s16 *) (r + 134))) < (-200))
+          {
+            if ((*((s16 *) (r + 150))) < ((*((s16 *) (r + 144))) << 2))
+            {
+              int lo = -200;
+              *((u16 *) (r + 134)) = lo;
+            }
+          }
+        }
+      }
+      new_var = (u16) (-2000);
+      if ((*((s16 *) (r + 150))) > ((s32) (*((u16 *) (r + 154)))))
+      {
+        *((u16 *) (r + 134)) += ((s16) (*((u16 *) (r + 110)))) << 5;
+        if ((*((s16 *) (r + 140))) > 0)
+        {
+          _080029E30(r, 20);
+        }
+        if ((*((s16 *) (r + 134))) < (-2000))
+        {
+          *((u16 *) (r + 134)) = new_var;
+        }
+      }
+    }
+    else
+    {
+      *((u16 *) (r + 150)) = f8;
+    }
+  }
+  else
+  {
+    *((u16 *) (r + 150)) = 0;
+    if ((*((s16 *) (r + 110))) > 0)
+    {
+      *((u16 *) (r + 110)) = (u16) ((*((u16 *) (r + 110))) - (((s16) (*((u16 *) (r + 112)))) >> 1));
+      if ((*((s16 *) (r + 110))) < 0)
+      {
+        *((u16 *) (r + 110)) = 0;
+      }
+    }
+    if ((*((s16 *) (r + 110))) < 0)
+    {
+      *((u16 *) (r + 110)) = (u16) ((*((u16 *) (r + 110))) + (((s16) (*((u16 *) (r + 112)))) >> 1));
+      if ((*((s16 *) (r + 110))) > 0)
+      {
+        *((u16 *) (r + 110)) = 0;
+      }
+    }
+  }
+__asm__ volatile ("");
+  {
+    int two;
+    if ((*((s16 *) (r + 110))) > (((s32) (*((s16 *) (r + 140)))) * 2))
+    {
+      *((u16 *) (r + 110)) = (u16) ((*((u16 *) (r + 140))) << 1);
+    }
+    else
+      if ((*((s16 *) (r + 110))) < (-(((s32) (*((s16 *) (r + 140)))) * 2)))
+    {
+      *((u16 *) (r + 110)) = (u16) (-((s32) ((*((u16 *) (r + 140))) << 1)));
+    }
+    *((s32 *) (r + 32)) += *((s16 *) (r + 110));
+    _0800295F4(r);
+  }
 }
+__asm__(".align 2, 0");
 // ----------------------------------------------------------------------------
 // 0x080299E0 — heading corrector (140>199 gate; 294C0/2937C/295F4).
 // ----------------------------------------------------------------------------
