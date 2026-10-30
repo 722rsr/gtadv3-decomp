@@ -44,6 +44,13 @@ HOST_STUB(int   _08002587C(int x));                                  // 0x080025
 extern int _0802581C(int x);   // 0x08002581C lineup probe
 extern int _0802587C(int x);   // 0x08002587C lineup probe
 extern void sub_0802B368(int v); // closure spelling for 0x0802B368
+// Closure spellings used by the plain-C bodies in this TU (the matching build
+// resolves them through the splicer; the host/equivalence build needs the
+// prototypes so the bodies type-check without implicit declarations).
+extern s16  _0802584C(int x);                                    // 0x0802584C table lookup
+extern void sub_08007770(int a, int b, int c, int d, int e, int f); // 0x08007770 6 machine args
+extern int  sub_080258A8(int idx);                               // 0x080258A8 numeric_leaves
+extern void sub_08007ABC(int a, int b, int c);                   // 0x08007ABC resource bind
 HOST_STUB(s16   _0800258A8(int idx));                                // 0x0800258A8 numeric_leaves
 HOST_STUB(s16   _0800258B8(int x));                                  // 0x0800258B8 course_cal cup
 HOST_STUB(s16   _0800258CC(int x));                                  // 0x0800258CC course_cal seq
@@ -232,235 +239,94 @@ void _08001FF7C(void *rec0) {
 
 void sub_08001FF7C(void *rec0) __attribute__((alias("_08001FF7C")));
 
-// ---- 0x0801FFD4 — key handler: countdown latch, lane tick, reselect + pools {0x08344450 x2} ----
-__attribute__((naked)) void _08001FFD4(void *rec0, int a1, int a2) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "\tpush\t{r4, r5, r6, r7, lr}\n"
-        "\tmov\tr7, r8\n"
-        "\tpush\t{r7}\n"
-        "\tsub\tsp, #8\n"
-        "\tadds\tr4, r0, #0\n"
-        "\tlsls\tr1, r1, #16\n"
-        "\tlsrs\tr5, r1, #16\n"
-        "\tlsls\tr2, r2, #16\n"
-        "\tlsrs\tr2, r2, #16\n"
-        "\tldrh\tr0, [r4, #26]\n"
-        "\tmov\tr8, r0\n"
-        "\tmovs\tr1, #28\n"
-        "\tldrsh\tr0, [r4, r1]\n"
-        "\tmovs\tr7, #1\n"
-        "\tcmp\tr0, #31\n"
-        "\tbgt .Lrace_08001ffd4_08001FFF6\n"
-        "\tmovs\tr7, #0\n"
-        ".Lrace_08001ffd4_08001FFF6:\n"
-        "\tsubs\tr0, r2, #1\n"
-        "\tlsls\tr0, r0, #16\n"
-        "\tlsrs\tr0, r0, #16\n"
-        "\tcmp\tr0, #1\n"
-        "\tbhi .Lrace_08001ffd4_080020012\n"
-        "\tmovs\tr0, #4\n"
-        "\tbl 0x0802B368\n"
-        "\tmovs\tr1, #10\n"
-        "\tstr\tr1, [r4, #32]\n"
-        "\tmovs\tr0, #0\n"
-        "\tstrh\tr0, [r4, #36]\n"
-        "\tstr\tr1, [r4, #64]\n"
-        "\tstr\tr0, [r4, #60]\n"
-        ".Lrace_08001ffd4_080020012:\n"
-        "\tmovs\tr0, #32\n"
-        "\tands\tr0, r5\n"
-        "\tadds\tr1, r4, #0\n"
-        "\tadds\tr1, #152\n"
-        "\tcmp\tr0, #0\n"
-        "\tbeq .Lrace_08001ffd4_080020030\n"
-        "\tmovs\tr2, #0\n"
-        "\tldrsh\tr0, [r1, r2]\n"
-        "\tcmp\tr0, #0\n"
-        "\tbgt .Lrace_08001ffd4_080020030\n"
-        "\tldrh\tr0, [r4, #28]\n"
-        "\tsubs\tr0, #1\n"
-        "\tstrh\tr0, [r4, #28]\n"
-        "\tmovs\tr0, #10\n"
-        "\tstrh\tr0, [r1, #0]\n"
-        ".Lrace_08001ffd4_080020030:\n"
-        "\tmovs\tr0, #16\n"
-        "\tands\tr0, r5\n"
-        "\tcmp\tr0, #0\n"
-        "\tbeq .Lrace_08001ffd4_08002004A\n"
-        "\tmovs\tr2, #0\n"
-        "\tldrsh\tr0, [r1, r2]\n"
-        "\tcmp\tr0, #0\n"
-        "\tbgt .Lrace_08001ffd4_08002004A\n"
-        "\tldrh\tr0, [r4, #28]\n"
-        "\tadds\tr0, #1\n"
-        "\tstrh\tr0, [r4, #28]\n"
-        "\tmovs\tr0, #10\n"
-        "\tstrh\tr0, [r1, #0]\n"
-        ".Lrace_08001ffd4_08002004A:\n"
-        "\tldrh\tr0, [r1, #0]\n"
-        "\tsubs\tr0, #1\n"
-        "\tmovs\tr2, #0\n"
-        "\tstrh\tr0, [r1, #0]\n"
-        "\tlsls\tr0, r0, #16\n"
-        "\tcmp\tr0, #0\n"
-        "\tbgt .Lrace_08001ffd4_08002005A\n"
-        "\tstrh\tr2, [r1, #0]\n"
-        ".Lrace_08001ffd4_08002005A:\n"
-        "\tmovs\tr1, #28\n"
-        "\tldrsh\tr0, [r4, r1]\n"
-        "\tcmp\tr0, #33\n"
-        "\tble .Lrace_08001ffd4_080020066\n"
-        "\tmovs\tr0, #34\n"
-        "\tstrh\tr0, [r4, #28]\n"
-        ".Lrace_08001ffd4_080020066:\n"
-        "\tmovs\tr1, #28\n"
-        "\tldrsh\tr0, [r4, r1]\n"
-        "\tcmp\tr0, #0\n"
-        "\tbge .Lrace_08001ffd4_080020070\n"
-        "\tstrh\tr2, [r4, #28]\n"
-        ".Lrace_08001ffd4_080020070:\n"
-        "\tmovs\tr2, #28\n"
-        "\tldrsh\tr0, [r4, r2]\n"
-        "\tcmp\tr0, #31\n"
-        "\tbgt .Lrace_08001ffd4_080020082\n"
-        "\tbl 0x0802580C\n"
-        "\tstrh\tr0, [r4, #26]\n"
-        "\tmovs\tr0, #0\n"
-        "\tb .Lrace_08001ffd4_080020090\n"
-        ".Lrace_08001ffd4_080020082:\n"
-        "\tmovs\tr2, #28\n"
-        "\tldrsh\tr0, [r4, r2]\n"
-        "\tsubs\tr0, #32\n"
-        "\tbl 0x0802584C\n"
-        "\tstrh\tr0, [r4, #26]\n"
-        "\tmovs\tr0, #1\n"
-        ".Lrace_08001ffd4_080020090:\n"
-        "\tlsls\tr0, r0, #16\n"
-        "\tasrs\tr5, r0, #16\n"
-        "\tadds\tr6, r0, #0\n"
-        "\tcmp\tr7, r5\n"
-        "\tbeq .Lrace_08001ffd4_0800200D4\n"
-        "\tmovs\tr0, #0\n"
-        "\tmovs\tr1, #1\n"
-        "\tbl 0x080050B4\n"
-        "\tcmp\tr5, #0\n"
-        "\tbne .Lrace_08001ffd4_0800200C0\n"
-        "\tldr r1, .Lrace_08001ffd4_0800200BC\n"
-        "\tmovs\tr0, #4\n"
-        "\tstr\tr0, [sp, #0]\n"
-        "\tmovs\tr0, #1\n"
-        "\tstr\tr0, [sp, #4]\n"
-        "\tmovs\tr0, #0\n"
-        "\tmovs\tr2, #3\n"
-        "\tmovs\tr3, #0\n"
-        "\tbl sub_08007770\n"
-        "\tb .Lrace_08001ffd4_0800200D4\n"
-        ".Lrace_08001ffd4_0800200BC: .word 0x08344450\n"
-        ".Lrace_08001ffd4_0800200C0:\n"
-        "\tldr r1, .Lrace_08001ffd4_080020130\n"
-        "\tmovs\tr0, #4\n"
-        "\tstr\tr0, [sp, #0]\n"
-        "\tmovs\tr0, #1\n"
-        "\tstr\tr0, [sp, #4]\n"
-        "\tmovs\tr0, #0\n"
-        "\tmovs\tr2, #4\n"
-        "\tmovs\tr3, #0\n"
-        "\tbl sub_08007770\n"
-        ".Lrace_08001ffd4_0800200D4:\n"
-        "\tldrh\tr0, [r4, #26]\n"
-        "\tcmp\tr0, r8\n"
-        "\tbeq .Lrace_08001ffd4_08002018A\n"
-        "\tmovs\tr0, #3\n"
-        "\tbl 0x0802B368\n"
-        "\tmovs\tr1, #26\n"
-        "\tldrsh\tr0, [r4, r1]\n"
-        "\tbl 0x080258A8\n"
-        "\tadds\tr1, r0, #0\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tadds\tr0, #180\n"
-        "\tlsls\tr1, r1, #16\n"
-        "\tasrs\tr1, r1, #16\n"
-        "\tstr\tr1, [r0, #0]\n"
-        "\tldr\tr0, [r4, #12]\n"
-        "\tadds\tr2, r4, #0\n"
-        "\tadds\tr2, #176\n"
-        "\tldr\tr2, [r2, #0]\n"
-        "\tbl sub_08007ABC\n"
-        "\tcmp\tr6, #0\n"
-        "\tbne .Lrace_08001ffd4_080020134\n"
-        "\tmovs\tr2, #26\n"
-        "\tldrsh\tr0, [r4, r2]\n"
-        "\tbl 0x080258B8\n"
-        "\tlsls\tr0, r0, #16\n"
-        "\tasrs\tr0, r0, #16\n"
-        "\tbl _08001F9EC\n"
-        "\tadds\tr1, r0, #0\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tadds\tr0, #192\n"
-        "\tlsls\tr1, r1, #16\n"
-        "\tasrs\tr1, r1, #16\n"
-        "\tstr\tr1, [r0, #0]\n"
-        "\tldr\tr0, [r4, #20]\n"
-        "\tadds\tr2, r4, #0\n"
-        "\tadds\tr2, #188\n"
-        "\tldr\tr2, [r2, #0]\n"
-        "\tbl sub_08007ABC\n"
-        "\tb .Lrace_08001ffd4_080020148\n"
-        "\tmovs\tr0, r0\n"
-        ".Lrace_08001ffd4_080020130: .word 0x08344450\n"
-        ".Lrace_08001ffd4_080020134:\n"
-        "\tadds\tr1, r4, #0\n"
-        "\tadds\tr1, #192\n"
-        "\tmovs\tr0, #13\n"
-        "\tstr\tr0, [r1, #0]\n"
-        "\tldr\tr0, [r4, #20]\n"
-        "\tsubs\tr1, #4\n"
-        "\tldr\tr2, [r1, #0]\n"
-        "\tmovs\tr1, #13\n"
-        "\tbl sub_08007ABC\n"
-        ".Lrace_08001ffd4_080020148:\n"
-        "\tcmp\tr6, #0\n"
-        "\tbne .Lrace_08001ffd4_080020176\n"
-        "\tmovs\tr1, #26\n"
-        "\tldrsh\tr0, [r4, r1]\n"
-        "\tbl 0x080258CC\n"
-        "\tlsls\tr0, r0, #16\n"
-        "\tasrs\tr0, r0, #16\n"
-        "\tbl _08001F9FC\n"
-        "\tadds\tr1, r0, #0\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tadds\tr0, #204\n"
-        "\tlsls\tr1, r1, #16\n"
-        "\tasrs\tr1, r1, #16\n"
-        "\tstr\tr1, [r0, #0]\n"
-        "\tldr\tr0, [r4, #20]\n"
-        "\tadds\tr2, r4, #0\n"
-        "\tadds\tr2, #200\n"
-        "\tldr\tr2, [r2, #0]\n"
-        "\tbl sub_08007ABC\n"
-        "\tb .Lrace_08001ffd4_08002018A\n"
-        ".Lrace_08001ffd4_080020176:\n"
-        "\tadds\tr1, r4, #0\n"
-        "\tadds\tr1, #204\n"
-        "\tmovs\tr0, #14\n"
-        "\tstr\tr0, [r1, #0]\n"
-        "\tldr\tr0, [r4, #20]\n"
-        "\tsubs\tr1, #4\n"
-        "\tldr\tr2, [r1, #0]\n"
-        "\tmovs\tr1, #14\n"
-        "\tbl sub_08007ABC\n"
-        ".Lrace_08001ffd4_08002018A:\n"
-        "\tadd\tsp, #8\n"
-        "\tpop\t{r3}\n"
-        "\tmov\tr8, r3\n"
-        "\tpop\t{r4, r5, r6, r7}\n"
-        "\tpop\t{r0}\n"
-        "\tbx\tr0\n"
-        "\tmovs\tr0, r0\n"
-        ".syntax divided\n"
-    );
+struct AsmLift_Struct0 { u8 _pad0[12]; s32 field_12; u8 _pad1[4]; s32 field_20; u8 _pad2[2]; u16 field_26; union { u16 uhalf; s16 shalf; } field_28; s32 field_32; u16 field_36; u8 _pad3[22]; s32 field_60; s32 field_64; u8 _pad4[108]; s32 field_176; s32 field_180; u8 _pad5[4]; s32 field_188; s32 field_192; u8 _pad6[4]; s32 field_200; s32 field_204; };
+void _08001FFD4(void *rec0, int a1, int a2) {
+    struct AsmLift_Struct0 *a0 = (struct AsmLift_Struct0 *)rec0;
+    u16 q2;
+    u16 zero;
+    u16 v0;
+    s32 v1;
+    s32 v2;
+    s16 v3;
+    s16 v4;
+    s16 v5;
+    s32 v6;
+    s32 v7;
+    v0 = a1;
+    q2 = (u16)a2;
+    v1 = a0->field_26;
+    if (a0->field_28.shalf <= 31) {
+        v6 = 0;
+    } else {
+        v6 = 1;
+    }
+    if ((u16)(q2 - 1) <= 1) {
+        sub_0802B368(4);
+        a0->field_32 = 10;
+        a0->field_36 = 0;
+        a0->field_64 = 10;
+        a0->field_60 = 0;
+    }
+    if ((32 & v0) != 0 && *(s16 *)((u8 *)a0 + 152 + 0) <= 0) {
+        a0->field_28.uhalf = a0->field_28.uhalf - 1;
+        *(u16 *)((u8 *)a0 + 152) = 10;
+    }
+    if ((16 & v0) != 0 && *(s16 *)((u8 *)a0 + 152 + 0) <= 0) {
+        a0->field_28.uhalf = a0->field_28.uhalf + 1;
+        *(u16 *)((u8 *)a0 + 152) = 10;
+    }
+    v2 = *(u16 *)((u8 *)a0 + 152) - 1;
+    __asm__ volatile("" : "+r"(v2));
+    zero = 0;
+    *(u16 *)((u8 *)a0 + 152) = v2;
+    if (v2 << 16 <= 0) *(u16 *)((u8 *)a0 + 152) = zero;
+    if (a0->field_28.shalf > 33) a0->field_28.uhalf = 34;
+    if (a0->field_28.shalf < 0) a0->field_28.uhalf = zero;
+    if (a0->field_28.shalf <= 31) {
+        a0->field_26 = _08002580C(a0->field_28.shalf);
+        v7 = 0;
+    } else {
+        register u16 h1 __asm__("r1");
+        s32 f;
+        __asm__ volatile("" : "=r"(h1));
+        f = a0->field_28.shalf;
+        __asm__ volatile("" : : "r"(h1));
+        a0->field_26 = _0802584C(f - 32);
+        v7 = 1;
+    }
+    if (v6 != (s16)v7) {
+        _080050B4(0, 1);
+        if ((s16)v7 == 0) {
+            sub_08007770(0, 137643088, 3, 0, 4, 1);
+        } else {
+            sub_08007770(0, 137643088, 4, 0, 4, 1);
+        }
+    }
+    if (a0->field_26 != v1) {
+        sub_0802B368(3);
+        v3 = sub_080258A8(((s16 *)a0)[13]);
+        a0->field_180 = v3;
+        sub_08007ABC(a0->field_12, v3, a0->field_176);
+        if (v7 << 16 == 0) {
+            v4 = _08001F9EC((s16)_080258B8(((s16 *)a0)[13]));
+            a0->field_192 = v4;
+            sub_08007ABC(a0->field_20, v4, a0->field_188);
+        } else {
+            *(s32 *)((u8 *)a0 + 192) = 13;
+            sub_08007ABC(a0->field_20, 13, *(s32 *)((u8 *)a0 + 192 - 4));
+        }
+        if (v7 << 16 == 0) {
+            v5 = _08001F9FC((s16)_080258CC(((s16 *)a0)[13]));
+            a0->field_204 = v5;
+            sub_08007ABC(a0->field_20, v5, a0->field_200);
+        } else {
+            *(s32 *)((u8 *)a0 + 204) = 14;
+            sub_08007ABC(a0->field_20, 14, *(s32 *)((u8 *)a0 + 204 - 4));
+        }
+    }
 }
+__asm__(".align 2, 0");
+
 
 // ---- 0x08020198 — key handler: byte-map integrate + car-record writeback + pools {0x03001D64, 0x03001DA0, 0x080CBC74, 0x080CBE74 x2, WA, 0x62A} ----
 void _080020198(void *rec0, int a1, int a2) {
