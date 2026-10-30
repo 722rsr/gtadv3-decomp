@@ -345,6 +345,18 @@ void sub_080014F60(void *a) __attribute__((alias("MenuFF78_14F60")));
 //     u32[rec+180+(d+1)*12] = (u32)(s32)s16[CB714+r0*2+22*s16[WA+0xFF6]];
 //     7ABC(u32[rec+4], val, u32[rec+176+(d+1)*12]).
 //   14078(rec).
+// MEASURED 2026-10-29: a full C draft reaches 696/732 bytes with 57% of the ROM
+// instructions inside matching runs. The body is armcc output over one global
+// CSE of the rec+offset pointers: the preheader build reuses the previous base
+// (`subs r3,#68` from 248, `subs r3,#136` from 180, `subs r2,#124` from 176,
+// `adds r0,#18` from 148, `adds r2,#116` from 52), and the outer loop head
+// re-materialises rec+156/158/160 each pass, which agbcc hoists out of the loop
+// (a `__asm__ volatile ("")` ahead of them does not stop it). What did land:
+// the prefix is byte-exact with `p32` pinned to r8 plus `p32 = p32r` before the
+// loop, a named zero shared by the block stores, and frame slots assigned in
+// declaration order (p180,p44,p52,p248,p148,p158,p160,p166,p168,p32,p176).
+// Remaining: those CSE base choices, the loop-head scheduling, and the
+// `i + 1` placement, which is what the tail's two blankets depend on.
 __attribute__((naked)) void MenuFF78_141AC(void *a) {
     __asm__ volatile (
         ".syntax unified\n"

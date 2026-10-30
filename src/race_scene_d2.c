@@ -62,6 +62,33 @@ static inline void W32(volatile u8 *p, u32 o, u32 v) { *(volatile u32 *)(p + o) 
 // ---- 0x08001EE2C — key/counter handler: setup latches + lane walk ----
 // Pools: {WA 0x03001780, table 0x080CBC24}. r0=rec, r1 dead, r2=(u16)c.
 // Entry snapshots: r7=u16[rec+142], r8=u16[rec+136] (compared at the tail).
+//
+// MEASURED 2026-10-29: C reaches 131/384 bytes (382 B candidate, first diff
+// +0x0A); the body has NO structural blocker left. Five spellings were
+// measured and are the levers to reuse:
+//  * `int c0` parameter + a named `u16 k = (u16)c0;` puts the narrowing after
+//    the rec copy (`adds r4,r0 / lsls r2,r2,#16`), which a `u16` parameter
+//    cannot: agbcc narrows parameters ahead of every user statement.
+//  * a plain (`volatile`-free) `s16` read through a `u16 *p = rec + 136`
+//    local gives the ROM's `movs rX,#0 / ldrsh rY,[p,rX]` index form; the
+//    volatile form emits `ldrh + lsls/asrs` instead. The `u16`-typed reads on
+//    the same cell must stay `volatile` or agbcc CSEs the two clamp loads.
+//  * the ROM's runtime `0xFC0` add (`movs r2,#252 / lsls r2,#4 / adds`) needs
+//    a laundered base: `u8 *wa = (u8 *)0x03001780u; __asm__ volatile ("" :
+//    "+r" (wa));` then `*(u16 *)(wa + 0xFC0)`. Any plain literal or symbol
+//    sum folds into ONE pool word (0x03002740) and loses the pair.
+//  * the four 10/0 stores want `u32 ten = 10; u32 zero = 0;` per block (one
+//    materialisation reused by both stores); function-scope locals spend a
+//    callee-saved register and reorder the whole frame.
+//  * the k==64 arm's merged store is reproduced with a label + `goto`
+//    (`if (z == 0) { nv = 3; goto store64; }`), not with if/else-if.
+// Residual is allocation only: key/p land r5/r6 against the ROM's r6/r5
+// (pinning p to r5 gives 131 but costs two rows elsewhere), the entry
+// `ldrh r7` is loaded via r0, the lane base and the `v` re-read schedule a
+// couple of instructions later, and the tail wants the ROM's fresh-base copy
+// (`adds r0,r4 / adds r0,#136 / movs r3,#0 / ldrsh r1,[r0,r3] / adds r2,r0`)
+// rather than reusing p. A `--sweep` over v/st/q/prev142/prev136 (2 rounds,
+// beam 2) reaches 123 on the pre-grid body; the grid above is the better base.
 // ----------------------------------------------------------------------------
 __attribute__((naked)) void _08001EE2C(void *rec0, u16 b, u16 c) {
     __asm__ volatile (

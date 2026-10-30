@@ -188,6 +188,11 @@ See [candidate-length diagnostics](findings/oversized_plus4_class.md).
   instruction asm splice; measured on `SoundChannelFreeAll` (0x0802BC84),
   where plain `flags & 199` scored PARTIAL 16/48 with the first difference
   at the test (+0x08).
+- agbcc *can* emit `cmn`, but only from the negated-operand spelling:
+  `if (a < -b)` (likewise `a >= -b`) lowers to `cmn a, b` + branch, while
+  the equivalent `if (a + b < 0)` always gives `adds` + `cmp #0`. Checked
+  with `tools/expr_probe.py`; it is what carried `_080029764`
+  (0x08029764) to 594/636 with the exact span.
 - A register-indexed signed byte read whose index differs from the destination
   (`ldrsb r2,[r4,r0]`) is not reachable from C with either shipped compiler:
   the constant path of `*extendqisi2_insn` reuses the destination as the
@@ -208,6 +213,25 @@ See [candidate-length diagnostics](findings/oversized_plus4_class.md).
   and cast at the dereference. See
   [the 0x08013108 lift](findings/menu_ff78_13108_lift.md) for the measured
   recipes behind a 728-byte body that reaches 708 bytes in C.
+- A constant added to a scaled index must be a *named value* when the ROM
+  materialises it separately (`mov r0,r8 / adds r0,#24 / adds r3,r3,r0`);
+  inline, combine folds it into the scale (`adds r3,#24 / add r3,r8`). A
+  pinned intermediate must keep its assignment inside the argument list: as
+  its own statement its live range covers another pin on the same register,
+  and the temp's address add clobbers it. See
+  [the 0x080148D8 lift](findings/menu_ff78_148d8_lift.md).
+- A dead clamp the ROM keeps -- an `if (v < 0) v = 0;` whose arm never reads
+  `v` -- is deleted by agbcc. An input-only empty asm *after* the assignment
+  (`"r"(v)`, no `"+r"`) makes the result live and restores the three
+  instructions; placed before the clamp it changes nothing. See
+  [the 0x080148D8 lift](findings/menu_ff78_148d8_lift.md).
+- An indexed read whose zero scratch the ROM keeps in a *different* register
+  than agbcc picks is reachable with a pair of empty asms around the read:
+  an output-only `"=r"(hold)` before it and an input-only `"r"(hold)` after.
+  The pair changes no bytes and stops the allocator reusing the scratch. The
+  same body shows a preheader fold: `off = z - 47` with `i = z` still live in
+  r0 emits the ROM's `subs r0,#47`, where a plain `-48` reloads i. See
+  [the 0x0801479C lift](findings/menu_ff78_1479c_lift.md).
 - A **pinned** base is copied before every load that uses it
   (`adds r0,r7,#0 / movs r1,#0 / ldrsh r0,[r0,r1]`); an **unpinned** local is
   read through directly (`movs r1,#0 / ldrsh r0,[r7,r1]`). A pinned variable

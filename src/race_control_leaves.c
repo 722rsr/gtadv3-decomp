@@ -147,6 +147,28 @@ void sub_080023E7C(void *a) __attribute__((alias("Code23E7C")));
 // _08023628 → scene_record_dispatch.c (RaceSceneCtor_23628).
 // 0x0802381C — 161 B, VMA 0x0802381C, pure Thumb, pools WA+0x10C3 (0x03001780+0x10C3), ctx+140 s16, ctx+20/16 etc.
 // Proven via 6000-frame trace: WA+0x10C3=0 (observed 0 all 200 snaps, so ldrb [r7]==1 branch not taken, bne to 0x2385A), race+140 s16 varying -26624..31650 (proves s16), but full CFG preserved.
+// 0x0802381C — parameter submit (0x08002158 kinds 0/1/2/3/6), event read
+// 0x08002178(r,1), lanes for ev 2 / 1 (sub 0,1) / 64 / 128, clamp to 0..1,
+// and a 0x0802B368(2) on change of u16[ctx+140].
+//
+// MEASURED 2026-10-29: C reaches the exact 316 B span and 97-112 of 143 rows.
+// The score is declaration-sensitive (an unused extra `u8 *` local moved a
+// 97-row body to 112 with no code change), so this body sits on an allocation
+// knife edge: sweep barriers on `c`/`wa` move it by at most 2 rows, and the
+// full 316-byte body needs the three items below pinned at once.
+// Residuals:
+//  * parameter-copy order. The ROM copies ctx to r5 at +0x06, then narrows
+//    a1 (r1) and a2 (r6). That order appears only with `int` parameters plus
+//    named `u16 n1 = (u16)a1; u16 n2 = (u16)a2;` locals, which homes ctx in r6;
+//    with `u16` parameters the two narrowings precede the ctx copy. Pinning
+//    ctx to r5 costs a third high-register save (+4 B, r9 enters the frame).
+//  * the ev==2 block shares 10 in r0 and 0 in r4 across c[16]/c[20]/c[48]/
+//    c[44]; named locals materialise them in r1/r0 and re-emit the zero.
+// `ev` pins to r6 (the ROM reuses n2's narrowed register). The 2-case switch
+// on `*(s16 *)(c+140)` still lowers to a linear `cmp #0 / cmp #1` chain where
+// the ROM emits the `emit_case_nodes` decision tree (`cmp #1 / beq`,
+// `cmp #1 / bgt`, `cmp #0 / bne`); an explicit `default: break;` does not
+// change it, so the tree is a third open item on this body.
 __attribute__((naked)) void Code2381C(void *ctx, int a1, int a2) {
     __asm__ volatile (
         ".syntax unified\n"

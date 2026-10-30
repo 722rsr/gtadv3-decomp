@@ -109,11 +109,9 @@
    "size": 148
   },
   "0x08000af4": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 112,
-    "naked": true
+    "pin": 2
    },
    "file": "src/foundation_handlers.c",
    "name": "EWRAM_Handler_BlobA",
@@ -3277,11 +3275,10 @@
    "size": 344
   },
   "0x08007368": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 138,
-    "naked": true
+    "barrier": 29,
+    "pin": 26
    },
    "file": "src/runtime_record_helpers.c",
    "name": "_08007368",
@@ -6163,22 +6160,21 @@
    "size": 204
   },
   "0x0801479c": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 144,
-    "naked": true
+    "barrier": 5,
+    "directive": 1,
+    "pin": 19
    },
    "file": "src/menu_ff78_n.c",
    "name": "MenuFF78_1479C",
    "size": 316
   },
   "0x080148d8": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 150,
-    "naked": true
+    "barrier": 1,
+    "pin": 10
    },
    "file": "src/menu_ff78_n.c",
    "name": "MenuFF78_148D8",
@@ -11349,11 +11345,10 @@
    "size": 152
   },
   "0x080295f4": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 176,
-    "naked": true
+    "barrier": 4,
+    "pin": 4
    },
    "file": "src/garage_records.c",
    "name": "_0800295F4",
@@ -13227,16 +13222,16 @@
  },
  "totals": {
   "asm": {
-   "bytes": 51476,
-   "functions": 135
+   "bytes": 49952,
+   "functions": 130
   },
   "c": {
    "bytes": 44326,
    "functions": 876
   },
   "c_fakematch": {
-   "bytes": 92134,
-   "functions": 661
+   "bytes": 93658,
+   "functions": 666
   },
   "partial": {
    "bytes": 200,
