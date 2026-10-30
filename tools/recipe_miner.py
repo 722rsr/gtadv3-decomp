@@ -1089,7 +1089,7 @@ def self_test() -> int:
     # --- signedness must never merge ------------------------------------
     signed = A.replace("u16", "s16")
     try:
-        merged = anti_unify_functions([parsed_a, parse_source(signed)], "signedness")
+        anti_unify_functions([parsed_a, parse_source(signed)], "signedness")
         merged_ok = True
     except ValueError:
         merged_ok = False

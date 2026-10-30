@@ -30,7 +30,7 @@ import argparse
 import json
 import re
 import sys
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -1241,7 +1241,7 @@ def synthesize(name: str, out: Path, return_type: str, memory: str, budget: int,
     try:
         shape = analyse(rom, contract)
     except kit.Unsupported as exc:
-        payload = writer.finish({"draft_status": kit.UNSUPPORTED_CONTRACT,
+        writer.finish({"draft_status": kit.UNSUPPORTED_CONTRACT,
                                  "reason": str(exc), "results": []})
         print(f"UNSUPPORTED_CONTRACT: {exc}")
         return 2

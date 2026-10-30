@@ -450,7 +450,7 @@ def self_test() -> None:
     print("wall_census self-test: PASS")
 
 
-def main() -> None:
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--class", dest="wall", choices=sorted(RANK),
@@ -465,11 +465,11 @@ def main() -> None:
     parser.add_argument("--lift-screen", action="store_true",
                         help="screen the raw rows for non-agbcc instruction idioms")
     parser.add_argument("--self-test", action="store_true")
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     if args.self_test:
         self_test()
-        return
+        return 0
 
     rows = census(args.snapshot)
     excluded: list[dict] = []
@@ -486,7 +486,8 @@ def main() -> None:
     if args.top:
         rows = rows[:args.top]
     print(render(rows, excluded))
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

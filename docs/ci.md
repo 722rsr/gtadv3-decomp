@@ -4,6 +4,8 @@
 
 `.github/workflows/ci.yml` runs one Ubuntu job for pull requests, pushes to
 `main`, and manual dispatches. It runs `make ci-check` with the runner's Python;
+the seed adapter and packet builder contribute pure, dependency-free self-tests
+to that target (asmlift itself is optional and never needed in CI).
 there are no dependency downloads, compiler builds, ROM secrets, caches,
 scheduled jobs, or build matrices. The job has a five-minute timeout and cancels
 superseded runs for the same branch or pull request. Feature-branch pushes do

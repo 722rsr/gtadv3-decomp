@@ -35,6 +35,20 @@ python3 tools/corpus_match_probe.py --function NAME --c89 --require-all --requir
 make fast-check
 ```
 
+For a body that is still assembly, start with a packet instead of a probe:
+
+```sh
+python3 tools/wall_census.py --lift-screen
+python3 tools/lift_packet.py 0x0801EFAC
+```
+
+The packet collects the ROM prologue, ROM-derived arity, callers, callees,
+literal references, nearest decompiled siblings, existing findings, and an
+optional `asmlift` seed. An asmlift seed is advisory: it compiles in isolation
+and is scored against the fixed ROM span, but it is not selected source. Review
+its ABI and access widths, replace it with readable C in the owning translation
+unit, then run the focused probe and the independent-link gates above.
+
 Add `--diff` to print the aligned ROM-vs-candidate listing for a body that is
 not exact: agreeing-instruction count, each differing pair with its offset and
 kind (`register`, `memory-offset`, `call-target`, ...), and the unmatched runs.

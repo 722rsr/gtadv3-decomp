@@ -32,6 +32,9 @@ Outputs belong under ignored `build/` or `assets/`.
 | `decomp_report.py` | Generate and verify the objdiff v2 progress snapshot (matched = decompiled C only). |
 | `source_quality.py` | Classify each selected function as `asm`, `partial`, `c_fakematch`, or `c`; decides what counts as decompiled. |
 | `update_progress.py` | Automate progress updates: ownership, slice, objdiff, source classification, report, treemap, and README progress block. |
+| `doctor.py` | Read-only environment report: Python, ARM tools, agbcc, ROM hash, generated reports, and optional asmlift/objdiff/Pillow helpers. |
+| `asmlift_seed.py` | Generate and score advisory C seeds for remaining assembly bodies with [asmlift](https://github.com/macabeus/asmlift); `--queue` sweeps the backlog. |
+| `lift_packet.py` | Build a complete work packet for one body: ABI, callers, callees, similar C, findings, seed, and promotion checklist. |
 
 ```sh
 make toolchain
@@ -59,7 +62,7 @@ neither target replaces `make matching-ready`.
 | `derisk_probe.py` | Probe pool-free leaf instruction selection. |
 | `derisk_pool_probe.py` | Probe literal-pool placement at real ROM addresses. |
 | `match_context.py` | Gather a function's source, ROM instructions, callers, and fresh matching examples. |
-| `match_families.py` | Index instruction/control-flow siblings; reject stale indexes; `--twins` sweeps for assembly bodies whose nearest sibling is already decompiled C. |
+| `match_families.py` | Index instruction/control-flow siblings; reject stale indexes; `--vma` fingerprints a naked ROM span; `--twins` sweeps for assembly bodies whose nearest sibling is already decompiled C. |
 | `lift_scout.py` | Triage unmatched functions by diagnostic evidence, and report the selected-but-still-assembly backlog the corpus report cannot rank. |
 | `strategy_router.py` | Select applicable diagnostics from measured function properties. |
 | `wall_census.py` | Sort the remaining asm-backed bodies into documented walls (`MEASURED`/unreachable/regalloc) and bodies that still need a lift, so a session opens a target that is not already walled; `--lift-screen` drops raw bodies whose own instruction stream is not agbcc output. |
@@ -144,6 +147,78 @@ is an operator override. `allocation.json` retains `REG_DEAD`, `REG_EQUAL`,
 from normalized instruction comparison. This exposes evidence without claiming
 that the first changed note explains an allocation decision. The `.greg` dump
 contains global allocation **and reload**, not a pre-reload snapshot.
+
+## Seed lifting and work packets
+
+The remaining backlog is byte-exact but still assembly: about 130 naked bodies
+and a few bodies with instructions spliced through `asm()`. The corpus report
+cannot rank them and the permuter has nothing to permute; the next move is a C
+draft. `asmlift_seed.py` is an adapter around
+[asmlift](https://github.com/macabeus/asmlift) (MIT), a matching decompiler for
+agbcc Thumb, and `lift_packet.py` collects the surrounding evidence.
+
+Install the optional tool once (Node.js and npm required; the package lands
+under ignored `build/tools/`):
+
+```sh
+make doctor
+make asmlift-install
+make asmlift-seed LIMIT=10       # same as asmlift_seed.py --queue --wall raw
+make lift-packet FUNC=0x0801EFAC
+```
+
+Seed one body, or sweep the raw backlog in parallel:
+
+```sh
+python3 tools/asmlift_seed.py 0x0801EFAC
+python3 tools/asmlift_seed.py --queue --wall raw --jobs 8
+python3 tools/lift_packet.py 0x0801EFAC
+python3 tools/lift_packet.py --queue --wall raw --limit 10
+```
+
+Edited a seed by hand? Re-score it without re-running asmlift:
+
+```sh
+python3 tools/asmlift_seed.py 0x0801EFAC --score-file build/lift-seeds/0801efac/seed.c
+```
+
+Outputs belong under `build/lift-seeds/` and `build/packets/`:
+
+- `build/lift-seeds/<vma>/input.s` is the normalized agbcc-shaped assembly the
+  adapter sends to asmlift. Labels become local `.L` names, numeric calls become
+  `sub_` symbols, alignment directives are dropped, and trailing pad halfwords
+  are removed.
+- `build/lift-seeds/<vma>/seed.c` is asmlift's draft, with synthetic
+  `Struct*`/`Elem*` types prefixed `AsmLift_` so a splice cannot collide.
+- `meta.json` records the normalization changes and the one-compile advisory
+  score (`kind`, candidate bytes, aligned instructions, matching bytes).
+- `build/packets/<vma>/packet.md` is the work brief: current signature, ROM
+  prologue, ROM arity, callers, callees, literal references, nearest decompiled
+  siblings, existing findings, seed status, commands, and the promotion
+  checklist.
+
+The adapter feeds callee arities from `arity_audit.py` and `proto_audit.py` into
+asmlift's `--proto` sidecar. Without that, a call with an outgoing stack word
+cannot be lifted. The default score is one compile of the self-contained seed,
+not asmlift's multi-thousand-candidate fan; `--rank` enables the fan when a
+single body is worth the extra seconds.
+
+The adapter pins `@asmlift/cli@0.10.0` for reproducible seeds. Upstream is very
+active, so upgrade deliberately with
+`python3 tools/asmlift_seed.py --install --version X` and re-run
+`make experimental-check`.
+
+asmlift declines are preserved verbatim in `log.txt`. The common classes on this
+ROM are computed Thumb jump tables (`mov pc, rX`), address-taken stack locals,
+and bodies whose last instruction falls through into data. Those need a manual
+lift or a different starting point; the queue reports them rather than forcing a
+misleading draft.
+
+A seed is **advisory**. It is not selected source, does not change
+`tools/matching_slice_functions.json`, and does not grant promotion authority.
+Review its ABI and access widths, replace it with readable C in the owning TU,
+then run the focused probe and the independent-link gates. The packet never
+writes under `src/`.
 
 ## agbcc permuter
 

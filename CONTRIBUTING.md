@@ -29,6 +29,23 @@ Explain non-obvious compiler constraints beside the source or in a focused
 finding. Keep speculative names and interpretations separate from verified
 behavior. Do not mix unrelated formatting or renaming into a matching change.
 
+### Remaining assembly bodies
+
+The selected-but-still-assembly backlog is byte-exact, so the corpus report
+cannot rank it. Start from the wall census and a work packet:
+
+```sh
+python3 tools/wall_census.py --lift-screen
+python3 tools/lift_packet.py 0x0801EFAC
+python3 tools/asmlift_seed.py --queue --wall raw --limit 10   # optional seeds
+```
+
+A packet records the ABI, callers, callees, nearest decompiled siblings,
+existing findings, and a seed when asmlift is installed. Treat the seed as a
+draft: review its ABI and access widths, replace it with readable C in the
+owning translation unit, then run the focused probe and the independent-link
+gates. A packet or seed never grants promotion authority.
+
 ## Before opening a pull request
 
 For changes to source, assembly, headers, build tools, linker scripts, or the

@@ -1253,7 +1253,6 @@ def self_test() -> int:
     # absent and the case fails for a harness reason instead.
     with tempfile.TemporaryDirectory(prefix="screen-anchor-") as tmp:
         VMA, END, ROM_BASE_ = 0x08ABCDE0, 0x08ABCDE8, ROM_BASE
-        body_bytes = b"\x00\x70" * 4                # all zero: pad_only holds
 
         class _FakeProbe:
             ROM = None                              # set below; needs .read_bytes()

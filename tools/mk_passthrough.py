@@ -51,7 +51,6 @@ def parse_syms(path):
 
 def parse_holes(args):
     holes = []
-    it = iter(range(len(args)))
     i = 0
     while i < len(args):
         if args[i] == "--converted":

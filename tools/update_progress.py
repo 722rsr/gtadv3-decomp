@@ -20,11 +20,9 @@ from __future__ import annotations
 
 import argparse
 import contextlib
-import hashlib
 import io
 import json
 from pathlib import Path
-import re
 import subprocess
 import sys
 import tempfile
@@ -293,10 +291,10 @@ def print_summary(root: Path = ROOT) -> None:
     print("    • objdiff.json")
     print("    • README.md")
     print("-" * 65)
-    print(f"  Recommended commit command:")
-    print(f"    git add docs/data/report.json docs/data/report-inputs.json docs/data/source_quality.json \\")
-    print(f"            docs/data/code_data_ownership.json docs/data/independent_slice.json \\")
-    print(f"            objdiff.json README.md")
+    print("  Recommended commit command:")
+    print("    git add docs/data/report.json docs/data/report-inputs.json docs/data/source_quality.json \\")
+    print("            docs/data/code_data_ownership.json docs/data/independent_slice.json \\")
+    print("            objdiff.json README.md")
     if fig is not None:
         print(f'    git commit -m "Progress: {fig["decompiled_functions"]:,}/{fig["total_functions"]:,} '
               f'functions decompiled to C"')

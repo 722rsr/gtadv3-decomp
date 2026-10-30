@@ -105,6 +105,23 @@ def main() -> int:
     args = ap.parse_args()
     if not 1 <= args.recipe_count <= 5:
         ap.error("--recipe-count must be between 1 and 5")
+    # A naked whole-body transcription is in the selected inventory but not in
+    # the probe's C-body inventory. Point at the packet tool instead of letting
+    # the probe answer "not found in src/", which reads as if the name were
+    # wrong.
+    quality = ROOT / "docs/data/source_quality.json"
+    try:
+        doc = json.loads(quality.read_text(encoding="utf-8"))
+        for key, rec in doc.get("functions", {}).items():
+            names = {rec.get("name", ""), key, f"0x{int(key, 16):08x}"}
+            if args.function.lower() in {n.lower() for n in names if n} and \
+                    rec.get("class") in ("asm", "partial"):
+                print(f"match_context: {args.function} is a {rec['class']} body; "
+                      f"build a work packet with "
+                      f"`python3 tools/lift_packet.py {key}`", file=sys.stderr)
+                return 2
+    except (OSError, ValueError, KeyError):
+        pass
     out_dir = args.out or ROOT / "build/match" / args.function.lstrip("_")
     out_dir.mkdir(parents=True, exist_ok=True)
     report_path = out_dir / "report.json"

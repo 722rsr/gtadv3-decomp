@@ -22,6 +22,9 @@ assets/
 __pycache__/
 *.pyc
 
+# Optional Node tooling (asmlift is installed under build/tools/)
+node_modules/
+
 # gbadisasm build tree (cloned source + binary; rebuild via tools/build_gbadisasm.sh)
 tools/gbadisasm/
 

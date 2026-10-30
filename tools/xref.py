@@ -17,7 +17,6 @@ Usage:
 """
 import argparse
 import re
-import sys
 
 
 def read_rom(path):

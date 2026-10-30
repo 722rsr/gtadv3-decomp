@@ -392,6 +392,32 @@ def find_record(index, name):
     return records[0]
 
 
+def target_from_rom(vma, size=None, work=None):
+    """Fingerprint a span that has no corpus-report record.
+
+    The index holds bodies the report scored; a naked body has no report row,
+    so `--function` cannot retrieve siblings for it. Reading the ROM span with
+    the same `flow`/`fingerprint` pair used by `build_index` makes the index
+    usable for exactly the backlog that needs a precedent.
+    """
+    spans = probe.rom_functions()
+    if size is None:
+        size = spans.get(vma, 0) - vma
+    if not 0 < size <= 0x10000:
+        raise ValueError(f'no usable span for {vma:#x}; pass --size')
+    rom = probe.ROM.read_bytes()
+    work = work or Path(tempfile.mkdtemp(prefix='family-target-'))
+    reachable, _edges, failures = flow(rom, vma, vma + size)
+    modes = assembled_modes(work)
+    instructions = {pc: item[1] for pc, item in reachable.items()
+                    if mode_at(modes, pc) == 't'}
+    listing = disassemble(rom, work, instructions)
+    target = fingerprint(rom, vma, vma + size, listing)
+    target.update({'vma': f'0x{vma:08x}', 'name': f'_0800{vma & 0xFFFFFF:06X}',
+                   'source': '', 'alias_of': None})
+    return target
+
+
 def _upper_bound_ratio(target_counts: dict, target_len: int, rec_tokens: list) -> float:
     """Sound upper bound on `SequenceMatcher(...).ratio()` for two token lists.
 
@@ -470,6 +496,53 @@ def nearest(index, target, count=3, recipes=False):
         candidates.append(dict(rec, similarity=round(score, 4),
                                same_family=rec['fingerprint'] == target['fingerprint']))
     return sorted(candidates, key=lambda r: (-r['same_family'], -r['similarity'], r['vma']))[:count]
+
+
+def cosine_siblings(index: dict, target: dict, count: int = 5,
+                    cutoff: float = 0.30) -> list[dict]:
+    """Length-tolerant token-multiset siblings.
+
+    `nearest()` uses `SequenceMatcher` and its 0.45 cutoff is deliberately
+    conservative. A long naked body can share most of its instruction
+    vocabulary with a lifted body and still fall below that cutoff because the
+    two lengths differ. Cosine over token counts is the fallback the lift
+    packet uses; keeping it here means both callers rank siblings the same way.
+    """
+    import math
+
+    target_counts = defaultdict(int)
+    for token in target.get('tokens') or []:
+        target_counts[token] += 1
+    target_norm = math.sqrt(sum(value * value for value in target_counts.values()))
+    if not target_norm:
+        return []
+    scored = []
+    seen = set()
+    for rec in index.get('records', []):
+        if not rec.get('complete') or rec.get('vma') == target.get('vma'):
+            continue
+        identity = (rec.get('source'), rec.get('alias_of') or rec.get('name'))
+        if identity in seen:
+            continue
+        tokens = rec.get('tokens') or []
+        if not tokens:
+            continue
+        counts = defaultdict(int)
+        for token in tokens:
+            counts[token] += 1
+        denom = target_norm * math.sqrt(sum(value * value for value in counts.values()))
+        if not denom:
+            continue
+        dot = sum(value * counts.get(key, 0) for key, value in target_counts.items())
+        score = dot / denom
+        if score < cutoff:
+            continue
+        seen.add(identity)
+        scored.append((score, rec))
+    scored.sort(key=lambda item: -item[0])
+    return [dict(rec, similarity=round(score, 4), method='cosine',
+                 same_family=rec['fingerprint'] == target.get('fingerprint'))
+            for score, rec in scored[:count]]
 
 
 def twins(index: dict, min_bytes: int = 48, cutoff: float = 0.60) -> list[dict]:
@@ -573,6 +646,12 @@ def main():
     ap.add_argument('--report', type=Path, default=REPORT)
     ap.add_argument('--index', type=Path, default=DEFAULT_INDEX)
     ap.add_argument('--function')
+    ap.add_argument('--vma', type=lambda s: int(s, 0),
+                    help='fingerprint a ROM span that has no corpus record')
+    ap.add_argument('--size', type=lambda s: int(s, 0),
+                    help='span length for --vma (default: the assembly inventory)')
+    ap.add_argument('--cosine', action='store_true',
+                    help='rank by token-multiset cosine instead of SequenceMatcher')
     ap.add_argument('--top', type=int, default=10)
     ap.add_argument('--twins', action='store_true',
                     help='sweep: asm bodies whose best sibling is decompiled C')
@@ -584,9 +663,15 @@ def main():
         ap.error('--top must be positive')
     try:
         index = build_index(args.report, args.index) if args.build else load_index(args.index)
+        ranker = cosine_siblings if args.cosine else nearest
         if args.function:
             target = find_record(index, args.function)
-            print(json.dumps({'target': target, 'siblings': nearest(index, target, args.top)}, indent=2))
+            print(json.dumps({'target': target,
+                              'siblings': ranker(index, target, args.top)}, indent=2))
+        elif args.vma:
+            target = target_from_rom(args.vma, args.size)
+            print(json.dumps({'target': target,
+                              'siblings': ranker(index, target, args.top)}, indent=2))
         elif args.twins:
             rows = twins(index, args.min_bytes, args.cutoff)
             print(f'{len(rows)} assembly bodies with a decompiled twin')

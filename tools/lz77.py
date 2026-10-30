@@ -223,7 +223,7 @@ def cmd_scan(args):
                     break
                 if flags & (0x80 >> bit):
                     j += 2
-                    disp = ((data[j - 2] & 0xF) << 8) | data[j - 1]
+                    # displacement is implicit in the stream position
                     length = ((data[j - 2] >> 4) & 0xF) + 3
                     produced += length
                 else:

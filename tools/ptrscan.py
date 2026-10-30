@@ -28,7 +28,7 @@ def cmd_density(args):
     with open(args.rom, "rb") as f:
         data = f.read()
     step = args.block
-    print(f"block      romptr%")
+    print("block      romptr%")
     for base in range(0, len(data) - step, step):
         blk = data[base : base + step]
         total = len(blk) // 4

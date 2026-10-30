@@ -249,8 +249,14 @@ def compile_tu(tu: str, origin: Path, workdir: Path = WORK, quiet: bool = False)
                          str(pre), "-o", str(sfile)], capture_output=True, text=True)
     if rc.returncode != 0:
         err(rc.stderr)
-        bad = [l for l in rc.stderr.splitlines() if "error" in l]
-        raise SystemExit("agbcc failed: " + (bad[0][:120] if bad else "?"))
+        # agbcc sometimes reports a fatal diagnostic without the word "error"
+        # (a rejected prototype shape, a bad initializer). Keep the first
+        # error line when there is one, but never reduce the message to "?"
+        # and throw away the only useful line.
+        lines = [l.strip() for l in rc.stderr.splitlines() if l.strip()]
+        bad = [l for l in lines if "error" in l.lower()]
+        detail = bad[0] if bad else (lines[-1] if lines else "no diagnostic")
+        raise SystemExit("agbcc failed: " + detail[:160])
     err(rc.stderr)
     obj = workdir / "lift.o"
     rc = subprocess.run(["arm-none-eabi-as", "-mcpu=arm7tdmi", "-o", str(obj),

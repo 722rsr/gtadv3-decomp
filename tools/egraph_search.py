@@ -51,7 +51,7 @@ import subprocess
 import sys
 import tempfile
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -1005,7 +1005,7 @@ def self_test() -> int:
     try:
         parsed = parse_seeded("(u32 + (u32 * (u32 a) (u32 3)) (u32 & (u32 b) (u32 255)))")
         ok_parse = len(parsed) == 1 and to_c(parsed[0]) == "((a * 3u) + (b & 255u))"
-    except kit.Unsupported as exc:  # pragma: no cover - defensive
+    except kit.Unsupported:  # pragma: no cover - defensive
         ok_parse = False
     check("seeded expression parses and emits C", ok_parse)
 

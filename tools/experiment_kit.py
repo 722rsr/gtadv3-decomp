@@ -38,7 +38,6 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import os
 import re
 import subprocess
 import sys
@@ -876,7 +875,7 @@ class EvidenceWriter:
             f"- draft status: `{payload['draft_status']}`",
             f"- integrated probe status: `{payload['integrated_status']}`",
             f"- independent-link acceptance: `{payload['link_accepted']}`",
-            f"- accepted C-owned bytes: `0` (an experiment tool cannot promote)",
+            "- accepted C-owned bytes: `0` (an experiment tool cannot promote)",
             "",
         ]
         for key, value in sorted(payload.items()):

@@ -329,7 +329,6 @@ def route(state: TargetState) -> Decision:
         return Decision(BAND_ROUTES[band].strategy, BAND_ROUTES[band].reason,
                         BAND_ROUTES[band].requires)
 
-    alternatives: list[str] = []
     declined: list[str] = []
 
     # 2. Unresolved control flow is a *synthesis* eligibility fact, not a

@@ -454,7 +454,7 @@ def main():
                 regs = [f"r{r}" for r in range(8) if hw & (1 << r)]
                 if hw & 0x100:
                     regs.append("lr")
-                out.append(f"\tpush\t{{" + ", ".join(regs) + "}")
+                out.append("\tpush\t{" + ", ".join(regs) + "}")
             else:
                 out.append(f"\t.hword 0x{hw:04X}")
             addr += 2

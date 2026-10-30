@@ -2243,7 +2243,6 @@ def main() -> int:
     alias_target = alias_targets()
     code_syms = load_code_symbols()
     decl_hints = scan_decl_hints()
-    resolver = SymbolResolver(code_syms, alias_target, decl_hints)
 
     if args.function:
         wanted = list(args.function)

@@ -30,7 +30,7 @@ import json
 import random
 import re
 import sys
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -940,7 +940,8 @@ def self_test() -> int:
     best = select(pool, Archive(), rng, 0.0, SCORE_ONLY)
     check("score-only mode picks the best score", best.name == "p2")
     rng = random.Random(0)
-    seen = {select(pool, Archive(), rng, 0.0, NOVELTY).name for _ in range(20)}
+    for _ in range(20):
+        select(pool, Archive(), rng, 0.0, NOVELTY)
     check("novelty mode is deterministic under a fixed seed", True)
     rng = random.Random(0)
     explored = [select(pool, Archive(), rng, 0.5, NOVELTY).name for _ in range(200)]
