@@ -755,3 +755,51 @@ refuses the two-address mnemonics the ROM disassembles as:
 agbcc-generated `.s` is unaffected (it emits its own spellings); this only
 bites asm splices written by hand, where the working spelling is the one without
 the trailing `s` for a three-register subtract or a two-register multiply.
+
+## Worked close-out: `_08001FFD4` (452 B), two scratch sites at once
+
+`_08001FFD4` sat at 446/452 with exactly two allocator sites off:
+
+```
+ROM  +0x0AE  movs r2,#28 / ldrsh r0,[r4,r2]      C gave r1
+ROM  +0x100  ldrh r0,[r4,#26] / cmp r0,r8        C gave r2
+```
+
+Pinning the register, a `"+r"` barrier, clobbers and statement permutations all
+failed (120+ measured). Two levers closed it together:
+
+1. **Liveness pin on the *unwanted* scratch of the indexed `ldrsh`.**
+   The else-arm load `a0->field_28.shalf` needs its constant index in r2, but
+   reload's `spill_regs` round-robin landed on r1. Declaring the unwanted
+   register busy across just that load moved the scratch to r2:
+
+   ```c
+   register u16 h1 __asm__("r1");
+   s32 f;
+   __asm__ volatile("" : "=r"(h1));   /* define: r1 busy here */
+   f = a0->field_28.shalf;            /* ROM: movs r2,#28 / ldrsh */
+   __asm__ volatile("" : : "r"(h1));  /* consume right after */
+   ```
+
+2. **The temporary must be `s32`, not `s16`.** With an `s16` local agbcc split
+   the load into `ldrh` + `lsls` + `asrs` (6 B, +2 over the ROM's 4 B
+   `movs`/`ldrsh`). Typing the temp `s32` keeps the single `*extendhisi2_insn`
+   and the body stays length-exact. This alone also cleared the second site
+   (`ldrh r0,[r4,#26]`): the pinned r1 shifted the block's live set so the
+   `movhi` destination fell on r0 as the ROM has it.
+
+3. **Section fill.** The 452-byte span ends in `00 00`; gas closes a
+   `-ffunction-sections` Thumb section with `46c0` (`nop`). Restate the fill
+   with `__asm__(".align 2, 0");` after the body (same trick as `_080029764`).
+
+Result: probe `EXACT 452/452`, `make matching-ready` PASS, full 8 MiB link
+byte-identical. Committed as 21e4bfc.
+
+### Reusable checklist for the remaining asm bodies
+
+1. Write the body from the ROM listing with natural C and the file's idioms.
+2. If only one or two instructions differ, run `tools/regalloc_report.py`.
+3. For a mismatched constant-index `ldrsh`/`ldrsb`, pin the *unwanted* scratch
+   with an output-only empty asm before the load and consume it after.
+4. Keep sign-extending temporaries `s32` so the extendhisi pattern survives.
+5. Add `__asm__(".align 2, 0");` when the span ends in zero padding.
