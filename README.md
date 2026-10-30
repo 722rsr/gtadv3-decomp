@@ -107,6 +107,7 @@ make toolchain
 make full-rom-match
 make fast-check
 make ci-check
+make doctor            # read-only environment/ROM report
 ```
 
 `make full-rom-match` includes `matching-ready`, the reference build, and the

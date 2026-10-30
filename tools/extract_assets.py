@@ -33,7 +33,7 @@ except ImportError:
 # Import local tools
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from lz77 import decompress  # noqa: E402
-from track_dump import read_package, DIR_OFF as TRACK_DIR_OFF, NGROUPS  # noqa: E402
+from track_dump import read_package, DIR_OFF as TRACK_DIR_OFF  # noqa: E402
 from mto_dump import DIR_OFF as MTO_DIR_OFF, N_ANNOUNCED as MTO_N_ANNOUNCED, classify as mto_classify  # noqa: E402
 
 
@@ -567,7 +567,6 @@ def extract_mto_directory(rom: bytes, out_dir: Path) -> Dict:
     mto_dir = out_dir / "mto"
     mto_dir.mkdir(parents=True, exist_ok=True)
 
-    entries = []
     tsv_lines = ["index\toffset\tvma\tsize\tclass\toutput_bin"]
     manifest = {
         "dir_offset": hex(MTO_DIR_OFF),
@@ -696,7 +695,6 @@ def extract_sound_assets(rom: bytes, out_dir: Path) -> Dict:
             break
         ptr = int.from_bytes(rom[ent_off : ent_off + 4], "little")
         gate = int.from_bytes(rom[ent_off + 4 : ent_off + 6], "little")
-        unused = int.from_bytes(rom[ent_off + 6 : ent_off + 8], "little")
 
         if ptr == 0 and gate == 0:
             continue

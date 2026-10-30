@@ -615,7 +615,7 @@ def main():
     out_png.parent.mkdir(parents=True, exist_ok=True)
     out_html.parent.mkdir(parents=True, exist_ok=True)
 
-    print(f"Gathering functions and coverage data from repo...")
+    print("Gathering functions and coverage data from repo...")
     functions, stats = gather_function_data()
     print(f"Found {stats['total_functions']:,} functions plus "
           f"{stats['non_function_spans']:,} non-function source ranges "

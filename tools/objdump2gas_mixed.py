@@ -18,10 +18,8 @@ Usage:
 The result must assemble byte-identical; `make`'s SHA gate arbitrates.
 """
 import argparse
-import os
 import re
 import struct
-import sys
 
 import objdump2gas as o2g
 

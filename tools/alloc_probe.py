@@ -125,7 +125,7 @@ def main() -> int:
 
     pre = work / (source.stem + ".i")
     out_s = work / (source.stem + ".s")
-    with pre.open("w", encoding="utf-8") as h:
+    with pre.open("w", encoding="utf-8"):
         r = run(["clang", "-E", "-nostdinc", "-undef", *inc_flags(), compile_path],
                 )
         if r.returncode:
@@ -194,7 +194,6 @@ def main() -> int:
         print(f"           free at its turn: {hard(free)}")
 
     print("\n== final dispositions ==")
-    by_reg = {v: k for k, v in dispositions.items()}
     for hreg in sorted(set(dispositions.values())):
         print(f"  {reg_name(hreg)} <- pseudo {dispositions and [p for p, d in dispositions.items() if d == hreg]}")
 

@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import argparse
 import collections
+from functools import lru_cache
 import json
 from pathlib import Path
 import re
@@ -254,6 +255,20 @@ ATTR_GROUP = re.compile(r"__attribute__\s*\(\(.*?\)\)|__extension__|"
                         r"__asm__\s*\(\"[^\"]*\"\)|__asm__\s*\([^)]*\)")
 
 
+@lru_cache(maxsize=64)
+def _source_text(path: str, mtime_ns: int, size: int) -> tuple[str, str]:
+    """Raw and non-code-masked text for one file, cached across body lookups.
+
+    `lift_scout.build()` asks for one body per function in a TU, so a
+    forty-function file used to run the character-level mask forty times. The
+    key includes mtime/size so an edit cannot serve a pre-edit mask.
+    """
+    from agbcc_c89_transform import strip_noncode
+
+    text = Path(path).read_text(encoding="utf-8", errors="replace")
+    return text, strip_noncode(text)
+
+
 def source_body(src: Path, name: str) -> str:
     """Signature -- RETURN TYPE INCLUDED -- plus body text of `name`, or ''
     when not found textually.
@@ -279,7 +294,12 @@ def source_body(src: Path, name: str) -> str:
     """
     if not src.exists():
         return ""
-    text = src.read_text(encoding="utf-8", errors="replace")
+    stat = src.stat()
+    text, masked = _source_text(str(src.resolve()), stat.st_mtime_ns, stat.st_size)
+    # A naked body's `__asm__` strings contain `push {r4}` / `pop {r4}`. Brace
+    # matching on the raw text closes the function at the first `}` inside a
+    # string, which is why every naked body used to come back as a bare
+    # signature. Match on the masked copy; slice the original.
     pat = re.compile(r"\b" + re.escape(name) + r"\s*\(")
     m = mbol = None
     for cand in pat.finditer(text):
@@ -311,13 +331,13 @@ def source_body(src: Path, name: str) -> str:
         # name. Decline rather than report a property nobody can read.
         return ""
     start = m.start() - len(head)
-    i = text.index("(", m.start())
+    i = masked.index("(", m.start())
     depth = 0
     sig_end = -1
-    for j in range(i, min(len(text), i + 4000)):
-        if text[j] == "(":
+    for j in range(i, min(len(masked), i + 4000)):
+        if masked[j] == "(":
             depth += 1
-        elif text[j] == ")":
+        elif masked[j] == ")":
             depth -= 1
             if depth == 0:
                 sig_end = j
@@ -325,16 +345,20 @@ def source_body(src: Path, name: str) -> str:
     if sig_end == -1:
         return ""
     sig = text[start:sig_end + 1]
-    k = text.find("{", sig_end)
+    k = masked.find("{", sig_end)
     if k == -1:
         # An alias declaration: a signature with no body. Return it as-is so a
         # caller can tell "no body here" from "body found and empty".
         return sig
     depth = 0
-    for n in range(k, min(len(text), k + 8000)):
-        if text[n] == "{":
+    # No artificial 8 KB cap: a naked asm transcription is often larger (this
+    # ROM's biggest is 3,640 bytes, but its `__asm__` listing is over 14 KB),
+    # and a capped scan used to return the bare signature as if it were the
+    # whole body. The file bound is enough.
+    for n in range(k, len(masked)):
+        if masked[n] == "{":
             depth += 1
-        elif text[n] == "}":
+        elif masked[n] == "}":
             depth -= 1
             if depth == 0:
                 return sig + " " + text[k:n + 1]
@@ -488,7 +512,6 @@ def _classify_once(rec: dict, shape: dict, body: str, typed: bool = True,
     ratio = prefix / rom if rom else 0.0
     first_diff = rec.get("first_diff")
     sig = signature_of(body)
-    src = rec.get("source") or ""
 
     # P9 unresolved relocation outranks everything: it is a spelling problem.
     if rec["status"] == "UNRESOLVED_RELOCATION":
@@ -556,7 +579,6 @@ def _classify_once(rec: dict, shape: dict, body: str, typed: bool = True,
     # Only operand/control-flow-aware evidence establishes a measured narrow
     # mismatch. Legacy reports compared mnemonics only; do not turn those class
     # strings into claims that registers are the sole difference.
-    report_class = rec.get("class") or ""
     if rec.get("instruction_diff", {}).get("register_only") and first_diff not in (None, 0):
         return "P1-register-choice", (
             f"verified instruction comparison: non-register operands, "
@@ -1037,6 +1059,22 @@ def self_test() -> int:
         # the alias block, so this proves brace-matching rather than luck.
         check("source_body-alias-has-no-body",
               "volatile u16 v" in alias_txt, False)
+        # A naked body's `__asm__` strings contain braces. Brace-matching the
+        # raw text used to close the function at the first `push {r4}` string,
+        # and an 8 KB scan cap returned the bare signature for every large
+        # transcription. Pin both: the result must include thousands of bytes
+        # of asm and must end at the real function brace, not inside a string.
+        naked = Path(td) / "naked.c"
+        naked.write_text(
+            "__attribute__((naked)) void _08002000(void) {\n"
+            "    __asm__ volatile (\n"
+            + '        "push {r4, r5, r6, lr}\\n"\n' * 500
+            + "    );\n}\n"
+            "void NextBody(void) { }\n", encoding="utf-8")
+        naked_txt = source_body(naked, "_08002000")
+        check("source_body-naked-large", len(naked_txt) > 8000, True)
+        check("source_body-naked-keeps-asm", "push {r4, r5, r6, lr}" in naked_txt, True)
+        check("source_body-naked-stops-at-body", "void NextBody" in naked_txt, False)
         # and the two must classify differently, which is the bug's whole cost
         r_vol = rec(rom_bytes=44, cand_bytes=44, prefix=8, first_diff=8,
                     status="OVERSIZED")

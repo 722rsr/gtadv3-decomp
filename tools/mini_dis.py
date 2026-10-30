@@ -13,7 +13,6 @@ Usage:
 `--pools` re-labels any `ldr rX, [pc, #n]` target word as `.word` data so the
 literal pool stops looking like instruction garbage.
 """
-import shutil
 import struct
 import subprocess
 import sys

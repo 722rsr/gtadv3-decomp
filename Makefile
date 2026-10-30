@@ -11,7 +11,22 @@ TARGET  := $(BUILD)/gtadv3.gba
 
 ASFLAGS := -mcpu=arm7tdmi -Iasm
 
-.PHONY: all verify clean distclean toolchain
+.PHONY: help all verify clean distclean toolchain
+help:
+	@echo "GT Advance 3 matching build"
+	@echo "  make verify            reference build + pinned ROM hash"
+	@echo "  make matching-ready    C/ASM slice, corpus probe, static audits"
+	@echo "  make full-rom-match    independent C/ASM + data link, 8 MiB hash"
+	@echo "  make fast-check        static audits and core tool regressions"
+	@echo "  make ci-check          ROM-free hosted checks"
+	@echo "  make progress          refresh the report and README progress block"
+	@echo "  make doctor            read-only environment/ROM report"
+	@echo "  make asmlift-install   provision optional asmlift seeds"
+	@echo "  make asmlift-seed LIMIT=10"
+	@echo "  make lift-packet FUNC=0x0801EFAC"
+	@echo "  make lift-queue LIMIT=10"
+	@echo "  make experimental-check"
+
 all: verify
 
 $(BUILD):
@@ -190,6 +205,31 @@ experimental-check:
 	@python3 tools/test_run_permuter.py
 	@python3 tools/test_objdiff_build.py
 	@python3 tools/test_function_trace.py
+	@python3 tools/asmlift_seed.py --self-test
+	@python3 tools/lift_packet.py --self-test
+
+.PHONY: doctor asmlift-install asmlift-seed lift-packet lift-queue
+# Environment and ROM readiness in one read-only report.
+doctor:
+	@python3 tools/doctor.py
+
+# Optional seed-lifting pass. `make asmlift-install` provisions the pinned
+# npm package under ignored build/tools; the seed and packet targets then read
+# it. A seed is a draft, never selected source.
+asmlift-install:
+	@python3 tools/asmlift_seed.py --install
+
+LIMIT ?= 10
+FUNC ?=
+asmlift-seed:
+	@python3 tools/asmlift_seed.py --queue --wall raw --limit $(LIMIT)
+
+lift-packet:
+	@test -n "$(FUNC)" || { echo "usage: make lift-packet FUNC=0x0801EFAC" >&2; exit 2; }
+	@python3 tools/lift_packet.py $(FUNC)
+
+lift-queue:
+	@python3 tools/lift_packet.py --queue --wall raw --limit $(LIMIT)
 
 .PHONY: objdiff-config
 objdiff-config:
@@ -315,16 +355,18 @@ treemap:
 
 # `rm -rf build` would take build/toolchains/ with it: the cloned, built agbcc
 # tree the matching tools read (a ~10 minute rebuild), plus the optional era
-# toolchains. Everything else under build/ is a regenerable output, so `clean`
-# keeps the toolchains and `distclean` is the explicit way to drop them.
+# toolchains. build/tools/ is the optional npm provision (asmlift) and is also
+# kept: a clean should not force a network install. Everything else under
+# build/ is a regenerable output, so `clean` keeps those two trees and
+# `distclean` is the explicit way to drop them.
 # Auxiliary object trees live beside build/ and must be cleared by both.
 AUX_BUILD_DIRS := $(CODEBUILD) build-slice build-c build-s
 clean:
 	@if [ -d $(BUILD) ]; then \
-	    find $(BUILD) -mindepth 1 -maxdepth 1 ! -name toolchains -exec rm -rf {} + ; \
+	    find $(BUILD) -mindepth 1 -maxdepth 1 ! -name toolchains ! -name tools -exec rm -rf {} + ; \
 	fi
 	@rm -rf $(AUX_BUILD_DIRS)
-	@echo "clean: removed build outputs (kept $(BUILD)/toolchains)"
+	@echo "clean: removed build outputs (kept $(BUILD)/toolchains and $(BUILD)/tools)"
 
 distclean:
 	rm -rf $(BUILD) $(AUX_BUILD_DIRS)
@@ -340,6 +382,8 @@ ci-check: progress-check
 	@python3 tools/agbcc_c89_transform.py --self-test
 	@python3 tools/update_progress.py --self-test
 	@python3 tools/full_rom_match.py --self-test
+	@python3 tools/asmlift_seed.py --self-test
+	@python3 tools/lift_packet.py --self-test
 	@python3 tools/test_matching_assist.py
 	@python3 tools/test_decomp_report.py
 	@python3 tools/test_data_regions.py
