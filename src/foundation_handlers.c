@@ -11,163 +11,117 @@ typedef struct { vu8 _00; vu8 fsm; vu8 _02; vu8 _03; vu8 ready; vu8 c5; vu8 flag
 #define SESS ((EwramSess*)0x0203EF90)
 
 // Blob A — _08000AF4 (MultiSio 32-bit burst, timer3+serial).
-// MEASURED 2026-10-22: a full C lift reaches 163/252 with the candidate length
-// exact (`SioBlock` copy out of 0x04000120, non-volatile SIO halves so the
-// stores are plain `strh`, and a memory barrier between the row loop and the
-// `cnt24 == 9` re-read). Every remaining difference is a register choice:
-// the session pointer's first pseudo (ROM `r2`, then `adds r4,r2`), the zero
-// shared by three stores (ROM `movs r5,#0`), and the `cnt24`/`cnt20` reloads
-// (ROM `r0`, agbcc homes them in r5/r6 because the loop keeps them live).
-// Pinning the session pointer to r4 costs the `adds r4,r2` copy and drops the
-// score; pinning a zero-valued local is folded away. Leaving the body naked
-// until a shape splits those three homes.
-__attribute__((naked)) void EWRAM_Handler_BlobA(void)
+// Exact C. Three homes the ROM splits and agbcc merges by default: the session
+// pointer is materialised in r2 and copied to r4 once (`t` pinned to r2, then
+// `st = t`), the zero shared by the three clears is a named local, and the
+// count reloads use r0 (pinned `n`), with volatile reloads where the ROM
+// re-reads a cell the loop could otherwise keep live. `bp`/`k` order the
+// compare's two materialisations (buf address, then 0xFEFE) ahead of the copy.
+void EWRAM_Handler_BlobA(void)
 {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, lr}\n"
-        "sub sp, #8\n"
-        "ldr r0, .L0af4_p0\n"
-        "ldr r1, [r0, #4]\n"
-        "ldr r0, [r0, #0]\n"
-        "str r0, [sp, #0]\n"
-        "str r1, [sp, #4]\n"
-        "ldr r2, .L0af4_p1\n"
-        "ldr r0, .L0af4_p2\n"
-        "ldr r0, [r0, #0]\n"
-        "lsls r0, r0, #25\n"
-        "lsrs r0, r0, #31\n"
-        "movs r5, #0\n"
-        "strb r0, [r2, #7]\n"
-        "mov r1, sp\n"
-        "ldr r0, .L0af4_p3\n"
-        "adds r4, r2, #0\n"
-        "ldrh r1, [r1, #0]\n"
-        "cmp r1, r0\n"
-        "bne .L0af4_mid\n"
-        "ldr r0, [r4, #24]\n"
-        "cmp r0, #9\n"
-        "ble .L0af4_mid\n"
-        "movs r0, #1\n"
-        "negs r0, r0\n"
-        "str r0, [r4, #24]\n"
-        "ldr r1, [r4, #40]\n"
-        "ldr r0, [r4, #36]\n"
-        "str r0, [r4, #40]\n"
-        "str r1, [r4, #36]\n"
-        "ldrb r0, [r4, #4]\n"
-        "cmp r0, #0\n"
-        "beq .L0af4_ime\n"
-        "ldr r1, [r4, #32]\n"
-        "ldr r0, [r4, #28]\n"
-        "str r0, [r4, #32]\n"
-        "str r1, [r4, #28]\n"
-        "strb r5, [r4, #4]\n"
-        "str r5, [r4, #20]\n"
-        ".L0af4_ime:\n"
-        "ldr r3, .L0af4_p4\n"
-        "strh r5, [r3, #0]\n"
-        "ldr r2, .L0af4_p5\n"
-        "ldrh r0, [r2, #0]\n"
-        "movs r1, #128\n"
-        "orrs r0, r1\n"
-        "strh r0, [r2, #0]\n"
-        "movs r0, #1\n"
-        "strh r0, [r3, #0]\n"
-        ".L0af4_mid:\n"
-        "ldr r0, [r4, #20]\n"
-        "cmp r0, #9\n"
-        "bgt .L0af4_after_rx\n"
-        "ldr r2, .L0af4_p2\n"
-        "ldr r1, [r4, #32]\n"
-        "lsls r0, r0, #1\n"
-        "adds r0, r0, r1\n"
-        "ldrh r0, [r0, #0]\n"
-        "strh r0, [r2, #2]\n"
-        ".L0af4_after_rx:\n"
-        "ldr r0, [r4, #20]\n"
-        "cmp r0, #10\n"
-        "bgt .L0af4_after_cnt14\n"
-        "adds r0, #1\n"
-        "str r0, [r4, #20]\n"
-        ".L0af4_after_cnt14:\n"
-        "ldr r0, [r4, #24]\n"
-        "cmp r0, #0\n"
-        "blt .L0af4_after_tx\n"
-        "ldr r1, [r4, #36]\n"
-        "mov r2, sp\n"
-        "lsls r0, r0, #1\n"
-        "adds r1, r1, r0\n"
-        "movs r3, #3\n"
-        ".L0af4_tx_loop:\n"
-        "ldrh r0, [r2, #0]\n"
-        "strh r0, [r1, #0]\n"
-        "adds r2, #2\n"
-        "adds r1, #24\n"
-        "subs r3, #1\n"
-        "cmp r3, #0\n"
-        "bge .L0af4_tx_loop\n"
-        "ldr r0, [r4, #24]\n"
-        "cmp r0, #9\n"
-        "bne .L0af4_after_tx\n"
-        "movs r0, #1\n"
-        "strb r0, [r4, #5]\n"
-        ".L0af4_after_tx:\n"
-        "ldr r0, [r4, #24]\n"
-        "cmp r0, #10\n"
-        "bgt .L0af4_after_latch\n"
-        "adds r0, #1\n"
-        "str r0, [r4, #24]\n"
-        ".L0af4_after_latch:\n"
-        "ldrb r2, [r4, #0]\n"
-        "cmp r2, #0\n"
-        "beq .L0af4_serial\n"
-        "ldr r1, .L0af4_p6\n"
-        "movs r0, #0\n"
-        "strh r0, [r1, #0]\n"
-        ".L0af4_serial:\n"
-        "ldr r0, [r4, #20]\n"
-        "cmp r0, #10\n"
-        "bgt .L0af4_done_serial\n"
-        "cmp r2, #0\n"
-        "beq .L0af4_done_serial\n"
-        "ldr r2, .L0af4_p2\n"
-        "ldrh r0, [r2, #0]\n"
-        "movs r1, #128\n"
-        "orrs r0, r1\n"
-        "strh r0, [r2, #0]\n"
-        "ldr r1, .L0af4_p6\n"
-        "movs r0, #192\n"
-        "strh r0, [r1, #0]\n"
-        ".L0af4_done_serial:\n"
-        "movs r0, #1\n"
-        "strb r0, [r4, #9]\n"
-        "add sp, #8\n"
-        "pop {r4, r5}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        ".align 2, 0\n"
-        ".L0af4_p0: .4byte 0x04000120\n"
-        ".L0af4_p1: .4byte 0x0203ef90\n"
-        ".L0af4_p2: .4byte 0x04000128\n"
-        ".L0af4_p3: .4byte 0x0000fefe\n"
-        ".L0af4_p4: .4byte 0x04000208\n"
-        ".L0af4_p5: .4byte 0x03007ff8\n"
-        ".L0af4_p6: .4byte 0x0400010e\n"
-        ".syntax divided\n"
-    );
+    u16 buf[4];
+    volatile u32 *sio;
+    u8 *st;
+    register u8 *t __asm__("r2");
+    register s32 n __asm__("r0");
+    u32 v;
+    u32 hi;
+    u32 lo;
+    u32 zero;
+    s32 i;
+    u16 *dst;
+    u16 *src;
+    u16 *bp;
+    u32 k;
+    u8 busy;
+    volatile u16 *cnt;
+
+    sio = (volatile u32 *)(uintptr_t)0x04000120u;
+    hi = sio[1];
+    lo = sio[0];
+    *(u32 *)&buf[0] = lo;
+    *(u32 *)&buf[2] = hi;
+    t = (u8 *)(uintptr_t)0x0203EF90u;
+    v = (*(volatile u32 *)(uintptr_t)0x04000128u << 25) >> 31;
+    zero = 0;
+    t[7] = (u8)v;
+    bp = buf;
+    k = 0xFEFEu;
+    st = t;
+    if (*bp == (u16)k) {
+        if (*(s32 *)(st + 24) > 9) {
+            *(s32 *)(st + 24) = -1;
+            hi = *(u32 *)(st + 40);
+            lo = *(u32 *)(st + 36);
+            *(u32 *)(st + 40) = lo;
+            *(u32 *)(st + 36) = hi;
+            if (st[4] != 0) {
+                hi = *(u32 *)(st + 32);
+                lo = *(u32 *)(st + 28);
+                *(u32 *)(st + 32) = lo;
+                *(u32 *)(st + 28) = hi;
+                st[4] = zero;
+                *(u32 *)(st + 20) = zero;
+            }
+            *(volatile u16 *)(uintptr_t)0x04000208u = zero;
+            *(volatile u16 *)(uintptr_t)0x03007FF8u |= 0x80;
+            *(volatile u16 *)(uintptr_t)0x04000208u = 1;
+        }
+    }
+    n = *(s32 *)(st + 20);
+    if (n <= 9) {
+        cnt = (volatile u16 *)(uintptr_t)0x04000128u;
+        cnt[1] = *(u16 *)(*(u32 *)(st + 32) + n * 2);
+    }
+    n = *(volatile s32 *)(st + 20);
+    if (n <= 10)
+        *(s32 *)(st + 20) = n + 1;
+    n = *(s32 *)(st + 24);
+    if (n >= 0) {
+        u32 base;
+
+        base = *(u32 *)(st + 36);
+        src = buf;
+        dst = (u16 *)(base + n * 2);
+        for (i = 0; i <= 3; i++) {
+            *dst = *src;
+            src++;
+            dst = (u16 *)((u8 *)dst + 24);
+        }
+        if (*(volatile s32 *)(st + 24) == 9)
+            st[5] = 1;
+    }
+    n = *(volatile s32 *)(st + 24);
+    if (n <= 10)
+        *(s32 *)(st + 24) = n + 1;
+    busy = st[0];
+    if (busy != 0)
+        *(volatile u16 *)(uintptr_t)0x0400010Eu = 0;
+    if (*(volatile s32 *)(st + 20) <= 10) {
+        if (busy != 0) {
+            *(volatile u16 *)(uintptr_t)0x04000128u |= 0x80;
+            *(volatile u16 *)(uintptr_t)0x0400010Eu = 192;
+        }
+    }
+    st[9] = 1;
 }
 void _08000AF4(void) __attribute__((alias("EWRAM_Handler_BlobA")));
 
 // Blob B — _08000E80 (SIO-normal polling, 0x0203F150 state)
 typedef struct { vu8 f00; vu8 _01[3]; vu32 p04; vu32 _08; vu32 cnt08; vu32 _0C; } EwramF150;
 #define F150 ((EwramF150*)0x0203F150)
-// MEASURED 2026-10-22: the C lift reaches 192/200; every remaining difference
-// is a store agbcc cross-jumps and the ROM keeps. Both modes end by writing
-// SIODATA32 (`str r0,[r2]` at +0x3C, +0x56, +0x60) and the three blocks are
-// identical in that last instruction, so agbcc merges them into one shared
-// copy and skips 8 bytes. Nothing in the C spelling separates them: the stored
-// values differ, the destination does not.
+// MEASURED 2026-10-29: C reaches 196/200 with the three SIODATA32 stores kept
+// apart by a bare `__asm__ volatile ("")` after the first two -- the earlier
+// 192-byte reading was agbcc's cross-jump merging them into one shared copy.
+// What is left is BLOCK LAYOUT only: the ROM puts the mode-0 negative arm
+// (`*[r5+8] = v-1`) after the mode-1 blocks at 0x08000EEA, i.e.
+// [head][mode1][neg][store chain]. Four spellings were measured -- if/else-if,
+// `if (v >= 0) goto store; goto neg;`, a `goto`-only else, and a `switch` with
+// `default` first -- and agbcc emits [head][neg][mode1][store] for all of them:
+// it places a trailing `goto`'s target block immediately after the block that
+// jumps to it, so the else block is always pushed past the join. The head's
+// two-branch dispatch (`bge store; b neg`) is what armcc produced; agbcc never
+// emits both arms out of line. Do not re-derive the 196-byte body.
 __attribute__((naked)) void EWRAM_Handler_BlobB(void)
 {
     __asm__ volatile (

@@ -1189,7 +1189,7 @@ __asm__(".align 2, 0");
 // Forward decls for intra-module calls (defined below).
 int _08002944C(void *rec);
 int _080029488(void *rec);
-void _0800295F4(void *rec);
+u32 _0800295F4(void *rec);
 void _080029E30(void *rec, s16 d);
 
 int _08002944C(void *rec) {
@@ -1346,212 +1346,148 @@ void _08002955C(void *rec) {
 
 // ----------------------------------------------------------------------------
 // 0x080295F4 — lateral dynamics (abs(134) vs 146 gate; flag-159 lanes).
+//
+// The body returns the last `_080029354` result: the ROM epilogue pops into r1
+// (`pop {r1}; bx r1`) because r0 carries the return value.
+//
+// MEASURED shapes (368/368 exact):
+//   * `register u8 *r asm("r6")` and `out` pinned to r4; without them the
+//     out/lat/lim pointers rotate r4/r5/r7.  A `lim` pin to r7 costs bytes
+//     (r7 is also the frame pointer) -- leave lim allocator-assigned.
+//   * `res` + `zero`: the zero must be initialized after the tmp reload but
+//     before the store, which is why the tmp value is copied to `res` first.
+//     `zero` is the shared literal for both `*lat = zero` arms; its home is ip.
+//   * flag reads: `1u & *t` (constant first), then an empty `+r` barrier on the
+//     temp, then `fl = t`.  That reproduces `movs r0,#1 / ldrb r3,[r1] /
+//     ands r0,r3 / adds r3,r1`; a single `u8 *fl` coalesces and loses the copy.
+//   * the two identical `|out| >> 1` lane tails need the empty asm inside the
+//     first lane (before its goto) or cross-jump merges them (8 bytes short).
+//   * `d << 16 > 0x1C20000` is the ROM's `lsls #16 / movs #225 / lsls #17`.
+//   * `f` pinned to r0 fixes the value/constant order of both `|` and `&`.
+//   * `s28` pinned to r4 with `v` loaded first gives `ldr r0,[r6,#32] /
+//     adds r4,r6,#0 / adds r4,#28 / adds r1,r4`.
 // ----------------------------------------------------------------------------
-__attribute__((naked)) void _0800295F4(void *rec) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "\tpush\t{r4, r5, r6, r7, lr}\n"
-        "\tsub\tsp, #4\n"
-        "\tadds\tr6, r0, #0\n"
-        "\tadds\tr5, r6, #0\n"
-        "\tadds\tr5, #134\n"
-        "\tmovs\tr0, #0\n"
-        "\tldrsh\tr1, [r5, r0]\n"
-        "\tcmp\tr1, #0\n"
-        "\tbge .Lgarage0800295F4__080029608\n"
-        "\tnegs\tr1, r1\n"
-        ".Lgarage0800295F4__080029608:\n"
-        "\tadds\tr7, r6, #0\n"
-        "\tadds\tr7, #146\n"
-        "\tmovs\tr2, #0\n"
-        "\tldrsh\tr0, [r7, r2]\n"
-        "\tcmp\tr1, r0\n"
-        "\tbgt .Lgarage0800295F4__080029616\n"
-        "\tb .Lgarage0800295F4__08002972A\n"
-        ".Lgarage0800295F4__080029616:\n"
-        "\tadds\tr4, r6, #0\n"
-        "\tadds\tr4, #136\n"
-        "\tmovs\tr3, #0\n"
-        "\tldrsh\tr0, [r4, r3]\n"
-        "\tstr\tr0, [sp, #0]\n"
-        "\tmovs\tr1, #0\n"
-        "\tldrsh\tr0, [r5, r1]\n"
-        "\tadds\tr1, r6, #0\n"
-        "\tadds\tr1, #138\n"
-        "\tmovs\tr3, #0\n"
-        "\tldrsh\tr2, [r1, r3]\n"
-        "\tmov\tr1, sp\n"
-        "\tbl sub_08002937C\n"
-        "\tldr\tr0, [sp, #0]\n"
-        "\tmovs\tr1, #0\n"
-        "\tmov\tip, r1\n"
-        "\tstrh\tr0, [r4, #0]\n"
-        "\tmovs\tr3, #0\n"
-        "\tldrsh\tr2, [r7, r3]\n"
-        "\tstr\tr2, [sp, #0]\n"
-        "\tadds\tr1, r6, #0\n"
-        "\tadds\tr1, #159\n"
-        "\tmovs\tr0, #1\n"
-        "\tldrb\tr3, [r1, #0]\n"
-        "\tands\tr0, r3\n"
-        "\tadds\tr3, r1, #0\n"
-        "\tcmp\tr0, #0\n"
-        "\tbne .Lgarage0800295F4__080029654\n"
-        "\tlsls\tr0, r2, #1\n"
-        "\tstr\tr0, [sp, #0]\n"
-        ".Lgarage0800295F4__080029654:\n"
-        "\tldrh\tr0, [r5, #0]\n"
-        "\tmovs\tr1, #0\n"
-        "\tldrsh\tr2, [r5, r1]\n"
-        "\tcmp\tr2, #0\n"
-        "\tble .Lgarage0800295F4__080029690\n"
-        "\tldrh\tr1, [r7, #0]\n"
-        "\tsubs\tr2, r0, r1\n"
-        "\tstrh\tr2, [r5, #0]\n"
-        "\tlsls\tr1, r2, #16\n"
-        "\tmovs\tr0, #225\n"
-        "\tlsls\tr0, r0, #17\n"
-        "\tcmp\tr1, r0\n"
-        "\tble .Lgarage0800295F4__080029674\n"
-        "\tldrh\tr1, [r7, #0]\n"
-        "\tsubs\tr0, r2, r1\n"
-        "\tstrh\tr0, [r5, #0]\n"
-        ".Lgarage0800295F4__080029674:\n"
-        "\tmovs\tr0, #4\n"
-        "\tldrb\tr2, [r3, #0]\n"
-        "\tands\tr0, r2\n"
-        "\tcmp\tr0, #0\n"
-        "\tbeq .Lgarage0800295F4__080029686\n"
-        "\tldrh\tr1, [r5, #0]\n"
-        "\tldrh\tr7, [r7, #0]\n"
-        "\tsubs\tr0, r1, r7\n"
-        "\tstrh\tr0, [r5, #0]\n"
-        ".Lgarage0800295F4__080029686:\n"
-        "\tmovs\tr2, #0\n"
-        "\tldrsh\tr0, [r5, r2]\n"
-        "\tcmp\tr0, #0\n"
-        "\tbge .Lgarage0800295F4__0800296C8\n"
-        "\tb .Lgarage0800295F4__0800296C4\n"
-        ".Lgarage0800295F4__080029690:\n"
-        "\tcmp\tr2, #0\n"
-        "\tbge .Lgarage0800295F4__0800296C8\n"
-        "\tldrh\tr1, [r7, #0]\n"
-        "\tadds\tr2, r1, r0\n"
-        "\tstrh\tr2, [r5, #0]\n"
-        "\tlsls\tr0, r2, #16\n"
-        "\tasrs\tr0, r0, #16\n"
-        "\tldr r1, .Lgarage0800295F4__0800296F0\n"
-        "\tcmp\tr0, r1\n"
-        "\tbge .Lgarage0800295F4__0800296AA\n"
-        "\tldrh\tr1, [r7, #0]\n"
-        "\tadds\tr0, r1, r2\n"
-        "\tstrh\tr0, [r5, #0]\n"
-        ".Lgarage0800295F4__0800296AA:\n"
-        "\tmovs\tr0, #8\n"
-        "\tldrb\tr2, [r3, #0]\n"
-        "\tands\tr0, r2\n"
-        "\tcmp\tr0, #0\n"
-        "\tbeq .Lgarage0800295F4__0800296BC\n"
-        "\tldrh\tr1, [r5, #0]\n"
-        "\tldrh\tr7, [r7, #0]\n"
-        "\tadds\tr0, r1, r7\n"
-        "\tstrh\tr0, [r5, #0]\n"
-        ".Lgarage0800295F4__0800296BC:\n"
-        "\tmovs\tr2, #0\n"
-        "\tldrsh\tr0, [r5, r2]\n"
-        "\tcmp\tr0, #0\n"
-        "\tble .Lgarage0800295F4__0800296C8\n"
-        ".Lgarage0800295F4__0800296C4:\n"
-        "\tmov\tr0, ip\n"
-        "\tstrh\tr0, [r5, #0]\n"
-        ".Lgarage0800295F4__0800296C8:\n"
-        "\tldrh\tr1, [r4, #0]\n"
-        "\tlsls\tr0, r1, #16\n"
-        "\tasrs\tr0, r0, #17\n"
-        "\tldr\tr1, [r6, #32]\n"
-        "\tadds\tr1, r1, r0\n"
-        "\tstr\tr1, [r6, #32]\n"
-        "\tmovs\tr0, #8\n"
-        "\tldrb\tr2, [r3, #0]\n"
-        "\tands\tr0, r2\n"
-        "\tcmp\tr0, #0\n"
-        "\tbeq .Lgarage0800295F4__0800296F4\n"
-        "\tmovs\tr1, #0\n"
-        "\tldrsh\tr0, [r4, r1]\n"
-        "\tcmp\tr0, #0\n"
-        "\tble .Lgarage0800295F4__0800296F4\n"
-        "\tcmp\tr0, #0\n"
-        "\tbge .Lgarage0800295F4__0800296EC\n"
-        "\tnegs\tr0, r0\n"
-        ".Lgarage0800295F4__0800296EC:\n"
-        "\tasrs\tr0, r0, #1\n"
-        "\tb .Lgarage0800295F4__08002971C\n"
-        ".Lgarage0800295F4__0800296F0: .word 0xFFFFFE3E\n"
-        ".Lgarage0800295F4__0800296F4:\n"
-        "\tmovs\tr0, #4\n"
-        "\tldrb\tr3, [r3, #0]\n"
-        "\tands\tr0, r3\n"
-        "\tcmp\tr0, #0\n"
-        "\tbeq .Lgarage0800295F4__080029710\n"
-        "\tmovs\tr3, #0\n"
-        "\tldrsh\tr0, [r4, r3]\n"
-        "\tcmp\tr0, #0\n"
-        "\tbge .Lgarage0800295F4__080029710\n"
-        "\tcmp\tr0, #0\n"
-        "\tbge .Lgarage0800295F4__08002970C\n"
-        "\tnegs\tr0, r0\n"
-        ".Lgarage0800295F4__08002970C:\n"
-        "\tasrs\tr0, r0, #1\n"
-        "\tb .Lgarage0800295F4__08002971C\n"
-        ".Lgarage0800295F4__080029710:\n"
-        "\tmovs\tr2, #0\n"
-        "\tldrsh\tr0, [r4, r2]\n"
-        "\tcmp\tr0, #0\n"
-        "\tbge .Lgarage0800295F4__08002971A\n"
-        "\tnegs\tr0, r0\n"
-        ".Lgarage0800295F4__08002971A:\n"
-        "\tlsls\tr0, r0, #2\n"
-        ".Lgarage0800295F4__08002971C:\n"
-        "\tadds\tr0, #20\n"
-        "\tstr\tr0, [sp, #0]\n"
-        "\tldr\tr0, [r6, #92]\n"
-        "\tmovs\tr1, #128\n"
-        "\tlsls\tr1, r1, #10\n"
-        "\torrs\tr0, r1\n"
-        "\tb .Lgarage0800295F4__08002973A\n"
-        ".Lgarage0800295F4__08002972A:\n"
-        "\tmovs\tr1, #0\n"
-        "\tstrh\tr1, [r5, #0]\n"
-        "\tadds\tr0, r6, #0\n"
-        "\tadds\tr0, #136\n"
-        "\tstrh\tr1, [r0, #0]\n"
-        "\tldr\tr0, [r6, #92]\n"
-        "\tldr r1, .Lgarage0800295F4__080029760\n"
-        "\tands\tr0, r1\n"
-        ".Lgarage0800295F4__08002973A:\n"
-        "\tstr\tr0, [r6, #92]\n"
-        "\tadds\tr0, r6, #0\n"
-        "\tadds\tr0, #32\n"
-        "\tbl _080029354\n"
-        "\tldr\tr0, [r6, #32]\n"
-        "\tadds\tr4, r6, #0\n"
-        "\tadds\tr4, #28\n"
-        "\tadds\tr1, r4, #0\n"
-        "\tmovs\tr2, #20\n"
-        "\tbl sub_08002937C\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tbl _080029354\n"
-        "\tadd\tsp, #4\n"
-        "\tpop\t{r4, r5, r6, r7}\n"
-        "\tpop\t{r1}\n"
-        "\tbx\tr1\n"
-        ".Lgarage0800295F4__080029760: .word 0xFFFDFFFF\n"
-        ".syntax divided\n"
-    );
+u32 _0800295F4(void *rec) {
+    register u8 *r __asm__("r6") = (u8 *)rec;
+    s16 *lat = (s16 *)(r + 134);
+    int a = *lat;
+    register u32 f __asm__("r0");
+
+    if (a < 0)
+        a = -a;
+    {
+        s16 *lim = (s16 *)(r + 146);
+        if (a > *lim) {
+            register s16 *out __asm__("r4") = (s16 *)(r + 136);
+            int tmp = *out;
+            _08002937C(*lat, (u32 *)&tmp, *(s16 *)(r + 138));
+            {
+                int res = tmp;
+                int zero = 0;
+                *out = (s16)res;
+                tmp = *lim;
+                {
+                    u8 *t = (u8 *)(r + 159);
+                    u8 test = 1u & *t;
+                    __asm__ volatile ("" : "+r" (t));
+                    u8 *fl = t;
+                    if (!test)
+                        tmp <<= 1;
+                    {
+                        u16 v = *(u16 *)lat;
+                        if (*(s16 *)lat > 0) {
+                            int d = v - *(u16 *)lim;
+                            *(u16 *)lat = (u16)d;
+                            if ((s32)(d << 16) > 0x1C20000)
+                                *(u16 *)lat = (u16)(d - *(u16 *)lim);
+                            if (*fl & 4u)
+                                *(u16 *)lat = (u16)(*(u16 *)lat - *(u16 *)lim);
+                            if (*(s16 *)lat < 0)
+                                *lat = zero;
+                        } else if (*(s16 *)lat < 0) {
+                            *(u16 *)lat = (u16)(*(u16 *)lim + v);
+                            if (*(s16 *)lat < -450)
+                                *(u16 *)lat = (u16)(*(u16 *)lim + *(u16 *)lat);
+                            if (*fl & 8u)
+                                *(u16 *)lat = (u16)(*(u16 *)lat + *(u16 *)lim);
+                            if (*(s16 *)lat > 0)
+                                *lat = zero;
+                        }
+                    }
+                    *(int *)(r + 32) += ((s32)(*(u16 *)out << 16)) >> 17;
+                    {
+                        int t2;
+                        if (*fl & 8u) {
+                            if (*out > 0) {
+                                t2 = *out;
+                                __asm__ volatile ("");
+                                if (t2 < 0)
+                                    t2 = -t2;
+                                t2 >>= 1;
+                                __asm__ volatile ("");
+                                goto lane_done;
+                            }
+                        }
+                        __asm__ volatile ("");
+                        if (*fl & 4u) {
+                            if (*out < 0) {
+                                t2 = *out;
+                                if (t2 < 0)
+                                    t2 = -t2;
+                                t2 >>= 1;
+                                goto lane_done;
+                            }
+                        }
+                        t2 = *out;
+                        if (t2 < 0)
+                            t2 = -t2;
+                        t2 <<= 2;
+                    lane_done:
+                        tmp = t2 + 20;
+                    }
+                }
+            }
+            f = *(u32 *)(r + 92) | 0x20000u;
+        } else {
+            *lat = 0;
+            *(u16 *)(r + 136) = 0;
+            f = *(u32 *)(r + 92) & 0xFFFDFFFFu;
+        }
+    }
+    *(u32 *)(r + 92) = f;
+    _080029354((u32 *)(r + 32));
+    {
+        s32 v;
+        register u32 *s28 __asm__("r4");
+        v = *(s32 *)(r + 32);
+        s28 = (u32 *)(r + 28);
+        _08002937C(v, s28, 20);
+        return _080029354(s28);
+    }
 }
 // ----------------------------------------------------------------------------
 // 0x08029764 — slide/flag-8/flag-4 lanes + 295F4 tail.
 // ----------------------------------------------------------------------------
+// MEASURED 2026-10-29: C reaches the exact 636 B span and 594/636 matched
+// bytes (287 of 312 instructions agree); kept as asm until the last 21
+// register choices land. What works:
+//   * byte[159]'s `ldrb` homed in r1, the masked flag as a `u8` temp (the
+//     `lsls #24 / lsrs #24` pair) copied to a `u16` pinned to r8 behind a
+//     `"+r"` barrier -- that pair emits the ROM's `mov r8,r0` at entry and
+//     the `mov r7,r8 / push {r7}` prologue.
+//   * `v110 < -v114`, not `v110 + v114 < 0`, is what makes agbcc emit the
+//     ROM's `cmn rX,rY` (see the cmn note in docs/matching_workflow.md).
+//   * both -200 clamp compares want the literal `-200`, while the store that
+//     follows keeps a named `int lo = -200`; the literal store or `(u16)-200`
+//     loses 200+ bytes. The -2000 clamp keeps its literal.
+//   * sum/d stay 32-bit locals; as `u16` they add the truncation pair.
+// Residual (all 2-byte register choices, length already exact): the A arm's
+// record+112 pointer wants `ip` (agbcc gives r8; pinning it reshuffles the
+// arm to 585 or 553), which also swaps the two load bases; the -2000 compare
+// wants the value in r0 and the pool word in r1 (4 sites); the flag-4 zero
+// store wants r5 (pin costs 53); two `movs rX,#0` index scratches differ; and
+// the tail's v110/p140 pair is emitted two slots late (cross-jump at +0x23A;
+// empty-asm and clobber barriers there cost 200+ bytes).
 __attribute__((naked)) void _080029764(void *rec) {
     __asm__ volatile (
         ".syntax unified\n"
@@ -3354,13 +3290,21 @@ __asm__(".align 2, 0");
 // ROM sets r0/r1 only (r2 stale); the 2A90C<-2A160<-2A740 chain has no
 // static callers so the lane is headless-orphaned; revisit if exercised.
 //
-// C-lift status (2026-10-28): a full C body reaches +4 B / 70 diff bytes and
-// is NOT promoted. Pinning `ctxx`->r4 and `ctxy`->r5 reproduces the ROM's
-// r4/r5 uses and grows the frame 16 -> 20 with `extra` landing at sp+16, but
-// `outp` then folds into r7 instead of taking the ROM's sp+20 slot, and pinning
-// the 1500 bound to r7 (so `extra` has no register left) miscompiles: agbcc
-// then clobbers r7 with the constant and reads `extra` through the same
-// register. The unsolved piece is the second spill, not the arithmetic.
+// C-lift status (2026-10-29): the frame is steerable, the register roles are
+// not. The ROM frame is v=sp+0, out=sp+8, extra=sp+16, outp=&out=sp+20.
+//   * volatile homes are allocated in declaration order, at the declaration:
+//     `volatile u32 v[2], out[2]; u32 *volatile extra, outp;` in that order
+//     reproduces all four slots (no asm barriers needed).
+//   * an `asm("" : "+m"(x))` home is allocated where the asm appears instead,
+//     so the same four slots need the barrier order v/out, extra, outp.
+//   * the barrier shaping reaches 96/136 aligned rows / 304 B (volatile:
+//     91/136, 308 B); the rest is register choice only (ROM: acc r6, pos r8,
+//     i sl, w r9, 1500 in r7).
+//   * a hard-reg pin on `pos`/`w` costs the folded word offset (agbcc emits
+//     `adds r1,r9,#4; ldr r1,[r1]` instead of `ldr r1,[r9,#4]`), so those two
+//     roles cannot be pinned; unpinned, agbcc picks pos=r5, i=r8, w=r7.
+//   * pinning the 1500 bound to r7 miscompiles: agbcc clobbers the pinned
+//     register and keeps reading the stale &out from it.
 // ----------------------------------------------------------------------------
 __attribute__((naked)) void _08002A90C(void *acc, void *pos, void *extra, void *unused) {
     __asm__ volatile (

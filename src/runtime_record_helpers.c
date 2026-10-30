@@ -254,155 +254,147 @@ __asm__(".align 2, 0");
 void *sub_08007484(void *x) __attribute__((alias("_08007484")));
 
 // 0x08007368 — proximity hit test (exact control flow from asm)
-__attribute__((naked)) int _08007368(void *state, void *pos, u32 heading_u16, void *out) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "        push {r4, r5, r6, r7, lr}\n"
-        "        mov r7, sl\n"
-        "        mov r6, r9\n"
-        "        mov r5, r8\n"
-        "        push {r5, r6, r7}\n"
-        "        sub sp, #56\n"
-        "        adds r4, r1, #0\n"
-        "        mov r9, r3\n"
-        "        lsls r2, r2, #16\n"
-        "        lsrs r2, r2, #16\n"
-        "        str r2, [sp, #36]\n"
-        "        movs r1, #0\n"
-        "        bl 0x08006C10\n"
-        "        adds r7, r0, #0\n"
-        "        add r2, sp, #12\n"
-        "        ldr r0, [r4, #0]\n"
-        "        ldr r1, [r7, #12]\n"
-        "        subs r0, r0, r1\n"
-        "        str r0, [sp, #12]\n"
-        "        ldr r0, [r4, #4]\n"
-        "        ldr r1, [r7, #16]\n"
-        "        subs r0, r0, r1\n"
-        "        str r0, [r2, #4]\n"
-        "        movs r0, #0\n"
-        "        str r0, [sp, #40]\n"
-        "        mov r1, sp\n"
-        "        adds r1, #20\n"
-        "        str r1, [sp, #52]\n"
-        "        mov r0, sp\n"
-        "        adds r0, #28\n"
-        "        str r0, [sp, #48]\n"
-        ".L7368_a8:\n"
-        "        ldr r1, [sp, #40]\n"
-        "        cmp r1, #0\n"
-        "        beq.n .L7368_b4\n"
-        "        movs r0, #32\n"
-        "        negs r0, r0\n"
-        "        b.n .L7368_b6\n"
-        ".L7368_b4:\n"
-        "        movs r0, #32\n"
-        ".L7368_b6:\n"
-        "        str r0, [sp, #20]\n"
-        "        movs r0, #64\n"
-        "        str r0, [sp, #24]\n"
-        "        ldr r0, [sp, #36]\n"
-        "        lsls r1, r0, #16\n"
-        "        ldr r0, [sp, #52]\n"
-        "        asrs r1, r1, #16\n"
-        "        bl 0x08005BA8\n"
-        "        mov r0, sp\n"
-        "        add r1, sp, #12\n"
-        "        bl 0x08005DA4\n"
-        "        movs r1, #0\n"
-        "        str r1, [sp, #44]\n"
-        "        ldr r0, [sp, #48]\n"
-        "        mov r8, r0\n"
-        "        adds r4, r7, #0\n"
-        "        adds r4, #40\n"
-        "        mov sl, r1\n"
-        ".L7368_de:\n"
-        "        mov r0, r8\n"
-        "        mov r1, sp\n"
-        "        adds r2, r4, #0\n"
-        "        bl 0x08005E14\n"
-        "        lsls r0, r0, #24\n"
-        "        cmp r0, #0\n"
-        "        beq.n _08007458\n"
-        "        ldr r3, [sp, #28]\n"
-        "        asrs r5, r3, #8\n"
-        "        movs r1, #12\n"
-        "        ldrsh r0, [r4, r1]\n"
-        "        cmp r0, r5\n"
-        "        bgt.n _08007458\n"
-        "        movs r1, #16\n"
-        "        ldrsh r0, [r4, r1]\n"
-        "        cmp r0, r5\n"
-        "        blt.n _08007458\n"
-        "        mov r0, r8\n"
-        "        ldr r2, [r0, #4]\n"
-        "        asrs r6, r2, #8\n"
-        "        movs r1, #14\n"
-        "        ldrsh r0, [r4, r1]\n"
-        "        cmp r0, r6\n"
-        "        bgt.n _08007458\n"
-        "        movs r1, #18\n"
-        "        ldrsh r0, [r4, r1]\n"
-        "        cmp r0, r6\n"
-        "        blt.n _08007458\n"
-        "        ldr r0, [sp, #12]\n"
-        "        subs r5, r3, r0\n"
-        "        ldr r0, [sp, #16]\n"
-        "        subs r6, r2, r0\n"
-        "        adds r0, r5, #0\n"
-        "        muls r0, r5\n"
-        "        adds r1, r6, #0\n"
-        "        muls r1, r6\n"
-        "        adds r0, r0, r1\n"
-        "        cmp r0, #25\n"
-        "        bgt.n _08007458\n"
-        "        ldr r0, [r7, #12]\n"
-        "        adds r0, r3, r0\n"
-        "        mov r1, r9\n"
-        "        str r0, [r1, #0]\n"
-        "        ldr r0, [r7, #16]\n"
-        "        adds r0, r2, r0\n"
-        "        str r0, [r1, #4]\n"
-        "        adds r0, r7, #0\n"
-        "        adds r0, #40\n"
-        "        add r0, sl\n"
-        "        ldr r0, [r0, #0]\n"
-        "        negs r0, r0\n"
-        "        str r0, [r1, #8]\n"
-        "        adds r0, r7, #0\n"
-        "        adds r0, #44\n"
-        "        add r0, sl\n"
-        "        ldr r0, [r0, #0]\n"
-        "        negs r0, r0\n"
-        "        str r0, [r1, #12]\n"
-        "        movs r0, #1\n"
-        "        b.n _08007474\n"
-        "_08007458:\n"
-        "        adds r4, #28\n"
-        "        movs r0, #28\n"
-        "        add sl, r0\n"
-        "        ldr r1, [sp, #44]\n"
-        "        adds r1, #1\n"
-        "        str r1, [sp, #44]\n"
-        "        cmp r1, #1\n"
-        "        ble.n .L7368_de\n"
-        "        ldr r0, [sp, #40]\n"
-        "        adds r0, #1\n"
-        "        str r0, [sp, #40]\n"
-        "        cmp r0, #1\n"
-        "        ble.n .L7368_a8\n"
-        "        movs r0, #0\n"
-        "_08007474:\n"
-        "        add sp, #56\n"
-        "        pop {r3, r4, r5}\n"
-        "        mov r8, r3\n"
-        "        mov r9, r4\n"
-        "        mov sl, r5\n"
-        "        pop {r4, r5, r6, r7}\n"
-        "        pop {r1}\n"
-        "        bx r1\n"
-        ".syntax divided\n"
-    );
+int _08007368(void *state, void *pos, u32 heading_u16, void *out) {
+    /* 05DA4 reads the four-word ray; 05E14 writes the adjacent point. */
+    struct { s32 line[3]; s32 ray[4]; s32 point[2]; } frame;
+    u8 *row;
+    register s32 *position __asm__("r4") = (s32 *)pos;
+    register s32 *result __asm__("r9") = (s32 *)out;
+    register u32 heading __asm__("r2") = (u16)heading_u16;
+    int side, i;
+    s32 *ray_end;
+    s32 *intersection;
+    u32 angle;
+    /* Reserve frame slots in ROM order; the barriers emit no instructions. */
+    __asm__ volatile ("" : "=m"(frame.point));
+    __asm__ volatile ("" : "+r"(heading));
+    angle = heading;
+    __asm__ volatile ("" : "+m"(angle));
+    row = _08006C10(state, 0);
+    {
+        register s32 *r __asm__("r2") = frame.ray;
+        frame.ray[0] = position[0] - *(s32 *)(row + 12);
+        r[1] = position[1] - *(s32 *)(row + 16);
+    }
+    side = 0;
+    __asm__ volatile ("" : "+m"(side));
+    __asm__ volatile ("" : "=m"(i));
+    __asm__ volatile ("" : "=m"(intersection));
+    __asm__ volatile ("" : "=m"(ray_end));
+    {
+        register u8 *base __asm__("r1") = (u8 *)&frame;
+        __asm__ volatile ("" : "+r"(base));
+        ray_end = (s32 *)(base + 20);
+        __asm__ volatile ("" : "+m"(ray_end));
+    }
+    {
+        register u8 *base __asm__("r0") = (u8 *)&frame;
+        __asm__ volatile ("" : "+r"(base));
+        intersection = (s32 *)(base + 28);
+        __asm__ volatile ("" : "+m"(intersection));
+    }
+    do {
+        register u8 *edge __asm__("r4");
+        register s32 *hit __asm__("r8");
+        register int offset __asm__("sl");
+        {
+            register int current __asm__("r1") = side;
+            __asm__ volatile ("" : "+r"(current));
+            if (current != 0)
+                frame.ray[2] = -32;
+            else
+                frame.ray[2] = 32;
+        }
+        frame.ray[3] = 64;
+        {
+            register u32 a __asm__("r0") = angle;
+            register u32 shifted __asm__("r1");
+            register s32 *end __asm__("r0");
+            __asm__ volatile ("" : "+r"(a));
+            shifted = a << 16;
+            __asm__ volatile ("" : "+r"(shifted));
+            end = ray_end;
+            _08005BA8(end, (s32)shifted >> 16);
+        }
+        _08005DA4(frame.line, (u8 *)&frame + 12);
+        {
+            register int zero __asm__("r1") = 0;
+            __asm__ volatile ("" : "+r"(zero));
+            i = zero;
+            __asm__ volatile ("" : "+m"(i));
+            hit = intersection;
+            edge = row + 40;
+            offset = zero;
+        }
+        do {
+            if ((u8)_08005E14(hit, frame.line, edge)) {
+                s32 x = frame.point[0];
+                register s32 bx __asm__("r5") = x >> 8;
+                if (*(s16 *)(edge + 12) <= bx) {
+                    register int hold __asm__("r2");
+                    int upper;
+                    /* Keep the signed-load scratch in r1. */
+                    __asm__ volatile ("" : "=r"(hold));
+                    upper = *(s16 *)(edge + 16);
+                    __asm__ volatile ("" : : "r"(hold));
+                    if (upper >= bx) {
+                        register s32 *p __asm__("r0") = hit;
+                        s32 y;
+                        __asm__ volatile ("" : "+r"(p));
+                        y = p[1];
+                        register s32 by __asm__("r6") = y >> 8;
+                        if (*(s16 *)(edge + 14) <= by && *(s16 *)(edge + 18) >= by) {
+                            register s32 rx __asm__("r0") = frame.ray[0];
+                            register s32 dx __asm__("r5");
+                            register s32 ry __asm__("r0");
+                            register s32 dy __asm__("r6");
+                            __asm__ volatile ("" : "+r"(rx));
+                            dx = x - rx;
+                            ry = frame.ray[1];
+                            __asm__ volatile ("" : "+r"(ry));
+                            dy = y - ry;
+                            if (dx * dx + dy * dy <= 25) {
+                                register s32 first __asm__("r0") = x + *(s32 *)(row + 12);
+                                register s32 *dst __asm__("r1") = result;
+                                __asm__ volatile ("" : "+r"(first));
+                                __asm__ volatile ("" : "+r"(dst));
+                                dst[0] = first;
+                                dst[1] = y + *(s32 *)(row + 16);
+                                {
+                                    register u8 *base __asm__("r0") = row;
+                                    __asm__ volatile ("" : "+r"(base));
+                                    base += 40;
+                                    __asm__ volatile ("" : "+r"(base));
+                                    dst[2] = -*(s32 *)(base + offset);
+                                    base = row;
+                                    __asm__ volatile ("" : "+r"(base));
+                                    base += 44;
+                                    __asm__ volatile ("" : "+r"(base));
+                                    dst[3] = -*(s32 *)(base + offset);
+                                }
+                                return 1;
+                            }
+                        }
+                    }
+                }
+            }
+            edge += 28;
+            offset += 28;
+            {
+                register int next __asm__("r1") = i + 1;
+                i = next;
+                __asm__ volatile ("" : "+m"(i));
+                if (next > 1) break;
+            }
+        } while (1);
+        {
+            int next = side + 1;
+            side = next;
+            __asm__ volatile ("" : "+m"(side));
+            if (next > 1) break;
+        }
+    } while (1);
+    return 0;
 }
 int sub_08007368(void *a, void *b, u32 c, void *d) __attribute__((alias("_08007368")));
 

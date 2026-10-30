@@ -31,6 +31,13 @@ a sweep rather than a guess. The best variant is written to
 `build/lift/sweep_best.c` for pasting back, and the winning placements to
 `build/lift/sweep_best.barriers` with the statement each one follows.
 
+`--spill VAR[,VAR...]` runs the same grid with an `asm("" : "+m"(VAR))`
+barrier instead. agbcc gives a variable its stack home where that asm appears,
+so a spill sweep orders the frame: on `_08002A90C` the placements `v/out` then
+`extra` then `outp` reproduce the ROM's sp+0/sp+8/sp+16/sp+20 layout, which no
+declaration order does. Use it when the frame offsets, not the registers, are
+what differs.
+
 `--sweep-rounds N` (default 1) stacks barriers: each round sweeps again on top
 of the current winner, so placements that only pay off *together* are
 reachable. `--beam K` carries the K best variants of a round into the next
@@ -345,7 +352,18 @@ def mask_calls(blob: bytes) -> bytes:
 
 def rom_slice(vma: int, size: int) -> bytes:
     off = vma - 0x08000000
-    return ROM.read_bytes()[off:off + size]
+    rom = ROM.read_bytes()
+    # A VMA outside the image silently yielded an empty slice, and every
+    # downstream score then read "0 aligned" as if the body were wrong. The
+    # usual cause is passing a symbol's 9-digit spelling (`0x08002AD14`, as in
+    # the `_08002AD14` label) instead of its 8-digit VMA (`0x802AD14`).
+    if off < 0 or off + size > len(rom):
+        raise SystemExit(
+            f"vma {vma:#010x} + {size} B falls outside the {len(rom):#x} B ROM "
+            f"(base {0x08000000:#010x}, offset {off:#x}); VMAs here are "
+            f"8-digit ({vma & 0x0FFFFFFF | 0x08000000:#010x}), not the "
+            f"9-digit symbol spelling")
+    return rom[off:off + size]
 
 
 def section_blob(obj: Path, function: str, workdir: Path = WORK) -> bytes:
@@ -367,7 +385,22 @@ def section_blob(obj: Path, function: str, workdir: Path = WORK) -> bytes:
     if rc.returncode != 0:
         sys.stderr.write(rc.stderr)
         raise SystemExit("objcopy failed")
-    return binpath.read_bytes()
+    blob = binpath.read_bytes()
+    # A function section can end in alignment padding (gas aligns the section,
+    # and an appended `.align`/section tail lands after the symbol). objcopy
+    # copies that padding, so the blob reads longer than the function and the
+    # length check reports a phantom `LENGTH +N` on an otherwise exact body.
+    # The symbol's own size is the authoritative extent.
+    nm = subprocess.run(["arm-none-eabi-nm", "-S", "--defined-only", str(obj)],
+                        capture_output=True, text=True).stdout
+    for line in nm.splitlines():
+        parts = line.split()
+        if len(parts) == 4 and parts[3] == function:
+            size = int(parts[1], 16)
+            if 0 < size < len(blob):
+                blob = blob[:size]
+            break
+    return blob
 
 
 def align_score(ref: bytes, cand: bytes) -> int:
@@ -425,6 +458,11 @@ def _barrier_stmt(reg: str) -> str:
     return '\n__asm__ volatile("" : "+r"(%s));' % reg
 
 
+def _spill_stmt(var: str) -> str:
+    """Force `var` into a stack home at this point (the --spill lever)."""
+    return '\n__asm__ volatile("" : "+m"(%s));' % var
+
+
 def _preceding_stmt(tu: str, at: int) -> str:
     """One-line tail of the statement a barrier at `at` follows.
 
@@ -458,6 +496,33 @@ def barrier_variants(tu: str, span: tuple[int, int], regs: list[str],
     return out
 
 
+def spill_variants(tu: str, span: tuple[int, int], vars_: list[str],
+                   tag: str = "") -> list[tuple[str, str, tuple[int, str, str]]]:
+    """(label, tu, (point, var, preceding statement)) per spill placement.
+
+    Same grid as `barrier_variants`, but the inserted statement is an `"+m"`
+    barrier. agbcc gives a variable a stack home where that asm appears (and
+    allocates the other homes around it), which is the lever for frame layout:
+    the slot order follows the barrier order, not the declaration order.
+    """
+    out = []
+    seen = set()
+    for idx, at in enumerate(statement_points(tu, span)):
+        window = tu[max(0, at - 64):at]
+        if BARRIER_SIG in window:
+            continue
+        for var in vars_:
+            if '"+m"(%s)' % var in window:
+                continue
+            cand = tu[:at] + _spill_stmt(var) + tu[at:]
+            if cand in seen:
+                continue
+            seen.add(cand)
+            out.append((f"{tag}p{idx:02d}/{var}", cand,
+                        (idx, var, _preceding_stmt(tu, at))))
+    return out
+
+
 RANK = {"exact": 0, "exact-calls": 1, "permuted": 2, "differs": 3, "error": 9}
 
 
@@ -474,8 +539,9 @@ def _rank(item, size: int) -> tuple:
     return _score(item, size) + (len(item[2]), item[0])
 
 
-def run_sweep(a, tu: str, span, vma: int, size: int) -> int:
-    regs = [r.strip() for r in a.sweep.split(",") if r.strip()]
+def run_sweep(a, tu: str, span, vma: int, size: int,
+              gen=barrier_variants) -> int:
+    regs = [r.strip() for r in (a.spill or a.sweep).split(",") if r.strip()]
     rounds = max(1, a.sweep_rounds)
     beam = max(1, a.beam)
     points = ({int(p.strip().lstrip("p")) for p in a.points.split(",") if p.strip()}
@@ -492,7 +558,7 @@ def run_sweep(a, tu: str, span, vma: int, size: int) -> int:
         variants = []
         seen = set()
         for _path, cur, meta in frontier:
-            for label, cand, m in barrier_variants(cur, span, regs, tag):
+            for label, cand, m in gen(cur, span, regs, tag):
                 if points is not None and rnd == 1 and m[0] not in points:
                     continue
                 if cand in seen:
@@ -557,6 +623,41 @@ def run_sweep(a, tu: str, span, vma: int, size: int) -> int:
     return 0 if res["kind"] == "exact" else 1
 
 
+def print_listing(ref_bytes: bytes, cand_bytes: bytes, vma: int,
+                  all_rows: bool = False, limit: int = 3) -> None:
+    """Print the aligned ROM-vs-candidate listing (
+    `!!` ROM rows, `++` candidate rows) for the first `limit` differing runs.
+
+    Shared by the single-body path and `--variant --diff`, so a spelling grid
+    does not need a second probe run to show what the bytes actually differ in.
+    """
+    ref = disasm(ref_bytes, vma)
+    cand = disasm(cand_bytes, vma)
+    sm = difflib.SequenceMatcher(None, [norm(r[1]) for r in ref],
+                                 [norm(c[1]) for c in cand])
+    shown = 0
+    for tag, i1, i2, j1, j2 in sm.get_opcodes():
+        if tag == "equal":
+            if all_rows:
+                for k in range(i2 - i1):
+                    print(f"   {ref[i1 + k][0]:08x}  ref: {ref[i1 + k][1]}")
+            continue
+        if all_rows:
+            for k in range(i1, i2):
+                print(f"!! {ref[k][0]:08x}  ref: {ref[k][1]}")
+            for k in range(j1, j2):
+                print(f"++ {cand[k][0]:08x}  c++: {cand[k][1]}")
+        else:
+            shown += 1
+            print(f"   rom {i1}:{i2}  ->  cand {j1}:{j2}")
+            for k in range(i1, i2):
+                print(f"!! {ref[k][0]:08x}  ref: {ref[k][1]}")
+            for k in range(j1, j2):
+                print(f"++ {cand[k][0]:08x}  c++: {cand[k][1]}")
+            if limit and shown >= limit:
+                break
+
+
 def byte_score(blob: bytes, ref: bytes) -> tuple[int, int | None]:
     """Byte-match count in the probe's sense, with unresolved windows out.
 
@@ -617,7 +718,12 @@ def run_variants(a, tu: str, span: tuple[int, int], vma: int, size: int) -> int:
               + (f"  {res['msg']}" if res["kind"] == "error" else ""))
     if not results:
         return 1
-    return 0 if results[0][1]["kind"] == "exact" else 1
+    best = results[0][1]
+    if a.diff and best["kind"] != "exact":
+        print(f"\n--- {Path(results[0][0]).name} ---")
+        print_listing(rom_slice(vma, size), best["blob"], vma,
+                      limit=a.limit)
+    return 0 if best["kind"] == "exact" else 1
 
 
 def main() -> int:
@@ -632,6 +738,9 @@ def main() -> int:
                     help="grade whole-body replacement files from a scratch TU")
     ap.add_argument("--sweep", metavar="VAR[,VAR...]",
                     help="insert a +r barrier on each variable at every statement boundary and rank")
+    ap.add_argument("--spill", metavar="VAR[,VAR...]",
+                    help="insert a \"+m\" barrier on each variable at every statement boundary "
+                         "and rank (forces a stack home at that point: the frame-layout lever)")
     ap.add_argument("--points", metavar="P[,P...]",
                     help="restrict the sweep to these statement indices")
     ap.add_argument("--sweep-rounds", type=int, default=1,
@@ -640,6 +749,10 @@ def main() -> int:
                     help="frontier width carried into the next sweep round")
     ap.add_argument("--jobs", type=int, default=0, help="parallel sweeps (0 = cpu count)")
     ap.add_argument("--top", type=int, default=10)
+    ap.add_argument("--diff", action="store_true",
+                    help="print the aligned listing for the best --variant body")
+    ap.add_argument("--limit", type=int, default=3,
+                    help="differing runs printed by --diff (0 = every run)")
     ap.add_argument("--raw-tu", action="store_true",
                     help="`source` is already a transformed TU (e.g. sweep_best.c)")
     a = ap.parse_args()
@@ -673,6 +786,11 @@ def main() -> int:
     if a.sweep:
         tu, span = build_tu(a.source, a.function, want_span=True)
         return run_sweep(a, tu, span, vma, a.len or span_len(vma) or 0)
+
+    if a.spill:
+        tu, span = build_tu(a.source, a.function, want_span=True)
+        return run_sweep(a, tu, span, vma, a.len or span_len(vma) or 0,
+                         gen=spill_variants)
 
     tu = (a.source.read_text(encoding="utf-8") if a.raw_tu
           else build_tu(a.source, a.function))
@@ -721,27 +839,7 @@ def main() -> int:
     else:
         print("not a pure register permutation -- at least one operation differs")
 
-    shown = 0
-    for tag, i1, i2, j1, j2 in sm.get_opcodes():
-        if tag == "equal":
-            if a.all:
-                for k in range(i2 - i1):
-                    print(f"   {ref[i1 + k][0]:08x}  ref: {ref[i1 + k][1]}")
-            continue
-        if a.all:
-            for k in range(i1, i2):
-                print(f"!! {ref[k][0]:08x}  ref: {ref[k][1]}")
-            for k in range(j1, j2):
-                print(f"++ {cand[k][0]:08x}  c++: {cand[k][1]}")
-        else:
-            shown += 1
-            print(f"   rom {i1}:{i2}  ->  cand {j1}:{j2}")
-            for k in range(i1, i2):
-                print(f"!! {ref[k][0]:08x}  ref: {ref[k][1]}")
-            for k in range(j1, j2):
-                print(f"++ {cand[k][0]:08x}  c++: {cand[k][1]}")
-            if shown >= 3:
-                break
+    print_listing(rom_slice(vma, size), blob, vma, a.all)
     return 1
 
 

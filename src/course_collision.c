@@ -375,6 +375,17 @@ __attribute__((naked)) int Course_CollisionMore(void *sl, void *a, void *b, void
 int _08006FD4(void *a,void *b,void *c,void *d) __attribute__((alias("Course_CollisionMore")));
 
 // _08007110 — 135 L, pool 0x001FFFFF at 0x720C s32, high-reg, s32 diffs + s16 bounds + 0x400 bound via 05B5C
+//
+// MEASURED 2026-10-29: a full C body reaches the exact 256 B span and 58/123
+// aligned rows. dx/dy/basis/ip pin cleanly to the ROM's r6/r7/r8/r9, so the
+// whole residual is one variable: `out`. The ROM spills it to sp+20 and
+// reloads r3 after every call; agbcc keeps it in a callee-saved register.
+// Measured spellings: a plain `s32 *o` (r5), `s32 *volatile o` (double store,
+// 276 B), a one-element array home (r7, which then clobbers the dy pin and
+// miscompiles), and an `asm("" : "+m"(o))` barrier (two stores, 260 B).
+// Pinning `o` to r3 is not safe: agbcc treats a hard register as callee-saved,
+// so it would not reload after the `bl`s. Closing this needs a lever that
+// forces a stack home without an extra store.
 __attribute__((naked)) int Course_CollisionLoop(void *query, void *candidate, void *out) {
     __asm__ volatile (
         ".syntax unified\n"
