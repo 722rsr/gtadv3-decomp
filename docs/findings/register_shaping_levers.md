@@ -837,3 +837,67 @@ arguments) whose setup is otherwise forced. Only three spellings mattered:
   (`volatile u8 *p16 = rec + 16;`) forms it in r0 before the load, as the ROM
   does. Same lever as "a pointer offset is two instructions only while the
   address stays a pointer" above.
+
+## A two-case switch needs an empty third case to reach `emit_case_nodes`
+
+`Code2381C` (0x0802381C, 316 B) closed with three shapes worth reusing.
+
+* **Switch tree.** `switch (v) { case 0: …; case 1: …; }` lowers to a linear
+  `cmp #0 / beq; cmp #1 / beq` chain. Adding an empty `case 2: break;` above
+  the range makes `emit_case_nodes` build the ROM's tree instead:
+  `cmp #1 / beq case1; cmp #1 / bgt default; cmp #0 / bne default;` with the
+  `case 0` arm as the fallthrough. The empty arm is not in the source's
+  behaviour; it is an allocation-shaping case value.
+* **Use the parameter, not a local copy.** Writing `self = (u8 *)ctx;` and
+  using `self` lets liveness end after the last `self` use, so agbcc folds the
+  final `self + N` into `adds rN,#imm` and clobbers the parameter's home
+  register. Using `(u8 *)ctx + N` at every site keeps the parameter live and
+  reproduces the ROM's `adds r0,r5,#0; adds r0,#N` copies (and keeps r5
+  intact). The entry copy `adds r5,r0,#0` then comes from global-alloc, so no
+  pin is needed.
+* **Shared constants across word and halfword stores.** In the `ev == 2`
+  block the ROM materialises `10` once (two word stores) and `0` once (a u16
+  store, a u32 store, and a u16 store across the `_08002618` call). Two named
+  locals assigned *after* the preceding call, each kept real with an empty
+  `"+r"` barrier, reproduce it: assigning both before the first store hoists
+  the second `movs` and keeps `0` in a caller-saved register instead of the
+  callee-saved home the ROM uses across the call.
+
+## `CourseOrch_0800628C` (0x0800628C, 476 B): exact length reached, not exact
+
+Measured 2026-10-30 in the owning TU. A complete C lift of the gfx/palette/
+minimap loader reaches the ROM's exact 476-byte span and **313/476** equal
+bytes, then was reverted (a non-exact body fails the focused slice gate). Four
+facts are reusable and were each confirmed in the emitted listing:
+
+* **GCSE hoists `s2 = ewram + 64` above both fixup/fill loops.** With
+  `u8 *ewram` live in r8, the derived pointer is materialised in r3 before the
+  first loop, stealing r3 from the loop counter `n` (which then takes r2). An
+  empty `__asm__ volatile ("" : "+r" (ewram));` immediately before the
+  assignment keeps the two instructions in the DMA preheader, where the ROM
+  has `mov r4,r8 / adds r4,#64`.
+* **The two halfword constants the ROM copies need pinned halfword locals.**
+  `register u16 add __asm__("r5")` with a later `add = 0x100` emits
+  `movs r0,#128 / lsls r0,#1 / adds r5,r0,#0`, and
+  `register u16 fill __asm__("r0")` with `fill = 0x100` placed before the
+  fill count emits `movs r1,#128 / lsls r1,#1 / adds r0,r1,#0` ahead of
+  `movs r3,#144 / lsls r3,#2`. Unpinned, both constants materialise directly
+  in their home and each branch loses 4 bytes.
+* **The fixup loop's operand copies follow the result allocno, not the C
+  operand order.** `(v & mask)` and `(mask & v)` both copy one operand per
+  AND; which one moves depends on the result register chosen, so swapping the
+  spelling does not by itself reproduce the ROM's `adds r1,r7,#0 / ands r1,r0`
+  pair.
+* **The 20-row DMA loop is lowered to a countdown.** `for (i = 0; i <= 19;
+  i++)`, `i < 20`, `while (++i <= 19)` and `i != 20` all compile to
+  `mov r4,#19 / subs / cmp #0 / bge`, while the ROM keeps
+  `movs r3,#0 / adds #1 / cmp #19 / ble`. No C-level spelling of the up-count
+  was found; the constant bound is folded by the loop optimizer.
+
+Residual: with `mask`/`high` unpinned the setup loads are direct but the homes
+are r6/r3 (ROM r7/r6), because `mask`'s allocno starts after the last call and
+r6 is already free; pinning them to r7/r6 fixes the homes and reproduces the
+loop body's two operand copies, but every pinned constant is then materialised
+in a temp and copied at setup (`ldr r0,<pool> / adds r7,r0,#0`), which the ROM
+does not have. Homes and copy site must move together, so the next attempt
+should aim at the allocno order rather than at either pin alone.

@@ -1,4 +1,5 @@
 #include "gtadv/car_physics_lane.h"
+#include "gtadv/ram_blocks.h"
 #include "gba/types.h"
 
 // Leaves for code_22* / 23* / 24* / 24048 etc.
@@ -145,188 +146,129 @@ void sub_080023E7C(void *a) __attribute__((alias("Code23E7C")));
 // 22D20 / 23628 lifted elsewhere; no stubs here.
 // Owners: _08022D20-cluster → code_22d20.c (7 funcs),
 // _08023628 → scene_record_dispatch.c (RaceSceneCtor_23628).
-// 0x0802381C — 161 B, VMA 0x0802381C, pure Thumb, pools WA+0x10C3 (0x03001780+0x10C3), ctx+140 s16, ctx+20/16 etc.
+// 0x0802381C — 316 B, VMA 0x0802381C, pure Thumb, pools WA+0x10C3 (0x03001780+0x10C3), ctx+140 s16, ctx+20/16 etc.
 // Proven via 6000-frame trace: WA+0x10C3=0 (observed 0 all 200 snaps, so ldrb [r7]==1 branch not taken, bne to 0x2385A), race+140 s16 varying -26624..31650 (proves s16), but full CFG preserved.
 // 0x0802381C — parameter submit (0x08002158 kinds 0/1/2/3/6), event read
 // 0x08002178(r,1), lanes for ev 2 / 1 (sub 0,1) / 64 / 128, clamp to 0..1,
-// and a 0x0802B368(2) on change of u16[ctx+140].
-//
-// MEASURED 2026-10-29: C reaches the exact 316 B span and 97-112 of 143 rows.
-// The score is declaration-sensitive (an unused extra `u8 *` local moved a
-// 97-row body to 112 with no code change), so this body sits on an allocation
-// knife edge: sweep barriers on `c`/`wa` move it by at most 2 rows, and the
-// full 316-byte body needs the three items below pinned at once.
-// Residuals:
-//  * parameter-copy order. The ROM copies ctx to r5 at +0x06, then narrows
-//    a1 (r1) and a2 (r6). That order appears only with `int` parameters plus
-//    named `u16 n1 = (u16)a1; u16 n2 = (u16)a2;` locals, which homes ctx in r6;
-//    with `u16` parameters the two narrowings precede the ctx copy. Pinning
-//    ctx to r5 costs a third high-register save (+4 B, r9 enters the frame).
-//  * the ev==2 block shares 10 in r0 and 0 in r4 across c[16]/c[20]/c[48]/
-//    c[44]; named locals materialise them in r1/r0 and re-emit the zero.
-// `ev` pins to r6 (the ROM reuses n2's narrowed register). The 2-case switch
-// on `*(s16 *)(c+140)` still lowers to a linear `cmp #0 / cmp #1` chain where
-// the ROM emits the `emit_case_nodes` decision tree (`cmp #1 / beq`,
-// `cmp #1 / bgt`, `cmp #0 / bne`); an explicit `default: break;` does not
-// change it, so the tree is a third open item on this body.
-__attribute__((naked)) void Code2381C(void *ctx, int a1, int a2) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push	{r4, r5, r6, r7, lr}\n"
-        "mov	r7, r8\n"
-        "push	{r7}\n"
-        "adds	r5, r0, #0\n"
-        "lsls	r1, r1, #16\n"
-        "lsrs	r1, r1, #16\n"
-        "lsls	r2, r2, #16\n"
-        "lsrs	r6, r2, #16\n"
-        "adds	r4, r5, #0\n"
-        "adds	r4, #140\n"
-        "ldrh	r0, [r4, #0]\n"
-        "mov	r8, r0\n"
-        "ldr r0, .Lcode2381c_080023880\n"
-        "ldr r2, .Lcode2381c_080023884\n"
-        "adds	r7, r0, r2\n"
-        "ldrb	r0, [r7, #0]\n"
-        "cmp	r0, #1\n"
-        "bne .Lcode2381c_08002385A\n"
-        "movs	r0, #0\n"
-        "bl 0x08002158\n"
-        "movs	r0, #1\n"
-        "adds	r1, r6, #0\n"
-        "bl 0x08002158\n"
-        "adds	r0, r5, #0\n"
-        "adds	r0, #162\n"
-        "ldrh	r1, [r0, #0]\n"
-        "movs	r0, #6\n"
-        "bl 0x08002158\n"
-        ".Lcode2381c_08002385A:\n"
-        "ldrh	r1, [r4, #0]\n"
-        "movs	r0, #2\n"
-        "bl 0x08002158\n"
-        "adds	r0, r5, #0\n"
-        "adds	r0, #232\n"
-        "ldrb	r1, [r0, #0]\n"
-        "movs	r0, #3\n"
-        "bl 0x08002158\n"
-        "ldrb	r0, [r7, #0]\n"
-        "cmp	r0, #0\n"
-        "bne .Lcode2381c_080023888\n"
-        "movs	r0, #1\n"
-        "movs	r1, #0\n"
-        "bl 0x08002178\n"
-        "movs	r0, #1\n"
-        "b .Lcode2381c_080023892\n"
-        ".Lcode2381c_080023880: .word 0x03001780\n"
-        ".Lcode2381c_080023884: .word 0x000010C3\n"
-        ".Lcode2381c_080023888:\n"
-        "movs	r0, #0\n"
-        "movs	r1, #0\n"
-        "bl 0x08002178\n"
-        "movs	r0, #0\n"
-        ".Lcode2381c_080023892:\n"
-        "movs	r1, #1\n"
-        "bl 0x08002178\n"
-        "adds	r6, r0, #0\n"
-        "cmp	r6, #2\n"
-        "bne .Lcode2381c_0800238BE\n"
-        "movs	r0, #4\n"
-        "bl 0x0802B368\n"
-        "movs	r0, #10\n"
-        "str	r0, [r5, #16]\n"
-        "movs	r4, #0\n"
-        "strh	r4, [r5, #20]\n"
-        "str	r0, [r5, #48]\n"
-        "str	r4, [r5, #44]\n"
-        "movs	r0, #1\n"
-        "movs	r1, #0\n"
-        "bl 0x08002618\n"
-        "adds	r0, r5, #0\n"
-        "adds	r0, #144\n"
-        "strh	r4, [r0, #0]\n"
-        ".Lcode2381c_0800238BE:\n"
-        "adds	r7, r5, #0\n"
-        "adds	r7, #140\n"
-        "cmp	r6, #1\n"
-        "bne .Lcode2381c_080023914\n"
-        "movs	r1, #0\n"
-        "ldrsh	r4, [r7, r1]\n"
-        "cmp	r4, #1\n"
-        "beq .Lcode2381c_080023902\n"
-        "cmp	r4, #1\n"
-        "bgt .Lcode2381c_080023914\n"
-        "cmp	r4, #0\n"
-        "bne .Lcode2381c_080023914\n"
-        "movs	r0, #1\n"
-        "bl 0x0802B368\n"
-        "adds	r0, r5, #0\n"
-        "adds	r0, #168\n"
-        "str	r6, [r0, #0]\n"
-        "strh	r4, [r5, #20]\n"
-        "subs	r0, #44\n"
-        "strh	r6, [r0, #0]\n"
-        "str	r6, [r5, #44]\n"
-        "movs	r0, #1\n"
-        "movs	r1, #0\n"
-        "bl 0x08002618\n"
-        "adds	r0, r5, #0\n"
-        "adds	r0, #144\n"
-        "strh	r4, [r0, #0]\n"
-        "movs	r2, #0\n"
-        "ldrsh	r0, [r7, r2]\n"
-        "bl 0x08004BFC\n"
-        "b .Lcode2381c_080023914\n"
-        ".Lcode2381c_080023902:\n"
-        "movs	r0, #1\n"
-        "bl 0x0802B368\n"
-        "adds	r0, r5, #0\n"
-        "adds	r0, #142\n"
-        "movs	r1, #0\n"
-        "strh	r6, [r0, #0]\n"
-        "adds	r0, #16\n"
-        "strh	r1, [r0, #0]\n"
-        ".Lcode2381c_080023914:\n"
-        "cmp	r6, #64\n"
-        "bne .Lcode2381c_08002391E\n"
-        "ldrh	r0, [r7, #0]\n"
-        "subs	r0, #1\n"
-        "strh	r0, [r7, #0]\n"
-        ".Lcode2381c_08002391E:\n"
-        "cmp	r6, #128\n"
-        "bne .Lcode2381c_080023928\n"
-        "ldrh	r0, [r7, #0]\n"
-        "adds	r0, #1\n"
-        "strh	r0, [r7, #0]\n"
-        ".Lcode2381c_080023928:\n"
-        "adds	r1, r7, #0\n"
-        "movs	r2, #0\n"
-        "ldrsh	r0, [r1, r2]\n"
-        "cmp	r0, #0\n"
-        "bge .Lcode2381c_080023936\n"
-        "movs	r0, #0\n"
-        "strh	r0, [r1, #0]\n"
-        ".Lcode2381c_080023936:\n"
-        "movs	r2, #0\n"
-        "ldrsh	r0, [r1, r2]\n"
-        "cmp	r0, #1\n"
-        "ble .Lcode2381c_080023942\n"
-        "movs	r0, #1\n"
-        "strh	r0, [r1, #0]\n"
-        ".Lcode2381c_080023942:\n"
-        "ldrh	r7, [r7, #0]\n"
-        "cmp	r8, r7\n"
-        "beq .Lcode2381c_08002394E\n"
-        "movs	r0, #2\n"
-        "bl 0x0802B368\n"
-        ".Lcode2381c_08002394E:\n"
-        "pop	{r3}\n"
-        "mov	r8, r3\n"
-        "pop	{r4, r5, r6, r7}\n"
-        "pop	{r0}\n"
-        "bx	r0\n"
-        ".syntax divided\n"
-    );
+// and a 0x0802B368(2) on change of u16[ctx+140]. Lifted to C with register
+// pins and empty barriers: the empty switch case 2 is what makes agbcc emit
+// the ROM's decision tree (`cmp #1 / beq`, `cmp #1 / bgt`, `cmp #0 / bne`),
+// and using the parameter directly keeps r5 live so every `ctx + N` is a
+// copy plus add. See docs/findings/register_shaping_levers.md.
+void Code2381C(void *ctx, int a1, int a2)
+{
+    extern void _08002158(int a, int b);
+    extern u32 _08002178(int x, int hwIndex);
+    extern void sub_0802B368(u32 v);
+    extern void _08002618(u32 a, u32 b);
+    extern void sub_08004BFC(int v);
+    u16 aN;
+    u16 aB;
+    u8 *rec140;
+    u16 prev;
+    volatile u8 *wa;
+    u32 gateOff;
+    volatile u8 *gate;
+    int sel;
+    register int ev __asm__("r6");
+    register int v __asm__("r4");
+    u16 *p140;
+    register u16 *q __asm__("r1");
+
+    RAM_DEF_03001780;
+    __asm__ volatile ("" ::: "memory");
+    aN = (u16)a1;
+    __asm__ volatile ("" ::: "memory");
+    aB = (u16)a2;
+    __asm__ volatile ("" ::: "memory");
+    rec140 = (u8 *)ctx;
+    rec140 += 140;
+    prev = *(u16 *)rec140;
+    wa = RAM_SYM_03001780;
+    gateOff = 0x10C3;
+    gate = wa + gateOff;
+
+    if (*gate == 1) {
+        _08002158(0, aN);
+        _08002158(1, aB);
+        _08002158(6, *(u16 *)((u8 *)ctx + 162));
+    }
+    _08002158(2, *(u16 *)rec140);
+    _08002158(3, *(u8 *)((u8 *)ctx + 232));
+    if (*gate == 0) {
+        _08002178(1, 0);
+        sel = 1;
+    } else {
+        _08002178(0, 0);
+        sel = 0;
+    }
+    ev = _08002178(sel, 1);
+
+    if (ev == 2) {
+        u32 ten;
+        u32 zero;
+        sub_0802B368(4);
+        ten = 10;
+        __asm__ volatile ("" : "+r"(ten));
+        *(u32 *)((u8 *)ctx + 16) = ten;
+        zero = 0;
+        __asm__ volatile ("" : "+r"(zero));
+        *(u16 *)((u8 *)ctx + 20) = (u16)zero;
+        *(u32 *)((u8 *)ctx + 48) = ten;
+        *(u32 *)((u8 *)ctx + 44) = zero;
+        _08002618(1, 0);
+        *(u16 *)((u8 *)ctx + 144) = (u16)zero;
+    }
+
+    p140 = (u16 *)((u8 *)ctx + 140);
+    if (ev == 1) {
+        register int hold __asm__("r0");
+        __asm__ volatile ("" : "=r"(hold));
+        v = *(s16 *)p140;
+        __asm__ volatile ("" : : "r"(hold));
+        switch (v) {
+        case 0:
+            sub_0802B368(1);
+            *(u32 *)((u8 *)ctx + 168) = ev;
+            *(u16 *)((u8 *)ctx + 20) = (u16)v;
+            *(u16 *)((u8 *)ctx + 124) = (u16)ev;
+            *(u32 *)((u8 *)ctx + 44) = ev;
+            _08002618(1, 0);
+            *(u16 *)((u8 *)ctx + 144) = (u16)v;
+            sub_08004BFC(*(s16 *)p140);
+            break;
+        case 1:
+        {
+            register u16 *p __asm__("r0");
+            u16 zero;
+            sub_0802B368(1);
+            p = (u16 *)((u8 *)ctx + 142);
+            zero = 0;
+            __asm__ volatile ("" : "+r"(zero));
+            *p = (u16)ev;
+            p += 8;
+            __asm__ volatile ("" : "+r"(p));
+            *p = zero;
+        }
+        break;
+        case 2:
+            break;
+        }
+    }
+
+    if (ev == 64)
+        *p140 -= 1;
+    if (ev == 128)
+        *p140 += 1;
+    q = p140;
+    if (*(s16 *)q < 0)
+        *q = 0;
+    if (*(s16 *)q > 1)
+        *q = 1;
+    if (prev != *p140)
+        sub_0802B368(2);
 }
+
 void _08002381C(void *a, int b, int c) __attribute__((alias("Code2381C")));
 void _0802381C(void *a, int b, int c) __attribute__((alias("Code2381C")));
 void sub_08002381C(void *a, int b, int c) __attribute__((alias("Code2381C")));
