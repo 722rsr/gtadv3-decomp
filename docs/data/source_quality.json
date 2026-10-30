@@ -8991,11 +8991,11 @@
    "size": 500
   },
   "0x0802381c": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 139,
-    "naked": true
+    "barrier": 9,
+    "directive": 1,
+    "pin": 5
    },
    "file": "src/race_control_leaves.c",
    "name": "Code2381C",
@@ -13220,16 +13220,16 @@
  },
  "totals": {
   "asm": {
-   "bytes": 48864,
-   "functions": 128
+   "bytes": 48548,
+   "functions": 127
   },
   "c": {
    "bytes": 44326,
    "functions": 876
   },
   "c_fakematch": {
-   "bytes": 94746,
-   "functions": 668
+   "bytes": 95062,
+   "functions": 669
   },
   "partial": {
    "bytes": 200,

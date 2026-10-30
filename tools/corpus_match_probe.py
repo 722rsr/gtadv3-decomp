@@ -701,11 +701,16 @@ def _src_functions_file(f: Path, mtime_ns: int, size: int) -> tuple[tuple[Path, 
     from serving its pre-edit result inside a long-lived process.
     """
     out: list[tuple[Path, str, int, int, bool]] = []
+    text = f.read_text(encoding="utf-8", errors="replace")
+    # A friendly-named body's VMA is only stated by its alias block, e.g.
+    #   void _08001650C(void *c) __attribute__((alias("Rec35_Record49Constructor")));
+    # so the alias targets are the friendly-name -> VMA map. FRIENDLY_SOURCE_VMAS
+    # stays as a fallback for bodies whose VMA-shaped name no longer aliases them.
+    friendly_vma: dict[str, int] = dict(FRIENDLY_SOURCE_VMAS)
     friendly_patterns = {
         name: (vma, re.compile(r"^[^\n;{}]*\b" + re.escape(name) + r"\s*\([^;{}]*\)\s*\{", re.M))
-        for name, vma in FRIENDLY_SOURCE_VMAS.items()
+        for name, vma in friendly_vma.items()
     }
-    text = f.read_text(encoding="utf-8", errors="replace")
     # 1. Alias definitions: void _0800B190(void) __attribute__((alias("Race_Dispatch")));
     if "alias" in text:
         target_cache: dict[str, int] = {}
@@ -721,6 +726,12 @@ def _src_functions_file(f: Path, mtime_ns: int, size: int) -> tuple[tuple[Path, 
                     bsize = _body_size(text, tend - 1) if tend is not None else 1
                     target_cache[target] = bsize
                 out.append((f, vma_name, vma, bsize, False))
+                if parse_vma_name(target) is None and target not in friendly_vma:
+                    friendly_vma[target] = vma
+                    friendly_patterns[target] = (
+                        vma,
+                        re.compile(r"^[^\n;{}]*\b" + re.escape(target)
+                                   + r"\s*\([^;{}]*\)\s*\{", re.M))
 
     # 2. Direct VMA function definitions
     for m in VMA_DEF.finditer(text):
