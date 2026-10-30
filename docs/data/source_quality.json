@@ -8353,11 +8353,10 @@
    "size": 88
   },
   "0x0801ffd4": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 205,
-    "naked": true
+    "barrier": 3,
+    "pin": 1
    },
    "file": "src/race_scene_e.c",
    "name": "_08001FFD4",
@@ -13221,16 +13220,16 @@
  },
  "totals": {
   "asm": {
-   "bytes": 49316,
-   "functions": 129
+   "bytes": 48864,
+   "functions": 128
   },
   "c": {
    "bytes": 44326,
    "functions": 876
   },
   "c_fakematch": {
-   "bytes": 94294,
-   "functions": 667
+   "bytes": 94746,
+   "functions": 668
   },
   "partial": {
    "bytes": 200,
