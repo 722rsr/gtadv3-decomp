@@ -69,6 +69,7 @@ same TU and gates as the acceptance probe.
 
 | draft | shape | candidate | aligned |
 | --- | --- | ---: | ---: |
+| v59 | sibling-style `o; pa = o; pa += wa;` + `sl` state pointer | 352 B | 76/174 |
 | v41 / v47 | absolute-symbol pools, byte index, `p = wa + off` per site | 340 B | 107/174 |
 | v48 | two base symbols, branch re-anchor `p = WA` | 344 B | 88 |
 | v44 | same + a single `idx` reused | 324 B | 86 |
@@ -93,6 +94,30 @@ from a source shape that keeps an anchor pointer *and* rebuilds the index from
 a spilled `c2`, not from pinning.
 
 `--sweep`/`--spill` over `k, c, k8, c2, idx, v, p, wa` plateau at 340/107.
+
+## Measured lever: `pa = o; pa += wa;`
+
+`src/race_progress.c` (`Race_AdvanceProgress`, EXACT) already solves this field set
+and shows the expression shape: name each pooled displacement with its own
+absolute symbol, keep the base in a register, and build the address as
+`offset first, then base`. Written as `pa = wa + o` agbcc emits
+`mov rX,r8; adds rX,rX,rO` (a base copy plus a 3-operand add); written as
+
+```c
+o = (u32)&SaveWAOffFFA;
+pa = o;
+pa += wa;
+```
+
+it emits the ROM's `ldr r1,=0x00000FFA; add r1,r8` — the 2-operand `add`.
+With that, the per-site shape matches the ROM instruction for instruction
+(`ldr offset; add base; adds idx,base; strh`), and the body reaches 352/368.
+
+`src/race_progress.c` also documents the complementary levers: a displacement
+without its own pool word must be derived from one that has it
+(`o4 = o4 - 16u; pa = w2 + o4;`), and a base that the ROM materialises twice
+needs two distinct symbols (`PftWa`/`PftWb`/`PftWc`) or agbcc CSEs the base
+into one long-lived register.
 
 ## Next move
 
