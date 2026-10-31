@@ -300,3 +300,141 @@ loop head from the spilled `k+1`; it appears whenever the increment value is
 kept in `k`'s register. A shape where the spill is read into a *different*
 register (the ROM reads it back into `r7` only at the loop *bottom*) should
 remove it.
+
+## Best C draft: first difference at +0x3E (real gate)
+
+Progress this session, all measured on `make matching-slice` (the acceptance
+gate) and reproduced by `python3 tools/corpus_match_probe.py --function
+SaveUpdate_080241C8 --c89`:
+
+| draft | gate first diff | candidate | note |
+| --- | --- | --- | --- |
+| earlier best | `0x0241D6` (+0x0E) | 368 B | pool 4 B late, spurious `movs r7,#1` |
+| `v172` | `0x0241F4` (+0x2C) | 368 B | `kf.c2` spill added; `c2` still in `r7` |
+| **`v173`** | **`0x024206` (+0x3E)** | **368 B** | **`c2` pinned to `r2`** |
+
+`v173` (`build/lift/save241c8/v173.c`) is the best draft: prologue, frame,
+`movs r7,#0`, the WA/state setup, the `k<<3` / `k+1` hoist, the `_08025D64`
+call, `lsls r2,r5,#1` (`c2` in `r2`), `adds r3,r2,r1` (`idx` in `r3`), the
+grid-1 store and the `lsls/asrs` narrowing are all byte-identical. The first
+difference is at function offset `0x3E`, where the ROM has
+
+```
+3e: 9201   str r2,[sp,#4]      ; spill c2
+40: 280b   cmp r0,#11
+```
+
+and the draft has `cmp` directly — the `c2` spill is missing. The ROM reloads
+it at `0xEC` (`ldr r2,[sp,#4]; add r2,r9`), so the value is live across the
+whole `if/else`.
+
+### Why the spill is missing, and what was measured
+
+`agbcc` spills `c2` in the ROM because `r2` is *also* used inside the
+`if/else` (`mov r2,sl` at 0x5C, `ldr r2,[pc]` at 0x6A/0x90, `mov r2,sl` at
+0xC2). Pinning `c2` to `r2` (`register s32 c2 __asm__("r2")`) is what makes
+the *first* half match — but it also removes `r2` from the allocator's scratch
+set, so nothing clobbers it and no spill is needed.
+
+Every C spelling tried to force the spill, with measured results:
+
+| spelling | first diff | len |
+| --- | --- | --- |
+| flush `c2` into `kf.c2` right after the grid store, read back for the grid-3 block | +0x0E | 364 |
+| same, but keep `c2` in `r2` **and** write `kf.pad` | +0x0E | 364 |
+| separate `u32 c2st` scalar instead of a struct field | +0x0E | 372 (oversized) |
+| two single-member structs (`{k}` + `{c2}`) | compile error | - |
+| address-taken alias through `&kf + 4` | compile error | - |
+| `volatile u32 c2m[1]` | +0x0E | 296 |
+| `u32 c2m[1]` | +0x0A | 372 |
+| named `s16 vs = (s16)v` before the compare (no spill) | +0x3E | 368 |
+| plain `knext` / `c2sp` scalars (no struct) | +0x2C | 364 |
+| `idx` pinned to `r3`, `c2` free | +0x3E | 364 |
+
+The struct form emits the right `str r2,[sp,#4]` but agbcc **rotates the outer
+loop** — it puts `mov r7,#1` before `.L265` and branches into the rotated
+head, which both costs 2 bytes at `0x1A` and drops 4 bytes overall (364 B).
+That rotation is the current blocker, not the store itself.
+
+### Tooling left in place
+
+- `build/lift/save241c8/score.py PATH.c [...]` — splice a body into
+  `src/save.c`, run the acceptance probe, print
+  `first=+0xNN len=NNN matched=NN status`. It restores `src/save.c` from git
+  before every splice, so it is safe to run in a sweep.
+- `build/lift/save241c8/gen*/` — the swept variants (loop form × k-init ×
+  k-spill × c2-spill × count-store × constant × register pins).
+- `build/lift/save241c8/v173.c` — the current best body.
+
+Next lead: stop the loop rotation that the two-slot struct triggers. The ROM
+keeps `k+1` in `sp+0` and reloads it only at `0x152`; agbcc instead rotates
+the loop when both halves of `kf` are live. A shape where the `k+1` store and
+its reload are the *same* memory object but the `c2` slot is reached through a
+different lvalue may keep the spill without enabling rotation.
+
+## Second pass: r2 pin moves the wall from 0x2C to 0x3E
+
+The compile-order recipe (`__asm__(".set NAME, 0x...")` at file scope for every
+WA offset, then the C body) is what makes the acceptance probe agree with the
+real gate. With that in place the search became measurable per variant.
+
+Pinning `c2 = c << 1` to r2 is the single highest-value lever found so far:
+
+```c
+register s32 kt __asm__("r2");
+register s32 c2 __asm__("r2");
+...
+c2 = c << 1;
+idx = c2 + k8;
+```
+
+`make matching-slice` then reports
+
+```
+match_c_slice: C-owned code slice differs at ROM offset 0x024206: got 0b, expected 01
+```
+
+`0x024206` is function offset `0x3E`. Bytes 0x00-0x3D are now exact: prologue,
+8-byte frame, `movs r7,#0`, the WA load, the `0xFF0` synthesis, `mov sl,r1`,
+`movs r5,#0`, `lsls r2,r7,#3`, `mov r9,r2`, `adds r0,r7,#1`, `str r0,[sp]`,
+`bl`, `lsls r2,r5,#1`, `mov r1,r9`, `adds r3,r2,r1`, the grid-1 base load,
+`strh r0,[r1]`, and the `lsls`/`asrs` narrowing. Probe: `PARTIAL 260/368,
+first difference +0x3E`.
+
+What is missing at 0x3E is the ROM's `str r2,[sp,#4]` - the spill of `c2`. The
+ROM stores it there and reloads it at `0xEC` (`ldr r2,[sp,#4]; add r2,r9`),
+because its if/else arms use r2 as scratch. agbcc with `c2` pinned to r2 has r2
+free, so it never spills.
+
+### Attempts measured against the gate/probe after the r2 pin
+
+| variant | idea | result |
+| --- | --- | --- |
+| `kf.c2 = (u32)c2` in `struct { s32 k; u32 c2; }` | force the spill | spill appears, but at `0x3C`, plus a spurious `movs r7,#1` at the loop head; 364 B |
+| `kf.pad = ...` in `struct { s32 k; u32 pad; }` | same, other field name | identical to the above |
+| two single-member structs (`{k}` + `{c2}`) | avoid the rotated loop | does not compile cleanly through the C89 transform |
+| byte-offset alias `*(u32 *)((u8 *)&kf + 4)` | spill without a second member | probe preprocess failure |
+| plain `s32 knext; u32 c2sp;` | two scalars | c2 lands in r7 again; `+0x2C`, 364 B |
+| `volatile u32 c2m[1]` | volatile slot | 296 B, `+0x0E` |
+| `u32 c2m[1]` | array slot | 372 B (oversized) |
+| `register s32 idx __asm__("r3")` | force idx to r3 | 364 B, `+0x0E`/`+0x3E` depending on the rest |
+| asm splice `str %0,[sp,#4]` / `ldr %0,[sp,#4]` | exact by construction | breaks the C89 transform at `src/save.c:232` |
+
+The `movs r7,#1` that appears whenever the struct is fully used is agbcc's loop
+rotation: it duplicates the loop head and materialises `k = 1` on the second
+entry path. That is why the struct form is 4 bytes short even though it has the
+right spill.
+
+### Harness left behind
+
+* `build/lift/save241c8/score.py` - splices a body (with the file-scope `.set`
+  block) into `src/save.c`, restores from git first, runs the acceptance probe,
+  and prints `first=+0xNN len=N matched=M status`.
+* `build/lift/save241c8/gen*/` - the measured variant families.
+* `build/lift/save241c8/v173.c` - best known body (260/368, first difference
+  `+0x3E`).
+* `build/lift/save241c8/ledger.jsonl` - 333 variants from the first sweep.
+
+Always restore with `git checkout -- src/save.c`; `make matching-slice` is green
+on the committed naked body.
+

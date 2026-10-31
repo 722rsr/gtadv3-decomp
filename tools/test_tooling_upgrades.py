@@ -9,6 +9,7 @@ from unittest.mock import patch
 
 import corpus_match_probe as probe
 import instruction_diff as diff
+import lift_loop
 import matching_campaign as campaign
 
 
@@ -67,6 +68,17 @@ class Diagnostics(unittest.TestCase):
         b = bytes.fromhex('c0460120') + probe.encode_thumb_bl(vma+4, vma) + bytes.fromhex('7047')
         r = self.compare(a, b)
         self.assertFalse(any('call-target' in d['kinds'] for d in r['differences']))
+
+
+class LiftLoopVma(unittest.TestCase):
+    def test_vma_alias_spellings_and_target(self):
+        source = ('void _0800275B8(void) __attribute__((alias("Garage_275B8")));\n'
+                  'void sub_08027234(void) __attribute__((alias("Other")));\n')
+        self.assertEqual(lift_loop.infer_vma(source, 'Garage_275B8'), 0x080275B8)
+        self.assertEqual(lift_loop.infer_vma(source, 'Other'), 0x08027234)
+        self.assertEqual(lift_loop.infer_vma('', 'sub_0800275B8'), 0x080275B8)
+        self.assertEqual(lift_loop.infer_vma('', '_08027234'), 0x08027234)
+        self.assertIsNone(lift_loop.infer_vma(source, 'Missing'))
 
 
 class CampaignUnit(unittest.TestCase):

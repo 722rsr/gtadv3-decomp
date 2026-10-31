@@ -205,18 +205,14 @@ void Garage_2711C(void) {
 void _08002711C(void) __attribute__((alias("Garage_2711C")));
 void sub_08002711C(void) __attribute__((alias("Garage_2711C")));
 
-// Mechanically translated bounded helpers from 0x0275B8 onward — opaque volatile byte pointers, exact widths
-// _0800275B8 (ROM 0x080275B8-0x080276E2, transcribed from the raw image):
-//   a1 is u16-normalized and reused as _08002BD8's index (s16[a0 + a1*2]);
-//   gate 32 - that <= 1 -> return. Two s16 randoms (rnd1/rnd2) from _08002BE8,
-//   then obj(=a2) gets the projection record header: [obj+4]=rec[0],
-//   [obj+8]=rec[1], and _080043B8(obj) fills obj+36/40/44/60. tbl = [obj+60].
-//   C48(rnd1, u16[tbl+6]); C48(rnd2, u16[tbl+6]); C84(rnd2); then two 16-byte
-//   OAM nodes via _08002BFC/_08002C34 (idx = ([obj+44] adj & 0xFFFFF) >> 4):
-//     attr0 = (obj40 & 0xFF) | u16[tbl+8]
-//     attr1 = ((obj36 - u16[tbl+0|2]) & 0x1FF) | 0x8000 | (rnd1|2 << 9)
-//     attr2 = (a1*16 + u16[rec+12]) | wide | (u16[rec+14] << 12)
-//     attr12 = 0     wide = *(u8*)(0x03001780+0x10BC) ? 0x400 : 0x80
+// 0x080275B8: emits two projected sprite nodes when the slot counter allows it.
+// _08002BD8 returns 32 minus the signed counter at 0x03000158; a1 is instead
+// narrowed to u16 and later interpreted as s16 for the tile offset. _08002BE8
+// allocates two successive signed slot indices, not random values. Both nodes
+// use (u16)(obj[44] / 16) for the list index and a wide bit of 0x400 or 0x800
+// selected by the byte at 0x03001780 + 0x10BC.
+// A C draft reached the same 44-byte frame but still differed in register and
+// control-flow allocation; retain this body until the complete span matches.
 __attribute__((naked)) void Garage_275B8(void *a0, int a1, int a2, void *a3, int a4) {
     __asm__ volatile (
         ".syntax unified\n"

@@ -407,11 +407,14 @@ def build_packet(needle: str, out_root: Path, *, seed: bool = True,
 
     seed_path = (work / "seed.c")
     splice_command = (f"python3 tools/lift_loop.py {record['file']} "
-                      f"{record['name']} --variant {_relative(seed_path)} --diff"
+                      f"{record['name']} --vma 0x{vma:08x} "
+                      f"--variant {_relative(seed_path)} --diff"
                       if seed_path.exists() else
                       f"# no seed; python3 tools/asmlift_seed.py 0x{vma:08x} --force")
     metadata["commands"] = {
-        "rescore_seed": f"python3 tools/asmlift_seed.py 0x{vma:08x} --force",
+        "rescore_seed": (f"python3 tools/asmlift_seed.py 0x{vma:08x} "
+                         f"--score-file {_relative(seed_path)}" if seed_path.exists() else
+                         f"# no seed; python3 tools/asmlift_seed.py 0x{vma:08x}"),
         "splice_and_score": splice_command,
         "wave_check": "python3 tools/wall_census.py",
         "accept": "make matching-ready && make full-rom-match",

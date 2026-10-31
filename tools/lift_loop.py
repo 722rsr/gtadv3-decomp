@@ -732,6 +732,15 @@ def run_variants(a, tu: str, span: tuple[int, int], vma: int, size: int) -> int:
     return 0 if best["kind"] == "exact" else 1
 
 
+def infer_vma(source: str, function: str) -> int | None:
+    """Find a VMA-shaped alias or entry name, including padded closure names."""
+    alias = re.search(
+        r"\b(?:sub_)?_?080([0-9A-Fa-f]{5,6})\b[^;]*alias\s*\(\s*\"%s\"\s*\)"
+        % re.escape(function), source)
+    match = alias or re.fullmatch(r"(?:sub_)?_?080([0-9A-Fa-f]{5,6})", function)
+    return 0x08000000 + int(match.group(1), 16) if match else None
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("source", type=Path)
@@ -767,20 +776,8 @@ def main() -> int:
 
     vma = a.vma or 0
     if not vma:
-        # The VMA name is the alias target's `_08027234` spelling, either as
-        # the requested symbol itself or as an alias of it.
         src = a.source.read_text(encoding="utf-8", errors="replace")
-        alias = re.search(
-            r"\b_?(?:080)([0-9A-Fa-f]{5})\b[^;]*alias\(\"%s\"\)" % re.escape(a.function), src)
-        if alias:
-            vma = 0x08000000 + int(alias.group(1), 16)
-        else:
-            m = re.fullmatch(r"_?080([0-9A-Fa-f]{5,6})", a.function)
-            if m:
-                # The trailing hex digits are the offset inside ROM: the
-                # base-prefixed spelling `_08002A90C` carries one extra zero
-                # after the `080*` prefix, so never int() the whole name.
-                vma = 0x08000000 + int(m.group(1), 16)
+        vma = infer_vma(src, a.function) or 0
     if not vma:
         raise SystemExit("pass --vma (or use an _0802xxxx symbol name)")
 

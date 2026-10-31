@@ -2173,7 +2173,7 @@
       }
     },
     {
-      "name": "foundation_subsys/_08004A0C",
+      "name": "foundation_subsys/HeapReset",
       "target_path": "build/objdiff/08004a0c/target.o",
       "base_path": "build/objdiff/08004a0c/candidate.o",
       "metadata": {
@@ -2717,7 +2717,7 @@
       }
     },
     {
-      "name": "event_dma_queue/_0800552C",
+      "name": "event_dma_queue/ObjQueuePush",
       "target_path": "build/objdiff/0800552c/target.o",
       "base_path": "build/objdiff/0800552c/candidate.o",
       "metadata": {

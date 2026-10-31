@@ -742,9 +742,11 @@ def packet_commands(record: dict, work: Path) -> dict:
     except ValueError:
         rel = work
     return {
-        "rescore_seed": f"python3 tools/asmlift_seed.py 0x{record['vma']:08x} --force",
+        "rescore_seed": f"python3 tools/asmlift_seed.py 0x{record['vma']:08x} "
+                        f"--score-file {rel}/seed.c",
         "splice_and_score": f"python3 tools/lift_loop.py {record['file']} "
-                            f"{record['name']} --variant {rel}/seed.c --diff",
+                            f"{record['name']} --vma 0x{record['vma']:08x} "
+                            f"--variant {rel}/seed.c --diff",
         "context": f"python3 tools/lift_packet.py 0x{record['vma']:08x}",
         "wall": "python3 tools/wall_census.py",
         "accept": "make matching-ready && make full-rom-match",
@@ -884,6 +886,11 @@ _08001020: .4byte 0x12345678
     renamed = rename_seed_types(seed)
     check("struct renamed", "struct AsmLift_Struct0" in renamed, True)
     check("error marker", seed_has_error("/* ASMLIFT_ERROR('x') */"), True)
+    commands = packet_commands({"vma": 0x080275B8, "file": "src/garage.c",
+                                "name": "Garage_275B8"}, ROOT / "build/lift-seeds/080275b8")
+    check("rescore uses existing seed", commands["rescore_seed"],
+          "python3 tools/asmlift_seed.py 0x080275b8 --score-file build/lift-seeds/080275b8/seed.c")
+    check("splice specifies vma", "--vma 0x080275b8" in commands["splice_and_score"], True)
 
     failed = [c for c in checks if not c[1]]
     for name, ok, got, want in checks:

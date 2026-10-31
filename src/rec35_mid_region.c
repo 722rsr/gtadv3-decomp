@@ -1951,171 +1951,151 @@ void _080017ECC(void *a, void *b) __attribute__((alias("Rec35_Ev1_17ECC")));
 
 // ---------------------------------------------------------------------------
 // _080017F04(rec) — scene constructor
-__attribute__((naked)) void Rec35_Setup_17F04(void *rec) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push	{r4, r5, r6, r7, lr}\n"
-        "mov	r7, sl\n"
-        "mov	r6, r9\n"
-        "mov	r5, r8\n"
-        "push	{r5, r6, r7}\n"
-        "sub	sp, #12\n"
-        "adds	r7, r0, #0\n"
-        "movs	r0, #65\n"
-        "bl 0x0802B214\n"
-        "ldr r4, .Lr35f_pool_044\n"
-        "movs	r0, #4\n"
-        "str	r0, [sp, #0]\n"
-        "movs	r0, #1\n"
-        "str	r0, [sp, #4]\n"
-        "movs	r0, #0\n"
-        "adds	r1, r4, #0\n"
-        "movs	r2, #1\n"
-        "movs	r3, #0\n"
-        "bl sub_08007770\n"
-        "movs	r0, #6\n"
-        "str	r0, [r7, #80]\n"
-        "movs	r0, #23\n"
-        "str	r0, [r7, #92]\n"
-        "movs	r0, #0\n"
-        "str	r0, [r7, #104]\n"
-        "adds	r0, r7, #0\n"
-        "adds	r0, #8\n"
-        "bl sub_0800DAB8\n"
-        "adds	r0, r4, #0\n"
-        "adds	r1, r7, #0\n"
-        "bl sub_0800798C\n"
-        "adds	r0, r7, #0\n"
-        "bl sub_08007A58\n"
-        "adds	r0, r4, #0\n"
-        "movs	r1, #0\n"
-        "movs	r2, #3\n"
-        "bl sub_080075E8\n"
-        "movs	r0, #3\n"
-        "mov	sl, r0\n"
-        "movs	r5, #0\n"
-        "movs	r4, #0\n"
-        "ldr r1, .Lr35f_pool_048\n"
-        "mov	r8, r1\n"
-        "ldr r2, .Lr35f_pool_04c\n"
-        "add	r2, r8\n"
-        "mov	r9, r2\n"
-        ".Lr35f_f6c:\n"
-        "ldr r3, .Lr35f_pool_050\n"
-        "add	r3, r8\n"
-        "movs	r6, #0\n"
-        "ldrsh	r0, [r3, r6]\n"
-        "mov	r2, r9\n"
-        "movs	r6, #0\n"
-        "ldrsh	r1, [r2, r6]\n"
-        "adds	r2, r4, #0\n"
-        "str	r3, [sp, #8]\n"
-        "bl 0x08025CF4\n"
-        "adds	r1, r0, #0\n"
-        "subs	r0, r1, #1\n"
-        "ldr	r3, [sp, #8]\n"
-        "cmp	r0, #2\n"
-        "bhi .Lr35f_f8e\n"
-        "adds	r5, r1, #0\n"
-        ".Lr35f_f8e:\n"
-        "cmp	r5, sl\n"
-        "bgt .Lr35f_f94\n"
-        "mov	sl, r5\n"
-        ".Lr35f_f94:\n"
-        "adds	r4, #1\n"
-        "cmp	r4, #2\n"
-        "ble .Lr35f_f6c\n"
-        "adds	r4, r7, #0\n"
-        "adds	r4, #132\n"
-        "movs	r0, #0\n"
-        "mov	r8, r0\n"
-        "mov	r1, sl\n"
-        "strh	r1, [r4, #0]\n"
-        "movs	r2, #0\n"
-        "ldrsh	r0, [r3, r2]\n"
-        "movs	r6, #4\n"
-        "ldrsh	r1, [r3, r6]\n"
-        "mov	r2, sl\n"
-        "bl sub_08002714\n"
-        "movs	r0, #64\n"
-        "bl sub_08005758\n"
-        "ldr r2, .Lr35f_pool_054\n"
-        "strh	r0, [r2, #2]\n"
-        "mov	r0, r8\n"
-        "strh	r0, [r2, #0]\n"
-        "ldr r5, .Lr35f_pool_058\n"
-        "ldr r1, .Lr35f_pool_05c\n"
-        "movs	r3, #0\n"
-        "ldrsh	r0, [r4, r3]\n"
-        "subs	r0, #1\n"
-        "lsls	r0, r0, #1\n"
-        "adds	r0, r0, r1\n"
-        "movs	r6, #0\n"
-        "ldrsh	r1, [r0, r6]\n"
-        "movs	r0, #2\n"
-        "ldrsh	r2, [r2, r0]\n"
-        "movs	r0, #64\n"
-        "str	r0, [sp, #0]\n"
-        "adds	r0, r5, #0\n"
-        "movs	r3, #64\n"
-        "bl sub_08007570\n"
-        "ldr r1, .Lr35f_pool_060\n"
-        "movs	r2, #0\n"
-        "ldrsh	r0, [r4, r2]\n"
-        "subs	r0, #1\n"
-        "lsls	r0, r0, #1\n"
-        "adds	r0, r0, r1\n"
-        "movs	r3, #0\n"
-        "ldrsh	r1, [r0, r3]\n"
-        "adds	r0, r5, #0\n"
-        "movs	r2, #4\n"
-        "bl sub_080075E8\n"
-        "adds	r4, #4\n"
-        "str	r4, [r7, #120]\n"
-        "adds	r0, r7, #0\n"
-        "adds	r0, #8\n"
-        "str	r0, [r7, #124]\n"
-        "mov	r6, r8\n"
-        "str	r6, [r7, #8]\n"
-        "movs	r0, #1\n"
-        "strh	r0, [r7, #12]\n"
-        "adds	r0, r7, #0\n"
-        "adds	r0, #28\n"
-        "movs	r2, #32\n"
-        "negs	r2, r2\n"
-        "movs	r1, #0\n"
-        "bl sub_0800D77C\n"
-        "adds	r0, r7, #0\n"
-        "adds	r0, #20\n"
-        "movs	r1, #0\n"
-        "movs	r2, #160\n"
-        "bl sub_0800D77C\n"
-        "movs	r0, #6\n"
-        "strh	r0, [r7, #16]\n"
-        "movs	r0, #5\n"
-        "strh	r0, [r7, #18]\n"
-        "movs	r0, #2\n"
-        "str	r0, [r4, #0]\n"
-        "add	sp, #12\n"
-        "pop	{r3, r4, r5}\n"
-        "mov	r8, r3\n"
-        "mov	r9, r4\n"
-        "mov	sl, r5\n"
-        "pop	{r4, r5, r6, r7}\n"
-        "pop	{r0}\n"
-        "bx	r0\n"
-        ".Lr35f_pool_044: .word 0x0832C31C\n"
-        ".Lr35f_pool_048: .word 0x03001780\n"
-        ".Lr35f_pool_04c: .word 0x00000FF8\n"
-        ".Lr35f_pool_050: .word 0x00000FF4\n"
-        ".Lr35f_pool_054: .word 0x0203F8E8\n"
-        ".Lr35f_pool_058: .word 0x08306B54\n"
-        ".Lr35f_pool_05c: .word 0x080CB8E0\n"
-        ".Lr35f_pool_060: .word 0x080CB8E6\n"
-        ".syntax divided\n"
-    );
+struct Rec35SetupRec {
+    u8 pad0[8];
+    s32 state;
+    u16 enabled;
+    u8 pad1[2];
+    u16 mode, phase;
+    u8 pad2[60];
+    s32 f80;
+    u8 pad3[8];
+    s32 f92;
+    u8 pad4[8];
+    s32 f104;
+    u8 pad5[12];
+    void *ptr120, *ptr124;
+    u8 pad6[4];
+    s16 result;
+    u16 pad7;
+    s32 next;
+};
+void Rec35_Setup_17F04(void *rec) {
+    extern void sub_0802B214(int);
+    extern void sub_08007770(int, void *, int, int, u32, u32);
+    extern void sub_0800DAB8(void *);
+    extern void sub_0800798C(void *, void *);
+    extern void sub_080075E8(void *, int, int);
+    extern int sub_08025CF4(int, int, int);
+    extern void sub_08002714(int, int, int);
+    extern int sub_08005758(u32);
+    extern void sub_0800D77C(void *, int, int);
+    extern u8 RecSetupWA[], RecSetupOff1[], RecSetupOff2[];
+    extern s16 RecSetupTable1[], RecSetupTable2[];
+    // Reserve r6 through setup so the record receives an allocator-owned r7.
+    register int hold __asm__("r6");
+    struct Rec35SetupRec *r = rec;
+    __asm__ volatile("" : "=r"(hold));
+    void *tmpl;
+    s16 *p;
+    register s16 *pp __asm__("r3");
+    register int i __asm__("r4");
+    register int val __asm__("r5");
+    register int best __asm__("r10");
+    register u16 *slot __asm__("r2");
+    register s16 *result __asm__("r4");
+    register int zero __asm__("r8");
+    register void *tmpl2 __asm__("r5");
+    __asm__(".globl RecSetupWA\nRecSetupWA = 0x03001780\n"
+            ".globl RecSetupOff1\nRecSetupOff1 = 0x00000FF4\n"
+            ".globl RecSetupOff2\nRecSetupOff2 = 0x00000FF8\n"
+            ".globl RecSetupTable1\nRecSetupTable1 = 0x080CB8E0\n"
+            ".globl RecSetupTable2\nRecSetupTable2 = 0x080CB8E6\n");
+    sub_0802B214(65);
+    tmpl = (void *)0x0832C31C;
+    sub_08007770(0, tmpl, 1, 0, 4, 1);
+    r->f80 = 6;
+    r->f92 = 23;
+    r->f104 = 0;
+    sub_0800DAB8(&r->state);
+    sub_0800798C(tmpl, r);
+    sub_08007A58(r);
+    sub_080075E8(tmpl, 0, 3);
+    __asm__ volatile("" : : "r"(hold));
+    best = 3;
+    val = 0;
+    i = 0;
+    {
+        register u8 *wa __asm__("r8") = RecSetupWA;
+        register uintptr_t qaddr __asm__("r2") = (uintptr_t)RecSetupOff2;
+        register s16 *q __asm__("r9");
+        qaddr += (uintptr_t)wa;
+        q = (s16 *)qaddr;
+        do {
+            int v;
+            pp = (s16 *)(wa + (uintptr_t)RecSetupOff1);
+            {
+                // Keep r2 live over the first load; both signed loads use r6
+                // as their index scratch, and pp spills across the call.
+                register int x0 __asm__("r0"), h2 __asm__("r2");
+                register int y1 __asm__("r1");
+                register s16 *qb __asm__("r2");
+                register int idx __asm__("r2");
+                __asm__ volatile("" : "=r"(h2));
+                x0 = *pp;
+                __asm__ volatile("" : "+r"(x0) : "r"(h2));
+                qb = q;
+                __asm__ volatile("" : "+r"(x0), "+r"(qb));
+                y1 = *qb;
+                idx = i;
+                p = pp;
+                __asm__ volatile("" : "+r"(x0), "+r"(y1), "+r"(idx), "+m"(p));
+                v = sub_08025CF4(x0, y1, idx);
+            }
+            {
+                register int rv __asm__("r1") = v;
+                register int adj __asm__("r0") = rv - 1;
+                __asm__ volatile("" : "+r"(adj));
+                __asm__ volatile("" : "=r"(pp) : "0"(p));
+                if ((u32)adj <= 2) val = rv;
+            }
+            if (val <= best) best = val;
+            i++;
+        } while (i <= 2);
+    }
+    {
+        // Keep r5 occupied while the two signed reads select r2/r6 scratch.
+        register int d __asm__("r5");
+        __asm__ volatile("" : "=r"(d));
+        result = &r->result;
+        { register int t __asm__("r0") = 0; __asm__ volatile("" : "+r"(t)); zero = t; }
+        { register int t __asm__("r1") = best; *result = t; }
+        {
+            register int g __asm__("r6"), g1 __asm__("r1");
+            register int a __asm__("r0");
+            register int h __asm__("r2"), b __asm__("r1");
+            __asm__ volatile("" : "=r"(g), "=r"(g1));
+            a = pp[0];
+            __asm__ volatile("" : "+r"(a) : "r"(g), "r"(g1));
+            __asm__ volatile("" : "+r"(a), "=r"(h));
+            b = pp[2];
+            __asm__ volatile("" : "+r"(b) : "r"(h));
+            sub_08002714(a, b, best);
+        }
+        __asm__ volatile("" : : "r"(d));
+    }
+    {
+        int a = sub_08005758(64);
+        slot = (u16 *)0x0203F8E8;
+        slot[1] = a;
+    }
+    { register int z __asm__("r0") = zero; slot[0] = z; }
+    tmpl2 = (void *)0x08306B54;
+    sub_08007570(tmpl2, RecSetupTable1[*result - 1], (s16)slot[1], 64, 64);
+    sub_080075E8(tmpl2, RecSetupTable2[*result - 1], 4);
+    result += 2;
+    r->ptr120 = result;
+    r->ptr124 = &r->state;
+    { register int z __asm__("r6") = zero; r->state = z; }
+    r->enabled = 1;
+    sub_0800D77C((u8 *)r + 28, 0, -32);
+    sub_0800D77C((u8 *)r + 20, 0, 160);
+    r->mode = 6;
+    r->phase = 5;
+    *(s32 *)result = 2;
 }
 void _080017F04(void *a) __attribute__((alias("Rec35_Setup_17F04")));
+void sub_080017F04(void *a) __attribute__((alias("Rec35_Setup_17F04")));
 
 // ---------------------------------------------------------------------------
 // _080018064(rec, a, b) — countdown gate

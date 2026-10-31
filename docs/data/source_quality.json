@@ -6834,11 +6834,11 @@
    "size": 4
   },
   "0x08017f04": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 147,
-    "naked": true
+    "barrier": 15,
+    "directive": 1,
+    "pin": 29
    },
    "file": "src/rec35_mid_region.c",
    "name": "Rec35_Setup_17F04",
@@ -13220,16 +13220,16 @@
  },
  "totals": {
   "asm": {
-   "bytes": 48548,
-   "functions": 127
+   "bytes": 48196,
+   "functions": 126
   },
   "c": {
    "bytes": 44326,
    "functions": 876
   },
   "c_fakematch": {
-   "bytes": 95062,
-   "functions": 669
+   "bytes": 95414,
+   "functions": 670
   },
   "partial": {
    "bytes": 200,
