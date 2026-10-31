@@ -168,3 +168,44 @@ The permuter cannot help on this draft: `--prepare-only` reports
 because the absolute `.set` symbols the pool recipe depends on are not visible
 to its relocation resolver. A symbol-free draft (the 340 B `v41`) permutes but
 plateaus at an advisory score of 5575.
+
+## Latest state: exact length, exact setup, 199 matched bytes
+
+`build/lift/save241c8/v108.c` (and `v109`) now reproduce the ROM's setup
+**instruction for instruction**:
+
+```
+movs r7,#0                  k = 0 in r7
+ldr r0,=WA / mov r8,r0      wa
+movs r1,#255 / lsls #4 / add r1,r8 / mov sl,r1   state pointer
+movs r5,#0                  c = 0
+lsls r2,r7,#3 / mov r9,r2   k8 (r2 scratch, r9 home)
+adds r0,r7,#1 / str r0,[sp,#0]    k+1 spill
+adds r0,r7,#0 / adds r1,r5,#0 / bl
+```
+
+It is 368 B (exact), has the ROM's 14 literal-pool words, and matches 199
+bytes / 114 of 174 instructions. The levers that got there:
+
+- `knext = k + 1; __asm__ volatile ("" : "+m"(knext));` — the explicit
+  increment temporary with a memory barrier is what reproduces the ROM's
+  `adds r0,r7,#1; str r0,[sp,#0]` hoist; a plain `for (...; k++)` does not.
+- `k8` computed through a pinned `r2` scratch (`kt`) with a `+r` barrier, then
+  moved to `r9`.
+- The `k+1` spill must be declared/assigned before `c = 0` in the loop body,
+  otherwise the compiler reorders `movs r5,#0` above the `lsls`.
+- `SaveWAOffNegFFA2` (a second symbol with the same value) is required so the
+  two `k==0` re-anchors do not merge into one pool word.
+
+### What is left
+
+The only structural difference left is the `c2` spill point. The ROM keeps
+`c2 = c<<1` in `r2` through the grid store and spills it afterwards
+(`str r2,[sp,#4]` at `0x08024206`); every draft spills at the definition
+(`str r1,[sp,#4]` right after `lsls r1,r5,#1`) because the `+m` barrier that
+creates the slot is satisfied by homing the variable from the start. Removing
+the barrier keeps `c2` in a register, drops the frame to 4 B and the body to
+356 B. A `+r` barrier at the definition plus `+m` later emits the store twice.
+
+The remaining register differences (`r1` vs `r2` for `c2`, `r0` vs `r3` in a
+few scratch slots) follow from that one spill decision.
