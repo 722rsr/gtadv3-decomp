@@ -1,88 +1,103 @@
-# SaveUpdate_080241C8 lift attempt: near-miss at 352/368
+# SaveUpdate_080241C8 lift attempt: 340/368 with the WA_SPLIT pool recipe
 
 `SaveUpdate_080241C8` (`0x080241C8`, 368 B, 174 instructions, 5 callees) is the
 last assembly body in `src/save.c`. It is a 2x4 grid updater. This note records
-the measured drafts and the two walls that stopped an exact match. The body is
-still assembly; nothing here was promoted.
+the measured drafts, the semantics as the ROM actually computes them, and the
+one wall left. The body is still assembly; nothing here was promoted.
 
-## What the body does
+## What the body does (corrected)
 
 ```
 for (k = 0; k <= 1; k++)
   for (c = 0; c <= 3; c++) {
     v = _08025D64(k, c);
-    idx = k*8 + c*2;
-    WA[0xFFA + idx] = v;                  // grid 1
-    if (v == 11) {
-      WA[0x101A + idx] = 1;               // grid 2
-      WA[0xFF6] = c + 1;                  // count
+    idx = k*8 + c*2;                      // BYTE offset, not a halfword index
+    *(u16 *)(WA + 0xFFA + idx) = v;       // grid 1
+    if ((s16)v == 11) {
+      *(u16 *)(WA + 0x101A + idx) = 1;    // grid 2
+      *(u16 *)(WA + 0xFF6) = c + 1;       // count
       if (k == 0) {
-        if ((s16)WA[0xFF0] == 0) { if (c+1 > 3) WA[0xFF6] = 3; }
-        else                     { if (c+1 > 3) { WA[0xFF6] = 0; WA[0xFF2] = 1; } }
+        if (*(s16 *)(WA + 0xFF0) == 0) { if (c+1 > 3) *(u16 *)(WA+0xFF6) = 3; }
+        else                           { if (c+1 > 3) { WA[0xFF6] = 0; WA[0xFF2] = 1; } }
       } else {
-        if (WA[0xFF0] == 1 && c+1 > 3) WA[0xFF6] = 3;
-        WA[0xFF0] = 1; WA[0xFF2] = 1;
+        if (*(u16 *)(WA + 0xFF0) == 1 && c+1 > 3) *(u16 *)(WA+0xFF6) = 3;
+        *(u16 *)(WA + 0xFF0) = 1;
+        *(u16 *)(WA + 0xFF2) = 1;
       }
     } else {
-      WA[0x101A + idx] = 0;
+      *(u16 *)(WA + 0x101A + idx) = 0;
     }
-    if ((s16)WA[0xFFA + idx] > 2) WA[0x102A + idx] = 1;   // grid 3
-    else                          WA[0x102A + idx] = 0;
+    if (*(s16 *)(WA + 0xFFA + idx) > 2) *(u16 *)(WA + 0x102A + idx) = 1;
+    else                                *(u16 *)(WA + 0x102A + idx) = 0;
     _08002714(k, c, _0800A9A0(k, c));
     _080026DC(k, c, _0800A9E0(k, c));
   }
 ```
 
-The two `_0800A9xx` calls return the value their `_08002714`/`_080026DC`
-partner stores, which is why the ROM copies `r0` to `r2` between them.
+**The index is a byte offset.** The ROM computes `c*2` (`lsls r2,r5,#1`),
+`k*8` (`lsls r2,r7,#3`) and adds them; the grid rows are 8 bytes (4 cells).
+Writing it as a u16 index (`k*4 + c`) compiled to the same address but a
+shorter body, and writing `(k*8 + c*2)*2` is simply wrong.
+
+## The pool recipe (`WA_SPLIT`)
+
+The ROM keeps the base and each displacement in separate literal-pool words
+(`ldr r2,=0x03001780; ... ldr r6,=0x00000FFA; add r6,r8`). A plain
+`(uintptr_t)(0x03001780 + off)` folds into one constant and collapses to a
+single `ldr`, which is most of the length shortfall. Naming the base and each
+offset as *absolute symbols* restores the split:
+
+```c
+__asm__(".globl SaveWABase\nSaveWABase = 0x03001780\n"
+        ".globl SaveWAOffFFA\nSaveWAOffFFA = 0x00000FFA\n" ...);
+```
+
+with `extern u8 SaveWABase;` etc. at file scope. This is the `WA_SPLIT`
+recipe from `src/race_scene_b1.c`, already documented for the same WA fields
+in `src/race_progress.c`. Two details measured there and confirmed here:
+
+- `0xFF0` has **no** pool word in the ROM: it is synthesised as
+  `movs r1,#255; lsls r1,#4`. Spelling it with a symbol adds a pool word and
+  two instructions, so it stays a plain constant.
+- Each `(wa + off)` must be materialised **before** `+ idx`; as one expression
+  agbcc re-associates and shares the `wa + idx` sum across sites.
 
 ## Measured drafts
 
-All drafts are under ignored `build/lift/save241c8/`.
+Drafts under ignored `build/lift/save241c8/`. The in-source numbers use the
+same TU and gates as the acceptance probe.
 
-| draft | shape | candidate | aligned | first diff |
-| --- | --- | ---: | ---: | ---: |
-| v17 | sweep best: pinned `r8` base, `sl` state, barrier on `idx`/`v` | 352 B | 104/174 | byte 12 |
-| v14 | + `k`/`k8` pins (ignored by the loop pass) | 344 B | 91 | byte 12 |
-| v13 | pinned `r8`/`sl`, natural counters | 344 B | 36 | byte 12 |
-| v6 | plain C, `s16` reads, `k8`/`c2` locals | 308 B | 57 | byte 10 |
-| v24 | `struct SaveWork24` field accesses | 320 B | 28 | byte 10 |
+| draft | shape | candidate | aligned |
+| --- | --- | ---: | ---: |
+| v41 / v47 | absolute-symbol pools, byte index, `p = wa + off` per site | 340 B | 107/174 |
+| v48 | two base symbols, branch re-anchor `p = WA` | 344 B | 88 |
+| v44 | same + a single `idx` reused | 324 B | 86 |
+| v40 | byte index, symbol pools, inline `c2 + k8` | 340 B | 66 |
+| v28 | halfword index (2x address, wrong) | 364 B | 72 |
+| v24 | `struct SaveWork24` fields | 320 B | 28 |
 
-The best draft reproduces the **entire tail byte for byte**: the four calls in
-order, the `r2` return copies, `c++` through `r4`, the two loop tests, and the
-whole epilogue. The setup matches through `sl = WA + 0xFF0` in v13/v14. The
-remaining 16 bytes (4 instructions) are all inside the inner body.
+The tail is byte-exact (all four calls, the `r2` return copies, the loop
+increments and tests, and the epilogue), and the setup is byte-exact through
+`sl = WA + 0xFF0` in v41.
 
-## Findings
+## The remaining wall (28 bytes)
 
-- **`volatile s16` is wrong here.** `*(volatile s16 *)p` compiles to
-  `ldrh` + `lsls/asrs`; a plain `*(s16 *)p` compiles to `ldrsh` with the
-  zero-index idiom `movs rX,#0; ldrsh rY,[base,rX]`. The ROM uses `ldrsh`
-  for the grid read at `0x080242B4` and for `state` in the `k==0` arm, and
-  `ldrh` for `state` in the `k!=0` arm — so the source mixed `s16` and `u16`
-  lvalues, and the `volatile` spelling costs two instructions per read.
-- **Call order comes first.** The ROM calls `_08025D64` before computing
-  `c*2`/`idx`; a draft that computes the index first hoists it above the call
-  and loses the alignment at `0x080241EC`. Keeping `v = f(k,c)` before
-  `idx = ...` is required.
-- **The ROM pools each `WA+offset` separately** (14 literal words, including
-  the same `0xFFA` and `-0xFFA` three times each). A shared `u16 *wa` base
-  lets agbcc CSE the offsets into `subs`/`adds` differences and drop several
-  pool words, which is most of the 16-byte shortfall. Separate pointer
-  locals (`g1`, `g2`, `g3`, ...) make it worse, not better: agbcc derives them
-  from one anchor (`movs r1,#10; negs r1,r1; add r1,r9`).
-- **`k` must land in `r7`.** In the ROM `r7`=k, `r9`=k*8, `r5`=c, `sp+0`=k+1,
-  `sp+4`=c*2. Natural C gives `r6`=k. Pinning `k` is ignored by the loop pass
-  (`register ... __asm__("r7")` is overridden after loop optimization); a
-  `+r` barrier on a *later* variable (`k8`) moved `k` into `r7` and fixed the
-  `sp+0` spill, but left `k8` spilled to `sp+4` instead of `r9`.
+Every grid store in the ROM is `ldr rX,=off; add rX,r8; adds rX,idx,rX`
+(two adds, base in `r8`). The draft instead copies the base to a scratch
+(`mov r4,r8; adds r1,r4,r0; adds r0,r1,r3`) or recomputes `base + c2 + k8`
+whenever the index is not kept live, and it never reproduces the three
+`ldr r2,=0xFFFFF006; adds r6,r6,r2` pointer resets that re-anchor the grid
+pointer on `WA`. Pinning the roles (`idx`→r3, base→r6, `k8`→r9, `c2`→r2) makes
+the body shorter (300-324 B), not longer, so the ROM's extra instructions come
+from a source shape that keeps an anchor pointer *and* rebuilds the index from
+a spilled `c2`, not from pinning.
+
+`--sweep`/`--spill` over `k, c, k8, c2, idx, v, p, wa` plateau at 340/107.
 
 ## Next move
 
-The tail and setup are done; only the inner body's base arithmetic remains.
-The most promising lead is forcing the `WA+offset` literals to stay separate
-by using a *different symbol per field* (like `SaveBlock1Flags_Set`/
-`SaveBlock1Masks_Set` in this file) instead of one `RAM_SYM` base plus
-offsets. Each symbol reference becomes a relocation the compiler cannot fold
-into another, which should restore the ROM's separate pool words and the
-`WA + const` address adds.
+Write the branch bodies as `p = (u8 *)WA;` and the grid stores as
+`p + (0xFFA + c2 + k8)`, with `c2` forced to the frame, so the compiler has to
+re-anchor `p` and rebuild the index at `0x080242B4` the way the ROM does. The
+three `-0xFFA` pool words and the `adds r6,r6,r2` resets are the visible
+signature of that shape.
