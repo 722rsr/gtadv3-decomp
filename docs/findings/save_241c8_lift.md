@@ -262,3 +262,41 @@ pointer in `sl`; the draft rotates several of those. Pins on `k`/`c` are
 overridden by the loop pass, and `--sweep` barriers trade length for alignment.
 decomp-permuter now ingests the draft (no unresolved relocations) and is
 grinding on the register choices from an advisory score of ~3900.
+
+## Real-gate evidence: 4 bytes from exact
+
+`make matching-slice` (the actual acceptance gate) now reports:
+
+```
+match_c_slice: C-owned code slice differs at ROM offset 0x0241D6: got 1b, expected 1a
+```
+
+`0x0241D6` is function offset `0xE`, the first literal-pool load. Everything
+before it — prologue, frame, `movs r7,#0`, the WA/state setup — is byte-exact.
+The cause is a single spurious `movs r7,#1` that every draft emits just before
+`movs r5,#0` (the ROM's `c = 0`), which pushes the pool four bytes late.
+
+Two exact-length drafts reach this point:
+
+- `v131`/`v146` (while + `knext`): frame 8, `c2` at `sp+4`, `k+1` hoist
+  `adds r0,r7,#1; str r0,[sp,#0]` — plus the spurious `movs r7,#1`.
+- `v163` (struct `{ k; c2; }` frame slots, `k` initialized in its declaration):
+  same, and it also fixes the `movs r7,#0` position.
+
+Tried and measured against the gate, all landing at `0x241D2`–`0x241D6`:
+`+m` barriers on `knext`/`c2st`, `volatile` locals, a `u32 kst[1]` array, a
+struct with a `volatile` field, `for`/`while`/`while(1)+break` loop forms,
+`k++` vs a hoisted `knext`, and removing the `+r(kt)` barrier. The `movs r7,#1`
+appears in every variant that also produces the ROM's `k+1` spill; the variants
+without it lose the `sp+0` slot and fail at `0x241D2` (frame 4 instead of 8).
+
+Note: the `+m` barrier does **not** allocate a stack slot — a draft using it
+alone writes `sp+4` inside a 4-byte frame. The struct form is the legitimate
+slot allocator.
+
+Next lead: find the source shape that yields `adds r0,r7,#1; str r0,[sp,#0]`
+without the `movs r7,#1`. The `movs` is the compiler materialising `k` at the
+loop head from the spilled `k+1`; it appears whenever the increment value is
+kept in `k`'s register. A shape where the spill is read into a *different*
+register (the ROM reads it back into `r7` only at the loop *bottom*) should
+remove it.
