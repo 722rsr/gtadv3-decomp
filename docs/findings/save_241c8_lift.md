@@ -572,3 +572,30 @@ body to 364 B.
   exactly 305 on the previous best - the neighbourhood is flat, which is why the
   pin recipe was needed.
 
+## Fifth pass: instrumented agbcc, and the exact nature of the last wall
+
+I built an instrumented copy of the pinned compiler (patch in
+`docs/findings/save241c8/allocator_dump.md`) and dumped `reg_renumber` for every
+allocno.  The result is definitive:
+
+**Every allocation the ROM makes is reproduced** - `k`->r7, `kf`->sp, `c`->r5,
+`c2`->r2, `idx`->r3, `cnt`->r4, the grid offset constants->r0, the address
+arithmetic->r0.
+
+The only remaining differences are which *scratch* register carries a constant
+that two dead registers could equally hold:
+
+| site | ROM | draft |
+| --- | --- | --- |
+| grid-2 flag `1` (pseudo 47) | r3 | r2 |
+| grid-3 constants (pseudo 76) | r1 | memory |
+
+Both registers are dead at that point, so this is a tie-break in the sorted
+allocation order, not a liveness or structure difference.  Pinning `r2` across
+the store, or naming the constant and pinning it to `r3`, both displace `c2` and
+change the frame (376 B / 364 B / 380 B).  72 pin combinations and a greedy pin
+sweep over 21 anchors x 5 registers were measured; 307/368 stands.
+
+This is the honest boundary: the remaining 61 bytes are an allocator tie-break
+that the C spelling does not reach.
+
