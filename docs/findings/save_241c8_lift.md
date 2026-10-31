@@ -227,3 +227,38 @@ the barrier keeps `c2` in a register, drops the frame to 4 B and the body to
 
 The remaining register differences (`r1` vs `r2` for `c2`, `r0` vs `r3` in a
 few scratch slots) follow from that one spill decision.
+
+## Near-complete draft: `v131` (368 B, exact structure, 170/368 bytes)
+
+`build/lift/save241c8/v131.c` is the closest draft so far:
+
+- **368 bytes, the ROM's exact length**, 14 literal-pool words in the ROM's
+  five pools with the same word order.
+- The instruction sequence matches block for block: same ops, same count.
+- `corpus_match_probe --c89` reports `PARTIAL 170/368 bytes, candidate 368`,
+  and the `--diff` listing shows the残り differences are **register choices
+  only** (`r0`/`r1`/`r2`/`r3` picks) plus pool-placement shifts that follow
+  from them — no missing or extra operations.
+
+Levers that built v131 (on top of the earlier ones):
+
+- `c2st = (u32)c2;` **after** the grid store plus
+  `__asm__ volatile("" : "+m"(c2st));` produces the ROM's late
+  `str r2,[sp,#4]` and the `ldr r2,[sp,#4]` re-read.
+- `knext = k + 1;` with a `+m` barrier produces the `adds r0,r7,#1;
+  str r0,[sp,#0]` increment hoist.
+- The three `-0xFFA` re-anchors must be **defined** in the function's own
+  `__asm__(".globl ...")` block (`SaveWAOffNegFFA`, `SaveWAOffNegFFA2`,
+  `SaveWAOffNegFF2`). Without the `.globl` definitions the assembler emits
+  `R_ARM_ABS32` relocations that the probe cannot resolve
+  (`pool +0x8C: SaveWAOffNegFFA -> 0x00000000`); with them the words are raw
+  bytes and the probe resolves the body.
+
+### Remaining
+
+Register allocation only. The ROM has `c` in `r5`, `k` in `r7`, `idx` in `r3`,
+`c2` in `r2`, the grid base in `r6`, `WA` in `r8`, `k8` in `r9`, the state
+pointer in `sl`; the draft rotates several of those. Pins on `k`/`c` are
+overridden by the loop pass, and `--sweep` barriers trade length for alignment.
+decomp-permuter now ingests the draft (no unresolved relocations) and is
+grinding on the register choices from an advisory score of ~3900.
