@@ -126,3 +126,45 @@ Write the branch bodies as `p = (u8 *)WA;` and the grid stores as
 re-anchor `p` and rebuild the index at `0x080242B4` the way the ROM does. The
 three `-0xFFA` pool words and the `adds r6,r6,r2` resets are the visible
 signature of that shape.
+
+## Progress: exact length reached (368 B)
+
+The strongest drafts now reproduce the ROM's **exact 368-byte length** and 96 of
+174 instructions:
+
+- `build/lift/save241c8/v93.c` / `v97.c` — the base pointer `g` re-anchors per
+  arm (`g = g + &NegFFA` in each `k==0` sub-path, `g = _flag + &NegFF2` in the
+  `k!=0` arm), which restores all three `-0xFFA` pool words and the `-0xFF2`
+  word. Pool-word count is 13 vs the ROM's 14.
+- `build/lift/save241c8/v47.c` — best instruction alignment (107/174) at 340 B,
+  from the barrier sweep.
+- The `-0xFFA` re-anchor only survives when the offset is an **absolute symbol**
+  (`extern u8 SaveWAOffNegFFA;` with `.set ... = 0xFFFFF006`); as a plain
+  `0xFFFFF006u` literal agbcc constant-folds it away and the body shrinks by 12 B.
+
+### The remaining wall: `k` lives on the stack
+
+The ROM keeps the outer counter in `r7` (`movs r7,#0`, `cmp r7,#1`, and
+`adds r0,r7,#0` at each call). Every draft spills it to `sp+0`
+(`movs r0,#0; str r0,[sp,#0]`, then `ldr r0,[sp,#0]` per use), because the other
+seven callee-saved registers are occupied by `wa` (r8), the state pointer (sl),
+`k8` (r9), `c` (r5), the grid base (r6) and the `c+1` scratch (r4).
+
+What was measured:
+
+- Register pins on `k` (`__asm__("r7")`) are overridden by the loop optimizer.
+- A `+r` barrier on `k` *does* put it in a register, but it also hides `k = 0`
+  from the loop test, so agbcc emits a pre-test (`cmp r7,#1; ble.n; b exit`)
+  that the ROM does not have. With a `do { } while` loop the pre-test is gone
+  but the ROM's `adds r0,r7,#1; str r0,[sp,#0]` increment hoist disappears too.
+- Declaration order, `register` without a pin, `k = 0` before/after the WA
+  setup, `k < 2`, `k != 2`, and `--sweep` over every variable all leave `k` on
+  the stack.
+- The `k8` shift scratch was pinned to `r2` (the ROM's) with a `+r` barrier; it
+  does not free `r7` for `k`.
+
+The permuter cannot help on this draft: `--prepare-only` reports
+`unresolved candidate relocation` for `SaveWAOffNegFFA`/`SaveWAOffNegFF2`,
+because the absolute `.set` symbols the pool recipe depends on are not visible
+to its relocation resolver. A symbol-free draft (the 340 B `v41`) permutes but
+plateaus at an advisory score of 5575.
