@@ -95,6 +95,24 @@ a spilled `c2`, not from pinning.
 
 `--sweep`/`--spill` over `k, c, k8, c2, idx, v, p, wa` plateau at 340/107.
 
+## Barrier-sweep progress (this session)
+
+Best exact-length barrier sets found by `--sweep` (in-place, 368 B):
+
+- `v117`: `+r(c2)` after the grid-1 store, elsewhere — **118/174 aligned**;
+  `+p71/c` (`+r(c)` after the `k!=0` flag store) is the probe that pays.
+- Compounding `p60/c + p71/c` etc. reaches 376 B / 121 aligned — **loses the exact
+  length**.
+- `r3p54/c` (+r(c) after the `count` store) reaches **368 B / 121 aligned**.
+- `body_diff` against the v117 ROM window: the setup through `str r0,[sp,#0]`
+  is **byte-identical**; the alignment metric overstates the remaining work.
+
+The remaining wall is unchanged: the ROM spills `c2` **after** the grid store
+(`str r2,[sp,#4]` at 0x08024206), where the drafts spill at its definition; and
+the `tst r3,#1`-style constant copy emits an extra `mov ip,r6` the ROM lacks.
+`body_diff` confirms 138/174 instructions currently differ over the full
+0x80241c8..0x8024338 span included pool disassembly confusion.
+
 ## Measured lever: `pa = o; pa += wa;`
 
 `src/race_progress.c` (`Race_AdvanceProgress`, EXACT) already solves this field set
