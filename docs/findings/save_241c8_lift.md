@@ -521,3 +521,54 @@ These are exactly the cases `docs/findings/indexed_halfword_scratch.md` and
 the choice "tracks the register pressure of the original source, which is not
 recoverable from the C spelling" for the halfword scratch.
 
+## Fourth pass: 307/368 via a liveness pin
+
+`docs/findings/save241c8/best_307.c` is the new best:
+
+```
+PARTIAL 307/368 bytes, candidate 368 bytes, first difference +0x3A
+```
+
+The `+0x20` wall (`adds r0,r7,#1` in the ROM, `adds r3,r7,#1` in the draft) is
+closed with the liveness-pin recipe from
+`docs/findings/indexed_halfword_scratch.md`: pin a dummy to the *unwanted*
+scratch register across the statement that allocates it.
+
+```c
+register s32 hold __asm__("r3");
+...
+__asm__ volatile ("" : "=r"(hold));
+kf.k = (s32)(k + 1);          /* now allocates r0, as the ROM does */
+__asm__ volatile ("" : : "r"(hold));
+```
+
+Measured: no pin -> `+0x20`/305; pin `r3` -> `+0x3A`/307; pins on `r0`, `r1`
+-> no change.
+
+### The new wall
+
+`0x3A` is the `c2` spill.  The ROM emits
+
+```
+3a: lsls r0,r0,#16
+3c: asrs r0,r0,#16
+3e: str r2,[sp,#4]
+```
+
+while the draft emits `str r2,[sp,#4]` at `0x3A` - the spill is scheduled two
+instructions before the sign-extension.  A greedy sweep over 21 statement
+anchors x 5 registers found **no single liveness pin that improves on 307**, and
+naming the sign extension (`s16 vs = (s16)v;`) costs a stack slot and drops the
+body to 364 B.
+
+### Search tooling
+
+* `build/lift/save241c8/drive.py` - bounded-round mutation search, persists the
+  best draft, verifies with the probe and runs `make matching-slice` on a
+  scratch-grader 368/368.
+* `build/lift/save241c8/pins.py` - greedy liveness-pin search.
+* Single-mutation sweeps over 12 mutator kinds (types, pins, declaration order,
+  statement order, counter order, flag/state/grid-3 temps, loop form) all return
+  exactly 305 on the previous best - the neighbourhood is flat, which is why the
+  pin recipe was needed.
+
