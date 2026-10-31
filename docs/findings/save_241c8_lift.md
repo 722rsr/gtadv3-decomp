@@ -486,3 +486,38 @@ through `o`, reordering the counter store, and an explicit `kf.c2` spill.
 The permuter runs on `best_305.c` with an advisory baseline of **1785**
 (previously 5300 on the earlier drafts).
 
+### Final measured state
+
+`docs/findings/save241c8/best_305.c` is the best correct draft:
+
+```
+_080241C8 0x080241c8 src/save.c: PARTIAL 305/368 bytes, candidate 368 bytes, first difference +0x20
+rom 174 instructions / 368 B, candidate 174 instructions / 368 B, 134 instructions identical
+```
+
+A sweep of 72 register-pin combinations (`c2`, `idx`, `c`, `cnt` pinned to
+`r2`/`r3`/`r4`/`r5`, flag constant as a pinned variable) found **no combination
+that moves the first difference past `+0x20`**; every one either stays at
+`+0x20`/368 B or drops to 364 B.  The `+0x20` difference is
+`adds r0,r7,#1` (ROM) versus `adds r3,r7,#1` (draft) - a pure scratch-register
+choice for the `k+1` hoist, and pinning that scratch (`register s32 kn
+__asm__("r0")`) is ignored by agbcc.
+
+The permuter, seeded from `best_305.c`, has an advisory baseline of **1785**
+(down from 5495 on the earlier wrong-length drafts) and its best mutation so far
+scores **1555**, from cosmetic rewrites (`0x0FF0u ^ 0`, an extra `u8 *`
+temporary), not a structural breakthrough.
+
+What remains is 40 instructions of register-choice difference across:
+
+* the `k+1` scratch (`r0` vs `r3`),
+* the `c2` spill being scheduled two instructions before the sign-extension,
+* the indexed-halfword scratch for `*(s16 *)wastate` (ROM `r2`/`r0`, draft `r0`/`r3`),
+* which low register holds the grid-2 flag, the grid-2 clear, and the grid-3 constants,
+* the reloaded `c2` for the grid-3 index (ROM `r2`, draft `r3`).
+
+These are exactly the cases `docs/findings/indexed_halfword_scratch.md` and
+`register_shaping_levers.md` call allocator-dependent; the repo's own note says
+the choice "tracks the register pressure of the original source, which is not
+recoverable from the C spelling" for the halfword scratch.
+
