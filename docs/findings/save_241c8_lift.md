@@ -438,3 +438,51 @@ right spill.
 Always restore with `git checkout -- src/save.c`; `make matching-slice` is green
 on the committed naked body.
 
+## Third pass: 305/368, correct program, register allocation only
+
+The decisive change was to stop pinning `k`.  A pin on `k` is not honoured after
+agbcc's loop pass: the generated code materialised the flag constant into `r7`
+and then compared it (`movs r7,#1; ...; cmp r7,#0`), which makes the `k == 0`
+arm unreachable.  The draft was the right length but a different program.
+
+With `k` left to the allocator, the body stays correct and the following shape
+reaches **368 bytes, 174 instructions (same as the ROM), 305/368 bytes matched,
+first difference `+0x20`**:
+
+* `struct { s32 k; u32 c2; } kf;` - forces the 8-byte frame and the two ROM
+  slots (`k+1` at `sp+0`, `c2` at `sp+4`).  With `k` unpinned agbcc emits the
+  ROM's `str r2,[sp,#4]` / `ldr [sp,#4]` spill and reload by itself.
+* `s32 cnt;` plus `if ((s16)cnt > 3)` - this is what produces the ROM's
+  `lsls rN,#16; asrs rN,#16` narrowing before each `cmp #3`.  A 16-bit `cnt`
+  type instead adds zero-extensions at every store and is 4 bytes too long.
+* `u16 *pcnt` hoisted out of the branch - the ROM computes `wa+0xFF6` once
+  (`ldr r1,=0xFF6; add r1,r8`) and reuses `r1` for the later `= 3` / `= 0`
+  stores.  Recomputing the pointer per store costs two instructions.
+* the `g += -0xFFA` adjustment must be emitted **before** the `cnt > 3`
+  comparison (the ROM does `adds r6,r6,r2` then `cmp r0,#3`).  Moving it after
+  the branch loses 18 bytes of alignment (`287` -> `305`).
+
+`docs/findings/save241c8/best_305.c` is that body (`v371` in the work tree).
+
+### What is left
+
+All remaining differences are register choices, not structure:
+
+| ROM | draft | site |
+| --- | --- | --- |
+| `adds r0,r7,#1` | `adds r3,r7,#1` | `k+1` hoist |
+| `str r2,[sp,#4]` at `0x3E` | at `0x3A` | `c2` spill scheduled two instructions early |
+| `movs r3,#1` | `movs r2,#1` | grid-2 flag |
+| `adds r0,r5,#1` + `adds r4,r0,#0` | `adds r4,r5,#1` | counter |
+| `mov r2,sl` / `ldrsh r2,[r2,r0]` | `mov r0,sl` / `ldrsh r0,[r0,r3]` | state read |
+| `ldr r2,[sp,#4]; add r2,r9` | `ldr r3,[sp,#4]; add r3,r9` | grid-3 index |
+| `movs r2,#0` | `movs r1,#0` | grid-2 clear |
+| `movs r1,#1` / `movs r2,#0` | `movs r3,#1` / `movs r0,#0` | grid-3 store |
+
+Measured attempts that did **not** help: pinning `idx` to `r2`, `cnt` to `r4`,
+`c2` to `r2`, the state read into an `r2`/`r0`/plain temp, computing `pcnt`
+through `o`, reordering the counter store, and an explicit `kf.c2` spill.
+
+The permuter runs on `best_305.c` with an advisory baseline of **1785**
+(previously 5300 on the earlier drafts).
+
