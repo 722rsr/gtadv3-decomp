@@ -95,9 +95,9 @@ void BlockB_Arm(u16 param) {
 
 // _08002140 -> matchCount if active else 0 (s16)
 //
-// The old "MEASURED WALL" here (a `beq` with no prologue) was the compiler, not
-// the source: the current agbcc frames every branchy body, old_agbcc frames
-// only non-leaves (docs/findings/compiler_split.md). Under old_agbcc the shape
+// The old note here (a `beq` with no prologue) was about the compiler, not the
+// source: the current agbcc frames every branchy body, old_agbcc frames only
+// non-leaves (docs/findings/compiler_split.md). Under old_agbcc the shape
 // below is what the ROM has, and its three remaining details are all measured:
 //   * `s16 v = 0;` FIRST -- the ROM materialises `movs r2,#0` before the pool
 //     load, and the accumulator is r2 through `adds r0,r2,#0`;

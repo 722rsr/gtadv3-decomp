@@ -3532,7 +3532,7 @@ void sub_0800BCD4(void *a0, u32 a1, void *a2, u32 a3, void *s1, void *s2, void *
 // Measured: the three zeroed halfwords need an offset variable (`0xFCA`, then
 // `+2`), otherwise the three stores collapse into `strh` with immediate
 // offsets. The four registers the ROM carries are pinned: row r5, a2 r4,
-// a3 r6, WA r3 (r3 stays live across both blocks, so it can never be spilt).
+// a3 r6, WA r3 (r3 stays live across both blocks, so the ROM does not spill it).
 // a2 is r4 so the later `0x03002808` base can reuse it once row is consumed;
 // `b2` + the empty `+r` barrier is what stops that constant folding into
 // `0x03002808 + 8`.

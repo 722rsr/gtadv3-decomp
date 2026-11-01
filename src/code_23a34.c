@@ -44,7 +44,7 @@ extern void _08007B18(void *a, int b, int c, int d, int e, int f, int g, int h);
 //     (`w2`/`o2` in r0/r1) because cse keeps the earlier values in callee-
 //     saved regs across the calls.
 //   * `result` needs a `"+r"` barrier after the call: without it agbcc
-//     compares the call result in r0 directly and never emits the ROM's
+//     compares the call result in r0 directly and does not emit the ROM's
 //     `adds r4,r0,#0`; the barrier also frees r0 for the 142/144 address
 //     copies. `z = 0` then lands in r4 after argB/result die.
 //   * one `tmp` per site (pins r0/r0/r1/r0) rather than a single local:

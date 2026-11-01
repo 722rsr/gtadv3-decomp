@@ -291,7 +291,7 @@ void sub_0800D72C(void *a, void *b) __attribute__((alias("MenuStage_0800D72C")))
 // menu_d4ea.s sub_0800D734 (VMA 0x0800D734, 0x48 B) — event dispatcher
 // {1:_0800D6E0(rec), 2:_0800D72C(rec,param1), 5:_0800D704(rec),
 //  6:_0800D728(rec,(u16)param1,(u16)p2)}; ids 0/3/4 and >6 no-op.
-// Guard note: 0x0800D774 holds an unreachable double epilogue
+// Guard note: 0x0800D774 holds a dead double epilogue
 // (`pop {r0}; bx r0` then `bx lr`) — equivalent to the shared return here.
 // Register ABI: r0 = id, r1 = param1, r2 = p2, r3 = rec.
 // Arms are laid out 2,1,5,6 in the ROM, and agbcc follows the source order:

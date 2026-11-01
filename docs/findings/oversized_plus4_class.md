@@ -31,8 +31,9 @@ candidate instruction.
 For example, a volatile signed halfword read may require three instructions
 where a non-volatile read can use `ldrsh`. This is a qualification question,
 not permission to remove volatility from hardware registers. Likewise, a
-compiler that frames conditional leaves cannot reproduce a frameless leaf
-merely by changing expression spelling.
+compiler that frames conditional leaves does not reproduce a frameless leaf
+merely by changing expression spelling; that needs a different era build or a
+splice.
 
 Length buckets are not interchangeable diagnostic classes. A cause observed
 at +4 bytes does not explain candidates at +8 or +12. Compare actual

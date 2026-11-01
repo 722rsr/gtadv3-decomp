@@ -3,7 +3,9 @@
 `SaveUpdate_080241C8` (`0x080241C8`, 368 B, 174 instructions, 5 callees) is the
 last assembly body in `src/save.c`. It is a 2x4 grid updater. This note records
 the measured drafts, the semantics as the ROM actually computes them, and the
-one wall left. The body is still assembly; nothing here was promoted.
+one open difference. The body is still assembly; nothing here was promoted.
+The notes below are attempt history, not a verdict: every draft and every
+negative result is a lead for the next allocation or scheduling lever.
 
 ## What the body does (corrected)
 
@@ -81,12 +83,12 @@ The tail is byte-exact (all four calls, the `r2` return copies, the loop
 increments and tests, and the epilogue), and the setup is byte-exact through
 `sl = WA + 0xFF0` in v41.
 
-## The remaining wall (28 bytes)
+## The remaining difference (28 bytes)
 
 Every grid store in the ROM is `ldr rX,=off; add rX,r8; adds rX,idx,rX`
 (two adds, base in `r8`). The draft instead copies the base to a scratch
 (`mov r4,r8; adds r1,r4,r0; adds r0,r1,r3`) or recomputes `base + c2 + k8`
-whenever the index is not kept live, and it never reproduces the three
+whenever the index is not kept live, and it does not reproduce the three
 `ldr r2,=0xFFFFF006; adds r6,r6,r2` pointer resets that re-anchor the grid
 pointer on `WA`. Pinning the roles (`idx`→r3, base→r6, `k8`→r9, `c2`→r2) makes
 the body shorter (300-324 B), not longer, so the ROM's extra instructions come
@@ -107,7 +109,7 @@ Best exact-length barrier sets found by `--sweep` (in-place, 368 B):
 - `body_diff` against the v117 ROM window: the setup through `str r0,[sp,#0]`
   is **byte-identical**; the alignment metric overstates the remaining work.
 
-The remaining wall is unchanged: the ROM spills `c2` **after** the grid store
+The remaining difference is unchanged: the ROM spills `c2` **after** the grid store
 (`str r2,[sp,#4]` at 0x08024206), where the drafts spill at its definition; and
 the `tst r3,#1`-style constant copy emits an extra `mov ip,r6` the ROM lacks.
 `body_diff` confirms 138/174 instructions currently differ over the full
@@ -160,7 +162,7 @@ The strongest drafts now reproduce the ROM's **exact 368-byte length** and 96 of
   (`extern u8 SaveWAOffNegFFA;` with `.set ... = 0xFFFFF006`); as a plain
   `0xFFFFF006u` literal agbcc constant-folds it away and the body shrinks by 12 B.
 
-### The remaining wall: `k` lives on the stack
+### The remaining difference: `k` lives on the stack
 
 The ROM keeps the outer counter in `r7` (`movs r7,#0`, `cmp r7,#1`, and
 `adds r0,r7,#0` at each call). Every draft spills it to `sp+0`
@@ -181,7 +183,7 @@ What was measured:
 - The `k8` shift scratch was pinned to `r2` (the ROM's) with a `+r` barrier; it
   does not free `r7` for `k`.
 
-The permuter cannot help on this draft: `--prepare-only` reports
+The permuter does not help on this draft yet: `--prepare-only` reports
 `unresolved candidate relocation` for `SaveWAOffNegFFA`/`SaveWAOffNegFF2`,
 because the absolute `.set` symbols the pool recipe depends on are not visible
 to its relocation resolver. A symbol-free draft (the 340 B `v41`) permutes but
@@ -354,7 +356,7 @@ Every C spelling tried to force the spill, with measured results:
 The struct form emits the right `str r2,[sp,#4]` but agbcc **rotates the outer
 loop** — it puts `mov r7,#1` before `.L265` and branches into the rotated
 head, which both costs 2 bytes at `0x1A` and drops 4 bytes overall (364 B).
-That rotation is the current blocker, not the store itself.
+That rotation is the current difference, not the store itself.
 
 ### Tooling left in place
 
@@ -372,7 +374,7 @@ the loop when both halves of `kf` are live. A shape where the `k+1` store and
 its reload are the *same* memory object but the `c2` slot is reached through a
 different lvalue may keep the spill without enabling rotation.
 
-## Second pass: r2 pin moves the wall from 0x2C to 0x3E
+## Second pass: r2 pin moves the first difference from 0x2C to 0x3E
 
 The compile-order recipe (`__asm__(".set NAME, 0x...")` at file scope for every
 WA offset, then the C body) is what makes the acceptance probe agree with the
@@ -404,7 +406,7 @@ first difference +0x3E`.
 What is missing at 0x3E is the ROM's `str r2,[sp,#4]` - the spill of `c2`. The
 ROM stores it there and reloads it at `0xEC` (`ldr r2,[sp,#4]; add r2,r9`),
 because its if/else arms use r2 as scratch. agbcc with `c2` pinned to r2 has r2
-free, so it never spills.
+free, so it does not spill.
 
 ### Attempts measured against the gate/probe after the r2 pin
 
@@ -443,7 +445,7 @@ on the committed naked body.
 The decisive change was to stop pinning `k`.  A pin on `k` is not honoured after
 agbcc's loop pass: the generated code materialised the flag constant into `r7`
 and then compared it (`movs r7,#1; ...; cmp r7,#0`), which makes the `k == 0`
-arm unreachable.  The draft was the right length but a different program.
+arm dead.  The draft was the right length but a different program.
 
 With `k` left to the allocator, the body stays correct and the following shape
 reaches **368 bytes, 174 instructions (same as the ROM), 305/368 bytes matched,
@@ -529,7 +531,7 @@ recoverable from the C spelling" for the halfword scratch.
 PARTIAL 307/368 bytes, candidate 368 bytes, first difference +0x3A
 ```
 
-The `+0x20` wall (`adds r0,r7,#1` in the ROM, `adds r3,r7,#1` in the draft) is
+The `+0x20` difference (`adds r0,r7,#1` in the ROM, `adds r3,r7,#1` in the draft) is
 closed with the liveness-pin recipe from
 `docs/findings/indexed_halfword_scratch.md`: pin a dummy to the *unwanted*
 scratch register across the statement that allocates it.
@@ -545,7 +547,7 @@ __asm__ volatile ("" : : "r"(hold));
 Measured: no pin -> `+0x20`/305; pin `r3` -> `+0x3A`/307; pins on `r0`, `r1`
 -> no change.
 
-### The new wall
+### The new difference
 
 `0x3A` is the `c2` spill.  The ROM emits
 
@@ -572,7 +574,7 @@ body to 364 B.
   exactly 305 on the previous best - the neighbourhood is flat, which is why the
   pin recipe was needed.
 
-## Fifth pass: instrumented agbcc, and the exact nature of the last wall
+## Fifth pass: instrumented agbcc, and the exact nature of the last difference
 
 I built an instrumented copy of the pinned compiler (patch in
 `docs/findings/save241c8/allocator_dump.md`) and dumped `reg_renumber` for every
@@ -596,6 +598,10 @@ the store, or naming the constant and pinning it to `r3`, both displace `c2` and
 change the frame (376 B / 364 B / 380 B).  72 pin combinations and a greedy pin
 sweep over 21 anchors x 5 registers were measured; 307/368 stands.
 
-This is the honest boundary: the remaining 61 bytes are an allocator tie-break
-that the C spelling does not reach.
+The remaining 61 bytes are an allocator tie-break between two dead scratch
+registers. That is a concrete target, not a boundary: the instrumented dump
+names the exact pseudo and both candidate registers, so the next pass can
+change the live ranges or the allocation order around that store and re-measure
+with the same gate. Keep the failed pin combinations as controls, not as a
+closed list.
 

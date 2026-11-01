@@ -32,12 +32,12 @@ behavior. Do not mix unrelated formatting or renaming into a matching change.
 ### Remaining assembly bodies
 
 The selected-but-still-assembly backlog is byte-exact, so the corpus report
-cannot rank it. Start from the wall census and a work packet:
+cannot rank it. Start from the backlog census and a work packet:
 
 ```sh
-python3 tools/wall_census.py --lift-screen
+python3 tools/backlog_census.py --lift-screen
 python3 tools/lift_packet.py 0x0801EFAC
-python3 tools/asmlift_seed.py --queue --wall raw --limit 10   # optional seeds
+python3 tools/asmlift_seed.py --queue --evidence raw --limit 10   # optional seeds
 ```
 
 A packet records the ABI, callers, callees, nearest decompiled siblings,

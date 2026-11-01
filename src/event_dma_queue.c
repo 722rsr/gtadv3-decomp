@@ -273,8 +273,8 @@ void sub_080050B4(int a, u32 b) __attribute__((alias("OAMSlotAttrSetWrap")));
 // 40-byte ROM span the probe scores is 0x080050C0-0x080050E8, which also covers
 // the 0x080050D0 counter leaf, because that body carries no `.type... %function`
 // label in asm/code_4e6c.s and the span scan falls through to 0x080050E8. The
-// candidate is one `-ffunction-sections` section (16 B), so 16 != 40 can never
-// satisfy `--require-exact`. Labelling 0x080050D0 as a function start splits the
+// candidate is one `-ffunction-sections` section (16 B), so 16 != 40 does not
+// satisfy `--require-exact` until the span is split. Labelling 0x080050D0 as a function start splits the
 // span 16 + 24 and makes this body exact on its own; the asm edit is not ours.
 //
 // Shape notes: `c[0] - c[0]` is the ai_line_leaves second-address-node cancel —

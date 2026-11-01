@@ -7095,11 +7095,11 @@
    "size": 68
   },
   "0x080188b0": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 171,
-    "naked": true
+    "barrier": 13,
+    "directive": 1,
+    "pin": 14
    },
    "file": "src/rec35_dispatch_tail.c",
    "name": "Rec35_RecordSwitch_188B0",
@@ -13220,16 +13220,16 @@
  },
  "totals": {
   "asm": {
-   "bytes": 48196,
-   "functions": 126
+   "bytes": 47780,
+   "functions": 125
   },
   "c": {
    "bytes": 44326,
    "functions": 876
   },
   "c_fakematch": {
-   "bytes": 95414,
-   "functions": 670
+   "bytes": 95830,
+   "functions": 671
   },
   "partial": {
    "bytes": 200,

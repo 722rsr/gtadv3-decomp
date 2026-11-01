@@ -278,7 +278,7 @@
       "asm/surface_access.s",
       "asm/wrapper_pair.s"
     ],
-    "source_closure_sha256": "4388042aba5652573f58b4db5625d731934af4457e897c24dcf47b8fac2cf999"
+    "source_closure_sha256": "35daaba01a88416329babb6776f92ee874803278fb1197d143c56f30b83d8313"
   },
   "raw_incbin_spans": [],
   "rom": {
@@ -7915,8 +7915,8 @@
           "start": "0x004B9C"
         }
       ],
-      "sha256": "ee21304d0108d82e8c8402e3b29ec6095e8301fdde286b82487c34730e1d9eb5",
-      "size": 4163
+      "sha256": "91f6338b7b1bdc5c3ef878baea1661458460dd138f4a9e939af3837a6b6f07ec",
+      "size": 4162
     },
     {
       "path": "asm/code_4cc4.s",
@@ -8011,8 +8011,8 @@
           "start": "0x005B3C"
         }
       ],
-      "sha256": "5f1f1d25a2897777d6c219e4a5a68b69110793d699e18a7bad4df0d7695f69ff",
-      "size": 10201
+      "sha256": "41679d896a5e6d15f2415df174ffe4c611c4aea069272dd10b5f4c7f898d1d13",
+      "size": 10200
     },
     {
       "path": "asm/code_c668.s",
@@ -9199,8 +9199,8 @@
           "start": "0x015ED0"
         }
       ],
-      "sha256": "2187c20422f8f9936310e3d266fed20bc636856735dc34f8185dee17625f6a20",
-      "size": 5321
+      "sha256": "247b649d58028fc42b47f3a344362001f149d145a1fa7fd4f0764c5742057670",
+      "size": 5314
     },
     {
       "path": "asm/resource_wrap.s",

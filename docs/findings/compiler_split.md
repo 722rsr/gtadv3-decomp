@@ -31,15 +31,17 @@ int f(unsigned a) { int r = 0; if (a == 8u || a == 11u) r = 1; return r; }
 ```
 
 The comparison binary emits a `push {lr}` and an interworking pop/branch
-epilogue. Changing source expressions cannot remove a frame imposed by this
-compiler behavior. Interworking is still required for the ROM's non-leaf
-epilogues; disabling it is not a substitute for the correct compiler.
+epilogue. Changing source expressions does not remove a frame imposed by that
+compiler's behavior; another era build or a deliberate splice is the separate
+route. Interworking is still required for the ROM's non-leaf epilogues;
+disabling it is not a substitute for the correct compiler.
 
 ## Thumb frames and interworking returns
 
 `old_agbcc` saves `lr` whenever a function makes a call or saves a low
-callee-saved register. It cannot produce a non-leaf `mov ip, lr` / `bx ip`
-frame or a push of low registers without `lr`.
+callee-saved register. From C it does not produce a non-leaf `mov ip, lr` /
+`bx ip` frame or a push of low registers without `lr`; those shapes need a
+splice, a grouped asm segment, or a different era compiler.
 
 With `-mthumb-interwork`, the epilogue scratch register follows the declared
 return width: void and structure returns use `r0`, returns up to four bytes use

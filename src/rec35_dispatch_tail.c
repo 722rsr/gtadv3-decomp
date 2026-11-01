@@ -254,209 +254,145 @@ void _08001886C(u32 ev, int a, int b, void *rec)
     __attribute__((alias("Rec35_Dispatch_1886C")));
 
 // _0800188B0: menu record-type switch over s16[rec]. sp frame 32 B (r5=rec).
-__attribute__((naked)) void Rec35_RecordSwitch_188B0(void *rec) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push	{r4, r5, lr}\n"
-        "sub	sp, #32\n"
-        "adds	r5, r0, #0\n"
-        "movs	r0, #0\n"
-        "ldrsh	r1, [r5, r0]\n"
-        "movs	r0, #1\n"
-        "negs	r0, r0\n"
-        "cmp	r1, r0\n"
-        "bne .Lrr188b0_080018908\n"
-        "ldr r1, .Lrr188b0_0800188dc\n"
-        "mov	r0, sp\n"
-        "movs	r2, #30\n"
-        "bl 0x0802E0A4\n"
-        "movs	r1, #2\n"
-        "ldrsh	r0, [r5, r1]\n"
-        "cmp	r0, #14\n"
-        "ble .Lrr188b0_0800188e0\n"
-        "mov	r0, sp\n"
-        "ldrh	r0, [r0, #28]\n"
-        "b .Lrr188b0_0800188ea\n"
-        "movs	r0, r0\n"
-        ".Lrr188b0_0800188dc: .word 0x0805FB66\n"
-        ".Lrr188b0_0800188e0:\n"
-        "movs	r2, #2\n"
-        "ldrsh	r0, [r5, r2]\n"
-        "lsls	r0, r0, #1\n"
-        "add	r0, sp\n"
-        "ldrh	r0, [r0, #0]\n"
-        ".Lrr188b0_0800188ea:\n"
-        "strh	r0, [r5, #0]\n"
-        "ldr r0, .Lrr188b0_0800188fc\n"
-        "str	r0, [r5, #12]\n"
-        "ldr r0, .Lrr188b0_080018900\n"
-        "ldr r1, .Lrr188b0_080018904\n"
-        "adds	r0, r0, r1\n"
-        "movs	r1, #1\n"
-        "strb	r1, [r0, #0]\n"
-        "b .Lrr188b0_08001891a\n"
-        ".Lrr188b0_0800188fc: .word 0x00002328\n"
-        ".Lrr188b0_080018900: .word 0x03001780\n"
-        ".Lrr188b0_080018904: .word 0x000010C1\n"
-        ".Lrr188b0_080018908:\n"
-        "ldr r1, .Lrr188b0_080018928\n"
-        "ldr r0, .Lrr188b0_08001892c\n"
-        "adds	r2, r1, r0\n"
-        "movs	r0, #0\n"
-        "strb	r0, [r2, #0]\n"
-        "ldrh	r0, [r5, #6]\n"
-        "ldr r2, .Lrr188b0_080018930\n"
-        "adds	r1, r1, r2\n"
-        "strh	r0, [r1, #0]\n"
-        ".Lrr188b0_08001891a:\n"
-        "movs	r1, #0\n"
-        "ldrsh	r0, [r5, r1]\n"
-        "cmp	r0, #4\n"
-        "bne .Lrr188b0_080018934\n"
-        "movs	r2, #24\n"
-        "ldrsh	r0, [r5, r2]\n"
-        "b .Lrr188b0_080018a0e\n"
-        ".Lrr188b0_080018928: .word 0x03001780\n"
-        ".Lrr188b0_08001892c: .word 0x000010C1\n"
-        ".Lrr188b0_080018930: .word 0x000010C6\n"
-        ".Lrr188b0_080018934:\n"
-        "cmp	r0, #0\n"
-        "bne .Lrr188b0_08001893e\n"
-        "strh	r0, [r5, #2]\n"
-        "strh	r0, [r5, #8]\n"
-        "b .Lrr188b0_080018a14\n"
-        ".Lrr188b0_08001893e:\n"
-        "cmp	r0, #9\n"
-        "bne .Lrr188b0_0800189d8\n"
-        "bl sub_08008014\n"
-        "bl 0x08005B5C\n"
-        "movs	r1, #31\n"
-        "ands	r0, r1\n"
-        "adds	r0, #16\n"
-        "strh	r0, [r5, #2]\n"
-        "movs	r1, #2\n"
-        "ldrsh	r0, [r5, r1]\n"
-        "bl 0x080258B8\n"
-        "lsls	r0, r0, #16\n"
-        "asrs	r0, r0, #16\n"
-        "cmp	r0, #1\n"
-        "bne .Lrr188b0_080018966\n"
-        "movs	r0, #2\n"
-        "strh	r0, [r5, #8]\n"
-        ".Lrr188b0_080018966:\n"
-        "movs	r4, #1\n"
-        "negs	r4, r4\n"
-        ".Lrr188b0_08001896a:\n"
-        "bl sub_08008014\n"
-        "bl 0x08005B5C\n"
-        "movs	r1, #98\n"
-        "bl 0x0802D97C\n"
-        "strh	r0, [r5, #24]\n"
-        "lsls	r0, r0, #16\n"
-        "asrs	r0, r0, #16\n"
-        "cmp	r0, #86\n"
-        "beq .Lrr188b0_08001896a\n"
-        "cmp	r0, #56\n"
-        "beq .Lrr188b0_08001896a\n"
-        "cmp	r0, #55\n"
-        "beq .Lrr188b0_08001896a\n"
-        "cmp	r0, #31\n"
-        "beq .Lrr188b0_08001896a\n"
-        "cmp	r0, #14\n"
-        "beq .Lrr188b0_08001896a\n"
-        "cmp	r0, #98\n"
-        "beq .Lrr188b0_08001896a\n"
-        "cmp	r0, #54\n"
-        "beq .Lrr188b0_08001896a\n"
-        "cmp	r0, #94\n"
-        "beq .Lrr188b0_08001896a\n"
-        "cmp	r0, #95\n"
-        "beq .Lrr188b0_08001896a\n"
-        "cmp	r0, #96\n"
-        "beq .Lrr188b0_08001896a\n"
-        "movs	r2, #24\n"
-        "ldrsh	r0, [r5, r2]\n"
-        "bl 0x080022E4\n"
-        "lsls	r0, r0, #16\n"
-        "asrs	r0, r0, #16\n"
-        "cmp	r0, r4\n"
-        "beq .Lrr188b0_08001896a\n"
-        "bl sub_08008014\n"
-        "bl 0x08005B5C\n"
-        "adds	r4, r0, #0\n"
-        "movs	r1, #24\n"
-        "ldrsh	r0, [r5, r1]\n"
-        "bl 0x080254E8\n"
-        "adds	r1, r0, #0\n"
-        "lsls	r1, r1, #24\n"
-        "asrs	r1, r1, #24\n"
-        "adds	r0, r4, #0\n"
-        "bl 0x0802D97C\n"
-        "strb	r0, [r5, #29]\n"
-        "b .Lrr188b0_080018a14\n"
-        ".Lrr188b0_0800189d8:\n"
-        "cmp	r0, #10\n"
-        "bne .Lrr188b0_0800189f8\n"
-        "ldr r0, .Lrr188b0_0800189f0\n"
-        "ldr r2, .Lrr188b0_0800189f4\n"
-        "adds	r0, r0, r2\n"
-        "movs	r1, #0\n"
-        "strb	r1, [r0, #0]\n"
-        "strh	r1, [r5, #8]\n"
-        "movs	r0, #48\n"
-        "strh	r0, [r5, #2]\n"
-        "strh	r1, [r5, #26]\n"
-        "b .Lrr188b0_080018a14\n"
-        ".Lrr188b0_0800189f0: .word 0x03001780\n"
-        ".Lrr188b0_0800189f4: .word 0x000010C1\n"
-        ".Lrr188b0_0800189f8:\n"
-        "cmp	r0, #6\n"
-        "bne .Lrr188b0_080018a02\n"
-        "movs	r0, #3\n"
-        "strh	r0, [r5, #0]\n"
-        "b .Lrr188b0_080018a14\n"
-        ".Lrr188b0_080018a02:\n"
-        "cmp	r0, #7\n"
-        "bne .Lrr188b0_080018a14\n"
-        "movs	r0, #4\n"
-        "strh	r0, [r5, #0]\n"
-        "movs	r1, #24\n"
-        "ldrsh	r0, [r5, r1]\n"
-        ".Lrr188b0_080018a0e:\n"
-        "bl 0x08024E7C\n"
-        "strh	r0, [r5, #4]\n"
-        ".Lrr188b0_080018a14:\n"
-        "movs	r2, #24\n"
-        "ldrsh	r0, [r5, r2]\n"
-        "bl 0x080022E4\n"
-        "lsls	r0, r0, #16\n"
-        "asrs	r0, r0, #16\n"
-        "movs	r1, #1\n"
-        "negs	r1, r1\n"
-        "cmp	r0, r1\n"
-        "bne .Lrr188b0_080018a30\n"
-        "movs	r1, #0\n"
-        "movs	r0, #10\n"
-        "strh	r0, [r5, #24]\n"
-        "strb	r1, [r5, #29]\n"
-        ".Lrr188b0_080018a30:\n"
-        "ldr r0, .Lrr188b0_080018a48\n"
-        "ldr r1, .Lrr188b0_080018a4c\n"
-        "adds	r0, r0, r1\n"
-        "adds	r1, r5, #0\n"
-        "movs	r2, #56\n"
-        "bl 0x0802E0A4\n"
-        "add	sp, #32\n"
-        "pop	{r4, r5}\n"
-        "pop	{r0}\n"
-        "bx	r0\n"
-        "movs	r0, r0\n"
-        ".Lrr188b0_080018a48: .word 0x03001780\n"
-        ".Lrr188b0_080018a4c: .word 0x000010FC\n"
-        ".syntax divided\n"
-    );
+struct Rec35SwitchRecord {
+    s16 kind, selection;
+    u16 lookup, setting, cup;
+    s32 timeout;
+    u8 pad0[8];
+    s16 car;
+    u16 option;
+    u8 pad1[1], variant;
+};
+void Rec35_RecordSwitch_188B0(void *rec) {
+    struct Rec35SwitchRecord *a0 = rec;
+    extern void *sub_0802E0A4(void *, const void *, u32);
+    extern int sub_08008014(void);
+    extern int sub_0802D97C(int, int);
+    extern int sub_080022E4(int);
+    extern s8 sub_080254E8(int);
+    // The ROM passes the signed halfword as an int; the callee uses its low 16 bits.
+    extern int sub_080024E7C(int);
+    // Separate symbols preserve the ROM's duplicate literal-pool entries.
+    extern u8 RecordWA[], RecordWA2[], RecordWA3[];
+    extern u8 RecordFlag[], RecordFlag2[], RecordFlag3[];
+    extern u8 RecordValue[], RecordCopy[];
+    __asm__(".globl RecordWA\nRecordWA = 0x03001780\n"
+            ".globl RecordWA2\nRecordWA2 = 0x03001780\n"
+            ".globl RecordWA3\nRecordWA3 = 0x03001780\n"
+            ".globl RecordFlag\nRecordFlag = 0x10c1\n"
+            ".globl RecordFlag2\nRecordFlag2 = 0x10c1\n"
+            ".globl RecordFlag3\nRecordFlag3 = 0x10c1\n"
+            ".globl RecordValue\nRecordValue = 0x10c6\n"
+            ".globl RecordCopy\nRecordCopy = 0x10fc\n");
+    s32 v0;
+    s32 v1;
+    s32 v2;
+    s32 v3;
+    s32 v5;
+    u8 sp0[32];
+    if (a0->kind == -1) {
+        sub_0802E0A4(sp0, (void *)0x0805FB66, 30);
+        { u32 selection;
+        if (a0->selection > 14) {
+            selection = ((u16 *)sp0)[14];
+        } else {
+            { register int hold __asm__("r1");
+              __asm__ volatile("" : "=r"(hold));
+              selection = ((u16 *)sp0)[a0->selection];
+              __asm__ volatile("" : : "r"(hold)); }
+        }
+        a0->kind = selection; }
+        a0->timeout = 9000;
+        { register uintptr_t base __asm__("r0") = (uintptr_t)RecordWA;
+          __asm__ volatile("" : "+r"(base));
+          *(u8 *)(base + (uintptr_t)RecordFlag) = 1; }
+    } else {
+        { register uintptr_t base __asm__("r1") = (uintptr_t)RecordWA2;
+          register uintptr_t flag __asm__("r0") = (uintptr_t)RecordFlag2;
+          register uintptr_t addr __asm__("r2");
+          __asm__ volatile("" : "+r"(base), "+r"(flag));
+          addr = base + flag;
+          *(u8 *)addr = 0;
+          { register u32 v __asm__("r0") = a0->setting;
+            register uintptr_t off __asm__("r2") = (uintptr_t)RecordValue;
+            __asm__ volatile("" : "+r"(v), "+r"(off));
+            *(u16 *)(base + off) = v; }
+        }
+    }
+    v0 = a0->kind;
+    if (v0 == 4) {
+        { register int v __asm__("r0") = a0->car;
+          __asm__ volatile("" : "+r"(v)); v5 = v; }
+        goto call_record;
+    } else {
+        if (v0 == 0) {
+            a0->selection = v0;
+            a0->cup = v0;
+        } else {
+            if (v0 == 9) {
+                a0->selection = (_08005B5C(sub_08008014()) & 31) + 16;
+                if ((s16)_080258B8(a0->selection) == 1) a0->cup = 2;
+                while (1) {
+                    v1 = _08005B5C(sub_08008014());
+                    v2 = sub_0802D97C(v1, 98);
+                    a0->car = v2;
+                    if ((s16)v2 == 86 || (s16)v2 == 56 || (s16)v2 == 55 ||
+                        (s16)v2 == 31 || (s16)v2 == 14 || (s16)v2 == 98 ||
+                        (s16)v2 == 54 || (s16)v2 == 94 || (s16)v2 == 95 ||
+                        (s16)v2 == 96)
+                        continue;
+                    if ((s16)sub_080022E4(a0->car) != -1) break;
+                }
+                v3 = _08005B5C(sub_08008014());
+                a0->variant = sub_0802D97C(v3, (s8)sub_080254E8(a0->car));
+            } else {
+                if (v0 == 10) {
+                    { register uintptr_t base __asm__("r0") = (uintptr_t)RecordWA3;
+                      register uintptr_t off __asm__("r2") = (uintptr_t)RecordFlag3;
+                      register int z __asm__("r1");
+                      register uintptr_t addr __asm__("r0");
+                      __asm__ volatile("" : "+r"(base), "+r"(off));
+                      addr = base + off;
+                      __asm__ volatile("" : "+r"(addr));
+                      z = 0; __asm__ volatile("" : "+r"(z));
+                      *(u8 *)addr = z;
+                      a0->cup = z;
+                      a0->selection = 48;
+                      a0->option = z; }
+                } else {
+                    if (v0 == 6) {
+                        a0->kind = 3;
+                    } else {
+                        if (v0 == 7) {
+                            a0->kind = 4;
+                            { register int h __asm__("r2");
+                              __asm__ volatile("" : "=r"(h));
+                              v5 = a0->car;
+                              __asm__ volatile("" : : "r"(h)); }
+                            goto call_record;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    goto after_record;
+call_record:
+    a0->lookup = sub_080024E7C(v5);
+after_record:
+    { register int h __asm__("r1"); int id;
+    __asm__ volatile("" : "=r"(h));
+    id = a0->car;
+    __asm__ volatile("" : : "r"(h));
+    if ((s16)sub_080022E4(id) == -1) {
+        a0->car = 10;
+        a0->variant = 0;
+    } }
+    sub_0802E0A4((void *)((uintptr_t)RecordWA + (uintptr_t)RecordCopy), a0, 56);
+    return;
 }
 void _0800188B0(void *rec) __attribute__((alias("Rec35_RecordSwitch_188B0")));
+void sub_0800188B0(void *rec) __attribute__((alias("Rec35_RecordSwitch_188B0")));
 
 // ROM entry alias.
 void UiPacket_Consume(void *rec) __attribute__((alias("Rec35_RecordSwitch_188B0")));

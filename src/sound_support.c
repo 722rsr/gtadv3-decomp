@@ -89,9 +89,10 @@ void sub_0802C53C(void) __attribute__((alias("SoundThunk")));
 // extended value in r3, so r1 is genuinely free and the load takes it. Widening
 // the parameter removes the pair entirely and says nothing about which register
 // the load lands in. Note also that _0802C488 has no parameter at all, yet shows
-// the identical divergence -- so no parameter-type spelling can be the lever for
-// either body. The allocation is decided in gcc-2.95 `local_alloc`, which no C
-// source spelling addresses. The control below is the same code with the pin
+// the identical divergence -- so the parameter type is not the lever for
+// either body. The allocation is decided in gcc-2.95 `local_alloc`; source
+// spelling does not steer it directly, but the liveness/pin levers below do.
+// The control below is the same code with the pin
 // removed: it reproduces the 26/28 and 27/32 residuals byte for byte, so the pin
 // is load-bearing and the naming is not.
 //

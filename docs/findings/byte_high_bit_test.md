@@ -29,14 +29,16 @@ The two `u32` spellings differ only in how the bound reaches the compare: a
 literal is canonicalised to `#127` (or, in QImode, to a sign test) before
 `simplify_comparison` runs, while a bound held in a local is still a register
 operand at that point and folds into the compare as `#128` afterwards. So the
-pair is reachable; an earlier revision of this note called it impossible.
+pair is reachable; an earlier revision of this note called it out of reach,
+which was wrong.
 
-What stays out of reach is the *other* instruction in these bodies: `tst rX, rY`.
-Sixteen gate spellings (`(f & m) != 0`, `== 0`, bare `(f & m)`, `!(f & m)`,
-`while`, `switch`, a `u32`/`u8` mask operand, a bitfield read, `(u8)(f & m)`)
-all expand to `ands` + `cmp #0`; agbcc has no `tstsi` lowering that survives to
-assembly. Both bodies that need `cmp #128`/`bcs` also contain `tst`, so they
-stay asm -- for the `tst` reason, not the range test.
+The *other* instruction in these bodies, `tst rX, rY`, is not produced by the
+current lowering. Sixteen gate spellings (`(f & m) != 0`, `== 0`, bare
+`(f & m)`, `!(f & m)`, `while`, `switch`, a `u32`/`u8` mask operand, a bitfield
+read, `(u8)(f & m)`) all expand to `ands` + `cmp #0`; agbcc's `tstsi` pattern
+does not survive to assembly for them. Both bodies that need `cmp #128`/`bcs`
+also contain `tst`, so that site needs a splice -- the range test is not the
+reason, and a new lowering pattern would reopen the pure-C form.
 
 Consequence: a body containing `cmp #128` + `bcs` **and no `tst`** is worth
 lifting with the named-bound spelling above; `python3

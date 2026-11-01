@@ -358,19 +358,21 @@ void _0802BEB4(void *s) __attribute__((alias("SoundBeb4Worker")));
 void sub_0802BEB4(void *s) __attribute__((alias("SoundBeb4Worker")));
 
 // --- _0802C11C voice-list cleanup (62 B + private pool 0x03007FF0 at 0x02C15C) ---
-// Instruction shape is reproduced, byte-exactness is NOT reachable: the ROM
-// tests bit 7 with `tst r0, r1` and takes the second mask branch straight off
-// the AND's flags (`ands r0, r3` / `beq`), and pret/agbcc cannot emit either
-// idiom. thumb.md has a single TST-named pattern (`tstsi`, line 818) whose
-// template is `cmp\t%0, #0`, it has no two-register TST at all, and
-// `*andsi3_insn` sets only the register, never (cc0) -- so agbcc always
-// follows an `and` with an explicit `cmp`. Both sites therefore cost 2 bytes
-// more than the ROM, which shifts everything after them. Verified against
-// both toolchain builds (`old_agbcc` and the `agbcc` baseline) with the
-// minimal gate alone: 4 instructions in, `and r0,r0,r2` + `cmp r0,#0` out.
-// No C spelling of `(c[0] & 0x80) == 0` or `(node[1] & 7) != 0` reaches TST,
-// and the ROM's 8-byte groups above are only 5 instructions wide, so the
-// 2-byte deficit cannot be paid back elsewhere in the same group.
+// Instruction shape is reproduced; a pure-C body is not byte-exact yet: the
+// ROM tests bit 7 with `tst r0, r1` and takes the second mask branch straight
+// off the AND's flags (`ands r0, r3` / `beq`), and pret/agbcc do not emit
+// either idiom through their current patterns. thumb.md has a single TST-named
+// pattern (`tstsi`, line 818) whose template is `cmp\t%0, #0`, it has no
+// two-register TST at all, and `*andsi3_insn` sets only the register, never
+// (cc0) -- so agbcc always follows an `and` with an explicit `cmp`. Both sites
+// therefore cost 2 bytes more than the ROM, which shifts everything after
+// them. Verified against both toolchain builds (`old_agbcc` and the `agbcc`
+// baseline) with the minimal gate alone: 4 instructions in,
+// `and r0,r0,r2` + `cmp r0,#0` out. The current C spellings of
+// `(c[0] & 0x80) == 0` or `(node[1] & 7) != 0` do not reach TST, and the
+// ROM's 8-byte groups above are only 5 instructions wide, so the 2-byte
+// deficit is not paid back elsewhere in the same group. The two sites stay
+// spliced; a new lowering pattern or a different group shape can reopen it.
 //
 // What the body does get right, and what a future compiler swap needs:
 // - the root-ptr cell is reached by a PRIVATE POOL word equal to 0x03007FF0

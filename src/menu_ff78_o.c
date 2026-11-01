@@ -154,7 +154,7 @@ void MenuFF78_15304(void *rec_) {
     *(volatile u32 *)(uintptr_t)(rec + 16) = 0;
     // The ROM's immediate r7-based STRH forms need rec as an *unpinned*
     // global allocno in r7: GO_IF_LEGITIMATE_ADDRESS rejects HImode FP-based
-    // addresses before reload, so a pinned r7 base can never fold the offset.
+    // addresses before reload, so a pinned r7 base does not fold the offset.
     *(volatile u16 *)(rec + 20) = 1;
     sub_0800D77C((void *)(uintptr_t)(rec + 36), 0, -32);
     sub_0800D77C((void *)(uintptr_t)(rec + 28), 0, 160);

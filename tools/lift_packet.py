@@ -307,9 +307,9 @@ def build_packet(needle: str, out_root: Path, *, seed: bool = True,
             return cached
     work.mkdir(parents=True, exist_ok=True)
 
-    # Current source body, notes, wall class.
+    # Current source body, notes, evidence class.
     import lift_scout
-    import wall_census
+    import backlog_census
 
     body = ""
     if record["file"]:
@@ -318,11 +318,11 @@ def build_packet(needle: str, out_root: Path, *, seed: bool = True,
             body = lift_scout.source_body(path, record["name"])
     # A queue pays the ~0.8 s live census once and shares it; a single packet
     # pays it once for itself. Re-deriving it per row made a ten-row queue
-    # spend most of its wall time re-reading the same source comments.
-    census = census_rows or {row["vma"]: row for row in wall_census.census(snapshot=False)}
-    wall_row = census.get(vma, {})
-    wall = wall_row.get("wall", "unknown")
-    note = wall_row.get("note", "")
+    # spend most of its runtime re-reading the same source comments.
+    census = census_rows or {row["vma"]: row for row in backlog_census.census(snapshot=False)}
+    evidence_row = census.get(vma, {})
+    evidence = evidence_row.get("evidence", "unknown")
+    note = evidence_row.get("note", "")
 
     # The normalized agbcc-shaped text is also the input a seed uses.
     entries = {int(key, 16) for key in asmlift_seed.load_quality()}
@@ -350,8 +350,8 @@ def build_packet(needle: str, out_root: Path, *, seed: bool = True,
         "class": record["class"],
         "aliases": record["aliases"],
         "body_present": bool(body),
-        "wall": wall,
-        "wall_note": note,
+        "evidence": evidence,
+        "evidence_note": note,
         "prologue": _disasm_span(vma, min(size, 24), limit=8),
         "arity": _arity(vma),
         "c_signature": _c_signature(record["file"], record["name"]),
@@ -416,7 +416,7 @@ def build_packet(needle: str, out_root: Path, *, seed: bool = True,
                          f"--score-file {_relative(seed_path)}" if seed_path.exists() else
                          f"# no seed; python3 tools/asmlift_seed.py 0x{vma:08x}"),
         "splice_and_score": splice_command,
-        "wave_check": "python3 tools/wall_census.py",
+        "backlog_check": "python3 tools/backlog_census.py",
         "accept": "make matching-ready && make full-rom-match",
     }
     (work / "meta.json").write_text(json.dumps(metadata, indent=2) + "\n",
@@ -451,13 +451,13 @@ def render(meta: dict) -> str:
         f"# {meta['name']} ({vma}, {meta['size']:,} B)",
         "",
         f"- Source: `{meta['file']}`",
-        f"- Source class: `{meta['class']}`; wall: `{meta['wall']}`",
+        f"- Source class: `{meta['class']}`; evidence: `{meta['evidence']}`",
         f"- ROM span: `{vma}`..`0x{end:08x}`",
     ]
     if meta.get("aliases"):
         lines.append("- Aliases: " + ", ".join(f"`{a}`" for a in meta["aliases"]))
-    if meta.get("wall_note"):
-        lines += ["", "> " + meta["wall_note"].strip().replace("\n", "\n> ")]
+    if meta.get("evidence_note"):
+        lines += ["", "> " + meta["evidence_note"].strip().replace("\n", "\n> ")]
     lines += ["", "## ABI", ""]
     prologue = meta.get("prologue") or []
     if prologue:
@@ -565,13 +565,13 @@ def render(meta: dict) -> str:
 # Queue and self-test
 # ---------------------------------------------------------------------------
 
-def queue(out_root: Path, *, wall: str, limit: int, seed: bool,
+def queue(out_root: Path, *, evidence: str, limit: int, seed: bool,
           force: bool) -> list[dict]:
     import asmlift_seed
-    import wall_census
+    import backlog_census
 
-    live = wall_census.census(snapshot=False)
-    rows = asmlift_seed.backlog(wall=wall, census_rows=live)
+    live = backlog_census.census(snapshot=False)
+    rows = asmlift_seed.backlog(evidence=evidence, census_rows=live)
     if limit:
         rows = rows[:limit]
     census_rows = {row["vma"]: row for row in live}
@@ -617,8 +617,8 @@ def main(argv: list[str] | None = None) -> int:
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("function", nargs="?", help="VMA or body name")
     ap.add_argument("--queue", action="store_true", help="build packets for a backlog slice")
-    ap.add_argument("--wall", default="raw",
-                    choices=["raw", "measured", "regalloc", "unreachable",
+    ap.add_argument("--evidence", default="raw",
+                    choices=["raw", "measured", "regalloc", "unresolved",
                              "veneer", "unexplained", "all"])
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--out", type=Path, default=DEFAULT_OUT)
@@ -633,7 +633,7 @@ def main(argv: list[str] | None = None) -> int:
         return self_test()
     out = args.out if args.out.is_absolute() else ROOT / args.out
     if args.queue:
-        rows = queue(out, wall=args.wall, limit=args.limit,
+        rows = queue(out, evidence=args.evidence, limit=args.limit,
                      seed=args.seed and not args.no_seed, force=args.force)
         ok = [r for r in rows if not r.get("error")]
         print(f"lift_packet: {len(ok)}/{len(rows)} packets; "

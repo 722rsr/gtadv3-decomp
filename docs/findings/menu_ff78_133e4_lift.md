@@ -4,8 +4,9 @@
 callees) is the largest liftable body left in the ~105-function FF78 menu
 family. This note records two sessions' attempts: the source shapes that
 reproduce the prologue and the entry block byte for byte, the measured score,
-and the walls that still stop an exact match. The body is still assembly;
-nothing here was promoted.
+and the remaining differences that keep it from an exact match. The body is
+still assembly; nothing here was promoted. The failed shapes are measured
+leads, not a verdict on the body.
 
 ## What the body does
 
@@ -96,7 +97,7 @@ emits `adds r0,r7,#0 / ldrh r1,[r0]`. The pinned-base copy is the same
 `--sweep`/`--spill` over the register and frame variables plateau at 174-178
 aligned instructions; no single barrier placement is close.
 
-## Remaining walls
+## Remaining differences
 
 1. **Pinned-base copies.** A pinned base register wins the allocation but
    agbcc still copies it to `r0` for the load (`adds r0,r7,#0`), one

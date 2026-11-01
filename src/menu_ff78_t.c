@@ -13,7 +13,7 @@
 // is only consumed when s is outside {2,3} as well, i.e. s<0 or s>3.
 // The +134 cell is 0 on construction (14C88) and clamped 0..3 by its only
 // mutator (14D94), and 14F60's sole caller is 15154-case5, so that path is
-// unreachable; the C uses 0 there.
+// dead in practice; the C uses 0 there.
 // ============================================================================
 
 #include "gba/types.h"
@@ -44,7 +44,7 @@ extern int Sub_08025D64(int a, int b);
 //   If u16[rec+134] != 3: 7B18(rec, u16[CB7B8+s*2], u32[CB788+s*8],
 //     u32[CB788+4+s*8], 3,1,0,0) with s = s16[rec+134].
 //   (r6, sl) = s==1 ? (s16[138], 8) : s==0 ? (s16[136], 12) :
-//     s==2 ? (s16[140], 2) : (0, 0) [unreachable residue, see NOTE].
+//     s==2 ? (s16[140], 2) : (0, 0) [dead residue, see NOTE].
 //   r7 = rec+136, r8 = rec+138, r5 = rec+140, r9 = rec+134.
 //   If (u16)(u16[134]-2) > 1 (s outside {2,3}):
 //     if r6 > 1: 7B18(rec, u16[CB7BE+s16[130]*2],

@@ -35,8 +35,8 @@ Why the adapter is not a one-line `npx asmlift`:
 Usage:
     python3 tools/asmlift_seed.py _0801EFAC
     python3 tools/asmlift_seed.py 0x0801EFAC --rank --jobs 8
-    python3 tools/asmlift_seed.py --queue --wall raw --limit 20
-    python3 tools/asmlift_seed.py --queue --wall raw --json build/lift-seeds/queue.json
+    python3 tools/asmlift_seed.py --queue --evidence raw --limit 20
+    python3 tools/asmlift_seed.py --queue --evidence raw --json build/lift-seeds/queue.json
     python3 tools/asmlift_seed.py --install          # npm install into build/tools
     python3 tools/asmlift_seed.py --self-test
 
@@ -176,7 +176,7 @@ def resolve(needle: str) -> dict:
                                  "size": 0, "class": "asm"}, entry)
     raise SystemExit(
         f"asmlift_seed: no selected body matches {needle!r}; "
-        "try a VMA from `python3 tools/wall_census.py` or a name from "
+        "try a VMA from `python3 tools/backlog_census.py` or a name from "
         "`python3 tools/source_quality.py --list asm`")
 
 
@@ -197,24 +197,24 @@ def _record(vma: int, rec: dict, entry: dict) -> dict:
     }
 
 
-def backlog(wall: str = "raw", klass: str = "all",
+def backlog(evidence: str = "raw", klass: str = "all",
             census_rows: list[dict] | None = None) -> list[dict]:
-    """Selected-but-assembly bodies with their wall class, largest first.
+    """Selected-but-assembly bodies with their evidence class, largest first.
 
     `census_rows` lets a queue pay the live source scan once and share it.
     The live census is the default because a stale snapshot can name a body
     that was promoted since the last `make progress`.
     """
-    import wall_census
+    import backlog_census
 
-    rows = census_rows if census_rows is not None else wall_census.census(snapshot=False)
+    rows = census_rows if census_rows is not None else backlog_census.census(snapshot=False)
     quality = load_quality()
     manifest = load_manifest()
     out = []
     for row in rows:
         if klass != "all" and row.get("class") != klass:
             continue
-        if wall not in ("all", row.get("wall")):
+        if evidence not in ("all", row.get("evidence")):
             continue
         key = f"0x{int(row['vma']):08x}"
         rec = quality.get(key, {})
@@ -748,16 +748,16 @@ def packet_commands(record: dict, work: Path) -> dict:
                             f"{record['name']} --vma 0x{record['vma']:08x} "
                             f"--variant {rel}/seed.c --diff",
         "context": f"python3 tools/lift_packet.py 0x{record['vma']:08x}",
-        "wall": "python3 tools/wall_census.py",
+        "backlog": "python3 tools/backlog_census.py",
         "accept": "make matching-ready && make full-rom-match",
     }
 
 
-def queue(out_root: Path, executable: Path, *, wall: str = "raw",
+def queue(out_root: Path, executable: Path, *, evidence: str = "raw",
           klass: str = "all", limit: int = 0, jobs: int = 1,
           rank: bool = False, score: bool = True, tail_calls: bool = False,
           force: bool = False) -> list[dict]:
-    rows = backlog(wall=wall, klass=klass)
+    rows = backlog(evidence=evidence, klass=klass)
     if limit:
         rows = rows[:limit]
     if not rows:
@@ -909,11 +909,11 @@ def main(argv: list[str] | None = None) -> int:
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("function", nargs="?", help="VMA or body name to seed")
     ap.add_argument("--queue", action="store_true",
-                    help="attempt every backlog body in the selected wall/class")
-    ap.add_argument("--wall", default="raw",
-                    choices=["raw", "measured", "regalloc", "unreachable",
+                    help="attempt every backlog body in the selected evidence/class")
+    ap.add_argument("--evidence", default="raw",
+                    choices=["raw", "measured", "regalloc", "unresolved",
                              "veneer", "unexplained", "all"],
-                    help="wall class to include in --queue (default: raw)")
+                    help="evidence class to include in --queue (default: raw)")
     ap.add_argument("--class", dest="klass", default="all",
                     choices=["asm", "partial", "all"],
                     help="source-quality class to include in --queue")
@@ -975,7 +975,7 @@ def main(argv: list[str] | None = None) -> int:
     jobs = args.jobs or max(1, min(8, os.cpu_count() or 2))
     out = args.out if args.out.is_absolute() else ROOT / args.out
     if args.queue:
-        rows = queue(out, executable, wall=args.wall, klass=args.klass,
+        rows = queue(out, executable, evidence=args.evidence, klass=args.klass,
                      limit=args.limit, jobs=jobs, rank=args.rank,
                      score=not args.no_score, tail_calls=args.tail_calls,
                      force=args.force)

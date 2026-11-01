@@ -38,8 +38,10 @@ extern void MenuPlaceUpdate_0BE74(void);               // scene_record_dispatch.
 // plus liveness pins ("=r"/"r" bracketing) on r6/r7/r0 around the first
 // 0x0FF6 load. Pinning r4 at the 0x0FF2 load or r6/r0 at the second 0x0FF6
 // load moves the *destination* instead of the scratch, and pinning r0+r4
-// together makes agbcc abort (internal compiler error), so the three r7
-// scratches are the wall. See findings/indexed_halfword_scratch.md.
+// together makes agbcc abort (internal compiler error). The three r7 scratch
+// choices are the remaining allocator detail; the pin set above plus the
+// liveness brackets closes the body at EXACT 244/244. See
+// findings/indexed_halfword_scratch.md for the lever family.
 void Race_CommitCell(void)
 {
     register u8 *wa __asm__("r2");

@@ -509,33 +509,17 @@ u32 _08001E14(int a) __attribute__((alias("Idle_GetDescriptorWord")));
 // local first the ROM's own order falls out: `movs r1,#0` at 0x08001E30, the
 // pool load at 0x08001E32.
 //
-// NOT byte-exact, and the two missing halfwords are not a C-shape problem.
-// asm/idle.s:673-686 is 24 B with no frame (`adds r0,r1,#0; bx lr` at 0x1e3e);
-// this body compiles to the identical ten instructions plus `push {lr}` at
-// 0x1e30 and `pop {r1}; bx r1` instead of the bare `bx lr` — 28 B, and
-// `push {lr}`/`pop {r1}` is an aligned 2-byte insert so even the 10 real
-// instructions sit at shifted addresses. The frame comes from agbcc's Thumb
-// prologue policy, not from the C: `thumb_function_prologue` pushes lr when
-// `live_regs_mask || !leaf_function_p || far_jump_used_p`
-// (gcc_arm/config/arm/thumb.c:1134) and `output_return` falls to
-// `thumb_exit(-1)` → `pop {r1}; bx r1` (thumb.c:1025-1034). Measured across
-// ~60 leaf shapes (int/u32/long/short/char/unsigned/pointer returns; if/else,
-// ?:, switch, do-while, goto, two-armed and three-armed accumulators; named
-// and unnamed initialisers; `register`): EVERY one that keeps a conditional
-// branch gets `push {lr}` + `pop {r1}; bx r1`, and every one that drops the
-// branch is frameless. A branchless rewrite (`neg/orr/lsr #31`, or
-// `mov r0,#1`) is frameless but does not reproduce the ROM's
-// `movs r1,#0 … movs r1,#1 … adds r0,r1,#0` either, so there is no C that
-// yields these 24 bytes. Consistent with the rest of the backlog: the ROM has
-// several frameless branchy leaves (asm/carphys_racer_tail.s:983-999 at
-// 0x080022438, asm/garage_26f50.s:1720 and :4567) and none is promoted;
-// src/race_phase_vms.c:565 records the same wall for 0x08002242C.
-// It is not a flag choice either: the same body frames at -O0/-O1/-O2/-O3/-Os
-// and with or without -mthumb-interwork (only the epilogue spelling changes:
-// `pop {pc}` instead of `pop {r1}; bx r1` when interwork is off, and
-// -fno-jump-tables does not help).
-// `bool` was also wrong independently: as a u8 return it gives the same
-// frame, and the ROM leaves the flag in r0 as a word.
+// Measured EXACT 24/24 (whole body): with the local first, the conditional
+// stays and agbcc emits the ROM's `movs r1,#0 … adds r0,r1,#0; bx lr` with no
+// frame. An earlier pass generalised a `push {lr}` prologue from a ~60-shape
+// leaf sweep and treated this 24-byte shape as out of reach; the sweep was a
+// statement about those shapes, not about the compiler. Re-measure the actual
+// TU before accepting a framing claim. Frameless branchy leaves appear
+// elsewhere in the corpus too (asm/carphys_racer_tail.s:983-999 at
+// 0x080022438, asm/garage_26f50.s:1720 and :4567), so a frame is a per-body
+// measurement, not a closed class.
+// `bool` remains wrong independently: as a u8 return it gives a frame, and the
+// ROM leaves the flag in r0 as a word.
 int Idle_IsSelZero(void) {
     int r = 0;
     if (*st16(6) == 0) r = 1;

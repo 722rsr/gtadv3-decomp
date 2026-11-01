@@ -167,7 +167,7 @@ a time):
 | `pos` r0 (per arm) | 304 | 304 | -- |
 
 Only the temp pin is load-bearing in the final spelling. With `t` a plain
-local, the `+180` table word cannot be written in place: the ROM chains the
+local, the `+180` table word is not written in place by that spelling: the ROM chains the
 pointer in r0 (`adds r0, #180`, then `adds r0, r0, r2 / ldr r2, [r0]`), while
 an unpinned pseudo's last use is the load, so the sum gets a fresh pseudo and
 the add writes elsewhere (`adds r2, r0, r2 / ldr r2, [r2]`).

@@ -168,16 +168,15 @@ void sub_0800CED4(void *a, int b, int c) __attribute__((alias("MenuRec_0800CED4"
 //   _08003978(120, 32, r2)
 //   _08026A20(*(u32*)(rec+0x1018), 120, 100)
 //
-// : exact at 64/64. This body was on the "unreachable"
-// list in docs/matching_workflow.md ("the destination dies at the consuming
-// instruction, so no source shape reaches it; 345 generated variants produced
-// zero hits"). That conclusion was correct about SOURCE SHAPES and wrong as a
-// statement about reachability: it was drawn before `register T v
-// __asm__("rN")` existed as a lever, and no source shape can pin a hard
-// register. The register pin reaches it, and the mechanism it exploits is
-// worth naming -- the shift must be a TWO-STATEMENT chain through a `u32`,
-// so that agbcc's combine_reloads has an intervening statement to break on
-// and cannot fold `ldrh` into the same register as its consumer.
+// : exact at 64/64. An earlier pass put this body on a
+// no-source-shape list ("the destination dies at the consuming instruction;
+// 345 generated variants produced zero hits"). That was a statement about the
+// source shapes in that pass, not about reachability: it predated
+// `register T v __asm__("rN")` as a lever, and no plain source shape can pin a
+// hard register. The pin reaches it, and the mechanism is worth naming -- the
+// shift must be a TWO-STATEMENT chain through a `u32`, so that agbcc's
+// combine_reloads has an intervening statement to break on and cannot fold
+// `ldrh` into the same register as its consumer.
 //
 //   ROM:  ldrh r0,[r0,#12] / lsls r2,r0,#16 / asrs r2,r2,#19
 //   was:  ldrh r2,[r0,#12] / lsls r2,r2,#16 / asrs r2,r2,#19

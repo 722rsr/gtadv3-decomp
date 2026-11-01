@@ -1,9 +1,10 @@
-# Lifting `_08002A764` (0x08002A764, 196 B): the unpinned base and two walls
+# Lifting `_08002A764` (0x08002A764, 196 B): the unpinned base and the two closing levers
 
-Worked 2026-10-20. The body is still `naked` in `src/garage_records.c`; this
-note records a C transcription that reaches **the exact ROM length (196 bytes,
-196 candidate bytes) with 127 of those bytes matching**, plus the two things
-that are left and the recipes that got it that far.
+Worked 2026-10-20. The body is now byte-exact at 196/196 in
+`src/garage_records.c`; this note records the C transcription that first
+reached **the exact ROM length (196 bytes, 196 candidate bytes) with 127 of
+those bytes matching**, plus the two remaining register differences at that
+stage and the recipes that closed them.
 
 ## The one big lever: an unpinned base is read through directly
 
@@ -131,7 +132,7 @@ int _08002A764(void *src_, void *dst_) {
   allocation; giving the division argument its own variable is worth 1 byte
   more.
 
-## What is left
+## The two differences that remained before the close
 
 Two things, both about *which* register rather than which instruction.
 
@@ -146,7 +147,9 @@ Two things, both about *which* register rather than which instruction.
    An empty `asm` with a memory clobber between the arms does not separate
    them.
 
-The remaining 44 differing offsets are all one of those two or the same
-swap seen at a different point: the ROM's first read puts the scratch in r0
-and the value in r1, the candidate the other way round, and the same swap
-reappears at the byte reads in the tail.
+The 44 differing offsets seen at the 127/196 stage were all one of those two
+or the same swap seen at a different point: the ROM's first read put the
+scratch in r0 and the value in r1, the candidate the other way round, and the
+same swap reappeared at the byte reads in the tail. The promoted body is exact
+at 196/196; keep these two items as controls for the next body with the same
+shape, not as limitations.

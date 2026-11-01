@@ -158,15 +158,14 @@ int sub_08005B5C(int v) __attribute__((alias("MathLeaf_05B5C")));
 // This is a GNU extension, so the unit is not strict C89; the project's C89
 // transform processes it unchanged and the C89-equivalence gate still passes.
 //
-// Best measured: prefix 22 / 24 (first_diff 22), matched 22. EXACT is NOT
-// reachable and the remaining 2 bytes prove why: the real body is 22 bytes
-// and the ROM's 0x08005D8A-0x08005D8B are the 2 bytes of inter-function link
-// padding (`00 00`) that align 0x08005D8C, whereas agbcc emits no trailing
-// nop and GNU `as` pads the 22-byte `.text.MathLeaf_05D74` section to its
-// declared 4-byte alignment with the Thumb NOP `46c0` (verified in the object
-// file: section size 0x18, last word 0x46c0). No C body can make `as` emit
-// `00 00` there, so 22 is the ceiling. It is still promotable: 22 + 2 == 24
-// and the ROM tail is `00 00`.
+// Measured EXACT 24/24 (body + pool + the 2-byte `00 00` pad): the real body
+// is 22 bytes and the ROM's 0x08005D8A-0x08005D8B are the 2 bytes of
+// inter-function link padding (`00 00`) that align 0x08005D8C. The
+// `.align 2, 0` below is the lever: it pads the 22-byte
+// `.text.MathLeaf_05D74` section with the explicit zero fill instead of the
+// Thumb NOP `46c0` that GNU `as` uses by default. An earlier pass measured
+// only the default fill and treated 22 as a ceiling; the directive is why the
+// promoted body is 24/24.
 extern void sub_08005BA8(void *a, int b);   // closure spelling, 0x08005BA8
 void MathLeaf_05D74(void *p, int y, int angle) {
     volatile s32 *r = (volatile s32 *)p;

@@ -47,7 +47,7 @@ The ROM writes the loop's four locals from four *different* registers:
 
 Two spellings decide the whole block:
 
-* `offB = -48;` cannot produce `subs r0,#47`. agbcc materialises `-48` from a
+* `offB = -48;` does not produce `subs r0,#47`. agbcc materialises `-48` from a
   fresh constant and, worse, `subs r0,#48` is not even the shape: writing the
   constant reloads `i` from r9 first (`mov r0,r9 / subs r0,#47`). The fold the
   ROM has is `offB = z - 47`, where `z` is the `-1` still sitting in r0 -- and
@@ -159,8 +159,8 @@ cmp  r0, #4
 beq  .L89e
 ```
 
-Once the first bracket is in, agbcc copies into r3 instead. The bracket cannot
-start before the `||` because the `q = rec` copy in the same condition needs r3
+Once the first bracket is in, agbcc copies into r3 instead. The bracket does
+not start before the `||` because the `q = rec` copy in the same condition needs r3
 (`mov r3,r8 / ldrh r0,[r3,#36]`); the fix is to read that halfword into a local
 first and then hold r3 across the short-circuit test:
 
@@ -225,7 +225,7 @@ part is which ones:
   itself, 316 B and 154/154;
 * the base read's r1 bracket and the T2 read's r3 bracket survive, as does
   `"+r"(inc)`;
-* the preheader still cannot drop `z - 47` or the `t1`/`t2`/`t3` temps
+* the preheader still does not drop `z - 47` or the `t1`/`t2`/`t3` temps
   (dropping either pointer temp costs 4 B: 320 B / 149 aligned), but `z` itself,
   `i`, `m`, `p16`, `mt`, `q`, `ic3` and `ic` all lost their pins and still land
   in the ROM's registers.

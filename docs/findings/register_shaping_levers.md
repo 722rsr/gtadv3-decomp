@@ -415,7 +415,7 @@ lvalue) is the form that gives the ROM's register-indexed
 `movs rX, #0 / ldrsh rY, [base, rX]`, and a `(uintptr_t)` cast turns it into
 a copy of the base plus the same index form.
 
-## Leave the record pointer unpinned; a local must never land in its register
+## Leave the record pointer unpinned; a local does not land in its register
 
 `_080017788` (`Rec35_Input_17788`, 452 B) reached EXACT in C only with
 `rec` as a plain local, not `register u8 *rec __asm__("r7")`. The pin looks
@@ -430,7 +430,7 @@ materialises the address of a pinned base -- `adds r1,r7,#0`, `adds r1,#20`,
 `movs r0,#1`, `strh r0,[r1]` -- and folds the offset only for word stores
 (`str r0,[r7,#88]`). This is `GO_IF_LEGITIMATE_ADDRESS` rejecting HImode
 FP-based addresses before reload (see
-[the sub-word fold rule](indexed_halfword_scratch.md#a-pinned-r7-base-can-never-fold-a-sub-word-store-or-load-offset)),
+[the sub-word fold rule](indexed_halfword_scratch.md#a-pinned-r7-base-does-not-fold-a-sub-word-store-or-load-offset)),
 so the splice cannot go while the record pointer stays pinned. The way out is
 not to keep the pin and reshaped stores: it is to unpin and steer.
 `MenuFF78_15304` (0x08015304, 408/408, 2026-10-24) lands there: `rec` plain
@@ -503,14 +503,14 @@ Measured 2026-10-21 (`--function _080026FF4 --c89 --require-exact` plus
   before the call (+4 B, `OVERSIZED`). Suspect a phantom trailing register
   whenever the last argument equals a constant already used as a load index.
 
-## Leaves that save r4/r5 but not lr: not reachable from this toolchain
+## Leaves that save r4/r5 but not lr: an open frame shape
 
 `SoundVoiceFollow_NoteOff` (`0x0802C390`, 64 B) is a leaf whose ROM prologue
 is `push {r4,r5}` and whose epilogue is `pop {r4,r5}` / `bx lr`: it holds the
 `131`/`64` masks in r4/r5 across a linked-list walk and never touches lr.
 The C body is small and otherwise reachable (the abort-on-cursor and
 two-`tst` gates are a `if (id >= 128)` plus `if (flags & mask)` /
-`if (!(flags & busy))` shape), so the frame is the only blocker.
+`if (!(flags & busy))` shape), so the frame is the remaining difference.
 
 Measured 2026-10-21 with a scratch TU compiled by both shipped compilers
 (`build/toolchains/agbcc/{old_agbcc,agbcc}`, `-O2 -ffunction-sections`):
@@ -521,27 +521,28 @@ Measured 2026-10-21 with a scratch TU compiled by both shipped compilers
 | `-mno-thumb-interwork` | `push {r4,r5,lr}` | `pop {r4,r5,pc}` (no `bx lr`) |
 
 A minimal leaf (`u32 a = 131, b = 64;` + the same loop, no calls) reproduces
-the lr save, so this is not pressure from the surrounding body. Neither
-option set reaches `push {r4,r5}` + `bx lr` (the mechanism was not traced
-into the compiler source; the four emitted shapes above are the measurement),
-so a body of this class cannot leave its naked-asm owner even when every
-instruction in it is understood. Do not re-spend source permutations or
-register pins on it;
-`SoundVoiceFollow_NoteOff` keeps its asm body and the doc comment above it.
+the lr save, so this is not pressure from the surrounding body. Neither option
+set reached `push {r4,r5}` + `bx lr` in that probe, and the mechanism was not
+traced into the compiler source; treat the four emitted shapes as the
+measurement, not as a limit. `SoundVoiceFollow_NoteOff` is still a naked body,
+and its frame remains a concrete target for the next pass rather than a reason
+to stop.
 
-The same limit applies to `Garage_CarPos_27120` (`0x08027120`, 240 B), whose
-ROM frame is `push {r4,r5,r6,r7,lr}` + `sub sp,#12` (so lr *is* saved there)
-but whose loop head and count reads stayed 16 bytes short of the ROM at
-224/240 in the best draft measured: the ROM duplicates the row-count test
-(`ldrb`+`lsls`/`asrs`, at both the entry and the back edge) and keeps the
-slot *address* in r7 while copying it to r6 for the loop, which agbcc folds
-into one register and one rotated test. It remains asm.
+`Garage_CarPos_27120` (`0x08027120`, 240 B) was in the same position: its ROM
+frame is `push {r4,r5,r6,r7,lr}` + `sub sp,#12` (so lr *is* saved there), and
+its loop head and count reads stayed 16 bytes short of the ROM at 224/240 in
+the best draft measured. The ROM duplicates the row-count test
+(`ldrb`+`lsls`/`asrs`, at both the entry and the back edge) and keeps the slot
+*address* in r7 while copying it to r6 for the loop, which agbcc folded into
+one register and one rotated test. That draft was not the end of the search:
+the promoted body is now exact at 240/240, so the frame is a source-shape
+problem and the 224/240 measurement is a useful control.
 
 ## `Race_Setup_19250` (0x08019250, 200 B): the ARMCC r8 slot, measured
 
-Lifted 2026-10-21 as far as plain C goes; the best draft reached **93/200
-bytes (candidate 192 B, first diff +0x6)** and was reverted. Measured probe
-sequence, in order:
+Lifted 2026-10-21 in stages; the best plain-C draft at that point reached
+**93/200 bytes (candidate 192 B, first diff +0x6)** and was reverted. Measured
+probe sequence, in order:
 
 * the two work-area gate reads must be spelled through `ram_blocks.h`
   (`RAM_DEF_03001780;` in the body, `wa = RAM_SYM_03001780; off = 0x1111u;`
@@ -556,8 +557,8 @@ sequence, in order:
   occupies r8 across the calls and therefore produces the ROM's
   `mov r7,r8 / push {r7}` save staging at all.
 
-The residual is the frame. At 93/200 the staging exists but holds the wrong
-value: the ROM keeps `p` in r7, `q` in r8 and `d` in r6, whereas the draft
+The residual at that stage was the frame. At 93/200 the staging existed but
+held the wrong value: the ROM keeps `p` in r7, `q` in r8 and `d` in r6, whereas the draft
 keeps the work-area base constant in r8 (`mov r8,r0` + `add r0,r8`) and
 `p`/`q` in r5/r7. Measured alternates, all reverted: pinning `p` to r7 gives
 19/200 -- the frame shape returns but every `p + N` sub-word address is
@@ -569,10 +570,10 @@ the explicit pins that worked on `MenuFF78_115E0` -- `register u8 *q
 __asm__("r8")` on its own reaches **42/200** (length exact at 200, frame
 `push {r4,r6,lr}`), and adding `register u8 *p __asm__("r7")` reaches
 **96/200**, still 200 bytes. The frame stays a three-register push because a
-pinned r7 is never saved (see "A pinned r7 is never saved") -- so the pins
-move the allocation but cannot reproduce the ROM's
-`push {r4,r5,r6,r7,lr}`. Treat
-96/200 as the ceiling for this body without a compiler-level allocation lever.
+pinned r7 is not saved (see "A pinned r7 is not saved") -- so the pins moved
+the allocation but did not reproduce the ROM's
+`push {r4,r5,r6,r7,lr}`. 96/200 was the best of that pin family; the
+unpinned-`a` shape below is why it was not a ceiling.
 
 **Resolved 2026-10-26: EXACT 200/200, no instruction splice.** The lever is not
 a pin on `p`/`q` at all -- it is leaving `a` *unpinned* so that it becomes a
@@ -603,7 +604,7 @@ with `prev` assigned after the cursor load -- reproduces the ROM staging, and
 the body then reaches **252/252 bytes of length** with the same instructions
 in nearly the same order (199/252 equal bytes, `PARTIAL`; the one ordering
 difference is where the +198 store address is materialised). The size parity
-alone disproves the "frame is unreachable" reading; what is left is
+alone disproves the "frame is unavailable" reading; what is left is
 temp-register numbering.What made the difference, with only the measurements actually taken:
 
 * `prev` pinned to r8 (above) gives the frame and, with the rest of the draft
@@ -627,7 +628,7 @@ width, not the call. `python3 tools/expr_probe.py --snippet` on
 `movs r1,#0 / ldrsh r4,[r0,r1] / movs r0,#0 / bl H / adds r0,r4,#0`, while
 declaring the same local `s16` emits `ldrh r4,[r0,#0]` and the
 `lsls #16`/`asrs #16` pair. An earlier reading of this body concluded the
-`ldrsh` was unreachable and spliced it; it is not, and no splice is needed.
+`ldrsh` was unavailable and spliced it; it is not, and no splice is needed.
 A natural draft with `int` locals reaches **117/252** at 244 bytes. What is
 left is the register each zero-index `ldrsh`'s constant lands in: the ROM
 uses a rotating r2/r0/r1/r3 and agbcc always prefers the next free low
@@ -654,10 +655,10 @@ of them costs the whole body:
   `subs r0,#1` re-uses the load). A plain `register u16 prev;` leaves it in
   r4 (agbcc's choice is correct at four live values), but the explicit pin
   `__asm__("r8")` does move it and produces the ROM's `mov r7,r8` /
-  `push {r7}` staging -- so this body is not evidence for an unreachable
+  `push {r7}` staging -- so this body is not evidence for an unavailable
   frame, only for one that needs an explicit pin.
 
-## A pinned r7 is never saved
+## A pinned r7 is not saved
 
 Measured 2026-10-21 with a scratch TU, one function per register: each holds
 the argument pointer across a call and dereferences it after the call.
@@ -696,7 +697,7 @@ a partial score, so it is easy to miss.
 
 Consequence for this corpus: `Race_Setup_19250`'s ROM keeps `p` in r7 across
 both calls, so its `push {r4,r5,r6,r7,lr}` frame is not reproducible from C at
-all -- the register itself cannot be saved by a pin. The earlier reading (a
+all -- the register itself is not saved by a pin. The earlier reading (a
 parameter copy is not saved, a value assigned from a load is) was wrong: the
 discriminator is register identity, not where the value comes from.
 `MenuFF78_115E0`'s r8 pin saves correctly because r8 is a high register.
@@ -707,8 +708,8 @@ Two bodies this session stalled on an `r8` slot, `Race_Setup_19250` and
 `MenuFF78_115E0`. In both, at most **four** values are live across a call, so
 agbcc parks them in r4/r5/r6/r7 and never touches r8 -- four for the menu
 body, three for the race body (the two cases are separated below). (`SoundVoiceFollow_NoteOff`
-is a different limit -- it has no calls at all and is blocked on saving lr;
-see the leaf-frame section above.)
+is a different shape -- it has no calls at all and its remaining difference is
+the lr save; see the leaf-frame section above.)
 
 Measured threshold on a scratch TU (`old_agbcc -O2 -mthumb-interwork
 -ffunction-sections`), each function accumulating `f(k)` results so every
@@ -744,12 +745,14 @@ Two consequences:
   the ROM's live range is longer than the C's, the pin makes the frame
   reachable and the body then lands at 252/252 bytes.
 
-`Race_Setup_19250` is *not* that case and must not be filed under it: at its
-`Sub_0802A8F0` call the ROM has only `p` (r7), `q` (r8) and `d` (r6) live --
-three -- and at `_08006C10` the same three plus a `ctx` that dies in the call.
-Three call-crossing values with two of them in r7/r8 is below the measured
-agbcc threshold, so no spelling reaches that frame: it is ARMCC allocation
-with a pointer-first preference, not a live-range difference.
+`Race_Setup_19250` needed a different frame lever: at its `Sub_0802A8F0`
+call the ROM has only `p` (r7), `q` (r8) and `d` (r6) live -- three -- and at
+`_08006C10` the same three plus a `ctx` that dies in the call. Three
+call-crossing values with two of them in r7/r8 is below the measured agbcc
+threshold, so the pin shapes in that pass did not reach the frame. The
+unpinned-`a` lever later did: the body is exact at 200/200, with the
+resolution recorded at the end of this section. That is the concrete counter-
+example to reading a frame measurement as a compiler limit.
 
 ## A dead stack spill comes back inside a nested block
 
@@ -891,8 +894,9 @@ facts are reusable and were each confirmed in the emitted listing:
 * **The 20-row DMA loop is lowered to a countdown.** `for (i = 0; i <= 19;
   i++)`, `i < 20`, `while (++i <= 19)` and `i != 20` all compile to
   `mov r4,#19 / subs / cmp #0 / bge`, while the ROM keeps
-  `movs r3,#0 / adds #1 / cmp #19 / ble`. No C-level spelling of the up-count
-  was found; the constant bound is folded by the loop optimizer.
+  `movs r3,#0 / adds #1 / cmp #19 / ble`. The C-level spellings of the
+  up-count tried in that pass all folded the constant bound; this is a lowering
+  lever to revisit rather than a closed shape.
 
 Residual: with `mask`/`high` unpinned the setup loads are direct but the homes
 are r6/r3 (ROM r7/r6), because `mask`'s allocno starts after the last call and

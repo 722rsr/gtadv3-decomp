@@ -65,7 +65,7 @@ neither target replaces `make matching-ready`.
 | `match_families.py` | Index instruction/control-flow siblings; reject stale indexes; `--vma` fingerprints a naked ROM span; `--twins` sweeps for assembly bodies whose nearest sibling is already decompiled C. |
 | `lift_scout.py` | Triage unmatched functions by diagnostic evidence, and report the selected-but-still-assembly backlog the corpus report cannot rank. |
 | `strategy_router.py` | Select applicable diagnostics from measured function properties. |
-| `wall_census.py` | Sort the remaining asm-backed bodies into documented walls (`MEASURED`/unreachable/regalloc) and bodies that still need a lift, so a session opens a target that is not already walled; `--lift-screen` drops raw bodies whose own instruction stream is not agbcc output. |
+| `backlog_census.py` | Sort the remaining asm-backed bodies by the evidence each one carries (`MEASURED`, unresolved, regalloc) and by whether it still needs a lift, so a session can pick a target with its history in view. Every class stays reopenable; `--lift-screen` marks raw bodies whose instruction stream is outside the corpus's agbcc idioms as separate backlog, not as closed. |
 | `experiment_kit.py` | Shared candidate compiler, byte scorer, contracts, and output handling. |
 | `matching_campaign.py` | Bounded, resumable full-TU variants and matrices; persistent failures, output deduplication, and best candidate. |
 | `frame_probe.py` | Compare a body's ROM prologue stack reservation (local `sub sp` + saved registers, and the total) with the current C draft's, before a lift: a draft whose ROM frame is larger is allocation-bound. `--draft FILE` grades a replacement body; exit 1 flags a mismatch. |
@@ -164,7 +164,7 @@ under ignored `build/tools/`):
 ```sh
 make doctor
 make asmlift-install
-make asmlift-seed LIMIT=10       # same as asmlift_seed.py --queue --wall raw
+make asmlift-seed LIMIT=10       # same as asmlift_seed.py --queue --evidence raw
 make lift-packet FUNC=0x0801EFAC
 ```
 
@@ -172,9 +172,9 @@ Seed one body, or sweep the raw backlog in parallel:
 
 ```sh
 python3 tools/asmlift_seed.py 0x0801EFAC
-python3 tools/asmlift_seed.py --queue --wall raw --jobs 8
+python3 tools/asmlift_seed.py --queue --evidence raw --jobs 8
 python3 tools/lift_packet.py 0x0801EFAC
-python3 tools/lift_packet.py --queue --wall raw --limit 10
+python3 tools/lift_packet.py --queue --evidence raw --limit 10
 ```
 
 Edited a seed by hand? Re-score it without re-running asmlift:
@@ -200,9 +200,10 @@ Outputs belong under `build/lift-seeds/` and `build/packets/`:
 
 The adapter feeds callee arities from `arity_audit.py` and `proto_audit.py` into
 asmlift's `--proto` sidecar. Without that, a call with an outgoing stack word
-cannot be lifted. The default score is one compile of the self-contained seed,
-not asmlift's multi-thousand-candidate fan; `--rank` enables the fan when a
-single body is worth the extra seconds.
+is not seeded correctly; add or correct the prototype and re-run. The default
+score is one compile of the self-contained seed, not asmlift's
+multi-thousand-candidate fan; `--rank` enables the fan when a single body is
+worth the extra seconds.
 
 The adapter pins `@asmlift/cli@0.10.0` for reproducible seeds. Upstream is very
 active, so upgrade deliberately with

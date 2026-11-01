@@ -327,7 +327,7 @@ void sub_08005884(u32 a, void *b, u32 c) __attribute__((alias("SaveReadSectors")
 // (sector, dst, size). The slot caller (save_slot_api.s:41-44) sets r0=src
 // (0x02000000), r1=sector before the bl, and the body advances r5+=8 (src
 // bytes) with r8+=1 (sector). A (sector, src) declaration swaps the two
-// increments and can never match.
+// increments and does not match.
 // The body is VOID (pop {r0} destroys r0). Sector/return values truncate to
 // u16 per call; the panic second arg reuses the truncated code in r1. r6
 // first holds IME base 0x04000208, then the remaining count (disjoint ranges,
@@ -539,7 +539,7 @@ void SaveTimerQueueArm(u16 time, u8 id) {
     //    keeps the pair in the prologue and scores 51/64.
     //  * `i <= 3` (not `i < 4`) is required: `i < 4` gives an unsigned `bls`
     //    where the ROM has a signed `ble`.
-    //  * Other measured dead ends: `unsigned i` 50/64; `idv` declared before
+    //  * Other measured alternatives: `unsigned i` 50/64; `idv` declared before
     //    the pointer locals 51/64 (unchanged); an explicit `u32 qp` temp for
     //    the queue pointer 51/64 (unchanged); reusing `cell` for the counter
     //    reload DROPS to 48/64 (agbcc then keeps `cell` live in r0 and
@@ -864,7 +864,9 @@ void _08024650(void) __attribute__((alias("SaveBlock1Save")));
 // `*(mt + (k<<1))`, the whole mask block moved before the packed block, and
 // both shifts hoisted -- all land on the same 36/40 with only that pair
 // swapped. This is the documented "reload pass orders the scale against the
-// pool load" wall (cf. 0x080026180); do not re-run it without a new idea.
+// pool load" scheduling difference (cf. 0x080026180). The six orderings above
+// are a map of what has been tried, not a closed list: reopen it with a new
+// scheduling lever, and keep the 36/40 measurement as the baseline.
 u32 SaveGarageMaskTest(u32 idx, u32 k) {
     extern u16 SaveMaskTbl[];
     __asm__(".globl SaveMaskTbl\nSaveMaskTbl = 0x080CC1A8");
@@ -1115,10 +1117,11 @@ void _0802488C(void) __attribute__((alias("SaveGarageUnpack")));
 // original build dropped that one and this one does not. Forcing the drop by
 // making the index non-affine (`u16 i`) does remove the giv but then wraps the
 // counter (`lsls #16 / lsrs #16`) and re-derives `i*72` instead of rolling it,
-// which is worse. Same wall on the unpack side: the running `0x5E8+k` offset
-// lives in a callee-saved register there (r7), while here it is rematerialised
-// and the `+4/+5/+6` offsets come out of the literal pool (120 vs 108).
-// Do not re-run these spellings without a new idea; see docs/matching_workflow.md.
+// which is worse. The unpack side has the same open scheduling difference: the
+// running `0x5E8+k` offset lives in a callee-saved register there (r7), while
+// here it is rematerialised and the `+4/+5/+6` offsets come out of the literal
+// pool (120 vs 108). The spellings above record what has been tried; revisit
+// them with a new giv/ordering lever. See docs/matching_workflow.md.
 void SaveCarRecordsPack(void) {
     extern u8 SaveCarRecordSrcOffset_2494C[];
     RAM_DEF_030013D0;

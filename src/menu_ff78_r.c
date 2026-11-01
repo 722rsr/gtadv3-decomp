@@ -55,7 +55,7 @@ extern void _0800D9A4(void *a, int b, int c);
 //     (s8)u8[0x080CCEEC + s16[174]*20 + k]*2);
 //     [..+4] = 0x05000280+k*2; [..+8] = 0x80000001 (+ dummy read).
 //
-// Shaping notes (the last walls, measured with corpus_match_probe --diff):
+// Shaping notes (the remaining differences, measured with corpus_match_probe --diff):
 //
 // * The DMA control word is the ROM's pooled 0x80000001, written from r3 with
 //   one `ldr r3,[pc,..]` hoisted ahead of the five unrolled stores.  Writing

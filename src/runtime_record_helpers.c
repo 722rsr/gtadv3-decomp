@@ -118,7 +118,7 @@ void _0800D17C(int ev, int a1, int a2, void *rec)
         break;
     }
 }
-// The last two bytes are the section-alignment filler, not unreachable code:
+// The last two bytes are the section-alignment filler, not dead code:
 // the body is 54 bytes, so under `-ffunction-sections` its section pads to 56
 // and gas closes a Thumb *code* section with the 2-byte nop (0x46c0) where the
 // ROM holds `00 00`. This file-scope `.align 2, 0` is emitted after the body's

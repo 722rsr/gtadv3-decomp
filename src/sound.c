@@ -229,15 +229,13 @@ void SoundOn(void){
 void _0802B1B8(void) __attribute__((alias("SoundOn")));
 void sub_0802B1B8(void) __attribute__((alias("SoundOn")));
 
-// The one escape found: `volatile SoundMaster *m` makes _0802B30C emit the
-// ROM's EXACT three registers (base r1 / mask r0 / temp r2) — but the
-// volatile member lvalue then costs a second `ldrb r3,[r1,#14]`, 38 bytes
-// against the ROM's 36.  Splitting the compound assignment into an explicit
-// `u8 f` temp does NOT remove it, and neither does routing the RMW through a
-// non-volatile `u8 *`/`SoundMaster *` alias of `m` (which loses the good
-// allocation again).  So on this body the register split and the byte count
-// are jointly unreachable from C: 32/36 with correct registers costs 2 bytes
-// too many, and 36 bytes with the correct count has the wrong registers.
+// The two pins below close _0802B30C at EXACT 36/36: base r1 / mask r0 /
+// temp r2. The volatile-member alternative reaches the same three registers
+// but costs a second `ldrb r3,[r1,#14]` (38 B), and routing the RMW through a
+// non-volatile `u8 *`/`SoundMaster *` alias loses the good allocation. Both
+// measured shapes are useful controls; the pinned form is the one that
+// matches, and the earlier 32/36 result was a property of that spelling, not a
+// limit of the body.
 // ----------------------------------------------------------------------------
 
 // _0802B1E4 / _0802B214 / _0802B234 / _0802B25C / _0802B280

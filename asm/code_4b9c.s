@@ -7,7 +7,7 @@
 @ Region-start marker. `passthrough.inc` names this address with `sub_08004B9C`,
 @ but `owners` prefers a `.s` over a `.inc`, so without a label here the
 @ screen resolves the byte owner as `passthrough.inc` -- which names only region
-@ starts and therefore can never yield this span's end marker (`_08004BAC:`,
+@ starts and therefore does not yield this span's end marker (`_08004BAC:`,
 @ line below). A bare label emits zero bytes.
 _08004B9C:
 	ldr r0, _08004BA8

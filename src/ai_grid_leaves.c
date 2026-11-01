@@ -144,8 +144,8 @@ void Sub_08025DBC(int a,int b) __attribute__((alias("Ai_GridSetPacked")));
 //     r1,#24`; the pool word then differs too.  The split statement keeps
 //     0x03001780 in the pool, which also lets the literal load hoist above
 //     `cmp r4,#0` the way the ROM does (`490a ldr r1,[pc,#40]` at +0x24).
-//     recorded this as an unreachable constant-folding difference
-//     after trying pointer, integer, struct-header, live-across-call and
+//     an earlier note recorded this as a constant-folding difference after
+//     trying pointer, integer, struct-header, live-across-call and
 //     both-association-order spellings; the statement form was not one of
 //     them.  51 -> 73.
 //   * the two reads need distinct pointers and the v read has to come first:

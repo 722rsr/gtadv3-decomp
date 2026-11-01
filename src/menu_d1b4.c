@@ -64,7 +64,7 @@ void sub_0800D1C0(void *a) __attribute__((alias("MenuD1B4_Draw")));
 //   u16[rec+4] += dx; u16[rec+6] += dy
 //   keys2 & 2 -> _08004EA8(1)
 //
-//  * The 2 trailing bytes are the section-alignment filler, not unreachable
+//  * The 2 trailing bytes are the section-alignment filler, not dead
 //    code.  The body is 82 bytes, so under `-ffunction-sections` its section
 //    is padded to 84 and gas closes a Thumb *code* section with the 2-byte
 //    nop filler (0x46c0) where the ROM holds `00 00`.  A file-scope

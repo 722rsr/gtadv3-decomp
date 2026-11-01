@@ -237,7 +237,7 @@ bool _08001730(int mode) __attribute__((alias("StateA_IsGameMode")));
 //
 // Byte-exact under `old_agbcc` with `u32 mode`. Both halves are measured:
 //   * the current agbcc frames EVERY body with a conditional branch, so this
-//     16-byte leaf could never match there (see
+//     16-byte leaf does not match there (see
 //     docs/findings/compiler_split.md); old_agbcc is stock-2.95 framing.
 //   * the parameter is WORD-width: `u16` adds a 4-byte `lsls/lsrs` narrowing
 //     prologue the ROM does not have, and the ROM's only caller

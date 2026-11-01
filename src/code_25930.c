@@ -412,8 +412,8 @@ void sub_080025C0C(void *a, int b) __attribute__((alias("Code25930_Alloc182")));
 //
 // Both neutral controls are the discriminator, and they came out NEGATIVE: a
 // semantically neutral input that does not move the score is the doc's
-// criterion for "the allocator is pinned here", not for "the miss is
-// unreachable" -- see the _08022D74 entry for the contrast, where the same
+// criterion for "the allocator is pinned here", not for "the miss has no
+// source-shape lever" -- see the _08022D74 entry for the contrast, where the same
 // test came out positive and a register pin closed the body one instruction
 // later. Here no register choice was involved at all: r1 was already the
 // register the constant landed in. The decision was WHEN, not WHERE.

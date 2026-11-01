@@ -10,8 +10,8 @@ a17c      ldrb  r1, [r4, #18]
 2256      ldrsb r2, [r4, r0]      <- index r0, destination r2
 ```
 
-The pinned `old_agbcc` cannot select this pair from C. Two independent limits
-combine:
+The C spellings tested against the pinned `old_agbcc` do not select this pair.
+Two independent lowering behaviours combine in those attempts:
 
 1. **The constant-offset lowering reuses the destination as the index.**
    `*extendqisi2_insn` in `thumb.md` emits
@@ -20,7 +20,8 @@ combine:
    `movs r2, #20; ldrsb r2, [r4, r2]` (46/48 bytes, `PARTIAL` at +0x3).
    The direct `ldrsb %0, [%1, %2]` template is only reached when the RTL
    address is a genuine `(plus base index)` with a register index.
-2. **REG+REG memory addresses never form in this compiler.** `thumb.h`
+2. **REG+REG memory addresses do not form in this compiler from those C
+   shapes.** `thumb.h`
    `GO_IF_LEGITIMATE_ADDRESS` admits `(plus reg reg)` only once
    `reload_completed`, and no post-reload pass creates the form after the
    fact (`reload_cse_regs` compares loaded values, not addresses;
@@ -33,7 +34,7 @@ combine:
    ```
 
    emits `add r0, r0, r1` followed by `ldrb r0, [r0, #0]` (plus the
-   `lsl #24 / asr #24` extension), never `ldrsb rX, [rB, rI]`.
+   `lsl #24 / asr #24` extension), not `ldrsb rX, [rB, rI]`.
 
 Register-index lemma: a register that holds the constant 20 at the load is
 either a folded constant (limit 1, destination reused) or an opaque value
@@ -41,7 +42,7 @@ whose address is first copied to a register (limit 2, extra `add`). Shape
 experiments along both routes -- a pinned `r0` offset with a leading `"=r"`
 barrier, a `"+r"` barrier before or after the read, and a volatile register
 local -- all regress or stay destination-indexed; the committed one-asm
-splice is the only byte-exact representation. Corpus check: of 102 `ldrsb`
+splice is the only byte-exact representation found so far. Corpus check: of 102 `ldrsb`
 instructions in `asm/*.s`, 101 have index == destination; this is the only
 exception. The one reg+reg word `ldr` in the generated corpus comes from the
 naked asm body `SoundBeb4Worker`, not from C.

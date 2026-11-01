@@ -1,4 +1,4 @@
-# How agbcc picks a register the C cannot pin
+# How agbcc picks a register outside the C spelling's direct control
 
 `_0801A204` (`Course_LoadEntry`, `src/course_orch.c`) is the worked example, and
 the reason its selector block once sat 2 bytes off at `+0x40`.
@@ -71,7 +71,8 @@ register busy), never a pin on the constant.
 Measured: `Garage_275B8` (`src/garage.c`) reaches 285/312 this way -- both
 `(obj[10] & 0xFF)` masks CSE into one allocno, so the ROM's r2/r1 pair cannot
 come from it; two separate constant pseudos need the two `& 0xFF` uses to be
-different RTL, which no C spelling in that body produces. `Race_CommitCell`
+different RTL, which the C spellings tried in that body do not produce.
+`Race_CommitCell`
 (`build/ad84_base.c`, 111/118) is the same shape at the three `movs r7,#0`
 sites, and a 406-placement barrier sweep over its live values beats neither.
 
@@ -93,15 +94,16 @@ would pin r1 for the first read as well, which the ROM does not have.
 
 `thumb.h` defines `FRAME_POINTER_REGNUM 7`, and r7 is eliminable to sp. That
 shapes both halves of register use and is worth stating precisely, because the
-first version of this note ("r7 is out of reach") was wrong and parked
-`_080019200` unnecessarily:
+first version of this note ("r7 is out of reach") was wrong and left
+`_080019200` at a partial score unnecessarily. `_080019200` is now exact at
+80/80; the r7 prologue rule below is the lever.
 
-* **Local allocation can never use r7.** `local-alloc.c`'s `find_free_reg`
+* **Local allocation does not use r7.** `local-alloc.c`'s `find_free_reg`
   unconditionally marks every eliminable register used:
   `for (i = 0; i < sizeof eliminables / ...; i++) SET_HARD_REG_BIT (used,
   eliminables[i].from);` ("Don't use the frame pointer reg in local-alloc even
   if we may omit the frame pointer..."). A pseudo born and dead inside one
-  basic block therefore never lands in r7.
+  basic block therefore does not land in r7.
 * **Global allocation can.** `global_conflicts` records r7's (permanent)
   frame-pointer liveness against every allocno, but immediately after that
   scan `global.c` clears it again:
@@ -118,8 +120,8 @@ first version of this note ("r7 is out of reach") was wrong and parked
   `mov r7, r8 / push {r7}`.
 * **A pin is not a pseudo.** `register T x __asm__("r7")` emits raw r7
   references; `flow.c`'s `mark_used_regs` and `mark_set_1` both early-return
-  for `FRAME_POINTER_REGNUM` in `elim_reg_set`, so a pinned r7 body never
-  sets `regs_ever_live[7]`: the body's uses assemble, the prologue keeps
+  for `FRAME_POINTER_REGNUM` in `elim_reg_set`, so a pinned r7 body does not
+  set `regs_ever_live[7]`: the body's uses assemble, the prologue keeps
   `push {r4,r5,r6,lr}` and uses `mov r6,r8 / push {r6}`, and the epilogue
   drops r7. (That is the half the old note got right.)
 
@@ -148,8 +150,8 @@ that conflicts with r0-r6:
 The pin is only a *spelling* lever, and in the one case where it is the only
 route to r7 it is also unsafe. `_08027234` (`Garage_Place_27234`,
 `src/garage.c`) needs `adds r7,r7,r0` for its first lane, which the allocator
-only produces for a pinned r7 (see the rule above: a local allocno never takes
-r7). With the pin in place and a `s32 pos[2]` frame array filled by a call,
+only produces for a pinned r7 (see the rule above: a local allocno does not
+take r7). With the pin in place and a `s32 pos[2]` frame array filled by a call,
 agbcc reads the *first* element from `[sp,#0]` and the *second* from `[r4,#4]`,
 where r4 is the argument copy -- `a+4` instead of `sp+4`. A 12-line scratch TU
 reproduces it (`build/r7pin_probe.c`); routing the array through a pointer
@@ -193,28 +195,31 @@ Value-known-constant temps interact with this: `reg_equiv_constant` lets
 reload rematerialise a constant per use instead of keeping its register live,
 which is how a ROM can hold a zero in r2 through a loop and free r2 again for
 the reload scratches. A *pin* makes the value opaque and its range real, so
-that rematerialisation disappears -- `_08009BF8` is parked on exactly this
+that rematerialisation disappears -- `_08009BF8` was affected by exactly this
 (zero-valued `result` plus the const-id cases that must still come out in r2).
+It is exact at 864/864 now; the pins in the source are the lever.
 
-`_080019200` (parked at 62/80 under the old note) should be re-examined with
-this rule: this session's four exact matches all needed the r7 prologue.
+`_080019200` was at 62/80 under the old note. It is now exact at 80/80: this
+session's four exact matches all needed the r7 prologue.
 
-## Loads can sink past earlier statements, and no `-f` flag stops it
+## Loads can sink past earlier statements; the RTL dump separates expansion order from reload order
 
-`_08001B068` (`src/race_scene_a1.c`) is parked at 183/200 on one shape: the
-ROM reads `a2` at `wb+0x10FE` (reusing the dying offset register as the zero
-index), then computes `pca = wb+0x10CA` and reads `a3`; agbcc emits the `pca`
-group first and then reads `a2` with whatever register is free by then.
+`_08001B068` (`src/race_scene_a1.c`) reached 183/200 on one shape and is now
+exact at 200/200. The ROM reads `a2` at `wb+0x10FE` (reusing the dying offset
+register as the zero index), then computes `pca = wb+0x10CA` and reads `a3`;
+agbcc emitted the `pca` group first and then read `a2` with whatever register
+was free by then.
 
 The `-dr` dump of that TU (`build/era-corpus/ready-work/race_scene_a1.i.rtl`)
-shows the pre-reload insn list in exact source order, so the move is not in
-expansion: the `a2` load sinks later. Compiling with `-fno-regmove`,
+shows the pre-reload insn list in exact source order, so the move was not in
+expansion: the `a2` load sank later. Compiling with `-fno-regmove`,
 `-fno-optimize-register-move`, `-fno-caller-saves`,
 `-fno-expensive-optimizations`, `-fno-inline` and `-fno-defer-pop` one at a
-time leaves the emitted order byte-identical, so it is none of those either --
-what is left is reload's placement, and there is no C-level lever. Read the
-RTL dump before spending time on a reorder: if the dump already matches the
-ROM, the C is not the problem.
+time left the emitted order byte-identical, so none of those flags was the
+lever; the closure in the promoted body uses ordered inline assembly plus
+symbol pools. Read the RTL dump before spending time on a reorder: if the dump
+already matches the ROM, the C spelling is not the problem, and the next lever
+is an ordered asm statement or a symbol-pool address.
 
 ## Counters: u32 + `(u8)` narrowing, and the temp must be pinned
 
@@ -305,8 +310,9 @@ register u32 *g0 __asm__("r0") = (u32 *)0x0203FD54u;   /* ldr r0, .Lpool */
 
 ## Constants are materialised in a scratch and copied (and agbcc folds the copy)
 
-`_08003004` (`RecordSetter_03004`, `src/foundation_runtime.c`) is parked at
-107/200 on this shape, and it is the same shape three times over. The ROM
+`_08003004` (`RecordSetter_03004`, `src/foundation_runtime.c`) reached 107/200
+on this shape and is now exact at 200/200 with the pins/barriers in the source.
+It is the same shape three times over. The ROM
 materialises every constant in a scratch register and then copies it in:
 
 ```asm
@@ -493,8 +499,9 @@ Two smaller levers from the same function:
 
 ## Keeping an address *live* instead of rematerialising it
 
-`_080012F98` (`src/menu_ff78_e.c`, PARKED 52/140) needs WA `0x03001780` live in
-r4 across the body, with the `+0xFC2` read as `ldr r1,=0xFC2 / adds r0,r4,r1`:
+`_080012F98` (`src/menu_ff78_e.c`, 52/140 before the symbol lever, now exact at
+140/140) needs WA `0x03001780` live in r4 across the body, with the `+0xFC2`
+read as `ldr r1,=0xFC2 / adds r0,r4,r1`:
 
 * `0x03001780u + 0xFC2u` in one expression is folded by the **front end** into a
   single `0x03002742` pool word -- no add at all, and nothing left to keep live;
@@ -505,11 +512,11 @@ r4 across the body, with the `+0xFC2` read as `ldr r1,=0xFC2 / adds r0,r4,r1`:
   (`include/gtadv/ram_blocks.h`, first used this way in `src/save.c`) is not a
   foldable constant, so the base stays in r4 and the offset is really added.
 
-## A loop's `mov r8,r9` in the preheader cannot be spelled in C
+## A loop's `mov r8,r9` in the preheader: an open placement question
 
-`_080013B68` (`src/menu_ff78_s.c`) is PARKED at **731/740** with the ROM's
-exact allocation; the missing 2 bytes are *where the copy lives*, not which
-register it uses:
+`_080013B68` (`src/menu_ff78_s.c`) reached **731/740** on the pin shape below
+and is now exact at 740/740; the last 2 bytes were *where the copy lives*, not
+which register it uses:
 
 ```
 ROM                              candidate
@@ -705,13 +712,13 @@ splice's clobber list and homes leak into the allocation of everything after
 it** -- finish the C on either side of a splice, then re-measure the splice
 before believing it is load-bearing.
 
-## r7: a pin is never saved, and a pinned r7 is not an addressable base
+## r7: a pin is not saved, and a pinned r7 is not an addressable base
 
 Two measured consequences, both cheap to trip over, and one earlier version of
 this section over-generalised the second -- the pinned and allocator r7 are not
 the same register to the backend.
 
-* **A pinned r7 is never pushed** (see the r7 section above): `regs_ever_live[7]`
+* **A pinned r7 is not pushed** (see the r7 section above): `regs_ever_live[7]`
   stays clear, so the body's uses assemble against a caller's r7.
 * **A pinned r7 is also not used as an indexed base.** With `q` pinned to r7,
   `*(s16 *)((char *)q + 22)` compiles to `adds r0,q,#22 / movs r1,#0 /
@@ -723,7 +730,7 @@ the same register to the backend.
   through global-alloc) the field pair `*(s16 *)(pa + 22) - *(s16 *)(pb + 22)`
   compiled to the ROM's `movs r0,#22 / ldrsh r1,[r7,r0]` with no help. So do
   not splice a read off r7 until the base is unpinned and the register is
-  really the allocator's; a pinned r7 is the one case that cannot express it.
+  really the allocator's; a pinned r7 is the one case that does not express it.
 
 The rest of that body's field pair is the same lever as the `"0"` tie below,
 applied to a copy instead of a constant: `pb` lives in r8, so reading `b+22`

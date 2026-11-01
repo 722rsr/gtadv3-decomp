@@ -1,4 +1,4 @@
-# The indexed halfword scratch register, and three other measured walls
+# The indexed halfword scratch register, and three other register-choice findings
 
 Worked while clearing the `partial` class (2026-10-19). Every number here was
 measured with the pinned compiler:
@@ -79,7 +79,7 @@ __asm__ volatile("" : : "r"(hold));
 ```
 
 The output operand starts `hold`'s live range and the later input ends it, so
-r3 is live *across* the load and `find_free_reg` cannot hand it to the
+r3 is live *across* the load and `find_free_reg` does not hand it to the
 scratch; agbcc takes the next free register, which is the ROM's r1. Both
 asms emit no bytes and the allocation shift is local to the load. Applying a
 second pin (dummy in r2, load of rec+164, whose ROM scratch is r3) then
@@ -87,7 +87,7 @@ matched the rest of the body, 592/592, with no instruction splices. The class
 moved `partial` -> `c_fakematch`.
 
 The tick is that the pin must *bracket* the load. An output-only asm alone
-leaves `hold` dead immediately, and a clobber cannot reserve the register for
+leaves `hold` dead immediately, and a clobber does not reserve the register for
 a load that is emitted after it. Measure one scratch at a time: a pin at one
 site can move the scratch at the next, so iterate down the listing.
 
@@ -154,7 +154,7 @@ difference between the two builds of the compiler.
 
 `src/agbmain_session.c` `SessionVerify_080008F4` carries the ROM's in-place
 `ldrb r7, [r7, #1]` (0x080008F4 + 0x146) as a one-instruction splice, and the
-source comment recorded it as a measured wall. It is not:
+source comment recorded it as a blocker. It is not:
 
 ```c
 record = (volatile u8 *)(uintptr_t)*(u8 *)(record + 1);
@@ -198,9 +198,9 @@ load with a self-referential base.
   `add` is computed fresh into the pinned `r2` and the body is 176/176 with no
   instruction splice. Prefer this over an `add r2,sp,#8` splice whenever an
   address is parked in a callee-saved across calls; it should also unblock
-  hoist walls like `OAMGrid_Build`'s palette shift.
+  hoist problems like `OAMGrid_Build`'s palette shift.
 
-## A pinned r7 base can never fold a sub-word store (or load) offset
+## A pinned r7 base does not fold a sub-word store (or load) offset
 
 `src/menu_ff78_o.c` `MenuFF78_15304` stores three halfwords with the ROM's
 immediate-offset forms (`movs r0,#1 / strh r0,[r7,#20]`). This section first
@@ -217,7 +217,7 @@ nothing: it is the **pin** that is fatal. A pinned r7 regvar is hard-reg r7 at
 expand time; an *unpinned* pseudo passes the check, survives to reload with
 its offset folded, and reload keeps the fold when the pseudo's home is r7.
 So a ROM body containing `strh r0,[r7,#off]` (off <= 62) is proof the base
-was a pseudo that global-alloc gave r7 -- never a regvar spelling.
+was a pseudo that global-alloc gave r7 -- not a regvar spelling.
 
 `MenuFF78_15304` (408/408, 2026-10-24) lands exactly that way, and with no
 instruction-bearing asm:
@@ -241,7 +241,7 @@ instruction-bearing asm:
 232 B, `partial` -> `c_fakematch` (2026-10-26), 232/232. The three instruction
 splices were two indexed `ldrsh` loads and one `ldr / movs / ldrsh` triple, all
 of which are plain non-volatile `*(s16 *)` reads. What made the body read as a
-scratch wall is that it needs **six** scratch choices in one function, and each
+scratch problem is that it needs **six** scratch choices in one function, and each
 one is a register the ROM had just freed:
 
 | site | ROM scratch |

@@ -457,7 +457,7 @@
     },
     {
       "path": "asm/code_4b9c.s",
-      "sha256": "ee21304d0108d82e8c8402e3b29ec6095e8301fdde286b82487c34730e1d9eb5"
+      "sha256": "91f6338b7b1bdc5c3ef878baea1661458460dd138f4a9e939af3837a6b6f07ec"
     },
     {
       "path": "asm/code_4cc4.s",
@@ -489,7 +489,7 @@
     },
     {
       "path": "asm/code_5b3c.s",
-      "sha256": "5f1f1d25a2897777d6c219e4a5a68b69110793d699e18a7bad4df0d7695f69ff"
+      "sha256": "41679d896a5e6d15f2415df174ffe4c611c4aea069272dd10b5f4c7f898d1d13"
     },
     {
       "path": "asm/code_c668.s",
@@ -885,7 +885,7 @@
     },
     {
       "path": "asm/rec35_stage.s",
-      "sha256": "2187c20422f8f9936310e3d266fed20bc636856735dc34f8185dee17625f6a20"
+      "sha256": "247b649d58028fc42b47f3a344362001f149d145a1fa7fd4f0764c5742057670"
     },
     {
       "path": "asm/resource_wrap.s",

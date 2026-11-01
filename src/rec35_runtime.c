@@ -81,8 +81,8 @@ extern void _080016A20(void *rec);           // 0x08016A20 (promoted in this clu
 //    ORIGINAL constant. Only `case` labels bypass the fold, because EQ has no
 //    C-1 rewrite and `expand_case` builds its range checks directly from the
 //    case values. So the ROM's tests are a `switch` over {21,27,28,29,30},
-//    and an if/else chain spelled with `<`/`>` (the previous form here) can
-//    never match: it emitted `cmp #20; ble` + `cmp #26; ble` instead.
+//    and an if/else chain spelled with `<`/`>` (the previous form here) does
+//    not match: it emits `cmp #20; ble` + `cmp #26; ble` instead.
 //
 //    The `&&`-chain spelling of the same set is also wrong: agbcc's range
 //    recognition rewrites `v >= 27 && v <= 30` into `(u16)(v - 27) <= 3`

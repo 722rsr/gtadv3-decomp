@@ -185,7 +185,7 @@ fast-check:
 	@python3 tools/match_c_slice.py --self-test
 	@python3 tools/corpus_match_probe.py --self-test
 	@python3 tools/lift_scout.py --self-test
-	@python3 tools/wall_census.py --self-test
+	@python3 tools/backlog_census.py --self-test
 	@python3 tools/frame_probe.py --self-test
 	@python3 tools/expr_probe.py --self-test
 	@python3 tools/test_matching_assist.py
@@ -223,14 +223,14 @@ asmlift-install:
 LIMIT ?= 10
 FUNC ?=
 asmlift-seed:
-	@python3 tools/asmlift_seed.py --queue --wall raw --limit $(LIMIT)
+	@python3 tools/asmlift_seed.py --queue --evidence raw --limit $(LIMIT)
 
 lift-packet:
 	@test -n "$(FUNC)" || { echo "usage: make lift-packet FUNC=0x0801EFAC" >&2; exit 2; }
 	@python3 tools/lift_packet.py $(FUNC)
 
 lift-queue:
-	@python3 tools/lift_packet.py --queue --wall raw --limit $(LIMIT)
+	@python3 tools/lift_packet.py --queue --evidence raw --limit $(LIMIT)
 
 .PHONY: objdiff-config
 objdiff-config:

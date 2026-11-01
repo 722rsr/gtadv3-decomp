@@ -11,7 +11,7 @@
 @ static BL/literal callers of either machine anywhere else in the ROM.
 @
 @ Each machine switches on its scene phase halfword (A: s16[ctx+0x94],
-@ B: s16[ctx+0x96]); phase >= 5 unreachable (cmp #4 / bhi):
+@ B: s16[ctx+0x96]); phase >= 5 dead (cmp #4 / bhi):
 @   phase 0 -> stamp 4 (pass-through/done)
 @   phase 1 -> arm ctx+0x90=1, post helper events (_08015E28 / _08015E7C,
 @              still raw, called numerically), _08002618(1,1), phase 2

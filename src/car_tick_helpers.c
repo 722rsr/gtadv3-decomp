@@ -65,8 +65,9 @@ extern int  RecAF84(void *c);
 // armcc sometimes returns a register it never wrote (the "stale tail"): the
 // ROM's branch tree jumps to a shared `adds r0, rN, #0` epilogue on an
 // unexpected key, so the value returned is whatever the CALLER left in rN.
-// There is no way to spell that in C, so the ARM build captures the incoming
-// register and the host build takes 0 (same seam as src/garage_records.c).
+// C has no direct spelling for "whatever the caller left in rN", so the ARM
+// build captures the incoming register and the host build takes 0 (same seam
+// as src/garage_records.c).
 #ifdef __arm__
 #define STALE_REG(dst, reg) __asm__ volatile ("mov %0, " #reg : "=r" (dst))
 #else
@@ -941,7 +942,7 @@ int sub_0800A1A4(void *c) __attribute__((alias("CarTick_Rec_0A1A4")));
 // 0x08009FB8 Rec9FB8(ctx) — record 23 ROUTER. key = s16[WA+0x1080]:
 //   0 -> 24, 1 -> 34, 2 -> 37 (and mark grid [37][0] = 1), else -> stale r4.
 // CONVERTED to C 2026-10-14 — same two levers as Rec9FFC below, plus two
-// details this body needs (the old note called the compare chain unreachable;
+// details this body needs (the old note called the compare chain unavailable;
 // it is not):
 //   * the stale-r4 tail is the local-pinned-to-r4 + empty-asm stake claim
 //     (docs/findings/r4_input_reachability.md lever B).

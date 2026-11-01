@@ -1,47 +1,51 @@
 #!/usr/bin/env python3
-"""Separate the remaining asm-backed backlog into documented walls and real work.
+"""Sort the remaining asm-backed backlog by the evidence each body carries.
 
 `source_quality.py --list asm` orders the backlog by size, which invites picking
 the biggest body first. Most of those big bodies are not "not yet attempted":
-they carry an inline note recording a measured compiler wall (an agbcc pattern
-that expands differently, a register pin the allocator will not reproduce, a
-`tst` the backend lowers to `cmp`). Re-deriving one of those costs a whole
-probe cycle and lands nothing.
+they carry an inline note recording what a pass measured (an agbcc pattern that
+expanded differently, a register pin the allocator did not honour, a `tst` the
+backend lowered to `cmp`). That history is a starting point, not a verdict.
+No class here closes a body: re-deriving a body without a new lever repeats a
+known measurement, and re-deriving it with a new lever is the point.
 
 This census reads the C text that already owns each leftover address and sorts
 it by the evidence it carries:
 
-  measured      a dated MEASURED note: someone probed this body
-  unreachable   the note names a construct agbcc cannot emit
-  regalloc      register pins/barriers present: allocation is the wall
+  measured      a dated MEASURED note: a pass probed this body
+  unresolved    the note names a construct the current patterns do not emit
+  regalloc      register pins/barriers present: allocation is the open detail
   raw           naked body with no C at all: needs a full lift, not a nudge
-  veneer        a 2-4 byte naked stub (`bx r3`, `swi n`): no C spelling exists
-  unexplained   no note, no pins: the only rows worth opening first
+  veneer        a 2-4 byte naked stub (`bx r3`, `swi n`): part of a
+                surrounding body, not a standalone C function; still backlog
+  unexplained   no note, no pins: the rows with no recorded attempt
 
-`raw` is not a wall: a large naked transcription can always be rewritten from
+`raw` is not closed: a large naked transcription can always be rewritten from
 scratch, it is just the most work per body, so it sorts last. Rows are ranked
 by class and then by size (largest payoff first within a class), so the first
 line of output is the best next target for the class you have budget for.
+The ranking is a reading order, not a closure: every row is reopenable.
 Nothing here compiles, edits, or promotes: it classifies the tree live (about
-a second) and reads the wall notes out of the C files. `--snapshot` uses the
-committed `docs/data/source_quality.json` instead, which is faster but can list
-bodies that have since been promoted.
+a second) and reads the evidence notes out of the C files. `--snapshot` uses
+the committed `docs/data/source_quality.json` instead, which is faster but can
+list bodies that have since been promoted.
 
 `--lift-screen` additionally reads the naked body's own instruction stream and
-drops the raw rows that are not agbcc output at all, so a full lift there can
-never reach an exact match. The markers are the documented non-agbcc idioms
-(see the matching guide): a `bl` with no `lr` save on the entry push, a
-`mov pc, lr` or `pop {..., pc}` return, a `mov ip, lr` / `bx ip` veneer, `tst`
-(agbcc lowers it to `and`+`cmp`), `swi`, an `.arm` body (the C corpus builds
-`-mthumb`), and a body whose last real instruction is not a return -- a guard
-or tail that falls through into the next function, e.g. 0x0802B898's Smsh check
-or the mixer tail at 0x0802BC28. Most raw bodies carry one of these; without the
-screen they read as "just a few hundred bytes".
+marks the raw rows whose stream does not follow the corpus's agbcc idioms, so a
+straight C lift is unlikely to reach an exact match without a splice or a
+different control-flow group. They stay backlog under a separate tally. The
+markers are documented in the matching guide: a `bl` with no `lr` save on the
+entry push, a `mov pc, lr` or `pop {..., pc}` return, a `mov ip, lr` / `bx ip`
+veneer, `tst` (the current pattern lowers it to `and`+`cmp`), `swi`, an `.arm`
+body (the C corpus builds `-mthumb`), and a body whose last real instruction is
+not a return -- a guard or tail that falls through into the next function, e.g.
+0x0802B898's Smsh check or the mixer tail at 0x0802BC28. Most raw bodies carry
+one of these; without the screen they read as "just a few hundred bytes".
 
-    python3 tools/wall_census.py                 # ranked census
-    python3 tools/wall_census.py --class unexplained --top 10
-    python3 tools/wall_census.py --lift-screen   # raw rows agbcc could emit
-    python3 tools/wall_census.py --json build/wall_census.json
+    python3 tools/backlog_census.py                 # ranked census
+    python3 tools/backlog_census.py --class unexplained --top 10
+    python3 tools/backlog_census.py --lift-screen   # straight-C raw rows
+    python3 tools/backlog_census.py --json build/backlog_census.json
 """
 from __future__ import annotations
 
@@ -58,18 +62,21 @@ ROOT = Path(__file__).resolve().parent.parent
 SNAPSHOT = ROOT / "docs/data/source_quality.json"
 
 # Ordered: the first class whose marker the evidence matches wins, so a dated
-# measurement outranks the general "cannot emit" phrasing it usually contains.
+# measurement outranks the general "does not emit" phrasing it usually contains.
 CLASSES = (
     # Notes appear both as `MEASURED` and as `Measured 2026-10-13:`.
     ("measured", re.compile(r"\bmeasured\b", re.I)),
-    ("unreachable", re.compile(
+    ("unresolved", re.compile(
         r"unreachable|no spelling|cannot be (?:emitted|reached|expressed|"
-        r"reproduced)|impossible|refuses|never emits|single instruction away",
+        r"reproduced)|does not emit|not produced by|needs a splice|impossible|"
+        r"refuses|never emits|single instruction away",
         re.I)),
     ("regalloc", re.compile(
         r"register alloc|\bpins?\b|\bpinned\b|\bpseudo\b|\bpermuted?\b", re.I)),
 )
-RANK = {"unexplained": 0, "regalloc": 1, "unreachable": 2,
+# Reading order only. A lower rank is not a closed body and a higher rank is
+# not a promise; all of these rows stay in the backlog.
+RANK = {"unexplained": 0, "regalloc": 1, "unresolved": 2,
         "measured": 3, "raw": 4, "veneer": 5}
 COMMENT_LINE = re.compile(r"^\s*(?:\*|//|/\*)")
 COMMENT_MARKS = re.compile(r"^(?:\s|/\*|\*|//)+")
@@ -98,7 +105,7 @@ def mask_comments(text: str) -> str:
     text; a brace inside a comment otherwise swallows the rest of the file
     (`src/sound_seq_follow.c` parses as zero functions that way). Blanking
     instead of deleting keeps the offsets usable against the raw file, which
-    is where the wall notes live.
+    is where the evidence notes live.
     """
     import source_quality
     chars = list(text)
@@ -143,7 +150,7 @@ def clean(lines: list[str]) -> list[str]:
 
 
 def _notes(path: Path) -> dict[str, list[str]]:
-    """{function name: wall-note lines} for one C file.
+    """{function name: evidence-note lines} for one C file.
 
     The note block is the comment run immediately above the signature plus
     every comment inside the body: those two places are where a session
@@ -195,7 +202,7 @@ def _notes(path: Path) -> dict[str, list[str]]:
 
 
 def classify(entry: dict, notes: list[str]) -> tuple[str, str]:
-    """Return (wall class, the note line that decided it)."""
+    """Return (evidence class, the note line that decided it)."""
     joined = "\n".join(notes)
     for label, pattern in CLASSES:
         hit = pattern.search(joined)
@@ -207,7 +214,7 @@ def classify(entry: dict, notes: list[str]) -> tuple[str, str]:
         pins = detail.get("pin", 0) + detail.get("barrier", 0)
         return "regalloc", f"{pins} register pin(s)/barrier(s) still in the body"
     if detail.get("naked") and 0 < entry.get("size", 99) <= 4:
-        return "veneer", "2-4 byte stub; bx/swi has no C spelling"
+        return "veneer", "2-4 byte stub; belongs to a surrounding body"
     if detail.get("naked"):
         return "raw", "naked asm body; no C to nudge"
     if detail.get("insn"):
@@ -223,7 +230,7 @@ LIFT_MARKERS = (
     # Interworking veneer: agbcc addresses a callee through its own call/long
     # branch, never by materialising `pc + k` and branching to it.
     ("pc veneer", re.compile(r"^\s*adds?\s+r\d+\s*,\s*pc\b")),
-    ("tst (lowers to and+cmp)", re.compile(r"^\s*tst\b")),
+    ("tst (current pattern lowers to and+cmp)", re.compile(r"^\s*tst\b")),
     ("swi", re.compile(r"^\s*swi\b")),
     # The C corpus is compiled `-mthumb`, so a body that switches to ARM is a
     # hand-written kernel or a misidentified data word, never a C lift target.
@@ -254,7 +261,7 @@ def _asm_instructions(path: Path, name: str) -> list[str] | None:
     """Instruction strings of one naked body, or None when it has no body here.
 
     A body that assembles from an `.include` carries no instruction literals, so
-    its stream cannot be screened from the C file; that returns None instead of
+    its stream has no inline instructions to screen; that returns None instead of
     an empty list so callers can tell "unknown" from "empty".
     """
     import source_quality
@@ -290,7 +297,7 @@ def _asm_instructions(path: Path, name: str) -> list[str] | None:
 
 
 def lift_blockers(instructions: list[str]) -> list[str]:
-    """Reasons this instruction stream cannot be agbcc output (empty = lift it)."""
+    """Reasons this stream is not a straight agbcc-corpus lift (empty = lift it)."""
     reasons: list[str] = []
     calls = any(re.match(r"bl\b", ins) for ins in instructions)
     pushes = [ins for ins in instructions if re.match(r"push\b", ins)]
@@ -317,17 +324,17 @@ def census(snapshot: bool = False) -> list[dict]:
     for path, items in wanted.items():
         notes = _notes(path)
         for vma, entry in items:
-            wall, note = classify(entry, notes.get(entry["name"], []))
+            evidence, note = classify(entry, notes.get(entry["name"], []))
             rows.append({
                 "vma": vma,
                 "class": entry["class"],
-                "wall": wall,
+                "evidence": evidence,
                 "size": entry["size"],
                 "file": entry["file"],
                 "name": entry["name"],
                 "note": note,
             })
-    rows.sort(key=lambda r: (RANK[r["wall"]], -r["size"], r["vma"]))
+    rows.sort(key=lambda r: (RANK[r["evidence"]], -r["size"], r["vma"]))
     return rows
 
 
@@ -339,7 +346,7 @@ def screen_lifts(rows: list[dict]) -> list[dict]:
     not silently promoted to liftable.
     """
     for row in rows:
-        if row["wall"] != "raw":
+        if row["evidence"] != "raw":
             continue
         instructions = _asm_instructions(ROOT / row["file"], row["name"])
         if not instructions:
@@ -352,12 +359,12 @@ def screen_lifts(rows: list[dict]) -> list[dict]:
 
 def render(rows: list[dict], excluded: list[dict] | None = None) -> str:
     screened = any("lift" in r for r in rows)
-    head = f"{'size':>6}  {'srcc':<7}  {'wall':<12}  "
+    head = f"{'size':>6}  {'srcc':<7}  {'evidence':<12}  "
     if screened:
         head += f"{'lift':<28}  "
     out = [head + "target"]
     for r in rows:
-        out.append(f"{r['size']:>6}  {r['class']:<7}  {r['wall']:<12}  "
+        out.append(f"{r['size']:>6}  {r['class']:<7}  {r['evidence']:<12}  "
                    + (f"{r.get('lift', ''):<28}  " if screened else "")
                    + f"0x{r['vma']:08x} {r['file']}:{r['name']}")
         if r["note"]:
@@ -366,7 +373,7 @@ def render(rows: list[dict], excluded: list[dict] | None = None) -> str:
                        + f"  {r['note'][:110]}")
     counts: dict[str, int] = {}
     for r in rows:
-        counts[r["wall"]] = counts.get(r["wall"], 0) + 1
+        counts[r["evidence"]] = counts.get(r["evidence"], 0) + 1
     total = sum(r["size"] for r in rows)
     tally = ", ".join(f"{k} {counts[k]}" for k in sorted(counts, key=RANK.get))
     out.append("")
@@ -385,7 +392,7 @@ def render(rows: list[dict], excluded: list[dict] | None = None) -> str:
         for r in excluded:
             reasons[r["lift"]] = reasons.get(r["lift"], 0) + 1
         tally = ", ".join(f"{k} {v}" for k, v in sorted(reasons.items()))
-        out.append(f"screened out of raw ({len(excluded)}): {tally}")
+        out.append(f"raw rows outside the straight-C idioms ({len(excluded)}): {tally}")
     return "\n".join(out)
 
 
@@ -393,11 +400,11 @@ def self_test() -> None:
     """Pin the marker precedence and the note window on known shapes."""
     sample = (
         "/* file header */\n"
-        "/* MEASURED (2026-10-16): agbcc cannot emit this. */\n"
+        "/* MEASURED (2026-10-16): the current pattern does not emit this. */\n"
         "void f(void) {\n"
         "    /* pins are load-bearing here */\n"
         "}\n"
-        "// The ROM's `tst` is unreachable from agbcc.\n"
+        "// The ROM's `tst` needs a splice with the current patterns.\n"
         "void g(void) { }\n"
         "void h(void) { }\n"
     )
@@ -405,9 +412,9 @@ def self_test() -> None:
         path = Path(tmp) / "t.c"
         path.write_text(sample)
         notes = _notes(path)
-    # A dated measurement also says "cannot emit"; measured still wins.
+    # A dated measurement also says "does not emit"; measured still wins.
     assert classify({}, notes["f"])[0] == "measured"
-    assert classify({}, notes["g"])[0] == "unreachable"
+    assert classify({}, notes["g"])[0] == "unresolved"
     assert classify({}, notes["h"])[0] == "unexplained"
     assert classify({"detail": {"pin": 1}}, [])[0] == "regalloc"
     assert classify({"detail": {"naked": True}, "size": 24}, [])[0] == "raw"
@@ -420,7 +427,8 @@ def self_test() -> None:
         "mov pc,lr return"]
     assert lift_blockers(["mov ip, lr", "bx ip"]) == ["ip/lr veneer"]
     assert lift_blockers(["add r2, pc, #0", "bx r2"]) == ["pc veneer"]
-    assert lift_blockers(["tst r0, r1", "bx lr"]) == ["tst (lowers to and+cmp)"]
+    assert lift_blockers(["tst r0, r1", "bx lr"]) == [
+        "tst (current pattern lowers to and+cmp)"]
     assert lift_blockers(["swi 0", "bx lr"]) == ["swi"]
     # A guard body that falls through into the next function is not a lift.
     assert lift_blockers(["ldr r0, [pc, #4]", "str r3, [r0]"]) == [
@@ -433,8 +441,8 @@ def self_test() -> None:
         ".arm body (C corpus is Thumb)"]
     # `mov pc, r3` is a switch jump table, which agbcc does emit.
     assert lift_blockers(["mov pc, r3"]) == []
-    # `movs rN, #0` + `ldrsh rX, [rBase, rN]` is NOT a wall: agbcc emits that
-    # pair for `p->field` / `p[0]` reads (measured with build/scratchcc.sh).
+    # `movs rN, #0` + `ldrsh rX, [rBase, rN]` is NOT a blocker: agbcc emits
+    # that pair for `p->field` / `p[0]` reads (measured with build/scratchcc.sh).
     with tempfile.TemporaryDirectory() as tmp:
         path = Path(tmp) / "t.c"
         path.write_text(
@@ -444,26 +452,27 @@ def self_test() -> None:
         got = _asm_instructions(path, "a")
     assert got == ["push {r4, lr}", "bl sub_x"], got
     # Ranking must float the actionable row even when it is the smaller one.
-    rows = [{"wall": "measured", "size": 900}, {"wall": "unexplained", "size": 20}]
-    rows.sort(key=lambda r: (RANK[r["wall"]], -r["size"]))
-    assert rows[0]["wall"] == "unexplained"
-    print("wall_census self-test: PASS")
+    rows = [{"evidence": "measured", "size": 900},
+            {"evidence": "unexplained", "size": 20}]
+    rows.sort(key=lambda r: (RANK[r["evidence"]], -r["size"]))
+    assert rows[0]["evidence"] == "unexplained"
+    print("backlog_census self-test: PASS")
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--class", dest="wall", choices=sorted(RANK),
-                        help="restrict to one wall class")
+    parser.add_argument("--class", dest="evidence", choices=sorted(RANK),
+                        help="restrict to one evidence class")
     parser.add_argument("--top", type=int, default=0,
                         help="stop after N rows (0 = all)")
     parser.add_argument("--ascending", action="store_true",
-                        help="smallest body first within each wall class")
+                        help="smallest body first within each evidence class")
     parser.add_argument("--snapshot", action="store_true",
                         help="use the committed classification snapshot")
     parser.add_argument("--json", type=Path, help="write the census as JSON")
     parser.add_argument("--lift-screen", action="store_true",
-                        help="screen the raw rows for non-agbcc instruction idioms")
+                        help="mark raw rows outside the corpus's agbcc idioms")
     parser.add_argument("--self-test", action="store_true")
     args = parser.parse_args(argv)
 
@@ -475,12 +484,14 @@ def main(argv: list[str] | None = None) -> int:
     excluded: list[dict] = []
     if args.lift_screen:
         rows = screen_lifts(rows)
-        excluded = [r for r in rows if r["wall"] == "raw" and r["lift"] != "liftable"]
-        rows = [r for r in rows if r["wall"] != "raw" or r["lift"] == "liftable"]
+        excluded = [r for r in rows
+                    if r["evidence"] == "raw" and r["lift"] != "liftable"]
+        rows = [r for r in rows
+                if r["evidence"] != "raw" or r["lift"] == "liftable"]
     if args.ascending:
-        rows.sort(key=lambda r: (RANK[r["wall"]], r["size"], r["vma"]))
-    if args.wall:
-        rows = [r for r in rows if r["wall"] == args.wall]
+        rows.sort(key=lambda r: (RANK[r["evidence"]], r["size"], r["vma"]))
+    if args.evidence:
+        rows = [r for r in rows if r["evidence"] == args.evidence]
     if args.json:
         args.json.write_text(json.dumps(rows, indent=1) + "\n")
     if args.top:

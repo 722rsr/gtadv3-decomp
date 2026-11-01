@@ -247,7 +247,7 @@ void Course_Build16Row(int sel){
 // award reads, the sprite emitters 0x08007538/0x080075E8 and the resource
 // writers 0x0800798C/0x08007A04/0x08007ABC.  The award reads are declared
 // word-returning: the ROM uses each result directly in a `strh` or an `adds`
-// and never emits the lsls/asrs a `s16` return would add.
+// and does not emit the lsls/asrs a `s16` return would add.
 extern int _080261B0(int a);
 extern int _080261F8(int a);
 extern void _08007538(void *base, int idx, int v);
@@ -442,7 +442,7 @@ u32 Course_Math_SumU16(void *rec, int i) { // _08007EC4: ldr [r4+4] X -> _080074
     v1 += (u32)rec;
     return v1;
 }
-// Section-alignment filler, not unreachable code: the body is 26 bytes, so
+// Section-alignment filler, not dead code: the body is 26 bytes, so
 // under `-ffunction-sections` its section pads to 28 and gas closes a Thumb
 // *code* section with the 2-byte nop (0x46c0) where the ROM holds `00 00`.
 // This file-scope `.align 2, 0` is emitted after the body's `.size`, still

@@ -53,7 +53,7 @@ constants). Both `r2` and `r3` are dead at that point; the ROM's compiler picked
 `r3`, ours picks `r2`. It is a tie-break in the sorted allocation order, not a
 liveness difference.
 
-## Why the C cannot force it
+## Why the attempted C spellings did not force it
 
 * A liveness pin holding `r2` across that store costs the frame: the body goes
   to 376 B (or 364 B) because `c2` then has nowhere to live.
@@ -62,6 +62,9 @@ liveness difference.
 * 72 pin combinations and a greedy pin sweep over 21 anchors x 5 registers were
   measured; the best remains 307/368.
 
-That is the precise statement of the wall: the last difference is an allocator
-tie-break between two equally free registers, and every source-level attempt to
-break the tie displaces `c2` and changes the frame.
+That is the precise statement of the open difference: the last gap is an
+allocator tie-break between two equally free registers, and every source-level
+attempt measured so far displaces `c2` and changes the frame. The dump above
+makes this a targeted problem -- the pseudo and both candidate registers are
+known, so a liveness or allocation-order change is the next lever. Do not treat
+the failed pin combinations as a proof that the tie cannot be broken.

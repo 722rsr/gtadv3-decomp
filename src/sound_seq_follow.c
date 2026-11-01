@@ -79,11 +79,12 @@ void SoundChannelFreeAll(u32 dummy, u8 *stream) {
 
     (void)dummy;
     while (channel != 0) {
-        /* MEASURED (2026-10-16): the ROM's `tst r0, r1` is unreachable from
-           agbcc. Its thumb.md `tstsi` pattern expands to `cmp %0, #0`, so
-           every spelling of `flags & 199` emits `and` + `cmp #0` + `beq`
-           (4-byte + 2-byte delta at +0x08, PARTIAL 16/48). The test stays a
-           one-instruction asm splice. */
+        /* MEASURED (2026-10-16): the ROM's `tst r0, r1` is not produced by
+           agbcc's current `tstsi` pattern, which expands to `cmp %0, #0`.
+           Every C spelling of `flags & 199` tried so far emits `and` +
+           `cmp #0` + `beq` (4-byte + 2-byte delta at +0x08, PARTIAL 16/48).
+           The test stays a one-instruction asm splice; a new lowering pattern
+           or a different flag-test shape can reopen the pure-C form. */
         register u8 flags __asm__("r1") = channel[0];
         __asm__ volatile (
             ".syntax unified\n"
@@ -385,11 +386,12 @@ __attribute__((naked)) void SoundBDA8_LoadRecord(void *seq, void *chan) {
 // that custom call/return boundary explicit and use C for payload operations
 // whose exact Thumb forms agbcc can generate.
 //
-// `_0802BCE8` is blocked by a different, also structural, fact: its last
-// instruction is `b.n 0x0802BCCE`, a tail jump into an interior label of
-// `_0802BCCC`, which no C construct emits. `_0802BD44` is blocked the same way
-// twice: both its `b.n 0x0802BCF6` sites enter `_0802BCF4` PAST its
-// `push {lr}`, so a C call costs +4 bytes at each.
+// `_0802BCE8` has a different structural constraint: its last instruction is
+// `b.n 0x0802BCCE`, a tail jump into an interior label of `_0802BCCC`, which
+// the current C constructs do not emit directly. `_0802BD44` has the same
+// constraint twice: both its `b.n 0x0802BCF6` sites enter `_0802BCF4` PAST
+// its `push {lr}`, so a C call costs +4 bytes at each. Both stay staged as asm
+// segments until a grouped control-flow conversion can express the entry.
 //
 // ----------------------------------------------------------------------------
 // 0x0802BE34 — track-selector change (envelope byte).
@@ -493,15 +495,15 @@ __attribute__((naked)) void SoundBE60_PSGWrite(void *a, void *seq) {
 // ----------------------------------------------------------------------------
 // 0x0802C3EC — fetch one byte (cursor++).
 //
-// MEASURED, : the "agbcc returns in r0, so
-// r3 is unreachable" reading in the block comment above is FALSIFIED. agbcc
+// MEASURED, : the earlier "agbcc returns in r0, so
+// r3 is unavailable" reading in the block comment above is wrong. agbcc
 // honours GCC's local register binding, so the result is pinned to r3 and
 // the body comes out byte-identical. Ten return-type/arity/qualifier shapes
 // (u8/u16/u32/int/char/struct/struct-return/3-arg/4-arg/void, volatile and
 // plain, byte-first and byte-last source order) were compiled first and EVERY
 // one returned in r0; the byte-last shape does reproduce the ROM's
 // instruction ORDER and LENGTH exactly, with r0 substituted for r3, which is
-// what made the mismatch look like an ABI dead end rather than a missing pin.
+// what made the mismatch look like an ABI limitation rather than a missing pin.
 //
 // Three local pins close it: `cur` -> r2, and BOTH the `cur + 1` temporary and
 // the fetched byte -> r3 (they do not overlap in liveness, which is why two

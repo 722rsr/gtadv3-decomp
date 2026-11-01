@@ -38,7 +38,7 @@ make fast-check
 For a body that is still assembly, start with a packet instead of a probe:
 
 ```sh
-python3 tools/wall_census.py --lift-screen
+python3 tools/backlog_census.py --lift-screen
 python3 tools/lift_packet.py 0x0801EFAC
 ```
 
@@ -208,11 +208,12 @@ See [candidate-length diagnostics](findings/oversized_plus4_class.md).
   with `tools/expr_probe.py`; it is what carried `_080029764`
   (0x08029764) to 594/636 with the exact span.
 - A register-indexed signed byte read whose index differs from the destination
-  (`ldrsb r2,[r4,r0]`) is not reachable from C with either shipped compiler:
-  the constant path of `*extendqisi2_insn` reuses the destination as the
-  index, and REG+REG memory addresses never form (the Thumb address predicate
-  admits them only after reload, and nothing recreates them). `0x0802C160`
-  keeps its one-instruction asm splice. See
+  (`ldrsb r2,[r4,r0]`) is not produced by either shipped compiler's current
+  patterns: the constant path of `*extendqisi2_insn` reuses the destination as
+  the index, and REG+REG memory addresses do not form from that shape (the
+  Thumb address predicate admits them only after reload, and nothing recreates
+  them). `0x0802C160` keeps its one-instruction asm splice for now; a changed
+  lowering or a different address shape can reopen it. See
   [register-indexed byte loads](findings/byte_ldrsb_register_index.md).
 - The *signed halfword* register-indexed load IS reachable from C -- a
   non-volatile `*(s16 *)` lvalue gives the ROM's `movs rX,#k / ldrsh
@@ -289,9 +290,9 @@ See [candidate-length diagnostics](findings/oversized_plus4_class.md).
   assigned in the loop, with and without `volatile` -- gives the same body with
   the destination reduced into a fourth rolling register. Making the index
   non-affine (`u16 i`) does drop the giv but wraps the counter and stops `i*72`
-  from rolling, which is worse. The same wall governs how a non-immediate
-  offset (`0x5E8`) is carried: as a running register in the ROM, rematerialised
-  from the literal pool here.
+  from rolling, which is worse. The same allocator rule governs how a
+  non-immediate offset (`0x5E8`) is carried: as a running register in the ROM,
+  rematerialised from the literal pool here.
 
 - Pinning the *destination of an assignment* is the fix when whole blocks come
   out with two registers swapped: `f = flags | bit` gave value/constant as
@@ -593,7 +594,7 @@ comment in `src/race_scene.c`.
 * `blt`/`bge` with the **original positive constant** is reachable only from
   switch lowering. fold-const rewrites every tree comparison `x < C` / `x >= C`
   with positive `C` into `<=`/`>` with `C-1` (`/* Change X >= CST to X >
-  (CST - 1) */`, fold-const.c), so an `if` can never emit `cmp #35 / blt` --
+  (CST - 1) */`, fold-const.c), so an `if` does not emit `cmp #35 / blt` --
   it always comes out `cmp #34 / ble` (measured at -O0 too). `stmt.c`'s
   `emit_case_nodes` emits case bounds directly and keeps them. This is how
   `MenuF924_0800F924` (`src/menus.c`) reproduces the ROM's
@@ -697,7 +698,7 @@ the scheduler fixes independently of the C (11 spellings measured, all 735/740).
 
 A promoted span that ends in `00 00` right after `bx lr` needs
 `__asm__(".align 2, 0");` after the body: gas otherwise fills the tail with the
-2-byte Thumb NOP (`46 c0`) and the last two bytes never match
+2-byte Thumb NOP (`46 c0`) and the last two bytes do not match
 (`_080021F14`, `_080022B48`; same trick as `Course_Iter_07CD0`).
 
 ## A labelled pool that sits *after* the epilogue
@@ -722,10 +723,10 @@ then the `.word`s, then `.popsection`. Two details are load-bearing:
 
 ## Splitting a body into swappable segments (measured 2026-10-24)
 
-A 3-4 kB body cannot be lifted in one sitting, and one monolithic `__asm__`
-block gives nowhere to stand: the first converted statement would have to
-reproduce the whole function. `tools/body_segments.py` cuts the span at its real
-control-flow boundaries so each piece can become C on its own:
+A 3-4 kB body does not need to be lifted in one sitting, and one monolithic
+`__asm__` block gives nowhere to stand: the first converted statement would
+have to reproduce the whole function. `tools/body_segments.py` cuts the span at
+its real control-flow boundaries so each piece can become C on its own:
 
 ```sh
 python3 tools/body_segments.py --function _08001C3E0 --out-dir build/segments/c3e0
@@ -740,18 +741,19 @@ On `_08001C3E0` the tool finds 227 segments (186 code, 28 data, 13 pad) and
 `--check` reassembles them to all 3640 bytes, then compiles the same segments
 through `clang -E` and the pinned `old_agbcc` and compares those bytes too.
 
-**Not every segment can become C, and the reason is the compiler, not the
-bytes.** agbcc keeps a block's asm only while C can still reach it. Swapping a
+**Not every segment can become C on its own; the constraint is the compiler's
+control-flow model, not the bytes.** agbcc keeps a block's asm only while C can
+still reach it. Swapping a
 `cond` segment for C control flow removed exactly its own `cmp`/`bge` and left
 the other 226 labels and 1437 instructions intact. Swapping a 2-byte `b` for
 `goto` deleted **233 instructions belonging to 30 other segments**: the
-unconditional jump makes everything up to the next C label unreachable from C,
-and the asm statements in between go with it. So a segment is convertible when
+unconditional jump makes everything up to the next C label dead from C's
+perspective, and the asm statements in between go with it. So a segment is convertible when
 it falls through (C keeps a sequential edge) or when nothing lies between it and
 its target; the tool prints that verdict (`c  yes` / `--`) per segment, records
 it as `c_swap` in the JSON, and marks each block in the scaffold. A segment that
-ends in `b`/`bx`/`mov pc` has to stay asm until the control flow around it
-converts as a group.
+ends in `b`/`bx`/`mov pc` is converted as a group with the blocks around it,
+because converting it alone deletes the fall-through path.
 
 Two smaller facts the tool depends on: every block brackets its own `.syntax
 unified` / `.syntax divided`, because objdump prints unified mnemonics while
@@ -778,8 +780,9 @@ Two naming traps that block an otherwise exact body at link time:
 
 ## Unresolved-call defects (fix these first)
 
-A body whose candidate carries an unresolved `bl` can never be exact, so the
-first move on any `UNRESOLVED_RELOCATION` record is to make the call resolve.
+A body whose candidate carries an unresolved `bl` cannot be exact while the
+relocation is unresolved, so the first move on any `UNRESOLVED_RELOCATION`
+record is to make the call resolve.
 Three recurring causes, all found with `--function NAME --c89` (the `call`
 lines name the symbol the probe could not place):
 
@@ -813,7 +816,7 @@ grep -n '^\s*static.*_[0-9A-Fa-f]\{4,\}\s*(' src/*.c
 facts measured against the pinned compiler:
 
 * agbcc always saves `lr` on the entry path when the body calls (`push {r4,
-  lr}`, `push {r4, r5, r6, r7, lr}`); it never emits a bare `push {rN}` with a
+  lr}`, `push {r4, r5, r6, r7, lr}`); it does not emit a bare `push {rN}` with a
   `bl` in the body, and never defers the frame past the early exits.
 * returns are `bx lr` / `pop {r0}; bx r0` -- never `mov pc, lr` or `pop {pc}`.
 
@@ -840,26 +843,29 @@ not the blocker -- the frame/return idioms are.
 python3 tools/match_families.py --build
 python3 tools/match_context.py NAME
 python3 tools/strategy_router.py --function NAME
-python3 tools/wall_census.py --class raw --ascending
+python3 tools/backlog_census.py --class raw --ascending
 ```
 
-`wall_census.py` answers "what is actually left": it sorts the asm-backed
-bodies by the evidence already written next to them (`measured`, unreachable,
-register pins) and lists the naked transcriptions separately, so a session does
-not re-open a body whose wall is already recorded inline.
+`backlog_census.py` answers "what is actually left": it sorts the asm-backed
+bodies by the evidence already written next to them (`measured`, unresolved,
+register pins) and lists the naked transcriptions separately, so a session can
+see a body's history before choosing a target. The classes are a reading order,
+not a verdict; every row is reopenable.
 
 `--lift-screen` additionally reads each naked body's own instruction stream and
-drops the transcriptions that no C can match, because the ROM bytes are not
-agbcc output: a `bl` with no `lr` save on the entry push, a `mov pc, lr` or
+marks the transcriptions that are not a straight agbcc-corpus lift, because the
+ROM bytes do not follow those idioms: a `bl` with no `lr` save on the entry
+push, a `mov pc, lr` or
 `pop {..., pc}` return, a `mov ip, lr` / `bx ip` or `add rN, pc` veneer, `tst`
 (agbcc lowers it to `and`+`cmp`), `swi`, an `.arm` body (the C corpus builds
 `-mthumb`), and a stream whose last real instruction (past the section-fill
 `movs r0, r0` and labelled pool words) is not a return -- a guard or tail that
 falls through into the next function, such as 0x0802B898's Smsh check before the
 mixer setup. Those markers are the documented non-agbcc idioms below; a body
-carrying one is a wall, not a lift. Bodies whose stream assembles from an
-`.include` cannot be screened this way and are reported as unknown rather than
-liftable.
+carrying one is not a straight C lift, but it remains backlog for a splice or
+a grouped control-flow conversion. Bodies whose stream assembles from an
+`.include` have no inline instructions to screen and are reported as unknown
+rather than liftable.
 
 Family matching compares instruction and branch patterns with consistent
 register normalization, while retaining load/store widths. It is a retrieval
@@ -949,8 +955,8 @@ the table above. Pointing the C at `_08002DE04` resolves both relocations;
 `_0802B898` additionally has a **mis-split span**: the ROM's guard ends
 `str r3,[r0,#0]` with no `bx lr`, i.e. its success path falls through into the
 next function at 0x0802B8AA, while the manifest's `end_marker` cuts the span at
-18 bytes. The body cannot be reproduced until the `asm/sound_mixer.s` markers are
-corrected.
+18 bytes. Correct the `asm/sound_mixer.s` markers before expecting the body to
+reproduce; the mis-split span is the blocker, not the C shape.
 
 Two near-misses keep the `instruction order` class alive and are documented in
 place rather than re-attempted: `_080013B68` (735/740; the loop preheader's
@@ -964,7 +970,7 @@ odd-branch site matches).
 
 A `volatile s16` lvalue lowers to `ldrh + lsls + asrs`; the ROM's indexed read is
 the true `movs rN,#0 / ldrsh rM,[rBase,rN]`, which agbcc only emits for a **plain**
-`*(s16 *)`. SW-`volatile` is also why a large work-area offset can never use the
+`*(s16 *)`. SW-`volatile` is also why a large work-area offset does not use the
 `ldrsh` immediate (it only reaches +62). Flipping one macro in
 `src/menu_ff78_a.c` (`WA_S16`) improved every body that reads through it and cost
 nothing:
@@ -1096,9 +1102,10 @@ Three separate rules govern an expression like
   ROM's sequence -- `ldr r1,=0x1FF / ands`, `ldr r1,=0xFFFFC000 / orrs`,
   `ldrh / lsls / orrs` -- whereas the nested form pre-loads both pool words
   before the `ands`.
-* **The `ldr r2,=C / adds r1,r2,#0` copy is not reachable from a constant
-  expression at -O2.** Assigning the constant to a local (`v = 0xFFFFC000;`
-  then `... | v`) makes the pool word land in r2 instead of r1, but the
+* **The `ldr r2,=C / adds r1,r2,#0` copy is not produced from a plain
+  constant expression at -O2 in these bodies.** Assigning the constant to a
+  local (`v = 0xFFFFC000;` then `... | v`) makes the pool word land in r2
+  instead of r1, but the
   `adds r1,r2,#0` hop needs the constant's pseudo to *spill*, i.e. the
   function must already be out of call-preserved registers. A body that is
   otherwise allocation-clean gets `ldr r1,=C / ands r0,r1` instead. Both
@@ -1123,7 +1130,7 @@ worth knowing when steering a body:
   competes for r4-r7 only, then r8-r10.
 * A register is only reachable for a *global* allocno. `local-alloc` marks all
   eliminable registers used, so a pseudo born and dead inside one basic block
-  can never take r7; see
+  does not take r7; see
   [r7 through global alloc](findings/local_alloc_register_choice.md#r7-is-reachable-through-global-alloc-not-through-pins).
 * An `__asm__ volatile("" : "+r"(x))` barrier *does* promote `x` to a global
   allocno, but that only helps when the value's priority is on your side. On
@@ -1132,7 +1139,7 @@ worth knowing when steering a body:
   [that finding](findings/local_alloc_register_choice.md#a-pinned-r7-in-a-framed-body-can-miscompile-an-array-read)).
   Check which allocator owns the value (`.greg` "Registers to be allocated")
   before spending shapes on it: a local allocno is decided by the per-block
-  first-free scan and cannot be steered by source order at all.
+  first-free scan and is not steered by source order alone.
 
 `tools/lift_loop.py` compiles one body out of its real TU in about a second and
 prints the ROM and candidate listings side by side; `--asm` prints just the
@@ -1284,7 +1291,7 @@ section, and nothing in the fixture's 1669-symbol closure maps
 `AgbMain_Run` (the ROM's whole setup+loop is ONE body; only the next
 inventory start at 0x08000590 bounds the span). Introspective fact: the
 inventory has no known start between 0x080002C4 and 0x08000590 (verified
-directly against `rom_functions()`), so NO alias spelling can fix this --
+directly against `rom_functions()`), so no alias spelling fixes this --
 the loop must be inline, per the old rule at the top of this file (a ROM
 body whose helper-call sites branch locally).
 

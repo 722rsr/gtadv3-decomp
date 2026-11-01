@@ -711,10 +711,10 @@ void Wrap_02D98(u32 r0, u32 r1, u32 r2, u32 r3, u32 r5){
     // it. `(u32)base + (r0 << 5)` in one initialiser emits
     // `adds r0, r4, r0` (base as the addend); the ROM's `adds r0, r0, r4`
     // wants the shifted index in r0 first and the base added into it. Two
-    // statements do exactly that and close the body: 32/32 EXACT, measured
-    //. This is the resolution of the note below that recorded the
-    // operand order as an open instruction-order wall -- it was never the
-    // scale/load order, only the add's operand order, and `+=` is the lever.
+    // statements do exactly that and close the body: 32/32 EXACT, measured.
+    // This resolves the earlier note that recorded the operand order as an
+    // open instruction-order difference -- it was never the scale/load order,
+    // only the add's operand order, and `+=` is the lever.
     register u32 addr __asm__("r0") = (r0 << 5);
     addr += (u32)(uintptr_t)base;
     *(volatile u16 *)(addr + 6)  = (u16)r1;
