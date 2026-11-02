@@ -21,7 +21,7 @@ extern void sub_0802B214(int v);
 extern int sub_0800572C(int v);
 extern s16 sub_080258A8(int idx);
 
-HOST_STUB(void _08002B368(u16 v));                                              // 0x08002B368 sound cue
+HOST_STUB(void _0802B368(u16 v));                                               // 0x0802B368 sound cue
 HOST_STUB(void _08002B214(int v));                                              // 0x08002B214 sound wake
 HOST_STUB(void *_08004B68(void));                                               // 0x08004B68 scene mgr
 HOST_STUB(void _08007B18(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h)); // 0x08007B18 emit
@@ -60,246 +60,166 @@ static inline void W32(volatile u8 *p, u32 o, u32 v) { *(volatile u32 *)(p + o) 
 
 // ----------------------------------------------------------------------------
 // ---- 0x08001EE2C — key/counter handler: setup latches + lane walk ----
-// Pools: {WA 0x03001780, table 0x080CBC24}. r0=rec, r1 dead, r2=(u16)c.
-// Entry snapshots: r7=u16[rec+142], r8=u16[rec+136] (compared at the tail).
+// C, EXACT 384/384 on both gates (`make matching-slice`, `make full-rom-match`).
+// Pools: {WA 0x03001780, lane table 0x080CBC24}. r0=rec, r1 dead, r2=(u16)c.
+// Entry snapshots: prev142 = u16[rec+142], p136 = rec+136, prev136 = *p136.
 //
-// MEASURED 2026-10-29: C reaches 131/384 bytes (382 B candidate, first diff
-// +0x0A); the body has NO structural blocker left. Five spellings were
-// measured and are the levers to reuse:
-//  * `int c0` parameter + a named `u16 k = (u16)c0;` puts the narrowing after
-//    the rec copy (`adds r4,r0 / lsls r2,r2,#16`), which a `u16` parameter
-//    cannot: agbcc narrows parameters ahead of every user statement.
-//  * a plain (`volatile`-free) `s16` read through a `u16 *p = rec + 136`
-//    local gives the ROM's `movs rX,#0 / ldrsh rY,[p,rX]` index form; the
-//    volatile form emits `ldrh + lsls/asrs` instead. The `u16`-typed reads on
-//    the same cell must stay `volatile` or agbcc CSEs the two clamp loads.
-//  * the ROM's runtime `0xFC0` add (`movs r2,#252 / lsls r2,#4 / adds`) needs
-//    a laundered base: `u8 *wa = (u8 *)0x03001780u; __asm__ volatile ("" :
-//    "+r" (wa));` then `*(u16 *)(wa + 0xFC0)`. Any plain literal or symbol
-//    sum folds into ONE pool word (0x03002740) and loses the pair.
-//  * the four 10/0 stores want `u32 ten = 10; u32 zero = 0;` per block (one
-//    materialisation reused by both stores); function-scope locals spend a
-//    callee-saved register and reorder the whole frame.
-//  * the k==64 arm's merged store is reproduced with a label + `goto`
-//    (`if (z == 0) { nv = 3; goto store64; }`), not with if/else-if.
-// Residual is allocation only: key/p land r5/r6 against the ROM's r6/r5
-// (pinning p to r5 gives 131 but costs two rows elsewhere), the entry
-// `ldrh r7` is loaded via r0, the lane base and the `v` re-read schedule a
-// couple of instructions later, and the tail wants the ROM's fresh-base copy
-// (`adds r0,r4 / adds r0,#136 / movs r3,#0 / ldrsh r1,[r0,r3] / adds r2,r0`)
-// rather than reusing p. A `--sweep` over v/st/q/prev142/prev136 (2 rounds,
-// beam 2) reaches 123 on the pre-grid body; the grid above is the better base.
+// The measured levers, in the order they matter:
+//  * `int c0` + a named `u16 k = (u16)c0;` keeps the narrowing after the rec
+//    copy (`adds r4,r0` runs first). A `u16` parameter narrows ahead of every
+//    statement and costs 4 bytes at +0x6.
+//  * The second half re-reads the cell as `int v = *(s16 *)(rec + 136);` and
+//    only then assigns `p`. Reading through `p` lets the allocator keep the
+//    entry pointer and drop the ROM's fresh `adds r0,r4 / adds r0,#136` pair,
+//    and an `s16` local keeps the value in HImode, emitting `ldrh` plus shifts
+//    instead of the ROM's `ldrsh`.
+//  * The two pool bases are pinned (`wa` r1, `tab` r2): unpinned, agbcc swaps
+//    the two pool loads and the lookup block inverts. One `"+r"(wa)` laundry
+//    is needed with them -- with neither variable laundered the loads reorder
+//    and the body loses 8 bytes.
+//  * In the `k == 1` arm the 10/0 materialisations interleave with their
+//    stores; hoisting both to the top of the block swaps the first two and
+//    costs 4 bytes.
+//  * `*p = *p + n` (not a named sum) stores the halfword before the signed
+//    narrow compare (`ldrh / add / strh / lsls / asrs / cmp`), the ROM's clamp.
+//  * The `k == 64` arm's shared store is a `switch` on the signed field: its
+//    two case bodies merge into one `strh` exactly as the ROM's do.
+//  * `q` pinned to r3 is the ROM's tail copy of `p` (`adds r3,r2,#0`); the
+//    clamps read and store through it. Unpinned, it coalesces into `p`.
+//  * An empty asm after the `k == 32` arm and after the `k == 64` arm stops
+//    cross-jump merging their stores into the later lanes' stores.
+//  * The span ends in `00 00`, so the file-scope `.align 2, 0` after the body
+//    supplies the zero fill instead of gas's Thumb `46 c0` nop.
 // ----------------------------------------------------------------------------
-__attribute__((naked)) void _08001EE2C(void *rec0, u16 b, u16 c) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "\tpush\t{r4, r5, r6, r7, lr}\n"
-        "\tmov\tr7, r8\n"
-        "\tpush\t{r7}\n"
-        "\tadds\tr4, r0, #0\n"
-        "\tlsls\tr2, r2, #16\n"
-        "\tlsrs\tr6, r2, #16\n"
-        "\tadds\tr0, #142\n"
-        "\tldrh\tr7, [r0, #0]\n"
-        "\tadds\tr5, r4, #0\n"
-        "\tadds\tr5, #136\n"
-        "\tldrh\tr0, [r5, #0]\n"
-        "\tmov\tr8, r0\n"
-        "\tcmp\tr6, #2\n"
-        "\tbne .Lx_08001ee2c_08001EE5A\n"
-        "\tmovs\tr1, #10\n"
-        "\tstr\tr1, [r4, #24]\n"
-        "\tmovs\tr0, #0\n"
-        "\tstrh\tr0, [r4, #28]\n"
-        "\tstr\tr1, [r4, #56]\n"
-        "\tstr\tr0, [r4, #52]\n"
-        "\tmovs\tr0, #4\n"
-        "\tbl 0x0802B368\n"
-        ".Lx_08001ee2c_08001EE5A:\n"
-        "\tcmp\tr6, #1\n"
-        "\tbne .Lx_08001ee2c_08001EECE\n"
-        "\tmovs\tr1, #0\n"
-        "\tldrsh\tr0, [r5, r1]\n"
-        "\tcmp\tr0, #7\n"
-        "\tbgt .Lx_08001ee2c_08001EEB8\n"
-        "\tlsls\tr0, r0, #1\n"
-        "\tadds\tr1, r4, #0\n"
-        "\tadds\tr1, #144\n"
-        "\tadds\tr1, r1, r0\n"
-        "\tldrh\tr0, [r1, #0]\n"
-        "\tcmp\tr0, #0\n"
-        "\tbeq .Lx_08001ee2c_08001EEB0\n"
-        "\tmovs\tr1, #10\n"
-        "\tstr\tr1, [r4, #24]\n"
-        "\tmovs\tr0, #0\n"
-        "\tstrh\tr0, [r4, #28]\n"
-        "\tstr\tr1, [r4, #56]\n"
-        "\tstr\tr6, [r4, #52]\n"
-        "\tadds\tr1, r4, #0\n"
-        "\tadds\tr1, #138\n"
-        "\tmovs\tr0, #4\n"
-        "\tstrh\tr0, [r1, #0]\n"
-        "\tldr r1, .Lx_08001ee2c_08001EEA8\n"
-        "\tldr r2, .Lx_08001ee2c_08001EEAC\n"
-        "\tmovs\tr3, #0\n"
-        "\tldrsh\tr0, [r5, r3]\n"
-        "\tlsls\tr0, r0, #1\n"
-        "\tadds\tr0, r0, r2\n"
-        "\tldrh\tr0, [r0, #0]\n"
-        "\tmovs\tr2, #252\n"
-        "\tlsls\tr2, r2, #4\n"
-        "\tadds\tr1, r1, r2\n"
-        "\tstrh\tr0, [r1, #0]\n"
-        "\tmovs\tr0, #1\n"
-        "\tbl 0x0802B368\n"
-        "\tb .Lx_08001ee2c_08001EECE\n"
-        "\tmovs\tr0, r0\n"
-        ".Lx_08001ee2c_08001EEA8: .word 0x03001780\n"
-        ".Lx_08001ee2c_08001EEAC: .word 0x080CBC24\n"
-        ".Lx_08001ee2c_08001EEB0:\n"
-        "\tmovs\tr0, #10\n"
-        "\tbl 0x0802B368\n"
-        "\tb .Lx_08001ee2c_08001EECE\n"
-        ".Lx_08001ee2c_08001EEB8:\n"
-        "\tcmp\tr0, #8\n"
-        "\tbne .Lx_08001ee2c_08001EECE\n"
-        "\tmovs\tr1, #10\n"
-        "\tstr\tr1, [r4, #24]\n"
-        "\tmovs\tr0, #0\n"
-        "\tstrh\tr0, [r4, #28]\n"
-        "\tstr\tr1, [r4, #56]\n"
-        "\tstr\tr0, [r4, #52]\n"
-        "\tmovs\tr0, #1\n"
-        "\tbl 0x0802B368\n"
-        ".Lx_08001ee2c_08001EECE:\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tadds\tr0, #136\n"
-        "\tmovs\tr3, #0\n"
-        "\tldrsh\tr1, [r0, r3]\n"
-        "\tadds\tr2, r0, #0\n"
-        "\tcmp\tr6, #32\n"
-        "\tbne .Lx_08001ee2c_08001EEF0\n"
-        "\tldrh\tr0, [r2, #0]\n"
-        "\tcmp\tr0, #8\n"
-        "\tbne .Lx_08001ee2c_08001EEE8\n"
-        "\tmovs\tr0, #3\n"
-        "\tstrh\tr0, [r2, #0]\n"
-        "\tb .Lx_08001ee2c_08001EEF0\n"
-        ".Lx_08001ee2c_08001EEE8:\n"
-        "\tsubs\tr1, #4\n"
-        "\tcmp\tr1, #0\n"
-        "\tblt .Lx_08001ee2c_08001EEF0\n"
-        "\tstrh\tr1, [r2, #0]\n"
-        ".Lx_08001ee2c_08001EEF0:\n"
-        "\tcmp\tr6, #16\n"
-        "\tbne .Lx_08001ee2c_08001EF08\n"
-        "\tldrh\tr3, [r2, #0]\n"
-        "\tcmp\tr3, #8\n"
-        "\tbne .Lx_08001ee2c_08001EF00\n"
-        "\tmovs\tr0, #7\n"
-        "\tstrh\tr0, [r2, #0]\n"
-        "\tb .Lx_08001ee2c_08001EF08\n"
-        ".Lx_08001ee2c_08001EF00:\n"
-        "\tadds\tr1, #4\n"
-        "\tcmp\tr1, #7\n"
-        "\tbgt .Lx_08001ee2c_08001EF08\n"
-        "\tstrh\tr1, [r2, #0]\n"
-        ".Lx_08001ee2c_08001EF08:\n"
-        "\tadds\tr1, r4, #0\n"
-        "\tadds\tr1, #142\n"
-        "\tcmp\tr6, #64\n"
-        "\tbne .Lx_08001ee2c_08001EF3C\n"
-        "\tldrh\tr0, [r2, #0]\n"
-        "\tcmp\tr0, #8\n"
-        "\tbne .Lx_08001ee2c_08001EF2C\n"
-        "\tmovs\tr4, #0\n"
-        "\tldrsh\tr0, [r1, r4]\n"
-        "\tcmp\tr0, #0\n"
-        "\tbeq .Lx_08001ee2c_08001EF24\n"
-        "\tcmp\tr0, #1\n"
-        "\tbeq .Lx_08001ee2c_08001EF28\n"
-        "\tb .Lx_08001ee2c_08001EF3C\n"
-        ".Lx_08001ee2c_08001EF24:\n"
-        "\tmovs\tr0, #3\n"
-        "\tb .Lx_08001ee2c_08001EF3A\n"
-        ".Lx_08001ee2c_08001EF28:\n"
-        "\tmovs\tr0, #7\n"
-        "\tb .Lx_08001ee2c_08001EF3A\n"
-        ".Lx_08001ee2c_08001EF2C:\n"
-        "\tsubs\tr0, #1\n"
-        "\tstrh\tr0, [r2, #0]\n"
-        "\tlsls\tr0, r0, #16\n"
-        "\tasrs\tr0, r0, #16\n"
-        "\tcmp\tr0, #3\n"
-        "\tbne .Lx_08001ee2c_08001EF3C\n"
-        "\tmovs\tr0, #4\n"
-        ".Lx_08001ee2c_08001EF3A:\n"
-        "\tstrh\tr0, [r2, #0]\n"
-        ".Lx_08001ee2c_08001EF3C:\n"
-        "\tcmp\tr6, #128\n"
-        "\tbne .Lx_08001ee2c_08001EF52\n"
-        "\tldrh\tr0, [r2, #0]\n"
-        "\tadds\tr0, #1\n"
-        "\tstrh\tr0, [r2, #0]\n"
-        "\tlsls\tr0, r0, #16\n"
-        "\tasrs\tr0, r0, #16\n"
-        "\tcmp\tr0, #4\n"
-        "\tbne .Lx_08001ee2c_08001EF52\n"
-        "\tmovs\tr0, #8\n"
-        "\tstrh\tr0, [r2, #0]\n"
-        ".Lx_08001ee2c_08001EF52:\n"
-        "\tadds\tr3, r2, #0\n"
-        "\tldrh\tr0, [r3, #0]\n"
-        "\tcmp\tr0, #3\n"
-        "\tbhi .Lx_08001ee2c_08001EF5E\n"
-        "\tmovs\tr0, #0\n"
-        "\tstrh\tr0, [r1, #0]\n"
-        ".Lx_08001ee2c_08001EF5E:\n"
-        "\tldrh\tr0, [r3, #0]\n"
-        "\tsubs\tr0, #4\n"
-        "\tlsls\tr0, r0, #16\n"
-        "\tlsrs\tr0, r0, #16\n"
-        "\tcmp\tr0, #3\n"
-        "\tbhi .Lx_08001ee2c_08001EF6E\n"
-        "\tmovs\tr0, #1\n"
-        "\tstrh\tr0, [r1, #0]\n"
-        ".Lx_08001ee2c_08001EF6E:\n"
-        "\tmovs\tr4, #0\n"
-        "\tldrsh\tr0, [r3, r4]\n"
-        "\tcmp\tr0, #0\n"
-        "\tbgt .Lx_08001ee2c_08001EF7A\n"
-        "\tmovs\tr0, #0\n"
-        "\tstrh\tr0, [r3, #0]\n"
-        ".Lx_08001ee2c_08001EF7A:\n"
-        "\tmovs\tr4, #0\n"
-        "\tldrsh\tr0, [r3, r4]\n"
-        "\tcmp\tr0, #7\n"
-        "\tble .Lx_08001ee2c_08001EF86\n"
-        "\tmovs\tr0, #8\n"
-        "\tstrh\tr0, [r3, #0]\n"
-        ".Lx_08001ee2c_08001EF86:\n"
-        "\tldrh\tr1, [r1, #0]\n"
-        "\tcmp\tr1, r7\n"
-        "\tbeq .Lx_08001ee2c_08001EF94\n"
-        "\tmovs\tr0, #3\n"
-        "\tbl 0x0802B368\n"
-        "\tb .Lx_08001ee2c_08001EFA0\n"
-        ".Lx_08001ee2c_08001EF94:\n"
-        "\tldrh\tr2, [r2, #0]\n"
-        "\tcmp\tr2, r8\n"
-        "\tbeq .Lx_08001ee2c_08001EFA0\n"
-        "\tmovs\tr0, #2\n"
-        "\tbl 0x0802B368\n"
-        ".Lx_08001ee2c_08001EFA0:\n"
-        "\tpop\t{r3}\n"
-        "\tmov\tr8, r3\n"
-        "\tpop\t{r4, r5, r6, r7}\n"
-        "\tpop\t{r0}\n"
-        "\tbx\tr0\n"
-        "\tmovs\tr0, r0\n"
-        ".syntax divided\n"
-    );
+void _08001EE2C(void *rec0, int b0, int c0) {
+    u8 *rec;
+    u16 k;
+    u16 prev142;
+    u16 prev136;
+    u16 *p136;
+
+    (void)b0;
+    rec = (u8 *)rec0;
+    k = (u16)c0;
+    prev142 = *(u16 *)(rec + 142);
+    p136 = (u16 *)(rec + 136);
+    prev136 = *p136;
+
+    if (k == 2) {
+        u32 ten;
+        u32 zero;
+        ten = 10;
+        __asm__ volatile ("" : "+r" (ten));
+        *(u32 *)(rec + 24) = ten;
+        zero = 0;
+        __asm__ volatile ("" : "+r" (zero));
+        *(u16 *)(rec + 28) = (u16)zero;
+        *(u32 *)(rec + 56) = ten;
+        *(u32 *)(rec + 52) = zero;
+        _0802B368(4);
+    }
+    if (k == 1) {
+        struct RecTab { u8 pad[144]; u16 tab[8]; };
+        int v;
+        v = *(s16 *)p136;
+        if (v <= 7) {
+            if (((struct RecTab *)rec)->tab[v] != 0) {
+                u32 ten2;
+                u32 zero2;
+                ten2 = 10;
+                *(u32 *)(rec + 24) = ten2;
+                zero2 = 0;
+                *(u16 *)(rec + 28) = (u16)zero2;
+                *(u32 *)(rec + 56) = ten2;
+                *(u32 *)(rec + 52) = k;
+                *(u16 *)(rec + 138) = 4;
+                {
+                    register u8 *wa __asm__("r1") = (u8 *)0x03001780u;
+                    register u16 *tab __asm__("r2") = (u16 *)0x080CBC24u;
+                    int sv;
+                    u16 val;
+                    __asm__ volatile ("" : "+r" (wa));
+                    sv = *(s16 *)p136;
+                    val = tab[sv];
+                    *(u16 *)(wa + 0xFC0) = val;
+                }
+                _0802B368(1);
+            } else {
+                _0802B368(10);
+            }
+        } else {
+            if (v == 8) {
+                u32 ten3;
+                u32 zero3;
+                ten3 = 10;
+                *(u32 *)(rec + 24) = ten3;
+                zero3 = 0;
+                *(u16 *)(rec + 28) = (u16)zero3;
+                *(u32 *)(rec + 56) = ten3;
+                *(u32 *)(rec + 52) = zero3;
+                _0802B368(1);
+            }
+        }
+    }
+
+    {
+        int v = *(s16 *)(rec + 136);
+        u16 *p = (u16 *)(rec + 136);
+        if (k == 32) {
+            if (*p == 8) {
+                *p = 3;
+            } else {
+                v = v - 4;
+                if (v >= 0) *p = (u16)v;
+            }
+        }
+        __asm__ volatile ("");
+        if (k == 16) {
+            if (*p == 8) {
+                *p = 7;
+            } else {
+                v = v + 4;
+                if (v <= 7) *p = (u16)v;
+            }
+        }
+        __asm__ volatile ("");
+        {
+            u16 *p142 = (u16 *)(rec + 142);
+            if (k == 64) {
+                if (*p == 8) {
+                    switch (*(s16 *)p142) {
+                    case 0: *p = 3; break;
+                    case 1: *p = 7; break;
+                    }
+                } else {
+                    *p = (u16)(*p - 1);
+                    if (*(s16 *)p == 3) *p = 4;
+                }
+            }
+            __asm__ volatile ("");
+            if (k == 128) {
+                *p = (u16)(*p + 1);
+                if (*(s16 *)p == 4) *p = 8;
+            }
+            {
+                register u16 *q __asm__("r3") = p;
+                if (*q <= 3) *p142 = 0;
+                if ((u16)(*q - 4) <= 3) *p142 = 1;
+                if (*(s16 *)q <= 0) *q = 0;
+                if (*(s16 *)q > 7) *q = 8;
+                if (*p142 != prev142) {
+                    _0802B368(3);
+                } else {
+                    if (*p != prev136) _0802B368(2);
+                }
+            }
+        }
+    }
 }
+// The ROM pads the 382-byte body with `00 00`; gas would close the section
+// with the Thumb nop `46 c0`. A file-scope `.align 2, 0` lands after the
+// body's `.size` in the same section and pads with the explicit zero fill.
+__asm__(".align 2, 0");
 
 // ----------------------------------------------------------------------------
 // ---- 0x08001EFAC — big scene assembly: 7B18/7BFC chains + grid loops ----

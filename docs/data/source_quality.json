@@ -8155,11 +8155,10 @@
    "size": 644
   },
   "0x0801ee2c": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 182,
-    "naked": true
+    "barrier": 6,
+    "pin": 3
    },
    "file": "src/race_scene_d2.c",
    "name": "_08001EE2C",
@@ -9212,11 +9211,11 @@
    "size": 76
   },
   "0x080241c8": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 165,
-    "naked": true
+    "barrier": 11,
+    "directive": 1,
+    "pin": 15
    },
    "file": "src/save.c",
    "name": "SaveUpdate_080241C8",
@@ -13220,16 +13219,16 @@
  },
  "totals": {
   "asm": {
-   "bytes": 47780,
-   "functions": 125
+   "bytes": 47028,
+   "functions": 123
   },
   "c": {
    "bytes": 44326,
    "functions": 876
   },
   "c_fakematch": {
-   "bytes": 95830,
-   "functions": 671
+   "bytes": 96582,
+   "functions": 673
   },
   "partial": {
    "bytes": 200,

@@ -1577,190 +1577,194 @@ clear_grid_row:
 void sub_0802446C(void) __attribute__((alias("SaveHook_0802446C")));
 void _0802446C(void) __attribute__((alias("SaveHook_0802446C")));
 
-// Zone-grid updater — substantiated §10.1 (asm 0x241C8)
-// Loops k∈{0,1} c∈0..3: v=_08025D64(k,c) → grids, plus _0800A9A0/_0800A9E0 side effects.
-__attribute__((naked)) void SaveUpdate_080241C8(void) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push\t{r4, r5, r6, r7, lr}\n"
-        "mov\tr7, sl\n"
-        "mov\tr6, r9\n"
-        "mov\tr5, r8\n"
-        "push\t{r5, r6, r7}\n"
-        "sub\tsp, #8\n"
-        "movs\tr7, #0\n"
-        "ldr r0, _080024240\n"
-        "mov\tr8, r0\n"
-        "movs\tr1, #255\n"
-        "lsls\tr1, r1, #4\n"
-        "add\tr1, r8\n"
-        "mov\tsl, r1\n"
-        ".Lsave241c8_0800241E2:\n"
-        "movs\tr5, #0\n"
-        "lsls\tr2, r7, #3\n"
-        "mov\tr9, r2\n"
-        "adds\tr0, r7, #1\n"
-        "str\tr0, [sp, #0]\n"
-        ".Lsave241c8_0800241EC:\n"
-        "adds\tr0, r7, #0\n"
-        "adds\tr1, r5, #0\n"
-        "bl 0x08025D64\n"
-        "lsls\tr2, r5, #1\n"
-        "mov\tr1, r9\n"
-        "adds\tr3, r2, r1\n"
-        "ldr r6, _080024244\n"
-        "add\tr6, r8\n"
-        "adds\tr1, r3, r6\n"
-        "strh\tr0, [r1, #0]\n"
-        "lsls\tr0, r0, #16\n"
-        "asrs\tr0, r0, #16\n"
-        "str\tr2, [sp, #4]\n"
-        "cmp\tr0, #11\n"
-        "bne .Lsave241c8_0800242A4\n"
-        "ldr r0, _080024248\n"
-        "add\tr0, r8\n"
-        "adds\tr0, r3, r0\n"
-        "movs\tr3, #1\n"
-        "strh\tr3, [r0, #0]\n"
-        "adds\tr0, r5, #1\n"
-        "ldr r1, _08002424C\n"
-        "add\tr1, r8\n"
-        "strh\tr0, [r1, #0]\n"
-        "adds\tr4, r0, #0\n"
-        "cmp\tr7, #0\n"
-        "bne .Lsave241c8_080024274\n"
-        "mov\tr2, sl\n"
-        "movs\tr0, #0\n"
-        "ldrsh\tr2, [r2, r0]\n"
-        "cmp\tr2, #0\n"
-        "bne .Lsave241c8_080024254\n"
-        "lsls\tr0, r4, #16\n"
-        "asrs\tr0, r0, #16\n"
-        "ldr r2, _080024250\n"
-        "adds\tr6, r6, r2\n"
-        "cmp\tr0, #3\n"
-        "ble .Lsave241c8_0800242B4\n"
-        "movs\tr0, #3\n"
-        "strh\tr0, [r1, #0]\n"
-        "b .Lsave241c8_0800242B4\n"
-        "_080024240: .word 0x03001780\n"
-        "_080024244: .word 0x00000FFA\n"
-        "_080024248: .word 0x0000101A\n"
-        "_08002424C: .word 0x00000FF6\n"
-        "_080024250: .word 0xFFFFF006\n"
-        ".Lsave241c8_080024254:\n"
-        "lsls\tr0, r4, #16\n"
-        "asrs\tr0, r0, #16\n"
-        "ldr r2, _08002426C\n"
-        "adds\tr6, r6, r2\n"
-        "cmp\tr0, #3\n"
-        "ble .Lsave241c8_0800242B4\n"
-        "strh\tr7, [r1, #0]\n"
-        "ldr r0, _080024270\n"
-        "add\tr0, r8\n"
-        "strh\tr3, [r0, #0]\n"
-        "b .Lsave241c8_0800242B4\n"
-        "movs\tr0, r0\n"
-        "_08002426C: .word 0xFFFFF006\n"
-        "_080024270: .word 0x00000FF2\n"
-        ".Lsave241c8_080024274:\n"
-        "mov\tr0, sl\n"
-        "ldrh\tr0, [r0, #0]\n"
-        "cmp\tr0, #1\n"
-        "bne .Lsave241c8_080024288\n"
-        "lsls\tr0, r4, #16\n"
-        "asrs\tr0, r0, #16\n"
-        "cmp\tr0, #3\n"
-        "ble .Lsave241c8_080024288\n"
-        "movs\tr0, #3\n"
-        "strh\tr0, [r1, #0]\n"
-        ".Lsave241c8_080024288:\n"
-        "movs\tr1, #1\n"
-        "mov\tr2, sl\n"
-        "strh\tr1, [r2, #0]\n"
-        "ldr r0, _08002429C\n"
-        "add\tr0, r8\n"
-        "strh\tr1, [r0, #0]\n"
-        "ldr r1, _0800242A0\n"
-        "adds\tr6, r0, r1\n"
-        "b .Lsave241c8_0800242B4\n"
-        "movs\tr0, r0\n"
-        "_08002429C: .word 0x00000FF2\n"
-        "_0800242A0: .word 0xFFFFF00E\n"
-        ".Lsave241c8_0800242A4:\n"
-        "ldr r0, _0800242D4\n"
-        "add\tr0, r8\n"
-        "adds\tr0, r3, r0\n"
-        "movs\tr2, #0\n"
-        "strh\tr2, [r0, #0]\n"
-        "ldr r0, _0800242D8\n"
-        "adds\tr6, r6, r0\n"
-        "adds\tr4, r5, #1\n"
-        ".Lsave241c8_0800242B4:\n"
-        "ldr\tr2, [sp, #4]\n"
-        "add\tr2, r9\n"
-        "ldr r1, _0800242DC\n"
-        "adds\tr0, r6, r1\n"
-        "adds\tr0, r2, r0\n"
-        "movs\tr1, #0\n"
-        "ldrsh\tr0, [r0, r1]\n"
-        "cmp\tr0, #2\n"
-        "ble .Lsave241c8_0800242E4\n"
-        "ldr r1, _0800242E0\n"
-        "adds\tr0, r6, r1\n"
-        "adds\tr0, r2, r0\n"
-        "movs\tr1, #1\n"
-        "strh\tr1, [r0, #0]\n"
-        "b .Lsave241c8_0800242EE\n"
-        "movs\tr0, r0\n"
-        "_0800242D4: .word 0x0000101A\n"
-        "_0800242D8: .word 0xFFFFF006\n"
-        "_0800242DC: .word 0x00000FFA\n"
-        "_0800242E0: .word 0x0000102A\n"
-        ".Lsave241c8_0800242E4:\n"
-        "ldr r1, _080024334\n"
-        "adds\tr0, r6, r1\n"
-        "adds\tr0, r2, r0\n"
-        "movs\tr2, #0\n"
-        "strh\tr2, [r0, #0]\n"
-        ".Lsave241c8_0800242EE:\n"
-        "adds\tr0, r7, #0\n"
-        "adds\tr1, r5, #0\n"
-        "bl 0x0800A9A0\n"
-        "adds\tr2, r0, #0\n"
-        "adds\tr0, r7, #0\n"
-        "adds\tr1, r5, #0\n"
-        "bl 0x08002714\n"
-        "adds\tr0, r7, #0\n"
-        "adds\tr1, r5, #0\n"
-        "bl 0x0800A9E0\n"
-        "adds\tr2, r0, #0\n"
-        "adds\tr0, r7, #0\n"
-        "adds\tr1, r5, #0\n"
-        "bl 0x080026DC\n"
-        "adds\tr5, r4, #0\n"
-        "cmp\tr5, #3\n"
-        "bgt .Lsave241c8_08002431A\n"
-        "b .Lsave241c8_0800241EC\n"
-        ".Lsave241c8_08002431A:\n"
-        "ldr\tr7, [sp, #0]\n"
-        "cmp\tr7, #1\n"
-        "bgt .Lsave241c8_080024322\n"
-        "b .Lsave241c8_0800241E2\n"
-        ".Lsave241c8_080024322:\n"
-        "add\tsp, #8\n"
-        "pop\t{r3, r4, r5}\n"
-        "mov\tr8, r3\n"
-        "mov\tr9, r4\n"
-        "mov\tsl, r5\n"
-        "pop\t{r4, r5, r6, r7}\n"
-        "pop\t{r0}\n"
-        "bx\tr0\n"
-        "movs\tr0, r0\n"
-        "_080024334: .word 0x0000102A\n"
-        ".syntax divided\n"
-    );
+// Zone-grid updater — 0x080241C8 (368 B, EXACT). 2x4 cells: v = _08025D64(k, c)
+// seeds grids WA+0xFFA / WA+0x101A / WA+0x102A and the 0xFF0/0xFF2/0xFF6 state
+// words, with _0800A9A0/_0800A9E0 side effects per cell.
+//
+// Measured levers (all needed for the byte match, keep them):
+//  * Pool split: the ROM keeps WA and each displacement in its own word. A
+//    folded `0x03001780 + off` collapses to one `ldr`, so every displacement
+//    that owns a pool word is an absolute symbol (the WA_SPLIT recipe of
+//    src/race_scene_b1.c); 0xFF0 has no word and stays `0xFF; lsls #4`.
+//  * `struct { s32 k; u32 c2; } kf` is the ROM's 8-byte frame: k+1 at sp+0 and
+//    c2 at sp+4, spilled after the grid-1 store and reloaded for grid 3.
+//  * The grid-3 index reuses the spilled `c2` (reload + add k8) rather than a
+//    second temp; that is what puts it in r2 like the ROM.
+//  * Two liveness pins pick the ROM's scratch registers: `h1` on r1 forces the
+//    grid-1/grid-3 zero stores to rematerialise into r2, and `hold` on r3 keeps
+//    the `k+1` hoist out of r3 (findings/indexed_halfword_scratch.md).
+//  * `one` + `"+r"` barrier orders the `movs r1,#1` before the `mov r2,sl`
+//    state-flag store; a plain `*ws = 1` emits the copy first.
+__asm__(".set SaveWABase, 0x03001780");
+extern u8 SaveWABase;
+__asm__(".set SaveWAOffFF2, 0x00000FF2");
+extern u8 SaveWAOffFF2;
+__asm__(".set SaveWAOffFF6, 0x00000FF6");
+extern u8 SaveWAOffFF6;
+__asm__(".set SaveWAOffFFA, 0x00000FFA");
+extern u8 SaveWAOffFFA;
+__asm__(".set SaveWAOff101A, 0x0000101A");
+extern u8 SaveWAOff101A;
+__asm__(".set SaveWAOff102A, 0x0000102A");
+extern u8 SaveWAOff102A;
+__asm__(".set SaveWAOffNegFFA, 0xFFFFF006");
+extern u8 SaveWAOffNegFFA;
+__asm__(".set SaveWAOffNegFFA2, 0xFFFFF006");
+extern u8 SaveWAOffNegFFA2;
+__asm__(".set SaveWAOffNegFF2, 0xFFFFF00E");
+extern u8 SaveWAOffNegFF2;
+// The splicer keeps only the function section, so the anchors are also defined
+// in-body (a file-scope `.set` does not reach the promoted TU).
+#define SAVE_WA_DECL                                                       \
+    __asm__(".globl SaveWABase\nSaveWABase = 0x03001780\n"                 \
+            ".globl SaveWAOffFF2\nSaveWAOffFF2 = 0x00000FF2\n"             \
+            ".globl SaveWAOffFF6\nSaveWAOffFF6 = 0x00000FF6\n"             \
+            ".globl SaveWAOffFFA\nSaveWAOffFFA = 0x00000FFA\n"             \
+            ".globl SaveWAOff101A\nSaveWAOff101A = 0x0000101A\n"           \
+            ".globl SaveWAOff102A\nSaveWAOff102A = 0x0000102A\n"           \
+            ".globl SaveWAOffNegFFA\nSaveWAOffNegFFA = 0xFFFFF006\n"       \
+            ".globl SaveWAOffNegFFA2\nSaveWAOffNegFFA2 = 0xFFFFF006\n"     \
+            ".globl SaveWAOffNegFF2\nSaveWAOffNegFF2 = 0xFFFFF00E\n")
+
+void SaveUpdate_080241C8(void) {
+    extern int _08025D64(int a, int b);
+    extern int _0800A9A0(int t, int r);
+    extern int _0800A9E0(int t, int r);
+    extern void _08002714(int type, int row, int value);
+    extern void _080026DC(int type, int row, int value);
+    SAVE_WA_DECL;
+    {
+    register u32 wa __asm__("r8");
+    register u32 g __asm__("r6");
+    register u16 *wastate __asm__("sl");
+    s32 k;
+    struct { s32 k; u32 c2; } kf;
+    s32 c;
+    register s32 k8 __asm__("r9");
+    register s32 kt __asm__("r2");
+    s32 c2;
+    s32 idx;
+    u32 o;
+    register u32 pa __asm__("r0");
+    u16 *pcnt;
+    register s32 cnt __asm__("r0");
+    register s32 cnt4 __asm__("r4");
+    register s32 hold __asm__("r3");
+    register u32 goff __asm__("r2");
+    register s16 *wp __asm__("r2");
+    register u16 *ws __asm__("r2");
+    register s32 h1 __asm__("r1");
+    u16 one;
+    register s32 knext __asm__("r0");
+
+    k = 0;
+    wa = (u32)&SaveWABase;
+    o = 0x0FF0u;
+    o += wa;
+    wastate = (u16 *)(uintptr_t)o;
+    while (k <= 1) {
+        c = 0;
+        kt = k << 3;
+        __asm__ volatile ("" : "+r"(kt));
+        k8 = kt;
+        __asm__ volatile ("" : "=r"(hold));
+        knext = k + 1;
+        __asm__ volatile ("" : "+r"(knext));
+        kf.k = knext;
+        __asm__ volatile ("" : : "r"(hold));
+        do {
+            u32 v;
+
+            v = (u32)_08025D64(k, c);
+            c2 = c << 1;
+            idx = c2 + k8;
+            o = (u32)&SaveWAOffFFA;
+            g = o;
+            g += wa;
+            *(u16 *)(uintptr_t)(idx + g) = (u16)v;
+            { s32 sv = (s16)v; __asm__ volatile ("" : : "r"(sv));
+              kf.c2 = (u32)c2;
+              if (sv == 11) {
+                { register u32 p2 __asm__("r0");
+                  p2 = (u32)&SaveWAOff101A;
+                  p2 += wa;
+                  p2 = idx + p2;
+                  idx = 1;
+                  *(u16 *)(uintptr_t)p2 = (u16)idx; }
+                cnt = c + 1;
+                pcnt = (u16 *)(uintptr_t)((uintptr_t)wa + (uintptr_t)&SaveWAOffFF6);
+                *pcnt = (u16)cnt;
+                cnt4 = cnt;
+                if (k == 0) {
+                    wp = (s16 *)wastate;
+                    if (*wp == 0) {
+                        s32 cnts = (s16)cnt4;
+                        goff = (u32)&SaveWAOffNegFFA;
+                        g = g + goff;
+                        if (cnts > 3) {
+                            *pcnt = 3;
+                        }
+                    } else {
+                        s32 cnts2 = (s16)cnt4;
+                        goff = (u32)&SaveWAOffNegFFA2;
+                        g = g + goff;
+                        if (cnts2 > 3) {
+                            *pcnt = 0;
+                            pa = (u32)&SaveWAOffFF2;
+                            pa += wa;
+                            *(u16 *)(uintptr_t)pa = 1;
+                        }
+                    }
+                } else {
+                    if (*wastate == 1 && (s16)cnt4 > 3) {
+                        *pcnt = 3;
+                    }
+                    one = 1;
+                    __asm__ volatile ("" : "+r"(one));
+                    ws = wastate;
+                    *ws = one;
+                    pa = (u32)&SaveWAOffFF2;
+                    pa += wa;
+                    *(u16 *)(uintptr_t)pa = one;
+                    o = (u32)&SaveWAOffNegFF2;
+                    g = pa + o;
+                    pa = 0;
+                }
+            } else {
+                pa = (u32)&SaveWAOff101A;
+                pa += wa;
+                __asm__ volatile ("" : "=r"(h1));
+                *(u16 *)(uintptr_t)(idx + pa) = 0;
+                __asm__ volatile ("" : : "r"(h1));
+                g = g + (u32)&SaveWAOffNegFFA;
+                cnt = c + 1;
+                cnt4 = c + 1;
+            } }
+            c2 = (s32)kf.c2 + k8;
+            o = (u32)&SaveWAOffFFA;
+            pa = g + o;
+            if (*(s16 *)(uintptr_t)(c2 + pa) > 2) {
+                o = (u32)&SaveWAOff102A;
+                pa = g + o;
+                *(u16 *)(uintptr_t)(c2 + pa) = 1;
+                __asm__ volatile ("");
+            } else {
+                o = (u32)&SaveWAOff102A;
+                pa = g + o;
+                __asm__ volatile ("" : "=r"(h1));
+                *(u16 *)(uintptr_t)(c2 + pa) = 0;
+                __asm__ volatile ("" : : "r"(h1));
+            }
+
+            _08002714(k, c, _0800A9A0(k, c));
+            _080026DC(k, c, _0800A9E0(k, c));
+            c = cnt4;
+        } while (c <= 3);
+        k = kf.k;
+    }
+    }
 }
+
 void _080241C8(void) __attribute__((alias("SaveUpdate_080241C8")));
 void Sub_080241C8(void) __attribute__((alias("SaveUpdate_080241C8")));
 void sub_080241C8(void) __attribute__((alias("SaveUpdate_080241C8")));
