@@ -45,27 +45,33 @@ void SoundPump(void){
     countdown = root[11];
     root[4] = (u8)countdown;
 
-    register volatile u32 *dma __asm__("r2") =
-        (volatile u32 *)(uintptr_t)0x040000BCu;
-    register u32 dmaCount __asm__("r1") = dma[2];
-    dmaCount <<= 7;
-    __asm__ volatile ("" : "+r"(dmaCount));
-    /* BCC consumes the shift's carry (original DMA word bit 25). */
-    __asm__ volatile (".syntax unified\nbcc .Lsound_pump_rearm\n.syntax divided" : : : "cc");
-    register u32 prime __asm__("r1") = 0x84400004u;
-    __asm__ volatile ("" : "+r"(prime));
-    *(volatile u32 *)(dma + 2) = prime;
-    __asm__ volatile (".syntax unified\n.Lsound_pump_rearm:\n.syntax divided");
+    {
+        register volatile u32 *dma __asm__("r2") =
+            (volatile u32 *)(uintptr_t)0x040000BCu;
+        register u32 dmaCount __asm__("r1") = dma[2];
+        dmaCount <<= 7;
+        __asm__ volatile ("" : "+r"(dmaCount));
+        /* BCC consumes the shift's carry (original DMA word bit 25). */
+        __asm__ volatile (".syntax unified\nbcc .Lsound_pump_rearm\n.syntax divided" : : : "cc");
+        {
+            register u32 prime __asm__("r1") = 0x84400004u;
+            __asm__ volatile ("" : "+r"(prime));
+            *(volatile u32 *)(dma + 2) = prime;
+            __asm__ volatile (".syntax unified\n.Lsound_pump_rearm:\n.syntax divided");
 
-    register u32 control __asm__("r1") = 4;
-    __asm__ volatile ("" : "+r"(control));
-    control <<= 8;
-    *(volatile u16 *)((volatile u8 *)dma + 10) = (u16)control;
-    control = 182;
-    control <<= 8;
-    *(volatile u16 *)((volatile u8 *)dma + 10) = (u16)control;
-pump_done:
-    __asm__ volatile (".syntax unified\n.Lsound_pump_done:\n.syntax divided");
+            {
+                register u32 control __asm__("r1") = 4;
+                __asm__ volatile ("" : "+r"(control));
+                control <<= 8;
+                *(volatile u16 *)((volatile u8 *)dma + 10) = (u16)control;
+                control = 182;
+                control <<= 8;
+                *(volatile u16 *)((volatile u8 *)dma + 10) = (u16)control;
+            pump_done:
+                __asm__ volatile (".syntax unified\n.Lsound_pump_done:\n.syntax divided");
+            }
+        }
+    }
 }
 
 void _0802BE78(void) __attribute__((alias("SoundPump")));
@@ -102,9 +108,9 @@ void sub_0802C53C(void) __attribute__((alias("SoundThunk")));
 // additionally fixes the parameter allocation as a side effect: with r3 bound to
 // the guard, the zero-extension pair collapses to the ROM's in-place
 // `lsls r1,r1,#16 / lsrs r1,r1,#16`, so both divergent stores fall back to r1.
-// One pin per body -- the C89 transform cannot handle two in one declaration
-// block. The pin is inert on the host: clang accepts the register name and
-// ignores it.
+// One pin per body, each in its own declaration block, the measured shape.
+// The pin is inert on the host: clang accepts the register name and ignores
+// it.
 void SoundPauseGateOff(void *state){
     volatile u32 *s = (volatile u32 *)state;
     register u32 g __asm__("r3"); // ROM `ldr r3,[r2,#52]` at +0x02 / `cmp r3,r0`

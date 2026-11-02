@@ -54,11 +54,13 @@ int SoundDA20_Setup(u32 dev, void *state){
     u32 d = (u8)dev;
     if (d > 3) return 1;
     *(volatile u8 *)0x03001768u = (u8)d;
-    volatile u32 *dst = (volatile u32 *)0x03001770u;
-    u32 b = *(volatile u8 *)0x03001768u;
-    *dst = 0x04000100u + (b << 2);
-    *(volatile u32 *)st = 0x0802D9FDu;
-    return 0;
+    {
+        volatile u32 *dst = (volatile u32 *)0x03001770u;
+        u32 b = *(volatile u8 *)0x03001768u;
+        *dst = 0x04000100u + (b << 2);
+        *(volatile u32 *)st = 0x0802D9FDu;
+        return 0;
+    }
 }
 int _0802DA20(u32 d, void *s) __attribute__((alias("SoundDA20_Setup")));
 int sub_0802DA20(u32 d, void *s) __attribute__((alias("SoundDA20_Setup")));
@@ -97,17 +99,23 @@ void SoundDB24_Setup(u32 sad, u32 dad, u16 cnt){
             volatile u16 *st1 = (volatile u16 *)((volatile u8 *)cc + 2);
             register u32 b1 __asm__("r2") = 0x8000u;
             __asm__ volatile ("" : "+r" (b1));
-            register u32 t __asm__("r0") = b1;
-            __asm__ volatile ("" : "+r" (t));
-            register u32 v __asm__("r1") = *st1;
-            __asm__ volatile ("" : "+r" (v));
-            if ((t & v) != 0) {
-                volatile u16 *st = (volatile u16 *)0x040000DEu;
-                register u32 b2t __asm__("r0") = (u32)0x80 << 8;
-                __asm__ volatile ("" : "+r" (b2t));
-                register u32 b2 __asm__("r1") = b2t;
-                __asm__ volatile ("" : "+r" (b2));
-                while ((b2 & *st) != 0) { }
+            {
+                register u32 t __asm__("r0") = b1;
+                __asm__ volatile ("" : "+r" (t));
+                {
+                    register u32 v __asm__("r1") = *st1;
+                    __asm__ volatile ("" : "+r" (v));
+                    if ((t & v) != 0) {
+                        volatile u16 *st = (volatile u16 *)0x040000DEu;
+                        register u32 b2t __asm__("r0") = (u32)0x80 << 8;
+                        __asm__ volatile ("" : "+r" (b2t));
+                        {
+                            register u32 b2 __asm__("r1") = b2t;
+                            __asm__ volatile ("" : "+r" (b2));
+                            while ((b2 & *st) != 0) { }
+                        }
+                    }
+                }
             }
         }
     }
@@ -345,21 +353,25 @@ int SoundDD30_Compare(u32 sector, void *buf){
     {
         u16 tmp[4];
         sub_0802DBA4(sec, tmp);
-        volatile u16 *p = (volatile u16 *)b;
-        volatile u16 *q = (volatile u16 *)tmp;
-        u8 i = 0;
-        goto body;
-        do {
-            i = (u8)(i + 1);
-test:
-            if (i > 3) break;
-body:
-            u16 x = *p;
-            u16 y = *q;
-            q++;
-            p++;
-            if (x != y) { rc = 0x8000u; break; }
-        } while (1);
+        {
+            volatile u16 *p = (volatile u16 *)b;
+            volatile u16 *q = (volatile u16 *)tmp;
+            u8 i = 0;
+            goto body;
+            do {
+                i = (u8)(i + 1);
+    test:
+                if (i > 3) break;
+    body:
+                {
+                    u16 x = *p;
+                    u16 y = *q;
+                    q++;
+                    p++;
+                    if (x != y) { rc = 0x8000u; break; }
+                }
+            } while (1);
+        }
     }
     return (int)rc;
 }

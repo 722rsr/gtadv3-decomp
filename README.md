@@ -27,8 +27,8 @@ Two separate questions have two separate answers:
 
 | Source form | Functions | Bytes | Share of code | Counts as decompiled |
 | --- | ---: | ---: | ---: | :---: |
-| Plain C | 876 | 44,326 | 23.48% | yes |
-| C with matching tricks (empty barriers, register pins, directives) | 673 | 96,582 | 51.17% | yes |
+| Plain C | 877 | 44,418 | 23.53% | yes |
+| C with matching tricks (empty barriers, register pins, directives) | 672 | 96,490 | 51.12% | yes |
 | C with instructions spliced in through `asm()` | 4 | 200 | 0.11% | no |
 | Assembly in C files (naked or asm-dominated bodies) | 123 | 47,028 | 24.91% | no |
 | Identified function not yet selected for C | 0 | 0 | 0.00% | no |
@@ -44,9 +44,11 @@ functions count as decompiled, but they are listed for cleanup. Run
 largest functions first.
 
 The reference build (`make`) produces a byte-identical ROM from reconstructed
-assembly and registered data generators. `make matching-ready` compiles the C
-corpus with pinned `old_agbcc` and verifies the selected functions in an
-independent executable slice. Byte matching measures emitted bytes, not source
+assembly and registered data generators. Maintained C is C89 for the pinned
+compiler and is compiled directly, with no C99-to-C89 rewrite step;
+`tools/c89_check.py` gates every translation unit. `make matching-ready`
+compiles the C corpus with pinned `old_agbcc` and verifies the selected
+functions in an independent executable slice. Byte matching measures emitted bytes, not source
 readability. The [integrated data regions](docs/data-integration.md) cover all
 cataloged data through content end `0x7B04C4` (7,873,388 non-padding bytes).
 Some compressed or raw payloads are preserved verbatim or extracted from the
@@ -82,7 +84,8 @@ sudo apt-get install build-essential git clang python3 python3-venv \
 ```
 
 The [Ubuntu ARM compiler package](https://packages.ubuntu.com/noble/gcc-arm-none-eabi)
-provides the modern compiler used for source-equivalence checks.
+provides the `arm-none-eabi` assembler, linker, and object tools used by the
+matching build.
 
 On macOS, install Apple's Command Line Tools and [Homebrew](https://brew.sh/),
 then install Python and the [ARM toolchain](https://formulae.brew.sh/cask/gcc-arm-embedded):

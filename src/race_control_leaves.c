@@ -8,6 +8,11 @@
 
 // ---- code_22e4 leaves — owner is ai_catalog.c (Ai_IdMap) per asm/code_22e4.s:7
 // Duplicate alias removed; use ai_catalog's Ai_IdMap via extern.
+extern void _080023E78(void *a);
+extern void _0800DBE8(void *a);
+extern u32 _08002140(void);
+extern void _08001EC8(void*,int);
+extern void _080016D0(int);
 extern int Ai_IdMap(int v);
 
 // 0x08022CB4 is implemented as CarRecEventReset_22CB4 in
@@ -25,7 +30,7 @@ void Code2254_Wrapper0(void){
     volatile u8 *p = (volatile u8*)(uintptr_t)(*slot);
     int zero = 0;
     *p = (u8)zero;
-    extern void _080016D0(int); _080016D0(zero);
+     _080016D0(zero);
 }
 void _08002254(void) __attribute__((alias("Code2254_Wrapper0")));
 void sub_08002254(void) __attribute__((alias("Code2254_Wrapper0")));
@@ -38,12 +43,14 @@ void Code2254_Wrapper1(void *a, int b){
     volatile u32 *cell = (volatile u32*)(uintptr_t)0x030000F4;
     u8 *p = (u8 *)(uintptr_t)(*cell);
     p[1] = 1;
-    int off = 8;
-    s16 v = *(s16 *)(uintptr_t)((u8 *)(uintptr_t)(*cell) + off);
-    extern void _08001F80(int); _08001F80((int)v);
-    // ROM: _08001EC8 keeps r0 as a record pointer and treats r1 as a number
-    // (adds r0,r1; +11; UDiv 0x0802DF6C) — so a=P, b=S.
-    extern void _08001EC8(void*,int); _08001EC8(a,b);
+    {
+        int off = 8;
+        s16 v = *(s16 *)(uintptr_t)((u8 *)(uintptr_t)(*cell) + off);
+        extern void _08001F80(int); _08001F80((int)v);
+        // ROM: _08001EC8 keeps r0 as a record pointer and treats r1 as a number
+        // (adds r0,r1; +11; UDiv 0x0802DF6C) — so a=P, b=S.
+         _08001EC8(a,b);
+    }
 }
 void _0800226C(void *a,int b) __attribute__((alias("Code2254_Wrapper1")));
 void sub_0800226C(void *a,int b) __attribute__((alias("Code2254_Wrapper1")));
@@ -119,24 +126,28 @@ void Code23E7C(void *ctx){
     __asm__("" : "+r" (waOffset));
     waAddr += waOffset;
     __asm__("" : "+r" (waAddr));
-    u16 phase = *(volatile u16 *)waAddr;
-    if (phase != 3) goto ret;
-    u32 v240 = *(volatile u32*)((uintptr_t)ctx + 240);
-    if (v240 != 1) goto ret;
-    extern u32 _08002140(void);
-    if (_08002140() != 2) {
-        volatile u32 *p236 = (volatile u32*)((uintptr_t)ctx + 236);
-        int v = (int)*p236 + 1;
-        *p236 = (u32)v;
-        if (v > 180) {
-            extern void _08004D4C(u32 a, u32 b, u32 c);
-            _08004D4C(21,0,0);
+    {
+        u16 phase = *(volatile u16 *)waAddr;
+        if (phase != 3) goto ret;
+        {
+            u32 v240 = *(volatile u32*)((uintptr_t)ctx + 240);
+            if (v240 != 1) goto ret;
+
+            if (_08002140() != 2) {
+                volatile u32 *p236 = (volatile u32*)((uintptr_t)ctx + 236);
+                int v = (int)*p236 + 1;
+                *p236 = (u32)v;
+                if (v > 180) {
+                    extern void _08004D4C(u32 a, u32 b, u32 c);
+                    _08004D4C(21,0,0);
+                }
+            } else {
+                *(volatile u32*)((uintptr_t)ctx + 236) = 0;
+            }
+        ret:
+            return;
         }
-    } else {
-        *(volatile u32*)((uintptr_t)ctx + 236) = 0;
     }
-ret:
-    return;
 }
 // The ROM span ends with 00 00 after BX LR; request zero-fill, not Thumb NOP.
 __asm__(".align 2, 0");
@@ -295,37 +306,41 @@ void Code23D4C(void *ctx){
     extern void sub_080023E78(void *a);
 
     _0800D97C(context + 136, 15);
-    u8 *table = (u8 *)(uintptr_t)0x080CC178u;
-    u8 *record140 = context + 140;
-    int offset = ((s16 *)record140)[0] << 3;
-    u8 *table4 = table + 4;
-    u32 first = *(u32 *)(table4 + offset);
-    u32 second = *(u32 *)(context + 168);
-    sub_080023AE4(context, (int)first, (int)second);
+    {
+        u8 *table = (u8 *)(uintptr_t)0x080CC178u;
+        u8 *record140 = context + 140;
+        int offset = ((s16 *)record140)[0] << 3;
+        u8 *table4 = table + 4;
+        u32 first = *(u32 *)(table4 + offset);
+        u32 second = *(u32 *)(context + 168);
+        sub_080023AE4(context, (int)first, (int)second);
 
-    int offset2 = ((s16 *)record140)[0] << 3;
-    u32 secondTableFirst = *(u32 *)(table + offset2);
-    u32 secondTableNext = *(u32 *)(table4 + offset2);
-    sub_080023B60(context, (int)secondTableFirst, (int)secondTableNext);
-    _0800DBE8(context + 16);
+        {
+            int offset2 = ((s16 *)record140)[0] << 3;
+            u32 secondTableFirst = *(u32 *)(table + offset2);
+            u32 secondTableNext = *(u32 *)(table4 + offset2);
+            sub_080023B60(context, (int)secondTableFirst, (int)secondTableNext);
+            _0800DBE8(context + 16);
 
-    if (*(volatile u16 *)(context + 144) == 1) {
-        slot158 = context + 158;
-        if (*(volatile u16 *)slot158 == 1)
-            sub_080023C54(context, ((s16 *)(context + 166))[0]);
-        _080022D44(context, context + 176, 64);
-        value = (u16)(*(volatile u16 *)slot158 - 5);
-        if (value <= 3) {
-            product = _080022CC() * 100;
-            if (product < 0)
-                product += 0xFFF;
-            _08003978(128, 96, 100 - (product >> 12));
+            if (*(volatile u16 *)(context + 144) == 1) {
+                slot158 = context + 158;
+                if (*(volatile u16 *)slot158 == 1)
+                    sub_080023C54(context, ((s16 *)(context + 166))[0]);
+                _080022D44(context, context + 176, 64);
+                value = (u16)(*(volatile u16 *)slot158 - 5);
+                if (value <= 3) {
+                    product = _080022CC() * 100;
+                    if (product < 0)
+                        product += 0xFFF;
+                    _08003978(128, 96, 100 - (product >> 12));
+                }
+            }
+
+            if (*(volatile u16 *)(context + 158) == 12)
+                sub_08023144(context);
+            sub_080023E78(context);
         }
     }
-
-    if (*(volatile u16 *)(context + 158) == 12)
-        sub_08023144(context);
-    sub_080023E78(context);
 }
 void _080023D4C(void *a) __attribute__((alias("Code23D4C")));
 void _08023D4C(void *a) __attribute__((alias("Code23D4C")));
@@ -343,31 +358,37 @@ void Code23E0C(void *ctx){
     // folds the offset. The scaled byte offset is kept in an int so the table
     // arithmetic stays `lsls #3 / adds`, and base/base+4 are locals live
     // across the 23AE4 call so they sit in callee-saved r4/r6 as the ROM shows.
-    u8 *tbl = (u8 *)(uintptr_t)0x080CC178u;
-    u8 *p140 = (u8 *)ctx + 140;
-    int off = ((s16 *)p140)[0] << 3;
-    u8 *tbl4 = tbl + 4;
-    u32 w4 = *(u32 *)(tbl4 + off);
-    u32 v168 = *(u32 *)((u8 *)ctx + 168);
-    extern void _08023AE4(void *a, int b, int c);
-    _08023AE4(ctx, (int)w4, (int)v168);
-    // Second +140 load for 23B60 (reloaded after the call, not reused).
-    int off2 = ((s16 *)p140)[0] << 3;
-    u32 w0 = *(u32 *)(tbl + off2);
-    u32 w4b = *(u32 *)(tbl4 + off2);
-    extern void sub_080023B60(void *a, int b, int c);
-    sub_080023B60(ctx, (int)w0, (int)w4b);
-    // ctx+16 -> 0x0800DBE8
-    extern void _0800DBE8(void *a);
-    _0800DBE8((void*)((uintptr_t)ctx + 16));
-    // ctx+144 u16 guard; ROM: r1 = ctx+176 pointer (asm/code_23e0c.s:46-50)
-    u16 v144 = *(volatile u16*)((uintptr_t)ctx + 144);
-    if (v144 == 1) {
-        extern void _08022D44(void *a, void *b, int c);
-        _08022D44(ctx, (void *)((uintptr_t)ctx + 176), 64);
+    {
+        u8 *tbl = (u8 *)(uintptr_t)0x080CC178u;
+        u8 *p140 = (u8 *)ctx + 140;
+        int off = ((s16 *)p140)[0] << 3;
+        u8 *tbl4 = tbl + 4;
+        u32 w4 = *(u32 *)(tbl4 + off);
+        u32 v168 = *(u32 *)((u8 *)ctx + 168);
+        extern void _08023AE4(void *a, int b, int c);
+        _08023AE4(ctx, (int)w4, (int)v168);
+        // Second +140 load for 23B60 (reloaded after the call, not reused).
+        {
+            int off2 = ((s16 *)p140)[0] << 3;
+            u32 w0 = *(u32 *)(tbl + off2);
+            u32 w4b = *(u32 *)(tbl4 + off2);
+            extern void sub_080023B60(void *a, int b, int c);
+            sub_080023B60(ctx, (int)w0, (int)w4b);
+            // ctx+16 -> 0x0800DBE8
+
+            _0800DBE8((void*)((uintptr_t)ctx + 16));
+            // ctx+144 u16 guard; ROM: r1 = ctx+176 pointer (asm/code_23e0c.s:46-50)
+            {
+                u16 v144 = *(volatile u16*)((uintptr_t)ctx + 144);
+                if (v144 == 1) {
+                    extern void _08022D44(void *a, void *b, int c);
+                    _08022D44(ctx, (void *)((uintptr_t)ctx + 176), 64);
+                }
+
+                _080023E78(ctx);
+            }
+        }
     }
-    extern void _080023E78(void *a);
-    _080023E78(ctx);
 }
 void _080023E0C(void *a) __attribute__((alias("Code23E0C")));
 void _08023E0C(void *a) __attribute__((alias("Code23E0C")));

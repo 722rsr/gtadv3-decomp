@@ -25,14 +25,16 @@ void SoundBD30_Rewind(void *dummy, void *chan){
     register u32 idx asm("r2");
     register volatile u8 *base asm("r3");
     (void)dummy;
-    volatile u8 *c = (volatile u8*)chan;
-    idx = c[2];
-    if(idx == 0) return;
-    idx--;
-    c[2] = (u8)idx;
-    base = c + idx * 4;
-    idx = *(volatile u32*)(base + 68);
-    *(volatile u32*)(c + 64) = idx;
+    {
+        volatile u8 *c = (volatile u8*)chan;
+        idx = c[2];
+        if(idx == 0) return;
+        idx--;
+        c[2] = (u8)idx;
+        base = c + idx * 4;
+        idx = *(volatile u32*)(base + 68);
+        *(volatile u32*)(c + 64) = idx;
+    }
 }
 void _0802BD30(void *a, void *b) __attribute__((alias("SoundBD30_Rewind")));
 void sub_0802BD30(void *a, void *b) __attribute__((alias("SoundBD30_Rewind")));

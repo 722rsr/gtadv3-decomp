@@ -1,16 +1,12 @@
 #!/usr/bin/env python3
-"""Scope: how much of the C corpus can agbcc compile at all, and what fails?
+"""Diagnostic: which maintained translation units does agbcc accept, and why not?
 
-The de-risk probes showed agbcc byte-matches game leaves. Before committing to a
-migration, two things have to be measured on the *real* corpus rather than on
-hand-written probes:
-
-1. How many of the 152 translation units does agbcc even accept? agbcc is C89;
-   the corpus uses declaration-in-`for` in 68 files.
-2. Once accepted, how many functions does it actually reproduce byte-for-byte?
-
-This tool answers (1) mechanically and (2) for the pool-free subset, and reports
-both as counts so the migration can be scoped honestly.
+The corpus is maintained in C89, so a complete run is 154/154. This tool exists
+for the case where that is not true: it names the rejection barrier per file
+(declaration-in-`for`, declaration-after-statement, `inline`, `long long`, or a
+parse error) so a source regression is localized instead of hidden behind one
+aggregate failure. `tools/c89_check.py` is the pass/fail gate; this report is
+the per-file breakdown used to fix one.
 """
 from __future__ import annotations
 
@@ -33,7 +29,7 @@ def run(argv, stdout=None):
 
 
 def classify_error(stderr: str) -> str:
-    """Name the C89 barrier that blocked this file, for the migration backlog."""
+    """Name the C89 barrier that blocked this file, for the regression report."""
     first = stderr.strip().splitlines()
     text = " ".join(first[:6])
     if "for loop initial declarations" in text or "only declares in for loop" in text:
@@ -81,7 +77,7 @@ def main() -> int:
             barriers.setdefault(reason, []).append(src.name)
 
     total = len(files)
-    print(f"agbcc acceptance over the real C corpus: {total} translation units\n")
+    print(f"agbcc acceptance over the maintained C corpus: {total} translation units\n")
     print(f"  accepted : {len(ok)}/{total}  ({100*len(ok)/total:.0f}%)")
     print(f"  rejected : {len(failed)}/{total}  ({100*len(failed)/total:.0f}%)\n")
     if barriers:

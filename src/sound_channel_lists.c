@@ -301,10 +301,13 @@ void SoundChannel_WalkFree(void *state){
     volatile u8 *s = (volatile u8*)state;
     u8 cnt = s[8]; // +8 u8 via ldrb [r7+8] u8
     void *arr = *(void**)(s + 44); // +44 void* via ldr [r7+44] u32
-    for(u32 i=0;i<cnt;i++){
-        volatile u8 *ch = (volatile u8*)arr + i*0x50; // 0x50 stride via adds r5,r5,r0 0x50
-        if((ch[0] & 0x80)==0) continue; // u8 +0 &0x80 gate via tst 0x80
-        // Vibrato beyond +0x19 etc. remains TODO where +0x19 vs +0x1C overlap not proven, so stop at gate
+    {
+        u32 i = 0;
+        for (;i<cnt;i++){
+            volatile u8 *ch = (volatile u8*)arr + i*0x50; // 0x50 stride via adds r5,r5,r0 0x50
+            if((ch[0] & 0x80)==0) continue; // u8 +0 &0x80 gate via tst 0x80
+            // Vibrato beyond +0x19 etc. remains TODO where +0x19 vs +0x1C overlap not proven, so stop at gate
+        }
     }
 }
 // The canonical 0x0802BEB4 body is owned by sound_core.c. Keep these

@@ -9,23 +9,27 @@ int Ai_LineSumA(const void *rec){
     const s8 *r = (const s8 *)rec;
     extern const u8 LineScoreTable[];
     __asm__(".globl LineScoreTable\nLineScoreTable = 0x080CD6A8\n");
-    const u8 *tbl = LineScoreTable;
-    const u8 *p2 = tbl + r[2] * 8;
-    const u8 *p6 = tbl + r[6] * 8 + 33;
-    register int v2 __asm__("r1") = p2[1];
-    __asm__("" : "+r"(v2));
-    register int v6 __asm__("r0") = *p6;
-    register int sum __asm__("r0");
-    /* Keep v6 live so agbcc emits the ROM's r1 + r0 operand order. */
-    __asm__("" : "+r"(v6));
-    sum = v2 + v6;
-    sum += (tbl + r[4] * 8)[65];
-    sum += (tbl + r[7] * 8)[97];
-    sum += (tbl + r[5] * 8)[129];
-    sum += (tbl + r[9] * 8)[161];
-    sum += (tbl + r[3] * 8)[193];
-    sum += (tbl + r[8] * 8)[225];
-    return (s8)sum;
+    {
+        const u8 *tbl = LineScoreTable;
+        const u8 *p2 = tbl + r[2] * 8;
+        const u8 *p6 = tbl + r[6] * 8 + 33;
+        register int v2 __asm__("r1") = p2[1];
+        __asm__("" : "+r"(v2));
+        {
+            register int v6 __asm__("r0") = *p6;
+            register int sum __asm__("r0");
+            /* Keep v6 live so agbcc emits the ROM's r1 + r0 operand order. */
+            __asm__("" : "+r"(v6));
+            sum = v2 + v6;
+            sum += (tbl + r[4] * 8)[65];
+            sum += (tbl + r[7] * 8)[97];
+            sum += (tbl + r[5] * 8)[129];
+            sum += (tbl + r[9] * 8)[161];
+            sum += (tbl + r[3] * 8)[193];
+            sum += (tbl + r[8] * 8)[225];
+            return (s8)sum;
+        }
+    }
 }
 __asm__(".align 2, 0");
 int _080255C4(const void *a) __attribute__((alias("Ai_LineSumA")));
@@ -36,23 +40,27 @@ int Ai_LineSumB(const void *rec){
     const s8 *r = (const s8 *)rec;
     extern const u8 LineScoreTable[];
     __asm__(".globl LineScoreTable\nLineScoreTable = 0x080CD6A8\n");
-    const u8 *tbl = LineScoreTable;
-    const u8 *p2 = tbl + r[2] * 8;
-    const u8 *p6 = tbl + r[6] * 8 + 32;
-    register int v2 __asm__("r1") = p2[0];
-    __asm__("" : "+r"(v2));
-    register int v6 __asm__("r0") = *p6;
-    register int sum __asm__("r0");
-    /* Keep v6 live so agbcc emits the ROM's r1 + r0 operand order. */
-    __asm__("" : "+r"(v6));
-    sum = v2 + v6;
-    sum += (tbl + r[4] * 8)[64];
-    sum += (tbl + r[7] * 8)[96];
-    sum += (tbl + r[5] * 8)[128];
-    sum += (tbl + r[9] * 8)[160];
-    sum += (tbl + r[3] * 8)[192];
-    sum += (tbl + r[8] * 8)[224];
-    return (s8)sum;
+    {
+        const u8 *tbl = LineScoreTable;
+        const u8 *p2 = tbl + r[2] * 8;
+        const u8 *p6 = tbl + r[6] * 8 + 32;
+        register int v2 __asm__("r1") = p2[0];
+        __asm__("" : "+r"(v2));
+        {
+            register int v6 __asm__("r0") = *p6;
+            register int sum __asm__("r0");
+            /* Keep v6 live so agbcc emits the ROM's r1 + r0 operand order. */
+            __asm__("" : "+r"(v6));
+            sum = v2 + v6;
+            sum += (tbl + r[4] * 8)[64];
+            sum += (tbl + r[7] * 8)[96];
+            sum += (tbl + r[5] * 8)[128];
+            sum += (tbl + r[9] * 8)[160];
+            sum += (tbl + r[3] * 8)[192];
+            sum += (tbl + r[8] * 8)[224];
+            return (s8)sum;
+        }
+    }
 }
 __asm__(".align 2, 0");
 int _08025640(const void *a) __attribute__((alias("Ai_LineSumB")));
@@ -61,7 +69,10 @@ int Sub_08025640(const void *a) __attribute__((alias("Ai_LineSumB")));
 // _0802581C / _08002581C — find course index by scanning 0x080600CC
 int Ai_LineFindCourse(int id){
     const s16 *tbl=(const s16*)(uintptr_t)0x080600CCu;
-    for(int i=0;i<=31;++i) if(id==tbl[i]) return (s16)i;
+    {
+        int i = 0;
+        for (;i<=31;++i) if(id==tbl[i]) return (s16)i;
+    }
     return 0;
 }
 int _0802581C(int a) __attribute__((alias("Ai_LineFindCourse")));
@@ -108,7 +119,10 @@ s16 _0802586C(int a) __attribute__((alias("Ai_LineLookupC")));
 // `(s16)` on the return); only the table, the stride and the bound differ.
 int Ai_LineFindIn6010C(int id){
     const s16 *t=(const s16*)(uintptr_t)0x0806010Cu;
-    for(int i=0;i<=2;++i) if(id==t[i*4]) return (s16)i;
+    {
+        int i = 0;
+        for (;i<=2;++i) if(id==t[i*4]) return (s16)i;
+    }
     return 0;
 }
 int _0802587C(int a) __attribute__((alias("Ai_LineFindIn6010C")));
@@ -154,21 +168,25 @@ int Ai_Line25750(int a, int b, int c) {
     if (a != 0) {
         extern const u8 Ai_Tbl5FCAC[];
         __asm__(".globl Ai_Tbl5FCAC\nAi_Tbl5FCAC = 0x0805FCAC\n");
-        register const u8 *base __asm__("r2") = Ai_Tbl5FCAC;
-        register int c3 __asm__("r1") = c_reg * 3;
-        register int b33 __asm__("r0") = b_reg * 33;
-        int off = (b33 + c3) * 8;
-        base += 16;
-        return *(const int *)(off + (uintptr_t)base);
+        {
+            register const u8 *base __asm__("r2") = Ai_Tbl5FCAC;
+            register int c3 __asm__("r1") = c_reg * 3;
+            register int b33 __asm__("r0") = b_reg * 33;
+            int off = (b33 + c3) * 8;
+            base += 16;
+            return *(const int *)(off + (uintptr_t)base);
+        }
     } else {
         extern const u8 Ai_Tbl5FCAC[];
         __asm__(".globl Ai_Tbl5FCAC\nAi_Tbl5FCAC = 0x0805FCAC\n");
-        register const u8 *base __asm__("r2") = Ai_Tbl5FCAC;
-        register int c3 __asm__("r1") = c_reg * 3;
-        register int b33 __asm__("r0") = b_reg * 33;
-        int off = (b33 + c3) * 8;
-        base += 12;
-        return *(const int *)(off + (uintptr_t)base);
+        {
+            register const u8 *base __asm__("r2") = Ai_Tbl5FCAC;
+            register int c3 __asm__("r1") = c_reg * 3;
+            register int b33 __asm__("r0") = b_reg * 33;
+            int off = (b33 + c3) * 8;
+            base += 12;
+            return *(const int *)(off + (uintptr_t)base);
+        }
     }
 }
 int _08025750(int a,int b,int c) __attribute__((alias("Ai_Line25750")));
@@ -179,21 +197,25 @@ s16 Ai_Line25790(int a, int b, int c) {
     if (a != 0) {
         extern const u8 Ai_Tbl5FCAC[];
         __asm__(".globl Ai_Tbl5FCAC\nAi_Tbl5FCAC = 0x0805FCAC\n");
-        register const u8 *base __asm__("r2") = Ai_Tbl5FCAC;
-        register int c3 __asm__("r1") = c_reg * 3;
-        register int b33 __asm__("r0") = b_reg * 33;
-        int off = (b33 + c3) * 8;
-        const u8 *p = (const u8 *)(off + (uintptr_t)base);
-        return *(const s16 *)(p + 8);
+        {
+            register const u8 *base __asm__("r2") = Ai_Tbl5FCAC;
+            register int c3 __asm__("r1") = c_reg * 3;
+            register int b33 __asm__("r0") = b_reg * 33;
+            int off = (b33 + c3) * 8;
+            const u8 *p = (const u8 *)(off + (uintptr_t)base);
+            return *(const s16 *)(p + 8);
+        }
     } else {
         extern const u8 Ai_Tbl5FCAC[];
         __asm__(".globl Ai_Tbl5FCAC\nAi_Tbl5FCAC = 0x0805FCAC\n");
-        register const u8 *base __asm__("r2") = Ai_Tbl5FCAC;
-        register int c3 __asm__("r1") = c_reg * 3;
-        register int b33 __asm__("r0") = b_reg * 33;
-        int off = (b33 + c3) * 8;
-        const u8 *p = (const u8 *)(off + (uintptr_t)base);
-        return *(const s16 *)(p + 6);
+        {
+            register const u8 *base __asm__("r2") = Ai_Tbl5FCAC;
+            register int c3 __asm__("r1") = c_reg * 3;
+            register int b33 __asm__("r0") = b_reg * 33;
+            int off = (b33 + c3) * 8;
+            const u8 *p = (const u8 *)(off + (uintptr_t)base);
+            return *(const s16 *)(p + 6);
+        }
     }
 }
 s16 _08025790(int a,int b,int c) __attribute__((alias("Ai_Line25790")));

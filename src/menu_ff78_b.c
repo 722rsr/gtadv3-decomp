@@ -101,131 +101,133 @@ static inline u16  tbl16(int off, s16 idx) {
 extern const u16 MenuFF78Tbl10CB8[];
 void MenuFF78_10CB8(void *rec_, int a1, int a2) {
     __asm__(".globl MenuFF78Tbl10CB8\nMenuFF78Tbl10CB8 = 0x080CB55C\n");
-    u8 *rec = (u8 *)rec_;
-    int key = (u16)a2;
-    int old = *(u16 *)(rec + 168);
-    (void)a1;
+    {
+        u8 *rec = (u8 *)rec_;
+        int key = (u16)a2;
+        int old = *(u16 *)(rec + 168);
+        (void)a1;
 
-    switch (*(s16 *)(rec + 168)) {
-    case 0:
-        if (key == 2) _0800108D4(rec);
-        if (key == 1) {
-            *(u16 *)(rec + 168) = *(u16 *)(rec + 168) + 1;
-            _0802B368(1);
-            if (*(u16 *)(rec + 172) != *(u16 *)(rec + 176)) {
-                *(u16 *)(rec + 198) = 99;
-                *(u16 *)(rec + 200) = 99;
+        switch (*(s16 *)(rec + 168)) {
+        case 0:
+            if (key == 2) _0800108D4(rec);
+            if (key == 1) {
+                *(u16 *)(rec + 168) = *(u16 *)(rec + 168) + 1;
+                _0802B368(1);
+                if (*(u16 *)(rec + 172) != *(u16 *)(rec + 176)) {
+                    *(u16 *)(rec + 198) = 99;
+                    *(u16 *)(rec + 200) = 99;
+                }
+                *(u16 *)(rec + 176) = *(u16 *)(rec + 172);
             }
-            *(u16 *)(rec + 176) = *(u16 *)(rec + 172);
+            break;
+        case 1:
+            if (key == 2) {
+                *(u16 *)(rec + 168) = old - 1;
+                _0802B368(4);
+            }
+            if (key == 1) {
+                *(u16 *)(rec + 168) = *(u16 *)(rec + 168) + 1;
+                _0802B368(1);
+            }
+            break;
+        case 2:
+            if (key == 2) {
+                *(u16 *)(rec + 168) = old - 1;
+                _0802B368(4);
+            }
+            if (key == 1) {
+                *(u16 *)(rec + 168) = *(u16 *)(rec + 168) + 1;
+                _0802B368(1);
+            }
+            break;
+        case 3:
+            if (key == 2) {
+                *(u16 *)(rec + 168) = old - 1;
+                _0802B368(4);
+            }
+            if (key == 1) _0800108F0(rec);
+            break;
         }
-        break;
-    case 1:
-        if (key == 2) {
-            *(u16 *)(rec + 168) = old - 1;
-            _0802B368(4);
-        }
-        if (key == 1) {
-            *(u16 *)(rec + 168) = *(u16 *)(rec + 168) + 1;
-            _0802B368(1);
-        }
-        break;
-    case 2:
-        if (key == 2) {
-            *(u16 *)(rec + 168) = old - 1;
-            _0802B368(4);
-        }
-        if (key == 1) {
-            *(u16 *)(rec + 168) = *(u16 *)(rec + 168) + 1;
-            _0802B368(1);
-        }
-        break;
-    case 3:
-        if (key == 2) {
-            *(u16 *)(rec + 168) = old - 1;
-            _0802B368(4);
-        }
-        if (key == 1) _0800108F0(rec);
-        break;
-    }
-    if (*(s16 *)(rec + 168) > 4) *(u16 *)(rec + 168) = 4;
-    if (*(u16 *)(rec + 168) == old) return;
-    switch (*(s16 *)(rec + 168)) {
-    case 0:
-        *(u16 *)(rec + 190) = 99;
-        *(u16 *)(rec + 192) = 99;
-        _0800F810(rec);
-        break;
-    case 1:
-        if (*(u16 *)(rec + 172) == *(u16 *)(rec + 176)) {
-            ((struct MenuFF78Rec10CB8 *)rec)->fBe = *(u16 *)(rec + 198);
-            if (((struct MenuFF78Rec10CB8 *)rec)->fBe == 99)
+        if (*(s16 *)(rec + 168) > 4) *(u16 *)(rec + 168) = 4;
+        if (*(u16 *)(rec + 168) == old) return;
+        switch (*(s16 *)(rec + 168)) {
+        case 0:
+            *(u16 *)(rec + 190) = 99;
+            *(u16 *)(rec + 192) = 99;
+            _0800F810(rec);
+            break;
+        case 1:
+            if (*(u16 *)(rec + 172) == *(u16 *)(rec + 176)) {
+                ((struct MenuFF78Rec10CB8 *)rec)->fBe = *(u16 *)(rec + 198);
+                if (((struct MenuFF78Rec10CB8 *)rec)->fBe == 99)
+                    *(u16 *)(rec + 190) = (u16)_0800F700(*(s16 *)(rec + 188),
+                                                         _0800F744(0));
+            } else {
                 *(u16 *)(rec + 190) = (u16)_0800F700(*(s16 *)(rec + 188),
                                                      _0800F744(0));
-        } else {
-            *(u16 *)(rec + 190) = (u16)_0800F700(*(s16 *)(rec + 188),
-                                                 _0800F744(0));
-        }
-        {
-            int i = 0;
-            s16 *p188;
-            u32 tb;
-            u32 off;
-            u16 v;
-            u32 lt;
-            u8 *pa;
-            u8 *pb;
-            p188 = (s16 *)(rec + 188);
-            tb = 0x080CB566u;
-            for (; i < (s32)_0800F6D0(*p188); i++) {
-                u32 port;
-                off = i * 12;
-                lt = _0800F700(*p188, i);
-                pa = rec + 376;
-                *(u32 *)(pa + off) = v = *(u16 *)(uintptr_t)(lt * 2 + tb);
-                port = *(u32 *)(rec + 36);
-                pb = pa - 4;
-                _08007ABC((void *)(uintptr_t)port, v, *(u32 *)(pb + off));
             }
-        }
-        if (*(u16 *)(rec + 190) != 99) {
-            s16 tail = _0800F7EC(*(s16 *)(rec + 188), *(s16 *)(rec + 190));
-            *(u32 *)(rec + 352) = (u32)tail;
-            _08007ABC(*(void **)(rec + 36), tail, *(u32 *)(rec + 348));
-        }
-        _0800F810(rec);
-        break;
-    case 2:
-        if (*(u16 *)(rec + 172) == *(u16 *)(rec + 176)) {
-            ((struct MenuFF78Rec10CB8 *)rec)->fC0 = *(u16 *)(rec + 200);
-            if (((struct MenuFF78Rec10CB8 *)rec)->fC0 == 99)
+            {
+                int i = 0;
+                s16 *p188;
+                u32 tb;
+                u32 off;
+                u16 v;
+                u32 lt;
+                u8 *pa;
+                u8 *pb;
+                p188 = (s16 *)(rec + 188);
+                tb = 0x080CB566u;
+                for (; i < (s32)_0800F6D0(*p188); i++) {
+                    u32 port;
+                    off = i * 12;
+                    lt = _0800F700(*p188, i);
+                    pa = rec + 376;
+                    *(u32 *)(pa + off) = v = *(u16 *)(uintptr_t)(lt * 2 + tb);
+                    port = *(u32 *)(rec + 36);
+                    pb = pa - 4;
+                    _08007ABC((void *)(uintptr_t)port, v, *(u32 *)(pb + off));
+                }
+            }
+            if (*(u16 *)(rec + 190) != 99) {
+                s16 tail = _0800F7EC(*(s16 *)(rec + 188), *(s16 *)(rec + 190));
+                *(u32 *)(rec + 352) = (u32)tail;
+                _08007ABC(*(void **)(rec + 36), tail, *(u32 *)(rec + 348));
+            }
+            _0800F810(rec);
+            break;
+        case 2:
+            if (*(u16 *)(rec + 172) == *(u16 *)(rec + 176)) {
+                ((struct MenuFF78Rec10CB8 *)rec)->fC0 = *(u16 *)(rec + 200);
+                if (((struct MenuFF78Rec10CB8 *)rec)->fC0 == 99)
+                    ((struct MenuFF78Rec10CB8 *)rec)->fC0 = 0;
+            } else {
                 ((struct MenuFF78Rec10CB8 *)rec)->fC0 = 0;
-        } else {
-            ((struct MenuFF78Rec10CB8 *)rec)->fC0 = 0;
+            }
+            {
+                const u16 *tb;
+                u16 *row;
+                u32 *out;
+                u16 v;
+                s32 off2;
+                out = (u32 *)(rec + 364);
+                tb = MenuFF78Tbl10CB8;
+                off2 = *(s16 *)(rec + 192) * 2;
+                row = (u16 *)(uintptr_t)(tb + 10);
+                *out = v = *(u16 *)(uintptr_t)((u32)off2 + (u32)(uintptr_t)row);
+                _08007ABC(*(void **)(rec + 36), v, *(u32 *)(rec + 360));
+                *(u32 *)(rec + 376) = tb[10];
+                *(u32 *)(rec + 388) = tb[11];
+                *(u32 *)(rec + 400) = tb[12];
+            }
+            _08007ABC(*(void **)(rec + 36), *(u32 *)(rec + 376),
+                      *(u32 *)(rec + 372));
+            _08007ABC(*(void **)(rec + 36), *(u32 *)(rec + 388),
+                      *(u32 *)(rec + 384));
+            _08007ABC(*(void **)(rec + 36), *(u32 *)(rec + 400),
+                      *(u32 *)(rec + 396));
+            _0800F810(rec);
+            break;
         }
-        {
-            const u16 *tb;
-            u16 *row;
-            u32 *out;
-            u16 v;
-            s32 off2;
-            out = (u32 *)(rec + 364);
-            tb = MenuFF78Tbl10CB8;
-            off2 = *(s16 *)(rec + 192) * 2;
-            row = (u16 *)(uintptr_t)(tb + 10);
-            *out = v = *(u16 *)(uintptr_t)((u32)off2 + (u32)(uintptr_t)row);
-            _08007ABC(*(void **)(rec + 36), v, *(u32 *)(rec + 360));
-            *(u32 *)(rec + 376) = tb[10];
-            *(u32 *)(rec + 388) = tb[11];
-            *(u32 *)(rec + 400) = tb[12];
-        }
-        _08007ABC(*(void **)(rec + 36), *(u32 *)(rec + 376),
-                  *(u32 *)(rec + 372));
-        _08007ABC(*(void **)(rec + 36), *(u32 *)(rec + 388),
-                  *(u32 *)(rec + 384));
-        _08007ABC(*(void **)(rec + 36), *(u32 *)(rec + 400),
-                  *(u32 *)(rec + 396));
-        _0800F810(rec);
-        break;
     }
 }
 
@@ -243,68 +245,70 @@ void sub_080010CB8(void *a, int b, int c) __attribute__((alias("MenuFF78_10CB8")
 void MenuFF78_11214(void *rec_, int a1, int a2) {
     extern const u16 MenuFF78Table11214[];
     __asm__(".globl MenuFF78Table11214\nMenuFF78Table11214 = 0x080CB55C\n");
-    u8 *rec = (u8 *)rec_;
-    u16 keys = (u16)a1;
-    int d;
-
-    // Keeps rec in a register from function entry: otherwise the two +0xBA/
-    // +0xB4 addresses in the 0x10 arm are hoisted in the opposite order.
-    __asm__ volatile("" : "+r"(rec));
-    (void)a2;
-
-    if (keys & 32) {
-        if (*(s16 *)(rec + 186) <= 0) {
-            *(u16 *)(rec + 180) = (u16)(*(u16 *)(rec + 180) - 1);
-            *(u16 *)(rec + 186) = 10;
-        }
-    }
-    if (keys & 16) {
-        if (*(s16 *)(rec + 186) <= 0) {
-            *(u16 *)(rec + 180) = (u16)(*(u16 *)(rec + 180) + 1);
-            *(u16 *)(rec + 186) = 10;
-        }
-    }
-    d = *(u16 *)(rec + 186) - 1;
     {
-        u16 zero;
-        s16 cur;
-        u16 limit;
+        u8 *rec = (u8 *)rec_;
+        u16 keys = (u16)a1;
+        int d;
 
-        zero = 0;
-        *(u16 *)(rec + 186) = (u16)d;
-        if (*(s16 *)(rec + 186) <= 0)
-            *(u16 *)(rec + 186) = zero;
-        cur = *(s16 *)(rec + 180);
-        limit = *(u16 *)(rec + 184);
-        if (cur >= *(s16 *)(rec + 184))
-            *(u16 *)(rec + 180) = limit;
-        if (*(s16 *)(rec + 180) < 0)
-            *(u16 *)(rec + 180) = zero;
+        // Keeps rec in a register from function entry: otherwise the two +0xBA/
+        // +0xB4 addresses in the 0x10 arm are hoisted in the opposite order.
+        __asm__ volatile("" : "+r"(rec));
+        (void)a2;
+
+        if (keys & 32) {
+            if (*(s16 *)(rec + 186) <= 0) {
+                *(u16 *)(rec + 180) = (u16)(*(u16 *)(rec + 180) - 1);
+                *(u16 *)(rec + 186) = 10;
+            }
+        }
+        if (keys & 16) {
+            if (*(s16 *)(rec + 186) <= 0) {
+                *(u16 *)(rec + 180) = (u16)(*(u16 *)(rec + 180) + 1);
+                *(u16 *)(rec + 186) = 10;
+            }
+        }
+        d = *(u16 *)(rec + 186) - 1;
+        {
+            u16 zero;
+            s16 cur;
+            u16 limit;
+
+            zero = 0;
+            *(u16 *)(rec + 186) = (u16)d;
+            if (*(s16 *)(rec + 186) <= 0)
+                *(u16 *)(rec + 186) = zero;
+            cur = *(s16 *)(rec + 180);
+            limit = *(u16 *)(rec + 184);
+            if (cur >= *(s16 *)(rec + 184))
+                *(u16 *)(rec + 180) = limit;
+            if (*(s16 *)(rec + 180) < 0)
+                *(u16 *)(rec + 180) = zero;
+        }
+        *(u16 *)(rec + 178) = (u16)_08025A8C(*(s16 *)(rec + 180));
+        if ((s16)_08002178(0, 2) != (s16)_08002178(1, 2))
+            return;
+        if (*(u16 *)(rec + 182) != *(u16 *)(rec + 172)) {
+            _0802B368(3);
+            *(u16 *)(rec + 172) = (u16)_08025A8C(*(s16 *)(rec + 180));
+            *(u16 *)(rec + 188) = (u16)_080258B8(*(s16 *)(rec + 172));
+            *(u16 *)(rec + 190) = (u16)_0800F744(*(s16 *)(rec + 188));
+            *(u16 *)(rec + 194) = 0;
+            *(u32 *)(rec + 232) = (u32)(s16)_0800258A8(*(s16 *)(rec + 172));
+            _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 28),
+                       *(u32 *)(rec + 232), *(u32 *)(rec + 228));
+            *(u32 *)(rec + 244) = (u32)*(s16 *)(rec + 172);
+            ((void (*)(u32, u32, u32))_080026F50)(*(u32 *)(rec + 240),
+                                                   *(u32 *)(rec + 244), 7);
+            *(u32 *)(rec + 340) = (u32)MenuFF78Table11214[*(s16 *)(rec + 188)];
+            _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 36),
+                       *(u32 *)(rec + 340), *(u32 *)(rec + 336));
+            *(u32 *)(rec + 352) =
+                (u32)(s16)_0800F7EC(*(s16 *)(rec + 188), *(s16 *)(rec + 190));
+            _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 36),
+                       *(u32 *)(rec + 352), *(u32 *)(rec + 348));
+        }
+        *(u16 *)(rec + 182) = *(u16 *)(rec + 172);
     }
-    *(u16 *)(rec + 178) = (u16)_08025A8C(*(s16 *)(rec + 180));
-    if ((s16)_08002178(0, 2) != (s16)_08002178(1, 2))
-        return;
-    if (*(u16 *)(rec + 182) != *(u16 *)(rec + 172)) {
-        _0802B368(3);
-        *(u16 *)(rec + 172) = (u16)_08025A8C(*(s16 *)(rec + 180));
-        *(u16 *)(rec + 188) = (u16)_080258B8(*(s16 *)(rec + 172));
-        *(u16 *)(rec + 190) = (u16)_0800F744(*(s16 *)(rec + 188));
-        *(u16 *)(rec + 194) = 0;
-        *(u32 *)(rec + 232) = (u32)(s16)_0800258A8(*(s16 *)(rec + 172));
-        _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 28),
-                   *(u32 *)(rec + 232), *(u32 *)(rec + 228));
-        *(u32 *)(rec + 244) = (u32)*(s16 *)(rec + 172);
-        ((void (*)(u32, u32, u32))_080026F50)(*(u32 *)(rec + 240),
-                                               *(u32 *)(rec + 244), 7);
-        *(u32 *)(rec + 340) = (u32)MenuFF78Table11214[*(s16 *)(rec + 188)];
-        _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 36),
-                   *(u32 *)(rec + 340), *(u32 *)(rec + 336));
-        *(u32 *)(rec + 352) =
-            (u32)(s16)_0800F7EC(*(s16 *)(rec + 188), *(s16 *)(rec + 190));
-        _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 36),
-                   *(u32 *)(rec + 352), *(u32 *)(rec + 348));
-    }
-    *(u16 *)(rec + 182) = *(u16 *)(rec + 172);
 }
 
 void _080011214(void *a, int b, int c) __attribute__((alias("MenuFF78_11214")));

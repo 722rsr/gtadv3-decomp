@@ -646,38 +646,46 @@ void _08001D654(void) {
     register u32 waBase __asm__("r1") = 0x03001780u;
     register u32 waOffset __asm__("r2") = 0x10FCu;
     __asm__ volatile("" : "+r"(waBase), "+r"(waOffset));
-    register u32 statusAddress __asm__("r0") = waBase + waOffset;
-    u16 w = *(volatile u16 *)(uintptr_t)statusAddress;
-    if (w == 10u) {
-        register u32 readyOffset __asm__("r0") = 134u;
-        readyOffset <<= 5;
-        waBase += readyOffset;
-        *(volatile u8 *)(uintptr_t)waBase = 1;
+    {
+        register u32 statusAddress __asm__("r0") = waBase + waOffset;
+        u16 w = *(volatile u16 *)(uintptr_t)statusAddress;
+        if (w == 10u) {
+            register u32 readyOffset __asm__("r0") = 134u;
+            readyOffset <<= 5;
+            waBase += readyOffset;
+            *(volatile u8 *)(uintptr_t)waBase = 1;
+        }
+
+        _0802B5AC();
+
+        {
+            register volatile u16 *irqControl __asm__("r3") =
+                (volatile u16 *)(uintptr_t)0x04000208u;
+            register u16 zero16 __asm__("r4") = 0;
+            *irqControl = zero16;
+            *(volatile u16 *)(uintptr_t)0x04000200u =
+                (u16)(*(volatile u16 *)(uintptr_t)0x04000200u & 0xFFFDu);
+            *(volatile u16 *)(uintptr_t)0x04000004u =
+                (u16)(*(volatile u16 *)(uintptr_t)0x04000004u & 0xFFEFu);
+            *irqControl = 1;
+
+            {
+                register volatile u32 *dmaBase __asm__("r1") =
+                    (volatile u32 *)(uintptr_t)0x040000D4u;
+                register volatile u16 *dmaControl __asm__("r0") =
+                    (volatile u16 *)(uintptr_t)0x040000DEu;
+                *dmaControl = zero16;
+                {
+                    register u32 zero32 __asm__("r0") = 0;
+                    dmaBase[0] = zero32;
+                    dmaBase[1] = zero32;
+                    dmaBase[2] = zero32;
+                    *(volatile u16 *)((volatile u8 *)dmaBase - 212) = (u16)zero32;
+                    _080024AC();
+                }
+            }
+        }
     }
-
-    _0802B5AC();
-
-    register volatile u16 *irqControl __asm__("r3") =
-        (volatile u16 *)(uintptr_t)0x04000208u;
-    register u16 zero16 __asm__("r4") = 0;
-    *irqControl = zero16;
-    *(volatile u16 *)(uintptr_t)0x04000200u =
-        (u16)(*(volatile u16 *)(uintptr_t)0x04000200u & 0xFFFDu);
-    *(volatile u16 *)(uintptr_t)0x04000004u =
-        (u16)(*(volatile u16 *)(uintptr_t)0x04000004u & 0xFFEFu);
-    *irqControl = 1;
-
-    register volatile u32 *dmaBase __asm__("r1") =
-        (volatile u32 *)(uintptr_t)0x040000D4u;
-    register volatile u16 *dmaControl __asm__("r0") =
-        (volatile u16 *)(uintptr_t)0x040000DEu;
-    *dmaControl = zero16;
-    register u32 zero32 __asm__("r0") = 0;
-    dmaBase[0] = zero32;
-    dmaBase[1] = zero32;
-    dmaBase[2] = zero32;
-    *(volatile u16 *)((volatile u8 *)dmaBase - 212) = (u16)zero32;
-    _080024AC();
 }
 
 // ----------------------------------------------------------------------------
@@ -865,94 +873,96 @@ extern u8 WAOff858E4;
 
 void _08001D858(void *rec_) {
     WA858_SPLIT_DECL;
-    register u32 rec  __asm__("r3") = (u32)rec_;
-    register u32 wa   __asm__("r1") = (u32)&WABaseB1;
-    register u32 wa2  __asm__("r6");
-    register u32 off  __asm__("r2");
-    register u32 off2 __asm__("r1");
-    register u32 off3 __asm__("r3");
-    register u32 addr __asm__("r0");
-    register u32 idx  __asm__("r0");
-    register volatile u16 *p172 __asm__("r1");
-    register s16 lane __asm__("r5");
-    register u32 zero __asm__("r4");
-    register volatile u16 *p182 __asm__("r4");
-    register volatile u16 *p184 __asm__("r2");
-    register volatile u16 *p186 __asm__("r1");
-    register volatile u16 *p146 __asm__("r1");
-    register volatile u16 *p180 __asm__("r0");
-    register int f __asm__("r1");
-    volatile u16 *q;
-    volatile u16 *q154;
-    u16 v154;
-    u32 val180;
-    u32 val186;
-    int b;
+    {
+        register u32 rec  __asm__("r3") = (u32)rec_;
+        register u32 wa   __asm__("r1") = (u32)&WABaseB1;
+        register u32 wa2  __asm__("r6");
+        register u32 off  __asm__("r2");
+        register u32 off2 __asm__("r1");
+        register u32 off3 __asm__("r3");
+        register u32 addr __asm__("r0");
+        register u32 idx  __asm__("r0");
+        register volatile u16 *p172 __asm__("r1");
+        register s16 lane __asm__("r5");
+        register u32 zero __asm__("r4");
+        register volatile u16 *p182 __asm__("r4");
+        register volatile u16 *p184 __asm__("r2");
+        register volatile u16 *p186 __asm__("r1");
+        register volatile u16 *p146 __asm__("r1");
+        register volatile u16 *p180 __asm__("r0");
+        register int f __asm__("r1");
+        volatile u16 *q;
+        volatile u16 *q154;
+        u16 v154;
+        u32 val180;
+        u32 val186;
+        int b;
 
-    __asm__("" : "+r" (rec), "+r" (wa));
+        __asm__("" : "+r" (rec), "+r" (wa));
 
-    off = (u32)&WAOff858FCE;
-    addr = wa + off;
-    lane = *(volatile u16 *)addr;
+        off = (u32)&WAOff858FCE;
+        addr = wa + off;
+        lane = *(volatile u16 *)addr;
 
-    off = (u32)&WAOff858F576;
-    addr = wa + off;
-    v154 = *(volatile u16 *)addr;
-    q154 = (volatile u16 *)(rec + 154u);
-    zero = 0;
-    *(volatile u16 *)q154 = v154;
+        off = (u32)&WAOff858F576;
+        addr = wa + off;
+        v154 = *(volatile u16 *)addr;
+        q154 = (volatile u16 *)(rec + 154u);
+        zero = 0;
+        *(volatile u16 *)q154 = v154;
 
-    off = (u32)&WAOff858FCA;
-    addr = wa + off;
-    wa2 = wa;
-    __asm__("" : "+r" (wa2));
-    *(volatile u16 *)addr;
+        off = (u32)&WAOff858FCA;
+        addr = wa + off;
+        wa2 = wa;
+        __asm__("" : "+r" (wa2));
+        *(volatile u16 *)addr;
 
-    idx = (u32)(lane << 1);
-    p172 = (volatile u16 *)(rec + 172u);
-    p172 = (volatile u16 *)((u8 *)p172 + idx);
-    *(volatile u16 *)p172 = (u16)zero;
-    q = (volatile u16 *)(rec + 182u);
-    *(volatile u16 *)q = (u16)zero;
-    p182 = q;
+        idx = (u32)(lane << 1);
+        p172 = (volatile u16 *)(rec + 172u);
+        p172 = (volatile u16 *)((u8 *)p172 + idx);
+        *(volatile u16 *)p172 = (u16)zero;
+        q = (volatile u16 *)(rec + 182u);
+        *(volatile u16 *)q = (u16)zero;
+        p182 = q;
 
-    off2 = (u32)&WAOff858FC8;
-    addr = wa2 + off2;
-    f = *(s16 *)(void *)addr;
-    __asm__("" : "+r" (f));
+        off2 = (u32)&WAOff858FC8;
+        addr = wa2 + off2;
+        f = *(s16 *)(void *)addr;
+        __asm__("" : "+r" (f));
 
-    if (f == 1) {
-        p180 = (volatile u16 *)(rec + 180u);
-        val180 = f;
-    } else {
-        p180 = (volatile u16 *)(rec + 180u);
-        val180 = 0;
-    }
-    *(volatile u16 *)p180 = (u16)val180;
-    p180 = (volatile u16 *)((u8 *)p180 + 4);
-    *(volatile u16 *)p180 = (u16)val180;
-    p184 = p180;
+        if (f == 1) {
+            p180 = (volatile u16 *)(rec + 180u);
+            val180 = f;
+        } else {
+            p180 = (volatile u16 *)(rec + 180u);
+            val180 = 0;
+        }
+        *(volatile u16 *)p180 = (u16)val180;
+        p180 = (volatile u16 *)((u8 *)p180 + 4);
+        *(volatile u16 *)p180 = (u16)val180;
+        p184 = p180;
 
-    off2 = (u32)&WAOff858E5;
-    addr = wa2 + off2;
-    b = *(volatile s8 *)addr;
-    p146 = (volatile u16 *)(rec + 146u);
-    *(volatile u16 *)p146 = b;
-    if ((u16)(b - 1) <= 2) {
-        p186 = (volatile u16 *)((u8 *)p146 + 40);
-        val186 = 1;
-    } else {
-        p186 = (volatile u16 *)(rec + 186u);
-        val186 = 0;
-    }
-    *(volatile u16 *)p186 = (u16)val186;
+        off2 = (u32)&WAOff858E5;
+        addr = wa2 + off2;
+        b = *(volatile s8 *)addr;
+        p146 = (volatile u16 *)(rec + 146u);
+        *(volatile u16 *)p146 = b;
+        if ((u16)(b - 1) <= 2) {
+            p186 = (volatile u16 *)((u8 *)p146 + 40);
+            val186 = 1;
+        } else {
+            p186 = (volatile u16 *)(rec + 186u);
+            val186 = 0;
+        }
+        *(volatile u16 *)p186 = (u16)val186;
 
-    off3 = (u32)&WAOff858E4;
-    addr = wa2 + off3;
-    if (*(volatile s8 *)addr == 0) {
-        *(volatile u16 *)p182 = 0;
-        *(volatile u16 *)p184 = 0;
-        *(volatile u16 *)p186 = 0;
+        off3 = (u32)&WAOff858E4;
+        addr = wa2 + off3;
+        if (*(volatile s8 *)addr == 0) {
+            *(volatile u16 *)p182 = 0;
+            *(volatile u16 *)p184 = 0;
+            *(volatile u16 *)p186 = 0;
+        }
     }
 }
 
@@ -1019,35 +1029,39 @@ __asm__(".align 2, 0");
 // ----------------------------------------------------------------------------
 void _08001D974(void *a_, void *b_) {
     WA_SPLIT_DECL;
-    register volatile u8 *pb __asm__("r4") = (volatile u8 *)b_;
-    register volatile u8 *pa __asm__("r5") = (volatile u8 *)a_;
-    register uintptr_t waBase __asm__("r2");
-    register uintptr_t waOff __asm__("r1");
-    register uintptr_t waAddr __asm__("r0");
-    register u32 zero __asm__("r0");
-    pa += 160u;
-    zero = 0;
-    *(volatile u16 *)pa = (u16)zero;
-    waBase = (uintptr_t)&WABaseB1;
-    waOff = (uintptr_t)&WAOffFBC;
-    __asm__("" : "+r" (waBase), "+r" (waOff));
-    waAddr = waBase + waOff;
-    __asm__("" : "+r" (waAddr));
-    if (*(volatile u16 *)waAddr == 3u) {
-        register volatile u8 *p88 __asm__("r1") = pb + 88u;
+    {
+        register volatile u8 *pb __asm__("r4") = (volatile u8 *)b_;
+        register volatile u8 *pa __asm__("r5") = (volatile u8 *)a_;
+        register uintptr_t waBase __asm__("r2");
+        register uintptr_t waOff __asm__("r1");
+        register uintptr_t waAddr __asm__("r0");
+        register u32 zero __asm__("r0");
+        pa += 160u;
         zero = 0;
-            *p88 = (u8)zero;
-        waOff = (uintptr_t)&WAOff10C3;
+        *(volatile u16 *)pa = (u16)zero;
+        waBase = (uintptr_t)&WABaseB1;
+        waOff = (uintptr_t)&WAOffFBC;
         __asm__("" : "+r" (waBase), "+r" (waOff));
         waAddr = waBase + waOff;
         __asm__("" : "+r" (waAddr));
-        if (*(volatile u8 *)waAddr == 0u) {
-            _080056F4((void *)(uintptr_t)pb, 1, 1);
-            *(volatile u16 *)pa = 1;
+        if (*(volatile u16 *)waAddr == 3u) {
+            register volatile u8 *p88 __asm__("r1") = pb + 88u;
+            zero = 0;
+                *p88 = (u8)zero;
+            waOff = (uintptr_t)&WAOff10C3;
+            __asm__("" : "+r" (waBase), "+r" (waOff));
+            waAddr = waBase + waOff;
+            __asm__("" : "+r" (waAddr));
+            if (*(volatile u8 *)waAddr == 0u) {
+                _080056F4((void *)(uintptr_t)pb, 1, 1);
+                *(volatile u16 *)pa = 1;
+            }
+        }
+        {
+            register volatile u8 *p84 __asm__("r1") = pb + 84u;
+            *(volatile u16 *)p84 = 1;
         }
     }
-    register volatile u8 *p84 __asm__("r1") = pb + 84u;
-    *(volatile u16 *)p84 = 1;
 }
 
 // ----------------------------------------------------------------------------
@@ -1069,12 +1083,14 @@ void _08001D9CC(void) {
     tab = (volatile u16 *)(uintptr_t)0x080CBBA2u;
     do {
         *slot = (s16)_08005758(16);
-        u16 entry = *tab;
-        s16 id = *(s16 *)(void *)slot;
-        _08007570((void *)(uintptr_t)0x08336CA0u, entry, id, 0, 16);
-        slot += 4;
-        tab += 1;
-        i++;
+        {
+            u16 entry = *tab;
+            s16 id = *(s16 *)(void *)slot;
+            _08007570((void *)(uintptr_t)0x08336CA0u, entry, id, 0, 16);
+            slot += 4;
+            tab += 1;
+            i++;
+        }
     } while (i <= 1);
 }
 
@@ -1089,18 +1105,20 @@ void _08001DA10(int v) {
     int w[2];
     w[0] = sub_0802DE9C(q, 10);
     w[1] = sub_0802DE9C(v, 10);
-    int i = 0;
-    register u8 *table __asm__("r6") = (u8 *)(uintptr_t)0x080CBBA2u;
-    register u8 *base __asm__("r5") = (u8 *)(uintptr_t)0x0203F8F0u;
-    __asm__ volatile("" : "+r"(table), "+r"(base));
-    for (; i < 2; i++) {
-        u16 t = *(volatile u16 *)(uintptr_t)(table + (u32)(w[i] * 2));
-        register s32 laneOffset __asm__("r0") = 2;
-        register s32 laneValue __asm__("r2");
-        laneValue = *(s16 *)(base + laneOffset);
-        _08007570((void *)(uintptr_t)0x08336CA0u, t,
-                  laneValue, 0, 16);
-        base += 8;
+    {
+        int i = 0;
+        register u8 *table __asm__("r6") = (u8 *)(uintptr_t)0x080CBBA2u;
+        register u8 *base __asm__("r5") = (u8 *)(uintptr_t)0x0203F8F0u;
+        __asm__ volatile("" : "+r"(table), "+r"(base));
+        for (; i < 2; i++) {
+            u16 t = *(volatile u16 *)(uintptr_t)(table + (u32)(w[i] * 2));
+            register s32 laneOffset __asm__("r0") = 2;
+            register s32 laneValue __asm__("r2");
+            laneValue = *(s16 *)(base + laneOffset);
+            _08007570((void *)(uintptr_t)0x08336CA0u, t,
+                      laneValue, 0, 16);
+            base += 8;
+        }
     }
 }
 
@@ -1116,36 +1134,48 @@ void _08001DA70(int a0, int a1, u32 a2, int a3) {
     if ((s32)a2 <= 9) {
         register int cur __asm__("r8") = a0 - 16;
         __asm__ volatile("" : "+r"(cur));
-        u32 base = 0x0203F8F0u;
-        __asm__ volatile("" : "+r"(base));
-        register int one __asm__("r4") = 1;
-        __asm__ volatile("" : "+r"(one));
-        u32 lane = base + 8u;
-        register int zero __asm__("r7") = 0;
-        __asm__ volatile("" : "+r"(zero));
-        int i;
-        for (i = 0; i >= 0; i--) {
-            _08002ED0((void *)(uintptr_t)(u32)cur, a1,
-                      *(s16 *)(uintptr_t)(lane + 2u),
-                      a3, (u32)one, 2u, (u32)one, (u32)zero, (u32)zero,
-                      (u32)one);
-            lane += 8u;
+        {
+            u32 base = 0x0203F8F0u;
+            __asm__ volatile("" : "+r"(base));
+            {
+                register int one __asm__("r4") = 1;
+                __asm__ volatile("" : "+r"(one));
+                {
+                    u32 lane = base + 8u;
+                    register int zero __asm__("r7") = 0;
+                    __asm__ volatile("" : "+r"(zero));
+                    {
+                        int i;
+                        for (i = 0; i >= 0; i--) {
+                            _08002ED0((void *)(uintptr_t)(u32)cur, a1,
+                                      *(s16 *)(uintptr_t)(lane + 2u),
+                                      a3, (u32)one, 2u, (u32)one, (u32)zero, (u32)zero,
+                                      (u32)one);
+                            lane += 8u;
+                        }
+                    }
+                }
+            }
         }
     } else {
         register int one __asm__("r6") = 1;
         __asm__ volatile("" : "+r"(one));
-        u32 lane = 0x0203F8F0u;
-        int cur = a0 - 32;
-        register int zero __asm__("r8") = 0;
-        __asm__ volatile("" : "+r"(zero));
-        int i;
-        for (i = 1; i >= 0; i--) {
-            _08002ED0((void *)(uintptr_t)(u32)cur, a1,
-                      *(s16 *)(uintptr_t)(lane + 2u),
-                      a3, (u32)one, 2u, (u32)one, (u32)zero, (u32)zero,
-                      (u32)one);
-            lane += 8u;
-            cur += 24;
+        {
+            u32 lane = 0x0203F8F0u;
+            int cur = a0 - 32;
+            register int zero __asm__("r8") = 0;
+            __asm__ volatile("" : "+r"(zero));
+            {
+                int i;
+                for (i = 1; i >= 0; i--) {
+                    _08002ED0((void *)(uintptr_t)(u32)cur, a1,
+                              *(s16 *)(uintptr_t)(lane + 2u),
+                              a3, (u32)one, 2u, (u32)one, (u32)zero, (u32)zero,
+                              (u32)one);
+                    lane += 8u;
+                    cur += 24;
+                }
+            }
         }
     }
 }
@@ -1184,20 +1214,22 @@ void _08001DB0C(void) {
 //   ORDER swap costing the remaining 6 bytes.
 void _08001DB4C(void *rec_) {
     WA_SPLIT_DECL;
-    volatile u8 *rec = (volatile u8 *)rec_;
-    register u32 gate __asm__("r4") = *(volatile u8 *)WA_SPLIT((uintptr_t)&WAOff10C3);
-    if (gate == 0u) {
-        _08002618(1, 1);
-        *(volatile u16 *)(rec + 160u) = 1;
-        RSB_CALLEE(Sub_08007770, sub_08007770)(1, (void *)(uintptr_t)0x082B7410u, 2, 0, gate, 3u);
-    } else {
-        u32 z;
-        volatile u16 *p;
-        _08002618(1, 0);
-        p = (volatile u16 *)(rec + 160u);
-        z = 0u;
-        *p = z;
-        RSB_CALLEE(Sub_08007770, sub_08007770)(1, (void *)(uintptr_t)0x082B7410u, 1, 0, z, 3u);
+    {
+        volatile u8 *rec = (volatile u8 *)rec_;
+        register u32 gate __asm__("r4") = *(volatile u8 *)WA_SPLIT((uintptr_t)&WAOff10C3);
+        if (gate == 0u) {
+            _08002618(1, 1);
+            *(volatile u16 *)(rec + 160u) = 1;
+            RSB_CALLEE(Sub_08007770, sub_08007770)(1, (void *)(uintptr_t)0x082B7410u, 2, 0, gate, 3u);
+        } else {
+            u32 z;
+            volatile u16 *p;
+            _08002618(1, 0);
+            p = (volatile u16 *)(rec + 160u);
+            z = 0u;
+            *p = z;
+            RSB_CALLEE(Sub_08007770, sub_08007770)(1, (void *)(uintptr_t)0x082B7410u, 1, 0, z, 3u);
+        }
     }
 }
 

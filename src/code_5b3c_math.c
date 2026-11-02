@@ -14,7 +14,7 @@
 // function that starts at 0x08005B4C — a body nothing branches to, hence
 // invisible. The bare `_08005B3C:` region marker plus a `.type`/label pair at
 // 0x08005B4C (both zero bytes) split them. Measured with
-// tools/corpus_match_probe.py --c89 (see each entry for its own numbers).
+// tools/corpus_match_probe.py (see each entry for its own numbers).
 
 #include "gba/types.h"
 
@@ -129,10 +129,12 @@ void MathDiff_05C3C(void *out, const void *a, const void *b) {
     const s32 *second = (const s32 *)b;
     s32 x = first[0];
     dst[0] = x;
-    s32 y = first[1];
-    dst[1] = y;
-    dst[2] = second[0] - x;
-    dst[3] = second[1] - y;
+    {
+        s32 y = first[1];
+        dst[1] = y;
+        dst[2] = second[0] - x;
+        dst[3] = second[1] - y;
+    }
 }
 void _08005C3C(void *a, const void *b, const void *c) __attribute__((alias("MathDiff_05C3C")));
 void sub_08005C3C(void *a, const void *b, const void *c) __attribute__((alias("MathDiff_05C3C")));
@@ -173,14 +175,16 @@ void MathLeaf_05D74(void *p, int y, int angle) {
     r[1] = -y;
     // The ROM does not inline the rotate here: it tail-calls the shared
     // 0x08005BA8 body with r0 still the incoming pointer and r1 the s16 angle.
-    register s16 t __asm__("r2") = (s16)angle;
-    int a = t;   // ordinary local, deliberately NOT a second pin (see above)
-    // Declared AND called under the guard: guarding only the declaration just
-    // moves the implicit declaration to the other side, and
-    // -Wimplicit-function-declaration is an error under `-Werror`.
-    // The closure spells 0x08005BA8 both ways; `sub_` is preferred because the
-    // `_` form is a local `t` symbol no separate C object can resolve.
-    sub_08005BA8(p, a);
+    {
+        register s16 t __asm__("r2") = (s16)angle;
+        int a = t;   // ordinary local, deliberately NOT a second pin (see above)
+        // Declared AND called under the guard: guarding only the declaration just
+        // moves the implicit declaration to the other side, and
+        // -Wimplicit-function-declaration is an error under `-Werror`.
+        // The closure spells 0x08005BA8 both ways; `sub_` is preferred because the
+        // `_` form is a local `t` symbol no separate C object can resolve.
+        sub_08005BA8(p, a);
+    }
 }
 __asm__(".align 2, 0");
 
@@ -212,9 +216,11 @@ void MathLeaf_05DA4(void *out, void *b) {
     // reloaded; moving the three stores to the end diverges at +0x08.
     s32 a = v[3];
     *o = a;
-    s32 c = -v[2];
-    o[1] = c;
-    o[2] = v[0] * a + v[1] * c;
+    {
+        s32 c = -v[2];
+        o[1] = c;
+        o[2] = v[0] * a + v[1] * c;
+    }
 }
 __asm__(".align 2, 0");
 void _08005DA4(void *a, void *b) __attribute__((alias("MathLeaf_05DA4")));
@@ -236,9 +242,11 @@ void MathLeaf_05DC4(void *out, void *b, void *c) {
     //   r1=[b+0]*r3; r2=r2*r4; [o+8]=r1+r2
     s32 x = q[1] - p[1];
     *o = x;
-    s32 y = p[0] - q[0];
-    o[1] = y;
-    o[2] = p[0] * x + y * p[1];
+    {
+        s32 y = p[0] - q[0];
+        o[1] = y;
+        o[2] = p[0] * x + y * p[1];
+    }
 }
 void _08005DC4(void *a, void *b, void *c) __attribute__((alias("MathLeaf_05DC4")));
 void sub_08005DC4(void *a, void *b, void *c) __attribute__((alias("MathLeaf_05DC4")));
@@ -261,9 +269,11 @@ void MathLeaf_05DE4(void *out, void *b, void *c) {
     const s16 *vc = (const s16 *)c;
     s32 d0 = vc[1] - vb[1];
     o[0] = d0;
-    s32 d1 = vb[0] - vc[0];
-    o[1] = d1;
-    o[2] = vb[0] * d0 + vb[1] * d1;
+    {
+        s32 d1 = vb[0] - vc[0];
+        o[1] = d1;
+        o[2] = vb[0] * d0 + vb[1] * d1;
+    }
 }
 void _08005DE4(void *a, void *b, void *c) __attribute__((alias("MathLeaf_05DE4")));
 void sub_08005DE4(void *a, void *b, void *c) __attribute__((alias("MathLeaf_05DE4")));
@@ -322,9 +332,11 @@ int MathLeaf_05E7C(void *out, void *a, void *b) {
     {
         s32 dx = o[0] - *(volatile s32 *)a;
         o[0] = dx;
-        s32 dy = o[1] - *((volatile s32 *)((volatile u8 *)a + 4));
-        o[1] = dy;
-        return dx * dx + dy * dy;
+        {
+            s32 dy = o[1] - *((volatile s32 *)((volatile u8 *)a + 4));
+            o[1] = dy;
+            return dx * dx + dy * dy;
+        }
     }
 }
 __asm__(".align 2, 0");
@@ -355,10 +367,12 @@ int MathLeaf_05EDC(void *out, void *a, void *b) {
         {
             s32 t1 = bb[0];
             w[0] = t1;
-            s32 t0 = bb[1];
-            w[1] = t0;
-            w[2] = t1;
-            w[3] = t0;
+            {
+                s32 t0 = bb[1];
+                w[1] = t0;
+                w[2] = t1;
+                w[3] = t0;
+            }
         }
         r4b = ob;
         MathLeaf_05DA4(r4b, w);

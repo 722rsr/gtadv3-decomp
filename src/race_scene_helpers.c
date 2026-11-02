@@ -1,5 +1,8 @@
 #include "gba/types.h"
 
+extern const u8 CarDispTbl219D0[];
+extern const s16 CarDispRowTblB[];
+extern const s16 CarDispRowTblA[];
 extern void _0802E0A4(void *dst, const void *src, u32 n);
 extern void *_08005F98(void);
 extern void _08006B20(void);
@@ -604,16 +607,18 @@ void CarDisplay_218F8(void *inst_)
 {
     __asm__(".globl CarDispRowTblA\nCarDispRowTblA = 0x080CBF9C\n");
     __asm__(".globl CarDispRowTblB\nCarDispRowTblB = 0x080CBF8C\n");
-    extern const s16 CarDispRowTblA[];
-    extern const s16 CarDispRowTblB[];
-    u8 *inst = (u8 *)inst_;
-    _08007B18((void *)inst, 9, 8, 56, 7, 1, 1, 0);
-    _08007BFC((void *)(inst + 8), *(volatile u32 *)(inst + 232), *(volatile u32 *)(inst + 236),
-              88, 93, 6, 1, 1, 0);
-    _08007B18((void *)inst, CarDispRowTblA[*(s16 *)(inst + 188)], 40, 64, 3, 1, 1, 0);
-    _08007B18((void *)inst, 8, 40, 96, 3, 1, 1, 0);
-    _08007B18((void *)(inst + 16), CarDispRowTblB[*(s16 *)(inst + 188)], 64, 72, 9, 1, 1, 0);
-    _080021860(48, 88, *(s16 *)(inst + 188), *(s16 *)(inst + 190), 8);
+
+
+    {
+        u8 *inst = (u8 *)inst_;
+        _08007B18((void *)inst, 9, 8, 56, 7, 1, 1, 0);
+        _08007BFC((void *)(inst + 8), *(volatile u32 *)(inst + 232), *(volatile u32 *)(inst + 236),
+                  88, 93, 6, 1, 1, 0);
+        _08007B18((void *)inst, CarDispRowTblA[*(s16 *)(inst + 188)], 40, 64, 3, 1, 1, 0);
+        _08007B18((void *)inst, 8, 40, 96, 3, 1, 1, 0);
+        _08007B18((void *)(inst + 16), CarDispRowTblB[*(s16 *)(inst + 188)], 64, 72, 9, 1, 1, 0);
+        _080021860(48, 88, *(s16 *)(inst + 188), *(s16 *)(inst + 190), 8);
+    }
 }
 
 // 20-byte row of the car-display table at 0x080CCEEC; the sprite selector is
@@ -631,25 +636,27 @@ typedef struct {
 // the `if` sinks the load after the index (296/300).
 void CarDisplay_219D0(void *inst_) {
     __asm__(".globl CarDispTbl219D0\nCarDispTbl219D0 = 0x080CCEEC\n");
-    extern const u8 CarDispTbl219D0[];
-    volatile u8 *inst = (volatile u8 *)inst_;
-    const CarDispRow219D0 *row;
 
-    _08007B18((void *)(inst + 92), 8, 56, 104, 5, 3, 1, 0);
-    _080026A2C((void *)(uintptr_t)*(volatile u32 *)(inst + 204), 104, 72);
-    row = (const CarDispRow219D0 *)CarDispTbl219D0;
-    if (row[*(s16 *)(inst + 182)].sprite == 1)
-        _08007B18((void *)inst, 15, 112, 120, 10, 1, 1, 0);
-    _08007B18((void *)inst, 13, 152, 72, 4, 1, 1, 0);
-    _08007B18((void *)inst, 14, 152, 88, 4, 1, 1, 0);
-    _08007B18((void *)inst, 14, 152, 112, 4, 1, 1, 0);
-    _08007BFC((void *)(inst + 24), *(volatile u32 *)(inst + 220),
-              *(volatile u32 *)(inst + 224), 155, 80, 6, 1, 1, 0);
-    _08007BFC((void *)(inst + 32), *(volatile u32 *)(inst + 244),
-              *(volatile u32 *)(inst + 248), 155, 96, 6, 1, 1, 0);
-    _08007BFC((void *)(inst + 40), *(volatile u32 *)(inst + 256),
-              *(volatile u32 *)(inst + 260), 155, 120, 6, 1, 1, 0);
-    _08007B18((void *)inst, 10, 8, 56, 7, 1, 1, 0);
+    {
+        volatile u8 *inst = (volatile u8 *)inst_;
+        const CarDispRow219D0 *row;
+
+        _08007B18((void *)(inst + 92), 8, 56, 104, 5, 3, 1, 0);
+        _080026A2C((void *)(uintptr_t)*(volatile u32 *)(inst + 204), 104, 72);
+        row = (const CarDispRow219D0 *)CarDispTbl219D0;
+        if (row[*(s16 *)(inst + 182)].sprite == 1)
+            _08007B18((void *)inst, 15, 112, 120, 10, 1, 1, 0);
+        _08007B18((void *)inst, 13, 152, 72, 4, 1, 1, 0);
+        _08007B18((void *)inst, 14, 152, 88, 4, 1, 1, 0);
+        _08007B18((void *)inst, 14, 152, 112, 4, 1, 1, 0);
+        _08007BFC((void *)(inst + 24), *(volatile u32 *)(inst + 220),
+                  *(volatile u32 *)(inst + 224), 155, 80, 6, 1, 1, 0);
+        _08007BFC((void *)(inst + 32), *(volatile u32 *)(inst + 244),
+                  *(volatile u32 *)(inst + 248), 155, 96, 6, 1, 1, 0);
+        _08007BFC((void *)(inst + 40), *(volatile u32 *)(inst + 256),
+                  *(volatile u32 *)(inst + 260), 155, 120, 6, 1, 1, 0);
+        _08007B18((void *)inst, 10, 8, 56, 7, 1, 1, 0);
+    }
 }
 void CarDisplay_21AFC(void *inst_)
 {

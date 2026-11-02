@@ -551,12 +551,15 @@ static inline void CourseIter7BFC_Static(void *rec, int kind, int dx3,
     u8 *a = (u8 *)arr;
     u32 cnt = a[7];
     u8 *ent = a + 8;
-    for (u32 i = 0; i < cnt; i++, ent += 4) {
-        u32 x = (u32)ent[2] + (u32)dx3;
-        u32 y = (u32)ent[3] + s0;
-        u32 z = (u32)ent[0] + (u32)kind;
-        _08002ED0((void *)(uintptr_t)x, (int)y, (int)z, (int)s1, (int)s2,
-                   (int)ent[1], 1, (int)s3, (int)s4, 1);
+    {
+        u32 i = 0;
+        for (; i < cnt; i++, ent += 4) {
+            u32 x = (u32)ent[2] + (u32)dx3;
+            u32 y = (u32)ent[3] + s0;
+            u32 z = (u32)ent[0] + (u32)kind;
+            _08002ED0((void *)(uintptr_t)x, (int)y, (int)z, (int)s1, (int)s2,
+                       (int)ent[1], 1, (int)s3, (int)s4, 1);
+        }
     }
 }
 
@@ -723,73 +726,75 @@ void sub_0800BD40(void) __attribute__((alias("MenuProgressUpdate_0BD40")));
 void MenuPlaceUpdate_0BE74(void) {
     extern u8 MenuPlaceWa[];
     __asm__(".globl MenuPlaceWa\nMenuPlaceWa = 0x03001780\n");
-    register u8 *wa __asm__("r6");
-    register s32 val __asm__("r4");
-    register u32 cur __asm__("r5");
-    u8 buf[16];
-    s32 sum;
-    s32 sum2;
-    s32 diff;
+    {
+        register u8 *wa __asm__("r6");
+        register s32 val __asm__("r4");
+        register u32 cur __asm__("r5");
+        u8 buf[16];
+        s32 sum;
+        s32 sum2;
+        s32 diff;
 
-    *(u32 *)&buf[12] = 0;
-    wa = (u8 *)(uintptr_t)MenuPlaceWa;
-    _0802581C((int)*(const s16 *)(wa + 0x576));
-    val = _08025750((int)*(const s16 *)(wa + 0xFF2),
-                    (int)*(const s16 *)(wa + 0xFF6),
-                    (int)*(const s16 *)(wa + 0x103A));
-    *(u32 *)&buf[0] = *(const u32 *)(wa + 0x10F4);
-    *(u16 *)&buf[4] = *(const u16 *)(wa + 0x574);
-    _0800D95C((void *)&buf[8], (void *)(wa + 0x1088), 3);
+        *(u32 *)&buf[12] = 0;
+        wa = (u8 *)(uintptr_t)MenuPlaceWa;
+        _0802581C((int)*(const s16 *)(wa + 0x576));
+        val = _08025750((int)*(const s16 *)(wa + 0xFF2),
+                        (int)*(const s16 *)(wa + 0xFF6),
+                        (int)*(const s16 *)(wa + 0x103A));
+        *(u32 *)&buf[0] = *(const u32 *)(wa + 0x10F4);
+        *(u16 *)&buf[4] = *(const u16 *)(wa + 0x574);
+        _0800D95C((void *)&buf[8], (void *)(wa + 0x1088), 3);
 
-    sum = _08002DE04(val, 0x4650) * 0x1770;
-    sum += _08002DE04(_08002DE9C(val, 0x4650), 300) * 100;
-    sum += _08002DE04(_08002DE9C(val, 300), 3);
+        sum = _08002DE04(val, 0x4650) * 0x1770;
+        sum += _08002DE04(_08002DE9C(val, 0x4650), 300) * 100;
+        sum += _08002DE04(_08002DE9C(val, 300), 3);
 
-    cur = *(const u32 *)&buf[0];
-    sum2 = (s32)(_0802DF6C(cur, 0x4650u) * 0x1770u);
-    sum2 += (s32)(_0802DF6C(_08002DFE4(cur, 0x4650u), 300u) * 100u);
-    sum2 += (s32)_0802DF6C(_08002DFE4(cur, 300u), 3u);
+        cur = *(const u32 *)&buf[0];
+        sum2 = (s32)(_0802DF6C(cur, 0x4650u) * 0x1770u);
+        sum2 += (s32)(_0802DF6C(_08002DFE4(cur, 0x4650u), 300u) * 100u);
+        sum2 += (s32)_0802DF6C(_08002DFE4(cur, 300u), 3u);
 
-    diff = sum - sum2;
-    if (*(const s8 *)(wa + 0x10E4) != 0) {
-        if ((u32)diff <= 99u) {
-            *(u32 *)&buf[12] = 1;
-            __asm__ volatile("");
-        } else if ((u32)(diff - 100) <= 99u) {
-            register u32 t2 __asm__("r1") = 2;
-            *(u32 *)&buf[12] = t2;
-            __asm__ volatile("");
-        } else if (diff > 199) {
-            register u32 t3 __asm__("r2") = 3;
-            *(u32 *)&buf[12] = t3;
+        diff = sum - sum2;
+        if (*(const s8 *)(wa + 0x10E4) != 0) {
+            if ((u32)diff <= 99u) {
+                *(u32 *)&buf[12] = 1;
+                __asm__ volatile("");
+            } else if ((u32)(diff - 100) <= 99u) {
+                register u32 t2 __asm__("r1") = 2;
+                *(u32 *)&buf[12] = t2;
+                __asm__ volatile("");
+            } else if (diff > 199) {
+                register u32 t3 __asm__("r2") = 3;
+                *(u32 *)&buf[12] = t3;
+            }
+            {
+                register u8 *wb __asm__("r2") = (u8 *)(uintptr_t)MenuPlaceWa;
+                register u32 off __asm__("r3");
+                register s16 *p __asm__("r6");
+                register s16 *q __asm__("r5");
+                register s16 *r __asm__("r4");
+                u32 offq;
+
+                off = 0xFF2;
+                __asm__ volatile("" : "+r"(off));
+                if (_08025E98((u32)*(const s16 *)(p = (s16 *)(wb + off)),
+                              (int)*(const s16 *)(q = (s16 *)(wb + (offq = off + 4))),
+                              (int)*(const s16 *)(r = (s16 *)(wb + 0x103A))) > *(const u32 *)&buf[0] ||
+                    _08025E98((u32)p[0], (int)q[0], (int)r[0]) == 0)
+                    _08025E70((u32)p[0], (int)q[0], (int)r[0], *(const u32 *)&buf[0]);
+            }
         }
         {
-            register u8 *wb __asm__("r2") = (u8 *)(uintptr_t)MenuPlaceWa;
-            register u32 off __asm__("r3");
-            register s16 *p __asm__("r6");
-            register s16 *q __asm__("r5");
-            register s16 *r __asm__("r4");
-            u32 offq;
+            register u8 *wc __asm__("r0") = (u8 *)(uintptr_t)MenuPlaceWa;
+            register u8 *bp __asm__("r2");
+            register u8 tier __asm__("r2");
+            u8 *dst = wc + 0x10E5;
 
-            off = 0xFF2;
-            __asm__ volatile("" : "+r"(off));
-            if (_08025E98((u32)*(const s16 *)(p = (s16 *)(wb + off)),
-                          (int)*(const s16 *)(q = (s16 *)(wb + (offq = off + 4))),
-                          (int)*(const s16 *)(r = (s16 *)(wb + 0x103A))) > *(const u32 *)&buf[0] ||
-                _08025E98((u32)p[0], (int)q[0], (int)r[0]) == 0)
-                _08025E70((u32)p[0], (int)q[0], (int)r[0], *(const u32 *)&buf[0]);
+            __asm__ volatile("" : "+r"(dst));
+            bp = buf;
+            tier = bp[12];
+            *dst = tier;
         }
-    }
-    {
-        register u8 *wc __asm__("r0") = (u8 *)(uintptr_t)MenuPlaceWa;
-        register u8 *bp __asm__("r2");
-        register u8 tier __asm__("r2");
-        u8 *dst = wc + 0x10E5;
-
-        __asm__ volatile("" : "+r"(dst));
-        bp = buf;
-        tier = bp[12];
-        *dst = tier;
     }
 }
 
@@ -812,59 +817,67 @@ void MenuObjInit_0DAB8(void *rec) {
     __asm__(".globl MenuObjWA_DAB8\nMenuObjWA_DAB8 = 0x03001780\n");
     __asm__(".globl MenuObjModeOffset_DAB8\nMenuObjModeOffset_DAB8 = 0x00000FBC\n");
     __asm__(".globl MenuObjSubmodeOffset_DAB8\nMenuObjSubmodeOffset_DAB8 = 0x00001078\n");
-    u8 *r6 = (u8 *)rec;
-    u8 *tmpl = (u8 *)(uintptr_t)0x082A798Cu;
-    u8 *r4 = r6 + 0x24;
-    _0800798C(tmpl, r4);
-    _08007A58(r4);
-    _080075E8(tmpl, 4, 1);
-    _080075E8(tmpl, 3, 2);
-    _0800798C((void *)(uintptr_t)0x082A95E4u, r6 + 0x34);
-    *(u32 *)(r6 + 0x44) = (u32)_0800572C(0x10);
-    register u32 cls __asm__("r0");
-    u32 mode_addr = (u32)(uintptr_t)MenuObjWA_DAB8 + (u32)(uintptr_t)MenuObjModeOffset_DAB8;
-    switch ((int)(s16)(*(u16 *)(uintptr_t)mode_addr)) {
-    case 0: cls = 7; goto store_class;
-    case 5: cls = 6; goto store_class;
-    case 1: cls = 8; goto store_class;
-    case 6: cls = 5; goto store_class;
-    case 2: cls = 1; goto store_class;
-    case 7: {
-        u32 sub_addr = (u32)(uintptr_t)MenuObjWA_DAB8 + (u32)(uintptr_t)MenuObjSubmodeOffset_DAB8;
-        int sub = (int)(s16)(*(u16 *)(uintptr_t)sub_addr);
-        if (sub == 1) goto submode_one;
-        if (sub == 2) goto submode_two;
-        cls = 2;
-        goto store_class;
-    submode_one:
-        cls = 0xB;
-        goto store_class;
-    submode_two:
-        cls = 0xA;
-        goto store_class;
+    {
+        u8 *r6 = (u8 *)rec;
+        u8 *tmpl = (u8 *)(uintptr_t)0x082A798Cu;
+        u8 *r4 = r6 + 0x24;
+        _0800798C(tmpl, r4);
+        _08007A58(r4);
+        _080075E8(tmpl, 4, 1);
+        _080075E8(tmpl, 3, 2);
+        _0800798C((void *)(uintptr_t)0x082A95E4u, r6 + 0x34);
+        *(u32 *)(r6 + 0x44) = (u32)_0800572C(0x10);
+        {
+            register u32 cls __asm__("r0");
+            u32 mode_addr = (u32)(uintptr_t)MenuObjWA_DAB8 + (u32)(uintptr_t)MenuObjModeOffset_DAB8;
+            switch ((int)(s16)(*(u16 *)(uintptr_t)mode_addr)) {
+            case 0: cls = 7; goto store_class;
+            case 5: cls = 6; goto store_class;
+            case 1: cls = 8; goto store_class;
+            case 6: cls = 5; goto store_class;
+            case 2: cls = 1; goto store_class;
+            case 7: {
+                u32 sub_addr = (u32)(uintptr_t)MenuObjWA_DAB8 + (u32)(uintptr_t)MenuObjSubmodeOffset_DAB8;
+                int sub = (int)(s16)(*(u16 *)(uintptr_t)sub_addr);
+                if (sub == 1) goto submode_one;
+                if (sub == 2) goto submode_two;
+                cls = 2;
+                goto store_class;
+            submode_one:
+                cls = 0xB;
+                goto store_class;
+            submode_two:
+                cls = 0xA;
+                goto store_class;
+            }
+            case 3: cls = 3; goto store_class;
+            case 8: cls = 0; goto store_class;
+            case 4: cls = 4; goto store_class;
+            case 9: cls = 9; goto store_class;
+            default: goto after_class;
+            }
+        store_class:
+            *(u32 *)(r6 + 0x48) = cls;
+        after_class:
+            _08007ABC((void *)(uintptr_t)*(u32 *)(r6 + 0x38),
+                      (void *)(uintptr_t)*(u32 *)(r6 + 0x48),
+                      (int)*(u32 *)(r6 + 0x44));
+            _0800798C((void *)(uintptr_t)0x082AB030u, r6 + 0x3C);
+            {
+                int a26 = _0800572C(0x26);
+                *(u32 *)(r6 + 0x50) = (u32)a26;
+                _08007ABC((void *)(uintptr_t)*(u32 *)(r6 + 0x40),
+                          (void *)(uintptr_t)*(u32 *)(r6 + 0x54), a26);
+                _0800798C((void *)(uintptr_t)0x082B283Cu, r6 + 0x2C);
+                {
+                    int a3c = _0800572C(0x3C);
+                    *(u32 *)(r6 + 0x5C) = (u32)a3c;
+                    _08007ABC((void *)(uintptr_t)*(u32 *)(r6 + 0x30),
+                              (void *)(uintptr_t)*(u32 *)(r6 + 0x60), a3c);
+                }
+            }
+        }
     }
-    case 3: cls = 3; goto store_class;
-    case 8: cls = 0; goto store_class;
-    case 4: cls = 4; goto store_class;
-    case 9: cls = 9; goto store_class;
-    default: goto after_class;
-    }
-store_class:
-    *(u32 *)(r6 + 0x48) = cls;
-after_class:
-    _08007ABC((void *)(uintptr_t)*(u32 *)(r6 + 0x38),
-              (void *)(uintptr_t)*(u32 *)(r6 + 0x48),
-              (int)*(u32 *)(r6 + 0x44));
-    _0800798C((void *)(uintptr_t)0x082AB030u, r6 + 0x3C);
-    int a26 = _0800572C(0x26);
-    *(u32 *)(r6 + 0x50) = (u32)a26;
-    _08007ABC((void *)(uintptr_t)*(u32 *)(r6 + 0x40),
-              (void *)(uintptr_t)*(u32 *)(r6 + 0x54), a26);
-    _0800798C((void *)(uintptr_t)0x082B283Cu, r6 + 0x2C);
-    int a3c = _0800572C(0x3C);
-    *(u32 *)(r6 + 0x5C) = (u32)a3c;
-    _08007ABC((void *)(uintptr_t)*(u32 *)(r6 + 0x30),
-              (void *)(uintptr_t)*(u32 *)(r6 + 0x60), a3c);
 }
 void _0800DAB8(void *p) __attribute__((alias("MenuObjInit_0DAB8")));
 void Sub_0800DAB8(void *p) __attribute__((alias("MenuObjInit_0DAB8")));
@@ -915,25 +928,30 @@ void MenuSelectHandler_0D3A4(void *rec, u32 a, u32 b) {
     u16 r8 = (u16)a, r7 = (u16)b;
     _080016D0(123);
     *(u16 *)(r5 + 6) = _08001EA4(2);
-    for (int r6 = 0; r6 < _08001F8C(); r6++) {   // signed compare: ROM branches `blt`, not `bcc`
-        (void)_08001E8C((int)r6, 0);
-        u16 key = _08001E8C((int)r6, 1);
-        if (_08001E30()) {
-            if (key & 0x40) {
-                if (*(u16 *)(r5 + 4) != 0u) *(u16 *)(r5 + 4) -= 1u;
+    {
+        int r6 = 0;
+        for (; r6 < _08001F8C(); r6++) {   // signed compare: ROM branches `blt`, not `bcc`
+            (void)_08001E8C((int)r6, 0);
+            {
+                u16 key = _08001E8C((int)r6, 1);
+                if (_08001E30()) {
+                    if (key & 0x40) {
+                        if (*(u16 *)(r5 + 4) != 0u) *(u16 *)(r5 + 4) -= 1u;
+                    }
+                    if (key & 0x80) {
+                        if (*(u16 *)(r5 + 4) <= 2u) *(u16 *)(r5 + 4) += 1u;
+                    }
+                }
+                if (key & 1u) {
+                    _08004EC0(1);
+                    _08004BFC(*(u16 *)(r5 + 6));
+                    goto d438;
+                }
+                if (key & 2u) {
+                    _08004EA8(1);
+                    goto d438;
+                }
             }
-            if (key & 0x80) {
-                if (*(u16 *)(r5 + 4) <= 2u) *(u16 *)(r5 + 4) += 1u;
-            }
-        }
-        if (key & 1u) {
-            _08004EC0(1);
-            _08004BFC(*(u16 *)(r5 + 6));
-            goto d438;
-        }
-        if (key & 2u) {
-            _08004EA8(1);
-            goto d438;
         }
     }
 d438:
@@ -986,10 +1004,12 @@ void MenuRecordUpdater_0D048(u8 *r4, u32 dummy, u16 key) {
         __asm__ volatile("" : "+r"(waBase), "+r"(waVal), "+r"(waOff));
         waAddr = waBase + waOff;
         *(volatile u16 *)(uintptr_t)waAddr = (u16)waVal;
-        register u32 v8 __asm__("r0") = *(volatile u16 *)(r4 + 8);
-        __asm__ volatile("" : "+r"(v8));
-        *(volatile u8 *)(uintptr_t)(waBase + 0x1151u) = (u8)v8;
-        _08004EA8(1);
+        {
+            register u32 v8 __asm__("r0") = *(volatile u16 *)(r4 + 8);
+            __asm__ volatile("" : "+r"(v8));
+            *(volatile u8 *)(uintptr_t)(waBase + 0x1151u) = (u8)v8;
+            _08004EA8(1);
+        }
     }
     if (k & 0x20u)
         dy--;
@@ -1065,39 +1085,47 @@ void MenuCtor2_0C1E4(void *rec) {
 //
     // `k1` is a plain local on purpose. Pinning it too (`register u16 k1
     // __asm__("r9")`) costs 4 bytes -- the set-up collapses to a single
-    // `movs` and the span becomes 220, not 224 (prefix 22). Two `register
-    //... __asm__` declarations cannot share one declaration block at all:
-    // tools/agbcc_c89_transform.py gives up with "budget exhausted" and drops
-    // the whole TU.
+    // `movs` and the span becomes 220, not 224 (prefix 22). Each pin that
+    // remains sits in its own declaration block, the measured ROM shape.
 //
     // `one` stays declared AFTER the zero store, and that position is still
     // load-bearing: declared first, agbcc issues the `movs r6,#1` ahead of the
     // `strh` and the body diverges at +0x0E (215/224, prefix 14).
     *(u16 *)(r4 + 0) = 0u;
-    register u8 one __asm__("r6");
-    one = 1u;
-    u16 k1 = 1u;
-    *(u16 *)(r4 + 2) = k1;
-    _08002E104(stk + 4, 0, 64u);
-    *(r4 + 4) = one;
-    *(r4 + 6) = 16u;
-    *(r4 + 9) = one;
-    *(void **)(stk + 16) = r5 + 0xCE4;
-    u8 *r8 = stk + 68;
-    *(MenuCtor_Tmpl *)(uintptr_t)r8 = *(const MenuCtor_Tmpl *)(uintptr_t)0x0805F6C4u;
-    _080056FC();
-    _080055D8((u32)(uintptr_t)(r5 + 0x1CE4), 16u);
-    *(u16 *)(r5 + 92) = 1u;
-    u8 *rr4 = r5 + 8;
-    _08002D974(stk, rr4, 0x04000011u);
-    u8 *rr6 = r5 + 76;
-    _08002D974(r8, rr6, 0x04000004u);
-    _08004D4C(2u, (u32)(uintptr_t)rr4, 0u);
-    _080050E8(rr4, 0);
-    _080032E0(rr6);
-    _08003104(r5 + 100);
-    *(void **)(r5 + 0x1DE4) = _08004DC8((void *)(uintptr_t)0x080CDFD0u);
-    *(void **)(r5 + 0x1DE8) = _08004DC8((void *)(uintptr_t)0x080CDFD8u);
+    {
+        register u8 one __asm__("r6");
+        one = 1u;
+        {
+            u16 k1 = 1u;
+            *(u16 *)(r4 + 2) = k1;
+            _08002E104(stk + 4, 0, 64u);
+            *(r4 + 4) = one;
+            *(r4 + 6) = 16u;
+            *(r4 + 9) = one;
+            *(void **)(stk + 16) = r5 + 0xCE4;
+            {
+                u8 *r8 = stk + 68;
+                *(MenuCtor_Tmpl *)(uintptr_t)r8 = *(const MenuCtor_Tmpl *)(uintptr_t)0x0805F6C4u;
+                _080056FC();
+                _080055D8((u32)(uintptr_t)(r5 + 0x1CE4), 16u);
+                *(u16 *)(r5 + 92) = 1u;
+                {
+                    u8 *rr4 = r5 + 8;
+                    _08002D974(stk, rr4, 0x04000011u);
+                    {
+                        u8 *rr6 = r5 + 76;
+                        _08002D974(r8, rr6, 0x04000004u);
+                        _08004D4C(2u, (u32)(uintptr_t)rr4, 0u);
+                        _080050E8(rr4, 0);
+                        _080032E0(rr6);
+                        _08003104(r5 + 100);
+                        *(void **)(r5 + 0x1DE4) = _08004DC8((void *)(uintptr_t)0x080CDFD0u);
+                        *(void **)(r5 + 0x1DE8) = _08004DC8((void *)(uintptr_t)0x080CDFD8u);
+                    }
+                }
+            }
+        }
+    }
 }
 void _0800C1E4(void *r) __attribute__((alias("MenuCtor2_0C1E4")));
 void sub_0800C1E4(void *r) __attribute__((alias("MenuCtor2_0C1E4")));
@@ -1128,36 +1156,48 @@ void MenuCtor_0C010(void *rec) {
     // instead of `mov r1,r9`; named `k1` only (plain `u8 one`) stays at
     // 219/224 prefix 19. See the full control list on MenuCtor2_0C1E4.
     *(u16 *)(r4 + 0) = 0u;
-    register u8 one __asm__("r6");
-    one = 1u;
-    u16 k1 = 1u;
-    *(u16 *)(r4 + 2) = k1;
-    _08002E104(stk + 4, 0, 64u);
-    *(r4 + 4) = one;
-    *(r4 + 6) = 24u;
-    *(r4 + 7) = one;
-    *(void **)(stk + 16) = r5 + 0xCE0;
-    u8 *r8 = stk + 68;
-    *(MenuCtor_Tmpl *)(uintptr_t)r8 = *(const MenuCtor_Tmpl *)(uintptr_t)0x0805F6B4u;
-    _080056FC();
-    _080055D8((u32)(uintptr_t)(r5 + 0x1CE0), 16u);
-    *(u16 *)(r5 + 92) = 1u;
-    u8 *rr4 = r5 + 8;
-    _08002D974(stk, rr4, 0x04000011u);
-    u8 *rr6 = r5 + 76;
-    _08002D974(r8, rr6, 0x04000004u);
-    _08004D4C(2u, (u32)(uintptr_t)rr4, 0u);
-    _080050E8(rr4, 0);
-    _080032E0(rr6);
-    _08003104(r5 + 96);
-    // `rr` is formed AFTER the first _08004DC8 call: the ROM computes
-    // `adds r4,r5,r2` at 0x0800C0B4, past the `bl` at 0x0800C0AC. Declaring it
-    // before the call sinks the address computation ahead of the call instead.
-    void *a = _08004DC8((void *)(uintptr_t)0x080CDFD0u);
-    u8 *rr = r5 + 0x1DE0;
-    *(void **)rr = a;
-    *(void **)(r5 + 0x1DE4) = _08004DC8((void *)(uintptr_t)0x080CDFD8u);
-    _08004EF0(*(void **)rr);
+    {
+        register u8 one __asm__("r6");
+        one = 1u;
+        {
+            u16 k1 = 1u;
+            *(u16 *)(r4 + 2) = k1;
+            _08002E104(stk + 4, 0, 64u);
+            *(r4 + 4) = one;
+            *(r4 + 6) = 24u;
+            *(r4 + 7) = one;
+            *(void **)(stk + 16) = r5 + 0xCE0;
+            {
+                u8 *r8 = stk + 68;
+                *(MenuCtor_Tmpl *)(uintptr_t)r8 = *(const MenuCtor_Tmpl *)(uintptr_t)0x0805F6B4u;
+                _080056FC();
+                _080055D8((u32)(uintptr_t)(r5 + 0x1CE0), 16u);
+                *(u16 *)(r5 + 92) = 1u;
+                {
+                    u8 *rr4 = r5 + 8;
+                    _08002D974(stk, rr4, 0x04000011u);
+                    {
+                        u8 *rr6 = r5 + 76;
+                        _08002D974(r8, rr6, 0x04000004u);
+                        _08004D4C(2u, (u32)(uintptr_t)rr4, 0u);
+                        _080050E8(rr4, 0);
+                        _080032E0(rr6);
+                        _08003104(r5 + 96);
+                        // `rr` is formed AFTER the first _08004DC8 call: the ROM computes
+                        // `adds r4,r5,r2` at 0x0800C0B4, past the `bl` at 0x0800C0AC. Declaring it
+                        // before the call sinks the address computation ahead of the call instead.
+                        {
+                            void *a = _08004DC8((void *)(uintptr_t)0x080CDFD0u);
+                            u8 *rr = r5 + 0x1DE0;
+                            *(void **)rr = a;
+                            *(void **)(r5 + 0x1DE4) = _08004DC8((void *)(uintptr_t)0x080CDFD8u);
+                            _08004EF0(*(void **)rr);
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 void _0800C010(void *r) __attribute__((alias("MenuCtor_0C010")));
 void sub_0800C010(void *r) __attribute__((alias("MenuCtor_0C010")));
@@ -1181,64 +1221,70 @@ void MenuCtor20_0C4D0(void *rec) {
 
     register u32 zero __asm__("r2");
     zero = 0;
-    u16 zero16 = 0;
-    *(u16 *)(r0 + 0) = zero16;
-    register u8 one __asm__("r4");
-    one = 1;
-    u16 oneHalf = 1;
-    *(u16 *)(r0 + 2) = oneHalf;
-    *(r0 + 4) = one;
-    *(r0 + 5) = zero;
-    *(r0 + 6) = 29;
-    *(r0 + 7) = zero;
-    *(r0 + 8) = one;
-    *(r0 + 9) = one;
-    *(r0 + 10) = zero;
-    *(r0 + 11) = zero;
-    *(u16 *)(r0 + 12) = 0;
-    *(u16 *)(r0 + 14) = 0;
-    *(void **)(stk + 16) = r5 + 0xCE4;
-    *(r0 + 20) = zero;
-    *(r0 + 21) = 3;
-    *(r0 + 22) = 31;
-    *(r0 + 23) = zero;
-    *(r0 + 24) = zero;
-    *(r0 + 25) = one;
-    *(r0 + 26) = zero;
-    *(r0 + 27) = zero;
-    *(u16 *)(r0 + 28) = 0;
-    *(u16 *)(r0 + 30) = 0;
-    *(void **)(stk + 32) = r5 + 0x1CE4;
+    {
+        u16 zero16 = 0;
+        *(u16 *)(r0 + 0) = zero16;
+        {
+            register u8 one __asm__("r4");
+            one = 1;
+            {
+                u16 oneHalf = 1;
+                *(u16 *)(r0 + 2) = oneHalf;
+                *(r0 + 4) = one;
+                *(r0 + 5) = zero;
+                *(r0 + 6) = 29;
+                *(r0 + 7) = zero;
+                *(r0 + 8) = one;
+                *(r0 + 9) = one;
+                *(r0 + 10) = zero;
+                *(r0 + 11) = zero;
+                *(u16 *)(r0 + 12) = 0;
+                *(u16 *)(r0 + 14) = 0;
+                *(void **)(stk + 16) = r5 + 0xCE4;
+                *(r0 + 20) = zero;
+                *(r0 + 21) = 3;
+                *(r0 + 22) = 31;
+                *(r0 + 23) = zero;
+                *(r0 + 24) = zero;
+                *(r0 + 25) = one;
+                *(r0 + 26) = zero;
+                *(r0 + 27) = zero;
+                *(u16 *)(r0 + 28) = 0;
+                *(u16 *)(r0 + 30) = 0;
+                *(void **)(stk + 32) = r5 + 0x1CE4;
 
-    _0802E104(stk + 36, 0, 16);
-    _0802E104(stk + 52, 0, 16);
-    r8 = stk + 68;
-    *(MenuCtor_Tmpl *)(uintptr_t)r8 = *(const MenuCtor_Tmpl *)(uintptr_t)0x0805F6D4u;
-    *(r5 + 96) = one;
-    _080056FC();
-    _080055D8((u32)(uintptr_t)(r5 + 0x24E4), 16);
-    *(u16 *)(r5 + 92) = 1;
+                _0802E104(stk + 36, 0, 16);
+                _0802E104(stk + 52, 0, 16);
+                r8 = stk + 68;
+                *(MenuCtor_Tmpl *)(uintptr_t)r8 = *(const MenuCtor_Tmpl *)(uintptr_t)0x0805F6D4u;
+                *(r5 + 96) = one;
+                _080056FC();
+                _080055D8((u32)(uintptr_t)(r5 + 0x24E4), 16);
+                *(u16 *)(r5 + 92) = 1;
 
-    r4 = r5 + 8;
-    _08002D974(stk, r4, (u32)(uintptr_t)0x04000011);
-    r6 = r5 + 76;
-    _08002D974(r8, r6, (u32)(uintptr_t)0x04000004);
-    _08004D4C(2, (u32)(uintptr_t)r4, 0);
-    _080050E8(r4, 0);
-    _080032E0(r6);
-    sub_0800C454();
-    sub_0800C4AC();
-    _08003104(r5 + 100);
+                r4 = r5 + 8;
+                _08002D974(stk, r4, (u32)(uintptr_t)0x04000011);
+                r6 = r5 + 76;
+                _08002D974(r8, r6, (u32)(uintptr_t)0x04000004);
+                _08004D4C(2, (u32)(uintptr_t)r4, 0);
+                _080050E8(r4, 0);
+                _080032E0(r6);
+                sub_0800C454();
+                sub_0800C4AC();
+                _08003104(r5 + 100);
 
-    resource = _08004DC8((void *)(uintptr_t)0x080CDFD0);
-    slot = r5 + 0x25E4;
-    *(void **)slot = resource;
-    resource = _08004DC8((void *)(uintptr_t)0x080CDFD8);
-    slot = r5 + 0x25E8;
-    *(void **)slot = resource;
-    resource = _08004DC8((void *)(uintptr_t)0x080CDFE0);
-    r5 += 0x25EC;
-    *(void **)r5 = resource;
+                resource = _08004DC8((void *)(uintptr_t)0x080CDFD0);
+                slot = r5 + 0x25E4;
+                *(void **)slot = resource;
+                resource = _08004DC8((void *)(uintptr_t)0x080CDFD8);
+                slot = r5 + 0x25E8;
+                *(void **)slot = resource;
+                resource = _08004DC8((void *)(uintptr_t)0x080CDFE0);
+                r5 += 0x25EC;
+                *(void **)r5 = resource;
+            }
+        }
+    }
 }
 
 void _0800C4D0(void *r) __attribute__((alias("MenuCtor20_0C4D0")));
@@ -1520,18 +1566,22 @@ static void CourseSetup7770_Static(void *ctx, void *X, int r2in, int r3in,
     int r9 = _080050D0((int)(uintptr_t)ctx, (int)RomLeaf7658(r5));
     void *r4b = _0800748C(r5);
     _08005260(ctx, r4b, r9, (int)_080074A8(r5)); // r3 = 074A8(r5) per ROM asm
-    const volatile u8 *src = (const volatile u8 *)_0800748C(r7);
-    u16 r8w0 = *(volatile u16 *)(r8 + 0);
-    u16 r8w2 = *(volatile u16 *)(r8 + 2);
-    int stk0 = (int)(u16)(r8w0 >> 3);
-    int stk1 = (int)(u16)(r8w2 >> 3);
-    _080053DC((int)(uintptr_t)ctx, src, r3in, (int)s0, stk0, stk1, r9, (int)s1);
-    volatile u32 *dma = (volatile u32 *)(uintptr_t)0x040000D4u;
-    dma[0] = (u32)(uintptr_t)_0800748C(r6);
-    dma[1] = 0x05000000u + (s1 << 5);
-    dma[2] = (_080074A8(r6) >> 2) | 0x84000000u;
-    (void)dma[2];
-    _080054A4((int)(uintptr_t)ctx, r3in, (int)s0, stk0, stk1);
+    {
+        const volatile u8 *src = (const volatile u8 *)_0800748C(r7);
+        u16 r8w0 = *(volatile u16 *)(r8 + 0);
+        u16 r8w2 = *(volatile u16 *)(r8 + 2);
+        int stk0 = (int)(u16)(r8w0 >> 3);
+        int stk1 = (int)(u16)(r8w2 >> 3);
+        _080053DC((int)(uintptr_t)ctx, src, r3in, (int)s0, stk0, stk1, r9, (int)s1);
+        {
+            volatile u32 *dma = (volatile u32 *)(uintptr_t)0x040000D4u;
+            dma[0] = (u32)(uintptr_t)_0800748C(r6);
+            dma[1] = 0x05000000u + (s1 << 5);
+            dma[2] = (_080074A8(r6) >> 2) | 0x84000000u;
+            (void)dma[2];
+            _080054A4((int)(uintptr_t)ctx, r3in, (int)s0, stk0, stk1);
+        }
+    }
 }
 
 // projects the query delta (05DA4), clamps to the 2-attempt entry list and
@@ -2663,127 +2713,151 @@ static inline u8 *phase_case5(u8 *r7) {
                              + (u16)((u16)(*(u16 *)(cc + 10)) * 2u)))
                              | ((u32)(u16)(*(u16 *)(cc + 54)) << 12));
     r7 += 8;
-    u16 lane = *(u16 *)(cc + 38);
-    CourseEmit7B18(cc + 88, 14, 184, 0, lane, 1u, 0u, 0u);
-    CourseEmit7B18(cc + 88, 15, 208, 4, lane, 1u, 0u, 0u);
-    CourseEmit7B18(cc + 88, 16, 224, 4, lane, 1u, 0u, 0u);
-    int c26 = (int)(s16)*(u16 *)(cc + 26);
-    if (c26 > 0) {
-        int rr = _08002BE8(0);
-        u16 nc26 = (u16)(*(u16 *)(cc + 26) - 1u);
-        *(u16 *)(cc + 26) = nc26;
-        int r5s = (s32)rr;
-        u16 trow = *(u16 *)(uintptr_t)(0x080CB154u + (u32)(u16)(nc26 & 15u) * 2u);
-        _08002C48(r5s, trow);
-        int c18 = (int)(s16)*(u16 *)(cc + 18);
-        if (c18 > 9) {
-            *(u16 *)(r7 + 0) = 0x386u;
-            *(u16 *)(r7 + 2) = (u16)(((u32)(u16)r5s << 9) | 0x4044u);
-            int dq = _08002DE04(c18, 10);
-            *(u16 *)(r7 + 4) = (u16)(((u32)(u16)(*(u16 *)(cc + 40))
-                                           + (u32)(dq * 4))
-                                     | ((u32)(u16)(*(u16 *)(cc + 38)) << 12));
-            r7 += 8;
-        }
-        *(u16 *)(r7 + 0) = 0x386u;
-        *(u16 *)(r7 + 2) = (u16)(((u32)(u16)r5s << 9) | 0x4050u);
-        int c18b = (int)(s16)*(u16 *)(cc + 18);
-        int dm = DivRemS_02DE9C(c18b, 10);
-        *(u16 *)(r7 + 4) = (u16)(((u32)(u16)(*(u16 *)(cc + 40))
-                                       + (u32)(dm * 4))
-                                 | ((u32)(u16)(*(u16 *)(cc + 38)) << 12));
-        r7 += 8;
-    } else {
-        int c18 = (int)(s16)*(u16 *)(cc + 18);
-        if (c18 > 9) {
-            *(u16 *)(r7 + 0) = 142u;
-            *(u16 *)(r7 + 2) = 0x404Cu;
-            int dq = _08002DE04(c18, 10);
-            *(u16 *)(r7 + 4) = (u16)(((u32)(u16)(*(u16 *)(cc + 40))
-                                           + (u32)(dq * 4))
-                                     | ((u32)(u16)(*(u16 *)(cc + 38)) << 12));
-            r7 += 8;
-        }
-        *(u16 *)(r7 + 0) = 142u;
-        *(u16 *)(r7 + 2) = 0x4058u;
-        int c18b = (int)(s16)*(u16 *)(cc + 18);
-        int dr = DivRemS_02DE9C(c18b, 10);
-        *(u16 *)(r7 + 4) = (u16)(((u32)(u16)(*(u16 *)(cc + 40))
-                                       + (u32)(dr * 4))
-                                 | ((u32)(u16)(*(u16 *)(cc + 38)) << 12));
-        r7 += 8;
-    }
-    // [crec+32] conditional ingen record
     {
-        u16 c32 = *(u16 *)(cc + 32);
-        if (c32 != 0u && c32 <= 16u) {
-            *(u16 *)(r7 + 0) = 1152u;
-            *(u16 *)(r7 + 2) = 0x40A0u;
-            *(u16 *)(r7 + 4) = (u16)(((u32)(u16)(*(u16 *)(cc + 38)) << 12)
-                                          | (u32)(u16)(*(u16 *)(cc + 42)));
-            r7 += 8;
-            *(u16 *)(uintptr_t)0x04000050u = 1856u;
-            *(u16 *)(uintptr_t)0x04000052u =
-                (u16)(((16u - (u32)c32) << 8) | (u32)c32);
-        }
-    }
-    // [crec+28] countdown block
-    {
-        u16 c28u = *(u16 *)(cc + 28);
-        if ((int)(s16)c28u > 0) {
-            *(u16 *)(cc + 28) = (u16)(c28u - 1u);
-            u8 nb79 = (u8)(*(cc + 79) + 1u);
-            *(cc + 79) = nb79;
-            if (nb79 > 15u) *(cc + 79) = 1u;
-            _08007614((void *)(uintptr_t)0x0828A35Cu, 1, (int)*(cc + 79),
-                      (int)*(u16 *)(cc + 58));
-            u8 *entry = (u8 *)(uintptr_t)(0x080CB074u
-                        + (u32)(s32)((s32)(s16)(*(u16 *)(cc + 30)) * 8));
-            int e2 = (int)(s16)*(u16 *)(entry + 2);
-            int c28 = (int)(s16)*(u16 *)(cc + 28);
-            int d = 60 - c28;
-            int dd = (d + (int)((u32)d >> 31)) >> 1;
-            CourseIter7BFC_Static(cc + 96, (int)*(u16 *)(cc + 62),
-                                  (int)(s16)*(u16 *)(entry + 0), e2 - dd,
-                                  (u32)*(u16 *)(cc + 58), 0u, 0u, 0u);
-        }
-    }
-    // [cc+80/84] stamp + [24] tail switch
-    *(u32 *)(cc + 80) = 168u;
-    *(u32 *)(cc + 84) = 80u;
-    {
-        int w24 = (int)(s16)(*(u16 *)(cc + 24));
-        if (w24 == 2) {
-            u8 nb = (u8)(*(cc + 79) + 1u);
-            *(cc + 79) = nb;
-            if (nb > 15u) *(cc + 79) = 1u;
-            _08007614((void *)(uintptr_t)0x0828A35Cu, 1, (int)*(cc + 79),
-                      (int)*(u16 *)(cc + 58));
-            r7 = (u8 *)RomEmit89FC(r7);
-        } else if (w24 == 1) {
-            u16 c22 = *(u16 *)(cc + 22);
-            *(u16 *)(cc + 22) = (u16)(c22 - 1u);
-            int idx = (int)(s16)*(u16 *)(cc + 22);
-            int tv = (int)(s16)*(u16 *)(uintptr_t)(0x080CB0CCu + (u32)(u16)idx * 2u);
-            *(u32 *)(cc + 80) = (u32)(tv + 168);
+        u16 lane = *(u16 *)(cc + 38);
+        CourseEmit7B18(cc + 88, 14, 184, 0, lane, 1u, 0u, 0u);
+        CourseEmit7B18(cc + 88, 15, 208, 4, lane, 1u, 0u, 0u);
+        CourseEmit7B18(cc + 88, 16, 224, 4, lane, 1u, 0u, 0u);
+        {
+            int c26 = (int)(s16)*(u16 *)(cc + 26);
+            if (c26 > 0) {
+                int rr = _08002BE8(0);
+                u16 nc26 = (u16)(*(u16 *)(cc + 26) - 1u);
+                *(u16 *)(cc + 26) = nc26;
+                {
+                    int r5s = (s32)rr;
+                    u16 trow = *(u16 *)(uintptr_t)(0x080CB154u + (u32)(u16)(nc26 & 15u) * 2u);
+                    _08002C48(r5s, trow);
+                    {
+                        int c18 = (int)(s16)*(u16 *)(cc + 18);
+                        if (c18 > 9) {
+                            *(u16 *)(r7 + 0) = 0x386u;
+                            *(u16 *)(r7 + 2) = (u16)(((u32)(u16)r5s << 9) | 0x4044u);
+                            {
+                                int dq = _08002DE04(c18, 10);
+                                *(u16 *)(r7 + 4) = (u16)(((u32)(u16)(*(u16 *)(cc + 40))
+                                                               + (u32)(dq * 4))
+                                                         | ((u32)(u16)(*(u16 *)(cc + 38)) << 12));
+                                r7 += 8;
+                            }
+                        }
+                        *(u16 *)(r7 + 0) = 0x386u;
+                        *(u16 *)(r7 + 2) = (u16)(((u32)(u16)r5s << 9) | 0x4050u);
+                        {
+                            int c18b = (int)(s16)*(u16 *)(cc + 18);
+                            int dm = DivRemS_02DE9C(c18b, 10);
+                            *(u16 *)(r7 + 4) = (u16)(((u32)(u16)(*(u16 *)(cc + 40))
+                                                           + (u32)(dm * 4))
+                                                     | ((u32)(u16)(*(u16 *)(cc + 38)) << 12));
+                            r7 += 8;
+                        }
+                    }
+                }
+            } else {
+                int c18 = (int)(s16)*(u16 *)(cc + 18);
+                if (c18 > 9) {
+                    *(u16 *)(r7 + 0) = 142u;
+                    *(u16 *)(r7 + 2) = 0x404Cu;
+                    {
+                        int dq = _08002DE04(c18, 10);
+                        *(u16 *)(r7 + 4) = (u16)(((u32)(u16)(*(u16 *)(cc + 40))
+                                                       + (u32)(dq * 4))
+                                                 | ((u32)(u16)(*(u16 *)(cc + 38)) << 12));
+                        r7 += 8;
+                    }
+                }
+                *(u16 *)(r7 + 0) = 142u;
+                *(u16 *)(r7 + 2) = 0x4058u;
+                {
+                    int c18b = (int)(s16)*(u16 *)(cc + 18);
+                    int dr = DivRemS_02DE9C(c18b, 10);
+                    *(u16 *)(r7 + 4) = (u16)(((u32)(u16)(*(u16 *)(cc + 40))
+                                                   + (u32)(dr * 4))
+                                             | ((u32)(u16)(*(u16 *)(cc + 38)) << 12));
+                    r7 += 8;
+                }
+            }
+            // [crec+32] conditional ingen record
+            {
+                u16 c32 = *(u16 *)(cc + 32);
+                if (c32 != 0u && c32 <= 16u) {
+                    *(u16 *)(r7 + 0) = 1152u;
+                    *(u16 *)(r7 + 2) = 0x40A0u;
+                    *(u16 *)(r7 + 4) = (u16)(((u32)(u16)(*(u16 *)(cc + 38)) << 12)
+                                                  | (u32)(u16)(*(u16 *)(cc + 42)));
+                    r7 += 8;
+                    *(u16 *)(uintptr_t)0x04000050u = 1856u;
+                    *(u16 *)(uintptr_t)0x04000052u =
+                        (u16)(((16u - (u32)c32) << 8) | (u32)c32);
+                }
+            }
+            // [crec+28] countdown block
+            {
+                u16 c28u = *(u16 *)(cc + 28);
+                if ((int)(s16)c28u > 0) {
+                    *(u16 *)(cc + 28) = (u16)(c28u - 1u);
+                    {
+                        u8 nb79 = (u8)(*(cc + 79) + 1u);
+                        *(cc + 79) = nb79;
+                        if (nb79 > 15u) *(cc + 79) = 1u;
+                        _08007614((void *)(uintptr_t)0x0828A35Cu, 1, (int)*(cc + 79),
+                                  (int)*(u16 *)(cc + 58));
+                        {
+                            u8 *entry = (u8 *)(uintptr_t)(0x080CB074u
+                                        + (u32)(s32)((s32)(s16)(*(u16 *)(cc + 30)) * 8));
+                            int e2 = (int)(s16)*(u16 *)(entry + 2);
+                            int c28 = (int)(s16)*(u16 *)(cc + 28);
+                            int d = 60 - c28;
+                            int dd = (d + (int)((u32)d >> 31)) >> 1;
+                            CourseIter7BFC_Static(cc + 96, (int)*(u16 *)(cc + 62),
+                                                  (int)(s16)*(u16 *)(entry + 0), e2 - dd,
+                                                  (u32)*(u16 *)(cc + 58), 0u, 0u, 0u);
+                        }
+                    }
+                }
+            }
+            // [cc+80/84] stamp + [24] tail switch
+            *(u32 *)(cc + 80) = 168u;
             *(u32 *)(cc + 84) = 80u;
-            if ((s32)((u32)(u16)(c22 - 1u) << 16) <= 0)
-                *(u16 *)(cc + 24) = 2u;
-            r7 = (u8 *)RomEmit8AAC(r7);
-        } else if (w24 == 3) {
-            u16 c22 = *(u16 *)(cc + 22);
-            *(u16 *)(cc + 22) = (u16)(c22 - 1u);
-            int idx = (int)(s16)*(u16 *)(cc + 22);
-            int tv = (int)(s16)*(u16 *)(uintptr_t)(0x080CB0EEu
-                       + (u32)(u16)(16 - idx) * 2u);
-            *(u32 *)(cc + 80) = (u32)(tv + 168);
-            *(u32 *)(cc + 84) = 80u;
-            if ((s32)((u32)(u16)(c22 - 1u) << 16) <= 0)
-                *(u16 *)(cc + 24) = 0u;
-            r7 = (u8 *)RomEmit8BB8(r7);
+            {
+                int w24 = (int)(s16)(*(u16 *)(cc + 24));
+                if (w24 == 2) {
+                    u8 nb = (u8)(*(cc + 79) + 1u);
+                    *(cc + 79) = nb;
+                    if (nb > 15u) *(cc + 79) = 1u;
+                    _08007614((void *)(uintptr_t)0x0828A35Cu, 1, (int)*(cc + 79),
+                              (int)*(u16 *)(cc + 58));
+                    r7 = (u8 *)RomEmit89FC(r7);
+                } else if (w24 == 1) {
+                    u16 c22 = *(u16 *)(cc + 22);
+                    *(u16 *)(cc + 22) = (u16)(c22 - 1u);
+                    {
+                        int idx = (int)(s16)*(u16 *)(cc + 22);
+                        int tv = (int)(s16)*(u16 *)(uintptr_t)(0x080CB0CCu + (u32)(u16)idx * 2u);
+                        *(u32 *)(cc + 80) = (u32)(tv + 168);
+                        *(u32 *)(cc + 84) = 80u;
+                        if ((s32)((u32)(u16)(c22 - 1u) << 16) <= 0)
+                            *(u16 *)(cc + 24) = 2u;
+                        r7 = (u8 *)RomEmit8AAC(r7);
+                    }
+                } else if (w24 == 3) {
+                    u16 c22 = *(u16 *)(cc + 22);
+                    *(u16 *)(cc + 22) = (u16)(c22 - 1u);
+                    {
+                        int idx = (int)(s16)*(u16 *)(cc + 22);
+                        int tv = (int)(s16)*(u16 *)(uintptr_t)(0x080CB0EEu
+                                   + (u32)(u16)(16 - idx) * 2u);
+                        *(u32 *)(cc + 80) = (u32)(tv + 168);
+                        *(u32 *)(cc + 84) = 80u;
+                        if ((s32)((u32)(u16)(c22 - 1u) << 16) <= 0)
+                            *(u16 *)(cc + 24) = 0u;
+                        r7 = (u8 *)RomEmit8BB8(r7);
+                    }
+                }
+            }
+            return r7;
         }
     }
-    return r7;
 }
 
 // Case 1/4/8 record burst + counter gate (8ED8). Returns tail cursor.
@@ -2818,25 +2892,31 @@ static inline u8 *phase_case148(u8 *r7) {
                              + (u16)((u16)(*(u16 *)(cc + 10)) * 2u)))
                              | ((u32)(u16)(*(u16 *)(cc + 54)) << 12));
     r7 += 8;
-    u16 lane = *(u16 *)(cc + 38);
-    CourseEmit7B18(cc + 88, 12, 0, 0, lane, 1u, 0u, 0u);
-    CourseEmit7B18(cc + 88, 15, 64, 4, lane, 1u, 0u, 0u);
-    CourseEmit7B18(cc + 88, 15, 80, 4, lane, 1u, 0u, 0u);
-    CourseEmit7B18(cc + 88, 15, 96, 4, lane, 1u, 0u, 0u);
-    CourseEmit7B18(cc + 88, 16, 104, 4, lane, 1u, 0u, 0u);
-    CourseEmit7B18(cc + 88, 13, 120, 0, lane, 1u, 0u, 0u);
-    CourseEmit7B18(cc + 88, 16, 168, 4, lane, 1u, 0u, 0u);
-    CourseEmit7B18(cc + 88, 14, 184, 0, lane, 1u, 0u, 0u);
-    CourseEmit7B18(cc + 88, 15, 208, 4, lane, 1u, 0u, 0u);
-    CourseEmit7B18(cc + 88, 16, 224, 4, lane, 1u, 0u, 0u);
-    u16 c4 = *(u16 *)(cc + 4);
-    if ((int)(s16)c4 <= 0) return r7;
-    u16 c4n = (u16)(c4 - 1u);
-    *(u16 *)(cc + 4) = c4n;
-    if ((s32)(s16)c4n > 63
-        && _08002D97C(_08002D978((int)(s16)c4n, 8), 2) == 0)
-        return r7;
-    return (u8 *)RomEmit861C(r7, (int)*(u32 *)(cc + 72));
+    {
+        u16 lane = *(u16 *)(cc + 38);
+        CourseEmit7B18(cc + 88, 12, 0, 0, lane, 1u, 0u, 0u);
+        CourseEmit7B18(cc + 88, 15, 64, 4, lane, 1u, 0u, 0u);
+        CourseEmit7B18(cc + 88, 15, 80, 4, lane, 1u, 0u, 0u);
+        CourseEmit7B18(cc + 88, 15, 96, 4, lane, 1u, 0u, 0u);
+        CourseEmit7B18(cc + 88, 16, 104, 4, lane, 1u, 0u, 0u);
+        CourseEmit7B18(cc + 88, 13, 120, 0, lane, 1u, 0u, 0u);
+        CourseEmit7B18(cc + 88, 16, 168, 4, lane, 1u, 0u, 0u);
+        CourseEmit7B18(cc + 88, 14, 184, 0, lane, 1u, 0u, 0u);
+        CourseEmit7B18(cc + 88, 15, 208, 4, lane, 1u, 0u, 0u);
+        CourseEmit7B18(cc + 88, 16, 224, 4, lane, 1u, 0u, 0u);
+        {
+            u16 c4 = *(u16 *)(cc + 4);
+            if ((int)(s16)c4 <= 0) return r7;
+            {
+                u16 c4n = (u16)(c4 - 1u);
+                *(u16 *)(cc + 4) = c4n;
+                if ((s32)(s16)c4n > 63
+                    && _08002D97C(_08002D978((int)(s16)c4n, 8), 2) == 0)
+                    return r7;
+                return (u8 *)RomEmit861C(r7, (int)*(u32 *)(cc + 72));
+            }
+        }
+    }
 }
 
 // Case 3 variant (90A4): conditional head emits, 8-burst, same counter gate.
@@ -2846,48 +2926,56 @@ static inline u8 *phase_case3(u8 *r7) {
     if (*(cc + 78) == 0u
         || _08002D97C(_08002D978((int)*(u32 *)(wa + 0x10D8), 3), 2) != 0)
         r7 = (u8 *)RomEmit8768(r7, (int)*(u32 *)(cc + 64));
-    u16 c34 = *(u16 *)(cc + 34);
-    if (c34 != 0u) {
-        u16 n34 = (u16)(c34 - 1u);
-        *(u16 *)(cc + 34) = n34;
-        if (_08002D97C(_08002D978((int)(s16)n34, 3), 2) != 0)
-            r7 = (u8 *)RomEmit88B0(r7, (int)*(u32 *)(cc + 72));
-    } else {
-        r7 = (u8 *)RomEmit88B0(r7, (int)*(u32 *)(cc + 68));
+    {
+        u16 c34 = *(u16 *)(cc + 34);
+        if (c34 != 0u) {
+            u16 n34 = (u16)(c34 - 1u);
+            *(u16 *)(cc + 34) = n34;
+            if (_08002D97C(_08002D978((int)(s16)n34, 3), 2) != 0)
+                r7 = (u8 *)RomEmit88B0(r7, (int)*(u32 *)(cc + 72));
+        } else {
+            r7 = (u8 *)RomEmit88B0(r7, (int)*(u32 *)(cc + 68));
+        }
+        *(u16 *)(r7 + 0) = 2u;
+        *(u16 *)(r7 + 2) = 0x40CDu;
+        *(u16 *)(r7 + 4) = (u16)(((u32)(u16)(*(u16 *)(cc + 38)) << 12)
+                                 | (u32)(u16)(*(u16 *)(cc + 48)));
+        r7 += 8;
+        *(u16 *)(r7 + 0) = 0x8000u;
+        *(u16 *)(r7 + 2) = 220u;
+        *(u16 *)(r7 + 4) = (u16)(((u32)(u16)((u16)(*(u16 *)(cc + 52)) + 24u))
+                                 | ((u32)(u16)(*(u16 *)(cc + 54)) << 12));
+        r7 += 8;
+        *(u16 *)(r7 + 0) = 0x8000u;
+        *(u16 *)(r7 + 2) = 227u;
+        *(u16 *)(r7 + 4) = (u16)(((u32)(u16)((u16)(*(u16 *)(cc + 52))
+                                 + (u16)((u16)(*(u16 *)(cc + 10)) * 2u)))
+                                 | ((u32)(u16)(*(u16 *)(cc + 54)) << 12));
+        r7 += 8;
+        {
+            u16 lane = *(u16 *)(cc + 38);
+            CourseEmit7B18(cc + 88, 12, 0, 0, lane, 1u, 0u, 0u);
+            CourseEmit7B18(cc + 88, 15, 64, 4, lane, 1u, 0u, 0u);
+            CourseEmit7B18(cc + 88, 15, 80, 4, lane, 1u, 0u, 0u);
+            CourseEmit7B18(cc + 88, 15, 96, 4, lane, 1u, 0u, 0u);
+            CourseEmit7B18(cc + 88, 16, 104, 4, lane, 1u, 0u, 0u);
+            CourseEmit7B18(cc + 88, 14, 184, 0, lane, 1u, 0u, 0u);
+            CourseEmit7B18(cc + 88, 15, 208, 4, lane, 1u, 0u, 0u);
+            CourseEmit7B18(cc + 88, 16, 224, 4, lane, 1u, 0u, 0u);
+            {
+                u16 c4 = *(u16 *)(cc + 4);
+                if ((int)(s16)c4 <= 0) return r7;
+                {
+                    u16 c4n = (u16)(c4 - 1u);
+                    *(u16 *)(cc + 4) = c4n;
+                    if ((s32)(s16)c4n > 63
+                        && _08002D97C(_08002D978((int)(s16)c4n, 8), 2) == 0)
+                        return r7;
+                    return (u8 *)RomEmit861C(r7, (int)*(u32 *)(cc + 72));
+                }
+            }
+        }
     }
-    *(u16 *)(r7 + 0) = 2u;
-    *(u16 *)(r7 + 2) = 0x40CDu;
-    *(u16 *)(r7 + 4) = (u16)(((u32)(u16)(*(u16 *)(cc + 38)) << 12)
-                             | (u32)(u16)(*(u16 *)(cc + 48)));
-    r7 += 8;
-    *(u16 *)(r7 + 0) = 0x8000u;
-    *(u16 *)(r7 + 2) = 220u;
-    *(u16 *)(r7 + 4) = (u16)(((u32)(u16)((u16)(*(u16 *)(cc + 52)) + 24u))
-                             | ((u32)(u16)(*(u16 *)(cc + 54)) << 12));
-    r7 += 8;
-    *(u16 *)(r7 + 0) = 0x8000u;
-    *(u16 *)(r7 + 2) = 227u;
-    *(u16 *)(r7 + 4) = (u16)(((u32)(u16)((u16)(*(u16 *)(cc + 52))
-                             + (u16)((u16)(*(u16 *)(cc + 10)) * 2u)))
-                             | ((u32)(u16)(*(u16 *)(cc + 54)) << 12));
-    r7 += 8;
-    u16 lane = *(u16 *)(cc + 38);
-    CourseEmit7B18(cc + 88, 12, 0, 0, lane, 1u, 0u, 0u);
-    CourseEmit7B18(cc + 88, 15, 64, 4, lane, 1u, 0u, 0u);
-    CourseEmit7B18(cc + 88, 15, 80, 4, lane, 1u, 0u, 0u);
-    CourseEmit7B18(cc + 88, 15, 96, 4, lane, 1u, 0u, 0u);
-    CourseEmit7B18(cc + 88, 16, 104, 4, lane, 1u, 0u, 0u);
-    CourseEmit7B18(cc + 88, 14, 184, 0, lane, 1u, 0u, 0u);
-    CourseEmit7B18(cc + 88, 15, 208, 4, lane, 1u, 0u, 0u);
-    CourseEmit7B18(cc + 88, 16, 224, 4, lane, 1u, 0u, 0u);
-    u16 c4 = *(u16 *)(cc + 4);
-    if ((int)(s16)c4 <= 0) return r7;
-    u16 c4n = (u16)(c4 - 1u);
-    *(u16 *)(cc + 4) = c4n;
-    if ((s32)(s16)c4n > 63
-        && _08002D97C(_08002D978((int)(s16)c4n, 8), 2) == 0)
-        return r7;
-    return (u8 *)RomEmit861C(r7, (int)*(u32 *)(cc + 72));
 }
 
 

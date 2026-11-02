@@ -78,7 +78,7 @@ same destination-is-index path as above, not the distinct-destination case.
 ## Reproduction
 
 ```sh
-python3 tools/corpus_match_probe.py --function _0802C160 --c89 \
+python3 tools/corpus_match_probe.py --function _0802C160 \
     --require-all --require-exact
 ```
 

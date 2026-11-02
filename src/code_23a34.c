@@ -25,7 +25,7 @@ extern void _08007B18(void *a, int b, int c, int d, int e, int f, int g, int h);
 // ----------------------------------------------------------------------------
 // 0x080023A34 sub_080023A34(rec, a, b) -- promoted from instruction
 // splices to plain C (2026-10-16), byte-exact under old_agbcc
-// (corpus_match_probe --c89 --require-exact), measured on the pinned
+// (corpus_match_probe --require-exact), measured on the pinned
 // toolchain. The spinning levers, all load-bearing:
 //   * params are `int`, NOT `u16`: agbcc normalises u16 formals at function
 //     ENTRY (before any statement), which would place the `lsls/lsrs r1`
@@ -151,18 +151,21 @@ void _080023AE4(void *rec, int a, int b)
     int zero = 0;
     int off = 0;
 
-    for (int i = 29; i >= 0; i--) {
-        switch (md) {
-        case 2:
-            _08007B18(R + 52, 7, off, a1, 4, one, one, zero);
-            break;
-        case 3:
-            _08007B18(R + 52, 7, off, a1, 5, one, one, zero);
-            break;
-        default:
-            break;
+    {
+        int i = 29;
+        for (; i >= 0; i--) {
+            switch (md) {
+            case 2:
+                _08007B18(R + 52, 7, off, a1, 4, one, one, zero);
+                break;
+            case 3:
+                _08007B18(R + 52, 7, off, a1, 5, one, one, zero);
+                break;
+            default:
+                break;
+            }
+            off += 8;
         }
-        off += 8;
     }
 }
 
@@ -183,20 +186,22 @@ void _080023B60(void *rec, int a, int b)
     register u32 table_base __asm__("r1") = 0x080CC190u;
     register u32 record_base __asm__("r0") = (u32)(uintptr_t)rec;
     __asm__ volatile ("" : "+r" (table_base), "+r" (record_base));
-    u16 w = *(u16 *)(uintptr_t)(table_base + ((int)(s16) * (u16 *)(uintptr_t)(record_base + 140)) * 2);
-    int sel = *(int *)((uintptr_t)rec + 168);
+    {
+        u16 w = *(u16 *)(uintptr_t)(table_base + ((int)(s16) * (u16 *)(uintptr_t)(record_base + 140)) * 2);
+        int sel = *(int *)((uintptr_t)rec + 168);
 
-    switch (sel) {
-    case 1:
-    case 3:
-        _08007B18(rec, (int)w, a, b, 5, 1, 1, 0);
-        break;
-    case 0:
-    case 2:
-        _08007B18(rec, (int)w, a, b, 4, 1, 1, 0);
-        break;
-    default:
-        break;
+        switch (sel) {
+        case 1:
+        case 3:
+            _08007B18(rec, (int)w, a, b, 5, 1, 1, 0);
+            break;
+        case 0:
+        case 2:
+            _08007B18(rec, (int)w, a, b, 4, 1, 1, 0);
+            break;
+        default:
+            break;
+        }
     }
 }
 // The ROM span ends with 00 00; use zero fill instead of gas's Thumb nop.

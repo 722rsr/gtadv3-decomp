@@ -310,8 +310,11 @@ void _080028834(void *rec_) {
     _08003940(40, 0x080C4BE0u);
     _08003940(60, 0x080C4C00u);
     p = (volatile u32 *)(rec + 80);
-    for (int i = 0; i < 3; i++)
-        sum += (s32)*p++;
+    {
+        int i = 0;
+        for (; i < 3; i++)
+            sum += (s32)*p++;
+    }
     _08003ADC(120, sub_0802DE04(100 * sum, 192 << 6));
 }
 // The spliced span for 0x08028834 starts at the asm label `sub_080028834`,
@@ -386,12 +389,17 @@ __asm__(".align 2, 0");
 // ----------------------------------------------------------------------------
 void _0800289D0(const u16 *vals) {
     _080038A4(60, 60, 0x0806133Cu);
-    const u16 *p = vals;
-    u32 y = 80;
-    for (int k = 3; k >= 0; k--) {
-        _08003978(60, (int)y, *p);
-        p++;
-        y += 10;
+    {
+        const u16 *p = vals;
+        u32 y = 80;
+        {
+            int k = 3;
+            for (; k >= 0; k--) {
+                _08003978(60, (int)y, *p);
+                p++;
+                y += 10;
+            }
+        }
     }
 }
 
@@ -417,11 +425,13 @@ void _080028A00(void *rec_, u32 dummy, u32 mask_) {
             _08005AA4(0, 1);
         }
     }
-    u32 b2 = 2u;
-    if ((m & b2) != 0) {
-        if (_08005A8C(m & b2) != 0) {
-            _08001E48(1, 2);
-            _08005AA4(1, 1);
+    {
+        u32 b2 = 2u;
+        if ((m & b2) != 0) {
+            if (_08005A8C(m & b2) != 0) {
+                _08001E48(1, 2);
+                _08005AA4(1, 1);
+            }
         }
     }
 }
@@ -506,11 +516,16 @@ void sub_080028AC0(int cmd, int x, int y, void *ctx) __attribute__((alias("_0800
 void _080028B88(void *rec) {
     vu16 *p = (vu16 *)rec;
     _080038A4(60, 60, 0x08061344u);
-    int y = 80;
-    for (int i = 3; i >= 0; i--) {
-        _08003978(60, y, (int)p[0]);
-        p++;
-        y += 10;
+    {
+        int y = 80;
+        {
+            int i = 3;
+            for (; i >= 0; i--) {
+                _08003978(60, y, (int)p[0]);
+                p++;
+                y += 10;
+            }
+        }
     }
 }
 
@@ -564,47 +579,57 @@ void _080028C54(int slot, int sel) {
     /* ROM keeps the masked selector in r1, copies it to r0, then shifts r1. */
     register u32 k __asm__("r1") = (u32)sel & 0xFFFu;
     __asm__ volatile("" : "+r"(k));
-    register s32 shiftedInput __asm__("r0");
-    shiftedInput = (s32)k;
-    __asm__ volatile("" : "+r"(shiftedInput));
-    k = (u32)(shiftedInput >> 4);
-    register u32 tableBase __asm__("r2") = 0x02038000u;
-    __asm__ volatile("" : "+r"(tableBase));
-    register volatile u8 *tableAddr __asm__("r0") =
-        (volatile u8 *)(uintptr_t)(k + tableBase);
-    register u32 b __asm__("r1");
-    b = *tableAddr;
-    __asm__ volatile("" : "+r"(b) : : "memory");
-    u32 base = ((b << 3) + b) << 8;
-    /* r5 keeps slot unscaled until the ROM's first source address is formed. */
-    register u32 lane __asm__("r5") = (u32)slot;
-    register u32 firstSourceOffset __asm__("r2") = 0x02038100u;
-    __asm__ volatile("" : "+r"(firstSourceOffset));
-    register u32 firstSource __asm__("r0") = base + firstSourceOffset;
-    __asm__ volatile("" : : "r"(firstSource));
-    lane <<= 12;
-    // The 12 lanes are UNROLLED, not tabled. The ROM emits one pool load and one
-    // `adds` per operand at each of the 12 call sites (0x8028C78, 0x8028C86, ...
-    // 0x8028D0E), so the source values are literals in the code; a `static const
-    // u32 SRC[12]` would put them in `.rodata`, which the slice cannot place at
-    // a ROM address (measured: the probe reports UNRESOLVED_RELOCATION on
-    // `.rodata`). `base` and `lane` stay live across all 12 calls, which is the
-    // `push {r4,r5,lr}` frame.
-    _0802D970((const void *)(uintptr_t)firstSource,
-               (void *)(uintptr_t)(lane + 0x06010120u), 48u);
-    _0802D970((const void *)(uintptr_t)(base + 0x020381C0u), (void *)(uintptr_t)(lane + 0x06010220u), 48u);
-    _0802D970((const void *)(uintptr_t)(base + 0x02038280u), (void *)(uintptr_t)(lane + 0x06010320u), 48u);
-    _0802D970((const void *)(uintptr_t)(base + 0x02038340u), (void *)(uintptr_t)(lane + 0x06010420u), 48u);
-    _0802D970((const void *)(uintptr_t)(base + 0x02038400u), (void *)(uintptr_t)(lane + 0x06010520u), 48u);
-    _0802D970((const void *)(uintptr_t)(base + 0x020384C0u), (void *)(uintptr_t)(lane + 0x06010620u), 48u);
-    _0802D970((const void *)(uintptr_t)(base + 0x02038580u), (void *)(uintptr_t)(lane + 0x06010920u), 48u);
-    _0802D970((const void *)(uintptr_t)(base + 0x02038640u), (void *)(uintptr_t)(lane + 0x06010A20u), 48u);
-    _0802D970((const void *)(uintptr_t)(base + 0x02038700u), (void *)(uintptr_t)(lane + 0x06010B20u), 48u);
-    _0802D970((const void *)(uintptr_t)(base + 0x020387C0u), (void *)(uintptr_t)(lane + 0x06010C20u), 48u);
-    _0802D970((const void *)(uintptr_t)(base + 0x02038880u), (void *)(uintptr_t)(lane + 0x06010D20u), 48u);
-    _0802D970((const void *)(uintptr_t)(base + 0x02038940u), (void *)(uintptr_t)(lane + 0x06010E20u), 48u);
-    sub_0802D974((const void *)0x0203C900u, (void *)0x05000200u, 0x04000008u);
-    __asm__ volatile("" : : "r"(base));
+    {
+        register s32 shiftedInput __asm__("r0");
+        shiftedInput = (s32)k;
+        __asm__ volatile("" : "+r"(shiftedInput));
+        k = (u32)(shiftedInput >> 4);
+        {
+            register u32 tableBase __asm__("r2") = 0x02038000u;
+            __asm__ volatile("" : "+r"(tableBase));
+            {
+                register volatile u8 *tableAddr __asm__("r0") =
+                    (volatile u8 *)(uintptr_t)(k + tableBase);
+                register u32 b __asm__("r1");
+                b = *tableAddr;
+                __asm__ volatile("" : "+r"(b) : : "memory");
+                {
+                    u32 base = ((b << 3) + b) << 8;
+                    /* r5 keeps slot unscaled until the ROM's first source address is formed. */
+                    register u32 lane __asm__("r5") = (u32)slot;
+                    register u32 firstSourceOffset __asm__("r2") = 0x02038100u;
+                    __asm__ volatile("" : "+r"(firstSourceOffset));
+                    {
+                        register u32 firstSource __asm__("r0") = base + firstSourceOffset;
+                        __asm__ volatile("" : : "r"(firstSource));
+                        lane <<= 12;
+                        // The 12 lanes are UNROLLED, not tabled. The ROM emits one pool load and one
+                        // `adds` per operand at each of the 12 call sites (0x8028C78, 0x8028C86, ...
+                        // 0x8028D0E), so the source values are literals in the code; a `static const
+                        // u32 SRC[12]` would put them in `.rodata`, which the slice cannot place at
+                        // a ROM address (measured: the probe reports UNRESOLVED_RELOCATION on
+                        // `.rodata`). `base` and `lane` stay live across all 12 calls, which is the
+                        // `push {r4,r5,lr}` frame.
+                        _0802D970((const void *)(uintptr_t)firstSource,
+                                   (void *)(uintptr_t)(lane + 0x06010120u), 48u);
+                        _0802D970((const void *)(uintptr_t)(base + 0x020381C0u), (void *)(uintptr_t)(lane + 0x06010220u), 48u);
+                        _0802D970((const void *)(uintptr_t)(base + 0x02038280u), (void *)(uintptr_t)(lane + 0x06010320u), 48u);
+                        _0802D970((const void *)(uintptr_t)(base + 0x02038340u), (void *)(uintptr_t)(lane + 0x06010420u), 48u);
+                        _0802D970((const void *)(uintptr_t)(base + 0x02038400u), (void *)(uintptr_t)(lane + 0x06010520u), 48u);
+                        _0802D970((const void *)(uintptr_t)(base + 0x020384C0u), (void *)(uintptr_t)(lane + 0x06010620u), 48u);
+                        _0802D970((const void *)(uintptr_t)(base + 0x02038580u), (void *)(uintptr_t)(lane + 0x06010920u), 48u);
+                        _0802D970((const void *)(uintptr_t)(base + 0x02038640u), (void *)(uintptr_t)(lane + 0x06010A20u), 48u);
+                        _0802D970((const void *)(uintptr_t)(base + 0x02038700u), (void *)(uintptr_t)(lane + 0x06010B20u), 48u);
+                        _0802D970((const void *)(uintptr_t)(base + 0x020387C0u), (void *)(uintptr_t)(lane + 0x06010C20u), 48u);
+                        _0802D970((const void *)(uintptr_t)(base + 0x02038880u), (void *)(uintptr_t)(lane + 0x06010D20u), 48u);
+                        _0802D970((const void *)(uintptr_t)(base + 0x02038940u), (void *)(uintptr_t)(lane + 0x06010E20u), 48u);
+                        sub_0802D974((const void *)0x0203C900u, (void *)0x05000200u, 0x04000008u);
+                        __asm__ volatile("" : : "r"(base));
+                    }
+                }
+            }
+        }
+    }
 }
 void sub_080028C54(int slot, int sel) __attribute__((alias("_080028C54")));
 
@@ -638,42 +663,58 @@ void _080028D9C(void *ctx) {
     _0802D974(&stk[1], (void *)0x06010000u, 0x05001000u);
     sub_08003104(c + 24);
     sub_0800473C(0x03004268u);
-    register u32 *rowDst __asm__("r9") = &stk[2];
-    register u32 *rowSrc __asm__("r7") = &stk[3];
-    register u32 recordOffset __asm__("r0") = 0x1A98u;
-    __asm__ volatile("" : "+r"(recordOffset));
-    register u8 *recordArea __asm__("r4") = c + recordOffset;
-    register const void *tableAddress __asm__("r1") =
-        (const void *)0x080CE018u;
-    __asm__ volatile("" : "+r"(tableAddress));
-    register const void *recordTable __asm__("r8") = tableAddress;
-    do {
-        stk[2] = 0;
-        _0802D974(rowDst, rowSrc, 0x05000001u);
-        stk[3] = (u32)_08001E14(i);
-        void *q0 = _08005080(recordArea, recordTable);
-        register void *v0 __asm__("r0") = _08002B7B8(q0, &stk[3]);
-        register u32 rowByteOffset __asm__("r2") = (u32)i << 2;
-        stk[4] = rowByteOffset;
-        register u32 firstFieldOffset __asm__("r3") = 0x1AB4u;
-        __asm__ volatile("" : "+r"(rowByteOffset), "+r"(firstFieldOffset));
-        register u32 firstFieldAddress __asm__("r1") =
-            (u32)(uintptr_t)c + firstFieldOffset + rowByteOffset;
-        *(volatile u32 *)(uintptr_t)firstFieldAddress = (u32)(uintptr_t)v0;
-        void *q1 = _08005080(recordArea, recordTable);
-        register void *v1 __asm__("r0") = _08002B7B8(q1, &stk[3]);
-        register u32 secondFieldOffset __asm__("r2") = 0x1AC4u;
-        __asm__ volatile("" : "+r"(secondFieldOffset));
-        register u32 secondFieldAddress __asm__("r1") =
-            (u32)(uintptr_t)c + secondFieldOffset;
-        register u32 rowByteOffsetCopy __asm__("r3") = stk[4];
-        secondFieldAddress += rowByteOffsetCopy;
-        *(volatile u32 *)(uintptr_t)secondFieldAddress = (u32)(uintptr_t)v1;
-        i++;
-    } while (i <= 3);
-    _08001818();
-    _08004DEC(c + 0x1AA0u, 0x080CDFD0u,
-              (u32)(uintptr_t)(c + 0x1AACu));
+    {
+        register u32 *rowDst __asm__("r9") = &stk[2];
+        register u32 *rowSrc __asm__("r7") = &stk[3];
+        register u32 recordOffset __asm__("r0") = 0x1A98u;
+        __asm__ volatile("" : "+r"(recordOffset));
+        {
+            register u8 *recordArea __asm__("r4") = c + recordOffset;
+            register const void *tableAddress __asm__("r1") =
+                (const void *)0x080CE018u;
+            __asm__ volatile("" : "+r"(tableAddress));
+            {
+                register const void *recordTable __asm__("r8") = tableAddress;
+                do {
+                    stk[2] = 0;
+                    _0802D974(rowDst, rowSrc, 0x05000001u);
+                    stk[3] = (u32)_08001E14(i);
+                    {
+                        void *q0 = _08005080(recordArea, recordTable);
+                        register void *v0 __asm__("r0") = _08002B7B8(q0, &stk[3]);
+                        register u32 rowByteOffset __asm__("r2") = (u32)i << 2;
+                        stk[4] = rowByteOffset;
+                        {
+                            register u32 firstFieldOffset __asm__("r3") = 0x1AB4u;
+                            __asm__ volatile("" : "+r"(rowByteOffset), "+r"(firstFieldOffset));
+                            {
+                                register u32 firstFieldAddress __asm__("r1") =
+                                    (u32)(uintptr_t)c + firstFieldOffset + rowByteOffset;
+                                *(volatile u32 *)(uintptr_t)firstFieldAddress = (u32)(uintptr_t)v0;
+                                {
+                                    void *q1 = _08005080(recordArea, recordTable);
+                                    register void *v1 __asm__("r0") = _08002B7B8(q1, &stk[3]);
+                                    register u32 secondFieldOffset __asm__("r2") = 0x1AC4u;
+                                    __asm__ volatile("" : "+r"(secondFieldOffset));
+                                    {
+                                        register u32 secondFieldAddress __asm__("r1") =
+                                            (u32)(uintptr_t)c + secondFieldOffset;
+                                        register u32 rowByteOffsetCopy __asm__("r3") = stk[4];
+                                        secondFieldAddress += rowByteOffsetCopy;
+                                        *(volatile u32 *)(uintptr_t)secondFieldAddress = (u32)(uintptr_t)v1;
+                                        i++;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } while (i <= 3);
+                _08001818();
+                _08004DEC(c + 0x1AA0u, 0x080CDFD0u,
+                          (u32)(uintptr_t)(c + 0x1AACu));
+            }
+        }
+    }
 }
 
 // Keep the closure spelling next to this body so its thumb_set glue lands in
@@ -685,21 +726,28 @@ void sub_080028D9C(void *ctx) __attribute__((alias("_080028D9C")));
 // ----------------------------------------------------------------------------
 void _080028EB0(void *ctx) {
     u8 *c = (u8 *)ctx;
-    for (int i = 0; i < _08001F8C(); i++) {
-        u32 ix = (u32)i * 4u;
-        OPaque(ix);
-        u32 a = (u32)(uintptr_t)c + 0x1AC4u;
-        u8 *rec = *(u8 *volatile *)(uintptr_t)(a + ix);
-        u8 *p = (u8 *)_08002B7B4(rec);
-        s32 d = (s32)((u32)*(volatile u32 *)(p + 8) - (u32)*(volatile u32 *)(c + 8));
-        _080028C54(i, d);
+    {
+        int i = 0;
+        for (; i < _08001F8C(); i++) {
+            u32 ix = (u32)i * 4u;
+            OPaque(ix);
+            {
+                u32 a = (u32)(uintptr_t)c + 0x1AC4u;
+                u8 *rec = *(u8 *volatile *)(uintptr_t)(a + ix);
+                u8 *p = (u8 *)_08002B7B4(rec);
+                s32 d = (s32)((u32)*(volatile u32 *)(p + 8) - (u32)*(volatile u32 *)(c + 8));
+                _080028C54(i, d);
+            }
+        }
     }
     sub_08002C98();
-    volatile vu32 *dma = (volatile vu32 *)0x040000D4u;
-    *(volatile vu16 *)0x040000DEu = 0u;
-    dma[0] = 0x03004268u;
-    dma[1] = 0x04000020u;
-    dma[2] = 0xA2600008u;
+    {
+        volatile vu32 *dma = (volatile vu32 *)0x040000D4u;
+        *(volatile vu16 *)0x040000DEu = 0u;
+        dma[0] = 0x03004268u;
+        dma[1] = 0x04000020u;
+        dma[2] = 0xA2600008u;
+    }
 }
 
 // Adjacent to its body on purpose: agbcc emits an alias's.globl/.thumb_set
@@ -1041,12 +1089,14 @@ void _080029230(void) {
     *(vu16 *)0x04000200u = (u16)(*(vu16 *)0x04000200u & 0xFFFDu);
     *(vu16 *)0x04000004u = (u16)(*(vu16 *)0x04000004u & 0xFFEFu);
     *(vu16 *)0x04000208u = 1u;
-    volatile vu32 *d4 = (volatile vu32 *)0x040000D4u;
-    *(vu16 *)0x040000DEu = 0u;
-    d4[0] = 0u;
-    d4[1] = 0u;
-    d4[2] = 0u;
-    _080024AC();
+    {
+        volatile vu32 *d4 = (volatile vu32 *)0x040000D4u;
+        *(vu16 *)0x040000DEu = 0u;
+        d4[0] = 0u;
+        d4[1] = 0u;
+        d4[2] = 0u;
+        _080024AC();
+    }
 }
 
 // ----------------------------------------------------------------------------
@@ -1131,12 +1181,14 @@ s32 _08002937C(s32 nw, u32 *addr, s32 step) {
             arg = d + 0x10000;
         else
             arg = d;
-        register s32 q __asm__("r3") = sub_0802DE04(arg, step);
-        if (q == 0)
-            *addrv = (u32)nwv;
-        else
-            *addrv = (u32)(base + q);
-        return q;
+        {
+            register s32 q __asm__("r3") = sub_0802DE04(arg, step);
+            if (q == 0)
+                *addrv = (u32)nwv;
+            else
+                *addrv = (u32)(base + q);
+            return q;
+        }
     }
 }
 // Content is 90 bytes (2 mod 4); the ROM pads the span with `00 00` where
@@ -1201,24 +1253,32 @@ int _08002944C(void *rec) {
     // record+76. These barriers keep agbcc from folding the address stages.
     register u32 idx __asm__("r0") = *(volatile u8 *)(r + 156);
     __asm__ volatile ("" : "+r" (idx));
-    register u32 slot_off __asm__("r1") = idx << 1;
-    __asm__ volatile ("" : "+r" (slot_off));
-    register u8 *slot_base __asm__("r0") = r;
-    __asm__ volatile ("" : "+r" (slot_base));
-    slot_base += 76;
-    const s16 *slot = (const s16 *)(slot_base + slot_off);
-    if (*slot > 0) {
-        // Keep the ROM's signed indexed load: copy the record base to r0,
-        // advance by 104 bytes, then load with r2=0.
-        register const s16 *num_base __asm__("r0") = (const s16 *)r;
-        __asm__ volatile ("" : "+r" (num_base));
-        num_base += 52;
-        register u32 num_index __asm__("r2") = 0;
-        int num = num_base[num_index];
-        int den = *slot;
-        r3 = (u16)sub_0802DE04(num, den);
+    {
+        register u32 slot_off __asm__("r1") = idx << 1;
+        __asm__ volatile ("" : "+r" (slot_off));
+        {
+            register u8 *slot_base __asm__("r0") = r;
+            __asm__ volatile ("" : "+r" (slot_base));
+            slot_base += 76;
+            {
+                const s16 *slot = (const s16 *)(slot_base + slot_off);
+                if (*slot > 0) {
+                    // Keep the ROM's signed indexed load: copy the record base to r0,
+                    // advance by 104 bytes, then load with r2=0.
+                    register const s16 *num_base __asm__("r0") = (const s16 *)r;
+                    __asm__ volatile ("" : "+r" (num_base));
+                    num_base += 52;
+                    {
+                        register u32 num_index __asm__("r2") = 0;
+                        int num = num_base[num_index];
+                        int den = *slot;
+                        r3 = (u16)sub_0802DE04(num, den);
+                    }
+                }
+                return (s16)r3;
+            }
+        }
     }
-    return (s16)r3;
 }
 // The 58-byte body is followed by ROM padding 00 00 before the next 4-byte
 // entry; request zero-fill instead of gas's default Thumb nop.
@@ -1232,26 +1292,36 @@ int _080029488(void *rec) {
     register u16 result __asm__("r3") = *(u16 *)(r + 104);
     register u32 idx __asm__("r0") = *(volatile u8 *)(r + 156);
     __asm__ volatile("" : "+r"(idx));
-    register u32 slotOffset __asm__("r1") = (u32)idx << 1;
-    register volatile u8 *slot __asm__("r0") = r + 76;
-    __asm__ volatile("" : "+r"(slot));
-    slot += slotOffset;
-    register u32 uv __asm__("r1") = *(volatile u16 *)slot;
-    /* Keep the unsigned and signed reads separate as they are in the ROM. */
-    __asm__ volatile("" : : "r"(uv) : "memory");
-    register s32 slotSigned __asm__("r0") = *(s16 *)slot;
-    if (slotSigned > 0) {
-        register u8 *bptr __asm__("r0") = r;
-        bptr += 140;
-        result = *(volatile u16 *)bptr;
-        register u32 product __asm__("r2") = (u32)uv * result;
-        __asm__ volatile("" : "+r"(product));
-        register u32 shifted __asm__("r0") = product;
-        __asm__ volatile("" : "+r"(shifted));
-        shifted <<= 16;
-        result = (u16)(shifted >> 16);
+    {
+        register u32 slotOffset __asm__("r1") = (u32)idx << 1;
+        register volatile u8 *slot __asm__("r0") = r + 76;
+        __asm__ volatile("" : "+r"(slot));
+        slot += slotOffset;
+        {
+            register u32 uv __asm__("r1") = *(volatile u16 *)slot;
+            /* Keep the unsigned and signed reads separate as they are in the ROM. */
+            __asm__ volatile("" : : "r"(uv) : "memory");
+            {
+                register s32 slotSigned __asm__("r0") = *(s16 *)slot;
+                if (slotSigned > 0) {
+                    register u8 *bptr __asm__("r0") = r;
+                    bptr += 140;
+                    result = *(volatile u16 *)bptr;
+                    {
+                        register u32 product __asm__("r2") = (u32)uv * result;
+                        __asm__ volatile("" : "+r"(product));
+                        {
+                            register u32 shifted __asm__("r0") = product;
+                            __asm__ volatile("" : "+r"(shifted));
+                            shifted <<= 16;
+                            result = (u16)(shifted >> 16);
+                        }
+                    }
+                }
+                return (s16)result;
+            }
+        }
     }
-    return (s16)result;
 }
 
 // ----------------------------------------------------------------------------
@@ -1269,8 +1339,10 @@ int _0800294C0(void *p0, void *p1, int d) {
     int v[2];
     v[0] = x - *(volatile int *)(b + 0);
     v[1] = y - *(volatile int *)(b + 4);
-    int a = _08005CB4(v);
-    return (a << 16) >> 12;
+    {
+        int a = _08005CB4(v);
+        return (a << 16) >> 12;
+    }
 }
 
 // Rule 6: the splice for 0x080294C0 deletes the asm `sub_0800294C0` spelling,
@@ -1296,15 +1368,19 @@ int _0800294FC(void *p0, void *p1, int limit) {
         if (acc >= limit)
             break;
     }
-    u8 *rw = (u8 *)row;
-    volatile u8 *b = (volatile u8 *)p0;
-    int x = *(volatile int *)(rw + 12) + *(s16 *)(rw + 28);
-    int y = *(volatile int *)(rw + 16) + *(s16 *)(rw + 30);
-    int v[2];
-    v[0] = x - *(volatile int *)(b + 0);
-    v[1] = y - *(volatile int *)(b + 4);
-    int a = _08005CB4(v);
-    return (a << 16) >> 12;
+    {
+        u8 *rw = (u8 *)row;
+        volatile u8 *b = (volatile u8 *)p0;
+        int x = *(volatile int *)(rw + 12) + *(s16 *)(rw + 28);
+        int y = *(volatile int *)(rw + 16) + *(s16 *)(rw + 30);
+        int v[2];
+        v[0] = x - *(volatile int *)(b + 0);
+        v[1] = y - *(volatile int *)(b + 4);
+        {
+            int a = _08005CB4(v);
+            return (a << 16) >> 12;
+        }
+    }
 }
 
 // Rule 6: the splice for 0x080294FC deletes the asm `sub_0800294FC` spelling,
@@ -1333,15 +1409,19 @@ void _08002955C(void *rec) {
         *(volatile int *)(r + 32) += (int)0xFFFFFE00;
     if (k & 16u)
         *(volatile int *)(r + 32) += 512;
-    int v[2];
-    // ROM order: [1] is stored first (0x080295C0 `str r0,[sp,#4]`), then [0].
-    v[1] = -(s16)*(u16 *)(r + 140);
-    v[0] = 0;
-    int ang = (*(volatile int *)(r + 32) << 12) >> 16;
-    _08005BA8(v, ang);
-    *(volatile int *)(r + 4) += v[0];
-    *(volatile int *)(r + 8) += v[1];
-    *(volatile int *)(r + 28) = *(volatile int *)(r + 32);
+    {
+        int v[2];
+        // ROM order: [1] is stored first (0x080295C0 `str r0,[sp,#4]`), then [0].
+        v[1] = -(s16)*(u16 *)(r + 140);
+        v[0] = 0;
+        {
+            int ang = (*(volatile int *)(r + 32) << 12) >> 16;
+            _08005BA8(v, ang);
+            *(volatile int *)(r + 4) += v[0];
+            *(volatile int *)(r + 8) += v[1];
+            *(volatile int *)(r + 28) = *(volatile int *)(r + 32);
+        }
+    }
 }
 
 // ----------------------------------------------------------------------------
@@ -1390,60 +1470,62 @@ u32 _0800295F4(void *rec) {
                     u8 *t = (u8 *)(r + 159);
                     u8 test = 1u & *t;
                     __asm__ volatile ("" : "+r" (t));
-                    u8 *fl = t;
-                    if (!test)
-                        tmp <<= 1;
                     {
-                        u16 v = *(u16 *)lat;
-                        if (*(s16 *)lat > 0) {
-                            int d = v - *(u16 *)lim;
-                            *(u16 *)lat = (u16)d;
-                            if ((s32)(d << 16) > 0x1C20000)
-                                *(u16 *)lat = (u16)(d - *(u16 *)lim);
-                            if (*fl & 4u)
-                                *(u16 *)lat = (u16)(*(u16 *)lat - *(u16 *)lim);
-                            if (*(s16 *)lat < 0)
-                                *lat = zero;
-                        } else if (*(s16 *)lat < 0) {
-                            *(u16 *)lat = (u16)(*(u16 *)lim + v);
-                            if (*(s16 *)lat < -450)
-                                *(u16 *)lat = (u16)(*(u16 *)lim + *(u16 *)lat);
-                            if (*fl & 8u)
-                                *(u16 *)lat = (u16)(*(u16 *)lat + *(u16 *)lim);
-                            if (*(s16 *)lat > 0)
-                                *lat = zero;
-                        }
-                    }
-                    *(int *)(r + 32) += ((s32)(*(u16 *)out << 16)) >> 17;
-                    {
-                        int t2;
-                        if (*fl & 8u) {
-                            if (*out > 0) {
-                                t2 = *out;
-                                __asm__ volatile ("");
-                                if (t2 < 0)
-                                    t2 = -t2;
-                                t2 >>= 1;
-                                __asm__ volatile ("");
-                                goto lane_done;
+                        u8 *fl = t;
+                        if (!test)
+                            tmp <<= 1;
+                        {
+                            u16 v = *(u16 *)lat;
+                            if (*(s16 *)lat > 0) {
+                                int d = v - *(u16 *)lim;
+                                *(u16 *)lat = (u16)d;
+                                if ((s32)(d << 16) > 0x1C20000)
+                                    *(u16 *)lat = (u16)(d - *(u16 *)lim);
+                                if (*fl & 4u)
+                                    *(u16 *)lat = (u16)(*(u16 *)lat - *(u16 *)lim);
+                                if (*(s16 *)lat < 0)
+                                    *lat = zero;
+                            } else if (*(s16 *)lat < 0) {
+                                *(u16 *)lat = (u16)(*(u16 *)lim + v);
+                                if (*(s16 *)lat < -450)
+                                    *(u16 *)lat = (u16)(*(u16 *)lim + *(u16 *)lat);
+                                if (*fl & 8u)
+                                    *(u16 *)lat = (u16)(*(u16 *)lat + *(u16 *)lim);
+                                if (*(s16 *)lat > 0)
+                                    *lat = zero;
                             }
                         }
-                        __asm__ volatile ("");
-                        if (*fl & 4u) {
-                            if (*out < 0) {
-                                t2 = *out;
-                                if (t2 < 0)
-                                    t2 = -t2;
-                                t2 >>= 1;
-                                goto lane_done;
+                        *(int *)(r + 32) += ((s32)(*(u16 *)out << 16)) >> 17;
+                        {
+                            int t2;
+                            if (*fl & 8u) {
+                                if (*out > 0) {
+                                    t2 = *out;
+                                    __asm__ volatile ("");
+                                    if (t2 < 0)
+                                        t2 = -t2;
+                                    t2 >>= 1;
+                                    __asm__ volatile ("");
+                                    goto lane_done;
+                                }
                             }
+                            __asm__ volatile ("");
+                            if (*fl & 4u) {
+                                if (*out < 0) {
+                                    t2 = *out;
+                                    if (t2 < 0)
+                                        t2 = -t2;
+                                    t2 >>= 1;
+                                    goto lane_done;
+                                }
+                            }
+                            t2 = *out;
+                            if (t2 < 0)
+                                t2 = -t2;
+                            t2 <<= 2;
+                        lane_done:
+                            tmp = t2 + 20;
                         }
-                        t2 = *out;
-                        if (t2 < 0)
-                            t2 = -t2;
-                        t2 <<= 2;
-                    lane_done:
-                        tmp = t2 + 20;
                     }
                 }
             }
@@ -1633,44 +1715,52 @@ void _0800299E0(void *rec_) {
     register u8 *status __asm__("r5") = rec + 159;
     register u32 zero6 __asm__("r6") = 0;
     __asm__ volatile ("" : : "r" (zero6) : "cc");
-    register u32 clear __asm__("r0");
-    clear = 0;
-    __asm__ volatile ("" : : "r" (clear));
-    *(volatile u8 *)status = (u8)clear;
-    register int speed __asm__("r0");
-    speed = *(s16 *)(uintptr_t)(rec + 140);
-    if (speed > 199) {
-        int initial = _0800294C0(rec + 4, rec + 36, 1);
-        register int delta __asm__("r1") =
-            _08002937C(initial, (u32 *)(rec + 32), 8);
-        if (delta > 0)
-            *status |= 8;
-        else if (delta < 0)
-            *status |= 4;
+    {
+        register u32 clear __asm__("r0");
+        clear = 0;
+        __asm__ volatile ("" : : "r" (clear));
+        *(volatile u8 *)status = (u8)clear;
+        {
+            register int speed __asm__("r0");
+            speed = *(s16 *)(uintptr_t)(rec + 140);
+            if (speed > 199) {
+                int initial = _0800294C0(rec + 4, rec + 36, 1);
+                register int delta __asm__("r1") =
+                    _08002937C(initial, (u32 *)(rec + 32), 8);
+                if (delta > 0)
+                    *status |= 8;
+                else if (delta < 0)
+                    *status |= 4;
 
-        int magnitude = delta;
-        if (delta < 0)
-            magnitude = -delta;
-        if (magnitude > 192) {
-            register volatile u16 *heading __asm__("r2") =
-                (volatile u16 *)(rec + 134);
-            register int half __asm__("r0") = delta >> 1;
-            register u32 old __asm__("r1") = *heading;
-            register u32 sum __asm__("r3") = old + (u32)half;
-            __asm__ volatile ("" : "+r" (half), "+r" (old), "+r" (sum));
-            *heading = (u16)sum;
-            if ((*(u32 *)(rec + 92) & 0x8000u) == 0) {
-                register int signed_sum __asm__("r0") = (s16)sum;
-                register int maximum __asm__("r1") = 400;
-                if (signed_sum > maximum)
-                    *heading = (u16)maximum;
-                int lower = *(s16 *)(uintptr_t)heading;
-                register int minimum __asm__("r1") = -400;
-                if (lower < minimum)
-                    *heading = (u16)minimum;
+                {
+                    int magnitude = delta;
+                    if (delta < 0)
+                        magnitude = -delta;
+                    if (magnitude > 192) {
+                        register volatile u16 *heading __asm__("r2") =
+                            (volatile u16 *)(rec + 134);
+                        register int half __asm__("r0") = delta >> 1;
+                        register u32 old __asm__("r1") = *heading;
+                        register u32 sum __asm__("r3") = old + (u32)half;
+                        __asm__ volatile ("" : "+r" (half), "+r" (old), "+r" (sum));
+                        *heading = (u16)sum;
+                        if ((*(u32 *)(rec + 92) & 0x8000u) == 0) {
+                            register int signed_sum __asm__("r0") = (s16)sum;
+                            register int maximum __asm__("r1") = 400;
+                            if (signed_sum > maximum)
+                                *heading = (u16)maximum;
+                            {
+                                int lower = *(s16 *)(uintptr_t)heading;
+                                register int minimum __asm__("r1") = -400;
+                                if (lower < minimum)
+                                    *heading = (u16)minimum;
+                            }
+                        }
+                    }
+                    _0800295F4(rec);
+                }
             }
         }
-        _0800295F4(rec);
     }
 }
 void sub_0800299E0(void *rec) __attribute__((alias("_0800299E0")));
@@ -1678,7 +1768,7 @@ void sub_0800299E0(void *rec) __attribute__((alias("_0800299E0")));
 // ----------------------------------------------------------------------------
 // 0x08029A74 — surface-adaptive speed (rem/div + flag-159 lanes). 340 B, EXACT.
 //
-// `python3 tools/corpus_match_probe.py --function _080029A74 --c89
+// `python3 tools/corpus_match_probe.py --function _080029A74
 // --require-all --require-exact` reports 340/340. Layout:
 //   a = (u16)(rec[118] + (rec[148] << 2)); b likewise from rec[120];
 //   delta = (s16)(rec[148] + rec[126]) + _0802DE9C(rec[4], 12)   (12 = `% 12`);
@@ -1861,7 +1951,7 @@ apply:
 // ----------------------------------------------------------------------------
 // 0x08029D48 — decel/approach + 29488 + 134 nudge. 232 B, EXACT.
 //
-// `python3 tools/corpus_match_probe.py --function _080029D48 --c89
+// `python3 tools/corpus_match_probe.py --function _080029D48
 // --require-exact` reports 232/232. Seven spellings are load-bearing; each was
 // swept one at a time against the ROM span.
 //
@@ -1997,45 +2087,53 @@ void _080029E60(void *rec) {
     volatile u8 *p162 = (volatile u8 *)(r + 162);
     *p162 = (u8)v116;
     p162 -= 34;
-    register s32 dif asm("r0") = (s16)v104;
-    dif -= *(volatile u16 *)p162;
-    dif <<= 16;
-    v104 = (u16)((u32)dif >> 16);
-    if (dif < 0)
-        *(volatile u16 *)(r + 116) = 0;
-    else
-        *(volatile u16 *)(r + 116) = 1;
     {
-        register volatile u8 *p159 asm("r1") = r + 159;
-        register u32 one asm("r3") = 1;
-        __asm__ volatile ("" : "+r" (one));
-        register u32 mask asm("r0") = one;
-        __asm__ volatile ("" : "+r" (mask));
-        register u32 cond asm("r0") = mask & *p159;
-        __asm__ volatile ("" : "+r" (cond));
-        if (cond) {
-        int a136 = *(const s16 *)(r + 136);
-        if (a136 < 0)
-            a136 = -a136;
-        if (a136 > 8)
-            *(volatile u16 *)(r + 116) = (u16)one;
-        if (*(const s16 *)(r + 142) > *(const s16 *)(r + 144))
-            *(volatile u16 *)(r + 116) = (u16)one;
+        register s32 dif asm("r0") = (s16)v104;
+        dif -= *(volatile u16 *)p162;
+        dif <<= 16;
+        v104 = (u16)((u32)dif >> 16);
+        if (dif < 0)
+            *(volatile u16 *)(r + 116) = 0;
+        else
+            *(volatile u16 *)(r + 116) = 1;
+        {
+            register volatile u8 *p159 asm("r1") = r + 159;
+            register u32 one asm("r3") = 1;
+            __asm__ volatile ("" : "+r" (one));
+            {
+                register u32 mask asm("r0") = one;
+                __asm__ volatile ("" : "+r" (mask));
+                {
+                    register u32 cond asm("r0") = mask & *p159;
+                    __asm__ volatile ("" : "+r" (cond));
+                    if (cond) {
+                    int a136 = *(const s16 *)(r + 136);
+                    if (a136 < 0)
+                        a136 = -a136;
+                    if (a136 > 8)
+                        *(volatile u16 *)(r + 116) = (u16)one;
+                    if (*(const s16 *)(r + 142) > *(const s16 *)(r + 144))
+                        *(volatile u16 *)(r + 116) = (u16)one;
+                    }
+                }
+            }
         }
-    }
-    if (*(const s16 *)(r + 116) == 0 && *(volatile u8 *)(r + 162) == 1 &&
-        (s16)_0802DE9C(*(const s16 *)(r + 104), 7) == 0 &&
-        *(const s16 *)(r + 104) > *(const s16 *)(r + 122) &&
-        *(const s16 *)(r + 106) < *(const s16 *)(r + 126) - 100)
-        *(volatile int *)(r + 92) |= (128 << 11);
-    {
-        register volatile u16 *p128 asm("r1") = (volatile u16 *)(r + 128);
-        __asm__ volatile ("" : "+r" (p128));
-        register s32 delta asm("r0") = ((s16)v104 << 16) >> 18;
-        delta += *p128;
-        *p128 = (u16)delta;
-        if ((s16)delta > 10000)
-            *p128 = 10000;
+        if (*(const s16 *)(r + 116) == 0 && *(volatile u8 *)(r + 162) == 1 &&
+            (s16)_0802DE9C(*(const s16 *)(r + 104), 7) == 0 &&
+            *(const s16 *)(r + 104) > *(const s16 *)(r + 122) &&
+            *(const s16 *)(r + 106) < *(const s16 *)(r + 126) - 100)
+            *(volatile int *)(r + 92) |= (128 << 11);
+        {
+            register volatile u16 *p128 asm("r1") = (volatile u16 *)(r + 128);
+            __asm__ volatile ("" : "+r" (p128));
+            {
+                register s32 delta asm("r0") = ((s16)v104 << 16) >> 18;
+                delta += *p128;
+                *p128 = (u16)delta;
+                if ((s16)delta > 10000)
+                    *p128 = 10000;
+            }
+        }
     }
 }
 
@@ -2765,72 +2863,84 @@ int _08002A5D4(void *dst, void *spec) {
         *dw++ = zero;
         remaining--;
     } while (remaining != 0);
-    register u16 field20 __asm__("r0") = *(u16 *)(S + 20);
-    D[157] = (u8)field20;
-    *(u32 *)(D + 92) = *(u16 *)(S + 16);
-    *(u32 *)(D + 0) = *(u32 *)(S + 0);
-    register u16 field18 __asm__("r1") = *(u16 *)(S + 18);
-    *(u16 *)(D + 108) = field18;
-    _08002AD14(D, S);
-    u32 w12 = *(u32 *)(S + 12);
-    *(u32 *)(D + 64) = w12;
-    if (*(u16 *)(S + 16) & 8u) {
-        if (w12 == 0)
-            *(u32 *)(D + 92) &= ~8u;
-        else
-            _08002AB90((void *)(uintptr_t)w12);
+    {
+        register u16 field20 __asm__("r0") = *(u16 *)(S + 20);
+        D[157] = (u8)field20;
+        *(u32 *)(D + 92) = *(u16 *)(S + 16);
+        *(u32 *)(D + 0) = *(u32 *)(S + 0);
+        {
+            register u16 field18 __asm__("r1") = *(u16 *)(S + 18);
+            *(u16 *)(D + 108) = field18;
+            _08002AD14(D, S);
+            {
+                u32 w12 = *(u32 *)(S + 12);
+                *(u32 *)(D + 64) = w12;
+                if (*(u16 *)(S + 16) & 8u) {
+                    if (w12 == 0)
+                        *(u32 *)(D + 92) &= ~8u;
+                    else
+                        _08002AB90((void *)(uintptr_t)w12);
+                }
+                switch (*(s32 *)D) {
+                case 1: remaining = 0; break;
+                case 2: remaining = 8; break;
+                case 3: remaining = 9; break;
+                case 4: remaining = 9; break;
+                case 0x100: remaining = 1; break;
+                case 0x101: remaining = 2; break;
+                case 0x102: remaining = 3; break;
+                case 0x103: remaining = 4; break;
+                case 0x104: remaining = 5; break;
+                case 0x105: remaining = 6; break;
+                case 0x106: remaining = 7; break;
+                }
+                {
+                    void *tmpl = _08005FE0(remaining);
+                    _08006BC8(D + 36, tmpl);
+                    *(u32 *)(D + 4) = *(u32 *)tmpl;
+                    *(u32 *)(D + 8) = *(u32 *)((u8 *)tmpl + 4);
+                    zero = 10;
+                    {
+                        s32 v10 = (s16)*(u16 *)((u8 *)tmpl + zero);
+                        *(u32 *)(D + 28) = (u32)(v10 << 4);
+                        *(u32 *)(D + 32) = (u32)(v10 << 4);
+                        zero = 0;
+                        *(u32 *)(D + 100) = zero;
+                        *(u16 *)(D + 152) = (u16)zero;
+                        *(u16 *)(D + 106) = (u16)zero;
+                        *(u16 *)(D + 140) = (u16)zero;
+                        *(u16 *)(D + 104) = (u16)zero;
+                        *(u16 *)(D + 128) = (u16)zero;
+                        *(u16 *)(D + 110) = (u16)zero;
+                        *(u32 *)(D + 68) = zero;
+                        *(u32 *)(D + 72) = zero;
+                        *(u16 *)(D + 148) = (u16)zero;
+                        field130 = D + 130;
+                        value1500 = 0x5DC;
+                        __asm__ volatile("" : "+r"(field130), "+r"(value1500));
+                        *(u16 *)field130 = (u16)value1500;
+                        *(u16 *)(D + 136) = (u16)zero;
+                        value144 = *(u16 *)(D + 144);
+                        field130 += 12;
+                        __asm__ volatile("" : "+r"(field130));
+                        *(u16 *)field130 = value144;
+                        *(u16 *)(D + 150) = (u16)zero;
+                        {
+                            u32 flags92 = *(u32 *)(D + 92);
+                            zero = 1;
+                            if (flags92 & zero)
+                                D[156] = 0;
+                            else
+                                D[156] = (u8)zero;
+                            *(u32 *)(D + 20) = 0;
+                            *(u32 *)(D + 24) = 0;
+                            return 0;
+                        }
+                    }
+                }
+            }
+        }
     }
-    switch (*(s32 *)D) {
-    case 1: remaining = 0; break;
-    case 2: remaining = 8; break;
-    case 3: remaining = 9; break;
-    case 4: remaining = 9; break;
-    case 0x100: remaining = 1; break;
-    case 0x101: remaining = 2; break;
-    case 0x102: remaining = 3; break;
-    case 0x103: remaining = 4; break;
-    case 0x104: remaining = 5; break;
-    case 0x105: remaining = 6; break;
-    case 0x106: remaining = 7; break;
-    }
-    void *tmpl = _08005FE0(remaining);
-    _08006BC8(D + 36, tmpl);
-    *(u32 *)(D + 4) = *(u32 *)tmpl;
-    *(u32 *)(D + 8) = *(u32 *)((u8 *)tmpl + 4);
-    zero = 10;
-    s32 v10 = (s16)*(u16 *)((u8 *)tmpl + zero);
-    *(u32 *)(D + 28) = (u32)(v10 << 4);
-    *(u32 *)(D + 32) = (u32)(v10 << 4);
-    zero = 0;
-    *(u32 *)(D + 100) = zero;
-    *(u16 *)(D + 152) = (u16)zero;
-    *(u16 *)(D + 106) = (u16)zero;
-    *(u16 *)(D + 140) = (u16)zero;
-    *(u16 *)(D + 104) = (u16)zero;
-    *(u16 *)(D + 128) = (u16)zero;
-    *(u16 *)(D + 110) = (u16)zero;
-    *(u32 *)(D + 68) = zero;
-    *(u32 *)(D + 72) = zero;
-    *(u16 *)(D + 148) = (u16)zero;
-    field130 = D + 130;
-    value1500 = 0x5DC;
-    __asm__ volatile("" : "+r"(field130), "+r"(value1500));
-    *(u16 *)field130 = (u16)value1500;
-    *(u16 *)(D + 136) = (u16)zero;
-    value144 = *(u16 *)(D + 144);
-    field130 += 12;
-    __asm__ volatile("" : "+r"(field130));
-    *(u16 *)field130 = value144;
-    *(u16 *)(D + 150) = (u16)zero;
-    u32 flags92 = *(u32 *)(D + 92);
-    zero = 1;
-    if (flags92 & zero)
-        D[156] = 0;
-    else
-        D[156] = (u8)zero;
-    *(u32 *)(D + 20) = 0;
-    *(u32 *)(D + 24) = 0;
-    return 0;
 }
 __asm__(".align 2, 0");
 
@@ -2857,7 +2967,7 @@ __asm__(".align 2, 0");
 // flat u32/u16 field copy, a signed `/5` through DivSI, a +-200 clamp on the
 // 110/136 halfword sum, and a `(flag ? flag : 1)` latch. 196 B, EXACT.
 //
-// `python3 tools/corpus_match_probe.py --function _08002A764 --c89
+// `python3 tools/corpus_match_probe.py --function _08002A764
 // --require-exact` reports 196/196. Six spellings are load-bearing; the last
 // one is the register tie the second half of this comment is about.
 //
@@ -2975,14 +3085,16 @@ u32 _08002A828(void *rec, u32 flags) {
         ret = flags & 1u;
         if (!ret) {
             *(u8 *)((u8 *)rec + 156) = 1;
-            s16 v = _080029488(rec);
-            u16 *cellp = (u16 *)((u8 *)rec + 104);
-            int sv = (int)v;
-            u16 cell = *cellp;
-            int d = (int)cell - sv;
-            d = (int)((s16)d >> 2);
-            *(u16 *)((u8 *)rec + 142) = (u16)d;
-            ret = (u32)d;
+            {
+                s16 v = _080029488(rec);
+                u16 *cellp = (u16 *)((u8 *)rec + 104);
+                int sv = (int)v;
+                u16 cell = *cellp;
+                int d = (int)cell - sv;
+                d = (int)((s16)d >> 2);
+                *(u16 *)((u8 *)rec + 142) = (u16)d;
+                ret = (u32)d;
+            }
         }
     }
     *(u32 *)((u8 *)rec + 92) = flags;
@@ -3034,29 +3146,39 @@ void _08002A86C(void *rec_, u32 bits, u32 flag) {
     if ((old & 1u) != 0 && (*(volatile u32 *)(rec + 92) & 1u) == 0) {
         *(u8 *)(rec + 156) = 1;
         __asm__ volatile ("" ::: "memory");
-        register volatile u16 *cell __asm__("r5") = (volatile u16 *)(rec + 104);
-        register int current __asm__("r1");
-        current = *cell;
-        __asm__ volatile ("" : "+r" (current));
-        register u32 offset __asm__("r2") = (u32)-6501;
-        register u32 shifted __asm__("r0") = ((u32)current + offset) << 16;
-        register u32 threshold __asm__("r1") = 0x03E60000u;
-        int value;
-        if (shifted <= threshold) {
-            register int result __asm__("r0") = _080029488(rec);
-            result = (s16)result;
-            register int after __asm__("r5") = *cell;
-            int delta = (s16)(after - result);
-            value = sub_0802DE04(delta, 12);
-        } else {
-            register int result __asm__("r0") = _080029488(rec);
-            result = (s16)result;
-            register int after __asm__("r5") = *cell;
-            int delta = (s16)(after - result);
-            value = delta >> 2;
+        {
+            register volatile u16 *cell __asm__("r5") = (volatile u16 *)(rec + 104);
+            register int current __asm__("r1");
+            current = *cell;
+            __asm__ volatile ("" : "+r" (current));
+            {
+                register u32 offset __asm__("r2") = (u32)-6501;
+                register u32 shifted __asm__("r0") = ((u32)current + offset) << 16;
+                register u32 threshold __asm__("r1") = 0x03E60000u;
+                int value;
+                if (shifted <= threshold) {
+                    register int result __asm__("r0") = _080029488(rec);
+                    result = (s16)result;
+                    {
+                        register int after __asm__("r5") = *cell;
+                        int delta = (s16)(after - result);
+                        value = sub_0802DE04(delta, 12);
+                    }
+                } else {
+                    register int result __asm__("r0") = _080029488(rec);
+                    result = (s16)result;
+                    {
+                        register int after __asm__("r5") = *cell;
+                        int delta = (s16)(after - result);
+                        value = delta >> 2;
+                    }
+                }
+                {
+                    register volatile u16 *out __asm__("r1") = (volatile u16 *)(rec + 142);
+                    *out = (u16)value;
+                }
+            }
         }
-        register volatile u16 *out __asm__("r1") = (volatile u16 *)(rec + 142);
-        *out = (u16)value;
     }
 }
 // Third spelling: race_scene.c reaches this VMA as Sub_08002A86C with a raw-word
@@ -3260,30 +3382,32 @@ __attribute__((naked)) void _08002A90C(void *acc, void *pos, void *extra, void *
 // ----------------------------------------------------------------------------
 void _08002AA30(void *rec, void *a1, void *a2, void *unused) {
     (void)unused;
-    u8 *R = (u8 *)rec;
-    u32 sp[8];
-    u32 *pa;
-    u32 *pb;
-    if ((s8)_08006FD4(R + 36, a2, a1, sp) > 0) {
-        u32 v24;
-        *(u32 *)((u8 *)sp + 16) = *(u32 *)(R + 20);
-        v24 = *(u32 *)(R + 24);
-        pa = sp + 4;
-        pa[1] = v24;
-        pb = sp + 6;
-        if (_08005EDC((u8 *)pb, (u8 *)pa, (u8 *)sp + 8) > 0) {
-            *(u32 *)(R + 68) -= (sp[6] << 2) + sp[2] * 3u;
-            *(u32 *)(R + 72) -= (pb[1] << 2) + sp[3] * 3u;
+    {
+        u8 *R = (u8 *)rec;
+        u32 sp[8];
+        u32 *pa;
+        u32 *pb;
+        if ((s8)_08006FD4(R + 36, a2, a1, sp) > 0) {
+            u32 v24;
+            *(u32 *)((u8 *)sp + 16) = *(u32 *)(R + 20);
+            v24 = *(u32 *)(R + 24);
+            pa = sp + 4;
+            pa[1] = v24;
+            pb = sp + 6;
+            if (_08005EDC((u8 *)pb, (u8 *)pa, (u8 *)sp + 8) > 0) {
+                *(u32 *)(R + 68) -= (sp[6] << 2) + sp[2] * 3u;
+                *(u32 *)(R + 72) -= (pb[1] << 2) + sp[3] * 3u;
+            }
+            if ((s16)*(u16 *)(R + 140) > 200)
+                _080029E30(rec, 100);
+            *(u16 *)(R + 134) = 0;
+            *(u16 *)(R + 150) = 0;
+            *(u32 *)(R + 92) |= 0x80u;
+            *(u32 *)(R + 4) = sp[0];
+            *(u32 *)(R + 8) = sp[1];
+        } else {
+            *(u32 *)(R + 92) &= ~(u32)128;
         }
-        if ((s16)*(u16 *)(R + 140) > 200)
-            _080029E30(rec, 100);
-        *(u16 *)(R + 134) = 0;
-        *(u16 *)(R + 150) = 0;
-        *(u32 *)(R + 92) |= 0x80u;
-        *(u32 *)(R + 4) = sp[0];
-        *(u32 *)(R + 8) = sp[1];
-    } else {
-        *(u32 *)(R + 92) &= ~(u32)128;
     }
 }
 // The 156-byte ROM span ends with two zero bytes after the final `bx r0` at
@@ -3333,7 +3457,7 @@ void sub_08002AACC(void *a, void *b, void *c, void *d) __attribute__((alias("_08
 //   * the last test reads the entry copy `rest` (r3) rather than `k` (r2),
 //     matching the ROM's `ands r3, r0` — the test value is pinned to r3 so
 //     the AND writes r3, not r0.
-// Verified with corpus_match_probe --c89 --require-exact.
+// Verified with corpus_match_probe --require-exact.
 // ----------------------------------------------------------------------------
 u32 _08002AB28(void) {
     register u32 k __asm__("r2") = _08009B50();
@@ -3391,88 +3515,94 @@ int _08002AB98(u32 idx, u16 *tab, u32 *ctr) {
     register u32 *counter __asm__("r6") = ctr;
     register u32 shifted __asm__("r0") = idx << 24;
     __asm__ volatile("" : "+r"(entries), "+r"(counter), "+r"(shifted));
-    register u32 id __asm__("r4") = shifted >> 24;
-    register u32 idIp __asm__("ip") = id;
-    __asm__ volatile("" : "+r"(id), "+r"(idIp));
-    register u32 n __asm__("r1") = *counter;
-    register u32 entryOffset __asm__("r0") = n << 1;
-    register u16 *entry __asm__("r2") =
-        (u16 *)(entryOffset + (u32)(uintptr_t)entries);
-    register u32 current __asm__("r3") = *entry;
-    register u32 currentHigh __asm__("r0") = current << 16;
-    register int result __asm__("r5");
-    register u32 work __asm__("r0");
-    register u32 slotId __asm__("r1");
-    register u32 markerNew __asm__("r2");
-    register u32 generation __asm__("r3");
-    /* A fresh 0xFFFF slot skips the ROM's result write and returns incoming r5. */
-    __asm__ volatile("" : "=r"(result));
-
-    if (current == 255u) {
-        register u32 freshValue __asm__("r0") = id;
-        __asm__ volatile("" : "+r"(freshValue));
-        freshValue += 64u;
-        *entry = (u16)freshValue;
-        goto write_fresh_marker;
-    }
-
-    result = current & 63u;
-    if ((u32)result != id)
-        goto mismatch_new_slot;
-
-    generation = currentHigh >> 22;
-    generation++;
-    if (generation > 0x3FFu) {
-        register u32 limit __asm__("r0") = 0x3FFu;
-        __asm__ volatile("" : "+r"(limit));
-        limit += 230u;
-        if (n > limit)
-            goto exhausted;
-        work = n;
-        work++;
-        *counter = work;
-        work = (work << 1) + (u32)(uintptr_t)entries;
-        slotId = id;
-        goto write_new_slot;
-    }
-
-    work = (u32)result + (generation << 6);
-    *entry = (u16)work;
-    result = 1;
-write_fresh_marker:
     {
-        register u32 markerValue __asm__("r1") = 0xFFFFu;
-        // Keep the literal in r1 so the C copy uses the ROM register flow.
-        __asm__ volatile("" : "+r"(markerValue));
-        register u32 markerCopy __asm__("r0") = markerValue;
-        * (volatile u16 *)(entry + 1) = (u16)markerCopy;
-    }
-    goto finish;
+        register u32 id __asm__("r4") = shifted >> 24;
+        register u32 idIp __asm__("ip") = id;
+        __asm__ volatile("" : "+r"(id), "+r"(idIp));
+        {
+            register u32 n __asm__("r1") = *counter;
+            register u32 entryOffset __asm__("r0") = n << 1;
+            register u16 *entry __asm__("r2") =
+                (u16 *)(entryOffset + (u32)(uintptr_t)entries);
+            register u32 current __asm__("r3") = *entry;
+            register u32 currentHigh __asm__("r0") = current << 16;
+            register int result __asm__("r5");
+            register u32 work __asm__("r0");
+            register u32 slotId __asm__("r1");
+            register u32 markerNew __asm__("r2");
+            register u32 generation __asm__("r3");
+            /* A fresh 0xFFFF slot skips the ROM's result write and returns incoming r5. */
+            __asm__ volatile("" : "=r"(result));
 
-mismatch_new_slot:
-    if (n > 0x4E5u)
-        goto exhausted;
-    work = n;
-    work++;
-    *counter = work;
-    work = (work << 1) + (u32)(uintptr_t)entries;
-    slotId = idIp;
-write_new_slot:
-    slotId += 64u;
-    *(volatile u16 *)(uintptr_t)work = (u16)slotId;
-    result = 0;
-    markerNew = 0xFFFFu;
-    __asm__ volatile("" : "+r"(result), "+r"(markerNew));
-    {
-        register u32 markerValue __asm__("r1") = markerNew;
-        *(volatile u16 *)(uintptr_t)(work + 2u) = (u16)markerValue;
-    }
-    goto finish;
+            if (current == 255u) {
+                register u32 freshValue __asm__("r0") = id;
+                __asm__ volatile("" : "+r"(freshValue));
+                freshValue += 64u;
+                *entry = (u16)freshValue;
+                goto write_fresh_marker;
+            }
 
-exhausted:
-    result = 4;
-finish:
-    return result;
+            result = current & 63u;
+            if ((u32)result != id)
+                goto mismatch_new_slot;
+
+            generation = currentHigh >> 22;
+            generation++;
+            if (generation > 0x3FFu) {
+                register u32 limit __asm__("r0") = 0x3FFu;
+                __asm__ volatile("" : "+r"(limit));
+                limit += 230u;
+                if (n > limit)
+                    goto exhausted;
+                work = n;
+                work++;
+                *counter = work;
+                work = (work << 1) + (u32)(uintptr_t)entries;
+                slotId = id;
+                goto write_new_slot;
+            }
+
+            work = (u32)result + (generation << 6);
+            *entry = (u16)work;
+            result = 1;
+        write_fresh_marker:
+            {
+                register u32 markerValue __asm__("r1") = 0xFFFFu;
+                // Keep the literal in r1 so the C copy uses the ROM register flow.
+                __asm__ volatile("" : "+r"(markerValue));
+                {
+                    register u32 markerCopy __asm__("r0") = markerValue;
+                    * (volatile u16 *)(entry + 1) = (u16)markerCopy;
+                }
+            }
+            goto finish;
+
+        mismatch_new_slot:
+            if (n > 0x4E5u)
+                goto exhausted;
+            work = n;
+            work++;
+            *counter = work;
+            work = (work << 1) + (u32)(uintptr_t)entries;
+            slotId = idIp;
+        write_new_slot:
+            slotId += 64u;
+            *(volatile u16 *)(uintptr_t)work = (u16)slotId;
+            result = 0;
+            markerNew = 0xFFFFu;
+            __asm__ volatile("" : "+r"(result), "+r"(markerNew));
+            {
+                register u32 markerValue __asm__("r1") = markerNew;
+                *(volatile u16 *)(uintptr_t)(work + 2u) = (u16)markerValue;
+            }
+            goto finish;
+
+        exhausted:
+            result = 4;
+        finish:
+            return result;
+        }
+    }
 }
 __asm__(".align 2, 0");
 
@@ -3535,10 +3665,12 @@ u32 _08002AC84(void *rec_) {
         return 0;
     if (flags & 8u) {
         result = (u8)_08002AB28();
-        u8 status = (u8)_08002AB98(result, *(u16 **)(rec + 64),
-                                   (u32 *)(rec + 100));
-        if (status == 4) {
-            *(u32 *)(rec + 92) = (*(u32 *)(rec + 92) & ~8u) | 0x10000u;
+        {
+            u8 status = (u8)_08002AB98(result, *(u16 **)(rec + 64),
+                                       (u32 *)(rec + 100));
+            if (status == 4) {
+                *(u32 *)(rec + 92) = (*(u32 *)(rec + 92) & ~8u) | 0x10000u;
+            }
         }
     } else if (flags & 16u) {
         u8 status = (u8)_08002AC2C((u8 *)&result, *(u16 **)(rec + 64),

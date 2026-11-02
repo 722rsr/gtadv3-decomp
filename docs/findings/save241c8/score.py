@@ -57,7 +57,7 @@ def score(work: Path | None = None) -> tuple[int, int, int, str]:
         shutil.rmtree(wd)
     out = subprocess.run(
         ["python3", "tools/corpus_match_probe.py", "--function",
-         "SaveUpdate_080241C8", "--c89", "--work-dir", str(wd)],
+         "SaveUpdate_080241C8", "--work-dir", str(wd)],
         cwd=ROOT, capture_output=True, text=True).stdout
     line = next((l for l in out.splitlines()
                  if "0x080241c8" in l and "bytes" in l), "")

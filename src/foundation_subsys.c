@@ -2,6 +2,16 @@
 // rule 6: the splice replaces this label. ARM-only: clang on darwin rejects
 // alias attributes outright, and no host test compiles this TU, so the
 // unguarded form was a latent host-build break no gate could see.
+extern void _08004BAC(void*);
+extern void _08004BAC(void*);
+extern void _08004BAC(void*);
+extern void _08004D4C(u32,u32,u32);
+extern void _08004B90(void *s);
+extern void _08004D4C(u32,u32,u32);
+extern void _08004AA4(int);
+extern void sub_08004CC4(void);
+extern void sub_08004A0C(void);
+extern u8 AllocMgr_49AC[];
 void *sub_08004DF4(void *a) __attribute__((alias("Leaf_04DF4")));
 #include "gtadv/memory.h"
 #include "gba/bios.h"
@@ -40,7 +50,7 @@ void *AllocSlot(int n) {
     void *blk;
     register u32 rem __asm__("r1");
     __asm__(".globl AllocMgr_49AC\nAllocMgr_49AC = 0x03000198\n");
-    extern u8 AllocMgr_49AC[];
+
     size = n;
     mgr = AllocMgr_49AC;
     cursor = (volatile u32 *)(mgr + 0x88);
@@ -53,9 +63,11 @@ void *AllocSlot(int n) {
             sub_0800295C(0x0805BA60, (u32)size - rem); // fatal report (ROM never returns)
         *cursor = *cursor + (u32)size;
         *remainingPtr = *remainingPtr - (u32)size;
-        u32 z = 0;
-        sub_0802D974(&z, blk, 0x05000000u | (((u32)size << 9) >> 11));
-        return blk;
+        {
+            u32 z = 0;
+            sub_0802D974(&z, blk, 0x05000000u | (((u32)size << 9) >> 11));
+            return blk;
+        }
     }
     return 0;
 }
@@ -72,7 +84,7 @@ void SubsysStoreConfig(u32 base, u32 size) {
     mgr[35] = size; // +140
     // The slice links no C object, so a promoted body may only call a
     // spelling the closure defines.
-    extern void sub_08004A0C(void);
+
     sub_08004A0C(); // cursor=base free=size
 }
 void _08004A2C(u32 a,u32 b) __attribute__((alias("SubsysStoreConfig")));
@@ -89,25 +101,33 @@ void *SubsysCreateInstance(void *record, int idx) {
     u32 z=0;
     sub_0802D974(&z, (void*)ctx, 0x05000018); // 24 B zero fill (verified ctrl)
     *(volatile u16*)(ctx+0x00) = (u16)idx;
-    u16 prev = *(volatile u16*)(ctx+0x62);
-    *(volatile u16*)(ctx+0x02) = prev;
-    *(volatile u16*)(ctx+0x62) = (u16)idx;
-    *(volatile void**)(ctx+0x50) = record;
-    int sz = *(int*)((u8*)record + 8);
-    void *blk = _080049AC(sz);
-    *(volatile void**)(ctx+0x54) = blk;
-    if (*(volatile void**)record) {
-        void *node = _080049AC(8);
-        *(volatile void**)(ctx+0x4C) = node;
-        // `volatile void *`: the load at record+0 is a volatile read, and
-        // reading it into a plain `void *` discards the qualifier. The byte
-        // sequence is unchanged -- only the C type of the loaded value.
-        volatile void *hdr = *(volatile void**)record;
-        *(void**)node = (void *)hdr;
-        void *data = _080049AC(*(int*)((u8*)hdr+4));
-        *(void**)((u8*)*(void**)(ctx+0x4C)+4) = data;
+    {
+        u16 prev = *(volatile u16*)(ctx+0x62);
+        *(volatile u16*)(ctx+0x02) = prev;
+        *(volatile u16*)(ctx+0x62) = (u16)idx;
+        *(volatile void**)(ctx+0x50) = record;
+        {
+            int sz = *(int*)((u8*)record + 8);
+            void *blk = _080049AC(sz);
+            *(volatile void**)(ctx+0x54) = blk;
+            if (*(volatile void**)record) {
+                void *node = _080049AC(8);
+                *(volatile void**)(ctx+0x4C) = node;
+                // `volatile void *`: the load at record+0 is a volatile read, and
+                // reading it into a plain `void *` discards the qualifier. The byte
+                // sequence is unchanged -- only the C type of the loaded value.
+                {
+                    volatile void *hdr = *(volatile void**)record;
+                    *(void**)node = (void *)hdr;
+                    {
+                        void *data = _080049AC(*(int*)((u8*)hdr+4));
+                        *(void**)((u8*)*(void**)(ctx+0x4C)+4) = data;
+                    }
+                }
+            }
+            return (void *)ctx; // ROM: r0 = r5 = ctx before the bx r1 tail
+        }
     }
-    return (void *)ctx; // ROM: r0 = r5 = ctx before the bx r1 tail
 }
 void *_08004A48(void *a,int b) __attribute__((alias("SubsysCreateInstance")));
 
@@ -140,8 +160,8 @@ void SubsysInit(void *desc) {
     mgr[0] = *(volatile u32 *)(d + 8);
     mgr[1] = *(volatile u32 *)(d + 4);
     mgr[3] = *(volatile u32 *)(d + 12);
-    extern void sub_08004CC4(void);
-    extern void _08004AA4(int);
+
+
     sub_08004CC4();
     zero = 0;
     mgr += 37;
@@ -314,9 +334,9 @@ void ExecCmd_04E40(int a) {
     {
         SubsysStateSlot *hdr = (SubsysStateSlot *)(uintptr_t)0x03000198u;
         *(volatile u16 *)(hdr->state + 10) = (u16)a;
-        extern void _08004D4C(u32,u32,u32);
+
         _08004D4C(14, (u32)a, 0);
-        extern void _08004B90(void *s);
+
         _08004B90((void *)hdr->state);
     }
 }
@@ -683,7 +703,7 @@ void Leaf_04E1C(void *a){
     {
         SubsysStateSlot *hdr = (SubsysStateSlot *)(uintptr_t)0x03000198u;
         *(volatile u16 *)(hdr->state + 10) = (u16)(uintptr_t)a;
-        extern void _08004D4C(u32,u32,u32);
+
         _08004D4C(13,(u32)(uintptr_t)a,0);
     }
 }
@@ -699,15 +719,15 @@ int FlagCheck_04B9C(void *ctx){
 }
 int _08004B9C(void *a) __attribute__((alias("FlagCheck_04B9C")));
 int SceneAdvanceIfNeeded(void *a) __attribute__((alias("FlagCheck_04B9C")));
-void SubstateClear_04BB8(void *ctx){ *(volatile u16*)((u8*)ctx+6)=0; extern void _08004BAC(void*); _08004BAC(ctx); }
+void SubstateClear_04BB8(void *ctx){ *(volatile u16*)((u8*)ctx+6)=0;  _08004BAC(ctx); }
 __asm__(".align 2, 0");
 void _08004BB8(void *a) __attribute__((alias("SubstateClear_04BB8")));
 void sub_08004BB8(void *a) __attribute__((alias("SubstateClear_04BB8")));
-void SubstateSet1_04BC8(void *ctx){ *(volatile u16*)((u8*)ctx+6)=1; extern void _08004BAC(void*); _08004BAC(ctx); }
+void SubstateSet1_04BC8(void *ctx){ *(volatile u16*)((u8*)ctx+6)=1;  _08004BAC(ctx); }
 __asm__(".align 2, 0");
 void _08004BC8(void *a) __attribute__((alias("SubstateSet1_04BC8")));
 void sub_08004BC8(void *a) __attribute__((alias("SubstateSet1_04BC8")));
-void SubstateSet2_04BD8(void *ctx){ void *c = sub_08004B68(); *(volatile u16*)((u8*)c+6)=2; extern void _08004BAC(void*); _08004BAC(c); (void)ctx; }
+void SubstateSet2_04BD8(void *ctx){ void *c = sub_08004B68(); *(volatile u16*)((u8*)c+6)=2;  _08004BAC(c); (void)ctx; }
 __asm__(".align 2, 0");
 void _08004BD8(void *a) __attribute__((alias("SubstateSet2_04BD8")));
 void sub_08004BD8(void *a) __attribute__((alias("SubstateSet2_04BD8")));
@@ -764,8 +784,10 @@ void *Load44Indexed_04C30(u32 idx){
     // `volatile void **` yields `volatile void *`, which discards the
     // qualifier on return and fails `-Wdiscarded-qualifiers`.
     // Same load, same order, no discarded qualifier.
-    void *volatile *slot = (void *volatile *)p;
-    return *slot;
+    {
+        void *volatile *slot = (void *volatile *)p;
+        return *slot;
+    }
 }
 // The body is 22 bytes, two short of the section's 4-byte alignment; the ROM
 // holds `00 00` at 0x08004c46 where gas fills the closed section with `nop`

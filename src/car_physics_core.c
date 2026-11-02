@@ -6,6 +6,7 @@
 // Sources: asm/carphys_racer.s, asm/go_start.s, asm/grant_delay.s, asm/carphys_racer.s
 
 // Forward decls of external helpers (provided by other lanes or ROM)
+extern void *sub_08004B68(void);
 extern void *_08004B68(void);
 extern void sub_0802B1E4(int);
 extern void sub_0800DAB8(void *p);
@@ -127,19 +128,23 @@ void GoStart_Tick(void) {
         if (stageWord == 1 && *(volatile u32 *)(wa + 0x10F8) > 19u &&
             (u16)sub_08026004(1) == 0) {
             sub_08025FF0(1);
-            register u32 selOff __asm__("r2") = 0x104Au;
-            volatile s16 *selection = (volatile s16 *)(wa + selOff);
-            s16 index = *(s16 *)(uintptr_t)selection;
-            s32 scaledIndex = (s32)index << 1;
-            __asm__ volatile ("" : "+r"(scaledIndex));
-            selOff += 2u;
-            __asm__ volatile ("" : "+r"(selOff));
-            register volatile u8 *scriptBase __asm__("r1");
-            scriptBase = wa + selOff;
-            *(volatile u16 *)(uintptr_t)(scaledIndex + (s32)(uintptr_t)scriptBase) = 2;
-            __asm__ volatile ("" : "+r"(wa));
-            _08023FF8(30, 0);
-            *selection = (u16)(*selection + 1);
+            {
+                register u32 selOff __asm__("r2") = 0x104Au;
+                volatile s16 *selection = (volatile s16 *)(wa + selOff);
+                s16 index = *(s16 *)(uintptr_t)selection;
+                s32 scaledIndex = (s32)index << 1;
+                __asm__ volatile ("" : "+r"(scaledIndex));
+                selOff += 2u;
+                __asm__ volatile ("" : "+r"(selOff));
+                {
+                    register volatile u8 *scriptBase __asm__("r1");
+                    scriptBase = wa + selOff;
+                    *(volatile u16 *)(uintptr_t)(scaledIndex + (s32)(uintptr_t)scriptBase) = 2;
+                    __asm__ volatile ("" : "+r"(wa));
+                    _08023FF8(30, 0);
+                    *selection = (u16)(*selection + 1);
+                }
+            }
         }
     }
 
@@ -148,27 +153,31 @@ void GoStart_Tick(void) {
         register u32 stageOffset __asm__("r1") = 0x576u;
         if (*(volatile u16 *)(wa + stageOffset) == 2) {
             __asm__ volatile ("" : : : "r2");
-            register u32 timerOffset __asm__("r2") = 0x10F8u;
-            u32 timerValue;
-            __asm__ volatile ("" : "+r"(timerOffset));
-            timerValue = *(volatile u32 *)(wa + timerOffset);
-            __asm__ volatile ("" : "+r"(timerOffset));
-            if (timerValue > 19u && (u16)sub_08026004(2) == 0) {
-                sub_08025FF0(2);
-                volatile s16 *selection = (volatile s16 *)(wa + 0x104A);
-                s16 index = *(s16 *)(uintptr_t)selection;
-                s32 scaledIndex = (s32)index << 1;
-                __asm__ volatile ("" : "+r"(scaledIndex));
-                {
-                    register u32 scriptOffset __asm__("r2") = 0x104Cu;
-                    register volatile u8 *targetBase __asm__("r1");
-                    __asm__ volatile ("" : "+r"(scriptOffset));
-                    targetBase = wa + scriptOffset;
-                    *(volatile u16 *)(uintptr_t)(scaledIndex + (s32)(uintptr_t)targetBase) = 3;
+            {
+                register u32 timerOffset __asm__("r2") = 0x10F8u;
+                u32 timerValue;
+                __asm__ volatile ("" : "+r"(timerOffset));
+                timerValue = *(volatile u32 *)(wa + timerOffset);
+                __asm__ volatile ("" : "+r"(timerOffset));
+                if (timerValue > 19u && (u16)sub_08026004(2) == 0) {
+                    sub_08025FF0(2);
+                    {
+                        volatile s16 *selection = (volatile s16 *)(wa + 0x104A);
+                        s16 index = *(s16 *)(uintptr_t)selection;
+                        s32 scaledIndex = (s32)index << 1;
+                        __asm__ volatile ("" : "+r"(scaledIndex));
+                        {
+                            register u32 scriptOffset __asm__("r2") = 0x104Cu;
+                            register volatile u8 *targetBase __asm__("r1");
+                            __asm__ volatile ("" : "+r"(scriptOffset));
+                            targetBase = wa + scriptOffset;
+                            *(volatile u16 *)(uintptr_t)(scaledIndex + (s32)(uintptr_t)targetBase) = 3;
+                        }
+                        __asm__ volatile ("" : "+r"(wa));
+                        _08023FF8(30, 0);
+                        *selection = (u16)(*selection + 1);
+                    }
                 }
-                __asm__ volatile ("" : "+r"(wa));
-                _08023FF8(30, 0);
-                *selection = (u16)(*selection + 1);
             }
         }
     }
@@ -178,7 +187,7 @@ void sub_0800B89C(void) __attribute__((alias("GoStart_Tick")));
 
 void CarPhysRacer_MarkScene(void *ctx, void *rec){
     (void)ctx;
-    extern void *sub_08004B68(void);
+
     (void)sub_08004B68();
     *(volatile u16 *)((uintptr_t)rec + 0x54) = 1;
 }

@@ -82,14 +82,20 @@ int Course_0x0800785C(void *ctx, void *X, int rec_arg, int lane) {
     u32 r4v = (u32)(uintptr_t)_0800748C(r5);
     _08005260(ctx, (void *)(uintptr_t)r4v, r9, (int)_080074A8(r5)); // r3 = 074A8(r5)
 
-    volatile u32 *dma = CRH_DMA3;
-    dma[0] = (u32)(uintptr_t)_0800748C(r8);
-    u32 w = (u32)lane << 5;
-    dma[1] = 0x05000000u + w;
-    u32 cnt = _080074A8(r8);
-    dma[2] = (cnt >> 2) | 0x84000000u;
-    (void)dma[2];
-    return r9;
+    {
+        volatile u32 *dma = CRH_DMA3;
+        dma[0] = (u32)(uintptr_t)_0800748C(r8);
+        {
+            u32 w = (u32)lane << 5;
+            dma[1] = 0x05000000u + w;
+            {
+                u32 cnt = _080074A8(r8);
+                dma[2] = (cnt >> 2) | 0x84000000u;
+                (void)dma[2];
+                return r9;
+            }
+        }
+    }
 }
 int _0800785C(void *a, void *b, int c, int d) __attribute__((alias("Course_0x0800785C")));
 int sub_0800785C(void *a, void *b, int c, int d) __attribute__((alias("Course_0x0800785C")));
@@ -104,9 +110,11 @@ void Course_0x080078EC(void *X, void *rec_arg, int lane) {
     volatile u32 *dma = CRH_DMA3;
     dma[0] = (u32)(uintptr_t)_0800748C(r5);
     dma[1] = (u32)lane;
-    u32 cnt = _080074A8(r5);
-    dma[2] = (cnt >> 2) | 0x84000000u;
-    (void)dma[2];
+    {
+        u32 cnt = _080074A8(r5);
+        dma[2] = (cnt >> 2) | 0x84000000u;
+        (void)dma[2];
+    }
 }
 void _080078EC(void *a, void *b, int c) __attribute__((alias("Course_0x080078EC")));
 void sub_080078EC(void *a, void *b, int c) __attribute__((alias("Course_0x080078EC")));
@@ -127,11 +135,15 @@ void Course_0x08007938(void *X, void *rec_arg, int lane) {
     void *r6 = _08007498(r4, 1);
     volatile u32 *dma = CRH_DMA3;
     dma[0] = (u32)(uintptr_t)_0800748C(r6);
-    u32 w = (u32)lane << 5;
-    dma[1] = 0x05000000u + w;                            // 160<<19 = 0x05000000
-    u32 cnt = _080074A8(r6);
-    dma[2] = (cnt >> 2) | 0x84000000u;
-    (void)dma[2];
+    {
+        u32 w = (u32)lane << 5;
+        dma[1] = 0x05000000u + w;                            // 160<<19 = 0x05000000
+        {
+            u32 cnt = _080074A8(r6);
+            dma[2] = (cnt >> 2) | 0x84000000u;
+            (void)dma[2];
+        }
+    }
 }
 void _08007938(void *a, void *b, int c) __attribute__((alias("Course_0x08007938")));
 void sub_08007938(void *a, void *b, int c) __attribute__((alias("Course_0x08007938")));

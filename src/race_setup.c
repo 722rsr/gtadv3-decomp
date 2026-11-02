@@ -71,16 +71,20 @@ void Race_Setup_18E28(u32 index_arg) {
         s32 raw_random = _08002BE8();
         random_dest = (volatile s32 *)(record + 220);
         __asm__ volatile("" : "+r"(random_dest) : : "memory");
-        s32 random = (s16)raw_random;
-        *random_dest = random;
-        _08002C48(random, *(volatile u16 *)((volatile u8 *)random_dest - 4));
+        {
+            s32 random = (s16)raw_random;
+            *random_dest = random;
+            _08002C48(random, *(volatile u16 *)((volatile u8 *)random_dest - 4));
+        }
     }
     {
         score = (volatile s32 *)(record + 208);
         __asm__ volatile("" : "+r"(score) : : "memory");
-        s32 value = *score;
-        if (value < 0) value += 15;
-        *score = value >> 4;
+        {
+            s32 value = *score;
+            if (value < 0) value += 15;
+            *score = value >> 4;
+        }
     }
     {
         void *source = (void *)(uintptr_t)*(volatile u32 *)(record + 280);
@@ -446,23 +450,29 @@ void Race_Setup_191BC(u32 a0) {
         *p90 = (s16)v16;
         return;
     }
-    volatile u32 *tbl = (volatile u32 *)0x080CBB30;
-    // lsls #16 / asrs #14 => *4 as signed halfword table index.
-    s16 sv = (s16)v16;
-    // Materialize the first table address in r1 before reloading the slot.
-    register volatile u32 *tvPtr __asm__("r1") = &tbl[(int)sv];
-    __asm__ volatile("" : "+r"(tvPtr));
-    // Keep the second signed read distinct from the earlier `cur` sample.
-    __asm__ volatile("" : : : "memory");
-    s32 sc;
-    sc = *(s16 *)(void *)p90;
-    __asm__ volatile("" : : : "memory");
-    // Pin the second address in r0; the ROM compares table values as signed.
-    register volatile u32 *tcPtr __asm__("r0") = &tbl[(int)sc];
-    s32 tv = (s32)*tvPtr;
-    s32 tc = (s32)*tcPtr;
-    if (tv >= tc) return;
-    *p90 = (s16)v16;
+    {
+        volatile u32 *tbl = (volatile u32 *)0x080CBB30;
+        // lsls #16 / asrs #14 => *4 as signed halfword table index.
+        s16 sv = (s16)v16;
+        // Materialize the first table address in r1 before reloading the slot.
+        register volatile u32 *tvPtr __asm__("r1") = &tbl[(int)sv];
+        __asm__ volatile("" : "+r"(tvPtr));
+        // Keep the second signed read distinct from the earlier `cur` sample.
+        __asm__ volatile("" : : : "memory");
+        {
+            s32 sc;
+            sc = *(s16 *)(void *)p90;
+            __asm__ volatile("" : : : "memory");
+            // Pin the second address in r0; the ROM compares table values as signed.
+            {
+                register volatile u32 *tcPtr __asm__("r0") = &tbl[(int)sc];
+                s32 tv = (s32)*tvPtr;
+                s32 tc = (s32)*tcPtr;
+                if (tv >= tc) return;
+                *p90 = (s16)v16;
+            }
+        }
+    }
 }
 void _0800191BC(u32 a0) __attribute__((alias("Race_Setup_191BC")));
 
@@ -623,27 +633,37 @@ int Race_Setup_19200(void *a, void *b) {
     register u8 *ra __asm__("r6") = (u8 *)a;
     u8 *rb = (u8 *)b;
     __asm__ volatile("" : "+r"(ra), "+r"(rb) : : "r5", "memory");
-    u8 *pA = *(u8 **)(ra + 28);
-    register s32 hA18 __asm__("r1");
-    hA18 = *(s16 *)(pA + 18);
-    u8 *pB = *(u8 **)(rb + 28);
-    s16 hB18 = *(s16 *)(pB + 18);
-    int d = (int)hA18 - (int)hB18;
-    if (d > 0) return 1;
-    if (d != 0) return 0;
-    u8 *tmp = (u8 *)_08006C10(pB, 0);
-    // ROM keeps the two racer deltas in r4 (a[4]-b[4]) and r5 (a[8]-b[8]).
-    register s32 a4 __asm__("r2") = *(s32 *)(ra + 4);
-    register s32 b4 __asm__("r1") = *(s32 *)(rb + 4);
-    d4 = a4 - b4;
-    register s32 a8 __asm__("r2") = *(s32 *)(ra + 8);
-    register s32 b8 __asm__("r1") = *(s32 *)(rb + 8);
-    d5 = a8 - b8;
-    __asm__("" : "+r"(d4), "+r"(d5));
-    s32 res = (s32)*(s16 *)(tmp + 20) * d5;
-    res -= (s32)*(s16 *)(tmp + 22) * d4; // muls as in asm, s32
-    if (res > 0) return 0;
-    return 1;
+    {
+        u8 *pA = *(u8 **)(ra + 28);
+        register s32 hA18 __asm__("r1");
+        hA18 = *(s16 *)(pA + 18);
+        {
+            u8 *pB = *(u8 **)(rb + 28);
+            s16 hB18 = *(s16 *)(pB + 18);
+            int d = (int)hA18 - (int)hB18;
+            if (d > 0) return 1;
+            if (d != 0) return 0;
+            {
+                u8 *tmp = (u8 *)_08006C10(pB, 0);
+                // ROM keeps the two racer deltas in r4 (a[4]-b[4]) and r5 (a[8]-b[8]).
+                register s32 a4 __asm__("r2") = *(s32 *)(ra + 4);
+                register s32 b4 __asm__("r1") = *(s32 *)(rb + 4);
+                d4 = a4 - b4;
+                {
+                    register s32 a8 __asm__("r2") = *(s32 *)(ra + 8);
+                    register s32 b8 __asm__("r1") = *(s32 *)(rb + 8);
+                    d5 = a8 - b8;
+                    __asm__("" : "+r"(d4), "+r"(d5));
+                    {
+                        s32 res = (s32)*(s16 *)(tmp + 20) * d5;
+                        res -= (s32)*(s16 *)(tmp + 22) * d4; // muls as in asm, s32
+                        if (res > 0) return 0;
+                        return 1;
+                    }
+                }
+            }
+        }
+    }
 }
 // The ROM's 80-byte span has a zero halfword after the 78-byte return sequence.
 // NOTE: agbcc only emits this top-level asm when it sits BEFORE the alias
@@ -685,72 +705,80 @@ int Race_Setup_19250(void *a, void *b) {
             ".globl RS19250_WA2\nRS19250_WA2 = 0x03001780\n"
             ".globl RS19250_O1111\nRS19250_O1111 = 0x00001111\n"
             ".globl RS19250_O10C3\nRS19250_O10C3 = 0x000010C3\n");
-    register u8 *pb __asm__("r8");
-    register int d __asm__("r6");
-    register int dx __asm__("r4");
-    register int dy __asm__("r5");
-    u8 *pa;
-    u8 *ctx;
-    s16 *p;
-    int t, v;
-    pa = (u8 *)a;
-    pb = (u8 *)b;
-    /* r4/r5 live from entry: keeps them off `pa`, which then lands in r7. */
-    __asm__ volatile("" : "+r"(dx), "+r"(dy));
     {
-        register s32 hi __asm__("r1") = *(s16 *)(pa + 22);
-        register u8 *q __asm__("r2") = pb;
-        __asm__ volatile("" : "+r"(q));
-        register s32 lo __asm__("r0") = *(s16 *)(q + 22);
-        d = hi - lo;
-    }
-    if (*(s8 *)(uintptr_t)((u32)(uintptr_t)&RS19250_O1111
-                           + (u32)(uintptr_t)&RS19250_WA1) != 0) {
-        t = (-d) << 3;
-        if (t > 36)
-            t = 36;
-        if (t < 0)
-            t = 0;
-        _0802A8F0(pa + 36, (s16)t);
-    }
-    ctx = *(u8 **)(uintptr_t)0x03004E20u;
-    if (*(ctx + 130) != 0) {
-        s8 z = 0;
-        *(ctx + 130) = z;
-        return z;
-    }
-    if (d > 0)
-        return 1;
-    if (d != 0)
-        return 0;
-    {
-        register u32 off4fc __asm__("r3") = 0x4FCu;
-        __asm__ volatile("" : "+r"(off4fc));
-        p = (s16 *)_08006C10(ctx + off4fc, 0);
-    }
-    {
-        /* `b` is re-materialised into a low register after the call and
-           indexed twice; without the barrier agbcc hoists the copy above the
-           `bl` and walks the pointer with `adds r1, #4`. */
-        register s32 ax __asm__("r2") = *(s32 *)pa;
-        register u8 *q __asm__("r3") = pb;
-        __asm__ volatile("" : "+r"(q));
-        register s32 bx __asm__("r1") = *(s32 *)q;
-        dx = ax - bx;
-        register s32 ay __asm__("r2") = *(s32 *)(pa + 4);
-        register s32 by __asm__("r1") = *(s32 *)(q + 4);
-        dy = ay - by;
-    }
-    v = (s32)p[10] * dy - (s32)p[11] * dx;
-    v >>= 16;
-    if ((u32)(v + 40) <= 79u) {
-        if (*(u8 *)(uintptr_t)((u32)(uintptr_t)&RS19250_O10C3
-                               + (u32)(uintptr_t)&RS19250_WA2) != 0)
+        register u8 *pb __asm__("r8");
+        register int d __asm__("r6");
+        register int dx __asm__("r4");
+        register int dy __asm__("r5");
+        u8 *pa;
+        u8 *ctx;
+        s16 *p;
+        int t, v;
+        pa = (u8 *)a;
+        pb = (u8 *)b;
+        /* r4/r5 live from entry: keeps them off `pa`, which then lands in r7. */
+        __asm__ volatile("" : "+r"(dx), "+r"(dy));
+        {
+            register s32 hi __asm__("r1") = *(s16 *)(pa + 22);
+            register u8 *q __asm__("r2") = pb;
+            __asm__ volatile("" : "+r"(q));
+            {
+                register s32 lo __asm__("r0") = *(s16 *)(q + 22);
+                d = hi - lo;
+            }
+        }
+        if (*(s8 *)(uintptr_t)((u32)(uintptr_t)&RS19250_O1111
+                               + (u32)(uintptr_t)&RS19250_WA1) != 0) {
+            t = (-d) << 3;
+            if (t > 36)
+                t = 36;
+            if (t < 0)
+                t = 0;
+            _0802A8F0(pa + 36, (s16)t);
+        }
+        ctx = *(u8 **)(uintptr_t)0x03004E20u;
+        if (*(ctx + 130) != 0) {
+            s8 z = 0;
+            *(ctx + 130) = z;
+            return z;
+        }
+        if (d > 0)
             return 1;
-    } else if (v < 0) {
-        return 1;
+        if (d != 0)
+            return 0;
+        {
+            register u32 off4fc __asm__("r3") = 0x4FCu;
+            __asm__ volatile("" : "+r"(off4fc));
+            p = (s16 *)_08006C10(ctx + off4fc, 0);
+        }
+        {
+            /* `b` is re-materialised into a low register after the call and
+               indexed twice; without the barrier agbcc hoists the copy above the
+               `bl` and walks the pointer with `adds r1, #4`. */
+            register s32 ax __asm__("r2") = *(s32 *)pa;
+            register u8 *q __asm__("r3") = pb;
+            __asm__ volatile("" : "+r"(q));
+            {
+                register s32 bx __asm__("r1") = *(s32 *)q;
+                dx = ax - bx;
+                {
+                    register s32 ay __asm__("r2") = *(s32 *)(pa + 4);
+                    register s32 by __asm__("r1") = *(s32 *)(q + 4);
+                    dy = ay - by;
+                }
+            }
+        }
+        v = (s32)p[10] * dy - (s32)p[11] * dx;
+        v >>= 16;
+        if ((u32)(v + 40) <= 79u) {
+            if (*(u8 *)(uintptr_t)((u32)(uintptr_t)&RS19250_O10C3
+                                   + (u32)(uintptr_t)&RS19250_WA2) != 0)
+                return 1;
+        } else if (v < 0) {
+            return 1;
+        }
+        return 0;
     }
-    return 0;
 }
 int _080019250(void *a, void *b) __attribute__((alias("Race_Setup_19250")));
 
@@ -770,68 +798,76 @@ void Race_Setup_18F14(void *a) {
     __asm__ volatile ("" : "+r"(global_tail) : : "r12");
     if ((s32)limit <= (s32)key) return;
 
-    register s32 index __asm__("r4") = 0;
-    register volatile u32 *firstp __asm__("r0") =
-        (volatile u32 *)0x03000598;
-    register u32 first __asm__("r1") = *firstp;
-    register volatile u32 *records __asm__("r6") = firstp;
-    if (first == 0) {
-        *records = (u32)(uintptr_t)record;
-        goto tail;
-    }
-compare_records:
     {
-        __asm__ volatile ("" : "+r"(record) : : "memory");
-        register volatile u32 *recordKeyp __asm__("r1") =
-            (volatile u32 *)((volatile u8 *)record + 204);
-        register s32 offset __asm__("r2") = index * 4;
-        register volatile u32 *slotp __asm__("r0");
-        slotp = (volatile u32 *)((uintptr_t)offset + (uintptr_t)records);
-        u32 slot = *slotp;
-        register volatile u32 *slotKeyp __asm__("r0") =
-            (volatile u32 *)((volatile u8 *)(uintptr_t)slot + 204);
-        u32 currentKey = *recordKeyp;
-        u32 slotKey = *slotKeyp;
-        if ((s32)currentKey < (s32)slotKey) {
-            register s32 move __asm__("r3") = 1;
-            if (move >= index) {
-                register volatile u32 *shift __asm__("r1") = records + 1;
-                do {
-                    shift[1] = shift[0];
-                    shift--;
-                    move--;
-                } while (move >= index);
-            }
-            {
-                register volatile u32 *writep __asm__("r0");
-                // Keep this address calculation after the optional shift loop
-                // and make its result the ROM's r0 store base.
-                __asm__ volatile ("" : "+r"(offset), "+r"(records) : : "memory");
-                writep = (volatile u32 *)((uintptr_t)offset +
-                                           (uintptr_t)records);
-                *writep = (u32)(uintptr_t)record;
-            }
+        register s32 index __asm__("r4") = 0;
+        register volatile u32 *firstp __asm__("r0") =
+            (volatile u32 *)0x03000598;
+        register u32 first __asm__("r1") = *firstp;
+        register volatile u32 *records __asm__("r6") = firstp;
+        if (first == 0) {
+            *records = (u32)(uintptr_t)record;
             goto tail;
         }
-    }
-    index++;
-    if (index > 2) goto tail;
-    {
-        register volatile u32 *nextp __asm__("r1");
-        register u32 scaledIndex __asm__("r0") = (u32)index << 2;
-        nextp = (volatile u32 *)((uintptr_t)scaledIndex +
-                                  (uintptr_t)records);
-        u32 next = *nextp;
-        if (next != 0) goto compare_records;
-        *nextp = (u32)(uintptr_t)record;
-        goto tail;
-    }
-tail:
-    {
-        u32 last = records[2];
-        if (last != 0) {
-            u32 lastKey = *(volatile u32 *)((volatile u8 *)(uintptr_t)last + 204);
-            *global_tail = lastKey;
+    compare_records:
+        {
+            __asm__ volatile ("" : "+r"(record) : : "memory");
+            {
+                register volatile u32 *recordKeyp __asm__("r1") =
+                    (volatile u32 *)((volatile u8 *)record + 204);
+                register s32 offset __asm__("r2") = index * 4;
+                register volatile u32 *slotp __asm__("r0");
+                slotp = (volatile u32 *)((uintptr_t)offset + (uintptr_t)records);
+                {
+                    u32 slot = *slotp;
+                    register volatile u32 *slotKeyp __asm__("r0") =
+                        (volatile u32 *)((volatile u8 *)(uintptr_t)slot + 204);
+                    u32 currentKey = *recordKeyp;
+                    u32 slotKey = *slotKeyp;
+                    if ((s32)currentKey < (s32)slotKey) {
+                        register s32 move __asm__("r3") = 1;
+                        if (move >= index) {
+                            register volatile u32 *shift __asm__("r1") = records + 1;
+                            do {
+                                shift[1] = shift[0];
+                                shift--;
+                                move--;
+                            } while (move >= index);
+                        }
+                        {
+                            register volatile u32 *writep __asm__("r0");
+                            // Keep this address calculation after the optional shift loop
+                            // and make its result the ROM's r0 store base.
+                            __asm__ volatile ("" : "+r"(offset), "+r"(records) : : "memory");
+                            writep = (volatile u32 *)((uintptr_t)offset +
+                                                       (uintptr_t)records);
+                            *writep = (u32)(uintptr_t)record;
+                        }
+                        goto tail;
+                    }
+                }
+            }
+        }
+        index++;
+        if (index > 2) goto tail;
+        {
+            register volatile u32 *nextp __asm__("r1");
+            register u32 scaledIndex __asm__("r0") = (u32)index << 2;
+            nextp = (volatile u32 *)((uintptr_t)scaledIndex +
+                                      (uintptr_t)records);
+            {
+                u32 next = *nextp;
+                if (next != 0) goto compare_records;
+                *nextp = (u32)(uintptr_t)record;
+                goto tail;
+            }
+        }
+    tail:
+        {
+            u32 last = records[2];
+            if (last != 0) {
+                u32 lastKey = *(volatile u32 *)((volatile u8 *)(uintptr_t)last + 204);
+                *global_tail = lastKey;
+            }
         }
     }
 }

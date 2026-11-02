@@ -28,6 +28,7 @@
 
 #include "gba/types.h"
 
+extern u8 RaceSceneE_Wa_20958[] __asm__("RaceSceneE_Wa_20958");
 #define HOST_STUB(sig) extern sig
 
 HOST_STUB(int   _08002580C(int x));                                  // 0x08002580C table lookup
@@ -162,54 +163,62 @@ void _08001FE24(void *rec0) {
     WS(rec + 156, RD16(wa, 0xFCC));
     // Keep the short result in r1 until rec+180 is formed in r0; promotion to
     // s32 then emits the ROM's sign extension immediately before the store.
-    register s16 t asm("r1") = _0800258A8((int)RD16(rec, 26));
-    register volatile u8 *t_slot asm("r0") = rec + 180;
-    register s32 t32 asm("r1") = t;
-    *(volatile s32 *)t_slot = t32;
-    _08007ABC((void *)R32(rec, 12), (void *)(uintptr_t)(u32)t32, (int)R32(rec, 176));
-    // The ROM preloads 1, clears it for lane <= 31, shifts the 0/1 flag by
-    // 16, then copies it to r5. The shifted value is only tested for zero, so
-    // it preserves the flag while matching the callee-saved guard across the
-    // later calls.
-    int lane = RD16(rec, 28);
-    u16 h = 1;
-    if (lane <= 31)
-        h = 0;
-    register int shifted asm("r0") = h << 16;
-    asm volatile("" : "+r"(shifted));
-    int hi = shifted;
-    if (!hi) {
-        int u = (int)(s16)RSE_CALLEE(_0800258B8, _080258B8)((int)RD16(rec, 26));
-        // This is the ROM's r1 result / r0 destination sequence. Reusing r1
-        // for the s16 promotion also supplies the helper's second argument.
-        register s32 w asm("r1") = _08001F9EC(u);
-        register volatile u8 *w_slot asm("r0") = rec + 192;
-        register s32 w16 asm("r1") = (s16)w;
-        *(volatile s32 *)w_slot = w16;
-        _08007ABC((void *)R32(rec, 20), (void *)(uintptr_t)(u32)w16, (int)R32(rec, 188));
-    } else {
-        // The ROM keeps rec+192 in r1, stores the constant through it, then
-        // decrements the same pointer to fetch rec+188 for the helper.
-        register volatile u8 *const_slot asm("r1") = rec + 192;
-        *(volatile s32 *)const_slot = 13;
-        _08007ABC((void *)R32(rec, 20), (void *)(uintptr_t)13,
-                  (int)*(volatile s32 *)(const_slot - 4));
-    }
-    if (!hi) {
-        int u2 = (int)(s16)RSE_CALLEE(_0800258CC, _080258CC)((int)RD16(rec, 26));
-        // Same store-and-call register pattern as the preceding nonconstant
-        // branch, with the second lane's +204/+200 fields.
-        register s32 w2 asm("r1") = _08001F9FC(u2);
-        register volatile u8 *w2_slot asm("r0") = rec + 204;
-        register s32 w2_16 asm("r1") = (s16)w2;
-        *(volatile s32 *)w2_slot = w2_16;
-        _08007ABC((void *)R32(rec, 20), (void *)(uintptr_t)(u32)w2_16, (int)R32(rec, 200));
-    } else {
-        // Reuse rec+204 as the base for the rec+200 helper field.
-        register volatile u8 *const_slot2 asm("r1") = rec + 204;
-        *(volatile s32 *)const_slot2 = 14;
-        _08007ABC((void *)R32(rec, 20), (void *)(uintptr_t)14,
-                  (int)*(volatile s32 *)(const_slot2 - 4));
+    {
+        register s16 t asm("r1") = _0800258A8((int)RD16(rec, 26));
+        register volatile u8 *t_slot asm("r0") = rec + 180;
+        register s32 t32 asm("r1") = t;
+        *(volatile s32 *)t_slot = t32;
+        _08007ABC((void *)R32(rec, 12), (void *)(uintptr_t)(u32)t32, (int)R32(rec, 176));
+        // The ROM preloads 1, clears it for lane <= 31, shifts the 0/1 flag by
+        // 16, then copies it to r5. The shifted value is only tested for zero, so
+        // it preserves the flag while matching the callee-saved guard across the
+        // later calls.
+        {
+            int lane = RD16(rec, 28);
+            u16 h = 1;
+            if (lane <= 31)
+                h = 0;
+            {
+                register int shifted asm("r0") = h << 16;
+                asm volatile("" : "+r"(shifted));
+                {
+                    int hi = shifted;
+                    if (!hi) {
+                        int u = (int)(s16)RSE_CALLEE(_0800258B8, _080258B8)((int)RD16(rec, 26));
+                        // This is the ROM's r1 result / r0 destination sequence. Reusing r1
+                        // for the s16 promotion also supplies the helper's second argument.
+                        register s32 w asm("r1") = _08001F9EC(u);
+                        register volatile u8 *w_slot asm("r0") = rec + 192;
+                        register s32 w16 asm("r1") = (s16)w;
+                        *(volatile s32 *)w_slot = w16;
+                        _08007ABC((void *)R32(rec, 20), (void *)(uintptr_t)(u32)w16, (int)R32(rec, 188));
+                    } else {
+                        // The ROM keeps rec+192 in r1, stores the constant through it, then
+                        // decrements the same pointer to fetch rec+188 for the helper.
+                        register volatile u8 *const_slot asm("r1") = rec + 192;
+                        *(volatile s32 *)const_slot = 13;
+                        _08007ABC((void *)R32(rec, 20), (void *)(uintptr_t)13,
+                                  (int)*(volatile s32 *)(const_slot - 4));
+                    }
+                    if (!hi) {
+                        int u2 = (int)(s16)RSE_CALLEE(_0800258CC, _080258CC)((int)RD16(rec, 26));
+                        // Same store-and-call register pattern as the preceding nonconstant
+                        // branch, with the second lane's +204/+200 fields.
+                        register s32 w2 asm("r1") = _08001F9FC(u2);
+                        register volatile u8 *w2_slot asm("r0") = rec + 204;
+                        register s32 w2_16 asm("r1") = (s16)w2;
+                        *(volatile s32 *)w2_slot = w2_16;
+                        _08007ABC((void *)R32(rec, 20), (void *)(uintptr_t)(u32)w2_16, (int)R32(rec, 200));
+                    } else {
+                        // Reuse rec+204 as the base for the rec+200 helper field.
+                        register volatile u8 *const_slot2 asm("r1") = rec + 204;
+                        *(volatile s32 *)const_slot2 = 14;
+                        _08007ABC((void *)R32(rec, 20), (void *)(uintptr_t)14,
+                                  (int)*(volatile s32 *)(const_slot2 - 4));
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -383,132 +392,152 @@ void _080020198(void *rec0, int a1, int a2) {
     }
     _0800D95C((void *)raw, (const void *)(uintptr_t)area, 3);
     // Same liveness pin: the ROM's scratch is r3, so exclude r2.
-    register int hold2 __asm__("r2");
-    __asm__ volatile("" : "=r"(hold2));
-    int c164 = (int)*(s16 *)(uintptr_t)(rec + 164);
-    __asm__ volatile("" : : "r"(hold2));
-    if (c164 <= 2) {
-        if (sel == 1) {
-            RSE_CALLEE(_08002B368, sub_0802B368)(1);
-            W16I(rec, 164, R16(rec, 164) + 1);
-        }
-        if (sel == 2) {
-            if (*(s16 *)(uintptr_t)(rec + 164) != 0)
-                RSE_CALLEE(_08002B368, sub_0802B368)(4);
-            W16I(rec, 164, R16(rec, 164) - 1);
-        }
-    } else {
-        if (sel == 1) {
-            RSE_CALLEE(_08002B368, sub_0802B368)(1);
-            W32(rec, 32, 10);
-            W16(rec, 36, 0);
-            W32(rec, 64, 10);
-            W32(rec, 60, (u32)sel); // r5 (==1 here)
-        }
-        if (sel == 2) {
-            W16I(rec, 164, sel); // ==2
-            RSE_CALLEE(_08002B368, sub_0802B368)(4);
-        }
-    }
-    if (*(s16 *)(uintptr_t)(rec + 164) < 0)
-        W16(rec, 164, 0);
-    if (*(s16 *)(uintptr_t)(rec + 164) > 3)
-        W16(rec, 164, 3);
-    if (*(s16 *)(uintptr_t)(rec + 164) <= 2) {
-        int key64 = key & 64;
-        volatile u8 *lane = rec + 152;
-        if (key64 != 0 && *(s16 *)(uintptr_t)lane <= 0) {
-            RSE_CALLEE(_08002B368, sub_0802B368)(2);
-            int idx = (int)*(s16 *)(uintptr_t)(rec + 164);
-            map[idx] = (u8)(map[idx] - 1u);
-            __asm__ volatile("" : : : "memory");
-            u32 v = (u32)map[(int)RD16(rec, 164)];
-            if (v == 0)
-                map[(int)RD16(rec, 164)] = 53;
-            else if (v > 53)
-                map[(int)RD16(rec, 164)] = 1;
-            __asm__ volatile("" : : : "memory");
-            int rawIdx = (int)RD16(rec, 164);
-            register u8 *rawEntry __asm__("r2") = raw + rawIdx;
-            register u8 *mapEntry __asm__("r1") = map + rawIdx;
-            __asm__ volatile("" : "+r"(rawEntry), "+r"(mapEntry) : : "memory");
-            rawEntry[0] = *(volatile u8 *)((*(volatile u32 *)0x080CBE74u) + mapEntry[0]);
-            W16(lane, 0, 10);
-        }
-        if ((key & 128) && *(s16 *)(uintptr_t)lane <= 0) {
-            RSE_CALLEE(_08002B368, sub_0802B368)(2);
-            int idx = (int)*(s16 *)(uintptr_t)(rec + 164);
-            map[idx] = (u8)(map[idx] + 1u);
-            __asm__ volatile("" : : : "memory");
-            u32 v = (u32)map[(int)RD16(rec, 164)];
-            if (v == 0)
-                map[(int)RD16(rec, 164)] = 53;
-            else if (v > 53)
-                map[(int)RD16(rec, 164)] = 1;
-            __asm__ volatile("" : : : "memory");
-            int rawIdx = (int)RD16(rec, 164);
-            register u8 *rawEntry __asm__("r2") = raw + rawIdx;
-            register u8 *mapEntry __asm__("r1") = map + rawIdx;
-            __asm__ volatile("" : "+r"(rawEntry), "+r"(mapEntry) : : "memory");
-            rawEntry[0] = *(volatile u8 *)((*(volatile u32 *)0x080CBE74u) + mapEntry[0]);
-            W16(lane, 0, 10);
-        }
+    {
+        register int hold2 __asm__("r2");
+        __asm__ volatile("" : "=r"(hold2));
         {
-            int t = (int)R16(lane, 0) - 1;
-            W16I(lane, 0, t);
-            if ((s16)(u16)t <= 0)
-                W16(lane, 0, 0);
-        }
-    }
-    if (R16(rec, 160) == 1) {
-        area[0] = raw[0];
-        area[1] = raw[1];
-        area[2] = raw[2];
-    }
-    if (R16(rec, 162) == 1) {
-        register volatile u8 *wa __asm__("r2") = (volatile u8 *)WA;
-        __asm__ volatile("" : "+r"(wa));
-        register volatile u8 *dst __asm__("r0");
-        register int offset __asm__("r3");
-        dst = (volatile u8 *)(uintptr_t)(
-            (u32)(int)*(s16 *)(uintptr_t)(rec + 28) * 72u + (u32)(uintptr_t)wa);
-        __asm__ volatile("" : "+r"(dst));
-        {
-            register u8 value __asm__("r1") = raw[0];
-            __asm__ volatile("" : "+r"(value) : : "memory");
-            offset = 197;
-            __asm__ volatile("" : "+r"(offset));
-            offset <<= 3;
-            dst += offset;
-            *dst = value;
-        }
-        dst = (volatile u8 *)(uintptr_t)(
-            (u32)(int)*(s16 *)(uintptr_t)(rec + 28) * 72u + (u32)(uintptr_t)wa);
-        __asm__ volatile("" : "+r"(dst));
-        {
-            register u8 value __asm__("r1") = raw[1];
-            __asm__ volatile("" : "+r"(value) : : "memory");
-            offset++;
-            dst += offset;
-            *dst = value;
-        }
-        {
-            register int row __asm__("r1");
-            row = *(s16 *)(uintptr_t)(rec + 28);
-            // Hold the preceding r3 offset through this signed read so agbcc
-            // uses r0 for the register offset, matching 0x080203B8.
-            __asm__ volatile("" : : "r"(offset));
-            dst = (volatile u8 *)(uintptr_t)(
-                (u32)row * 72u + (u32)(uintptr_t)wa);
-        }
-        __asm__ volatile("" : "+r"(dst));
-        {
-            register u8 value __asm__("r1") = raw[2];
-            __asm__ volatile("" : "+r"(value) : : "memory");
-            register int finalOffset __asm__("r2") = 0x62A;
-            __asm__ volatile("" : "+r"(finalOffset));
-            dst += finalOffset;
-            *dst = value;
+            int c164 = (int)*(s16 *)(uintptr_t)(rec + 164);
+            __asm__ volatile("" : : "r"(hold2));
+            if (c164 <= 2) {
+                if (sel == 1) {
+                    RSE_CALLEE(_08002B368, sub_0802B368)(1);
+                    W16I(rec, 164, R16(rec, 164) + 1);
+                }
+                if (sel == 2) {
+                    if (*(s16 *)(uintptr_t)(rec + 164) != 0)
+                        RSE_CALLEE(_08002B368, sub_0802B368)(4);
+                    W16I(rec, 164, R16(rec, 164) - 1);
+                }
+            } else {
+                if (sel == 1) {
+                    RSE_CALLEE(_08002B368, sub_0802B368)(1);
+                    W32(rec, 32, 10);
+                    W16(rec, 36, 0);
+                    W32(rec, 64, 10);
+                    W32(rec, 60, (u32)sel); // r5 (==1 here)
+                }
+                if (sel == 2) {
+                    W16I(rec, 164, sel); // ==2
+                    RSE_CALLEE(_08002B368, sub_0802B368)(4);
+                }
+            }
+            if (*(s16 *)(uintptr_t)(rec + 164) < 0)
+                W16(rec, 164, 0);
+            if (*(s16 *)(uintptr_t)(rec + 164) > 3)
+                W16(rec, 164, 3);
+            if (*(s16 *)(uintptr_t)(rec + 164) <= 2) {
+                int key64 = key & 64;
+                volatile u8 *lane = rec + 152;
+                if (key64 != 0 && *(s16 *)(uintptr_t)lane <= 0) {
+                    RSE_CALLEE(_08002B368, sub_0802B368)(2);
+                    {
+                        int idx = (int)*(s16 *)(uintptr_t)(rec + 164);
+                        map[idx] = (u8)(map[idx] - 1u);
+                        __asm__ volatile("" : : : "memory");
+                        {
+                            u32 v = (u32)map[(int)RD16(rec, 164)];
+                            if (v == 0)
+                                map[(int)RD16(rec, 164)] = 53;
+                            else if (v > 53)
+                                map[(int)RD16(rec, 164)] = 1;
+                            __asm__ volatile("" : : : "memory");
+                            {
+                                int rawIdx = (int)RD16(rec, 164);
+                                register u8 *rawEntry __asm__("r2") = raw + rawIdx;
+                                register u8 *mapEntry __asm__("r1") = map + rawIdx;
+                                __asm__ volatile("" : "+r"(rawEntry), "+r"(mapEntry) : : "memory");
+                                rawEntry[0] = *(volatile u8 *)((*(volatile u32 *)0x080CBE74u) + mapEntry[0]);
+                                W16(lane, 0, 10);
+                            }
+                        }
+                    }
+                }
+                if ((key & 128) && *(s16 *)(uintptr_t)lane <= 0) {
+                    RSE_CALLEE(_08002B368, sub_0802B368)(2);
+                    {
+                        int idx = (int)*(s16 *)(uintptr_t)(rec + 164);
+                        map[idx] = (u8)(map[idx] + 1u);
+                        __asm__ volatile("" : : : "memory");
+                        {
+                            u32 v = (u32)map[(int)RD16(rec, 164)];
+                            if (v == 0)
+                                map[(int)RD16(rec, 164)] = 53;
+                            else if (v > 53)
+                                map[(int)RD16(rec, 164)] = 1;
+                            __asm__ volatile("" : : : "memory");
+                            {
+                                int rawIdx = (int)RD16(rec, 164);
+                                register u8 *rawEntry __asm__("r2") = raw + rawIdx;
+                                register u8 *mapEntry __asm__("r1") = map + rawIdx;
+                                __asm__ volatile("" : "+r"(rawEntry), "+r"(mapEntry) : : "memory");
+                                rawEntry[0] = *(volatile u8 *)((*(volatile u32 *)0x080CBE74u) + mapEntry[0]);
+                                W16(lane, 0, 10);
+                            }
+                        }
+                    }
+                }
+                {
+                    int t = (int)R16(lane, 0) - 1;
+                    W16I(lane, 0, t);
+                    if ((s16)(u16)t <= 0)
+                        W16(lane, 0, 0);
+                }
+            }
+            if (R16(rec, 160) == 1) {
+                area[0] = raw[0];
+                area[1] = raw[1];
+                area[2] = raw[2];
+            }
+            if (R16(rec, 162) == 1) {
+                register volatile u8 *wa __asm__("r2") = (volatile u8 *)WA;
+                __asm__ volatile("" : "+r"(wa));
+                {
+                    register volatile u8 *dst __asm__("r0");
+                    register int offset __asm__("r3");
+                    dst = (volatile u8 *)(uintptr_t)(
+                        (u32)(int)*(s16 *)(uintptr_t)(rec + 28) * 72u + (u32)(uintptr_t)wa);
+                    __asm__ volatile("" : "+r"(dst));
+                    {
+                        register u8 value __asm__("r1") = raw[0];
+                        __asm__ volatile("" : "+r"(value) : : "memory");
+                        offset = 197;
+                        __asm__ volatile("" : "+r"(offset));
+                        offset <<= 3;
+                        dst += offset;
+                        *dst = value;
+                    }
+                    dst = (volatile u8 *)(uintptr_t)(
+                        (u32)(int)*(s16 *)(uintptr_t)(rec + 28) * 72u + (u32)(uintptr_t)wa);
+                    __asm__ volatile("" : "+r"(dst));
+                    {
+                        register u8 value __asm__("r1") = raw[1];
+                        __asm__ volatile("" : "+r"(value) : : "memory");
+                        offset++;
+                        dst += offset;
+                        *dst = value;
+                    }
+                    {
+                        register int row __asm__("r1");
+                        row = *(s16 *)(uintptr_t)(rec + 28);
+                        // Hold the preceding r3 offset through this signed read so agbcc
+                        // uses r0 for the register offset, matching 0x080203B8.
+                        __asm__ volatile("" : : "r"(offset));
+                        dst = (volatile u8 *)(uintptr_t)(
+                            (u32)row * 72u + (u32)(uintptr_t)wa);
+                    }
+                    __asm__ volatile("" : "+r"(dst));
+                    {
+                        register u8 value __asm__("r1") = raw[2];
+                        __asm__ volatile("" : "+r"(value) : : "memory");
+                        {
+                            register int finalOffset __asm__("r2") = 0x62A;
+                            __asm__ volatile("" : "+r"(finalOffset));
+                            dst += finalOffset;
+                            *dst = value;
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -543,7 +572,7 @@ __asm__(".align 2, 0");
 // ---- 0x080020498 — 5-arg emit helper: mode 0 -> 01FADC, mode 1 -> 01FB58 loop ----
 // Promoted from instruction splices to plain C (2026-10-16): every splice
 // was a register-shaping lever that pins reproduce directly, measured on the
-// pinned old_agbcc (corpus_match_probe --c89 --require-exact):
+// pinned old_agbcc (corpus_match_probe --require-exact):
 //   * rec/area are pinned to the ROM's r8/r2 and their initializers emit the
 //     prologue copies (`mov r8,r0 / adds r2,r3,#0`) in declaration order.
 //     `bReg` must stay UNPINNED: it is the body's real global allocno (live
@@ -637,12 +666,14 @@ void _080020518(void *rec0) {
             rowIndex = RD16(rec, 28);
             __asm__ volatile ("" : "+r" (rowIndex));
             row = (uintptr_t)(rowIndex * 72);
-            register uintptr_t offset __asm__("r1") = (uintptr_t)RaceSceneE_Offset_20518;
-            __asm__ volatile ("" : "+r" (offset) : : "memory");
-            table = wa + offset;
-            __asm__ volatile ("" : "+r" (table));
-            row += table;
-            _08003B9C(56, 74, *(volatile u32 *)row);
+            {
+                register uintptr_t offset __asm__("r1") = (uintptr_t)RaceSceneE_Offset_20518;
+                __asm__ volatile ("" : "+r" (offset) : : "memory");
+                table = wa + offset;
+                __asm__ volatile ("" : "+r" (table));
+                row += table;
+                _08003B9C(56, 74, *(volatile u32 *)row);
+            }
         }
         {
             int index = RD16(rec, 28);
@@ -663,12 +694,14 @@ void _080020518(void *rec0) {
             rowIndex = RD16(rec, 28);
             __asm__ volatile ("" : "+r" (rowIndex));
             row = (uintptr_t)(rowIndex * 72);
-            register uintptr_t offset __asm__("r1") = (uintptr_t)RaceSceneE_Offset_20518;
-            __asm__ volatile ("" : "+r" (offset) : : "memory");
-            table = wa + offset;
-            __asm__ volatile ("" : "+r" (table));
-            row += table;
-            _08003954(120, 74, *(volatile u32 *)row);
+            {
+                register uintptr_t offset __asm__("r1") = (uintptr_t)RaceSceneE_Offset_20518;
+                __asm__ volatile ("" : "+r" (offset) : : "memory");
+                table = wa + offset;
+                __asm__ volatile ("" : "+r" (table));
+                row += table;
+                _08003954(120, 74, *(volatile u32 *)row);
+            }
         }
         {
             register int hold0 __asm__("r0");
@@ -726,58 +759,62 @@ void _080020690(void *rec0) {
     __asm__(".globl RaceSceneE_Offset_20690\nRaceSceneE_Offset_20690 = 0x000005E4");
     __asm__(".globl RaceSceneE_AltWa_20690\nRaceSceneE_AltWa_20690 = 0x03001D64");
 
-    register uintptr_t wa __asm__("r4");
-    int zero;
-    uintptr_t table;
-
-    rec = (volatile u8 *)rec0;
-    _0800D97C((void *)((volatile u8 *)rec0 + 172), 5);
-    zero = 0;
-    wa = (uintptr_t)RaceSceneE_Wa_20690;
     {
-        int rowIndex = RD16(rec, 28);
-        uintptr_t row = (uintptr_t)(rowIndex * 72);
-        register uintptr_t offset __asm__("r1") = (uintptr_t)RaceSceneE_Offset_20690;
-        __asm__ volatile ("" : "+r" (offset) : : "memory");
-        table = wa + offset;
-        __asm__ volatile ("" : "+r" (table));
-        row += table;
-        _08003B9C(56, 74, *(volatile u32 *)row);
-    }
+        register uintptr_t wa __asm__("r4");
+        int zero;
+        uintptr_t table;
 
-    {
-        int index = RD16(rec, 28);
-        s16 value = *(s16 *)(uintptr_t)(wa + (uintptr_t)(index * 72) + 1512u);
-        int transformed = _08002370(value);
-        _08001FA64(128, 78, transformed, 3);
-    }
+        rec = (volatile u8 *)rec0;
+        _0800D97C((void *)((volatile u8 *)rec0 + 172), 5);
+        zero = 0;
+        wa = (uintptr_t)RaceSceneE_Wa_20690;
+        {
+            int rowIndex = RD16(rec, 28);
+            uintptr_t row = (uintptr_t)(rowIndex * 72);
+            register uintptr_t offset __asm__("r1") = (uintptr_t)RaceSceneE_Offset_20690;
+            __asm__ volatile ("" : "+r" (offset) : : "memory");
+            table = wa + offset;
+            __asm__ volatile ("" : "+r" (table));
+            row += table;
+            _08003B9C(56, 74, *(volatile u32 *)row);
+        }
 
-    if (zero == RD16(rec, 156) && RD16(rec, 160) == 1) {
-        int index = RD16(rec, 28);
-        uintptr_t area = (uintptr_t)(index * 72) + table + 8u;
-        _080020498((void *)rec, 184, 78, (void *)area, 1);
-    } else {
-        /* The ROM synthesizes 78 as (2 << 4) + 46 in r2 rather than
-         * loading the immediate directly; the barriers keep agbcc from
-         * folding the constant arithmetic into a single movs. */
-        register u32 idParts __asm__("r2");
-        idParts = 2u;
-        __asm__ volatile ("" : "+r" (idParts));
-        idParts <<= 4;
-        __asm__ volatile ("" : "+r" (idParts));
-        idParts += 46u;
-        int index = RD16(rec, 28);
-        uintptr_t area = (uintptr_t)(index * 72) + (uintptr_t)RaceSceneE_AltWa_20690;
-        area += 8;
-        _080020498((void *)rec, 184, (int)idParts, (void *)area, 0);
-    }
+        {
+            int index = RD16(rec, 28);
+            s16 value = *(s16 *)(uintptr_t)(wa + (uintptr_t)(index * 72) + 1512u);
+            int transformed = _08002370(value);
+            _08001FA64(128, 78, transformed, 3);
+        }
 
-    _08007BFC((void *)(rec + 8),
-              *(volatile u32 *)(rec + 176), *(volatile u32 *)(rec + 180),
-              24, 33, 6, 1, 0, 0);
-    _0800DBE8((void *)(rec + 32));
-    _080020878((void *)rec);
-    __asm__ volatile ("" : "+r" (zero));
+        if (zero == RD16(rec, 156) && RD16(rec, 160) == 1) {
+            int index = RD16(rec, 28);
+            uintptr_t area = (uintptr_t)(index * 72) + table + 8u;
+            _080020498((void *)rec, 184, 78, (void *)area, 1);
+        } else {
+            /* The ROM synthesizes 78 as (2 << 4) + 46 in r2 rather than
+             * loading the immediate directly; the barriers keep agbcc from
+             * folding the constant arithmetic into a single movs. */
+            register u32 idParts __asm__("r2");
+            idParts = 2u;
+            __asm__ volatile ("" : "+r" (idParts));
+            idParts <<= 4;
+            __asm__ volatile ("" : "+r" (idParts));
+            idParts += 46u;
+            {
+                int index = RD16(rec, 28);
+                uintptr_t area = (uintptr_t)(index * 72) + (uintptr_t)RaceSceneE_AltWa_20690;
+                area += 8;
+                _080020498((void *)rec, 184, (int)idParts, (void *)area, 0);
+            }
+        }
+
+        _08007BFC((void *)(rec + 8),
+                  *(volatile u32 *)(rec + 176), *(volatile u32 *)(rec + 180),
+                  24, 33, 6, 1, 0, 0);
+        _0800DBE8((void *)(rec + 32));
+        _080020878((void *)rec);
+        __asm__ volatile ("" : "+r" (zero));
+    }
 }
 
 // ---- 0x08020784 — scene setup C (03954 path, mode-1 area select) + pools {WA+0x5E4, 0x03001D64} ----
@@ -792,55 +829,59 @@ void _080020784(void *rec0) {
     __asm__(".globl RaceSceneE_Offset_20784\nRaceSceneE_Offset_20784 = 0x000005E4");
     __asm__(".globl RaceSceneE_AltWa_20784\nRaceSceneE_AltWa_20784 = 0x03001D64");
 
-    register uintptr_t wa __asm__("r4");
-    int zero;
-    uintptr_t table;
-
-    rec = (volatile u8 *)rec0;
-    _0800D97C((void *)((volatile u8 *)rec0 + 172), 5);
-    zero = 0;
-    wa = (uintptr_t)RaceSceneE_Wa_20784;
     {
-        int rowIndex = RD16(rec, 28);
-        uintptr_t row = (uintptr_t)(rowIndex * 72);
-        register uintptr_t offset __asm__("r1") = (uintptr_t)RaceSceneE_Offset_20784;
-        __asm__ volatile ("" : "+r" (offset) : : "memory");
-        table = wa + offset;
-        __asm__ volatile ("" : "+r" (table));
-        row += table;
-        _08003954(120, 74, *(volatile u32 *)row);
-    }
+        register uintptr_t wa __asm__("r4");
+        int zero;
+        uintptr_t table;
 
-    {
-        int index = RD16(rec, 28);
-        s16 value = *(s16 *)(uintptr_t)(wa + (uintptr_t)(index * 72) + 1512u);
-        int transformed = _08002370(value);
-        _08001FA64(128, 78, transformed, 3);
-    }
+        rec = (volatile u8 *)rec0;
+        _0800D97C((void *)((volatile u8 *)rec0 + 172), 5);
+        zero = 0;
+        wa = (uintptr_t)RaceSceneE_Wa_20784;
+        {
+            int rowIndex = RD16(rec, 28);
+            uintptr_t row = (uintptr_t)(rowIndex * 72);
+            register uintptr_t offset __asm__("r1") = (uintptr_t)RaceSceneE_Offset_20784;
+            __asm__ volatile ("" : "+r" (offset) : : "memory");
+            table = wa + offset;
+            __asm__ volatile ("" : "+r" (table));
+            row += table;
+            _08003954(120, 74, *(volatile u32 *)row);
+        }
 
-    if (zero == RD16(rec, 156) && RD16(rec, 160) == 1) {
-        int index = RD16(rec, 28);
-        uintptr_t area = (uintptr_t)(index * 72) + table + 8u;
-        _080020498((void *)rec, 184, 78, (void *)area, 1);
-    } else {
-        register u32 idParts __asm__("r2");
-        idParts = 2u;
-        __asm__ volatile ("" : "+r" (idParts));
-        idParts <<= 4;
-        __asm__ volatile ("" : "+r" (idParts));
-        idParts += 46u;
-        int index = RD16(rec, 28);
-        uintptr_t area = (uintptr_t)(index * 72) + (uintptr_t)RaceSceneE_AltWa_20784;
-        area += 8;
-        _080020498((void *)rec, 184, (int)idParts, (void *)area, 0);
-    }
+        {
+            int index = RD16(rec, 28);
+            s16 value = *(s16 *)(uintptr_t)(wa + (uintptr_t)(index * 72) + 1512u);
+            int transformed = _08002370(value);
+            _08001FA64(128, 78, transformed, 3);
+        }
 
-    _08007BFC((void *)(rec + 8),
-              *(volatile u32 *)(rec + 176), *(volatile u32 *)(rec + 180),
-              24, 33, 6, 1, 0, 0);
-    _0800DBE8((void *)(rec + 32));
-    _080020878((void *)rec);
-    __asm__ volatile ("" : "+r" (zero));
+        if (zero == RD16(rec, 156) && RD16(rec, 160) == 1) {
+            int index = RD16(rec, 28);
+            uintptr_t area = (uintptr_t)(index * 72) + table + 8u;
+            _080020498((void *)rec, 184, 78, (void *)area, 1);
+        } else {
+            register u32 idParts __asm__("r2");
+            idParts = 2u;
+            __asm__ volatile ("" : "+r" (idParts));
+            idParts <<= 4;
+            __asm__ volatile ("" : "+r" (idParts));
+            idParts += 46u;
+            {
+                int index = RD16(rec, 28);
+                uintptr_t area = (uintptr_t)(index * 72) + (uintptr_t)RaceSceneE_AltWa_20784;
+                area += 8;
+                _080020498((void *)rec, 184, (int)idParts, (void *)area, 0);
+            }
+        }
+
+        _08007BFC((void *)(rec + 8),
+                  *(volatile u32 *)(rec + 176), *(volatile u32 *)(rec + 180),
+                  24, 33, 6, 1, 0, 0);
+        _0800DBE8((void *)(rec + 32));
+        _080020878((void *)rec);
+        __asm__ volatile ("" : "+r" (zero));
+    }
 }
 
 // ---- 0x0802087C — 12-way event dispatcher (ev-1 over table 0x08020894) ----
@@ -907,17 +948,21 @@ __asm__(".align 2, 0");
 
 void _080020958(void *unused, void *rec_) {
     (void)unused;
-    extern u8 RaceSceneE_Wa_20958[] __asm__("RaceSceneE_Wa_20958");
+
     __asm__(".globl RaceSceneE_Wa_20958\nRaceSceneE_Wa_20958 = 0x03001780\n");
-    uintptr_t base = (uintptr_t)RaceSceneE_Wa_20958;
-    if (*(volatile u16 *)(uintptr_t)(base + 0xFBCu) == 3) {
-        *(volatile u8 *)(uintptr_t)((volatile u8 *)rec_ + 88) = 0;
-    }
-    u16 car_id = *(volatile u16 *)(uintptr_t)((volatile u8 *)_08004B68() + 2);
-    if (car_id == 20) {
-        *(volatile s16 *)(uintptr_t)((volatile u8 *)rec_ + 84) = 5;
-    } else {
-        *(volatile s16 *)(uintptr_t)((volatile u8 *)rec_ + 84) = 6;
+    {
+        uintptr_t base = (uintptr_t)RaceSceneE_Wa_20958;
+        if (*(volatile u16 *)(uintptr_t)(base + 0xFBCu) == 3) {
+            *(volatile u8 *)(uintptr_t)((volatile u8 *)rec_ + 88) = 0;
+        }
+        {
+            u16 car_id = *(volatile u16 *)(uintptr_t)((volatile u8 *)_08004B68() + 2);
+            if (car_id == 20) {
+                *(volatile s16 *)(uintptr_t)((volatile u8 *)rec_ + 84) = 5;
+            } else {
+                *(volatile s16 *)(uintptr_t)((volatile u8 *)rec_ + 84) = 6;
+            }
+        }
     }
 }
 __asm__(".align 2, 0");
@@ -1382,29 +1427,35 @@ void _080020D28(void *rec0, int a, int b, int gate, int h5) {
             if (gate <= 3) {
                 __asm__(".globl RaceSceneWaD28\nRaceSceneWaD28 = 0x03001780\n");
                 __asm__(".globl RaceSceneTblD28\nRaceSceneTblD28 = 0x080CBEB0\n");
-                volatile u8 *pool = (volatile u8 *)0x0203F990u;
-                // NOTE: ldrsh — signed compare vs 15. RD16 (non-volatile) is
-                // what yields a true `movs rX,#0 / ldrsh rY,[r6,rX]`; the
-                // volatile S16 helper costs an ldrh + lsls + asrs triple.
-                if ((int)RD16(pool, 0) > 15)
-                    W16(pool, 0, 0);
-                // Hoisted into locals, and the base added LAST: the ROM loads
-                // 0x08349754 then 0x080CBEB0 up front, computes 2*gate, then
-                // reads WA, and assembles `adds r2,r2,r1 / adds r2,r2,r3`.
-                void *tbl = (void *)0x08349754u;
-                u32 base = (uintptr_t)RaceSceneTblD28;
-                int g2 = 2 * gate;
-                // Symbol in a pointer VARIABLE: an inline `WA + 0xFC0` folds
-                // into one pool word, the ROM adds 0xFC0 in a register.
-                volatile u8 *wa = (volatile u8 *)RaceSceneWaD28;
-                int w = (int)RD16(wa, 0xFC0);
-                u32 addr = (u32)g2 + (u32)(8 * w) + base;
-                int q1 = (int)RD16((volatile u8 *)addr, 0);
-                int q2 = (int)RD16(pool, 2);
-                int q3 = (int)RD16(pool, 0) << 4;
-                _08007570(tbl, q1, q2, q3, 16);
-                int r2s = (int)RD16(pool, 2);
-                _08002ED0((void *)(u32)a, b, r2s, h5, 1, 2, 1, 0, 0, 1);
+                {
+                    volatile u8 *pool = (volatile u8 *)0x0203F990u;
+                    // NOTE: ldrsh — signed compare vs 15. RD16 (non-volatile) is
+                    // what yields a true `movs rX,#0 / ldrsh rY,[r6,rX]`; the
+                    // volatile S16 helper costs an ldrh + lsls + asrs triple.
+                    if ((int)RD16(pool, 0) > 15)
+                        W16(pool, 0, 0);
+                    // Hoisted into locals, and the base added LAST: the ROM loads
+                    // 0x08349754 then 0x080CBEB0 up front, computes 2*gate, then
+                    // reads WA, and assembles `adds r2,r2,r1 / adds r2,r2,r3`.
+                    {
+                        void *tbl = (void *)0x08349754u;
+                        u32 base = (uintptr_t)RaceSceneTblD28;
+                        int g2 = 2 * gate;
+                        // Symbol in a pointer VARIABLE: an inline `WA + 0xFC0` folds
+                        // into one pool word, the ROM adds 0xFC0 in a register.
+                        volatile u8 *wa = (volatile u8 *)RaceSceneWaD28;
+                        int w = (int)RD16(wa, 0xFC0);
+                        u32 addr = (u32)g2 + (u32)(8 * w) + base;
+                        int q1 = (int)RD16((volatile u8 *)addr, 0);
+                        int q2 = (int)RD16(pool, 2);
+                        int q3 = (int)RD16(pool, 0) << 4;
+                        _08007570(tbl, q1, q2, q3, 16);
+                        {
+                            int r2s = (int)RD16(pool, 2);
+                            _08002ED0((void *)(u32)a, b, r2s, h5, 1, 2, 1, 0, 0, 1);
+                        }
+                    }
+                }
             }
         }
     }
@@ -1605,19 +1656,21 @@ void _080020F50(void *rec0, int sel) {
         // WA+0xFC0 into a single pool word. The symbol is defined in this body
         // so the per-body splice carries it.
         __asm__(".globl RaceSceneWaF50\nRaceSceneWaF50 = 0x03001780\n.globl RaceSceneTblF50\nRaceSceneTblF50 = 0x0203F980\n");
-        volatile u8 *tbl = (volatile u8 *)RaceSceneTblF50;
-        volatile u8 *wa = (volatile u8 *)RaceSceneWaF50;
-        int w = (int)RD16(wa, 0xFC0);
-        int t = (int)*(s16 *)(tbl + (u32)(2 * w));
-        if ((int)r5 != t) {
-            int v = (int)RD16(rec, 166);
-            switch (v) {
-            case 0:
-                _08007B18((void *)(uintptr_t)(rec + 68), 15, 64, 72, 3, 1, 1, 0);
-                break;
-            case 1:
-                _08007B18((void *)(uintptr_t)(rec + 68), 16, 64, 72, 3, 1, 1, 0);
-                break;
+        {
+            volatile u8 *tbl = (volatile u8 *)RaceSceneTblF50;
+            volatile u8 *wa = (volatile u8 *)RaceSceneWaF50;
+            int w = (int)RD16(wa, 0xFC0);
+            int t = (int)*(s16 *)(tbl + (u32)(2 * w));
+            if ((int)r5 != t) {
+                int v = (int)RD16(rec, 166);
+                switch (v) {
+                case 0:
+                    _08007B18((void *)(uintptr_t)(rec + 68), 15, 64, 72, 3, 1, 1, 0);
+                    break;
+                case 1:
+                    _08007B18((void *)(uintptr_t)(rec + 68), 16, 64, 72, 3, 1, 1, 0);
+                    break;
+                }
             }
         }
     }
@@ -1642,47 +1695,55 @@ void _080021018(void *rec0, int a, int b, int c) {
         byte = 32;
     if ((s32)(byte << 24) <= 0)
         byte = 0;
-    register u32 shifted __asm__("r0") = byte << 24;
-    __asm__ volatile("" : "+r" (shifted));
-    register s32 u __asm__("r1") = (s32)(s8)(shifted >> 24);
-    register s32 n0 __asm__("r0") = (u + (s32)(shifted >> 31)) >> 1;
-    __asm__ volatile("" : "+r" (n0));
-    register s32 n __asm__("r6") = n0;
-    register s32 odd __asm__("r8") = (s8)(u - (n << 1));
-    register int remaining __asm__("r5") = 0;
-    __asm__ volatile("" : "+r" (remaining));
-    if (remaining < n) {
-        /* These are the four stack arguments consumed by 7B18. Pinning the
-         * current outgoing area to SP lets C place them before the register
-         * arguments without reproducing the store instructions in asm. */
-        register volatile u32 *outgoing __asm__("sp");
-        int one = 1;
-        register int row __asm__("r4") = a_slot;
-        remaining = n;
-        do {
-            outgoing[0] = 9;
-            outgoing[1] = one;
-            outgoing[2] = one;
-            outgoing[3] = 0;
-            __asm__ volatile ("" : "+r" (rec));
-            register volatile u8 *row_record __asm__("r0") = rec + 8;
-            ((void (*)(void *, int, int, int))_08007B18)(
-                (void *)row_record, 6, row, breg);
-            row += 8;
-            remaining--;
-        } while (remaining != 0);
-        // The ROM ends the `if` body with `adds r5,r6,#0` (remaining = n) at
-        // 0x08021084 and its `bge` at 0x08021060 jumps PAST it to 0x08021086
-        // (`mov r0,r8`), so the restore belongs INSIDE the `if`. With it
-        // outside, agbcc retargets the `bge` onto the shared store (target
-        // 0x08021084 -> 0x08021082) and the tail reads r5 = n instead of 0.
-        remaining = n;
-    }
-    if (odd == 1) {
-        // The second call site uses ordinary C and already matches the ROM;
-        // retain its distinct argument expressions and register allocation.
-        _08007B18((void *)(uintptr_t)(rec + 8), 5, a_slot + 8 * remaining,
-                  breg, 9, (u32)odd, (u32)odd, 0);
+    {
+        register u32 shifted __asm__("r0") = byte << 24;
+        __asm__ volatile("" : "+r" (shifted));
+        {
+            register s32 u __asm__("r1") = (s32)(s8)(shifted >> 24);
+            register s32 n0 __asm__("r0") = (u + (s32)(shifted >> 31)) >> 1;
+            __asm__ volatile("" : "+r" (n0));
+            {
+                register s32 n __asm__("r6") = n0;
+                register s32 odd __asm__("r8") = (s8)(u - (n << 1));
+                register int remaining __asm__("r5") = 0;
+                __asm__ volatile("" : "+r" (remaining));
+                if (remaining < n) {
+                    /* These are the four stack arguments consumed by 7B18. Pinning the
+                     * current outgoing area to SP lets C place them before the register
+                     * arguments without reproducing the store instructions in asm. */
+                    register volatile u32 *outgoing __asm__("sp");
+                    int one = 1;
+                    register int row __asm__("r4") = a_slot;
+                    remaining = n;
+                    do {
+                        outgoing[0] = 9;
+                        outgoing[1] = one;
+                        outgoing[2] = one;
+                        outgoing[3] = 0;
+                        __asm__ volatile ("" : "+r" (rec));
+                        {
+                            register volatile u8 *row_record __asm__("r0") = rec + 8;
+                            ((void (*)(void *, int, int, int))_08007B18)(
+                                (void *)row_record, 6, row, breg);
+                            row += 8;
+                            remaining--;
+                        }
+                    } while (remaining != 0);
+                    // The ROM ends the `if` body with `adds r5,r6,#0` (remaining = n) at
+                    // 0x08021084 and its `bge` at 0x08021060 jumps PAST it to 0x08021086
+                    // (`mov r0,r8`), so the restore belongs INSIDE the `if`. With it
+                    // outside, agbcc retargets the `bge` onto the shared store (target
+                    // 0x08021084 -> 0x08021082) and the tail reads r5 = n instead of 0.
+                    remaining = n;
+                }
+                if (odd == 1) {
+                    // The second call site uses ordinary C and already matches the ROM;
+                    // retain its distinct argument expressions and register allocation.
+                    _08007B18((void *)(uintptr_t)(rec + 8), 5, a_slot + 8 * remaining,
+                              breg, 9, (u32)odd, (u32)odd, 0);
+                }
+            }
+        }
     }
 }
 __asm__(".align 2, 0");
@@ -1746,19 +1807,23 @@ __asm__(".align 2, 0");
 void _080021260(void *rec_) {
     extern u8 RaceSceneWa21260[] __asm__("RaceSceneWa21260");
     __asm__(".globl RaceSceneWa21260\nRaceSceneWa21260 = 0x03001780\n");
-    uintptr_t base = (uintptr_t)RaceSceneWa21260;
-    if (*(volatile u16 *)(uintptr_t)(base + 0xFBCu) == 3) {
-        if (_08002140() == 2) goto reset;
-        u32 v = *(volatile u32 *)(uintptr_t)((volatile u8 *)rec_ + 208);
-        v += 1;
-        *(volatile u32 *)(uintptr_t)((volatile u8 *)rec_ + 208) = v;
-        if ((s32)v > 180) {
-            _08004D4C(21, 0, 0);
+    {
+        uintptr_t base = (uintptr_t)RaceSceneWa21260;
+        if (*(volatile u16 *)(uintptr_t)(base + 0xFBCu) == 3) {
+            if (_08002140() == 2) goto reset;
+            {
+                u32 v = *(volatile u32 *)(uintptr_t)((volatile u8 *)rec_ + 208);
+                v += 1;
+                *(volatile u32 *)(uintptr_t)((volatile u8 *)rec_ + 208) = v;
+                if ((s32)v > 180) {
+                    _08004D4C(21, 0, 0);
+                }
+            }
         }
+        return;
+    reset:
+        *(volatile u32 *)(uintptr_t)((volatile u8 *)rec_ + 208) = 0;
     }
-    return;
-reset:
-    *(volatile u32 *)(uintptr_t)((volatile u8 *)rec_ + 208) = 0;
 }
 __asm__(".align 2, 0");
 

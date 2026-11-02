@@ -29,52 +29,60 @@ void Race_Cluster_A(void) {
     register u32 countOffset __asm__("r2") = 0x10CAu;
     __asm__ volatile("" : "+r"(racers), "+r"(i), "+r"(waBase),
                       "+r"(countOffset));
-    register volatile s16 *countCell __asm__("r1") =
-        (volatile s16 *)(waBase + countOffset);
-    __asm__ volatile("" : "+r"(countCell));
-    register s32 count __asm__("r0") = *(s16 *)(void *)countCell;
-    if (i >= count)
-        return;
-
-    register volatile s16 *countTail __asm__("r6") = countCell;
-    __asm__ volatile("" : "+r"(countTail));
-loop:
     {
-        u32 flag;
-        register int selector __asm__("r2");
-        register u32 result __asm__("r0");
-        flag = _08018ACC(32);
-        if (flag != 0) {
-            selector = 3;
-            if (i == 0)
-                selector = 2;
-        } else {
-            selector = 5;
-            if (i == 0)
-                selector = 1;
-        }
-        result = (u32)(uintptr_t)sub_080263C4(
-            i, (void *)(uintptr_t)*(volatile u16 *)(racers + 26), selector);
+        register volatile s16 *countCell __asm__("r1") =
+            (volatile s16 *)(waBase + countOffset);
+        __asm__ volatile("" : "+r"(countCell));
         {
-            register u32 storeOffset __asm__("r2") = 140;
-            __asm__ volatile("" : "+r"(storeOffset));
-            storeOffset <<= 1;
-            register volatile u32 *target __asm__("r1") =
-                (volatile u32 *)(racers + storeOffset);
-            *target = result;
+            register s32 count __asm__("r0") = *(s16 *)(void *)countCell;
+            if (i >= count)
+                return;
+
+            {
+                register volatile s16 *countTail __asm__("r6") = countCell;
+                __asm__ volatile("" : "+r"(countTail));
+            loop:
+                {
+                    u32 flag;
+                    register int selector __asm__("r2");
+                    register u32 result __asm__("r0");
+                    flag = _08018ACC(32);
+                    if (flag != 0) {
+                        selector = 3;
+                        if (i == 0)
+                            selector = 2;
+                    } else {
+                        selector = 5;
+                        if (i == 0)
+                            selector = 1;
+                    }
+                    result = (u32)(uintptr_t)sub_080263C4(
+                        i, (void *)(uintptr_t)*(volatile u16 *)(racers + 26), selector);
+                    {
+                        register u32 storeOffset __asm__("r2") = 140;
+                        __asm__ volatile("" : "+r"(storeOffset));
+                        storeOffset <<= 1;
+                        {
+                            register volatile u32 *target __asm__("r1") =
+                                (volatile u32 *)(racers + storeOffset);
+                            *target = result;
+                        }
+                    }
+                }
+                i++;
+                {
+                    register u32 stride __asm__("r0") = 142;
+                    stride <<= 1;
+                    racers += stride;
+                }
+                {
+                    register s32 nextCount __asm__("r0") =
+                        *(s16 *)(void *)countTail;
+                    if (i < nextCount)
+                        goto loop;
+                }
+            }
         }
-    }
-    i++;
-    {
-        register u32 stride __asm__("r0") = 142;
-        stride <<= 1;
-        racers += stride;
-    }
-    {
-        register s32 nextCount __asm__("r0") =
-            *(s16 *)(void *)countTail;
-        if (i < nextCount)
-            goto loop;
     }
 }
 __asm__(".align 2, 0");
@@ -137,33 +145,39 @@ void Race_Cluster_D(void) {
     // so the offset pool-loads second, in ROM order.
     u32 wabase = WORK_AREA_BASE;
     __asm__("" : "+r"(wabase));
-    u8 *cell = (u8 *)(wabase + 0x10FCu);
-    int ph = (int)*(u16 *)cell;
-    u32 v;
-    u32 a0;
-    u32 a2;
-    // ARGS (measured): both call args are set per-path (`movs r0,#0` lives
-    // in each branch, not hoisted to the join), and the call result feeds
-    // the store straight from r0 (no `adds r1,r0` copy). The two `a0 = 0`
-    // assignments are textually identical so the compiler merges them into
-    // one join movs; the barrier makes taken's opaque and unmergeable.
-    if (ph == 10) {
-        v = (u32)*(u16 *)(racers + 26);
-        a0 = 0;
-        __asm__("" : "+r"(a0));
-        a2 = 0;
-    } else {
-        (void)_08018ACC(32);
-        v = (u32)*(u16 *)(racers + 26);
-        a0 = 0;
-        a2 = 1;
+    {
+        u8 *cell = (u8 *)(wabase + 0x10FCu);
+        int ph = (int)*(u16 *)cell;
+        u32 v;
+        u32 a0;
+        u32 a2;
+        // ARGS (measured): both call args are set per-path (`movs r0,#0` lives
+        // in each branch, not hoisted to the join), and the call result feeds
+        // the store straight from r0 (no `adds r1,r0` copy). The two `a0 = 0`
+        // assignments are textually identical so the compiler merges them into
+        // one join movs; the barrier makes taken's opaque and unmergeable.
+        if (ph == 10) {
+            v = (u32)*(u16 *)(racers + 26);
+            a0 = 0;
+            __asm__("" : "+r"(a0));
+            a2 = 0;
+        } else {
+            (void)_08018ACC(32);
+            v = (u32)*(u16 *)(racers + 26);
+            a0 = 0;
+            a2 = 1;
+        }
+        {
+            u32 result = (u32)(uintptr_t)sub_080263C4((int)a0, (void *)v, (int)a2);
+            // The call clobbers r2, so rematerialize the record offset after it.
+            register u32 idx __asm__("r2") = 280;
+            __asm__("" : "+r"(idx));
+            {
+                register u32 *target __asm__("r1") = (u32 *)(racers + idx);
+                *target = result;
+            }
+        }
     }
-    u32 result = (u32)(uintptr_t)sub_080263C4((int)a0, (void *)v, (int)a2);
-    // The call clobbers r2, so rematerialize the record offset after it.
-    register u32 idx __asm__("r2") = 280;
-    __asm__("" : "+r"(idx));
-    register u32 *target __asm__("r1") = (u32 *)(racers + idx);
-    *target = result;
 }
 // _0801A0E8 occupies 68 ROM bytes: 66 instruction bytes followed by a zero
 // halfword. Emit that in its function section instead of gas's Thumb nop fill.

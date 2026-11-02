@@ -1,4 +1,9 @@
 #include "gba/types.h"
+extern void EventBind_0x08007ABC(void *a, int b, int c2);
+extern void Event_0x08025BF0(void *list, int id);
+extern void Rec35_Leaf_16A20(void *c);
+extern void Rec35_Leaf_16944(void *c);
+extern u8 Rec35Wa3[] __asm__("Rec35Wa3");
 void sub_080016AD4(void *c) __attribute__((alias("Rec35_Leaf_16AD4")));  /* rule 6: the splice replaces this label */
 #include "gtadv/memory.h"
 #include "gtadv/ghost.h"
@@ -366,34 +371,44 @@ void Rec35_Leaf_166E8(void *ctx, int r1, int flag) {
     // ROM gate is the 0xFFFF0000 truncation idiom (shift spelled FIRST --
     // see src/car_physics_core.c:134), not the plain `(flag<<16)>>16` which
     // agbcc renders as `lsls / asrs` and takes the SIGNED `bgt` branch.
-    u16 m = (u16)(((((u32)flag) << 16) + 0xFFFF0000u) >> 16);
-    if (m > 1) return;
-    sub_0802B368(1);
-    volatile u8 *c = (volatile u8 *)ctx;
-    // +136 is a 32-bit store, and the +116 store REUSES that address
-    // (`subs r0,#20`) instead of recomputing it from `ctx`. An integer local --
-    // not a re-derived pointer -- is what stops agbcc re-materialising the
-    // `adds r0,r4,#0 / adds r0,#116` pair it emits from a second lvalue.
-    u32 a136 = (u32)(uintptr_t)(c + 136);
-    *(volatile u32 *)(uintptr_t)a136 = 1;
-    u16 z = 0;
-    *(volatile s16 *)(c + 12) = (s16)z;
-    *(volatile u16 *)(uintptr_t)(a136 - 20) = 1;
-    // ROM: ldr 0x03001780 / ldr 0x1074 / adds / movs r1,#0 / ldrsh r0,[r0,r1].
-    // Two pool words plus the add needs the non-foldable base; the
-    // `movs r1,#0` register index is agbcc's form for the constant-0 element.
-    extern u8 Rec35Wa3[] __asm__("Rec35Wa3");
-    volatile u8 *wa = (volatile u8 *)(uintptr_t)Rec35Wa3;
-    __asm__(".globl Rec35Wa3\nRec35Wa3 = 0x03001780\n");
-    // ROM loads the cell with a REGISTER index (`movs r1,#0 / ldrsh r0,[r0,r1]`)
-    // and no separate widen pair. That is the NON-VOLATILE `s16 *` load form:
-    // a `volatile s16 *` lvalue makes agbcc emit `ldrh [r0,#0]` plus
-    // `lsls/asrs` instead (recorded at src/ai_award_leaves.c:211-214 and
-    // src/car_tick_dispatch.c:127-129). Indexing element 0 -- not casting a
-    // byte pointer -- is what yields the register-offset encoding.
-    s16 g = ((const s16 *)(const void *)(wa + 0x1074u))[0];
-    if (g == 1) *(volatile s16 *)(c + 16) = 1;
-    *(volatile u32 *)(c + 36) = z;
+    {
+        u16 m = (u16)(((((u32)flag) << 16) + 0xFFFF0000u) >> 16);
+        if (m > 1) return;
+        sub_0802B368(1);
+        {
+            volatile u8 *c = (volatile u8 *)ctx;
+            // +136 is a 32-bit store, and the +116 store REUSES that address
+            // (`subs r0,#20`) instead of recomputing it from `ctx`. An integer local --
+            // not a re-derived pointer -- is what stops agbcc re-materialising the
+            // `adds r0,r4,#0 / adds r0,#116` pair it emits from a second lvalue.
+            u32 a136 = (u32)(uintptr_t)(c + 136);
+            *(volatile u32 *)(uintptr_t)a136 = 1;
+            {
+                u16 z = 0;
+                *(volatile s16 *)(c + 12) = (s16)z;
+                *(volatile u16 *)(uintptr_t)(a136 - 20) = 1;
+                // ROM: ldr 0x03001780 / ldr 0x1074 / adds / movs r1,#0 / ldrsh r0,[r0,r1].
+                // Two pool words plus the add needs the non-foldable base; the
+                // `movs r1,#0` register index is agbcc's form for the constant-0 element.
+
+                {
+                    volatile u8 *wa = (volatile u8 *)(uintptr_t)Rec35Wa3;
+                    __asm__(".globl Rec35Wa3\nRec35Wa3 = 0x03001780\n");
+                    // ROM loads the cell with a REGISTER index (`movs r1,#0 / ldrsh r0,[r0,r1]`)
+                    // and no separate widen pair. That is the NON-VOLATILE `s16 *` load form:
+                    // a `volatile s16 *` lvalue makes agbcc emit `ldrh [r0,#0]` plus
+                    // `lsls/asrs` instead (recorded at src/ai_award_leaves.c:211-214 and
+                    // src/car_tick_dispatch.c:127-129). Indexing element 0 -- not casting a
+                    // byte pointer -- is what yields the register-offset encoding.
+                    {
+                        s16 g = ((const s16 *)(const void *)(wa + 0x1074u))[0];
+                        if (g == 1) *(volatile s16 *)(c + 16) = 1;
+                        *(volatile u32 *)(c + 36) = z;
+                    }
+                }
+            }
+        }
+    }
 }
 void _0800166E8(void *a,int b,int c) __attribute__((alias("Rec35_Leaf_166E8")));
 
@@ -412,26 +427,40 @@ extern void sub_08002ED0(void *a, int b, int c, int d, int e, int f, int g, int 
 void Rec35_PlacementTick_16734(void *ctx, int a, int b, int c) {
     register int index __asm__("r1") = b;
     __asm__ volatile("" : "+r"(index));
-    register volatile u32 *cnt __asm__("r2") = (volatile u32 *)0x0300058C;
-    __asm__ volatile("" : "+r"(cnt));
-    int v = (int)(*cnt) - 1;
-    *cnt = (u32)v;
-    register s16 *cur __asm__("r5") = (s16 *)0x0203F8E8;
-    __asm__ volatile("" : "+r"(cur));
-    if (v <= 0) {
-        *cur = (u16)(*cur + 1);
-        *cnt = 5;
+    {
+        register volatile u32 *cnt __asm__("r2") = (volatile u32 *)0x0300058C;
+        __asm__ volatile("" : "+r"(cnt));
+        {
+            int v = (int)(*cnt) - 1;
+            *cnt = (u32)v;
+            {
+                register s16 *cur __asm__("r5") = (s16 *)0x0203F8E8;
+                __asm__ volatile("" : "+r"(cur));
+                if (v <= 0) {
+                    *cur = (u16)(*cur + 1);
+                    *cnt = 5;
+                }
+                {
+                    register s16 *cur0 __asm__("r2") = cur;
+                    __asm__ volatile("" : "+r"(cur0));
+                    if (*cur0 > 15) *cur0 = 0;
+                    {
+                        register void *base __asm__("r0") = (void *)0x08306B54;
+                        __asm__ volatile("" : "+r"(base));
+                        {
+                            register const s16 *table __asm__("r2") = (const s16 *)0x080CB8AC;
+                            __asm__ volatile("" : "+r"(table));
+                            {
+                                int s16val = table[index];
+                                sub_08007570(base, s16val, (int)cur[1], (int)cur[0] << 6, 64);
+                                sub_08002ED0(ctx, a, (int)cur[1], c, 1, 3, 1, 0, 0, 1);
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
-    register s16 *cur0 __asm__("r2") = cur;
-    __asm__ volatile("" : "+r"(cur0));
-    if (*cur0 > 15) *cur0 = 0;
-    register void *base __asm__("r0") = (void *)0x08306B54;
-    __asm__ volatile("" : "+r"(base));
-    register const s16 *table __asm__("r2") = (const s16 *)0x080CB8AC;
-    __asm__ volatile("" : "+r"(table));
-    int s16val = table[index];
-    sub_08007570(base, s16val, (int)cur[1], (int)cur[0] << 6, 64);
-    sub_08002ED0(ctx, a, (int)cur[1], c, 1, 3, 1, 0, 0, 1);
 }
 void _080016734(void *c,int a,int b,int d) __attribute__((alias("Rec35_PlacementTick_16734")));
 void sub_080016734(void *c,int a,int b,int d) __attribute__((alias("Rec35_PlacementTick_16734")));
@@ -515,8 +544,10 @@ void _08001681C(void *c, int a, int b, int d) __attribute__((alias("Rec35_Dispat
 extern void _08002060(int v);   // slice-closure spelling; body + `Sub_` alias in src/idle_accessors.c
 void Rec35_Leaf_16AD4(void *ctx) {
     _08002060(0);
-    volatile u8 *c = (volatile u8 *)ctx;
-    *(volatile u16 *)(c + 346) = 180;
+    {
+        volatile u8 *c = (volatile u8 *)ctx;
+        *(volatile u16 *)(c + 346) = 180;
+    }
 }
 // The body is 26 bytes, two short of the section's 4-byte alignment. Under
 // -ffunction-sections gas closes the section itself and fills a Thumb code
@@ -547,9 +578,11 @@ void Rec35_Leaf_168B8(u32 a0) {
     extern u8 Rec35Wa4[] __asm__("Rec35Wa4");
     volatile u8 *wa = (volatile u8 *)(uintptr_t)Rec35Wa4;
     __asm__(".globl Rec35Wa4\nRec35Wa4 = 0x03001780\n");
-    u8 f = *(volatile u8 *)(wa + 0x10C3u);
-    if (f == 1) sub_0802B368(v);
-    else sub_0802B368(v);
+    {
+        u8 f = *(volatile u8 *)(wa + 0x10C3u);
+        if (f == 1) sub_0802B368(v);
+        else sub_0802B368(v);
+    }
 }
 // The body is 46 bytes; the ROM's 48-byte span ends in `00 00`, while gas
 // closes a Thumb code section with a `nop` (0x46c0). This file-scope
@@ -566,13 +599,15 @@ extern void Sub_08002618(int a,int b);
 extern void sub_08002618(int a,int b);
 void Rec35_Leaf_173E8(void *ctx) {
     _08002618(1,0);
-    volatile u8 *c = (volatile u8 *)ctx;
-    *(volatile u16 *)(c + 192) = 0;
-    _0802B368(1);
-    *(volatile u32 *)(c + 56) = 10;
-    *(volatile u16 *)(c + 60) = 0;
-    *(volatile u32 *)(c + 88) = 10;
-    *(volatile u32 *)(c + 84) = 1;
+    {
+        volatile u8 *c = (volatile u8 *)ctx;
+        *(volatile u16 *)(c + 192) = 0;
+        _0802B368(1);
+        *(volatile u32 *)(c + 56) = 10;
+        *(volatile u16 *)(c + 60) = 0;
+        *(volatile u32 *)(c + 88) = 10;
+        *(volatile u32 *)(c + 84) = 1;
+    }
 }
 void _0800173E8(void *c) __attribute__((alias("Rec35_Leaf_173E8")));
 void sub_0800173E8(void *c) __attribute__((alias("Rec35_Leaf_173E8")));
@@ -580,20 +615,22 @@ void sub_0800173E8(void *c) __attribute__((alias("Rec35_Leaf_173E8")));
 // _080017414: twin of 173E8 with +192=0 and flag 4
 void Rec35_Leaf_17414(void *ctx) {
     sub_08002618(1,0);
-    volatile u8 *c = (volatile u8 *)ctx;
-    u32 z;
-    // `z = 0` lives inside the first store's expression on purpose. Written as
-    // its own statement, agbcc materialises the zero *before* the
-    // `adds r0, r5, #0` / `adds r0, #192` address pair and hands r5 to the
-    // pointer; written here it keeps the address computation first and gives
-    // r4 to the zero, which the ROM does at 0x08017424 and then reuses for
-    // all three zero-stores (0x08017426, 0x08017432, 0x08017436).
-    *(volatile u16 *)(c + 192) = (u16)(z = 0);
-    sub_0802B368(4);
-    *(volatile u32 *)(c + 56) = 10;
-    *(volatile u16 *)(c + 60) = (u16)z;
-    *(volatile u32 *)(c + 88) = 10;
-    *(volatile u32 *)(c + 84) = z;
+    {
+        volatile u8 *c = (volatile u8 *)ctx;
+        u32 z;
+        // `z = 0` lives inside the first store's expression on purpose. Written as
+        // its own statement, agbcc materialises the zero *before* the
+        // `adds r0, r5, #0` / `adds r0, #192` address pair and hands r5 to the
+        // pointer; written here it keeps the address computation first and gives
+        // r4 to the zero, which the ROM does at 0x08017424 and then reuses for
+        // all three zero-stores (0x08017426, 0x08017432, 0x08017436).
+        *(volatile u16 *)(c + 192) = (u16)(z = 0);
+        sub_0802B368(4);
+        *(volatile u32 *)(c + 56) = 10;
+        *(volatile u16 *)(c + 60) = (u16)z;
+        *(volatile u32 *)(c + 88) = 10;
+        *(volatile u32 *)(c + 84) = z;
+    }
 }
 __asm__(".align 2, 0");
 void _080017414(void *c) __attribute__((alias("Rec35_Leaf_17414")));
@@ -633,38 +670,40 @@ void Rec35_Dispatch_16F28(void *ctx) {
             // The selection joins BEFORE the call: the ROM writes 0/1 into r0
             // in two out-of-line arms that both fall into one shared `bl`. A
             // call inside each arm duplicates the `bl` (+2 bytes each).
-            s16 v182 = *(s16 *)(c8 + 182);
-            int sel;
             {
-                // A switch, not an if/else-if chain: the ROM emits BOTH tests
-                // first and keeps the two `movs r0,#0/#1` arms out of line
-                // (0x4E/0x52), which the if-chain's inline-then layout misses.
-                switch (v182) {
-                case 1: sel = 0; break;
-                case 2: sel = 1; break;
-                default: goto no_sel;
+                s16 v182 = *(s16 *)(c8 + 182);
+                int sel;
+                {
+                    // A switch, not an if/else-if chain: the ROM emits BOTH tests
+                    // first and keeps the two `movs r0,#0/#1` arms out of line
+                    // (0x4E/0x52), which the if-chain's inline-then layout misses.
+                    switch (v182) {
+                    case 1: sel = 0; break;
+                    case 2: sel = 1; break;
+                    default: goto no_sel;
+                    }
                 }
+                REC35_CALLEE(Sound_0x08024C0C, _08024C0C)(sel);
+                 // 0x08016944
+                 // 0x08016A20
+                 // 0x08025BF0 (ROM shape (P,S))
+                 // 0x08007ABC (ROM shape (P,S,S))
+                REC35_CALLEE(Rec35_Leaf_16944, _080016944)(c8);
+                REC35_CALLEE(Rec35_Leaf_16A20, _080016A20)(c8);
+                *(s16 *)(c8 + 200) = 4;
+                {
+                    // The `ctx+480` cell is live across both binds and gets its own
+                    // callee-saved register (the ROM's r4). It is computed AFTER the
+                    // [+200]=4 store, not at the top of the arm.
+                    u8 *ev = c8 + 480;
+                    REC35_CALLEE(Event_0x08025BF0, _08025BF0)((void *)ev, 10);
+                    REC35_CALLEE(EventBind_0x08007ABC, _08007ABC)((void *)(uintptr_t)*(u32 *)(c8 + 44),
+                                                                  *(u32 *)(c8 + 484),
+                                                                  *(u32 *)ev);
+                }
+            no_sel:
+                break;
             }
-            REC35_CALLEE(Sound_0x08024C0C, _08024C0C)(sel);
-            extern void Rec35_Leaf_16944(void *c); // 0x08016944
-            extern void Rec35_Leaf_16A20(void *c); // 0x08016A20
-            extern void Event_0x08025BF0(void *list, int id); // 0x08025BF0 (ROM shape (P,S))
-            extern void EventBind_0x08007ABC(void *a, int b, int c2); // 0x08007ABC (ROM shape (P,S,S))
-            REC35_CALLEE(Rec35_Leaf_16944, _080016944)(c8);
-            REC35_CALLEE(Rec35_Leaf_16A20, _080016A20)(c8);
-            *(s16 *)(c8 + 200) = 4;
-            {
-                // The `ctx+480` cell is live across both binds and gets its own
-                // callee-saved register (the ROM's r4). It is computed AFTER the
-                // [+200]=4 store, not at the top of the arm.
-                u8 *ev = c8 + 480;
-                REC35_CALLEE(Event_0x08025BF0, _08025BF0)((void *)ev, 10);
-                REC35_CALLEE(EventBind_0x08007ABC, _08007ABC)((void *)(uintptr_t)*(u32 *)(c8 + 44),
-                                                              *(u32 *)(c8 + 484),
-                                                              *(u32 *)ev);
-            }
-        no_sel:
-            break;
         }
         case 4: *(s16 *)(c8 + 60) = 1; break; // 0x08016FB4
         case 3:                                // 0x08016FBA
@@ -813,11 +852,13 @@ extern void _0802B368(int v);          // slice-closure spelling (src/sound.c)
 extern void _08004EA8(int v);          // slice-closure spelling (src/foundation_subsys.c)
 void Rec35_Leaf_182D8(int a, int b, int c) {
     (void)a; (void)b;
-    u16 v = (u16)c;
-    u16 w = (u16)(v - 1); // lsls Vu16 #16; adds Vu32 0xFFFF0000; lsrs Vu16 #16
-    if (w > 1) return; // cmp #1 bhi Vu16 >1
-    _0802B368(1);
-    _08004EA8(1);
+    {
+        u16 v = (u16)c;
+        u16 w = (u16)(v - 1); // lsls Vu16 #16; adds Vu32 0xFFFF0000; lsrs Vu16 #16
+        if (w > 1) return; // cmp #1 bhi Vu16 >1
+        _0802B368(1);
+        _08004EA8(1);
+    }
 }
 void _0800182D8(int a, int b, int c) __attribute__((alias("Rec35_Leaf_182D8")));
 void sub_0800182D8(int a, int b, int c) __attribute__((alias("Rec35_Leaf_182D8")));
@@ -827,10 +868,12 @@ extern void sub_080025C60(void *s, int idx);
 extern void sub_08007ABC(u32 a, u32 b, u32 c);
 void Rec35_Leaf_18210(void *a, void *b, int c) {
     sub_080025C60(b, c);
-    void *pa4 = *(void **)((volatile u8 *)a + 4);
-    int v24 = *(volatile u32 *)((volatile u8 *)b + 24);
-    int v20 = *(volatile u32 *)((volatile u8 *)b + 20);
-    sub_08007ABC((u32)(uintptr_t)pa4, (u32)v24, (u32)v20);
+    {
+        void *pa4 = *(void **)((volatile u8 *)a + 4);
+        int v24 = *(volatile u32 *)((volatile u8 *)b + 24);
+        int v20 = *(volatile u32 *)((volatile u8 *)b + 20);
+        sub_08007ABC((u32)(uintptr_t)pa4, (u32)v24, (u32)v20);
+    }
 }
 __asm__(".align 2, 0");
 void _080018210(void *a, void *b, int c) __attribute__((alias("Rec35_Leaf_18210")));
@@ -840,12 +883,15 @@ void _080018210(void *a, void *b, int c) __attribute__((alias("Rec35_Leaf_18210"
 extern void _08025F78(int v); // asm/ai_award_bitset.s spells it this way
 void Rec35_Leaf_18434(void *ctx) {
     (void)ctx;
-    for (int r4 = 1; r4 <= 98; r4++) {
-        if (r4 == 54) continue;
-        if (r4 == 94) continue;
-        if (r4 == 95) continue;
-        if (r4 == 96) continue;
-        _08025F78(r4);
+    {
+        int r4 = 1;
+        for (; r4 <= 98; r4++) {
+            if (r4 == 54) continue;
+            if (r4 == 94) continue;
+            if (r4 == 95) continue;
+            if (r4 == 96) continue;
+            _08025F78(r4);
+        }
     }
 }
 __asm__(".align 2, 0");
@@ -997,10 +1043,12 @@ typedef struct { u32 f0, f1, f2, f3, f4; } Rec35_Row20;
 void Rec35_RecordFill_25C60(void *dst, int idx) {
     extern u8 Rec35RowTbl25C60[] __asm__("Rec35RowTbl25C60");
     __asm__(".globl Rec35RowTbl25C60\nRec35RowTbl25C60 = 0x080CD830\n");
-    const u8 *base = (const u8 *)(uintptr_t)Rec35RowTbl25C60;
-    const u8 *row = base + (u32)idx * 20u;
-    *(volatile u32 *)((u8 *)dst + 24) = (u32)(s32)((const s16 *)row)[0];
-    *(Rec35_Row20 *)dst = *(const Rec35_Row20 *)row;
+    {
+        const u8 *base = (const u8 *)(uintptr_t)Rec35RowTbl25C60;
+        const u8 *row = base + (u32)idx * 20u;
+        *(volatile u32 *)((u8 *)dst + 24) = (u32)(s32)((const s16 *)row)[0];
+        *(Rec35_Row20 *)dst = *(const Rec35_Row20 *)row;
+    }
 }
 void Sub_08025C60(void *a, int b) __attribute__((alias("Rec35_RecordFill_25C60")));
 void _08025C60(void *a, int b) __attribute__((alias("Rec35_RecordFill_25C60")));

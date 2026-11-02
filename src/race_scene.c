@@ -653,48 +653,56 @@ void Race_Scene_BHandler_1B410(void) {
     // signed byte is needed because the optimizer can otherwise reduce its
     // nonzero test to an unsigned byte test. The signed halfword load is
     // spelled explicitly to preserve the ROM's `mov r1,#0 / ldrsh r0,[r0,r1]`.
-    register u32 workbase __asm__("r0");
-    register u32 countoff __asm__("r2");
-    register s16 *countp __asm__("r1");
-    int i;
-    i = 0;
-    workbase = (u32)(uintptr_t)&RS1B410_WA;
-    countoff = (u32)(uintptr_t)&RS1B410_O10CA;
-    countp = (s16 *)(uintptr_t)(workbase + countoff);
-    if (i < (int)*countp) {
-        register s16 *bound __asm__("r6") = countp;
-        register u32 off __asm__("r5") = 0u;
-        do {
-            register u32 callbase __asm__("r0");
-            callbase = 0x03004EA4u;
-            __asm__ volatile("" : "+r"(callbase));
-            RS_CALLEE(Sub_08002A86C, sub_08002A86C)(
-                (void *)(uintptr_t)(off + callbase), 1, 0);
-            off += 284u;
-            i++;
-        } while (i < (int)*bound);
-    }
-    if (RS_CALLEE(Ghost_FlagTest, _08018ACC)(32u) == 0u) {
-        register u32 workbase2 __asm__("r1") = (u32)(uintptr_t)&RS1B410_WA;
-        register u32 offset2 __asm__("r2") = (u32)(uintptr_t)&RS1B410_O1110;
-        int v = (int)*(volatile u8 *)(uintptr_t)(workbase2 + offset2);
-        // Preserve the ROM's explicit s8-to-int conversion across the
-        // truthiness check; the empty constraint only holds the computed C value.
-        v = (s8)v;
-        __asm__ volatile("" : "+l"(v));
-        if (v != 0) {
-            offset2 -= 18u;
-            register u32 countaddr __asm__("r0") = workbase2 + offset2;
-            __asm__ volatile("" : "+r"(countaddr));
-            register int c __asm__("r0");
-            c = *(s16 *)(uintptr_t)countaddr;
-            __asm__ volatile("" : : "r"(offset2));
-            u16 song = (u16)RS_CALLEE(Course_GetSong, _080258E0)(c);
-            RS_CALLEE(SoundSetMasterVol, _0802B1E4)((u32)song);
+    {
+        register u32 workbase __asm__("r0");
+        register u32 countoff __asm__("r2");
+        register s16 *countp __asm__("r1");
+        int i;
+        i = 0;
+        workbase = (u32)(uintptr_t)&RS1B410_WA;
+        countoff = (u32)(uintptr_t)&RS1B410_O10CA;
+        countp = (s16 *)(uintptr_t)(workbase + countoff);
+        if (i < (int)*countp) {
+            register s16 *bound __asm__("r6") = countp;
+            register u32 off __asm__("r5") = 0u;
+            do {
+                register u32 callbase __asm__("r0");
+                callbase = 0x03004EA4u;
+                __asm__ volatile("" : "+r"(callbase));
+                RS_CALLEE(Sub_08002A86C, sub_08002A86C)(
+                    (void *)(uintptr_t)(off + callbase), 1, 0);
+                off += 284u;
+                i++;
+            } while (i < (int)*bound);
         }
+        if (RS_CALLEE(Ghost_FlagTest, _08018ACC)(32u) == 0u) {
+            register u32 workbase2 __asm__("r1") = (u32)(uintptr_t)&RS1B410_WA;
+            register u32 offset2 __asm__("r2") = (u32)(uintptr_t)&RS1B410_O1110;
+            int v = (int)*(volatile u8 *)(uintptr_t)(workbase2 + offset2);
+            // Preserve the ROM's explicit s8-to-int conversion across the
+            // truthiness check; the empty constraint only holds the computed C value.
+            v = (s8)v;
+            __asm__ volatile("" : "+l"(v));
+            if (v != 0) {
+                offset2 -= 18u;
+                {
+                    register u32 countaddr __asm__("r0") = workbase2 + offset2;
+                    __asm__ volatile("" : "+r"(countaddr));
+                    {
+                        register int c __asm__("r0");
+                        c = *(s16 *)(uintptr_t)countaddr;
+                        __asm__ volatile("" : : "r"(offset2));
+                        {
+                            u16 song = (u16)RS_CALLEE(Course_GetSong, _080258E0)(c);
+                            RS_CALLEE(SoundSetMasterVol, _0802B1E4)((u32)song);
+                        }
+                    }
+                }
+            }
+        }
+        RS_CALLEE(Ghost_FlagOp, _08018AA8)(128u, 1);
+        RS_CALLEE(Ghost_FlagOp, _08018AA8)(0x10000u, 1);
     }
-    RS_CALLEE(Ghost_FlagOp, _08018AA8)(128u, 1);
-    RS_CALLEE(Ghost_FlagOp, _08018AA8)(0x10000u, 1);
 }
 void _08001B410(void) __attribute__((alias("Race_Scene_BHandler_1B410")));
 
@@ -774,34 +782,36 @@ extern void Sub_08019AEC(int v);
 void Race_Scene_Leaf_1B130(int a0) {
     extern u8 RSWa[] __asm__("RSWa");
     __asm__(".globl RSWa\nRSWa = 0x03001780\n");
-    int mode = a0;
-    volatile u8 *wa;
-    uintptr_t off;
-    _08018AA8(0x200000u, 0);
-    if (mode == 1) goto case1;
-    if (mode > 1) goto gt1;
-    if (mode == 0) goto case0;
-    goto done;
-gt1:
-    if (mode == 2) goto case2;
-    goto done;
-case0:
-    _08018AA8(0x100000u, 0);
-    goto done;
-case1:
-    _0802B368(1);
-    _08018AA8(16, 1);
-    _08018AA8(2, 1);
-    wa = RSWa;
-    off = 0x10BD;
-    *(volatile u8 *)(wa + off) = 0;
-    goto done;
-case2:
-    _0802B368(1);
-    sub_080019AEC(-1);
-    _08018AA8(2, 1);
-done:
-    return;
+    {
+        int mode = a0;
+        volatile u8 *wa;
+        uintptr_t off;
+        _08018AA8(0x200000u, 0);
+        if (mode == 1) goto case1;
+        if (mode > 1) goto gt1;
+        if (mode == 0) goto case0;
+        goto done;
+    gt1:
+        if (mode == 2) goto case2;
+        goto done;
+    case0:
+        _08018AA8(0x100000u, 0);
+        goto done;
+    case1:
+        _0802B368(1);
+        _08018AA8(16, 1);
+        _08018AA8(2, 1);
+        wa = RSWa;
+        off = 0x10BD;
+        *(volatile u8 *)(wa + off) = 0;
+        goto done;
+    case2:
+        _0802B368(1);
+        sub_080019AEC(-1);
+        _08018AA8(2, 1);
+    done:
+        return;
+    }
 }
 void _08001B130(int a0) __attribute__((alias("Race_Scene_Leaf_1B130")));
 
@@ -851,54 +861,56 @@ void Race_Scene_Dispatch_1B1A4(int a0) {
     extern u8 RSWa[] __asm__("RSWa");
     __asm__(".globl RSWa\nRSWa = 0x03001780\n");
 #define RS_WA RSWa
-    int r4 = a0;
-    if (Ghost_FlagTest(0x100000u) == 0) { // 128<<13 = 0x100000
-        _08001B068(0);
-        return;
-    }
-    if ((u32)r4 > 5) return;
-    switch(r4){
-        case 0: break;
-        // case 1 @ +0x44: movs r0,#2 / bl 0x0802B368 / b +0xCA
-        case 1: Sub_0802B368(2); break;
-        // case 2 @ +0x4C: bl sub_08009674 / bl sub_08001B130 / b +0xCA
-        // The ROM has no `movs r0,#0` here: sub_08001B130 receives whatever
-        // sub_08009674 left in r0, i.e. its return value. The int-returning
-        // re-spelling keeps the closure's VMA symbol while giving the call a
-        // result to forward.
-        // Every callee below is called by the CLOSURE spelling, which is not the
-        // friendly one: `arm-none-eabi-nm -n build-code/code.o` binds
-        // sub_08009674 / sub_0800968C / sub_08001B498 / _08018AA8 / _080019AEC,
-        // and a promoted body spliced into the slice has no asm to fall back on.
-        case 2: { extern int Sub_08009674r(void) __asm__("sub_08009674");
-                  RS_CALLEE(Race_Scene_Leaf_1B130, _08001B130)(Sub_08009674r()); } break;
-        // case 3 @ +0x56: the second call's result is truncated to s16
-        // (`lsls r0,#16 / asrs r0,#16`) before Sub_08019AEC sees it.
-        case 3:
-            RS_CALLEE(Sub_08001B498, sub_08001B498)(0);
-            RS_CALLEE(Sub_08019AEC, sub_080019AEC)((s16)RS_CALLEE(Sub_0800968C, sub_0800968C)(0));
-            RS_CALLEE(Ghost_FlagOp, _08018AA8)(0x100000u, 0);
-            break;
-        // case 4 @ +0x76: `ldr r1,=WA; ldr r2,=0x10C6; adds r1,r1,r2` is
-        // the two-pool-word address, not a folded constant.
-        case 4: {
-            int r0 = RS_CALLEE(Sub_0800968C, sub_0800968C)(1);
-            volatile u8 *wa = RS_WA;
-            volatile u16 *p = (volatile u16 *)(wa + 0x10C6);
-            *p = (u16)r0;
-            RS_CALLEE(Ghost_FlagOp, _08018AA8)(2,1);
-            RS_CALLEE(Ghost_FlagOp, _08018AA8)(16,1);
-} break;
-        case 5: {
-            int r0 = RS_CALLEE(Sub_0800968C, sub_0800968C)(2);
-            volatile u8 *wa = RS_WA;
-            volatile u16 *p = (volatile u16 *)(wa + 0x10C8);
-            *p = (u16)r0;
-            { s16 *q = (s16 *)p; RS_CALLEE(Sub_08008098, sub_08008098)(*q); }
-            RS_CALLEE(Ghost_FlagOp, _08018AA8)(0x200000u,0);
-            RS_CALLEE(Ghost_FlagOp, _08018AA8)(0x100000u,0);
-} break;
-        default: break;
+    {
+        int r4 = a0;
+        if (Ghost_FlagTest(0x100000u) == 0) { // 128<<13 = 0x100000
+            _08001B068(0);
+            return;
+        }
+        if ((u32)r4 > 5) return;
+        switch(r4){
+            case 0: break;
+            // case 1 @ +0x44: movs r0,#2 / bl 0x0802B368 / b +0xCA
+            case 1: Sub_0802B368(2); break;
+            // case 2 @ +0x4C: bl sub_08009674 / bl sub_08001B130 / b +0xCA
+            // The ROM has no `movs r0,#0` here: sub_08001B130 receives whatever
+            // sub_08009674 left in r0, i.e. its return value. The int-returning
+            // re-spelling keeps the closure's VMA symbol while giving the call a
+            // result to forward.
+            // Every callee below is called by the CLOSURE spelling, which is not the
+            // friendly one: `arm-none-eabi-nm -n build-code/code.o` binds
+            // sub_08009674 / sub_0800968C / sub_08001B498 / _08018AA8 / _080019AEC,
+            // and a promoted body spliced into the slice has no asm to fall back on.
+            case 2: { extern int Sub_08009674r(void) __asm__("sub_08009674");
+                      RS_CALLEE(Race_Scene_Leaf_1B130, _08001B130)(Sub_08009674r()); } break;
+            // case 3 @ +0x56: the second call's result is truncated to s16
+            // (`lsls r0,#16 / asrs r0,#16`) before Sub_08019AEC sees it.
+            case 3:
+                RS_CALLEE(Sub_08001B498, sub_08001B498)(0);
+                RS_CALLEE(Sub_08019AEC, sub_080019AEC)((s16)RS_CALLEE(Sub_0800968C, sub_0800968C)(0));
+                RS_CALLEE(Ghost_FlagOp, _08018AA8)(0x100000u, 0);
+                break;
+            // case 4 @ +0x76: `ldr r1,=WA; ldr r2,=0x10C6; adds r1,r1,r2` is
+            // the two-pool-word address, not a folded constant.
+            case 4: {
+                int r0 = RS_CALLEE(Sub_0800968C, sub_0800968C)(1);
+                volatile u8 *wa = RS_WA;
+                volatile u16 *p = (volatile u16 *)(wa + 0x10C6);
+                *p = (u16)r0;
+                RS_CALLEE(Ghost_FlagOp, _08018AA8)(2,1);
+                RS_CALLEE(Ghost_FlagOp, _08018AA8)(16,1);
+    } break;
+            case 5: {
+                int r0 = RS_CALLEE(Sub_0800968C, sub_0800968C)(2);
+                volatile u8 *wa = RS_WA;
+                volatile u16 *p = (volatile u16 *)(wa + 0x10C8);
+                *p = (u16)r0;
+                { s16 *q = (s16 *)p; RS_CALLEE(Sub_08008098, sub_08008098)(*q); }
+                RS_CALLEE(Ghost_FlagOp, _08018AA8)(0x200000u,0);
+                RS_CALLEE(Ghost_FlagOp, _08018AA8)(0x100000u,0);
+    } break;
+            default: break;
+        }
     }
 }
 void _08001B1A4(int a0) __attribute__((alias("Race_Scene_Dispatch_1B1A4")));
@@ -961,9 +973,11 @@ extern void *sub_08004B68(void);        // asm/passthrough.inc spells it this wa
 extern void _08002158(int id, int val); // asm/blockb.s spells it this way
 void Race_Scene_Leaf_F554(void *a) {
     (void)a;
-    void *hdr = sub_08004B68();
-    u16 v = *(volatile u16 *)hdr;
-    _08002158(6, (int)v);
+    {
+        void *hdr = sub_08004B68();
+        u16 v = *(volatile u16 *)hdr;
+        _08002158(6, (int)v);
+    }
 }
 // Same trailing-pad case as `Race_Scene_Wrapper_1D218` above. The 20-byte
 // ROM span's last instruction is the 2-byte `00 47` at +0x10, and the two
@@ -984,9 +998,11 @@ void _08001F554(void *a) __attribute__((alias("Race_Scene_Leaf_F554")));
 // silently relocate every caller of _08002124C.
 void Race_Scene_Leaf_2124C(void *a) {
     (void)a;
-    void *hdr = sub_08004B68();
-    u16 v = *(volatile u16 *)hdr;
-    _08002158(6, (int)v);
+    {
+        void *hdr = sub_08004B68();
+        u16 v = *(volatile u16 *)hdr;
+        _08002158(6, (int)v);
+    }
 }
 __asm__(".align 2, 0");
 void sub_08002124C(void *a) __attribute__((alias("Race_Scene_Leaf_2124C")));

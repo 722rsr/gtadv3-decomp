@@ -318,23 +318,14 @@ def compare_pass(a_text: str, b_text: str, *, keep_insn_list: bool = False,
 # Compilation
 # --------------------------------------------------------------------------
 def preprocess(source: str, work: Path, tag: str) -> tuple[Path | None, str | None]:
-    """C89-transform if needed, then `clang -E` with the project's closure."""
+    """`clang -E` a C89 candidate with the project's include closure."""
     work.mkdir(parents=True, exist_ok=True)
     c_file = work / f"{tag}.c"
     c_file.write_text(source, encoding="utf-8")
-    compile_input = c_file
-    if "#include" in source:
-        import agbcc_c89_transform as c89_transform
-        transformed, stats = c89_transform.cached_transform_file(c_file)
-        if stats.get("unhandled"):
-            return None, f"C89 transform: {stats['unhandled']}"
-        c89_file = work / f"{tag}.c89.c"
-        c89_file.write_text(transformed, encoding="utf-8")
-        compile_input = c89_file
     i_file = work / f"{tag}.i"
     with i_file.open("w", encoding="utf-8") as handle:
         done = subprocess.run(
-            ["clang", "-E", "-nostdinc", "-undef", *probe.inc_flags(), str(compile_input)],
+            ["clang", "-E", "-nostdinc", "-undef", *probe.inc_flags(), str(c_file)],
             text=True, stdout=handle, stderr=subprocess.PIPE)
     if done.returncode:
         return None, f"preprocess: {(done.stderr or '').strip()[:1500]}"
@@ -387,7 +378,7 @@ def compile_variant(source: str, tag: str, letters: str, work: Path) -> dict:
             str(i_file), "-o", str(s_file)]
     done = subprocess.run(argv, text=True, capture_output=True, cwd=str(work))
     warning = (done.stderr or done.stdout or "").strip()
-    scratch = {preamble_file, i_file, s_file, work / f"{tag}.c", work / f"{tag}.c89.c"}
+    scratch = {preamble_file, i_file, s_file, work / f"{tag}.c"}
     dumps = dump_files(base, scratch)
     if not dumps:
         return {"tag": tag, "ok": False, "stage": "agbcc", "argv": argv,

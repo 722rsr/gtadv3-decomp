@@ -97,28 +97,30 @@ void MenuFF78_15304(void *rec_) {
         extern u8 Menu15304WaOffset;
         __asm__(".globl Menu15304WaBase\nMenu15304WaBase = 0x03001780\n"
                 ".globl Menu15304WaOffset\nMenu15304WaOffset = 0x00000FBC\n");
-        s16 *gate = (s16 *)(uintptr_t)((uintptr_t)&Menu15304WaBase +
-                                       (uintptr_t)&Menu15304WaOffset);
-        int v = gate[0];
-        if ((u32)v <= 7u) {
-            // Match the ROM table order: 0, 1/2/5/7, 3, then 4/6.
-            switch (v) {
-            case 0:
-                _08007770(0, (void *)(uintptr_t)0x082FA8E4u, 1, 0, 4, 1);
-                *(volatile s16 *)(uintptr_t)(rec + 138) = 2;
-                break;
-            case 1: case 2: case 5: case 7:
-                _08007770(0, (void *)(uintptr_t)0x082FA8E4u, 0, 0, 4, 1);
-                *(volatile s16 *)(uintptr_t)(rec + 138) = 0;
-                break;
-            case 3:
-                _08007770(0, (void *)(uintptr_t)0x082FA8E4u, 0, 0, 4, 1);
-                *(volatile s16 *)(uintptr_t)(rec + 138) = 1;
-                break;
-            case 4: case 6:
-                break;
-            default:
-                break;
+        {
+            s16 *gate = (s16 *)(uintptr_t)((uintptr_t)&Menu15304WaBase +
+                                           (uintptr_t)&Menu15304WaOffset);
+            int v = gate[0];
+            if ((u32)v <= 7u) {
+                // Match the ROM table order: 0, 1/2/5/7, 3, then 4/6.
+                switch (v) {
+                case 0:
+                    _08007770(0, (void *)(uintptr_t)0x082FA8E4u, 1, 0, 4, 1);
+                    *(volatile s16 *)(uintptr_t)(rec + 138) = 2;
+                    break;
+                case 1: case 2: case 5: case 7:
+                    _08007770(0, (void *)(uintptr_t)0x082FA8E4u, 0, 0, 4, 1);
+                    *(volatile s16 *)(uintptr_t)(rec + 138) = 0;
+                    break;
+                case 3:
+                    _08007770(0, (void *)(uintptr_t)0x082FA8E4u, 0, 0, 4, 1);
+                    *(volatile s16 *)(uintptr_t)(rec + 138) = 1;
+                    break;
+                case 4: case 6:
+                    break;
+                default:
+                    break;
+                }
             }
         }
     }
@@ -194,124 +196,138 @@ void sub_080015304(void *a) __attribute__((alias("MenuFF78_15304")));
 //   clamp s16 0..4; changed vs entry -> 2B368(2).
 void MenuFF78_154E0(void *rec_, u32 dead, u32 ev_) {
     (void)dead;
-    volatile u8 *rec = (volatile u8 *)rec_;
-    u16 ev = (u16)ev_;
-    register volatile u8 *cell asm("r4") =
-        (volatile u8 *)(uintptr_t)(rec + 144);
-    u16 entry = *(volatile u16 *)(uintptr_t)cell;
-    if (ev == 2)
-        _08001549C(rec_);
-    register volatile u8 *tail_cell asm("r6") = cell;
-    __asm__ volatile("" : "+r"(tail_cell) : : "cc");
-    if (ev == 1) {
-        register s32 s asm("r4");
-        /* Zero-index load: ROM's scratch is r1, so keep r0 live across it. */
-        register int hold asm("r0");
-        __asm__ volatile("" : "=r"(hold));
-        s = *(s16 *)(uintptr_t)tail_cell;
-        __asm__ volatile("" : : "r"(hold));
-        switch (s) {
-        case 0:
-            *(volatile s16 *)(uintptr_t)(rec + 24) = (s16)ev;
-            _0802B368(1);
-            *(volatile u32 *)(uintptr_t)(rec + 16) = 10;
-            *(volatile s16 *)(uintptr_t)(rec + 20) = (s16)s;
-            *(volatile u32 *)(uintptr_t)(rec + 48) = 10;
-            *(volatile u32 *)(uintptr_t)(rec + 44) = (u32)ev;
-            MENU_FF78_O_WA_STORE_R3(tail_cell);
-            break;
-        case 1:
-            MENU_FF78_O_WA_STORE_R2(tail_cell);
+    {
+        volatile u8 *rec = (volatile u8 *)rec_;
+        u16 ev = (u16)ev_;
+        register volatile u8 *cell asm("r4") =
+            (volatile u8 *)(uintptr_t)(rec + 144);
+        u16 entry = *(volatile u16 *)(uintptr_t)cell;
+        if (ev == 2)
             _08001549C(rec_);
-            break;
-        case 2:
-        case 3:
-        case 4: {
-            register u32 current_state asm("r6") =
-                *(volatile u16 *)(uintptr_t)tail_cell;
-            __asm__ volatile("" : "+r"(current_state) : : "memory");
-            if (current_state == 4) {
-                register u32 wa_base asm("r0") = 0x03001780u;
-                register u32 wa_offset asm("r2") = 0x0FBCu;
-                register u32 wa_addr asm("r0");
-                register u32 gate asm("r0");
-                __asm__ volatile("" : "+r"(wa_base), "+r"(wa_offset)
-                                 : : "memory");
-                wa_addr = wa_base + wa_offset;
-                __asm__ volatile("" : "+r"(wa_addr) : : "cc");
-                gate = *(volatile u16 *)(uintptr_t)wa_addr;
-                if (gate == 7) {
-                    _0802B368(10);
-                    tail_cell = rec + 144;
-                    __asm__ volatile("" : "+r"(tail_cell) : : "cc");
+        {
+            register volatile u8 *tail_cell asm("r6") = cell;
+            __asm__ volatile("" : "+r"(tail_cell) : : "cc");
+            if (ev == 1) {
+                register s32 s asm("r4");
+                /* Zero-index load: ROM's scratch is r1, so keep r0 live across it. */
+                register int hold asm("r0");
+                __asm__ volatile("" : "=r"(hold));
+                s = *(s16 *)(uintptr_t)tail_cell;
+                __asm__ volatile("" : : "r"(hold));
+                switch (s) {
+                case 0:
+                    *(volatile s16 *)(uintptr_t)(rec + 24) = (s16)ev;
+                    _0802B368(1);
+                    *(volatile u32 *)(uintptr_t)(rec + 16) = 10;
+                    *(volatile s16 *)(uintptr_t)(rec + 20) = (s16)s;
+                    *(volatile u32 *)(uintptr_t)(rec + 48) = 10;
+                    *(volatile u32 *)(uintptr_t)(rec + 44) = (u32)ev;
+                    MENU_FF78_O_WA_STORE_R3(tail_cell);
+                    break;
+                case 1:
+                    MENU_FF78_O_WA_STORE_R2(tail_cell);
+                    _08001549C(rec_);
+                    break;
+                case 2:
+                case 3:
+                case 4: {
+                    register u32 current_state asm("r6") =
+                        *(volatile u16 *)(uintptr_t)tail_cell;
+                    __asm__ volatile("" : "+r"(current_state) : : "memory");
+                    if (current_state == 4) {
+                        register u32 wa_base asm("r0") = 0x03001780u;
+                        register u32 wa_offset asm("r2") = 0x0FBCu;
+                        register u32 wa_addr asm("r0");
+                        register u32 gate asm("r0");
+                        __asm__ volatile("" : "+r"(wa_base), "+r"(wa_offset)
+                                         : : "memory");
+                        wa_addr = wa_base + wa_offset;
+                        __asm__ volatile("" : "+r"(wa_addr) : : "cc");
+                        gate = *(volatile u16 *)(uintptr_t)wa_addr;
+                        if (gate == 7) {
+                            _0802B368(10);
+                            tail_cell = rec + 144;
+                            __asm__ volatile("" : "+r"(tail_cell) : : "cc");
+                            break;
+                        }
+                    }
+                    {
+                        register int rv asm("r0") = Sub_08024068();
+                        if (rv != 39)
+                            goto map_gate;
+                        rv = 1;
+                        goto map_store;
+            map_gate:
+                        {
+                            register u32 wa_base asm("r0") = 0x03001780u;
+                            register u32 wa_offset asm("r3") = 0x0FBCu;
+                            register u32 wa_addr asm("r0");
+                            register u32 gate asm("r0");
+                            __asm__ volatile("" : "+r"(wa_base), "+r"(wa_offset)
+                                             : : "memory");
+                            wa_addr = wa_base + wa_offset;
+                            __asm__ volatile("" : "+r"(wa_addr) : : "cc");
+                            gate = *(volatile u16 *)(uintptr_t)wa_addr;
+                            if (gate != 1)
+                                goto map_five;
+                        }
+                        rv = 7;
+                        goto map_store;
+            map_five:
+                        rv = 5;
+            map_store:
+                        *(volatile s16 *)(uintptr_t)(rec + 24) = (s16)rv;
+                        goto state_common;
+                    }
+                }
+                default:
                     break;
                 }
+                goto state_done;
+        state_common:
+                _0802B368(1);
+                *(volatile u32 *)(uintptr_t)(rec + 16) = 10;
+                *(volatile s16 *)(uintptr_t)(rec + 20) = 0;
+                *(volatile u32 *)(uintptr_t)(rec + 48) = 10;
+                *(volatile u32 *)(uintptr_t)(rec + 44) = 1;
+                MENU_FF78_O_WA_STORE_FROM_REC(rec);
+        state_done:;
             }
-            register int rv asm("r0") = Sub_08024068();
-            if (rv != 39)
-                goto map_gate;
-            rv = 1;
-            goto map_store;
-map_gate:
+            if (ev == 64) {
+                u16 c = *(volatile u16 *)(uintptr_t)tail_cell;
+                *(volatile u16 *)(uintptr_t)tail_cell = (u16)(c - 1);
+            }
+            if (ev == 128) {
+                u16 c = *(volatile u16 *)(uintptr_t)tail_cell;
+                *(volatile u16 *)(uintptr_t)tail_cell = (u16)(c + 1);
+            }
             {
-                register u32 wa_base asm("r0") = 0x03001780u;
-                register u32 wa_offset asm("r3") = 0x0FBCu;
-                register u32 wa_addr asm("r0");
-                register u32 gate asm("r0");
-                __asm__ volatile("" : "+r"(wa_base), "+r"(wa_offset)
-                                 : : "memory");
-                wa_addr = wa_base + wa_offset;
-                __asm__ volatile("" : "+r"(wa_addr) : : "cc");
-                gate = *(volatile u16 *)(uintptr_t)wa_addr;
-                if (gate != 1)
-                    goto map_five;
+                register volatile u8 *r1 asm("r1") = tail_cell;
+                __asm__ volatile("" : "+r"(r1) : : "cc");
+                {
+                    register s32 cur asm("r0");
+                    cur = *(s16 *)r1;
+                    if (cur < 0)
+                        *(volatile u16 *)(uintptr_t)r1 = 0;
+                    /* ROM's clamp reread uses r3, so keep r2 live across it. */
+                    {
+                        register int hold2 asm("r2");
+                        __asm__ volatile("" : "=r"(hold2));
+                        cur = *(s16 *)r1;
+                        __asm__ volatile("" : : "r"(hold2));
+                        if (cur > 4)
+                            *(volatile u16 *)(uintptr_t)r1 = 4;
+                        {
+                            register u32 current asm("r6") = *(volatile u16 *)(uintptr_t)tail_cell;
+                            __asm__ volatile("" : "+r"(current) : : "memory");
+                            if (entry != current)
+                                _0802B368(2);
+                        }
+                    }
+                }
             }
-            rv = 7;
-            goto map_store;
-map_five:
-            rv = 5;
-map_store:
-            *(volatile s16 *)(uintptr_t)(rec + 24) = (s16)rv;
-            goto state_common;
         }
-        default:
-            break;
-        }
-        goto state_done;
-state_common:
-        _0802B368(1);
-        *(volatile u32 *)(uintptr_t)(rec + 16) = 10;
-        *(volatile s16 *)(uintptr_t)(rec + 20) = 0;
-        *(volatile u32 *)(uintptr_t)(rec + 48) = 10;
-        *(volatile u32 *)(uintptr_t)(rec + 44) = 1;
-        MENU_FF78_O_WA_STORE_FROM_REC(rec);
-state_done:;
     }
-    if (ev == 64) {
-        u16 c = *(volatile u16 *)(uintptr_t)tail_cell;
-        *(volatile u16 *)(uintptr_t)tail_cell = (u16)(c - 1);
-    }
-    if (ev == 128) {
-        u16 c = *(volatile u16 *)(uintptr_t)tail_cell;
-        *(volatile u16 *)(uintptr_t)tail_cell = (u16)(c + 1);
-    }
-    register volatile u8 *r1 asm("r1") = tail_cell;
-    __asm__ volatile("" : "+r"(r1) : : "cc");
-    register s32 cur asm("r0");
-    cur = *(s16 *)r1;
-    if (cur < 0)
-        *(volatile u16 *)(uintptr_t)r1 = 0;
-    /* ROM's clamp reread uses r3, so keep r2 live across it. */
-    register int hold2 asm("r2");
-    __asm__ volatile("" : "=r"(hold2));
-    cur = *(s16 *)r1;
-    __asm__ volatile("" : : "r"(hold2));
-    if (cur > 4)
-        *(volatile u16 *)(uintptr_t)r1 = 4;
-    register u32 current asm("r6") = *(volatile u16 *)(uintptr_t)tail_cell;
-    __asm__ volatile("" : "+r"(current) : : "memory");
-    if (entry != current)
-        _0802B368(2);
 }
 #undef MENU_FF78_O_WA_STORE_R3
 #undef MENU_FF78_O_WA_STORE_R2

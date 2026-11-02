@@ -14,6 +14,8 @@
 
 #include "gba/types.h"
 
+extern u8 RaceSceneCTbl4C0[];
+extern u8 RaceSceneCWa454[];
 #define HOST_STUB(sig) extern sig
 
 // External callees (strong lifts or trampolines).
@@ -123,13 +125,15 @@ void _08001E230(volatile u8 *rec, u16 b, u16 c) {
     {
         extern u8 RaceSceneCWaE230[];
         __asm__(".globl RaceSceneCWaE230\nRaceSceneCWaE230 = 0x03001780");
-        const volatile u8 *wa = RaceSceneCWaE230;
-        if (*(volatile u8 *)(uintptr_t)(wa + 0x10C3) == 1) {
-            _08002158(4, *(volatile u16 *)(rec + 170));
-            r4 = rec + 168;
-        } else {
-            r4 = rec + 168;
-            _08002158(4, *(volatile u16 *)r4);
+        {
+            const volatile u8 *wa = RaceSceneCWaE230;
+            if (*(volatile u8 *)(uintptr_t)(wa + 0x10C3) == 1) {
+                _08002158(4, *(volatile u16 *)(rec + 170));
+                r4 = rec + 168;
+            } else {
+                r4 = rec + 168;
+                _08002158(4, *(volatile u16 *)r4);
+            }
         }
     }
     {
@@ -211,14 +215,16 @@ void sub_08001E9DC(void *rec_) __attribute__((alias("_08001E9DC")));
 void _08001E3BC(volatile u8 *rec) {
     extern u8 RaceSceneCWa3BC[];
     __asm__(".globl RaceSceneCWa3BC\nRaceSceneCWa3BC = 0x03001780");
-    uintptr_t wa = (uintptr_t)RaceSceneCWa3BC;
-    u32 w0 = *(volatile u32 *)(wa + 0x10E8u);
-    int a0 = ((const s16 *)(rec + 172))[0];
-    const s16 *tail = (const s16 *)(rec + 150);
-    _08001D910(84, 36, w0, a0, tail[0]);
-    _08001D910(84, 52, *(volatile u32 *)(wa + 0x10ECu), ((const s16 *)(rec + 174))[0], tail[0]);
-    _08001D910(84, 68, *(volatile u32 *)(wa + 0x10F0u), ((const s16 *)(rec + 176))[0], tail[0]);
-    _08001D910(84, 92, *(volatile u32 *)(wa + 0x10F4u), ((const s16 *)(rec + 180))[0], tail[0]);
+    {
+        uintptr_t wa = (uintptr_t)RaceSceneCWa3BC;
+        u32 w0 = *(volatile u32 *)(wa + 0x10E8u);
+        int a0 = ((const s16 *)(rec + 172))[0];
+        const s16 *tail = (const s16 *)(rec + 150);
+        _08001D910(84, 36, w0, a0, tail[0]);
+        _08001D910(84, 52, *(volatile u32 *)(wa + 0x10ECu), ((const s16 *)(rec + 174))[0], tail[0]);
+        _08001D910(84, 68, *(volatile u32 *)(wa + 0x10F0u), ((const s16 *)(rec + 176))[0], tail[0]);
+        _08001D910(84, 92, *(volatile u32 *)(wa + 0x10F4u), ((const s16 *)(rec + 180))[0], tail[0]);
+    }
 }
 
 // ----------------------------------------------------------------------------
@@ -233,13 +239,15 @@ void _08001E3BC(volatile u8 *rec) {
 // ----------------------------------------------------------------------------
 void _08001E454(void *rec_) {
     (void)rec_;
-    extern u8 RaceSceneCWa454[];
+
     __asm__(".globl RaceSceneCWa454\nRaceSceneCWa454 = 0x03001780");
-    uintptr_t wa = (uintptr_t)RaceSceneCWa454;
-    _08001D910(84, 36, *(volatile u32 *)(wa + 0x10E8u), 0, 0);
-    _08001D910(84, 52, *(volatile u32 *)(wa + 0x10ECu), 0, 0);
-    _08001D910(84, 68, *(volatile u32 *)(wa + 0x10F0u), 0, 0);
-    _08001D910(84, 92, *(volatile u32 *)(wa + 0x10F4u), 0, 0);
+    {
+        uintptr_t wa = (uintptr_t)RaceSceneCWa454;
+        _08001D910(84, 36, *(volatile u32 *)(wa + 0x10E8u), 0, 0);
+        _08001D910(84, 52, *(volatile u32 *)(wa + 0x10ECu), 0, 0);
+        _08001D910(84, 68, *(volatile u32 *)(wa + 0x10F0u), 0, 0);
+        _08001D910(84, 92, *(volatile u32 *)(wa + 0x10F4u), 0, 0);
+    }
 }
 
 // ----------------------------------------------------------------------------
@@ -248,18 +256,20 @@ void _08001E454(void *rec_) {
 void _08001E4C0(void) {
     extern u8 RaceSceneCWa4C0[];
     __asm__(".globl RaceSceneCWa4C0\nRaceSceneCWa4C0 = 0x03001780\n");
-    extern u8 RaceSceneCTbl4C0[];
+
     __asm__(".globl RaceSceneCTbl4C0\nRaceSceneCTbl4C0 = 0x0805FC1C\n");
-    uintptr_t wa = (uintptr_t)RaceSceneCWa4C0;
-    uintptr_t a = wa + 0x10F4u;
-    u32 w = *(volatile u32 *)a;
-    if (w != 0)
-        _08003B78(84, 92, w);
-    else
-        _08003838(84, 92,
-                  (const volatile u8 *)(uintptr_t)
-                  RaceSceneCTbl4C0
-                  );
+    {
+        uintptr_t wa = (uintptr_t)RaceSceneCWa4C0;
+        uintptr_t a = wa + 0x10F4u;
+        u32 w = *(volatile u32 *)a;
+        if (w != 0)
+            _08003B78(84, 92, w);
+        else
+            _08003838(84, 92,
+                      (const volatile u8 *)(uintptr_t)
+                      RaceSceneCTbl4C0
+                      );
+    }
 }
 
 
@@ -270,12 +280,14 @@ void _08001E4C0(void) {
 void _08001E4F4(volatile u8 *rec) {
     extern u8 RaceSceneCWa4F4[];
     __asm__(".globl RaceSceneCWa4F4\nRaceSceneCWa4F4 = 0x03001780\n");
-    uintptr_t wa = (uintptr_t)RaceSceneCWa4F4;
-    uintptr_t a = wa + 0x10F8u;
-    u32 w = *(volatile u32 *)a;
-    _08001D950(148, 92, w,
-               ((const s16 *)(rec + 180))[0],
-               ((const s16 *)(rec + 150))[0]);
+    {
+        uintptr_t wa = (uintptr_t)RaceSceneCWa4F4;
+        uintptr_t a = wa + 0x10F8u;
+        u32 w = *(volatile u32 *)a;
+        _08001D950(148, 92, w,
+                   ((const s16 *)(rec + 180))[0],
+                   ((const s16 *)(rec + 150))[0]);
+    }
 }
 
 
@@ -389,60 +401,62 @@ void _08001E764(void *rec_) {
     extern u8 RaceSceneCO10F8[];
     __asm__(".globl RaceSceneCWa1F8\nRaceSceneCWa1F8 = 0x03001780\n"
             ".globl RaceSceneCO10F8\nRaceSceneCO10F8 = 0x000010F8\n");
-    register void *dst __asm__("r5");
-    register u32 a72 __asm__("r3");
-    register u32 a80 __asm__("r9");
-    register u32 t80 __asm__("r1");
-    register u32 off1 __asm__("r2");
-    register u32 off2 __asm__("r4");
-    register uintptr_t addr __asm__("r0");
-    uintptr_t a;
-    u32 r1;
-    u32 r2;
+    {
+        register void *dst __asm__("r5");
+        register u32 a72 __asm__("r3");
+        register u32 a80 __asm__("r9");
+        register u32 t80 __asm__("r1");
+        register u32 off1 __asm__("r2");
+        register u32 off2 __asm__("r4");
+        register uintptr_t addr __asm__("r0");
+        uintptr_t a;
+        u32 r1;
+        u32 r2;
 
-    _08001E390(rec_);
-    a = (uintptr_t)RaceSceneCWa1F8 + (uintptr_t)RaceSceneCO10F8;
-    _08001DA70(120, 64, *(volatile u32 *)a, 10);
-    if (*(volatile u32 *)a <= 9u) {
-        a72 = 72;
-        t80 = 80;
-        __asm__ volatile("" : "+r"(t80));
-        a80 = t80;
-        dst = (void *)(rec + 16);
-        {
-            register u32 v1 __asm__("r1");
-            u32 v2;
-            off1 = 292;
-            __asm__ volatile("" : "+r"(off1));
-            addr = (uintptr_t)rec + off1;
-            v1 = *(volatile u32 *)addr;
-            off2 = 296;
-            __asm__ volatile("" : "+r"(off2));
-            addr = (uintptr_t)rec + off2;
-            v2 = *(volatile u32 *)addr;
-            sub_08007BFC(dst, (int)v1, (int)v2, 56, a72, 10, 1, 1, 0);
+        _08001E390(rec_);
+        a = (uintptr_t)RaceSceneCWa1F8 + (uintptr_t)RaceSceneCO10F8;
+        _08001DA70(120, 64, *(volatile u32 *)a, 10);
+        if (*(volatile u32 *)a <= 9u) {
+            a72 = 72;
+            t80 = 80;
+            __asm__ volatile("" : "+r"(t80));
+            a80 = t80;
+            dst = (void *)(rec + 16);
+            {
+                register u32 v1 __asm__("r1");
+                u32 v2;
+                off1 = 292;
+                __asm__ volatile("" : "+r"(off1));
+                addr = (uintptr_t)rec + off1;
+                v1 = *(volatile u32 *)addr;
+                off2 = 296;
+                __asm__ volatile("" : "+r"(off2));
+                addr = (uintptr_t)rec + off2;
+                v2 = *(volatile u32 *)addr;
+                sub_08007BFC(dst, (int)v1, (int)v2, 56, a72, 10, 1, 1, 0);
+            }
+            r1 = *(volatile u32 *)(rec + 304);
+            r2 = *(volatile u32 *)(rec + 308);
+            sub_08007BFC(dst, (int)r1, (int)r2, 132, a80, 10, 1, 1, 0);
+        } else {
+            a72 = 72;
+            a80 = 80;
+            dst = (void *)(rec + 16);
+            r1 = *(volatile u32 *)(rec + 292);
+            r2 = *(volatile u32 *)(rec + 296);
+            sub_08007BFC(dst, (int)r1, (int)r2, 40, a72, 10, 1, 1, 0);
+            r1 = *(volatile u32 *)(rec + 304);
+            r2 = *(volatile u32 *)(rec + 308);
+            sub_08007BFC(dst, (int)r1, (int)r2, 140, a80, 10, 1, 1, 0);
         }
-        r1 = *(volatile u32 *)(rec + 304);
-        r2 = *(volatile u32 *)(rec + 308);
-        sub_08007BFC(dst, (int)r1, (int)r2, 132, a80, 10, 1, 1, 0);
-    } else {
-        a72 = 72;
-        a80 = 80;
-        dst = (void *)(rec + 16);
-        r1 = *(volatile u32 *)(rec + 292);
-        r2 = *(volatile u32 *)(rec + 296);
-        sub_08007BFC(dst, (int)r1, (int)r2, 40, a72, 10, 1, 1, 0);
-        r1 = *(volatile u32 *)(rec + 304);
-        r2 = *(volatile u32 *)(rec + 308);
-        sub_08007BFC(dst, (int)r1, (int)r2, 140, a80, 10, 1, 1, 0);
+        _08007BFC(dst, (int)*(volatile u32 *)(rec + 264), (int)*(volatile u32 *)(rec + 268),
+                  (int)*(volatile u32 *)(rec + 276), *(volatile u32 *)(rec + 280),
+                  11, 1, 1, 0);
+        _08001DBC0((void *)rec, *(s16 *)(rec + 162));
+        _0800D97C((void *)(rec + 148), 15);
+        _0800DBE8((void *)(rec + 40));
+        _08001E9D8((void *)rec);
     }
-    _08007BFC(dst, (int)*(volatile u32 *)(rec + 264), (int)*(volatile u32 *)(rec + 268),
-              (int)*(volatile u32 *)(rec + 276), *(volatile u32 *)(rec + 280),
-              11, 1, 1, 0);
-    _08001DBC0((void *)rec, *(s16 *)(rec + 162));
-    _0800D97C((void *)(rec + 148), 15);
-    _0800DBE8((void *)(rec + 40));
-    _08001E9D8((void *)rec);
 }
 // ----------------------------------------------------------------------------
 // ---- 0x08001E8B4 — E4C0 + E56C + guarded emit + DBC0/D97C/DBE8/E9D8 tail ----
@@ -474,22 +488,24 @@ void _08001E92C(void *rec_) {
     volatile u8 *rec = (volatile u8 *)rec_;
     extern u8 RaceSceneCWa1E92C[];
     __asm__(".globl RaceSceneCWa1E92C\nRaceSceneCWa1E92C = 0x03001780");
-    const volatile u8 *wa = RaceSceneCWa1E92C;
-    s32 gate = *(volatile s8 *)(wa + 0x10E4);
-    __asm__ volatile("" : "+r"(gate));
-    if (gate != 0)
-        sub_08007BFC((void *)(rec + 8),
-                     *(volatile u32 *)(rec + 228), *(volatile u32 *)(rec + 232),
-                     160, 32, 8, 1, 1, 0);
-    _08001E454(rec_);
-    if (*(s16 *)(rec + 160) == 1)
-        _08007C68((void *)(rec + 24),
-                     (int)*(volatile u32 *)(rec + 216), (int)*(volatile u32 *)(rec + 220),
-                     20, 112, 9, 1, 0, 0); // R1-proven C body (was Sub_ ROM veneer)
-    _08001DBC0(rec_, *(s16 *)(rec + 162));
-    _0800D97C((void *)(rec + 148), 15);
-    _0800DBE8((void *)(rec + 40));
-    _08001E9D8(rec_);
+    {
+        const volatile u8 *wa = RaceSceneCWa1E92C;
+        s32 gate = *(volatile s8 *)(wa + 0x10E4);
+        __asm__ volatile("" : "+r"(gate));
+        if (gate != 0)
+            sub_08007BFC((void *)(rec + 8),
+                         *(volatile u32 *)(rec + 228), *(volatile u32 *)(rec + 232),
+                         160, 32, 8, 1, 1, 0);
+        _08001E454(rec_);
+        if (*(s16 *)(rec + 160) == 1)
+            _08007C68((void *)(rec + 24),
+                         (int)*(volatile u32 *)(rec + 216), (int)*(volatile u32 *)(rec + 220),
+                         20, 112, 9, 1, 0, 0); // R1-proven C body (was Sub_ ROM veneer)
+        _08001DBC0(rec_, *(s16 *)(rec + 162));
+        _0800D97C((void *)(rec + 148), 15);
+        _0800DBE8((void *)(rec + 40));
+        _08001E9D8(rec_);
+    }
 }
 
 // ----------------------------------------------------------------------------
@@ -501,21 +517,23 @@ void _08001E92C(void *rec_) {
 void _08001E9DC(void *rec_) {
     extern u8 RaceSceneCWaE9DC[];
     __asm__(".globl RaceSceneCWaE9DC\nRaceSceneCWaE9DC = 0x03001780");
-    const volatile u8 *wa = RaceSceneCWaE9DC;
-    u32 n;
-    if (*(volatile u16 *)(uintptr_t)(wa + 0xFBC) != 3)
-        return;
-    // The ==2 arm is the OUT-OF-LINE block in the ROM (beq past the pool),
-    // so it must be the else arm here, not the fallthrough.
-    if (_08002140() != 2) {
-        n = *(volatile u32 *)(rec_ + 320) + 1;
-        *(volatile u32 *)(rec_ + 320) = n;
-        // Signed test: the ROM's `cmp r0,#180 / ble` is a SIGNED branch, so
-        // `n > 180u` emits `bls` and costs the last mismatching byte.
-        if ((s32)n > 180)
-            _08004D4C(21, 0, 0);
-    } else {
-        *(volatile u32 *)(rec_ + 320) = 0;
+    {
+        const volatile u8 *wa = RaceSceneCWaE9DC;
+        u32 n;
+        if (*(volatile u16 *)(uintptr_t)(wa + 0xFBC) != 3)
+            return;
+        // The ==2 arm is the OUT-OF-LINE block in the ROM (beq past the pool),
+        // so it must be the else arm here, not the fallthrough.
+        if (_08002140() != 2) {
+            n = *(volatile u32 *)(rec_ + 320) + 1;
+            *(volatile u32 *)(rec_ + 320) = n;
+            // Signed test: the ROM's `cmp r0,#180 / ble` is a SIGNED branch, so
+            // `n > 180u` emits `bls` and costs the last mismatching byte.
+            if ((s32)n > 180)
+                _08004D4C(21, 0, 0);
+        } else {
+            *(volatile u32 *)(rec_ + 320) = 0;
+        }
     }
 }
 
@@ -610,22 +628,24 @@ void _08001EB48(int a0, void *rec_) {
     volatile u8 *rec = (volatile u8 *)rec_;
     extern u8 RaceSceneCWaEB48[];
     __asm__(".globl RaceSceneCWaEB48\nRaceSceneCWaEB48 = 0x03001780");
-    const volatile u8 *wa = RaceSceneCWaEB48;
-    s16 v;
-    (void)a0;
-    if (*(volatile u16 *)(uintptr_t)(wa + 0xFBC) == 3)
-        *(volatile u8 *)(rec + 88) = 0;
-    v = *(s16 *)((u8 *)_08004B68() + 2);
-    switch (v) {
-    case 26:
-    case 35:
-        *(volatile u16 *)(rec + 84) = 5;
-        break;
-    case 39:
-        *(volatile u16 *)(rec + 84) = 1;
-        break;
-    default:
-        *(volatile u16 *)(rec + 84) = 6;
-        break;
+    {
+        const volatile u8 *wa = RaceSceneCWaEB48;
+        s16 v;
+        (void)a0;
+        if (*(volatile u16 *)(uintptr_t)(wa + 0xFBC) == 3)
+            *(volatile u8 *)(rec + 88) = 0;
+        v = *(s16 *)((u8 *)_08004B68() + 2);
+        switch (v) {
+        case 26:
+        case 35:
+            *(volatile u16 *)(rec + 84) = 5;
+            break;
+        case 39:
+            *(volatile u16 *)(rec + 84) = 1;
+            break;
+        default:
+            *(volatile u16 *)(rec + 84) = 6;
+            break;
+        }
     }
 }

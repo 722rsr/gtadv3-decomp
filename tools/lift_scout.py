@@ -263,7 +263,7 @@ def _source_text(path: str, mtime_ns: int, size: int) -> tuple[str, str]:
     forty-function file used to run the character-level mask forty times. The
     key includes mtime/size so an edit cannot serve a pre-edit mask.
     """
-    from agbcc_c89_transform import strip_noncode
+    from c_source import strip_noncode
 
     text = Path(path).read_text(encoding="utf-8", errors="replace")
     return text, strip_noncode(text)

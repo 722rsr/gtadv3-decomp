@@ -5,13 +5,16 @@
 // with `(u16)(id-1) > 97` (agbcc folds it to `(id<<16) + 0xFFFF0000 >> 16`)
 // and indexes the table with the SIGNED halfword, so 1..98 is the legal range.
 // The previous body returned the identity and never touched the table.
+extern void sub_08024F34(void*);
 int Ai_IdMap(int id){
     extern s16 L_IdTable[];
     __asm__(".globl L_IdTable\nL_IdTable = 0x080C43EC\n");
-    s16 v = (s16)id;
-    if ((u16)(v - 1) <= 97)
-        return L_IdTable[v];
-    return -1;
+    {
+        s16 v = (s16)id;
+        if ((u16)(v - 1) <= 97)
+            return L_IdTable[v];
+        return -1;
+    }
 }
 int _080022E4(int a) __attribute__((alias("Ai_IdMap")));
 int Sub_080022E4(int a) __attribute__((alias("Ai_IdMap")));
@@ -23,15 +26,17 @@ int Sub_080022E4(int a) __attribute__((alias("Ai_IdMap")));
 int Ai_IdRemap(int id){
     extern s16 L_IdTable[];
     __asm__(".globl L_IdTable\nL_IdTable = 0x080C43EC\n");
-    s16 v = (s16)id;
-    u16 n = (u16)(v - 1);
-    if (n <= 97) {
-        s16 t = L_IdTable[v];
-        if (t == -1)
-            t = 23;
-        return t;
+    {
+        s16 v = (s16)id;
+        u16 n = (u16)(v - 1);
+        if (n <= 97) {
+            s16 t = L_IdTable[v];
+            if (t == -1)
+                t = 23;
+            return t;
+        }
+        return n;
     }
-    return n;
 }
 int _0800230C(int a) __attribute__((alias("Ai_IdRemap")));
 int Sub_0800230C(int a) __attribute__((alias("Ai_IdRemap")));
@@ -48,24 +53,30 @@ void *Ai_CatalogA(int id){
     s32 shifted = (u32)mapped << 16;
     uintptr_t base = (uintptr_t)0x080CC640u;
     __asm__ volatile ("" : "+r"(base) : : "memory");
-    s32 offset = shifted >> 14;
-    return (void *)(uintptr_t)*(const u32 *)(offset + base);
+    {
+        s32 offset = shifted >> 14;
+        return (void *)(uintptr_t)*(const u32 *)(offset + base);
+    }
 }
 void *Ai_CatalogB(int id){
     int mapped = Catalog_IdMap((s16)id);
     s32 shifted = (u32)mapped << 16;
     uintptr_t base = (uintptr_t)0x080CC7C4u;
     __asm__ volatile ("" : "+r"(base) : : "memory");
-    s32 offset = shifted >> 14;
-    return (void *)(uintptr_t)*(const u32 *)(offset + base);
+    {
+        s32 offset = shifted >> 14;
+        return (void *)(uintptr_t)*(const u32 *)(offset + base);
+    }
 }
 void *Ai_CatalogC(int id){
     int mapped = Catalog_IdMap((s16)id);
     s32 shifted = (u32)mapped << 16;
     uintptr_t base = (uintptr_t)0x080CC948u;
     __asm__ volatile ("" : "+r"(base) : : "memory");
-    s32 offset = shifted >> 14;
-    return (void *)(uintptr_t)*(const u32 *)(offset + base);
+    {
+        s32 offset = shifted >> 14;
+        return (void *)(uintptr_t)*(const u32 *)(offset + base);
+    }
 }
 void *_08024C3C(int a) __attribute__((alias("Ai_CatalogA")));
 void *sub_08024C3C(int a) __attribute__((alias("Ai_CatalogA")));
@@ -102,15 +113,17 @@ int Ai_CatalogIndexInGroup(int id, int g){
     int idx = 0;
     const u32 *table = (const u32 *)(uintptr_t)0x080CC518u;
     __asm__ volatile ("" : "+r"(table) : : "memory");
-    const s32 *list = (const s32 *)(uintptr_t)table[g];
-    if (*list != -1) {
-        do {
-            if (id == *list) return idx;
-            idx++;
-            list++;
-        } while (*list != -1);
+    {
+        const s32 *list = (const s32 *)(uintptr_t)table[g];
+        if (*list != -1) {
+            do {
+                if (id == *list) return idx;
+                idx++;
+                list++;
+            } while (*list != -1);
+        }
+        return 0;
     }
-    return 0;
 }
 __asm__(".align 2, 0");
 int _08024CD0(int a,int b) __attribute__((alias("Ai_CatalogIndexInGroup")));
@@ -119,16 +132,18 @@ int Ai_CatalogOwnedIndexInGroup(int id, int g){
     int ownedCnt = 0;
     const u32 *table = (const u32 *)(uintptr_t)0x080CC518u;
     __asm__ volatile ("" : "+r"(table) : : "memory");
-    const s32 *list = (const s32 *)(uintptr_t)table[g];
-    extern int _08025FAC(int);
-    while (*list != -1) {
-        if (_08025FAC(*list)) {
-            if (id == *list) return ownedCnt;
-            ownedCnt++;
+    {
+        const s32 *list = (const s32 *)(uintptr_t)table[g];
+        extern int _08025FAC(int);
+        while (*list != -1) {
+            if (_08025FAC(*list)) {
+                if (id == *list) return ownedCnt;
+                ownedCnt++;
+            }
+            list++;
         }
-        list++;
+        return 0;
     }
-    return 0;
 }
 __asm__(".align 2, 0");
 int _08024D0C(int a,int b) __attribute__((alias("Ai_CatalogOwnedIndexInGroup")));
@@ -159,25 +174,29 @@ int _08024DD8(void) __attribute__((alias("Ai_CatalogGroupCount")));
 int Ai_CatalogGroupSize(int g){
     const u32 *t = (const u32 *)(uintptr_t)0x080CC518u;
     __asm__ volatile ("" : "+r"(t) : : "memory");
-    const u32 *list=(const u32*)(uintptr_t)t[g];
-    int c=0; while(*list!=(u32)~0u){ c++; list++; } return c;
+    {
+        const u32 *list=(const u32*)(uintptr_t)t[g];
+        int c=0; while(*list!=(u32)~0u){ c++; list++; } return c;
+    }
 }
 int _08024D78(int a) __attribute__((alias("Ai_CatalogGroupSize")));
 
 int Ai_CatalogOwnedInGroup(int g){
     const u32 *t=(const u32*)(uintptr_t)0x080CC518u;
     __asm__("" : "+r"(t));
-    const u32 *cur=(const u32*)(uintptr_t)t[g];
-    extern int _08025FAC(int);
-    int c=0;
-    if ((int)*cur != -1) {
-        do {
-            int v = (int)*cur;
-            if (_08025FAC(v)) c++;
-            cur++;
-        } while ((int)*cur != -1);
+    {
+        const u32 *cur=(const u32*)(uintptr_t)t[g];
+        extern int _08025FAC(int);
+        int c=0;
+        if ((int)*cur != -1) {
+            do {
+                int v = (int)*cur;
+                if (_08025FAC(v)) c++;
+                cur++;
+            } while ((int)*cur != -1);
+        }
+        return c;
     }
-    return c;
 }
 int _08024DA0(int a) __attribute__((alias("Ai_CatalogOwnedInGroup")));
 int Sub_08024DA0(int a) __attribute__((alias("Ai_CatalogOwnedInGroup")));
@@ -213,7 +232,7 @@ void *_08024E00(int a) __attribute__((alias("Ai_CatalogBindB")));
 // 0x08024E24 — 16B: strh r1, [r0, #0]; adds r0, #4; bl sub_08024F34
 void Ai_CatalogStoreHelper(void *p, int v){
     *(volatile u16*)p = (u16)v;
-    extern void sub_08024F34(void*);
+
     sub_08024F34((u8*)p+4);
 }
 __asm__(".align 2, 0");
@@ -242,7 +261,10 @@ void sub_08024F34(void *a) __attribute__((alias("Ai_CatalogClear10")));
 
 int Ai_CatalogOwnedTotal(void){
     extern int _08025FAC(int);
-    int c=0; for(int i=1;i<=98;++i) if(_08025FAC(i)) c++; return c;
+    int c=0; {
+        int i = 1;
+        for (;i<=98;++i) if(_08025FAC(i)) c++;
+    } return c;
 }
 int _08024E34(void) __attribute__((alias("Ai_CatalogOwnedTotal")));
 

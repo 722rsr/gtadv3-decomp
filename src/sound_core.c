@@ -6,6 +6,9 @@
 // asm/sound_d974.s spells it `sub_0802D974`; a promoted body must call that
 // exact name, so bind the VMA alias (a direct alias of `CpuSet`) rather than
 // the C-only `CpuSet_2D974` wrapper.
+extern s32 sub_0802DE04(s32 num, s32 den);
+extern u16 SoundControlRateTable_2C990[];
+extern u32 SoundControlRootCell_2C990[];
 extern void sub_0802D974(const void *src, void *dst, u32 ctrl);
 
 // Sound core followup — largest pure-Thumb units, evidence-backed.
@@ -395,50 +398,52 @@ void sub_0802BEB4(void *s) __attribute__((alias("SoundBeb4Worker")));
 extern void _0802C10C(u32 bits); // 0x0802C10C `bx r3` dispatch thunk
 void SoundVoiceCleanup(void *unused, void *chan){
     (void)unused;
-    register volatile u8 *c __asm__("r5") = (volatile u8*)chan;
-    register u32 z __asm__("r6");
-    volatile u32 *node;
-    /* Keep the ROM's TST form and let the zero path skip directly to bx lr. */
-    __asm__ volatile(
-        "ldrb r1, [%0, #0]\n\t"
-        "movs r0, #128\n\t"
-        "tst r0, r1\n\t"
-        "beq .Lsound_voice_cleanup_exit\n\t"
-        : : "l"(c) : "r0", "r1", "cc", "memory");
-    node = (volatile u32 *)*(volatile u32 *)((uintptr_t)c + 32);
-    if (node != 0) {
-        z = 0;
-        do {
-            u8 mode = ((volatile u8*)node)[0];
-            if (mode != 0){
-                register u32 mode_bits __asm__("r0") =
-                    ((volatile u8 *)node)[1];
-                /* Branch on the mask's own flags; agbcc adds a CMP in C. */
-                __asm__ volatile(
-                    ".syntax unified\n\t"
-                    "movs r3, #7\n\t"
-                    "ands %0, %0, r3\n\t"
-                    "beq .Lsound_voice_cleanup_skip_cb\n\t"
-                    ".syntax divided\n\t"
-                    : "+l"(mode_bits) : : "r3", "cc", "memory");
-                {
-                    register u32 cb __asm__("r3");
-                    extern u8 SndRootCell[];
-                    __asm__(".globl SndRootCell\nSndRootCell = 0x03007FF0\n");
-                    cb = (u32)(uintptr_t)SndRootCell;
-                    cb = *(volatile u32 *)(uintptr_t)cb;
-                    cb = *(volatile u32 *)((uintptr_t)cb + 44u);
-                    _0802C10C(mode_bits);
+    {
+        register volatile u8 *c __asm__("r5") = (volatile u8*)chan;
+        register u32 z __asm__("r6");
+        volatile u32 *node;
+        /* Keep the ROM's TST form and let the zero path skip directly to bx lr. */
+        __asm__ volatile(
+            "ldrb r1, [%0, #0]\n\t"
+            "movs r0, #128\n\t"
+            "tst r0, r1\n\t"
+            "beq .Lsound_voice_cleanup_exit\n\t"
+            : : "l"(c) : "r0", "r1", "cc", "memory");
+        node = (volatile u32 *)*(volatile u32 *)((uintptr_t)c + 32);
+        if (node != 0) {
+            z = 0;
+            do {
+                u8 mode = ((volatile u8*)node)[0];
+                if (mode != 0){
+                    register u32 mode_bits __asm__("r0") =
+                        ((volatile u8 *)node)[1];
+                    /* Branch on the mask's own flags; agbcc adds a CMP in C. */
+                    __asm__ volatile(
+                        ".syntax unified\n\t"
+                        "movs r3, #7\n\t"
+                        "ands %0, %0, r3\n\t"
+                        "beq .Lsound_voice_cleanup_skip_cb\n\t"
+                        ".syntax divided\n\t"
+                        : "+l"(mode_bits) : : "r3", "cc", "memory");
+                    {
+                        register u32 cb __asm__("r3");
+                        extern u8 SndRootCell[];
+                        __asm__(".globl SndRootCell\nSndRootCell = 0x03007FF0\n");
+                        cb = (u32)(uintptr_t)SndRootCell;
+                        cb = *(volatile u32 *)(uintptr_t)cb;
+                        cb = *(volatile u32 *)((uintptr_t)cb + 44u);
+                        _0802C10C(mode_bits);
+                    }
+                    __asm__ volatile(".Lsound_voice_cleanup_skip_cb:");
+                    ((volatile u8*)node)[0] = (u8)z;
                 }
-                __asm__ volatile(".Lsound_voice_cleanup_skip_cb:");
-                ((volatile u8*)node)[0] = (u8)z;
-            }
-            *(volatile u32 *)((volatile u8 *)node + 44) = z;
-            node = (volatile u32 *)(uintptr_t)*(volatile u32 *)((volatile u8 *)node + 52);
-        } while (node != 0);
+                *(volatile u32 *)((volatile u8 *)node + 44) = z;
+                node = (volatile u32 *)(uintptr_t)*(volatile u32 *)((volatile u8 *)node + 52);
+            } while (node != 0);
+        }
+        *(volatile u32 *)(c + 32) = (u32)(uintptr_t)node;
+        __asm__ volatile(".Lsound_voice_cleanup_exit:");
     }
-    *(volatile u32 *)(c + 32) = (u32)(uintptr_t)node;
-    __asm__ volatile(".Lsound_voice_cleanup_exit:");
 }
 void _0802C11C(void *a, void *b) __attribute__((alias("SoundVoiceCleanup")));
 void sub_0802C11C(void *a, void *b) __attribute__((alias("SoundVoiceCleanup")));
@@ -450,16 +455,22 @@ void _0802BCE8a(void *s, u8 *o) __attribute__((alias("SoundChannelFetchByte")));
 // --- _0802CB20 command commit + _0802C990 control (pure Thumb, pools at 0x02CB6C etc.) ---
 void SoundCmdCommit(void *state){
     (void)state;                       // dead in ROM; reloaded from the pool
-    volatile u32 *cell = (volatile u32 *)0x03007FF0u;
-    volatile u32 *s = (volatile u32 *)(uintptr_t)*cell;   // root block
-    u32 tag = s[0];
-    if (tag + 0x978C92ADu > 1u) return;                    // signature gate
-    s[0] = tag + 10;                                       // advance root[0]
-    volatile u32 *dma1 = (volatile u32 *)0x040000C4u;
-    if (*dma1 & (128u << 18)) *dma1 = 0x84400004u;         // DMA1 ctrl rewrite
-    *(volatile u16 *)0x040000C6u = (u16)(128u << 3);       // DMA1 count = 1024
-    u32 zero = 0;
-    sub_0802D974(&zero, (void *)((uintptr_t)s + 848u), 0x0500018Cu);
+    {
+        volatile u32 *cell = (volatile u32 *)0x03007FF0u;
+        volatile u32 *s = (volatile u32 *)(uintptr_t)*cell;   // root block
+        u32 tag = s[0];
+        if (tag + 0x978C92ADu > 1u) return;                    // signature gate
+        s[0] = tag + 10;                                       // advance root[0]
+        {
+            volatile u32 *dma1 = (volatile u32 *)0x040000C4u;
+            if (*dma1 & (128u << 18)) *dma1 = 0x84400004u;         // DMA1 ctrl rewrite
+            *(volatile u16 *)0x040000C6u = (u16)(128u << 3);       // DMA1 count = 1024
+            {
+                u32 zero = 0;
+                sub_0802D974(&zero, (void *)((uintptr_t)s + 848u), 0x0500018Cu);
+            }
+        }
+    }
 }
 void _0802CB20(void *s) __attribute__((alias("SoundCmdCommit")));
 void sub_0802CB20(void *s) __attribute__((alias("SoundCmdCommit")));
@@ -473,66 +484,68 @@ void SoundControlInit(u32 rate) {
             "SoundControlRootCell_2C990 = 0x03007FF0\n"
             ".globl SoundControlRateTable_2C990\n"
             "SoundControlRateTable_2C990 = 0x08061654\n");
-    extern u32 SoundControlRootCell_2C990[];
-    extern u16 SoundControlRateTable_2C990[];
-    extern s32 sub_0802DE04(s32 num, s32 den);
-    register volatile u8 *r4 __asm__("r4");
-    register u32 r5 __asm__("r5");
-    register u32 r6 __asm__("r6");
-    register u32 r0 __asm__("r0");
-    register u32 r1 __asm__("r1");
-    register u32 r2 __asm__("r2");
 
-    r2 = rate;
-    __asm__ volatile ("" : "+r" (r2));
-    r0 = (u32)(uintptr_t)SoundControlRootCell_2C990;
-    r4 = (volatile u8 *)(uintptr_t)*(volatile u32 *)(uintptr_t)r0;
-    r0 = 240;
-    r0 <<= 12;
-    r0 &= r2;
-    r2 = r0 >> 16;
-    r6 = 0;
-    r4[8] = (u8)r2;
-    r1 = (u32)(uintptr_t)SoundControlRateTable_2C990;
-    r0 = r2 - 1;
-    r0 <<= 1;
-    r0 += r1;
-    r5 = *(volatile u16 *)(uintptr_t)r0;
-    *(volatile u32 *)(uintptr_t)(r4 + 16) = r5;
 
-    r0 = 198;
-    r0 <<= 3;
-    r1 = r5;
-    r0 = (u32)sub_0802DE04((s32)r0, (s32)r1);
-    r4[11] = (u8)r0;
-    r0 = 0x00091D1B;
-    r0 *= r5;
-    r1 = 0x00001388;
-    r0 += r1;
-    r1 = 0x00002710;
-    r0 = (u32)sub_0802DE04((s32)r0, (s32)r1);
-    r1 = r0;
-    __asm__ volatile ("" : "+r" (r1));
-    *(volatile u32 *)(uintptr_t)(r4 + 20) = r1;
-    r0 = 128;
-    r0 <<= 17;
-    /* The ROM reuses the quotient copied to r1 (and +20) as this divisor. */
-    __asm__ volatile ("" : "=r" (r1));
-    r0 = (u32)sub_0802DE04((s32)r0, (s32)r1);
-    r0 = (u32)(((s32)r0 + 1) >> 1);
-    *(volatile u32 *)(uintptr_t)(r4 + 24) = r0;
 
-    *(volatile u16 *)0x04000102u = (u16)r6;
-    r4 = (volatile u8 *)0x04000100u;
-    r0 = 0x00044940;
-    r1 = r5;
-    r0 = (u32)sub_0802DE04((s32)r0, (s32)r1);
-    r0 = 0 - r0;
-    *(volatile u16 *)(uintptr_t)r4 = (u16)r0;
-    sub_0802CB84((void *)(uintptr_t)r0);
-    while (*(volatile u8 *)0x04000006u == 159) {}
-    while (*(volatile u8 *)0x04000006u != 159) {}
-    *(volatile u16 *)0x04000102u = 128;
+    {
+        register volatile u8 *r4 __asm__("r4");
+        register u32 r5 __asm__("r5");
+        register u32 r6 __asm__("r6");
+        register u32 r0 __asm__("r0");
+        register u32 r1 __asm__("r1");
+        register u32 r2 __asm__("r2");
+
+        r2 = rate;
+        __asm__ volatile ("" : "+r" (r2));
+        r0 = (u32)(uintptr_t)SoundControlRootCell_2C990;
+        r4 = (volatile u8 *)(uintptr_t)*(volatile u32 *)(uintptr_t)r0;
+        r0 = 240;
+        r0 <<= 12;
+        r0 &= r2;
+        r2 = r0 >> 16;
+        r6 = 0;
+        r4[8] = (u8)r2;
+        r1 = (u32)(uintptr_t)SoundControlRateTable_2C990;
+        r0 = r2 - 1;
+        r0 <<= 1;
+        r0 += r1;
+        r5 = *(volatile u16 *)(uintptr_t)r0;
+        *(volatile u32 *)(uintptr_t)(r4 + 16) = r5;
+
+        r0 = 198;
+        r0 <<= 3;
+        r1 = r5;
+        r0 = (u32)sub_0802DE04((s32)r0, (s32)r1);
+        r4[11] = (u8)r0;
+        r0 = 0x00091D1B;
+        r0 *= r5;
+        r1 = 0x00001388;
+        r0 += r1;
+        r1 = 0x00002710;
+        r0 = (u32)sub_0802DE04((s32)r0, (s32)r1);
+        r1 = r0;
+        __asm__ volatile ("" : "+r" (r1));
+        *(volatile u32 *)(uintptr_t)(r4 + 20) = r1;
+        r0 = 128;
+        r0 <<= 17;
+        /* The ROM reuses the quotient copied to r1 (and +20) as this divisor. */
+        __asm__ volatile ("" : "=r" (r1));
+        r0 = (u32)sub_0802DE04((s32)r0, (s32)r1);
+        r0 = (u32)(((s32)r0 + 1) >> 1);
+        *(volatile u32 *)(uintptr_t)(r4 + 24) = r0;
+
+        *(volatile u16 *)0x04000102u = (u16)r6;
+        r4 = (volatile u8 *)0x04000100u;
+        r0 = 0x00044940;
+        r1 = r5;
+        r0 = (u32)sub_0802DE04((s32)r0, (s32)r1);
+        r0 = 0 - r0;
+        *(volatile u16 *)(uintptr_t)r4 = (u16)r0;
+        sub_0802CB84((void *)(uintptr_t)r0);
+        while (*(volatile u8 *)0x04000006u == 159) {}
+        while (*(volatile u8 *)0x04000006u != 159) {}
+        *(volatile u16 *)0x04000102u = 128;
+    }
 }
 void _0802C990(u32 r) __attribute__((alias("SoundControlInit")));
 void sub_0802C990(u32 r) __attribute__((alias("SoundControlInit")));
@@ -890,12 +903,14 @@ fade_complete:
     if (count > 0) {
         do {
             _0802C11C((void *)s, (void *)voice);
-            register u32 one __asm__("r0") = 1;
-            current = *(u16 *)((u8 *)s + 40);
-            one &= current;
-            if (one == 0) voice[0] = (u8)one;
-            count -= 1;
-            voice += 80;
+            {
+                register u32 one __asm__("r0") = 1;
+                current = *(u16 *)((u8 *)s + 40);
+                one &= current;
+                if (one == 0) voice[0] = (u8)one;
+                count -= 1;
+                voice += 80;
+            }
         } while (count > 0);
         __asm__ volatile ("" : "+r" (current));
     }
@@ -905,9 +920,11 @@ fade_complete:
         one &= *(volatile u16 *)(s + 40);
         if (one != 0) {
             flags = *(volatile u32 *)(s + 4);
-            register u32 sign __asm__("r1") = 128;
-            sign <<= 24;
-            flags |= sign;
+            {
+                register u32 sign __asm__("r1") = 128;
+                sign <<= 24;
+                flags |= sign;
+            }
         } else {
             flags = 128;
             flags <<= 24;
@@ -921,26 +938,30 @@ fade_voices:
     count = s[8];
     voice = *(volatile u8 **)(s + 44);
     if (count <= 0) goto fade_done;
-    register u32 direction __asm__("r3") = 128;
-    current = 0;
-    register u32 control __asm__("r2") = 3;
-    do {
-        register u32 flags __asm__("r1") = voice[0];
-        register u32 active __asm__("r0") = direction & flags;
-        if (active != 0) {
-            current = *(u16 *)((u8 *)s + 40);
-            active = current >> 2;
-            voice[19] = (u8)active;
-            active = flags;
-            active |= control;
-            voice[0] = (u8)active;
+    {
+        register u32 direction __asm__("r3") = 128;
+        current = 0;
+        {
+            register u32 control __asm__("r2") = 3;
+            do {
+                register u32 flags __asm__("r1") = voice[0];
+                register u32 active __asm__("r0") = direction & flags;
+                if (active != 0) {
+                    current = *(u16 *)((u8 *)s + 40);
+                    active = current >> 2;
+                    voice[19] = (u8)active;
+                    active = flags;
+                    active |= control;
+                    voice[0] = (u8)active;
+                }
+                count -= 1;
+                voice += 80;
+            } while (count > 0);
+            __asm__ volatile ("" : "+r" (current));
+        fade_done:
+            return;
         }
-        count -= 1;
-        voice += 80;
-    } while (count > 0);
-    __asm__ volatile ("" : "+r" (current));
-fade_done:
-    return;
+    }
 }
 void _0802CD58(void *s) __attribute__((alias("SoundFadeTick")));
 void sub_0802CD58(void *s) __attribute__((alias("SoundFadeTick")));
@@ -952,8 +973,8 @@ void sub_0802BCB4(void *a); // channel-table copy (sound_channel_bcb4.c)
 // The two defects recorded are both closed. Both were register
 // allocation, not instruction selection, which is the same conclusion
 // reached for other bodies, so the lever was `register T v __asm__("rN")` —
-// a GNU extension, so the unit is not strict C89 (the C89 transform accepts
-// it and the repo gates pass). FOUR pins were tried; ONE survived its
+// a GNU extension, so the unit is not strict ISO C89; it is part of the
+// pinned agbcc dialect and the source gate accepts it. FOUR pins were tried; ONE survived its
 // drop-one control and the other three were deleted as decoration:
 //
 // The 12 words seeded into the two tables are handler addresses: every one is
@@ -1011,73 +1032,81 @@ void SoundVoiceInit(void *state) {
     // zero and the body diverges at offset 13. Pinning the zero alone is
     // sufficient; `p80` is a plain named local because an address-taken
     // pointer has to be a pseudo, and its pseudo then lands in r3.
-    register u16 z80 __asm__("r2");
-    volatile u16 *p80;
-    volatile u8 *r5 = (volatile u8 *)state;
-    // The `0x04000084u = 143` pair needs no pin: the ROM and agbcc already
-    // agree on r1 for the address and r0 for the value.
-    *(volatile u16 *)0x04000084u = 143;
-    p80 = (volatile u16 *)0x04000080u;
-    z80 = 0;
-    *p80 = z80;
-    volatile u8 *r0 = (volatile u8 *)0x04000063u;
-    *r0 = 8; r0 += 6; *r0 = 8; r0 += 16; *r0 = 8;
-    r0 -= 20; *r0 = 128; r0 += 8; *r0 = 128; r0 += 16; *r0 = 128;
-    r0 -= 13; *r0 = (u8)z80;
-    *(volatile u8 *)p80 = 119;
-    volatile u32 *r4 = *(volatile u32 **)0x03007FF0u;
-    u32 r6 = r4[0];
-    if (r6 != 0x68736D53u) return; // "Smsh" gate
-    r4[0] = r6 + 1;
-    volatile u32 *r1 = (volatile u32 *)0x0203EBB0u;
-    r1[8]  = (u32)(uintptr_t)&SndInitH_0802D6F5; // +32  sub_0802D6F4 | Thumb
-    r1[17] = (u32)(uintptr_t)&SndInitH_0802C3F9; // +68  sub_0802C3F8 | Thumb
-    r1[19] = (u32)(uintptr_t)&SndInitH_0802C40D; // +76  sub_0802C40C | Thumb
-    r1[28] = (u32)(uintptr_t)&SndInitH_0802D84D; // +112 sub_0802D84C | Thumb
-    r1[29] = (u32)(uintptr_t)&SndInitH_0802C391; // +116 sub_0802C390 | Thumb
-    r1[30] = (u32)(uintptr_t)&SndInitH_0802C991; // +120 sub_0802C990 | Thumb
-    r1[31] = (u32)(uintptr_t)&SndInitH_0802C11D; // +124 sub_0802C11C | Thumb
-    *(volatile u32 *)((volatile u8 *)r1 + 128) = (u32)(uintptr_t)&SndInitH_0802CD59;
-    *(volatile u32 *)((volatile u8 *)r1 + 132) = (u32)(uintptr_t)&SndInitH_0802CE21;
-    r4[7] = (u32)(uintptr_t)r5;  // +28 = voice struct
-    r4[10] = (u32)(uintptr_t)&SndInitH_0802D035; // +40
-    r4[11] = (u32)(uintptr_t)&SndInitH_0802CF7D; // +44
-    r4[12] = (u32)(uintptr_t)&SndInitH_0802CED5; // +48
-    // Defect B. ROM +0x80..+0x86 is
-    //   ldr r0,_0802C890 / movs r1,#0 / strb r0,[r4,#12] / str r1,[sp]
-    // — a pool-loaded zero for the +12 byte, then a SECOND zero for the
-    // CpuSet source slot, with both materialisations ahead of both stores.
-    // A plain constant 0 is always folded to `movs` by reload, so the byte
-    // value is spelled as the address of SoundVoiceInitZero, an assembler
-    // absolute symbol of value 0: a CONST holding a SYMBOL_REF is the one
-    // shape that reaches the pool. Copying the CpuSet zero through `slot`
-    // rather than passing `&zq` directly is what keeps the second zero a
-    // separate materialisation in the ROM's order.
     {
-        u32 slot;
-        u32 bz = (u32)(uintptr_t)&SoundVoiceInitZero;
-        u32 zq = 0;
-        ((volatile u8 *)r4)[12] = (u8)bz; // +12 byte
-        slot = zq;
-        sub_0802D974(&slot, (void *)r5, 0x05000040u); // CpuSet fill 64 words @r5
+        register u16 z80 __asm__("r2");
+        volatile u16 *p80;
+        volatile u8 *r5 = (volatile u8 *)state;
+        // The `0x04000084u = 143` pair needs no pin: the ROM and agbcc already
+        // agree on r1 for the address and r0 for the value.
+        *(volatile u16 *)0x04000084u = 143;
+        p80 = (volatile u16 *)0x04000080u;
+        z80 = 0;
+        *p80 = z80;
+        {
+            volatile u8 *r0 = (volatile u8 *)0x04000063u;
+            *r0 = 8; r0 += 6; *r0 = 8; r0 += 16; *r0 = 8;
+            r0 -= 20; *r0 = 128; r0 += 8; *r0 = 128; r0 += 16; *r0 = 128;
+            r0 -= 13; *r0 = (u8)z80;
+            *(volatile u8 *)p80 = 119;
+            {
+                volatile u32 *r4 = *(volatile u32 **)0x03007FF0u;
+                u32 r6 = r4[0];
+                if (r6 != 0x68736D53u) return; // "Smsh" gate
+                r4[0] = r6 + 1;
+                {
+                    volatile u32 *r1 = (volatile u32 *)0x0203EBB0u;
+                    r1[8]  = (u32)(uintptr_t)&SndInitH_0802D6F5; // +32  sub_0802D6F4 | Thumb
+                    r1[17] = (u32)(uintptr_t)&SndInitH_0802C3F9; // +68  sub_0802C3F8 | Thumb
+                    r1[19] = (u32)(uintptr_t)&SndInitH_0802C40D; // +76  sub_0802C40C | Thumb
+                    r1[28] = (u32)(uintptr_t)&SndInitH_0802D84D; // +112 sub_0802D84C | Thumb
+                    r1[29] = (u32)(uintptr_t)&SndInitH_0802C391; // +116 sub_0802C390 | Thumb
+                    r1[30] = (u32)(uintptr_t)&SndInitH_0802C991; // +120 sub_0802C990 | Thumb
+                    r1[31] = (u32)(uintptr_t)&SndInitH_0802C11D; // +124 sub_0802C11C | Thumb
+                    *(volatile u32 *)((volatile u8 *)r1 + 128) = (u32)(uintptr_t)&SndInitH_0802CD59;
+                    *(volatile u32 *)((volatile u8 *)r1 + 132) = (u32)(uintptr_t)&SndInitH_0802CE21;
+                    r4[7] = (u32)(uintptr_t)r5;  // +28 = voice struct
+                    r4[10] = (u32)(uintptr_t)&SndInitH_0802D035; // +40
+                    r4[11] = (u32)(uintptr_t)&SndInitH_0802CF7D; // +44
+                    r4[12] = (u32)(uintptr_t)&SndInitH_0802CED5; // +48
+                    // Defect B. ROM +0x80..+0x86 is
+                    //   ldr r0,_0802C890 / movs r1,#0 / strb r0,[r4,#12] / str r1,[sp]
+                    // — a pool-loaded zero for the +12 byte, then a SECOND zero for the
+                    // CpuSet source slot, with both materialisations ahead of both stores.
+                    // A plain constant 0 is always folded to `movs` by reload, so the byte
+                    // value is spelled as the address of SoundVoiceInitZero, an assembler
+                    // absolute symbol of value 0: a CONST holding a SYMBOL_REF is the one
+                    // shape that reaches the pool. Copying the CpuSet zero through `slot`
+                    // rather than passing `&zq` directly is what keeps the second zero a
+                    // separate materialisation in the ROM's order.
+                    {
+                        u32 slot;
+                        u32 bz = (u32)(uintptr_t)&SoundVoiceInitZero;
+                        u32 zq = 0;
+                        ((volatile u8 *)r4)[12] = (u8)bz; // +12 byte
+                        slot = zq;
+                        sub_0802D974(&slot, (void *)r5, 0x05000040u); // CpuSet fill 64 words @r5
+                    }
+                    r5[1] = 1;
+                    r5[28] = 17;
+                    // The ROM walks ONE pointer through the six byte stores and reaches the
+                    // last two by offset: `adds r1,#36` lands on r5+192, then `strb [r1,#1]`
+                    // and `strb [r1,#28]`. Six independent `r5[n] =` stores make agbcc rebase
+                    // on r5 for each one and emit a 6-instruction chain (+37/+27 walks) that
+                    // lands on r5+193 and r5+220 instead. Same bytes written, wrong form.
+                    {
+                        volatile u8 *p = r5 + 65;
+                        p[0] = 2;
+                        p += 27; p[0] = 34;
+                        p += 37; p[0] = 3;
+                        p += 27; p[0] = 68;
+                        p += 36; p[1] = 4;
+                        p[28] = 136;
+                    }
+                    r4[0] = r6; // restore (net zero; kept for ISR-visibility parity)
+                }
+            }
+        }
     }
-    r5[1] = 1;
-    r5[28] = 17;
-    // The ROM walks ONE pointer through the six byte stores and reaches the
-    // last two by offset: `adds r1,#36` lands on r5+192, then `strb [r1,#1]`
-    // and `strb [r1,#28]`. Six independent `r5[n] =` stores make agbcc rebase
-    // on r5 for each one and emit a 6-instruction chain (+37/+27 walks) that
-    // lands on r5+193 and r5+220 instead. Same bytes written, wrong form.
-    {
-        volatile u8 *p = r5 + 65;
-        p[0] = 2;
-        p += 27; p[0] = 34;
-        p += 37; p[0] = 3;
-        p += 27; p[0] = 68;
-        p += 36; p[1] = 4;
-        p[28] = 136;
-    }
-    r4[0] = r6; // restore (net zero; kept for ISR-visibility parity)
 }
 void _0802C780(void *s) __attribute__((alias("SoundVoiceInit")));
 void sub_0802C780(void *s) __attribute__((alias("SoundVoiceInit")));
@@ -1094,19 +1123,21 @@ void SoundStateInit(void *state) {
     *(volatile u32 *)0x040000BCu = (u32)(uintptr_t)(r5 + 848); // DMA1SAD
     *(volatile u32 *)0x040000C0u = 0x040000A0u; // DMA1DAD = FIFOA
     *(volatile u32 *)0x03007FF0u = (u32)(uintptr_t)r5; // root cell
-    u32 zero = 0;
-    sub_0802D974(&zero, (void *)r5, 0x05000260u); // CpuSet fill
-    r5[6] = 8;
-    r5[7] = 15;
-    *(volatile u32 *)(r5 + 56) = 0x0802C191u;
-    *(volatile u32 *)(r5 + 40) = 0x0802D96Du;
-    *(volatile u32 *)(r5 + 44) = 0x0802D96Du;
-    *(volatile u32 *)(r5 + 48) = 0x0802D96Du;
-    *(volatile u32 *)(r5 + 60) = 0x0802D96Du;
-    sub_0802BCB4((void *)0x0203EBB0u);
-    *(volatile u32 *)(r5 + 52) = 0x0203EBB0u;
-    sub_0802C990(0x00040000u); // 128<<11, as in asm (aliased to SoundControlInit below)
-    *(volatile u32 *)r5 = 0x68736D53u; // "Smsh" magic published last
+    {
+        u32 zero = 0;
+        sub_0802D974(&zero, (void *)r5, 0x05000260u); // CpuSet fill
+        r5[6] = 8;
+        r5[7] = 15;
+        *(volatile u32 *)(r5 + 56) = 0x0802C191u;
+        *(volatile u32 *)(r5 + 40) = 0x0802D96Du;
+        *(volatile u32 *)(r5 + 44) = 0x0802D96Du;
+        *(volatile u32 *)(r5 + 48) = 0x0802D96Du;
+        *(volatile u32 *)(r5 + 60) = 0x0802D96Du;
+        sub_0802BCB4((void *)0x0203EBB0u);
+        *(volatile u32 *)(r5 + 52) = 0x0203EBB0u;
+        sub_0802C990(0x00040000u); // 128<<11, as in asm (aliased to SoundControlInit below)
+        *(volatile u32 *)r5 = 0x68736D53u; // "Smsh" magic published last
+    }
 }
 void _0802C8C4(void *s) __attribute__((alias("SoundStateInit")));
 void sub_0802C8C4(void *s) __attribute__((alias("SoundStateInit")));

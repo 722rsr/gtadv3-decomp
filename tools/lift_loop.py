@@ -75,7 +75,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import corpus_match_probe as probe  # noqa: E402
-from agbcc_c89_transform import strip_noncode, transform_file  # noqa: E402
+from c_source import strip_noncode  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 WORK = ROOT / "build/lift"
@@ -166,7 +166,7 @@ def blank_attrs(masked: str) -> str:
     return ATTR_RE.sub(lambda m: " " * (m.end() - m.start()), masked)
 
 
-def build_tu(path: Path, name: str, want_span: bool = False, raw: bool = False):
+def build_tu(path: Path, name: str, want_span: bool = False):
     """The whole file with every function body but `name` blanked out.
 
     Keeping the file intact means typedefs, macros, `__asm__` symbol bindings
@@ -177,17 +177,11 @@ def build_tu(path: Path, name: str, want_span: bool = False, raw: bool = False):
     `want_span` returns the kept body's `{ ... }` range as well, which is what
     the barrier sweep needs to know where it may insert.
 
-    `raw` returns the file untransformed, so a caller can splice raw C into it
-    and then run the C89 transform over the whole result. A `--variant` file is
-    ordinary source, and splicing it into the already-transformed text would
-    leave its declarations after a statement.
+    Maintained source is C89, so the file is read as-is. A `--variant` file is
+    also expected in C89: agbcc reports any declaration-after-statement
+    directly instead of a rewrite silently accepting it.
     """
-    if raw:
-        text = path.read_text(encoding="utf-8", errors="replace")
-    else:
-        # C89 needs every declaration ahead of the first statement; the project
-        # applies that transform before agbcc, so the scratch TU must too.
-        text, _stats = probe.cached_transform_file(path)
+    text = path.read_text(encoding="utf-8", errors="replace")
     # Comments and literals are blanked (same indices) so neither the brace scan
     # nor the signature lookback can mistake prose for code -- a doc comment
     # directly above a definition otherwise wins the greedy name match.
@@ -473,8 +467,8 @@ def _preceding_stmt(tu: str, at: int) -> str:
     """One-line tail of the statement a barrier at `at` follows.
 
     Printed with the winner so the placement can be reproduced in the real
-    source: the sweep runs on the C89-transformed TU, whose line numbers mean
-    nothing to the file on disk, but the statement text does.
+    source: the sweep may splice a variant into the TU, but the statement text
+    is what a reader needs to find the insertion point.
     """
     text = " ".join(tu[max(0, at - 160):at].split())
     return text[-78:]
@@ -610,8 +604,8 @@ def run_sweep(a, tu: str, span, vma: int, size: int,
     if meta and res["tu"]:
         best_path = WORK / "sweep_best.c"
         best_path.write_text(res["tu"], encoding="utf-8")
-        # The variant is already past the C89 transform, so its real TU origin
-        # has to travel with it for `--raw-tu` to compile it the same way.
+        # The variant is already C89, so its real TU origin has to travel with
+        # it for `--raw-tu` to compile it the same way.
         (WORK / "sweep_best.origin").write_text(str(a.source.resolve()))
         lines = [f"# {a.function}: {res['kind']}, {res['size']} B, "
                  f"{res['aligned']} aligned",
@@ -695,19 +689,18 @@ def run_variants(a, tu: str, span: tuple[int, int], vma: int, size: int) -> int:
     lab_sweep, but at the scratch TU's compile cost (a second or two instead of
     a full-TU probe). Ranking counts probe-sense matched bytes (`byte_score`),
     so the fast sweep ranks the way the acceptance gate will. The splice runs on
-    the raw source and the whole file is then C89-transformed, so a variant may
-    declare locals after statements like any other source file.
+    the maintained source unchanged, so a variant must already be C89 like the
+    file it replaces.
     """
-    raw_tu, raw_span = build_tu(a.source, a.function, want_span=True, raw=True)
+    raw_tu, raw_span = build_tu(a.source, a.function, want_span=True)
     results = []
     for vfile in a.variant:
         body = Path(vfile).read_text(encoding="utf-8")
         cand = raw_tu[:raw_span[0]] + body + raw_tu[raw_span[1]:]
         workdir = WORK / "variant" / Path(vfile).stem
         workdir.mkdir(parents=True, exist_ok=True)
-        scratch = workdir / "variant_raw.c"
+        scratch = workdir / "variant.c"
         scratch.write_text(cand, encoding="utf-8")
-        cand, _stats = transform_file(scratch)
         res = evaluate(cand, a.source, a.function, vma, size, workdir)
         n = size or len(res["blob"])
         res["bytes"], res["first"] = byte_score(res["blob"],
@@ -769,7 +762,7 @@ def main() -> int:
     ap.add_argument("--limit", type=int, default=3,
                     help="differing runs printed by --diff (0 = every run)")
     ap.add_argument("--raw-tu", action="store_true",
-                    help="`source` is already a transformed TU (e.g. sweep_best.c)")
+                    help="`source` is already a complete C89 TU (e.g. sweep_best.c)")
     a = ap.parse_args()
     if not a.jobs:
         a.jobs = max(1, min(8, (os.cpu_count() or 2)))

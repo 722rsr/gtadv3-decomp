@@ -25,6 +25,13 @@
 #include "gtadv/ram_blocks.h"
 
 // ---- external callees (C lifts or asm trampolines) -------------------------
+extern u16 RaceVMRow_CC168[];
+extern u8 RaceVM_A14_WA[];
+extern u8 RaceVM_Wa2205C[];
+extern u32 RaceVMPr_CC0A8[];
+extern u16 RaceVMSel_CC108[];
+extern u16 RaceVMRow_CC098[];
+extern u16 RaceVMRow_CC120[];
 extern void *_08004B68(void);                       // car-record base getter
 extern void *sub_08004B68(void);                     // closure spelling of _08004B68
 extern void _0802B214(u32 vol);                     // sound master vol cond
@@ -122,46 +129,54 @@ void sub_080021CC0(void *rec) __attribute__((alias("RaceVM_021CC0")));
 void RaceVM_021CC4(void *rec) {
     volatile u8 *r7 = (volatile u8 *)rec;
     _0802B214(51);
-    const u32 *r5 = (const u32 *)0x08376500;
-    _08007770(0, (void *)r5, 4, 0, 4u, 1u);
-    *(volatile u32 *)(r7 + 80) = 6;
-    *(volatile u32 *)(r7 + 92) = 1;
-    *(volatile u32 *)(r7 + 104) = 1;
-    _0800DAB8((void *)(r7 + 8));
-    const u32 *r4 = (const u32 *)0x082A798C;
-    _08007614((void *)r4, 1, 0, 3);
-    _08007614((void *)r4, 1, 1, 4);
-    _0800798C((void *)r5, (void *)rec);
-    _08007A58((void *)rec);
-    _080075E8((void *)r5, 1, 6);
-    _080075E8((void *)r5, 2, 7);
-    _080075E8((void *)r5, 0, 8);
-    _080075E8((void *)r5, 3, 5);
-    // r4 = r7+160; [rec+120] = rec+160; [rec+124] = rec+8
-    *(volatile u32 *)(r7 + 120) = (u32)(uintptr_t)(r7 + 160);
-    *(volatile u32 *)(r7 + 124) = (u32)(uintptr_t)(r7 + 8);
-    *(volatile u32 *)(r7 + 8) = 0;
-    *(volatile u16 *)(r7 + 12) = 1;
-    _0800D77C((void *)(r7 + 28), 0, -32);
-    _0800D77C((void *)(r7 + 20), 0, 160);
-    *(volatile u16 *)(r7 + 16) = 1;
-    *(volatile u16 *)(r7 + 18) = 5;
-    *(volatile u32 *)(r7 + 160) = 2;
-    // Both loads are plain (non-volatile): a volatile s16 load becomes
-    // ldrh+lsls+asrs, and a volatile u16 load is sunk into the store so the
-    // address register is reused for the value.  The ROM has a real ldrsh
-    // (ARMv4T needs a register index) issued *before* the store address, so
-    // the u16 read has to stay in its own statement.
-    volatile u8 *WA = (volatile u8 *)0x03001780;
-    u16 v = *(u16 *)(WA + 0xFF6);
-    *(volatile u16 *)(r7 + 156) = v;
-    s16 ff2 = *(s16 *)(WA + 0xFF2);
-    // Both loads are plain (non-volatile): a volatile s16 load becomes
-    // ldrh+lsls+asrs, and a volatile u16 load is sunk into the store so the
-    // address register is reused for the value.  The ROM has a real ldrsh
-    // (ARMv4T needs a register index) issued *before* the store address, so
-    // the u16 read has to stay in its own statement.
-    *(volatile u16 *)(r7 + 158) = (u16)_08025D90(ff2);
+    {
+        const u32 *r5 = (const u32 *)0x08376500;
+        _08007770(0, (void *)r5, 4, 0, 4u, 1u);
+        *(volatile u32 *)(r7 + 80) = 6;
+        *(volatile u32 *)(r7 + 92) = 1;
+        *(volatile u32 *)(r7 + 104) = 1;
+        _0800DAB8((void *)(r7 + 8));
+        {
+            const u32 *r4 = (const u32 *)0x082A798C;
+            _08007614((void *)r4, 1, 0, 3);
+            _08007614((void *)r4, 1, 1, 4);
+            _0800798C((void *)r5, (void *)rec);
+            _08007A58((void *)rec);
+            _080075E8((void *)r5, 1, 6);
+            _080075E8((void *)r5, 2, 7);
+            _080075E8((void *)r5, 0, 8);
+            _080075E8((void *)r5, 3, 5);
+            // r4 = r7+160; [rec+120] = rec+160; [rec+124] = rec+8
+            *(volatile u32 *)(r7 + 120) = (u32)(uintptr_t)(r7 + 160);
+            *(volatile u32 *)(r7 + 124) = (u32)(uintptr_t)(r7 + 8);
+            *(volatile u32 *)(r7 + 8) = 0;
+            *(volatile u16 *)(r7 + 12) = 1;
+            _0800D77C((void *)(r7 + 28), 0, -32);
+            _0800D77C((void *)(r7 + 20), 0, 160);
+            *(volatile u16 *)(r7 + 16) = 1;
+            *(volatile u16 *)(r7 + 18) = 5;
+            *(volatile u32 *)(r7 + 160) = 2;
+            // Both loads are plain (non-volatile): a volatile s16 load becomes
+            // ldrh+lsls+asrs, and a volatile u16 load is sunk into the store so the
+            // address register is reused for the value.  The ROM has a real ldrsh
+            // (ARMv4T needs a register index) issued *before* the store address, so
+            // the u16 read has to stay in its own statement.
+            {
+                volatile u8 *WA = (volatile u8 *)0x03001780;
+                u16 v = *(u16 *)(WA + 0xFF6);
+                *(volatile u16 *)(r7 + 156) = v;
+                {
+                    s16 ff2 = *(s16 *)(WA + 0xFF2);
+                    // Both loads are plain (non-volatile): a volatile s16 load becomes
+                    // ldrh+lsls+asrs, and a volatile u16 load is sunk into the store so the
+                    // address register is reused for the value.  The ROM has a real ldrsh
+                    // (ARMv4T needs a register index) issued *before* the store address, so
+                    // the u16 read has to stay in its own statement.
+                    *(volatile u16 *)(r7 + 158) = (u16)_08025D90(ff2);
+                }
+            }
+        }
+    }
 }
 void _080021CC4(void *a) __attribute__((alias("RaceVM_021CC4")));
 void sub_080021CC4(void *a) __attribute__((alias("RaceVM_021CC4")));
@@ -204,23 +219,25 @@ void RaceVM_021DC0(void *rec_, int a1, u32 v) {
     }
     if (ev == 1) {
         __asm__(".globl RaceVMRow_CC120\nRaceVMRow_CC120 = 0x080CC120\n");
-        extern u16 RaceVMRow_CC120[];
-        volatile u8 *wa;
-        u8 *cells;
-        s32 off;
-        u16 t;
-        _0802B368(1);
-        *(volatile u16 *)(rec + 12) = 0;
-        *(volatile u16 *)(rec + 116) = (u16)ev;
-        wa = RAM_SYM_03001780;
-        t = RaceVMRow_CC120[*(s16 *)(rec + 156)];
-        *(volatile u16 *)(wa + 0xFF6) = t;
-        off = *(s16 *)(wa + 0xFF6) * 2 + *(s16 *)(wa + 0xFF2) * 8;
-        cells = (u8 *)(wa + 0xFD0);
-        if (*(s16 *)(cells + off) == 0)
-            *(volatile u16 *)(rec + 16) = (u16)ev;
-        else
-            *(volatile u16 *)(rec + 16) = 6;
+
+        {
+            volatile u8 *wa;
+            u8 *cells;
+            s32 off;
+            u16 t;
+            _0802B368(1);
+            *(volatile u16 *)(rec + 12) = 0;
+            *(volatile u16 *)(rec + 116) = (u16)ev;
+            wa = RAM_SYM_03001780;
+            t = RaceVMRow_CC120[*(s16 *)(rec + 156)];
+            *(volatile u16 *)(wa + 0xFF6) = t;
+            off = *(s16 *)(wa + 0xFF6) * 2 + *(s16 *)(wa + 0xFF2) * 8;
+            cells = (u8 *)(wa + 0xFD0);
+            if (*(s16 *)(cells + off) == 0)
+                *(volatile u16 *)(rec + 16) = (u16)ev;
+            else
+                *(volatile u16 *)(rec + 16) = 6;
+        }
     }
     if (ev == 64)
         *(volatile u16 *)(rec + 156) = *(u16 *)(rec + 156) - 1;
@@ -280,19 +297,21 @@ void sub_080021DC0(void *a, int b, u32 c) __attribute__((alias("RaceVM_021DC0"))
 // src/race_scene_b1.c); an absolute assignment emits no bytes.
 void RaceVM_021F14(void *rec, int a1, int a2) {
     __asm__(".globl RaceVMRow_CC098\nRaceVMRow_CC098 = 0x080CC098\n");
-    extern u16 RaceVMRow_CC098[];
-    u16 *tab = RaceVMRow_CC098;
-    s16 idx = *(s16 *)((u8 *)rec + 156);
-    u16 v = tab[idx];
-    switch (*(s32 *)((u8 *)rec + 160)) {
-    case 1:
-    case 3:
-        _08007B18(rec, (int)v, a1, a2, 4u, 1u, 0u, 0u);
-        break;
-    case 0:
-    case 2:
-        _08007B18(rec, (int)v, a1, a2, 3u, 1u, 0u, 0u);
-        break;
+
+    {
+        u16 *tab = RaceVMRow_CC098;
+        s16 idx = *(s16 *)((u8 *)rec + 156);
+        u16 v = tab[idx];
+        switch (*(s32 *)((u8 *)rec + 160)) {
+        case 1:
+        case 3:
+            _08007B18(rec, (int)v, a1, a2, 4u, 1u, 0u, 0u);
+            break;
+        case 0:
+        case 2:
+            _08007B18(rec, (int)v, a1, a2, 3u, 1u, 0u, 0u);
+            break;
+        }
     }
 }
 void _080021F14(void *a, int b, int c) __attribute__((alias("RaceVM_021F14")));
@@ -327,67 +346,69 @@ __asm__(".align 2, 0");
 void RaceVM_021F88(void *rec) {
     __asm__(".globl RaceVMSel_CC108\nRaceVMSel_CC108 = 0x080CC108\n");
     __asm__(".globl RaceVMPr_CC0A8\nRaceVMPr_CC0A8 = 0x080CC0A8\n");
-    extern u16 RaceVMSel_CC108[];
-    extern u32 RaceVMPr_CC0A8[];
-    register void *base __asm__("r5") = rec;
-    int slot = 0;
-    int i;
 
-    for (i = 0; i <= 3; i++) {
-        register s16 *row __asm__("r0") = (s16 *)((u8 *)base + 156);
-        register s16 *saved __asm__("r2");
-        int cur = row[0];
 
-        saved = row;
-        if (i == cur) {
-            uintptr_t mode_p = (uintptr_t)row + 4;
-            u16 *selTab;
-            int c;
-            int sel;
-            int pairIdx;
-            u16 rowSel;
-            register int c3 __asm__("r3");
+    {
+        register void *base __asm__("r5") = rec;
+        int slot = 0;
+        int i;
 
-            __asm__ volatile("" : "+r"(mode_p));
-            switch (*(u32 *)mode_p) {
-            case 4:
-                slot = 0;
-                break;
-            case 0:
-            case 2:
-                slot = 1;
-                break;
-            case 1:
-            case 3:
-                slot = 2;
-                break;
+        for (i = 0; i <= 3; i++) {
+            register s16 *row __asm__("r0") = (s16 *)((u8 *)base + 156);
+            register s16 *saved __asm__("r2");
+            int cur = row[0];
+
+            saved = row;
+            if (i == cur) {
+                uintptr_t mode_p = (uintptr_t)row + 4;
+                u16 *selTab;
+                int c;
+                int sel;
+                int pairIdx;
+                u16 rowSel;
+                register int c3 __asm__("r3");
+
+                __asm__ volatile("" : "+r"(mode_p));
+                switch (*(u32 *)mode_p) {
+                case 4:
+                    slot = 0;
+                    break;
+                case 0:
+                case 2:
+                    slot = 1;
+                    break;
+                case 1:
+                case 3:
+                    slot = 2;
+                    break;
+                }
+                selTab = RaceVMSel_CC108;
+                c = saved[0];
+                c3 = c * 3;
+                sel = c3 + slot;
+                __asm__ volatile("" : "+r"(sel));
+                rowSel = selTab[sel];
+                __asm__ volatile("" : : "r"((u32)(uintptr_t)RaceVMPr_CC0A8));
+                pairIdx = c3 + slot;
+                _08007B18(base, (int)rowSel,
+                          (int)*(u32 *)((u8 *)RaceVMPr_CC0A8 + pairIdx * 8),
+                          (int)*(u32 *)((u8 *)RaceVMPr_CC0A8 + pairIdx * 8 + 4),
+                          6u, 1u, 0u, 0u);
+            } else {
+                int pairOff;
+                u16 rowSel;
+                register int d3 __asm__("r3");
+
+                __asm__ volatile("" : : "r"((u32)(uintptr_t)RaceVMSel_CC108));
+                d3 = i * 3;
+                rowSel = RaceVMSel_CC108[d3];
+                __asm__ volatile("" : : "r"((u32)(uintptr_t)RaceVMPr_CC0A8));
+                pairOff = d3 * 8;
+                _08007B18(base, (int)rowSel,
+                          (int)*(u32 *)((u8 *)RaceVMPr_CC0A8 + pairOff),
+                          (int)*(u32 *)((u8 *)RaceVMPr_CC0A8 + pairOff + 4),
+                          6u, 1u, 0u, 0u);
             }
-            selTab = RaceVMSel_CC108;
-            c = saved[0];
-            c3 = c * 3;
-            sel = c3 + slot;
-            __asm__ volatile("" : "+r"(sel));
-            rowSel = selTab[sel];
-            __asm__ volatile("" : : "r"((u32)(uintptr_t)RaceVMPr_CC0A8));
-            pairIdx = c3 + slot;
-            _08007B18(base, (int)rowSel,
-                      (int)*(u32 *)((u8 *)RaceVMPr_CC0A8 + pairIdx * 8),
-                      (int)*(u32 *)((u8 *)RaceVMPr_CC0A8 + pairIdx * 8 + 4),
-                      6u, 1u, 0u, 0u);
-        } else {
-            int pairOff;
-            u16 rowSel;
-            register int d3 __asm__("r3");
-
-            __asm__ volatile("" : : "r"((u32)(uintptr_t)RaceVMSel_CC108));
-            d3 = i * 3;
-            rowSel = RaceVMSel_CC108[d3];
-            __asm__ volatile("" : : "r"((u32)(uintptr_t)RaceVMPr_CC0A8));
-            pairOff = d3 * 8;
-            _08007B18(base, (int)rowSel,
-                      (int)*(u32 *)((u8 *)RaceVMPr_CC0A8 + pairOff),
-                      (int)*(u32 *)((u8 *)RaceVMPr_CC0A8 + pairOff + 4),
-                      6u, 1u, 0u, 0u);
         }
     }
 }
@@ -414,85 +435,95 @@ void RaceVM_02205C(void *rec) {
     register uintptr_t r1_tmp __asm__("r1");
     register uintptr_t r2_tmp __asm__("r2");
     _0800D97C((void *)(r7 + 152), 15);
-    extern u8 RaceVM_Wa2205C[];
+
     __asm__(".globl RaceVM_Wa2205C\nRaceVM_Wa2205C = 0x03001780");
-    register uintptr_t r1_wa __asm__("r1") = (uintptr_t)RaceVM_Wa2205C;
-    register u32 r2_off __asm__("r2") = 255;
-    register uintptr_t r0_cell __asm__("r0");
-    register s32 m0 __asm__("r5");
-    r2_off <<= 4;
-    r0_cell = r1_wa + r2_off;
-    m0 = *(s16 *)r0_cell;
-    if (m0 == 1) {
-        // The ROM rebuilds r3=0 inside this branch after its earlier load.
-        __asm__ volatile("" : : : "r3");
-        r2_off += 2;
-        __asm__ volatile("" : "+r"(r2_off));
+    {
+        register uintptr_t r1_wa __asm__("r1") = (uintptr_t)RaceVM_Wa2205C;
+        register u32 r2_off __asm__("r2") = 255;
+        register uintptr_t r0_cell __asm__("r0");
+        register s32 m0 __asm__("r5");
+        r2_off <<= 4;
         r0_cell = r1_wa + r2_off;
-        register s32 c1 __asm__("r6");
-        c1 = *(s16 *)(uintptr_t)r0_cell;
-        __asm__ volatile("" : : "r"(r1_wa), "r"(r2_off) : "memory");
-        switch (c1) {
-        case 0:
-            _08007B18((void *)r7, 14, 8, 32, 7u, (u32)m0, (u32)c1, (u32)c1);
-            _08007B18((void *)r7, 6, 64, 34, 8u, (u32)m0, (u32)c1, (u32)c1);
-            _08007B18((void *)r7, 11, 72, 32, 7u, (u32)m0, (u32)c1, (u32)c1);
-            break;
-        case 1:
-            _08007B18((void *)r7, 13, 8, 32, 7u, (u32)c1, 0u, 0u);
-            _08007B18((void *)r7, 12, 64, 34, 8u, (u32)c1, 0u, 0u);
-            _08007B18((void *)r7, 5, 72, 32, 7u, (u32)c1, 0u, 0u);
-            break;
-        default:
-            break;
+        m0 = *(s16 *)r0_cell;
+        if (m0 == 1) {
+            // The ROM rebuilds r3=0 inside this branch after its earlier load.
+            __asm__ volatile("" : : : "r3");
+            r2_off += 2;
+            __asm__ volatile("" : "+r"(r2_off));
+            r0_cell = r1_wa + r2_off;
+            {
+                register s32 c1 __asm__("r6");
+                c1 = *(s16 *)(uintptr_t)r0_cell;
+                __asm__ volatile("" : : "r"(r1_wa), "r"(r2_off) : "memory");
+                switch (c1) {
+                case 0:
+                    _08007B18((void *)r7, 14, 8, 32, 7u, (u32)m0, (u32)c1, (u32)c1);
+                    _08007B18((void *)r7, 6, 64, 34, 8u, (u32)m0, (u32)c1, (u32)c1);
+                    _08007B18((void *)r7, 11, 72, 32, 7u, (u32)m0, (u32)c1, (u32)c1);
+                    break;
+                case 1:
+                    _08007B18((void *)r7, 13, 8, 32, 7u, (u32)c1, 0u, 0u);
+                    _08007B18((void *)r7, 12, 64, 34, 8u, (u32)c1, 0u, 0u);
+                    _08007B18((void *)r7, 5, 72, 32, 7u, (u32)c1, 0u, 0u);
+                    break;
+                default:
+                    break;
+                }
+            }
+        }
+        r5_idx = 0;
+        r8_limit = r7 + 158;
+        r1_tmp = 156;
+        __asm__ volatile("" : "+r"(r1_tmp));
+        r1_tmp += (uintptr_t)r7;
+        __asm__ volatile("" : "+r"(r1_tmp));
+        r9_index = (volatile u8 *)r1_tmp;
+        r2_tmp = 8;
+        __asm__ volatile("" : "+r"(r2_tmp));
+        r2_tmp += (uintptr_t)r7;
+        __asm__ volatile("" : "+r"(r2_tmp));
+        sl_rec8 = (void *)r2_tmp;
+        r4_rows = (const volatile u32 *)0x080CC078u;
+        r6_gates = (const volatile u16 *)0x080CC0A0u;
+        do {
+            register u32 word0 __asm__("r2") = r4_rows[0];
+            register u32 word1_r3 __asm__("r3") = r4_rows[1];
+            register u32 word1_ip __asm__("ip");
+            word1_ip = word1_r3;
+            {
+                register s32 cur __asm__("r0");
+                register volatile u8 *loadBase __asm__("r1") = r8_limit;
+                __asm__ volatile("" : "+r"(loadBase));
+                cur = *(s16 *)(uintptr_t)loadBase;
+                if (r5_idx > cur) {
+                    u16 gate = r6_gates[0];
+                    _08007B18((void *)r7, (int)gate, (int)word0, (int)word1_ip,
+                              5u, 1u, 0u, 0u);
+                }
+                r4_rows += 2;
+                r6_gates++;
+                r5_idx++;
+            }
+        } while (r5_idx <= 3);
+        {
+            register u32 w0 __asm__("r1");
+            register u32 w1 __asm__("r2") = 0x080CC078u;
+            w0 = (u32)(uintptr_t)r9_index;
+            __asm__ volatile("" : "+r"(w0));
+            {
+                register u32 scaledIndex __asm__("r0");
+                scaledIndex = *(s16 *)(uintptr_t)w0;
+                scaledIndex <<= 3;
+                w0 = *(volatile u32 *)(uintptr_t)(scaledIndex + w1);
+                w1 += 4;
+                __asm__ volatile("" : "+r"(w1));
+                w1 = *(volatile u32 *)(uintptr_t)(scaledIndex + w1);
+                _080021F14((void *)r7, (int)w0, (int)w1);
+                _080021F88((void *)r7);
+                _0800DBE8(sl_rec8);
+            }
         }
     }
-    r5_idx = 0;
-    r8_limit = r7 + 158;
-    r1_tmp = 156;
-    __asm__ volatile("" : "+r"(r1_tmp));
-    r1_tmp += (uintptr_t)r7;
-    __asm__ volatile("" : "+r"(r1_tmp));
-    r9_index = (volatile u8 *)r1_tmp;
-    r2_tmp = 8;
-    __asm__ volatile("" : "+r"(r2_tmp));
-    r2_tmp += (uintptr_t)r7;
-    __asm__ volatile("" : "+r"(r2_tmp));
-    sl_rec8 = (void *)r2_tmp;
-    r4_rows = (const volatile u32 *)0x080CC078u;
-    r6_gates = (const volatile u16 *)0x080CC0A0u;
-    do {
-        register u32 word0 __asm__("r2") = r4_rows[0];
-        register u32 word1_r3 __asm__("r3") = r4_rows[1];
-        register u32 word1_ip __asm__("ip");
-        word1_ip = word1_r3;
-        register s32 cur __asm__("r0");
-        register volatile u8 *loadBase __asm__("r1") = r8_limit;
-        __asm__ volatile("" : "+r"(loadBase));
-        cur = *(s16 *)(uintptr_t)loadBase;
-        if (r5_idx > cur) {
-            u16 gate = r6_gates[0];
-            _08007B18((void *)r7, (int)gate, (int)word0, (int)word1_ip,
-                      5u, 1u, 0u, 0u);
-        }
-        r4_rows += 2;
-        r6_gates++;
-        r5_idx++;
-    } while (r5_idx <= 3);
-    register u32 w0 __asm__("r1");
-    register u32 w1 __asm__("r2") = 0x080CC078u;
-    w0 = (u32)(uintptr_t)r9_index;
-    __asm__ volatile("" : "+r"(w0));
-    register u32 scaledIndex __asm__("r0");
-    scaledIndex = *(s16 *)(uintptr_t)w0;
-    scaledIndex <<= 3;
-    w0 = *(volatile u32 *)(uintptr_t)(scaledIndex + w1);
-    w1 += 4;
-    __asm__ volatile("" : "+r"(w1));
-    w1 = *(volatile u32 *)(uintptr_t)(scaledIndex + w1);
-    _080021F14((void *)r7, (int)w0, (int)w1);
-    _080021F88((void *)r7);
-    _0800DBE8(sl_rec8);
 }
 void _08002205C(void *a) __attribute__((alias("RaceVM_02205C")));
 void sub_08002205C(void *a) __attribute__((alias("RaceVM_02205C")));
@@ -546,29 +577,33 @@ extern void _08007ABC(void *a, int b, int c);
 void RaceVM_022280(void *rec) {
     volatile u8 *r4 = (volatile u8 *)rec;
     _0802B214(67);
-    const u32 *r5 = (const u32 *)0x0837BBB0;
-    _0800798C((void *)r5, (void *)rec);
-    *(volatile u32 *)(r4 + 20) = (u32)PV_CALLEE(_0800572C, sub_0800572C)(19);
-    *(volatile u32 *)(r4 + 24) = 5;
-    _080075E8((void *)r5, 0, 3);
-    _08007ABC((void *)(uintptr_t)*(volatile u32 *)(r4 + 4),
-              (int)*(volatile u32 *)(r4 + 24),
-              (int)*(volatile u32 *)(r4 + 20));
-    // plain (non-volatile) read → a real ldrsh (a volatile s16 load is
-    // lowered to ldrh+lsls+asrs).  One call site per arm, and the default
-    // arm makes no call at all — that is what the ROM does.
-    __asm__(".globl RaceVM_WA\nRaceVM_WA = 0x03001780\n");
-    u32 base = (uintptr_t)RaceVM_WA;
-    u16 off = 0x0FF6;
-    s16 m0 = *(s16 *)(base + off);
-    switch (m0) {                      // one call site per arm; default: no call
-        case 0: _08007664((void *)0, (void *)r5, 2); break;
-        case 1: _08007664((void *)0, (void *)r5, 3); break;
-        case 2: _08007664((void *)0, (void *)r5, 1); break;
-        case 3: _08007664((void *)0, (void *)r5, 4); break;
-        default: break;
+    {
+        const u32 *r5 = (const u32 *)0x0837BBB0;
+        _0800798C((void *)r5, (void *)rec);
+        *(volatile u32 *)(r4 + 20) = (u32)PV_CALLEE(_0800572C, sub_0800572C)(19);
+        *(volatile u32 *)(r4 + 24) = 5;
+        _080075E8((void *)r5, 0, 3);
+        _08007ABC((void *)(uintptr_t)*(volatile u32 *)(r4 + 4),
+                  (int)*(volatile u32 *)(r4 + 24),
+                  (int)*(volatile u32 *)(r4 + 20));
+        // plain (non-volatile) read → a real ldrsh (a volatile s16 load is
+        // lowered to ldrh+lsls+asrs).  One call site per arm, and the default
+        // arm makes no call at all — that is what the ROM does.
+        __asm__(".globl RaceVM_WA\nRaceVM_WA = 0x03001780\n");
+        {
+            u32 base = (uintptr_t)RaceVM_WA;
+            u16 off = 0x0FF6;
+            s16 m0 = *(s16 *)(base + off);
+            switch (m0) {                      // one call site per arm; default: no call
+                case 0: _08007664((void *)0, (void *)r5, 2); break;
+                case 1: _08007664((void *)0, (void *)r5, 3); break;
+                case 2: _08007664((void *)0, (void *)r5, 1); break;
+                case 3: _08007664((void *)0, (void *)r5, 4); break;
+                default: break;
+            }
+            *(volatile u16 *)(r4 + 8) = 0;
+        }
     }
-    *(volatile u16 *)(r4 + 8) = 0;
 }
 // The body is 154 bytes, two short of the section's 4-byte alignment, so gas
 // closes the section with a `nop` (0x46c0) where the ROM holds `00 00`. This
@@ -591,12 +626,16 @@ void sub_08002231C(void *a) __attribute__((alias("RaceVM_02231C")));
 // if (u16)(v-1) <= 1 → _08004BFC(14) + _08004EC0(1).
 void RaceVM_022320(void *ctx, int r1, u32 v) {
     (void)ctx; (void)r1;
-    u16 trunc = (u16)v;                  // lsls/lsrs issued *before* the call
-    (void)sub_08004B68();                // closure spelling; car-record base read, unused
-    u16 tag = trunc - 1;                 // subs/lsls/lsrs
-    if (tag <= 1) {
-        _08004BFC(14);
-        _08004EC0(1);
+    {
+        u16 trunc = (u16)v;                  // lsls/lsrs issued *before* the call
+        (void)sub_08004B68();                // closure spelling; car-record base read, unused
+        {
+            u16 tag = trunc - 1;                 // subs/lsls/lsrs
+            if (tag <= 1) {
+                _08004BFC(14);
+                _08004EC0(1);
+            }
+        }
     }
 }
 __asm__(".align 2, 0");
@@ -645,10 +684,12 @@ void sub_08002234C(u32 a, u32 b, u32 c, void *d) __attribute__((alias("RaceVM_02
 u32 RaceVM_0223C0(int n) {
     u32 tmp[2];   // 8-byte frame keeps the memcpy 4-aligned like sp+8
     _0802E0A4(tmp, (const void *)0x0805FC64, 6);
-    int r4 = n;
-    if (r4 > 1) r4 = 2;
-    if (r4 <= 0) r4 = 0;
-    return ((volatile u16 *)tmp)[r4];
+    {
+        int r4 = n;
+        if (r4 > 1) r4 = 2;
+        if (r4 <= 0) r4 = 0;
+        return ((volatile u16 *)tmp)[r4];
+    }
 }
 u32 _0800223C0(int a) __attribute__((alias("RaceVM_0223C0")));
 u32 sub_0800223C0(int a) __attribute__((alias("RaceVM_0223C0")));
@@ -669,11 +710,13 @@ void RaceVM_0223F0(void *rec) {
         }
         r4++;
     }
-    int v = r6 - 1;
-    volatile u16 *cnt = (volatile u16 *)(r7 + 184);
-    *cnt = (u16)v;
-    if ((s32)((u32)v << 16) <= 0) {
-        *cnt = 0;
+    {
+        int v = r6 - 1;
+        volatile u16 *cnt = (volatile u16 *)(r7 + 184);
+        *cnt = (u16)v;
+        if ((s32)((u32)v << 16) <= 0) {
+            *cnt = 0;
+        }
     }
 }
 // The body is 58 bytes, two short of the section's 4-byte alignment. Under
@@ -748,12 +791,14 @@ int sub_080022438(int a) __attribute__((alias("RaceVM_022438")));
 // (u16[car+2]==44) ? 5 : 6.
 void RaceVM_022454(void *ctx, void *rec) {
     (void)ctx;
-    volatile u16 *hw = (volatile u16 *)_08004B68();
-    volatile u8 *r4 = (volatile u8 *)rec;
-    if (hw[1] == 44)
-        *(volatile u16 *)(r4 + 84) = 5;
-    else
-        *(volatile u16 *)(r4 + 84) = 6;
+    {
+        volatile u16 *hw = (volatile u16 *)_08004B68();
+        volatile u8 *r4 = (volatile u8 *)rec;
+        if (hw[1] == 44)
+            *(volatile u16 *)(r4 + 84) = 5;
+        else
+            *(volatile u16 *)(r4 + 84) = 6;
+    }
 }
 void _080022454(void *a, void *b) __attribute__((alias("RaceVM_022454")));
 void sub_080022454(void *a, void *b) __attribute__((alias("RaceVM_022454")));
@@ -986,76 +1031,98 @@ void sub_08002247C(void *a) __attribute__((alias("RaceVM_02247C")));
 // counter dec/inc; clamp [0,2]; sound 2 on change.
 void RaceVM_022624(void *rec, int r1, u32 v) {
     (void)r1;
-    register u8 *r5 asm("r5") = (u8 *)rec;
-    register u32 raw asm("r2") = v;
-    register u32 r6 asm("r6");
-    r6 = (u16)raw;
-    register volatile u16 *r4 asm("r4") =
-        (volatile u16 *)(r5 + 132);
-    u16 saved;
-    __asm__ volatile("" : "=l"(saved) : "0"(*r4));
-    __asm__ volatile("" : "+r"(r5), "+r"(r6), "+r"(r4));
-    if (r6 == 2) {
-        _0802B368(4);
-        u32 ten = 10;
-        *(volatile u32 *)(r5 + 8) = ten;
-        u16 zero = 0;
-        *(u16 *)(r5 + 12) = zero;
-        *(volatile u32 *)(r5 + 40) = ten;
-        *(volatile u32 *)(r5 + 36) = zero;
-    }
-    if (r6 == 1) {
-        register s32 cur asm("r0");
-        cur = *(s16 *)r4;
-        if (_08026068(cur) == 1) {
-            register s32 cur_again asm("r0");
-            /* ROM's second zero-index load takes r2, not r1: keep r1 live. */
-            register int hold __asm__("r1");
-            __asm__ volatile("" : "=r"(hold));
-            cur_again = *(s16 *)r4;
-            __asm__ volatile("" : : "r"(hold));
-            u32 place = sub_0800223C0(cur_again);
-            __asm__(".globl RaceVM_WA\nRaceVM_WA = 0x03001780\n");
-            register u32 wa asm("r1") = (uintptr_t)RaceVM_WA;
-            register u32 cell asm("r3") = 0x0FC2;
-            __asm__ volatile("" : "+r"(wa), "+r"(cell));
-            register u32 addr asm("r1") = wa + cell;
-            __asm__ volatile("" : "+r"(addr));
-            register u32 zero asm("r4") = 0;
-            __asm__ volatile("" : "+r"(zero));
-            *(u16 *)addr = (u16)place;
-            _0802B368(1);
-            *(volatile u32 *)(r5 + 196) = r6;
-            *(u16 *)(r5 + 12) = (u16)zero;
-            *(u16 *)(r5 + 116) = (u16)r6;
-            *(volatile u32 *)(r5 + 36) = r6;
-        } else {
-            _0802B368(10);
+    {
+        register u8 *r5 asm("r5") = (u8 *)rec;
+        register u32 raw asm("r2") = v;
+        register u32 r6 asm("r6");
+        r6 = (u16)raw;
+        {
+            register volatile u16 *r4 asm("r4") =
+                (volatile u16 *)(r5 + 132);
+            u16 saved;
+            __asm__ volatile("" : "=l"(saved) : "0"(*r4));
+            __asm__ volatile("" : "+r"(r5), "+r"(r6), "+r"(r4));
+            if (r6 == 2) {
+                _0802B368(4);
+                {
+                    u32 ten = 10;
+                    *(volatile u32 *)(r5 + 8) = ten;
+                    {
+                        u16 zero = 0;
+                        *(u16 *)(r5 + 12) = zero;
+                        *(volatile u32 *)(r5 + 40) = ten;
+                        *(volatile u32 *)(r5 + 36) = zero;
+                    }
+                }
+            }
+            if (r6 == 1) {
+                register s32 cur asm("r0");
+                cur = *(s16 *)r4;
+                if (_08026068(cur) == 1) {
+                    register s32 cur_again asm("r0");
+                    /* ROM's second zero-index load takes r2, not r1: keep r1 live. */
+                    register int hold __asm__("r1");
+                    __asm__ volatile("" : "=r"(hold));
+                    cur_again = *(s16 *)r4;
+                    __asm__ volatile("" : : "r"(hold));
+                    {
+                        u32 place = sub_0800223C0(cur_again);
+                        __asm__(".globl RaceVM_WA\nRaceVM_WA = 0x03001780\n");
+                        {
+                            register u32 wa asm("r1") = (uintptr_t)RaceVM_WA;
+                            register u32 cell asm("r3") = 0x0FC2;
+                            __asm__ volatile("" : "+r"(wa), "+r"(cell));
+                            {
+                                register u32 addr asm("r1") = wa + cell;
+                                __asm__ volatile("" : "+r"(addr));
+                                {
+                                    register u32 zero asm("r4") = 0;
+                                    __asm__ volatile("" : "+r"(zero));
+                                    *(u16 *)addr = (u16)place;
+                                    _0802B368(1);
+                                    *(volatile u32 *)(r5 + 196) = r6;
+                                    *(u16 *)(r5 + 12) = (u16)zero;
+                                    *(u16 *)(r5 + 116) = (u16)r6;
+                                    *(volatile u32 *)(r5 + 36) = r6;
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    _0802B368(10);
+                }
+            }
+            {
+                register volatile u16 *r2 asm("r2") =
+                    (volatile u16 *)(r5 + 132);
+                if (r6 == 64) {
+                    u16 t = *r2;
+                    *r2 = (u16)(t - 1);
+                }
+                if (r6 == 128) {
+                    u16 t = *r2;
+                    *r2 = (u16)(t + 1);
+                }
+                {
+                    register u8 *p1 asm("r1") = (u8 *)r2;
+                    {
+                        register s32 cur asm("r0");
+                        cur = *(s16 *)p1;
+                        if (cur < 0) *(volatile u16 *)p1 = 0;
+                    }
+                    {
+                        register s32 cur asm("r0");
+                        cur = *(s16 *)p1;
+                        if (cur > 2) *(volatile u16 *)p1 = 2;
+                    }
+                    {
+                        register u16 current asm("r2") = *r2;
+                        if (saved != current) _0802B368(2);
+                    }
+                }
+            }
         }
     }
-    register volatile u16 *r2 asm("r2") =
-        (volatile u16 *)(r5 + 132);
-    if (r6 == 64) {
-        u16 t = *r2;
-        *r2 = (u16)(t - 1);
-    }
-    if (r6 == 128) {
-        u16 t = *r2;
-        *r2 = (u16)(t + 1);
-    }
-    register u8 *p1 asm("r1") = (u8 *)r2;
-    {
-        register s32 cur asm("r0");
-        cur = *(s16 *)p1;
-        if (cur < 0) *(volatile u16 *)p1 = 0;
-    }
-    {
-        register s32 cur asm("r0");
-        cur = *(s16 *)p1;
-        if (cur > 2) *(volatile u16 *)p1 = 2;
-    }
-    register u16 current asm("r2") = *r2;
-    if (saved != current) _0802B368(2);
 }
 void _080022624(void *a, int b, u32 c) __attribute__((alias("RaceVM_022624")));
 void sub_080022624(void *a, int b, u32 c) __attribute__((alias("RaceVM_022624")));
@@ -1294,12 +1361,14 @@ void sub_08002285C(u32 a, u32 b, u32 c, void *d) __attribute__((alias("RaceVM_02
 // (u16[car+2]==15) ? 5 : 6.
 void RaceVM_0228F8(void *ctx, void *rec) {
     (void)ctx;
-    volatile u16 *hw = (volatile u16 *)_08004B68();
-    volatile u8 *r4 = (volatile u8 *)rec;
-    if (hw[1] == 15)
-        *(volatile u16 *)(r4 + 84) = 5;
-    else
-        *(volatile u16 *)(r4 + 84) = 6;
+    {
+        volatile u16 *hw = (volatile u16 *)_08004B68();
+        volatile u8 *r4 = (volatile u8 *)rec;
+        if (hw[1] == 15)
+            *(volatile u16 *)(r4 + 84) = 5;
+        else
+            *(volatile u16 *)(r4 + 84) = 6;
+    }
 }
 void _0800228F8(void *a, void *b) __attribute__((alias("RaceVM_0228F8")));
 void sub_0800228F8(void *a, void *b) __attribute__((alias("RaceVM_0228F8")));
@@ -1332,61 +1401,63 @@ void sub_08002291C(void *rec) __attribute__((alias("RaceVM_02291C")));
 // two integer literals would fold into one pool word.
 void RaceVM_022920(void *rec) {
     RAM_DEF_03001780;
-    register u32 wa_base __asm__("r0") = (u32)RAM_SYM_03001780;
-    register u32 wa_off __asm__("r1") = 0x1078u;
-    register u32 r4v __asm__("r4");
-    register u32 r5v __asm__("r5");
-    register u32 r6v __asm__("r6");
-    register s32 r9v __asm__("r9");
-    register s32 r1v __asm__("r1");
-    register u32 rslv __asm__("r10");
-    register volatile u32 *r8v __asm__("r8");
-    volatile u8 *r7 = (volatile u8 *)rec;
+    {
+        register u32 wa_base __asm__("r0") = (u32)RAM_SYM_03001780;
+        register u32 wa_off __asm__("r1") = 0x1078u;
+        register u32 r4v __asm__("r4");
+        register u32 r5v __asm__("r5");
+        register u32 r6v __asm__("r6");
+        register s32 r9v __asm__("r9");
+        register s32 r1v __asm__("r1");
+        register u32 rslv __asm__("r10");
+        register volatile u32 *r8v __asm__("r8");
+        volatile u8 *r7 = (volatile u8 *)rec;
 
-    r4v = wa_base + wa_off;
-    r9v = (s32)*(s16 *)(uintptr_t)r4v;
-    _0802B214(51);
-    r5v = 0;
-    *(volatile u16 *)(uintptr_t)r4v = (u16)r5v;
-    r8v = (volatile u32 *)0x0839E9C0u;
-    // The sixth argument is the assignment: the ROM materialises the 1 in
-    // r1, copies it into sl and stores r1 to the stack, so the copy and
-    // the store share one materialisation.
-    _08007770(0, (void *)(uintptr_t)r8v, 0, 0, 4, (rslv = 1));
-    *(volatile u32 *)(uintptr_t)(r7 + 80) = 6;
-    *(volatile u32 *)(uintptr_t)(r7 + 92) = 20;
-    *(volatile u32 *)(uintptr_t)(r7 + 104) = rslv;
-    r6v = (u32)(uintptr_t)(r7 + 8);
-    _0800DAB8((void *)(uintptr_t)r6v);
-    r4v = 0x082A798Cu;
-    _08007614((void *)(uintptr_t)r4v, 1, 0, 4);
-    _08007614((void *)(uintptr_t)r4v, 1, 1, 5);
-    _0800798C((void *)(uintptr_t)r8v, (void *)(uintptr_t)r7);
-    _08007A58((void *)(uintptr_t)r7);
-    r4v = (u32)(uintptr_t)(r7 + 136);
-    *(volatile u32 *)(uintptr_t)(r7 + 120) = r4v;
-    *(volatile u32 *)(uintptr_t)(r7 + 124) = r6v;
-    *(volatile u32 *)(uintptr_t)(r7 + 8) = r5v;
-    *(volatile u16 *)(uintptr_t)(r7 + 12) = (u16)rslv;
-    _0800D77C((void *)(uintptr_t)(r7 + 28), 0, -32);
-    _0800D77C((void *)(uintptr_t)(r7 + 20), 0, 160);
-    *(volatile u16 *)(uintptr_t)(r7 + 16) = 6;
-    *(volatile u16 *)(uintptr_t)(r7 + 18) = 5;
-    *(volatile u32 *)(uintptr_t)r4v = 2;
-    *(volatile u16 *)(uintptr_t)0x030027F6u = (u16)r5v;
-    // The ROM copies the gate value into r1 before the dispatch and keeps
-    // the case bodies in r0, so the copy is explicit and pinned here.
-    r1v = r9v;
-    switch (r1v) {
-    // The ROM's dispatch tests 1 then 2 and falls through into the 1 arm
-    // for every other value, so the default shares case 1's body.
-    default:
-    case 1:
-        *(volatile u16 *)(uintptr_t)(r7 + 132) = (u16)r5v;
-        break;
-    case 2:
-        *(volatile u16 *)(uintptr_t)(r7 + 132) = (u16)rslv;
-        break;
+        r4v = wa_base + wa_off;
+        r9v = (s32)*(s16 *)(uintptr_t)r4v;
+        _0802B214(51);
+        r5v = 0;
+        *(volatile u16 *)(uintptr_t)r4v = (u16)r5v;
+        r8v = (volatile u32 *)0x0839E9C0u;
+        // The sixth argument is the assignment: the ROM materialises the 1 in
+        // r1, copies it into sl and stores r1 to the stack, so the copy and
+        // the store share one materialisation.
+        _08007770(0, (void *)(uintptr_t)r8v, 0, 0, 4, (rslv = 1));
+        *(volatile u32 *)(uintptr_t)(r7 + 80) = 6;
+        *(volatile u32 *)(uintptr_t)(r7 + 92) = 20;
+        *(volatile u32 *)(uintptr_t)(r7 + 104) = rslv;
+        r6v = (u32)(uintptr_t)(r7 + 8);
+        _0800DAB8((void *)(uintptr_t)r6v);
+        r4v = 0x082A798Cu;
+        _08007614((void *)(uintptr_t)r4v, 1, 0, 4);
+        _08007614((void *)(uintptr_t)r4v, 1, 1, 5);
+        _0800798C((void *)(uintptr_t)r8v, (void *)(uintptr_t)r7);
+        _08007A58((void *)(uintptr_t)r7);
+        r4v = (u32)(uintptr_t)(r7 + 136);
+        *(volatile u32 *)(uintptr_t)(r7 + 120) = r4v;
+        *(volatile u32 *)(uintptr_t)(r7 + 124) = r6v;
+        *(volatile u32 *)(uintptr_t)(r7 + 8) = r5v;
+        *(volatile u16 *)(uintptr_t)(r7 + 12) = (u16)rslv;
+        _0800D77C((void *)(uintptr_t)(r7 + 28), 0, -32);
+        _0800D77C((void *)(uintptr_t)(r7 + 20), 0, 160);
+        *(volatile u16 *)(uintptr_t)(r7 + 16) = 6;
+        *(volatile u16 *)(uintptr_t)(r7 + 18) = 5;
+        *(volatile u32 *)(uintptr_t)r4v = 2;
+        *(volatile u16 *)(uintptr_t)0x030027F6u = (u16)r5v;
+        // The ROM copies the gate value into r1 before the dispatch and keeps
+        // the case bodies in r0, so the copy is explicit and pinned here.
+        r1v = r9v;
+        switch (r1v) {
+        // The ROM's dispatch tests 1 then 2 and falls through into the 1 arm
+        // for every other value, so the default shares case 1's body.
+        default:
+        case 1:
+            *(volatile u16 *)(uintptr_t)(r7 + 132) = (u16)r5v;
+            break;
+        case 2:
+            *(volatile u16 *)(uintptr_t)(r7 + 132) = (u16)rslv;
+            break;
+        }
     }
 }
 
@@ -1400,85 +1471,107 @@ void sub_080022920(void *a) __attribute__((alias("RaceVM_022920")));
 // u32[rec+36]=1); 64/128 dec/inc; clamp [0,1]; sound 2 on change.
 void RaceVM_022A14(void *rec, int unused, u32 v) {
     (void)unused;
-    register u8 *r4 __asm__("r4") = (u8 *)rec;
-    register u32 raw __asm__("r2") = v;
-    register u32 r5 __asm__("r5");
-    r5 = (u16)raw;
-    register volatile u16 *r6 __asm__("r6") =
-        (volatile u16 *)(r4 + 132);
-    u16 saved;
-    __asm__ volatile ("" : "=l"(saved) : "0"(*r6));
-    __asm__ volatile ("" : "+r"(r4), "+r"(r5), "+r"(r6));
-
-    if (r5 == 2) {
-        _0802B368(4);
-        u32 ten = 10;
-        *(volatile u32 *)(r4 + 8) = ten;
-        u16 zero = 0;
-        *(u16 *)(r4 + 12) = zero;
-        *(volatile u32 *)(r4 + 40) = ten;
-        *(volatile u32 *)(r4 + 36) = zero;
-    }
-    if (r5 == 1) {
-        register s32 cur __asm__("r0");
-        cur = *(s16 *)r6;
-        switch (cur) {
-        case 0: {
-            __asm__(".globl RaceVM_A14_WA\nRaceVM_A14_WA = 0x03001780\n");
-            extern u8 RaceVM_A14_WA[];
-            register u32 wa __asm__("r0") = (u32)(uintptr_t)RaceVM_A14_WA;
-            register u32 cell __asm__("r3") = 0x1078;
-            __asm__ volatile ("" : "+r"(wa), "+r"(cell));
-            register u32 addr __asm__("r0") = wa + cell;
-            __asm__ volatile ("" : "+r"(addr));
-            *(u16 *)addr = (u16)r5;
-            break;
-        }
-        case 1: {
-            extern u8 RaceVM_A14_WA[];
-            register u32 wa __asm__("r0") = (u32)(uintptr_t)RaceVM_A14_WA;
-            register u32 cell __asm__("r1") = 0x1078;
-            __asm__ volatile ("" : "+r"(wa), "+r"(cell));
-            register u32 addr __asm__("r0") = wa + cell;
-            __asm__ volatile ("" : "+r"(addr));
-            register u32 two __asm__("r1") = 2;
-            __asm__ volatile ("" : "+r"(two));
-            *(u16 *)addr = (u16)two;
-            break;
-        }
-        default:
-            break;
-        }
-        _0802B368(1);
-        *(volatile u32 *)(r4 + 136) = 1;
-        *(u16 *)(r4 + 12) = 0;
-        *(u16 *)(r4 + 116) = 1;
-        *(volatile u32 *)(r4 + 36) = 1;
-    }
-
-    register volatile u16 *r2 __asm__("r2") =
-        (volatile u16 *)(r4 + 132);
-    if (r5 == 64) {
-        u16 t = *r2;
-        *r2 = (u16)(t - 1);
-    }
-    if (r5 == 128) {
-        u16 t = *r2;
-        *r2 = (u16)(t + 1);
-    }
-    register u8 *p1 __asm__("r1") = (u8 *)r2;
     {
-        register s32 cur __asm__("r0");
-        cur = *(s16 *)p1;
-        if (cur < 0) *(volatile u16 *)p1 = 0;
+        register u8 *r4 __asm__("r4") = (u8 *)rec;
+        register u32 raw __asm__("r2") = v;
+        register u32 r5 __asm__("r5");
+        r5 = (u16)raw;
+        {
+            register volatile u16 *r6 __asm__("r6") =
+                (volatile u16 *)(r4 + 132);
+            u16 saved;
+            __asm__ volatile ("" : "=l"(saved) : "0"(*r6));
+            __asm__ volatile ("" : "+r"(r4), "+r"(r5), "+r"(r6));
+
+            if (r5 == 2) {
+                _0802B368(4);
+                {
+                    u32 ten = 10;
+                    *(volatile u32 *)(r4 + 8) = ten;
+                    {
+                        u16 zero = 0;
+                        *(u16 *)(r4 + 12) = zero;
+                        *(volatile u32 *)(r4 + 40) = ten;
+                        *(volatile u32 *)(r4 + 36) = zero;
+                    }
+                }
+            }
+            if (r5 == 1) {
+                register s32 cur __asm__("r0");
+                cur = *(s16 *)r6;
+                switch (cur) {
+                case 0: {
+                    __asm__(".globl RaceVM_A14_WA\nRaceVM_A14_WA = 0x03001780\n");
+
+                    {
+                        register u32 wa __asm__("r0") = (u32)(uintptr_t)RaceVM_A14_WA;
+                        register u32 cell __asm__("r3") = 0x1078;
+                        __asm__ volatile ("" : "+r"(wa), "+r"(cell));
+                        {
+                            register u32 addr __asm__("r0") = wa + cell;
+                            __asm__ volatile ("" : "+r"(addr));
+                            *(u16 *)addr = (u16)r5;
+                            break;
+                        }
+                    }
+                }
+                case 1: {
+                    extern u8 RaceVM_A14_WA[];
+                    register u32 wa __asm__("r0") = (u32)(uintptr_t)RaceVM_A14_WA;
+                    register u32 cell __asm__("r1") = 0x1078;
+                    __asm__ volatile ("" : "+r"(wa), "+r"(cell));
+                    {
+                        register u32 addr __asm__("r0") = wa + cell;
+                        __asm__ volatile ("" : "+r"(addr));
+                        {
+                            register u32 two __asm__("r1") = 2;
+                            __asm__ volatile ("" : "+r"(two));
+                            *(u16 *)addr = (u16)two;
+                            break;
+                        }
+                    }
+                }
+                default:
+                    break;
+                }
+                _0802B368(1);
+                *(volatile u32 *)(r4 + 136) = 1;
+                *(u16 *)(r4 + 12) = 0;
+                *(u16 *)(r4 + 116) = 1;
+                *(volatile u32 *)(r4 + 36) = 1;
+            }
+
+            {
+                register volatile u16 *r2 __asm__("r2") =
+                    (volatile u16 *)(r4 + 132);
+                if (r5 == 64) {
+                    u16 t = *r2;
+                    *r2 = (u16)(t - 1);
+                }
+                if (r5 == 128) {
+                    u16 t = *r2;
+                    *r2 = (u16)(t + 1);
+                }
+                {
+                    register u8 *p1 __asm__("r1") = (u8 *)r2;
+                    {
+                        register s32 cur __asm__("r0");
+                        cur = *(s16 *)p1;
+                        if (cur < 0) *(volatile u16 *)p1 = 0;
+                    }
+                    {
+                        register s32 cur __asm__("r0");
+                        cur = *(s16 *)p1;
+                        if (cur > 1) *(volatile u16 *)p1 = 1;
+                    }
+                    {
+                        register u16 current __asm__("r2") = *r2;
+                        if (saved != current) _0802B368(2);
+                    }
+                }
+            }
+        }
     }
-    {
-        register s32 cur __asm__("r0");
-        cur = *(s16 *)p1;
-        if (cur > 1) *(volatile u16 *)p1 = 1;
-    }
-    register u16 current __asm__("r2") = *r2;
-    if (saved != current) _0802B368(2);
 }
 void _080022A14(void *a, int b, u32 c) __attribute__((alias("RaceVM_022A14")));
 void sub_080022A14(void *a, int b, u32 c) __attribute__((alias("RaceVM_022A14")));
@@ -1523,19 +1616,21 @@ void sub_080022ACC(void *a, int b, u32 c) __attribute__((alias("RaceVM_022ACC"))
 //   mode 0|2 -> _08007B18(rec, v, a1, a2, 4, 1, 0, 0)
 void RaceVM_022B48(void *rec, int a1, int a2) {
     __asm__(".globl RaceVMRow_CC168\nRaceVMRow_CC168 = 0x080CC168\n");
-    extern u16 RaceVMRow_CC168[];
-    u16 *tab = RaceVMRow_CC168;
-    s16 idx = *(s16 *)((u8 *)rec + 132);
-    u16 v = tab[idx];
-    switch (*(s32 *)((u8 *)rec + 136)) {
-    case 1:
-    case 3:
-        _08007B18(rec, (int)v, a1, a2, 5u, 1u, 0u, 0u);
-        break;
-    case 0:
-    case 2:
-        _08007B18(rec, (int)v, a1, a2, 4u, 1u, 0u, 0u);
-        break;
+
+    {
+        u16 *tab = RaceVMRow_CC168;
+        s16 idx = *(s16 *)((u8 *)rec + 132);
+        u16 v = tab[idx];
+        switch (*(s32 *)((u8 *)rec + 136)) {
+        case 1:
+        case 3:
+            _08007B18(rec, (int)v, a1, a2, 5u, 1u, 0u, 0u);
+            break;
+        case 0:
+        case 2:
+            _08007B18(rec, (int)v, a1, a2, 4u, 1u, 0u, 0u);
+            break;
+        }
     }
 }
 void _080022B48(void *a, int b, int c) __attribute__((alias("RaceVM_022B48")));
@@ -1550,29 +1645,37 @@ __asm__(".align 2, 0");
 void RaceVM_022BBC(void *rec) {
     register volatile u8 *r4 __asm__("r4") = (volatile u8 *)rec;
     _0800D97C((void *)(r4 + 128), 15);
-    register const u32 *r5 __asm__("r5") = (const u32 *)0x080CC158;
-    __asm__ volatile("" : "+r" (r5));
-    register volatile u8 *r6 __asm__("r6") = r4 + 132;
-    register u32 r1 __asm__("r1") = 0;
-    register s32 index __asm__("r0") = *(const s16 *)(r6 + r1);
-    index <<= 3;
-    r1 = (u32)(uintptr_t)r5 + 4;
-    register const u8 *r8 __asm__("r8") = (const u8 *)(uintptr_t)r1;
-    index += (u32)(uintptr_t)r8;
-    r1 = *(const u32 *)(uintptr_t)index;
-    register u32 modeAddress __asm__("r0") = (u32)(uintptr_t)r4 + 136;
-    register u32 mode __asm__("r2") = *(volatile u32 *)(uintptr_t)modeAddress;
-    RaceVM_022ACC((void *)r4, (int)r1, mode);
-    r1 = 0;
-    index = *(const s16 *)(r6 + r1);
-    index <<= 3;
-    r5 = (const u32 *)((u32)index + (u32)(uintptr_t)r5);
-    r1 = r5[0];
-    index += (u32)(uintptr_t)r8;
-    mode = *(const u32 *)(uintptr_t)index;
-    sub_080022B48((void *)r4, (int)r1, (int)mode);
-    r4 += 8;
-    _0800DBE8((void *)r4);
+    {
+        register const u32 *r5 __asm__("r5") = (const u32 *)0x080CC158;
+        __asm__ volatile("" : "+r" (r5));
+        {
+            register volatile u8 *r6 __asm__("r6") = r4 + 132;
+            register u32 r1 __asm__("r1") = 0;
+            register s32 index __asm__("r0") = *(const s16 *)(r6 + r1);
+            index <<= 3;
+            r1 = (u32)(uintptr_t)r5 + 4;
+            {
+                register const u8 *r8 __asm__("r8") = (const u8 *)(uintptr_t)r1;
+                index += (u32)(uintptr_t)r8;
+                r1 = *(const u32 *)(uintptr_t)index;
+                {
+                    register u32 modeAddress __asm__("r0") = (u32)(uintptr_t)r4 + 136;
+                    register u32 mode __asm__("r2") = *(volatile u32 *)(uintptr_t)modeAddress;
+                    RaceVM_022ACC((void *)r4, (int)r1, mode);
+                    r1 = 0;
+                    index = *(const s16 *)(r6 + r1);
+                    index <<= 3;
+                    r5 = (const u32 *)((u32)index + (u32)(uintptr_t)r5);
+                    r1 = r5[0];
+                    index += (u32)(uintptr_t)r8;
+                    mode = *(const u32 *)(uintptr_t)index;
+                    sub_080022B48((void *)r4, (int)r1, (int)mode);
+                    r4 += 8;
+                    _0800DBE8((void *)r4);
+                }
+            }
+        }
+    }
 }
 void _080022BBC(void *a) __attribute__((alias("RaceVM_022BBC")));
 void sub_080022BBC(void *a) __attribute__((alias("RaceVM_022BBC")));

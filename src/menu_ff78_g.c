@@ -18,6 +18,7 @@
 #include "gba/types.h"
 #include "gtadv/ram_blocks.h"
 
+extern u8 MenuFF78Wa12990[];
 extern void Sub_08007B18(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h);
 extern void Sub_080011E10(void *a);
 extern void Sub_080011784(void *a);
@@ -134,24 +135,26 @@ void MenuFF78_11E58(void *rec_, u32 a1) {
         return;
     p = (s16 *)(uintptr_t)((u8 *)p + 16);
     r6 = p[0];
-    s32 r6s = (s32)r6;
-    extern u8 T1_11E58[];
-    extern u8 T2_11E58[];
-    __asm__("T1_11E58 = 0x080CB5A6");
-    __asm__("T2_11E58 = 0x080CB5AA");
-    if (a != 0) {
-        u32 t = (u32)(uintptr_t)T1_11E58;
-        s16 i = *(s16 *)(uintptr_t)((u8 *)rec_ + 226);
-        s16 v = *(s16 *)(uintptr_t)(t + (u32)(i * 2));
-        _08007B18((void *)(uintptr_t)((u8 *)rec_ + 100), (int)v, 72, 72,
-                  3, 1, 1, (u32)f5);
-    }
-    if ((u32)a != (u32)r6s) {
-        u32 t = (u32)(uintptr_t)T2_11E58;
-        s16 i = *(s16 *)(uintptr_t)((u8 *)rec_ + 226);
-        s16 v = *(s16 *)(uintptr_t)(t + (u32)(i * 2));
-        _08007B18((void *)(uintptr_t)((u8 *)rec_ + 100), (int)v, 144, 72,
-                  3, 1, 1, (u32)f5);
+    {
+        s32 r6s = (s32)r6;
+        extern u8 T1_11E58[];
+        extern u8 T2_11E58[];
+        __asm__("T1_11E58 = 0x080CB5A6");
+        __asm__("T2_11E58 = 0x080CB5AA");
+        if (a != 0) {
+            u32 t = (u32)(uintptr_t)T1_11E58;
+            s16 i = *(s16 *)(uintptr_t)((u8 *)rec_ + 226);
+            s16 v = *(s16 *)(uintptr_t)(t + (u32)(i * 2));
+            _08007B18((void *)(uintptr_t)((u8 *)rec_ + 100), (int)v, 72, 72,
+                      3, 1, 1, (u32)f5);
+        }
+        if ((u32)a != (u32)r6s) {
+            u32 t = (u32)(uintptr_t)T2_11E58;
+            s16 i = *(s16 *)(uintptr_t)((u8 *)rec_ + 226);
+            s16 v = *(s16 *)(uintptr_t)(t + (u32)(i * 2));
+            _08007B18((void *)(uintptr_t)((u8 *)rec_ + 100), (int)v, 144, 72,
+                      3, 1, 1, (u32)f5);
+        }
     }
 }
 void _080011E58(void *a, u32 b) __attribute__((alias("MenuFF78_11E58")));
@@ -167,24 +170,26 @@ void MenuFF78_11EE0(void *rec_, u32 a1) {
         return;
     p = (s16 *)(uintptr_t)((u8 *)p + 16);
     r6 = p[0];
-    s32 r6s = (s32)r6;
-    extern u8 T1_11EE0[];
-    extern u8 T2_11EE0[];
-    __asm__("T1_11EE0 = 0x080CB5A6");
-    __asm__("T2_11EE0 = 0x080CB5AA");
-    if (a != 0) {
-        u32 t = (u32)(uintptr_t)T1_11EE0;
-        s16 i = *(s16 *)(uintptr_t)((u8 *)rec_ + 226);
-        s16 v = *(s16 *)(uintptr_t)(t + (u32)(i * 2));
-        _08007B18((void *)(uintptr_t)((u8 *)rec_ + 100), (int)v, 72, 72,
-                  3, 1, 1, (u32)f5);
-    }
-    if ((u32)a != (u32)r6s) {
-        u32 t = (u32)(uintptr_t)T2_11EE0;
-        s16 i = *(s16 *)(uintptr_t)((u8 *)rec_ + 226);
-        s16 v = *(s16 *)(uintptr_t)(t + (u32)(i * 2));
-        _08007B18((void *)(uintptr_t)((u8 *)rec_ + 100), (int)v, 144, 72,
-                  3, 1, 1, (u32)f5);
+    {
+        s32 r6s = (s32)r6;
+        extern u8 T1_11EE0[];
+        extern u8 T2_11EE0[];
+        __asm__("T1_11EE0 = 0x080CB5A6");
+        __asm__("T2_11EE0 = 0x080CB5AA");
+        if (a != 0) {
+            u32 t = (u32)(uintptr_t)T1_11EE0;
+            s16 i = *(s16 *)(uintptr_t)((u8 *)rec_ + 226);
+            s16 v = *(s16 *)(uintptr_t)(t + (u32)(i * 2));
+            _08007B18((void *)(uintptr_t)((u8 *)rec_ + 100), (int)v, 72, 72,
+                      3, 1, 1, (u32)f5);
+        }
+        if ((u32)a != (u32)r6s) {
+            u32 t = (u32)(uintptr_t)T2_11EE0;
+            s16 i = *(s16 *)(uintptr_t)((u8 *)rec_ + 226);
+            s16 v = *(s16 *)(uintptr_t)(t + (u32)(i * 2));
+            _08007B18((void *)(uintptr_t)((u8 *)rec_ + 100), (int)v, 144, 72,
+                      3, 1, 1, (u32)f5);
+        }
     }
 }
 void _080011EE0(void *a, u32 b) __attribute__((alias("MenuFF78_11EE0")));
@@ -200,24 +205,26 @@ void MenuFF78_11F68(void *rec_, u32 a1) {
         return;
     p = (s16 *)(uintptr_t)((u8 *)p + 16);
     r6 = p[0];
-    s32 r6s = (s32)r6;
-    extern u8 T1_11F68[];
-    extern u8 T2_11F68[];
-    __asm__("T1_11F68 = 0x080CB5A6");
-    __asm__("T2_11F68 = 0x080CB5AA");
-    if (a != 0) {
-        u32 t = (u32)(uintptr_t)T1_11F68;
-        s16 i = *(s16 *)(uintptr_t)((u8 *)rec_ + 226);
-        s16 v = *(s16 *)(uintptr_t)(t + (u32)(i * 2));
-        _08007B18((void *)(uintptr_t)((u8 *)rec_ + 100), (int)v, 72, 72,
-                  3, 1, 1, (u32)f5);
-    }
-    if ((u32)a != (u32)r6s) {
-        u32 t = (u32)(uintptr_t)T2_11F68;
-        s16 i = *(s16 *)(uintptr_t)((u8 *)rec_ + 226);
-        s16 v = *(s16 *)(uintptr_t)(t + (u32)(i * 2));
-        _08007B18((void *)(uintptr_t)((u8 *)rec_ + 100), (int)v, 144, 72,
-                  3, 1, 1, (u32)f5);
+    {
+        s32 r6s = (s32)r6;
+        extern u8 T1_11F68[];
+        extern u8 T2_11F68[];
+        __asm__("T1_11F68 = 0x080CB5A6");
+        __asm__("T2_11F68 = 0x080CB5AA");
+        if (a != 0) {
+            u32 t = (u32)(uintptr_t)T1_11F68;
+            s16 i = *(s16 *)(uintptr_t)((u8 *)rec_ + 226);
+            s16 v = *(s16 *)(uintptr_t)(t + (u32)(i * 2));
+            _08007B18((void *)(uintptr_t)((u8 *)rec_ + 100), (int)v, 72, 72,
+                      3, 1, 1, (u32)f5);
+        }
+        if ((u32)a != (u32)r6s) {
+            u32 t = (u32)(uintptr_t)T2_11F68;
+            s16 i = *(s16 *)(uintptr_t)((u8 *)rec_ + 226);
+            s16 v = *(s16 *)(uintptr_t)(t + (u32)(i * 2));
+            _08007B18((void *)(uintptr_t)((u8 *)rec_ + 100), (int)v, 144, 72,
+                      3, 1, 1, (u32)f5);
+        }
     }
 }
 void _080011F68(void *a, u32 b) __attribute__((alias("MenuFF78_11F68")));
@@ -383,72 +390,88 @@ void sub_080012A44(void *a, u32 b, u32 c) __attribute__((alias("MenuFF78_12A44")
 //   Clamp: <0 -> 9; >9 -> 0. Tail: 04BFC(s16[cell]).
 void MenuFF78_12990(void *rec_, int dead, u32 ev_) {
     (void)dead;
-    volatile u8 *rec = (volatile u8 *)rec_;
-    u16 ev = (u16)ev_;
-    if (ev == 2) {
-        MFFG_12990_B368(4);
-        register u32 ten __asm__("r1") = 10;
-        __asm__ volatile("" : "+r"(ten));
-        *(volatile u32 *)(uintptr_t)(rec + 8) = ten;
+    {
+        volatile u8 *rec = (volatile u8 *)rec_;
+        u16 ev = (u16)ev_;
+        if (ev == 2) {
+            MFFG_12990_B368(4);
+            {
+                register u32 ten __asm__("r1") = 10;
+                __asm__ volatile("" : "+r"(ten));
+                *(volatile u32 *)(uintptr_t)(rec + 8) = ten;
+                {
+                    register u32 zero __asm__("r0") = 0;
+                    __asm__ volatile("" : "+r"(zero));
+                    *(volatile s16 *)(uintptr_t)(rec + 12) = (s16)zero;
+                    *(volatile u32 *)(uintptr_t)(rec + 40) = ten;
+                    *(volatile u32 *)(uintptr_t)(rec + 36) = zero;
+                }
+            }
+        }
         {
-            register u32 zero __asm__("r0") = 0;
-            __asm__ volatile("" : "+r"(zero));
-            *(volatile s16 *)(uintptr_t)(rec + 12) = (s16)zero;
-            *(volatile u32 *)(uintptr_t)(rec + 40) = ten;
-            *(volatile u32 *)(uintptr_t)(rec + 36) = zero;
+            register volatile u8 *cell __asm__("r6") =
+                (volatile u8 *)(uintptr_t)(rec + 128);
+            if (ev == 1) {
+                register int cell_s16 __asm__("r0");
+                cell_s16 = *(const s16 *)(uintptr_t)cell;
+                {
+                    int v = MFFG_12990_24DA0(cell_s16);
+                    if (v != 0) {
+                        MFFG_12990_B368(1);
+                        *(volatile u32 *)(uintptr_t)(rec + 140) = 1;
+                        *(volatile s16 *)(uintptr_t)(rec + 12) = 0;
+                        *(volatile s16 *)(uintptr_t)(rec + 116) = 1;
+                        __asm__(".globl MenuFF78Wa12990\nMenuFF78Wa12990 = 0x03001780");
+
+                        {
+                            register u32 wa_base __asm__("r0") =
+                                (u32)(uintptr_t)MenuFF78Wa12990;
+                            register u16 cell_value __asm__("r1") =
+                                *(volatile u16 *)(uintptr_t)cell;
+                            register u32 wa_offset __asm__("r2") = 0xFBEu;
+                            __asm__ volatile("" : "+r"(wa_base));
+                            __asm__ volatile("" : "+r"(cell_value));
+                            __asm__ volatile("" : "+r"(wa_offset));
+                            *(volatile u16 *)(uintptr_t)(wa_base + wa_offset) = cell_value;
+                        }
+                    } else {
+                        MFFG_12990_B368(10);
+                    }
+                }
+            }
+            if (ev == 64 || ev == 32) {
+                MFFG_12990_B368(2);
+                {
+                    u16 c = *(volatile u16 *)(uintptr_t)cell;
+                    *(volatile u16 *)(uintptr_t)cell = (u16)(c - 1);
+                }
+            }
+            if (ev == 128 || ev == 16) {
+                MFFG_12990_B368(2);
+                {
+                    u16 c = *(volatile u16 *)(uintptr_t)cell;
+                    *(volatile u16 *)(uintptr_t)cell = (u16)(c + 1);
+                }
+            }
+            /* Signed non-volatile reads select ldrsh; keep the clamped stores volatile. */
+            {
+                register volatile s16 *clamp_cell __asm__("r1") = (volatile s16 *)cell;
+                register int clamp_value __asm__("r0");
+                clamp_value = *(const s16 *)(uintptr_t)clamp_cell;
+                if (clamp_value < 0) {
+                    clamp_value = 9;
+                    *clamp_cell = (s16)clamp_value;
+                }
+                clamp_value = *(const s16 *)(uintptr_t)clamp_cell;
+                if (clamp_value > 9) {
+                    clamp_value = 0;
+                    *clamp_cell = (s16)clamp_value;
+                }
+                clamp_value = *(const s16 *)(uintptr_t)cell;
+                sub_08004BFC(clamp_value);
+            }
         }
     }
-    register volatile u8 *cell __asm__("r6") =
-        (volatile u8 *)(uintptr_t)(rec + 128);
-    if (ev == 1) {
-        register int cell_s16 __asm__("r0");
-        cell_s16 = *(const s16 *)(uintptr_t)cell;
-        int v = MFFG_12990_24DA0(cell_s16);
-        if (v != 0) {
-            MFFG_12990_B368(1);
-            *(volatile u32 *)(uintptr_t)(rec + 140) = 1;
-            *(volatile s16 *)(uintptr_t)(rec + 12) = 0;
-            *(volatile s16 *)(uintptr_t)(rec + 116) = 1;
-            __asm__(".globl MenuFF78Wa12990\nMenuFF78Wa12990 = 0x03001780");
-            extern u8 MenuFF78Wa12990[];
-            register u32 wa_base __asm__("r0") =
-                (u32)(uintptr_t)MenuFF78Wa12990;
-            register u16 cell_value __asm__("r1") =
-                *(volatile u16 *)(uintptr_t)cell;
-            register u32 wa_offset __asm__("r2") = 0xFBEu;
-            __asm__ volatile("" : "+r"(wa_base));
-            __asm__ volatile("" : "+r"(cell_value));
-            __asm__ volatile("" : "+r"(wa_offset));
-            *(volatile u16 *)(uintptr_t)(wa_base + wa_offset) = cell_value;
-        } else {
-            MFFG_12990_B368(10);
-        }
-    }
-    if (ev == 64 || ev == 32) {
-        MFFG_12990_B368(2);
-        u16 c = *(volatile u16 *)(uintptr_t)cell;
-        *(volatile u16 *)(uintptr_t)cell = (u16)(c - 1);
-    }
-    if (ev == 128 || ev == 16) {
-        MFFG_12990_B368(2);
-        u16 c = *(volatile u16 *)(uintptr_t)cell;
-        *(volatile u16 *)(uintptr_t)cell = (u16)(c + 1);
-    }
-    /* Signed non-volatile reads select ldrsh; keep the clamped stores volatile. */
-    register volatile s16 *clamp_cell __asm__("r1") = (volatile s16 *)cell;
-    register int clamp_value __asm__("r0");
-    clamp_value = *(const s16 *)(uintptr_t)clamp_cell;
-    if (clamp_value < 0) {
-        clamp_value = 9;
-        *clamp_cell = (s16)clamp_value;
-    }
-    clamp_value = *(const s16 *)(uintptr_t)clamp_cell;
-    if (clamp_value > 9) {
-        clamp_value = 0;
-        *clamp_cell = (s16)clamp_value;
-    }
-    clamp_value = *(const s16 *)(uintptr_t)cell;
-    sub_08004BFC(clamp_value);
 }
 // The ROM has a zero halfword after bx r0; use data-fill alignment instead
 // of the Thumb section's 0x46C0 nop filler.
@@ -530,18 +553,20 @@ next_12c90:
         u32 offset = (u32)(s32)index << 3;
         u32 r6 = *(const u32 *)(records + offset);
         records += 4;
-        u32 r4 = *(const u32 *)(records + offset);
         {
-            register u32 progress __asm__("r2");
-            progress = *(const u32 *)(uintptr_t)(rec + 140);
-            MenuFF78_12A44((void *)rec, r4, progress);
+            u32 r4 = *(const u32 *)(records + offset);
+            {
+                register u32 progress __asm__("r2");
+                progress = *(const u32 *)(uintptr_t)(rec + 140);
+                MenuFF78_12A44((void *)rec, r4, progress);
+            }
+            {
+                register u32 mode __asm__("r3");
+                mode = *(const u32 *)(uintptr_t)(rec + 140);
+                MenuFF78_12AC0_4((void *)rec, r6, r4, mode);
+            }
+            MenuFF78_12B68_4((void *)rec, r6, r4);
         }
-        {
-            register u32 mode __asm__("r3");
-            mode = *(const u32 *)(uintptr_t)(rec + 140);
-            MenuFF78_12AC0_4((void *)rec, r6, r4, mode);
-        }
-        MenuFF78_12B68_4((void *)rec, r6, r4);
     }
     MenuFF78_12B34_4((void *)rec);
     MenuFF78_0D97C_4((void *)(uintptr_t)(rec + 132), 15);
@@ -558,61 +583,63 @@ void sub_080012C90(void *a) __attribute__((alias("MenuFF78_12C90")));
 //   s==0: one call at v+9; s==9: one call at v-9; otherwise both in order.
 void MenuFF78_12B68(void *rec_, u32 ignored, u32 v) {
     (void)ignored;
-    u8 *rec = (u8 *)rec_;
-    s16 *mode_field;
-    void *helper_rec;
-    int y_plus;
-    s16 s;
-    s16 gate;
-    register u32 mode asm("r6");
-    register u32 v_reg asm("r5") = v;
-    register u32 one asm("r8");
-    register u32 two asm("r9");
+    {
+        u8 *rec = (u8 *)rec_;
+        s16 *mode_field;
+        void *helper_rec;
+        int y_plus;
+        s16 s;
+        s16 gate;
+        register u32 mode asm("r6");
+        register u32 v_reg asm("r5") = v;
+        register u32 one asm("r8");
+        register u32 two asm("r9");
 
-    mode_field = (s16 *)(uintptr_t)(rec + 134);
-    gate = mode_field[0];
-    if (gate != 0) return;
-    mode_field = (s16 *)(uintptr_t)((u8 *)mode_field + 6);
-    mode = *(u32 *)mode_field;
-    if (mode == 2) goto mode_two;
-    if (mode != 3) return;
+        mode_field = (s16 *)(uintptr_t)(rec + 134);
+        gate = mode_field[0];
+        if (gate != 0) return;
+        mode_field = (s16 *)(uintptr_t)((u8 *)mode_field + 6);
+        mode = *(u32 *)mode_field;
+        if (mode == 2) goto mode_two;
+        if (mode != 3) return;
 
-    s = *((s16 *)(uintptr_t)((u8 *)mode_field - 12));
-    if (s == 0) {
-        _08007B18((void *)(uintptr_t)(rec + 44), 10, 0,
-                     (int)(v_reg + 9), 2, 1, 0, 0);
-    } else if (s == 9) {
-        _08007B18((void *)(uintptr_t)(rec + 44), 9, 0,
-                     (int)(v_reg - 9), 2, 1, 0, 0);
-    } else {
-        mode = (u32)(uintptr_t)(rec + 44);
-        y_plus = (int)(v_reg + 9);
-        two = 2;
-        _08007B18((void *)(uintptr_t)mode, 10, 0, y_plus, 2,
-                     (one = 1), 0, 0);
-        _08007B18((void *)(uintptr_t)mode, 9, 0,
-                     (int)(v_reg - 9), two, one, 0, 0);
+        s = *((s16 *)(uintptr_t)((u8 *)mode_field - 12));
+        if (s == 0) {
+            _08007B18((void *)(uintptr_t)(rec + 44), 10, 0,
+                         (int)(v_reg + 9), 2, 1, 0, 0);
+        } else if (s == 9) {
+            _08007B18((void *)(uintptr_t)(rec + 44), 9, 0,
+                         (int)(v_reg - 9), 2, 1, 0, 0);
+        } else {
+            mode = (u32)(uintptr_t)(rec + 44);
+            y_plus = (int)(v_reg + 9);
+            two = 2;
+            _08007B18((void *)(uintptr_t)mode, 10, 0, y_plus, 2,
+                         (one = 1), 0, 0);
+            _08007B18((void *)(uintptr_t)mode, 9, 0,
+                         (int)(v_reg - 9), two, one, 0, 0);
+        }
+        goto done;
+
+    mode_two:
+        s = *((s16 *)(uintptr_t)(rec + 128));
+        if (s == 0) {
+            _08007B18((void *)(uintptr_t)(rec + 44), 10, 0,
+                         (int)(v_reg + 9), mode, 1, 0, 0);
+        } else if (s == 9) {
+            _08007B18((void *)(uintptr_t)(rec + 44), 9, 0,
+                         (int)(v_reg - 9), mode, 1, 0, 0);
+        } else {
+            helper_rec = (void *)(uintptr_t)(rec + 44);
+            y_plus = (int)(v_reg + 9);
+            _08007B18(helper_rec, 10, 0, y_plus, mode, (one = 1), 0, 0);
+            _08007B18(helper_rec, 9, 0,
+                         (int)(v_reg - 9), mode, one, 0, 0);
+        }
+
+    done:
+        return;
     }
-    goto done;
-
-mode_two:
-    s = *((s16 *)(uintptr_t)(rec + 128));
-    if (s == 0) {
-        _08007B18((void *)(uintptr_t)(rec + 44), 10, 0,
-                     (int)(v_reg + 9), mode, 1, 0, 0);
-    } else if (s == 9) {
-        _08007B18((void *)(uintptr_t)(rec + 44), 9, 0,
-                     (int)(v_reg - 9), mode, 1, 0, 0);
-    } else {
-        helper_rec = (void *)(uintptr_t)(rec + 44);
-        y_plus = (int)(v_reg + 9);
-        _08007B18(helper_rec, 10, 0, y_plus, mode, (one = 1), 0, 0);
-        _08007B18(helper_rec, 9, 0,
-                     (int)(v_reg - 9), mode, one, 0, 0);
-    }
-
-done:
-    return;
 }
 void _080012B68(void *a, u32 b, u32 c) __attribute__((alias("MenuFF78_12B68")));
 void Sub_080012B68(void *a, u32 b, u32 c) __attribute__((alias("MenuFF78_12B68")));

@@ -53,40 +53,54 @@ void CourseOrch_080064EC(void *out, int idx, void *base) {
     *(u16 *)(o + 0x30) = *(u16 *)(p + 10);
 
     // r3 keeps p+12 through the whole body (the tail reloads p[14] from it).
-    u8 *q = p + 12;
-    *(u32 *)(o + 0x00) = (u32)(uintptr_t)q;
-    u32 acc = (u32)(uintptr_t)(p + 28);
-    *(u32 *)(o + 0x04) = acc;
+    {
+        u8 *q = p + 12;
+        *(u32 *)(o + 0x00) = (u32)(uintptr_t)q;
+        {
+            u32 acc = (u32)(uintptr_t)(p + 28);
+            *(u32 *)(o + 0x04) = acc;
 
-    s16 nA = *(s16 *)(p + 2);
-    acc += (u32)((nA << 2) + nA) * 4;   // nA*20
-    *(u32 *)(o + 0x08) = acc;
+            {
+                s16 nA = *(s16 *)(p + 2);
+                acc += (u32)((nA << 2) + nA) * 4;   // nA*20
+                *(u32 *)(o + 0x08) = acc;
 
-    s16 nB = *(s16 *)(p + 4);
-    acc += (u32)((nB << 1) + nB) * 4;   // nB*12
-    *(u32 *)(o + 0x0C) = acc;
+                {
+                    s16 nB = *(s16 *)(p + 4);
+                    acc += (u32)((nB << 1) + nB) * 4;   // nB*12
+                    *(u32 *)(o + 0x0C) = acc;
 
-    s16 nC = *(s16 *)(p + 6);
-    acc += (u32)((nC << 1) + nC) * 4;   // nC*12
-    *(u32 *)(o + 0x10) = acc;
+                    {
+                        s16 nC = *(s16 *)(p + 6);
+                        acc += (u32)((nC << 1) + nC) * 4;   // nC*12
+                        *(u32 *)(o + 0x10) = acc;
 
-    s16 nD = *(s16 *)(p + 8);
-    acc += (u32)(nD << 3);              // nD*8
-    *(u32 *)(o + 0x14) = acc;
+                        {
+                            s16 nD = *(s16 *)(p + 8);
+                            acc += (u32)(nD << 3);              // nD*8
+                            *(u32 *)(o + 0x14) = acc;
 
-    acc += 60;
-    *(u32 *)(o + 0x18) = acc;
+                            acc += 60;
+                            *(u32 *)(o + 0x18) = acc;
 
-    // Tail flag: the ROM reuses the narrowed byte register for the 0/1
-    // result (`cmp; bhi zero; movs r0,#1; b; zero: movs r0,#0`), so the
-    // branches assign back into `f` itself -- a separate flag local takes
-    // r1 and lets the compiler hoist one materialization above the compare.
-    u8 f = (u8)(q[2] - 6);
-    if (f <= 1)
-        f = 1;
-    else
-        f = 0;
-    *(u16 *)(o + 0x32) = f;
+                            // Tail flag: the ROM reuses the narrowed byte register for the 0/1
+                            // result (`cmp; bhi zero; movs r0,#1; b; zero: movs r0,#0`), so the
+                            // branches assign back into `f` itself -- a separate flag local takes
+                            // r1 and lets the compiler hoist one materialization above the compare.
+                            {
+                                u8 f = (u8)(q[2] - 6);
+                                if (f <= 1)
+                                    f = 1;
+                                else
+                                    f = 0;
+                                *(u16 *)(o + 0x32) = f;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 void _080064EC(void *a, int b, void *c) __attribute__((alias("CourseOrch_080064EC")));
 void sub_080064EC(void *a, int b, void *c) __attribute__((alias("CourseOrch_080064EC")));

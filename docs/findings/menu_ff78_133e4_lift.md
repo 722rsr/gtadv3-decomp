@@ -115,10 +115,9 @@ aligned instructions; no single barrier placement is close.
 
 ## Tooling notes
 
-- `RAM_DEF_03001780` must stay after every declaration that the C89 transform
-  can hoist: the transform moves declarations to the top of the block and
-  leaves the macro's `.set` as a statement, so a `register ... __asm__`
-  declaration written before it becomes a declaration-after-statement.
+- `RAM_DEF_03001780` must stay after every declaration in its block: the macro
+  expands to a statement, so a `register ... __asm__` declaration written after
+  it is a declaration-after-statement and agbcc rejects the TU.
 - An undefined `FF78_DMA_STEP(...)` compiles silently as an implicit
   `int` function call, which scores as a 112-byte-short body. Keep the macro
   definition at file scope inside the TU.

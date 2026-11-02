@@ -42,7 +42,7 @@ instructions and use a controlled change that tests the suspected cause.
 ## Reproduction
 
 ```sh
-python3 tools/corpus_match_probe.py --function NAME --c89 \
+python3 tools/corpus_match_probe.py --function NAME \
     --work-dir build/scratch/length-check --json build/scratch/length-check.json
 ```
 

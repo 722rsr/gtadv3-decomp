@@ -809,7 +809,7 @@ def subprocess_probe(name: str) -> dict | None:
         report = Path(tmp) / "report.json"
         result = subprocess.run(
             [sys.executable, str(probe.ROOT / "tools/corpus_match_probe.py"),
-             "--function", name, "--c89", "--require-all", "--require-exact",
+             "--function", name, "--require-all", "--require-exact",
              "--work-dir", tmp, "--json", str(report)],
             text=True, capture_output=True)
         if result.returncode or not report.exists():

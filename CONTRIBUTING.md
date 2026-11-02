@@ -13,6 +13,17 @@ before changing game code to establish a working baseline.
 Keep each pull request focused. For a large subsystem change, open an issue
 first to agree on scope and avoid duplicating work.
 
+## Source language
+
+`src/*.c` is maintained in C89 for the pinned `old_agbcc`; it is compiled
+directly with no C99-to-C89 rewrite step. Declarations precede statements in
+their block, `for` initializers do not declare variables, and block-scope
+`extern` declarations are hoisted to file scope. `make matching-ready` runs
+`tools/c89_check.py` over every translation unit, so a C99 construct fails the
+gate instead of being transformed away. GNU extensions already used by the
+matching work (`__asm__`, `__attribute__`, named register variables, and `//`
+comments) remain part of the accepted dialect.
+
 ## Matching work
 
 Read the [matching workflow](docs/matching_workflow.md) before selecting or

@@ -112,7 +112,7 @@ def probe_function(function: str, work: Path, report: Path,
     `source` is the configured owner of this unit. Passing it lets the probe
     scan that one file instead of searching all of src/ for the name.
     """
-    argv = ["corpus_match_probe.py", "--function", function, "--c89", "--require-all",
+    argv = ["corpus_match_probe.py", "--function", function, "--require-all",
             "--work-dir", str(work), "--json", str(report)]
     if source is not None:
         argv += ["--source-file", str(source)]

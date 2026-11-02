@@ -9,6 +9,18 @@
 // VMA references cite original asm and asm/saveblock.s.
 
 // External BIOS and driver hooks (weak so this lane links standalone on host builds)
+extern u8 SaveStage4[];
+extern u8 SaveDevPtr[];
+extern u8 SaveSlotTbl[];
+extern u8 SaveDevPtr[];
+extern u8 SaveDst4[];
+extern u8 SaveSlotTbl[];
+extern u8 SaveWrP3[];
+extern u8 SaveWrP2[];
+extern u8 SaveWrP1[];
+extern u8 SaveWrIE[];
+extern u8 SaveWrIME[];
+extern u8 SaveCtrlBase[];
 __attribute__((weak)) void CpuSetWrap(const void *src, void *dst, u32 mode) { CpuFastSet(src, dst, mode); }
 __attribute__((weak)) int EepromPanic(const char *msg) { (void)msg; return -1; }
 __attribute__((weak)) int EepromReadSector(u32 sector, void *dst) { (void)sector; (void)dst; return 0; }
@@ -229,44 +241,48 @@ void sub_080057A4(u32 a, u32 b) __attribute__((alias("SaveAllocInit")));
 // ----------------------------------------------------------------------------
 u32 SaveDescAppend(u32 byteSize) {
     __asm__(".globl SaveCtrlBase\nSaveCtrlBase = 0x03000320");
-    extern u8 SaveCtrlBase[];
-    u32 bs = byteSize;
-    register volatile u32 *ctrl __asm__("r2") = (volatile u32 *)SaveCtrlBase;
-    u32 idx = ctrl[0];
-    u32 off = idx * 8;
-    volatile u8 *b = (volatile u8 *)ctrl;
-    b += 12;
-    off += (u32)(uintptr_t)b;
-    register volatile u32 *slot __asm__("r0") = (volatile u32 *)(uintptr_t)off;
-    u32 inc;
-    s32 dev;
-    slot[0] = ctrl[2];
-    slot[1] = bs;
-    inc = byteSize + 4;
-    dev = (s32)ctrl[1];
-    // The ROM's range gate is `cmp #2; bgt` then `cmp #1; blt` to one shared
-    // continuation (0x0800582E). An if-chain cannot produce it: agbcc folds
-    // `dev < 1` into `<= 0` (`cmp #0; ble`). The switch over {1, 2} emits both
-    // signed case bounds in that order and needs no default arm (measured).
-    switch (dev) {
-    case 1:
-    case 2:
-        inc += 7;
+
+    {
+        u32 bs = byteSize;
+        register volatile u32 *ctrl __asm__("r2") = (volatile u32 *)SaveCtrlBase;
+        u32 idx = ctrl[0];
+        u32 off = idx * 8;
+        volatile u8 *b = (volatile u8 *)ctrl;
+        b += 12;
+        off += (u32)(uintptr_t)b;
         {
-            u32 t = inc;
-            if ((s32)t < 0)
-                t = byteSize + 18;
-            inc = (u32)((s32)t >> 3);
-            inc <<= 3;
+            register volatile u32 *slot __asm__("r0") = (volatile u32 *)(uintptr_t)off;
+            u32 inc;
+            s32 dev;
+            slot[0] = ctrl[2];
+            slot[1] = bs;
+            inc = byteSize + 4;
+            dev = (s32)ctrl[1];
+            // The ROM's range gate is `cmp #2; bgt` then `cmp #1; blt` to one shared
+            // continuation (0x0800582E). An if-chain cannot produce it: agbcc folds
+            // `dev < 1` into `<= 0` (`cmp #0; ble`). The switch over {1, 2} emits both
+            // signed case bounds in that order and needs no default arm (measured).
+            switch (dev) {
+            case 1:
+            case 2:
+                inc += 7;
+                {
+                    u32 t = inc;
+                    if ((s32)t < 0)
+                        t = byteSize + 18;
+                    inc = (u32)((s32)t >> 3);
+                    inc <<= 3;
+                }
+                break;
+            }
+            if ((s32)inc < 0)
+                inc += 7;
+            inc = (u32)((s32)inc >> 3);
+            ctrl[2] += inc;
+            ctrl[0] += 1;
+            return (idx << 24) >> 24;
         }
-        break;
     }
-    if ((s32)inc < 0)
-        inc += 7;
-    inc = (u32)((s32)inc >> 3);
-    ctrl[2] += inc;
-    ctrl[0] += 1;
-    return (idx << 24) >> 24;
 }
 u32 _0800580C(u32 s) __attribute__((alias("SaveDescAppend")));
 
@@ -339,58 +355,60 @@ void SaveWriteSectors(const void *src, u32 sector, u32 byteSize) {
     __asm__(".globl SaveWrP1\nSaveWrP1 = 0x0805BABC");
     __asm__(".globl SaveWrP2\nSaveWrP2 = 0x0805BAD0");
     __asm__(".globl SaveWrP3\nSaveWrP3 = 0x0805BAE0");
-    extern u8 SaveWrIME[];
-    extern u8 SaveWrIE[];
-    extern u8 SaveWrP1[];
-    extern u8 SaveWrP2[];
-    extern u8 SaveWrP3[];
-    register u8 *p5 __asm__("r5") = (u8 *)src;
-    register u32 s8 __asm__("r8") = sector;
-    register u32 n __asm__("r4") = (byteSize + 7) >> 3;
-    u32 retries = 0;
-    *(volatile u16 *)SaveWrIME = 0;
-    sub_080029D8();
-    sub_08002A68();
+
+
+
+
+
     {
-        u32 t = (u32)sub_08002AF4(9);
-        int rc0 = sub_0802DA20(0, t);
-        if ((u16)rc0 != 0)
-            sub_0800295C((u32)SaveWrP1, (u32)(u16)rc0);
-    }
-    *(volatile u16 *)SaveWrIE |= 8;
-    *(volatile u16 *)SaveWrIME = 1;
-    if (n == 0)
-        goto done;
-    {
-        register u32 rem __asm__("r6") = n;
-        do {
-            u32 sec16 = (u16)s8;
-            int w = sub_0802DC54(sec16, (u32)p5);
-            if ((u16)w != 0) {
-                retries += 1;
-                if ((s32)retries <= 10)
-                    goto retry;
-                sub_0800295C((u32)SaveWrP2, (u32)(u16)w);
-            }
-            {
-                int v = sub_0802DD30(sec16, (u32)p5);
-                if ((u16)v != 0) {
+        register u8 *p5 __asm__("r5") = (u8 *)src;
+        register u32 s8 __asm__("r8") = sector;
+        register u32 n __asm__("r4") = (byteSize + 7) >> 3;
+        u32 retries = 0;
+        *(volatile u16 *)SaveWrIME = 0;
+        sub_080029D8();
+        sub_08002A68();
+        {
+            u32 t = (u32)sub_08002AF4(9);
+            int rc0 = sub_0802DA20(0, t);
+            if ((u16)rc0 != 0)
+                sub_0800295C((u32)SaveWrP1, (u32)(u16)rc0);
+        }
+        *(volatile u16 *)SaveWrIE |= 8;
+        *(volatile u16 *)SaveWrIME = 1;
+        if (n == 0)
+            goto done;
+        {
+            register u32 rem __asm__("r6") = n;
+            do {
+                u32 sec16 = (u16)s8;
+                int w = sub_0802DC54(sec16, (u32)p5);
+                if ((u16)w != 0) {
                     retries += 1;
                     if ((s32)retries <= 10)
                         goto retry;
-                    sub_0800295C((u32)SaveWrP3, (u32)(u16)v);
+                    sub_0800295C((u32)SaveWrP2, (u32)(u16)w);
                 }
-            }
-            p5 += 8;
-            s8 += 1;
-            rem -= 1;
-        retry:
-            if ((s32)rem == 0)
-                break;
-        } while (1);
+                {
+                    int v = sub_0802DD30(sec16, (u32)p5);
+                    if ((u16)v != 0) {
+                        retries += 1;
+                        if ((s32)retries <= 10)
+                            goto retry;
+                        sub_0800295C((u32)SaveWrP3, (u32)(u16)v);
+                    }
+                }
+                p5 += 8;
+                s8 += 1;
+                rem -= 1;
+            retry:
+                if ((s32)rem == 0)
+                    break;
+            } while (1);
+        }
+    done:
+        sub_08002A0C();
     }
-done:
-    sub_08002A0C();
 }
 void _080058D0(const void *a, u32 b, u32 c) __attribute__((alias("SaveWriteSectors")));
 void sub_080058D0(const void *a, u32 b, u32 c) __attribute__((alias("SaveWriteSectors")));
@@ -407,37 +425,39 @@ int SaveSlotSave(u32 slotIdx, const void *src) {
     __asm__(".globl SaveSlotTbl\nSaveSlotTbl = 0x0300032C");
     __asm__(".globl SaveDst4\nSaveDst4 = 0x02000004");
     __asm__(".globl SaveDevPtr\nSaveDevPtr = 0x030003AC");
-    extern u8 SaveSlotTbl[];
-    extern u8 SaveDst4[];
-    extern u8 SaveDevPtr[];
-    volatile u8 *e = SaveSlotTbl + ((slotIdx << 24) >> 21);
-    // Use the closure's retained ROM spelling here. SaveChecksum is a C alias
-    // at the same address, but the isolated slice keeps sub_08005860 from asm.
-    u32 cksum = sub_08005860(src, *(volatile u32 *)(e + 4));
-    u32 stk = cksum;
-    u8 *stage;
-    __asm__ volatile("" : "+r" (e));
-    stage = (u8 *)0x02000000u;
-    sub_0802D974(&stk, (void *)stage, 2);
+
+
+
     {
-        void *d = (void *)SaveDst4;
-        u32 sz = *(volatile u32 *)(e + 4);
-        u32 words = ((sz + (sz >> 31)) << 10) >> 11;
-        sub_0802D974(src, d, words);
-    }
-    {
-        s32 devType = (s32)*(volatile u32 *)(*(volatile u32 *)SaveDevPtr + 4);
-        // Same switch lever as SaveDescAppend: the ROM's `cmp #2; bgt` /
-        // `cmp #1; blt` pair is the {1,2} case-bound test, not an if-chain
-        // (agbcc folds `devType < 1` into `cmp #0; ble`).
-        switch (devType) {
-        case 1:
-        case 2:
-            sub_080058D0((void *)stage, *(volatile u32 *)e, *(volatile u32 *)(e + 4) + 4);
-            break;
+        volatile u8 *e = SaveSlotTbl + ((slotIdx << 24) >> 21);
+        // Use the closure's retained ROM spelling here. SaveChecksum is a C alias
+        // at the same address, but the isolated slice keeps sub_08005860 from asm.
+        u32 cksum = sub_08005860(src, *(volatile u32 *)(e + 4));
+        u32 stk = cksum;
+        u8 *stage;
+        __asm__ volatile("" : "+r" (e));
+        stage = (u8 *)0x02000000u;
+        sub_0802D974(&stk, (void *)stage, 2);
+        {
+            void *d = (void *)SaveDst4;
+            u32 sz = *(volatile u32 *)(e + 4);
+            u32 words = ((sz + (sz >> 31)) << 10) >> 11;
+            sub_0802D974(src, d, words);
         }
+        {
+            s32 devType = (s32)*(volatile u32 *)(*(volatile u32 *)SaveDevPtr + 4);
+            // Same switch lever as SaveDescAppend: the ROM's `cmp #2; bgt` /
+            // `cmp #1; blt` pair is the {1,2} case-bound test, not an if-chain
+            // (agbcc folds `devType < 1` into `cmp #0; ble`).
+            switch (devType) {
+            case 1:
+            case 2:
+                sub_080058D0((void *)stage, *(volatile u32 *)e, *(volatile u32 *)(e + 4) + 4);
+                break;
+            }
+        }
+        return 1;
     }
-    return 1;
 }
 int _080059F0(u32 a, const void *b) __attribute__((alias("SaveSlotSave")));
 int sub_080059F0(u32 a, const void *b) __attribute__((alias("SaveSlotSave")));
@@ -446,38 +466,40 @@ int SaveSlotLoad(u32 slotIdx, void *dst) {
     __asm__(".globl SaveSlotTbl\nSaveSlotTbl = 0x0300032C");
     __asm__(".globl SaveDevPtr\nSaveDevPtr = 0x030003AC");
     __asm__(".globl SaveStage4\nSaveStage4 = 0x02000004");
-    extern u8 SaveSlotTbl[];
-    extern u8 SaveDevPtr[];
-    extern u8 SaveStage4[];
-    volatile u8 *e = SaveSlotTbl + ((slotIdx << 24) >> 21);
-    s32 devType = (s32)*(volatile u32 *)(*(volatile u32 *)SaveDevPtr + 4);
-    // Same switch lever as SaveDescAppend/SaveSlotSave: the ROM's
-    // `cmp #2; bgt` / `cmp #1; blt` pair is the {1,2} case-bound test;
-    // an if-chain's `< 1` folds into `cmp #0; ble`.
-    switch (devType) {
-    case 1:
-    case 2:
+
+
+
     {
-        u32 sec = *(volatile u32 *)e;
-        u8 *d = (u8 *)0x02000000u;
-        sub_08005884(sec, (void *)d, *(volatile u32 *)(e + 4) + 4);
-    }
-        break;
-    }
-    {
-        register u8 *stage4 __asm__("r5") = SaveStage4;
-        register u32 sz __asm__("r1") = *(volatile u32 *)(e + 4);
-        u32 calc = sub_08005860(stage4, sz);
-        u8 *stage0 = (u8 *)0x02000000u;
-        u32 stored = *(volatile u32 *)stage0;
-        if (calc != stored)
-            return 0;
+        volatile u8 *e = SaveSlotTbl + ((slotIdx << 24) >> 21);
+        s32 devType = (s32)*(volatile u32 *)(*(volatile u32 *)SaveDevPtr + 4);
+        // Same switch lever as SaveDescAppend/SaveSlotSave: the ROM's
+        // `cmp #2; bgt` / `cmp #1; blt` pair is the {1,2} case-bound test;
+        // an if-chain's `< 1` folds into `cmp #0; ble`.
+        switch (devType) {
+        case 1:
+        case 2:
         {
-            register u32 copySz __asm__("r2") = *(volatile u32 *)(e + 4);
-            u32 words = ((copySz + (copySz >> 31)) << 10) >> 11;
-            sub_0802D974(stage4, dst, words);
+            u32 sec = *(volatile u32 *)e;
+            u8 *d = (u8 *)0x02000000u;
+            sub_08005884(sec, (void *)d, *(volatile u32 *)(e + 4) + 4);
         }
-        return 1;
+            break;
+        }
+        {
+            register u8 *stage4 __asm__("r5") = SaveStage4;
+            register u32 sz __asm__("r1") = *(volatile u32 *)(e + 4);
+            u32 calc = sub_08005860(stage4, sz);
+            u8 *stage0 = (u8 *)0x02000000u;
+            u32 stored = *(volatile u32 *)stage0;
+            if (calc != stored)
+                return 0;
+            {
+                register u32 copySz __asm__("r2") = *(volatile u32 *)(e + 4);
+                u32 words = ((copySz + (copySz >> 31)) << 10) >> 11;
+                sub_0802D974(stage4, dst, words);
+            }
+            return 1;
+        }
     }
 }
 int _08005988(u32 a, void *b) __attribute__((alias("SaveSlotLoad")));
@@ -828,7 +850,7 @@ int _08024634(void) __attribute__((alias("SaveBlock1Load")));
 // `pop {r1}; bx r1`, and the ROM's `pop {r0}; bx r0` is the form it emits when
 // the return value is unused. The declaration in include/gtadv/save.h had to
 // change in the same commit, because a lone `void` here is a hard agbcc
-// "conflicting types" error and the C89 transform then skips the WHOLE TU.
+// "conflicting types" error and the whole TU would not compile.
 //
 // The sibling SaveBlock1Load at 0x08024634 is the opposite: the ROM ends that
 // one with `movs r0,#1`, so it really does return a value and stays `int`.
@@ -870,23 +892,25 @@ void _08024650(void) __attribute__((alias("SaveBlock1Save")));
 u32 SaveGarageMaskTest(u32 idx, u32 k) {
     extern u16 SaveMaskTbl[];
     __asm__(".globl SaveMaskTbl\nSaveMaskTbl = 0x080CC1A8");
-    volatile u16 *packed;
-    u16 mask;
-    s16 v;
-    u8 *base;
-    u32 ioff;
-    u32 koff;
-    u16 *mt;
-    RAM_DEF_030013D0;
-    base = (u8 *)RAM_SYM_030013D0;
-    ioff = idx << 1;
-    base += 0x2E;
-    packed = (volatile u16 *)(base + ioff);
-    mt = SaveMaskTbl;
-    koff = k << 1;
-    mask = *(volatile u16 *)((u8 *)mt + koff);
-    v = (s16)(*packed & mask);
-    return (v != 0) ? 1 : 0;
+    {
+        volatile u16 *packed;
+        u16 mask;
+        s16 v;
+        u8 *base;
+        u32 ioff;
+        u32 koff;
+        u16 *mt;
+        RAM_DEF_030013D0;
+        base = (u8 *)RAM_SYM_030013D0;
+        ioff = idx << 1;
+        base += 0x2E;
+        packed = (volatile u16 *)(base + ioff);
+        mt = SaveMaskTbl;
+        koff = k << 1;
+        mask = *(volatile u16 *)((u8 *)mt + koff);
+        v = (s16)(*packed & mask);
+        return (v != 0) ? 1 : 0;
+    }
 }
 u32 _0802476C(u32 a, u32 b) __attribute__((alias("SaveGarageMaskTest")));
 
@@ -1250,30 +1274,32 @@ void SaveBlock2PreSave(void) {
     typedef struct { u32 w[8]; } Blk32;
     typedef struct { u32 w[3]; } Blk12;    RAM_DEF_030013D0;
     RAM_DEF_03001780;
-    u8 *dst = (u8 *)RAM_SYM_030013D0;
-    u8 *src = (u8 *)RAM_SYM_03001780;
-    u8 *d = dst;
-    u8 *s = src;
-    *(Blk32 *)d = *(Blk32 *)s;
-    d += 32; s += 32;
-    *(Blk12 *)d = *(Blk12 *)s;
-    d += 12; s += 12;
-    *(u16 *)d = *(u16 *)s;
-    *(u32 *)(dst + 48) = *(u32 *)(src + 1392);
-    *(u16 *)(dst + 52) = *(u16 *)(src + 0x574);
-    *(u16 *)(dst + 54) = *(u16 *)(src + 0x576);
-    SaveGaragePack();
-    *(u32 *)(dst + 56) = *(u32 *)(src + 1400);
     {
-        u8 *dst60 = dst + 60;
-        *(u32 *)dst60 = *(u32 *)(src + 1404);
-        sub_0802E0A4(dst60, src + 1404, 96);
+        u8 *dst = (u8 *)RAM_SYM_030013D0;
+        u8 *src = (u8 *)RAM_SYM_03001780;
+        u8 *d = dst;
+        u8 *s = src;
+        *(Blk32 *)d = *(Blk32 *)s;
+        d += 32; s += 32;
+        *(Blk12 *)d = *(Blk12 *)s;
+        d += 12; s += 12;
+        *(u16 *)d = *(u16 *)s;
+        *(u32 *)(dst + 48) = *(u32 *)(src + 1392);
+        *(u16 *)(dst + 52) = *(u16 *)(src + 0x574);
+        *(u16 *)(dst + 54) = *(u16 *)(src + 0x576);
+        SaveGaragePack();
+        *(u32 *)(dst + 56) = *(u32 *)(src + 1400);
+        {
+            u8 *dst60 = dst + 60;
+            *(u32 *)dst60 = *(u32 *)(src + 1404);
+            sub_0802E0A4(dst60, src + 1404, 96);
+        }
+        {
+            u16 tail = *(u16 *)(src + 1504);
+            *(u16 *)(dst + 160) = tail;
+        }
+        SaveCarRecordsPack();
     }
-    {
-        u16 tail = *(u16 *)(src + 1504);
-        *(u16 *)(dst + 160) = tail;
-    }
-    SaveCarRecordsPack();
 }
 void _08024A18(void) __attribute__((alias("SaveBlock2PreSave")));
 
@@ -1293,39 +1319,41 @@ void SaveBlock2PostLoad(void) {
     typedef struct { u32 w[8]; } Blk32;
     typedef struct { u32 w[3]; } Blk12;    RAM_DEF_030013D0;
     RAM_DEF_03001780;
-    u8 *dst = (u8 *)RAM_SYM_03001780;
-    u8 *src = (u8 *)RAM_SYM_030013D0;
-    u8 *d = dst;
-    u8 *s = src;
-    *(Blk32 *)d = *(Blk32 *)s;
-    d += 32; s += 32;
-    *(Blk12 *)d = *(Blk12 *)s;
-    d += 12; s += 12;
-    *(u16 *)d = *(u16 *)s;
-    *(u32 *)(dst + 1392) = *(u32 *)(src + 48);
     {
-        u16 v = *(u16 *)(src + 52);
-        *(u16 *)(dst + 0x574) = v;
+        u8 *dst = (u8 *)RAM_SYM_03001780;
+        u8 *src = (u8 *)RAM_SYM_030013D0;
+        u8 *d = dst;
+        u8 *s = src;
+        *(Blk32 *)d = *(Blk32 *)s;
+        d += 32; s += 32;
+        *(Blk12 *)d = *(Blk12 *)s;
+        d += 12; s += 12;
+        *(u16 *)d = *(u16 *)s;
+        *(u32 *)(dst + 1392) = *(u32 *)(src + 48);
+        {
+            u16 v = *(u16 *)(src + 52);
+            *(u16 *)(dst + 0x574) = v;
+        }
+        {
+            u16 v = *(u16 *)(src + 54);
+            *(u16 *)(dst + 0x576) = v;
+        }
+        SaveGarageUnpack();
+        *(u32 *)(dst + 1400) = *(u32 *)(src + 56);
+        {
+            u8 *dst57c = dst + 0x57c;
+            u8 *src60 = src + 60;
+            __asm__ volatile ("" : "+r" (dst57c));
+            __asm__ volatile ("" : "+r" (src60));
+            *(u32 *)dst57c = *(u32 *)(src + 60);
+            sub_0802E0A4(dst57c, src60, 96);
+        }
+        {
+            u16 tail = *(u16 *)(src + 160);
+            *(u16 *)(dst + 1504) = tail;
+        }
+        SaveCarRecordsUnpack();
     }
-    {
-        u16 v = *(u16 *)(src + 54);
-        *(u16 *)(dst + 0x576) = v;
-    }
-    SaveGarageUnpack();
-    *(u32 *)(dst + 1400) = *(u32 *)(src + 56);
-    {
-        u8 *dst57c = dst + 0x57c;
-        u8 *src60 = src + 60;
-        __asm__ volatile ("" : "+r" (dst57c));
-        __asm__ volatile ("" : "+r" (src60));
-        *(u32 *)dst57c = *(u32 *)(src + 60);
-        sub_0802E0A4(dst57c, src60, 96);
-    }
-    {
-        u16 tail = *(u16 *)(src + 160);
-        *(u16 *)(dst + 1504) = tail;
-    }
-    SaveCarRecordsUnpack();
 }
 void _08024A98(void) __attribute__((alias("SaveBlock2PostLoad")));
 
@@ -1360,19 +1388,25 @@ int _08024B24(void) __attribute__((alias("SaveBlock2Load")));
 // shape and not scheduling.
 void SaveBlock2Save(void) {
     SAVE_CALL_PRE_SAVE();
-    u32 idx = *(volatile u8 *)SAVE_BLOCK2_IDX_ADDR;
-    SAVE_CALL_SLOT_SAVE(idx, (void *)SAVE_BLOCK2_BUF_ADDR);
+    {
+        u32 idx = *(volatile u8 *)SAVE_BLOCK2_IDX_ADDR;
+        SAVE_CALL_SLOT_SAVE(idx, (void *)SAVE_BLOCK2_BUF_ADDR);
+    }
 }
 void _08024B54(void) __attribute__((alias("SaveBlock2Save")));
 
 void SaveGuardedFull(void) {
     sub_0802B234(); sub_0802B190();
-    u32 zero=0; sub_0802D974(&zero,(void *)SAVE_BLOCK2_BUF_ADDR,0x0500007F);
-    SAVE_CALL_POST_LOAD(); SAVE_CALL_HOOK_2446C(); SAVE_CALL_PRE_SAVE();
-    u32 idx = *(volatile u8 *)SAVE_BLOCK2_IDX_ADDR;
-    SAVE_CALL_SLOT_SAVE(idx,(void *)SAVE_BLOCK2_BUF_ADDR);
-    SAVE_CALL_POST_LOAD();
-    sub_0802B1B8();
+    {
+        u32 zero=0; sub_0802D974(&zero,(void *)SAVE_BLOCK2_BUF_ADDR,0x0500007F);
+        SAVE_CALL_POST_LOAD(); SAVE_CALL_HOOK_2446C(); SAVE_CALL_PRE_SAVE();
+        {
+            u32 idx = *(volatile u8 *)SAVE_BLOCK2_IDX_ADDR;
+            SAVE_CALL_SLOT_SAVE(idx,(void *)SAVE_BLOCK2_BUF_ADDR);
+            SAVE_CALL_POST_LOAD();
+            sub_0802B1B8();
+        }
+    }
 }
 void _08024B70(void) __attribute__((alias("SaveGuardedFull")));
 
@@ -1784,33 +1818,55 @@ void SaveRebuild_08024338(void) {
     // `bl 0x08025C84` per iteration, `movs r0,#0` then `movs r0,#1`, with r1 = r
     // (0..3) and r2 = col (0..10). The three-level `t` loop cannot produce that
     // shape: it makes t the outer counter instead of an unrolled first argument.
-    for(int r=0;r<=3;r++)
-        for(int col=0;col<=10;col++){
-            _08025C84(0,r,col,0);
-            _08025C84(1,r,col,0);
-        }
+    {
+        int r = 0;
+        for (;r<=3;r++)
+            {
+                int col = 0;
+                for (;col<=10;col++){
+                    _08025C84(0,r,col,0);
+                    _08025C84(1,r,col,0);
+                }
+            }
+    }
     // s16 B[FF2] → _08025D90 → B[FF6]; then _08025D64(B[FF2],B[FF6])→B[103A] — width s16
     // NON-volatile: the ROM's three reads are the indexed `movs rN,#0 /
     // ldrsh rM,[rBase,rN]` form, which agbcc only emits for a plain `*(s16 *)`;
     // the volatile spelling lowers to `ldrh + lsls + asrs` and adds 6 bytes.
     // B[FF2] is read twice, before and after the _08025D90 call, and the call
     // is enough of a memory barrier for agbcc to reload it -- same as the ROM.
-    s16 *Bs = (s16 *)GARAGE_BASE_ADDR;
-    s16 ff2 = Bs[0xFF2/2]; int ff6 = _08025D90(ff2); Bs[0xFF6/2]=(s16)ff6;
-    int v = _08025D64(Bs[0xFF2/2], Bs[0xFF6/2]); Bs[0x103A/2]=(s16)v;
-    sub_080241C8();
-    // ROM: 20 separate `movs r0,#N / bl 0x08025F78` pairs, not a table walk. A
-    // local `int evs[] = {...}` initializer instead puts the list in .rodata,
-    // which is a relocation with no ROM VMA -- the probe reports it as
-    // UNRESOLVED_RELOCATION and the body also carries a loop the ROM lacks.
-    _08025F78(1);  _08025F78(3);  _08025F78(6);  _08025F78(7);
-    _08025F78(8);  _08025F78(10); _08025F78(15); _08025F78(16);
-    _08025F78(24); _08025F78(25); _08025F78(32); _08025F78(34);
-    _08025F78(35); _08025F78(41); _08025F78(57); _08025F78(63);
-    _08025F78(65); _08025F78(67); _08025F78(68); _08025F78(72);
-    for(int i=0;i<32;i++) _08025DBC(i,0);
-    for(int k=0;k<=1;k++) for(int g=0;g<=3;g++) for(int j=0;j<=2;j++) _08025E70(k,g,j,0);
-    _08025FF0(0);
+    {
+        s16 *Bs = (s16 *)GARAGE_BASE_ADDR;
+        s16 ff2 = Bs[0xFF2/2]; int ff6 = _08025D90(ff2); Bs[0xFF6/2]=(s16)ff6;
+        {
+            int v = _08025D64(Bs[0xFF2/2], Bs[0xFF6/2]); Bs[0x103A/2]=(s16)v;
+            sub_080241C8();
+            // ROM: 20 separate `movs r0,#N / bl 0x08025F78` pairs, not a table walk. A
+            // local `int evs[] = {...}` initializer instead puts the list in .rodata,
+            // which is a relocation with no ROM VMA -- the probe reports it as
+            // UNRESOLVED_RELOCATION and the body also carries a loop the ROM lacks.
+            _08025F78(1);  _08025F78(3);  _08025F78(6);  _08025F78(7);
+            _08025F78(8);  _08025F78(10); _08025F78(15); _08025F78(16);
+            _08025F78(24); _08025F78(25); _08025F78(32); _08025F78(34);
+            _08025F78(35); _08025F78(41); _08025F78(57); _08025F78(63);
+            _08025F78(65); _08025F78(67); _08025F78(68); _08025F78(72);
+            {
+                int i = 0;
+                for (;i<32;i++) _08025DBC(i,0);
+            }
+            {
+                int k = 0;
+                for (;k<=1;k++) {
+                    int g = 0;
+                    for (;g<=3;g++) {
+                        int j = 0;
+                        for (;j<=2;j++) _08025E70(k,g,j,0);
+                    }
+                }
+            }
+            _08025FF0(0);
+        }
+    }
 }
 void _08024338(void) __attribute__((alias("SaveRebuild_08024338")));
 void sub_08024338(void) __attribute__((alias("SaveRebuild_08024338")));

@@ -7,7 +7,7 @@ looks up a grid value (`sub_08025CF4`) and a tier (`_0802572C`), and calls
 probe and in the independent slice:
 
 ```sh
-python3 tools/corpus_match_probe.py --function _08001479C --c89 \
+python3 tools/corpus_match_probe.py --function _08001479C \
     --require-all --require-exact     # EXACT 316/316
 python3 tools/match_c_slice.py _08001479C
 ```

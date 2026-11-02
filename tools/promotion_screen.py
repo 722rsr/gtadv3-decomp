@@ -1546,7 +1546,7 @@ def main() -> int:
         print("  call_targets come from the COMPILED corpus objects, so this "
               "screen grades pre-edit state and a correct fix reads as no "
               "progress. Refresh it first:\n"
-              "  python3 tools/corpus_match_probe.py --c89 --require-all "
+              "  python3 tools/corpus_match_probe.py --require-all "
               "--work-dir build/era-corpus/ready-work "
               "--json build/era-corpus/ready-report.json", file=sys.stderr)
     staged, blocked, counts = screen.run()

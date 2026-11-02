@@ -53,33 +53,41 @@ void MenuFF78_14650(void *rec_, u32 a1, u32 a2) {
     __asm__ volatile("" : "+r"(rec));
     args.a1 = a1;
     args.a2 = a2;
-    register int idx __asm__("r0") = 0;
-    register int next_idx __asm__("r9");
-    register void *target __asm__("r10") = (void *)(uintptr_t)(rec + 24);
-    __asm__ volatile("" : "+r"(target));
-    volatile u32 *base1 = (volatile u32 *)(rec + 248);
-    volatile u32 *base2 = (volatile u32 *)(rec + 252);
-    do {
+    {
+        register int idx __asm__("r0") = 0;
+        register int next_idx __asm__("r9");
+        register void *target __asm__("r10") = (void *)(uintptr_t)(rec + 24);
         __asm__ volatile("" : "+r"(target));
-        register u32 lane_off __asm__("r1") = (u32)idx * 8u;
-        __asm__ volatile("" : "+r"(lane_off));
-        next_idx = idx + 1;
-        __asm__ volatile("" : "+r"(next_idx));
-        u32 row = (lane_off + (u32)idx) * 8u;
-        u32 r8v = args.a2 + lane_off;
-        u32 arg = args.a1;
-        volatile u32 *p2 = (volatile u32 *)(row + (uintptr_t)base2);
-        volatile u32 *p1 = (volatile u32 *)(row + (uintptr_t)base1);
-        int k;
-        for (k = 5; k >= 0; k--) {
-            sub_08007BFC(target, (int)*p1, (int)*p2, (int)arg,
-                         r8v, 11, 1, 0, 0);
-            arg += 16;
-            p2 += 3;
-            p1 += 3;
+        {
+            volatile u32 *base1 = (volatile u32 *)(rec + 248);
+            volatile u32 *base2 = (volatile u32 *)(rec + 252);
+            do {
+                __asm__ volatile("" : "+r"(target));
+                {
+                    register u32 lane_off __asm__("r1") = (u32)idx * 8u;
+                    __asm__ volatile("" : "+r"(lane_off));
+                    next_idx = idx + 1;
+                    __asm__ volatile("" : "+r"(next_idx));
+                    {
+                        u32 row = (lane_off + (u32)idx) * 8u;
+                        u32 r8v = args.a2 + lane_off;
+                        u32 arg = args.a1;
+                        volatile u32 *p2 = (volatile u32 *)(row + (uintptr_t)base2);
+                        volatile u32 *p1 = (volatile u32 *)(row + (uintptr_t)base1);
+                        int k;
+                        for (k = 5; k >= 0; k--) {
+                            sub_08007BFC(target, (int)*p1, (int)*p2, (int)arg,
+                                         r8v, 11, 1, 0, 0);
+                            arg += 16;
+                            p2 += 3;
+                            p1 += 3;
+                        }
+                        idx = next_idx;
+                    }
+                }
+            } while (idx <= 3);
         }
-        idx = next_idx;
-    } while (idx <= 3);
+    }
 }
 void _080014650(void *a, u32 b, u32 c) __attribute__((alias("MenuFF78_14650")));
 void Sub_080014650(void *a, u32 b, u32 c) __attribute__((alias("MenuFF78_14650")));
@@ -233,51 +241,75 @@ void MenuFF78_14078(void *rec_) {
         int inner = 0;
         register int base asm("r0") = outer << 3;
         __asm__ volatile ("" : "+r" (base));
-        register int next_low asm("r2") = outer + 1;
-        __asm__ volatile ("" : "+r" (next_low));
-        register int next_outer asm("sl") = next_low;
-        __asm__ volatile ("" : "+r" (next_outer));
-        register int one asm("r1") = 1;
-        __asm__ volatile ("" : "+r" (one));
-        register int r8 asm("r8") = one;
-        __asm__ volatile ("" : "+r" (r8));
-        base += outer;
-        base <<= 3;
-        register u32 src_origin asm("r2") = (u32)src_base;
-        __asm__ volatile ("" : "+r" (src_origin));
-        register volatile u32 *src asm("r6") =
-            (volatile u32 *)(uintptr_t)(base + src_origin);
-        __asm__ volatile ("" : "+r" (src));
-        register u32 dst_origin asm("r1") = (u32)dst_base;
-        __asm__ volatile ("" : "+r" (dst_origin));
-        register volatile u32 *dst asm("r5") =
-            (volatile u32 *)(uintptr_t)(base + dst_origin);
-        __asm__ volatile ("" : "+r" (dst));
-        while (inner <= 5) {
-            register u32 w0 asm("r0");
-            register const s16 *table0 asm("r2") =
-                (const s16 *)(uintptr_t)0x03002772u;
-            register int gval asm("r0");
-            gval = *table0;
-            int g = _08025CF4(gval, outer, inner * 2);
-            register const s16 *table1 asm("r2") =
-                (const s16 *)(uintptr_t)0x03002772u;
-            register int hval asm("r0");
-            hval = *table1;
-            int h = _08025CF4(hval, outer, r8);
-            u32 idx = (((u32)h) << 1) + (((u32)g) << 3);
-            s16 v = *(s16 *)(uintptr_t)(spad + idx);
-            *dst = (u32)(s32)v;
-            register volatile u32 *rec_words asm("r2") = (volatile u32 *)rec;
-            w0 = rec_words[7];
-            u32 w2 = *src;
-            _08007ABC(w0, (u32)(s32)v, w2);
-            src += 3;
-            dst += 3;
-            r8 += 2;
-            inner++;
+        {
+            register int next_low asm("r2") = outer + 1;
+            __asm__ volatile ("" : "+r" (next_low));
+            {
+                register int next_outer asm("sl") = next_low;
+                __asm__ volatile ("" : "+r" (next_outer));
+                {
+                    register int one asm("r1") = 1;
+                    __asm__ volatile ("" : "+r" (one));
+                    {
+                        register int r8 asm("r8") = one;
+                        __asm__ volatile ("" : "+r" (r8));
+                        base += outer;
+                        base <<= 3;
+                        {
+                            register u32 src_origin asm("r2") = (u32)src_base;
+                            __asm__ volatile ("" : "+r" (src_origin));
+                            {
+                                register volatile u32 *src asm("r6") =
+                                    (volatile u32 *)(uintptr_t)(base + src_origin);
+                                __asm__ volatile ("" : "+r" (src));
+                                {
+                                    register u32 dst_origin asm("r1") = (u32)dst_base;
+                                    __asm__ volatile ("" : "+r" (dst_origin));
+                                    {
+                                        register volatile u32 *dst asm("r5") =
+                                            (volatile u32 *)(uintptr_t)(base + dst_origin);
+                                        __asm__ volatile ("" : "+r" (dst));
+                                        while (inner <= 5) {
+                                            register u32 w0 asm("r0");
+                                            register const s16 *table0 asm("r2") =
+                                                (const s16 *)(uintptr_t)0x03002772u;
+                                            register int gval asm("r0");
+                                            gval = *table0;
+                                            {
+                                                int g = _08025CF4(gval, outer, inner * 2);
+                                                register const s16 *table1 asm("r2") =
+                                                    (const s16 *)(uintptr_t)0x03002772u;
+                                                register int hval asm("r0");
+                                                hval = *table1;
+                                                {
+                                                    int h = _08025CF4(hval, outer, r8);
+                                                    u32 idx = (((u32)h) << 1) + (((u32)g) << 3);
+                                                    s16 v = *(s16 *)(uintptr_t)(spad + idx);
+                                                    *dst = (u32)(s32)v;
+                                                    {
+                                                        register volatile u32 *rec_words asm("r2") = (volatile u32 *)rec;
+                                                        w0 = rec_words[7];
+                                                        {
+                                                            u32 w2 = *src;
+                                                            _08007ABC(w0, (u32)(s32)v, w2);
+                                                            src += 3;
+                                                            dst += 3;
+                                                            r8 += 2;
+                                                            inner++;
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        outer = next_outer;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
-        outer = next_outer;
     }
 }
 void _080014078(void *a) __attribute__((alias("MenuFF78_14078")));

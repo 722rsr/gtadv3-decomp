@@ -8,11 +8,9 @@ happens when the project's own C -- written to be *behaviourally* faithful, not
 shaped for GCC 2.95's register allocator -- is compiled and compared byte-for-byte
 against the ROM.
 
-This tool does that for the translation units agbcc accepts today, i.e. those
-with no C99 constructs needing a transform. That is a deliberate, self-limiting
-scope: the C89 transform is unfinished, so rather than wait for it, this measures
-the byte-match rate on the subset that compiles, which is enough to decide whether
-the migration has a payoff.
+Maintained source is C89 and compiled directly: there is no rewrite step between
+the checked-in translation unit and agbcc. A TU that does not compile is reported
+as a source defect, not skipped as a C99 construct the compiler cannot parse.
 
 Method, per function:
   * compile the TU with agbcc, `-ffunction-sections`, at the function's real ROM VMA
@@ -67,8 +65,8 @@ EXPLICIT_SIZE_RE = re.compile(
 # Translation-unit compile cache.
 #
 # `match_c_slice.py` runs this probe once per *promoted body*, in a private
-# work dir, and each of those runs redid the C89 transform, the clang
-# preprocess, the agbcc compile and the assemble -- for the whole TU, whose
+# work dir, and each of those runs redid the clang preprocess, the agbcc
+# compile and the assemble -- for the whole TU, whose
 # output is byte-identical for every body in it. Measured on a 268-body
 # manifest: 275 compiles for 56 distinct TUs, 4.9x redundant, and that
 # redundancy *is* the 13-minute link.
@@ -86,7 +84,7 @@ TU_CACHE = ROOT / "build/era-corpus/tu-cache"
 # Bump only when the commands/flags that produce cached TU objects change.
 # Scoring, relocation decoding, or diagnostics changes do not alter agbcc/as
 # output and should not force a redundant compile of every translation unit.
-TU_CACHE_SCHEMA = "preprocess-c89|agbcc-function-sections|as-arm7tdmi-v1"
+TU_CACHE_SCHEMA = "preprocess|agbcc-function-sections|as-arm7tdmi-v2"
 
 # The path field of a clang linemarker. Normalising it is what makes the key
 # work-dir independent; see _tu_cache_key.
@@ -120,7 +118,7 @@ def _assembly_include_inputs(preprocessed: bytes) -> list[tuple[str, bytes | Non
 DEFAULT_AGBCC_OPTIONS = agbcc_options("default.c")
 
 
-def _tu_cache_key(pre: Path, use_c89: bool,
+def _tu_cache_key(pre: Path,
                   options: tuple[str, ...] = DEFAULT_AGBCC_OPTIONS) -> str:
     """Content address for one TU's agbcc output.
 
@@ -140,10 +138,9 @@ def _tu_cache_key(pre: Path, use_c89: bool,
     for include_name, include_content in _assembly_include_inputs(preprocessed):
         h.update(b"\0asm-include=" + include_name.encode())
         h.update(b"\0missing" if include_content is None else b"\0" + include_content)
-    h.update(b"\0c89=" + str(use_c89).encode())
     h.update(b"\0opts=" + " ".join(options).encode())
     h.update(b"\0schema=" + TU_CACHE_SCHEMA.encode())
-    tools = [AGBCC, ROOT / "tools/agbcc_c89_transform.py"]
+    tools = [AGBCC, ROOT / "tools/agbcc_options.py"]
     for command_name in ("clang", "arm-none-eabi-as"):
         command_path = shutil.which(command_name)
         if command_path:
@@ -160,10 +157,10 @@ def _tu_cache_key(pre: Path, use_c89: bool,
     return h.hexdigest()[:32]
 
 
-def tu_cache_lookup(pre: Path, use_c89: bool, dest_s: Path, dest_o: Path,
+def tu_cache_lookup(pre: Path, dest_s: Path, dest_o: Path,
                     options: tuple[str, ...] = DEFAULT_AGBCC_OPTIONS) -> bool:
     """Copy a cached TU's agbcc output into `dest_s`/`dest_o`; True on a hit."""
-    entry = TU_CACHE / _tu_cache_key(pre, use_c89, options)
+    entry = TU_CACHE / _tu_cache_key(pre, options)
     if not (entry / "out.s").exists() or not (entry / "out.o").exists():
         return False
     dest_s.parent.mkdir(parents=True, exist_ok=True)
@@ -172,22 +169,12 @@ def tu_cache_lookup(pre: Path, use_c89: bool, dest_s: Path, dest_o: Path,
     return True
 
 
-def tu_cache_store(pre: Path, use_c89: bool, src: Path, obj: Path,
+def tu_cache_store(pre: Path, src: Path, obj: Path,
                    options: tuple[str, ...] = DEFAULT_AGBCC_OPTIONS) -> None:
-    entry = TU_CACHE / _tu_cache_key(pre, use_c89, options)
+    entry = TU_CACHE / _tu_cache_key(pre, options)
     entry.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(src, entry / "out.s")
     shutil.copyfile(obj, entry / "out.o")
-
-# The C89 transform is imported on first use, not at module import. It costs
-# 21 ms to import, and `run_permuter --compile` -- executed once per permuter
-# candidate -- imports this module without ever calling the transform;
-# `export_audit` (8 ms) is lazy for the same reason. The `--c89` probe paths
-# pay each import once, inside the operation that needs it.
-def cached_transform_file(path: Path):
-    """`agbcc_c89_transform.cached_transform_file`; imports the tool on use."""
-    from agbcc_c89_transform import cached_transform_file as transform
-    return transform(path)
 
 # A function definition in src/: a VMA-shaped name bound to a body.
 VMA_DEF = re.compile(
@@ -1738,7 +1725,7 @@ def self_test() -> int:
           rom_functions().get(0x0802BCCC) == 0x0802BCCE)
     # The register branch veneers at 0x0802DDC8..0x0802DDEC used to be treated as having no C
     # bodies. They now have exact naked C definitions in runtime_state_dispatch.c
-    # (verified through the C89 path), so they are ordinary promoted candidates
+    # (verified directly with agbcc), so they are ordinary promoted candidates
     # and must not remain in this exemption set. 0x0802BCCE USED to be listed
     # here ("2 bytes into a body"); it is now a real, C-owned entry of its own
     # -- the label sweep made the inventory see `bl`-targeted interior entries,
@@ -1884,12 +1871,12 @@ def self_test() -> int:
             with (tdp / out).open("w") as h:
                 run(["clang", "-E", "-nostdinc", "-undef", "-I", str(tdp), str(body)], stdout=h)
         check("TU cache key is stable for identical preprocessed text",
-              _tu_cache_key(tdp / "a.i", True) == _tu_cache_key(tdp / "b.i", True))
+              _tu_cache_key(tdp / "a.i") == _tu_cache_key(tdp / "b.i"))
         check("per-TU ABI options select the memory-set profile",
               "-mno-thumb-interwork" in agbcc_options("runtime_memset.c"))
         check("per-TU ABI options invalidate the TU cache key",
-              _tu_cache_key(tdp / "a.i", True, agbcc_options("runtime_memset.c"))
-              != _tu_cache_key(tdp / "a.i", True, agbcc_options("ordinary.c")))
+              _tu_cache_key(tdp / "a.i", agbcc_options("runtime_memset.c"))
+              != _tu_cache_key(tdp / "a.i", agbcc_options("ordinary.c")))
         # The property match_c_slice actually depends on: it gives every
         # promoted body its own --work-dir, and clang stamps that directory
         # into every linemarker. Without normalising the path field the key
@@ -1899,38 +1886,37 @@ def self_test() -> int:
         d1, d2 = tdp / "wd1", tdp / "wd2"
         for d in (d1, d2):
             d.mkdir()
-            (d / "c89").mkdir()
-            (d / "c89" / "tu.c").write_text((tdp / "tu.c").read_text(encoding="utf-8"), encoding="utf-8")
+            (d / "tu.c").write_text((tdp / "tu.c").read_text(encoding="utf-8"), encoding="utf-8")
             with (d / "tu.i").open("w") as h:
                 run(["clang", "-E", "-nostdinc", "-undef", "-I", str(tdp),
-                     str(d / "c89" / "tu.c")], stdout=h)
+                     str(d / "tu.c")], stdout=h)
         check("TU cache key ignores the work dir (linemarkers normalised)",
-              _tu_cache_key(d1 / "tu.i", True) == _tu_cache_key(d2 / "tu.i", True))
+              _tu_cache_key(d1 / "tu.i") == _tu_cache_key(d2 / "tu.i"))
         check("the two work dirs really did produce different raw bytes",
               (d1 / "tu.i").read_bytes() != (d2 / "tu.i").read_bytes())
         hdr.write_text("#define N 2\n", encoding="utf-8")
         with (tdp / "c.i").open("w") as h:
             run(["clang", "-E", "-nostdinc", "-undef", "-I", str(tdp), str(body)], stdout=h)
         check("a header edit changes the TU cache key",
-              _tu_cache_key(tdp / "a.i", True) != _tu_cache_key(tdp / "c.i", True))
+              _tu_cache_key(tdp / "a.i") != _tu_cache_key(tdp / "c.i"))
         asm_input = tdp / "inline_body.inc"
         asm_input.write_text("nop\n", encoding="utf-8")
         asm_pre = tdp / "asm.i"
         asm_pre.write_text("__asm__(" + json.dumps(f'.include "{asm_input}"\n')
                            + ");\n", encoding="utf-8")
-        asm_key_before = _tu_cache_key(asm_pre, True)
+        asm_key_before = _tu_cache_key(asm_pre)
         asm_input.write_text("mov r0, r0\n", encoding="utf-8")
         check("an inline-assembly include edit changes the TU cache key",
-              _tu_cache_key(asm_pre, True) != asm_key_before)
+              _tu_cache_key(asm_pre) != asm_key_before)
         # Negative control: the key must NOT be the .c content alone, or the
         # case above would pass for the wrong reason.
         check("TU cache key is not just the source file bytes",
-              _tu_cache_key(tdp / "a.i", True) != hashlib.sha256(body.read_bytes()).hexdigest()[:32])
+              _tu_cache_key(tdp / "a.i") != hashlib.sha256(body.read_bytes()).hexdigest()[:32])
         # And a toolchain change must miss too, or a rebuilt agbcc would serve
         # every previously-cached object. Monkeypatched rather than faked with
         # a parameter, so the production key path is the one under test.
         real_agbcc = AGBCC
-        k_before = _tu_cache_key(tdp / "a.i", True)
+        k_before = _tu_cache_key(tdp / "a.i")
         fake = tdp / "agbcc-fake"
         fake.write_text("not really agbcc\n", encoding="utf-8")
         import os as _os
@@ -1938,7 +1924,7 @@ def self_test() -> int:
         AGBCC = fake
         try:
             check("a toolchain change invalidates the TU cache key",
-                  _tu_cache_key(tdp / "a.i", True) != k_before)
+                  _tu_cache_key(tdp / "a.i") != k_before)
         finally:
             AGBCC = real_agbcc
 
@@ -2220,7 +2206,6 @@ def main() -> int:
     ap.add_argument("--source-file", type=Path, help=argparse.SUPPRESS)
     ap.add_argument("--work-dir", type=Path, help="private scratch directory for this run")
     ap.add_argument("--include-unknown", action="store_true", help="include source VMAs outside the known ASM function inventory")
-    ap.add_argument("--c89", action="store_true", help="compile validated C89 copies of source TUs")
     ap.add_argument("--diff", action="store_true",
                     help="with --function: print the aligned instruction diff (ROM vs candidate) "
                          "for every non-exact body, so a spelling can be steered from the listing "
@@ -2232,12 +2217,6 @@ def main() -> int:
 
     if args.work_dir:
         WORK = args.work_dir.resolve()
-    if args.c89:
-        # Point the transform's scratch dir at this run's work dir. Imported
-        # here so a plain probe (and every tool that only imports this module)
-        # does not pay the transform's import at all.
-        import agbcc_c89_transform as c89
-        c89.WORK = WORK / "c89-transform"
 
     if args.self_test:
         return self_test()
@@ -2299,23 +2278,13 @@ def main() -> int:
         pre = WORK / (path.stem + ".i")
         src = WORK / (path.stem + ".s")
         obj = WORK / (path.stem + ".o")
-        compile_path = path
         hit = 0
         comp = 0
         unsc = []
         res = []
 
-        if args.c89:
-            transformed, stats = cached_transform_file(path)
-            if stats["unhandled"] is not None:
-                return (hit, comp, {"source": str(path.relative_to(ROOT)),
-                                    "reason": str(stats["unhandled"])}, unsc, res, 0)
-            compile_path = WORK / "c89" / path.name
-            compile_path.parent.mkdir(parents=True, exist_ok=True)
-            compile_path.write_text(transformed, encoding="utf-8")
-
         with pre.open("w", encoding="utf-8") as h:
-            if run(["clang", "-E", "-nostdinc", "-undef", *inc_flags(), str(compile_path)], stdout=h).returncode:
+            if run(["clang", "-E", "-nostdinc", "-undef", *inc_flags(), str(path)], stdout=h).returncode:
                 return (hit, comp, {"source": str(path.relative_to(ROOT)), "reason": "preprocess"}, unsc, res, 0)
 
         # Preprocess first, then consult the cache. `pre` is agbcc's real
@@ -2324,7 +2293,7 @@ def main() -> int:
         # objects for every TU that includes the changed header, and a stale
         # object still produces a confident, byte-exact-looking score.
         options = agbcc_options(path)
-        if tu_cache_lookup(pre, bool(args.c89), src, obj, options):
+        if tu_cache_lookup(pre, src, obj, options):
             hit = 1
         else:
             comp = 1
@@ -2334,7 +2303,7 @@ def main() -> int:
                 return (hit, comp, {"source": str(path.relative_to(ROOT)), "reason": "agbcc compile"}, unsc, res, 0)
             if run(["arm-none-eabi-as", "-mcpu=arm7tdmi", "-o", str(obj), str(src)]).returncode:
                 return (hit, comp, {"source": str(path.relative_to(ROOT)), "reason": "assembler"}, unsc, res, 0)
-            tu_cache_store(pre, bool(args.c89), src, obj, options)
+            tu_cache_store(pre, src, obj, options)
 
         sections, all_relocs = fast_parse_elf(obj)
         if sections is None:
@@ -2453,7 +2422,7 @@ def main() -> int:
     ]
 
     print(f"corpus byte-match probe: {total} src functions in {compiled_files} agbcc-compiled TUs "
-          f"({skipped_files} skipped{' after C89 transform' if args.c89 else ': C99 constructs agbcc rejects'})\n")
+          f"({skipped_files} skipped: source did not compile)\n")
     if tu_cache_hits or tu_cache_compiles:
         print(f"  TU cache: {tu_cache_hits} hit(s), {tu_cache_compiles} agbcc compile(s) "
               f"-- a hit is byte-identical output, keyed on the preprocessed source")

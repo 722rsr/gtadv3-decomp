@@ -12,9 +12,9 @@ Outputs belong under ignored `build/` or `assets/`.
 | Tool | Purpose |
 | --- | --- |
 | `build_agbcc.sh` | Provision pinned `pret/agbcc`; `--check` verifies installation and `--verify` checks runtime provenance. |
-| `agbcc_c89_transform.py` | Generate compiler-compatible C copies under `build/`. |
-| `agbcc_c89_shim.py` | Generate small source fixtures for the era-compiler probe. |
-| `c89_equivalence.py` | Compare original/transformed modern ARM objects and relocations. |
+| `c89_check.py` | Gate that every `src/*.c` translation unit compiles directly with pinned `old_agbcc`; includes a C99-rejection self-test. |
+| `c_source.py` | Shared comment/string/char mask and delimiter helpers for source-aware tools; `--self-test` pins the lexical cases. |
+| `agbcc_options.py` | Pinned per-TU `old_agbcc` flags, including the `runtime_memset.c` ABI exception. |
 | `corpus_match_probe.py` | Score compiled functions against their ROM spans, resolving relocations. |
 | `promotion_screen.py` | Check candidate ownership, spans, symbols, and alignment before selecting C sections. |
 | `match_c_slice.py` | Link selected C sections into the independent executable slice; includes an instruction-mutation negative control. |
@@ -87,7 +87,7 @@ neither target replaces `make matching-ready`.
 | `test_experiment_strategies.py` | Regression checks for matching strategies and their shared constraints. |
 
 ```sh
-python3 tools/corpus_match_probe.py --function NAME --c89 --require-all --require-exact
+python3 tools/corpus_match_probe.py --function NAME --require-all --require-exact
 python3 tools/expr_probe.py --snippet 'int f(u8*a){return *(u16*)(a+148);}'
 python3 tools/match_families.py --build
 python3 tools/match_families.py --twins --json build/matching-assist/twins.json
@@ -279,7 +279,7 @@ for adapter regressions (also included in `make experimental-check`).
 Permuter scores are advisory: branch targets and some operand differences are
 normalized by the fork. A zero score does not prove byte identity. Search output
 contains the candidate body; review it in its owning source file, run the focused
-`corpus_match_probe.py --c89 --require-all --require-exact`, and then the independent
+`corpus_match_probe.py --require-all --require-exact`, and then the independent
 link/`matching-ready` gate before promotion. No candidate is applied automatically.
 Scratch objects and ROM-derived bytes remain private build artifacts.
 
@@ -312,7 +312,7 @@ assembly changes trigger rebuilds. Objects are generated on demand, so opening a
 fresh checkout does not require compiling the entire corpus.
 
 `tools/objdiff_build.py` is the configured build command. It refreshes the assembled
-symbol closure, runs the selected function's C89/old_agbcc probe, resolves calls
+symbol closure, runs the selected function's C89 source probe with `old_agbcc`, resolves calls
 and pools at the ROM VMA, and publishes `target.o` and `candidate.o` under
 `build/objdiff/ADDRESS/`. Each diagnostic ELF contains one sized Thumb function,
 including its literal pool and alignment tail, with ARM code/data mapping symbols.

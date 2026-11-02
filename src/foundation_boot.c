@@ -7,6 +7,11 @@
 // Behavioral C — hardware accesses via volatile regs.
 
 // code_295c — Foundation_InitCommon(a0,a1) 0x0800295C
+extern void _08002950(void);
+extern void sub_0802D9B0(void);
+extern void sub_08002924(void);
+extern void sub_08002910(void);
+extern void sub_080028CC(void);
 void Foundation_InitCommon(u32 a0, u32 a1) {
     // a0/a1 share one pool word (ROM `ldr r2,=0x030035D0 / str r0 / str r1`),
     // not two absolute pools.
@@ -20,31 +25,33 @@ void Foundation_InitCommon(u32 a0, u32 a1) {
     // The DMA triplet base pool-loads separately (ROM `ldr r1,=0x040000D4`
     // then `ldr r0,=0x040000DE`): without the barrier the compiler derives
     // 0xD4 from 0xDE with `subs r0,#10` and drops a pool word.
-    volatile u32 *dma = (volatile u32 *)0x040000D4u;
-    __asm__("" : "+r"(dma));
-    *(volatile u16*)0x040000DE = 0;
-    dma[0] = 0;
-    dma[1] = 0;
-    dma[2] = 0;
-    *(volatile u16*)0x04000200 = 0x2001;
-    *(volatile u16*)0x04000004 = 8;
-    // The ROM then calls the first init leaf once and repeats the other
-    // four forever (`bl 28CC / loop: bl 2910 / bl 2924 / bl 2D9B0 /
-    // bl 2950 / b loop`): this function never returns (no epilogue).
-    // sub_0802D9B0 is the closure's only spelling at 0x0802D9B0. 0x08002950
-    // is C-owned under its `_08002950` spelling (no sub_ export), so the
-    // call uses that; the other three match their owners' sub_ spellings.
-    extern void sub_080028CC(void);
-    extern void sub_08002910(void);
-    extern void sub_08002924(void);
-    extern void sub_0802D9B0(void);
-    extern void _08002950(void);
-    sub_080028CC();
-    for (;;) {
-        sub_08002910();
-        sub_08002924();
-        sub_0802D9B0();
-        _08002950();
+    {
+        volatile u32 *dma = (volatile u32 *)0x040000D4u;
+        __asm__("" : "+r"(dma));
+        *(volatile u16*)0x040000DE = 0;
+        dma[0] = 0;
+        dma[1] = 0;
+        dma[2] = 0;
+        *(volatile u16*)0x04000200 = 0x2001;
+        *(volatile u16*)0x04000004 = 8;
+        // The ROM then calls the first init leaf once and repeats the other
+        // four forever (`bl 28CC / loop: bl 2910 / bl 2924 / bl 2D9B0 /
+        // bl 2950 / b loop`): this function never returns (no epilogue).
+        // sub_0802D9B0 is the closure's only spelling at 0x0802D9B0. 0x08002950
+        // is C-owned under its `_08002950` spelling (no sub_ export), so the
+        // call uses that; the other three match their owners' sub_ spellings.
+
+
+
+
+
+        sub_080028CC();
+        for (;;) {
+            sub_08002910();
+            sub_08002924();
+            sub_0802D9B0();
+            _08002950();
+        }
     }
 }
 void _0800295C(u32 a,u32 b) __attribute__((alias("Foundation_InitCommon")));
@@ -115,7 +122,10 @@ void sub_08002A3C(int a, void *b) __attribute__((alias("IrqInstall")));
 // though the body already matched 24/24. Both spellings alias the same body;
 // the call has to carry the one the closure has.
 void IrqResetSlot0(void) {
-    for(int i=0;i<1;i++) sub_08002A3C(i,NULL);
+    {
+        int i = 0;
+        for (;i<1;i++) sub_08002A3C(i,NULL);
+    }
 }
 void _08002A68(void) __attribute__((alias("IrqResetSlot0")));
 void sub_08002A68(void) __attribute__((alias("IrqResetSlot0")));
@@ -200,14 +210,18 @@ u8 SessionRxPoll(void) {
     // IME-guarded swap at 0x0203EF90 +0x28/0x2C
     volatile u8 *base = (volatile u8*)0x0203EF90;
     REG_IME=0;
-    u32 a = *(volatile u32*)(base+0x28);
-    u32 b = *(volatile u32*)(base+0x2C);
-    *(volatile u32*)(base+0x28)=b;
-    *(volatile u32*)(base+0x2C)=a;
-    u8 ret = base[5];
-    base[5]=0;
-    REG_IME=1;
-    return ret;
+    {
+        u32 a = *(volatile u32*)(base+0x28);
+        u32 b = *(volatile u32*)(base+0x2C);
+        *(volatile u32*)(base+0x28)=b;
+        *(volatile u32*)(base+0x2C)=a;
+        {
+            u8 ret = base[5];
+            base[5]=0;
+            REG_IME=1;
+            return ret;
+        }
+    }
 }
 u8 _0800021C(void) __attribute__((alias("SessionRxPoll")));
 

@@ -33,6 +33,8 @@
 #include "gtadv/ram_blocks.h"
 // 0x08026230 / 0x080262A4 are renamed from `_08026230` / `_080262A4`: the slice
 // closure defines only the `sub_` spelling (promotion rule 1).
+extern u8 B16GateOff[]  __asm__("B16GateOff");
+extern u8 B16GateBase[] __asm__("B16GateBase");
 extern void *sub_08026230(int a, void *b);
 extern void sub_080262A4(void *a, int b);
 
@@ -310,16 +312,20 @@ int SessionStep_CA0(u32 *levelOut) {
             *(volatile u32 *)0x04000128u = z;
             z += 3;
             *(volatile u32 *)0x04000128u = z;
-            volatile u32 *buf = (volatile u32 *)(ie - 224);
-            register u32 b0 __asm__("r0") = 0;
-            __asm__ volatile("" : "+r"(b0));
-            register u32 b1 __asm__("r1") = 0;
-            __asm__ volatile("" : "+r"(b1));
-            buf[0] = b0;
-            buf[1] = b1;
-            if (rec[0] != 0)
-                *(volatile u32 *)0x0400010Cu = 0;
-            *(volatile u16 *)0x04000202u = 0xC0;
+            {
+                volatile u32 *buf = (volatile u32 *)(ie - 224);
+                register u32 b0 __asm__("r0") = 0;
+                __asm__ volatile("" : "+r"(b0));
+                {
+                    register u32 b1 __asm__("r1") = 0;
+                    __asm__ volatile("" : "+r"(b1));
+                    buf[0] = b0;
+                    buf[1] = b1;
+                    if (rec[0] != 0)
+                        *(volatile u32 *)0x0400010Cu = 0;
+                    *(volatile u16 *)0x04000202u = 0xC0;
+                }
+            }
         }
         if (rec[0] == 0)
             return 1;
@@ -444,35 +450,41 @@ void ScreenInit_0254C(void) {
 
     scratch[0] = 0;
     _0802D974((const void *)&scratch[0], (void *)r6, 0x01000010);
-    u16 *fill1 = &scratch[1];
-    *fill1 = 0x1111;
-    _0802D974((const void *)fill1, (void *)(r6 + 32), 0x01000010);
-    u16 *fill2 = &scratch[2];
-    *fill2 = 0x2222;
-    _0802D974((const void *)fill2, (void *)(r6 + 64), 0x01000010);
-    _0802D974((const void *)r6,
-              (void *)(uintptr_t)_080056C4(0), 0x04000018);
+    {
+        u16 *fill1 = &scratch[1];
+        *fill1 = 0x1111;
+        _0802D974((const void *)fill1, (void *)(r6 + 32), 0x01000010);
+        {
+            u16 *fill2 = &scratch[2];
+            *fill2 = 0x2222;
+            _0802D974((const void *)fill2, (void *)(r6 + 64), 0x01000010);
+            _0802D974((const void *)r6,
+                      (void *)(uintptr_t)_080056C4(0), 0x04000018);
 
-    *(volatile u16 *)(r6 + 0) = 0;
-    *(volatile u16 *)(r6 + 2) = 0x6739;
-    *(volatile u16 *)(r6 + 4) = 0x7BDE;
-    _0802D974((const void *)r6, (void *)(uintptr_t)0x05000000, 0x04000008);
+            *(volatile u16 *)(r6 + 0) = 0;
+            *(volatile u16 *)(r6 + 2) = 0x6739;
+            *(volatile u16 *)(r6 + 4) = 0x7BDE;
+            _0802D974((const void *)r6, (void *)(uintptr_t)0x05000000, 0x04000008);
 
-    int row = 0;
-    for (;;) {
-        int col = 0;
-        int rowOffset = row * 64;
-        int nextRow = row + 1;
-        u8 *p = (u8 *)r6;
-        for (; col <= 29; col++) {
-            u16 v = (u16)(((row + col) & 1) + 1);
-            *(volatile u16 *)(uintptr_t)p = v;
-            p += 2;
+            {
+                int row = 0;
+                for (;;) {
+                    int col = 0;
+                    int rowOffset = row * 64;
+                    int nextRow = row + 1;
+                    u8 *p = (u8 *)r6;
+                    for (; col <= 29; col++) {
+                        u16 v = (u16)(((row + col) & 1) + 1);
+                        *(volatile u16 *)(uintptr_t)p = v;
+                        p += 2;
+                    }
+                    _0802D974((const void *)r6,
+                              (void *)(uintptr_t)(_080056DC(0) + rowOffset), 0x04000010);
+                    row = nextRow;
+                    if (row > 19) break;
+                }
+            }
         }
-        _0802D974((const void *)r6,
-                  (void *)(uintptr_t)(_080056DC(0) + rowOffset), 0x04000010);
-        row = nextRow;
-        if (row > 19) break;
     }
 }
 void _0800254C(void) __attribute__((alias("ScreenInit_0254C")));
@@ -511,40 +523,42 @@ void VoiceParamTick_2CE20(void *ch, void *unused)
         product *= factor;
         __asm__ volatile ("" : "+r"(product));
         level = product >> 5;
-        register s32 mode __asm__("r4") = c[24];
-        if (mode == 1) {
-            register s32 volumePan __asm__("r0") = ((s8 *)c)[22];
-            volumePan += 128;
-            volumePan *= (s32)level;
-            level = (u32)volumePan >> 7;
-        }
         {
-            register s32 left __asm__("r0") = ((s8 *)c)[20];
-            register s32 pan __asm__("r1");
-            left <<= 1;
-            pan = ((s8 *)c)[21];
-            pan = left + pan;
-            if (mode == 2) {
-                register s32 adjust __asm__("r0") = ((s8 *)c)[22];
-                pan += adjust;
-            }
-            if (pan < -128) {
-                pan = -128;
-                goto pan_ready;
-            }
-            if (pan > 127) pan = 127;
-pan_ready:
-            {
-                register u32 out __asm__("r0") = (u32)(pan + 128);
-                out *= level;
-                out >>= 8;
-                *(volatile u8 *)(c + 16) = (u8)out;
+            register s32 mode __asm__("r4") = c[24];
+            if (mode == 1) {
+                register s32 volumePan __asm__("r0") = ((s8 *)c)[22];
+                volumePan += 128;
+                volumePan *= (s32)level;
+                level = (u32)volumePan >> 7;
             }
             {
-                register u32 out __asm__("r0") = (u32)(127 - pan);
-                out *= level;
-                out >>= 8;
-                *(volatile u8 *)(c + 17) = (u8)out;
+                register s32 left __asm__("r0") = ((s8 *)c)[20];
+                register s32 pan __asm__("r1");
+                left <<= 1;
+                pan = ((s8 *)c)[21];
+                pan = left + pan;
+                if (mode == 2) {
+                    register s32 adjust __asm__("r0") = ((s8 *)c)[22];
+                    pan += adjust;
+                }
+                if (pan < -128) {
+                    pan = -128;
+                    goto pan_ready;
+                }
+                if (pan > 127) pan = 127;
+    pan_ready:
+                {
+                    register u32 out __asm__("r0") = (u32)(pan + 128);
+                    out *= level;
+                    out >>= 8;
+                    *(volatile u8 *)(c + 16) = (u8)out;
+                }
+                {
+                    register u32 out __asm__("r0") = (u32)(127 - pan);
+                    out *= level;
+                    out >>= 8;
+                    *(volatile u8 *)(c + 17) = (u8)out;
+                }
             }
         }
     }
@@ -558,27 +572,29 @@ pan_ready:
             register s32 product __asm__("r0") = ((s8 *)c)[14];
             register u32 factor __asm__("r1") = c[15];
             product *= factor;
-            register s32 env __asm__("r1") = ((s8 *)c)[12];
-            env += product;
-            env <<= 2;
             {
-                register s32 part __asm__("r0") = ((s8 *)c)[10];
-                part <<= 8;
-                env += part;
+                register s32 env __asm__("r1") = ((s8 *)c)[12];
+                env += product;
+                env <<= 2;
+                {
+                    register s32 part __asm__("r0") = ((s8 *)c)[10];
+                    part <<= 8;
+                    env += part;
+                }
+                {
+                    register s32 part __asm__("r0") = ((s8 *)c)[11];
+                    part <<= 8;
+                    env += part;
+                }
+                env += c[13];
+                if (c[24] == 0) {
+                    register s32 part __asm__("r0") = ((s8 *)c)[22];
+                    part <<= 4;
+                    env += part;
+                }
+                *(volatile u8 *)(c + 8) = (u8)(env >> 8);
+                *(volatile u8 *)(c + 9) = (u8)env;
             }
-            {
-                register s32 part __asm__("r0") = ((s8 *)c)[11];
-                part <<= 8;
-                env += part;
-            }
-            env += c[13];
-            if (c[24] == 0) {
-                register s32 part __asm__("r0") = ((s8 *)c)[22];
-                part <<= 4;
-                env += part;
-            }
-            *(volatile u8 *)(c + 8) = (u8)(env >> 8);
-            *(volatile u8 *)(c + 9) = (u8)env;
         }
         {
             register u32 clear __asm__("r0") = 250;
@@ -663,31 +679,37 @@ void SoundCACC_Step(void) {
     register volatile u32 *root __asm__("r6") = *cell;
     register u32 state __asm__("r1") = root[0];
     if (state != 0x68736D53u) return;
-    register u32 bumped __asm__("r0") = state + 1;
-    root[0] = bumped;
-    register int count __asm__("r5") = 12;
-    register volatile u8 *cursor __asm__("r4") = (volatile u8 *)root + 80;
-    register int zero __asm__("r0") = 0;
-    do {
-        *cursor = (u8)zero;
-        --count;
-        cursor += 64;
-    } while (count > 0);
-    register u32 voice __asm__("r4") = root[7];
-    u32 voicePresent = voice;
-    if (voicePresent != 0) {
-        register int index __asm__("r5") = 1;
-        int voiceZero = 0;
-        do {
-            register u32 arg __asm__("r0") = (u8)index;
-            __asm__ volatile("" : "+r" (arg));
-            ((void (*)(u32))(uintptr_t)root[11])(arg);
-            *(volatile u8 *)(uintptr_t)voice = (u8)voiceZero;
-            ++index;
-            voice += 64u;
-        } while (index <= 4);
+    {
+        register u32 bumped __asm__("r0") = state + 1;
+        root[0] = bumped;
+        {
+            register int count __asm__("r5") = 12;
+            register volatile u8 *cursor __asm__("r4") = (volatile u8 *)root + 80;
+            register int zero __asm__("r0") = 0;
+            do {
+                *cursor = (u8)zero;
+                --count;
+                cursor += 64;
+            } while (count > 0);
+            {
+                register u32 voice __asm__("r4") = root[7];
+                u32 voicePresent = voice;
+                if (voicePresent != 0) {
+                    register int index __asm__("r5") = 1;
+                    int voiceZero = 0;
+                    do {
+                        register u32 arg __asm__("r0") = (u8)index;
+                        __asm__ volatile("" : "+r" (arg));
+                        ((void (*)(u32))(uintptr_t)root[11])(arg);
+                        *(volatile u8 *)(uintptr_t)voice = (u8)voiceZero;
+                        ++index;
+                        voice += 64u;
+                    } while (index <= 4);
+                }
+                root[0] = 0x68736D53u;
+            }
+        }
     }
-    root[0] = 0x68736D53u;
 }
 void _0802CACC(void) __attribute__((alias("SoundCACC_Step")));
 void sub_0802CACC(void) __attribute__((alias("SoundCACC_Step")));
@@ -745,20 +767,26 @@ void SoundC5C0_BankCheck(int arg) {
     u32 hi = (u32)arg << 16;
     __asm__(".globl C5C0RowTbl\nC5C0RowTbl = 0x08061F74\n.globl C5C0RecBase\nC5C0RecBase = 0x08061FA4\n");
     rowtbl = (u32)(uintptr_t)C5C0RowTbl;
-    u32 recbase = (u32)(uintptr_t)C5C0RecBase;
-    rec = (volatile u8 *)(uintptr_t)(recbase + (hi >> 13));
-    row = *(volatile u32 **)(rowtbl + (*(volatile u16 *)(rec + 4)) * 12);
-    u32 claim = row[0];
-    u32 held = *(volatile u32 *)(rec + 0);
-    if (claim != held) {
-        _0802CC34((void *)row, (void *)(uintptr_t)held);
-        return;
-    }
-    u32 state = row[1];
-    if (*(volatile u16 *)((volatile u8 *)row + 4) == 0) {
-        _0802CC34((void *)row, (void *)(uintptr_t)held);
-    } else {
-        if ((s32)state < 0) _0802C488((void *)row);
+    {
+        u32 recbase = (u32)(uintptr_t)C5C0RecBase;
+        rec = (volatile u8 *)(uintptr_t)(recbase + (hi >> 13));
+        row = *(volatile u32 **)(rowtbl + (*(volatile u16 *)(rec + 4)) * 12);
+        {
+            u32 claim = row[0];
+            u32 held = *(volatile u32 *)(rec + 0);
+            if (claim != held) {
+                _0802CC34((void *)row, (void *)(uintptr_t)held);
+                return;
+            }
+            {
+                u32 state = row[1];
+                if (*(volatile u16 *)((volatile u8 *)row + 4) == 0) {
+                    _0802CC34((void *)row, (void *)(uintptr_t)held);
+                } else {
+                    if ((s32)state < 0) _0802C488((void *)row);
+                }
+            }
+        }
     }
 }
 void _0802C5C0(int a) __attribute__((alias("SoundC5C0_BankCheck")));
@@ -774,19 +802,25 @@ void SoundC574_Replace(int arg) {
     u32 hi = (u32)arg << 16;
     __asm__(".globl C574RowTbl\nC574RowTbl = 0x08061F74\n.globl C574RecBase\nC574RecBase = 0x08061FA4\n");
     rowtbl = (u32)(uintptr_t)C574RowTbl;
-    u32 recbase = (u32)(uintptr_t)C574RecBase;
-    rec = (volatile u8 *)(uintptr_t)(recbase + (hi >> 13));
-    row = *(volatile u32 **)(rowtbl + (*(volatile u16 *)(rec + 4)) * 12);
-    u32 claim = row[0];
-    u32 held = *(volatile u32 *)(rec + 0);
-    if (claim != held) {
-        _0802CC34((void *)row, (void *)(uintptr_t)held);
-        return;
+    {
+        u32 recbase = (u32)(uintptr_t)C574RecBase;
+        rec = (volatile u8 *)(uintptr_t)(recbase + (hi >> 13));
+        row = *(volatile u32 **)(rowtbl + (*(volatile u16 *)(rec + 4)) * 12);
+        {
+            u32 claim = row[0];
+            u32 held = *(volatile u32 *)(rec + 0);
+            if (claim != held) {
+                _0802CC34((void *)row, (void *)(uintptr_t)held);
+                return;
+            }
+            {
+                u32 state = row[1];
+                if (*(volatile u16 *)((volatile u8 *)row + 4) != 0 && (s32)state >= 0)
+                    return;
+                _0802CC34((void *)row, (void *)(uintptr_t)claim);
+            }
+        }
     }
-    u32 state = row[1];
-    if (*(volatile u16 *)((volatile u8 *)row + 4) != 0 && (s32)state >= 0)
-        return;
-    _0802CC34((void *)row, (void *)(uintptr_t)claim);
 }
 void _0802C574(int a) __attribute__((alias("SoundC574_Replace")));
 void sub_0802C574(int a) __attribute__((alias("SoundC574_Replace")));
@@ -866,16 +900,20 @@ void MenuF9A0_Scatter(void *rec) {
         register s32 xZero __asm__("r1") = 0;
         register s32 x __asm__("r0");
         x = *(s16 *)(xBase + xZero);
-        register u8 *yBase __asm__("r1") = r + 190;
-        register s32 yZero __asm__("r2") = 0;
-        register s32 y __asm__("r1");
-        y = *(s16 *)(yBase + yZero);
-        register u32 dist __asm__("r0") = sub_0800F700(x, y);
         {
-            register volatile u16 *dst __asm__("r1");
-            offset = 0xFE6;
-            dst = (volatile u16 *)(wa + offset);
-            *dst = (u16)dist;
+            register u8 *yBase __asm__("r1") = r + 190;
+            register s32 yZero __asm__("r2") = 0;
+            register s32 y __asm__("r1");
+            y = *(s16 *)(yBase + yZero);
+            {
+                register u32 dist __asm__("r0") = sub_0800F700(x, y);
+                {
+                    register volatile u16 *dst __asm__("r1");
+                    offset = 0xFE6;
+                    dst = (volatile u16 *)(wa + offset);
+                    *dst = (u16)dist;
+                }
+            }
         }
     }
     {
@@ -1182,18 +1220,20 @@ void *Course_0x080263C4(int a, void *b, int c) __attribute__((alias("ResourceWra
 // ============================================================================
 void SoundStop_2CB84(void *unused) {
     (void)unused;
-    volatile u32 *rootp = (volatile u32 *)0x03007FF0;
-    volatile u32 *root = (volatile u32 *)(uintptr_t)*rootp;
-    u32 state = root[0];
-    if (state == 0x68736D53u) return;
-    *(volatile u16 *)0x040000C6 = 0xB600;
     {
-        volatile u8 *flag = (volatile u8 *)root + 4;
-        u8 v = *flag;
-        v = 0;
-        *flag = v;
+        volatile u32 *rootp = (volatile u32 *)0x03007FF0;
+        volatile u32 *root = (volatile u32 *)(uintptr_t)*rootp;
+        u32 state = root[0];
+        if (state == 0x68736D53u) return;
+        *(volatile u16 *)0x040000C6 = 0xB600;
+        {
+            volatile u8 *flag = (volatile u8 *)root + 4;
+            u8 v = *flag;
+            v = 0;
+            *flag = v;
+        }
+        root[0] = state - 10;
     }
-    root[0] = state - 10;
 }
 void _0802CB84(void *a) __attribute__((alias("SoundStop_2CB84")));
 void sub_0802CB84(void *a) __attribute__((alias("SoundStop_2CB84")));
@@ -1350,14 +1390,16 @@ void SoundStopAll_2CD18(void *rec) {
     if (m != 0x68736D53u) return;
     *(volatile u32 *)(s + 52) = m + 1;
     *(volatile u32 *)(s + 4) |= 0x80000000u;
-    int n = s[8];
-    u8 *ch = (u8 *)(uintptr_t)*(volatile u32 *)(s + 44);
-    while (n > 0) {
-        _0802C11C(s, ch);
-        n--;
-        ch += 80;
+    {
+        int n = s[8];
+        u8 *ch = (u8 *)(uintptr_t)*(volatile u32 *)(s + 44);
+        while (n > 0) {
+            _0802C11C(s, ch);
+            n--;
+            ch += 80;
+        }
+        *(volatile u32 *)(s + 52) = 0x68736D53u;
     }
-    *(volatile u32 *)(s + 52) = 0x68736D53u;
 }
 void _0802CD18(void *a) __attribute__((alias("SoundStopAll_2CD18")));
 void sub_0802CD18(void *a) __attribute__((alias("SoundStopAll_2CD18")));
@@ -1379,26 +1421,30 @@ void SoundTick_2C738(void *root) {
     register volatile u8 *r4 asm("r4") =
         (volatile u8 *)(uintptr_t)*(volatile u32 *)(rootp + 44);
     if (n <= 0) return;
-    int active = 0x80;
-    do {
-        register int f asm("r1") = r4[0];
-        register int gate asm("r0") = active;
-        gate &= f;
-        if (gate == 0) goto next_voice;
-        register int tick asm("r6") = 0x40;
-        gate = tick;
-        gate &= f;
-        if (gate == 0) goto next_voice;
-        _0802C8B0((void *)(uintptr_t)r4);
-        r4[0] = active;
-        r4[15] = 2;
-        r4[19] = tick;
-        r4[25] = 22;
-        r4[36] = 1;
-    next_voice:
-        n--;
-        r4 += 80;
-    } while (n > 0);
+    {
+        int active = 0x80;
+        do {
+            register int f asm("r1") = r4[0];
+            register int gate asm("r0") = active;
+            gate &= f;
+            if (gate == 0) goto next_voice;
+            {
+                register int tick asm("r6") = 0x40;
+                gate = tick;
+                gate &= f;
+                if (gate == 0) goto next_voice;
+                _0802C8B0((void *)(uintptr_t)r4);
+                r4[0] = active;
+                r4[15] = 2;
+                r4[19] = tick;
+                r4[25] = 22;
+                r4[36] = 1;
+            next_voice:
+                n--;
+                r4 += 80;
+            }
+        } while (n > 0);
+    }
 }
 void _0802C738(void *a) __attribute__((alias("SoundTick_2C738")));
 void sub_0802C738(void *a) __attribute__((alias("SoundTick_2C738")));
@@ -1496,30 +1542,34 @@ int AiGridGet_25CF4(int type, int row, int col) {
     _0802E0A4((void *)tmp, (const void *)0x08060D48, 4);
     if (col > 10) return 0;
     if (col < 0) return 0;
-    int idx = 44 * type + 11 * row + col;
-    int rem = _0802D97C(idx, 4);
-    int sh = _0802D97C(idx, 4);
-    const u8 *base;
-    // Absolute symbol declared INSIDE the body: the slice link splices only this
-    // body's own section, so a file-scope definition would not travel with it
-    // (the WA_SPLIT_DECL rule of src/race_scene_b1.c:141-156).
-    extern u8 B16GridBase[] __asm__("B16GridBase");
-    __asm__(".globl B16GridBase\nB16GridBase = 0x03001780\n");
-    base = (const u8 *)(uintptr_t)B16GridBase;
-    int q = (idx < 0) ? (idx + 3) : idx;
-    // 0x03001780 is IWRAM WORK AREA — the packed collection grid at the very
-    // start of the work area, not a hardware register — and the ROM reads it
-    // exactly once with a bare `ldrb`, with no intervening store. `volatile`
-    // would assert a hardware contract this access does not have; it is
-    // byte-neutral here (EXACT measured both with and without) and is dropped.
-    // The sibling SETTER, Code25930_GridSet in src/code_25930.c, does keep
-    // `volatile` — it writes through the same base and its reads/writes must not
-    // be folded. That qualifier is untouched.
-    const u8 *bp = base + (q >> 2);
-    u8 v = *bp;
-    u8 m = tmp[rem];
-    u8 out = (u8)(v & m);
-    return (int)(u8)(out >> (sh * 2));
+    {
+        int idx = 44 * type + 11 * row + col;
+        int rem = _0802D97C(idx, 4);
+        int sh = _0802D97C(idx, 4);
+        const u8 *base;
+        // Absolute symbol declared INSIDE the body: the slice link splices only this
+        // body's own section, so a file-scope definition would not travel with it
+        // (the WA_SPLIT_DECL rule of src/race_scene_b1.c:141-156).
+        extern u8 B16GridBase[] __asm__("B16GridBase");
+        __asm__(".globl B16GridBase\nB16GridBase = 0x03001780\n");
+        base = (const u8 *)(uintptr_t)B16GridBase;
+        {
+            int q = (idx < 0) ? (idx + 3) : idx;
+            // 0x03001780 is IWRAM WORK AREA — the packed collection grid at the very
+            // start of the work area, not a hardware register — and the ROM reads it
+            // exactly once with a bare `ldrb`, with no intervening store. `volatile`
+            // would assert a hardware contract this access does not have; it is
+            // byte-neutral here (EXACT measured both with and without) and is dropped.
+            // The sibling SETTER, Code25930_GridSet in src/code_25930.c, does keep
+            // `volatile` — it writes through the same base and its reads/writes must not
+            // be folded. That qualifier is untouched.
+            const u8 *bp = base + (q >> 2);
+            u8 v = *bp;
+            u8 m = tmp[rem];
+            u8 out = (u8)(v & m);
+            return (int)(u8)(out >> (sh * 2));
+        }
+    }
 }
 int _08025CF4(int a, int b, int c) __attribute__((alias("AiGridGet_25CF4")));
 int Sub_08025CF4(int a, int b, int c) __attribute__((alias("AiGridGet_25CF4")));
@@ -1584,24 +1634,26 @@ void MenuInit_CFE4(void *rec) {
         waBase += waOffset;
         *(volatile u16 *)(r4 + 6) = *(volatile u16 *)(uintptr_t)waBase;
     }
-    void *obj = MCI_CALLEE(_08026948, _080026948)();
-    *(volatile u32 *)(r4 + 28) = (u32)(uintptr_t)obj;
     {
-        // Plain indexed reads: r4 (the record) stays live for the later
-        // field accesses, which is what makes agbcc take the index form
-        // (`movs rX,#imm / ldrsh rY,[r4,rX]`, oracle `_08001A74`) instead
-        // of folding the offset into the address.
-        register int arg1 __asm__("r1") = *(s16 *)((u8 *)r4 + 6);
-        register int arg2 __asm__("r2") = *(s16 *)((u8 *)r4 + 8);
-        _08026A4C(obj, arg1, arg2);
-    }
-    _08026A58((void *)(uintptr_t)*(volatile u32 *)(r4 + 28), 1);
-    _08026A60((void *)(uintptr_t)*(volatile u32 *)(r4 + 28), 0);
-    {
-        register void *objAt28 __asm__("r0") =
-            (void *)(uintptr_t)*(volatile u32 *)(r4 + 28);
-        register int arg1 __asm__("r1") = *(s16 *)((u8 *)r4 + 6);
-    MCI_CALLEE(_08026938, _080026938)(objAt28, arg1);
+        void *obj = MCI_CALLEE(_08026948, _080026948)();
+        *(volatile u32 *)(r4 + 28) = (u32)(uintptr_t)obj;
+        {
+            // Plain indexed reads: r4 (the record) stays live for the later
+            // field accesses, which is what makes agbcc take the index form
+            // (`movs rX,#imm / ldrsh rY,[r4,rX]`, oracle `_08001A74`) instead
+            // of folding the offset into the address.
+            register int arg1 __asm__("r1") = *(s16 *)((u8 *)r4 + 6);
+            register int arg2 __asm__("r2") = *(s16 *)((u8 *)r4 + 8);
+            _08026A4C(obj, arg1, arg2);
+        }
+        _08026A58((void *)(uintptr_t)*(volatile u32 *)(r4 + 28), 1);
+        _08026A60((void *)(uintptr_t)*(volatile u32 *)(r4 + 28), 0);
+        {
+            register void *objAt28 __asm__("r0") =
+                (void *)(uintptr_t)*(volatile u32 *)(r4 + 28);
+            register int arg1 __asm__("r1") = *(s16 *)((u8 *)r4 + 6);
+        MCI_CALLEE(_08026938, _080026938)(objAt28, arg1);
+        }
     }
 }
 void _0800CFE4(void *a) __attribute__((alias("MenuInit_CFE4")));
@@ -1618,12 +1670,14 @@ HOST_STUB(void _0800279C(int v));
 s16 GridS16_2730(int a, int b) {
     extern u8 GridBase[] __asm__("GridBase");
     __asm__(".globl GridBase\nGridBase = 0x03001780\n");
-    u32 base = (u32)(uintptr_t)GridBase;
-    int off = (b << 1) + (a << 3);
-    u32 disp = 0x109Cu;
-    u32 idx = 0;
-    u32 addr = (u32)off + (base + disp);
-    return ((s16 *)(addr + idx))[idx];
+    {
+        u32 base = (u32)(uintptr_t)GridBase;
+        int off = (b << 1) + (a << 3);
+        u32 disp = 0x109Cu;
+        u32 idx = 0;
+        u32 addr = (u32)off + (base + disp);
+        return ((s16 *)(addr + idx))[idx];
+    }
 }
 s16 _08002730(int a, int b) __attribute__((alias("GridS16_2730")));
 s16 sub_08002730(int a, int b) __attribute__((alias("GridS16_2730")));
@@ -1688,22 +1742,26 @@ void CarRecEventReset_22CB4(void *a, void *b) {
     // assembler SYMBOL_REF, so `simplify_rtx` cannot fold `0x03001780 + 0x10C3`
     // into the single literal 0x03002843 (it folds an integer literal `plus`,
     // but a symbol_ref is a real insn the reload pass cannot merge).
-    extern u8 B16GateBase[] __asm__("B16GateBase");
-    extern u8 B16GateOff[]  __asm__("B16GateOff");
+
+
     __asm__(".globl B16GateBase\nB16GateBase = 0x03001780\n"
             ".globl B16GateOff\nB16GateOff = 0x10C3\n");
-    const u8 *gate = B16GateBase + (uintptr_t)B16GateOff;
-    if (*gate == 0) {
-        _080056F4(r4, 1, 1);
-        *(volatile u16 *)(r5 + 144) = 1;
-    }
-    s16 *mb = (s16 *)(uintptr_t)_08004B68();
-    int scene = (int)mb[1];
-    switch (scene) {
-    case 15:
-    case 35: *(volatile u16 *)(r4 + 84) = 5; break;
-    case 40: *(volatile u16 *)(r4 + 84) = 1; break;
-    default: *(volatile u16 *)(r4 + 84) = 6; break;
+    {
+        const u8 *gate = B16GateBase + (uintptr_t)B16GateOff;
+        if (*gate == 0) {
+            _080056F4(r4, 1, 1);
+            *(volatile u16 *)(r5 + 144) = 1;
+        }
+        {
+            s16 *mb = (s16 *)(uintptr_t)_08004B68();
+            int scene = (int)mb[1];
+            switch (scene) {
+            case 15:
+            case 35: *(volatile u16 *)(r4 + 84) = 5; break;
+            case 40: *(volatile u16 *)(r4 + 84) = 1; break;
+            default: *(volatile u16 *)(r4 + 84) = 6; break;
+            }
+        }
     }
 }
 void _08022CB4(void *a, void *b) __attribute__((alias("CarRecEventReset_22CB4")));

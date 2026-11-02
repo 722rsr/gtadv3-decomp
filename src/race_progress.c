@@ -163,111 +163,113 @@ extern u8 RPOffFF6;
 
 void Race_AdvanceProgress(void) {
     RACE_PR_DECL;
-    register u32 wa __asm__("r2") = (u32)&RacePrWaB;
-    register u32 w2 __asm__("r5");
-    register u32 pa __asm__("r0");
-    register u32 o1 __asm__("r1");
-    register u32 o2 __asm__("r5");
-    register u32 o3 __asm__("r3");
-    register u32 o5 __asm__("r2");
-    register u32 o6 __asm__("r0");
-    u32 o4;
-    register s16 *pb __asm__("r4");
-    s16 *pe;
-    register s16 *pcA __asm__("r2");
-    register s16 *pcB __asm__("r3");
-    register s32 idx __asm__("r1");
-    register s32 c __asm__("r6");
-    register s32 d __asm__("r12");
-    s32 e, i2, zero;
-    u32 n;
+    {
+        register u32 wa __asm__("r2") = (u32)&RacePrWaB;
+        register u32 w2 __asm__("r5");
+        register u32 pa __asm__("r0");
+        register u32 o1 __asm__("r1");
+        register u32 o2 __asm__("r5");
+        register u32 o3 __asm__("r3");
+        register u32 o5 __asm__("r2");
+        register u32 o6 __asm__("r0");
+        u32 o4;
+        register s16 *pb __asm__("r4");
+        s16 *pe;
+        register s16 *pcA __asm__("r2");
+        register s16 *pcB __asm__("r3");
+        register s32 idx __asm__("r1");
+        register s32 c __asm__("r6");
+        register s32 d __asm__("r12");
+        s32 e, i2, zero;
+        u32 n;
 
-    o1 = (u32)&RPOffFF8;
-    pa = wa + o1;
-    idx = *(s16 *)pa * 2;
-    o2 = (u32)&RPOffFF2;
-    pb = (s16 *)(wa + o2);
-    {
-        register s32 h3 __asm__("r3");
-        register s32 h5 __asm__("r5");
-        register s32 h6 __asm__("r6");
-        __asm__("" : "=r"(h3), "=r"(h5), "=r"(h6));
-        idx += *pb * 8;
-        __asm__("" : : "r"(h3), "r"(h5), "r"(h6));
-    }
-    o3 = (u32)&RPOffFFA;
-    pa = wa + o3;
-    {
-        register s32 h3b __asm__("r3");
-        __asm__("" : "=r"(h3b));
-        c = *(s16 *)(uintptr_t)(idx + pa);
-        __asm__("" : : "r"(h3b));
-    }
-    o4 = 0x102A;
-    __asm__ volatile("" : "+r"(o4));
-    pa = wa + o4;
-    d = *(s16 *)(uintptr_t)(idx + pa);
-    w2 = wa;
-    if (c == 11) {
-        o4 = o4 - 16u;
-        pa = w2 + o4;
-        __asm__("" : "+r"(o4), "+r"(pa));
-        pe = (s16 *)(uintptr_t)(idx + pa);
-        e = *pe;
-        if (e == 0) {
-            *pe = 1;
-            o1 = (u32)&RPOffFF6;
-            pcA = (s16 *)(w2 + o1);
-            __asm__("" : "+r"(pcA));
-            n = (u32)(u16)*pcA + 1u;
-            *pcA = n;
-            if ((s16)n > 3) {
-                o4 = o4 - 42u;
-                pa = w2 + o4;
-                __asm__("" : "+r"(o4), "+r"(pa));
-                if (*(s16 *)pa == 1) {
-                    if (*pb == 0) {
-                        *pb = 1;
-                        *pcA = e;
+        o1 = (u32)&RPOffFF8;
+        pa = wa + o1;
+        idx = *(s16 *)pa * 2;
+        o2 = (u32)&RPOffFF2;
+        pb = (s16 *)(wa + o2);
+        {
+            register s32 h3 __asm__("r3");
+            register s32 h5 __asm__("r5");
+            register s32 h6 __asm__("r6");
+            __asm__("" : "=r"(h3), "=r"(h5), "=r"(h6));
+            idx += *pb * 8;
+            __asm__("" : : "r"(h3), "r"(h5), "r"(h6));
+        }
+        o3 = (u32)&RPOffFFA;
+        pa = wa + o3;
+        {
+            register s32 h3b __asm__("r3");
+            __asm__("" : "=r"(h3b));
+            c = *(s16 *)(uintptr_t)(idx + pa);
+            __asm__("" : : "r"(h3b));
+        }
+        o4 = 0x102A;
+        __asm__ volatile("" : "+r"(o4));
+        pa = wa + o4;
+        d = *(s16 *)(uintptr_t)(idx + pa);
+        w2 = wa;
+        if (c == 11) {
+            o4 = o4 - 16u;
+            pa = w2 + o4;
+            __asm__("" : "+r"(o4), "+r"(pa));
+            pe = (s16 *)(uintptr_t)(idx + pa);
+            e = *pe;
+            if (e == 0) {
+                *pe = 1;
+                o1 = (u32)&RPOffFF6;
+                pcA = (s16 *)(w2 + o1);
+                __asm__("" : "+r"(pcA));
+                n = (u32)(u16)*pcA + 1u;
+                *pcA = n;
+                if ((s16)n > 3) {
+                    o4 = o4 - 42u;
+                    pa = w2 + o4;
+                    __asm__("" : "+r"(o4), "+r"(pa));
+                    if (*(s16 *)pa == 1) {
+                        if (*pb == 0) {
+                            *pb = 1;
+                            *pcA = e;
+                        } else {
+                            *pb = 1;
+                            *pcA = 3;
+                        }
                     } else {
-                        *pb = 1;
+                        *pb = 0;
                         *pcA = 3;
                     }
-                } else {
-                    *pb = 0;
-                    *pcA = 3;
+                }
+            } else {
+                zero = 0;
+                __asm__("" : "+r"(zero));
+                *pe = 1;
+                o6 = (u32)&RPOffFF6;
+                pcB = (s16 *)(w2 + o6);
+                __asm__("" : "+r"(pcB));
+                if (*pcB > 2) {
+                    o4 = 0x0FF0;
+                    pa = w2 + o4;
+                    __asm__("" : "+r"(o4), "+r"(pa));
+                    if (*(s16 *)pa == 1 && *pb != 0)
+                        *pb = 1;
+                    else
+                        *pb = zero;
+                    *pcB = 3;
                 }
             }
-        } else {
-            zero = 0;
-            __asm__("" : "+r"(zero));
-            *pe = 1;
-            o6 = (u32)&RPOffFF6;
-            pcB = (s16 *)(w2 + o6);
-            __asm__("" : "+r"(pcB));
-            if (*pcB > 2) {
-                o4 = 0x0FF0;
-                pa = w2 + o4;
-                __asm__("" : "+r"(o4), "+r"(pa));
-                if (*(s16 *)pa == 1 && *pb != 0)
-                    *pb = 1;
-                else
-                    *pb = zero;
-                *pcB = 3;
-            }
         }
-    }
-    if (c == 3 && d == 0) {
-        o1 = (u32)&RPOffFF8;
-        pa = w2 + o1;
-        i2 = *(s16 *)pa * 2;
-        o3 = (u32)&RPOffFF2T;
-        pa = w2 + o3;
-        i2 += *(s16 *)pa * 8;
-        __asm__ volatile("" : "+r"(o3));
-        o5 = 0x102A;
-        pa = w2 + o5;
-        *(s16 *)(uintptr_t)(i2 + pa) = 1;
+        if (c == 3 && d == 0) {
+            o1 = (u32)&RPOffFF8;
+            pa = w2 + o1;
+            i2 = *(s16 *)pa * 2;
+            o3 = (u32)&RPOffFF2T;
+            pa = w2 + o3;
+            i2 += *(s16 *)pa * 8;
+            __asm__ volatile("" : "+r"(o3));
+            o5 = 0x102A;
+            pa = w2 + o5;
+            *(s16 *)(uintptr_t)(i2 + pa) = 1;
+        }
     }
 }
 
@@ -333,94 +335,96 @@ int Race_PerFrameTail(void) {
             ".globl PftWc\nPftWc = 0x03001780\n"
             ".globl PftO1074\nPftO1074 = 0x00001074\n"
             ".globl PftO0FF2\nPftO0FF2 = 0x00000FF2\n");
-    register u8 *wa __asm__("r2");
-    u8 *wbp;
-    register u8 *p1 __asm__("r3");
-    register u8 *p3 __asm__("r1");
-    u32 wb, wc, o, oc, t;
-    u8 rb;
-    s16 *sp;
-    s16 *gate;
-    int v, m, a, b, c, r;
-
-    wa = (u8 *)(uintptr_t)&PftWa;
-    __asm__ volatile("" : "+r"(wa));
-    __asm__ volatile("" : "+r"(oc));
-    p1 = wa + 0x10BE;
-    if (*p1 != 0) {
-        *p1 = 0;
-        return 47;
-    }
-    p1 = wa + 0x10C0;
-    if (*p1 != 0) {
-        *p1 = 0;
-        PFT_CALLEE(CounterClear, sub_08004CC4)();
-        return 13;
-    }
-    p3 = wa + 0x10E5;
-    v = *(s8 *)p3;
-    switch (v) {
-    case 1:
-        v = 3;
-        break;
-    case 3:
-        v = 1;
-        break;
-    case 0:
-    case 2:
-        break;
-    default:
-        goto stepped;
-    }
-    *p3 = (u8)v;
-stepped:
-    wbp = (u8 *)(uintptr_t)&PftWb;
-    wb = (u32)(uintptr_t)wbp;
-    *(u16 *)(uintptr_t)(wbp + 0x103Cu) = 0;
-    *(u16 *)(uintptr_t)(wb + 0x104Au) = 0;
-    oc = (u32)(uintptr_t)&PftO1074;
-    *(u16 *)(uintptr_t)(wb + oc) = 0;
-    t = (u32)(uintptr_t)&PftO0FF2;
-    sp = (s16 *)(uintptr_t)(wb + t);
-    a = *sp;
-    __asm__ volatile("" : "+r"(t));
-    oc = oc - 126u;
-    b = *(s16 *)(uintptr_t)(wb + oc);
-    oc = oc + 68u;
-    c = *(s16 *)(uintptr_t)(wb + oc);
-    r = PFT_CALLEE(Ai_GridGet, _08025CF4)(a, b, c);
-    rb = (u8)r;
-    o = 0x1054u;
-    *(u16 *)(uintptr_t)(wb + o) = rb;
-
     {
-    register int m __asm__("r0");
-    m = *(s16 *)(uintptr_t)(wb + 0x0FBCu);
-    switch (m) {
-    case 7:
-        if (*(u16 *)(uintptr_t)(wb + 0x1078u) == 2)
+        register u8 *wa __asm__("r2");
+        u8 *wbp;
+        register u8 *p1 __asm__("r3");
+        register u8 *p3 __asm__("r1");
+        u32 wb, wc, o, oc, t;
+        u8 rb;
+        s16 *sp;
+        s16 *gate;
+        int v, m, a, b, c, r;
+
+        wa = (u8 *)(uintptr_t)&PftWa;
+        __asm__ volatile("" : "+r"(wa));
+        __asm__ volatile("" : "+r"(oc));
+        p1 = wa + 0x10BE;
+        if (*p1 != 0) {
+            *p1 = 0;
+            return 47;
+        }
+        p1 = wa + 0x10C0;
+        if (*p1 != 0) {
+            *p1 = 0;
+            PFT_CALLEE(CounterClear, sub_08004CC4)();
+            return 13;
+        }
+        p3 = wa + 0x10E5;
+        v = *(s8 *)p3;
+        switch (v) {
+        case 1:
+            v = 3;
+            break;
+        case 3:
+            v = 1;
+            break;
+        case 0:
+        case 2:
+            break;
+        default:
+            goto stepped;
+        }
+        *p3 = (u8)v;
+    stepped:
+        wbp = (u8 *)(uintptr_t)&PftWb;
+        wb = (u32)(uintptr_t)wbp;
+        *(u16 *)(uintptr_t)(wbp + 0x103Cu) = 0;
+        *(u16 *)(uintptr_t)(wb + 0x104Au) = 0;
+        oc = (u32)(uintptr_t)&PftO1074;
+        *(u16 *)(uintptr_t)(wb + oc) = 0;
+        t = (u32)(uintptr_t)&PftO0FF2;
+        sp = (s16 *)(uintptr_t)(wb + t);
+        a = *sp;
+        __asm__ volatile("" : "+r"(t));
+        oc = oc - 126u;
+        b = *(s16 *)(uintptr_t)(wb + oc);
+        oc = oc + 68u;
+        c = *(s16 *)(uintptr_t)(wb + oc);
+        r = PFT_CALLEE(Ai_GridGet, _08025CF4)(a, b, c);
+        rb = (u8)r;
+        o = 0x1054u;
+        *(u16 *)(uintptr_t)(wb + o) = rb;
+
+        {
+        register int m __asm__("r0");
+        m = *(s16 *)(uintptr_t)(wb + 0x0FBCu);
+        switch (m) {
+        case 7:
+            if (*(u16 *)(uintptr_t)(wb + 0x1078u) == 2)
+                PFT_CALLEE(MenuProgressUpdate_0BD40, _0800BD40)();
+            break;
+        case 1:
             PFT_CALLEE(MenuProgressUpdate_0BD40, _0800BD40)();
-        break;
-    case 1:
-        PFT_CALLEE(MenuProgressUpdate_0BD40, _0800BD40)();
-        break;
-    case 0:
-        if (*(u16 *)(uintptr_t)(wb + 0x10FCu) == 2)
-            PFT_CALLEE(MenuPlaceUpdate_0BE74, _0800BE74)();
-        break;
-    case 2:
-        PFT_CALLEE(MenuRecordApply_0800BE20, _0800BE20)((void *)(uintptr_t)m);
-        break;
+            break;
+        case 0:
+            if (*(u16 *)(uintptr_t)(wb + 0x10FCu) == 2)
+                PFT_CALLEE(MenuPlaceUpdate_0BE74, _0800BE74)();
+            break;
+        case 2:
+            PFT_CALLEE(MenuRecordApply_0800BE20, _0800BE20)((void *)(uintptr_t)m);
+            break;
+        }
+        }
+        wc = (u32)(uintptr_t)&PftWc;
+        gate = (s16 *)(uintptr_t)(wc + 0x0FBCu);
+        if (*gate == 0)
+            PFT_CALLEE(Race_CommitCell, _0800AD84)();
+        PFT_CALLEE(Ai_RaceFsm, _0800AA40)();
+        if (*gate == 0)
+            PFT_CALLEE(Race_AdvanceProgress, _0800AE78)();
+        return _0800AA20();
     }
-    }
-    wc = (u32)(uintptr_t)&PftWc;
-    gate = (s16 *)(uintptr_t)(wc + 0x0FBCu);
-    if (*gate == 0)
-        PFT_CALLEE(Race_CommitCell, _0800AD84)();
-    PFT_CALLEE(Ai_RaceFsm, _0800AA40)();
-    if (*gate == 0)
-        PFT_CALLEE(Race_AdvanceProgress, _0800AE78)();
-    return _0800AA20();
 }
 
 void _0800AD84(void) __attribute__((alias("Race_CommitCell")));

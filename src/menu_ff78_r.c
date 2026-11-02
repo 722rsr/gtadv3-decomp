@@ -97,116 +97,118 @@ extern void _0800D9A4(void *a, int b, int c);
 
 void MenuFF78_13108(void *rec_) {
     RAM_DEF_03001780;
-    register u32 r4v __asm__("r4");
-    register u32 r5v __asm__("r5");
-    register u32 r6v __asm__("r6");
-    volatile u8 *rec;
-    volatile u32 *r9v;
-    volatile u32 *r8v;
-    register u32 ghost8 __asm__("r8");
-    register u32 wa_base __asm__("r0");
-    register u32 wa_off __asm__("r1");
-    register u32 mode __asm__("r2");
-    register u32 val;
-    register s32 idx_ __asm__("r1");
-    volatile u32 *dma;
+    {
+        register u32 r4v __asm__("r4");
+        register u32 r5v __asm__("r5");
+        register u32 r6v __asm__("r6");
+        volatile u8 *rec;
+        volatile u32 *r9v;
+        volatile u32 *r8v;
+        register u32 ghost8 __asm__("r8");
+        register u32 wa_base __asm__("r0");
+        register u32 wa_off __asm__("r1");
+        register u32 mode __asm__("r2");
+        register u32 val;
+        register s32 idx_ __asm__("r1");
+        volatile u32 *dma;
 
-    rec = (volatile u8 *)rec_;
+        rec = (volatile u8 *)rec_;
 
-    wa_base = (u32)RAM_SYM_03001780;
-    wa_off = 0x0FBCu;
-    r4v = wa_base + wa_off;
-    mode = (u32)*(u16 *)(uintptr_t)r4v;
-    if (mode == 3)
-        _08002124(0x1393u);
-    r4v = (u32)*(u16 *)(uintptr_t)r4v;
-    if (r4v == 7)
-        *(volatile s16 *)(uintptr_t)(rec + 138) = 0;
-    else
-        *(volatile s16 *)(uintptr_t)(rec + 138) = 1;
+        wa_base = (u32)RAM_SYM_03001780;
+        wa_off = 0x0FBCu;
+        r4v = wa_base + wa_off;
+        mode = (u32)*(u16 *)(uintptr_t)r4v;
+        if (mode == 3)
+            _08002124(0x1393u);
+        r4v = (u32)*(u16 *)(uintptr_t)r4v;
+        if (r4v == 7)
+            *(volatile s16 *)(uintptr_t)(rec + 138) = 0;
+        else
+            *(volatile s16 *)(uintptr_t)(rec + 138) = 1;
 
-    sub_0802B214(49);
+        sub_0802B214(49);
 
-    r5v = 0x082EE524u;
-    _08007770(0, (void *)(uintptr_t)r5v, 3, 0, 4, 1);
+        r5v = 0x082EE524u;
+        _08007770(0, (void *)(uintptr_t)r5v, 3, 0, 4, 1);
 
-    *(volatile u32 *)(uintptr_t)(rec + 104) = 6;
-    *(volatile u32 *)(uintptr_t)(rec + 116) = 4;
-    { volatile u8 *p1 = rec + 128; *(volatile u32 *)(uintptr_t)p1 = 1; }
-    { volatile u8 *p2 = rec + 32; _0800DAB8((void *)(uintptr_t)p2); }
+        *(volatile u32 *)(uintptr_t)(rec + 104) = 6;
+        *(volatile u32 *)(uintptr_t)(rec + 116) = 4;
+        { volatile u8 *p1 = rec + 128; *(volatile u32 *)(uintptr_t)p1 = 1; }
+        { volatile u8 *p2 = rec + 32; _0800DAB8((void *)(uintptr_t)p2); }
 
-    r4v = 0x082A798Cu;
-    _080075E8((void *)(uintptr_t)r4v, 0, 3);
-    _080075E8((void *)(uintptr_t)r4v, 2, 7);
-    _0800798C((void *)(uintptr_t)r5v, (void *)(uintptr_t)rec);
-    _080075E8((void *)(uintptr_t)r5v, 0, 4);
-    _080075E8((void *)(uintptr_t)r5v, 1, 6);
-    _080075E8((void *)(uintptr_t)r5v, 2, 8);
-    sub_08007A58((void *)(uintptr_t)rec);
+        r4v = 0x082A798Cu;
+        _080075E8((void *)(uintptr_t)r4v, 0, 3);
+        _080075E8((void *)(uintptr_t)r4v, 2, 7);
+        _0800798C((void *)(uintptr_t)r5v, (void *)(uintptr_t)rec);
+        _080075E8((void *)(uintptr_t)r5v, 0, 4);
+        _080075E8((void *)(uintptr_t)r5v, 1, 6);
+        _080075E8((void *)(uintptr_t)r5v, 2, 8);
+        sub_08007A58((void *)(uintptr_t)rec);
 
-    r8v = (volatile u32 *)(uintptr_t)(rec + 138);
-    switch ((int)*(s16 *)(uintptr_t)r8v) {
-    case 0: sub_080012F98((void *)(uintptr_t)rec); break;
-    case 1: sub_080013024((void *)(uintptr_t)rec); break;
-    default: break;
+        r8v = (volatile u32 *)(uintptr_t)(rec + 138);
+        switch ((int)*(s16 *)(uintptr_t)r8v) {
+        case 0: sub_080012F98((void *)(uintptr_t)rec); break;
+        case 1: sub_080013024((void *)(uintptr_t)rec); break;
+        default: break;
+        }
+
+        _080075E8((void *)(uintptr_t)0x082C4228u, 0, 5);
+        _0800798C((void *)(uintptr_t)0x082ECAE4u, (void *)(uintptr_t)(rec + 8));
+
+        r4v = (u32)(uintptr_t)(rec + 176);
+        sub_080012E5C((int)*(s16 *)(uintptr_t)r4v);
+        *(volatile u32 *)(uintptr_t)(rec + 584) = sub_0800572C(16);
+        val = (u32)sub_080012E74((int)*(s16 *)(uintptr_t)r4v);
+        *(volatile u32 *)(uintptr_t)(rec + 588) = val;
+        sub_08007ABC(*(volatile u32 *)(uintptr_t)(rec + 12), val,
+                     *(volatile u32 *)(uintptr_t)(rec + 584));
+
+        _0800798C((void *)(uintptr_t)0x082C5040u, (void *)(uintptr_t)(rec + 16));
+        *(volatile u32 *)(uintptr_t)(rec + 596) = sub_0800572C(14);
+        // Pinned-r8 window around the rec+600 pointer: keeps local-alloc off r8 so
+        // the address lands in r9 as in the ROM.  Emits no instructions.
+        __asm__ volatile ("" : "=r"(ghost8));
+        r9v = (volatile u32 *)(uintptr_t)(rec + 600);
+        *r9v = 5;
+        __asm__ volatile ("" : : "r"(ghost8));
+        sub_08007ABC(*(volatile u32 *)(uintptr_t)(rec + 20), 5,
+                     *(volatile u32 *)(uintptr_t)(rec + 596));
+
+        _0800798C((void *)(uintptr_t)0x082D0DC0u, (void *)(uintptr_t)(rec + 24));
+        *(volatile u32 *)(uintptr_t)(rec + 608) = sub_0800572C(7);
+        r8v = (volatile u32 *)(uintptr_t)(rec + 612);
+        *r8v = 50;
+        sub_08007ABC(*(volatile u32 *)(uintptr_t)(rec + 28), 50,
+                     *(volatile u32 *)(uintptr_t)(rec + 608));
+
+        *(volatile u32 *)(uintptr_t)(rec + 32) = 0;
+        *(volatile s16 *)(uintptr_t)(rec + 36) = 1;
+        _0800D77C((void *)(uintptr_t)(rec + 52), 0, -32);
+        _0800D77C((void *)(uintptr_t)(rec + 44), 0, 160);
+        *(volatile s16 *)(uintptr_t)(rec + 40) = 6;
+        *(volatile s16 *)(uintptr_t)(rec + 42) = 5;
+
+        { volatile u8 *p3 = rec + 580;
+          r6v = (u32)(uintptr_t)(rec + 174);
+          _0800D9A4((void *)(uintptr_t)p3, (int)*(s16 *)(uintptr_t)r6v,
+                       (int)*(s16 *)(uintptr_t)(rec + 172)); }
+        val = (u32)_08024C3C((int)*(s16 *)(uintptr_t)r6v);
+        *r9v = val;
+        sub_08007ABC(*(volatile u32 *)(uintptr_t)(rec + 20), val,
+                     *(volatile u32 *)(uintptr_t)(rec + 596));
+        val = (u32)_08024C58((int)*(s16 *)(uintptr_t)r6v);
+        *r8v = val;
+        sub_08007ABC(*(volatile u32 *)(uintptr_t)(rec + 28), val,
+                     *(volatile u32 *)(uintptr_t)(rec + 608));
+
+        dma = (volatile u32 *)0x040000D4u;
+        r5v = 0x080CCEECu;
+        FF78_DMA_STEP(1, 0x05000282u);
+        FF78_DMA_STEP(2, 0x05000284u);
+        FF78_DMA_STEP(3, 0x05000286u);
+        FF78_DMA_STEP(4, 0x05000288u);
+        FF78_DMA_STEP(5, 0x0500028Au);
     }
-
-    _080075E8((void *)(uintptr_t)0x082C4228u, 0, 5);
-    _0800798C((void *)(uintptr_t)0x082ECAE4u, (void *)(uintptr_t)(rec + 8));
-
-    r4v = (u32)(uintptr_t)(rec + 176);
-    sub_080012E5C((int)*(s16 *)(uintptr_t)r4v);
-    *(volatile u32 *)(uintptr_t)(rec + 584) = sub_0800572C(16);
-    val = (u32)sub_080012E74((int)*(s16 *)(uintptr_t)r4v);
-    *(volatile u32 *)(uintptr_t)(rec + 588) = val;
-    sub_08007ABC(*(volatile u32 *)(uintptr_t)(rec + 12), val,
-                 *(volatile u32 *)(uintptr_t)(rec + 584));
-
-    _0800798C((void *)(uintptr_t)0x082C5040u, (void *)(uintptr_t)(rec + 16));
-    *(volatile u32 *)(uintptr_t)(rec + 596) = sub_0800572C(14);
-    // Pinned-r8 window around the rec+600 pointer: keeps local-alloc off r8 so
-    // the address lands in r9 as in the ROM.  Emits no instructions.
-    __asm__ volatile ("" : "=r"(ghost8));
-    r9v = (volatile u32 *)(uintptr_t)(rec + 600);
-    *r9v = 5;
-    __asm__ volatile ("" : : "r"(ghost8));
-    sub_08007ABC(*(volatile u32 *)(uintptr_t)(rec + 20), 5,
-                 *(volatile u32 *)(uintptr_t)(rec + 596));
-
-    _0800798C((void *)(uintptr_t)0x082D0DC0u, (void *)(uintptr_t)(rec + 24));
-    *(volatile u32 *)(uintptr_t)(rec + 608) = sub_0800572C(7);
-    r8v = (volatile u32 *)(uintptr_t)(rec + 612);
-    *r8v = 50;
-    sub_08007ABC(*(volatile u32 *)(uintptr_t)(rec + 28), 50,
-                 *(volatile u32 *)(uintptr_t)(rec + 608));
-
-    *(volatile u32 *)(uintptr_t)(rec + 32) = 0;
-    *(volatile s16 *)(uintptr_t)(rec + 36) = 1;
-    _0800D77C((void *)(uintptr_t)(rec + 52), 0, -32);
-    _0800D77C((void *)(uintptr_t)(rec + 44), 0, 160);
-    *(volatile s16 *)(uintptr_t)(rec + 40) = 6;
-    *(volatile s16 *)(uintptr_t)(rec + 42) = 5;
-
-    { volatile u8 *p3 = rec + 580;
-      r6v = (u32)(uintptr_t)(rec + 174);
-      _0800D9A4((void *)(uintptr_t)p3, (int)*(s16 *)(uintptr_t)r6v,
-                   (int)*(s16 *)(uintptr_t)(rec + 172)); }
-    val = (u32)_08024C3C((int)*(s16 *)(uintptr_t)r6v);
-    *r9v = val;
-    sub_08007ABC(*(volatile u32 *)(uintptr_t)(rec + 20), val,
-                 *(volatile u32 *)(uintptr_t)(rec + 596));
-    val = (u32)_08024C58((int)*(s16 *)(uintptr_t)r6v);
-    *r8v = val;
-    sub_08007ABC(*(volatile u32 *)(uintptr_t)(rec + 28), val,
-                 *(volatile u32 *)(uintptr_t)(rec + 608));
-
-    dma = (volatile u32 *)0x040000D4u;
-    r5v = 0x080CCEECu;
-    FF78_DMA_STEP(1, 0x05000282u);
-    FF78_DMA_STEP(2, 0x05000284u);
-    FF78_DMA_STEP(3, 0x05000286u);
-    FF78_DMA_STEP(4, 0x05000288u);
-    FF78_DMA_STEP(5, 0x0500028Au);
 }
 
 void _080013108(void *a) __attribute__((alias("MenuFF78_13108")));

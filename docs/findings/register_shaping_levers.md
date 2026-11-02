@@ -7,7 +7,7 @@ became byte-exact with the recipes below -- `0x08000848`
 `0x0800B89C` (`GoStart_Tick`) and `0x08009BF8`. Both now match their complete
 244-byte and 864-byte bodies, respectively (2026-10-17).
 Every claim here was checked with
-`python3 tools/corpus_match_probe.py --function NAME --c89 --require-exact`
+`python3 tools/corpus_match_probe.py --function NAME --require-exact`
 plus `python3 tools/match_c_slice.py NAME`, and each touched TU's siblings were
 re-probed afterwards. The matching commits are `a46575a`, `3a972ed`, `dd36b43`,
 `644e6c1` and `f362679`.
@@ -479,7 +479,7 @@ coalesce and the ROM's `adds r0,r7,r2` / `ldrh r1,[r0]` pair becomes
 
 ## `Garage_InitRecord` (0x080026FF4, 228 B): three shapes worth reusing
 
-Measured 2026-10-21 (`--function _080026FF4 --c89 --require-exact` plus
+Measured 2026-10-21 (`--function _080026FF4 --require-exact` plus
 `match_c_slice.py`).
 
 * **Address constants re-dereferenced per use.** The ROM holds `0x03001678`

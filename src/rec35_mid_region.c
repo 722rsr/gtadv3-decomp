@@ -260,32 +260,40 @@ void Rec35_SyncRec_16944(void *rec) {
     register u16 *dst __asm__("r1") = (u16 *)((u8 *)r5 + 204);
     u16 z = 0;
     dst[0] = a;
-    u16 b = RD16P(r0);
-    WR16((u8 *)r5 + 206, b);
-    // A 3-case switch, not an if/else-if chain. agbcc only builds an indirect
-    // table from 4 cases up; at 3 it emits the binary decision tree the ROM
-    // has (`cmp #2 / beq` then `cmp #2 / bgt` then `cmp #1 / beq`), which no
-    // if/else-if spelling produces (that comes out as a linear chain).
-    int sel = RS16((u8 *)r5 + 182);
-    switch (sel) {
-    case 1: WR16((u8 *)r5 + 208, (u16)sel); WR16((u8 *)r5 + 210, z); break;
-    case 2: WR16((u8 *)r5 + 208, z); WR16((u8 *)r5 + 210, 1); break;
-    case 3: WR16((u8 *)r5 + 208, z); WR16((u8 *)r5 + 210, z); break;
-    default: break;
+    {
+        u16 b = RD16P(r0);
+        WR16((u8 *)r5 + 206, b);
+        // A 3-case switch, not an if/else-if chain. agbcc only builds an indirect
+        // table from 4 cases up; at 3 it emits the binary decision tree the ROM
+        // has (`cmp #2 / beq` then `cmp #2 / bgt` then `cmp #1 / beq`), which no
+        // if/else-if spelling produces (that comes out as a linear chain).
+        {
+            int sel = RS16((u8 *)r5 + 182);
+            switch (sel) {
+            case 1: WR16((u8 *)r5 + 208, (u16)sel); WR16((u8 *)r5 + 210, z); break;
+            case 2: WR16((u8 *)r5 + 208, z); WR16((u8 *)r5 + 210, 1); break;
+            case 3: WR16((u8 *)r5 + 208, z); WR16((u8 *)r5 + 210, z); break;
+            default: break;
+            }
+            {
+                void *p208 = (u8 *)r5 + 208;
+                void *r6 = (u8 *)r5 + 210;
+                u32 *out1 = (u32 *)((u8 *)r5 + 460);
+                const s16 (*tbl)[2] = (const s16 (*)[2])0x080CB8CC;
+                int term1 = RS16(p208) * 2;
+                int off1 = term1 + RS16((u8 *)r5 + 204) * 4;
+                *out1 = (u32)*(const s16 *)((const u8 *)tbl + off1);
+                R35_CALLEE(Sub_08007ABC, _08007ABC)(RD32((u8 *)r5 + 12), *out1, RD32((u8 *)r5 + 456));
+                {
+                    u32 *out2 = (u32 *)((u8 *)r5 + 472);
+                    int term2 = RS16(r6) * 2;
+                    int off2 = term2 + RS16((u8 *)r5 + 206) * 4;
+                    *out2 = (u32)*(const s16 *)((const u8 *)tbl + off2);
+                    R35_CALLEE(Sub_08007ABC, _08007ABC)(RD32((u8 *)r5 + 12), *out2, RD32((u8 *)r5 + 468));
+                }
+            }
+        }
     }
-    void *p208 = (u8 *)r5 + 208;
-    void *r6 = (u8 *)r5 + 210;
-    u32 *out1 = (u32 *)((u8 *)r5 + 460);
-    const s16 (*tbl)[2] = (const s16 (*)[2])0x080CB8CC;
-    int term1 = RS16(p208) * 2;
-    int off1 = term1 + RS16((u8 *)r5 + 204) * 4;
-    *out1 = (u32)*(const s16 *)((const u8 *)tbl + off1);
-    R35_CALLEE(Sub_08007ABC, _08007ABC)(RD32((u8 *)r5 + 12), *out1, RD32((u8 *)r5 + 456));
-    u32 *out2 = (u32 *)((u8 *)r5 + 472);
-    int term2 = RS16(r6) * 2;
-    int off2 = term2 + RS16((u8 *)r5 + 206) * 4;
-    *out2 = (u32)*(const s16 *)((const u8 *)tbl + off2);
-    R35_CALLEE(Sub_08007ABC, _08007ABC)(RD32((u8 *)r5 + 12), *out2, RD32((u8 *)r5 + 468));
 }
 void _080016944(void *a) __attribute__((alias("Rec35_SyncRec_16944")));
 
@@ -327,37 +335,51 @@ void Rec35_PlacementEmit_16A20(void *rec) {
     // i is zeroed BEFORE the ghost fetches (`mov r0,#0 / mov r8,r0` sits ahead of
     // the first `bl`), so the initialiser belongs to the declaration, not a
     // `for` prologue.
-    int i = 0;
-    u32 off;
-    sp[0] = (u32)Rec35GhostSlot(0);
-    sp[1] = (u32)Rec35GhostSlot(1);
-    off = 0;
-    for (; i <= 1; off += 12, i++) {
-        s16 r4 = RS16((u8 *)(u32)sp[i] + 16);
-        _080022E4(r4);
-        u32 v1 = (u32)_08024D5C(r4);
-        u8 *pa = (u8 *)r6 + 388;
-        WR32(pa + off, v1);
-        u32 arg0 = RD32((u8 *)r6 + 20);
-        u8 *pb = (u8 *)r6 + 384;
-        u32 arg2 = RD32(pb + off);
-        R35_CALLEE(Sub_08007ABC, _08007ABC)(arg0, v1, arg2);
-        u32 v2 = (u32)_08024C74(r4);
-        u8 *pa2 = (u8 *)r6 + 412;
-        WR32(pa2 + off, v2);
-        u32 arg0b = RD32((u8 *)r6 + 28);
-        u8 *pb2 = (u8 *)r6 + 408;
-        u32 arg2b = RD32(pb2 + off);
-        R35_CALLEE(Sub_08007ABC, _08007ABC)(arg0b, v2, arg2b);
-        int raw3 = _080258A8(RS16((u8 *)(u32)sp[i] + 2));
-        u8 *pa3 = (u8 *)r6 + 436;
-        u8 *dst3 = pa3 + off;
-        s16 v3 = (s16)raw3;
-        WR32(dst3, (u32)v3);
-        u32 arg0c = RD32((u8 *)r6 + 36);
-        u8 *pb3 = (u8 *)r6 + 432;
-        u32 arg2c = RD32(pb3 + off);
-        R35_CALLEE(Sub_08007ABC, _08007ABC)(arg0c, (u32)v3, arg2c);
+    {
+        int i = 0;
+        u32 off;
+        sp[0] = (u32)Rec35GhostSlot(0);
+        sp[1] = (u32)Rec35GhostSlot(1);
+        off = 0;
+        for (; i <= 1; off += 12, i++) {
+            s16 r4 = RS16((u8 *)(u32)sp[i] + 16);
+            _080022E4(r4);
+            {
+                u32 v1 = (u32)_08024D5C(r4);
+                u8 *pa = (u8 *)r6 + 388;
+                WR32(pa + off, v1);
+                {
+                    u32 arg0 = RD32((u8 *)r6 + 20);
+                    u8 *pb = (u8 *)r6 + 384;
+                    u32 arg2 = RD32(pb + off);
+                    R35_CALLEE(Sub_08007ABC, _08007ABC)(arg0, v1, arg2);
+                    {
+                        u32 v2 = (u32)_08024C74(r4);
+                        u8 *pa2 = (u8 *)r6 + 412;
+                        WR32(pa2 + off, v2);
+                        {
+                            u32 arg0b = RD32((u8 *)r6 + 28);
+                            u8 *pb2 = (u8 *)r6 + 408;
+                            u32 arg2b = RD32(pb2 + off);
+                            R35_CALLEE(Sub_08007ABC, _08007ABC)(arg0b, v2, arg2b);
+                            {
+                                int raw3 = _080258A8(RS16((u8 *)(u32)sp[i] + 2));
+                                u8 *pa3 = (u8 *)r6 + 436;
+                                u8 *dst3 = pa3 + off;
+                                s16 v3 = (s16)raw3;
+                                WR32(dst3, (u32)v3);
+                                {
+                                    u32 arg0c = RD32((u8 *)r6 + 36);
+                                    u8 *pb3 = (u8 *)r6 + 432;
+                                    u32 arg2c = RD32(pb3 + off);
+                                    R35_CALLEE(Sub_08007ABC, _08007ABC)(arg0c, (u32)v3, arg2c);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 void _080016A20(void *a) __attribute__((alias("Rec35_PlacementEmit_16A20")));
@@ -448,15 +470,17 @@ void Rec35_Leaf_16BBC(void *rec) {
         // lsrs r4,r0,#16` instead of an extra `adds r4,r0,#0`.
         int v = (u16)_08002178(1, 2);
         if (v != 1) break;
-        u8 *wa;
-        { extern u8 Rec35Wa[];
-          __asm__(".globl Rec35Wa\nRec35Wa = 0x03001780\n");
-          wa = Rec35Wa; }
-        if (*(wa + 0x10C3) == 1) { WR16((u8 *)r5 + 198, 2); break; }
-        Rec35_Leaf_16AD4(r5);
-        R35_CALLEE(Sub_08024C18, _08024C18)(RS16((u8 *)r5 + 340));
-        WR16((u8 *)r5 + 198, (u16)v);
-        break;
+        {
+            u8 *wa;
+            { extern u8 Rec35Wa[];
+              __asm__(".globl Rec35Wa\nRec35Wa = 0x03001780\n");
+              wa = Rec35Wa; }
+            if (*(wa + 0x10C3) == 1) { WR16((u8 *)r5 + 198, 2); break; }
+            Rec35_Leaf_16AD4(r5);
+            R35_CALLEE(Sub_08024C18, _08024C18)(RS16((u8 *)r5 + 340));
+            WR16((u8 *)r5 + 198, (u16)v);
+            break;
+        }
     }
     case 1: {                                   // 0x08016C48
         WR32((u8 *)r5 + 508, 0);
@@ -465,10 +489,12 @@ void Rec35_Leaf_16BBC(void *rec) {
         WR16((u8 *)r5 + 198, 3);
         R35_CALLEE(Sub_08002618, _08002618)(1, 1);
         WR16((u8 *)r5 + 192, 1);
-        void *r4 = (u8 *)r5 + 480;
-        R35_CALLEE(Sub_08025BF0, _08025BF0)(r4, 4);
-        R35_CALLEE(Sub_08007ABC, _08007ABC)(RD32((u8 *)r5 + 44), RD32((u8 *)r5 + 484), RD32(r4));
-        break;
+        {
+            void *r4 = (u8 *)r5 + 480;
+            R35_CALLEE(Sub_08025BF0, _08025BF0)(r4, 4);
+            R35_CALLEE(Sub_08007ABC, _08007ABC)(RD32((u8 *)r5 + 44), RD32((u8 *)r5 + 484), RD32(r4));
+            break;
+        }
     }
     case 2: {                                   // 0x08016C8C
         WR32((u8 *)r5 + 508, 0);
@@ -477,10 +503,12 @@ void Rec35_Leaf_16BBC(void *rec) {
         WR16((u8 *)r5 + 198, 4);
         R35_CALLEE(Sub_08002618, _08002618)(1, 1);
         WR16((u8 *)r5 + 192, 1);
-        void *r4 = (u8 *)r5 + 480;
-        R35_CALLEE(Sub_08025BF0, _08025BF0)(r4, 2);
-        R35_CALLEE(Sub_08007ABC, _08007ABC)(RD32((u8 *)r5 + 44), RD32((u8 *)r5 + 484), RD32(r4));
-        break;
+        {
+            void *r4 = (u8 *)r5 + 480;
+            R35_CALLEE(Sub_08025BF0, _08025BF0)(r4, 2);
+            R35_CALLEE(Sub_08007ABC, _08007ABC)(RD32((u8 *)r5 + 44), RD32((u8 *)r5 + 484), RD32(r4));
+            break;
+        }
     }
     case 3:                                     // 0x08016CCC
         if (R35_CALLEE(Sub_080022C0, _080022C0)() != 1) break;
@@ -492,34 +520,42 @@ void Rec35_Leaf_16BBC(void *rec) {
     case 4: {                                   // 0x08016D02
         if (R35_CALLEE(Sub_080022C0, _080022C0)() != 1) break;
         Rec35_Leaf_16AD4(r5);
-        void *r4 = (u8 *)r5 + 480;
-        R35_CALLEE(Sub_08025BF0, _08025BF0)(r4, 1);
-        R35_CALLEE(Sub_08007ABC, _08007ABC)(RD32((u8 *)r5 + 44), RD32((u8 *)r5 + 484), RD32(r4));
-        u8 *r6 = (u8 *)r5 + 342;                // ROM keeps this in r6 across calls
-        R35_CALLEE(Sub_08024C14, _08024C14)(RS16(r6), (int)(uintptr_t)((u8 *)_080240D0() + 32));
-        // ROM (asm/rec35_runtime.s:1049-1057): r4 = rec + s16[rec+340]*32 + 276
-        // (the `subs r2, #64` reuses the 340 constant); dst = the ghost record
-        // (bl 0x08024BFC), ctrl = pool _080016D8C = 0x04000008.
-        // Parenthesised so the offset folds BEFORE the base add: the ROM is
-        // `lsls r4,#5 / subs r2,#64 / adds r4,r4,r2 / adds r4,r5,r4`, not
-        // `… / adds r4,r5,r4 / subs r2,#64 / adds r4,r4,r2`.
-        const void *dst = (const void *)((u8 *)r5 + (RS16((u8 *)r5 + 340) * 32 + 276));
-        R35_CALLEE(Sub_08002D974, sub_0802D974)(dst, Rec35GhostSlot(RS16(r6)), 0x04000008u);
-        R35_CALLEE(Sub_08024C10, _08024C10)(0);
-        R35_CALLEE(Sub_08024C10, _08024C10)(1);
-        R35_CALLEE(Sub_08024C1C, _08024C1C)();
-        R35_CALLEE(Rec35_SyncRec_16944, _080016944)(r5);
-        R35_CALLEE(Rec35_PlacementEmit_16A20, _080016A20)(r5);
-        WR16((u8 *)r5 + 198, 6);
-        break;
+        {
+            void *r4 = (u8 *)r5 + 480;
+            R35_CALLEE(Sub_08025BF0, _08025BF0)(r4, 1);
+            R35_CALLEE(Sub_08007ABC, _08007ABC)(RD32((u8 *)r5 + 44), RD32((u8 *)r5 + 484), RD32(r4));
+            {
+                u8 *r6 = (u8 *)r5 + 342;                // ROM keeps this in r6 across calls
+                R35_CALLEE(Sub_08024C14, _08024C14)(RS16(r6), (int)(uintptr_t)((u8 *)_080240D0() + 32));
+                // ROM (asm/rec35_runtime.s:1049-1057): r4 = rec + s16[rec+340]*32 + 276
+                // (the `subs r2, #64` reuses the 340 constant); dst = the ghost record
+                // (bl 0x08024BFC), ctrl = pool _080016D8C = 0x04000008.
+                // Parenthesised so the offset folds BEFORE the base add: the ROM is
+                // `lsls r4,#5 / subs r2,#64 / adds r4,r4,r2 / adds r4,r5,r4`, not
+                // `… / adds r4,r5,r4 / subs r2,#64 / adds r4,r4,r2`.
+                {
+                    const void *dst = (const void *)((u8 *)r5 + (RS16((u8 *)r5 + 340) * 32 + 276));
+                    R35_CALLEE(Sub_08002D974, sub_0802D974)(dst, Rec35GhostSlot(RS16(r6)), 0x04000008u);
+                    R35_CALLEE(Sub_08024C10, _08024C10)(0);
+                    R35_CALLEE(Sub_08024C10, _08024C10)(1);
+                    R35_CALLEE(Sub_08024C1C, _08024C1C)();
+                    R35_CALLEE(Rec35_SyncRec_16944, _080016944)(r5);
+                    R35_CALLEE(Rec35_PlacementEmit_16A20, _080016A20)(r5);
+                    WR16((u8 *)r5 + 198, 6);
+                    break;
+                }
+            }
+        }
     }
     case 6: {                                   // 0x08016D90
         WR32((u8 *)r5 + 512, 1);
-        int v = (u16)_08002178(1, 6);
-        if (v != 1) break;
-        WR32((u8 *)r5 + 508, (u32)v);
-        WR16((u8 *)r5 + 194, 6);
-        break;
+        {
+            int v = (u16)_08002178(1, 6);
+            if (v != 1) break;
+            WR32((u8 *)r5 + 508, (u32)v);
+            WR16((u8 *)r5 + 194, 6);
+            break;
+        }
     }
     case 5:                                     // 0x08016DB8 (fallthrough exit)
     case 7:
@@ -581,22 +617,26 @@ void Rec35_Leaf_16DE4(void *rec) {
         void *r4 = Rec35GhostSlot(0);
         void *r1 = Rec35GhostSlot(1);
         if (RD16P(r4) == 0 && RD16P(r1) == 0) { WR16((u8 *)r5 + 194, 7); break; }
-        u8 *q = (u8 *)r5 + 496;
-        WR32(q, 0);
-        // ROM puts the constant in r1 and the cell in r2 (0x08007ABC's 2nd/3rd
-        // parameters are in that order at this call site).
-        R35_CALLEE(Sub_08007ABC, _08007ABC)(RD32((u8 *)r5 + 52), 0, RD32(q - 4));
-        WR16((u8 *)r5 + 194, 2);
-        break;
+        {
+            u8 *q = (u8 *)r5 + 496;
+            WR32(q, 0);
+            // ROM puts the constant in r1 and the cell in r2 (0x08007ABC's 2nd/3rd
+            // parameters are in that order at this call site).
+            R35_CALLEE(Sub_08007ABC, _08007ABC)(RD32((u8 *)r5 + 52), 0, RD32(q - 4));
+            WR16((u8 *)r5 + 194, 2);
+            break;
+        }
     }
     case 7: {                                   // 0x08016E8C
         R35_CALLEE(Sub_08002618, _08002618)(1, 1);
         WR16((u8 *)r5 + 192, 1);
-        void *r4 = (u8 *)r5 + 480;
-        R35_CALLEE(Sub_08025BF0, _08025BF0)(r4, 0);
-        R35_CALLEE(Sub_08007ABC, _08007ABC)(RD32((u8 *)r5 + 44), RD32((u8 *)r5 + 484), RD32(r4));
-        WR16((u8 *)r5 + 194, 8);
-        break;
+        {
+            void *r4 = (u8 *)r5 + 480;
+            R35_CALLEE(Sub_08025BF0, _08025BF0)(r4, 0);
+            R35_CALLEE(Sub_08007ABC, _08007ABC)(RD32((u8 *)r5 + 44), RD32((u8 *)r5 + 484), RD32(r4));
+            WR16((u8 *)r5 + 194, 8);
+            break;
+        }
     }
     case 3: {                                   // 0x08016EC4
         // Written as if/else so agbcc branches OVER the main block (`bne` to the
@@ -1143,83 +1183,85 @@ void _080016FD0(void *a) __attribute__((alias("Rec35_Scene_16FD0")));
 // Rec35_Input_17528; the 4-state early-out replaces the whole tail.
 void Rec35_Input_17440(void *rec, int a, int id) {
     (void)a;
-    int nid = (u16)id;
-    void *r2;
-    void *p480;
-    void *r7 = (u8 *)rec + 182;
-    int old = RD16P(r7);
-    void *r4 = (u8 *)rec + 200;
-    // Inverted guard: the ROM branches *away* to the state-4 fixup, so the
-    // state-4 block is emitted last instead of first.
-    if (RD16P(r4) != 4) {
-        if (nid == 2) {
-            Sub_0802B368(4);
-            WR32((u8 *)rec + 56, 10);
-            WR16((u8 *)rec + 60, 0);
-            WR32((u8 *)rec + 88, 10);
-            WR32((u8 *)rec + 84, 0);
-        }
-        if (nid == 1) {
-            // 3-arm switch. Cases 1 and 2 must be *separate* case labels with
-            // duplicated bodies: a grouped `case 1: case 2:` becomes one range
-            // node (`cmp #1 / blt / ble`) instead of the ROM's balanced
-            // `cmp #2 / beq ... cmp #2 / bgt ... cmp #1 / beq` tree, which is
-            // then cross-jumped to the shared block.
-            switch (RS16(r7)) {
-            case 1: {
-                // ROM materialises the 0 *before* the rec+200 store and then
-                // reuses the register (`movs r0,#0 / strh r6,[r4] /
-                // strh r0,[r5,#60]`); an explicit zero variable keeps that
-                // order instead of rematerialising it at the store.
-                u16 z;
-                Sub_0802B368(1);
-                z = 0;
-                WR16(r4, nid);
-                WR16((u8 *)rec + 60, z);
-                p480 = (u8 *)rec + 480;
-                R35_CALLEE(Sub_08025BF0, _08025BF0)(p480, 9);
-                R35_CALLEE(Sub_08007ABC, _08007ABC)(RD32((u8 *)rec + 44), RD32((u8 *)rec + 484), RD32(p480));
-                R35_CALLEE(Sub_08002618, _08002618)(1, 1);
-                WR16((u8 *)rec + 192, nid);
-                break;
+    {
+        int nid = (u16)id;
+        void *r2;
+        void *p480;
+        void *r7 = (u8 *)rec + 182;
+        int old = RD16P(r7);
+        void *r4 = (u8 *)rec + 200;
+        // Inverted guard: the ROM branches *away* to the state-4 fixup, so the
+        // state-4 block is emitted last instead of first.
+        if (RD16P(r4) != 4) {
+            if (nid == 2) {
+                Sub_0802B368(4);
+                WR32((u8 *)rec + 56, 10);
+                WR16((u8 *)rec + 60, 0);
+                WR32((u8 *)rec + 88, 10);
+                WR32((u8 *)rec + 84, 0);
             }
-            case 2: {
-                u16 z;
-                Sub_0802B368(1);
-                z = 0;
-                WR16(r4, nid);
-                WR16((u8 *)rec + 60, z);
-                p480 = (u8 *)rec + 480;
-                R35_CALLEE(Sub_08025BF0, _08025BF0)(p480, 9);
-                R35_CALLEE(Sub_08007ABC, _08007ABC)(RD32((u8 *)rec + 44), RD32((u8 *)rec + 484), RD32(p480));
-                R35_CALLEE(Sub_08002618, _08002618)(1, 1);
-                WR16((u8 *)rec + 192, nid);
-                break;
+            if (nid == 1) {
+                // 3-arm switch. Cases 1 and 2 must be *separate* case labels with
+                // duplicated bodies: a grouped `case 1: case 2:` becomes one range
+                // node (`cmp #1 / blt / ble`) instead of the ROM's balanced
+                // `cmp #2 / beq ... cmp #2 / bgt ... cmp #1 / beq` tree, which is
+                // then cross-jumped to the shared block.
+                switch (RS16(r7)) {
+                case 1: {
+                    // ROM materialises the 0 *before* the rec+200 store and then
+                    // reuses the register (`movs r0,#0 / strh r6,[r4] /
+                    // strh r0,[r5,#60]`); an explicit zero variable keeps that
+                    // order instead of rematerialising it at the store.
+                    u16 z;
+                    Sub_0802B368(1);
+                    z = 0;
+                    WR16(r4, nid);
+                    WR16((u8 *)rec + 60, z);
+                    p480 = (u8 *)rec + 480;
+                    R35_CALLEE(Sub_08025BF0, _08025BF0)(p480, 9);
+                    R35_CALLEE(Sub_08007ABC, _08007ABC)(RD32((u8 *)rec + 44), RD32((u8 *)rec + 484), RD32(p480));
+                    R35_CALLEE(Sub_08002618, _08002618)(1, 1);
+                    WR16((u8 *)rec + 192, nid);
+                    break;
+                }
+                case 2: {
+                    u16 z;
+                    Sub_0802B368(1);
+                    z = 0;
+                    WR16(r4, nid);
+                    WR16((u8 *)rec + 60, z);
+                    p480 = (u8 *)rec + 480;
+                    R35_CALLEE(Sub_08025BF0, _08025BF0)(p480, 9);
+                    R35_CALLEE(Sub_08007ABC, _08007ABC)(RD32((u8 *)rec + 44), RD32((u8 *)rec + 484), RD32(p480));
+                    R35_CALLEE(Sub_08002618, _08002618)(1, 1);
+                    WR16((u8 *)rec + 192, nid);
+                    break;
+                }
+                case 3:
+                    Rec35_Leaf_17414(rec);
+                    break;
+                default:
+                    break;
+                }
             }
-            case 3:
-                Rec35_Leaf_17414(rec);
-                break;
-            default:
-                break;
+            r2 = (u8 *)rec + 182;
+            if (nid == 64)  { u16 v = RD16P(r2) - 1;  WR16(r2, v); }
+            if (nid == 128) { u16 v = RD16P(r2) + 1;  WR16(r2, v); }
+            {
+                // Same clamp shape as Rec35_Input_17528 (pointer in r2, clamp base
+                // copied to r1 with an r3=0 index scratch).
+                register void *q __asm__("r1") = (u8 *)rec + 182;
+                __asm__ volatile("" : "+r"(q));
+                if (RS16(q) < 1) WR16(q, 1);
+                if (RS16(q) > 3) WR16(q, 3);
             }
+            if (old != RD16P(r2)) {
+                R35_CALLEE(Rec35_SyncRec_16944, _080016944)(rec);
+                Sub_0802B368(2);
+            }
+        } else if (nid == 1) {
+            WR16(r4, 3);
         }
-        r2 = (u8 *)rec + 182;
-        if (nid == 64)  { u16 v = RD16P(r2) - 1;  WR16(r2, v); }
-        if (nid == 128) { u16 v = RD16P(r2) + 1;  WR16(r2, v); }
-        {
-            // Same clamp shape as Rec35_Input_17528 (pointer in r2, clamp base
-            // copied to r1 with an r3=0 index scratch).
-            register void *q __asm__("r1") = (u8 *)rec + 182;
-            __asm__ volatile("" : "+r"(q));
-            if (RS16(q) < 1) WR16(q, 1);
-            if (RS16(q) > 3) WR16(q, 3);
-        }
-        if (old != RD16P(r2)) {
-            R35_CALLEE(Rec35_SyncRec_16944, _080016944)(rec);
-            Sub_0802B368(2);
-        }
-    } else if (nid == 1) {
-        WR16(r4, 3);
     }
 }
 void _080017440(void *a, int b, int c) __attribute__((alias("Rec35_Input_17440")));
@@ -1231,38 +1273,40 @@ void _080017440(void *a, int b, int c) __attribute__((alias("Rec35_Input_17440")
 // call but gets a callee-saved home (r4) for the rest.
 void Rec35_Input_17528(void *rec, int a, int id) {
     (void)a;
-    int nid = (u16)id;
-    void *r5 = (u8 *)rec + 182;
-    u16 old = RD16P(r5);
-    void *p;
-    if (nid == 2) Rec35_Leaf_17414(rec);
-    if (nid == 1) {
-        // 3-arm switch on the raw s16: agbcc emits the ROM's balanced
-        // `cmp #2 / beq; cmp #2 / bgt; cmp #1 / beq` decision tree only here.
-        switch (RS16(r5)) {
-        case 1: R35_CALLEE(Sub_08024C08, _08024C08)(0); Rec35_Leaf_173E8(rec); break;
-        case 2: R35_CALLEE(Sub_08024C08, _08024C08)(1); Rec35_Leaf_173E8(rec); break;
-        case 3: Rec35_Leaf_173E8(rec); break;
-        default: goto skip;
-        }
-    }
-skip:
-    p = (u8 *)rec + 182;
-    if (nid == 64)  { u16 v = RD16P(p) - 1;  WR16(p, v); }
-    if (nid == 128) { u16 v = RD16P(p) + 1;  WR16(p, v); }
     {
-        // ROM keeps the tail pointer in r2 and the clamp on a *copy* in r1
-        // with a r3=0 index scratch (`adds r1,r2,#0; movs r3,#0;
-        // ldrsh r0,[r1,r3]`). Pinning the clamp base to r1 forces agbcc to
-        // push `p` off r1 and materialise the copy.
-        register void *q __asm__("r1") = (u8 *)rec + 182;
-        __asm__ volatile("" : "+r"(q));
-        if (RS16(q) < 1) WR16(q, 1);
-        if (RS16(q) > 3) WR16(q, 3);
-    }
-    if (old != RD16P(p)) {
-        Rec35_SyncRec_16944(rec);
-        Sub_0802B368(2);
+        int nid = (u16)id;
+        void *r5 = (u8 *)rec + 182;
+        u16 old = RD16P(r5);
+        void *p;
+        if (nid == 2) Rec35_Leaf_17414(rec);
+        if (nid == 1) {
+            // 3-arm switch on the raw s16: agbcc emits the ROM's balanced
+            // `cmp #2 / beq; cmp #2 / bgt; cmp #1 / beq` decision tree only here.
+            switch (RS16(r5)) {
+            case 1: R35_CALLEE(Sub_08024C08, _08024C08)(0); Rec35_Leaf_173E8(rec); break;
+            case 2: R35_CALLEE(Sub_08024C08, _08024C08)(1); Rec35_Leaf_173E8(rec); break;
+            case 3: Rec35_Leaf_173E8(rec); break;
+            default: goto skip;
+            }
+        }
+    skip:
+        p = (u8 *)rec + 182;
+        if (nid == 64)  { u16 v = RD16P(p) - 1;  WR16(p, v); }
+        if (nid == 128) { u16 v = RD16P(p) + 1;  WR16(p, v); }
+        {
+            // ROM keeps the tail pointer in r2 and the clamp on a *copy* in r1
+            // with a r3=0 index scratch (`adds r1,r2,#0; movs r3,#0;
+            // ldrsh r0,[r1,r3]`). Pinning the clamp base to r1 forces agbcc to
+            // push `p` off r1 and materialise the copy.
+            register void *q __asm__("r1") = (u8 *)rec + 182;
+            __asm__ volatile("" : "+r"(q));
+            if (RS16(q) < 1) WR16(q, 1);
+            if (RS16(q) > 3) WR16(q, 3);
+        }
+        if (old != RD16P(p)) {
+            Rec35_SyncRec_16944(rec);
+            Sub_0802B368(2);
+        }
     }
 }
 void _080017528(void *a, int b, int c) __attribute__((alias("Rec35_Input_17528")));
@@ -1292,124 +1336,138 @@ void Rec35_Input_175BC(void *rec) {
     __asm__(".globl Rec35Wa\nRec35Wa = 0x03001780");
     // ROM parks the two ghost-slot pointers in r5/r6 and the later state in
     // r7/r8/r9; agbcc prefers the high callee-saved pair for them, so pin.
-    register void *r5 __asm__("r5") = Rec35GhostSlot(0);
-    __asm__ volatile("" : "+r"(r5));
-    register void *r6 __asm__("r6") = Rec35GhostSlot(1);
-    __asm__ volatile("" : "+r"(r6));
-    u16 zero;                                   // ROM keeps 0 in r9
-    void *r8;                                   // r8 = rec+194 (the FSM cell)
-    int mode;
-    if (RD16P((u8 *)rec + 188) == 2) {
-        if ((u16)_08002178(0, 5) == 2 && (u16)_08002178(1, 5) == 2) {
-            WR16((u8 *)rec + 190, 0);
-            sub_080017414(rec);
-        }
-    }
-    register u8 *statusp __asm__("r0") = (u8 *)rec + 188;
-    mode = RS16(statusp);
-    if (mode != 1) return;
-    statusp += 2;
-    __asm__ volatile("" : "+r"(statusp));
-    zero = 0;                                   // 0x0801761C: movs r2,#0; mov r9,r2
-    WR16(statusp, zero);
-    r8 = (u8 *)rec + 194;
-    // Two-case dispatch is a plain chain; the inner sel dispatch is a 3-arm
-    // switch (balanced `cmp #2 / beq; cmp #2 / bgt; cmp #1 / beq` tree).
-    switch (RS16(r8)) {
-    case 2:
-        if ((u16)_08002178(1, 4) != 2) return;
-        register u16 *slotp __asm__("r0");
-        switch (RS16((u8 *)rec + 182)) {
-        case 1:
-            slotp = (u16 *)r5;
-            __asm__ volatile("" : "+r"(slotp));
-            if (RD16P(slotp) == 1) {
-                sub_0800168B8(1);
-                WR16((u8 *)rec + 340, zero);
-            } else {
-                goto mode2_slot_fail;
-            }
-            goto mode2_done;
-        case 2:
-            slotp = (u16 *)r6;
-            __asm__ volatile("" : "+r"(slotp));
-            if (RD16P(slotp) == 1) {
-                sub_0800168B8(1);
-                {
-                    // The pinned offset keeps the ROM's
-                    // `movs r2,#170 / lsls r2,#1 / adds r0,r4,r2`; the barrier
-                    // keeps cse from folding 340 past the pin at the add.
-                    register int byteOffset __asm__("r2");
-                    byteOffset = 340;
-                    __asm__ volatile("" : "+r"(byteOffset));
-                    register volatile u16 *dest __asm__("r0") =
-                        (volatile u16 *)((u8 *)rec + byteOffset);
-                    *dest = (u16)mode;
-                }
-            } else {
-                goto mode2_slot_fail;
-            }
-            /* Fall through to the shared [+194]=3 update. */
-mode2_done:
-            WR16(r8, 3);
-            return;
-mode2_slot_fail:
-            sub_0800168B8(10);
-            return;
-        case 3:
-            goto mode2_sel3;
-        default:
-            return;
-        }
-mode2_sel3:
-        sub_080017414(rec);
-        return;
-    case 4: {
-        u8 *wa;
-        int sel;
-        if ((u16)_08002178(1, 4) != 4) return;
+    {
+        register void *r5 __asm__("r5") = Rec35GhostSlot(0);
+        __asm__ volatile("" : "+r"(r5));
         {
-            sel = RS16((u8 *)rec + 182);
-        }
-        switch (sel) {
-        case 1:
-            sub_0800168B8(1);
-            *(volatile u16 *)((u8 *)rec + 342) = zero;
-            goto mode4_done;
-        case 2:
-            sub_0800168B8(1);
+            register void *r6 __asm__("r6") = Rec35GhostSlot(1);
+            __asm__ volatile("" : "+r"(r6));
             {
-                register int byteOffset __asm__("r2");
-                byteOffset = 342;
-                __asm__ volatile("" : "+r"(byteOffset));
-                register volatile u16 *dest __asm__("r0") =
-                    (volatile u16 *)((u8 *)rec + byteOffset);
-                *dest = (u16)mode;
+                u16 zero;                                   // ROM keeps 0 in r9
+                void *r8;                                   // r8 = rec+194 (the FSM cell)
+                int mode;
+                if (RD16P((u8 *)rec + 188) == 2) {
+                    if ((u16)_08002178(0, 5) == 2 && (u16)_08002178(1, 5) == 2) {
+                        WR16((u8 *)rec + 190, 0);
+                        sub_080017414(rec);
+                    }
+                }
+                {
+                    register u8 *statusp __asm__("r0") = (u8 *)rec + 188;
+                    mode = RS16(statusp);
+                    if (mode != 1) return;
+                    statusp += 2;
+                    __asm__ volatile("" : "+r"(statusp));
+                    zero = 0;                                   // 0x0801761C: movs r2,#0; mov r9,r2
+                    WR16(statusp, zero);
+                    r8 = (u8 *)rec + 194;
+                    // Two-case dispatch is a plain chain; the inner sel dispatch is a 3-arm
+                    // switch (balanced `cmp #2 / beq; cmp #2 / bgt; cmp #1 / beq` tree).
+                    switch (RS16(r8)) {
+                    case 2:
+                        if ((u16)_08002178(1, 4) != 2) return;
+                        {
+                            register u16 *slotp __asm__("r0");
+                            switch (RS16((u8 *)rec + 182)) {
+                            case 1:
+                                slotp = (u16 *)r5;
+                                __asm__ volatile("" : "+r"(slotp));
+                                if (RD16P(slotp) == 1) {
+                                    sub_0800168B8(1);
+                                    WR16((u8 *)rec + 340, zero);
+                                } else {
+                                    goto mode2_slot_fail;
+                                }
+                                goto mode2_done;
+                            case 2:
+                                slotp = (u16 *)r6;
+                                __asm__ volatile("" : "+r"(slotp));
+                                if (RD16P(slotp) == 1) {
+                                    sub_0800168B8(1);
+                                    {
+                                        // The pinned offset keeps the ROM's
+                                        // `movs r2,#170 / lsls r2,#1 / adds r0,r4,r2`; the barrier
+                                        // keeps cse from folding 340 past the pin at the add.
+                                        register int byteOffset __asm__("r2");
+                                        byteOffset = 340;
+                                        __asm__ volatile("" : "+r"(byteOffset));
+                                        {
+                                            register volatile u16 *dest __asm__("r0") =
+                                                (volatile u16 *)((u8 *)rec + byteOffset);
+                                            *dest = (u16)mode;
+                                        }
+                                    }
+                                } else {
+                                    goto mode2_slot_fail;
+                                }
+                                /* Fall through to the shared [+194]=3 update. */
+                    mode2_done:
+                                WR16(r8, 3);
+                                return;
+                    mode2_slot_fail:
+                                sub_0800168B8(10);
+                                return;
+                            case 3:
+                                goto mode2_sel3;
+                            default:
+                                return;
+                            }
+                    mode2_sel3:
+                            sub_080017414(rec);
+                            return;
+                        case 4: {
+                            u8 *wa;
+                            int sel;
+                            if ((u16)_08002178(1, 4) != 4) return;
+                            {
+                                sel = RS16((u8 *)rec + 182);
+                            }
+                            switch (sel) {
+                            case 1:
+                                sub_0800168B8(1);
+                                *(volatile u16 *)((u8 *)rec + 342) = zero;
+                                goto mode4_done;
+                            case 2:
+                                sub_0800168B8(1);
+                                {
+                                    register int byteOffset __asm__("r2");
+                                    byteOffset = 342;
+                                    __asm__ volatile("" : "+r"(byteOffset));
+                                    {
+                                        register volatile u16 *dest __asm__("r0") =
+                                            (volatile u16 *)((u8 *)rec + byteOffset);
+                                        *dest = (u16)mode;
+                                    }
+                                }
+                                /* Fall through to the shared mode-4 updates. */
+                    mode4_done:
+                            // Symbol form keeps the base in a register and adds the offset, like
+                            // the ROM's two pool words (`ldr r0,=0x03001780; ldr r1,=0x10C3`).
+                            { extern u8 Rec35Wa[];
+                              wa = Rec35Wa; }
+                            if (*(wa + 0x10C3) == 0) {
+                                WR16((u8 *)rec + 340, (u16)_08002178(1, 3));
+                            }
+                            WR16(r8, 5);                            // [+194]=5
+                            WR16((u8 *)rec + 198, zero);
+                            WR16((u8 *)rec + 344, (u16)mode);
+                            return;
+                            case 3:
+                                goto mode4_sel3;
+                            default:
+                                return;
+                            }
+                    mode4_sel3:
+                            sub_080017414(rec);
+                            return;
+                        }
+                        default:
+                            return;
+                        }
+                    }
+                }
             }
-            /* Fall through to the shared mode-4 updates. */
-mode4_done:
-        // Symbol form keeps the base in a register and adds the offset, like
-        // the ROM's two pool words (`ldr r0,=0x03001780; ldr r1,=0x10C3`).
-        { extern u8 Rec35Wa[];
-          wa = Rec35Wa; }
-        if (*(wa + 0x10C3) == 0) {
-            WR16((u8 *)rec + 340, (u16)_08002178(1, 3));
         }
-        WR16(r8, 5);                            // [+194]=5
-        WR16((u8 *)rec + 198, zero);
-        WR16((u8 *)rec + 344, (u16)mode);
-        return;
-        case 3:
-            goto mode4_sel3;
-        default:
-            return;
-        }
-mode4_sel3:
-        sub_080017414(rec);
-        return;
-    }
-    default:
-        return;
     }
 }
 // The ROM has two zero pad bytes after the return; use zero fill instead of
@@ -1468,30 +1526,36 @@ void Rec35_Input_17788(void *rec0, int a, int id) {
           __asm__ volatile("" : "+r"(k));
           k <<= 1;
           __asm__ volatile("" : "+r"(k));
-          register u8 *p __asm__("r0");
-          p = rec + k;
-          __asm__ volatile("" : "+r"(p));
-          _08002158(3, RD16P(p));
+          {
+              register u8 *p __asm__("r0");
+              p = rec + k;
+              __asm__ volatile("" : "+r"(p));
+              _08002158(3, RD16P(p));
+          }
           __asm__ volatile("" : "+r"(k)); }
         { register u32 k __asm__("r3");
           k = 172u;
           __asm__ volatile("" : "+r"(k));
           k <<= 1;
           __asm__ volatile("" : "+r"(k));
-          register u8 *p __asm__("r0");
-          p = rec + k;
-          __asm__ volatile("" : "+r"(p));
-          _08002158(2, RD16P(p));
+          {
+              register u8 *p __asm__("r0");
+              p = rec + k;
+              __asm__ volatile("" : "+r"(p));
+              _08002158(2, RD16P(p));
+          }
           __asm__ volatile("" : "+r"(k)); }
         { register u32 k __asm__("r1");
           k = 128u;
           __asm__ volatile("" : "+r"(k));
           k <<= 2;
           __asm__ volatile("" : "+r"(k));
-          register u8 *p __asm__("r0");
-          p = rec + k;
-          __asm__ volatile("" : "+r"(p));
-          _08002158(6, RD16P(p));
+          {
+              register u8 *p __asm__("r0");
+              p = rec + k;
+              __asm__ volatile("" : "+r"(p));
+              _08002158(6, RD16P(p));
+          }
           __asm__ volatile("" : "+r"(k)); }
         p194 = p188;
         p184 = p182;
@@ -1511,30 +1575,36 @@ void Rec35_Input_17788(void *rec0, int a, int id) {
           __asm__ volatile("" : "+r"(k));
           k <<= 1;
           __asm__ volatile("" : "+r"(k));
-          register u8 *p __asm__("r0");
-          p = rec + k;
-          __asm__ volatile("" : "+r"(p));
-          _08002158(3, RD16P(p));
+          {
+              register u8 *p __asm__("r0");
+              p = rec + k;
+              __asm__ volatile("" : "+r"(p));
+              _08002158(3, RD16P(p));
+          }
           __asm__ volatile("" : "+r"(k)); }
         { register u32 k __asm__("r3");
           k = 172u;
           __asm__ volatile("" : "+r"(k));
           k <<= 1;
           __asm__ volatile("" : "+r"(k));
-          register u8 *p __asm__("r0");
-          p = rec + k;
-          __asm__ volatile("" : "+r"(p));
-          _08002158(2, RD16P(p));
+          {
+              register u8 *p __asm__("r0");
+              p = rec + k;
+              __asm__ volatile("" : "+r"(p));
+              _08002158(2, RD16P(p));
+          }
           __asm__ volatile("" : "+r"(k)); }
         { register u32 k __asm__("r1");
           k = 128u;
           __asm__ volatile("" : "+r"(k));
           k <<= 2;
           __asm__ volatile("" : "+r"(k));
-          register u8 *p __asm__("r0");
-          p = rec + k;
-          __asm__ volatile("" : "+r"(p));
-          _08002158(6, RD16P(p));
+          {
+              register u8 *p __asm__("r0");
+              p = rec + k;
+              __asm__ volatile("" : "+r"(p));
+              _08002158(6, RD16P(p));
+          }
           __asm__ volatile("" : "+r"(k)); }
         p184 = rec + 184;
     }
@@ -1671,11 +1741,13 @@ void Rec35_Emit_17A20(void *rec) {
         u32 a388 = RD32((u8 *)rec + 388);
         R35_CALLEE(Sub_08007BFC, sub_08007BFC)(d16, (int)a384, (int)a388,
                      9, 72, 4, 1, 1, 0);
-        u8 *d24 = (u8 *)rec + 24;
-        u32 a408 = RD32((u8 *)rec + 408);
-        u32 a412 = RD32((u8 *)rec + 412);
-        R35_CALLEE(Sub_08007BFC, sub_08007BFC)(d24, (int)a408, (int)a412,
-                     76, 72, 4, 1, 1, 0);
+        {
+            u8 *d24 = (u8 *)rec + 24;
+            u32 a408 = RD32((u8 *)rec + 408);
+            u32 a412 = RD32((u8 *)rec + 412);
+            R35_CALLEE(Sub_08007BFC, sub_08007BFC)(d24, (int)a408, (int)a412,
+                         76, 72, 4, 1, 1, 0);
+        }
     }
     if (RD16P(s1) != 0) {
         u8 *d16 = (u8 *)rec + 16;
@@ -1683,11 +1755,13 @@ void Rec35_Emit_17A20(void *rec) {
         u32 a400 = RD32((u8 *)rec + 400);
         R35_CALLEE(Sub_08007BFC, sub_08007BFC)(d16, (int)a396, (int)a400,
                      9, 112, 4, 1, 1, 0);
-        u8 *d24 = (u8 *)rec + 24;
-        u32 a420 = RD32((u8 *)rec + 420);
-        u32 a424 = RD32((u8 *)rec + 424);
-        R35_CALLEE(Sub_08007BFC, sub_08007BFC)(d24, (int)a420, (int)a424,
-                     76, 112, 4, 1, 1, 0);
+        {
+            u8 *d24 = (u8 *)rec + 24;
+            u32 a420 = RD32((u8 *)rec + 420);
+            u32 a424 = RD32((u8 *)rec + 424);
+            R35_CALLEE(Sub_08007BFC, sub_08007BFC)(d24, (int)a420, (int)a424,
+                         76, 112, 4, 1, 1, 0);
+        }
     }
 }
 void _080017A20(void *a) __attribute__((alias("Rec35_Emit_17A20")));
@@ -1730,9 +1804,11 @@ void Rec35_Emit_17B84(void *rec) {
     register u32 offset __asm__("r3") = 492;
     register u32 x __asm__("r1") = *(u32 *)(base + offset);
     offset += 4;
-    u32 y = *(u32 *)(base + offset);
-    sub_08007BFC(dst, (int)x, (int)y,
-                 0, 32, 3, 1, 1, 0);
+    {
+        u32 y = *(u32 *)(base + offset);
+        sub_08007BFC(dst, (int)x, (int)y,
+                     0, 32, 3, 1, 1, 0);
+    }
 }
 // ROM inventory span ends with the zero-filled alignment halfword at +0x32.
 __asm__(".align 2, 0");
@@ -1986,113 +2062,115 @@ void Rec35_Setup_17F04(void *rec) {
     register int hold __asm__("r6");
     struct Rec35SetupRec *r = rec;
     __asm__ volatile("" : "=r"(hold));
-    void *tmpl;
-    s16 *p;
-    register s16 *pp __asm__("r3");
-    register int i __asm__("r4");
-    register int val __asm__("r5");
-    register int best __asm__("r10");
-    register u16 *slot __asm__("r2");
-    register s16 *result __asm__("r4");
-    register int zero __asm__("r8");
-    register void *tmpl2 __asm__("r5");
-    __asm__(".globl RecSetupWA\nRecSetupWA = 0x03001780\n"
-            ".globl RecSetupOff1\nRecSetupOff1 = 0x00000FF4\n"
-            ".globl RecSetupOff2\nRecSetupOff2 = 0x00000FF8\n"
-            ".globl RecSetupTable1\nRecSetupTable1 = 0x080CB8E0\n"
-            ".globl RecSetupTable2\nRecSetupTable2 = 0x080CB8E6\n");
-    sub_0802B214(65);
-    tmpl = (void *)0x0832C31C;
-    sub_08007770(0, tmpl, 1, 0, 4, 1);
-    r->f80 = 6;
-    r->f92 = 23;
-    r->f104 = 0;
-    sub_0800DAB8(&r->state);
-    sub_0800798C(tmpl, r);
-    sub_08007A58(r);
-    sub_080075E8(tmpl, 0, 3);
-    __asm__ volatile("" : : "r"(hold));
-    best = 3;
-    val = 0;
-    i = 0;
     {
-        register u8 *wa __asm__("r8") = RecSetupWA;
-        register uintptr_t qaddr __asm__("r2") = (uintptr_t)RecSetupOff2;
-        register s16 *q __asm__("r9");
-        qaddr += (uintptr_t)wa;
-        q = (s16 *)qaddr;
-        do {
-            int v;
-            pp = (s16 *)(wa + (uintptr_t)RecSetupOff1);
-            {
-                // Keep r2 live over the first load; both signed loads use r6
-                // as their index scratch, and pp spills across the call.
-                register int x0 __asm__("r0"), h2 __asm__("r2");
-                register int y1 __asm__("r1");
-                register s16 *qb __asm__("r2");
-                register int idx __asm__("r2");
-                __asm__ volatile("" : "=r"(h2));
-                x0 = *pp;
-                __asm__ volatile("" : "+r"(x0) : "r"(h2));
-                qb = q;
-                __asm__ volatile("" : "+r"(x0), "+r"(qb));
-                y1 = *qb;
-                idx = i;
-                p = pp;
-                __asm__ volatile("" : "+r"(x0), "+r"(y1), "+r"(idx), "+m"(p));
-                v = sub_08025CF4(x0, y1, idx);
-            }
-            {
-                register int rv __asm__("r1") = v;
-                register int adj __asm__("r0") = rv - 1;
-                __asm__ volatile("" : "+r"(adj));
-                __asm__ volatile("" : "=r"(pp) : "0"(p));
-                if ((u32)adj <= 2) val = rv;
-            }
-            if (val <= best) best = val;
-            i++;
-        } while (i <= 2);
-    }
-    {
-        // Keep r5 occupied while the two signed reads select r2/r6 scratch.
-        register int d __asm__("r5");
-        __asm__ volatile("" : "=r"(d));
-        result = &r->result;
-        { register int t __asm__("r0") = 0; __asm__ volatile("" : "+r"(t)); zero = t; }
-        { register int t __asm__("r1") = best; *result = t; }
+        void *tmpl;
+        s16 *p;
+        register s16 *pp __asm__("r3");
+        register int i __asm__("r4");
+        register int val __asm__("r5");
+        register int best __asm__("r10");
+        register u16 *slot __asm__("r2");
+        register s16 *result __asm__("r4");
+        register int zero __asm__("r8");
+        register void *tmpl2 __asm__("r5");
+        __asm__(".globl RecSetupWA\nRecSetupWA = 0x03001780\n"
+                ".globl RecSetupOff1\nRecSetupOff1 = 0x00000FF4\n"
+                ".globl RecSetupOff2\nRecSetupOff2 = 0x00000FF8\n"
+                ".globl RecSetupTable1\nRecSetupTable1 = 0x080CB8E0\n"
+                ".globl RecSetupTable2\nRecSetupTable2 = 0x080CB8E6\n");
+        sub_0802B214(65);
+        tmpl = (void *)0x0832C31C;
+        sub_08007770(0, tmpl, 1, 0, 4, 1);
+        r->f80 = 6;
+        r->f92 = 23;
+        r->f104 = 0;
+        sub_0800DAB8(&r->state);
+        sub_0800798C(tmpl, r);
+        sub_08007A58(r);
+        sub_080075E8(tmpl, 0, 3);
+        __asm__ volatile("" : : "r"(hold));
+        best = 3;
+        val = 0;
+        i = 0;
         {
-            register int g __asm__("r6"), g1 __asm__("r1");
-            register int a __asm__("r0");
-            register int h __asm__("r2"), b __asm__("r1");
-            __asm__ volatile("" : "=r"(g), "=r"(g1));
-            a = pp[0];
-            __asm__ volatile("" : "+r"(a) : "r"(g), "r"(g1));
-            __asm__ volatile("" : "+r"(a), "=r"(h));
-            b = pp[2];
-            __asm__ volatile("" : "+r"(b) : "r"(h));
-            sub_08002714(a, b, best);
+            register u8 *wa __asm__("r8") = RecSetupWA;
+            register uintptr_t qaddr __asm__("r2") = (uintptr_t)RecSetupOff2;
+            register s16 *q __asm__("r9");
+            qaddr += (uintptr_t)wa;
+            q = (s16 *)qaddr;
+            do {
+                int v;
+                pp = (s16 *)(wa + (uintptr_t)RecSetupOff1);
+                {
+                    // Keep r2 live over the first load; both signed loads use r6
+                    // as their index scratch, and pp spills across the call.
+                    register int x0 __asm__("r0"), h2 __asm__("r2");
+                    register int y1 __asm__("r1");
+                    register s16 *qb __asm__("r2");
+                    register int idx __asm__("r2");
+                    __asm__ volatile("" : "=r"(h2));
+                    x0 = *pp;
+                    __asm__ volatile("" : "+r"(x0) : "r"(h2));
+                    qb = q;
+                    __asm__ volatile("" : "+r"(x0), "+r"(qb));
+                    y1 = *qb;
+                    idx = i;
+                    p = pp;
+                    __asm__ volatile("" : "+r"(x0), "+r"(y1), "+r"(idx), "+m"(p));
+                    v = sub_08025CF4(x0, y1, idx);
+                }
+                {
+                    register int rv __asm__("r1") = v;
+                    register int adj __asm__("r0") = rv - 1;
+                    __asm__ volatile("" : "+r"(adj));
+                    __asm__ volatile("" : "=r"(pp) : "0"(p));
+                    if ((u32)adj <= 2) val = rv;
+                }
+                if (val <= best) best = val;
+                i++;
+            } while (i <= 2);
         }
-        __asm__ volatile("" : : "r"(d));
+        {
+            // Keep r5 occupied while the two signed reads select r2/r6 scratch.
+            register int d __asm__("r5");
+            __asm__ volatile("" : "=r"(d));
+            result = &r->result;
+            { register int t __asm__("r0") = 0; __asm__ volatile("" : "+r"(t)); zero = t; }
+            { register int t __asm__("r1") = best; *result = t; }
+            {
+                register int g __asm__("r6"), g1 __asm__("r1");
+                register int a __asm__("r0");
+                register int h __asm__("r2"), b __asm__("r1");
+                __asm__ volatile("" : "=r"(g), "=r"(g1));
+                a = pp[0];
+                __asm__ volatile("" : "+r"(a) : "r"(g), "r"(g1));
+                __asm__ volatile("" : "+r"(a), "=r"(h));
+                b = pp[2];
+                __asm__ volatile("" : "+r"(b) : "r"(h));
+                sub_08002714(a, b, best);
+            }
+            __asm__ volatile("" : : "r"(d));
+        }
+        {
+            int a = sub_08005758(64);
+            slot = (u16 *)0x0203F8E8;
+            slot[1] = a;
+        }
+        { register int z __asm__("r0") = zero; slot[0] = z; }
+        tmpl2 = (void *)0x08306B54;
+        sub_08007570(tmpl2, RecSetupTable1[*result - 1], (s16)slot[1], 64, 64);
+        sub_080075E8(tmpl2, RecSetupTable2[*result - 1], 4);
+        result += 2;
+        r->ptr120 = result;
+        r->ptr124 = &r->state;
+        { register int z __asm__("r6") = zero; r->state = z; }
+        r->enabled = 1;
+        sub_0800D77C((u8 *)r + 28, 0, -32);
+        sub_0800D77C((u8 *)r + 20, 0, 160);
+        r->mode = 6;
+        r->phase = 5;
+        *(s32 *)result = 2;
     }
-    {
-        int a = sub_08005758(64);
-        slot = (u16 *)0x0203F8E8;
-        slot[1] = a;
-    }
-    { register int z __asm__("r0") = zero; slot[0] = z; }
-    tmpl2 = (void *)0x08306B54;
-    sub_08007570(tmpl2, RecSetupTable1[*result - 1], (s16)slot[1], 64, 64);
-    sub_080075E8(tmpl2, RecSetupTable2[*result - 1], 4);
-    result += 2;
-    r->ptr120 = result;
-    r->ptr124 = &r->state;
-    { register int z __asm__("r6") = zero; r->state = z; }
-    r->enabled = 1;
-    sub_0800D77C((u8 *)r + 28, 0, -32);
-    sub_0800D77C((u8 *)r + 20, 0, 160);
-    r->mode = 6;
-    r->phase = 5;
-    *(s32 *)result = 2;
 }
 void _080017F04(void *a) __attribute__((alias("Rec35_Setup_17F04")));
 void sub_080017F04(void *a) __attribute__((alias("Rec35_Setup_17F04")));
@@ -2129,26 +2207,40 @@ void _080018064(void *a, int b, int c) __attribute__((alias("Rec35_CountdownGate
 void Rec35_RowEmit_18098(void *rec, void *dst, int idx, int arg) {
     register int index __asm__("r1") = idx;
     __asm__ volatile("" : "+r"(index));
-    register volatile u32 *cnt __asm__("r2") = (volatile u32 *)0x03000590;
-    __asm__ volatile("" : "+r"(cnt));
-    int v = (int)(*cnt) - 1;
-    *cnt = (u32)v;
-    register s16 *cur __asm__("r5") = (s16 *)0x0203F8E8;
-    __asm__ volatile("" : "+r"(cur));
-    if (v <= 0) {
-        *cur = (u16)(*cur + 1);
-        *cnt = 5;
+    {
+        register volatile u32 *cnt __asm__("r2") = (volatile u32 *)0x03000590;
+        __asm__ volatile("" : "+r"(cnt));
+        {
+            int v = (int)(*cnt) - 1;
+            *cnt = (u32)v;
+            {
+                register s16 *cur __asm__("r5") = (s16 *)0x0203F8E8;
+                __asm__ volatile("" : "+r"(cur));
+                if (v <= 0) {
+                    *cur = (u16)(*cur + 1);
+                    *cnt = 5;
+                }
+                {
+                    register s16 *cur0 __asm__("r2") = cur;
+                    __asm__ volatile("" : "+r"(cur0));
+                    if (*cur0 > 15) *cur0 = 0;
+                    {
+                        register void *base __asm__("r0") = (void *)0x08306B54;
+                        __asm__ volatile("" : "+r"(base));
+                        {
+                            register const s16 *table __asm__("r2") = (const s16 *)0x080CB8E0;
+                            __asm__ volatile("" : "+r"(table));
+                            {
+                                int s16val = table[index];
+                                sub_08007570(base, s16val, (int)cur[1], (int)cur[0] << 6, 64);
+                                sub_08002ED0(rec, (int)(uintptr_t)dst, (int)cur[1], arg, 1, 3, 1, 0, 0, 1);
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
-    register s16 *cur0 __asm__("r2") = cur;
-    __asm__ volatile("" : "+r"(cur0));
-    if (*cur0 > 15) *cur0 = 0;
-    register void *base __asm__("r0") = (void *)0x08306B54;
-    __asm__ volatile("" : "+r"(base));
-    register const s16 *table __asm__("r2") = (const s16 *)0x080CB8E0;
-    __asm__ volatile("" : "+r"(table));
-    int s16val = table[index];
-    sub_08007570(base, s16val, (int)cur[1], (int)cur[0] << 6, 64);
-    sub_08002ED0(rec, (int)(uintptr_t)dst, (int)cur[1], arg, 1, 3, 1, 0, 0, 1);
 }
 void _080018098(void *a, void *b, int c, int d) __attribute__((alias("Rec35_RowEmit_18098")));
 

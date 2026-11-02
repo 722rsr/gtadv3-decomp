@@ -7,7 +7,7 @@ two differences that are left, so the work is resumable rather than repeated.
 Measured with:
 
 ```sh
-python3 tools/corpus_match_probe.py --function _080013108 --c89 --work-dir build/lab/ff78
+python3 tools/corpus_match_probe.py --function _080013108 --work-dir build/lab/ff78
 ```
 
 ## Status

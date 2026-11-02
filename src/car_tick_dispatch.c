@@ -45,32 +45,38 @@ extern int sub_08025CF4(int,int,int);
 // `cmp r5,r6 / bgt` = `last <= best` (assign on ties, not `last < best`).
 int CarTick_GridA(int type,int row){
     int best=3, last=0;
-    for(int col=0; col<=2; col++){
-        u8 v = sub_08025CF4(type,row,col);
-        // `(unsigned)`, NOT `(u8)`: `v-1` promotes to int under C's usual
-        // arithmetic conversions, and the signedness is load-bearing -- it is
-        // what makes agbcc emit `bhi` (0xd8, the ROM's form) rather than `bge`
-        // (0xda). The values agree at runtime, but an 8-bit cast hands agbcc a
-        // different type and it REALLOCATES: (u8) scored 33/64 where this
-        // scores 62/64. Do not "simplify" this to (u8) or to a bare 2.
-        if ((unsigned)(v - 1) <= 2u) last=v;
-        if (last <= best) best=last;
+    {
+        int col = 0;
+        for (; col<=2; col++){
+            u8 v = sub_08025CF4(type,row,col);
+            // `(unsigned)`, NOT `(u8)`: `v-1` promotes to int under C's usual
+            // arithmetic conversions, and the signedness is load-bearing -- it is
+            // what makes agbcc emit `bhi` (0xd8, the ROM's form) rather than `bge`
+            // (0xda). The values agree at runtime, but an 8-bit cast hands agbcc a
+            // different type and it REALLOCATES: (u8) scored 33/64 where this
+            // scores 62/64. Do not "simplify" this to (u8) or to a bare 2.
+            if ((unsigned)(v - 1) <= 2u) last=v;
+            if (last <= best) best=last;
+        }
     }
     return best;
 }
 __asm__(".align 2, 0");
 int CarTick_GridB(int type,int row){
     int best=3, last=0;
-    for(int col=3; col<=10; col++){
-        u8 v = sub_08025CF4(type,row,col);
-        // `(unsigned)`, NOT `(u8)`: `v-1` promotes to int under C's usual
-        // arithmetic conversions, and the signedness is load-bearing -- it is
-        // what makes agbcc emit `bhi` (0xd8, the ROM's form) rather than `bge`
-        // (0xda). The values agree at runtime, but an 8-bit cast hands agbcc a
-        // different type and it REALLOCATES: (u8) scored 33/64 where this
-        // scores 62/64. Do not "simplify" this to (u8) or to a bare 2.
-        if ((unsigned)(v - 1) <= 2u) last=v;
-        if (last <= best) best=last;
+    {
+        int col = 3;
+        for (; col<=10; col++){
+            u8 v = sub_08025CF4(type,row,col);
+            // `(unsigned)`, NOT `(u8)`: `v-1` promotes to int under C's usual
+            // arithmetic conversions, and the signedness is load-bearing -- it is
+            // what makes agbcc emit `bhi` (0xd8, the ROM's form) rather than `bge`
+            // (0xda). The values agree at runtime, but an 8-bit cast hands agbcc a
+            // different type and it REALLOCATES: (u8) scored 33/64 where this
+            // scores 62/64. Do not "simplify" this to (u8) or to a bare 2.
+            if ((unsigned)(v - 1) <= 2u) last=v;
+            if (last <= best) best=last;
+        }
     }
     return best;
 }
@@ -191,10 +197,12 @@ int CarTick_Shared(void){
     extern void sub_08024048(void*);
     sub_08024048(&pair);
     a = (int)*(volatile long long *)&pair;
-    register int neg __asm__("r2");
-    neg = -1;
-    if (a == neg) sub_08004CF0();
-    return a;
+    {
+        register int neg __asm__("r2");
+        neg = -1;
+        if (a == neg) sub_08004CF0();
+        return a;
+    }
 }
 #if defined(__linux__) || defined(__ELF__)
 int _0800AA20(void) __attribute__((alias("CarTick_Shared")));

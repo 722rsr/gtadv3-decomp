@@ -86,18 +86,20 @@ int _08009BCC(void)
 {
     extern u8 CarTickWa[];
     __asm__(".globl CarTickWa\nCarTickWa = 0x03001780\n");
-    uintptr_t base = (uintptr_t)CarTickWa;
-    volatile u8 *gate = (volatile u8 *)(uintptr_t)(base + 0x10C0u);
-    int r;
+    {
+        uintptr_t base = (uintptr_t)CarTickWa;
+        volatile u8 *gate = (volatile u8 *)(uintptr_t)(base + 0x10C0u);
+        int r;
 
-    if (*gate == 0)
-        r = sub_08004CF0();
-    else {
-        *gate = 0;
-        sub_08004CC4();
-        r = 13;
+        if (*gate == 0)
+            r = sub_08004CF0();
+        else {
+            *gate = 0;
+            sub_08004CC4();
+            r = 13;
+        }
+        return r;
     }
-    return r;
 }
 // The body is 42 bytes; under `-ffunction-sections` gas closes the section
 // with the 2-byte Thumb nop (0x46c0) where the ROM holds `00 00`. This
@@ -252,19 +254,21 @@ int _08009BF8(void *ctx)
         sub_0802D974(packet + 60, packet, 0x0500000Eu);
         ((u16 *)packet)[0] = 10;
         packet[23] = (u8)slot;
-        register u32 waBase __asm__("r5");
-        waBase = (u32)CarTickWa;
-        cursor = (s16 *)(uintptr_t)(waBase + 0x574u);
-        ((u16 *)packet)[12] = (u16)_08002340((int)(*cursor));
-        sourceWords = (const u32 *)(uintptr_t)((s32)(*cursor) * 12 + waBase);
-        __asm__ volatile ("" : "+r" (sourceWords) : : "memory");
-        destWords = (u32 *)(packet + 28);
-        __asm__ volatile ("" : "+r" (destWords) : : "memory");
-        sourceWords += 12;
-        __asm__ volatile ("" : : "r" (sourceWords) : "memory");
-        __builtin_memcpy(destWords, sourceWords, 3 * sizeof(u32));
-        __asm__ volatile ("" : : "r" (waBase) : "memory");
-        goto packet_epilogue;
+        {
+            register u32 waBase __asm__("r5");
+            waBase = (u32)CarTickWa;
+            cursor = (s16 *)(uintptr_t)(waBase + 0x574u);
+            ((u16 *)packet)[12] = (u16)_08002340((int)(*cursor));
+            sourceWords = (const u32 *)(uintptr_t)((s32)(*cursor) * 12 + waBase);
+            __asm__ volatile ("" : "+r" (sourceWords) : : "memory");
+            destWords = (u32 *)(packet + 28);
+            __asm__ volatile ("" : "+r" (destWords) : : "memory");
+            sourceWords += 12;
+            __asm__ volatile ("" : : "r" (sourceWords) : "memory");
+            __builtin_memcpy(destWords, sourceWords, 3 * sizeof(u32));
+            __asm__ volatile ("" : : "r" (waBase) : "memory");
+            goto packet_epilogue;
+        }
     }
 packet_epilogue:
         sub_0800188B0(packet);
@@ -738,15 +742,17 @@ int _0800A62C(void *ctx) {
     case 0: {
         extern u8 CarTickWa[];
         __asm__(".globl CarTickWa\nCarTickWa = 0x03001780\n");
-        uintptr_t base = (uintptr_t)CarTickWa;
-        volatile u16 *request = (volatile u16 *)(uintptr_t)(base + 0x1086u);
+        {
+            uintptr_t base = (uintptr_t)CarTickWa;
+            volatile u16 *request = (volatile u16 *)(uintptr_t)(base + 0x1086u);
 
-        if (*request == 1u) {
-            result = 49;
-            *request = 0;
-        } else
-            result = 14;
-        break;
+            if (*request == 1u) {
+                result = 49;
+                *request = 0;
+            } else
+                result = 14;
+            break;
+        }
     }
     case 1:
         _08009B60((void *)(uintptr_t)key);
@@ -773,16 +779,18 @@ int _0800A908(void)
 {
     extern u8 CarTickWa[];
     __asm__(".globl CarTickWa\nCarTickWa = 0x03001780\n");
-    uintptr_t base = (uintptr_t)CarTickWa;
-    int v = *(const s16 *)(uintptr_t)(base + 0x1084u);
+    {
+        uintptr_t base = (uintptr_t)CarTickWa;
+        int v = *(const s16 *)(uintptr_t)(base + 0x1084u);
 
-    if (v) {
-        if (v == 1) {
-            sub_08004CC4();
-            sub_08004CD4(13);
+        if (v) {
+            if (v == 1) {
+                sub_08004CC4();
+                sub_08004CD4(13);
+            }
         }
+        return sub_08004CF0();
     }
-    return sub_08004CF0();
 }
 
 // ----------------------------------------------------------------------------
@@ -960,22 +968,24 @@ int Rec9FB8(void *ctx)
 {
     extern u8 CarTickWa[];
     __asm__(".globl CarTickWa\nCarTickWa = 0x03001780\n");
-    register int r __asm__("r4");
-    s32 key;
-    uintptr_t base;
-    __asm__ volatile("" : "=r" (r));
-    base = (uintptr_t)CarTickWa;
-    key = *(const s16 *)(uintptr_t)(base + 0x1080u);
-    switch (key) {
-    case 0:  r = 24; break;
-    case 1:  r = 34; break;
-    case 2:
-        r = 37;
-        _08004C48(37, 0, 1);
-        break;
+    {
+        register int r __asm__("r4");
+        s32 key;
+        uintptr_t base;
+        __asm__ volatile("" : "=r" (r));
+        base = (uintptr_t)CarTickWa;
+        key = *(const s16 *)(uintptr_t)(base + 0x1080u);
+        switch (key) {
+        case 0:  r = 24; break;
+        case 1:  r = 34; break;
+        case 2:
+            r = 37;
+            _08004C48(37, 0, 1);
+            break;
+        }
+        (void)ctx;
+        return r;
     }
-    (void)ctx;
-    return r;
 }
 int _08009FB8(void *c) __attribute__((alias("Rec9FB8")));
 __asm__(".align 2, 0");
@@ -989,22 +999,24 @@ int CarTick_Rec_0A028(void *ctx)
 {
     extern u8 CarTickWa[];
     __asm__(".globl CarTickWa\nCarTickWa = 0x03001780\n");
-    uintptr_t base = (uintptr_t)CarTickWa;
-    s32 idx = ((s32)*(const s16 *)(uintptr_t)(base + 0x0FF6u) << 1)
-             + ((s32)*(const s16 *)(uintptr_t)(base + 0x0FF2u) << 3);
-    uintptr_t cb = base;
-    s16 *cell;
-    int r2;
+    {
+        uintptr_t base = (uintptr_t)CarTickWa;
+        s32 idx = ((s32)*(const s16 *)(uintptr_t)(base + 0x0FF6u) << 1)
+                 + ((s32)*(const s16 *)(uintptr_t)(base + 0x0FF2u) << 3);
+        uintptr_t cb = base;
+        s16 *cell;
+        int r2;
 
-    cb += 253u << 4;
-    cell = (s16 *)(uintptr_t)(cb + (u32)idx);
-    if (*cell == 0) {
-        r2 = 32;
-        *cell = 1;
-    } else
-        r2 = 15;
-    (void)ctx;
-    return r2;
+        cb += 253u << 4;
+        cell = (s16 *)(uintptr_t)(cb + (u32)idx);
+        if (*cell == 0) {
+            r2 = 32;
+            *cell = 1;
+        } else
+            r2 = 15;
+        (void)ctx;
+        return r2;
+    }
 }
 __asm__(".align 2, 0");
 int _0800A028(void *c) __attribute__((alias("CarTick_Rec_0A028")));
@@ -1098,15 +1110,17 @@ int CarTick_Rec_0A124(void *ctx)
 {
     extern u8 CarTickWa[];
     __asm__(".globl CarTickWa\nCarTickWa = 0x03001780\n");
-    uintptr_t base = (uintptr_t)CarTickWa;
-    if (*(volatile u16 *)(uintptr_t)(base + 0x0FBCu) == 7) {
-        (void)sub_08004CF0();
-    } else {
-        (void)sub_08004CF0();
-        (void)sub_08004CF0();
+    {
+        uintptr_t base = (uintptr_t)CarTickWa;
+        if (*(volatile u16 *)(uintptr_t)(base + 0x0FBCu) == 7) {
+            (void)sub_08004CF0();
+        } else {
+            (void)sub_08004CF0();
+            (void)sub_08004CF0();
+        }
+        (void)ctx;
+        return 15;
     }
-    (void)ctx;
-    return 15;
 }
 __asm__(".align 2, 0");
 int _0800A124(void *c) __attribute__((alias("CarTick_Rec_0A124")));
@@ -1127,56 +1141,62 @@ int CarTick_Rec_0A150(void *ctx)
 {
     register int result __asm__("r1") = 0;
     __asm__ volatile("" : "+r"(result));
-    register u32 phaseBase __asm__("r0") = WA;
-    register u32 phaseOffset __asm__("r2") = 0x0FBCu;
-    __asm__ volatile("" : "+r"(phaseBase), "+r"(phaseOffset));
-    register int phase __asm__("r0");
-    phaseBase += phaseOffset;
-    phaseOffset = 0;
-    phase = *(const s16 *)((const u8 *)(uintptr_t)phaseBase + phaseOffset);
+    {
+        register u32 phaseBase __asm__("r0") = WA;
+        register u32 phaseOffset __asm__("r2") = 0x0FBCu;
+        __asm__ volatile("" : "+r"(phaseBase), "+r"(phaseOffset));
+        {
+            register int phase __asm__("r0");
+            phaseBase += phaseOffset;
+            phaseOffset = 0;
+            phase = *(const s16 *)((const u8 *)(uintptr_t)phaseBase + phaseOffset);
 
-    if (phase == 2) goto phase2;
-    if (phase > 2) goto phase_above_2;
-    if (phase == 1) goto dispatch_once;
-    goto finish;
+            if (phase == 2) goto phase2;
+            if (phase > 2) goto phase_above_2;
+            if (phase == 1) goto dispatch_once;
+            goto finish;
 
-phase_above_2:
-    if (phase == 3) goto phase3;
-    if (phase == 7) goto phase7;
-    goto finish;
+        phase_above_2:
+            if (phase == 3) goto phase3;
+            if (phase == 7) goto phase7;
+            goto finish;
 
-phase2:
-    {
-        register int arg __asm__("r0");
-        __asm__ volatile("" : "=r"(arg));
-        CarTickDispatch_R0(arg);
+        phase2:
+            {
+                register int arg __asm__("r0");
+                __asm__ volatile("" : "=r"(arg));
+                CarTickDispatch_R0(arg);
+            }
+        phase3:
+            {
+                register int arg __asm__("r0");
+                __asm__ volatile("" : "=r"(arg));
+                CarTickDispatch_R0(arg);
+            }
+        phase7:
+            {
+                register u32 base __asm__("r0") = WA;
+                register u32 offset __asm__("r1") = 0x1078u;
+                __asm__ volatile("" : "+r"(base), "+r"(offset));
+                {
+                    register int arg __asm__("r0");
+                    base += offset;
+                    arg = *(const s16 *)(uintptr_t)base;
+                    __asm__ volatile("" : "+r"(offset), "+r"(arg));
+                }
+            }
+        dispatch_once:
+            {
+                register int arg __asm__("r0");
+                __asm__ volatile("" : "=r"(arg));
+                CarTickDispatch_R0(arg);
+            }
+            result = 49;
+        finish:
+            (void)ctx;
+            return result;
+        }
     }
-phase3:
-    {
-        register int arg __asm__("r0");
-        __asm__ volatile("" : "=r"(arg));
-        CarTickDispatch_R0(arg);
-    }
-phase7:
-    {
-        register u32 base __asm__("r0") = WA;
-        register u32 offset __asm__("r1") = 0x1078u;
-        __asm__ volatile("" : "+r"(base), "+r"(offset));
-        register int arg __asm__("r0");
-        base += offset;
-        arg = *(const s16 *)(uintptr_t)base;
-        __asm__ volatile("" : "+r"(offset), "+r"(arg));
-    }
-dispatch_once:
-    {
-        register int arg __asm__("r0");
-        __asm__ volatile("" : "=r"(arg));
-        CarTickDispatch_R0(arg);
-    }
-    result = 49;
-finish:
-    (void)ctx;
-    return result;
 }
 int _0800A150(void *c) __attribute__((alias("CarTick_Rec_0A150")));
 

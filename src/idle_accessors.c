@@ -226,10 +226,12 @@ void Idle_ArenaRegister(void *handle, void *region, int len) {
     u32 zero = 0;
     int n = len;
     if (n < 0) n += 3;
-    u32 ctrl = 0x05000000u | (((u32)n << 9) >> 11);
-    sub_0802D974(&zero, region, ctrl);
-    ((u32 *)handle)[0] = (u32)(uintptr_t)region;
-    ((u32 *)handle)[1] = (u32)len;
+    {
+        u32 ctrl = 0x05000000u | (((u32)n << 9) >> 11);
+        sub_0802D974(&zero, region, ctrl);
+        ((u32 *)handle)[0] = (u32)(uintptr_t)region;
+        ((u32 *)handle)[1] = (u32)len;
+    }
 }
 // The body is 50 bytes, two short of the section's 4-byte alignment. Under
 // -ffunction-sections gas closes the section itself and fills a Thumb code

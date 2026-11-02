@@ -174,11 +174,15 @@ void _0800CDEC(void *rec)
 {
     volatile u8 *r4 = (volatile u8 *)rec;
     _080038A4(96, 15, (const void *)(uintptr_t)0x0805F88Cu);
-    register u16 v __asm__("r0") = KEYPAD_W12;
-    register u32 t __asm__("r2");
-    t = (u32)v << 16;
-    t = (u32)((s32)t >> 19);
-    _08003978(120, 32, (int)t);
-    void *obj = (void *)(uintptr_t)(*(volatile u32 *)(r4 + REC_OBJ_OFF));
-    _080026A20(obj, 120, 100);
+    {
+        register u16 v __asm__("r0") = KEYPAD_W12;
+        register u32 t __asm__("r2");
+        t = (u32)v << 16;
+        t = (u32)((s32)t >> 19);
+        _08003978(120, 32, (int)t);
+        {
+            void *obj = (void *)(uintptr_t)(*(volatile u32 *)(r4 + REC_OBJ_OFF));
+            _080026A20(obj, 120, 100);
+        }
+    }
 }

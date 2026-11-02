@@ -7,6 +7,8 @@
 // Behavior validated against tools/track_dump.py.
 // Externs for BIOS and cross-module helpers are weak so host tests can stub.
 
+extern int _0802DE9C(int, int);
+extern const u8 CourseVramBase[];
 extern void _0802D974(const void *src, void *dst, u32 ctrl); // CpuSet (swi 0x0B)
 
 void CpuSetWrapper(const void *src, void *dst, u32 ctrl) __attribute__((weak));
@@ -90,12 +92,14 @@ void Course_StreamDispatcher(void) {
     extern u8 StreamCurB[] __asm__("StreamCurB");
     __asm__(".globl StreamCurA\nStreamCurA = 0x0203F8A4\n");
     __asm__(".globl StreamCurB\nStreamCurB = 0x0203F870\n");
-    register volatile u8 *pa __asm__("r0") = (volatile u8 *)StreamCurA;
-    register volatile u8 *pb __asm__("r1") = (volatile u8 *)StreamCurB;
-    s16 cursor = *(s16 *)pa;
-    s16 count  = *(s16 *)pb;
-    if (cursor < count) _08006678();
-    else _080068D4();
+    {
+        register volatile u8 *pa __asm__("r0") = (volatile u8 *)StreamCurA;
+        register volatile u8 *pb __asm__("r1") = (volatile u8 *)StreamCurB;
+        s16 cursor = *(s16 *)pa;
+        s16 count  = *(s16 *)pb;
+        if (cursor < count) _08006678();
+        else _080068D4();
+    }
 }
 
 void Course_StreamRow(void) {
@@ -127,72 +131,76 @@ void Course_StreamRow(void) {
     rec += 4;
     y = *(volatile u32 *)(uintptr_t)(off + rec);
     y4 = (s32)y << 4;
-    extern const u8 CourseVramBase[];
-    __asm__(".globl CourseVramBase\nCourseVramBase = 0x06004000\n");
-    register u32 mask __asm__("r1") = 0x70;
-    register u32 ypart __asm__("r2") = ((u32)y4 & mask) << 7;
-    register u32 xpart __asm__("r0") = (u32)x4 & mask;
-    xpart += (u32)(uintptr_t)CourseVramBase;
-    register u32 dst __asm__("r6") = ypart + xpart;
-    volatile u32 *hp = (volatile u32 *)EWRAM_ROOT_PTR_ADDR;
-    register u32 header __asm__("r0") = *(volatile u32 *)(uintptr_t)*hp;
-    // This selected surface header is RAM; the plain halfword read preserves
-    // the ROM's immediate-offset ldrh used by both bounds and the row stride.
-    u32 w = *(u16 *)((u8 *)(uintptr_t)header + 8);
-    u32 h = *(volatile u16 *)(uintptr_t)(header + SURFACE_HEADER_H_OFF);
-    register u32 ctrl __asm__("r5");
 
-    if (x4 >= 0) {
-        if (y4 >= 0) {
-            if ((s32)w > x4) {
-                if ((s32)h > y4) {
-                    u32 row = (u32)y4 * w;
-                    register u32 xb2 __asm__("r0") = (u32)x4 + EWRAM_SURFACE_MAP;
-                    u32 src = row + xb2;
-                    ctrl = 0x04000004u;
-                    _0802D974((void *)src, (void *)dst, ctrl); src += w; dst += 0x80;
-                    _0802D974((void *)src, (void *)dst, ctrl); src += w; dst += 0x80;
-                    _0802D974((void *)src, (void *)dst, ctrl); src += w; dst += 0x80;
-                    _0802D974((void *)src, (void *)dst, ctrl); src += w; dst += 0x80;
-                    _0802D974((void *)src, (void *)dst, ctrl); src += w; dst += 0x80;
-                    _0802D974((void *)src, (void *)dst, ctrl); src += w; dst += 0x80;
-                    _0802D974((void *)src, (void *)dst, ctrl); src += w; dst += 0x80;
-                    _0802D974((void *)src, (void *)dst, ctrl); src += w; dst += 0x80;
-                    _0802D974((void *)src, (void *)dst, ctrl); src += w; dst += 0x80;
-                    _0802D974((void *)src, (void *)dst, ctrl); src += w; dst += 0x80;
-                    _0802D974((void *)src, (void *)dst, ctrl); src += w; dst += 0x80;
-                    _0802D974((void *)src, (void *)dst, ctrl); src += w; dst += 0x80;
-                    _0802D974((void *)src, (void *)dst, ctrl); src += w; dst += 0x80;
-                    _0802D974((void *)src, (void *)dst, ctrl); src += w; dst += 0x80;
-                    _0802D974((void *)src, (void *)dst, ctrl); src += w; dst += 0x80;
-                    _0802D974((void *)src, (void *)dst, ctrl);
-                    goto done;
+    __asm__(".globl CourseVramBase\nCourseVramBase = 0x06004000\n");
+    {
+        register u32 mask __asm__("r1") = 0x70;
+        register u32 ypart __asm__("r2") = ((u32)y4 & mask) << 7;
+        register u32 xpart __asm__("r0") = (u32)x4 & mask;
+        xpart += (u32)(uintptr_t)CourseVramBase;
+        {
+            register u32 dst __asm__("r6") = ypart + xpart;
+            volatile u32 *hp = (volatile u32 *)EWRAM_ROOT_PTR_ADDR;
+            register u32 header __asm__("r0") = *(volatile u32 *)(uintptr_t)*hp;
+            // This selected surface header is RAM; the plain halfword read preserves
+            // the ROM's immediate-offset ldrh used by both bounds and the row stride.
+            u32 w = *(u16 *)((u8 *)(uintptr_t)header + 8);
+            u32 h = *(volatile u16 *)(uintptr_t)(header + SURFACE_HEADER_H_OFF);
+            register u32 ctrl __asm__("r5");
+
+            if (x4 >= 0) {
+                if (y4 >= 0) {
+                    if ((s32)w > x4) {
+                        if ((s32)h > y4) {
+                            u32 row = (u32)y4 * w;
+                            register u32 xb2 __asm__("r0") = (u32)x4 + EWRAM_SURFACE_MAP;
+                            u32 src = row + xb2;
+                            ctrl = 0x04000004u;
+                            _0802D974((void *)src, (void *)dst, ctrl); src += w; dst += 0x80;
+                            _0802D974((void *)src, (void *)dst, ctrl); src += w; dst += 0x80;
+                            _0802D974((void *)src, (void *)dst, ctrl); src += w; dst += 0x80;
+                            _0802D974((void *)src, (void *)dst, ctrl); src += w; dst += 0x80;
+                            _0802D974((void *)src, (void *)dst, ctrl); src += w; dst += 0x80;
+                            _0802D974((void *)src, (void *)dst, ctrl); src += w; dst += 0x80;
+                            _0802D974((void *)src, (void *)dst, ctrl); src += w; dst += 0x80;
+                            _0802D974((void *)src, (void *)dst, ctrl); src += w; dst += 0x80;
+                            _0802D974((void *)src, (void *)dst, ctrl); src += w; dst += 0x80;
+                            _0802D974((void *)src, (void *)dst, ctrl); src += w; dst += 0x80;
+                            _0802D974((void *)src, (void *)dst, ctrl); src += w; dst += 0x80;
+                            _0802D974((void *)src, (void *)dst, ctrl); src += w; dst += 0x80;
+                            _0802D974((void *)src, (void *)dst, ctrl); src += w; dst += 0x80;
+                            _0802D974((void *)src, (void *)dst, ctrl); src += w; dst += 0x80;
+                            _0802D974((void *)src, (void *)dst, ctrl); src += w; dst += 0x80;
+                            _0802D974((void *)src, (void *)dst, ctrl);
+                            goto done;
+                        }
+                    }
                 }
             }
+            {
+                u16 scratch[16];
+                { u16 *p = &scratch[0]; *p = 0; ctrl = 0x01000008u; _0802D974((void *)p, (void *)dst, ctrl); } dst += 0x80;
+                { u16 *p = &scratch[1]; *p = 0; _0802D974((void *)p, (void *)dst, ctrl); } dst += 0x80;
+                { u16 *p = &scratch[2]; *p = 0; _0802D974((void *)p, (void *)dst, ctrl); } dst += 0x80;
+                { u16 *p = &scratch[3]; *p = 0; _0802D974((void *)p, (void *)dst, ctrl); } dst += 0x80;
+                { u16 *p = &scratch[4]; *p = 0; _0802D974((void *)p, (void *)dst, ctrl); } dst += 0x80;
+                { u16 *p = &scratch[5]; *p = 0; _0802D974((void *)p, (void *)dst, ctrl); } dst += 0x80;
+                { u16 *p = &scratch[6]; *p = 0; _0802D974((void *)p, (void *)dst, ctrl); } dst += 0x80;
+                { u16 *p = &scratch[7]; *p = 0; _0802D974((void *)p, (void *)dst, ctrl); } dst += 0x80;
+                { u16 *p = &scratch[8]; *p = 0; _0802D974((void *)p, (void *)dst, ctrl); } dst += 0x80;
+                { u16 *p = &scratch[9]; *p = 0; _0802D974((void *)p, (void *)dst, ctrl); } dst += 0x80;
+                { u16 *p = &scratch[10]; *p = 0; _0802D974((void *)p, (void *)dst, ctrl); } dst += 0x80;
+                { u16 *p = &scratch[11]; *p = 0; _0802D974((void *)p, (void *)dst, ctrl); } dst += 0x80;
+                { u16 *p = &scratch[12]; *p = 0; _0802D974((void *)p, (void *)dst, ctrl); } dst += 0x80;
+                { u16 *p = &scratch[13]; *p = 0; _0802D974((void *)p, (void *)dst, ctrl); } dst += 0x80;
+                { u16 *p = &scratch[14]; *p = 0; _0802D974((void *)p, (void *)dst, ctrl); } dst += 0x80;
+                { u16 *p = &scratch[15]; *p = 0; _0802D974((void *)p, (void *)dst, ctrl); } dst += 0x80;
+            }
+        done:
+            *(volatile s16 *)EWRAM_STREAM_CURSOR =
+                (s16)(*(volatile s16 *)EWRAM_STREAM_CURSOR + 1);
         }
     }
-    {
-        u16 scratch[16];
-        { u16 *p = &scratch[0]; *p = 0; ctrl = 0x01000008u; _0802D974((void *)p, (void *)dst, ctrl); } dst += 0x80;
-        { u16 *p = &scratch[1]; *p = 0; _0802D974((void *)p, (void *)dst, ctrl); } dst += 0x80;
-        { u16 *p = &scratch[2]; *p = 0; _0802D974((void *)p, (void *)dst, ctrl); } dst += 0x80;
-        { u16 *p = &scratch[3]; *p = 0; _0802D974((void *)p, (void *)dst, ctrl); } dst += 0x80;
-        { u16 *p = &scratch[4]; *p = 0; _0802D974((void *)p, (void *)dst, ctrl); } dst += 0x80;
-        { u16 *p = &scratch[5]; *p = 0; _0802D974((void *)p, (void *)dst, ctrl); } dst += 0x80;
-        { u16 *p = &scratch[6]; *p = 0; _0802D974((void *)p, (void *)dst, ctrl); } dst += 0x80;
-        { u16 *p = &scratch[7]; *p = 0; _0802D974((void *)p, (void *)dst, ctrl); } dst += 0x80;
-        { u16 *p = &scratch[8]; *p = 0; _0802D974((void *)p, (void *)dst, ctrl); } dst += 0x80;
-        { u16 *p = &scratch[9]; *p = 0; _0802D974((void *)p, (void *)dst, ctrl); } dst += 0x80;
-        { u16 *p = &scratch[10]; *p = 0; _0802D974((void *)p, (void *)dst, ctrl); } dst += 0x80;
-        { u16 *p = &scratch[11]; *p = 0; _0802D974((void *)p, (void *)dst, ctrl); } dst += 0x80;
-        { u16 *p = &scratch[12]; *p = 0; _0802D974((void *)p, (void *)dst, ctrl); } dst += 0x80;
-        { u16 *p = &scratch[13]; *p = 0; _0802D974((void *)p, (void *)dst, ctrl); } dst += 0x80;
-        { u16 *p = &scratch[14]; *p = 0; _0802D974((void *)p, (void *)dst, ctrl); } dst += 0x80;
-        { u16 *p = &scratch[15]; *p = 0; _0802D974((void *)p, (void *)dst, ctrl); } dst += 0x80;
-    }
-done:
-    *(volatile s16 *)EWRAM_STREAM_CURSOR =
-        (s16)(*(volatile s16 *)EWRAM_STREAM_CURSOR + 1);
 }
 
 void Course_CollectProximity(void) {
@@ -268,92 +276,116 @@ void *Course_StreamMore_06B30(void) {
     register volatile u8 *root COURSE_STREAM_REG("r9") = *(volatile u8 *volatile *)(uintptr_t)0x0203F760u;
     register volatile s32 *centerBase COURSE_STREAM_REG("r1") = (volatile s32 *)(uintptr_t)0x0203F8E0u;
     __asm__ volatile("" : "+r"(centerBase));
-    register volatile s32 *center COURSE_STREAM_REG("r8") = centerBase;
+    {
+        register volatile s32 *center COURSE_STREAM_REG("r8") = centerBase;
 
-    for (;;) {
-        register s32 index COURSE_STREAM_REG("r0");
-        {
-            register volatile u16 *cursorIter COURSE_STREAM_REG("r4") = cursor;
-            register u32 cursorValue COURSE_STREAM_REG("r1") = (u32)*cursorIter + 1u;
-            *cursorIter = (u16)cursorValue;
-            cursorValue <<= 16;
+        for (;;) {
+            register s32 index COURSE_STREAM_REG("r0");
             {
-            register u32 limitValue __asm__("r0");
-            register u32 limitHalf __asm__("r5") = (u32)(uintptr_t)root;
-            limitHalf = *(volatile u16 *)((volatile u8 *)(uintptr_t)limitHalf + 46);
-            __asm__ volatile("" : "+r"(limitHalf));
-            limitValue = limitHalf << 16;
-            if ((s32)limitValue <= (s32)cursorValue)
-                return NULL;
-            // Keep the offset in the only remaining low register: r7. The
-            // empty asm carries register lifetimes but emits no instructions.
-            register u32 hold1 __asm__("r1");
-            register u32 hold2 __asm__("r2");
-            register u32 hold3 __asm__("r3");
-            register u32 hold5 __asm__("r5");
-            register u32 hold6 __asm__("r6");
-            __asm__ volatile("" : "=r"(hold1), "=r"(hold2), "=r"(hold3),
-                             "=r"(hold5), "=r"(hold6));
-            index = *(s16 *)(uintptr_t)cursorIter;
-            __asm__ volatile("" : : "r"(hold1), "r"(hold2), "r"(hold3),
-                             "r"(hold5), "r"(hold6));
+                register volatile u16 *cursorIter COURSE_STREAM_REG("r4") = cursor;
+                register u32 cursorValue COURSE_STREAM_REG("r1") = (u32)*cursorIter + 1u;
+                *cursorIter = (u16)cursorValue;
+                cursorValue <<= 16;
+                {
+                register u32 limitValue __asm__("r0");
+                register u32 limitHalf __asm__("r5") = (u32)(uintptr_t)root;
+                limitHalf = *(volatile u16 *)((volatile u8 *)(uintptr_t)limitHalf + 46);
+                __asm__ volatile("" : "+r"(limitHalf));
+                limitValue = limitHalf << 16;
+                if ((s32)limitValue <= (s32)cursorValue)
+                    return NULL;
+                // Keep the offset in the only remaining low register: r7. The
+                // empty asm carries register lifetimes but emits no instructions.
+                {
+                    register u32 hold1 __asm__("r1");
+                    register u32 hold2 __asm__("r2");
+                    register u32 hold3 __asm__("r3");
+                    register u32 hold5 __asm__("r5");
+                    register u32 hold6 __asm__("r6");
+                    __asm__ volatile("" : "=r"(hold1), "=r"(hold2), "=r"(hold3),
+                                     "=r"(hold5), "=r"(hold6));
+                    index = *(s16 *)(uintptr_t)cursorIter;
+                    __asm__ volatile("" : : "r"(hold1), "r"(hold2), "r"(hold3),
+                                     "r"(hold5), "r"(hold6));
+                }
+                }
+            }
+            index <<= 3;
+            {
+                register u32 records COURSE_STREAM_REG("r1");
+                register volatile u32 *rootWords __asm__("r4") = (volatile u32 *)root;
+                records = rootWords[4];
+                {
+                    register volatile u8 *record COURSE_STREAM_REG("r6") =
+                        (volatile u8 *)(uintptr_t)(records + index);
+                    register volatile s32 *bounds COURSE_STREAM_REG("r1") = (volatile s32 *)(uintptr_t)0x0203F8B0u;
+                    register s32 x COURSE_STREAM_REG("r5");
+                    // Keep the other available low registers live so agbcc uses r7 for
+                    // the zero index implicit in its signed-halfword load pattern.
+                    register u32 hold0 __asm__("r0");
+                    register u32 hold2 __asm__("r2");
+                    register u32 hold3 __asm__("r3");
+                    register u32 hold4 __asm__("r4");
+                    __asm__ volatile("" : "=r"(hold0), "=r"(hold2), "=r"(hold3), "=r"(hold4));
+                    x = *(s16 *)(uintptr_t)record;
+                    __asm__ volatile("" : : "r"(hold0), "r"(hold2), "r"(hold3), "r"(hold4));
+                    {
+                        register s32 xBound COURSE_STREAM_REG("r0") = bounds[0];
+                        if (xBound > x)
+                            continue;
+
+                        {
+                            register s32 y COURSE_STREAM_REG("r4");
+                            {
+                                register u32 hold2 __asm__("r2");
+                                register u32 hold3 __asm__("r3");
+                                __asm__ volatile("" : "=r"(hold2), "=r"(hold3));
+                                y = *(s16 *)(uintptr_t)(record + 2);
+                                __asm__ volatile("" : : "r"(hold2), "r"(hold3));
+                            }
+                            {
+                                register s32 yBound COURSE_STREAM_REG("r1") = bounds[1];
+                                if (yBound > y)
+                                    continue;
+                                if (xBound + 16 <= x)
+                                    continue;
+                                {
+                                    register s32 yUpperBound __asm__("r0");
+                                    yUpperBound = yBound + 16;
+                                    if (yUpperBound <= y)
+                                        continue;
+
+                                    {
+                                        register volatile s32 *center1 COURSE_STREAM_REG("r1") = center;
+                                        register s32 dx COURSE_STREAM_REG("r2");
+                                        register s32 dy COURSE_STREAM_REG("r3");
+                                        register s32 centerX __asm__("r0") = center1[0];
+                                        dx = x - centerX;
+                                        {
+                                            register s32 centerY __asm__("r0") = center1[1];
+                                            dy = y - centerY;
+                                            {
+                                                register s32 distanceSquared __asm__("r0");
+                                                distanceSquared = dx;
+                                                distanceSquared *= dx;
+                                                {
+                                                    register s32 dySquared __asm__("r1") = dy;
+                                                    dySquared *= dy;
+                                                    distanceSquared += dySquared;
+                                                    if (distanceSquared > 50)
+                                                        continue;
+                                                    return (void *)record;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
-        index <<= 3;
-        register u32 records COURSE_STREAM_REG("r1");
-        register volatile u32 *rootWords __asm__("r4") = (volatile u32 *)root;
-        records = rootWords[4];
-        register volatile u8 *record COURSE_STREAM_REG("r6") =
-            (volatile u8 *)(uintptr_t)(records + index);
-        register volatile s32 *bounds COURSE_STREAM_REG("r1") = (volatile s32 *)(uintptr_t)0x0203F8B0u;
-        register s32 x COURSE_STREAM_REG("r5");
-        // Keep the other available low registers live so agbcc uses r7 for
-        // the zero index implicit in its signed-halfword load pattern.
-        register u32 hold0 __asm__("r0");
-        register u32 hold2 __asm__("r2");
-        register u32 hold3 __asm__("r3");
-        register u32 hold4 __asm__("r4");
-        __asm__ volatile("" : "=r"(hold0), "=r"(hold2), "=r"(hold3), "=r"(hold4));
-        x = *(s16 *)(uintptr_t)record;
-        __asm__ volatile("" : : "r"(hold0), "r"(hold2), "r"(hold3), "r"(hold4));
-        register s32 xBound COURSE_STREAM_REG("r0") = bounds[0];
-        if (xBound > x)
-            continue;
-
-        register s32 y COURSE_STREAM_REG("r4");
-        {
-            register u32 hold2 __asm__("r2");
-            register u32 hold3 __asm__("r3");
-            __asm__ volatile("" : "=r"(hold2), "=r"(hold3));
-            y = *(s16 *)(uintptr_t)(record + 2);
-            __asm__ volatile("" : : "r"(hold2), "r"(hold3));
-        }
-        register s32 yBound COURSE_STREAM_REG("r1") = bounds[1];
-        if (yBound > y)
-            continue;
-        if (xBound + 16 <= x)
-            continue;
-        register s32 yUpperBound __asm__("r0");
-        yUpperBound = yBound + 16;
-        if (yUpperBound <= y)
-            continue;
-
-        register volatile s32 *center1 COURSE_STREAM_REG("r1") = center;
-        register s32 dx COURSE_STREAM_REG("r2");
-        register s32 dy COURSE_STREAM_REG("r3");
-        register s32 centerX __asm__("r0") = center1[0];
-        dx = x - centerX;
-        register s32 centerY __asm__("r0") = center1[1];
-        dy = y - centerY;
-        register s32 distanceSquared __asm__("r0");
-        distanceSquared = dx;
-        distanceSquared *= dx;
-        register s32 dySquared __asm__("r1") = dy;
-        dySquared *= dy;
-        distanceSquared += dySquared;
-        if (distanceSquared > 50)
-            continue;
-        return (void *)record;
     }
 }
 // The ROM ends this Thumb body with a zero halfword. Keep gas's default
@@ -435,10 +467,12 @@ clamp_pos:
 void Course_StreamMore_06BC8(void *a, void *b) {
     // _08006BC8: ldrh [b+12] etc., stores to a+10, +0/+4/+8/+12/+18 etc., widths u16/s16/u8
     (void)a; (void)b;
-    u16 v = *(u16*)((u8*)b + 12);
-    s16 sv = *(s16*)((u8*)b + 12);
-    (void)v; (void)sv;
-    // Exact sequence: strh [a+10]=v or 0, str [a+0]=[root+20], etc., widths s16/u16/u8 as per ldrh/ldrh/strh/strb
+    {
+        u16 v = *(u16*)((u8*)b + 12);
+        s16 sv = *(s16*)((u8*)b + 12);
+        (void)v; (void)sv;
+        // Exact sequence: strh [a+10]=v or 0, str [a+0]=[root+20], etc., widths s16/u16/u8 as per ldrh/ldrh/strh/strb
+    }
 }
 void *Course_StreamMore_06C10(void *a, int idx) {
     // _08006C10: s16 +10 + idx, ldrb [a+0]==0 branch, s16 +8 loop via _08002DE9C (sdiv)
@@ -447,24 +481,30 @@ void *Course_StreamMore_06C10(void *a, int idx) {
     u8 flag = *(u8*)a;
     if (flag == 0) {
         if (sum < 0) return NULL;
-        s16 lim = *(s16*)((u8*)a + 8);
-        if (sum > lim) return NULL;
-        return NULL;
+        {
+            s16 lim = *(s16*)((u8*)a + 8);
+            if (sum > lim) return NULL;
+            return NULL;
+        }
     }
     // sdiv path via 0x0802DE9C preserved as extern
-    extern int _0802DE9C(int, int);
-    s16 off = *(s16*)((u8*)a + 8);
-    int q = _0802DE9C(sum, off);
-    (void)q;
-    return (void*)((u8*)a + q*88 + 4); // 88 = course record stride
+
+    {
+        s16 off = *(s16*)((u8*)a + 8);
+        int q = _0802DE9C(sum, off);
+        (void)q;
+        return (void*)((u8*)a + q*88 + 4); // 88 = course record stride
+    }
 }
 void *Course_StreamMore_06C60(void *a) {
     // _08006C60: bl 06C10(a,0) then ldrsh +10 check, then 05F98→[+8] compute
     void *p = Course_StreamMore_06C10(a, 0);
     if (!p) return NULL;
-    s16 v = *(s16*)((u8*)p + 10);
-    if (v < 0) return NULL;
-    return p;
+    {
+        s16 v = *(s16*)((u8*)p + 10);
+        if (v < 0) return NULL;
+        return p;
+    }
 }
 int Course_StreamMore_06C94(void *a, void *b) {
     // _08006C94: subs [b+12]/[b+16] diffs, muls with s16 +20/+22, subs — widths s32 via ldr, s16 via ldrsh

@@ -103,18 +103,22 @@ int CourseLeaves_09830(u16 step, u16 sel) {
     }
     if (sel == 64) {
         blk = (volatile u32 *)(uintptr_t)*CL_SLOT;
-        u32 v = blk[1];
-        if ((s32)v > 0) {
-            blk[1] = v - 1;
-            r3 = 1;
+        {
+            u32 v = blk[1];
+            if ((s32)v > 0) {
+                blk[1] = v - 1;
+                r3 = 1;
+            }
         }
     }
     if (sel == 128) {
         blk = (volatile u32 *)(uintptr_t)*CL_SLOT;
-        u32 v = blk[1];
-        if ((s32)v <= 1) {
-            blk[1] = v + 1;
-            r3 = 1;
+        {
+            u32 v = blk[1];
+            if ((s32)v <= 1) {
+                blk[1] = v + 1;
+                r3 = 1;
+            }
         }
     }
     if (sel & 0x30) {
@@ -141,37 +145,43 @@ void CourseLeaves_09900(void) {
     _0802E0A4((void *)rowA, (const void *)(uintptr_t)0x0805F6A4u, 6u);
     _0802E0A4((void *)rowB, (const void *)(uintptr_t)0x0805F6AAu, 6u);
 
-    volatile u8 *blk = (volatile u8 *)(uintptr_t)*CL_SLOT;
-    // ROM stack block: s0 = s16[blk+16], s1 = s2 = s3 = 0 (fix).
-    _08007B18((void *)(uintptr_t)(blk + 36), 1, 88, 28,
-              (u32)(s32)(s16)*(s16 *)(blk + 16), 0u, 0u, 0u);
+    {
+        volatile u8 *blk = (volatile u8 *)(uintptr_t)*CL_SLOT;
+        // ROM stack block: s0 = s16[blk+16], s1 = s2 = s3 = 0 (fix).
+        _08007B18((void *)(uintptr_t)(blk + 36), 1, 88, 28,
+                  (u32)(s32)(s16)*(s16 *)(blk + 16), 0u, 0u, 0u);
 
-    u32 r8 = 0, r5 = 0;
-    // Keep the shared zero in r5 before initializing the row position and
-    // pointers. The ROM reuses it for all three stack arguments each call.
-    __asm__("" : : "r"(r5));
-    u32 r7 = 64;
-    u8 *r6 = rowB, *r4 = rowA;
-    for (;;) {
-        volatile u8 *b = (volatile u8 *)(uintptr_t)*CL_SLOT;
-        u32 mode = *(volatile u32 *)b;
-        if (mode == r8) {
-            s16 a0 = *(s16 *)r4;
-            s16 b0 = *(s16 *)r6;
-            _08007B18((void *)(uintptr_t)(b + 36), a0, b0, (int)r7,
-                      (u32)(s32)(s16)*(s16 *)(b + 16), r5, r5, r5);
-        } else {
-            s16 a0 = *(s16 *)r4;
-            s16 b0 = *(s16 *)r6;
-            _08007B18((void *)(uintptr_t)(b + 36), a0, b0, (int)r7,
-                      (u32)(s32)(s16)*(s16 *)(b + 18), r5, r5, r5);
+        {
+            u32 r8 = 0, r5 = 0;
+            // Keep the shared zero in r5 before initializing the row position and
+            // pointers. The ROM reuses it for all three stack arguments each call.
+            __asm__("" : : "r"(r5));
+            {
+                u32 r7 = 64;
+                u8 *r6 = rowB, *r4 = rowA;
+                for (;;) {
+                    volatile u8 *b = (volatile u8 *)(uintptr_t)*CL_SLOT;
+                    u32 mode = *(volatile u32 *)b;
+                    if (mode == r8) {
+                        s16 a0 = *(s16 *)r4;
+                        s16 b0 = *(s16 *)r6;
+                        _08007B18((void *)(uintptr_t)(b + 36), a0, b0, (int)r7,
+                                  (u32)(s32)(s16)*(s16 *)(b + 16), r5, r5, r5);
+                    } else {
+                        s16 a0 = *(s16 *)r4;
+                        s16 b0 = *(s16 *)r6;
+                        _08007B18((void *)(uintptr_t)(b + 36), a0, b0, (int)r7,
+                                  (u32)(s32)(s16)*(s16 *)(b + 18), r5, r5, r5);
+                    }
+                    r7 += 24;
+                    r6 += 2;
+                    r4 += 2;
+                    r8++;
+                    if ((s32)r8 > 2)
+                        break;
+                }
+            }
         }
-        r7 += 24;
-        r6 += 2;
-        r4 += 2;
-        r8++;
-        if ((s32)r8 > 2)
-            break;
     }
 }
 void _08009900(void) __attribute__((alias("CourseLeaves_09900")));

@@ -13,7 +13,10 @@
  // Substantiated: 10x strb r1 where r1=0 (asm/code_24f34.s:7-16).
 void Code24F34_Clear10(void *dst) {
     volatile u8 *p = (volatile u8 *)dst;
-    for (int i = 0; i < 10; i++) p[i] = 0;
+    {
+        int i = 0;
+        for (; i < 10; i++) p[i] = 0;
+    }
 }
 // No alias – raw inline sequence has no BL target.
 
@@ -124,11 +127,13 @@ s16 sub_080258A8(int idx) __attribute__((alias("Code258A8_SimpleLookup")));
 s16 Code26F8_GetIWRAM_S16(int r0,int r1){
     u32 base = 0x03001780u;
     __asm__ volatile ("" : "+r"(base) : : "memory");
-    u32 off = ((u32)r1 << 1) + ((u32)r0 << 3);
-    u32 idx = 0;
-    u32 disp = 0x108Cu;
-    u32 addr = (u32)off + (base + disp);
-    return ((s16 *)(addr + idx))[idx];
+    {
+        u32 off = ((u32)r1 << 1) + ((u32)r0 << 3);
+        u32 idx = 0;
+        u32 disp = 0x108Cu;
+        u32 addr = (u32)off + (base + disp);
+        return ((s16 *)(addr + idx))[idx];
+    }
 }
 void Code26F8_SetIWRAM_S16(int r0,int r1,int r2){
     volatile s16 *p = (volatile s16 *)(0x03001780u + 0x109Cu + (r1*2) + (r0*8));
@@ -268,18 +273,22 @@ s16 Sub_080258A8(int idx) __attribute__((alias("Code258A8_SimpleLookup")));
 void GridStore_26DC(int a, int b, int c) {
     u32 base = 0x03001780u;
     __asm__ volatile ("" : "+r"(base) : : "memory");
-    u32 off = ((u32)b << 1) + ((u32)a << 3);
-    u32 disp = 0x108Cu;
-    u32 addr = off + (base + disp);
-    *(volatile u16 *)addr = (u16)c;
+    {
+        u32 off = ((u32)b << 1) + ((u32)a << 3);
+        u32 disp = 0x108Cu;
+        u32 addr = off + (base + disp);
+        *(volatile u16 *)addr = (u16)c;
+    }
 }
 void GridStore_2714(int a, int b, int c) {
     u32 base = 0x03001780u;
     __asm__ volatile ("" : "+r"(base) : : "memory");
-    u32 off = ((u32)b << 1) + ((u32)a << 3);
-    u32 disp = 0x109Cu;
-    u32 addr = off + (base + disp);
-    *(volatile u16 *)addr = (u16)c;
+    {
+        u32 off = ((u32)b << 1) + ((u32)a << 3);
+        u32 disp = 0x109Cu;
+        u32 addr = off + (base + disp);
+        *(volatile u16 *)addr = (u16)c;
+    }
 }
 void _080026DC(int a, int b, int c) __attribute__((alias("GridStore_26DC")));
 void sub_080026DC(int a, int b, int c) __attribute__((alias("GridStore_26DC")));
@@ -293,8 +302,10 @@ void Sub_08002714(int a, int b, int c) __attribute__((alias("GridStore_2714")));
 int GridFlagTest_2780(void) {
     u32 base = 0x03001780u;
     __asm__ volatile ("" : "+r"(base) : : "memory");
-    s16 v = *(s16 *)(base + 0x1056u);
-    return (int)(((u32)(-v) | (u32)v) >> 31);
+    {
+        s16 v = *(s16 *)(base + 0x1056u);
+        return (int)(((u32)(-v) | (u32)v) >> 31);
+    }
 }
 int _08002780(void) __attribute__((alias("GridFlagTest_2780")));
 int sub_08002780(void) __attribute__((alias("GridFlagTest_2780")));
@@ -305,8 +316,10 @@ int sub_08002780(void) __attribute__((alias("GridFlagTest_2780")));
 int GridFlagTest_27EC(void) {
     u32 base = 0x03001780u;
     __asm__ volatile ("" : "+r"(base) : : "memory");
-    s16 v = *(s16 *)(base + 0x105Cu);
-    return (int)(((u32)(-v) | (u32)v) >> 31);
+    {
+        s16 v = *(s16 *)(base + 0x105Cu);
+        return (int)(((u32)(-v) | (u32)v) >> 31);
+    }
 }
 int _080027EC(void) __attribute__((alias("GridFlagTest_27EC")));
 int sub_080027EC(void) __attribute__((alias("GridFlagTest_27EC")));

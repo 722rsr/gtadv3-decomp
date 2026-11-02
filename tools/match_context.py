@@ -16,7 +16,7 @@ import sys
 from pathlib import Path
 
 import corpus_match_probe as probe
-from agbcc_c89_transform import matching_delimiter, strip_noncode
+from c_source import matching_delimiter, strip_noncode
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -31,7 +31,7 @@ def run_probe(function: str, work_dir: Path, report_path: Path) -> tuple[int, st
     -- `match_c_slice.run_probe` established the in-process pattern for exactly
     this reason. Output is still captured and still only printed on failure.
     """
-    argv = ["corpus_match_probe.py", "--function", function, "--c89", "--require-all",
+    argv = ["corpus_match_probe.py", "--function", function, "--require-all",
             "--work-dir", str(work_dir), "--json", str(report_path)]
     saved_argv = sys.argv
     captured = io.StringIO()
@@ -151,7 +151,7 @@ def main() -> int:
         f"- ROM span: {rec['rom_bytes']} bytes; candidate: {rec['cand_bytes']} bytes",
         f"- Result: **{rec['status']}**, {rec['matched_bytes']}/{rec['rom_bytes']} matching bytes; first difference {mismatch}",
         "- Compiler: `agbcc -O2 -mthumb-interwork -ffunction-sections`; calls and pools resolved at the ROM VMA",
-        f"- Recheck: `python3 tools/corpus_match_probe.py --function {rec['name']} --c89 --require-all --json {display_path(report_path)}`",
+        f"- Recheck: `python3 tools/corpus_match_probe.py --function {rec['name']} --require-all --json {display_path(report_path)}`",
         "- Exact gate: add `--require-exact` to the recheck command; a score or matching instructions alone is insufficient.",
         "", "## Calls and pool relocations", "",
     ]

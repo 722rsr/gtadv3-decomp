@@ -38,8 +38,10 @@ void MenuC2C4_Enable(void *rec) {
     volatile u8 *r = (volatile u8 *)rec;
     _080050E8((void *)(uintptr_t)(r + 8), 1);
     _080056B8(1);
-    u16 v = *(volatile u16 *)(r + 92);
-    _08004E1C((void *)(uintptr_t)v);
+    {
+        u16 v = *(volatile u16 *)(r + 92);
+        _08004E1C((void *)(uintptr_t)v);
+    }
 }
 void _0800C2C4(void *a) __attribute__((alias("MenuC2C4_Enable")));
 void sub_0800C2C4(void *a) __attribute__((alias("MenuC2C4_Enable")));
@@ -148,19 +150,21 @@ void sub_0800C390(void *a) __attribute__((alias("MenuC340_SetMode")));
 //   18->C390, 20->C37C(u16 arg); every other slot returns.
 void MenuC340_Command(int id, int arg, int a2, void *rec) {
     (void)a2;
-    int idx = id - 1;
-    if ((u32)idx > 20)
-        return;
-    switch (idx) {
-    case 0: _0800C1E4(rec); break;
-    case 2: MenuC2C4_Enable(rec); break;
-    case 3: MenuC2C4_Teardown(rec); break;
-    case 7: MenuC2C4_Flush(rec); break;
-    case 12: MenuC2C4_PtrDispatch(rec, arg); break;
-    case 13: MenuC340_Dispatch(rec, arg); break;
-    case 20: MenuC340_ByteGate(rec, (u16)arg); break;
-    case 18: MenuC340_SetMode(rec); break;
-    default:        break;
+    {
+        int idx = id - 1;
+        if ((u32)idx > 20)
+            return;
+        switch (idx) {
+        case 0: _0800C1E4(rec); break;
+        case 2: MenuC2C4_Enable(rec); break;
+        case 3: MenuC2C4_Teardown(rec); break;
+        case 7: MenuC2C4_Flush(rec); break;
+        case 12: MenuC2C4_PtrDispatch(rec, arg); break;
+        case 13: MenuC340_Dispatch(rec, arg); break;
+        case 20: MenuC340_ByteGate(rec, (u16)arg); break;
+        case 18: MenuC340_SetMode(rec); break;
+        default:        break;
+        }
     }
 }
 // Body is 182 bytes; the ROM's 184-byte span ends in `00 00`. Under

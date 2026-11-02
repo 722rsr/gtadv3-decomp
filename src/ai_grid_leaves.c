@@ -2,6 +2,7 @@
 #include "gba/types.h"
 #include "gba/bios.h"
 
+extern int _08025CF4(int type, int row, int col);
 extern void _0802E0A4(void *dst, const void *src, u32 n);
 extern int  _0802D97C(int idx,int bits);
 
@@ -40,7 +41,7 @@ col_loop:
     // this address `_08025CF4` (asm/ai_grid.s:8, C-owned at
     // src/runtime_state_dispatch.c:1019); both denote 0x08025CF4, so the `bl` is
     // unchanged. The host build has no VMA-named symbol: it keeps the name.
-    extern int _08025CF4(int type, int row, int col);
+
     v = _08025CF4(type,row,col);
     if((v<<24)==0) goto col_done;
     cnt++;
@@ -97,27 +98,33 @@ void Ai_GridSetPacked(int type, int val){
     register volatile u8 *cell __asm__("r5");
     _0802E0A4((void *)tmp, (const void *)(uintptr_t)AI_GRID_MASK_TBL, 4u);
     v &= 3;
-    register int sh __asm__("r2") = packed_shift(type, 4);
-    register volatile u8 *base __asm__("r0") = (volatile u8 *)(uintptr_t)AI_GRID_BASE;
-    register int idx __asm__("r1") = type;
-    if (type < 0) idx = type + 3;
-    idx >>= 2;
-    base += 24;
-    cell = (volatile u8 *)(idx + (uintptr_t)base);
-    register u8 *t __asm__("r1") = tmp;
-    register volatile u8 *mp __asm__("r0") = t + sh;
-    register u32 cur __asm__("r1") = *cell;
-    register u32 mask __asm__("r0") = *mp;
-    // Preserve the ROM register pair; without this empty constraint agbcc
-    // inserts a temporary move before lowering the C bit-clear.
-    __asm__ volatile ("" : "+r"(cur), "+r"(mask));
-    cur &= ~mask;
-    mask = cur;
-    *cell = mask;
-    int sh2 = packed_shift(type, 4);
-    v <<= (sh2 << 1);
-    v |= *cell;
-    *cell = v;
+    {
+        register int sh __asm__("r2") = packed_shift(type, 4);
+        register volatile u8 *base __asm__("r0") = (volatile u8 *)(uintptr_t)AI_GRID_BASE;
+        register int idx __asm__("r1") = type;
+        if (type < 0) idx = type + 3;
+        idx >>= 2;
+        base += 24;
+        cell = (volatile u8 *)(idx + (uintptr_t)base);
+        {
+            register u8 *t __asm__("r1") = tmp;
+            register volatile u8 *mp __asm__("r0") = t + sh;
+            register u32 cur __asm__("r1") = *cell;
+            register u32 mask __asm__("r0") = *mp;
+            // Preserve the ROM register pair; without this empty constraint agbcc
+            // inserts a temporary move before lowering the C bit-clear.
+            __asm__ volatile ("" : "+r"(cur), "+r"(mask));
+            cur &= ~mask;
+            mask = cur;
+            *cell = mask;
+            {
+                int sh2 = packed_shift(type, 4);
+                v <<= (sh2 << 1);
+                v |= *cell;
+                *cell = v;
+            }
+        }
+    }
 }
 void _08025DBC(int a,int b) __attribute__((alias("Ai_GridSetPacked")));
 void sub_08025DBC(int a,int b) __attribute__((alias("Ai_GridSetPacked")));
@@ -158,18 +165,24 @@ void Sub_08025DBC(int a,int b) __attribute__((alias("Ai_GridSetPacked")));
 int Ai_GridGetPacked(int type){
     u8 tmp[4];
     _0802E0A4((void *)tmp, (const void *)(uintptr_t)AI_GRID_MASK_TBL, 4u);
-    int sh = packed_shift(type, 4);
-    int sh2 = packed_shift(type, 4);
-    int idx = type;
-    volatile u8 *base = (volatile u8 *)(uintptr_t)AI_GRID_BASE;
-    if (idx < 0) idx += 3;
-    int i4 = idx >> 2;
-    base += 24;
-    volatile u8 *cell = base + i4;
-    volatile u8 *mp = tmp + sh;
-    u8 v = *cell;
-    u8 mask = *mp;
-    return (u8)((v & mask) >> (sh2 << 1));
+    {
+        int sh = packed_shift(type, 4);
+        int sh2 = packed_shift(type, 4);
+        int idx = type;
+        volatile u8 *base = (volatile u8 *)(uintptr_t)AI_GRID_BASE;
+        if (idx < 0) idx += 3;
+        {
+            int i4 = idx >> 2;
+            base += 24;
+            {
+                volatile u8 *cell = base + i4;
+                volatile u8 *mp = tmp + sh;
+                u8 v = *cell;
+                u8 mask = *mp;
+                return (u8)((v & mask) >> (sh2 << 1));
+            }
+        }
+    }
 }
 int _08025E1C(int a) __attribute__((alias("Ai_GridGetPacked")));
 int Sub_08025E1C(int a) __attribute__((alias("Ai_GridGetPacked")));
@@ -226,33 +239,39 @@ void Ai_GridHalfwordSet(int id, int val){
     register volatile u16 *cell __asm__("r5");
     _0802E0A4((void *)tmp, (const void *)(uintptr_t)AI_GRID_MASK_TBL, 4u);
     masked &= 7;
-    register int sh __asm__("r2") = packed_shift(masked, 4);
-    register uintptr_t base __asm__("r1");
-    register u32 off __asm__("r3");
-    register int i4 __asm__("r0");
-    /* Absolute definition in-body: the splicer retains only the function's
-       section, so a file-scope asm definition is omitted from the link. */
-    extern u8 AiGridHalfBase[];
-    __asm__(".globl AiGridHalfBase\nAiGridHalfBase = 0x03001780\n");
-    base = (uintptr_t)AiGridHalfBase;
-    i4 = (masked / 4) << 1;
-    off = 174;
-    off = off << 3;
-    base += off;
-    cell = (volatile u16 *)(i4 + base);
-    register u8 *t __asm__("r1") = tmp;
-    register volatile u8 *mp __asm__("r0") = t + sh;
-    register u32 cur __asm__("r3") = *cell;
-    register u32 mask __asm__("r0") = *mp;
-    // Keep the cell value in its ROM register for the C bit-clear below.
-    __asm__ volatile ("" : "+r"(cur), "+r"(mask));
-    cur &= ~mask;
-    mask = cur;
-    *cell = mask;
-    int sh2 = packed_shift(masked, 4);
-    v <<= (sh2 << 1);
-    v |= *cell;
-    *cell = v;
+    {
+        register int sh __asm__("r2") = packed_shift(masked, 4);
+        register uintptr_t base __asm__("r1");
+        register u32 off __asm__("r3");
+        register int i4 __asm__("r0");
+        /* Absolute definition in-body: the splicer retains only the function's
+           section, so a file-scope asm definition is omitted from the link. */
+        extern u8 AiGridHalfBase[];
+        __asm__(".globl AiGridHalfBase\nAiGridHalfBase = 0x03001780\n");
+        base = (uintptr_t)AiGridHalfBase;
+        i4 = (masked / 4) << 1;
+        off = 174;
+        off = off << 3;
+        base += off;
+        cell = (volatile u16 *)(i4 + base);
+        {
+            register u8 *t __asm__("r1") = tmp;
+            register volatile u8 *mp __asm__("r0") = t + sh;
+            register u32 cur __asm__("r3") = *cell;
+            register u32 mask __asm__("r0") = *mp;
+            // Keep the cell value in its ROM register for the C bit-clear below.
+            __asm__ volatile ("" : "+r"(cur), "+r"(mask));
+            cur &= ~mask;
+            mask = cur;
+            *cell = mask;
+            {
+                int sh2 = packed_shift(masked, 4);
+                v <<= (sh2 << 1);
+                v |= *cell;
+                *cell = v;
+            }
+        }
+    }
 }
 void _08025EC0(int a,int b) __attribute__((alias("Ai_GridHalfwordSet")));
 void sub_08025EC0(int a,int b) __attribute__((alias("Ai_GridHalfwordSet")));
@@ -285,19 +304,23 @@ extern u8 AiGridHalfBase[] __asm__("AiGridHalfBase");
 int Ai_GridHalfwordGet(int id){
     u8 tmp[4];
     _0802E0A4((void *)tmp, (const void *)(uintptr_t)AI_GRID_MASK_TBL, 4u);
-    int masked = id & 7;
-    int sh = packed_shift(masked, 4);
-    int sh2 = packed_shift(masked, 4);
-    __asm__(".globl AiGridHalfBase\nAiGridHalfBase = 0x03001780\n");
-    register uintptr_t base asm("r1");
-    register u32 off asm("r3");
-    register int i4 asm("r0");
-    base = (uintptr_t)AiGridHalfBase;
-    i4 = (masked / 4) << 1;
-    off = 174;
-    off = off << 3;
-    base += off;
-    return (*(s16 *)(i4 + base) & tmp[sh]) >> (sh2 << 1);
+    {
+        int masked = id & 7;
+        int sh = packed_shift(masked, 4);
+        int sh2 = packed_shift(masked, 4);
+        __asm__(".globl AiGridHalfBase\nAiGridHalfBase = 0x03001780\n");
+        {
+            register uintptr_t base asm("r1");
+            register u32 off asm("r3");
+            register int i4 asm("r0");
+            base = (uintptr_t)AiGridHalfBase;
+            i4 = (masked / 4) << 1;
+            off = 174;
+            off = off << 3;
+            base += off;
+            return (*(s16 *)(i4 + base) & tmp[sh]) >> (sh2 << 1);
+        }
+    }
 }
 int _08025F20(int a) __attribute__((alias("Ai_GridHalfwordGet")));
 

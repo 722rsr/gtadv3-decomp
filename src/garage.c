@@ -121,11 +121,15 @@ void Garage_InitRecord(void *rec_, u32 a1_, u32 count_, u32 flagByte)
         // r0 pin keeps the slot dereference after this call, as the ROM has it.
         register s16 v __asm__("r0");
         v = sub_080261F8(10);
-        u8 *b = (u8 *)(uintptr_t)GARAGE_CUR;
-        *(volatile s16 *)(b + 12) = v;
-        u16 w = 0xFFC0;                  // a literal here costs an extra copy
-        if (flag != 0) *(volatile u16 *)b = w;
-        else *(volatile u16 *)b = (u16)flag;
+        {
+            u8 *b = (u8 *)(uintptr_t)GARAGE_CUR;
+            *(volatile s16 *)(b + 12) = v;
+            {
+                u16 w = 0xFFC0;                  // a literal here costs an extra copy
+                if (flag != 0) *(volatile u16 *)b = w;
+                else *(volatile u16 *)b = (u16)flag;
+            }
+        }
     }
     *(volatile u16 *)((u8 *)(uintptr_t)GARAGE_CUR + 2) = 16;
     for (i = 0; i < count; i++) Garage_ByteStore_27104((void *)(uintptr_t)i, 1);
@@ -169,7 +173,7 @@ void sub_08027104(void *a, uint32_t b) __attribute__((alias("Garage_ByteStore_27
 // the file-scope `.align 2, 0` (the same Trap-6 lever as
 // src/sound_seq_follow.c `SoundC484_Noop`) reproducing the zero padding
 // inside the body's own section. A distinct body per VMA keeps the ownership
-// half; verified with corpus_match_probe --c89 --require-exact.
+// half; verified with corpus_match_probe --require-exact.
 void Garage_Stub_2869C(void) { }
 __asm__(".align 2, 0");
 void Garage_Stub_286A0(void) { }
@@ -846,7 +850,7 @@ void sub_080027D30(void) __attribute__((alias("Garage_27D30")));
 //     6..19 of the 0x0600F000 map get filled with 0xF000 | the lane's row
 //     index.
 //
-// Matching notes (all measured with corpus_match_probe --c89 --diff):
+// Matching notes (all measured with corpus_match_probe --diff):
 //   * WA is a PLAIN (non-volatile) cell. agbcc then re-reads the slot after
 //     every call but CSEs the two reads that are not separated by one -- which
 //     is exactly the ROM's single `ldr r1,[r4]` before the +14 store and the
@@ -1430,13 +1434,15 @@ void Garage_282D0(void *a,int b){
         // what the screen reported as a rename. The value must be explicit
         // here (92/92) where 0x08028134 needs the bare call (84/84).
         Garage_BAC(sub_08004B68());
-    s32 q=31-(s32)sub_0802DF6C(*p*32u,6u);
-    if (q < 0) q = 0;
-    if (b == 3)
-        *(volatile u16*)0x04000050u = 0x0FDF;
-    else
-        *(volatile u16*)0x04000050u = 0x0F9F;
-    *(volatile u16*)0x04000054u = (u16)q;
+    {
+        s32 q=31-(s32)sub_0802DF6C(*p*32u,6u);
+        if (q < 0) q = 0;
+        if (b == 3)
+            *(volatile u16*)0x04000050u = 0x0FDF;
+        else
+            *(volatile u16*)0x04000050u = 0x0F9F;
+        *(volatile u16*)0x04000054u = (u16)q;
+    }
 }
 void _0800282D0(void *a,int b) __attribute__((alias("Garage_282D0")));
 void sub_0800282D0(void *a,int b) __attribute__((alias("Garage_282D0")));
@@ -1845,10 +1851,12 @@ void sub_080028B54(void *a) __attribute__((alias("Garage_28B54")));
 // Proven via objdump: 0x08028888: b500 push {lr}; 0b12 lsls r2,#16; 0b1a lsrs r2,#16; 2001 movs r0,#1; 4010 ands r2,r0; 2800 cmp r2,#0; d001 beq 02889A; f7ff fffe bl 0x08004EC0; bc08 pop {r0}; 4700 bx r0
 void Garage_28888(int a, int b, int flag){
     (void)a; (void)b;
-    u16 fu = (u16)flag; // lsls #16 lsrs #16 via u16 width
-    if ((fu & 1u) != 0){
-        extern void _08004EC0(int);
-        _08004EC0(1);
+    {
+        u16 fu = (u16)flag; // lsls #16 lsrs #16 via u16 width
+        if ((fu & 1u) != 0){
+            extern void _08004EC0(int);
+            _08004EC0(1);
+        }
     }
 }
 __asm__(".align 2, 0");
@@ -2097,37 +2105,39 @@ void Garage_ListWalk_27828(void *a)
 {
     extern u8 GarageListWalkWa[];
     __asm__(".globl GarageListWalkWa\nGarageListWalkWa = 0x03001780\n");
-    u8 *p1 = *(u8 **)0x0300167Cu;
-    u8 *node = *(u8 **)(p1 + 144);
-    volatile u8 *wa = (volatile u8 *)(uintptr_t)GarageListWalkWa;
+    {
+        u8 *p1 = *(u8 **)0x0300167Cu;
+        u8 *node = *(u8 **)(p1 + 144);
+        volatile u8 *wa = (volatile u8 *)(uintptr_t)GarageListWalkWa;
 
-    if (*(volatile u8 *)(wa + 0x10C2u) == 0) {
-        u32 flag = (0u - (*(volatile u32 *)(wa + 0x10DCu) & 2u)) >> 31;
+        if (*(volatile u8 *)(wa + 0x10C2u) == 0) {
+            u32 flag = (0u - (*(volatile u32 *)(wa + 0x10DCu) & 2u)) >> 31;
+
+            if (node != 0) {
+                s32 scaled_flag = (s32)(flag << 16);
+                do {
+                    ((void (*)(void *, int, void *))sub_0800275B8)(
+                        node, scaled_flag >> 16, a);
+                    node = *(u8 **)(node + 16);
+                } while (node != 0);
+            }
+            return;
+        }
 
         if (node != 0) {
-            s32 scaled_flag = (s32)(flag << 16);
-            do {
-                ((void (*)(void *, int, void *))sub_0800275B8)(
-                    node, scaled_flag >> 16, a);
-                node = *(u8 **)(node + 16);
-            } while (node != 0);
-        }
-        return;
-    }
-
-    if (node != 0) {
-        if (*(s16 *)(p1 + 10) != 0) {
-            if (*(s16 *)(p1 + 8) != 0) {
-                sub_0800276F0(*(s16 *)(p1 + 20), 0, 0);
+            if (*(s16 *)(p1 + 10) != 0) {
+                if (*(s16 *)(p1 + 8) != 0) {
+                    sub_0800276F0(*(s16 *)(p1 + 20), 0, 0);
+                } else {
+                    sub_080027788(*(s16 *)(p1 + 20), 0, 0);
+                }
             } else {
-                sub_080027788(*(s16 *)(p1 + 20), 0, 0);
+                sub_08002773C(*(s16 *)(p1 + 20), 0, 0);
             }
-        } else {
-            sub_08002773C(*(s16 *)(p1 + 20), 0, 0);
+            ((void (*)(void *, int, void *))sub_0800275B8)(node, 0, a);
+            p1 = *(u8 **)0x0300167Cu;
+            *(s16 *)(p1 + 10) = (*(s16 *)(p1 + 10) == 0);
         }
-        ((void (*)(void *, int, void *))sub_0800275B8)(node, 0, a);
-        p1 = *(u8 **)0x0300167Cu;
-        *(s16 *)(p1 + 10) = (*(s16 *)(p1 + 10) == 0);
     }
 }
 void _08027828(void *a) __attribute__((alias("Garage_ListWalk_27828")));
@@ -2151,74 +2161,86 @@ void Garage_Ticker_278F0(void)
     extern void _0800278DC(void *rec);                   // list push (garage_records.c)
     extern u8 GarageTickerWa[];
     __asm__(".globl GarageTickerWa\nGarageTickerWa = 0x03001780\n");
-    volatile u8 *volatile *slot0 =
-        (volatile u8 *volatile *)(uintptr_t)0x0300167C;
-    volatile u8 *initial = *slot0;
-    *(volatile u32 *)(initial + 144) = 0;                // [P1+0x90] = NULL
-    volatile u8 *volatile *P1slot = slot0;
-    u32 off = 24;
-    int i = 5;
-    do {
-        register volatile u8 *current_base __asm__("r0") = *P1slot;
-        register volatile u8 *node __asm__("r1") = current_base + off;
-        register u32 count __asm__("r2");
-        count = *(volatile u16 *)(node + 10);
-        register int signed_count __asm__("r0");
-        signed_count = *(s16 *)(node + 10);
-        if (signed_count > 0) {
-            register u32 dec_count __asm__("r0");
-            dec_count = count - 1;
-            *(volatile u16 *)(node + 10) = (u16)dec_count;
-            *(volatile u16 *)(node + 8) = (u16)(*(volatile u16 *)(node + 8) + 1);
-            _0800278DC((void *)(uintptr_t)node);
-        }
-        off += 20;
-        i--;
-    } while (i >= 0);
-    register volatile u8 *volatile *tail_slot __asm__("r4") =
-        (volatile u8 *volatile *)(uintptr_t)0x0300167C;
-    register volatile u8 *m __asm__("r2") = *tail_slot;
-    s32 status;
-    status = *(s16 *)(m + 6);
-    if (status != 0) {
-        u32 t = (u32)*(volatile u16 *)(m + 4) + 1;
-        *(volatile u16 *)(m + 4) = (u16)t;
-        int hi = ((s16)t > 50) ? 1 : 0;
-        int idle = 0;
-        s32 idleField = *(s16 *)(m + 8);
-        if (idleField == 0) idle = 1;
-        if (hi & idle) {
-            *(volatile u16 *)(m + 8) = 1u;
-            {
-                volatile u8 *wa = (volatile u8 *)(uintptr_t)GarageTickerWa;
-                if (*(volatile u8 *)(wa + 0x10C2) == 0) {
-                    Garage_276F0(*(s16 *)(m + 20), 0, 0);
-                    Garage_276F0(*(s16 *)(*tail_slot + 22), 1, 0);
-                }
-            }
-        }
-        register volatile u8 *volatile *reset_slot __asm__("r0") =
+    {
+        volatile u8 *volatile *slot0 =
             (volatile u8 *volatile *)(uintptr_t)0x0300167C;
-        register volatile u8 *reset_base __asm__("r1") = *reset_slot;
-        *(volatile u16 *)(reset_base + 6) = 0;
-    } else {
-        s32 elapsed;
-        elapsed = *(s16 *)(m + 4);
-        if (elapsed > 0) {
-            *(volatile u16 *)(m + 8) = (u16)status;
-            *(volatile u16 *)(m + 4) = (u16)status;
+        volatile u8 *initial = *slot0;
+        *(volatile u32 *)(initial + 144) = 0;                // [P1+0x90] = NULL
+        {
+            volatile u8 *volatile *P1slot = slot0;
+            u32 off = 24;
+            int i = 5;
+            do {
+                register volatile u8 *current_base __asm__("r0") = *P1slot;
+                register volatile u8 *node __asm__("r1") = current_base + off;
+                register u32 count __asm__("r2");
+                count = *(volatile u16 *)(node + 10);
+                {
+                    register int signed_count __asm__("r0");
+                    signed_count = *(s16 *)(node + 10);
+                    if (signed_count > 0) {
+                        register u32 dec_count __asm__("r0");
+                        dec_count = count - 1;
+                        *(volatile u16 *)(node + 10) = (u16)dec_count;
+                        *(volatile u16 *)(node + 8) = (u16)(*(volatile u16 *)(node + 8) + 1);
+                        _0800278DC((void *)(uintptr_t)node);
+                    }
+                    off += 20;
+                    i--;
+                }
+            } while (i >= 0);
             {
-                register volatile u8 *wa __asm__("r0") =
-                    (volatile u8 *)(uintptr_t)GarageTickerWa;
-                register u32 wa_off __asm__("r5") = 0x10C2;
-                if (*(volatile u8 *)(wa + wa_off) == 0) {
-                    register s32 arg0 __asm__("r0");
-                    register int hold5b __asm__("r5");
-                    __asm__ volatile("" : "=r"(hold5b));
-                    arg0 = *(s16 *)(m + 20);
-                    __asm__ volatile("" : : "r"(hold5b));
-                    Garage_27788(arg0, 0, 0);
-                    Garage_27788(*(s16 *)(*tail_slot + 22), 1, 0);
+                register volatile u8 *volatile *tail_slot __asm__("r4") =
+                    (volatile u8 *volatile *)(uintptr_t)0x0300167C;
+                register volatile u8 *m __asm__("r2") = *tail_slot;
+                s32 status;
+                status = *(s16 *)(m + 6);
+                if (status != 0) {
+                    u32 t = (u32)*(volatile u16 *)(m + 4) + 1;
+                    *(volatile u16 *)(m + 4) = (u16)t;
+                    {
+                        int hi = ((s16)t > 50) ? 1 : 0;
+                        int idle = 0;
+                        s32 idleField = *(s16 *)(m + 8);
+                        if (idleField == 0) idle = 1;
+                        if (hi & idle) {
+                            *(volatile u16 *)(m + 8) = 1u;
+                            {
+                                volatile u8 *wa = (volatile u8 *)(uintptr_t)GarageTickerWa;
+                                if (*(volatile u8 *)(wa + 0x10C2) == 0) {
+                                    Garage_276F0(*(s16 *)(m + 20), 0, 0);
+                                    Garage_276F0(*(s16 *)(*tail_slot + 22), 1, 0);
+                                }
+                            }
+                        }
+                        {
+                            register volatile u8 *volatile *reset_slot __asm__("r0") =
+                                (volatile u8 *volatile *)(uintptr_t)0x0300167C;
+                            register volatile u8 *reset_base __asm__("r1") = *reset_slot;
+                            *(volatile u16 *)(reset_base + 6) = 0;
+                        }
+                    }
+                } else {
+                    s32 elapsed;
+                    elapsed = *(s16 *)(m + 4);
+                    if (elapsed > 0) {
+                        *(volatile u16 *)(m + 8) = (u16)status;
+                        *(volatile u16 *)(m + 4) = (u16)status;
+                        {
+                            register volatile u8 *wa __asm__("r0") =
+                                (volatile u8 *)(uintptr_t)GarageTickerWa;
+                            register u32 wa_off __asm__("r5") = 0x10C2;
+                            if (*(volatile u8 *)(wa + wa_off) == 0) {
+                                register s32 arg0 __asm__("r0");
+                                register int hold5b __asm__("r5");
+                                __asm__ volatile("" : "=r"(hold5b));
+                                arg0 = *(s16 *)(m + 20);
+                                __asm__ volatile("" : : "r"(hold5b));
+                                Garage_27788(arg0, 0, 0);
+                                Garage_27788(*(s16 *)(*tail_slot + 22), 1, 0);
+                            }
+                        }
+                    }
                 }
             }
         }

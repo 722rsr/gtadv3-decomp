@@ -19,11 +19,13 @@ void RuntimeIrqConfig(void) {
         // Materialize both addresses before either word is fetched, as in
         // the ROM's ldr r0 / ldr r1 / ldr r2,[r0] / ldr r0,[r1].
         __asm__("" : : "r"(codep), "r"(expectedp));
-        u32 code = *codep;
-        u32 expected = *expectedp;
-        if (code == expected) {
-            register u32 flags __asm__("r0") = *ie;
-            *ie = flags | 8192;
+        {
+            u32 code = *codep;
+            u32 expected = *expectedp;
+            if (code == expected) {
+                register u32 flags __asm__("r0") = *ie;
+                *ie = flags | 8192;
+            }
         }
     }
     *(volatile u16 *)0x04000004u = 0x3828;
@@ -91,55 +93,75 @@ void EmitPlace_02ED0(void *base,int id,int z,int y,int idx,int row,int count,int
     typedef struct { u16 attr0, attr1, attr2, pad; u32 next; u16 clear; } EmitObj;
     // Retain the assembly's interior label at the first stack-argument load.
     __asm__(".global _08002EE4\n.set _08002EE4, EmitPlace_02ED0 + 20");
-    int x = (int)(uintptr_t)base;
-    register int incoming __asm__("ip") = id;
-    register int tile __asm__("r6") = z;
-    volatile int depth = y;
-    __asm__("" : : "m"(row), "m"(count), "m"(bank), "m"(shape), "m"(clear) : "memory");
-    int rowindex = row;
-    __asm__("" : "+r"(rowindex));
-    register int remaining __asm__("r5") = count;
-    register u32 shapearg __asm__("r2") = shape;
-    const EmitRow *tbl = (const EmitRow *)(0x080C4940u + ((u32)rowindex << 3));
-    register u32 shapebits __asm__("sl") = shapearg << 10;
-    u16 advance = tbl->advance;
-    if (remaining == 0) return;
-    register u32 ybits __asm__("r9") = (u32)incoming & 255;
-    register int step __asm__("r8") = (s16)advance;
-    do {
-        extern void _08002C34(int,void *);
-        extern void *EmitAllocate_02ED0(void) __asm__("_08002BFC");
-        EmitObj *obj = (EmitObj *)EmitAllocate_02ED0();
-        u32 attr0 = shapebits;
-        __asm__("" : "+r"(attr0));
-        register u32 tableattr __asm__("r3") = tbl->attr0;
-        obj->attr0 = attr0 | tableattr | ybits;
-        // The ROM loads the mask in r3, copies it to r2, then masks r0.
-        register u32 mask __asm__("r3") = 511;
-        register u32 maskcopy __asm__("r2") = mask;
-        __asm__("" : "+r"(maskcopy) : "r"(mask));
-        obj->attr1 = ((u32)x & maskcopy) | tbl->attr1;
-        register u32 d __asm__("r3") = depth;
-        register u32 bits __asm__("r0") = (d << 12) | (u32)tile;
-        __asm__("" : : "r"(d));
-        register u32 bankarg __asm__("r3") = bank;
-        __asm__("" : : "r"(bankarg));
-        register u32 bankfield __asm__("r2") = bankarg << 10;
-        bits |= bankfield;
-        __asm__("" : "+r"(bits));
-        obj->attr2 = bits;
-        // Hardware ABI contract: the ROM reads only the low halfword of
-        // the tenth caller word at sp+56 after its fixed 36-byte frame.
-        // A normal cast emits a word load; &clear emits add sp,#56 instead
-        // of the ROM's mov r0,sp / ldrh r0,[r0,#56]. Byte gates cover the
-        // frame size and this exact access independently of the host model.
-        register const struct { u8 pad[56]; u16 clear; } *frame __asm__("sp");
-        __asm__("" : "=r"(frame));
-        obj->clear = frame->clear;
-        _08002C34(idx,obj);
-        x += tbl->dx;
-        tile += step;
-    } while (--remaining != 0);
+    {
+        int x = (int)(uintptr_t)base;
+        register int incoming __asm__("ip") = id;
+        register int tile __asm__("r6") = z;
+        volatile int depth = y;
+        __asm__("" : : "m"(row), "m"(count), "m"(bank), "m"(shape), "m"(clear) : "memory");
+        {
+            int rowindex = row;
+            __asm__("" : "+r"(rowindex));
+            {
+                register int remaining __asm__("r5") = count;
+                register u32 shapearg __asm__("r2") = shape;
+                const EmitRow *tbl = (const EmitRow *)(0x080C4940u + ((u32)rowindex << 3));
+                register u32 shapebits __asm__("sl") = shapearg << 10;
+                u16 advance = tbl->advance;
+                if (remaining == 0) return;
+                {
+                    register u32 ybits __asm__("r9") = (u32)incoming & 255;
+                    register int step __asm__("r8") = (s16)advance;
+                    do {
+                        extern void _08002C34(int,void *);
+                        extern void *EmitAllocate_02ED0(void) __asm__("_08002BFC");
+                        EmitObj *obj = (EmitObj *)EmitAllocate_02ED0();
+                        u32 attr0 = shapebits;
+                        __asm__("" : "+r"(attr0));
+                        {
+                            register u32 tableattr __asm__("r3") = tbl->attr0;
+                            obj->attr0 = attr0 | tableattr | ybits;
+                            // The ROM loads the mask in r3, copies it to r2, then masks r0.
+                            {
+                                register u32 mask __asm__("r3") = 511;
+                                register u32 maskcopy __asm__("r2") = mask;
+                                __asm__("" : "+r"(maskcopy) : "r"(mask));
+                                obj->attr1 = ((u32)x & maskcopy) | tbl->attr1;
+                                {
+                                    register u32 d __asm__("r3") = depth;
+                                    register u32 bits __asm__("r0") = (d << 12) | (u32)tile;
+                                    __asm__("" : : "r"(d));
+                                    {
+                                        register u32 bankarg __asm__("r3") = bank;
+                                        __asm__("" : : "r"(bankarg));
+                                        {
+                                            register u32 bankfield __asm__("r2") = bankarg << 10;
+                                            bits |= bankfield;
+                                            __asm__("" : "+r"(bits));
+                                            obj->attr2 = bits;
+                                            // Hardware ABI contract: the ROM reads only the low halfword of
+                                            // the tenth caller word at sp+56 after its fixed 36-byte frame.
+                                            // A normal cast emits a word load; &clear emits add sp,#56 instead
+                                            // of the ROM's mov r0,sp / ldrh r0,[r0,#56]. Byte gates cover the
+                                            // frame size and this exact access independently of the host model.
+                                            {
+                                                register const struct { u8 pad[56]; u16 clear; } *frame __asm__("sp");
+                                                __asm__("" : "=r"(frame));
+                                                obj->clear = frame->clear;
+                                                _08002C34(idx,obj);
+                                                x += tbl->dx;
+                                                tile += step;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } while (--remaining != 0);
+                }
+            }
+        }
+    }
 }
 void RecordSetter_02F68(int x,int id,int y,int z,int idx,int row,int count);
 void _08002F68(int a,int b,int c,int d,int e,int f,int g) __attribute__((alias("RecordSetter_02F68")));
@@ -164,69 +186,87 @@ void RecordSetter_02F68(int x, int id, int y, int z,
     register u32 tablebase __asm__("r1") = 0x080C4940u;
     __asm__("" : "+r"(tableaddr), "+r"(tablebase));
     tableaddr += tablebase;
-    const Row *table = (const Row *)(uintptr_t)tableaddr;
-    register u32 row_attr0 __asm__("r2") = table->attr0;
-    volatile u32 attr1_home = table->attr1;
-    dx = (u16)(s8)table->dx;
-    // The ROM zero-extends the signed byte into sl, then narrows it to s16
-    // when applying each x step. r9 retains the row's unsigned advance.
-    __asm__ volatile ("" : : "r"(dx));
-    dy = table->advance;
-    if (remaining == 0) return;
-    register u32 maskbase __asm__("r1") = 128u;
-    __asm__("" : "+r"(maskbase));
-    maskbase <<= 3;
-    __asm__("" : "+r"(maskbase));
-    register u32 maskcopy __asm__("r0") = maskbase;
-    __asm__("" : "+r"(maskcopy));
-    register u32 attr0 __asm__("r5") = row_attr0;
-    __asm__("" : "+r"(attr0));
-    attr0 |= maskcopy;
-    item_id &= 255u;
-    attr0 |= (u32)item_id;
-    do {
-        extern void *EmitAllocate_02F68(void) __asm__("_08002BFC");
-        extern void _08002C34(int, void *);
-        register volatile u8 *obj __asm__("r1") = (volatile u8 *)EmitAllocate_02F68();
-        *(volatile u16 *)(obj + 0) = (u16)attr0;
+    {
+        const Row *table = (const Row *)(uintptr_t)tableaddr;
+        register u32 row_attr0 __asm__("r2") = table->attr0;
+        volatile u32 attr1_home = table->attr1;
+        dx = (u16)(s8)table->dx;
+        // The ROM zero-extends the signed byte into sl, then narrows it to s16
+        // when applying each x step. r9 retains the row's unsigned advance.
+        __asm__ volatile ("" : : "r"(dx));
+        dy = table->advance;
+        if (remaining == 0) return;
         {
-            // Preserve the ROM's r0 mask, r2 copy, and attr1 combination.
-            register u32 mask __asm__("r0") = 0x1FFu;
-            __asm__("" : "+r"(mask));
-            register u32 mask_copy __asm__("r2") = mask;
-            __asm__("" : "+r"(mask_copy));
-            register u32 base_copy __asm__("r0") = (u32)base;
-            __asm__("" : "+r"(base_copy));
-            base_copy &= mask_copy;
-            register u32 attr1_copy __asm__("r2") = attr1_home;
-            __asm__("" : "+r"(attr1_copy));
-            base_copy |= attr1_copy;
-            *(volatile u16 *)(obj + 2) = (u16)base_copy;
+            register u32 maskbase __asm__("r1") = 128u;
+            __asm__("" : "+r"(maskbase));
+            maskbase <<= 3;
+            __asm__("" : "+r"(maskbase));
+            {
+                register u32 maskcopy __asm__("r0") = maskbase;
+                __asm__("" : "+r"(maskcopy));
+                {
+                    register u32 attr0 __asm__("r5") = row_attr0;
+                    __asm__("" : "+r"(attr0));
+                    attr0 |= maskcopy;
+                    item_id &= 255u;
+                    attr0 |= (u32)item_id;
+                    do {
+                        extern void *EmitAllocate_02F68(void) __asm__("_08002BFC");
+                        extern void _08002C34(int, void *);
+                        register volatile u8 *obj __asm__("r1") = (volatile u8 *)EmitAllocate_02F68();
+                        *(volatile u16 *)(obj + 0) = (u16)attr0;
+                        {
+                            // Preserve the ROM's r0 mask, r2 copy, and attr1 combination.
+                            register u32 mask __asm__("r0") = 0x1FFu;
+                            __asm__("" : "+r"(mask));
+                            {
+                                register u32 mask_copy __asm__("r2") = mask;
+                                __asm__("" : "+r"(mask_copy));
+                                {
+                                    register u32 base_copy __asm__("r0") = (u32)base;
+                                    __asm__("" : "+r"(base_copy));
+                                    base_copy &= mask_copy;
+                                    {
+                                        register u32 attr1_copy __asm__("r2") = attr1_home;
+                                        __asm__("" : "+r"(attr1_copy));
+                                        base_copy |= attr1_copy;
+                                        *(volatile u16 *)(obj + 2) = (u16)base_copy;
+                                    }
+                                }
+                            }
+                        }
+                        {
+                            register u32 zvalue __asm__("r2") = zslot;
+                            __asm__("" : "+r"(zvalue));
+                            {
+                                register u32 zbits __asm__("r0") = zvalue << 12;
+                                __asm__("" : "+r"(zbits));
+                                zbits |= (u32)ybase;
+                                *(volatile u16 *)(obj + 4) = (u16)zbits;
+                            }
+                        }
+                        *(volatile u16 *)(obj + 12) = 0;
+                        _08002C34(idx, (void *)obj);
+                        {
+                            register u32 dx_copy __asm__("r1") = dx;
+                            register int delta __asm__("r0") = (s16)dx_copy;
+                            base += delta;
+                        }
+                        {
+                            register u32 dy_copy __asm__("r2") = dy;
+                            __asm__("" : "+r"(dy_copy));
+                            {
+                                register int delta __asm__("r0") = (s16)dy_copy;
+                                __asm__("" : "+r"(delta));
+                                ybase += delta;
+                            }
+                        }
+                        remaining--;
+                    } while (remaining != 0);
+                }
+            }
         }
-        {
-            register u32 zvalue __asm__("r2") = zslot;
-            __asm__("" : "+r"(zvalue));
-            register u32 zbits __asm__("r0") = zvalue << 12;
-            __asm__("" : "+r"(zbits));
-            zbits |= (u32)ybase;
-            *(volatile u16 *)(obj + 4) = (u16)zbits;
-        }
-        *(volatile u16 *)(obj + 12) = 0;
-        _08002C34(idx, (void *)obj);
-        {
-            register u32 dx_copy __asm__("r1") = dx;
-            register int delta __asm__("r0") = (s16)dx_copy;
-            base += delta;
-        }
-        {
-            register u32 dy_copy __asm__("r2") = dy;
-            __asm__("" : "+r"(dy_copy));
-            register int delta __asm__("r0") = (s16)dy_copy;
-            __asm__("" : "+r"(delta));
-            ybase += delta;
-        }
-        remaining--;
-    } while (remaining != 0);
+    }
 }
 void RecordSetter_03004(int base,int v1,int z,int y,int idx,int row,int a6,int a7);
 void _08003004(int a,int b,int c,int d,int e,int f,int g,int h)
@@ -293,9 +333,11 @@ void RecordSetter_03004(int base,int v1,int z,int y,int idx,int row,int a6,int a
         extern void _08002C60(int, u32, u32);
         register u32 a6r __asm__("r1") = (u16)a6;
         __asm__("" : "+r"(a6r));
-        register int a7r __asm__("r3") = a7;
-        __asm__("" : "+r"(a7r));
-        _08002C60(r9, a6r, (u16)a7r);
+        {
+            register int a7r __asm__("r3") = a7;
+            __asm__("" : "+r"(a7r));
+            _08002C60(r9, a6r, (u16)a7r);
+        }
     }
     // The allocator takes no argument in the ROM: a no-parameter
     // declaration keeps `bl _08002BFC` free of an argument setup.
@@ -308,69 +350,87 @@ void RecordSetter_03004(int base,int v1,int z,int y,int idx,int row,int a6,int a
     // `ldrsb` is what a non-volatile signed byte read emits. The halving is
     // C `/2` (truncating): the ROM emits the `lsrs #31; adds; asrs #1`
     // idiom, not `asrs #31; adds; asrs #1` for a hand-written floor shift.
-    register int a6cmp __asm__("r0") = a6;
-    __asm__("" : "+r"(a6cmp));
-    if (a6cmp <= 255) goto record_adjusted;
     {
-        register int a7cmp __asm__("r1") = a7;
-        __asm__("" : "+r"(a7cmp));
-        if (a7cmp > 255) goto record_high_mode;
-    }
-record_adjusted: {
-        int b6=*(const s8*)(tbl+6);
-        register int b6half __asm__("r0") = b6/2;
-        __asm__("" : "+r"(b6half));
-        register int base_adjust __asm__("r3") = rbase;
-        __asm__("" : "+r"(base_adjust));
-        base_adjust-=b6half;
-        __asm__("" : "+r"(base_adjust));
-        rbase=base_adjust;
-        int b7=*(const s8*)(tbl+7);
-        rv1-=b7/2;
-        rv1&=0xFF;
-        h0=(u16)(h0 | (u16)rv1);
-        h0=(u16)(h0 | 0x300u);
-    }
-    goto record_complete;
-record_high_mode: {
-        rv1&=0xFF;
-        h0=(u16)(h0 | (u16)rv1);
+        register int a6cmp __asm__("r0") = a6;
+        __asm__("" : "+r"(a6cmp));
+        if (a6cmp <= 255) goto record_adjusted;
         {
-            register u32 mode __asm__("r3") = 0x100u;
-            __asm__("" : "+r"(mode));
-            register u32 temp __asm__("r0") = mode;
-            __asm__("" : "+r"(temp));
-            h0=(u16)(h0 | (u16)temp);
+            register int a7cmp __asm__("r1") = a7;
+            __asm__("" : "+r"(a7cmp));
+            if (a7cmp > 255) goto record_high_mode;
         }
-    }
-record_complete:
-    *(volatile u16*)(obj+0)=h0;
-    {
-        register u32 mask __asm__("r1") = 0x1FFu;
-        __asm__("" : "+r"(mask));
-        register u32 mask_copy __asm__("r0") = mask;
-        __asm__("" : "+r"(mask_copy));
-        register u32 base_copy __asm__("r3") = rbase;
-        __asm__("" : "+r"(base_copy));
-        h2=(u16)(h2 | (u16)(base_copy & mask_copy));
-    }
-    h2=(u16)(h2 | (u16)(r9<<9));
-    register u16 zero_value __asm__("r1") = 0;
-    __asm__("" : "+r"(zero_value));
-    *(volatile u16*)(obj+2)=h2;
-    {
-        register u32 ycopy __asm__("r3") = (u32)ry;
-        __asm__("" : "+r"(ycopy));
-        register u32 yshift __asm__("r0") = ycopy << 12;
-        __asm__("" : "+r"(yshift));
-        register u32 zcopy __asm__("r3") = (u32)zslot;
-        __asm__("" : "+r"(zcopy));
-        *(volatile u16*)(obj+4)=(u16)(yshift | zcopy);
-    }
-    *(volatile u16*)(obj+12)=zero_value;
-    {
-        extern void _08002C34(int, void*);
-        _08002C34(idx, (void*)obj);
+    record_adjusted: {
+            int b6=*(const s8*)(tbl+6);
+            register int b6half __asm__("r0") = b6/2;
+            __asm__("" : "+r"(b6half));
+            {
+                register int base_adjust __asm__("r3") = rbase;
+                __asm__("" : "+r"(base_adjust));
+                base_adjust-=b6half;
+                __asm__("" : "+r"(base_adjust));
+                rbase=base_adjust;
+                {
+                    int b7=*(const s8*)(tbl+7);
+                    rv1-=b7/2;
+                    rv1&=0xFF;
+                    h0=(u16)(h0 | (u16)rv1);
+                    h0=(u16)(h0 | 0x300u);
+                }
+            }
+        }
+        goto record_complete;
+    record_high_mode: {
+            rv1&=0xFF;
+            h0=(u16)(h0 | (u16)rv1);
+            {
+                register u32 mode __asm__("r3") = 0x100u;
+                __asm__("" : "+r"(mode));
+                {
+                    register u32 temp __asm__("r0") = mode;
+                    __asm__("" : "+r"(temp));
+                    h0=(u16)(h0 | (u16)temp);
+                }
+            }
+        }
+    record_complete:
+        *(volatile u16*)(obj+0)=h0;
+        {
+            register u32 mask __asm__("r1") = 0x1FFu;
+            __asm__("" : "+r"(mask));
+            {
+                register u32 mask_copy __asm__("r0") = mask;
+                __asm__("" : "+r"(mask_copy));
+                {
+                    register u32 base_copy __asm__("r3") = rbase;
+                    __asm__("" : "+r"(base_copy));
+                    h2=(u16)(h2 | (u16)(base_copy & mask_copy));
+                }
+            }
+        }
+        h2=(u16)(h2 | (u16)(r9<<9));
+        {
+            register u16 zero_value __asm__("r1") = 0;
+            __asm__("" : "+r"(zero_value));
+            *(volatile u16*)(obj+2)=h2;
+            {
+                register u32 ycopy __asm__("r3") = (u32)ry;
+                __asm__("" : "+r"(ycopy));
+                {
+                    register u32 yshift __asm__("r0") = ycopy << 12;
+                    __asm__("" : "+r"(yshift));
+                    {
+                        register u32 zcopy __asm__("r3") = (u32)zslot;
+                        __asm__("" : "+r"(zcopy));
+                        *(volatile u16*)(obj+4)=(u16)(yshift | zcopy);
+                    }
+                }
+            }
+            *(volatile u16*)(obj+12)=zero_value;
+            {
+                extern void _08002C34(int, void*);
+                _08002C34(idx, (void*)obj);
+            }
+        }
     }
 }
 // 0x080030CC: inits u16 buf[4] = {160,0,0,0} on stack (mov r2,sp first),
@@ -451,30 +511,34 @@ void Helper_02DB8(void *base,int id,int z,int y,int idx,int row,int count) {
     // and keep count in r5 so the table calculation uses r0/r1, not r4/r0.
     int rowindex = row;
     __asm__("" : "+r"(rowindex));
-    register int remaining __asm__("r5") = count;
-    const EmitRow *tbl = (const EmitRow *)(0x080C4940u + ((u32)rowindex << 3));
-    u16 advance = tbl->advance;
-    if (remaining == 0) return;
-    register u32 ybits __asm__("r9") = (u32)incoming & 255;
-    register int step __asm__("r8") = (s16)advance;
-    do {
-        // The allocator overwrites r0 without reading it; the ROM call has
-        // no argument materialization. Its legacy int parameter is unused.
-        extern void _08002C34(int,void *);
-        extern void *EmitAllocate_02DB8(void) __asm__("_08002BFC");
-        EmitObj *obj = (EmitObj *)EmitAllocate_02DB8();
-        u32 attr0 = ybits;
-        __asm__("" : "+r"(attr0));
-        obj->attr0 = attr0 | tbl->attr0;
-        obj->attr1 = ((u32)x & 511) | tbl->attr1;
-        // Shift depth inside the loop, retaining the unshifted sl value.
-        __asm__("" : "+r"(depth));
-        obj->attr2 = ((u32)depth << 12) | (u32)tile;
-        obj->clear = 0;
-        _08002C34(idx,obj);
-        x += tbl->dx;
-        tile += step;
-    } while (--remaining != 0);
+    {
+        register int remaining __asm__("r5") = count;
+        const EmitRow *tbl = (const EmitRow *)(0x080C4940u + ((u32)rowindex << 3));
+        u16 advance = tbl->advance;
+        if (remaining == 0) return;
+        {
+            register u32 ybits __asm__("r9") = (u32)incoming & 255;
+            register int step __asm__("r8") = (s16)advance;
+            do {
+                // The allocator overwrites r0 without reading it; the ROM call has
+                // no argument materialization. Its legacy int parameter is unused.
+                extern void _08002C34(int,void *);
+                extern void *EmitAllocate_02DB8(void) __asm__("_08002BFC");
+                EmitObj *obj = (EmitObj *)EmitAllocate_02DB8();
+                u32 attr0 = ybits;
+                __asm__("" : "+r"(attr0));
+                obj->attr0 = attr0 | tbl->attr0;
+                obj->attr1 = ((u32)x & 511) | tbl->attr1;
+                // Shift depth inside the loop, retaining the unshifted sl value.
+                __asm__("" : "+r"(depth));
+                obj->attr2 = ((u32)depth << 12) | (u32)tile;
+                obj->clear = 0;
+                _08002C34(idx,obj);
+                x += tbl->dx;
+                tile += step;
+            } while (--remaining != 0);
+        }
+    }
 }
 void _08002DB8(void *a,int b,int c,int d,int e,int f,int g)
     __attribute__((alias("Helper_02DB8")));
@@ -493,38 +557,46 @@ void Helper_02E3C(void *base,int id,int z,int y,int idx,int row,int count,u32 ba
     // Force the incoming copies and depth spill before the three stack
     // loads, without emitting instructions or modifying the arguments.
     __asm__("" : : "m"(row), "m"(count), "m"(bank) : "memory");
-    int rowindex = row;
-    __asm__("" : "+r"(rowindex));
-    register int remaining __asm__("r5") = count;
-    register u32 bankarg __asm__("r1") = bank;
-    register u32 bankbits __asm__("sl") = (u16)bankarg;
-    const EmitRow *tbl = (const EmitRow *)(0x080C4940u + ((u32)rowindex << 3));
-    u16 advance = tbl->advance;
-    if (remaining == 0) return;
-    register u32 ybits __asm__("r9") = (u32)incoming & 255;
-    register int step __asm__("r8") = (s16)advance;
-    do {
-        extern void _08002C34(int,void *);
-        extern void *EmitAllocate_02E3C(void) __asm__("_08002BFC");
-        EmitObj *obj = (EmitObj *)EmitAllocate_02E3C();
-        u32 attr0 = ybits;
-        __asm__("" : "+r"(attr0));
-        obj->attr0 = attr0 | tbl->attr0;
-        obj->attr1 = ((u32)x & 511) | tbl->attr1;
-        __asm__("" : "+r"(bankbits));
-        // The ROM loads depth through r3, shifts into r0, and reuses r3
-        // for sl. Keep the final OR/store in r0 rather than destroying r2.
-        register u32 d __asm__("r3") = depth;
-        register u32 bits __asm__("r0") = (d << 12) | (u32)tile;
-        __asm__("" : : "r"(d));
-        bits |= bankbits << 10;
-        __asm__("" : "+r"(bits));
-        obj->attr2 = bits;
-        obj->clear = 0;
-        _08002C34(idx,obj);
-        x += tbl->dx;
-        tile += step;
-    } while (--remaining != 0);
+    {
+        int rowindex = row;
+        __asm__("" : "+r"(rowindex));
+        {
+            register int remaining __asm__("r5") = count;
+            register u32 bankarg __asm__("r1") = bank;
+            register u32 bankbits __asm__("sl") = (u16)bankarg;
+            const EmitRow *tbl = (const EmitRow *)(0x080C4940u + ((u32)rowindex << 3));
+            u16 advance = tbl->advance;
+            if (remaining == 0) return;
+            {
+                register u32 ybits __asm__("r9") = (u32)incoming & 255;
+                register int step __asm__("r8") = (s16)advance;
+                do {
+                    extern void _08002C34(int,void *);
+                    extern void *EmitAllocate_02E3C(void) __asm__("_08002BFC");
+                    EmitObj *obj = (EmitObj *)EmitAllocate_02E3C();
+                    u32 attr0 = ybits;
+                    __asm__("" : "+r"(attr0));
+                    obj->attr0 = attr0 | tbl->attr0;
+                    obj->attr1 = ((u32)x & 511) | tbl->attr1;
+                    __asm__("" : "+r"(bankbits));
+                    // The ROM loads depth through r3, shifts into r0, and reuses r3
+                    // for sl. Keep the final OR/store in r0 rather than destroying r2.
+                    {
+                        register u32 d __asm__("r3") = depth;
+                        register u32 bits __asm__("r0") = (d << 12) | (u32)tile;
+                        __asm__("" : : "r"(d));
+                        bits |= bankbits << 10;
+                        __asm__("" : "+r"(bits));
+                        obj->attr2 = bits;
+                        obj->clear = 0;
+                        _08002C34(idx,obj);
+                        x += tbl->dx;
+                        tile += step;
+                    }
+                } while (--remaining != 0);
+            }
+        }
+    }
 }
 void _08002E3C(void *a,int b,int c,int d,int e,int f,int g,u32 h)
     __attribute__((alias("Helper_02E3C")));
@@ -556,26 +628,32 @@ void Wrap_02B50(void){
     // the barrier clobbers r0 instead -- with r0's value unknown the
     // compiler cannot derive the address and must pool-load it.
     __asm__("" : : "r"(v140) : "r0");
-    u32 v144 = *(volatile u32*)(uintptr_t)0x03000144u;
-    u32 masked = v144 & 0x001FFFFFu;
-    masked |= (160u << 19);
-    sub_0802D974(&z0, (void*)v140, masked);
-    u32 z1 = 0;
-    // The src pointer materializes before the cell pool-load (ROM `add
-    // r0,sp,#4` precedes `ldr r4,=0x03000134`), so it is named here.
-    u32 *src1 = &z1;
-    volatile u32 *cell = (volatile u32*)(uintptr_t)0x03000134u;
-    sub_0802D974(src1, (void*)*cell, 0x05000100u);
-    int i = 0;
-    u32 bd = 0x1FFu;
-    u16 v = 160;
-    for (; i <= (int)bd; i += 4) {
-        // b is pinned to r1 (ROM `ldr r1,[r4]` first, index into r0);
-        // unpinned it takes r0 and the pair swaps. The address sum is
-        // written index-first so the result lands in r0 (`adds r0,r0,r1`,
-        // not `adds r1,r1,r0`).
-        register u32 b __asm__("r1") = *cell;
-        *(u16*)((i << 1) + b) = v;
+    {
+        u32 v144 = *(volatile u32*)(uintptr_t)0x03000144u;
+        u32 masked = v144 & 0x001FFFFFu;
+        masked |= (160u << 19);
+        sub_0802D974(&z0, (void*)v140, masked);
+        {
+            u32 z1 = 0;
+            // The src pointer materializes before the cell pool-load (ROM `add
+            // r0,sp,#4` precedes `ldr r4,=0x03000134`), so it is named here.
+            u32 *src1 = &z1;
+            volatile u32 *cell = (volatile u32*)(uintptr_t)0x03000134u;
+            sub_0802D974(src1, (void*)*cell, 0x05000100u);
+            {
+                int i = 0;
+                u32 bd = 0x1FFu;
+                u16 v = 160;
+                for (; i <= (int)bd; i += 4) {
+                    // b is pinned to r1 (ROM `ldr r1,[r4]` first, index into r0);
+                    // unpinned it takes r0 and the pair swaps. The address sum is
+                    // written index-first so the result lands in r0 (`adds r0,r0,r1`,
+                    // not `adds r1,r1,r0`).
+                    register u32 b __asm__("r1") = *cell;
+                    *(u16*)((i << 1) + b) = v;
+                }
+            }
+        }
     }
 }
 void _08002B50(void) __attribute__((alias("Wrap_02B50")));
@@ -608,11 +686,11 @@ void sub_08002C74(int a, int b) __attribute__((alias("Store_02C74")));
 // the ROM's `negs r1,r2` at 0x08002C8E. Both pins are needed and neither
 // suffices alone — measured: both 20/20 prefix 20; r2 pin only 18/20 prefix 10
 // (load correct, `negs r2,r2`); r1 pin only 18/20 prefix 8, identical to the
-// unpinned body. The two must also be SEPARATE declaration statements: two
-// `register... __asm__` in one block makes the C89 transform bail with
-// "budget exhausted" and the probe then skips the whole TU.
+// unpinned body. The two are kept as SEPARATE declaration statements, the
+// measured shape that reproduces the ROM.
 // `register T v __asm__("rN")` is a GNU extension, so this unit is not strict
-// C89; the C89 transform still processes it and the probe compiles it.
+// ISO C89; it is part of the pinned agbcc dialect and the source gate accepts
+// it.
 // _08002C84 exact: ldr r1,=0x03000134; ldr r1,[r1]; lsls r0,#5; adds r0,r1; ldrh r2,[r0,#6]; negs r1,r2; strh r1,[r0,#6]; pool _08002C94=0x03000134
 void Wrap_02C84(int idx){
     volatile u32 *basePtr = (volatile u32*)(uintptr_t)0x03000134;
@@ -658,46 +736,50 @@ void Wrap_02D3C(void){
     // registers swap). Same r0-clobber lever as Wrap_02B50: with r0's value
     // unknown the compiler must pool-load the next IWRAM cell address.
     __asm__("" : : "r"(tbl) : "r0");
-    volatile u32 *p138 = (volatile u32 *)(uintptr_t)0x03000138u;
-    u8 *dst = (u8 *)(uintptr_t)*p138;
-    int idx = 0;
-    volatile u32 *cntPtr = (volatile u32 *)(uintptr_t)0x03000144u;
-    // Load the count value for the entry check first (ROM ldr r0,[r1];
-    // cmp r3,r0; bge skip), then save the pointer itself for the
-    // per-iteration reloads (ROM adds r5,r1 after the check). Spelling the
-    // entry check directly as `idx < *cntPtr` lets agbcc keep the pointer
-    // in r4 from the start and emit a bare `b' to the bottom test instead.
-    // idx/cnt are SIGNED: the ROM's entry/exit tests are bge/blt, not
-    // bcs/bcc, so u32 here costs exactly those two branch opcodes.
-    int cnt = (int)*cntPtr;
-    // Pin the OAM cell pointer to r6: the ROM pool-loads 0x03000134 after
-    // the count deref and keeps it in r6 for the tail CpuFastSet, which is
-    // what forces push {r4,r5,r6,lr}. Declared earlier its pool groups
-    // before the movs above.
-    register volatile u32 *oamCell __asm__("r6") = (volatile u32 *)(uintptr_t)0x03000134u;
-    extern void _0802D970(const void *, void *, u32);
-    if (idx < cnt) {
-        volatile int *cntSaved = (volatile int *)(uintptr_t)0x03000144u;
-        do {
-            u8 *entry = *(u8 **)tbl;
-            tbl++;
-            idx++;
-            if (entry != (u8 *)0) {
-                do {
-                    *(volatile u32 *)dst = *(volatile u32 *)entry;
-                    *(volatile u16 *)(dst + 4) = *(volatile u16 *)(entry + 4);
-                    dst += 8;
-                    entry = *(u8 **)(entry + 8);
-                } while (entry != (u8 *)0);
-            }
-        } while (idx < *cntSaved);
+    {
+        volatile u32 *p138 = (volatile u32 *)(uintptr_t)0x03000138u;
+        u8 *dst = (u8 *)(uintptr_t)*p138;
+        int idx = 0;
+        volatile u32 *cntPtr = (volatile u32 *)(uintptr_t)0x03000144u;
+        // Load the count value for the entry check first (ROM ldr r0,[r1];
+        // cmp r3,r0; bge skip), then save the pointer itself for the
+        // per-iteration reloads (ROM adds r5,r1 after the check). Spelling the
+        // entry check directly as `idx < *cntPtr` lets agbcc keep the pointer
+        // in r4 from the start and emit a bare `b' to the bottom test instead.
+        // idx/cnt are SIGNED: the ROM's entry/exit tests are bge/blt, not
+        // bcs/bcc, so u32 here costs exactly those two branch opcodes.
+        int cnt = (int)*cntPtr;
+        // Pin the OAM cell pointer to r6: the ROM pool-loads 0x03000134 after
+        // the count deref and keeps it in r6 for the tail CpuFastSet, which is
+        // what forces push {r4,r5,r6,lr}. Declared earlier its pool groups
+        // before the movs above.
+        register volatile u32 *oamCell __asm__("r6") = (volatile u32 *)(uintptr_t)0x03000134u;
+        extern void _0802D970(const void *, void *, u32);
+        if (idx < cnt) {
+            volatile int *cntSaved = (volatile int *)(uintptr_t)0x03000144u;
+            do {
+                u8 *entry = *(u8 **)tbl;
+                tbl++;
+                idx++;
+                if (entry != (u8 *)0) {
+                    do {
+                        *(volatile u32 *)dst = *(volatile u32 *)entry;
+                        *(volatile u16 *)(dst + 4) = *(volatile u16 *)(entry + 4);
+                        dst += 8;
+                        entry = *(u8 **)(entry + 8);
+                    } while (entry != (u8 *)0);
+                }
+            } while (idx < *cntSaved);
+        }
+        // Load the OAM source before synthesising the immediates: the ROM does
+        // ldr r0,[r6] / movs r1,#224 / lsls / movs r2,#128 / lsls, while passing
+        // *oamCell directly lets agbcc emit the two movs/lsls first.
+        {
+            u32 oamSrc = *oamCell;
+            _0802D970((const void *)(uintptr_t)oamSrc,
+                      (void *)(uintptr_t)((u32)224 << 19), (u32)((u32)128 << 1));
+        }
     }
-    // Load the OAM source before synthesising the immediates: the ROM does
-    // ldr r0,[r6] / movs r1,#224 / lsls / movs r2,#128 / lsls, while passing
-    // *oamCell directly lets agbcc emit the two movs/lsls first.
-    u32 oamSrc = *oamCell;
-    _0802D970((const void *)(uintptr_t)oamSrc,
-              (void *)(uintptr_t)((u32)224 << 19), (u32)((u32)128 << 1));
 }
 void _08002D3C(void) __attribute__((alias("Wrap_02D3C")));
 // Both entry spellings are branch/entry labels in the reference span.
@@ -759,14 +841,17 @@ void _08003298(int a,int b,int c) __attribute__((alias("Wrap_03298")));
 void Wrap_032E6(int id, void *buf){
     volatile u32 *p134 = (volatile u32*)(uintptr_t)0x03000160;
     u32 base = *p134;
-    for(int i=0;i<=3;i++){
-        u8 v = *(volatile u8*)((u8*)buf + i*4);
-        if(v==0) continue;
-        // indirect via 0x080C4BB0 table not proven — opaque
-        (void)v; (void)base; (void)id;
-        if(i==0) Wrap_03248(0,0,0);
-        else if(i==2) Wrap_03270(0,0,0);
-        else if(i==3) Wrap_03298(0,0,0);
+    {
+        int i = 0;
+        for (;i<=3;i++){
+            u8 v = *(volatile u8*)((u8*)buf + i*4);
+            if(v==0) continue;
+            // indirect via 0x080C4BB0 table not proven — opaque
+            (void)v; (void)base; (void)id;
+            if(i==0) Wrap_03248(0,0,0);
+            else if(i==2) Wrap_03270(0,0,0);
+            else if(i==3) Wrap_03298(0,0,0);
+        }
     }
 }
 void _080032E6(int a,void *b) __attribute__((alias("Wrap_032E6")));
@@ -788,20 +873,24 @@ void Wrap_03604(int a,int b,int c,void *d){
     // add into r0 (`adds r0,r0,r1`) instead of r1.
     register u32 base __asm__("r1") = 0x080C4BA0u;
     __asm__("" : "+r"(base));
-    register u32 addr __asm__("r0") = (u32)a << 2;
-    addr += base;
-    int v = *(volatile int *)(uintptr_t)addr;
-    int step = v / 2;
-    volatile u8 *p = orig;
-    int x = 120;
-    extern void _08003350(int, int, int, int, const void *, int);
-    if (*p != 0) {
-        do {
-            p++;
-            x -= step;
-        } while (*p != 0);
+    {
+        register u32 addr __asm__("r0") = (u32)a << 2;
+        addr += base;
+        {
+            int v = *(volatile int *)(uintptr_t)addr;
+            int step = v / 2;
+            volatile u8 *p = orig;
+            int x = 120;
+            extern void _08003350(int, int, int, int, const void *, int);
+            if (*p != 0) {
+                do {
+                    p++;
+                    x -= step;
+                } while (*p != 0);
+            }
+            _08003350(a, x, b, c, (const void *)orig, 1);
+        }
     }
-    _08003350(a, x, b, c, (const void *)orig, 1);
 }
 void _08003604(int a,int b,int c,void *d) __attribute__((alias("Wrap_03604")));
 // runtime_2aac.s branches here by the `sub_08003604` spelling; without this

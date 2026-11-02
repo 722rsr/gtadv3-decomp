@@ -58,128 +58,130 @@ void MenuFF78_1479C(void *rec_) {
             ".globl Menu1479C_SYM\nMenu1479C_SYM = 0x03002776\n"
             ".globl Menu1479C_T1\nMenu1479C_T1 = 0x080CB76C\n"
             ".globl Menu1479C_T2\nMenu1479C_T2 = 0x080CB776\n");
-    u8 *rec;
-    s32 i;
-    volatile s32 base;
-    u8 * volatile p158;
-    u8 * volatile p160;
-    volatile s32 offA;
-    volatile s32 offB;
-    s16 tag;
-    s32 lim;
-    s32 m;
-    s32 idx;
-    s32 mt;
-    s32 res;
-    register s32 v __asm__("r4");
-    register s32 pos __asm__("r5");
-    u8 *p16;
-    register u8 *pq __asm__("r1");
-    register u8 *pl __asm__("r1");
-    s32 ic3;
-    u8 *q;
-    register s32 ob __asm__("r3");
-    register s32 oa __asm__("r3");
-    register s32 inc __asm__("r2");
-    s32 ic;
-    register s32 raw __asm__("r0");
-    register s32 bt __asm__("r2");
-
-    rec = (u8 *)rec_;
-    base = 0;
-    tag = *(s16 *)(rec + 166);
-    if (tag >= 0) {
-        if (tag <= 3) {
-            register s32 hold __asm__("r1");
-
-            __asm__ volatile("" : "=r"(hold));
-            bt = *(s16 *)(rec + 164);
-            __asm__ volatile("" : : "r"(hold));
-            base = bt;
-        }
-    }
     {
-        s32 z;
-        register u8 *t1 __asm__("r1");
-        register u8 *t2 __asm__("r2");
-        register s32 t3 __asm__("r3");
-        z = -1;
-        i = z;
-        t1 = rec + 160;
-        p160 = t1;
-        t2 = rec + 158;
-        p158 = t2;
-        t3 = -24;
-        offA = t3;
-        offB = z - 47;
-    }
-    do {
-        pq = p160;
-        raw = *(s16 *)pq;
-        ic3 = i;
-        v = raw + ic3;
-        if (v < 0)
-            v = 0;
-        pl = p158;
-        lim = *(s16 *)pl;
-        if (v > lim)
-            v = lim;
-        {
-            register u8 *wa __asm__("r3");
-            register s16 *cell __asm__("r0");
-            register s16 *sym __asm__("r3");
-            wa = (u8 *)(uintptr_t)Menu1479C_WA;
-            cell = (s16 *)(uintptr_t)(wa + 0xFF2u);
-            res = sub_08025CF4(*cell,
-                               *(sym = (s16 *)(uintptr_t)Menu1479C_SYM), v);
-        }
-        {
-            register s16 *sym2 __asm__("r3");
-            m = (s16)_0802572C(*(sym2 = (s16 *)(uintptr_t)Menu1479C_SYM), v);
-        }
-        if (m < 0)
-            m = 0;
-        if (m > 4)
-            m = 4;
-        q = rec;
-        {
-            u16 s36;
+        u8 *rec;
+        s32 i;
+        volatile s32 base;
+        u8 * volatile p158;
+        u8 * volatile p160;
+        volatile s32 offA;
+        volatile s32 offB;
+        s16 tag;
+        s32 lim;
+        s32 m;
+        s32 idx;
+        s32 mt;
+        s32 res;
+        register s32 v __asm__("r4");
+        register s32 pos __asm__("r5");
+        u8 *p16;
+        register u8 *pq __asm__("r1");
+        register u8 *pl __asm__("r1");
+        s32 ic3;
+        u8 *q;
+        register s32 ob __asm__("r3");
+        register s32 oa __asm__("r3");
+        register s32 inc __asm__("r2");
+        s32 ic;
+        register s32 raw __asm__("r0");
+        register s32 bt __asm__("r2");
 
-            s36 = *(u16 *)(q + 36);
-            if (s36 != 0 || (i != -1 && i != 4)) {
-                s16 *t1;
-                p16 = rec + 16;
-                t1 = (s16 *)(uintptr_t)Menu1479C_T1;
-                mt = m * 2;
-                sub_08007B18(p16, *(s16 *)((u8 *)(uintptr_t)mt + (uintptr_t)t1),
-                             ((pos = base + 24), (ob = offB), ob + pos),
-                             64, 10, 1, 0, 0);
-                idx = res - 1;
-                if ((u32)idx <= 2) {
-                    s16 *t2;
-                    register s32 hold3 __asm__("r3");
-                    s32 tv;
+        rec = (u8 *)rec_;
+        base = 0;
+        tag = *(s16 *)(rec + 166);
+        if (tag >= 0) {
+            if (tag <= 3) {
+                register s32 hold __asm__("r1");
 
-                    t2 = (s16 *)(uintptr_t)Menu1479C_T2;
-                    __asm__ volatile("" : "=r"(hold3));
-                    tv = *(s16 *)((u8 *)(uintptr_t)(idx * 2) + (uintptr_t)t2);
-                    __asm__ volatile("" : : "r"(hold3));
-                    sub_08007B18(p16, tv,
-                                 ((oa = offA), oa + pos), 64, 11, 1, 0, 0);
-                }
+                __asm__ volatile("" : "=r"(hold));
+                bt = *(s16 *)(rec + 164);
+                __asm__ volatile("" : : "r"(hold));
+                base = bt;
             }
         }
-        offA += 48;
         {
-            register s32 tb __asm__("r1");
-            tb = offB + 48;
-            offB = tb;
+            s32 z;
+            register u8 *t1 __asm__("r1");
+            register u8 *t2 __asm__("r2");
+            register s32 t3 __asm__("r3");
+            z = -1;
+            i = z;
+            t1 = rec + 160;
+            p160 = t1;
+            t2 = rec + 158;
+            p158 = t2;
+            t3 = -24;
+            offA = t3;
+            offB = z - 47;
         }
-        inc = 1;
-        __asm__ volatile("" : "+r"(inc));
-        i += inc;
-        ic = i;
-    } while (ic <= 4);
+        do {
+            pq = p160;
+            raw = *(s16 *)pq;
+            ic3 = i;
+            v = raw + ic3;
+            if (v < 0)
+                v = 0;
+            pl = p158;
+            lim = *(s16 *)pl;
+            if (v > lim)
+                v = lim;
+            {
+                register u8 *wa __asm__("r3");
+                register s16 *cell __asm__("r0");
+                register s16 *sym __asm__("r3");
+                wa = (u8 *)(uintptr_t)Menu1479C_WA;
+                cell = (s16 *)(uintptr_t)(wa + 0xFF2u);
+                res = sub_08025CF4(*cell,
+                                   *(sym = (s16 *)(uintptr_t)Menu1479C_SYM), v);
+            }
+            {
+                register s16 *sym2 __asm__("r3");
+                m = (s16)_0802572C(*(sym2 = (s16 *)(uintptr_t)Menu1479C_SYM), v);
+            }
+            if (m < 0)
+                m = 0;
+            if (m > 4)
+                m = 4;
+            q = rec;
+            {
+                u16 s36;
+
+                s36 = *(u16 *)(q + 36);
+                if (s36 != 0 || (i != -1 && i != 4)) {
+                    s16 *t1;
+                    p16 = rec + 16;
+                    t1 = (s16 *)(uintptr_t)Menu1479C_T1;
+                    mt = m * 2;
+                    sub_08007B18(p16, *(s16 *)((u8 *)(uintptr_t)mt + (uintptr_t)t1),
+                                 ((pos = base + 24), (ob = offB), ob + pos),
+                                 64, 10, 1, 0, 0);
+                    idx = res - 1;
+                    if ((u32)idx <= 2) {
+                        s16 *t2;
+                        register s32 hold3 __asm__("r3");
+                        s32 tv;
+
+                        t2 = (s16 *)(uintptr_t)Menu1479C_T2;
+                        __asm__ volatile("" : "=r"(hold3));
+                        tv = *(s16 *)((u8 *)(uintptr_t)(idx * 2) + (uintptr_t)t2);
+                        __asm__ volatile("" : : "r"(hold3));
+                        sub_08007B18(p16, tv,
+                                     ((oa = offA), oa + pos), 64, 11, 1, 0, 0);
+                    }
+                }
+            }
+            offA += 48;
+            {
+                register s32 tb __asm__("r1");
+                tb = offB + 48;
+                offB = tb;
+            }
+            inc = 1;
+            __asm__ volatile("" : "+r"(inc));
+            i += inc;
+            ic = i;
+        } while (ic <= 4);
+    }
 }
 void _08001479C(void *a) __attribute__((alias("MenuFF78_1479C")));
 void Sub_08001479C(void *a) __attribute__((alias("MenuFF78_1479C")));

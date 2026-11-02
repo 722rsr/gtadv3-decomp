@@ -80,104 +80,118 @@ extern void Sub_08002618(u32 a, u32 b);
 //   clamp s16 0..4; changed (u16) vs entry -> 2B368(2).
 void MenuFF78_15620(void *rec_, u32 dead, u32 ev_) {
     (void)dead;
-    volatile u8 *rec = (volatile u8 *)rec_;
-    u16 ev = (u16)ev_;
-    register volatile u8 *cell asm("r5") =
-        (volatile u8 *)(uintptr_t)(rec + 144);
-    u16 entry = *(volatile u16 *)(uintptr_t)cell;
-    if (ev == 2)
-        _08001549C(rec_);
-    register volatile u8 *tail_cell asm("r6") = cell;
-    __asm__ volatile("" : "+r"(tail_cell) : : "cc");
-    if (ev == 1) {
-        register s32 s asm("r5");
-        /* ROM's scratch is r2 here; hold r0 and r1 live across the load. */
-        register int hold0 asm("r0");
-        register int hold1 asm("r1");
-        __asm__ volatile("" : "=r"(hold0), "=r"(hold1));
-        s = *(s16 *)(uintptr_t)tail_cell;
-        __asm__ volatile("" : : "r"(hold0), "r"(hold1));
-        register int rv asm("r0");
-        switch (s) {
-        case 0:
-            *(volatile s16 *)(uintptr_t)(rec + 24) = (s16)ev;
-            _0802B368(1);
-            *(volatile u32 *)(uintptr_t)(rec + 16) = 10;
-            *(volatile s16 *)(uintptr_t)(rec + 20) = (s16)s;
-            *(volatile u32 *)(uintptr_t)(rec + 48) = 10;
-            *(volatile u32 *)(uintptr_t)(rec + 44) = (u32)ev;
-            MENU_FF78_WA_STORE_R3(tail_cell);
-            break;
-        case 1:
-            MENU_FF78_WA_STORE_R2(tail_cell);
+    {
+        volatile u8 *rec = (volatile u8 *)rec_;
+        u16 ev = (u16)ev_;
+        register volatile u8 *cell asm("r5") =
+            (volatile u8 *)(uintptr_t)(rec + 144);
+        u16 entry = *(volatile u16 *)(uintptr_t)cell;
+        if (ev == 2)
             _08001549C(rec_);
-            break;
-        case 2:
-        case 3:
-        case 4: {
-            rv = Sub_08024068();
-            if (rv == 16)
-                goto map_five;
-            if (rv != 39)
-                goto state_common;
-            goto map_one;
+        {
+            register volatile u8 *tail_cell asm("r6") = cell;
+            __asm__ volatile("" : "+r"(tail_cell) : : "cc");
+            if (ev == 1) {
+                register s32 s asm("r5");
+                /* ROM's scratch is r2 here; hold r0 and r1 live across the load. */
+                register int hold0 asm("r0");
+                register int hold1 asm("r1");
+                __asm__ volatile("" : "=r"(hold0), "=r"(hold1));
+                s = *(s16 *)(uintptr_t)tail_cell;
+                __asm__ volatile("" : : "r"(hold0), "r"(hold1));
+                {
+                    register int rv asm("r0");
+                    switch (s) {
+                    case 0:
+                        *(volatile s16 *)(uintptr_t)(rec + 24) = (s16)ev;
+                        _0802B368(1);
+                        *(volatile u32 *)(uintptr_t)(rec + 16) = 10;
+                        *(volatile s16 *)(uintptr_t)(rec + 20) = (s16)s;
+                        *(volatile u32 *)(uintptr_t)(rec + 48) = 10;
+                        *(volatile u32 *)(uintptr_t)(rec + 44) = (u32)ev;
+                        MENU_FF78_WA_STORE_R3(tail_cell);
+                        break;
+                    case 1:
+                        MENU_FF78_WA_STORE_R2(tail_cell);
+                        _08001549C(rec_);
+                        break;
+                    case 2:
+                    case 3:
+                    case 4: {
+                        rv = Sub_08024068();
+                        if (rv == 16)
+                            goto map_five;
+                        if (rv != 39)
+                            goto state_common;
+                        goto map_one;
+                    }
+                    default:
+                        break;
+                    }
+                    goto state_done;
+            map_one:
+                    rv = 1;
+                    goto map_store;
+            map_five:
+                    rv = 5;
+            map_store:
+                    *(volatile s16 *)(uintptr_t)(rec + 24) = (s16)rv;
+            state_common:
+                        _0802B368(1);
+                        *(volatile u32 *)(uintptr_t)(rec + 16) = 10;
+                        *(volatile s16 *)(uintptr_t)(rec + 20) = 0;
+                        *(volatile u32 *)(uintptr_t)(rec + 48) = 10;
+                        *(volatile u32 *)(uintptr_t)(rec + 44) = 1;
+                        MENU_FF78_WA_STORE_FROM_REC(rec);
+            state_done:;
+                }
+            }
+            if (ev == 64) {
+                register u32 c asm("r0") = *(volatile u16 *)(uintptr_t)tail_cell - 1;
+                *(volatile u16 *)(uintptr_t)tail_cell = (u16)c;
+                __asm__ volatile("" : "+r"(c) : : "memory");
+                if ((s16)c == 2)
+                    *(volatile s16 *)(uintptr_t)tail_cell = 1;
+            }
+            if (ev == 128) {
+                register u32 c asm("r0") = *(volatile u16 *)(uintptr_t)tail_cell + 1;
+                *(volatile u16 *)(uintptr_t)tail_cell = (u16)c;
+                __asm__ volatile("" : "+r"(c) : : "memory");
+                if ((s16)c == 2)
+                    *(volatile s16 *)(uintptr_t)tail_cell = 3;
+            }
+            {
+                register volatile u8 *r1 asm("r1") = tail_cell;
+                __asm__ volatile("" : "+r"(r1) : : "cc");
+                {
+                    register s32 cur asm("r0");
+                    /* The ROM rereads the cell through two different zero-index scratches
+                     * (r2 then r3). Holding the other one live across each load keeps agbcc
+                     * off it, one load at a time. */
+                    register int hold_r3 asm("r3");
+                    __asm__ volatile("" : "=r"(hold_r3));
+                    cur = *(s16 *)(uintptr_t)r1;
+                    __asm__ volatile("" : : "r"(hold_r3));
+                    if (cur < 0)
+                        *(volatile u16 *)(uintptr_t)r1 = 0;
+                    {
+                        register int hold_r2 asm("r2");
+                        __asm__ volatile("" : "=r"(hold_r2));
+                        cur = *(s16 *)(uintptr_t)r1;
+                        __asm__ volatile("" : : "r"(hold_r2));
+                        if (cur > 4)
+                            *(volatile u16 *)(uintptr_t)r1 = 4;
+                        {
+                            register u32 current asm("r6") = *(volatile u16 *)(uintptr_t)tail_cell;
+                            __asm__ volatile("" : "+r"(current) : : "memory");
+                            if (entry != current)
+                                _0802B368(2);
+                        }
+                    }
+                }
+            }
         }
-        default:
-            break;
-        }
-        goto state_done;
-map_one:
-        rv = 1;
-        goto map_store;
-map_five:
-        rv = 5;
-map_store:
-        *(volatile s16 *)(uintptr_t)(rec + 24) = (s16)rv;
-state_common:
-            _0802B368(1);
-            *(volatile u32 *)(uintptr_t)(rec + 16) = 10;
-            *(volatile s16 *)(uintptr_t)(rec + 20) = 0;
-            *(volatile u32 *)(uintptr_t)(rec + 48) = 10;
-            *(volatile u32 *)(uintptr_t)(rec + 44) = 1;
-            MENU_FF78_WA_STORE_FROM_REC(rec);
-state_done:;
     }
-    if (ev == 64) {
-        register u32 c asm("r0") = *(volatile u16 *)(uintptr_t)tail_cell - 1;
-        *(volatile u16 *)(uintptr_t)tail_cell = (u16)c;
-        __asm__ volatile("" : "+r"(c) : : "memory");
-        if ((s16)c == 2)
-            *(volatile s16 *)(uintptr_t)tail_cell = 1;
-    }
-    if (ev == 128) {
-        register u32 c asm("r0") = *(volatile u16 *)(uintptr_t)tail_cell + 1;
-        *(volatile u16 *)(uintptr_t)tail_cell = (u16)c;
-        __asm__ volatile("" : "+r"(c) : : "memory");
-        if ((s16)c == 2)
-            *(volatile s16 *)(uintptr_t)tail_cell = 3;
-    }
-    register volatile u8 *r1 asm("r1") = tail_cell;
-    __asm__ volatile("" : "+r"(r1) : : "cc");
-    register s32 cur asm("r0");
-    /* The ROM rereads the cell through two different zero-index scratches
-     * (r2 then r3). Holding the other one live across each load keeps agbcc
-     * off it, one load at a time. */
-    register int hold_r3 asm("r3");
-    __asm__ volatile("" : "=r"(hold_r3));
-    cur = *(s16 *)(uintptr_t)r1;
-    __asm__ volatile("" : : "r"(hold_r3));
-    if (cur < 0)
-        *(volatile u16 *)(uintptr_t)r1 = 0;
-    register int hold_r2 asm("r2");
-    __asm__ volatile("" : "=r"(hold_r2));
-    cur = *(s16 *)(uintptr_t)r1;
-    __asm__ volatile("" : : "r"(hold_r2));
-    if (cur > 4)
-        *(volatile u16 *)(uintptr_t)r1 = 4;
-    register u32 current asm("r6") = *(volatile u16 *)(uintptr_t)tail_cell;
-    __asm__ volatile("" : "+r"(current) : : "memory");
-    if (entry != current)
-        _0802B368(2);
 }
 #undef MENU_FF78_WA_STORE_R3
 #undef MENU_FF78_WA_STORE_R2

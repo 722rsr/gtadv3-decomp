@@ -3,6 +3,7 @@
 
 // Reference: asm/course_records_7bfc.s, course_builders_8290.s, course_dispatch_8aac.s, course_leaves_95f0.s
 
+extern u32 sub_0802DF6C(u32, u32);
 extern void *_08007498(void *X,int i);
 extern void *_0800748C(void *X);
 extern void _08003004(int a,int b,int c,int d,int e,int f,int g,int h);
@@ -17,8 +18,10 @@ void Course_RecordsIterA(void *X) { (void)X; // legacy stub for hosts, iterators
 int Course_DistanceSqrtUdiv(int a,int b){
     // _08007F08: substantiated leaves _08007EC4/_08007EE0/_08007F08 use Sqrt + udiv via _0802DF6C
     (void)a;(void)b;
-    int d = Sqrt((u32)(a*b));
-    return d/10;
+    {
+        int d = Sqrt((u32)(a*b));
+        return d/10;
+    }
 }
 void Course_StateTick(void *blk){
     // 0x8014+ leaves ticking block behind 0x030003E0 slot; template from 0x0805F604
@@ -157,68 +160,74 @@ void Course_Build16Row(int sel){
     u32 *selectors = frame.selectors;
     *(Row16Template *)selectors =
         *(const Row16Template *)(uintptr_t)0x0805F624u;
-    u32 *selector = selectors;
-    selector += sel;
-    int r5 = (int)*selector;
-    void *template_base = (void *)0x0828FF08u;
-    sub_080078EC(template_base, (void *)(uintptr_t)r5, 0x0600DB60);
-    sub_08007938(template_base, r5, 12);
-    frame.base = sub_08007924(template_base, r5);
-    // The pins preserve the row builder's register roles. The empty barriers
-    // retain the compiler temporaries needed for the exact Thumb sequence.
-    register int row __asm__("r4");
-    register u32 mask __asm__("r10");
-    register u32 mask_hi __asm__("r9");
-    register u32 addend __asm__("r8");
-    u32 set_bits;
-    register u16 *pixel __asm__("r3");
-    register int dest_row __asm__("r5");
-    register int next_row __asm__("r6");
-    register u32 value __asm__("r2");
-    register u32 low __asm__("r1");
-    register u32 high __asm__("r0");
-    row = 0;
-    mask = 0x000003FFu;
-    // Build the palette masks and addend in the registers used by the row loop.
-    low = 192;
-    low <<= 4;
-    __asm__ volatile ("" : "+r" (low));
-    mask_hi = low;
-    dest_row = 0x000002DBu;
-    __asm__ volatile ("" : "+r" (dest_row));
-    addend = dest_row;
-    next_row = 192;
-    next_row <<= 8;
-    __asm__ volatile ("" : "+r" (next_row));
-    set_bits = next_row;
-    do {
-        high = row * 30;
-        low = (u32)(uintptr_t)frame.base;
-        high = low + high;
-        sub_0802D974((const void *)(uintptr_t)high, frame.pixels, 15);
-        pixel = frame.pixels;
-        dest_row = row + 18;
-        next_row = row + 1;
-        row = 31;
-        do {
-            value = *pixel;
-            low = value & mask;
-            high = value & mask_hi;
-            low += addend;
-            // Preserve source bits 10-11, add 0x2DB to the low ten bits,
-            // and force the high palette bits before storing the halfword.
-            high |= set_bits;
-            low |= high;
-            *pixel = (u16)low;
-            --row;
-            ++pixel;
-        } while (row >= 0);
-        low = (u32)dest_row << 6;
-        row = (int)0x0600F000u;
-        low += (u32)row;
-        sub_0802D974(frame.pixels, (void *)(uintptr_t)low, 15);
-        row = next_row;
-    } while (row <= 1);
+    {
+        u32 *selector = selectors;
+        selector += sel;
+        {
+            int r5 = (int)*selector;
+            void *template_base = (void *)0x0828FF08u;
+            sub_080078EC(template_base, (void *)(uintptr_t)r5, 0x0600DB60);
+            sub_08007938(template_base, r5, 12);
+            frame.base = sub_08007924(template_base, r5);
+            // The pins preserve the row builder's register roles. The empty barriers
+            // retain the compiler temporaries needed for the exact Thumb sequence.
+            {
+                register int row __asm__("r4");
+                register u32 mask __asm__("r10");
+                register u32 mask_hi __asm__("r9");
+                register u32 addend __asm__("r8");
+                u32 set_bits;
+                register u16 *pixel __asm__("r3");
+                register int dest_row __asm__("r5");
+                register int next_row __asm__("r6");
+                register u32 value __asm__("r2");
+                register u32 low __asm__("r1");
+                register u32 high __asm__("r0");
+                row = 0;
+                mask = 0x000003FFu;
+                // Build the palette masks and addend in the registers used by the row loop.
+                low = 192;
+                low <<= 4;
+                __asm__ volatile ("" : "+r" (low));
+                mask_hi = low;
+                dest_row = 0x000002DBu;
+                __asm__ volatile ("" : "+r" (dest_row));
+                addend = dest_row;
+                next_row = 192;
+                next_row <<= 8;
+                __asm__ volatile ("" : "+r" (next_row));
+                set_bits = next_row;
+                do {
+                    high = row * 30;
+                    low = (u32)(uintptr_t)frame.base;
+                    high = low + high;
+                    sub_0802D974((const void *)(uintptr_t)high, frame.pixels, 15);
+                    pixel = frame.pixels;
+                    dest_row = row + 18;
+                    next_row = row + 1;
+                    row = 31;
+                    do {
+                        value = *pixel;
+                        low = value & mask;
+                        high = value & mask_hi;
+                        low += addend;
+                        // Preserve source bits 10-11, add 0x2DB to the low ten bits,
+                        // and force the high palette bits before storing the halfword.
+                        high |= set_bits;
+                        low |= high;
+                        *pixel = (u16)low;
+                        --row;
+                        ++pixel;
+                    } while (row >= 0);
+                    low = (u32)dest_row << 6;
+                    row = (int)0x0600F000u;
+                    low += (u32)row;
+                    sub_0802D974(frame.pixels, (void *)(uintptr_t)low, 15);
+                    row = next_row;
+                } while (row <= 1);
+            }
+        }
+    }
 }
 // ----------------------------------------------------------------------------
 // 0x08008480 Course_BuildDispatch(mode, sel) — course-screen state setup.
@@ -318,33 +327,35 @@ void Course_BuildDispatch(int mode, u8 sel) {
         *(u16 *)((u8 *)*cellp + 52) = (u16)_080261B0(15);
         *(u16 *)((u8 *)*cellp + 54) = (u16)_080261F8(15);
 
-        u8 *tpl = (u8 *)0x0828FF08u;
+        {
+            u8 *tpl = (u8 *)0x0828FF08u;
 
-        _0800798C(tpl, (u8 *)*cellp + 88);
-        _08007A04((u8 *)*cellp + 88, *(u16 *)((u8 *)*cellp + 36));
-        _080075E8(tpl, 2, *(u16 *)((u8 *)*cellp + 38));
-        *(u8 *)((u8 *)*cellp + 77) = 1;
-        *(u8 *)((u8 *)*cellp + 76) = 1;
-        v44 = (u16)_08007EC4((u8 *)*cellp + 88, 10);
-        *(u16 *)((u8 *)*cellp + 44) = v44;
-        *(u16 *)((u8 *)*cellp + 46) = (u16)_08007EC4((u8 *)*cellp + 88, 11);
+            _0800798C(tpl, (u8 *)*cellp + 88);
+            _08007A04((u8 *)*cellp + 88, *(u16 *)((u8 *)*cellp + 36));
+            _080075E8(tpl, 2, *(u16 *)((u8 *)*cellp + 38));
+            *(u8 *)((u8 *)*cellp + 77) = 1;
+            *(u8 *)((u8 *)*cellp + 76) = 1;
+            v44 = (u16)_08007EC4((u8 *)*cellp + 88, 10);
+            *(u16 *)((u8 *)*cellp + 44) = v44;
+            *(u16 *)((u8 *)*cellp + 46) = (u16)_08007EC4((u8 *)*cellp + 88, 11);
 
-        if (*(u16 *)C84_WA((uintptr_t)&C84WA10FC) == 5) {
-            int a = _080261B0(3);
-            int b = a;
+            if (*(u16 *)C84_WA((uintptr_t)&C84WA10FC) == 5) {
+                int a = _080261B0(3);
+                int b = a;
 
-            *(u16 *)((u8 *)*cellp + 56) = (u16)a;
-            b += 32;
-            *(u16 *)((u8 *)*cellp + 60) = (u16)b;
-            b += 32;
-            *(u16 *)((u8 *)*cellp + 40) = (u16)b;
-            *(u16 *)((u8 *)*cellp + 42) = (u16)(a + 104);
-            *(u16 *)((u8 *)*cellp + 62) = (u16)_080261B0(2);
-            *(u16 *)((u8 *)*cellp + 58) = (u16)_080261F8(3);
-            _0800798C((u8 *)0x0828C420u, (u8 *)*cellp + 96);
-            _08007ABC(*(void **)((u8 *)*cellp + 100), 10, *(u16 *)((u8 *)*cellp + 60));
-            _08007538(tpl, 0, *(u16 *)((u8 *)*cellp + 40));
-            _08007538(tpl, 1, *(u16 *)((u8 *)*cellp + 42));
+                *(u16 *)((u8 *)*cellp + 56) = (u16)a;
+                b += 32;
+                *(u16 *)((u8 *)*cellp + 60) = (u16)b;
+                b += 32;
+                *(u16 *)((u8 *)*cellp + 40) = (u16)b;
+                *(u16 *)((u8 *)*cellp + 42) = (u16)(a + 104);
+                *(u16 *)((u8 *)*cellp + 62) = (u16)_080261B0(2);
+                *(u16 *)((u8 *)*cellp + 58) = (u16)_080261F8(3);
+                _0800798C((u8 *)0x0828C420u, (u8 *)*cellp + 96);
+                _08007ABC(*(void **)((u8 *)*cellp + 100), 10, *(u16 *)((u8 *)*cellp + 60));
+                _08007538(tpl, 0, *(u16 *)((u8 *)*cellp + 40));
+                _08007538(tpl, 1, *(u16 *)((u8 *)*cellp + 42));
+            }
         }
     }
 }
@@ -360,15 +371,20 @@ void Course_Emit8A(void *out,int w){
     int c2 = sub_0802D97C(w, 0x4650); int rB = sub_0802D978(c2, base);
     int c3 = sub_0802D978(w, 0x4650); int rC = sub_0802D978(c3,10);
     (void)rA; (void)rB; (void)rC;
-    u16 *dst=(u16*)out;
-    u16 baseId=0x803C;
-    int types[8]={90,98,106,114,122,130,138,146};
-    for(int i=0;i<8;i++){
-        dst[i*4+0]=baseId;
-        dst[i*4+1]=types[i];
-        // packed at +4: (r*1 + [slot+52]) & (r*??) | ([slot+54]<<12)
-        // Literal trace: lsls #1, ldrh +52/+54, adds, orrs #12
-        dst[i*4+2]=0; // placeholder for packed, would be (r<<1)+baseX | (baseY<<12)
+    {
+        u16 *dst=(u16*)out;
+        u16 baseId=0x803C;
+        int types[8]={90,98,106,114,122,130,138,146};
+        {
+            int i = 0;
+            for (;i<8;i++){
+                dst[i*4+0]=baseId;
+                dst[i*4+1]=types[i];
+                // packed at +4: (r*1 + [slot+52]) & (r*??) | ([slot+54]<<12)
+                // Literal trace: lsls #1, ldrh +52/+54, adds, orrs #12
+                dst[i*4+2]=0; // placeholder for packed, would be (r<<1)+baseX | (baseY<<12)
+            }
+        }
     }
 }
 void Course_Emit8B(void *out,int w){ (void)out;(void)w; /* _08008768: same but base 0x8000 (128<<8), types 56/64/70/77/85/91/98/106 */ }
@@ -380,8 +396,10 @@ void Course_Dispatch2Rec(void *rec){
     extern int _08002BE8(void);
     s16 idx = *(s16*)((u8*)rec+22);
     (void)idx;
-    int r1=_08002BE8(); int r2=_08002BE8(); (void)r1;(void)r2;
-    // Table lookup: u16 lo = *(0x080CB110 + idx*2), hi = *(0x080CB132 + idx*2)
+    {
+        int r1=_08002BE8(); int r2=_08002BE8(); (void)r1;(void)r2;
+        // Table lookup: u16 lo = *(0x080CB110 + idx*2), hi = *(0x080CB132 + idx*2)
+    }
 }
 void Course_DispatchB(void *rec){
     // _08008BB8: 3-record variant, same random/table but 3× records
@@ -466,50 +484,58 @@ int Course_Math_DistanceHeading(int x0,int y0,int x1,int y1) { // _08007F08: sig
     register int y1_input __asm__("r6") = y1;
     __asm__ volatile ("" : "+r" (y0_input), "+r" (x1_input), "+r" (y1_input));
 
-    register int dx __asm__("r5") = x1_input - x0;
-    int sx;
-    if (dx < 0) { dx = -dx; sx = 0; }
-    else {
-        register int one __asm__("r1") = 1;
-        __asm__ volatile ("" : "+r" (one));
-        sx = one;
+    {
+        register int dx __asm__("r5") = x1_input - x0;
+        int sx;
+        if (dx < 0) { dx = -dx; sx = 0; }
+        else {
+            register int one __asm__("r1") = 1;
+            __asm__ volatile ("" : "+r" (one));
+            sx = one;
+        }
+
+        {
+            register int dy __asm__("r6") = y1_input - y0_input;
+            int sy;
+            if (dy < 0) { dy = -dy; sy = 0; }
+            else { sy = 1; }
+
+            if (dx == 0 && dy == 0) return 0;
+
+            {
+                int sq = dx * dx + dy * dy;
+                u16 root = (u16)Sqrt((u32)sq);
+                int rt = (int)root;
+                register int rx __asm__("r5") =
+                    (int)sub_0802DF6C((u32)dx << 11, (u32)rt);
+                register int ry __asm__("r6") =
+                    (int)sub_0802DF6C((u32)dy << 11, (u32)rt);
+
+                const s16 *tbl;
+                register u32 index2 __asm__("r0");
+                if (rx <= ry) {
+                    tbl = (const s16 *)0x080C9064;
+                    index2 = (u32)rx << 1;
+                } else {
+                    tbl = (const s16 *)0x080CA064;
+                    index2 = (u32)ry << 1;
+                }
+                {
+                    register int v __asm__("r5") =
+                        *(s16 *)(uintptr_t)(index2 + (uintptr_t)tbl);
+
+                    if (sx == 0) {
+                        if (sy) v += 1024;
+                        else v = 1024 - v;
+                    } else {
+                        if (sy) v = 3072 - v;
+                        else v += 3072;
+                    }
+                    return v;
+                }
+            }
+        }
     }
-
-    register int dy __asm__("r6") = y1_input - y0_input;
-    int sy;
-    if (dy < 0) { dy = -dy; sy = 0; }
-    else { sy = 1; }
-
-    if (dx == 0 && dy == 0) return 0;
-
-    int sq = dx * dx + dy * dy;
-    u16 root = (u16)Sqrt((u32)sq);
-    int rt = (int)root;
-    register int rx __asm__("r5") =
-        (int)sub_0802DF6C((u32)dx << 11, (u32)rt);
-    register int ry __asm__("r6") =
-        (int)sub_0802DF6C((u32)dy << 11, (u32)rt);
-
-    const s16 *tbl;
-    register u32 index2 __asm__("r0");
-    if (rx <= ry) {
-        tbl = (const s16 *)0x080C9064;
-        index2 = (u32)rx << 1;
-    } else {
-        tbl = (const s16 *)0x080CA064;
-        index2 = (u32)ry << 1;
-    }
-    register int v __asm__("r5") =
-        *(s16 *)(uintptr_t)(index2 + (uintptr_t)tbl);
-
-    if (sx == 0) {
-        if (sy) v += 1024;
-        else v = 1024 - v;
-    } else {
-        if (sy) v = 3072 - v;
-        else v += 3072;
-    }
-    return v;
 }
 // ROM has a zero-filled alignment halfword after the return instruction.
 __asm__(".align 2, 0");
@@ -524,27 +550,35 @@ int Course_Math_HeadingInterp(int p0, int p1, int p2, void *out) {
     c = (u16)p2;
     clamped = 0;
     a4 = (int)(p0w >> 16);
-    int p0s = (int)p0w >> 16;
-    if (p0s > 7) { a4 = 7; clamped = 1; }
-    c = (u32)((s16)c - (int)(p1s = (u32)(s32)(s16)p1s));
     {
-        s16 *table = (s16 *)0x080CB064u;
-        // Materialize the literal base before the signed index scaling, in r2.
-        __asm__ volatile ("" : "+r" (table));
-        int tv = table[(s16)a4];
-        // Keep the selected index live through the ldrsh address calculation.
-        __asm__ volatile ("" : "+r" (a4));
-        int res = tv * (int)c;
-        if (res < 0) res += 0xFFF;
-        res >>= 12;
-        // Keep the start angle in r3 and the scaled delta in r0 for the ROM's ADD.
-        register int accum __asm__("r0") = res;
-        register int start __asm__("r3") = (int)p1s;
-        accum = start + accum;
-        res = accum;
-        *(volatile s16 *)o = (s16)res;
+        int p0s = (int)p0w >> 16;
+        if (p0s > 7) { a4 = 7; clamped = 1; }
+        c = (u32)((s16)c - (int)(p1s = (u32)(s32)(s16)p1s));
+        {
+            s16 *table = (s16 *)0x080CB064u;
+            // Materialize the literal base before the signed index scaling, in r2.
+            __asm__ volatile ("" : "+r" (table));
+            {
+                int tv = table[(s16)a4];
+                // Keep the selected index live through the ldrsh address calculation.
+                __asm__ volatile ("" : "+r" (a4));
+                {
+                    int res = tv * (int)c;
+                    if (res < 0) res += 0xFFF;
+                    res >>= 12;
+                    // Keep the start angle in r3 and the scaled delta in r0 for the ROM's ADD.
+                    {
+                        register int accum __asm__("r0") = res;
+                        register int start __asm__("r3") = (int)p1s;
+                        accum = start + accum;
+                        res = accum;
+                        *(volatile s16 *)o = (s16)res;
+                    }
+                }
+            }
+        }
+        return clamped;
     }
-    return clamped;
 }
 // --- State leaves 0x08014-0x08284 (block behind 0x030003E0, widths proven) ---
 void Course_State_Store0(u16 v) { // _08008074: strh [r1+0] u16
@@ -581,8 +615,10 @@ void Course_State_ClampStore2(int v) { // _080080A4: lsls #16; lsrs, cmp #0, lsl
     s16 a = (s16)v; // lsls/lsrs #16 then asrs
     if (a < 0) a = 0;
     if (a > 0x3E7) a = 0x3E7; // 999
-    volatile u16 *p = *(volatile u16**)0x030003E0;
-    *(volatile u16*)((u8*)p + 2) = (u16)a;
+    {
+        volatile u16 *p = *(volatile u16**)0x030003E0;
+        *(volatile u16*)((u8*)p + 2) = (u16)a;
+    }
 }
 void Course_State_Store64(u32 v) { // _080080CC: str [r1+64] u32
     volatile u32 *p = *(volatile u32**)0x030003E0;
@@ -611,9 +647,11 @@ void *Course_State_Store12Flag77(int a) { // _08008114: (u16)a; u16[rec+12] != v
     volatile u8 *rec = *(volatile u8 *volatile *)0x030003E0;
     if (*(volatile u16 *)(rec + 12) != v)
         *(volatile u8 *)(rec + 77) = 1;
-    volatile u8 *rec2 = *(volatile u8 *volatile *)0x030003E0;
-    *(volatile u16 *)(rec2 + 12) = v;
-    return (void *)rec2;
+    {
+        volatile u8 *rec2 = *(volatile u8 *volatile *)0x030003E0;
+        *(volatile u16 *)(rec2 + 12) = v;
+        return (void *)rec2;
+    }
 }
 // _08008134: clamp v to the s16 limit at [+10] (`cmp` of the two `<<16`
 // values, `ble`; the limit is re-read as the clamped value), flag u8[+76]
@@ -651,14 +689,16 @@ int Course_State_ResetTimed(void) { // _0800821C: sdiv 5, strh [+30] s16, ldrsh 
     *(volatile u16*)(base + 22) = 16;
     *(volatile u16*)(base + 24) = 3;
     *(volatile u8*)(base + 79) = 1;
-    s16 v16 = *(volatile s16*)(base + 16);
-    int q = 0; // sdiv 5 via bl 02DE04
-    extern int sub_0802DE04(int,int);
-    q = sub_0802DE04(v16, 5);
-    if (q > 10) q = 10;
-    *(volatile u16*)(base + 30) = (u16)q;
-    // ldrsh table 0x080CB074 + gate + bl 07ABC remains blocked — TODO
-    return q;
+    {
+        s16 v16 = *(volatile s16*)(base + 16);
+        int q = 0; // sdiv 5 via bl 02DE04
+        extern int sub_0802DE04(int,int);
+        q = sub_0802DE04(v16, 5);
+        if (q > 10) q = 10;
+        *(volatile u16*)(base + 30) = (u16)q;
+        // ldrsh table 0x080CB074 + gate + bl 07ABC remains blocked — TODO
+        return q;
+    }
 }
 void Course_State_Store32(u32 v) { // _08008284: strh [+32] u16
     volatile u8 *base = *(volatile u8**)0x030003E0;
@@ -684,32 +724,42 @@ u32 Course_08014(void) {
     // movs r4,#135 / lsls r4,#5 / adds r5,r0,r4`). The pins also defeat
     // constant-folding of the absolute addresses; the barrier keeps offA's
     // shift materialized instead of folded.
-    register u32 base __asm__("r0") = 0x03001780u;
-    register u32 offA __asm__("r4") = 135u;
-    offA <<= 5;
-    __asm__("" : "+r"(offA));
-    register u32 *pA __asm__("r5") = (u32 *)(base + offA);   // 0x03002860
-    u32 offB = 0x10D8u;
-    __asm__("" : "+r"(offB));
-    u32 *pB = (u32 *)(base + offB);   // 0x03002858
-    u32 r6 = *pB;
-    u32 idx = (r6 & 7u) << 2;
-    u32 *slot = (u32 *)((u8 *)sp_buf + idx);
-    u32 r4 = *pA;
-    u32 t = *slot;
-    r4 += t;
-    u32 timer = *(volatile u32 *)0x04000100u;
-    r4 += timer;
-    *pA = r4;
-    extern u32 sub_0802DF6C(u32, u32);
-    u32 q = sub_0802DF6C(r4, 23u);
-    r4 += q;
-    r4 += r6;
-    *pA = r4;
-    // ROM tail: `adds r0, r4, #0; add sp,#32; pop {r4,r5,r6}; pop {r1}; bx r1`
-    // — the accumulated counter IS returned in r0 (consumed by MenuPkt_08009B60,
-    // which floors it and packs pkt+2).
-    return r4;
+    {
+        register u32 base __asm__("r0") = 0x03001780u;
+        register u32 offA __asm__("r4") = 135u;
+        offA <<= 5;
+        __asm__("" : "+r"(offA));
+        {
+            register u32 *pA __asm__("r5") = (u32 *)(base + offA);   // 0x03002860
+            u32 offB = 0x10D8u;
+            __asm__("" : "+r"(offB));
+            {
+                u32 *pB = (u32 *)(base + offB);   // 0x03002858
+                u32 r6 = *pB;
+                u32 idx = (r6 & 7u) << 2;
+                u32 *slot = (u32 *)((u8 *)sp_buf + idx);
+                u32 r4 = *pA;
+                u32 t = *slot;
+                r4 += t;
+                {
+                    u32 timer = *(volatile u32 *)0x04000100u;
+                    r4 += timer;
+                    *pA = r4;
+
+                    {
+                        u32 q = sub_0802DF6C(r4, 23u);
+                        r4 += q;
+                        r4 += r6;
+                        *pA = r4;
+                        // ROM tail: `adds r0, r4, #0; add sp,#32; pop {r4,r5,r6}; pop {r1}; bx r1`
+                        // — the accumulated counter IS returned in r0 (consumed by MenuPkt_08009B60,
+                        // which floors it and packs pkt+2).
+                        return r4;
+                    }
+                }
+            }
+        }
+    }
 }
 u32 _08008014(void) __attribute__((alias("Course_08014")));
 u32 sub_08008014(void) __attribute__((alias("Course_08014")));
@@ -718,11 +768,13 @@ void Course_Leaves_095F0(void) { // _080095F0: ldr 0x0828FF08/0x030003E4, ldrh [
     extern void sub_08007570(void*,int,int,int,int);
     void *base = (void*)0x0828FF08;
     (void)base;
-    void *rec = *(void**)0x030003E0;
-    u16 v50 = *(u16*)((u8*)rec + 50); // ldrh
-    s16 v12 = *(s16*)((u8*)rec + 12); // ldrsh
-    (void)v50; (void)v12;
-    // lsls #2, str 4, bl with r0=base, r1=rec, r2=v12*4, r3=4, sp0=4 not fully proven — keep blocked for exact stack
+    {
+        void *rec = *(void**)0x030003E0;
+        u16 v50 = *(u16*)((u8*)rec + 50); // ldrh
+        s16 v12 = *(s16*)((u8*)rec + 12); // ldrsh
+        (void)v50; (void)v12;
+        // lsls #2, str 4, bl with r0=base, r1=rec, r2=v12*4, r3=4, sp0=4 not fully proven — keep blocked for exact stack
+    }
 }
 void Course_Leaves_0961C(void) { // _0800961C: ldrh [r1+48] u16, ldrsh [r1+8] s16, lsls #2
     extern void sub_08007570(void*,int,int,int,int);
@@ -805,16 +857,20 @@ void Course_Iter_07C68(void *X, u32 r1_add, u32 kind, u32 r3_add,
         // the coordinate instructions.
         register u32 xsrc __asm__("r1") = row[2];
         __asm__ volatile ("" : "+r" (xsrc));
-        u32 x = xsrc + dx_copy;
-        register u32 ysrc __asm__("r2") = row[3];
-        __asm__ volatile ("" : "+r" (ysrc));
-        u32 y = ysrc + s0_yadd;
-        u32 z = (u32)row[0] + r1_add;
-        call_z = (int)z;
-        sub_08002ED0((void *)x, (int)y, call_z, (int)s1_p3, (int)s2_s0,
-                     (int)row[1], 1, (int)s3, (int)s4, 0);
-            row += 4;
-            i++;
+        {
+            u32 x = xsrc + dx_copy;
+            register u32 ysrc __asm__("r2") = row[3];
+            __asm__ volatile ("" : "+r" (ysrc));
+            {
+                u32 y = ysrc + s0_yadd;
+                u32 z = (u32)row[0] + r1_add;
+                call_z = (int)z;
+                sub_08002ED0((void *)x, (int)y, call_z, (int)s1_p3, (int)s2_s0,
+                             (int)row[1], 1, (int)s3, (int)s4, 0);
+                    row += 4;
+                    i++;
+            }
+        }
         } while ((int)i < (int)a[7]);
     }
 }

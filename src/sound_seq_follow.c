@@ -213,27 +213,29 @@ __attribute__((naked)) void SoundBCEA_FetchTail(void *a, void *seq, u32 cursor) 
 //   fourth byte comes through the CCCC validate path.
 static void SoundBCF4_FetchBE(void *dummy, volatile u8 *seq) {
     __asm__(".globl _0802BCF6\n_0802BCF6:");
-    register volatile u8 *r1 __asm__("r1");
-    register u32 cur __asm__("r2");
-    register u32 w   __asm__("r0");
-    register u8  t   __asm__("r3");
-    register u32 res __asm__("r3");
-    volatile u8 *p;
-    r1 = (volatile u8 *)seq;
-    cur = *(volatile u32 *)(r1 + 64);
-    p = (volatile u8 *)(uintptr_t)cur;
-    w = (u32)p[3];
-    w = w << 8;
-    t = p[2];
-    w |= (u32)t;
-    w = w << 8;
-    t = p[1];
-    w |= (u32)t;
-    w = w << 8;
-    SB_CALLEE(SoundBCCC_Validate, sub_0802BCCC)(w);
-    w |= res;
-    *(volatile u32 *)(r1 + 64) = w;
-    (void)dummy;
+    {
+        register volatile u8 *r1 __asm__("r1");
+        register u32 cur __asm__("r2");
+        register u32 w   __asm__("r0");
+        register u8  t   __asm__("r3");
+        register u32 res __asm__("r3");
+        volatile u8 *p;
+        r1 = (volatile u8 *)seq;
+        cur = *(volatile u32 *)(r1 + 64);
+        p = (volatile u8 *)(uintptr_t)cur;
+        w = (u32)p[3];
+        w = w << 8;
+        t = p[2];
+        w |= (u32)t;
+        w = w << 8;
+        t = p[1];
+        w |= (u32)t;
+        w = w << 8;
+        SB_CALLEE(SoundBCCC_Validate, sub_0802BCCC)(w);
+        w |= res;
+        *(volatile u32 *)(r1 + 64) = w;
+        (void)dummy;
+    }
 }
 
 void _0802BCF4(void *dummy, void *s) __attribute__((alias("SoundBCF4_FetchBE")));
@@ -250,15 +252,19 @@ __attribute__((naked)) void SoundBD14_Dispatch(void *a, void *chan) {
     register u32 slot __asm__("r2") = channel[2];
     __asm__ volatile (".syntax unified\n\tcmp %0, #3\n\tbcs 1f\n\t.syntax divided"
                       : : "r"(slot) : "cc");
-    register volatile u8 *record __asm__("r3") = channel + slot * 4;
-    register u32 cursor __asm__("r2") = *(volatile u32 *)(channel + 64);
-    cursor += 4;
-    *(volatile u32 *)(record + 68) = cursor;
-    register u32 count __asm__("r2") = channel[2];
-    count += 1;
-    channel[2] = (u8)count;
-    __asm__ volatile (".syntax unified\n\tb.n _0802BCF4\n1:\n\tb.n _0802BC84\n\t.short 0x0000\n\t.syntax divided"
-                      : : : "cc", "memory");
+    {
+        register volatile u8 *record __asm__("r3") = channel + slot * 4;
+        register u32 cursor __asm__("r2") = *(volatile u32 *)(channel + 64);
+        cursor += 4;
+        *(volatile u32 *)(record + 68) = cursor;
+        {
+            register u32 count __asm__("r2") = channel[2];
+            count += 1;
+            channel[2] = (u8)count;
+            __asm__ volatile (".syntax unified\n\tb.n _0802BCF4\n1:\n\tb.n _0802BC84\n\t.short 0x0000\n\t.syntax divided"
+                              : : : "cc", "memory");
+        }
+    }
 }
 
 // ----------------------------------------------------------------------------
@@ -411,17 +417,21 @@ __attribute__((naked)) void SoundBE34_TrackSel(void *a, void *seq) {
     register volatile u8 *channel __asm__("r1") = (volatile u8 *)seq;
     __asm__ volatile(".syntax unified\n\tmov %0, lr\n\tbl _0802BCE8\n\t.syntax divided"
                      : "=r"(frame), "=r"(value) : : "lr", "cc", "memory");
-    register u32 current __asm__("r0") = channel[24];
-    __asm__ volatile("" : "+r"(current) : : "memory");
-    if (current != value) {
-        channel[24] = (u8)value;
-        register u32 flags __asm__("r3") = channel[0];
-        register u32 bits __asm__("r2") = 15;
-        __asm__ volatile("" : "+r"(flags), "+r"(bits) : : "cc", "memory");
-        flags |= bits;
-        channel[0] = (u8)flags;
+    {
+        register u32 current __asm__("r0") = channel[24];
+        __asm__ volatile("" : "+r"(current) : : "memory");
+        if (current != value) {
+            channel[24] = (u8)value;
+            {
+                register u32 flags __asm__("r3") = channel[0];
+                register u32 bits __asm__("r2") = 15;
+                __asm__ volatile("" : "+r"(flags), "+r"(bits) : : "cc", "memory");
+                flags |= bits;
+                channel[0] = (u8)flags;
+            }
+        }
+        __asm__ volatile("bx %0" : : "r"(frame) : "cc");
     }
-    __asm__ volatile("bx %0" : : "r"(frame) : "cc");
 }
 
 // ----------------------------------------------------------------------------
@@ -443,12 +453,14 @@ __attribute__((naked)) void SoundBE4C_Volume(void *a, void *seq) {
                      : "=r"(frame), "=r"(value) : : "lr", "cc", "memory");
     value -= 64;
     *(volatile u8 *)(channel + 12) = (u8)value;
-    register u32 flags __asm__("r3") = channel[0];
-    register u32 bits __asm__("r2") = 12;
-    __asm__ volatile("" : "+r"(flags), "+r"(bits) : : "cc", "memory");
-    flags |= bits;
-    channel[0] = (u8)flags;
-    __asm__ volatile("bx %0" : : "r"(frame) : "cc");
+    {
+        register u32 flags __asm__("r3") = channel[0];
+        register u32 bits __asm__("r2") = 12;
+        __asm__ volatile("" : "+r"(flags), "+r"(bits) : : "cc", "memory");
+        flags |= bits;
+        channel[0] = (u8)flags;
+        __asm__ volatile("bx %0" : : "r"(frame) : "cc");
+    }
 }
 
 // ----------------------------------------------------------------------------
@@ -603,29 +615,35 @@ int SoundC420_EnvRamp(void *seq, int a1, int a2, int a3) {
         level = 178;
         fraction = 0xFF000000u;
     }
-    const u8 *indices = (const u8 *)0x08061570u;
-    encoded = indices[level];
-    const u32 *scales = (const u32 *)0x08061624u;
-    // Materialize the shared mask before copying r5 to r0. These barriers
-    // emit no instructions; they preserve ROM load/copy order under agbcc.
-    u32 mask = 15;
-    __asm__("" : : "r"(mask));
-    tableindex = encoded;
-    __asm__("" : "+r"(tableindex));
-    lo = scales[tableindex & mask] >> (encoded >> 4);
-    nextlevel = level + 1;
-    __asm__("" : "+r"(nextlevel));
-    next = indices[nextlevel];
-    hi = scales[next & mask] >> (next >> 4);
-    // A member offset keeps the load at [r1,#4], not add #4 / ldr [r1].
-    value = ((const struct { u32 unused; u32 gain; } *)record)->gain;
-    __asm__("" : : "r"(level), "r"(fraction));
-    hi = _0802B888(hi - lo, fraction);
-    // The original copies the multiply result into r1 before adding lo.
-    register u32 sum __asm__("r1") = hi;
-    __asm__("" : "+r"(sum));
-    sum = lo + sum;
-    return (int)_0802B888(value, sum);
+    {
+        const u8 *indices = (const u8 *)0x08061570u;
+        encoded = indices[level];
+        {
+            const u32 *scales = (const u32 *)0x08061624u;
+            // Materialize the shared mask before copying r5 to r0. These barriers
+            // emit no instructions; they preserve ROM load/copy order under agbcc.
+            u32 mask = 15;
+            __asm__("" : : "r"(mask));
+            tableindex = encoded;
+            __asm__("" : "+r"(tableindex));
+            lo = scales[tableindex & mask] >> (encoded >> 4);
+            nextlevel = level + 1;
+            __asm__("" : "+r"(nextlevel));
+            next = indices[nextlevel];
+            hi = scales[next & mask] >> (next >> 4);
+            // A member offset keeps the load at [r1,#4], not add #4 / ldr [r1].
+            value = ((const struct { u32 unused; u32 gain; } *)record)->gain;
+            __asm__("" : : "r"(level), "r"(fraction));
+            hi = _0802B888(hi - lo, fraction);
+            // The original copies the multiply result into r1 before adding lo.
+            {
+                register u32 sum __asm__("r1") = hi;
+                __asm__("" : "+r"(sum));
+                sum = lo + sum;
+                return (int)_0802B888(value, sum);
+            }
+        }
+    }
 }
 
 int _0802C420(void *s, int a, int b, int c) __attribute__((alias("SoundC420_EnvRamp")));
@@ -713,20 +731,22 @@ void sub_0802C648(void *a) __attribute__((alias("SoundC648_Unclaim")));
 void SoundC67C_StopAll(void) {
     __asm__(".globl SoundC67C_Count\nSoundC67C_Count = 4\n"
             ".globl SoundC67C_Table\nSoundC67C_Table = 0x08061F74\n");
-    u16 count;
-    extern u8 SoundC67C_Count[];
-    extern u8 SoundC67C_Table[];
+    {
+        u16 count;
+        extern u8 SoundC67C_Count[];
+        extern u8 SoundC67C_Table[];
 
-    count = (u16)(uintptr_t)SoundC67C_Count;
-    if (count != 0) {
-        // Table base is the walking pointer (r5), the count copy is the
-        // down counter (r4): `adds r5,#12` / `subs r4,#1` / `bne`.
-        volatile u8 *tab = (volatile u8 *)(uintptr_t)SoundC67C_Table;
-        int n = count;
-        do {
-            _0802CD18((void *)(uintptr_t)*(volatile u32 *)(uintptr_t)tab);
-            tab += 12;
-        } while (--n);
+        count = (u16)(uintptr_t)SoundC67C_Count;
+        if (count != 0) {
+            // Table base is the walking pointer (r5), the count copy is the
+            // down counter (r4): `adds r5,#12` / `subs r4,#1` / `bne`.
+            volatile u8 *tab = (volatile u8 *)(uintptr_t)SoundC67C_Table;
+            int n = count;
+            do {
+                _0802CD18((void *)(uintptr_t)*(volatile u32 *)(uintptr_t)tab);
+                tab += 12;
+            } while (--n);
+        }
     }
 }
 void _0802C67C(void) __attribute__((alias("SoundC67C_StopAll")));
@@ -747,18 +767,20 @@ void sub_0802C6A8(void *a) __attribute__((alias("SoundC6A8_PauseOff")));
 void SoundC6B4_PauseAll(void) {
     __asm__(".globl SoundC6B4_Count\nSoundC6B4_Count = 4\n"
             ".globl SoundC6B4_Table\nSoundC6B4_Table = 0x08061F74\n");
-    u16 count;
-    extern u8 SoundC6B4_Count[];
-    extern u8 SoundC6B4_Table[];
+    {
+        u16 count;
+        extern u8 SoundC6B4_Count[];
+        extern u8 SoundC6B4_Table[];
 
-    count = (u16)(uintptr_t)SoundC6B4_Count;
-    if (count != 0) {
-        volatile u8 *tab = (volatile u8 *)(uintptr_t)SoundC6B4_Table;
-        int n = count;
-        do {
-            _0802C488((void *)(uintptr_t)*(volatile u32 *)(uintptr_t)tab);
-            tab += 12;
-        } while (--n);
+        count = (u16)(uintptr_t)SoundC6B4_Count;
+        if (count != 0) {
+            volatile u8 *tab = (volatile u8 *)(uintptr_t)SoundC6B4_Table;
+            int n = count;
+            do {
+                _0802C488((void *)(uintptr_t)*(volatile u32 *)(uintptr_t)tab);
+                tab += 12;
+            } while (--n);
+        }
     }
 }
 void _0802C6B4(void) __attribute__((alias("SoundC6B4_PauseAll")));

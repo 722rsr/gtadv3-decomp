@@ -9,6 +9,8 @@
 
 // 24AC : video/DMA setup leaf 0x024AC, 72 B, pools 0x04000010/0x04000052/0x05000100/0x040000D4/0x84000100
 // Exact strh sequence from disassembly 0x080024AC: ldr r0,=0x04000010; movs r1,#0; strh [r0]; adds #2 ×3; adds #10; 128<<1 → 0x0100 strh
+extern void _08026220(void);
+extern void sub_0802D974(const void*,void*,uint32_t);
 void Code24AC_VideoInit(void){
     // Preserve exact offsets and u16 widths (strh)
     *(volatile uint16_t*)0x04000010 = 0;
@@ -30,15 +32,19 @@ void Code24AC_VideoInit(void){
     // `src` is declared BEFORE `zero` on purpose: it is live across the
     // CpuSet call (dma[0] below), so agbcc materialises it into r4 ahead of
     // the [sp]=0 store, which is the ROM's order at 0x080024F6.
-    extern void sub_0802D974(const void*,void*,uint32_t);
-    uint32_t src = 0x02000000;   // 128 << 18
-    uint32_t zero=0;
-    sub_0802D974(&zero, (void*)src, 0x05000100);
-    volatile uint32_t *dma = (volatile uint32_t*)0x040000D4;
-    dma[0] = src;
-    dma[1] = 0x07000000; // 224 << 19 (OAM destination for DMA3)
-    dma[2] = 0x84000100;
-    (void)dma[2];
+
+    {
+        uint32_t src = 0x02000000;   // 128 << 18
+        uint32_t zero=0;
+        sub_0802D974(&zero, (void*)src, 0x05000100);
+        {
+            volatile uint32_t *dma = (volatile uint32_t*)0x040000D4;
+            dma[0] = src;
+            dma[1] = 0x07000000; // 224 << 19 (OAM destination for DMA3)
+            dma[2] = 0x84000100;
+            (void)dma[2];
+        }
+    }
 }
 void _080024AC(void) __attribute__((alias("Code24AC_VideoInit")));
 void sub_080024AC(void) __attribute__((alias("Code24AC_VideoInit")));
@@ -138,13 +144,15 @@ int Code26068_Tiny(int r0){
     extern u8 TrackTickOff57C[];
     __asm__(".globl TrackTickWa\nTrackTickWa = 0x03001780\n");
     __asm__(".globl TrackTickOff57C\nTrackTickOff57C = 0x0000057C\n");
-    register int res __asm__("r2") = 0;
-    uintptr_t a = (uintptr_t)TrackTickWa + (uintptr_t)TrackTickOff57C;
-    uint8_t v = *(volatile uint8_t *)((uintptr_t)r0 + a);
-    if (v == 1) {
-        res = 1;
+    {
+        register int res __asm__("r2") = 0;
+        uintptr_t a = (uintptr_t)TrackTickWa + (uintptr_t)TrackTickOff57C;
+        uint8_t v = *(volatile uint8_t *)((uintptr_t)r0 + a);
+        if (v == 1) {
+            res = 1;
+        }
+        return res;
     }
-    return res;
 }
 // Entry twins `_08026068` / `sub_08026068` are NOT declared here: they already
 // exist as aliases of RaceVM_026068 in src/race_phase_vms.c, which is the C
@@ -160,9 +168,11 @@ int _080026068(int r0) __attribute__((alias("Code26068_Tiny")));
 s16 Code261D4_Get(s16 idx){
     extern u8 TrackAwardRecBase[];
     __asm__(".globl TrackAwardRecBase\nTrackAwardRecBase = 0x030015F0\n");
-    uintptr_t base = (uintptr_t)TrackAwardRecBase;
-    s32 off = (s32)((u32)idx << 16) >> 13;
-    return *(s16 *)(base + off + 2);
+    {
+        uintptr_t base = (uintptr_t)TrackAwardRecBase;
+        s32 off = (s32)((u32)idx << 16) >> 13;
+        return *(s16 *)(base + off + 2);
+    }
 }
 s16 _0800261D4(s16 idx) __attribute__((alias("Code261D4_Get")));
 s16 _080261D4(s16 idx) __attribute__((alias("Code261D4_Get")));
@@ -185,7 +195,7 @@ s16 _080026208(s16 idx) __attribute__((alias("Code261D4_Get4")));
 void Code261D4_StoreSlot(void *a0, void *a1){
     *(volatile uintptr_t*)0x03001670u = (uintptr_t)a0;
     *(volatile uintptr_t*)(uintptr_t)a0 = (uintptr_t)a1;
-    extern void _08026220(void);
+
     _08026220();
 }
 void _08002621C(void *a, void *b) __attribute__((alias("Code261D4_StoreSlot")));
@@ -225,9 +235,11 @@ void sub_0802620C(void *a, void *b) __attribute__((alias("RegisterBase_2620C")))
 void PoolStore_261E8(int idx, int v){
     extern u8 TrackAwardRecBase[];
     __asm__(".globl TrackAwardRecBase\nTrackAwardRecBase = 0x030015F0\n");
-    uintptr_t base = (uintptr_t)TrackAwardRecBase;
-    s32 off = (s32)((u32)idx << 16) >> 13;
-    *(volatile u16 *)(base + off + 4) = v;
+    {
+        uintptr_t base = (uintptr_t)TrackAwardRecBase;
+        s32 off = (s32)((u32)idx << 16) >> 13;
+        *(volatile u16 *)(base + off + 4) = v;
+    }
 }
 void _080261E8(int a, int b) __attribute__((alias("PoolStore_261E8")));
 void sub_080261E8(int a, int b) __attribute__((alias("PoolStore_261E8")));
@@ -237,9 +249,11 @@ void sub_080261E8(int a, int b) __attribute__((alias("PoolStore_261E8")));
 s16 PoolLoad_261F8(int idx){
     extern u8 TrackAwardRecBase[];
     __asm__(".globl TrackAwardRecBase\nTrackAwardRecBase = 0x030015F0\n");
-    uintptr_t base = (uintptr_t)TrackAwardRecBase;
-    s32 off = (s32)((u32)idx << 16) >> 13;
-    return *(s16 *)(base + off + 4);
+    {
+        uintptr_t base = (uintptr_t)TrackAwardRecBase;
+        s32 off = (s32)((u32)idx << 16) >> 13;
+        return *(s16 *)(base + off + 4);
+    }
 }
 s16 _080261F8(int a) __attribute__((alias("PoolLoad_261F8")));
 s16 sub_080261F8(int a) __attribute__((alias("PoolLoad_261F8")));

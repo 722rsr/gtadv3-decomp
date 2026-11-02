@@ -81,109 +81,115 @@ void Code25930_BuildGrid(void) {
     __asm__(".globl C25_Zones\nC25_Zones = 0x0805FCAC\n");
     __asm__(".globl C25_ZoneIds\nC25_ZoneIds = 0x080600CC\n");
     __asm__(".globl C25_CountOut\nC25_CountOut = 0x0203FA40\n");
-    int count = 0;
-    register int latch __asm__("sl") = 0;
     {
-        int base = (int)C25_GridOut;
-        int zero = 0;
-        int p = base + 124;
+        int count = 0;
+        register int latch __asm__("sl") = 0;
+        {
+            int base = (int)C25_GridOut;
+            int zero = 0;
+            int p = base + 124;
 
-        do {
-            *(int *)p = zero;
-            p -= 4;
-        } while (p >= base);
-    }
+            do {
+                *(int *)p = zero;
+                p -= 4;
+            } while (p >= base);
+        }
 
-    {
-        register int row __asm__("r8") = 0;
-        do {
-            int zone_row = 0;
-            register int next_row __asm__("r9");
-            int zone_off;
-            {
-                register int tmp __asm__("r2") = 1;
-                tmp += row;
-                next_row = tmp;
-            }
-            zone_off = 0;
-            for (zone_row = 0; zone_row <= 3; zone_off += 264, zone_row++) {
-                register int zone_type __asm__("r5") = 3;
-                register const u16 *zptr __asm__("r4");
+        {
+            register int row __asm__("r8") = 0;
+            do {
+                int zone_row = 0;
+                register int next_row __asm__("r9");
+                int zone_off;
                 {
-                    register const u8 *r4_base __asm__("r4") = C25_Zones;
-                    register int r0 __asm__("r0") = zone_off + (int)r4_base;
-                    zptr = (const u16 *)(r0 + 72);
+                    register int tmp __asm__("r2") = 1;
+                    tmp += row;
+                    next_row = tmp;
                 }
-                do {
-                    if (_08025CF4(0, zone_row, zone_type) > 0) {
-                        if (_08025CF4(0, zone_row, zone_type) <= 3) {
-                            register const u16 *zone_ids __asm__("r1") = C25_ZoneIds;
-                            const s16 *idptr = (const s16 *)((row * 2) + (uintptr_t)zone_ids);
-                            if (*zptr == *(const u16 *)idptr) {
-                                register const int *r0_out __asm__("r0") = C25_GridOut;
-                                register int r1_slot __asm__("r1") = count << 2;
-                                r1_slot += (int)r0_out;
-                                *(int *)r1_slot = *idptr;
-                                count++;
-                                latch = 1;
-                                goto latch_check;
+                zone_off = 0;
+                for (zone_row = 0; zone_row <= 3; zone_off += 264, zone_row++) {
+                    register int zone_type __asm__("r5") = 3;
+                    register const u16 *zptr __asm__("r4");
+                    {
+                        register const u8 *r4_base __asm__("r4") = C25_Zones;
+                        register int r0 __asm__("r0") = zone_off + (int)r4_base;
+                        zptr = (const u16 *)(r0 + 72);
+                    }
+                    do {
+                        if (_08025CF4(0, zone_row, zone_type) > 0) {
+                            if (_08025CF4(0, zone_row, zone_type) <= 3) {
+                                register const u16 *zone_ids __asm__("r1") = C25_ZoneIds;
+                                const s16 *idptr = (const s16 *)((row * 2) + (uintptr_t)zone_ids);
+                                if (*zptr == *(const u16 *)idptr) {
+                                    register const int *r0_out __asm__("r0") = C25_GridOut;
+                                    register int r1_slot __asm__("r1") = count << 2;
+                                    r1_slot += (int)r0_out;
+                                    *(int *)r1_slot = *idptr;
+                                    count++;
+                                    latch = 1;
+                                    goto latch_check;
+                                }
                             }
                         }
+                        zptr = (const u16 *)((const u8 *)zptr + 24);
+                        zone_type++;
+                    } while (zone_type <= 10);
+                latch_check:
+                    if (latch == 1) {
+                        latch = 0;
+                        break;
                     }
-                    zptr = (const u16 *)((const u8 *)zptr + 24);
-                    zone_type++;
-                } while (zone_type <= 10);
-            latch_check:
-                if (latch == 1) {
-                    latch = 0;
-                    break;
                 }
-            }
-            row = next_row;
-        } while (row <= 31);
-    }
-
-    {
-        register int r6 __asm__("r6") = 0;
-        register const int *r1_out __asm__("r1") = C25_GridOut;
-        register const u8 *r9 __asm__("r9") = C25_Zones;
-        register const s16 *r8 __asm__("r8") = (const s16 *)(r9 + 72);
-        register int r5 __asm__("r5") = 0;
-        register int r0 __asm__("r0") = count << 2;
-        register int *r4 __asm__("r4") = (int *)(r0 + (uintptr_t)r1_out);
-        do {
-            int cnt = _08025D64(0, r6);
-            if ((unsigned)(cnt - 3) <= 7) {
-                *r4++ = *(const s16 *)(((cnt * 24) + r5) + (uintptr_t)r9);
-                count++;
-            } else if (cnt <= 2) {
-                if (_08025D90(0) == r6) {
-                    register int val __asm__("r0");
-                    register const s16 *base __asm__("r2") = r8;
-                    val = *base;
-                    __asm__ volatile("" : : "r"(base));
-                    *r4++ = val;
-                    count++;
-                }
-            }
-            register int stride __asm__("r0") = 132;
-            stride <<= 1;
-            __asm__ volatile("" : "+r"(stride));
-            r8 = (const s16 *)((const u8 *)r8 + stride);
-            r5 += stride;
-            r6++;
-        } while (r6 <= 3);
-        int *cnt = C25_CountOut;
-        int n = count - 1;
-        *cnt = n;
-        if (n <= 0) {
-            register int *r1 __asm__("r1") = C25_GridOut;
-            register const u8 *r0 __asm__("r0") = C25_Zones;
-            r0 += 72;
-            *r1 = *(const s16 *)r0;
-            *cnt = 0;
+                row = next_row;
+            } while (row <= 31);
         }
-        __asm__ volatile("" : : "r"(r4));
+
+        {
+            register int r6 __asm__("r6") = 0;
+            register const int *r1_out __asm__("r1") = C25_GridOut;
+            register const u8 *r9 __asm__("r9") = C25_Zones;
+            register const s16 *r8 __asm__("r8") = (const s16 *)(r9 + 72);
+            register int r5 __asm__("r5") = 0;
+            register int r0 __asm__("r0") = count << 2;
+            register int *r4 __asm__("r4") = (int *)(r0 + (uintptr_t)r1_out);
+            do {
+                int cnt = _08025D64(0, r6);
+                if ((unsigned)(cnt - 3) <= 7) {
+                    *r4++ = *(const s16 *)(((cnt * 24) + r5) + (uintptr_t)r9);
+                    count++;
+                } else if (cnt <= 2) {
+                    if (_08025D90(0) == r6) {
+                        register int val __asm__("r0");
+                        register const s16 *base __asm__("r2") = r8;
+                        val = *base;
+                        __asm__ volatile("" : : "r"(base));
+                        *r4++ = val;
+                        count++;
+                    }
+                }
+                {
+                    register int stride __asm__("r0") = 132;
+                    stride <<= 1;
+                    __asm__ volatile("" : "+r"(stride));
+                    r8 = (const s16 *)((const u8 *)r8 + stride);
+                    r5 += stride;
+                    r6++;
+                }
+            } while (r6 <= 3);
+            {
+                int *cnt = C25_CountOut;
+                int n = count - 1;
+                *cnt = n;
+                if (n <= 0) {
+                    register int *r1 __asm__("r1") = C25_GridOut;
+                    register const u8 *r0 __asm__("r0") = C25_Zones;
+                    r0 += 72;
+                    *r1 = *(const s16 *)r0;
+                    *cnt = 0;
+                }
+                __asm__ volatile("" : : "r"(r4));
+            }
+        }
     }
 }
 void _080025930(void) __attribute__((alias("Code25930_BuildGrid")));
@@ -390,10 +396,14 @@ void Code25930_Alloc182(void *out, int id) {
     volatile u32 *o = (volatile u32 *)out;
     int h = _0800572C(182);
     o[0] = (u32)h;
-    u32 off = ((u32)id << 2) + (u32)id;
-    off <<= 2;
-    volatile s16 *p = (volatile s16 *)(uintptr_t)(C25_REC_TBL + off);
-    o[1] = (u32)*(volatile s16 *)p;
+    {
+        u32 off = ((u32)id << 2) + (u32)id;
+        off <<= 2;
+        {
+            volatile s16 *p = (volatile s16 *)(uintptr_t)(C25_REC_TBL + off);
+            o[1] = (u32)*(volatile s16 *)p;
+        }
+    }
 }
 void _080025C0C(void *a, int b) __attribute__((alias("Code25930_Alloc182")));
 void sub_080025C0C(void *a, int b) __attribute__((alias("Code25930_Alloc182")));
@@ -431,9 +441,8 @@ void sub_080025C0C(void *a, int b) __attribute__((alias("Code25930_Alloc182")));
 // file-scope `__asm__` defining it is simply absent from the spliced section.
 // C89 also requires every declaration to precede the `__asm__` statement, so
 // `base` and `off` are declared (not initialised) at the top of the block. A
-// mid-block `const u8 *base =...` next to the shim sends
-// tools/agbcc_c89_transform.py into a nest/unwrap loop and the TU is dropped
-// with "budget exhausted" -- measured, not assumed.
+// mid-block `const u8 *base =...` next to the shim would be a
+// declaration-after-statement and the TU would not compile.
 //
 // `C25RecTbl` is a new absolute symbol, not a duplicate of anything: no asm
 // label is defined at 0x080CD830, only five pool `.4byte` references to that
@@ -485,10 +494,12 @@ void Code25930_CopyBody(void *dst_, int id) {
     volatile u32 *o = (volatile u32 *)dst_;
     u32 off = ((u32)id << 2) + (u32)id;
     off <<= 2;
-    volatile u32 *p = (volatile u32 *)(uintptr_t)(C25_REC_TBL + off);
-    o[6] = (u32)*(volatile s16 *)p;   // [dst+24]
-    o[7] = p[0]; o[8] = p[1]; o[9] = p[2];
-    o[10] = p[3]; o[11] = p[4];
+    {
+        volatile u32 *p = (volatile u32 *)(uintptr_t)(C25_REC_TBL + off);
+        o[6] = (u32)*(volatile s16 *)p;   // [dst+24]
+        o[7] = p[0]; o[8] = p[1]; o[9] = p[2];
+        o[10] = p[3]; o[11] = p[4];
+    }
 }
 void _080025C64(void *a, int b) __attribute__((alias("Code25930_CopyBody")));
 void sub_080025C64(void *a, int b) __attribute__((alias("Code25930_CopyBody")));

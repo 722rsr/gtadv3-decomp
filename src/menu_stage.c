@@ -356,12 +356,14 @@ void MenuStage_0800D790(void *rec) {
     volatile u8 *r2 = (volatile u8 *)rec;
     s32 y = *(volatile s32 *)(r2 + 16) - 2;
     *(volatile s32 *)(r2 + 16) = y;
-    s32 x = *(volatile s32 *)(r2 + 24) + 4;
-    *(volatile s32 *)(r2 + 24) = x;
-    if (y <= 144 || x >= 0) {
-        *(volatile s32 *)(r2 + 24) = 0;
-        *(volatile s32 *)(r2 + 16) = 144;
-        *(volatile s32 *)r2 = 2;
+    {
+        s32 x = *(volatile s32 *)(r2 + 24) + 4;
+        *(volatile s32 *)(r2 + 24) = x;
+        if (y <= 144 || x >= 0) {
+            *(volatile s32 *)(r2 + 24) = 0;
+            *(volatile s32 *)(r2 + 16) = 144;
+            *(volatile s32 *)r2 = 2;
+        }
     }
 }
 void _0800D790(void *a) __attribute__((alias("MenuStage_0800D790")));
@@ -401,16 +403,18 @@ void MenuStage_0800D7CC(void *rec) {
     *(volatile s32 *)(r1 + 32) = c;
     if (c > 0) return;
     *(volatile s32 *)r1 = 12;
-    s32 m = *(volatile s32 *)(r1 + 28);
-    switch (m) {
-    case 0:
-        _08004EA8((int)*(s16 *)(r1 + 10));
-        break;
-    case 1:
-        _08004EC0((int)*(s16 *)(r1 + 8));
-        break;
-    default:
-        break;
+    {
+        s32 m = *(volatile s32 *)(r1 + 28);
+        switch (m) {
+        case 0:
+            _08004EA8((int)*(s16 *)(r1 + 10));
+            break;
+        case 1:
+            _08004EC0((int)*(s16 *)(r1 + 8));
+            break;
+        default:
+            break;
+        }
     }
 }
 void _0800D7CC(void *a) __attribute__((alias("MenuStage_0800D7CC")));
@@ -424,11 +428,13 @@ void MenuStage_0800D800(void *rec) {
     volatile u8 *r2 = (volatile u8 *)rec;
     s32 y = *(volatile s32 *)(r2 + 16) + 2;
     *(volatile s32 *)(r2 + 16) = y;
-    s32 x = *(volatile s32 *)(r2 + 24) - 4;
-    *(volatile s32 *)(r2 + 24) = x;
-    if (!(y <= 159) || x <= -32) {
-        *(volatile s32 *)(r2 + 24) = -32;
-        *(volatile s32 *)(r2 + 16) = 160;
+    {
+        s32 x = *(volatile s32 *)(r2 + 24) - 4;
+        *(volatile s32 *)(r2 + 24) = x;
+        if (!(y <= 159) || x <= -32) {
+            *(volatile s32 *)(r2 + 24) = -32;
+            *(volatile s32 *)(r2 + 16) = 160;
+        }
     }
 }
 __asm__(".align 2, 0");

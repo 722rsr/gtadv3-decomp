@@ -35,9 +35,11 @@ void SoftIrqKicker(void){
                     (volatile u16 *)(uintptr_t)0x04000128;
                 u32 v = *(volatile u32 *)(uintptr_t)sio;
                 ST->siocnt6 = (u8)((v << 25) >> 31);
-                register u32 fill __asm__("r0") = 0xFEFE;
-                *(sio + 1) = fill;
-                *sio = (u16)(*sio | 0x80u);
+                {
+                    register u32 fill __asm__("r0") = 0xFEFE;
+                    *(sio + 1) = fill;
+                    *sio = (u16)(*sio | 0x80u);
+                }
             }
             REG_TM3CNT_H = 0xC0;
             }

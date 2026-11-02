@@ -297,8 +297,8 @@ ownership-check: ownership-map
 	@python3 tools/ownership_map.py --self-test
 	@python3 tools/ownership_map.py --check --strict
 
-# Repeatable starting gate for matching C source. All generated copies, reports,
-# and temporary C-owned assembly remain under ignored build/.
+# Repeatable starting gate for matching C source. Reports and temporary
+# C-owned assembly remain under ignored build/.
 .PHONY: matching-ready matching-slice
 matching-slice: code-objects
 	@python3 tools/match_c_slice.py --all
@@ -307,11 +307,11 @@ matching-slice: code-objects
 # Resolve probe symbols from a freshly assembled code object.
 matching-ready: all code-objects
 	@$(MAKE) data-check
-	@python3 tools/agbcc_c89_transform.py --self-test
-	@python3 tools/agbcc_c89_transform.py --out build/era-corpus/c89/generated --json build/era-corpus/c89/transform_report.json
-	@python3 tools/c89_equivalence.py --json build/era-corpus/c89/equivalence_report.json
+	@python3 tools/c_source.py --self-test
+	@python3 tools/c89_check.py --self-test
+	@python3 tools/c89_check.py --json build/era-corpus/c89-check.json
 	@python3 tools/corpus_match_probe.py --self-test
-	@python3 tools/corpus_match_probe.py --c89 --require-all --work-dir build/era-corpus/ready-work --json build/era-corpus/ready-report.json > build/era-corpus/ready-summary.txt
+	@python3 tools/corpus_match_probe.py --require-all --work-dir build/era-corpus/ready-work --json build/era-corpus/ready-report.json > build/era-corpus/ready-summary.txt
 	@python3 tools/promotion_screen.py --self-test
 	@python3 tools/match_c_slice.py --self-test
 	@$(MAKE) matching-slice
@@ -380,7 +380,8 @@ ci-check: progress-check
 	@python3 tools/source_quality.py
 	@python3 tools/export_audit.py --self-test
 	@python3 tools/call_audit.py --self-test
-	@python3 tools/agbcc_c89_transform.py --self-test
+	@python3 tools/c_source.py --self-test
+	@python3 tools/c89_check.py --self-test
 	@python3 tools/update_progress.py --self-test
 	@python3 tools/full_rom_match.py --self-test
 	@python3 tools/asmlift_seed.py --self-test

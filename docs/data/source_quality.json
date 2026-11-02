@@ -5796,10 +5796,7 @@
    "size": 560
   },
   "0x080127f4": {
-   "class": "c_fakematch",
-   "detail": {
-    "directive": 1
-   },
+   "class": "c",
    "file": "src/menu_ff78_e.c",
    "name": "MenuFF78_127F4",
    "size": 92
@@ -5922,7 +5919,7 @@
   "0x08012ed0": {
    "class": "c_fakematch",
    "detail": {
-    "directive": 2
+    "directive": 1
    },
    "file": "src/menu_ff78_e.c",
    "name": "MenuFF78_12ED0",
@@ -6550,7 +6547,7 @@
   "0x080166e8": {
    "class": "c_fakematch",
    "detail": {
-    "directive": 2
+    "directive": 1
    },
    "file": "src/rec35_runtime.c",
    "name": "Rec35_Leaf_166E8",
@@ -8437,7 +8434,7 @@
   "0x08020958": {
    "class": "c_fakematch",
    "detail": {
-    "directive": 2
+    "directive": 1
    },
    "file": "src/race_scene_e.c",
    "name": "_080020958",
@@ -8889,7 +8886,7 @@
   "0x08022cb4": {
    "class": "c_fakematch",
    "detail": {
-    "directive": 3
+    "directive": 1
    },
    "file": "src/runtime_state_dispatch.c",
    "name": "CarRecEventReset_22CB4",
@@ -10476,7 +10473,6 @@
    "class": "c_fakematch",
    "detail": {
     "barrier": 10,
-    "directive": 1,
     "pin": 17
    },
    "file": "src/sprite_obj_263e0.c",
@@ -13223,12 +13219,12 @@
    "functions": 123
   },
   "c": {
-   "bytes": 44326,
-   "functions": 876
+   "bytes": 44418,
+   "functions": 877
   },
   "c_fakematch": {
-   "bytes": 96582,
-   "functions": 673
+   "bytes": 96490,
+   "functions": 672
   },
   "partial": {
    "bytes": 200,

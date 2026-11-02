@@ -21,17 +21,19 @@ void Rec35_GridFill_1845C(void *ctx) {
     // The ROM materializes the constant 1 once (`movs r7,#1`) and passes it
     // via `adds r3,r7,#0` / `adds r1,r7,#0` at both use sites; a shared named
     // local keeps it in the callee-saved r7 instead of re-issuing `movs`.
-    int one = 1;
-    int r5, r4;
-    for (r5 = 0; r5 <= 3; r5++) {
-        for (r4 = 0; r4 <= 10; r4++)
-            sub_08025C84(0, r5, r4, one);
+    {
+        int one = 1;
+        int r5, r4;
+        for (r5 = 0; r5 <= 3; r5++) {
+            for (r4 = 0; r4 <= 10; r4++)
+                sub_08025C84(0, r5, r4, one);
+        }
+        sub_08025FF0(0);
+        sub_08025FF0(1);
+        sub_08025FF0(2);
+        for (r4 = 0; r4 <= 31; r4++)
+            sub_08025DBC(r4, one);
     }
-    sub_08025FF0(0);
-    sub_08025FF0(1);
-    sub_08025FF0(2);
-    for (r4 = 0; r4 <= 31; r4++)
-        sub_08025DBC(r4, one);
 }
 // The body is 74 bytes (2 mod 4); gas would close the section with a `c0 46`
 // code nop while the ROM holds `00 00`. This file-scope zero-fill `.align`
@@ -78,22 +80,24 @@ void _0800184A8(void *ctx) __attribute__((alias("Rec35_ConstFill_184A8")));
 extern u16 Rec35_WA18[];
 void Rec35_GridFill3_18508(void *ctx) {
     (void)ctx;
-    int r5, r4;
-    for (r5 = 0; r5 <= 3; r5++) {
-        for (r4 = 0; r4 <= 10; r4++)
-            sub_08025C84(0, r5, r4, 3);
+    {
+        int r5, r4;
+        for (r5 = 0; r5 <= 3; r5++) {
+            for (r4 = 0; r4 <= 10; r4++)
+                sub_08025C84(0, r5, r4, 3);
+        }
+        Rec35_WA18[255 * 8] = 1;
+        // The defining shim MUST be inside this body. At file scope agbcc emits it
+        // ahead of the function's own `.section.text.Rec35_GridFill3_18508`
+        // directive, so it lands in the PRECEDING section -- and the per-body splice
+        // extracts only the function's section, leaving `Rec35_WA18` undefined at
+        // link while the reference inside the spliced body survives. Verified in
+        // the generated.s: file scope put the shim at line 85 and the section
+        // directive at 89. A label plus an absolute assignment emits no bytes, so
+        // it is exempt from the splicer's ownership check for the same reason the
+        // byte-free alias case is.
+        __asm__(".globl Rec35_WA18\nRec35_WA18 = 0x03001780\n");
     }
-    Rec35_WA18[255 * 8] = 1;
-    // The defining shim MUST be inside this body. At file scope agbcc emits it
-    // ahead of the function's own `.section.text.Rec35_GridFill3_18508`
-    // directive, so it lands in the PRECEDING section -- and the per-body splice
-    // extracts only the function's section, leaving `Rec35_WA18` undefined at
-    // link while the reference inside the spliced body survives. Verified in
-    // the generated.s: file scope put the shim at line 85 and the section
-    // directive at 89. A label plus an absolute assignment emits no bytes, so
-    // it is exempt from the splicer's ownership check for the same reason the
-    // byte-free alias case is.
-    __asm__(".globl Rec35_WA18\nRec35_WA18 = 0x03001780\n");
 }
 void _080018508(void *ctx) __attribute__((alias("Rec35_GridFill3_18508")));
 

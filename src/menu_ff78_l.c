@@ -78,46 +78,68 @@ void MenuFF78_11958(volatile u8 *rec) {
             kinds[0] = 8;
             kinds[1] = 32;
             kinds[2] = 56;
-            u32 k = 0;
-            for (;;) {
-                int lim = sub_0800F6D0(
-                    (int)*(s16 *)(uintptr_t)(rec + 188));
-                if (!((int)k < lim)) break;
-                register u8 *emit_rec __asm__("r0") = (u8 *)(uintptr_t)(rec + 32);
-                __asm__ volatile("" : "+r"(emit_rec));
-                register u32 stride __asm__("r3") = k * 12;
-                __asm__ volatile("" : "+r"(stride));
-                register u32 word_off __asm__("r4") = 372;
-                __asm__ volatile("" : "+r"(word_off));
-                u32 r1 = *(volatile u32 *)(uintptr_t)(rec + word_off + stride);
-                word_off += 4;
-                __asm__ volatile("" : "+r"(word_off));
-                register volatile u32 *second __asm__("r2") =
-                    (volatile u32 *)(uintptr_t)(rec + word_off + stride);
-                __asm__ volatile("" : "+r"(second));
-                u32 r2 = *second;
-                sub_08007BFC(emit_rec, (int)r1, (int)r2,
-                             (int)kinds[k], 120, 5, 1, 1, 0);
-                k++;
+            {
+                u32 k = 0;
+                for (;;) {
+                    int lim = sub_0800F6D0(
+                        (int)*(s16 *)(uintptr_t)(rec + 188));
+                    if (!((int)k < lim)) break;
+                    {
+                        register u8 *emit_rec __asm__("r0") = (u8 *)(uintptr_t)(rec + 32);
+                        __asm__ volatile("" : "+r"(emit_rec));
+                        {
+                            register u32 stride __asm__("r3") = k * 12;
+                            __asm__ volatile("" : "+r"(stride));
+                            {
+                                register u32 word_off __asm__("r4") = 372;
+                                __asm__ volatile("" : "+r"(word_off));
+                                {
+                                    u32 r1 = *(volatile u32 *)(uintptr_t)(rec + word_off + stride);
+                                    word_off += 4;
+                                    __asm__ volatile("" : "+r"(word_off));
+                                    {
+                                        register volatile u32 *second __asm__("r2") =
+                                            (volatile u32 *)(uintptr_t)(rec + word_off + stride);
+                                        __asm__ volatile("" : "+r"(second));
+                                        {
+                                            u32 r2 = *second;
+                                            sub_08007BFC(emit_rec, (int)r1, (int)r2,
+                                                         (int)kinds[k], 120, 5, 1, 1, 0);
+                                            k++;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
         sub_080011854((void *)rec, *(volatile u16 *)(uintptr_t)(rec + 190));
-        register u32 selected1 __asm__("r6") = *(volatile u16 *)(uintptr_t)(rec + 190);
-        __asm__ volatile("" : "+r"(selected1));
-        if (selected1 != 99) {
-            extern u32 J11958_T[];
-            __asm__(".globl J11958_T\nJ11958_T = 0x080CB5B0\n");
-            register u32 tbl_base __asm__("r3") = (uintptr_t)J11958_T;
-            __asm__ volatile("" : "+r"(tbl_base));
-            u16 ti = *(volatile u16 *)(uintptr_t)(rec + 212);
-            u32 offset = (u32)ti * 8;
-            u32 w0 = *(volatile u32 *)(uintptr_t)(offset + tbl_base);
-            tbl_base += 4;
-            __asm__ volatile("" : "+r"(tbl_base));
-            u32 w1 = *(volatile u32 *)(uintptr_t)(offset + tbl_base);
-            sub_08007B18((void *)rec, 13, (int)w0, (int)w1, 3, 1, 1, 0);
+        {
+            register u32 selected1 __asm__("r6") = *(volatile u16 *)(uintptr_t)(rec + 190);
+            __asm__ volatile("" : "+r"(selected1));
+            if (selected1 != 99) {
+                extern u32 J11958_T[];
+                __asm__(".globl J11958_T\nJ11958_T = 0x080CB5B0\n");
+                {
+                    register u32 tbl_base __asm__("r3") = (uintptr_t)J11958_T;
+                    __asm__ volatile("" : "+r"(tbl_base));
+                    {
+                        u16 ti = *(volatile u16 *)(uintptr_t)(rec + 212);
+                        u32 offset = (u32)ti * 8;
+                        u32 w0 = *(volatile u32 *)(uintptr_t)(offset + tbl_base);
+                        tbl_base += 4;
+                        __asm__ volatile("" : "+r"(tbl_base));
+                        {
+                            u32 w1 = *(volatile u32 *)(uintptr_t)(offset + tbl_base);
+                            sub_08007B18((void *)rec, 13, (int)w0, (int)w1, 3, 1, 1, 0);
+                        }
+                    }
+                }
+            }
+            break;
         }
-        break;
     }
     case 2: {
         register u32 init_three __asm__("r4");
@@ -129,60 +151,76 @@ void MenuFF78_11958(volatile u8 *rec) {
         sub_08007B18((void *)rec, 10, 0, 112,
                      three = init_three = 3, one = init_one = 1, 1,
                      zero = init_zero = 0);
-        register u8 *emit_rec __asm__("r6") = (u8 *)(uintptr_t)(rec + 32);
-        __asm__ volatile("" : "+r"(emit_rec));
         {
-            register u32 off1 __asm__("r2") = 372;
-            __asm__ volatile("" : "+r"(off1));
-            register volatile u32 *cell __asm__("r0") =
-                (volatile u32 *)(uintptr_t)(rec + off1);
-            __asm__ volatile("" : "+r"(cell));
-            u32 r1 = *cell;
-            register u32 off2 __asm__("r4") = 376;
-            __asm__ volatile("" : "+r"(off2));
-            cell = (volatile u32 *)(uintptr_t)(rec + off2);
-            __asm__ volatile("" : "+r"(cell));
-            u32 r2 = *cell;
-            sub_08007BFC(emit_rec, (int)r1, (int)r2,
-                         8, 120, 5, one, one, zero);
+            register u8 *emit_rec __asm__("r6") = (u8 *)(uintptr_t)(rec + 32);
+            __asm__ volatile("" : "+r"(emit_rec));
+            {
+                register u32 off1 __asm__("r2") = 372;
+                __asm__ volatile("" : "+r"(off1));
+                {
+                    register volatile u32 *cell __asm__("r0") =
+                        (volatile u32 *)(uintptr_t)(rec + off1);
+                    __asm__ volatile("" : "+r"(cell));
+                    {
+                        u32 r1 = *cell;
+                        register u32 off2 __asm__("r4") = 376;
+                        __asm__ volatile("" : "+r"(off2));
+                        cell = (volatile u32 *)(uintptr_t)(rec + off2);
+                        __asm__ volatile("" : "+r"(cell));
+                        {
+                            u32 r2 = *cell;
+                            sub_08007BFC(emit_rec, (int)r1, (int)r2,
+                                         8, 120, 5, one, one, zero);
+                        }
+                    }
+                }
+            }
+            {
+                u32 r1 = *(volatile u32 *)(uintptr_t)(rec + 384);
+                u32 r2 = *(volatile u32 *)(uintptr_t)(rec + 388);
+                sub_08007BFC(emit_rec, (int)r1, (int)r2,
+                             32, 120, 5, one, one, zero);
+            }
+            {
+                u32 r1 = *(volatile u32 *)(uintptr_t)(rec + 396);
+                u32 r2 = *(volatile u32 *)(uintptr_t)(rec + 400);
+                register u32 scratch_one __asm__("r4");
+                sub_08007BFC(emit_rec, (int)r1, (int)r2,
+                             56, 120, 5,
+                             ({ scratch_one = one; __asm__ volatile ("" : "+r"(scratch_one)); scratch_one; }),
+                             scratch_one, zero);
+            }
+            sub_0800118DC((void *)rec, *(volatile u16 *)(uintptr_t)(rec + 192));
+            {
+                register u32 selected2 __asm__("r4") = *(volatile u16 *)(uintptr_t)(rec + 192);
+                __asm__ volatile("" : "+r"(selected2));
+                if (selected2 != 99) {
+                    extern u32 J11958_T[];
+                    __asm__(".globl J11958_T\nJ11958_T = 0x080CB5B0\n");
+                    {
+                        register u32 tbl_base __asm__("r3") = (uintptr_t)J11958_T;
+                        __asm__ volatile("" : "+r"(tbl_base));
+                        {
+                            u16 ti = *(volatile u16 *)(uintptr_t)(rec + 212);
+                            u32 offset = (u32)ti * 8;
+                            u32 w0 = *(volatile u32 *)(uintptr_t)(offset + tbl_base);
+                            tbl_base += 4;
+                            __asm__ volatile("" : "+r"(tbl_base));
+                            {
+                                u32 w1 = *(volatile u32 *)(uintptr_t)(offset + tbl_base);
+                                register u32 final_zero __asm__("r0");
+                                register u32 scratch_one __asm__("r4");
+                                sub_08007B18((void *)rec, 13, (int)w0, (int)w1,
+                                             three,
+                                             ({ scratch_one = one; __asm__ volatile ("" : "+r"(scratch_one)); scratch_one; }),
+                                             scratch_one, final_zero = zero);
+                            }
+                        }
+                    }
+                }
+                break;
+            }
         }
-        {
-            u32 r1 = *(volatile u32 *)(uintptr_t)(rec + 384);
-            u32 r2 = *(volatile u32 *)(uintptr_t)(rec + 388);
-            sub_08007BFC(emit_rec, (int)r1, (int)r2,
-                         32, 120, 5, one, one, zero);
-        }
-        {
-            u32 r1 = *(volatile u32 *)(uintptr_t)(rec + 396);
-            u32 r2 = *(volatile u32 *)(uintptr_t)(rec + 400);
-            register u32 scratch_one __asm__("r4");
-            sub_08007BFC(emit_rec, (int)r1, (int)r2,
-                         56, 120, 5,
-                         ({ scratch_one = one; __asm__ volatile ("" : "+r"(scratch_one)); scratch_one; }),
-                         scratch_one, zero);
-        }
-        sub_0800118DC((void *)rec, *(volatile u16 *)(uintptr_t)(rec + 192));
-        register u32 selected2 __asm__("r4") = *(volatile u16 *)(uintptr_t)(rec + 192);
-        __asm__ volatile("" : "+r"(selected2));
-        if (selected2 != 99) {
-            extern u32 J11958_T[];
-            __asm__(".globl J11958_T\nJ11958_T = 0x080CB5B0\n");
-            register u32 tbl_base __asm__("r3") = (uintptr_t)J11958_T;
-            __asm__ volatile("" : "+r"(tbl_base));
-            u16 ti = *(volatile u16 *)(uintptr_t)(rec + 212);
-            u32 offset = (u32)ti * 8;
-            u32 w0 = *(volatile u32 *)(uintptr_t)(offset + tbl_base);
-            tbl_base += 4;
-            __asm__ volatile("" : "+r"(tbl_base));
-            u32 w1 = *(volatile u32 *)(uintptr_t)(offset + tbl_base);
-            register u32 final_zero __asm__("r0");
-            register u32 scratch_one __asm__("r4");
-            sub_08007B18((void *)rec, 13, (int)w0, (int)w1,
-                         three,
-                         ({ scratch_one = one; __asm__ volatile ("" : "+r"(scratch_one)); scratch_one; }),
-                         scratch_one, final_zero = zero);
-        }
-        break;
     }
     default:
         break;

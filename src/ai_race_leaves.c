@@ -34,11 +34,15 @@ void Ai_RingPush(int ev, int arg) {
         int off = i * 8;
         int *base_ev = b + 1;
         *(int *)((uintptr_t)off + (uintptr_t)base_ev) = ev;
-        int *base_arg = b + 2;
-        *(int *)((uintptr_t)off + (uintptr_t)base_arg) = arg;
-        register int next_off __asm__("r0") = (i + 1) * 8;
-        *(int *)((uintptr_t)next_off + (uintptr_t)base_ev) = -1;
-        *(int *)((uintptr_t)next_off + (uintptr_t)base_arg) = 0;
+        {
+            int *base_arg = b + 2;
+            *(int *)((uintptr_t)off + (uintptr_t)base_arg) = arg;
+            {
+                register int next_off __asm__("r0") = (i + 1) * 8;
+                *(int *)((uintptr_t)next_off + (uintptr_t)base_ev) = -1;
+                *(int *)((uintptr_t)next_off + (uintptr_t)base_arg) = 0;
+            }
+        }
     }
 }
 void _08023FF8(int a,int b) __attribute__((alias("Ai_RingPush")));
@@ -733,14 +737,16 @@ void Ai_CollectTick(void) {
     } else {
         if ((s16)sub_08025F20(id1) >= id2)
             goto part2;
-        register s16 *pickL __asm__("r3");
-        pickL = (s16 *)(wa + 0x1046);
-        *pickL = id1;
-        count = (s16 *)(wa + 0x1048);
-        *count = id2;
-        *(s16 *)(wa + 0x105A) = 1;
-        sub_08025EC0(*pickL, *count);
-        _08023FF8(27, 0);
+        {
+            register s16 *pickL __asm__("r3");
+            pickL = (s16 *)(wa + 0x1046);
+            *pickL = id1;
+            count = (s16 *)(wa + 0x1048);
+            *count = id2;
+            *(s16 *)(wa + 0x105A) = 1;
+            sub_08025EC0(*pickL, *count);
+            _08023FF8(27, 0);
+        }
     }
 
 part2:

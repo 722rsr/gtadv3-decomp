@@ -151,7 +151,7 @@ def run(args):
                               'source_parent': str(source_path.parent),
                               'tools': {name: kit.digest_path(probe.ROOT/'tools'/name) for name in
                                         ('matching_campaign.py', 'experiment_kit.py', 'corpus_match_probe.py',
-                                         'instruction_diff.py', 'agbcc_c89_transform.py', 'agbcc_options.py')}})
+                                         'instruction_diff.py', 'c_source.py', 'agbcc_options.py')}})
         ledger = out/'ledger.jsonl'
         records = [json.loads(line) for line in ledger.read_text().splitlines()] if ledger.exists() else []
         prior = {r['key']: r for r in records if r['environment'] == environment and r.get('reusable')}

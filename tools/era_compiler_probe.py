@@ -198,7 +198,7 @@ def main() -> int:
     if not args.source.exists():
         print(
             f"era_compiler_probe: ERROR: no source at {args.source}\n"
-            "Run tools/agbcc_c89_shim.py first if this is an experiment copy.",
+            "Maintained src/ is already C89; supply a C89 experiment copy.",
             file=sys.stderr,
         )
         return 2

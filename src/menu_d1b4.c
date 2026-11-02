@@ -47,9 +47,11 @@ static inline s16 *slot_d1c0(volatile u8 *p, s16 off) {
 void MenuD1B4_Draw(void *rec) {
     volatile u8 *r4 = (volatile u8 *)rec;
     _080038A4(60, 60, D1B4_FRAME_60);
-    s16 x = *slot_d1c0(r4, 4);
-    s16 y = *slot_d1c0(r4, 6);
-    _080038A4(x, y, D1B4_FRAME_MOVE);
+    {
+        s16 x = *slot_d1c0(r4, 4);
+        s16 y = *slot_d1c0(r4, 6);
+        _080038A4(x, y, D1B4_FRAME_MOVE);
+    }
 }
 void _0800D1C0(void *a) __attribute__((alias("MenuD1B4_Draw")));
 void sub_0800D1C0(void *a) __attribute__((alias("MenuD1B4_Draw")));
@@ -96,15 +98,19 @@ void MenuD1B4_Move(void *rec, int keys, int keys2) {
     if (keys & 128)
         r2 += 1;
 
-    register u16 x __asm__("r1") = *(volatile u16 *)(r3 + 4);
-    register u16 s __asm__("r0") = (u16)(x + r4);
-    *(volatile u16 *)(r3 + 4) = s;
-    register u16 y __asm__("r1") = *(volatile u16 *)(r3 + 6);
-    register u16 t __asm__("r0") = (u16)(y + r2);
-    *(volatile u16 *)(r3 + 6) = t;
+    {
+        register u16 x __asm__("r1") = *(volatile u16 *)(r3 + 4);
+        register u16 s __asm__("r0") = (u16)(x + r4);
+        *(volatile u16 *)(r3 + 4) = s;
+        {
+            register u16 y __asm__("r1") = *(volatile u16 *)(r3 + 6);
+            register u16 t __asm__("r0") = (u16)(y + r2);
+            *(volatile u16 *)(r3 + 6) = t;
 
-    if (keys2 & 2)
-        _08004EA8(1);
+            if (keys2 & 2)
+                _08004EA8(1);
+        }
+    }
 }
 // Two GCC local register variables per field. The ROM keeps the LOAD and the
 // SUM in different registers -- `ldrh r1,[r3,#4]` then `adds r0,r1,r4`

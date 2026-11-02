@@ -42,11 +42,13 @@ void Course_Leaves_096A4(void *arg) {
     // Blocker: exact CFG beyond +18 via ldrh/strh at +14/+16/+18 is proven, but CpuSet stack 44B argument at sp and template 0x0805F604 lane at +24 requires watch of CpuSet src/dst/len and 261B0 table at +12 s16 vs +0 Vu32 — leave blocked, no alias until full CFG proven via objdump ldr/str/CpuSet length and watch.
     volatile u32 *slot = (volatile u32 *)0x030003E4u;
     *slot = (u32)(uintptr_t)arg;
-    u32 stack = 0;
-    extern void sub_0802D974(const void*,void*,u32);
-    sub_0802D974(&stack, (void*)0, 0x0500000Bu);
-    // Not claimed — tail blocked, no alias
-    (void)stack;
+    {
+        u32 stack = 0;
+        extern void sub_0802D974(const void*,void*,u32);
+        sub_0802D974(&stack, (void*)0, 0x0500000Bu);
+        // Not claimed — tail blocked, no alias
+        (void)stack;
+    }
 }
 // _080096A4 remains unaliased — blocked until full CFG with CpuSet 44B stack and 0798C template proven via watch
 // _08009674/_08009680/_0800968C removed — duplicates of course_records.c owner; keep exactly one owner (course_records) to avoid ld -r duplicate
@@ -80,15 +82,17 @@ void CourseLeaves_09748(u16 a, u16 sel) {
         } else {
             base = (u8 *)0x03001780u;
             __asm__("" : "+r"(base));
-            register u32 table_off __asm__("r4") = 0x10CAu;
-            __asm__("" : "+r"(table_off));
-            p = (u16 *)(base + table_off);
-            max_u = *(volatile u16 *)p;
-            // The same r4 becomes the zero register used by ROM's ldrsh.
-            table_off = 0;
-            __asm__("" : "+r"(table_off));
-            bound = *(s16 *)p;
-            if (sum_s > bound) *(volatile u16 *)(blk + 20) = max_u;
+            {
+                register u32 table_off __asm__("r4") = 0x10CAu;
+                __asm__("" : "+r"(table_off));
+                p = (u16 *)(base + table_off);
+                max_u = *(volatile u16 *)p;
+                // The same r4 becomes the zero register used by ROM's ldrsh.
+                table_off = 0;
+                __asm__("" : "+r"(table_off));
+                bound = *(s16 *)p;
+                if (sum_s > bound) *(volatile u16 *)(blk + 20) = max_u;
+            }
         }
         break;
     }
@@ -120,36 +124,38 @@ int _080097E8(u16 a, u16 sel) {
     // _080097E8: VMA 0x080097E8 116 B pure Thumb, smallest remaining leaf with no external BL.
     // Fidelity: asm at 097F2/09800/09814 is ldr r0,=0x030003E4 / ldr r0,[r0] / str/ldr [r0,#0] with no null guard (09734 ldr r0,[r0] then str r3,[r0]; 09800 ldr r2,[r0] etc.). Slot is always valid (0x03005B38 from 2280 per course_header_trace); C dereferences unconditionally to match exact asm control flow. No silent safety branch added.
     (void)a; // r0 incoming ignored per asm (r1 is selector; r0 overwritten with slot load)
-    u16 k = sel; // lsls #16 lsrs #16 Vu16
-    int r3 = 0; // movs r3,#0
-    if (k == 8) { // cmp #8
-        volatile u32 *slot = (volatile u32 *)0x030003E4u;
-        volatile u32 *blk = *(volatile u32 * volatile *)slot; // unconditional: asm ldr r0,[r0] / str r3,[r0,#0] Vu32
-        *blk = (u32)r3; // r3=0 stored, then r3=2
-        r3 = 2; // movs r3,#2
-    }
-    if (k == 1) { // cmp #1
-        r3 = 2;
-    }
-    if (k == 64) { // cmp #64
-        volatile u32 *slot = (volatile u32 *)0x030003E4u;
-        volatile u32 *blk = *(volatile u32 * volatile *)slot; // unconditional deref
-        u32 v = *blk; // ldr Vu32 at [blk+0]
-        if ((s32)v > 0) { // cmp #0 ble
-            r3 = 1; // movs r3,#1
-            *blk = v - 1; // subs #1 str Vu32
+    {
+        u16 k = sel; // lsls #16 lsrs #16 Vu16
+        int r3 = 0; // movs r3,#0
+        if (k == 8) { // cmp #8
+            volatile u32 *slot = (volatile u32 *)0x030003E4u;
+            volatile u32 *blk = *(volatile u32 * volatile *)slot; // unconditional: asm ldr r0,[r0] / str r3,[r0,#0] Vu32
+            *blk = (u32)r3; // r3=0 stored, then r3=2
+            r3 = 2; // movs r3,#2
         }
-    }
-    if (k == 128) { // cmp #128
-        volatile u32 *slot = (volatile u32 *)0x030003E4u;
-        volatile u32 *blk = *(volatile u32 * volatile *)slot; // unconditional
-        u32 v = *blk; // ldr Vu32
-        if ((s32)v <= 1) { // cmp #1 bgt skip
-            r3 = 1;
-            *blk = v + 1; // adds #1 str
+        if (k == 1) { // cmp #1
+            r3 = 2;
         }
+        if (k == 64) { // cmp #64
+            volatile u32 *slot = (volatile u32 *)0x030003E4u;
+            volatile u32 *blk = *(volatile u32 * volatile *)slot; // unconditional deref
+            u32 v = *blk; // ldr Vu32 at [blk+0]
+            if ((s32)v > 0) { // cmp #0 ble
+                r3 = 1; // movs r3,#1
+                *blk = v - 1; // subs #1 str Vu32
+            }
+        }
+        if (k == 128) { // cmp #128
+            volatile u32 *slot = (volatile u32 *)0x030003E4u;
+            volatile u32 *blk = *(volatile u32 * volatile *)slot; // unconditional
+            u32 v = *blk; // ldr Vu32
+            if ((s32)v <= 1) { // cmp #1 bgt skip
+                r3 = 1;
+                *blk = v + 1; // adds #1 str
+            }
+        }
+        return r3; // adds r0,r3
     }
-    return r3; // adds r0,r3
 }
 int CourseLeaves_097E8(u16 a, u16 b) __attribute__((alias("_080097E8")));
 int sub_080097E8(u16 a, u16 b) __attribute__((alias("_080097E8")));

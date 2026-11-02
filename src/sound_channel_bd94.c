@@ -19,10 +19,12 @@ __attribute__((naked)) void SoundBD94_Store(void *a, void *chan) {
     __asm__ volatile(".syntax unified\n\tmov %0, lr\n\tbl _0802BCE8\n\t.syntax divided"
                      : "=r"(frame), "=r"(value) : : "lr", "cc", "memory");
     *(volatile u8 *)(channel + 10) = (u8)value;
-    register u32 flags __asm__("r3") = channel[0];
-    register u32 mask __asm__("r2") = 12;
-    __asm__ volatile("" : "+r"(flags), "+r"(mask) : : "cc", "memory");
-    flags |= mask;
-    channel[0] = (u8)flags;
-    __asm__ volatile("bx %0\n\t.short 0x0000" : : "r"(frame) : "cc");
+    {
+        register u32 flags __asm__("r3") = channel[0];
+        register u32 mask __asm__("r2") = 12;
+        __asm__ volatile("" : "+r"(flags), "+r"(mask) : : "cc", "memory");
+        flags |= mask;
+        channel[0] = (u8)flags;
+        __asm__ volatile("bx %0\n\t.short 0x0000" : : "r"(frame) : "cc");
+    }
 }

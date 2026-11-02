@@ -34,17 +34,19 @@ void *RuntimeMemcpy(void *dst, const void *src, u32 n) {
         }
     }
     count--;
-    const u8 *s8 = (const u8 *)s;
-    scratch = 1;
-    scratch = -scratch;
-    if (count != scratch) {
-        word_dst = (u32 *)scratch;
-        do {
-            *d++ = *s8++;
-            count--;
-        } while (count != (u32)word_dst);
+    {
+        const u8 *s8 = (const u8 *)s;
+        scratch = 1;
+        scratch = -scratch;
+        if (count != scratch) {
+            word_dst = (u32 *)scratch;
+            do {
+                *d++ = *s8++;
+                count--;
+            } while (count != (u32)word_dst);
+        }
+        return original;
     }
-    return original;
 }
 
 __asm__(".align 2, 0");
@@ -63,20 +65,22 @@ void *RuntimeMemset(void *dst, int c, u32 n) {
     if (n > 3 && (((u32)(uintptr_t)dst & 3u) == 0)) {
         u32 *w = (u32 *)(uintptr_t)dst;
         v &= 0xFFu;
-        u32 fill = v | (v << 8);
-        fill |= fill << 16;
-        while (n > 15) {
-            *w++ = fill;
-            *w++ = fill;
-            *w++ = fill;
-            *w++ = fill;
-            n -= 16;
+        {
+            u32 fill = v | (v << 8);
+            fill |= fill << 16;
+            while (n > 15) {
+                *w++ = fill;
+                *w++ = fill;
+                *w++ = fill;
+                *w++ = fill;
+                n -= 16;
+            }
+            while (n > 3) {
+                *w++ = fill;
+                n -= 4;
+            }
+            d = (u8 *)w;
         }
-        while (n > 3) {
-            *w++ = fill;
-            n -= 4;
-        }
-        d = (u8 *)w;
     }
     while (n-- > 0)
         *d++ = (u8)v;

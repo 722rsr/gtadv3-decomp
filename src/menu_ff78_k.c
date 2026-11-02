@@ -171,8 +171,10 @@ void MenuFF78_12854(void *rec_) {
             // CSE'd into sl or folded into 0x030027D8).
             extern u8 J12854_WA2[];
             __asm__(".globl J12854_WA2\nJ12854_WA2 = 0x03001780\n");
-            u8 *wa2 = (u8 *)(uintptr_t)J12854_WA2;
-            *(volatile u16 *)(uintptr_t)(wa2 + 0x1058u) = z;
+            {
+                u8 *wa2 = (u8 *)(uintptr_t)J12854_WA2;
+                *(volatile u16 *)(uintptr_t)(wa2 + 0x1058u) = z;
+            }
         }
     }
 }
@@ -207,9 +209,11 @@ void MenuFF78_13EB0(int ev, u32 a1, u32 a2, void *rec_) {
             // expression folds to the single literal 0x0300273C.
             extern u8 J13EB0_WA[];
             __asm__(".globl J13EB0_WA\nJ13EB0_WA = 0x03001780\n");
-            u8 *wa = (u8 *)(uintptr_t)J13EB0_WA;
-            if (*(volatile u16 *)(uintptr_t)(wa + 0xFBCu) == 3)
-                K_CALLEE(Sub_080013E4C, sub_080013E4C)((void *)rec);
+            {
+                u8 *wa = (u8 *)(uintptr_t)J13EB0_WA;
+                if (*(volatile u16 *)(uintptr_t)(wa + 0xFBCu) == 3)
+                    K_CALLEE(Sub_080013E4C, sub_080013E4C)((void *)rec);
+            }
         }
         break;
     case 6:
@@ -360,8 +364,10 @@ void MenuFF78_14AC4(void *rec_) {
         // pool words (`ldr r0,=WA; ldr r1,=0xFF2; adds r0,r0,r1`).
         extern u8 J14AC4_WA[];
         __asm__(".globl J14AC4_WA\nJ14AC4_WA = 0x03001780\n");
-        u8 *wa = (u8 *)(uintptr_t)J14AC4_WA;
-        r1 = *(s16 *)(uintptr_t)(wa + 0xFF2u);
+        {
+            u8 *wa = (u8 *)(uintptr_t)J14AC4_WA;
+            r1 = *(s16 *)(uintptr_t)(wa + 0xFF2u);
+        }
     }
     // Two-arm `switch` keeps both bodies out-of-line behind `beq` tests
     // (an if/else if inlines the first body and reorders the else path).

@@ -4,7 +4,7 @@ Worked while clearing the `partial` class (2026-10-19). Every number here was
 measured with the pinned compiler:
 
 ```sh
-python3 tools/corpus_match_probe.py --function NAME --c89 --require-all --require-exact
+python3 tools/corpus_match_probe.py --function NAME --require-all --require-exact
 ```
 
 The `partial` class is the set of functions that are byte-exact but still

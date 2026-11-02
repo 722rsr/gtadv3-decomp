@@ -9,6 +9,9 @@
 // HOST_STUB = weak on Apple host builds, extern on ARM. A host link with
 // -undefined dynamic_lookup binds lazily, so a bare extern would leave
 // the symbol silently undefined.
+extern int _080050D0(int a,int b);
+extern u32 _08007658(void *a);
+extern void _08002ED0(void *a, int b, int c, int d, int e, int f, int g, int h, int i, int j);
 #define HOST_STUB(sig) extern sig
 
 // Helpers that map inline data after offset table: core seek arithmetic
@@ -27,8 +30,10 @@ void *Course_Seek(void *X, int i) {
     u8 *p = (u8 *)X;
     p = p + 12;
     p = p + idx;
-    u32 off = *(volatile u32 *)p;
-    return (u8 *)X + off;
+    {
+        u32 off = *(volatile u32 *)p;
+        return (u8 *)X + off;
+    }
 }
 // The body is 14 bytes, two short of the section's 4-byte alignment. The
 // default filler is the 2-byte nop `0x46c0`; the ROM pads with `0x0000`.
@@ -60,8 +65,10 @@ extern void _08002ED0(void *a, int b, int c, int d, int e, int f, int g, int h, 
 void Course_ClearSlot_074AC(void *X, void *Y) {
     u32 stack_tmp = 0; // explicit stack temporary at [sp+0], str r0,[sp]
     _0802D974(&stack_tmp, Y, 0x05000002u); // mov r0,sp; bl 2D974, r2=0x05000002 pool at 074D0
-    void *ret = _08007484(X); // bl 07484 with r0=X
-    *(volatile void**)((volatile u8*)Y + 4) = ret; // str r0,[r4+4] where r4=Y (original r1)
+    {
+        void *ret = _08007484(X); // bl 07484 with r0=X
+        *(volatile void**)((volatile u8*)Y + 4) = ret; // str r0,[r4+4] where r4=Y (original r1)
+    }
 }
 void _080074AC(void *a,void *b) __attribute__((alias("Course_ClearSlot_074AC")));
 
@@ -93,18 +100,25 @@ void Course_SetupRecords_074D4(void *rec) {
     // on the same call result expresses exactly store-then-extend.
     int raw = (int)_0800572C(0);
     *(volatile u16 *)r4 = (u16)raw;
-    register u32 alloc __asm__("r6") = (u32)(u16)raw;
-    register void *entry __asm__("r4");
-    for (u32 i = 0; (int)i < count; i++) {
-        entry = _08007498(base, (int)i);
-        if (*(volatile u32 *)entry != 1)
-            continue;
-        _08007538(base, (int)i, (void *)(uintptr_t)alloc);
-        void *lane = _0800748C(entry);
-        u32 lanev = _0800572C(*(volatile u8 *)((u8 *)lane + 7));
-        (void)lanev;
-        lane = _0800748C(entry);
-        alloc += *(volatile u8 *)((u8 *)lane + 7);
+    {
+        register u32 alloc __asm__("r6") = (u32)(u16)raw;
+        register void *entry __asm__("r4");
+        {
+            u32 i = 0;
+            for (; (int)i < count; i++) {
+                entry = _08007498(base, (int)i);
+                if (*(volatile u32 *)entry != 1)
+                    continue;
+                _08007538(base, (int)i, (void *)(uintptr_t)alloc);
+                {
+                    void *lane = _0800748C(entry);
+                    u32 lanev = _0800572C(*(volatile u8 *)((u8 *)lane + 7));
+                    (void)lanev;
+                    lane = _0800748C(entry);
+                    alloc += *(volatile u8 *)((u8 *)lane + 7);
+                }
+            }
+        }
     }
 }
 void _080074D4(void *a) __attribute__((alias("Course_SetupRecords_074D4")));
@@ -158,9 +172,8 @@ void Course_EmitLane_075A4(void *a, void *b, void *c, void *d, void *e, void *f)
     // the halfword's register hard so the destination cannot merge with it.
     // GNU extension; see the DECISION note in docs/matching_workflow.md.
     // `r4` is also a local's NAME in this function; the __asm__ operand is the
-    // hard register, which is the whole point. Two pins must not share one
-    // declaration block — tools/agbcc_c89_transform.py then bails with
-    // "budget exhausted" — which is why this one is nested.
+    // hard register, which is the whole point. Each pin sits in its own
+    // declaration block, the measured shape that reproduces the ROM.
     register u16 h0 __asm__("r4") = *(volatile u16 *)r4;
     u32 r2 = (u32)flag6 + (u32)h0;
     extern void sub_08002DB8(void *a, int b, int c, int d, int e, int f, int g);
@@ -277,36 +290,46 @@ u32 Course_ResourceSetup(void *ctx, void *X, int idx) {
     sub_0802D984(sub_0800748C(c1),
                  (void *)(uintptr_t)sub_080056C4((int)(uintptr_t)rctx));
         sub_0802D988(sub_0800748C(c3), (void *)(uintptr_t)0x02000000u);
-        register u32 raw_tw __asm__("r1") = *(volatile u16 *)((u8 *)flags + 0);
-        __asm__ volatile("" : "+r" (raw_tw));
-        register int tw __asm__("r0") = (int)(raw_tw >> 3);
-        _080052F0((int)(uintptr_t)rctx, 0x02000000, 0, 0,
-                  tw, ({
-                      haddr = *(u16 *)((u8 *)flags + 2);
-                      (int)(haddr >> 3);
-                  }), 0, 0);
+        {
+            register u32 raw_tw __asm__("r1") = *(volatile u16 *)((u8 *)flags + 0);
+            __asm__ volatile("" : "+r" (raw_tw));
+            {
+                register int tw __asm__("r0") = (int)(raw_tw >> 3);
+                _080052F0((int)(uintptr_t)rctx, 0x02000000, 0, 0,
+                          tw, ({
+                              haddr = *(u16 *)((u8 *)flags + 2);
+                              (int)(haddr >> 3);
+                          }), 0, 0);
+            }
+        }
     } else {
         // Raw arm: row-emit fill of c1 (len = _080074A8(c1), asm init.s:81-83)
         // then c3 with the same length.
         _08005260(rctx, sub_0800748C(c1), 0, (int)_080074A8(c1));
-        void *c3_base = sub_0800748C(c3);
-        register u32 raw_tw __asm__("r2") = *(volatile u16 *)((u8 *)flags + 0);
-        __asm__ volatile("" : "+r" (raw_tw));
-        register int tw __asm__("r0") = (int)(raw_tw >> 3);
-        _080052F0((int)(uintptr_t)rctx, (int)(uintptr_t)c3_base,
-                  0, 0, tw,
-                  ({
-                      haddr = *(u16 *)((u8 *)flags + 2);
-                      (int)(haddr >> 3);
-                  }), flag, flag);
+        {
+            void *c3_base = sub_0800748C(c3);
+            register u32 raw_tw __asm__("r2") = *(volatile u16 *)((u8 *)flags + 0);
+            __asm__ volatile("" : "+r" (raw_tw));
+            {
+                register int tw __asm__("r0") = (int)(raw_tw >> 3);
+                _080052F0((int)(uintptr_t)rctx, (int)(uintptr_t)c3_base,
+                          0, 0, tw,
+                          ({
+                              haddr = *(u16 *)((u8 *)flags + 2);
+                              (int)(haddr >> 3);
+                          }), flag, flag);
+            }
+        }
     }
     // Tail (0x08007738): DMA3 triple. r2 = (u32[c2+4] >> 2) | 0x84000000.
-    volatile u32 *dma = (volatile u32 *)0x040000D4;
-    dma[0] = (u32)(uintptr_t)sub_0800748C(c2);
-    dma[1] = 0x05000000u;                    // 160 << 19
-    dma[2] = (_080074A8(c2) >> 2) | 0x84000000u;
-    (void)dma[2];                            // ROM re-reads DMA3CNT; harmless
-    return r0_050D0;
+    {
+        volatile u32 *dma = (volatile u32 *)0x040000D4;
+        dma[0] = (u32)(uintptr_t)sub_0800748C(c2);
+        dma[1] = 0x05000000u;                    // 160 << 19
+        dma[2] = (_080074A8(c2) >> 2) | 0x84000000u;
+        (void)dma[2];                            // ROM re-reads DMA3CNT; harmless
+        return r0_050D0;
+    }
 }
 
 // Surface_access.s
@@ -383,55 +406,67 @@ void Surface_ScatterInit(void *unused) {
     // u16[*(u32*)root + 8]; destination advances 128 bytes per transfer; the
     // ROM re-reads DMACNT (the poll) each iteration.
     (void)unused;
-    void *root = Surface_GetRoot();
-    // Declaration order follows the ROM's materialization order: the VRAM
-    // destination constant first, then the two root fields, then the DMACNT
-    // control word (kept in a named local, as the ROM holds it in r6), then
-    // the counter. The field loads are non-volatile so the halfword load lands
-    // directly in its home register.
-    u32 dst = 0x06004000;
-    u16 stride = *(u16 *)((u8 *)(*(void **)root) + 8);
-    volatile u32 *dma = (volatile u32 *)0x040000D4;
-    u32 cnt = 0x80000040;
-    u32 src = *(u32 *)((u8 *)root + 28);
-    int i = 127;
-    do {
-        dma[0] = src;
-        dma[1] = dst;
-        dma[2] = cnt;
-        (void)dma[2];
-        dst += 128;
-        src += stride;
-        i--;
-    } while (i >= 0);
+    {
+        void *root = Surface_GetRoot();
+        // Declaration order follows the ROM's materialization order: the VRAM
+        // destination constant first, then the two root fields, then the DMACNT
+        // control word (kept in a named local, as the ROM holds it in r6), then
+        // the counter. The field loads are non-volatile so the halfword load lands
+        // directly in its home register.
+        u32 dst = 0x06004000;
+        u16 stride = *(u16 *)((u8 *)(*(void **)root) + 8);
+        volatile u32 *dma = (volatile u32 *)0x040000D4;
+        u32 cnt = 0x80000040;
+        u32 src = *(u32 *)((u8 *)root + 28);
+        int i = 127;
+        do {
+            dma[0] = src;
+            dma[1] = dst;
+            dma[2] = cnt;
+            (void)dma[2];
+            dst += 128;
+            src += stride;
+            i--;
+        } while (i >= 0);
+    }
 }
 
 // Helpers for resource_more / leaf family — evidence-backed skeletons with exact widths
 void Course_ResourceMore_0798C(void *a, void *b) {
     // _0800798C: CpuSet fill 0x05000002 then [b+4]=_08007484(a) — s32, u16 widths preserved
     (void)a; (void)b;
-    u32 zero=0; CpuSet(&zero, a, 0x05000002);
-    *(void**)((u8*)b+4) = Course_GetCountPtr(a);
+    {
+        u32 zero=0; CpuSet(&zero, a, 0x05000002);
+        *(void**)((u8*)b+4) = Course_GetCountPtr(a);
+    }
 }
 void Course_ResourceMore_079B4(void *a, void *b) {
     u32 cntWord = _08007488(a); // ldr r0,[r0,#8] Vu32 at [a+8] (offset 8)
     u16 n = (u16)cntWord; // low half is count (u16 at +8), high half is next field; proven via ldr word vs ldrh
-    for (u16 i=0; i<n; i++) {
-        void *entry = _08007498(a, i);
-        u32 v = *(volatile u32*)entry; // ldr [r4] u32
-        if (v == 4) {
-            extern void _08007ABC(void *a, int b, int c);
-            _08007ABC(a, (int)(uintptr_t)b, (int)i);
+    {
+        u16 i = 0;
+        for (; i<n; i++) {
+            void *entry = _08007498(a, i);
+            u32 v = *(volatile u32*)entry; // ldr [r4] u32
+            if (v == 4) {
+                extern void _08007ABC(void *a, int b, int c);
+                _08007ABC(a, (int)(uintptr_t)b, (int)i);
+            }
         }
     }
 }
 void Course_ResourceMore_07A04(void *a, u16 v) {
     *(volatile u16*)a = (u16)((v << 16) >> 16); // lsls/lsrs #16 s16 width
-    u32 cntWord = _08007488(a); // Vu32 at [a+8]
-    u16 n = (u16)cntWord;
-    for (u16 i=0; i<n; i++) {
-        void *entry = _08007498(a, i);
-        (void)entry;
+    {
+        u32 cntWord = _08007488(a); // Vu32 at [a+8]
+        u16 n = (u16)cntWord;
+        {
+            u16 i = 0;
+            for (; i<n; i++) {
+                void *entry = _08007498(a, i);
+                (void)entry;
+            }
+        }
     }
 }
 void Course_ResourceLeaf_07ABC(void *a, int b, int c) {
@@ -458,28 +493,35 @@ void Course_ResourceLeaf_07B18(void *a, void *b, int c, int d) {
     u16 hdr2 = *(volatile u16*)((volatile u8*)a + 2); // ldrh [+2] u16
     s16 hdr0 = *(volatile s16*)a; // ldrh [r4+0] s16
     (void)hdr0; (void)hdr2;
-    u8 cnt = *(volatile u8*)((volatile u8*)a + 7); // ldrb [+7] u8
-    for (u8 s5=0; s5 < cnt; s5++) {
-        u8 v2 = *(volatile u8*)((volatile u8*)a + 2); // ldrb [r4+2] u8 + sl
-        u8 v3 = *(volatile u8*)((volatile u8*)a + 3); // +r9
-        u8 v0 = *(volatile u8*)a; // +r8
-        u8 v1 = *(volatile u8*)((volatile u8*)a + 1); // [sp+4]
-        (void)v2; (void)v3; (void)v0; (void)v1;
-        // Stack temporaries for _08002ED0 (ROM _08007B18, asm/course_resource_leaf_more.s:40-50):
-        // [sp+0]=caller s1, [sp+4]=ent[1], [sp+8]=1, [sp+12]=caller s2,
-        // [sp+16]=caller s3, [sp+20]=1; r3=caller s0. This approximation has
-        // no s0/s1 (4-arg shell), so they follow the author's own [b+64]/[b+68]
-        // pattern for s2/s3: s0=[b+56], s1=[b+60]. v1 (loaded above, [a+1])
-        // is the ent[1] lane. Never runs on ARM (no VMA alias) — shape fix.
-        u32 s0 = *(volatile u32*)((volatile u8*)b + 56);
-        u32 s1 = *(volatile u32*)((volatile u8*)b + 60);
-        u32 sp8 = 1; // str r7(1) [sp+8]
-        u32 sp12 = *(volatile u32*)((volatile u8*)b + 64); // ldr [sp+64] -> [sp+12]
-        u32 sp16 = *(volatile u32*)((volatile u8*)b + 68);
-        (void)sp8; (void)sp12; (void)sp16;
-        extern void _08002ED0(void *a, int b, int c, int d, int e, int f, int g, int h, int i, int j);
-        _08002ED0((void*)(uintptr_t)v2, v3, v0, (int)s0, (int)s1, v1, 1, (int)sp12, (int)sp16, 1);
-        (void)c; (void)d;
+    {
+        u8 cnt = *(volatile u8*)((volatile u8*)a + 7); // ldrb [+7] u8
+        {
+            u8 s5 = 0;
+            for (; s5 < cnt; s5++) {
+                u8 v2 = *(volatile u8*)((volatile u8*)a + 2); // ldrb [r4+2] u8 + sl
+                u8 v3 = *(volatile u8*)((volatile u8*)a + 3); // +r9
+                u8 v0 = *(volatile u8*)a; // +r8
+                u8 v1 = *(volatile u8*)((volatile u8*)a + 1); // [sp+4]
+                (void)v2; (void)v3; (void)v0; (void)v1;
+                // Stack temporaries for _08002ED0 (ROM _08007B18, asm/course_resource_leaf_more.s:40-50):
+                // [sp+0]=caller s1, [sp+4]=ent[1], [sp+8]=1, [sp+12]=caller s2,
+                // [sp+16]=caller s3, [sp+20]=1; r3=caller s0. This approximation has
+                // no s0/s1 (4-arg shell), so they follow the author's own [b+64]/[b+68]
+                // pattern for s2/s3: s0=[b+56], s1=[b+60]. v1 (loaded above, [a+1])
+                // is the ent[1] lane. Never runs on ARM (no VMA alias) — shape fix.
+                {
+                    u32 s0 = *(volatile u32*)((volatile u8*)b + 56);
+                    u32 s1 = *(volatile u32*)((volatile u8*)b + 60);
+                    u32 sp8 = 1; // str r7(1) [sp+8]
+                    u32 sp12 = *(volatile u32*)((volatile u8*)b + 64); // ldr [sp+64] -> [sp+12]
+                    u32 sp16 = *(volatile u32*)((volatile u8*)b + 68);
+                    (void)sp8; (void)sp12; (void)sp16;
+
+                    _08002ED0((void*)(uintptr_t)v2, v3, v0, (int)s0, (int)s1, v1, 1, (int)sp12, (int)sp16, 1);
+                    (void)c; (void)d;
+                }
+            }
+        }
     }
 }
 void Course_ResourceHelper_07770(void *a, void *b, void *c, void *d) {
@@ -494,8 +536,8 @@ void Course_ResourceHelper_07770(void *a, void *b, void *c, void *d) {
     dma[1] = 0x04000000u;
     dma[2] = 0x84000000u | 0x20u;
     (void)b; (void)c; (void)d;
-    extern u32 _08007658(void *a);
-    extern int _080050D0(int a,int b);
+
+
     _080050D0((int)(uintptr_t)a, (int)_08007658(b));
     _08005260(c, s0, 0, (int)_080074A8(s0)); // r3 = transfer size (ROM asm)
 }
@@ -572,20 +614,26 @@ void VramEmit_05260(void *bank, void *src, int off, int len) {
     u32 dst;
     int n;
     dma[0] = (u32)(uintptr_t)src;
-    register u32 base __asm__("r1");
-    { extern u8 VramEmit_05260Rows[];
-      __asm__(".globl VramEmit_05260Rows\nVramEmit_05260Rows = 0x03000260\n");
-      base = (u32)(uintptr_t)VramEmit_05260Rows; }
-    u32 addr = ((u32)(uintptr_t)bank << 4) + base;
-    sel = *(volatile u8 *)(addr + 5);
+    {
+        register u32 base __asm__("r1");
+        { extern u8 VramEmit_05260Rows[];
+          __asm__(".globl VramEmit_05260Rows\nVramEmit_05260Rows = 0x03000260\n");
+          base = (u32)(uintptr_t)VramEmit_05260Rows; }
+        {
+            u32 addr = ((u32)(uintptr_t)bank << 4) + base;
+            sel = *(volatile u8 *)(addr + 5);
 
-    sel <<= 14;
-    dst = ((u32)off << 5) + 0x06000000u;
-    dma[1] = sel + dst;
-    n = (len >= 0) ? len : len + 3;
-    u32 ret = 0x84000000u | ((s32)n >> 2);
-    dma[2] = ret;
-    (void)dma[2];
+            sel <<= 14;
+            dst = ((u32)off << 5) + 0x06000000u;
+            dma[1] = sel + dst;
+            n = (len >= 0) ? len : len + 3;
+            {
+                u32 ret = 0x84000000u | ((s32)n >> 2);
+                dma[2] = ret;
+                (void)dma[2];
+            }
+        }
+    }
 }
 void _08005260(void *a, void *b, int c, int d) __attribute__((alias("VramEmit_05260")));
 void sub_08005260(void *a, void *b, int c, int d) __attribute__((alias("VramEmit_05260")));
@@ -595,15 +643,21 @@ void VramBlit_052F0(int bank, int src, int off, int len, int tw, int th) {
     volatile u8 *p = (volatile u8 *)(0x03000260u + (u32)bank * 16u);
     volatile u32 *dst = (volatile u32 *)(0x06000000u + ((u32)p[6] << 11) + ((u32)off << 5));
     int wordIdx = (s16)(u16)off;
-    for (int row = 0; row < len; row++) {
-        volatile u16 *d = (volatile u16 *)((volatile u8 *)dst + row * 64);
-        for (int t = 0; t < th; t++) {
-            u16 v = *d;
-            v = (u16)((v & 0x03FFu) | ((u32)wordIdx << 10) | (1u << 12));
-            *d = v;
-            d++;
+    {
+        int row = 0;
+        for (; row < len; row++) {
+            volatile u16 *d = (volatile u16 *)((volatile u8 *)dst + row * 64);
+            {
+                int t = 0;
+                for (; t < th; t++) {
+                    u16 v = *d;
+                    v = (u16)((v & 0x03FFu) | ((u32)wordIdx << 10) | (1u << 12));
+                    *d = v;
+                    d++;
+                }
+            }
+            (void)tw; (void)src;
         }
-        (void)tw; (void)src;
     }
 }
 void _080052F0(int a, u32 b, int c, int d, int e, int f, int g, int h) __attribute__((alias("VramBlit_052F0")));

@@ -10,6 +10,7 @@
 
 #include "gba/types.h"
 
+extern u16 RaceSceneD1Tab[];
 #define HOST_STUB(sig) extern sig
 
 // Closure spellings for _08001F6A4's two external callees. A HOST_STUB is NOT a
@@ -436,41 +437,43 @@ void sub_08001F568(volatile u8 *rec) __attribute__((alias("_08001F568")));
 void _08001F5B4(int ev, u32 b, u32 c, void *rec_) {
     extern u8 RaceSceneD1WA_F5B4[];
     __asm__(".globl RaceSceneD1WA_F5B4\nRaceSceneD1WA_F5B4 = 0x03001780");
-    register u32 breg __asm__("r5") = b;
-    register u32 creg __asm__("r6") = c;
-    register volatile u8 *rec __asm__("r4") = (volatile u8 *)rec_;
-    int idx = ev - 1;
-    if ((u32)idx > 11u)
-        return;
-    switch (idx) {
-    case 1:
-        _08001EB48((int)(uintptr_t)rec, (void *)(uintptr_t)breg);
-        break;
-    case 4:
-        _0800D854((void *)(rec + 24));
-        {
-            u8 *wa = (u8 *)(uintptr_t)RaceSceneD1WA_F5B4;
-            u32 off = 0x0FBCu;
-            if (*(volatile u16 *)(uintptr_t)(wa + off) == 3)
-                _08001F554((void *)rec);
+    {
+        register u32 breg __asm__("r5") = b;
+        register u32 creg __asm__("r6") = c;
+        register volatile u8 *rec __asm__("r4") = (volatile u8 *)rec_;
+        int idx = ev - 1;
+        if ((u32)idx > 11u)
+            return;
+        switch (idx) {
+        case 1:
+            _08001EB48((int)(uintptr_t)rec, (void *)(uintptr_t)breg);
+            break;
+        case 4:
+            _0800D854((void *)(rec + 24));
+            {
+                u8 *wa = (u8 *)(uintptr_t)RaceSceneD1WA_F5B4;
+                u32 off = 0x0FBCu;
+                if (*(volatile u16 *)(uintptr_t)(wa + off) == 3)
+                    _08001F554((void *)rec);
+            }
+            break;
+        case 6:
+            _08001EFAC((void *)rec);
+            break;
+        case 5:
+            _08001F568((void *)rec);
+            if (*(volatile u16 *)(rec + 28) != 0)
+                _08001EE2C((void *)rec, (u16)breg, (u16)creg);
+            break;
+        case 0:
+            _08001EBA8((void *)rec);
+            break;
+        case 11:
+            ((void (*)(void *))(void *)_08001EBA4)((void *)rec);
+            break;
+        default:
+            break;
         }
-        break;
-    case 6:
-        _08001EFAC((void *)rec);
-        break;
-    case 5:
-        _08001F568((void *)rec);
-        if (*(volatile u16 *)(rec + 28) != 0)
-            _08001EE2C((void *)rec, (u16)breg, (u16)creg);
-        break;
-    case 0:
-        _08001EBA8((void *)rec);
-        break;
-    case 11:
-        ((void (*)(void *))(void *)_08001EBA4)((void *)rec);
-        break;
-    default:
-        break;
     }
 }
 
@@ -535,15 +538,17 @@ void _08001F6A4(void *rec_) {
     // index into one address constant; the ROM computes base + 132<<5. The
     // extern and its definition both live in this body so the per-body splice
     // carries the reference and the definition together.
-    struct RaceSceneWA { u8 blocks[0x1080]; u16 lane_sel; };
-    extern u8 RaceSceneWorkArea[];
-    __asm__("RaceSceneWorkArea = 0x03001780");
-    w = ((volatile struct RaceSceneWA *)(uintptr_t)RaceSceneWorkArea)->lane_sel;
-    if (w <= 2) {
-        *(volatile u16 *)(rec + 8) = w;
-    } else {
-        w = 0;
-        *(volatile u16 *)(rec + 8) = w;
+    {
+        struct RaceSceneWA { u8 blocks[0x1080]; u16 lane_sel; };
+        extern u8 RaceSceneWorkArea[];
+        __asm__("RaceSceneWorkArea = 0x03001780");
+        w = ((volatile struct RaceSceneWA *)(uintptr_t)RaceSceneWorkArea)->lane_sel;
+        if (w <= 2) {
+            *(volatile u16 *)(rec + 8) = w;
+        } else {
+            w = 0;
+            *(volatile u16 *)(rec + 8) = w;
+        }
     }
 }
 
@@ -668,22 +673,24 @@ void _08001F764(volatile u8 *rec, u16 b, u16 c) {
 // dead 4th parameter is what makes agbcc emit that load.
 void _08001F82C(volatile u8 *rec, int b, int c, int d) {
     (void)d;
-    extern u16 RaceSceneD1Tab[];
+
     __asm__(".globl RaceSceneD1Tab\nRaceSceneD1Tab = 0x080CBC60");
-    s16 k = *(s16 *)(uintptr_t)(rec + 8);
-    u16 sel = RaceSceneD1Tab[k];
-    int m = (int)*(volatile u32 *)(rec + 12);
-    switch (m) {
-    case 1:
-    case 3:
-        _08007B18((void *)rec, (int)sel, b, c, 4, 1, 0, 0);
-        break;
-    case 0:
-    case 2:
-        _08007B18((void *)rec, (int)sel, b, c, 3, 1, 0, 0);
-        break;
-    default:
-        break;
+    {
+        s16 k = *(s16 *)(uintptr_t)(rec + 8);
+        u16 sel = RaceSceneD1Tab[k];
+        int m = (int)*(volatile u32 *)(rec + 12);
+        switch (m) {
+        case 1:
+        case 3:
+            _08007B18((void *)rec, (int)sel, b, c, 4, 1, 0, 0);
+            break;
+        case 0:
+        case 2:
+            _08007B18((void *)rec, (int)sel, b, c, 3, 1, 0, 0);
+            break;
+        default:
+            break;
+        }
     }
 }
 // The body is 110 bytes, so its `-ffunction-sections` section is padded to 112.
@@ -741,16 +748,18 @@ void sub_08001F89C(volatile u8 *rec, int v, int mode) __attribute__((alias("_080
 void _08001F918(volatile u8 *rec) {
     extern u8 RaceSceneD1Tbl40[];
     __asm__(".globl RaceSceneD1Tbl40\nRaceSceneD1Tbl40 = 0x080CBC40");
-    u8 *tbl = RaceSceneD1Tbl40;
-    s16 k = *(s16 *)(uintptr_t)(rec + 8);
-    u32 idx = (u32)((s32)k * 8);
-    u8 *pa = tbl + idx;
-    u16 a = *(u16 *)(uintptr_t)pa;
-    u8 *tblb = tbl + 4u;
-    s16 b = *(s16 *)(uintptr_t)(tblb + idx);
-    _08001F89C((void *)rec, (int)b, (int)*(volatile u32 *)(rec + 12));
-    _08001F82C((void *)rec, (int)(s16)a, (int)b, (int)*(volatile u32 *)(rec + 12));
-    _0800DBE8((void *)(rec + 16));
+    {
+        u8 *tbl = RaceSceneD1Tbl40;
+        s16 k = *(s16 *)(uintptr_t)(rec + 8);
+        u32 idx = (u32)((s32)k * 8);
+        u8 *pa = tbl + idx;
+        u16 a = *(u16 *)(uintptr_t)pa;
+        u8 *tblb = tbl + 4u;
+        s16 b = *(s16 *)(uintptr_t)(tblb + idx);
+        _08001F89C((void *)rec, (int)b, (int)*(volatile u32 *)(rec + 12));
+        _08001F82C((void *)rec, (int)(s16)a, (int)b, (int)*(volatile u32 *)(rec + 12));
+        _0800DBE8((void *)(rec + 16));
+    }
 }
 
 // asm/race_scene.s:10453-10455 defines BOTH `sub_08001F918:` and
@@ -808,15 +817,17 @@ void _08001FA0C(void) {
     // sequence instead of folding the address into a 0x0203F8F2 pool word.
     extern s16 RaceSceneD1RamF8F0[];
     __asm__(".globl RaceSceneD1RamF8F0\nRaceSceneD1RamF8F0 = 0x0203F8F0");
-    int i = 0;
-    u16 *base = (u16 *)RaceSceneD1RamF8F0;
-    for (; i <= 63; i++) {
-        base[1 + i] = (u16)_08005758(1);
-        _08007570((void *)0x08344450u, 0,
-                  (int)*(s16 *)(uintptr_t)&base[1 + i], i, 1);
+    {
+        int i = 0;
+        u16 *base = (u16 *)RaceSceneD1RamF8F0;
+        for (; i <= 63; i++) {
+            base[1 + i] = (u16)_08005758(1);
+            _08007570((void *)0x08344450u, 0,
+                      (int)*(s16 *)(uintptr_t)&base[1 + i], i, 1);
+        }
+        _08007614((void *)0x08344450u, 1, 0, 3);
+        _08007614((void *)0x08344450u, 1, 1, 4);
     }
-    _08007614((void *)0x08344450u, 1, 0, 3);
-    _08007614((void *)0x08344450u, 1, 1, 4);
 }
 void sub_08001FA0C(void) __attribute__((alias("_08001FA0C")));
 
@@ -923,19 +934,21 @@ void _08001FBD8(void *rec_) {
     register u32 a __asm__("r1");
     register u32 b __asm__("r0");
     __asm__ volatile("" : "+r"(base));
-    u32 offset = 0xFFFFF55Cu;
-    u8 *rec = (u8 *)rec_;
-    u8 *q;
-    v = (int)*(s16 *)(rec + 28);
-    a = (u32)((v * 9) << 3);
-    q = rec + 156;
-    v = (int)*(s16 *)q;
-    b = (u32)((v * 3) << 2);
-    v = (s32)(base + offset);
-    b = b + (u32)v;
-    a = a + b;
-    a = a + 8u;
-    _0800D95C((void *)base, (const void *)a, 3);
+    {
+        u32 offset = 0xFFFFF55Cu;
+        u8 *rec = (u8 *)rec_;
+        u8 *q;
+        v = (int)*(s16 *)(rec + 28);
+        a = (u32)((v * 9) << 3);
+        q = rec + 156;
+        v = (int)*(s16 *)q;
+        b = (u32)((v * 3) << 2);
+        v = (s32)(base + offset);
+        b = b + (u32)v;
+        a = a + b;
+        a = a + 8u;
+        _0800D95C((void *)base, (const void *)a, 3);
+    }
 }
 
 // ----------------------------------------------------------------------------

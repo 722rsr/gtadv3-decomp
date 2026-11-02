@@ -31,29 +31,33 @@ void KeypadPoll(void) {
     st->repeat = 0; // cleared, conditionally re-set below
 
     // Frame counter increments every poll (u16 wrap)
-    register u32 frame __asm__("r1") = (u32)st->frameCounter + 1;
-    __asm__("" : "+r"(frame));
-    *(volatile u16 *)((u8 *)st + 0x0A) = frame;
+    {
+        register u32 frame __asm__("r1") = (u32)st->frameCounter + 1;
+        __asm__("" : "+r"(frame));
+        *(volatile u16 *)((u8 *)st + 0x0A) = frame;
 
-    register u16 lastHeld __asm__("r4") = st->lastHeld;
-    if (keys == lastHeld) {
-        // Held unchanged: tick countdown
-        int cd = st->countdown;
-        if (cd == 0) {
-            // Countdown expired: repeat fires every other frame (bit0 of frameCounter)
-            frame &= 1;
-            if (frame != 0)
-                st->repeat = lastHeld;
-        } else {
-            cd--;
-            st->countdown = cd;
+        {
+            register u16 lastHeld __asm__("r4") = st->lastHeld;
+            if (keys == lastHeld) {
+                // Held unchanged: tick countdown
+                int cd = st->countdown;
+                if (cd == 0) {
+                    // Countdown expired: repeat fires every other frame (bit0 of frameCounter)
+                    frame &= 1;
+                    if (frame != 0)
+                        st->repeat = lastHeld;
+                } else {
+                    cd--;
+                    st->countdown = cd;
+                }
+            } else {
+                // Key state changed: latch new held value, set repeat = current,
+                // reload countdown to 24 (initial repeat delay)
+                st->lastHeld = keys;
+                st->repeat = keys;
+                st->countdown = 24;
+            }
         }
-    } else {
-        // Key state changed: latch new held value, set repeat = current,
-        // reload countdown to 24 (initial repeat delay)
-        st->lastHeld = keys;
-        st->repeat = keys;
-        st->countdown = 24;
     }
 }
 // The ROM's function section ends with a zero halfword after `bx lr`.

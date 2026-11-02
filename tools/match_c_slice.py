@@ -1186,7 +1186,7 @@ def run_probe(tu_work: Path, report: Path, c_names: list[str],
     compiled in. `main()` leaves the module-level work dir set to the last TU
     it ran; the caller re-sets it per key before reading anything.
     """
-    argv = ["corpus_match_probe.py", "--c89", "--require-all",
+    argv = ["corpus_match_probe.py", "--require-all",
             "--work-dir", str(tu_work), "--json", str(report)]
     # The owning TU is already known here, so the probe need not re-scan all
     # of src/ to find it for every batch.
@@ -1310,8 +1310,20 @@ def main() -> int:
     # grouping by TU fixed the redundancy, and one interpreter removes the rest.
     src_by_name: dict[str, Path] = {}
     src_vmas: set[int] = set()
-    for src_path, name, src_vma, _body, _weak in probe.src_functions():
-        src_by_name.setdefault(name, Path(src_path))
+    # A VMA can have several spellings in different TUs (a full body and an
+    # alias stub are the common pair). Use the probe's own rank -- strong beat
+    # weak, then the longer body -- instead of "first file wins". The probe
+    # scores the ranked body; binding the group to a stub compiles a different
+    # definition and reports a slice mismatch that does not exist in the body
+    # the probe measured. Measured on `_080052F0`: the alias in
+    # course_resource.c (132 B) won alphabetically over the 236 B body in
+    # event_dma_queue.c and the slice failed at +0x0A.
+    src_best: dict[str, tuple[tuple[int, int], Path]] = {}
+    for src_path, name, src_vma, body, weak in probe.src_functions():
+        rank = (0 if weak else 1, body)
+        if name not in src_best or rank > src_best[name][0]:
+            src_best[name] = (rank, Path(src_path))
+            src_by_name[name] = Path(src_path)
         src_vmas.add(src_vma)
     # `src_functions()` reports the VMA-shaped spelling of each body, so a
     # friendly c_name (`MenuStage_0800D77C`, aliased to `_0800D77C`) is not a

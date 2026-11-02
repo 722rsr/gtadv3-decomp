@@ -20,10 +20,12 @@ __attribute__((naked)) void SoundBDEC_Store(void *a, void *chan) {
                      : "=r"(frame), "=r"(value) : : "lr", "cc", "memory");
     value -= 64;
     *(volatile u8 *)(channel + 20) = (u8)value;
-    register u32 flags __asm__("r3") = channel[0];
-    register u32 bits __asm__("r2") = 3;
-    __asm__ volatile("" : "+r"(flags), "+r"(bits) : : "cc", "memory");
-    flags |= bits;
-    channel[0] = (u8)flags;
-    __asm__ volatile("bx %0" : : "r"(frame) : "cc");
+    {
+        register u32 flags __asm__("r3") = channel[0];
+        register u32 bits __asm__("r2") = 3;
+        __asm__ volatile("" : "+r"(flags), "+r"(bits) : : "cc", "memory");
+        flags |= bits;
+        channel[0] = (u8)flags;
+        __asm__ volatile("bx %0" : : "r"(frame) : "cc");
+    }
 }

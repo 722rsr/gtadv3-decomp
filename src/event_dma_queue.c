@@ -29,6 +29,12 @@
 //     become direct calls cb(args).
 // ============================================================================
 
+extern u8 SubmitBase_5614[];
+extern u8 ParamBase_54A4[];
+extern u8 RecolorSlotBase_52F0[];
+extern u8 TileBase_529C[];
+extern u8 EventHeadBase[];
+extern u8 EventHeadBase[];
 extern void *RuntimeMemcpy(void *dst, const void *src, u32 len);
 //. The promoted callee at 0x0802D974 is exported by the manifest as
 // `sub_0802D974` (asm/sound_d974.s); `CpuSet_2D974` is a C-only wrapper in
@@ -176,7 +182,7 @@ void Event_ListEnable(void) {
     register volatile u8 *base __asm__("r0");
     register u16 flags __asm__("r1");
     __asm__(".globl EventHeadBase\nEventHeadBase = 0x03000250\n");
-    extern u8 EventHeadBase[];
+
     base = EventHeadBase;
     flags = 1;
     flags |= *(volatile u16 *)(base + 8);
@@ -190,7 +196,7 @@ void Event_ListDisable(void) {
     register volatile u8 *base __asm__("r1");
     register u32 flags __asm__("r0");
     __asm__(".globl EventHeadBase\nEventHeadBase = 0x03000250\n");
-    extern u8 EventHeadBase[];
+
     base = EventHeadBase;
     flags = 0xFFFEu;
     flags &= *(volatile u16 *)(base + 8);
@@ -435,7 +441,7 @@ void DMA3_Tiles(int slot, u32 src, int x, int y, int width, int count) {
     int idx;
     register int remaining __asm__("r2");
     __asm__(".globl TileBase_529C\nTileBase_529C = 0x03000260\n");
-    extern u8 TileBase_529C[];
+
     c = TileBase_529C;
     t = c + c[0] - c[0];
     idx = slot * 16;
@@ -443,24 +449,30 @@ void DMA3_Tiles(int slot, u32 src, int x, int y, int width, int count) {
     rawShift = (u32)((volatile u8 *)(uintptr_t)idx)[6];
     __asm__ volatile("" : "+r"(rawShift));
     shift = rawShift << 11;
-    u32 rowDst = (u32)(y * width * 2);
-    rowDst += 0x06000000u;
-    u32 dst = (u32)shift + rowDst;
-    dst += (u32)(x * 2);
-    if (count > 0) {
-        dma = DMA3;
-        srcReg = src;
-        u32 cnt = 0x80000000u | (u32)width;
-        int step = width * 2;
-        remaining = count;
-        do {
-            dma[0] = srcReg;
-            dma[1] = dst;
-            dma[2] = cnt;
-            (void)dma[2];
-            srcReg += (u32)step;
-            dst += 64;
-        } while (--remaining != 0);
+    {
+        u32 rowDst = (u32)(y * width * 2);
+        rowDst += 0x06000000u;
+        {
+            u32 dst = (u32)shift + rowDst;
+            dst += (u32)(x * 2);
+            if (count > 0) {
+                dma = DMA3;
+                srcReg = src;
+                {
+                    u32 cnt = 0x80000000u | (u32)width;
+                    int step = width * 2;
+                    remaining = count;
+                    do {
+                        dma[0] = srcReg;
+                        dma[1] = dst;
+                        dma[2] = cnt;
+                        (void)dma[2];
+                        srcReg += (u32)step;
+                        dst += 64;
+                    } while (--remaining != 0);
+                }
+            }
+        }
     }
 }
 void _0800529C(int a, u32 b, int c, int d, int e, int f) __attribute__((alias("DMA3_Tiles")));
@@ -496,7 +508,7 @@ void DMA3_RecolorRows(int slot, u32 src, int x, int y, volatile int width, volat
     q = 0x02002000u;
     __asm__ volatile("" : "+r"(q));
     __asm__(".globl RecolorSlotBase_52F0\nRecolorSlotBase_52F0 = 0x03000260\n");
-    extern u8 RecolorSlotBase_52F0[];
+
     c = RecolorSlotBase_52F0;
     t = c + c[0] - c[0];
     idx = slot * 16;
@@ -516,74 +528,90 @@ void DMA3_RecolorRows(int slot, u32 src, int x, int y, volatile int width, volat
     if (row < r5work) {
         register volatile u32 *dma __asm__("r6");
         dma = DMA3;
-        register u32 highBit __asm__("r0") = 0x80000000u;
-        register u32 transferWidth __asm__("r1") = (u32)width;
-        cnt = transferWidth | highBit;
-        register u32 sourceWidth __asm__("r3") = (u32)width;
-        srcStep = sourceWidth << 1;
-        do {
-            r5work = (int)p;
-            dma[0] = (u32)r5work;          // SAD = src row
-            dma[1] = q;                    // DAD = EWRAM staging row
-            dma[2] = cnt;
-            (void)dma[2];
-            register volatile u16 *h __asm__("r3") =
-                (volatile u16 *)(uintptr_t)q;
-            u32 qNext = (u32)(uintptr_t)h;
-            qNext += 64;
-            row++;
-            register int rowSaved __asm__("r12") = row;
-            register int loopWidth __asm__("r1") = width;
-            if (loopWidth > 0) {
-                register u32 maskTmp __asm__("r2") = 0x0C00u;
-                register u32 mask __asm__("r9");
-                __asm__ volatile("" : "+r" (maskTmp));
-                mask = maskTmp;
-                q = (u32)loopWidth;
-                register u32 palInput __asm__("r0") = (u32)palette;
-                r5work = (int)(palInput << 12);
+        {
+            register u32 highBit __asm__("r0") = 0x80000000u;
+            register u32 transferWidth __asm__("r1") = (u32)width;
+            cnt = transferWidth | highBit;
+            {
+                register u32 sourceWidth __asm__("r3") = (u32)width;
+                srcStep = sourceWidth << 1;
                 do {
-                    row = (int)*h;
-                    loopWidth = 0x03FF;
-                    loopWidth &= row;
-                    register u32 pal __asm__("r0") = (u32)row & mask;
-                    row = tileAdd;
-                    loopWidth += row;
-                    pal |= (u32)r5work;
-                    pal |= (u32)loopWidth;
-                    *h = (u16)pal;
-                    q--;
-                    h++;
-                } while (q != 0);
+                    r5work = (int)p;
+                    dma[0] = (u32)r5work;          // SAD = src row
+                    dma[1] = q;                    // DAD = EWRAM staging row
+                    dma[2] = cnt;
+                    (void)dma[2];
+                    {
+                        register volatile u16 *h __asm__("r3") =
+                            (volatile u16 *)(uintptr_t)q;
+                        u32 qNext = (u32)(uintptr_t)h;
+                        qNext += 64;
+                        row++;
+                        {
+                            register int rowSaved __asm__("r12") = row;
+                            register int loopWidth __asm__("r1") = width;
+                            if (loopWidth > 0) {
+                                register u32 maskTmp __asm__("r2") = 0x0C00u;
+                                register u32 mask __asm__("r9");
+                                __asm__ volatile("" : "+r" (maskTmp));
+                                mask = maskTmp;
+                                q = (u32)loopWidth;
+                                {
+                                    register u32 palInput __asm__("r0") = (u32)palette;
+                                    r5work = (int)(palInput << 12);
+                                    do {
+                                        row = (int)*h;
+                                        loopWidth = 0x03FF;
+                                        loopWidth &= row;
+                                        {
+                                            register u32 pal __asm__("r0") = (u32)row & mask;
+                                            row = tileAdd;
+                                            loopWidth += row;
+                                            pal |= (u32)r5work;
+                                            pal |= (u32)loopWidth;
+                                            *h = (u16)pal;
+                                            q--;
+                                            h++;
+                                        }
+                                    } while (q != 0);
+                                }
+                            }
+                            sourceWidth = srcStep;
+                            p += sourceWidth;
+                            q = qNext;
+                            row = rowSaved;
+                            r5work = rows;
+                            __asm__ volatile("" : "+r" (r5work));
+                        }
+                    }
+                } while (row < r5work);
             }
-            sourceWidth = srcStep;
-            p += sourceWidth;
-            q = qNext;
-            row = rowSaved;
-            r5work = rows;
-            __asm__ volatile("" : "+r" (r5work));
-        } while (row < r5work);
+        }
     }
-    register int writeRows __asm__("r0") = rows;
-    if (writeRows > 0) {
-        register volatile u32 *dma2 __asm__("r1");
-        dma2 = DMA3;
-        register u32 writeCnt __asm__("r3") = 0x80000000u;
-        row = width;
-        writeCnt |= (u32)row;
-        row = writeRows;
-        do {                                      // write-back phase
-            r5work = stageSave;
-            dma2[0] = (u32)r5work;
-            dma2[1] = dst;
-            dma2[2] = writeCnt;
-            (void)dma2[2];
-            r5work += 64;
-            stageSave = (u32)r5work;
-            r5work = 64;
-            __asm__ volatile ("" : "+r"(r5work));
-            dst += (u32)r5work;
-        } while (--row != 0);
+    {
+        register int writeRows __asm__("r0") = rows;
+        if (writeRows > 0) {
+            register volatile u32 *dma2 __asm__("r1");
+            dma2 = DMA3;
+            {
+                register u32 writeCnt __asm__("r3") = 0x80000000u;
+                row = width;
+                writeCnt |= (u32)row;
+                row = writeRows;
+                do {                                      // write-back phase
+                    r5work = stageSave;
+                    dma2[0] = (u32)r5work;
+                    dma2[1] = dst;
+                    dma2[2] = writeCnt;
+                    (void)dma2[2];
+                    r5work += 64;
+                    stageSave = (u32)r5work;
+                    r5work = 64;
+                    __asm__ volatile ("" : "+r"(r5work));
+                    dst += (u32)r5work;
+                } while (--row != 0);
+            }
+        }
     }
 }
 void _080052F0(int a, u32 b, int c, int d, int e, int f, int g, int h)
@@ -655,83 +683,87 @@ void OAMGrid_Build(volatile int tableIdx, const volatile u8 *src,
         do {
         ip = source;
         // Keep zero in r1 so the C copy to r8 retains the ROM's register move.
-        register int zero __asm__("r1") = 0;
-        __asm__ volatile("" : : "r"(zero));
-        col = zero;
-        temp7 = row + 1;
-        nextRow = temp7;
-        colBound = cols;
-        if (col < colBound) {
-            volatile int rowPos;
-            temp7 = yHome;
-            rowPos = temp7 + row;
-            tableIndex = (u32)tableIdx;
-            {
-                register u32 off __asm__("r0");
-                off = tableIndex << 2;
-                temp7 = 0x030002A4u;
-                rowTab = (volatile u32 *)(off + (u32)temp7);
-            }
-            // When y is outside the grid but x is inside, the original still
-            // updates the destination through the far-column term; only when
-            // both are outside does it carry the old r9 value forward.
-            rb = (u32)rowPos;
-            rowBytes = rb * 64;
-            xTerm = xHome;
-            colTerm = (u32)xTerm * 2;
-            temp7 = 248;
-            temp7 <<= 3;
-            hi = colTerm + (u32)temp7;
-            do {
-                __asm__ volatile("" : "=r"(hold2));
-                colPos = xHome + col;
-                if (colPos <= 31) {
-                    if (rowPos <= 31) {
-                        dst = *rowTab + colTerm + rowBytes;
-                        cell = ip;
-                    } else {
-                        dst = *rowTab + hi + rowBytes;
-                        cell = ip;
-                    }
-                } else {
-                    xTerm = rowPos;
-                    if (xTerm <= 31) {
-                        dst = *rowTab + hi + rowBytes;
-                        cell = ip;
-                    } else {
-                        cell = ip;
-                    }
-                }
-                h = *(u16 *)(uintptr_t)cell;
-                __asm__ volatile("" : : "r"(hold2));
-
-                // Pin the byte step in r0; the pointer update is C.
-                register int two __asm__("r0") = 2;
-                __asm__ volatile("" : : "r"(two));
-                ip += two;
-                __asm__ volatile("" : : "r"(cell));
-                lo = h & 0x03FFu;
-                up = h & 0x0C00u;
-                tableIndex = (u32)tileBase;
-                lo += tableIndex;
+        {
+            register int zero __asm__("r1") = 0;
+            __asm__ volatile("" : : "r"(zero));
+            col = zero;
+            temp7 = row + 1;
+            nextRow = temp7;
+            colBound = cols;
+            if (col < colBound) {
+                volatile int rowPos;
+                temp7 = yHome;
+                rowPos = temp7 + row;
+                tableIndex = (u32)tableIdx;
                 {
-                    register u32 pal __asm__("r7");
-                    pal = (u32)palette;
-                    palShift = pal << 12;
-                    up |= palShift;
+                    register u32 off __asm__("r0");
+                    off = tableIndex << 2;
+                    temp7 = 0x030002A4u;
+                    rowTab = (volatile u32 *)(off + (u32)temp7);
                 }
-                up |= lo;
-                *(volatile u16 *)(uintptr_t)dst = (u16)up;
-                hi += 2;
-                colTerm += 2;
-                temp7 = 1;
-                col += temp7;
-            } while (col < cols);
+                // When y is outside the grid but x is inside, the original still
+                // updates the destination through the far-column term; only when
+                // both are outside does it carry the old r9 value forward.
+                rb = (u32)rowPos;
+                rowBytes = rb * 64;
+                xTerm = xHome;
+                colTerm = (u32)xTerm * 2;
+                temp7 = 248;
+                temp7 <<= 3;
+                hi = colTerm + (u32)temp7;
+                do {
+                    __asm__ volatile("" : "=r"(hold2));
+                    colPos = xHome + col;
+                    if (colPos <= 31) {
+                        if (rowPos <= 31) {
+                            dst = *rowTab + colTerm + rowBytes;
+                            cell = ip;
+                        } else {
+                            dst = *rowTab + hi + rowBytes;
+                            cell = ip;
+                        }
+                    } else {
+                        xTerm = rowPos;
+                        if (xTerm <= 31) {
+                            dst = *rowTab + hi + rowBytes;
+                            cell = ip;
+                        } else {
+                            cell = ip;
+                        }
+                    }
+                    h = *(u16 *)(uintptr_t)cell;
+                    __asm__ volatile("" : : "r"(hold2));
+
+                    // Pin the byte step in r0; the pointer update is C.
+                    {
+                        register int two __asm__("r0") = 2;
+                        __asm__ volatile("" : : "r"(two));
+                        ip += two;
+                        __asm__ volatile("" : : "r"(cell));
+                        lo = h & 0x03FFu;
+                        up = h & 0x0C00u;
+                        tableIndex = (u32)tileBase;
+                        lo += tableIndex;
+                        {
+                            register u32 pal __asm__("r7");
+                            pal = (u32)palette;
+                            palShift = pal << 12;
+                            up |= palShift;
+                        }
+                        up |= lo;
+                        *(volatile u16 *)(uintptr_t)dst = (u16)up;
+                        hi += 2;
+                        colTerm += 2;
+                        temp7 = 1;
+                        col += temp7;
+                    }
+                } while (col < cols);
+            }
+            colBound = rowStride;
+            source += colBound;
+            row = nextRow;
+            temp7 = rows;
         }
-        colBound = rowStride;
-        source += colBound;
-        row = nextRow;
-        temp7 = rows;
         } while (row < temp7);
     }
 }
@@ -758,7 +790,7 @@ void DMA3_ParamRows(int slot, int offset, int row, int bytes, volatile int count
     register u32 src __asm__("r1");
     register u32 dst __asm__("r4");
     __asm__(".globl ParamBase_54A4\nParamBase_54A4 = 0x03000260\n");
-    extern u8 ParamBase_54A4[];
+
     offsetReg = offset;
     bytesReg = bytes;
     __asm__ volatile ("" : "+r"(offsetReg), "+r"(bytesReg) : : "memory");
@@ -771,28 +803,36 @@ void DMA3_ParamRows(int slot, int offset, int row, int bytes, volatile int count
     __asm__ volatile("" : "+r"(tmp));
     tmp <<= 19;
     dst += tmp;
-    int index = slot * 4;
-    base += 68;
-    index += (int)(uintptr_t)base;
-    src = *(volatile u32 *)(uintptr_t)index;
-    u32 rowOffset = (u32)(row * 64);
-    dst += rowOffset;
-    src += rowOffset;
-    if (countReg > 0) {
-        base = (volatile u8 *)DMA3;
-        register int adjusted __asm__("r0");
-        adjusted = bytesReg + ((u32)bytesReg >> 31);
-        __asm__ volatile("" : "+r"(adjusted));
-        u32 cnt = 0x84000000u | (u32)(adjusted >> 1);
-        int remaining = countReg;
-        do {
-            ((volatile u32 *)base)[0] = src;
-            ((volatile u32 *)base)[1] = dst + (u32)offsetReg;
-            ((volatile u32 *)base)[2] = cnt;
-            (void)((volatile u32 *)base)[2];
-            dst += 64;
-            src += 64;
-        } while (--remaining != 0);
+    {
+        int index = slot * 4;
+        base += 68;
+        index += (int)(uintptr_t)base;
+        src = *(volatile u32 *)(uintptr_t)index;
+        {
+            u32 rowOffset = (u32)(row * 64);
+            dst += rowOffset;
+            src += rowOffset;
+            if (countReg > 0) {
+                base = (volatile u8 *)DMA3;
+                {
+                    register int adjusted __asm__("r0");
+                    adjusted = bytesReg + ((u32)bytesReg >> 31);
+                    __asm__ volatile("" : "+r"(adjusted));
+                    {
+                        u32 cnt = 0x84000000u | (u32)(adjusted >> 1);
+                        int remaining = countReg;
+                        do {
+                            ((volatile u32 *)base)[0] = src;
+                            ((volatile u32 *)base)[1] = dst + (u32)offsetReg;
+                            ((volatile u32 *)base)[2] = cnt;
+                            (void)((volatile u32 *)base)[2];
+                            dst += 64;
+                            src += 64;
+                        } while (--remaining != 0);
+                    }
+                }
+            }
+        }
     }
 }
 void _080054A4(int a, int b, int c, int d, int e) __attribute__((alias("DMA3_ParamRows")));
@@ -876,10 +916,12 @@ void ObjQueueFlush(volatile u8 *rec) {
             u32 value = *(volatile u16 *)(e + 2);
             dma[0] = (u32)(uintptr_t)&value;
             dma[1] = *(volatile u32 *)(e + 8);
-            u32 len = *(volatile u32 *)(e + 12);
-            u32 ctrl = (len >> 2) | 0x85000000u;
-            dma[2] = ctrl;
-            (void)dma[2];
+            {
+                u32 len = *(volatile u32 *)(e + 12);
+                u32 ctrl = (len >> 2) | 0x85000000u;
+                dma[2] = ctrl;
+                (void)dma[2];
+            }
         }
         i++;
         e += 16;
@@ -943,7 +985,7 @@ void ObjQueueSubmit(u32 a, u32 b, int c) {
     register volatile u8 *gate __asm__("r0");
     s32 gate_value;
     __asm__(".globl SubmitBase_5614\nSubmitBase_5614 = 0x03000260\n");
-    extern u8 SubmitBase_5614[];
+
     base = SubmitBase_5614;
     gate = base;
     gate += 100;
@@ -953,10 +995,12 @@ void ObjQueueSubmit(u32 a, u32 b, int c) {
         dma = DMA3;
         dma[0] = a;
         dma[1] = b;
-        int adj = (c < 0) ? c + 3 : c;
-        u32 cnt = 0x84000000u | (u32)(adj >> 2);
-        dma[2] = cnt;
-        (void)dma[2];
+        {
+            int adj = (c < 0) ? c + 3 : c;
+            u32 cnt = 0x84000000u | (u32)(adj >> 2);
+            dma[2] = cnt;
+            (void)dma[2];
+        }
     } else {
         ObjQueuePush(base + 96, a, b, c);
     }
@@ -992,8 +1036,10 @@ void sub_08005664(u32 a, int b) __attribute__((alias("ObjQueueSubmitZero")));
 extern u8 SlotBase_56B8[];
 void ObjQueueGate(int v) {
     __asm__(".globl SlotBase_56B8\nSlotBase_56B8 = 0x03000260\n");
-    volatile u8 *base = SlotBase_56B8;
-    *(volatile u16 *)(base + 100) = v;
+    {
+        volatile u8 *base = SlotBase_56B8;
+        *(volatile u16 *)(base + 100) = v;
+    }
 }
 void _080056B8(int v) __attribute__((alias("ObjQueueGate")));
 void sub_080056B8(int v) __attribute__((alias("ObjQueueGate")));

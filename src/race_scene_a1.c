@@ -731,57 +731,63 @@ void _08001B364(u32 a, u32 b) {
     u32 arg_b;
     arg_b = (u16)a;
     arg_a = (u16)b;
-    register u32 wa_base __asm__("r0") = 0x03001780u;
-    register u32 wa_offset __asm__("r1") = 0x10FCu;
-    __asm__ volatile ("" : "+r" (wa_base), "+r" (wa_offset));
-    register volatile u16 *wa_mode __asm__("r5") =
-        (volatile u16 *)(uintptr_t)(wa_base + wa_offset);
-    register u32 initial_mode __asm__("r3");
-    initial_mode = *wa_mode;
-    __asm__ volatile ("" : "+r" (initial_mode));
+    {
+        register u32 wa_base __asm__("r0") = 0x03001780u;
+        register u32 wa_offset __asm__("r1") = 0x10FCu;
+        __asm__ volatile ("" : "+r" (wa_base), "+r" (wa_offset));
+        {
+            register volatile u16 *wa_mode __asm__("r5") =
+                (volatile u16 *)(uintptr_t)(wa_base + wa_offset);
+            register u32 initial_mode __asm__("r3");
+            initial_mode = *wa_mode;
+            __asm__ volatile ("" : "+r" (initial_mode));
 
-    if (initial_mode == 8) {
-        u8 *ctx = *(u8 **)(uintptr_t)0x03004E20u;
-        if (*(s16 *)(ctx + 106) > 0)
-            return;
-    }
-    if (_08018ACC(4) != 0) {
-        register int action __asm__("r4") = 0;
-        register u32 mode __asm__("r5");
-        mode = *wa_mode;
-        __asm__ volatile ("" : "+r" (mode));
-        if (mode == 8) {
-            if (_08018ACC(0x800000u) != 0 || _08018ACC(0x400000u) != 0) {
-                _08001B130(0);
-                action = 2;
-                goto dispatch;
+            if (initial_mode == 8) {
+                u8 *ctx = *(u8 **)(uintptr_t)0x03004E20u;
+                if (*(s16 *)(ctx + 106) > 0)
+                    return;
+            }
+            if (_08018ACC(4) != 0) {
+                register int action __asm__("r4") = 0;
+                register u32 mode __asm__("r5");
+                mode = *wa_mode;
+                __asm__ volatile ("" : "+r" (mode));
+                if (mode == 8) {
+                    if (_08018ACC(0x800000u) != 0 || _08018ACC(0x400000u) != 0) {
+                        _08001B130(0);
+                        action = 2;
+                        goto dispatch;
+                    }
+                }
+                if (_08018ACC(0x200000u) != 0) {
+                    register u8 *ctx __asm__("r0") =
+                        *(u8 **)(uintptr_t)0x03004E20u;
+                    register volatile u16 *count __asm__("r1") =
+                        (volatile u16 *)(ctx + 122);
+                    register u32 count_value __asm__("r2");
+                    count_value = *count;
+                    __asm__ volatile ("" : "+r" (count_value));
+                    {
+                        register u32 zero __asm__("r3") = 0;
+                        register int signed_count __asm__("r0");
+                        signed_count = ((s16 *)(uintptr_t)count)[zero];
+                        if (signed_count > 0) {
+                            register int decremented __asm__("r0") = count_value - 1;
+                            *count = (u16)decremented;
+                        }
+                        else {
+                            register int call_result __asm__("r0");
+                            call_result = _080098C8_wide(arg_b, arg_a);
+                            action = call_result;
+                        }
+                    }
+                }
+            dispatch:
+                _08001B1A4(action);
+            } else {
+                _08001B27C_wide(arg_b, arg_a);
             }
         }
-        if (_08018ACC(0x200000u) != 0) {
-            register u8 *ctx __asm__("r0") =
-                *(u8 **)(uintptr_t)0x03004E20u;
-            register volatile u16 *count __asm__("r1") =
-                (volatile u16 *)(ctx + 122);
-            register u32 count_value __asm__("r2");
-            count_value = *count;
-            __asm__ volatile ("" : "+r" (count_value));
-            register u32 zero __asm__("r3") = 0;
-            register int signed_count __asm__("r0");
-            signed_count = ((s16 *)(uintptr_t)count)[zero];
-            if (signed_count > 0) {
-                register int decremented __asm__("r0") = count_value - 1;
-                *count = (u16)decremented;
-            }
-            else {
-                register int call_result __asm__("r0");
-                call_result = _080098C8_wide(arg_b, arg_a);
-                action = call_result;
-            }
-        }
-    dispatch:
-        _08001B1A4(action);
-    } else {
-        _08001B27C_wide(arg_b, arg_a);
     }
 }
 void sub_08001B364(u32 a, u32 b) __attribute__((alias("_08001B364")));
@@ -1328,7 +1334,7 @@ __asm__(".align 2, 0");
 // and arm 5 stores 40; the shared tail then ticks u16[[ctx]+76] down.  Only
 // arm 0 reports 1.
 //
-// Measured spelling notes (360/360, `corpus_match_probe --c89`):
+// Measured spelling notes (360/360, `corpus_match_probe`):
 //  * `int state`, not `s16`: an `s16` local gives the load a HImode result, so
 //    the entry block's `adds r4,r1,#0` ctx-cell copy is scheduled *before* the
 //    `ldrsh` and the zero index takes r1 (354/360, first diff +0xA).  The

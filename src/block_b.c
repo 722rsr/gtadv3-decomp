@@ -154,9 +154,11 @@ loop_record:
         {
             u32 raw = Idle_GetRecordFiltered(i); // _0800206C
             b = (BlockB *)*(volatile u32 *)BLOCK_B_SLOT_ADDR;
-            u16 rec = (u16)raw;
-            if (rec == b->param)
-                matches++;
+            {
+                u16 rec = (u16)raw;
+                if (rec == b->param)
+                    matches++;
+            }
         }
         i++;
 check_count:

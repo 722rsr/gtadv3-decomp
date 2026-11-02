@@ -550,7 +550,7 @@ def render(meta: dict) -> str:
         "2. Replace the seed with readable C in the owning translation unit; "
         "keep aliases and required interiors intact.",
         "3. Run the focused probe: "
-        f"`python3 tools/corpus_match_probe.py --function {meta['name']} --c89 --require-all --require-exact`.",
+        f"`python3 tools/corpus_match_probe.py --function {meta['name']} --require-all --require-exact`.",
         "4. Run `make matching-ready` and then `make full-rom-match`.",
         "5. Refresh `source_quality`, the report, and the README progress block "
         "with `make update-progress`.",

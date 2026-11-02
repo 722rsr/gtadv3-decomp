@@ -22,6 +22,7 @@
 // ----------------------------------------------------------------------------
 // Extern callees.
 // ----------------------------------------------------------------------------
+extern void *Sprite_EmitAllocate(void) __asm__("sub_08002BFC");
 extern void _0802D970(const void *a, void *b, u32 c);   // swi 0x0C CpuFastSet (bios_wrappers.c)
 extern void _0802D974(const void *a, void *b, u32 c);   // swi 0x0B CpuSet (bios_wrappers.c)
 extern int _0802D978(int a, int b);                     // swi 0x06 Div (bios_wrappers.c)
@@ -130,25 +131,27 @@ void *Sprite_CourseByte(void *rec, u32 off) {
     void *arr = _0800748C(record);
     int r4 = (int)(off & 0xFFFu);
     r4 = asr_low8(r4, arr);
-    void *arr2 = _0800748C(_08007498(record, 0));
-    u8 *p = (u8 *)arr2 + r4;
-    u32 mk = 127u;
-    u32 b = mk & (u32)*(volatile u8 *)p;
-    // Register pin (measured : the ROM materialises `b * 2304` in
-    // r2 (lsls/adds/lsls) and then loads the [rec+4] base into r0, the return
-    // register.  Left to itself agbcc allocates the chain to r0 (it is the
-    // return register, so the natural accumulator) and then reuses the now-dead
-    // r1 mask for the base load -- same mnemonics, different register numbers,
-    // 5 halfwords off.  Pinning the chain result frees r0 for the base load.
-    // CONTROL : dropping this pin scores 66/72, i.e. the pin is
-    // load-bearing and the operand-order fix below is not the whole answer.
-    register u32 m __asm__("r2") = b * 2304u;
-    // Operand order: the ROM's `adds r0, r0, r2` loads [rec+4] into r0 FIRST
-    // and adds the r2 chain second. Writing the sum the other way round makes
-    // agbcc emit the same add with its operands exchanged (`adds r0, r2, r0`),
-    // which is one byte off. Both operands are u32, so the wraparound is
-    // identical -- this is a commutation, not a rewrite of the arithmetic.
-    return (void *)(uintptr_t)(*(volatile u32 *)((u8 *)rec + 4) + m);
+    {
+        void *arr2 = _0800748C(_08007498(record, 0));
+        u8 *p = (u8 *)arr2 + r4;
+        u32 mk = 127u;
+        u32 b = mk & (u32)*(volatile u8 *)p;
+        // Register pin (measured : the ROM materialises `b * 2304` in
+        // r2 (lsls/adds/lsls) and then loads the [rec+4] base into r0, the return
+        // register.  Left to itself agbcc allocates the chain to r0 (it is the
+        // return register, so the natural accumulator) and then reuses the now-dead
+        // r1 mask for the base load -- same mnemonics, different register numbers,
+        // 5 halfwords off.  Pinning the chain result frees r0 for the base load.
+        // CONTROL : dropping this pin scores 66/72, i.e. the pin is
+        // load-bearing and the operand-order fix below is not the whole answer.
+        register u32 m __asm__("r2") = b * 2304u;
+        // Operand order: the ROM's `adds r0, r0, r2` loads [rec+4] into r0 FIRST
+        // and adds the r2 chain second. Writing the sum the other way round makes
+        // agbcc emit the same add with its operands exchanged (`adds r0, r2, r0`),
+        // which is one byte off. Both operands are u32, so the wraparound is
+        // identical -- this is a commutation, not a rewrite of the arithmetic.
+        return (void *)(uintptr_t)(*(volatile u32 *)((u8 *)rec + 4) + m);
+    }
 }
 void *_0800264D8(void *a, u32 b) __attribute__((alias("Sprite_CourseByte")));
 void *sub_0800264D8(void *a, u32 b) __attribute__((alias("Sprite_CourseByte")));
@@ -204,27 +207,33 @@ void Sprite_PlacePair(void *rec, int x, void *spr) {
     void *arr = _0800748C(record);
     int r5 = (int)(x & 0xFFFu);
     r5 = asr_low8(r5, arr);
-    void *arr2 = _0800748C(_08007498(record, 0));
-    int flag = WA_10BC ? 2048 : 1024;
-    if ((*(volatile u8 *)((u8 *)arr2 + r5) & 128u) != 0) {
-        _08002C84((int)*(volatile u32 *)(r7 + 20));
-        sp0 = *(volatile u16 *)(r7 + 24);
-        r6 = (u16)(*(volatile u32 *)(r7 + 24) + 64);
+    {
+        void *arr2 = _0800748C(_08007498(record, 0));
+        int flag = WA_10BC ? 2048 : 1024;
+        if ((*(volatile u8 *)((u8 *)arr2 + r5) & 128u) != 0) {
+            _08002C84((int)*(volatile u32 *)(r7 + 20));
+            sp0 = *(volatile u16 *)(r7 + 24);
+            r6 = (u16)(*(volatile u32 *)(r7 + 24) + 64);
+        }
+        {
+            u8 *obj = (u8 *)_08002BFC(0);
+            *(volatile u16 *)(obj + 0) = (u16)(r9 | *(volatile u16 *)(sl + 8));
+            *(volatile u16 *)(obj + 2) = (u16)(((u32)(*(volatile u32 *)(r7 + 0) - *(volatile u16 *)(sl + 0)) & 0x1FFu)
+                                               | ((u32)(*(volatile u32 *)(r7 + 20)) << 9) | 0xC000u);
+            *(volatile u16 *)(obj + 4) = (u16)(r6 | flag | *(volatile u16 *)(r7 + 28));
+            *(volatile u16 *)(obj + 12) = 0;
+            _08002C34((int)*(volatile u32 *)(r7 + 8), obj);
+            {
+                u8 *obj2 = (u8 *)_08002BFC(0);
+                *(volatile u16 *)(obj2 + 0) = (u16)(r9 | *(volatile u16 *)(sl + 8));
+                *(volatile u16 *)(obj2 + 2) = (u16)(((u32)(*(volatile u32 *)(r7 + 0) - *(volatile u16 *)(sl + 2)) & 0x1FFu)
+                                                    | ((u32)(*(volatile u32 *)(r7 + 20)) << 9) | 0xC000u);
+                *(volatile u16 *)(obj2 + 4) = (u16)(flag | sp0 | *(volatile u16 *)(r7 + 28));
+                *(volatile u16 *)(obj2 + 12) = 0;
+                _08002C34((int)*(volatile u32 *)(r7 + 8), obj2);
+            }
+        }
     }
-    u8 *obj = (u8 *)_08002BFC(0);
-    *(volatile u16 *)(obj + 0) = (u16)(r9 | *(volatile u16 *)(sl + 8));
-    *(volatile u16 *)(obj + 2) = (u16)(((u32)(*(volatile u32 *)(r7 + 0) - *(volatile u16 *)(sl + 0)) & 0x1FFu)
-                                       | ((u32)(*(volatile u32 *)(r7 + 20)) << 9) | 0xC000u);
-    *(volatile u16 *)(obj + 4) = (u16)(r6 | flag | *(volatile u16 *)(r7 + 28));
-    *(volatile u16 *)(obj + 12) = 0;
-    _08002C34((int)*(volatile u32 *)(r7 + 8), obj);
-    u8 *obj2 = (u8 *)_08002BFC(0);
-    *(volatile u16 *)(obj2 + 0) = (u16)(r9 | *(volatile u16 *)(sl + 8));
-    *(volatile u16 *)(obj2 + 2) = (u16)(((u32)(*(volatile u32 *)(r7 + 0) - *(volatile u16 *)(sl + 2)) & 0x1FFu)
-                                        | ((u32)(*(volatile u32 *)(r7 + 20)) << 9) | 0xC000u);
-    *(volatile u16 *)(obj2 + 4) = (u16)(flag | sp0 | *(volatile u16 *)(r7 + 28));
-    *(volatile u16 *)(obj2 + 12) = 0;
-    _08002C34((int)*(volatile u32 *)(r7 + 8), obj2);
 }
 void _080026554(void *a, int b, void *c) __attribute__((alias("Sprite_PlacePair")));
 void sub_080026554(void *a, int b, void *c) __attribute__((alias("Sprite_PlacePair")));
@@ -641,14 +650,18 @@ void *Sprite_CourseByte2(int a, u32 off) {
         (const s8 *)(uintptr_t)(0x080CDA74u + (u32)a);
     s8 b = *bp;
     if (b == -1) return (void *)0;
-    void *r5 = _0800748C(_08007498(CREC_TABLE1, (int)b));
-    void *rec6 = _08007498(CREC_TABLE0, 6);
-    void *arr = _0800748C(rec6);
-    o6 &= 0xFFFu;
-    o6 = (s32)o6 >> *(const u32 *)arr;
-    void *arr2 = _0800748C(_08007498(rec6, 0));
-    u32 tile = 127u & (u32)*(const u8 *)((u8 *)arr2 + o6);
-    return (void *)((u8 *)r5 + (tile << 10));
+    {
+        void *r5 = _0800748C(_08007498(CREC_TABLE1, (int)b));
+        void *rec6 = _08007498(CREC_TABLE0, 6);
+        void *arr = _0800748C(rec6);
+        o6 &= 0xFFFu;
+        o6 = (s32)o6 >> *(const u32 *)arr;
+        {
+            void *arr2 = _0800748C(_08007498(rec6, 0));
+            u32 tile = 127u & (u32)*(const u8 *)((u8 *)arr2 + o6);
+            return (void *)((u8 *)r5 + (tile << 10));
+        }
+    }
 }
 void *_0800267FC(int a, u32 b) __attribute__((alias("Sprite_CourseByte2")));
 void *sub_0800267FC(int a, u32 b) __attribute__((alias("Sprite_CourseByte2")));
@@ -689,69 +702,95 @@ void Sprite_EmitPair(void *unused0, int unused1, int x, int y,
                      u32 a4, u32 a5, u32 a6, u32 a7, u32 a8) {
     (void)unused0; (void)unused1;
     /* The ROM enters the allocator with r0 still holding the 0x400 mask. */
-    extern void *Sprite_EmitAllocate(void) __asm__("sub_08002BFC");
+
     /* Keep the ROM's four-byte frame so its five stack arguments stay at the
        original offsets. The empty output constraint reserves the C stack slot
        while emitting no instructions. */
-    struct SpritePairStack {
-        u8 pad[36];
-        volatile u32 a4;
-        volatile u32 a5;
-        volatile u32 a6;
-        volatile u32 a7;
-        volatile u32 a8;
-    };
-    u32 framePad;
-    __asm__ volatile("" : "=m"(framePad));
-    register volatile struct SpritePairStack *args __asm__("sp");
-    __asm__ volatile("" : "=r"(args));
-    register int xreg __asm__("r5") = x;
-    register u32 yreg __asm__("r8") = y;
-    register u32 signarg __asm__("r0") = args->a7;
-    register u32 a8value __asm__("r7") = args->a8;
-    register u32 zero __asm__("sl") = 0;
-    register u32 high __asm__("r9") = 0xC000u;
-    register u32 a5bits __asm__("r6");
-    __asm__ volatile("" : "+r"(xreg), "+r"(yreg) : : "memory");
-    __asm__ volatile("" : "+r"(signarg) : : "memory");
-    __asm__ volatile("" : "+r"(zero) : : "memory");
-    __asm__ volatile("" : "+r"(high) : : "memory");
-    register u32 attr0 __asm__("r4") =
-        (u32)((s32)(signarg | (u32)(-(s32)signarg)) >> 31) & 0x400u;
-    __asm__ volatile("" : "+r"(attr0) : : "memory");
-    u8 *obj = (u8 *)Sprite_EmitAllocate();
-    register u32 lowy __asm__("r2") = yreg;
-    lowy &= 0xFFu;
-    attr0 |= lowy;
-    *(volatile u16 *)(obj + 0) = (u16)attr0;
-    register int xpos __asm__("r0") = xreg;
-    xpos -= 56;
-    yreg = 0x1FFu;
-    /* Keep the high-register source opaque so C copies it into pinned r2;
-       otherwise agbcc reuses the low-register constant and drops the ROM move. */
-    __asm__ volatile("" : "+r"(yreg));
-    register u32 maskcopy1 __asm__("r2") = yreg;
-    __asm__ volatile("" : "+r"(maskcopy1));
-    *(volatile u16 *)(obj + 2) = (u16)(((u32)xpos & maskcopy1) | high);
-    register u32 a5raw __asm__("r0") = args->a5;
-    a5bits = a5raw << 12;
-    __asm__ volatile("" : "+r"(a5bits) : : "memory");
-    *(volatile u16 *)(obj + 4) = (u16)((args->a4 & 0xFFFFu) | a5bits | (a8value << 10));
-    register u32 zero1 __asm__("r2") = zero;
-    *(volatile u16 *)(obj + 12) = (u16)zero1;
-    _08002C34((int)args->a6, obj);
-    u8 *obj2 = (u8 *)Sprite_EmitAllocate();
-    *(volatile u16 *)(obj2 + 0) = (u16)attr0;
-    xreg -= 8;
-    register u32 maskcopy __asm__("r0") = yreg;
-    xreg &= maskcopy;
-    register u32 highcopy __asm__("r2") = high;
-    xreg |= highcopy;
-    *(volatile u16 *)(obj2 + 2) = (u16)xreg;
-    *(volatile u16 *)(obj2 + 4) = (u16)(((args->a4 + 64) & 0xFFFFu) | a5bits | (a8value << 10));
-    register u32 zero2 __asm__("r0") = zero;
-    *(volatile u16 *)(obj2 + 12) = (u16)zero2;
-    _08002C34((int)args->a6, obj2);
+    {
+        struct SpritePairStack {
+            u8 pad[36];
+            volatile u32 a4;
+            volatile u32 a5;
+            volatile u32 a6;
+            volatile u32 a7;
+            volatile u32 a8;
+        };
+        u32 framePad;
+        __asm__ volatile("" : "=m"(framePad));
+        {
+            register volatile struct SpritePairStack *args __asm__("sp");
+            __asm__ volatile("" : "=r"(args));
+            {
+                register int xreg __asm__("r5") = x;
+                register u32 yreg __asm__("r8") = y;
+                register u32 signarg __asm__("r0") = args->a7;
+                register u32 a8value __asm__("r7") = args->a8;
+                register u32 zero __asm__("sl") = 0;
+                register u32 high __asm__("r9") = 0xC000u;
+                register u32 a5bits __asm__("r6");
+                __asm__ volatile("" : "+r"(xreg), "+r"(yreg) : : "memory");
+                __asm__ volatile("" : "+r"(signarg) : : "memory");
+                __asm__ volatile("" : "+r"(zero) : : "memory");
+                __asm__ volatile("" : "+r"(high) : : "memory");
+                {
+                    register u32 attr0 __asm__("r4") =
+                        (u32)((s32)(signarg | (u32)(-(s32)signarg)) >> 31) & 0x400u;
+                    __asm__ volatile("" : "+r"(attr0) : : "memory");
+                    {
+                        u8 *obj = (u8 *)Sprite_EmitAllocate();
+                        register u32 lowy __asm__("r2") = yreg;
+                        lowy &= 0xFFu;
+                        attr0 |= lowy;
+                        *(volatile u16 *)(obj + 0) = (u16)attr0;
+                        {
+                            register int xpos __asm__("r0") = xreg;
+                            xpos -= 56;
+                            yreg = 0x1FFu;
+                            /* Keep the high-register source opaque so C copies it into pinned r2;
+                               otherwise agbcc reuses the low-register constant and drops the ROM move. */
+                            __asm__ volatile("" : "+r"(yreg));
+                            {
+                                register u32 maskcopy1 __asm__("r2") = yreg;
+                                __asm__ volatile("" : "+r"(maskcopy1));
+                                *(volatile u16 *)(obj + 2) = (u16)(((u32)xpos & maskcopy1) | high);
+                                {
+                                    register u32 a5raw __asm__("r0") = args->a5;
+                                    a5bits = a5raw << 12;
+                                    __asm__ volatile("" : "+r"(a5bits) : : "memory");
+                                    *(volatile u16 *)(obj + 4) = (u16)((args->a4 & 0xFFFFu) | a5bits | (a8value << 10));
+                                    {
+                                        register u32 zero1 __asm__("r2") = zero;
+                                        *(volatile u16 *)(obj + 12) = (u16)zero1;
+                                        _08002C34((int)args->a6, obj);
+                                        {
+                                            u8 *obj2 = (u8 *)Sprite_EmitAllocate();
+                                            *(volatile u16 *)(obj2 + 0) = (u16)attr0;
+                                            xreg -= 8;
+                                            {
+                                                register u32 maskcopy __asm__("r0") = yreg;
+                                                xreg &= maskcopy;
+                                                {
+                                                    register u32 highcopy __asm__("r2") = high;
+                                                    xreg |= highcopy;
+                                                    *(volatile u16 *)(obj2 + 2) = (u16)xreg;
+                                                    *(volatile u16 *)(obj2 + 4) = (u16)(((args->a4 + 64) & 0xFFFFu) | a5bits | (a8value << 10));
+                                                    {
+                                                        register u32 zero2 __asm__("r0") = zero;
+                                                        *(volatile u16 *)(obj2 + 12) = (u16)zero2;
+                                                        _08002C34((int)args->a6, obj2);
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 void _080026898(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h, u32 i)
     __attribute__((alias("Sprite_EmitPair")));
@@ -1049,21 +1088,29 @@ void Sprite_Paint(void *rec) {
     // ROM's ldrsh instructions; volatile signed halfword reads expand instead.
     int v = *(s16 *)((u8 *)rec + 8);
     if (v < 0) v += 255;
-    int r1 = v >> 8;
-    r1 <<= 7;
-    // The ROM keeps the two call results in r5 and r4 across the next calls.
-    register void *base __asm__("r5") =
-        Sprite_CourseByte((void *)(uintptr_t)*(volatile u32 *)((u8 *)rec + 92), (u32)r1);
-    register void *tile __asm__("r4") =
-        Sprite_CourseSurface(*(s16 *)((u8 *)rec + 10),
-                             *(s16 *)((u8 *)rec + 12));
-    sub_0800263E0((u8 *)base, (int)*(volatile u16 *)((u8 *)rec + 0));
-    // ROM loads the final index into r6, then shifts into r1. The empty asm
-    // keeps agbcc from folding the load directly into the shifted r1 value.
-    register u32 rawIndex __asm__("r6") = *(volatile u16 *)((u8 *)rec + 2);
-    __asm__("" : "+r" (rawIndex));
-    register u32 p __asm__("r1") = rawIndex << 5;
-    _0802D970(tile, (void *)(uintptr_t)(0x05000200u + p), 8);
+    {
+        int r1 = v >> 8;
+        r1 <<= 7;
+        // The ROM keeps the two call results in r5 and r4 across the next calls.
+        {
+            register void *base __asm__("r5") =
+                Sprite_CourseByte((void *)(uintptr_t)*(volatile u32 *)((u8 *)rec + 92), (u32)r1);
+            register void *tile __asm__("r4") =
+                Sprite_CourseSurface(*(s16 *)((u8 *)rec + 10),
+                                     *(s16 *)((u8 *)rec + 12));
+            sub_0800263E0((u8 *)base, (int)*(volatile u16 *)((u8 *)rec + 0));
+            // ROM loads the final index into r6, then shifts into r1. The empty asm
+            // keeps agbcc from folding the load directly into the shifted r1 value.
+            {
+                register u32 rawIndex __asm__("r6") = *(volatile u16 *)((u8 *)rec + 2);
+                __asm__("" : "+r" (rawIndex));
+                {
+                    register u32 p __asm__("r1") = rawIndex << 5;
+                    _0802D970(tile, (void *)(uintptr_t)(0x05000200u + p), 8);
+                }
+            }
+        }
+    }
 }
 void _08026AB4(void *a) __attribute__((alias("Sprite_Paint")));
 void sub_08026AB4(void *a) __attribute__((alias("Sprite_Paint")));
@@ -1103,13 +1150,15 @@ void sub_08026B00(int a, int b, int c, void *d) __attribute__((alias("Sprite_Eve
 // ============================================================================
 void Sprite_Init(void *rec) {
     SPR_MENU_REC = rec;
-    u32 zero = 0;
-    _0802D974(&zero, rec, 0x0500000Fu);
-    // The ROM reloads the shared record slot after each helper call.
-    *(volatile u16 *)((u8 *)(uintptr_t)SPR_MENU_REC + 4) = (u16)_080261B0(12);
-    *(volatile u16 *)((u8 *)(uintptr_t)SPR_MENU_REC + 8) = (u16)_080261F8(12);
-    *(volatile u16 *)((u8 *)(uintptr_t)SPR_MENU_REC + 6) = (u16)_080261B0(13);
-    *(volatile u16 *)((u8 *)(uintptr_t)SPR_MENU_REC + 10) = (u16)_080261F8(13);
+    {
+        u32 zero = 0;
+        _0802D974(&zero, rec, 0x0500000Fu);
+        // The ROM reloads the shared record slot after each helper call.
+        *(volatile u16 *)((u8 *)(uintptr_t)SPR_MENU_REC + 4) = (u16)_080261B0(12);
+        *(volatile u16 *)((u8 *)(uintptr_t)SPR_MENU_REC + 8) = (u16)_080261F8(12);
+        *(volatile u16 *)((u8 *)(uintptr_t)SPR_MENU_REC + 6) = (u16)_080261B0(13);
+        *(volatile u16 *)((u8 *)(uintptr_t)SPR_MENU_REC + 10) = (u16)_080261F8(13);
+    }
 }
 void _08026B30(void *a) __attribute__((alias("Sprite_Init")));
 void sub_08026B30(void *a) __attribute__((alias("Sprite_Init")));
@@ -1280,23 +1329,29 @@ void Sprite_EmitTriple(void *base, int id, int x, int y) {
     register u8 *obj __asm__("r9") = (u8 *)base;
     int idv = id;
     __asm__ volatile("" : "+r"(obj), "+r"(idv));
-    register int sx __asm__("r5") = x;
-    register u32 uy __asm__("r4") = (u32)y;
-    __asm__ volatile("" : "+r"(sx), "+r"(uy));
-    uy = (u16)uy;
-    __asm__ volatile("" : "+r"(uy));
-    register void *tpl __asm__("r6") = (void *)(uintptr_t)0x083A2100u;
-    __asm__ volatile("" : "+r"(tpl));
-    sx = (s16)sx;
-    __asm__ volatile("" : "+r"(sx));
-    _08007538(tpl, 23, (void *)(uintptr_t)sx);
-    int sy = (s16)uy;
-    _080075E8(tpl, 9, sy);
-    _08002DB8(obj, idv, sx, sy, 0, 6, 1);
-    _08002DB8(obj + 32, idv, sx + 8, sy, 0, 6, 1);
-    obj += 64;
-    sx += 16;
-    _08002DB8(obj, idv, sx, sy, 0, 8, 1);
+    {
+        register int sx __asm__("r5") = x;
+        register u32 uy __asm__("r4") = (u32)y;
+        __asm__ volatile("" : "+r"(sx), "+r"(uy));
+        uy = (u16)uy;
+        __asm__ volatile("" : "+r"(uy));
+        {
+            register void *tpl __asm__("r6") = (void *)(uintptr_t)0x083A2100u;
+            __asm__ volatile("" : "+r"(tpl));
+            sx = (s16)sx;
+            __asm__ volatile("" : "+r"(sx));
+            _08007538(tpl, 23, (void *)(uintptr_t)sx);
+            {
+                int sy = (s16)uy;
+                _080075E8(tpl, 9, sy);
+                _08002DB8(obj, idv, sx, sy, 0, 6, 1);
+                _08002DB8(obj + 32, idv, sx + 8, sy, 0, 6, 1);
+                obj += 64;
+                sx += 16;
+                _08002DB8(obj, idv, sx, sy, 0, 8, 1);
+            }
+        }
+    }
 }
 void _08026CAC(void *a, int b, int c, int d) __attribute__((alias("Sprite_EmitTriple")));
 void sub_08026CAC(void *a, int b, int c, int d) __attribute__((alias("Sprite_EmitTriple")));

@@ -38,13 +38,15 @@ void sub_0800DE4C(void *a) __attribute__((alias("MenuDE4C_0800DE4C")));
 //   if r2 <= 1: _08002B368(4); _08002618(1, 0); u16[rec+20] = 0
 void MenuE2E4_0800E2E4(void *rec, int a1, u32 param) {
     (void)a1;
-    volatile u8 *r4 = (volatile u8 *)rec;
-    u32 v = ((u32)param << 16) + 0xFFFF0000u;
-    v >>= 16;
-    if (v <= 1) {
-        _0802B368(4);
-        _08002618(1, 0);
-        *(volatile u16 *)(r4 + 20) = 0;
+    {
+        volatile u8 *r4 = (volatile u8 *)rec;
+        u32 v = ((u32)param << 16) + 0xFFFF0000u;
+        v >>= 16;
+        if (v <= 1) {
+            _0802B368(4);
+            _08002618(1, 0);
+            *(volatile u16 *)(r4 + 20) = 0;
+        }
     }
 }
 void _0800E2E4(void *a, int b, u32 c) __attribute__((alias("MenuE2E4_0800E2E4")));

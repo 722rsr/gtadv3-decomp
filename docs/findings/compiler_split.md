@@ -60,7 +60,8 @@ caller behavior before changing a declaration to match an epilogue.
 
 Local register pins are GNU extensions. Their comments must identify the ROM
 register and instruction that requires the constraint. They are not ordinary
-C89 syntax, even though the source transform supports their use.
+ISO C89 syntax, but they are part of the pinned agbcc dialect and the
+maintained source uses them directly.
 
 ## Artifact validity
 

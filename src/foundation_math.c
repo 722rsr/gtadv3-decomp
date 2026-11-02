@@ -64,30 +64,34 @@ int MathHelper_05C58(int a,int b){
     register int a12 __asm__("r6") = a;
     register int b12 __asm__("r4") = b;
     __asm__("" : "+r"(a12), "+r"(b12));
-    int mask = 0xFFF;
-    register int acc __asm__("r5");
-    a12 &= mask;
-    acc = a12;
-    b12 &= mask;
-    // The ROM keeps `off` in r1 for every arm (`adds r1,r0,r2` from the
-    // 0x1000 add, and `off = t` reuses the r1 copy of the call result), which
-    // in turn leaves r0 for the wrap difference and r2 for the 0x1000
-    // materialisation (`movs r2,#128` / `lsls r2,r2,#5`).
-    register int off __asm__("r1");
-    int sign;
     {
-        register int d __asm__("r0");
-        int t = _08005B5C(acc - b12);
-        if (t > 0x800) {
-            if (acc > b12) { d = b12 - acc; off = d + 0x1000; sign = 1; }
-            else           { d = acc - b12; off = d + 0x1000; sign = -1; }
-        } else {
-            off = t;
-            if (acc > b12) sign = -1;
-            else           sign = 1;
+        int mask = 0xFFF;
+        register int acc __asm__("r5");
+        a12 &= mask;
+        acc = a12;
+        b12 &= mask;
+        // The ROM keeps `off` in r1 for every arm (`adds r1,r0,r2` from the
+        // 0x1000 add, and `off = t` reuses the r1 copy of the call result), which
+        // in turn leaves r0 for the wrap difference and r2 for the 0x1000
+        // materialisation (`movs r2,#128` / `lsls r2,r2,#5`).
+        {
+            register int off __asm__("r1");
+            int sign;
+            {
+                register int d __asm__("r0");
+                int t = _08005B5C(acc - b12);
+                if (t > 0x800) {
+                    if (acc > b12) { d = b12 - acc; off = d + 0x1000; sign = 1; }
+                    else           { d = acc - b12; off = d + 0x1000; sign = -1; }
+                } else {
+                    off = t;
+                    if (acc > b12) sign = -1;
+                    else           sign = 1;
+                }
+            }
+            return (a12 + (sign << 1) * off) & 0xFFF;
         }
     }
-    return (a12 + (sign << 1) * off) & 0xFFF;
 }
 int _08005C58(int a,int b) __attribute__((alias("MathHelper_05C58")));
 extern s16 MathAngleTableX[];

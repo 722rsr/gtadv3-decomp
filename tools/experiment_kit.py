@@ -50,7 +50,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import corpus_match_probe as probe
 import match_families as families
-import agbcc_c89_transform as c89_transform
 
 ROOT = probe.ROOT
 ROM_BASE = probe.ROM_BASE
@@ -534,35 +533,15 @@ class CandidateAdapter:
         return hashlib.sha256("\x00".join(parts).encode()).hexdigest()[:32]
 
     def _preprocess(self, source: str, directory: Path, tag: str) -> tuple[Path | None, str | None]:
-        """C89-transform (when needed) then `clang -E` one candidate body."""
+        """`clang -E` one candidate body; the corpus and candidates are C89."""
         c_file = directory / f"{tag}.c"
         c_file.write_text(source, encoding="utf-8")
-
-        # agbcc is a C89 compiler and the project's own sources are not: they
-        # use declaration-after-statement, which agbcc rejects with a syntax
-        # error at the *declaration*. Reuse the existing compiler-driven
-        # transform rather than hand-rolling another one, so a candidate that
-        # fails to compile fails for a reason the strategy actually caused.
-        #
-        # Only for sources carrying their own `#include`s: those are real
-        # translation units in modern C, and this is exactly what the probe
-        # does to them. A synthesized candidate is already C89 by
-        # construction, and running the compiler-driven fixer over it would
-        # fail closed on `unhandled` for input the strategy never malformed.
-        compile_input = c_file
-        if "#include" in source:
-            transformed, stats = c89_transform.cached_transform_file(c_file)
-            if stats.get("unhandled"):
-                return None, f"C89 transform: {stats['unhandled']}"
-            c89_file = directory / f"{tag}.c89.c"
-            c89_file.write_text(transformed, encoding="utf-8")
-            compile_input = c89_file
 
         i_file = directory / f"{tag}.i"
         with i_file.open("w", encoding="utf-8") as handle:
             preprocess = subprocess.run(
                 ["clang", "-E", "-nostdinc", "-undef", *probe.inc_flags(),
-                 *("-I" + str(p) for p in self.include_dirs), str(compile_input)],
+                 *("-I" + str(p) for p in self.include_dirs), str(c_file)],
                 text=True, stdout=handle, stderr=subprocess.PIPE)
         if preprocess.returncode:
             return None, f"preprocess: {preprocess.stderr.strip()[:1500]}"

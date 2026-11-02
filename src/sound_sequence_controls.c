@@ -32,24 +32,32 @@ void SoundSeq_VolumeWalker(u32 id, u32 chsel, u32 val){
             "SoundSeqWalkerTable_B718 = 0x08061F74\n"
             ".globl SoundSeqWalkerDirectory_B718\n"
             "SoundSeqWalkerDirectory_B718 = 0x08061FA4\n");
-    register u32 index __asm__("r0") = id << 16;
-    register const u8 *table __asm__("r4") = SoundSeqWalkerTable_B718;
-    __asm__ volatile("" : "+r" (table));
-    register const u8 *directory __asm__("r3") = SoundSeqWalkerDirectory_B718;
-    __asm__ volatile("" : "+r" (directory));
-    index >>= 13;
-    index += (u32)(uintptr_t)directory;
-    register u16 gate __asm__("r5") =
-        ((const volatile u16 *)(uintptr_t)index)[2];
-    register u32 offset __asm__("r3") = (u32)gate << 1;
-    offset += gate;
-    offset <<= 2;
-    offset += (u32)(uintptr_t)table;
-    register void *state __asm__("r0") =
-        (void *)(uintptr_t)*(const volatile u32 *)(uintptr_t)offset;
-    register u32 c16 __asm__("r1") = (chsel << 16) >> 16;
-    register u32 v16 __asm__("r2") = (val << 16) >> 16;
-    sub_0802D4A8(state, c16, v16);
+    {
+        register u32 index __asm__("r0") = id << 16;
+        register const u8 *table __asm__("r4") = SoundSeqWalkerTable_B718;
+        __asm__ volatile("" : "+r" (table));
+        {
+            register const u8 *directory __asm__("r3") = SoundSeqWalkerDirectory_B718;
+            __asm__ volatile("" : "+r" (directory));
+            index >>= 13;
+            index += (u32)(uintptr_t)directory;
+            {
+                register u16 gate __asm__("r5") =
+                    ((const volatile u16 *)(uintptr_t)index)[2];
+                register u32 offset __asm__("r3") = (u32)gate << 1;
+                offset += gate;
+                offset <<= 2;
+                offset += (u32)(uintptr_t)table;
+                {
+                    register void *state __asm__("r0") =
+                        (void *)(uintptr_t)*(const volatile u32 *)(uintptr_t)offset;
+                    register u32 c16 __asm__("r1") = (chsel << 16) >> 16;
+                    register u32 v16 __asm__("r2") = (val << 16) >> 16;
+                    sub_0802D4A8(state, c16, v16);
+                }
+            }
+        }
+    }
 }
 void _0802B718(u32 a, u32 b, u32 c) __attribute__((alias("SoundSeq_VolumeWalker")));
 void sub_0802B718(u32 a, u32 b, u32 c) __attribute__((alias("SoundSeq_VolumeWalker")));
@@ -61,24 +69,32 @@ void SoundSeq_PanWalker(u32 id, u32 chsel, u32 val){
             "SoundSeqWalkerTable_B74C = 0x08061F74\n"
             ".globl SoundSeqWalkerDirectory_B74C\n"
             "SoundSeqWalkerDirectory_B74C = 0x08061FA4\n");
-    register u32 index __asm__("r0") = id << 16;
-    register const u8 *table __asm__("r4") = SoundSeqWalkerTable_B74C;
-    __asm__ volatile("" : "+r" (table));
-    register const u8 *directory __asm__("r3") = SoundSeqWalkerDirectory_B74C;
-    __asm__ volatile("" : "+r" (directory));
-    index >>= 13;
-    index += (u32)(uintptr_t)directory;
-    register u16 gate __asm__("r5") =
-        ((const volatile u16 *)(uintptr_t)index)[2];
-    register u32 offset __asm__("r3") = (u32)gate << 1;
-    offset += gate;
-    offset <<= 2;
-    offset += (u32)(uintptr_t)table;
-    register void *state __asm__("r0") =
-        (void *)(uintptr_t)*(const volatile u32 *)(uintptr_t)offset;
-    register u32 c16 __asm__("r1") = (chsel << 16) >> 16;
-    register s32 v16 __asm__("r2") = (s32)(val << 16) >> 16;
-    sub_0802D510(state, c16, (u32)v16);
+    {
+        register u32 index __asm__("r0") = id << 16;
+        register const u8 *table __asm__("r4") = SoundSeqWalkerTable_B74C;
+        __asm__ volatile("" : "+r" (table));
+        {
+            register const u8 *directory __asm__("r3") = SoundSeqWalkerDirectory_B74C;
+            __asm__ volatile("" : "+r" (directory));
+            index >>= 13;
+            index += (u32)(uintptr_t)directory;
+            {
+                register u16 gate __asm__("r5") =
+                    ((const volatile u16 *)(uintptr_t)index)[2];
+                register u32 offset __asm__("r3") = (u32)gate << 1;
+                offset += gate;
+                offset <<= 2;
+                offset += (u32)(uintptr_t)table;
+                {
+                    register void *state __asm__("r0") =
+                        (void *)(uintptr_t)*(const volatile u32 *)(uintptr_t)offset;
+                    register u32 c16 __asm__("r1") = (chsel << 16) >> 16;
+                    register s32 v16 __asm__("r2") = (s32)(val << 16) >> 16;
+                    sub_0802D510(state, c16, (u32)v16);
+                }
+            }
+        }
+    }
 }
 void _0802B74C(u32 a, u32 b, u32 c) __attribute__((alias("SoundSeq_PanWalker")));
 void sub_0802B74C(u32 a, u32 b, u32 c) __attribute__((alias("SoundSeq_PanWalker")));
@@ -90,24 +106,32 @@ void SoundSeq_ThirdWalker(u32 id, u32 chsel, u32 val){
             "SoundSeqWalkerTable_B780 = 0x08061F74\n"
             ".globl SoundSeqWalkerDirectory_B780\n"
             "SoundSeqWalkerDirectory_B780 = 0x08061FA4\n");
-    register u32 index __asm__("r0") = id << 16;
-    register const u8 *table __asm__("r4") = SoundSeqWalkerTable_B780;
-    __asm__ volatile("" : "+r" (table));
-    register const u8 *directory __asm__("r3") = SoundSeqWalkerDirectory_B780;
-    __asm__ volatile("" : "+r" (directory));
-    index >>= 13;
-    index += (u32)(uintptr_t)directory;
-    register u16 gate __asm__("r5") =
-        ((const volatile u16 *)(uintptr_t)index)[2];
-    register u32 offset __asm__("r3") = (u32)gate << 1;
-    offset += gate;
-    offset <<= 2;
-    offset += (u32)(uintptr_t)table;
-    register void *state __asm__("r0") =
-        (void *)(uintptr_t)*(const volatile u32 *)(uintptr_t)offset;
-    register u32 c16 __asm__("r1") = (chsel << 16) >> 16;
-    register s32 v8 __asm__("r2") = (s32)(val << 24) >> 24;
-    sub_0802D584(state, c16, (u32)v8);
+    {
+        register u32 index __asm__("r0") = id << 16;
+        register const u8 *table __asm__("r4") = SoundSeqWalkerTable_B780;
+        __asm__ volatile("" : "+r" (table));
+        {
+            register const u8 *directory __asm__("r3") = SoundSeqWalkerDirectory_B780;
+            __asm__ volatile("" : "+r" (directory));
+            index >>= 13;
+            index += (u32)(uintptr_t)directory;
+            {
+                register u16 gate __asm__("r5") =
+                    ((const volatile u16 *)(uintptr_t)index)[2];
+                register u32 offset __asm__("r3") = (u32)gate << 1;
+                offset += gate;
+                offset <<= 2;
+                offset += (u32)(uintptr_t)table;
+                {
+                    register void *state __asm__("r0") =
+                        (void *)(uintptr_t)*(const volatile u32 *)(uintptr_t)offset;
+                    register u32 c16 __asm__("r1") = (chsel << 16) >> 16;
+                    register s32 v8 __asm__("r2") = (s32)(val << 24) >> 24;
+                    sub_0802D584(state, c16, (u32)v8);
+                }
+            }
+        }
+    }
 }
 void _0802B780(u32 a, u32 b, u32 c) __attribute__((alias("SoundSeq_ThirdWalker")));
 void sub_0802B780(u32 a, u32 b, u32 c) __attribute__((alias("SoundSeq_ThirdWalker")));

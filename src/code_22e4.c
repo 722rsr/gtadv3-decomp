@@ -68,18 +68,24 @@ void _080023C4(void)
     int slot;
     volatile u16 *ime = (volatile u16 *)(uintptr_t)0x04000208u;
     *ime = 0;
-    volatile u16 *tm0 = (volatile u16 *)(uintptr_t)0x04000004u;
-    *tm0 = 0;
-    volatile u16 *dstat = (volatile u16 *)(uintptr_t)0x04000200u;
-    *dstat = 0;
-    volatile u16 *dstat_en = (volatile u16 *)(uintptr_t)0x04000202u;
-    *dstat_en = 0xFFFF;
+    {
+        volatile u16 *tm0 = (volatile u16 *)(uintptr_t)0x04000004u;
+        *tm0 = 0;
+        {
+            volatile u16 *dstat = (volatile u16 *)(uintptr_t)0x04000200u;
+            *dstat = 0;
+            {
+                volatile u16 *dstat_en = (volatile u16 *)(uintptr_t)0x04000202u;
+                *dstat_en = 0xFFFF;
 
-    for (slot = 0; slot <= 9; slot++)
-        _080023AC(slot, (void *)0);
-    _080023AC(0, (void *)(uintptr_t)0x0203EE71u);
-    _080023AC(1, (void *)(uintptr_t)0x08002389u);
-    _080023B8();
+                for (slot = 0; slot <= 9; slot++)
+                    _080023AC(slot, (void *)0);
+                _080023AC(0, (void *)(uintptr_t)0x0203EE71u);
+                _080023AC(1, (void *)(uintptr_t)0x08002389u);
+                _080023B8();
+            }
+        }
+    }
 }
 
 // 0x08002424 sub_08002424 — 12 B thin wrapper: `push {lr} / bl 0x08002AAC /

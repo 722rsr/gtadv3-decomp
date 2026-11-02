@@ -524,18 +524,24 @@ int Course_ProximitySearch(void *query, void *candidate) {
     if (*(volatile s32*)((volatile u8*)query+8)==0 && *(volatile s32*)((volatile u8*)query+12)==0) return 0;
     // Build rect: sub sp#16, bl _08005DA4 with r0=candidate,r1=query
     // extern _08005DA4 already declared at top
-    int rect = _08005DA4(candidate, query); // returns 0/1 via lsls #24 gate
-    if (!rect) return 0;
-    // Min/max clamping via 5/6 slots at sp+0/4 etc. — exact s32 via ldr/str, uses 0x0203F770 dedup
-    volatile u32 *sp0 = (volatile u32*)candidate; // placeholder for sp+0 rect min
-    (void)sp0;
-    // Proven roots: 0x0203F770 dedup u8[64] at 0x0203F770, cursors 0x0203F8B0 etc. via volatile
-    volatile u8 *dedup = (volatile u8*)0x0203F770;
-    volatile u16 *cursor = (volatile u16*)0x0203F8B0;
-    (void)dedup; (void)cursor;
-    // Second iteration gate: same rect build with swapped candidate/query as in asm second half
-    // For brevity, return rect gate
-    return rect;
+    {
+        int rect = _08005DA4(candidate, query); // returns 0/1 via lsls #24 gate
+        if (!rect) return 0;
+        // Min/max clamping via 5/6 slots at sp+0/4 etc. — exact s32 via ldr/str, uses 0x0203F770 dedup
+        {
+            volatile u32 *sp0 = (volatile u32*)candidate; // placeholder for sp+0 rect min
+            (void)sp0;
+            // Proven roots: 0x0203F770 dedup u8[64] at 0x0203F770, cursors 0x0203F8B0 etc. via volatile
+            {
+                volatile u8 *dedup = (volatile u8*)0x0203F770;
+                volatile u16 *cursor = (volatile u16*)0x0203F8B0;
+                (void)dedup; (void)cursor;
+                // Second iteration gate: same rect build with swapped candidate/query as in asm second half
+                // For brevity, return rect gate
+                return rect;
+            }
+        }
+    }
 }
 
 // _08007368 — proximity continuation, 165 L, u16 width, 32-entry sp+40 loop, _08006C10/_08005BA8/_08005DA4
@@ -548,12 +554,14 @@ int Course_ProximityMore(void *a, void *b, void *c, void *d) {
     if (!arr) return 0;
     // ROM rotates the 2-vector at sp+20 in place (void return); [sp+28] below
     // it is never stored (stack residue feeding the 05DA4 loop — see footer).
-    u32 rot[2] = {0, 0};
-    _08005BA8(rot, (s16)(u16)(uintptr_t)c);
-    (void)rot;
-    // Remainder (05DA4 2-pass loop + 05E14 hit test) stays untranscribed.
-    (void)b; (void)d;
-    return 0;
+    {
+        u32 rot[2] = {0, 0};
+        _08005BA8(rot, (s16)(u16)(uintptr_t)c);
+        (void)rot;
+        // Remainder (05DA4 2-pass loop + 05E14 hit test) stays untranscribed.
+        (void)b; (void)d;
+        return 0;
+    }
 }
 
 // _08006050 — scan helper, 78 instructions, no pool. Record bounds and car
@@ -587,46 +595,48 @@ int Course_Scan(void *outPair, void *inPair) {
         index = *(s16 *)(recordLow + 4);
         /* ROM gives the second signed halfword offset its own scratch (r2);
          * keeping r1 live across the load keeps agbcc off it. */
-        register int hold __asm__("r1");
-        __asm__ volatile("" : "=r"(hold));
-        last = *(s16 *)(recordLow + 6);
-        __asm__ volatile("" : : "r"(hold));
-        if (last >= index) {
-            offset = index * 12;
-            __asm__ volatile ("" : "+r"(offset));
-            do {
-                recordLow = (volatile u8 *)_08005F98();
-                recordLow = (volatile u8 *)*(volatile u32 *)(recordLow + 12);
-                __asm__ volatile ("" : "+r"(recordLow));
-                entry = recordLow + offset;
-                if (((u32)_08018A6C(*(s16 *)(entry + 8)) << 24) != 0u) {
-                    dx = *(volatile s32 *)(entry + 0);
-                    __asm__ volatile ("" : : : "memory");
-                    second = out;
-                    dx -= *(volatile s32 *)(second + 0);
-                    deltaLow = delta;
-                    *(volatile s32 *)(deltaLow + 0) = dx;
-                    absValue = _08005B5C(dx);
-                    limit = 128;
-                    limit <<= 3;
-                    if (absValue <= limit) {
-                        dy = *(volatile s32 *)(entry + 4);
+        {
+            register int hold __asm__("r1");
+            __asm__ volatile("" : "=r"(hold));
+            last = *(s16 *)(recordLow + 6);
+            __asm__ volatile("" : : "r"(hold));
+            if (last >= index) {
+                offset = index * 12;
+                __asm__ volatile ("" : "+r"(offset));
+                do {
+                    recordLow = (volatile u8 *)_08005F98();
+                    recordLow = (volatile u8 *)*(volatile u32 *)(recordLow + 12);
+                    __asm__ volatile ("" : "+r"(recordLow));
+                    entry = recordLow + offset;
+                    if (((u32)_08018A6C(*(s16 *)(entry + 8)) << 24) != 0u) {
+                        dx = *(volatile s32 *)(entry + 0);
                         __asm__ volatile ("" : : : "memory");
                         second = out;
-                        dy -= *(volatile s32 *)(second + 4);
+                        dx -= *(volatile s32 *)(second + 0);
                         deltaLow = delta;
-                        *(volatile s32 *)(deltaLow + 4) = dy;
-                        absValue = _08005B5C(dy);
-                        if (absValue <= limit)
-                            return 12;
+                        *(volatile s32 *)(deltaLow + 0) = dx;
+                        absValue = _08005B5C(dx);
+                        limit = 128;
+                        limit <<= 3;
+                        if (absValue <= limit) {
+                            dy = *(volatile s32 *)(entry + 4);
+                            __asm__ volatile ("" : : : "memory");
+                            second = out;
+                            dy -= *(volatile s32 *)(second + 4);
+                            deltaLow = delta;
+                            *(volatile s32 *)(deltaLow + 4) = dy;
+                            absValue = _08005B5C(dy);
+                            if (absValue <= limit)
+                                return 12;
+                        }
                     }
-                }
-                offset += 12;
-                index++;
-                second = record;
-            } while (*(s16 *)(second + 6) >= index);
+                    offset += 12;
+                    index++;
+                    second = record;
+                } while (*(s16 *)(second + 6) >= index);
+            }
+            record = (volatile u8 *)_08006AEC();
         }
-        record = (volatile u8 *)_08006AEC();
     }
     return 0;
 }

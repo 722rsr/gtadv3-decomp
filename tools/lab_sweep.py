@@ -31,7 +31,7 @@ ROOT = Path(__file__).resolve().parent.parent
 def score(function: str, work: Path, diff: bool = False) -> dict:
     out = work / "score.json"
     cmd = [sys.executable, str(ROOT / "tools/corpus_match_probe.py"),
-           "--c89", "--function", function, "--work-dir", str(work / "probe"),
+           "--function", function, "--work-dir", str(work / "probe"),
            "--json", str(out)]
     if diff:
         cmd.append("--diff")

@@ -17,6 +17,8 @@
 // Absolute anchors for the split WA base + offset below. `.set` emits no bytes;
 // the matching `.globl` assignment lives inside the function that uses it (see
 // docs/matching_workflow.md — match_c_slice splices only the promoted body).
+extern u8 MenuWaOff5E4;
+extern u8 MenuWa121A8;
 __asm__(".set MenuWaOff5E4, 0x000005E4");
 
 extern void sub_08007B18(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h);
@@ -85,78 +87,80 @@ void MenuFF78_121A8(void *rec_) {
     volatile u8 *rec = (volatile u8 *)rec_;
     __asm__(".globl MenuWa121A8\nMenuWa121A8 = 0x03001780\n"
             ".globl MenuWaOff5E4\nMenuWaOff5E4 = 0x000005E4\n");
-    extern u8 MenuWa121A8;
-    extern u8 MenuWaOff5E4;
+
+
     // Halfword pointer, not `u8 *` + cast: the ROM loads the second element
     // straight into the pointer's own register (`ldrh r0,[r5,#0]` then
     // `ldrh r5,[r5,#2]`), which only happens when `p[1]` is spelled on a
     // `u16 *`. With a byte pointer the value lands in r1 and `cmp r1,r0`.
-    u16 *p = (u16 *)Sub_08024BF0();
-    // Every call below passes `rec`, never the `rec_` parameter: while both
-    // spellings are live agbcc allocates a SECOND callee-saved register for the
-    // record (`push {r4,r5,r6,lr}` + `adds r6,r4,#0`) where the ROM has
-    // `push {r4,r5,lr}` and passes r4 straight through.
-    Sub_080011784((void *)rec);
-    Sub_080011E10((void *)rec);
-    Sub_080011CFC((void *)rec);
-    Sub_080011B48((void *)rec);
-    Sub_080011E58((void *)rec, *(volatile u16 *)(uintptr_t)(rec + 180));
-    // Both sides are UNSIGNED, NON-volatile halfword loads in the ROM
-    // (`ldrh r5,[r5,#2]` -> `ldrh r0,[r0,#0]` -> `cmp r5,r0`):
-    //   * a `volatile s16`/`u16` access is lowered to `ldrh; lsls #16; asrs #16`
-    //     (the signed `ldrsh` spelling is only correct later, at 0x08012222);
-    //   * with a volatile access the allocator hands `p[1]` to r1, and only a
-    //     non-volatile access reuses the dying pointer register r5.
-    if (p[0] != 0 && p[1] == *(u16 *)(uintptr_t)(rec + 172)) {
-        // `dst` is computed BEFORE the two loads, exactly as the ROM does
-        // (`adds r0,r4,#0 / adds r0,#32` at 0x080121EA precedes the 444/448
-        // loads). Computing it last leaves r0 free as the load scratch, so the
-        // loads take r2/r0 instead of the ROM's r2/r3 and the block shifts.
-        void *dst = (void *)(uintptr_t)(rec + 32);
-        u32 r1 = *(volatile u32 *)(uintptr_t)(rec + 444);
-        u32 r2 = *(volatile u32 *)(uintptr_t)(rec + 448);
-        Sub_08007BFC(dst, (int)r1, (int)r2,
-                     208, 120, 5, 1, 1, 0);
-    }
-    Sub_080011CBC((void *)rec);
     {
-        // NON-volatile `s16 *` read: agbcc lowers a `volatile s16` READ to
-        // `ldrh; lsls #16; asrs #16`, but the ROM has the single
-        // `movs r1,#0 / ldrsh r0,[r0,r1]` at 0x08012222.
-        s16 *signedp = (s16 *)(uintptr_t)(rec + 172);
-        s16 i = *signedp;
-        s16 v = (s16)Sub_0802581C((int)i);
-        u32 k = (u32)(s32)v;
-        // The base anchor is loaded BEFORE the shift chain (`ldr r2,[pc]` at
-        // 0x0801222C precedes `lsls r1,r0,#3`) and pinned to r2: pinning the
-        // SUM instead leaves the add encoded as `adds r2,r3,r2` (195/196).
-        register uintptr_t wbase __asm__("r2") = (uintptr_t)&MenuWa121A8;
-        u32 off = ((k << 3) + k) << 3; // *72
-        // Pinned to r3: the ROM loads the second anchor into r3
-        // (`ldr r3,[pc,#48]` at 0x0801223C). Left free, agbcc picks r0 and the
-        // pair is 2 bytes wrong (194/196).
-        register uintptr_t woffs __asm__("r3") = (uintptr_t)&MenuWaOff5E4;
-        // Separate statement so the anchor sum targets the dying BASE register
-        // (`adds r2,r2,r3`); folded into the address expression agbcc instead
-        // writes the sum into the pinned r3 and the direction flips.
-        uintptr_t wsum = wbase + woffs;
-        // The ROM loads 0x03001780 and 0x000005E4 as TWO pool words
-        // (lit 0x08012264 / 0x08012268) and adds them at runtime:
-        //   ldr r2,[pc] / ldr r3,[pc] / adds r2,r2,r3 / adds r1,r1,r2
-        // A literal `0x03001780u + 0x5E4u` folds into one pool word
-        // (0x03001D64), so the offset must come from its own anchor SYMBOL --
-        // two symbol_refs are not folded at RTL level. Same recipe as
-        // WA_SPLIT in src/race_scene_b1.c.
-        // Outer sum spelled `off + wsum` so it accumulates into the dead offset
-        // register (`adds r1,r1,r2`). Plain `wbase + woffs + off` is
-        // left-associative the other way round and overwrites the base instead
-        // (170/196).
-        u32 t = *(volatile u32 *)(uintptr_t)(off + wsum);
-        Sub_0800F778(168, 76, t);
+        u16 *p = (u16 *)Sub_08024BF0();
+        // Every call below passes `rec`, never the `rec_` parameter: while both
+        // spellings are live agbcc allocates a SECOND callee-saved register for the
+        // record (`push {r4,r5,r6,lr}` + `adds r6,r4,#0`) where the ROM has
+        // `push {r4,r5,lr}` and passes r4 straight through.
+        Sub_080011784((void *)rec);
+        Sub_080011E10((void *)rec);
+        Sub_080011CFC((void *)rec);
+        Sub_080011B48((void *)rec);
+        Sub_080011E58((void *)rec, *(volatile u16 *)(uintptr_t)(rec + 180));
+        // Both sides are UNSIGNED, NON-volatile halfword loads in the ROM
+        // (`ldrh r5,[r5,#2]` -> `ldrh r0,[r0,#0]` -> `cmp r5,r0`):
+        //   * a `volatile s16`/`u16` access is lowered to `ldrh; lsls #16; asrs #16`
+        //     (the signed `ldrsh` spelling is only correct later, at 0x08012222);
+        //   * with a volatile access the allocator hands `p[1]` to r1, and only a
+        //     non-volatile access reuses the dying pointer register r5.
+        if (p[0] != 0 && p[1] == *(u16 *)(uintptr_t)(rec + 172)) {
+            // `dst` is computed BEFORE the two loads, exactly as the ROM does
+            // (`adds r0,r4,#0 / adds r0,#32` at 0x080121EA precedes the 444/448
+            // loads). Computing it last leaves r0 free as the load scratch, so the
+            // loads take r2/r0 instead of the ROM's r2/r3 and the block shifts.
+            void *dst = (void *)(uintptr_t)(rec + 32);
+            u32 r1 = *(volatile u32 *)(uintptr_t)(rec + 444);
+            u32 r2 = *(volatile u32 *)(uintptr_t)(rec + 448);
+            Sub_08007BFC(dst, (int)r1, (int)r2,
+                         208, 120, 5, 1, 1, 0);
+        }
+        Sub_080011CBC((void *)rec);
+        {
+            // NON-volatile `s16 *` read: agbcc lowers a `volatile s16` READ to
+            // `ldrh; lsls #16; asrs #16`, but the ROM has the single
+            // `movs r1,#0 / ldrsh r0,[r0,r1]` at 0x08012222.
+            s16 *signedp = (s16 *)(uintptr_t)(rec + 172);
+            s16 i = *signedp;
+            s16 v = (s16)Sub_0802581C((int)i);
+            u32 k = (u32)(s32)v;
+            // The base anchor is loaded BEFORE the shift chain (`ldr r2,[pc]` at
+            // 0x0801222C precedes `lsls r1,r0,#3`) and pinned to r2: pinning the
+            // SUM instead leaves the add encoded as `adds r2,r3,r2` (195/196).
+            register uintptr_t wbase __asm__("r2") = (uintptr_t)&MenuWa121A8;
+            u32 off = ((k << 3) + k) << 3; // *72
+            // Pinned to r3: the ROM loads the second anchor into r3
+            // (`ldr r3,[pc,#48]` at 0x0801223C). Left free, agbcc picks r0 and the
+            // pair is 2 bytes wrong (194/196).
+            register uintptr_t woffs __asm__("r3") = (uintptr_t)&MenuWaOff5E4;
+            // Separate statement so the anchor sum targets the dying BASE register
+            // (`adds r2,r2,r3`); folded into the address expression agbcc instead
+            // writes the sum into the pinned r3 and the direction flips.
+            uintptr_t wsum = wbase + woffs;
+            // The ROM loads 0x03001780 and 0x000005E4 as TWO pool words
+            // (lit 0x08012264 / 0x08012268) and adds them at runtime:
+            //   ldr r2,[pc] / ldr r3,[pc] / adds r2,r2,r3 / adds r1,r1,r2
+            // A literal `0x03001780u + 0x5E4u` folds into one pool word
+            // (0x03001D64), so the offset must come from its own anchor SYMBOL --
+            // two symbol_refs are not folded at RTL level. Same recipe as
+            // WA_SPLIT in src/race_scene_b1.c.
+            // Outer sum spelled `off + wsum` so it accumulates into the dead offset
+            // register (`adds r1,r1,r2`). Plain `wbase + woffs + off` is
+            // left-associative the other way round and overwrites the base instead
+            // (170/196).
+            u32 t = *(volatile u32 *)(uintptr_t)(off + wsum);
+            Sub_0800F778(168, 76, t);
+        }
+        Sub_0800D97C((void *)(uintptr_t)(rec + 224), 15);
+        Sub_0800DBE8((void *)(uintptr_t)(rec + 64));
+        Sub_080012574(rec);
     }
-    Sub_0800D97C((void *)(uintptr_t)(rec + 224), 15);
-    Sub_0800DBE8((void *)(uintptr_t)(rec + 64));
-    Sub_080012574(rec);
 }
 void _0800121A8(void *a) __attribute__((alias("MenuFF78_121A8")));
 void sub_0800121A8(void *a) __attribute__((alias("MenuFF78_121A8")));
@@ -240,8 +244,8 @@ void sub_0800121A8(void *a) __attribute__((alias("MenuFF78_121A8")));
             _08007C68(dst, r1, r2, 20, (s0), 5, 1, 0, 0);          \
         }                                                          \
     }                                                              \
-    /* Trailing so the C89 transform keeps every declaration ahead of the   \
-       first statement; `.set` emits no bytes wherever it lands. */         \
+    /* Trailing so every declaration stays ahead of the first statement;    \
+       `.set` emits no bytes wherever it lands. */                           \
     __asm__(".globl " #tblsym "\n" #tblsym " = " #tblval "\n"              \
             ".globl " #tbl2sym "\n" #tbl2sym " = " #tbl2val "\n");         \
 } while (0)

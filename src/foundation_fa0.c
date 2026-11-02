@@ -244,18 +244,20 @@ __asm__(".align 2, 0");
 // (600), bl _080015A0. Incoming r0 ignored (clobbered by mask first).
 void Helper_015B8(void *p){
     (void)p;
-    u32 cnt = 0;
-    volatile u16 *reg = (volatile u16 *)0x04000128u;
-    extern void _080015A0(u32);
-    if ((*reg & 128u) != 0) {
-        register u32 lim __asm__("r5") = 0x795Cu;
-        u32 bit = 128u;
-        do {
-            cnt++;
-            if ((int)cnt > (int)lim) break;
-        } while ((bit & *reg) != 0);
+    {
+        u32 cnt = 0;
+        volatile u16 *reg = (volatile u16 *)0x04000128u;
+        extern void _080015A0(u32);
+        if ((*reg & 128u) != 0) {
+            register u32 lim __asm__("r5") = 0x795Cu;
+            u32 bit = 128u;
+            do {
+                cnt++;
+                if ((int)cnt > (int)lim) break;
+            } while ((bit & *reg) != 0);
+        }
+        _080015A0(600u);
     }
-    _080015A0(600u);
 }
 void _080015B8(void *a) __attribute__((alias("Helper_015B8")));
 // 0x0800104E is an interior case arm of the fa0 dispatch (entered via
@@ -267,17 +269,21 @@ void _080015B8(void *a) __attribute__((alias("Helper_015B8")));
 // through IntrMain_Dispatch above.
 void TimerHelper_01168(void *ctx){
     (void)ctx;
-    volatile u16 *t120 = (volatile u16*)0x04000120;
-    volatile u8 *c73 = (volatile u8*)((u8*)ctx+73);
-    (void)t120; (void)c73;
+    {
+        volatile u16 *t120 = (volatile u16*)0x04000120;
+        volatile u8 *c73 = (volatile u8*)((u8*)ctx+73);
+        (void)t120; (void)c73;
+    }
 }
 void _08001168(void *a) __attribute__((alias("TimerHelper_01168")));
 void TimerHelper_011B4(void *ctx){
     // 0x011B4: movs r5,#1, movs r4,#3, adds r7,r6,#73, ldr r1,_08001218 (0x03000000), mov r8,r1 etc., lsls/lsrs timer halfwords
     (void)ctx;
-    volatile u32 *base = (volatile u32*)0x03000000;
-    volatile u16 *t120 = (volatile u16*)0x04000120;
-    (void)base; (void)t120;
-    // preserve pools 0x03000000 / 0x04000120, high-reg r8/r9/sl spill, vu16 widths
+    {
+        volatile u32 *base = (volatile u32*)0x03000000;
+        volatile u16 *t120 = (volatile u16*)0x04000120;
+        (void)base; (void)t120;
+        // preserve pools 0x03000000 / 0x04000120, high-reg r8/r9/sl spill, vu16 widths
+    }
 }
 void _080011B4(void *a) __attribute__((alias("TimerHelper_011B4")));

@@ -74,23 +74,27 @@ void MenuFF78_11854(void *rec_, int a1) {
         s16 *tbase = (s16 *)0x080CB5A6u;
         register volatile u8 *p __asm__("r1") = rec;
         __asm__ volatile ("" : "+r" (p));
-        s16 *sp = (s16 *)(p + 226);
-        s16 idx = sp[0];
-        s16 *tp = tbase + idx;
-        void *a0 = (void *)(rec + 100);
-        s16 v = tp[0];
-        _08007B18(a0, (s32)v, 8, 112, 3, 1, 1, (int)z);
+        {
+            s16 *sp = (s16 *)(p + 226);
+            s16 idx = sp[0];
+            s16 *tp = tbase + idx;
+            void *a0 = (void *)(rec + 100);
+            s16 v = tp[0];
+            _08007B18(a0, (s32)v, 8, 112, 3, 1, 1, (int)z);
+        }
     }
     if ((int)r5 != r6) {
         s16 *tbase = (s16 *)0x080CB5AAu;
         register volatile u8 *q __asm__("r1") = rec;
         __asm__ volatile ("" : "+r" (q));
-        s16 *sq = (s16 *)(q + 226);
-        s16 idx = sq[0];
-        s16 *tq = tbase + idx;
-        void *a0 = (void *)(rec + 100);
-        s16 v = tq[0];
-        _08007B18(a0, (s32)v, 16, 112, 3, 1, 1, (int)z);
+        {
+            s16 *sq = (s16 *)(q + 226);
+            s16 idx = sq[0];
+            s16 *tq = tbase + idx;
+            void *a0 = (void *)(rec + 100);
+            s16 v = tq[0];
+            _08007B18(a0, (s32)v, 16, 112, 3, 1, 1, (int)z);
+        }
     }
 }
 void _080011854(void *a, int b) __attribute__((alias("MenuFF78_11854")));
@@ -112,23 +116,27 @@ void MenuFF78_118DC(void *rec_, int a1) {
         s16 *tbase = (s16 *)0x080CB5A6u;
         register volatile u8 *p __asm__("r1") = rec;
         __asm__ volatile ("" : "+r" (p));
-        s16 *sp = (s16 *)(p + 226);
-        s16 idx = sp[0];
-        s16 *tp = tbase + idx;
-        void *a0 = (void *)(rec + 100);
-        s16 v = tp[0];
-        _08007B18(a0, (s32)v, 8, 112, 3, 1, 1, (int)z);
+        {
+            s16 *sp = (s16 *)(p + 226);
+            s16 idx = sp[0];
+            s16 *tp = tbase + idx;
+            void *a0 = (void *)(rec + 100);
+            s16 v = tp[0];
+            _08007B18(a0, (s32)v, 8, 112, 3, 1, 1, (int)z);
+        }
     }
     if (r5 != 2) {
         s16 *tbase = (s16 *)0x080CB5AAu;
         register volatile u8 *q __asm__("r1") = rec;
         __asm__ volatile ("" : "+r" (q));
-        s16 *sq = (s16 *)(q + 226);
-        s16 idx = sq[0];
-        s16 *tq = tbase + idx;
-        void *a0 = (void *)(rec + 100);
-        s16 v = tq[0];
-        _08007B18(a0, (s32)v, 16, 112, 3, 1, 1, (int)z);
+        {
+            s16 *sq = (s16 *)(q + 226);
+            s16 idx = sq[0];
+            s16 *tq = tbase + idx;
+            void *a0 = (void *)(rec + 100);
+            s16 v = tq[0];
+            _08007B18(a0, (s32)v, 16, 112, 3, 1, 1, (int)z);
+        }
     }
 }
 void _0800118DC(void *a, int b) __attribute__((alias("MenuFF78_118DC")));
@@ -142,10 +150,12 @@ void sub_0800118DC(void *a, int b) __attribute__((alias("MenuFF78_118DC")));
 void MenuFF78_11CBC(void *rec_) {
     volatile u8 *rec = (volatile u8 *)rec_;
     if (RD16(rec, 168) == 3) return;
-    void *dst = (void *)(uintptr_t)(rec + 16);
-    u32 r1 = RD32(rec, 252);
-    u32 r2 = RD32(rec, 256);
-    _08007BFC(dst, (int)r1, (int)r2, 88, 120, 8, 1, 1, 0);
+    {
+        void *dst = (void *)(uintptr_t)(rec + 16);
+        u32 r1 = RD32(rec, 252);
+        u32 r2 = RD32(rec, 256);
+        _08007BFC(dst, (int)r1, (int)r2, 88, 120, 8, 1, 1, 0);
+    }
 }
 // The body is 62 bytes, two short of the section's 4-byte alignment. Under
 // -ffunction-sections gas closes the section itself and fills a Thumb code
@@ -165,10 +175,12 @@ void sub_080011CBC(void *a) __attribute__((alias("MenuFF78_11CBC")));
 void MenuFF78_11CFC(void *rec_) {
     volatile u8 *rec = (volatile u8 *)rec_;
     _08007B18(rec_, 9, 152, 88, 3, 1, 1, 0);
-    void *dst = (void *)(uintptr_t)(rec + 40);
-    u32 r1 = RD32(rec, 288);
-    u32 r2 = RD32(rec, 292);
-    _08007BFC(dst, (int)r1, (int)r2, 152, 64, 3, 1, 1, 0);
+    {
+        void *dst = (void *)(uintptr_t)(rec + 40);
+        u32 r1 = RD32(rec, 288);
+        u32 r2 = RD32(rec, 292);
+        _08007BFC(dst, (int)r1, (int)r2, 152, 64, 3, 1, 1, 0);
+    }
 }
 void _080011CFC(void *a) __attribute__((alias("MenuFF78_11CFC")));
 void Sub_080011CFC(void *a) __attribute__((alias("MenuFF78_11CFC")));
@@ -181,10 +193,12 @@ void sub_080011CFC(void *a) __attribute__((alias("MenuFF78_11CFC")));
 void MenuFF78_11DC4(void *rec_) {
     volatile u8 *rec = (volatile u8 *)rec_;
     _08007B18(rec_, 9, 152, 88, 3, 1, 1, 0);
-    void *dst = (void *)(uintptr_t)(rec + 40);
-    u32 r1 = RD32(rec, 288);
-    u32 r2 = RD32(rec, 292);
-    _08007BFC(dst, (int)r1, (int)r2, 152, 64, 3, 1, 1, 0);
+    {
+        void *dst = (void *)(uintptr_t)(rec + 40);
+        u32 r1 = RD32(rec, 288);
+        u32 r2 = RD32(rec, 292);
+        _08007BFC(dst, (int)r1, (int)r2, 152, 64, 3, 1, 1, 0);
+    }
 }
 void _080011DC4(void *a) __attribute__((alias("MenuFF78_11DC4")));
 void Sub_080011DC4(void *a) __attribute__((alias("MenuFF78_11DC4")));
@@ -211,10 +225,12 @@ void MenuFF78_11FF0(void *rec_) {
     volatile u8 *rec = (volatile u8 *)rec_;
     u16 r = (u16)(RD16(rec, 194) - 1);
     if ((u32)r > 2) return;
-    void *dst = (void *)(uintptr_t)(rec + 32);
-    u32 r1 = RD32(rec, 0x144);
-    u32 r2 = RD32(rec, 0x148);
-    _08007BFC(dst, (int)r1, (int)r2, 208, 120, 6, 1, 1, 0);
+    {
+        void *dst = (void *)(uintptr_t)(rec + 32);
+        u32 r1 = RD32(rec, 0x144);
+        u32 r2 = RD32(rec, 0x148);
+        _08007BFC(dst, (int)r1, (int)r2, 208, 120, 6, 1, 1, 0);
+    }
 }
 void _080011FF0(void *a) __attribute__((alias("MenuFF78_11FF0")));
 void Sub_080011FF0(void *a) __attribute__((alias("MenuFF78_11FF0")));
@@ -342,14 +358,17 @@ void MenuFF78_15930(void *rec_, int a1, int a2) {
     int r6 = a2;
     int one = 1;
     int zero = 0;
-    for (int r4 = 0, r9 = 29; r9 >= 0; r4 += 8, r9--) {
-        switch (r6) {
-        case 2:
-            _08007B18((void *)(uintptr_t)(rec + 52), 7, r4, r7, 3, one, one, zero);
-            break;
-        case 3:
-            _08007B18((void *)(uintptr_t)(rec + 52), 7, r4, r7, 4, one, one, zero);
-            break;
+    {
+        int r4 = 0, r9 = 29;
+        for (; r9 >= 0; r4 += 8, r9--) {
+            switch (r6) {
+            case 2:
+                _08007B18((void *)(uintptr_t)(rec + 52), 7, r4, r7, 3, one, one, zero);
+                break;
+            case 3:
+                _08007B18((void *)(uintptr_t)(rec + 52), 7, r4, r7, 4, one, one, zero);
+                break;
+            }
         }
     }
 }

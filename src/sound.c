@@ -7,6 +7,10 @@
 // VMA refs per asm/* + asm/sound_api.s.
 
 // Weak externs for low-level helpers not yet reconstructed (allow standalone host builds)
+extern u32 SoundSwapBankTable_2B5AC[];
+extern u32 SoundSwapRootCell_2B5AC[];
+extern u32 SoundClaimRootCell_2B500[];
+extern u32 SoundClaimBankTable_2B500[];
 __attribute__((weak)) void sub_0802C4C4(void) {}
 __attribute__((weak)) void sub_0802C5C0(void) {}
 // Declarations for helpers that have real bodies below (ARM) or weak for host
@@ -130,13 +134,15 @@ void SoundVCounter(void) {
             }
         }
         __asm__ volatile ("" : : "r" (zero));
-        register volatile u32 *tailCell __asm__("r4") =
-            (volatile u32 *)SOUND_MASTER_PTR;
-        m = (SoundMaster *)(uintptr_t)*tailCell;
-        if (m->chanCLevel != 255) {
-            _0802B718(m->chanCLevel, 255, m->chanC);
+        {
+            register volatile u32 *tailCell __asm__("r4") =
+                (volatile u32 *)SOUND_MASTER_PTR;
             m = (SoundMaster *)(uintptr_t)*tailCell;
-            _0802B74C(m->chanCLevel, 255, m->chanD);
+            if (m->chanCLevel != 255) {
+                _0802B718(m->chanCLevel, 255, m->chanC);
+                m = (SoundMaster *)(uintptr_t)*tailCell;
+                _0802B74C(m->chanCLevel, 255, m->chanD);
+            }
         }
     }
 }
@@ -608,105 +614,107 @@ void sub_08002B368(u16 vol) __attribute__((alias("_0802B368")));
 void SoundBankClaim_2B500(u32 idx, u32 w4, u32 w6) {
     __asm__(".globl SoundClaimBankTable_2B500\nSoundClaimBankTable_2B500 = 0x08061FA4\n"
             ".globl SoundClaimRootCell_2B500\nSoundClaimRootCell_2B500 = 0x03001764\n");
-    extern u32 SoundClaimBankTable_2B500[];
-    extern u32 SoundClaimRootCell_2B500[];
-    register u32 r0 __asm__("r0");
-    register u32 r1 __asm__("r1");
-    register u32 r2 __asm__("r2");
-    register u32 r3 __asm__("r3");
-    register u32 r4 __asm__("r4");
-    register u32 r5 __asm__("r5");
-    register u32 r6 __asm__("r6");
-    register u32 r8 __asm__("r8");
-    register u32 r9 __asm__("r9");
-    register u32 sl __asm__("sl");
-    register u32 ip __asm__("ip");
-    u32 tableBase;
 
-    r4 = (u16)idx;
-    sl = r4;
-    r5 = (u16)w4;
-    r9 = r5;
-    r6 = (u16)w6;
-    r8 = r6;
-    tableBase = (u32)(uintptr_t)SoundClaimBankTable_2B500;
-    r0 = ((s32)(s16)r4) * 8;
-    r2 = r0 + tableBase;
-    r0 = *(volatile u16 *)(uintptr_t)(r2 + 4);
-    if (r0 != 3)
+
+    {
+        register u32 r0 __asm__("r0");
+        register u32 r1 __asm__("r1");
+        register u32 r2 __asm__("r2");
+        register u32 r3 __asm__("r3");
+        register u32 r4 __asm__("r4");
+        register u32 r5 __asm__("r5");
+        register u32 r6 __asm__("r6");
+        register u32 r8 __asm__("r8");
+        register u32 r9 __asm__("r9");
+        register u32 sl __asm__("sl");
+        register u32 ip __asm__("ip");
+        u32 tableBase;
+
+        r4 = (u16)idx;
+        sl = r4;
+        r5 = (u16)w4;
+        r9 = r5;
+        r6 = (u16)w6;
+        r8 = r6;
+        tableBase = (u32)(uintptr_t)SoundClaimBankTable_2B500;
+        r0 = ((s32)(s16)r4) * 8;
+        r2 = r0 + tableBase;
+        r0 = *(volatile u16 *)(uintptr_t)(r2 + 4);
+        if (r0 != 3)
+            goto claim_done;
+
+        r1 = (u32)(uintptr_t)SoundClaimRootCell_2B500;
+        ip = r1;
+        r3 = *(volatile u32 *)(uintptr_t)r1;
+        r0 = *(volatile u8 *)(uintptr_t)(r3 + 15);
+        if (r0 != 255)
+            goto c_busy;
+        r0 = *(volatile u8 *)(uintptr_t)(r3 + 16);
+        if (r0 != 255)
+            goto d_busy;
+        *(volatile u8 *)(uintptr_t)(r3 + 16) = (u8)r4;
+        goto claim_commit;
+
+    d_busy:
+        r1 = *(volatile u8 *)(uintptr_t)(r3 + 16);
+        __asm__ volatile ("" : "+r" (r1));
+        r0 = r1 << 3;
+        r0 += tableBase;
+        r1 = *(volatile u32 *)(uintptr_t)r0;
+        r0 = *(volatile u32 *)(uintptr_t)r2;
+        r1 = *(volatile u8 *)(uintptr_t)(r1 + 2);
+        r0 = *(volatile u8 *)(uintptr_t)(r0 + 2);
+        if (r1 < r0)
+            goto claim_done;
+        goto claim_set_d;
+
+    c_busy:
+        r1 = *(volatile u8 *)(uintptr_t)(r3 + 15);
+        __asm__ volatile ("" : "+r" (r1));
+        r0 = r1 << 3;
+        r0 += tableBase;
+        r1 = *(volatile u32 *)(uintptr_t)r0;
+        r0 = *(volatile u32 *)(uintptr_t)r2;
+        r2 = *(volatile u8 *)(uintptr_t)(r0 + 2);
+        __asm__ volatile ("" : "+r" (r2));
+        r1 = *(volatile u8 *)(uintptr_t)(r1 + 2);
+        __asm__ volatile ("" : "+r" (r1));
+        if (r1 < r2)
+            goto claim_done;
+        r0 = *(volatile u8 *)(uintptr_t)(r3 + 16);
+        if (r0 == 255)
+            goto d_free;
+        r1 = *(volatile u8 *)(uintptr_t)(r3 + 16);
+        __asm__ volatile ("" : "+r" (r1));
+        r0 = r1 << 3;
+        r0 += tableBase;
+        r0 = *(volatile u32 *)(uintptr_t)r0;
+        r0 = *(volatile u8 *)(uintptr_t)(r0 + 2);
+        if (r0 < r2)
+            goto claim_done;
+
+    claim_set_d:
+        *(volatile u8 *)(uintptr_t)(r3 + 16) = (u8)r4;
+        r1 = ip;
+    claim_commit:
+        r0 = *(volatile u32 *)(uintptr_t)r1;
+        *(volatile u16 *)(uintptr_t)(r0 + 4) = (u16)r5;
+        *(volatile u16 *)(uintptr_t)(r0 + 6) = (u16)r6;
         goto claim_done;
 
-    r1 = (u32)(uintptr_t)SoundClaimRootCell_2B500;
-    ip = r1;
-    r3 = *(volatile u32 *)(uintptr_t)r1;
-    r0 = *(volatile u8 *)(uintptr_t)(r3 + 15);
-    if (r0 != 255)
-        goto c_busy;
-    r0 = *(volatile u8 *)(uintptr_t)(r3 + 16);
-    if (r0 != 255)
-        goto d_busy;
-    *(volatile u8 *)(uintptr_t)(r3 + 16) = (u8)r4;
-    goto claim_commit;
+    d_free:
+        r0 = sl;
+        *(volatile u8 *)(uintptr_t)(r3 + 16) = (u8)r0;
+        r1 = ip;
+        r0 = *(volatile u32 *)(uintptr_t)r1;
+        r1 = r9;
+        *(volatile u16 *)(uintptr_t)(r0 + 4) = (u16)r1;
+        r1 = r8;
+        *(volatile u16 *)(uintptr_t)(r0 + 6) = (u16)r1;
 
-d_busy:
-    r1 = *(volatile u8 *)(uintptr_t)(r3 + 16);
-    __asm__ volatile ("" : "+r" (r1));
-    r0 = r1 << 3;
-    r0 += tableBase;
-    r1 = *(volatile u32 *)(uintptr_t)r0;
-    r0 = *(volatile u32 *)(uintptr_t)r2;
-    r1 = *(volatile u8 *)(uintptr_t)(r1 + 2);
-    r0 = *(volatile u8 *)(uintptr_t)(r0 + 2);
-    if (r1 < r0)
-        goto claim_done;
-    goto claim_set_d;
-
-c_busy:
-    r1 = *(volatile u8 *)(uintptr_t)(r3 + 15);
-    __asm__ volatile ("" : "+r" (r1));
-    r0 = r1 << 3;
-    r0 += tableBase;
-    r1 = *(volatile u32 *)(uintptr_t)r0;
-    r0 = *(volatile u32 *)(uintptr_t)r2;
-    r2 = *(volatile u8 *)(uintptr_t)(r0 + 2);
-    __asm__ volatile ("" : "+r" (r2));
-    r1 = *(volatile u8 *)(uintptr_t)(r1 + 2);
-    __asm__ volatile ("" : "+r" (r1));
-    if (r1 < r2)
-        goto claim_done;
-    r0 = *(volatile u8 *)(uintptr_t)(r3 + 16);
-    if (r0 == 255)
-        goto d_free;
-    r1 = *(volatile u8 *)(uintptr_t)(r3 + 16);
-    __asm__ volatile ("" : "+r" (r1));
-    r0 = r1 << 3;
-    r0 += tableBase;
-    r0 = *(volatile u32 *)(uintptr_t)r0;
-    r0 = *(volatile u8 *)(uintptr_t)(r0 + 2);
-    if (r0 < r2)
-        goto claim_done;
-
-claim_set_d:
-    *(volatile u8 *)(uintptr_t)(r3 + 16) = (u8)r4;
-    r1 = ip;
-claim_commit:
-    r0 = *(volatile u32 *)(uintptr_t)r1;
-    *(volatile u16 *)(uintptr_t)(r0 + 4) = (u16)r5;
-    *(volatile u16 *)(uintptr_t)(r0 + 6) = (u16)r6;
-    goto claim_done;
-
-d_free:
-    r0 = sl;
-    *(volatile u8 *)(uintptr_t)(r3 + 16) = (u8)r0;
-    r1 = ip;
-    r0 = *(volatile u32 *)(uintptr_t)r1;
-    r1 = r9;
-    *(volatile u16 *)(uintptr_t)(r0 + 4) = (u16)r1;
-    r1 = r8;
-    *(volatile u16 *)(uintptr_t)(r0 + 6) = (u16)r1;
-
-claim_done:
-    return;
+    claim_done:
+        return;
+    }
 }
 void _0802B500(u32 a, u32 b, u32 c) __attribute__((alias("SoundBankClaim_2B500")));
 void sub_0802B500(u32 a, u32 b, u32 c) __attribute__((alias("SoundBankClaim_2B500")));
@@ -730,99 +738,101 @@ void SoundBankSwap_2B5AC(void) {
     extern void sub_0802B64C(u32 channel);
     __asm__(".globl SoundSwapRootCell_2B5AC\nSoundSwapRootCell_2B5AC = 0x03001764\n"
             ".globl SoundSwapBankTable_2B5AC\nSoundSwapBankTable_2B5AC = 0x08061FA4\n");
-    extern u32 SoundSwapRootCell_2B5AC[];
-    extern u32 SoundSwapBankTable_2B5AC[];
-    register u32 r1 __asm__("r1");
-    register u32 r2 __asm__("r2");
-    register u32 r3 __asm__("r3");
-    register volatile u32 *r4 __asm__("r4");
-    register u32 r5 __asm__("r5");
-    u8 c_owner;
 
-    r4 = SoundSwapRootCell_2B5AC;
-    r2 = *(volatile u32 *)(uintptr_t)r4;
+
     {
-        register u32 r0 __asm__("r0");
-        r0 = *(volatile u8 *)(uintptr_t)(r2 + 16);
-        if (r0 == 255)
-            goto no_d_owner;
-        r1 = (u32)(uintptr_t)SoundSwapBankTable_2B5AC;
-        r3 = r0;
-    }
-    {
-        register u32 r0 __asm__("r0");
-        r0 = r3 << 3;
-        r0 += r1;
-        r1 = *(volatile u32 *)(uintptr_t)r0;
-        r5 = 1;
-        r0 = r5;
-        __asm__ volatile ("" : "+r" (r0));
-        r1 = *(volatile u8 *)(uintptr_t)(r1 + 2);
-        r0 &= r1;
-        if (r0 == 0)
-            goto use_current_owner;
-        c_owner = *(volatile u8 *)(uintptr_t)(r2 + 15);
-        if (r3 == c_owner)
+        register u32 r1 __asm__("r1");
+        register u32 r2 __asm__("r2");
+        register u32 r3 __asm__("r3");
+        register volatile u32 *r4 __asm__("r4");
+        register u32 r5 __asm__("r5");
+        u8 c_owner;
+
+        r4 = SoundSwapRootCell_2B5AC;
+        r2 = *(volatile u32 *)(uintptr_t)r4;
+        {
+            register u32 r0 __asm__("r0");
+            r0 = *(volatile u8 *)(uintptr_t)(r2 + 16);
+            if (r0 == 255)
+                goto no_d_owner;
+            r1 = (u32)(uintptr_t)SoundSwapBankTable_2B5AC;
+            r3 = r0;
+        }
+        {
+            register u32 r0 __asm__("r0");
+            r0 = r3 << 3;
+            r0 += r1;
+            r1 = *(volatile u32 *)(uintptr_t)r0;
+            r5 = 1;
+            r0 = r5;
+            __asm__ volatile ("" : "+r" (r0));
+            r1 = *(volatile u8 *)(uintptr_t)(r1 + 2);
+            r0 &= r1;
+            if (r0 == 0)
+                goto use_current_owner;
+            c_owner = *(volatile u8 *)(uintptr_t)(r2 + 15);
+            if (r3 == c_owner)
+                goto clear_d_owner;
+            goto promote_d_owner;
+
+    use_current_owner:
+            c_owner = *(volatile u8 *)(uintptr_t)(r2 + 15);
+    promote_d_owner:
+            if (c_owner != 255)
+                sub_0802B65C(c_owner);
+            r1 = *(volatile u32 *)(uintptr_t)r4;
+            r0 = *(volatile u8 *)(uintptr_t)(r1 + 16);
+            *(volatile u8 *)(uintptr_t)(r1 + 15) = (u8)r0;
+            r0 = *(volatile u32 *)(uintptr_t)r4;
+            *(volatile u8 *)(uintptr_t)(r0 + 17) = (u8)r5;
+            r0 = *(volatile u32 *)(uintptr_t)r4;
+            r0 = *(volatile u8 *)(uintptr_t)(r0 + 15);
+            sub_0802B64C(r0);
             goto clear_d_owner;
-        goto promote_d_owner;
+        }
 
-use_current_owner:
-        c_owner = *(volatile u8 *)(uintptr_t)(r2 + 15);
-promote_d_owner:
-        if (c_owner != 255)
-            sub_0802B65C(c_owner);
-        r1 = *(volatile u32 *)(uintptr_t)r4;
-        r0 = *(volatile u8 *)(uintptr_t)(r1 + 16);
-        *(volatile u8 *)(uintptr_t)(r1 + 15) = (u8)r0;
-        r0 = *(volatile u32 *)(uintptr_t)r4;
-        *(volatile u8 *)(uintptr_t)(r0 + 17) = (u8)r5;
-        r0 = *(volatile u32 *)(uintptr_t)r4;
-        r0 = *(volatile u8 *)(uintptr_t)(r0 + 15);
-        sub_0802B64C(r0);
-        goto clear_d_owner;
-    }
+    no_d_owner:
+        {
+            register u32 r0 __asm__("r0");
+            c_owner = *(volatile u8 *)(uintptr_t)(r2 + 15);
+            if (c_owner == 255)
+                goto clear_d_owner;
+            r1 = (u32)(uintptr_t)SoundSwapBankTable_2B5AC;
+            r2 = c_owner;
+            r0 = r2 << 3;
+            r0 += r1;
+            r1 = *(volatile u32 *)(uintptr_t)r0;
+            r0 = 1;
+            __asm__ volatile ("" : "+r" (r0));
+            r1 = *(volatile u8 *)(uintptr_t)(r1 + 2);
+            r0 &= r1;
+            if (r0 == 0)
+                goto probe_streams;
+            r0 = r2;
+            goto pause_and_free;
 
-no_d_owner:
-    {
-        register u32 r0 __asm__("r0");
-        c_owner = *(volatile u8 *)(uintptr_t)(r2 + 15);
-        if (c_owner == 255)
-            goto clear_d_owner;
-        r1 = (u32)(uintptr_t)SoundSwapBankTable_2B5AC;
-        r2 = c_owner;
-        r0 = r2 << 3;
-        r0 += r1;
-        r1 = *(volatile u32 *)(uintptr_t)r0;
-        r0 = 1;
-        __asm__ volatile ("" : "+r" (r0));
-        r1 = *(volatile u8 *)(uintptr_t)(r1 + 2);
-        r0 &= r1;
-        if (r0 == 0)
-            goto probe_streams;
-        r0 = r2;
-        goto pause_and_free;
+    probe_streams:
+            r0 = sub_0802B3B8(3);
+            r0 <<= 24;
+            if (r0 != 0)
+                goto clear_d_owner;
+            r0 = *(volatile u32 *)(uintptr_t)r4;
+            r0 = *(volatile u8 *)(uintptr_t)(r0 + 15);
+    pause_and_free:
+            sub_0802B65C(r0);
+            r1 = *(volatile u32 *)(uintptr_t)r4;
+            r0 = 255;
+            *(volatile u8 *)(uintptr_t)(r1 + 15) = (u8)r0;
+        }
 
-probe_streams:
-        r0 = sub_0802B3B8(3);
-        r0 <<= 24;
-        if (r0 != 0)
-            goto clear_d_owner;
-        r0 = *(volatile u32 *)(uintptr_t)r4;
-        r0 = *(volatile u8 *)(uintptr_t)(r0 + 15);
-pause_and_free:
-        sub_0802B65C(r0);
-        r1 = *(volatile u32 *)(uintptr_t)r4;
-        r0 = 255;
-        *(volatile u8 *)(uintptr_t)(r1 + 15) = (u8)r0;
-    }
-
-clear_d_owner:
-    {
-        register u32 r0 __asm__("r0");
-        r0 = (u32)(uintptr_t)SoundSwapRootCell_2B5AC;
-        r1 = *(volatile u32 *)(uintptr_t)r0;
-        r0 = 255;
-        *(volatile u8 *)(uintptr_t)(r1 + 16) = (u8)r0;
+    clear_d_owner:
+        {
+            register u32 r0 __asm__("r0");
+            r0 = (u32)(uintptr_t)SoundSwapRootCell_2B5AC;
+            r1 = *(volatile u32 *)(uintptr_t)r0;
+            r0 = 255;
+            *(volatile u8 *)(uintptr_t)(r1 + 16) = (u8)r0;
+        }
     }
 }
 void _0802B5AC(void) __attribute__((alias("SoundBankSwap_2B5AC")));

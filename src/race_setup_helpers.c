@@ -105,35 +105,43 @@ void sub_080018F94(void)
         register volatile u8 *wa __asm__("r0") = (volatile u8 *)0x03001780u;
         register u32 countOffset __asm__("r2") = 0x10CA;
         __asm__ volatile ("" : "+r" (wa), "+r" (countOffset));
-        register volatile s16 *countp __asm__("r1") =
-            (volatile s16 *)((u32)wa + (u32)countOffset);
-        register s16 *plainCount __asm__("r1") = (s16 *)countp;
-        register s32 n __asm__("r0") = *plainCount;
-        if (i >= n) goto finish;
-        countTail = countp;
-        stride = 142;
-        stride <<= 1;
-loop_records:
         {
-            u8 *r4 = (u8 *)(uintptr_t)(0x03004E80u + stride);
-            if (_080044C4(*(int *)(r4 + 0), *(int *)(r4 + 4),
-                          (u32 *)(r4 + 200))) {
-                _080018F14((void *)r4);
-                register volatile u8 *racectx __asm__("r0") =
-                    *(volatile u8 *volatile *)(uintptr_t)0x03004E20u;
-                register volatile u16 *lapCount __asm__("r0") =
-                    (volatile u16 *)(racectx + 70);
-                register u16 lapTotal __asm__("r1") = *lapCount;
-                lapTotal++;
-                *lapCount = lapTotal;
+            register volatile s16 *countp __asm__("r1") =
+                (volatile s16 *)((u32)wa + (u32)countOffset);
+            register s16 *plainCount __asm__("r1") = (s16 *)countp;
+            register s32 n __asm__("r0") = *plainCount;
+            if (i >= n) goto finish;
+            countTail = countp;
+            stride = 142;
+            stride <<= 1;
+    loop_records:
+            {
+                u8 *r4 = (u8 *)(uintptr_t)(0x03004E80u + stride);
+                if (_080044C4(*(int *)(r4 + 0), *(int *)(r4 + 4),
+                              (u32 *)(r4 + 200))) {
+                    _080018F14((void *)r4);
+                    {
+                        register volatile u8 *racectx __asm__("r0") =
+                            *(volatile u8 *volatile *)(uintptr_t)0x03004E20u;
+                        register volatile u16 *lapCount __asm__("r0") =
+                            (volatile u16 *)(racectx + 70);
+                        register u16 lapTotal __asm__("r1") = *lapCount;
+                        lapTotal++;
+                        *lapCount = lapTotal;
+                    }
+                }
+                {
+                    register s32 strideStep __asm__("r0") = 142;
+                    __asm__ volatile ("" : "+r" (strideStep));
+                    strideStep <<= 1;
+                    stride += strideStep;
+                    i++;
+                    {
+                        s32 currentCount = *(s16 *)countTail;
+                        if (i < currentCount) goto loop_records;
+                    }
+                }
             }
-            register s32 strideStep __asm__("r0") = 142;
-            __asm__ volatile ("" : "+r" (strideStep));
-            strideStep <<= 1;
-            stride += strideStep;
-            i++;
-            s32 currentCount = *(s16 *)countTail;
-            if (i < currentCount) goto loop_records;
         }
     }
 finish:
@@ -697,21 +705,23 @@ void sub_0800199CC(void)
 void sub_080019A2C(int mode)
 {
     _08018AA8(64, 1);
-    volatile u8 *rc = *(volatile u8 *volatile *)(uintptr_t)0x03004E20u;
-    *(volatile u16 *)(rc + 72) = (u16)mode;
-    *(volatile u16 *)(uintptr_t)0x04000050u = 0x0FDF;
+    {
+        volatile u8 *rc = *(volatile u8 *volatile *)(uintptr_t)0x03004E20u;
+        *(volatile u16 *)(rc + 72) = (u16)mode;
+        *(volatile u16 *)(uintptr_t)0x04000050u = 0x0FDF;
 
-    switch (mode) {
-    case 0:
-        *(volatile u16 *)(uintptr_t)0x04000054u = 16;
-        *(volatile u16 *)(rc + 74) = 32;
-        break;
-    case 1:
-        *(volatile u16 *)(uintptr_t)0x04000054u = 0;
-        *(volatile u16 *)(rc + 74) = 32;
-        break;
-    default:
-        break;
+        switch (mode) {
+        case 0:
+            *(volatile u16 *)(uintptr_t)0x04000054u = 16;
+            *(volatile u16 *)(rc + 74) = 32;
+            break;
+        case 1:
+            *(volatile u16 *)(uintptr_t)0x04000054u = 0;
+            *(volatile u16 *)(rc + 74) = 32;
+            break;
+        default:
+            break;
+        }
     }
 }
 

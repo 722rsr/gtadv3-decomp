@@ -50,11 +50,13 @@ void Rec35_CountdownDec(void *rec, int reload) {
     *cell = nv;
     if ((s16)nv < 0) {
         *cell = (u16)reload;
-        s16 st = (s16)*(volatile u16 *)((u8 *)rec + 2);
-        if (st == 0) {
-            *(volatile u16 *)((u8 *)rec + 2) = 1;
-        } else if (st == 1) {
-            *(volatile u16 *)((u8 *)rec + 2) = 0;
+        {
+            s16 st = (s16)*(volatile u16 *)((u8 *)rec + 2);
+            if (st == 0) {
+                *(volatile u16 *)((u8 *)rec + 2) = 1;
+            } else if (st == 1) {
+                *(volatile u16 *)((u8 *)rec + 2) = 0;
+            }
         }
     }
 }
@@ -86,17 +88,19 @@ void Rec35_EventA(void *rec, int unused, int mode) {
 
     if (event == 2) {
         _0802B368(4);
-        register u32 ten __asm__("r0") = 10;
-        register u32 zero __asm__("r1");
-        *(volatile u32 *)(record + 16) = ten;
-        __asm__ volatile ("" : "=r"(zero) : : "memory");
-        zero = 0;
-        *(volatile u16 *)(record + 20) = (u16)zero;
-        *(volatile u32 *)(record + 48) = ten;
-        *(volatile u32 *)(record + 44) = zero;
         {
-            volatile u8 *wa = (volatile u8 *)(uintptr_t)Rec35EventAWa;
-            *(volatile u16 *)(wa + 0x1084u) = (u16)zero;
+            register u32 ten __asm__("r0") = 10;
+            register u32 zero __asm__("r1");
+            *(volatile u32 *)(record + 16) = ten;
+            __asm__ volatile ("" : "=r"(zero) : : "memory");
+            zero = 0;
+            *(volatile u16 *)(record + 20) = (u16)zero;
+            *(volatile u32 *)(record + 48) = ten;
+            *(volatile u32 *)(record + 44) = zero;
+            {
+                volatile u8 *wa = (volatile u8 *)(uintptr_t)Rec35EventAWa;
+                *(volatile u16 *)(wa + 0x1084u) = (u16)zero;
+            }
         }
     }
     if (event == 1) {
@@ -177,15 +181,17 @@ void Rec35_EventB(void *rec, int unused, int mode) {
 
     if (event == 2) {
         _0802B368(4);
-        register u32 ten __asm__("r1") = 10;
-        register u32 zero __asm__("r0");
-        *(volatile u32 *)(record + 16) = ten;
-        // The zero is materialized after the first store, as in the ROM.
-        __asm__ volatile ("" : "=r"(zero) : : "memory");
-        zero = 0;
-        *(volatile u16 *)(record + 20) = (u16)zero;
-        *(volatile u32 *)(record + 48) = ten;
-        *(volatile u32 *)(record + 44) = zero;
+        {
+            register u32 ten __asm__("r1") = 10;
+            register u32 zero __asm__("r0");
+            *(volatile u32 *)(record + 16) = ten;
+            // The zero is materialized after the first store, as in the ROM.
+            __asm__ volatile ("" : "=r"(zero) : : "memory");
+            zero = 0;
+            *(volatile u16 *)(record + 20) = (u16)zero;
+            *(volatile u32 *)(record + 48) = ten;
+            *(volatile u32 *)(record + 44) = zero;
+        }
     }
     if (event == 1) {
         register u32 modeIndex __asm__("r0") = 0;
@@ -254,32 +260,36 @@ void sub_0800160C4(void *a, int b, int c) __attribute__((alias("Rec35_EventB")))
 // ============================================================================
 void Rec35_RecordClear(void *rec, int unused, int mode) {
     (void)unused;
-    u8 *r5 = (u8 *)rec;
-    // ROM gate: lsls r2,#16 / ldr r0,=0xFFFF0000 / adds r2,r2,r0 / lsrs r2,#16
-    // / cmp r2,#1 / bhi. That is a plain (u16) truncation of `mode` -- NOT
-    // `(u16)mode - 1`, which agbcc renders with a leading `subs r2,#1` that
-    // displaced every later instruction (measured 8/60). The shift must be
-    // spelled FIRST: agbcc reassociates `(u16)((u16)x + 0xFFFF)` into
-    // `ldr 0xFFFF0000 / adds / lsls / lsrs`, hoisting the constant above the
-    // shift. Proven shape: src/car_physics_core.c:134.
-    u16 m = (u16)(((((u32)mode) << 16) + 0xFFFF0000u) >> 16);
-    if (m > 1) return;
-    // ROM holds ONE zero for all three clear stores: `movs r4,#0` at +0x14
-    // feeds `strh r4,[r0]` (+144), `strh r4,[r5,#20]` and `str r4,[r5,#44]`.
-    // The named local is what keeps agbcc on r4; three separate literal zeros
-    // rematerialise `movs r0,#0` before the +44 store. The ASSIGNMENT lives
-    // INSIDE the first store's expression (same lever as Rec35_Leaf_17414 in
-    // rec35_runtime.c): as its own statement agbcc hoists `movs r4,#0` ABOVE
-    // the `adds r0,r5,#0 / adds r0,#144` address pair, where the ROM
-    // materialises it after.
-    u32 z;
-    *(volatile u16 *)((u8 *)r5 + 144) = (u16)(z = 0);
-    _08002618(1, 0);
-    _0802B368(1);
-    *(volatile u32 *)((u8 *)r5 + 16) = 10;
-    *(volatile u16 *)((u8 *)r5 + 20) = (u16)z;
-    *(volatile u32 *)((u8 *)r5 + 48) = 10;
-    *(volatile u32 *)((u8 *)r5 + 44) = z;
+    {
+        u8 *r5 = (u8 *)rec;
+        // ROM gate: lsls r2,#16 / ldr r0,=0xFFFF0000 / adds r2,r2,r0 / lsrs r2,#16
+        // / cmp r2,#1 / bhi. That is a plain (u16) truncation of `mode` -- NOT
+        // `(u16)mode - 1`, which agbcc renders with a leading `subs r2,#1` that
+        // displaced every later instruction (measured 8/60). The shift must be
+        // spelled FIRST: agbcc reassociates `(u16)((u16)x + 0xFFFF)` into
+        // `ldr 0xFFFF0000 / adds / lsls / lsrs`, hoisting the constant above the
+        // shift. Proven shape: src/car_physics_core.c:134.
+        u16 m = (u16)(((((u32)mode) << 16) + 0xFFFF0000u) >> 16);
+        if (m > 1) return;
+        // ROM holds ONE zero for all three clear stores: `movs r4,#0` at +0x14
+        // feeds `strh r4,[r0]` (+144), `strh r4,[r5,#20]` and `str r4,[r5,#44]`.
+        // The named local is what keeps agbcc on r4; three separate literal zeros
+        // rematerialise `movs r0,#0` before the +44 store. The ASSIGNMENT lives
+        // INSIDE the first store's expression (same lever as Rec35_Leaf_17414 in
+        // rec35_runtime.c): as its own statement agbcc hoists `movs r4,#0` ABOVE
+        // the `adds r0,r5,#0 / adds r0,#144` address pair, where the ROM
+        // materialises it after.
+        {
+            u32 z;
+            *(volatile u16 *)((u8 *)r5 + 144) = (u16)(z = 0);
+            _08002618(1, 0);
+            _0802B368(1);
+            *(volatile u32 *)((u8 *)r5 + 16) = 10;
+            *(volatile u16 *)((u8 *)r5 + 20) = (u16)z;
+            *(volatile u32 *)((u8 *)r5 + 48) = 10;
+            *(volatile u32 *)((u8 *)r5 + 44) = z;
+        }
+    }
 }
 void _080016164(void *a, int b, int c) __attribute__((alias("Rec35_RecordClear")));
 void sub_080016164(void *a, int b, int c) __attribute__((alias("Rec35_RecordClear")));
@@ -290,32 +300,40 @@ void sub_080016164(void *a, int b, int c) __attribute__((alias("Rec35_RecordClea
 // ============================================================================
 void Rec35_RecordClear2(void *rec, int unused, int mode) {
     (void)unused;
-    u8 *r5 = (u8 *)rec;
-    // Same (u16)-truncation gate as 0x08016164 -- see the note above.
-    u16 m = (u16)(((((u32)mode) << 16) + 0xFFFF0000u) >> 16);
-    if (m > 1) return;
-    // ONE zero for all three clear stores, assigned inside the first store --
-    // see the note in Rec35_RecordClear above.
-    u32 z;
-    *(volatile u16 *)((u8 *)r5 + 144) = (u16)(z = 0);
-    _08002618(1, 0);
-    _0802B368(1);
-    *(volatile u32 *)((u8 *)r5 + 16) = 10;
-    *(volatile u16 *)((u8 *)r5 + 20) = (u16)z;
-    *(volatile u32 *)((u8 *)r5 + 48) = 10;
-    *(volatile u32 *)((u8 *)r5 + 44) = z;
-    // ROM keeps `1` live in r1 across all three stores and reaches WA+0x1084
-    // as TWO pool words plus an `adds r0,r0,r2`, so the base must stay a
-    // SYMBOL_REF. The `.globl` definition goes INSIDE the function, as in
-    // src/ai_award_leaves.c (Ai_SetOwnedFlag): agbcc expands a file-scope
-    // constant definition early enough that simplify_rtx folds it back into
-    // one pool word 0x03002804.
-    u16 one = 1;
-    *(volatile u16 *)((u8 *)r5 + 26) = one;
-    *(volatile u16 *)((u8 *)r5 + 24) = one;
-    volatile u8 *wa = REC35_WA_BASE;
-    __asm__(".globl Rec35Wa\nRec35Wa = 0x03001780\n");
-    *(volatile u16 *)(wa + 0x1084u) = one;
+    {
+        u8 *r5 = (u8 *)rec;
+        // Same (u16)-truncation gate as 0x08016164 -- see the note above.
+        u16 m = (u16)(((((u32)mode) << 16) + 0xFFFF0000u) >> 16);
+        if (m > 1) return;
+        // ONE zero for all three clear stores, assigned inside the first store --
+        // see the note in Rec35_RecordClear above.
+        {
+            u32 z;
+            *(volatile u16 *)((u8 *)r5 + 144) = (u16)(z = 0);
+            _08002618(1, 0);
+            _0802B368(1);
+            *(volatile u32 *)((u8 *)r5 + 16) = 10;
+            *(volatile u16 *)((u8 *)r5 + 20) = (u16)z;
+            *(volatile u32 *)((u8 *)r5 + 48) = 10;
+            *(volatile u32 *)((u8 *)r5 + 44) = z;
+            // ROM keeps `1` live in r1 across all three stores and reaches WA+0x1084
+            // as TWO pool words plus an `adds r0,r0,r2`, so the base must stay a
+            // SYMBOL_REF. The `.globl` definition goes INSIDE the function, as in
+            // src/ai_award_leaves.c (Ai_SetOwnedFlag): agbcc expands a file-scope
+            // constant definition early enough that simplify_rtx folds it back into
+            // one pool word 0x03002804.
+            {
+                u16 one = 1;
+                *(volatile u16 *)((u8 *)r5 + 26) = one;
+                *(volatile u16 *)((u8 *)r5 + 24) = one;
+                {
+                    volatile u8 *wa = REC35_WA_BASE;
+                    __asm__(".globl Rec35Wa\nRec35Wa = 0x03001780\n");
+                    *(volatile u16 *)(wa + 0x1084u) = one;
+                }
+            }
+        }
+    }
 }
 void _0800161A0(void *a, int b, int c) __attribute__((alias("Rec35_RecordClear2")));
 void sub_0800161A0(void *a, int b, int c) __attribute__((alias("Rec35_RecordClear2")));
@@ -346,18 +364,21 @@ void Rec35_PlaceRecords(void *rec, int arg1, int mode) {
     int one = 1;
     int zero = 0;
     int off = 0;
-    for (int i = 29; i >= 0; i--) {
-        switch (md) {
-        case 2:
-            sub_08007B18(R + 52, 7, off, a1, 4, one, one, zero);
-            break;
-        case 3:
-            sub_08007B18(R + 52, 7, off, a1, 5, one, one, zero);
-            break;
-        default:
-            break;
+    {
+        int i = 29;
+        for (; i >= 0; i--) {
+            switch (md) {
+            case 2:
+                sub_08007B18(R + 52, 7, off, a1, 4, one, one, zero);
+                break;
+            case 3:
+                sub_08007B18(R + 52, 7, off, a1, 5, one, one, zero);
+                break;
+            default:
+                break;
+            }
+            off += 8;
         }
-        off += 8;
     }
 }
 void _0800161F0(void *a, int b, int c) __attribute__((alias("Rec35_PlaceRecords")));
@@ -373,21 +394,25 @@ void Rec35_PlaceByTable(void *rec, int arg1, int arg2) {
     // Keep the entry pointer in r0 for the first field access; r3 holds its call copy.
     register void *index_base __asm__("r0") = rec;
     __asm__ volatile ("" : "+r" (index_base));
-    u16 *tbase = (u16 *)0x080CB89Cu;
-    // Load the ROM table literal into r1 before the index arithmetic; r2 is the ldrsh offset.
-    __asm__ volatile ("" : "+r" (tbase));
-    s16 idx = *(s16 *)((u8 *)index_base + 140);
-    u16 t = tbase[idx];
-    int m = *(int *)((u8 *)rec + 152);
-    switch (m) {
-    case 1:
-    case 3:
-        sub_08007B18(rec, (int)t, arg1, arg2, 5, 1, 1, 0);
-        break;
-    case 0:
-    case 2:
-        sub_08007B18(rec, (int)t, arg1, arg2, 4, 1, 1, 0);
-        break;
+    {
+        u16 *tbase = (u16 *)0x080CB89Cu;
+        // Load the ROM table literal into r1 before the index arithmetic; r2 is the ldrsh offset.
+        __asm__ volatile ("" : "+r" (tbase));
+        {
+            s16 idx = *(s16 *)((u8 *)index_base + 140);
+            u16 t = tbase[idx];
+            int m = *(int *)((u8 *)rec + 152);
+            switch (m) {
+            case 1:
+            case 3:
+                sub_08007B18(rec, (int)t, arg1, arg2, 5, 1, 1, 0);
+                break;
+            case 0:
+            case 2:
+                sub_08007B18(rec, (int)t, arg1, arg2, 4, 1, 1, 0);
+                break;
+            }
+        }
     }
 }
 // The ROM span ends with a zero-filled alignment halfword.
@@ -431,57 +456,65 @@ void Rec35_Record49Tail(void *rec) {
     // Keep the sign-extended load in int; a separate s16 temporary adds
     // redundant shifts. Leave it unpinned so the proven zero can feed both
     // EMIT arms and the load destination can use the ROM's register.
-    register u8 *saddr __asm__("r0") = r7 + 144;
-    int status;
-    status = *(s16 *)saddr;
-    if (status == 0) {
-        // rec+142 derives from the status address (subs, no new pool), and
-        // the select load is a plain indexed ldrsh.
-        {
-            u8 *seladdr = saddr - 2;
-            s16 sel = ((s16 *)seladdr)[0];
-            if (sel != 0) {
-                if (sel == 1) {
-                    sub_08007B18(r7, 4, 0, 32, 3, sel, sel, status);
+    {
+        register u8 *saddr __asm__("r0") = r7 + 144;
+        int status;
+        status = *(s16 *)saddr;
+        if (status == 0) {
+            // rec+142 derives from the status address (subs, no new pool), and
+            // the select load is a plain indexed ldrsh.
+            {
+                u8 *seladdr = saddr - 2;
+                s16 sel = ((s16 *)seladdr)[0];
+                if (sel != 0) {
+                    if (sel == 1) {
+                        sub_08007B18(r7, 4, 0, 32, 3, sel, sel, status);
+                    }
+                } else {
+                    sub_08007B18(r7, 5, 0, 32, 3, 1, 1, 0);
                 }
-            } else {
-                sub_08007B18(r7, 5, 0, 32, 3, 1, 1, 0);
+                // Table anchor in r4, cell pointer in r5, table+4 in r6: all three
+                // survive the PlaceRecords call below (callee-saved), the way the
+                // ROM keeps them for the second pair. Index loads are plain
+                // indexed ldrsh (volatile would be ldrh+extends, never indexed).
+                {
+                    register u32 tbl __asm__("r4") = 0x080CB88Cu;
+                    register u8 *c140 __asm__("r5") = r7 + 140;
+                    s16 idx = ((s16 *)c140)[0];
+                    int idx8 = idx << 3;
+                    register u32 t4 __asm__("r6") = tbl + 4;
+                    u32 r1a = *(u32 *)(idx8 + t4);
+                    u32 r2a = *(u32 *)(r7 + 152);
+                    sub_0800161F0(r7, (int)r1a, (int)r2a);
+                    {
+                        s16 idx2 = ((s16 *)c140)[0];
+                        int idx82 = idx2 << 3;
+                        u32 r1b = *(u32 *)(idx82 + tbl);
+                        // addr3 into its own pinned home: t4 dies here, so spelling it
+                        // plain lets the add fold back into t4 (`adds r6,r6,r0`).
+                        register u32 ad3 __asm__("r0") = idx82 + t4;
+                        u32 r2b = *(u32 *)ad3;
+                        sub_08001626C(r7, (int)r1b, (int)r2b);
+                    }
+                }
             }
-            // Table anchor in r4, cell pointer in r5, table+4 in r6: all three
-            // survive the PlaceRecords call below (callee-saved), the way the
-            // ROM keeps them for the second pair. Index loads are plain
-            // indexed ldrsh (volatile would be ldrh+extends, never indexed).
-            register u32 tbl __asm__("r4") = 0x080CB88Cu;
-            register u8 *c140 __asm__("r5") = r7 + 140;
-            s16 idx = ((s16 *)c140)[0];
-            int idx8 = idx << 3;
-            register u32 t4 __asm__("r6") = tbl + 4;
-            u32 r1a = *(u32 *)(idx8 + t4);
-            u32 r2a = *(u32 *)(r7 + 152);
-            sub_0800161F0(r7, (int)r1a, (int)r2a);
-            s16 idx2 = ((s16 *)c140)[0];
-            int idx82 = idx2 << 3;
-            u32 r1b = *(u32 *)(idx82 + tbl);
-            // addr3 into its own pinned home: t4 dies here, so spelling it
-            // plain lets the add fold back into t4 (`adds r6,r6,r0`).
-            register u32 ad3 __asm__("r0") = idx82 + t4;
-            u32 r2b = *(u32 *)ad3;
-            sub_08001626C(r7, (int)r1b, (int)r2b);
+        }
+        // Status re-read into r4 (plain indexed ldrsh); rec+8 derives from its
+        // address (subs, no new pool); the 7th call arg reuses the proven-one
+        // status instead of a rematerialised literal.
+        {
+            register u8 *sa __asm__("r0") = r7 + 144;
+            register int st __asm__("r4") = ((s16 *)sa)[0];
+            if (st == 1) {
+                sub_08007C68(sa - 136,
+                             *(volatile u32 *)(r7 + 160),
+                             *(volatile u32 *)(r7 + 164),
+                             48, 64, 6, st, 0, 0);
+            }
+            sub_0800DBE8(r7 + 16);
+            sub_0800163B4(r7);
         }
     }
-    // Status re-read into r4 (plain indexed ldrsh); rec+8 derives from its
-    // address (subs, no new pool); the 7th call arg reuses the proven-one
-    // status instead of a rematerialised literal.
-    register u8 *sa __asm__("r0") = r7 + 144;
-    register int st __asm__("r4") = ((s16 *)sa)[0];
-    if (st == 1) {
-        sub_08007C68(sa - 136,
-                     *(volatile u32 *)(r7 + 160),
-                     *(volatile u32 *)(r7 + 164),
-                     48, 64, 6, st, 0, 0);
-    }
-    sub_0800DBE8(r7 + 16);
-    sub_0800163B4(r7);
 }
 void _0800162E0(void *a) __attribute__((alias("Rec35_Record49Tail")));
 void sub_0800162E0(void *a) __attribute__((alias("Rec35_Record49Tail")));

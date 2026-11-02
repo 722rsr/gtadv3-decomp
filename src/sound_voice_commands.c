@@ -91,14 +91,16 @@ void _0802CA34(void *config){
         if (nibble) {
             register u32 shifted __asm__("r0") = nibble >> 8;
             root[6] = (u8)shifted;
-        register u32 remaining __asm__("r4") = 12;
-        register volatile u8 *p __asm__("r0") = root + 80;
-        register u8 zero __asm__("r1") = 0;
-        do {
-            *p = zero;
-            remaining--;
-            p += 64;
-        } while (remaining != 0);
+        {
+            register u32 remaining __asm__("r4") = 12;
+            register volatile u8 *p __asm__("r0") = root + 80;
+            register u8 zero __asm__("r1") = 0;
+            do {
+                *p = zero;
+                remaining--;
+                p += 64;
+            } while (remaining != 0);
+        }
         }
     }
     {
@@ -119,13 +121,15 @@ void _0802CA34(void *config){
             scaled <<= 14;
             scaled &= biasMask;
             biasMask = scaled >> 14;
-            register volatile u8 *bias __asm__("r2") =
-                (volatile u8 *)0x04000089u;
-            register u32 old __asm__("r1") = *bias;
-            register u32 low __asm__("r0") = 63u;
-            low &= old;
-            low |= biasMask;
-            *bias = (u8)low;
+            {
+                register volatile u8 *bias __asm__("r2") =
+                    (volatile u8 *)0x04000089u;
+                register u32 old __asm__("r1") = *bias;
+                register u32 low __asm__("r0") = 63u;
+                low &= old;
+                low |= biasMask;
+                *bias = (u8)low;
+            }
         }
     }
     {

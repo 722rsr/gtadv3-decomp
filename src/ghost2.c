@@ -19,8 +19,10 @@ void *Ghost_GetRecP(void) {
 // u16 *` at the record base emits the ROM's five instructions and nothing else.
 void Ghost_RecA_ClearValid(u32 unused) {
     (void)unused;
-    volatile u16 *p = (volatile u16 *)(void *)(uintptr_t)GhostMgr_Get()->recA;
-    *p = 0;
+    {
+        volatile u16 *p = (volatile u16 *)(void *)(uintptr_t)GhostMgr_Get()->recA;
+        *p = 0;
+    }
 }
 void Ghost_RecA_SetW08(u32 v) {
     volatile GhostRecord *r = (volatile GhostRecord *)GhostMgr_Get()->recA;
@@ -68,33 +70,35 @@ void Ghost_Snapshot(void) {
     struct GhostStage32 { u32 w[8]; };
     extern u8 GhostSnapshotWorkArea[];
     __asm__("GhostSnapshotWorkArea = 0x03001780");
-    volatile GhostMgr *m = GhostMgr_Get();
-    Ghost_Invalidate((void *)(uintptr_t)m->recA);
-    Ghost_Invalidate((void *)(uintptr_t)m->recP);
     {
-        // `base` is a NAMED variable, not part of a constant expression: written
-        // inline, `GhostSnapshotWorkArea + 0x1DF4` folds to one relocation and
-        // gas resolves it to a single pool word (0x03003574). Through a variable
-        // the ROM's three instructions survive -- `ldr r2,=0x03001780`,
-        // `ldr r0,=0x1DF4`, `adds r1,r2,r0` -- and r2 stays live for the second
-        // staging buffer, which is computed from the same base.
-        u8 *base = (u8 *)(uintptr_t)GhostSnapshotWorkArea;
-        // Each destination is built from the base BEFORE the source is re-read,
-        // which is the ROM's order: `ldr r2,=base`, `ldr rX,=offset`,
-        // `adds rX, r2, rX`, `ldr r0,[r4,#8]`, then the copy. Left alone agbcc
-        // hoists the manager read above the address arithmetic and parks the
-        // offset in r3, which then cannot be an LDM temp and the whole tail
-        // (including both 2-word LDM/STM pairs) comes out with the wrong
-        // register set. The empty `asm` with a "memory" clobber is the
-        // scheduling fence that keeps the two in the ROM's order; it emits no
-        // instruction.
-        struct GhostStage32 *d1 = (struct GhostStage32 *)(base + 0x1DF4);
-        __asm__("" : : "r"(d1) : "memory");
-        *d1 = *(const struct GhostStage32 *)(uintptr_t)m->recP;
+        volatile GhostMgr *m = GhostMgr_Get();
+        Ghost_Invalidate((void *)(uintptr_t)m->recA);
+        Ghost_Invalidate((void *)(uintptr_t)m->recP);
         {
-            struct GhostStage32 *d2 = (struct GhostStage32 *)(base + 0x1E14);
-            __asm__("" : : "r"(d2) : "memory");
-            *d2 = *(const struct GhostStage32 *)(uintptr_t)m->recP;
+            // `base` is a NAMED variable, not part of a constant expression: written
+            // inline, `GhostSnapshotWorkArea + 0x1DF4` folds to one relocation and
+            // gas resolves it to a single pool word (0x03003574). Through a variable
+            // the ROM's three instructions survive -- `ldr r2,=0x03001780`,
+            // `ldr r0,=0x1DF4`, `adds r1,r2,r0` -- and r2 stays live for the second
+            // staging buffer, which is computed from the same base.
+            u8 *base = (u8 *)(uintptr_t)GhostSnapshotWorkArea;
+            // Each destination is built from the base BEFORE the source is re-read,
+            // which is the ROM's order: `ldr r2,=base`, `ldr rX,=offset`,
+            // `adds rX, r2, rX`, `ldr r0,[r4,#8]`, then the copy. Left alone agbcc
+            // hoists the manager read above the address arithmetic and parks the
+            // offset in r3, which then cannot be an LDM temp and the whole tail
+            // (including both 2-word LDM/STM pairs) comes out with the wrong
+            // register set. The empty `asm` with a "memory" clobber is the
+            // scheduling fence that keeps the two in the ROM's order; it emits no
+            // instruction.
+            struct GhostStage32 *d1 = (struct GhostStage32 *)(base + 0x1DF4);
+            __asm__("" : : "r"(d1) : "memory");
+            *d1 = *(const struct GhostStage32 *)(uintptr_t)m->recP;
+            {
+                struct GhostStage32 *d2 = (struct GhostStage32 *)(base + 0x1E14);
+                __asm__("" : : "r"(d2) : "memory");
+                *d2 = *(const struct GhostStage32 *)(uintptr_t)m->recP;
+            }
         }
     }
 }

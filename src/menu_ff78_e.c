@@ -25,6 +25,8 @@
 #include "gba/types.h"
 #include "gtadv/ram_blocks.h"
 
+extern u8 MenuFF78E_Wa[] __asm__("MenuFF78E_Wa");
+extern u8 MenuFF78E_Wa[] __asm__("MenuFF78E_Wa");
 #define HOST_STUB(sig) extern sig
 
 // ---- 7 menu-item record builder bodies ------------------------------------
@@ -86,30 +88,32 @@ void MenuFF78_12034(void *rec_) {
     // The ROM reads rec+172 with a true `ldrsh` (0x0801205A), so the s16
     // lvalue must NOT be volatile: a volatile sub-word lvalue makes agbcc
     // emit ldrh + lsls + asrs instead (docs/matching_workflow.md:2190).
-    s16 ac = *(s16 *)(uintptr_t)((u8 *)rec_ + 172);
-    s16 e = (s16)_0802581C((int)ac);
-    // The three shapes below are each load-bearing, in this order:
-    //   se  — agbcc puts the s16->int extension of `e` at its USE, so a bare
-    //         `e * 72` emits the ROM's lsls/asrs AFTER the table-base load.
-    //         Giving the widened value a name pins it before that load
-    //         (0x08012062/0x08012064).
-    //   wa  — NAMED, so the base stays a pool-word SYMBOL_REF (0x03001780 at
-    //         `_0800120A0`) instead of folding with 0x5E4 into the single
-    //         word 0x03001D64. Written inline it folds: 108 bytes, 49/116.
-    //   base— named, so the ROM's grouping holds: r2 = wa + 0x5E4 first,
-    //         then r1 = idx + r2. Inlined, agbcc reassociates to
-    //         r1 = idx + wa, then r1 = r1 + 0x5E4.
-    s32 se = (s32)e;
-    u32 wa   = (u32)(uintptr_t)_03001780;
-    u32 idx  = (u32)(se * 72);
-    u32 base = wa + 0x5E4u;
-    u32 w = *(volatile u32 *)(uintptr_t)(base + idx);
-    __asm__(".globl _03001780\n_03001780 = 0x03001780\n");
-    _0800F778(168, 76, w);
-    _080011CBC(rec_);
-    _0800D97C((void *)(uintptr_t)((volatile u8 *)rec_ + 224), 15);
-    _0800DBE8((void *)(uintptr_t)((volatile u8 *)rec_ + 64));
-    _080012574((volatile void *)rec_);
+    {
+        s16 ac = *(s16 *)(uintptr_t)((u8 *)rec_ + 172);
+        s16 e = (s16)_0802581C((int)ac);
+        // The three shapes below are each load-bearing, in this order:
+        //   se  — agbcc puts the s16->int extension of `e` at its USE, so a bare
+        //         `e * 72` emits the ROM's lsls/asrs AFTER the table-base load.
+        //         Giving the widened value a name pins it before that load
+        //         (0x08012062/0x08012064).
+        //   wa  — NAMED, so the base stays a pool-word SYMBOL_REF (0x03001780 at
+        //         `_0800120A0`) instead of folding with 0x5E4 into the single
+        //         word 0x03001D64. Written inline it folds: 108 bytes, 49/116.
+        //   base— named, so the ROM's grouping holds: r2 = wa + 0x5E4 first,
+        //         then r1 = idx + r2. Inlined, agbcc reassociates to
+        //         r1 = idx + wa, then r1 = r1 + 0x5E4.
+        s32 se = (s32)e;
+        u32 wa   = (u32)(uintptr_t)_03001780;
+        u32 idx  = (u32)(se * 72);
+        u32 base = wa + 0x5E4u;
+        u32 w = *(volatile u32 *)(uintptr_t)(base + idx);
+        __asm__(".globl _03001780\n_03001780 = 0x03001780\n");
+        _0800F778(168, 76, w);
+        _080011CBC(rec_);
+        _0800D97C((void *)(uintptr_t)((volatile u8 *)rec_ + 224), 15);
+        _0800DBE8((void *)(uintptr_t)((volatile u8 *)rec_ + 64));
+        _080012574((volatile void *)rec_);
+    }
 }
 void _080012034(void *a) __attribute__((alias("MenuFF78_12034")));
 void sub_080012034(void *a) __attribute__((alias("MenuFF78_12034")));
@@ -525,44 +529,48 @@ void sub_080012F18(void *a) __attribute__((alias("MenuFF78_12F18")));
 extern void *_08004B68(void);
 void MenuFF78_127F4(int unused_, void *rec_) {
     (void)unused_;
-    extern u8 MenuFF78E_Wa[] __asm__("MenuFF78E_Wa");
-    uintptr_t base = (uintptr_t)MenuFF78E_Wa;
-    if (*(volatile u16 *)(uintptr_t)(base + 0xFBCu) == 3) {
-        *(volatile u8 *)(uintptr_t)((volatile u8 *)rec_ + 88) = 0;
+
+    {
+        uintptr_t base = (uintptr_t)MenuFF78E_Wa;
+        if (*(volatile u16 *)(uintptr_t)(base + 0xFBCu) == 3) {
+            *(volatile u8 *)(uintptr_t)((volatile u8 *)rec_ + 88) = 0;
+        }
+        // The ROM reads the car id with a REGISTER index holding a BYTE offset of
+        // 2: `movs r1,#2; ldrsh r0,[r0,r1] @ 0x08012810..12`. An s16 subscript of
+        // 1 gives that byte offset; subscript 2 scales to `#4`. A non-volatile
+        // s16 lvalue is what yields `ldrsh` rather than `ldrh` + shifts.
+        {
+            s16 car_id = ((s16 *)(uintptr_t)sub_08004B68())[1];
+            // The ROM's ladder jumps into THREE shared store blocks, not four:
+            // `beq -> 0x08012832` serves BOTH car 35 (0x08012816) and car 20
+            // (0x0801281E), `beq -> 0x0801283A` serves 39 (0x0801282E), and both
+            // defaults `b -> 0x08012842`. Only a goto-style tail merge emits three
+            // blocks; a plain if/else ladder duplicates the second `== 5` store and
+            // grows the body by 4 bytes.
+        //
+            // `cmp r0,#35; bgt @ 0x08012818` targets 0x0801282C, which sits AFTER the
+            // literal pool — so the `> 35` arm is the out-of-line one and the
+            // `<= 35` ladder is the fall-through. Stating the `<= 35` arm first is
+            // what makes agbcc lay the blocks out in the ROM's order.
+            if (car_id == 35) goto set5;
+            if (car_id <= 35) {
+                if (car_id == 20) goto set5;
+                goto set6;
+            }
+            if (car_id == 39) goto set1;
+            goto set6;
+        set5:
+            *(volatile s16 *)(uintptr_t)((volatile u8 *)rec_ + 84) = 5;
+            goto store;
+        set1:
+            *(volatile s16 *)(uintptr_t)((volatile u8 *)rec_ + 84) = 1;
+            goto store;
+        set6:
+            *(volatile s16 *)(uintptr_t)((volatile u8 *)rec_ + 84) = 6;
+        store:
+            return;
+        }
     }
-    // The ROM reads the car id with a REGISTER index holding a BYTE offset of
-    // 2: `movs r1,#2; ldrsh r0,[r0,r1] @ 0x08012810..12`. An s16 subscript of
-    // 1 gives that byte offset; subscript 2 scales to `#4`. A non-volatile
-    // s16 lvalue is what yields `ldrsh` rather than `ldrh` + shifts.
-    s16 car_id = ((s16 *)(uintptr_t)sub_08004B68())[1];
-    // The ROM's ladder jumps into THREE shared store blocks, not four:
-    // `beq -> 0x08012832` serves BOTH car 35 (0x08012816) and car 20
-    // (0x0801281E), `beq -> 0x0801283A` serves 39 (0x0801282E), and both
-    // defaults `b -> 0x08012842`. Only a goto-style tail merge emits three
-    // blocks; a plain if/else ladder duplicates the second `== 5` store and
-    // grows the body by 4 bytes.
-//
-    // `cmp r0,#35; bgt @ 0x08012818` targets 0x0801282C, which sits AFTER the
-    // literal pool — so the `> 35` arm is the out-of-line one and the
-    // `<= 35` ladder is the fall-through. Stating the `<= 35` arm first is
-    // what makes agbcc lay the blocks out in the ROM's order.
-    if (car_id == 35) goto set5;
-    if (car_id <= 35) {
-        if (car_id == 20) goto set5;
-        goto set6;
-    }
-    if (car_id == 39) goto set1;
-    goto set6;
-set5:
-    *(volatile s16 *)(uintptr_t)((volatile u8 *)rec_ + 84) = 5;
-    goto store;
-set1:
-    *(volatile s16 *)(uintptr_t)((volatile u8 *)rec_ + 84) = 1;
-    goto store;
-set6:
-    *(volatile s16 *)(uintptr_t)((volatile u8 *)rec_ + 84) = 6;
-store:
-    return;
 }
 void _0800127F4(int a, void *b) __attribute__((alias("MenuFF78_127F4")));
 void sub_0800127F4(int a, void *b) __attribute__((alias("MenuFF78_127F4")));
@@ -612,17 +620,21 @@ void sub_080012E9C(void *a) __attribute__((alias("MenuFF78_12E9C")));
 // ============================================================================
 void MenuFF78_12ED0(int unused_, void *rec_) {
     (void)unused_;
-    extern u8 MenuFF78E_Wa[] __asm__("MenuFF78E_Wa");
+
     __asm__(".globl MenuFF78E_Wa\nMenuFF78E_Wa = 0x03001780\n");
-    uintptr_t base = (uintptr_t)MenuFF78E_Wa;
-    if (*(volatile u16 *)(uintptr_t)(base + 0xFBCu) == 3) {
-        *(volatile u8 *)(uintptr_t)((volatile u8 *)rec_ + 88) = 0;
-    }
-    u16 car_id = *(volatile u16 *)(uintptr_t)((volatile u8 *)sub_08004B68() + 2);
-    if (car_id == 35) {
-        *(volatile s16 *)(uintptr_t)((volatile u8 *)rec_ + 84) = 5;
-    } else {
-        *(volatile s16 *)(uintptr_t)((volatile u8 *)rec_ + 84) = 6;
+    {
+        uintptr_t base = (uintptr_t)MenuFF78E_Wa;
+        if (*(volatile u16 *)(uintptr_t)(base + 0xFBCu) == 3) {
+            *(volatile u8 *)(uintptr_t)((volatile u8 *)rec_ + 88) = 0;
+        }
+        {
+            u16 car_id = *(volatile u16 *)(uintptr_t)((volatile u8 *)sub_08004B68() + 2);
+            if (car_id == 35) {
+                *(volatile s16 *)(uintptr_t)((volatile u8 *)rec_ + 84) = 5;
+            } else {
+                *(volatile s16 *)(uintptr_t)((volatile u8 *)rec_ + 84) = 6;
+            }
+        }
     }
 }
 // The ROM pads the body's last two bytes with 0x0000 (0x08012F12..0x08012F13)
@@ -642,15 +654,19 @@ void MenuFF78_12F6C(void *rec_) {
     u32 *q;
     extern u8 MenuFF78E_Wa[] __asm__("MenuFF78E_Wa");
     __asm__(".globl MenuFF78E_Wa\nMenuFF78E_Wa = 0x03001780\n");
-    uintptr_t base = (uintptr_t)MenuFF78E_Wa;
-    q = (u32 *)(uintptr_t)(rec + 188);
-    register u32 idx __asm__("r3") = 0;
-    s16 v = ((s16 *)(uintptr_t)(base + 0xFC2u))[idx];
-    *(volatile u32 *)q = (u32)(s32)v;
     {
-        u32 *q2 = (u32 *)(uintptr_t)((u8 *)q + 4);
-        *(volatile u32 *)q2 = 0xFFFFFFFFu;
-        *(volatile u16 *)(uintptr_t)((u8 *)q2 - 8) = 0;
+        uintptr_t base = (uintptr_t)MenuFF78E_Wa;
+        q = (u32 *)(uintptr_t)(rec + 188);
+        {
+            register u32 idx __asm__("r3") = 0;
+            s16 v = ((s16 *)(uintptr_t)(base + 0xFC2u))[idx];
+            *(volatile u32 *)q = (u32)(s32)v;
+            {
+                u32 *q2 = (u32 *)(uintptr_t)((u8 *)q + 4);
+                *(volatile u32 *)q2 = 0xFFFFFFFFu;
+                *(volatile u16 *)(uintptr_t)((u8 *)q2 - 8) = 0;
+            }
+        }
     }
 }
 void _080012F6C(void *a) __attribute__((alias("MenuFF78_12F6C")));
@@ -711,10 +727,12 @@ void MenuFF78_12F98(void *rec_) {
         *(volatile s16 *)(uintptr_t)(rec + 172) = (s16)b1;
         // Keep the +48 signed-byte read before the rec+178 address; agbcc
         // otherwise hoists the destination calculation above the read.
-        register s32 b2 __asm__("r0") = (s32)(uintptr_t)(
-            base + ((int)*(s16 *)(uintptr_t)(rec + 174) * 3) * 4 + 48);
-        b2 = *(s8 *)(uintptr_t)b2;
-        *(volatile s16 *)(uintptr_t)(rec + 178) = (s16)b2;
+        {
+            register s32 b2 __asm__("r0") = (s32)(uintptr_t)(
+                base + ((int)*(s16 *)(uintptr_t)(rec + 174) * 3) * 4 + 48);
+            b2 = *(s8 *)(uintptr_t)b2;
+            *(volatile s16 *)(uintptr_t)(rec + 178) = (s16)b2;
+        }
     }
     *(volatile u32 *)(uintptr_t)(rec + 144) = 2;
     *(volatile u16 *)(uintptr_t)(rec + 186) = (u16)zero;

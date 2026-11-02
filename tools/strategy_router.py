@@ -112,8 +112,6 @@ BAND_ROUTES: dict[str, Route] = {
         ("pin the divergent value: `register u32 g __asm__(\"r3\");` -- the "
          "construct already used at src/ai_line_leaves.c and "
          "src/code_22d20.c for this exact class",
-         "one pin per body: tools/agbcc_c89_transform.py cannot handle two in "
-         "one declaration block",
          "prove the pin is load-bearing by removing it and reproducing the "
          "original residual byte for byte"),
     ),

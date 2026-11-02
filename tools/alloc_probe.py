@@ -18,7 +18,7 @@ relative to another's and read off the chain consequence directly.
 
 Usage:
     python3 tools/alloc_probe.py src/course_collision.c --function Course_CollisionLoop
-    python3 tools/alloc_probe.py src/foo.c --function _08007110 --c89 --rtl
+    python3 tools/alloc_probe.py src/foo.c --function _08007110 --rtl
 """
 from __future__ import annotations
 
@@ -97,8 +97,6 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("source", type=Path, help="translation unit (src/...)")
     ap.add_argument("--function", required=True, help="function name as in the dump")
-    ap.add_argument("--c89", action="store_true",
-                    help="apply the C89 transform before compiling (as the probe does)")
     ap.add_argument("--rtl", action="store_true",
                     help="also print each allocno's first RTL context line")
     ap.add_argument("--work-dir", type=Path, default=Path("build/alloc_probe"))
@@ -113,15 +111,6 @@ def main() -> int:
 
     source = args.source if args.source.is_absolute() else ROOT / args.source
     compile_path = source
-    if args.c89:
-        from agbcc_c89_transform import cached_transform_file
-        transformed, stats = cached_transform_file(source)
-        if stats["unhandled"] is not None:
-            print(f"alloc_probe: C89 transform unhandled: {stats['unhandled']}",
-                  file=sys.stderr)
-            return 2
-        compile_path = work / source.name
-        compile_path.write_text(transformed, encoding="utf-8")
 
     pre = work / (source.stem + ".i")
     out_s = work / (source.stem + ".s")

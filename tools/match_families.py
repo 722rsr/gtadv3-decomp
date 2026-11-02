@@ -590,7 +590,7 @@ def twins(index: dict, min_bytes: int = 48, cutoff: float = 0.60) -> list[dict]:
 
 def _run_probe_captured(name: str, work: Path, report: Path) -> tuple[int, str]:
     """Score one recipe in THIS process; `(status, combined output)`."""
-    argv = ["corpus_match_probe.py", "--function", name, "--c89", "--require-all",
+    argv = ["corpus_match_probe.py", "--function", name, "--require-all",
             "--require-exact", "--work-dir", str(work), "--json", str(report)]
     saved_argv = sys.argv
     captured = io.StringIO()

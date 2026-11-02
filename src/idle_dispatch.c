@@ -188,21 +188,25 @@ void Idle_Mode6Handler(void) {
             if (record == expected)
                 matches++;
             i++;
-            u16 current_count = *(volatile u16 *)((volatile u8 *)(uintptr_t)
-                *(volatile u32 *)STATE_BLOCK_A_SLOT_ADDR + 0x0A);
-            if (i >= current_count)
-                break;
+            {
+                u16 current_count = *(volatile u16 *)((volatile u8 *)(uintptr_t)
+                    *(volatile u32 *)STATE_BLOCK_A_SLOT_ADDR + 0x0A);
+                if (i >= current_count)
+                    break;
+            }
         } while (1);
     }
 
-    register volatile u8 *base __asm__("r1") =
-        (volatile u8 *)(uintptr_t)*saved_slot;
-    u16 final_count = *(volatile u16 *)(base + 0x0A);
-    if (matches == final_count) {
-        *(volatile u16 *)(base + 0x12) = 7;
-        *(volatile u16 *)(base + 0x14) = 3;
+    {
+        register volatile u8 *base __asm__("r1") =
+            (volatile u8 *)(uintptr_t)*saved_slot;
+        u16 final_count = *(volatile u16 *)(base + 0x0A);
+        if (matches == final_count) {
+            *(volatile u16 *)(base + 0x12) = 7;
+            *(volatile u16 *)(base + 0x14) = 3;
+        }
+        StateA_SetPendingParam(0x03F2);
     }
-    StateA_SetPendingParam(0x03F2);
 }
 void _08001ACC(void) __attribute__((alias("Idle_Mode6Handler")));
 
@@ -307,25 +311,29 @@ void Idle_RefreshWorkArea(void) {
     volatile u8 *first = (volatile u8 *)(uintptr_t)*slot;
     // asm _08001C48: r0=st+0xC0 (src), r1=st+0xB0 (dst) — C0->B0, not B0->C0.
     CpuSet((const void*)(first+0xC0), (void*)(first+0xB0), 0x04000004);
-    volatile u8 *st = (volatile u8 *)(uintptr_t)*slot;
-    register u16 rawCount __asm__("r0") = *(volatile u16 *)(st+8);
-    register u32 countOff __asm__("r3") = 8;
-    register s32 signedCount __asm__("r2");
-    signedCount = *(s16 *)(st + countOff);
-    if (signedCount==0) {
-        u32 z=(u32)signedCount; CpuSet(&z, (void*)(st+0xC0), 0x05000004);
-    } else {
-        *(volatile u16 *)(st+8) = rawCount-1;
-    }
-    slot = (volatile u32 *)(uintptr_t)STATE_BLOCK_A_SLOT_ADDR;
-    volatile u8 *modeState = (volatile u8 *)(uintptr_t)*slot;
-    u16 cur = *(volatile u16 *)(modeState+0x10);
-    if (StateA_IsGameMode(cur)) {
-        register volatile u8 *state __asm__("r0") =
-            (volatile u8 *)(uintptr_t)*slot;
-        register u16 p __asm__("r2") = *(volatile u16 *)(state+4);
-        *(volatile u16*)(state+0xC0) = p;
-        _08000848((void*)(state+0xB0), 0);
+    {
+        volatile u8 *st = (volatile u8 *)(uintptr_t)*slot;
+        register u16 rawCount __asm__("r0") = *(volatile u16 *)(st+8);
+        register u32 countOff __asm__("r3") = 8;
+        register s32 signedCount __asm__("r2");
+        signedCount = *(s16 *)(st + countOff);
+        if (signedCount==0) {
+            u32 z=(u32)signedCount; CpuSet(&z, (void*)(st+0xC0), 0x05000004);
+        } else {
+            *(volatile u16 *)(st+8) = rawCount-1;
+        }
+        slot = (volatile u32 *)(uintptr_t)STATE_BLOCK_A_SLOT_ADDR;
+        {
+            volatile u8 *modeState = (volatile u8 *)(uintptr_t)*slot;
+            u16 cur = *(volatile u16 *)(modeState+0x10);
+            if (StateA_IsGameMode(cur)) {
+                register volatile u8 *state __asm__("r0") =
+                    (volatile u8 *)(uintptr_t)*slot;
+                register u16 p __asm__("r2") = *(volatile u16 *)(state+4);
+                *(volatile u16*)(state+0xC0) = p;
+                _08000848((void*)(state+0xB0), 0);
+            }
+        }
     }
 }
 void _08001C48(void) __attribute__((alias("Idle_RefreshWorkArea")));
@@ -357,47 +365,49 @@ void Idle_Ticker(void)
             register u32 trigger __asm__("r3") = 0;
             register volatile u8 *flagsField __asm__("r0") = activeState;
             flagsField += 216;
-            register u32 flags __asm__("r2") =
-                *(volatile u32 *)flagsField;
-            if ((flags & 0x3000) != 0)
-                goto update_timer;
-            if ((flags & 0x8000) != 0) {
-                register u32 lowNibble __asm__("r1") = (flags << 28) >> 28;
-                register u32 inputNibble __asm__("r0") = (flags << 20) >> 28;
-                if (lowNibble != inputNibble)
-                    trigger = 1;
-            }
-            if (trigger == 0)
-                goto reset_timer;
-update_timer:
             {
-                register volatile u32 *timerSlot __asm__("r0") =
-                    (volatile u32 *)(uintptr_t)STATE_BLOCK_A_SLOT_ADDR;
-                activeState = (volatile u8 *)(uintptr_t)*timerSlot;
-            }
-            {
-                register u32 timer __asm__("r0") = *(volatile u16 *)(activeState + 14);
-                timer += 1;
-                *(volatile u16 *)(activeState + 14) = timer;
-                timer = (u16)timer;
-                if (timer <= 60)
-                    goto after_timer;
-                *(volatile u16 *)(activeState + 14) = 0;
-                {
-                    register volatile u8 *callField __asm__("r0") = activeState;
-                    register u32 context __asm__("r1");
-                    callField += 216;
-                    context = *(volatile u32 *)callField;
-                    sub_08004D4C(21, context, 0);
+                register u32 flags __asm__("r2") =
+                    *(volatile u32 *)flagsField;
+                if ((flags & 0x3000) != 0)
+                    goto update_timer;
+                if ((flags & 0x8000) != 0) {
+                    register u32 lowNibble __asm__("r1") = (flags << 28) >> 28;
+                    register u32 inputNibble __asm__("r0") = (flags << 20) >> 28;
+                    if (lowNibble != inputNibble)
+                        trigger = 1;
                 }
-                goto after_timer;
-            }
-reset_timer:
-            {
-                register volatile u32 *resetSlot __asm__("r0") =
-                    (volatile u32 *)(uintptr_t)STATE_BLOCK_A_SLOT_ADDR;
-                resetSlot = (volatile u32 *)(uintptr_t)*resetSlot;
-                *(volatile u16 *)((volatile u8 *)resetSlot + 14) = trigger;
+                if (trigger == 0)
+                    goto reset_timer;
+    update_timer:
+                {
+                    register volatile u32 *timerSlot __asm__("r0") =
+                        (volatile u32 *)(uintptr_t)STATE_BLOCK_A_SLOT_ADDR;
+                    activeState = (volatile u8 *)(uintptr_t)*timerSlot;
+                }
+                {
+                    register u32 timer __asm__("r0") = *(volatile u16 *)(activeState + 14);
+                    timer += 1;
+                    *(volatile u16 *)(activeState + 14) = timer;
+                    timer = (u16)timer;
+                    if (timer <= 60)
+                        goto after_timer;
+                    *(volatile u16 *)(activeState + 14) = 0;
+                    {
+                        register volatile u8 *callField __asm__("r0") = activeState;
+                        register u32 context __asm__("r1");
+                        callField += 216;
+                        context = *(volatile u32 *)callField;
+                        sub_08004D4C(21, context, 0);
+                    }
+                    goto after_timer;
+                }
+    reset_timer:
+                {
+                    register volatile u32 *resetSlot __asm__("r0") =
+                        (volatile u32 *)(uintptr_t)STATE_BLOCK_A_SLOT_ADDR;
+                    resetSlot = (volatile u32 *)(uintptr_t)*resetSlot;
+                    *(volatile u16 *)((volatile u8 *)resetSlot + 14) = trigger;
+                }
             }
         }
     }
@@ -495,10 +505,12 @@ u32 Idle_GetDescriptorWord(int idx) {
     register u32 tbl __asm__("r2") = 0x0802E190;
     /* Force the pinned table base into r2 before the index shift. */
     __asm__ volatile ("" : "+r" (tbl));
-    u32 off = (u32)idx << 2;
-    u16 sel = *st16(6);
-    u32 sum = off + ((u32)sel << 4);
-    return *(u32 *)((uintptr_t)sum + (uintptr_t)tbl);
+    {
+        u32 off = (u32)idx << 2;
+        u16 sel = *st16(6);
+        u32 sum = off + ((u32)sel << 4);
+        return *(u32 *)((uintptr_t)sum + (uintptr_t)tbl);
+    }
 }
 u32 _08001E14(int a) __attribute__((alias("Idle_GetDescriptorWord")));
 // _08001E30 -> int — 1 when block A +6 == 0 (normal select active).

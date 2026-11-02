@@ -24,7 +24,7 @@ import tempfile
 from pathlib import Path
 
 import corpus_match_probe as probe
-from agbcc_c89_transform import matching_delimiter, strip_noncode
+from c_source import matching_delimiter, strip_noncode
 
 # `elftools` is deliberately NOT imported at module level: the permuter invokes
 # this file once per candidate through `compile.sh --compile`, and
@@ -338,7 +338,7 @@ def prepare(function: str, work: Path):
     probe_name = next((alias for alias, target in aliases.items()
                        if target == function and probe.parse_vma_name(alias)), function)
     run([sys.executable, ROOT / "tools/corpus_match_probe.py", "--function", probe_name,
-         "--c89", "--require-all", "--work-dir", probe_work, "--json", report], cwd=ROOT)
+         "--require-all", "--work-dir", probe_work, "--json", report], cwd=ROOT)
     records = json.loads(report.read_text())["results"]
     if len(records) != 1:
         raise ValueError(f"expected one probe result, got {len(records)}")

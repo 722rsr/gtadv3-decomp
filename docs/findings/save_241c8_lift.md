@@ -237,7 +237,7 @@ few scratch slots) follow from that one spill decision.
 - **368 bytes, the ROM's exact length**, 14 literal-pool words in the ROM's
   five pools with the same word order.
 - The instruction sequence matches block for block: same ops, same count.
-- `corpus_match_probe --c89` reports `PARTIAL 170/368 bytes, candidate 368`,
+- `corpus_match_probe` reports `PARTIAL 170/368 bytes, candidate 368`,
   and the `--diff` listing shows the残り differences are **register choices
   only** (`r0`/`r1`/`r2`/`r3` picks) plus pool-placement shifts that follow
   from them — no missing or extra operations.
@@ -307,7 +307,7 @@ remove it.
 
 Progress this session, all measured on `make matching-slice` (the acceptance
 gate) and reproduced by `python3 tools/corpus_match_probe.py --function
-SaveUpdate_080241C8 --c89`:
+SaveUpdate_080241C8`:
 
 | draft | gate first diff | candidate | note |
 | --- | --- | --- | --- |
@@ -414,13 +414,13 @@ free, so it does not spill.
 | --- | --- | --- |
 | `kf.c2 = (u32)c2` in `struct { s32 k; u32 c2; }` | force the spill | spill appears, but at `0x3C`, plus a spurious `movs r7,#1` at the loop head; 364 B |
 | `kf.pad = ...` in `struct { s32 k; u32 pad; }` | same, other field name | identical to the above |
-| two single-member structs (`{k}` + `{c2}`) | avoid the rotated loop | does not compile cleanly through the C89 transform |
+| two single-member structs (`{k}` + `{c2}`) | avoid the rotated loop | does not compile cleanly as C89 |
 | byte-offset alias `*(u32 *)((u8 *)&kf + 4)` | spill without a second member | probe preprocess failure |
 | plain `s32 knext; u32 c2sp;` | two scalars | c2 lands in r7 again; `+0x2C`, 364 B |
 | `volatile u32 c2m[1]` | volatile slot | 296 B, `+0x0E` |
 | `u32 c2m[1]` | array slot | 372 B (oversized) |
 | `register s32 idx __asm__("r3")` | force idx to r3 | 364 B, `+0x0E`/`+0x3E` depending on the rest |
-| asm splice `str %0,[sp,#4]` / `ldr %0,[sp,#4]` | exact by construction | breaks the C89 transform at `src/save.c:232` |
+| asm splice `str %0,[sp,#4]` / `ldr %0,[sp,#4]` | exact by construction | breaks C89 compilation at `src/save.c:232` |
 
 The `movs r7,#1` that appears whenever the struct is fully used is agbcc's loop
 rotation: it duplicates the loop head and materialises `k = 1` on the second

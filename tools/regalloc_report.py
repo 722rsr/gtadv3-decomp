@@ -15,8 +15,8 @@ are live around it. That answers "why did the result pseudo not take the dying
 operand's register" without source-shape guesswork.
 
 Discovery and compilation follow tools/corpus_match_probe.py exactly (same
-C89 transform, preprocessor, and agbcc flags), so the allocation reported is
-the one the matching probes see.
+C89 source, preprocessor, and agbcc flags), so the allocation reported is the
+one the matching probes see.
 
 This is diagnostic evidence only; it grants no promotion authority.
 """
@@ -65,15 +65,10 @@ def function_source_path(name: str) -> tuple[Path, str, list[str]]:
 
 
 def compile_with_dumps(path: Path, work: Path) -> Path:
-    """C89-transform + preprocess + agbcc (with RTL dumps) into `work`."""
-    transformed, stats = probe.cached_transform_file(path)
-    if stats["unhandled"] is not None:
-        raise ValueError(f"C89 transform: {stats['unhandled']}")
-    unit = work / (path.stem + ".c89.c")
-    unit.write_text(transformed, encoding="utf-8")
+    """Preprocess + agbcc (with RTL dumps) into `work`."""
     pre = work / (path.stem + ".i")
     with pre.open("w", encoding="utf-8") as handle:
-        run(["clang", "-E", "-nostdinc", "-undef", *probe.inc_flags(), str(unit)],
+        run(["clang", "-E", "-nostdinc", "-undef", *probe.inc_flags(), str(path)],
             stdout=handle)
     run([probe.AGBCC, *FLAGS, pre.name, "-o", (work / (path.stem + ".s")).name],
         capture_output=True, cwd=work)

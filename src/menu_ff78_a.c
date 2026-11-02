@@ -104,71 +104,73 @@ extern const u16 MenuFF78Table101FC[];
 void MenuFF78_101FC(void *rec_) {
     __asm__(".globl MenuWA101FC\nMenuWA101FC = 0x03001780\n"
             ".globl MenuFF78Table101FC\nMenuFF78Table101FC = 0x080CB55C\n");
-    u8 *rec = (u8 *)rec_;
-    u8 *wa;
-    u16 t;
-    u16 *q;
-    u16 *p190;
-    u16 *p192;
-    u16 *p194;
-    register u32 *p280 __asm__("r4");
-    u32 *p292;
-    register u16 *p168 __asm__("r1");
-
-    p168 = (u16 *)(rec + 168);
-    *p168 = 3;
-    wa = (u8 *)(uintptr_t)&MenuWA101FC;
-    t = (u16)_080256D8(*(s16 *)(wa + 0xFF6), *(s16 *)(wa + 0x103A));
-    q = (u16 *)(rec + 172);
-    *q = t;
-    t = (u16)_080256F4(*(s16 *)(wa + 0xFF6), *(s16 *)(wa + 0x103A));
-    p190 = (u16 *)(rec + 190);
-    *p190 = t;
-    *(u16 *)(rec + 188) = (u16)_0802572C(*(s16 *)(wa + 0xFF6),
-                                         *(s16 *)(wa + 0x103A));
-    t = (u16)_08025710(*(s16 *)(wa + 0xFF6), *(s16 *)(wa + 0x103A));
-    p192 = (u16 *)(rec + 192);
-    *p192 = t;
-    t = (u16)_08025CF4(*(s16 *)(wa + 0xFF2), *(s16 *)(wa + 0xFF6),
-                       *(s16 *)(wa + 0x103A));
-    p194 = (u16 *)(rec + 194);
-    *p194 = t;
-    p280 = (u32 *)(rec + 280);
-    *p280 = 5;
-    p292 = (u32 *)(rec + 292);
-    *p292 = 2;
-    _0800F8B4(rec, (u32)(s16)(*(volatile u16 *)p194 - 1));
-    t = (u16)_080258B8(*(s16 *)q);
     {
-        u32 *lb = (u32 *)(rec + 340);
-        register u32 base __asm__("r2") = (u32)(uintptr_t)MenuFF78Table101FC;
-        *lb = *(u16 *)(uintptr_t)(base + (s16)t * 2);
-        __asm__ volatile("" : "+r"(base));
+        u8 *rec = (u8 *)rec_;
+        u8 *wa;
+        u16 t;
+        u16 *q;
+        u16 *p190;
+        u16 *p192;
+        u16 *p194;
+        register u32 *p280 __asm__("r4");
+        u32 *p292;
+        register u16 *p168 __asm__("r1");
+
+        p168 = (u16 *)(rec + 168);
+        *p168 = 3;
+        wa = (u8 *)(uintptr_t)&MenuWA101FC;
+        t = (u16)_080256D8(*(s16 *)(wa + 0xFF6), *(s16 *)(wa + 0x103A));
+        q = (u16 *)(rec + 172);
+        *q = t;
+        t = (u16)_080256F4(*(s16 *)(wa + 0xFF6), *(s16 *)(wa + 0x103A));
+        p190 = (u16 *)(rec + 190);
+        *p190 = t;
+        *(u16 *)(rec + 188) = (u16)_0802572C(*(s16 *)(wa + 0xFF6),
+                                             *(s16 *)(wa + 0x103A));
+        t = (u16)_08025710(*(s16 *)(wa + 0xFF6), *(s16 *)(wa + 0x103A));
+        p192 = (u16 *)(rec + 192);
+        *p192 = t;
+        t = (u16)_08025CF4(*(s16 *)(wa + 0xFF2), *(s16 *)(wa + 0xFF6),
+                           *(s16 *)(wa + 0x103A));
+        p194 = (u16 *)(rec + 194);
+        *p194 = t;
+        p280 = (u32 *)(rec + 280);
+        *p280 = 5;
+        p292 = (u32 *)(rec + 292);
+        *p292 = 2;
+        _0800F8B4(rec, (u32)(s16)(*(volatile u16 *)p194 - 1));
+        t = (u16)_080258B8(*(s16 *)q);
         {
-            u32 *lb2 = (u32 *)(rec + 352);
-            register u16 *t2 __asm__("r1");
-            register u32 idx2 __asm__("r0");
-            idx2 = (s16)*p190 * 2;
-            t2 = (u16 *)(uintptr_t)(base + 10);
-            *lb2 = *(u16 *)(uintptr_t)(idx2 + (u32)(uintptr_t)t2);
+            u32 *lb = (u32 *)(rec + 340);
+            register u32 base __asm__("r2") = (u32)(uintptr_t)MenuFF78Table101FC;
+            *lb = *(u16 *)(uintptr_t)(base + (s16)t * 2);
+            __asm__ volatile("" : "+r"(base));
             {
-                u32 *lb3 = (u32 *)(rec + 364);
-                u32 idx3 = (s16)*p192 * 2;
-                u32 t3 = base + 20;
-                *lb3 = *(u16 *)(uintptr_t)(idx3 + t3);
+                u32 *lb2 = (u32 *)(rec + 352);
+                register u16 *t2 __asm__("r1");
+                register u32 idx2 __asm__("r0");
+                idx2 = (s16)*p190 * 2;
+                t2 = (u16 *)(uintptr_t)(base + 10);
+                *lb2 = *(u16 *)(uintptr_t)(idx2 + (u32)(uintptr_t)t2);
                 {
-                    u32 a0 = *(u32 *)(rec + 44);
-                    u32 v = *p280;
-                    _08007ABC((void *)(uintptr_t)a0, v, *(u32 *)(rec + 276));
+                    u32 *lb3 = (u32 *)(rec + 364);
+                    u32 idx3 = (s16)*p192 * 2;
+                    u32 t3 = base + 20;
+                    *lb3 = *(u16 *)(uintptr_t)(idx3 + t3);
+                    {
+                        u32 a0 = *(u32 *)(rec + 44);
+                        u32 v = *p280;
+                        _08007ABC((void *)(uintptr_t)a0, v, *(u32 *)(rec + 276));
+                    }
+                    _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 44), *p292,
+                              *(u32 *)(rec + 288));
+                    _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 36), *lb,
+                              *(u32 *)(rec + 336));
+                    _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 36), *lb2,
+                              *(u32 *)(rec + 348));
+                    _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 36), *lb3,
+                              *(u32 *)(rec + 360));
                 }
-                _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 44), *p292,
-                          *(u32 *)(rec + 288));
-                _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 36), *lb,
-                          *(u32 *)(rec + 336));
-                _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 36), *lb2,
-                          *(u32 *)(rec + 348));
-                _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 36), *lb3,
-                          *(u32 *)(rec + 360));
             }
         }
     }
@@ -204,66 +206,68 @@ extern const u16 MenuFF78Table10370[];
 void MenuFF78_10370(void *rec_) {
     __asm__(".globl MenuWA10370\nMenuWA10370 = 0x03001780\n"
             ".globl MenuFF78Table10370\nMenuFF78Table10370 = 0x080CB55C\n");
-    u8 *rec = (u8 *)rec_;
-    u8 *wa;
-    u16 t;
-    u32 *p280;
-    u32 *p292;
-    u16 *p180;
-    u16 *p172;
-    u16 *p190;
-    u16 *p192;
-    u32 *p340;
-    u32 *p352;
-    u32 *p364;
+    {
+        u8 *rec = (u8 *)rec_;
+        u8 *wa;
+        u16 t;
+        u32 *p280;
+        u32 *p292;
+        u16 *p180;
+        u16 *p172;
+        u16 *p190;
+        u16 *p192;
+        u32 *p340;
+        u32 *p352;
+        u32 *p364;
 
-    p280 = (u32 *)(rec + 280);
-    *p280 = 4;
-    p292 = (u32 *)(rec + 292);
-    *p292 = 2;
-    _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 44), *p280,
-              *(u32 *)(rec + 276));
-    _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 44), *p292,
-              *(u32 *)(rec + 288));
-    _080025930();
-    *(u16 *)(rec + 168) = 0;
-    wa = (u8 *)(uintptr_t)&MenuWA10370;
-    t = (u16)_08025A9C(*(s16 *)(wa + 0x576));
-    p180 = (u16 *)(rec + 180);
-    *p180 = t;
-    t = (u16)_08025A8C((s16)*p180);
-    p172 = (u16 *)(rec + 172);
-    *p172 = t;
-    *(u16 *)(rec + 184) = (u16)_08025A80();
-    *(u16 *)(rec + 188) = (u16)_080258B8((s16)*p172);
-    t = (u16)_0800F744((s16)*(u16 *)(rec + 188));
-    p190 = (u16 *)(rec + 190);
-    *p190 = t;
-    p192 = (u16 *)(rec + 192);
-    *p192 = 0;
-    *(u16 *)(rec + 194) = (u16)_08025E1C((s16)*p180);
-    *p280 = 4;
-    *p292 = 2;
-    t = (u16)_080258B8((s16)*p172);
-    p340 = (u32 *)(rec + 340);
-    *p340 = MenuFF78Table10370[(s16)t];
-    p352 = (u32 *)(rec + 352);
-    *p352 = *(u16 *)(uintptr_t)((u32)(uintptr_t)MenuFF78Table10370 + 10 +
-                                (s16)*p190 * 2);
-    p364 = (u32 *)(rec + 364);
-    *p364 = *(u16 *)(uintptr_t)((u32)(uintptr_t)MenuFF78Table10370 + 20 +
-                                (s16)*p192 * 2);
-    _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 44), *p280,
-              *(u32 *)(rec + 276));
-    _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 44), *p292,
-              *(u32 *)(rec + 288));
-    _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 36), *p340,
-              *(u32 *)(rec + 336));
-    _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 36), *p352,
-              *(u32 *)(rec + 348));
-    _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 36), *p364,
-              *(u32 *)(rec + 360));
-    _0800F810(rec);
+        p280 = (u32 *)(rec + 280);
+        *p280 = 4;
+        p292 = (u32 *)(rec + 292);
+        *p292 = 2;
+        _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 44), *p280,
+                  *(u32 *)(rec + 276));
+        _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 44), *p292,
+                  *(u32 *)(rec + 288));
+        _080025930();
+        *(u16 *)(rec + 168) = 0;
+        wa = (u8 *)(uintptr_t)&MenuWA10370;
+        t = (u16)_08025A9C(*(s16 *)(wa + 0x576));
+        p180 = (u16 *)(rec + 180);
+        *p180 = t;
+        t = (u16)_08025A8C((s16)*p180);
+        p172 = (u16 *)(rec + 172);
+        *p172 = t;
+        *(u16 *)(rec + 184) = (u16)_08025A80();
+        *(u16 *)(rec + 188) = (u16)_080258B8((s16)*p172);
+        t = (u16)_0800F744((s16)*(u16 *)(rec + 188));
+        p190 = (u16 *)(rec + 190);
+        *p190 = t;
+        p192 = (u16 *)(rec + 192);
+        *p192 = 0;
+        *(u16 *)(rec + 194) = (u16)_08025E1C((s16)*p180);
+        *p280 = 4;
+        *p292 = 2;
+        t = (u16)_080258B8((s16)*p172);
+        p340 = (u32 *)(rec + 340);
+        *p340 = MenuFF78Table10370[(s16)t];
+        p352 = (u32 *)(rec + 352);
+        *p352 = *(u16 *)(uintptr_t)((u32)(uintptr_t)MenuFF78Table10370 + 10 +
+                                    (s16)*p190 * 2);
+        p364 = (u32 *)(rec + 364);
+        *p364 = *(u16 *)(uintptr_t)((u32)(uintptr_t)MenuFF78Table10370 + 20 +
+                                    (s16)*p192 * 2);
+        _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 44), *p280,
+                  *(u32 *)(rec + 276));
+        _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 44), *p292,
+                  *(u32 *)(rec + 288));
+        _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 36), *p340,
+                  *(u32 *)(rec + 336));
+        _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 36), *p352,
+                  *(u32 *)(rec + 348));
+        _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 36), *p364,
+                  *(u32 *)(rec + 360));
+        _0800F810(rec);
+    }
 }
 
 void _080010370(void *a) __attribute__((alias("MenuFF78_10370")));
@@ -291,96 +295,98 @@ extern const u16 MenuFF78Table104F0[];
 void MenuFF78_104F0(void *rec_) {
     __asm__(".globl MenuWA104F0\nMenuWA104F0 = 0x03001780\n"
             ".globl MenuFF78Table104F0\nMenuFF78Table104F0 = 0x080CB55C\n");
-    u8 *rec = (u8 *)rec_;
-    u8 *wa;
-    u16 t;
-    register u16 zero __asm__("r5");
-    u16 *q;
+    {
+        u8 *rec = (u8 *)rec_;
+        u8 *wa;
+        u16 t;
+        register u16 zero __asm__("r5");
+        u16 *q;
 
-    _080025AC0();
-    {
-        u16 *p = (u16 *)(rec + 168);
-        __asm__ volatile("" : "+r"(p));
-        zero = 0;
-        *p = zero;
-    }
-    {
-        u16 *p;
-        u16 v;
-        wa = (u8 *)(uintptr_t)&MenuWA104F0;
-        v = (u16)_08025B18(*(s16 *)(wa + 0x576));
-        p = (u16 *)(rec + 180);
-        *p = v;
-        v = (u16)_08025B08(*(s16 *)p);
-        q = (u16 *)(rec + 172);
-        *q = v;
-    }
-    *(u16 *)(rec + 184) = (u16)_08025AFC();
-    *(u16 *)(rec + 188) = (u16)_080258B8(*(s16 *)q);
-    {
-        u16 *p = (u16 *)(rec + 188);
-        *(u16 *)(rec + 190) = (u16)_0800F744(*(s16 *)p);
-    }
-    {
-        register u16 *p192 __asm__("r6");
-        register u16 *p194 __asm__("r1");
-        u32 *p280;
-        u32 *p292;
-        p192 = (u16 *)(rec + 192);
-        *p192 = zero;
-        p194 = (u16 *)(rec + 194);
-        *p194 = zero;
+        _080025AC0();
         {
-            register u32 *p __asm__("r5");
-            p = (u32 *)(rec + 280);
-            *p = 3;
-            p280 = p;
+            u16 *p = (u16 *)(rec + 168);
+            __asm__ volatile("" : "+r"(p));
+            zero = 0;
+            *p = zero;
         }
         {
-            register u32 *p __asm__("r10");
-            p = (u32 *)(rec + 292);
-            *p = 1;
-            p292 = p;
+            u16 *p;
+            u16 v;
+            wa = (u8 *)(uintptr_t)&MenuWA104F0;
+            v = (u16)_08025B18(*(s16 *)(wa + 0x576));
+            p = (u16 *)(rec + 180);
+            *p = v;
+            v = (u16)_08025B08(*(s16 *)p);
+            q = (u16 *)(rec + 172);
+            *q = v;
         }
-        _0800F8B4(rec, (s16)(*(volatile u16 *)p194 - 1));
-        t = (u16)_080258B8(*(s16 *)q);
+        *(u16 *)(rec + 184) = (u16)_08025AFC();
+        *(u16 *)(rec + 188) = (u16)_080258B8(*(s16 *)q);
         {
-            u32 *lb = (u32 *)(rec + 340);
-            register u32 base __asm__("r2") = (u32)(uintptr_t)MenuFF78Table104F0;
-            *lb = *(u16 *)(uintptr_t)(base + (s16)t * 2);
-            __asm__ volatile("" : "+r"(base));
+            u16 *p = (u16 *)(rec + 188);
+            *(u16 *)(rec + 190) = (u16)_0800F744(*(s16 *)p);
+        }
+        {
+            register u16 *p192 __asm__("r6");
+            register u16 *p194 __asm__("r1");
+            u32 *p280;
+            u32 *p292;
+            p192 = (u16 *)(rec + 192);
+            *p192 = zero;
+            p194 = (u16 *)(rec + 194);
+            *p194 = zero;
             {
-                u32 *lb2 = (u32 *)(rec + 352);
-                register u16 *t2 __asm__("r1");
-                register u32 idx2 __asm__("r0");
-                idx2 = (s16)(*(u16 *)(rec + 190)) * 2;
-                t2 = (u16 *)(uintptr_t)(base + 10);
-                *lb2 = *(u16 *)(uintptr_t)(idx2 + (u32)(uintptr_t)t2);
+                register u32 *p __asm__("r5");
+                p = (u32 *)(rec + 280);
+                *p = 3;
+                p280 = p;
+            }
+            {
+                register u32 *p __asm__("r10");
+                p = (u32 *)(rec + 292);
+                *p = 1;
+                p292 = p;
+            }
+            _0800F8B4(rec, (s16)(*(volatile u16 *)p194 - 1));
+            t = (u16)_080258B8(*(s16 *)q);
+            {
+                u32 *lb = (u32 *)(rec + 340);
+                register u32 base __asm__("r2") = (u32)(uintptr_t)MenuFF78Table104F0;
+                *lb = *(u16 *)(uintptr_t)(base + (s16)t * 2);
+                __asm__ volatile("" : "+r"(base));
                 {
-                    u32 *lb3;
-                    u32 idx3;
-                    u32 t3;
-                    lb3 = (u32 *)(rec + 364);
-                    idx3 = (s16)*p192 * 2;
-                    t3 = base;
-                    t3 += 20;
-                    idx3 += t3;
-                    *lb3 = *(u16 *)(uintptr_t)idx3;
-                    _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 44), *p280,
-                              *(u32 *)(rec + 276));
-                    _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 44), *p292,
-                              *(u32 *)(rec + 288));
-                    _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 36), *lb,
-                              *(u32 *)(rec + 336));
-                    _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 36), *lb2,
-                              *(u32 *)(rec + 348));
-                    _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 36), *lb3,
-                              *(u32 *)(rec + 360));
+                    u32 *lb2 = (u32 *)(rec + 352);
+                    register u16 *t2 __asm__("r1");
+                    register u32 idx2 __asm__("r0");
+                    idx2 = (s16)(*(u16 *)(rec + 190)) * 2;
+                    t2 = (u16 *)(uintptr_t)(base + 10);
+                    *lb2 = *(u16 *)(uintptr_t)(idx2 + (u32)(uintptr_t)t2);
+                    {
+                        u32 *lb3;
+                        u32 idx3;
+                        u32 t3;
+                        lb3 = (u32 *)(rec + 364);
+                        idx3 = (s16)*p192 * 2;
+                        t3 = base;
+                        t3 += 20;
+                        idx3 += t3;
+                        *lb3 = *(u16 *)(uintptr_t)idx3;
+                        _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 44), *p280,
+                                  *(u32 *)(rec + 276));
+                        _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 44), *p292,
+                                  *(u32 *)(rec + 288));
+                        _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 36), *lb,
+                                  *(u32 *)(rec + 336));
+                        _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 36), *lb2,
+                                  *(u32 *)(rec + 348));
+                        _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 36), *lb3,
+                                  *(u32 *)(rec + 360));
+                    }
                 }
             }
         }
+        _0800F810(rec);
     }
-    _0800F810(rec);
 }
 void _0800104F0(void *a) __attribute__((alias("MenuFF78_104F0")));
 void sub_0800104F0(void *a) __attribute__((alias("MenuFF78_104F0")));
@@ -409,101 +415,103 @@ extern const u16 MenuFF78Table10644[];
 void MenuFF78_10644(void *rec_) {
     __asm__(".globl MenuWA10644\nMenuWA10644 = 0x03001780\n"
             ".globl MenuFF78Table10644\nMenuFF78Table10644 = 0x080CB55C\n");
-    u8 *rec = (u8 *)rec_;
-    u8 *wa;
-    u16 t;
-    u16 zero;
-    u16 *q;
+    {
+        u8 *rec = (u8 *)rec_;
+        u8 *wa;
+        u16 t;
+        u16 zero;
+        u16 *q;
 
-    _08002124(0x138D);
-    {
-        u16 *p = (u16 *)(rec + 218);
-        __asm__ volatile("" : "+r"(p));
-        zero = 0;
-        *p = 1;
-    }
-    _080025930();
-    *(u16 *)(rec + 168) = zero;
-    {
-        u16 *p;
-        u16 v;
-        wa = (u8 *)(uintptr_t)&MenuWA10644;
-        v = (u16)_08025A9C(*(s16 *)(wa + 0x576));
-        p = (u16 *)(rec + 180);
-        *p = v;
-        v = (u16)_08025A8C(*(s16 *)p);
-        q = (u16 *)(rec + 172);
-        *q = v;
-    }
-    *(u16 *)(rec + 184) = (u16)_08025A80();
-    *(u16 *)(rec + 188) = (u16)_080258B8(*(s16 *)q);
-    {
-        u16 *p = (u16 *)(rec + 188);
-        *(u16 *)(rec + 190) = (u16)_0800F744(*(s16 *)p);
-    }
-    {
-        register u16 *p192 __asm__("r6");
-        u16 *p194;
-        u32 *p280;
-        u32 *p292;
-        p192 = (u16 *)(rec + 192);
-        *p192 = zero;
-        p194 = (u16 *)(rec + 194);
-        *p194 = zero;
+        _08002124(0x138D);
         {
-            u16 v = *q;
-            *(u16 *)(rec + 182) = v;
+            u16 *p = (u16 *)(rec + 218);
+            __asm__ volatile("" : "+r"(p));
+            zero = 0;
+            *p = 1;
+        }
+        _080025930();
+        *(u16 *)(rec + 168) = zero;
+        {
+            u16 *p;
+            u16 v;
+            wa = (u8 *)(uintptr_t)&MenuWA10644;
+            v = (u16)_08025A9C(*(s16 *)(wa + 0x576));
+            p = (u16 *)(rec + 180);
+            *p = v;
+            v = (u16)_08025A8C(*(s16 *)p);
+            q = (u16 *)(rec + 172);
+            *q = v;
+        }
+        *(u16 *)(rec + 184) = (u16)_08025A80();
+        *(u16 *)(rec + 188) = (u16)_080258B8(*(s16 *)q);
+        {
+            u16 *p = (u16 *)(rec + 188);
+            *(u16 *)(rec + 190) = (u16)_0800F744(*(s16 *)p);
         }
         {
-            register u32 *p __asm__("r4");
-            p = (u32 *)(rec + 280);
-            *p = 4;
-            p280 = p;
-        }
-        p292 = (u32 *)(rec + 292);
-        *p292 = 2;
-        _0800F8B4(rec, (s16)(*(volatile u16 *)p194 - 1));
-        t = (u16)_080258B8(*(s16 *)q);
-        {
-            u32 *lb = (u32 *)(rec + 340);
-            register u32 base __asm__("r2") = (u32)(uintptr_t)MenuFF78Table10644;
-            *lb = *(u16 *)(uintptr_t)(base + (s16)t * 2);
-            __asm__ volatile("" : "+r"(base));
+            register u16 *p192 __asm__("r6");
+            u16 *p194;
+            u32 *p280;
+            u32 *p292;
+            p192 = (u16 *)(rec + 192);
+            *p192 = zero;
+            p194 = (u16 *)(rec + 194);
+            *p194 = zero;
             {
-                u32 *lb2 = (u32 *)(rec + 352);
-                register u16 *t2 __asm__("r1");
-                register u32 idx2 __asm__("r0");
-                idx2 = (s16)(*(u16 *)(rec + 190)) * 2;
-                t2 = (u16 *)(uintptr_t)(base + 10);
-                *lb2 = *(u16 *)(uintptr_t)(idx2 + (u32)(uintptr_t)t2);
+                u16 v = *q;
+                *(u16 *)(rec + 182) = v;
+            }
+            {
+                register u32 *p __asm__("r4");
+                p = (u32 *)(rec + 280);
+                *p = 4;
+                p280 = p;
+            }
+            p292 = (u32 *)(rec + 292);
+            *p292 = 2;
+            _0800F8B4(rec, (s16)(*(volatile u16 *)p194 - 1));
+            t = (u16)_080258B8(*(s16 *)q);
+            {
+                u32 *lb = (u32 *)(rec + 340);
+                register u32 base __asm__("r2") = (u32)(uintptr_t)MenuFF78Table10644;
+                *lb = *(u16 *)(uintptr_t)(base + (s16)t * 2);
+                __asm__ volatile("" : "+r"(base));
                 {
-                    u32 *lb3 = (u32 *)(rec + 364);
-                    u32 idx3;
-                    u32 t3;
-                    idx3 = (s16)*p192 * 2;
-                    t3 = base;
-                    t3 += 20;
-                    idx3 += t3;
-                    *lb3 = *(u16 *)(uintptr_t)idx3;
-                    _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 44), *p280,
-                              *(u32 *)(rec + 276));
-                    _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 44), *p292,
-                              *(u32 *)(rec + 288));
-                    _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 36), *lb,
-                              *(u32 *)(rec + 336));
-                    _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 36), *lb2,
-                              *(u32 *)(rec + 348));
-                    _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 36), *lb3,
-                              *(u32 *)(rec + 360));
+                    u32 *lb2 = (u32 *)(rec + 352);
+                    register u16 *t2 __asm__("r1");
+                    register u32 idx2 __asm__("r0");
+                    idx2 = (s16)(*(u16 *)(rec + 190)) * 2;
+                    t2 = (u16 *)(uintptr_t)(base + 10);
+                    *lb2 = *(u16 *)(uintptr_t)(idx2 + (u32)(uintptr_t)t2);
+                    {
+                        u32 *lb3 = (u32 *)(rec + 364);
+                        u32 idx3;
+                        u32 t3;
+                        idx3 = (s16)*p192 * 2;
+                        t3 = base;
+                        t3 += 20;
+                        idx3 += t3;
+                        *lb3 = *(u16 *)(uintptr_t)idx3;
+                        _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 44), *p280,
+                                  *(u32 *)(rec + 276));
+                        _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 44), *p292,
+                                  *(u32 *)(rec + 288));
+                        _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 36), *lb,
+                                  *(u32 *)(rec + 336));
+                        _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 36), *lb2,
+                                  *(u32 *)(rec + 348));
+                        _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 36), *lb3,
+                                  *(u32 *)(rec + 360));
+                    }
                 }
             }
         }
-    }
-    *(u16 *)(rec + 202) = 30;
-    {
-        register u16 v __asm__("r1");
-        v = *q;
-        *(u16 *)(rec + 178) = v;
+        *(u16 *)(rec + 202) = 30;
+        {
+            register u16 v __asm__("r1");
+            v = *q;
+            *(u16 *)(rec + 178) = v;
+        }
     }
 }
 void _080010644(void *a) __attribute__((alias("MenuFF78_10644")));
@@ -516,7 +524,7 @@ void sub_080010644(void *a) __attribute__((alias("MenuFF78_10644")));
 // ============================================================================
 // EXACT 264/264 bytes, no instruction-bearing asm. Five spellings are
 // load-bearing; each was measured with
-// `python3 tools/corpus_match_probe.py --function _0800107CC --c89`:
+// `python3 tools/corpus_match_probe.py --function _0800107CC`:
 //
 //  * The work-area base is a VARIABLE and each cell offset is a plain literal.
 //    A folded `0x03001780 + off` constant collapses base and offset into one
@@ -543,51 +551,55 @@ void sub_080010644(void *a) __attribute__((alias("MenuFF78_10644")));
 extern u8 MenuWA107CC;
 void MenuFF78_107CC(void *rec_) {
     __asm__(".globl MenuWA107CC\nMenuWA107CC = 0x03001780\n");
-    u8 *rec = (u8 *)rec_;
-    u8 *wa;
-    u16 t;
+    {
+        u8 *rec = (u8 *)rec_;
+        u8 *wa;
+        u16 t;
 
-    _080025930();
-    *(u16 *)(rec + 168) = 0;
-    wa = (u8 *)(uintptr_t)&MenuWA107CC;
-    *(u16 *)(rec + 180) = (u16)_08025A9C(*(s16 *)(wa + 0x576));
-    *(u16 *)(rec + 172) = (u16)_08025A8C(*(s16 *)(rec + 180));
-    t = *(u16 *)(wa + 0xFEC);
-    *(u16 *)(rec + 176) = t;
-    t = *(u16 *)(wa + 0xFE8);
-    *(u16 *)(rec + 200) = t;
-    t = *(u16 *)(wa + 0xFEC - 2);
-    *(u16 *)(rec + 198) = t;
-    *(u16 *)(rec + 184) = (u16)_08025A80();
-    {
-        register u16 *seed __asm__("r0") = (u16 *)(rec + 188);
-        *seed++ = 99;
-        *seed++ = 99;
-        __asm__ volatile("" : "+r"(seed));
-        *seed = 99;
+        _080025930();
+        *(u16 *)(rec + 168) = 0;
+        wa = (u8 *)(uintptr_t)&MenuWA107CC;
+        *(u16 *)(rec + 180) = (u16)_08025A9C(*(s16 *)(wa + 0x576));
+        *(u16 *)(rec + 172) = (u16)_08025A8C(*(s16 *)(rec + 180));
+        t = *(u16 *)(wa + 0xFEC);
+        *(u16 *)(rec + 176) = t;
+        t = *(u16 *)(wa + 0xFE8);
+        *(u16 *)(rec + 200) = t;
+        t = *(u16 *)(wa + 0xFEC - 2);
+        *(u16 *)(rec + 198) = t;
+        *(u16 *)(rec + 184) = (u16)_08025A80();
+        {
+            register u16 *seed __asm__("r0") = (u16 *)(rec + 188);
+            *seed++ = 99;
+            *seed++ = 99;
+            __asm__ volatile("" : "+r"(seed));
+            *seed = 99;
+        }
+        *(u16 *)(rec + 194) = (u16)_08025E1C(*(s16 *)(rec + 180));
+        *(u32 *)(rec + 280) = 4;
+        *(u32 *)(rec + 292) = 2;
+        _0800F8B4(rec, (s16)(*(volatile u16 *)(rec + 194) - 1));
+        _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 44), *(u32 *)(rec + 280),
+                   *(u32 *)(rec + 276));
+        _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 44), *(u32 *)(rec + 292),
+                   *(u32 *)(rec + 288));
+        t = (u16)_080258B8(*(s16 *)(rec + 172));
+        {
+            extern const u16 MenuFF78Table107CC[];
+            __asm__(".globl MenuFF78Table107CC\nMenuFF78Table107CC = 0x080CB55C\n");
+            {
+                u32 *dst = (u32 *)(rec + 340);
+                register u32 tableBase __asm__("r1") = (u32)(uintptr_t)MenuFF78Table107CC;
+                register u32 tblOff __asm__("r0") = (u32)(s16)t;
+                u16 sel;
+                tblOff <<= 1;
+                sel = *(u16 *)(uintptr_t)(tblOff + tableBase);
+                *dst = sel;
+                _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 36), sel, *(u32 *)(rec + 336));
+            }
+        }
+        _0800F810(rec);
     }
-    *(u16 *)(rec + 194) = (u16)_08025E1C(*(s16 *)(rec + 180));
-    *(u32 *)(rec + 280) = 4;
-    *(u32 *)(rec + 292) = 2;
-    _0800F8B4(rec, (s16)(*(volatile u16 *)(rec + 194) - 1));
-    _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 44), *(u32 *)(rec + 280),
-               *(u32 *)(rec + 276));
-    _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 44), *(u32 *)(rec + 292),
-               *(u32 *)(rec + 288));
-    t = (u16)_080258B8(*(s16 *)(rec + 172));
-    {
-        extern const u16 MenuFF78Table107CC[];
-        __asm__(".globl MenuFF78Table107CC\nMenuFF78Table107CC = 0x080CB55C\n");
-        u32 *dst = (u32 *)(rec + 340);
-        register u32 tableBase __asm__("r1") = (u32)(uintptr_t)MenuFF78Table107CC;
-        register u32 tblOff __asm__("r0") = (u32)(s16)t;
-        u16 sel;
-        tblOff <<= 1;
-        sel = *(u16 *)(uintptr_t)(tblOff + tableBase);
-        *dst = sel;
-        _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 36), sel, *(u32 *)(rec + 336));
-    }
-    _0800F810(rec);
 }
 void _0800107CC(void *a) __attribute__((alias("MenuFF78_107CC")));
 void sub_0800107CC(void *a) __attribute__((alias("MenuFF78_107CC")));
@@ -602,35 +614,37 @@ void sub_0800107CC(void *a) __attribute__((alias("MenuFF78_107CC")));
 // in the tail, so the tail uses a fresh expression rather than the pointer.
 void MenuFF78_1096C(void *rec_, int a1, int a2) {
     (void)a1;
-    u8 *rec = (u8 *)rec_;
-    u16 r4 = (u16)a2;
-    u16 *p = (u16 *)(rec + 168);
-    s16 v = *(s16 *)p;
-    // A `switch` over the two sparse cases, not `if/else if`: the ROM's
-    // dispatch is `cmp r0,#0 / beq case0 / cmp r0,#3 / beq case3 / b tail`
-    // with both case bodies laid out after it, which is gcc's comparison-chain
-    // expansion. `if (v == 0) {...} else if (v == 3) {...}` instead lays case 0
-    // inline after `bne`.
-    switch (v) {
-    case 0:
-        if (r4 == 2) _0800108D4(rec_);
-        if (r4 == 1) {
-            *p = 3;
-            _0802B368(1);
+    {
+        u8 *rec = (u8 *)rec_;
+        u16 r4 = (u16)a2;
+        u16 *p = (u16 *)(rec + 168);
+        s16 v = *(s16 *)p;
+        // A `switch` over the two sparse cases, not `if/else if`: the ROM's
+        // dispatch is `cmp r0,#0 / beq case0 / cmp r0,#3 / beq case3 / b tail`
+        // with both case bodies laid out after it, which is gcc's comparison-chain
+        // expansion. `if (v == 0) {...} else if (v == 3) {...}` instead lays case 0
+        // inline after `bne`.
+        switch (v) {
+        case 0:
+            if (r4 == 2) _0800108D4(rec_);
+            if (r4 == 1) {
+                *p = 3;
+                _0802B368(1);
+            }
+            break;
+        case 3:
+            if (r4 == 2) {
+                *p = 0;
+                _0802B368(4);
+            }
+            if (r4 == 1) {
+                _0800108F0(rec_);
+                *(u16 *)(rec + 220) = r4;
+            }
+            break;
         }
-        break;
-    case 3:
-        if (r4 == 2) {
-            *p = 0;
-            _0802B368(4);
-        }
-        if (r4 == 1) {
-            _0800108F0(rec_);
-            *(u16 *)(rec + 220) = r4;
-        }
-        break;
+        if (*(s16 *)(rec + 168) > 4) *(u16 *)(rec + 168) = 4;
     }
-    if (*(s16 *)(rec + 168) > 4) *(u16 *)(rec + 168) = 4;
 }
 void _08001096C(void *a, int b, int c) __attribute__((alias("MenuFF78_1096C")));
 void sub_08001096C(void *a, int b, int c) __attribute__((alias("MenuFF78_1096C")));
@@ -690,137 +704,139 @@ void sub_08001096C(void *a, int b, int c) __attribute__((alias("MenuFF78_1096C")
 extern u8 MenuFF78WA109D4[];
 void MenuFF78_109D4(volatile u8 *rec, u16 b, u16 c) {
     __asm__(".globl MenuFF78WA109D4\nMenuFF78WA109D4 = 0x03001780\n");
-    u16 *p;
-    register u16 *q __asm__("r5");
-    u16 *t170;
-    u16 *t204;
-    u16 zero;
-    register u16 *p172 __asm__("r6");
-    register u16 *p204 __asm__("r5");
-    u16 *p218;
+    {
+        u16 *p;
+        register u16 *q __asm__("r5");
+        u16 *t170;
+        u16 *t204;
+        u16 zero;
+        register u16 *p172 __asm__("r6");
+        register u16 *p204 __asm__("r5");
+        u16 *p218;
 
-    p = (u16 *)(rec + 168);
-    {
-        volatile u8 *wa = (volatile u8 *)(uintptr_t)MenuFF78WA109D4;
-        if (*(volatile u8 *)((u8 *)wa + 0x10C3u) == 1) {
-            _08002158(2, *(u16 *)(rec + 178));
-            q = (u16 *)(rec + 218);
-            _08002158(3, *q);
-            _08002158(5, *(u16 *)(rec + 206));
-            t170 = (u16 *)(rec + 170);
-            _08002158(4, *t170);
-            p218 = q;
-            p = t170;
-            p172 = (u16 *)(rec + 172);
-            p204 = q - 7;
-        } else {
-            p172 = (u16 *)(rec + 172);
-            _08002158(2, *p172);
-            q = (u16 *)(rec + 218);
-            _08002158(3, *q);
-            t204 = (u16 *)(rec + 204);
-            _08002158(5, *t204);
-            _08002158(4, *p);
-            p218 = q;
-            p = (u16 *)(rec + 170);
-            p204 = t204;
+        p = (u16 *)(rec + 168);
+        {
+            volatile u8 *wa = (volatile u8 *)(uintptr_t)MenuFF78WA109D4;
+            if (*(volatile u8 *)((u8 *)wa + 0x10C3u) == 1) {
+                _08002158(2, *(u16 *)(rec + 178));
+                q = (u16 *)(rec + 218);
+                _08002158(3, *q);
+                _08002158(5, *(u16 *)(rec + 206));
+                t170 = (u16 *)(rec + 170);
+                _08002158(4, *t170);
+                p218 = q;
+                p = t170;
+                p172 = (u16 *)(rec + 172);
+                p204 = q - 7;
+            } else {
+                p172 = (u16 *)(rec + 172);
+                _08002158(2, *p172);
+                q = (u16 *)(rec + 218);
+                _08002158(3, *q);
+                t204 = (u16 *)(rec + 204);
+                _08002158(5, *t204);
+                _08002158(4, *p);
+                p218 = q;
+                p = (u16 *)(rec + 170);
+                p204 = t204;
+            }
         }
-    }
-    if (c == 1) *(u16 *)(rec + 206) = c;
-    if (c == 2) *(u16 *)(rec + 206) = c;
-    {
-        volatile u8 *wa = (volatile u8 *)(uintptr_t)MenuFF78WA109D4;
-        if (*(volatile u8 *)((u8 *)wa + 0x10C3u) == 0) {
-            *p172 = (u16)_08002178(1, 2);
-            *(volatile u16 *)((u8 *)wa + 0x0FEEu) = (u16)_08002178(1, 3);
-            *p204 = (u16)_08002178(1, 5);
-            *(u16 *)(rec + 168) = (u16)_08002178(1, 4);
-        } else {
-            *p172 = (u16)_08002178(0, 2);
-            *(volatile u16 *)((u8 *)wa + 0x0FEEu) = (u16)_08002178(0, 3);
-            *p204 = (u16)_08002178(0, 5);
-            *(u16 *)(rec + 168) = (u16)_08002178(0, 4);
+        if (c == 1) *(u16 *)(rec + 206) = c;
+        if (c == 2) *(u16 *)(rec + 206) = c;
+        {
+            volatile u8 *wa = (volatile u8 *)(uintptr_t)MenuFF78WA109D4;
+            if (*(volatile u8 *)((u8 *)wa + 0x10C3u) == 0) {
+                *p172 = (u16)_08002178(1, 2);
+                *(volatile u16 *)((u8 *)wa + 0x0FEEu) = (u16)_08002178(1, 3);
+                *p204 = (u16)_08002178(1, 5);
+                *(u16 *)(rec + 168) = (u16)_08002178(1, 4);
+            } else {
+                *p172 = (u16)_08002178(0, 2);
+                *(volatile u16 *)((u8 *)wa + 0x0FEEu) = (u16)_08002178(0, 3);
+                *p204 = (u16)_08002178(0, 5);
+                *(u16 *)(rec + 168) = (u16)_08002178(0, 4);
+            }
         }
-    }
-    if (*(s16 *)p172 == 0) *p172 = *(u16 *)(rec + 182);
-    {
-        int t = *(u16 *)(rec + 202) - 1;
-        zero = 0;
-        *(u16 *)(rec + 202) = t;
-        if ((s16)t <= 0) {
-            *(u16 *)(rec + 202) = zero;
-            if ((u16)_08002178(0, 5) == (u16)_08002178(1, 5)) {
-                switch (*(s16 *)(rec + 168)) {
-                case 0:
-                    if (*(u16 *)p204 == 2) {
-                        *(u16 *)(rec + 206) = zero;
-                        _08002618(1, 0);
-                        *(u16 *)(rec + 216) = zero;
-                        _0800108D4((void *)rec);
-                    }
-                    if (*(u16 *)p204 == 1) {
-                        *(u16 *)(rec + 206) = zero;
-                        *p = 3;
-                        _0802B368(1);
-                    }
-                    break;
-                case 3:
-                    if (*(u16 *)p204 == 2) {
-                        *(u16 *)(rec + 206) = zero;
-                        *p = 0;
-                        _0802B368(4);
-                    }
-                    {
-                        int v = *(s16 *)p204;
-                        if (v == 1) {
+        if (*(s16 *)p172 == 0) *p172 = *(u16 *)(rec + 182);
+        {
+            int t = *(u16 *)(rec + 202) - 1;
+            zero = 0;
+            *(u16 *)(rec + 202) = t;
+            if ((s16)t <= 0) {
+                *(u16 *)(rec + 202) = zero;
+                if ((u16)_08002178(0, 5) == (u16)_08002178(1, 5)) {
+                    switch (*(s16 *)(rec + 168)) {
+                    case 0:
+                        if (*(u16 *)p204 == 2) {
                             *(u16 *)(rec + 206) = zero;
-                            _08002618(1, 1);
-                            *(u16 *)(rec + 216) = v;
-                            *p = 4;
+                            _08002618(1, 0);
+                            *(u16 *)(rec + 216) = zero;
+                            _0800108D4((void *)rec);
+                        }
+                        if (*(u16 *)p204 == 1) {
+                            *(u16 *)(rec + 206) = zero;
+                            *p = 3;
                             _0802B368(1);
                         }
-                    }
-                    break;
-                case 4:
-                    if (c == 32) *p218 = 0;
-                    if (c == 16) *p218 = 1;
-                    if (*(u16 *)p204 == 2) {
-                        *(u16 *)(rec + 206) = zero;
-                        *p = 3;
-                        _0802B368(4);
+                        break;
+                    case 3:
+                        if (*(u16 *)p204 == 2) {
+                            *(u16 *)(rec + 206) = zero;
+                            *p = 0;
+                            _0802B368(4);
+                        }
                         {
-                            volatile u8 *wa =
-                                (volatile u8 *)(uintptr_t)MenuFF78WA109D4;
-                            if (*(volatile u8 *)((u8 *)wa + 0x10C3u) == 1) {
-                                _08002618(1, 0);
-                                *(u16 *)(rec + 216) = zero;
+                            int v = *(s16 *)p204;
+                            if (v == 1) {
+                                *(u16 *)(rec + 206) = zero;
+                                _08002618(1, 1);
+                                *(u16 *)(rec + 216) = v;
+                                *p = 4;
+                                _0802B368(1);
                             }
                         }
-                    }
-                    if (*(u16 *)p204 == 1) {
-                        if ((u16)_08002178(0, 2) ==
-                            (u16)_08002178(1, 2)) {
-                            *(u16 *)(rec + 206) = 0;
-                            _08002618(1, 0);
-                            *(u16 *)(rec + 216) = 0;
-                            _0800108F0((void *)rec);
+                        break;
+                    case 4:
+                        if (c == 32) *p218 = 0;
+                        if (c == 16) *p218 = 1;
+                        if (*(u16 *)p204 == 2) {
+                            *(u16 *)(rec + 206) = zero;
+                            *p = 3;
+                            _0802B368(4);
+                            {
+                                volatile u8 *wa =
+                                    (volatile u8 *)(uintptr_t)MenuFF78WA109D4;
+                                if (*(volatile u8 *)((u8 *)wa + 0x10C3u) == 1) {
+                                    _08002618(1, 0);
+                                    *(u16 *)(rec + 216) = zero;
+                                }
+                            }
                         }
+                        if (*(u16 *)p204 == 1) {
+                            if ((u16)_08002178(0, 2) ==
+                                (u16)_08002178(1, 2)) {
+                                *(u16 *)(rec + 206) = 0;
+                                _08002618(1, 0);
+                                *(u16 *)(rec + 216) = 0;
+                                _0800108F0((void *)rec);
+                            }
+                        }
+                        break;
                     }
-                    break;
                 }
             }
         }
-    }
-    if (*(s16 *)p > 4) *p = 4;
-    if (*(s16 *)(rec + 168) == 0) {
-        volatile u8 *wa = (volatile u8 *)(uintptr_t)MenuFF78WA109D4;
-        switch (*(volatile u8 *)((u8 *)wa + 0x10C3u)) {
-        case 0:
-            _0800113A0((void *)rec, b, c);
-            break;
-        case 1:
-            _080011214((void *)rec, b, c);
-            break;
+        if (*(s16 *)p > 4) *p = 4;
+        if (*(s16 *)(rec + 168) == 0) {
+            volatile u8 *wa = (volatile u8 *)(uintptr_t)MenuFF78WA109D4;
+            switch (*(volatile u8 *)((u8 *)wa + 0x10C3u)) {
+            case 0:
+                _0800113A0((void *)rec, b, c);
+                break;
+            case 1:
+                _080011214((void *)rec, b, c);
+                break;
+            }
         }
     }
 }

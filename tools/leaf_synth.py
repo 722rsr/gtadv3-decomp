@@ -208,7 +208,7 @@ def synthesize(name, out, return_type, memory, budget):
     (out / 'summary.json').write_text(json.dumps({'status': 'STARTED', 'function': name}) + '\n')
     report = out / 'baseline.json'
     command = [sys.executable, str(probe.ROOT / 'tools/corpus_match_probe.py'), '--function', name,
-               '--c89', '--require-all', '--work-dir', str(out / 'baseline'), '--json', str(report)]
+               '--require-all', '--work-dir', str(out / 'baseline'), '--json', str(report)]
     run = subprocess.run(command, text=True, capture_output=True)
     (out / 'baseline.log').write_text(run.stdout + run.stderr)
     if run.returncode:

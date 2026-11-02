@@ -82,20 +82,22 @@ void SessionPump(void) __attribute__((alias("SessionPump_080006A4")));
 //   halfword; EF90[6] &= 0x7F.
 void SessionExit_080006BC(void) {
     *AG_IMEM = 0;
-    u16 ie = *AG_IE;
-    *AG_IE = (u16)(ie & 0xFF3Fu);
-    *AG_IMEM = 1;
-    *AG_SIOCNT = 0x2003;
-    // subs r1,#0x1c from SIOCNT = 0x0400010C, word store 0xABFB
-    *(volatile u32 *)(uintptr_t)0x0400010C = 0xABFBu;
-    // adds r1,#0xf6 from 0x0400010C = 0x04000202, halfword 0xC0
-    *(volatile u16 *)(uintptr_t)0x04000202 = 0xC0;
-    // EF90[6] &= 0x7F, with the base in r1 and the mask in r0 (see above)
     {
-        register volatile u8 *b __asm__("r1") = (volatile u8 *)(uintptr_t)0x0203EF90;
-        register u8 m __asm__("r0") = 0x7F;
-        m = (u8)(m & b[6]);
-        b[6] = m;
+        u16 ie = *AG_IE;
+        *AG_IE = (u16)(ie & 0xFF3Fu);
+        *AG_IMEM = 1;
+        *AG_SIOCNT = 0x2003;
+        // subs r1,#0x1c from SIOCNT = 0x0400010C, word store 0xABFB
+        *(volatile u32 *)(uintptr_t)0x0400010C = 0xABFBu;
+        // adds r1,#0xf6 from 0x0400010C = 0x04000202, halfword 0xC0
+        *(volatile u16 *)(uintptr_t)0x04000202 = 0xC0;
+        // EF90[6] &= 0x7F, with the base in r1 and the mask in r0 (see above)
+        {
+            register volatile u8 *b __asm__("r1") = (volatile u8 *)(uintptr_t)0x0203EF90;
+            register u8 m __asm__("r0") = 0x7F;
+            m = (u8)(m & b[6]);
+            b[6] = m;
+        }
     }
 }
 void _080006BC(void) __attribute__((alias("SessionExit_080006BC")));

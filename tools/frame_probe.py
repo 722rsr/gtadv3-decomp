@@ -162,14 +162,13 @@ def compile_current(path: Path, cname: str, work: Path) -> bytes:
 
 def compile_draft(path: Path, cname: str, draft: Path, work: Path) -> bytes:
     """Splice a whole-body replacement over the real TU, as --variant does."""
-    raw_tu, raw_span = lift_loop.build_tu(path, cname, want_span=True, raw=True)
+    tu, span = lift_loop.build_tu(path, cname, want_span=True)
     body = draft.read_text(encoding="utf-8")
-    candidate = raw_tu[:raw_span[0]] + body + raw_tu[raw_span[1]:]
+    candidate = tu[:span[0]] + body + tu[span[1]:]
     work.mkdir(parents=True, exist_ok=True)
-    scratch = work / "draft_raw.c"
+    scratch = work / "draft.c"
     scratch.write_text(candidate, encoding="utf-8")
-    transformed, _stats = lift_loop.transform_file(scratch)
-    obj = lift_loop.compile_tu(transformed, path, work)
+    obj = lift_loop.compile_tu(candidate, path, work)
     return lift_loop.section_blob(obj, cname, work)
 
 

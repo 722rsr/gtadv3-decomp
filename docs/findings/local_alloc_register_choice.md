@@ -608,7 +608,7 @@ lsls r2, r2, #16         @ 16-bit selector sign-extended in place at the call
 asrs r2, r2, #16
 ```
 
-Measured source shapes (probe `--function _0800FE90 --c89 --diff`):
+Measured source shapes (probe `--function _0800FE90 --diff`):
 
 | shape | result |
 | --- | --- |

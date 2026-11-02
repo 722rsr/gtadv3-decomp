@@ -30,13 +30,20 @@ Reproduce with `make era-runtime-probe`. The recorded comparison is
 Third-party source and its license are documented in
 [`tools/third_party/gcc-2.95.3/README.md`](../tools/third_party/gcc-2.95.3/README.md).
 
-## Source generation and matching
+## Source language and matching
 
-`tools/agbcc_c89_transform.py` writes compiler-compatible copies under `build/`.
-Maintained C source is not rewritten by the build. `tools/c89_equivalence.py`
-compares modern ARM compilations of the original and transformed source,
-including loadable sections and symbolic relocations. This is an empirical
-equivalence check, not a general proof of text-transform semantics.
+Maintained C is C89 in the dialect accepted by the pinned `old_agbcc`. There is
+no C99-to-C89 rewrite step between `src/` and the compiler: the checked-in
+translation unit is the compiler input. GNU extensions that the original build
+already relies on -- `__asm__` statements, `__attribute__`, named register
+variables, and `//` comments -- remain part of that dialect; the language gate
+is what `old_agbcc` accepts, not ISO C89 with extensions disabled.
+
+`tools/c89_check.py` is the source-language gate: it preprocesses and compiles
+every `src/*.c` directly with `old_agbcc` and reports the compiler's diagnostic
+for any C99 construct. Its self-test proves the gate accepts a C89 fixture and
+rejects a `for`-declaration. `tools/c_source.py` holds the comment/string mask
+and delimiter helpers shared by source-aware tools.
 
 `tools/corpus_match_probe.py` compiles functions, resolves calls and pool
 relocations at their ROM addresses, and compares the resulting spans. The

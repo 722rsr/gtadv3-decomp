@@ -99,9 +99,11 @@ void Rec35_Gate_186A8(void *rec) {
     extern u8 Rec35Wa2[] __asm__("Rec35Wa2");
     volatile u8 *wa = (volatile u8 *)(uintptr_t)Rec35Wa2;
     __asm__(".globl Rec35Wa2\nRec35Wa2 = 0x03001780\n");
-    u32 x = *(volatile u32 *)(wa + 0x10D8);
-    if (_0802D978(_0802D97C((int)x, 48), 24) != 0)
-        _08007B18((void *)((volatile u8 *)rec + 28), 13, 88, 112, 0, 0, 0, 0);
+    {
+        u32 x = *(volatile u32 *)(wa + 0x10D8);
+        if (_0802D978(_0802D97C((int)x, 48), 24) != 0)
+            _08007B18((void *)((volatile u8 *)rec + 28), 13, 88, 112, 0, 0, 0, 0);
+    }
 }
 void _0800186A8(void *rec) __attribute__((alias("Rec35_Gate_186A8")));
 
@@ -174,16 +176,20 @@ void Rec35_Leaf_187B4(void *rec, void *base, int c) {
     extern u8 Rec35Wa187B4[] __asm__("Rec35Wa187B4");
     volatile u8 *wa = (volatile u8 *)(uintptr_t)Rec35Wa187B4;
     __asm__(".globl Rec35Wa187B4\nRec35Wa187B4 = 0x03001780\n");
-    u32 off = 134;
-    off = off << 5;
-    volatile u8 *p = wa + off;
-    volatile u8 *b = (volatile u8 *)base;
-    (void)rec; (void)c;
-    if (*p != 0) {
-        *p = 0;
-        *(volatile u16 *)(b + 84) = 1;
-    } else {
-        *(volatile u16 *)(b + 84) = 2;
+    {
+        u32 off = 134;
+        off = off << 5;
+        {
+            volatile u8 *p = wa + off;
+            volatile u8 *b = (volatile u8 *)base;
+            (void)rec; (void)c;
+            if (*p != 0) {
+                *p = 0;
+                *(volatile u16 *)(b + 84) = 1;
+            } else {
+                *(volatile u16 *)(b + 84) = 2;
+            }
+        }
     }
 }
 void _0800187B4(void *a, void *b, int c) __attribute__((alias("Rec35_Leaf_187B4")));
@@ -284,112 +290,114 @@ void Rec35_RecordSwitch_188B0(void *rec) {
             ".globl RecordFlag3\nRecordFlag3 = 0x10c1\n"
             ".globl RecordValue\nRecordValue = 0x10c6\n"
             ".globl RecordCopy\nRecordCopy = 0x10fc\n");
-    s32 v0;
-    s32 v1;
-    s32 v2;
-    s32 v3;
-    s32 v5;
-    u8 sp0[32];
-    if (a0->kind == -1) {
-        sub_0802E0A4(sp0, (void *)0x0805FB66, 30);
-        { u32 selection;
-        if (a0->selection > 14) {
-            selection = ((u16 *)sp0)[14];
-        } else {
-            { register int hold __asm__("r1");
-              __asm__ volatile("" : "=r"(hold));
-              selection = ((u16 *)sp0)[a0->selection];
-              __asm__ volatile("" : : "r"(hold)); }
-        }
-        a0->kind = selection; }
-        a0->timeout = 9000;
-        { register uintptr_t base __asm__("r0") = (uintptr_t)RecordWA;
-          __asm__ volatile("" : "+r"(base));
-          *(u8 *)(base + (uintptr_t)RecordFlag) = 1; }
-    } else {
-        { register uintptr_t base __asm__("r1") = (uintptr_t)RecordWA2;
-          register uintptr_t flag __asm__("r0") = (uintptr_t)RecordFlag2;
-          register uintptr_t addr __asm__("r2");
-          __asm__ volatile("" : "+r"(base), "+r"(flag));
-          addr = base + flag;
-          *(u8 *)addr = 0;
-          { register u32 v __asm__("r0") = a0->setting;
-            register uintptr_t off __asm__("r2") = (uintptr_t)RecordValue;
-            __asm__ volatile("" : "+r"(v), "+r"(off));
-            *(u16 *)(base + off) = v; }
-        }
-    }
-    v0 = a0->kind;
-    if (v0 == 4) {
-        { register int v __asm__("r0") = a0->car;
-          __asm__ volatile("" : "+r"(v)); v5 = v; }
-        goto call_record;
-    } else {
-        if (v0 == 0) {
-            a0->selection = v0;
-            a0->cup = v0;
-        } else {
-            if (v0 == 9) {
-                a0->selection = (_08005B5C(sub_08008014()) & 31) + 16;
-                if ((s16)_080258B8(a0->selection) == 1) a0->cup = 2;
-                while (1) {
-                    v1 = _08005B5C(sub_08008014());
-                    v2 = sub_0802D97C(v1, 98);
-                    a0->car = v2;
-                    if ((s16)v2 == 86 || (s16)v2 == 56 || (s16)v2 == 55 ||
-                        (s16)v2 == 31 || (s16)v2 == 14 || (s16)v2 == 98 ||
-                        (s16)v2 == 54 || (s16)v2 == 94 || (s16)v2 == 95 ||
-                        (s16)v2 == 96)
-                        continue;
-                    if ((s16)sub_080022E4(a0->car) != -1) break;
-                }
-                v3 = _08005B5C(sub_08008014());
-                a0->variant = sub_0802D97C(v3, (s8)sub_080254E8(a0->car));
+    {
+        s32 v0;
+        s32 v1;
+        s32 v2;
+        s32 v3;
+        s32 v5;
+        u8 sp0[32];
+        if (a0->kind == -1) {
+            sub_0802E0A4(sp0, (void *)0x0805FB66, 30);
+            { u32 selection;
+            if (a0->selection > 14) {
+                selection = ((u16 *)sp0)[14];
             } else {
-                if (v0 == 10) {
-                    { register uintptr_t base __asm__("r0") = (uintptr_t)RecordWA3;
-                      register uintptr_t off __asm__("r2") = (uintptr_t)RecordFlag3;
-                      register int z __asm__("r1");
-                      register uintptr_t addr __asm__("r0");
-                      __asm__ volatile("" : "+r"(base), "+r"(off));
-                      addr = base + off;
-                      __asm__ volatile("" : "+r"(addr));
-                      z = 0; __asm__ volatile("" : "+r"(z));
-                      *(u8 *)addr = z;
-                      a0->cup = z;
-                      a0->selection = 48;
-                      a0->option = z; }
+                { register int hold __asm__("r1");
+                  __asm__ volatile("" : "=r"(hold));
+                  selection = ((u16 *)sp0)[a0->selection];
+                  __asm__ volatile("" : : "r"(hold)); }
+            }
+            a0->kind = selection; }
+            a0->timeout = 9000;
+            { register uintptr_t base __asm__("r0") = (uintptr_t)RecordWA;
+              __asm__ volatile("" : "+r"(base));
+              *(u8 *)(base + (uintptr_t)RecordFlag) = 1; }
+        } else {
+            { register uintptr_t base __asm__("r1") = (uintptr_t)RecordWA2;
+              register uintptr_t flag __asm__("r0") = (uintptr_t)RecordFlag2;
+              register uintptr_t addr __asm__("r2");
+              __asm__ volatile("" : "+r"(base), "+r"(flag));
+              addr = base + flag;
+              *(u8 *)addr = 0;
+              { register u32 v __asm__("r0") = a0->setting;
+                register uintptr_t off __asm__("r2") = (uintptr_t)RecordValue;
+                __asm__ volatile("" : "+r"(v), "+r"(off));
+                *(u16 *)(base + off) = v; }
+            }
+        }
+        v0 = a0->kind;
+        if (v0 == 4) {
+            { register int v __asm__("r0") = a0->car;
+              __asm__ volatile("" : "+r"(v)); v5 = v; }
+            goto call_record;
+        } else {
+            if (v0 == 0) {
+                a0->selection = v0;
+                a0->cup = v0;
+            } else {
+                if (v0 == 9) {
+                    a0->selection = (_08005B5C(sub_08008014()) & 31) + 16;
+                    if ((s16)_080258B8(a0->selection) == 1) a0->cup = 2;
+                    while (1) {
+                        v1 = _08005B5C(sub_08008014());
+                        v2 = sub_0802D97C(v1, 98);
+                        a0->car = v2;
+                        if ((s16)v2 == 86 || (s16)v2 == 56 || (s16)v2 == 55 ||
+                            (s16)v2 == 31 || (s16)v2 == 14 || (s16)v2 == 98 ||
+                            (s16)v2 == 54 || (s16)v2 == 94 || (s16)v2 == 95 ||
+                            (s16)v2 == 96)
+                            continue;
+                        if ((s16)sub_080022E4(a0->car) != -1) break;
+                    }
+                    v3 = _08005B5C(sub_08008014());
+                    a0->variant = sub_0802D97C(v3, (s8)sub_080254E8(a0->car));
                 } else {
-                    if (v0 == 6) {
-                        a0->kind = 3;
+                    if (v0 == 10) {
+                        { register uintptr_t base __asm__("r0") = (uintptr_t)RecordWA3;
+                          register uintptr_t off __asm__("r2") = (uintptr_t)RecordFlag3;
+                          register int z __asm__("r1");
+                          register uintptr_t addr __asm__("r0");
+                          __asm__ volatile("" : "+r"(base), "+r"(off));
+                          addr = base + off;
+                          __asm__ volatile("" : "+r"(addr));
+                          z = 0; __asm__ volatile("" : "+r"(z));
+                          *(u8 *)addr = z;
+                          a0->cup = z;
+                          a0->selection = 48;
+                          a0->option = z; }
                     } else {
-                        if (v0 == 7) {
-                            a0->kind = 4;
-                            { register int h __asm__("r2");
-                              __asm__ volatile("" : "=r"(h));
-                              v5 = a0->car;
-                              __asm__ volatile("" : : "r"(h)); }
-                            goto call_record;
+                        if (v0 == 6) {
+                            a0->kind = 3;
+                        } else {
+                            if (v0 == 7) {
+                                a0->kind = 4;
+                                { register int h __asm__("r2");
+                                  __asm__ volatile("" : "=r"(h));
+                                  v5 = a0->car;
+                                  __asm__ volatile("" : : "r"(h)); }
+                                goto call_record;
+                            }
                         }
                     }
                 }
             }
         }
+        goto after_record;
+    call_record:
+        a0->lookup = sub_080024E7C(v5);
+    after_record:
+        { register int h __asm__("r1"); int id;
+        __asm__ volatile("" : "=r"(h));
+        id = a0->car;
+        __asm__ volatile("" : : "r"(h));
+        if ((s16)sub_080022E4(id) == -1) {
+            a0->car = 10;
+            a0->variant = 0;
+        } }
+        sub_0802E0A4((void *)((uintptr_t)RecordWA + (uintptr_t)RecordCopy), a0, 56);
+        return;
     }
-    goto after_record;
-call_record:
-    a0->lookup = sub_080024E7C(v5);
-after_record:
-    { register int h __asm__("r1"); int id;
-    __asm__ volatile("" : "=r"(h));
-    id = a0->car;
-    __asm__ volatile("" : : "r"(h));
-    if ((s16)sub_080022E4(id) == -1) {
-        a0->car = 10;
-        a0->variant = 0;
-    } }
-    sub_0802E0A4((void *)((uintptr_t)RecordWA + (uintptr_t)RecordCopy), a0, 56);
-    return;
 }
 void _0800188B0(void *rec) __attribute__((alias("Rec35_RecordSwitch_188B0")));
 void sub_0800188B0(void *rec) __attribute__((alias("Rec35_RecordSwitch_188B0")));

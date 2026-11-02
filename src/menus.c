@@ -9,6 +9,10 @@
 // ARM-live truth: extern decls to the strong bodies (-21 class fix).
 // sub_080055F4/sub_08005604/sub_08002C98 are 0-arg ObjQueue thunks — the old
 // call sites passed `rec`, which the bodies never read.
+extern void *sub_08004B68(void);
+extern u8 MenuED98_WA[];
+extern void *_08004B68(void);
+extern u8 MenuWaB60;
 extern void sub_0802D974(const void *s, void *d, u32 m);
 extern int  sub_08008014(void);
 // The ROM's 0x080188B0 is a raw region; the closure names it sub_0800188B0
@@ -86,66 +90,72 @@ void MenuPkt_08009B60(void *ctx) {
     // +0x574 cursor word and the +idx*12 garage record. The `MENU_WA_BASE + K`
     // spelling pools 0x03001CF4 instead.
     __asm__(".globl MenuWaB60\nMenuWaB60 = 0x03001780\n");
-    extern u8 MenuWaB60;
+
     // NOT `= {0}`: the ROM never zeroes the 56-byte frame. It writes pkt[0],
     // pkt[+2], pkt[+8], pkt[+10], pkt[+20], pkt[+24] and pkt[+29] and leaves
     // the rest as garbage, so an aggregate initialiser only adds a `bl memset`
     // (an agbcc intrinsic with no ROM counterpart -> UNRESOLVED_RELOCATION)
     // and 8 extra bytes.
-    u8 pkt[56];
-    // Materialised once and live ACROSS the `bl`, so it lands in r4 and the
-    // prologue is `push {r4,lr}` as the ROM has it.
-    // Base of the FIRST store pinned to r1, and declared BEFORE `zero`: the
-    // ROM's opening pair is `mov r1,sp / movs r4,#0 / movs r0,#9 /
-    // strh r0,[r1,#0]`, so the pointer materialises first and the zero
-    // constant (live across the `bl`) second. (r1 is free again by the `bl`,
-    // where the return value is pinned back onto r1.)
-    register u16 *pkt0 __asm__("r1") = (u16 *)pkt;
-    u16 zero = 0;
-    pkt0[0] = 9;
-    // Pinned to r1: the ROM copies the return value into r1 (`adds r1,r0,#0`
-    // at 0x08009B70) and keeps the packet pointer in r2 (`mov r2,sp`), so the
-    // index compare is `cmp r1,#0`. Left free, agbcc hands `v` r2 and the
-    // packet pointer r1 (87/108).
-    register int v __asm__("r1") = sub_08008014();
-    // Bias-then-shift, not the `? :` over two shifts: the ROM's `cmp r1,#0 /
-    // bge` skips only `adds r0,#31` and BOTH paths share the `asrs r0,r0,#5`
-    // at 0x08009B7A. The conditional-shift spelling duplicates the shift and
-    // costs a branch.
-    // Packet base in r2 from here on: the ROM's `mov r2,sp` sits between the
-    // value copy and the `cmp r1,#0` (0x08009B72) and the store is
-    // `strh r0,[r2,#2]`, i.e. the pointer is the BASE, not base+2.
-    register u16 *pkt2 __asm__("r2") = (u16 *)pkt;
-    int bias = (v < 0) ? v + 31 : v;
-    // The floored value is pinned to r0 so the final chain is
-    // `subs r0,r1,r0 / adds r0,#16 / strh r0,[r2,#2]`. Left as a named plain
-    // local the extra pseudo changes which register agbcc hands to `v`
-    // (87/108); left as an inline expression the chain accumulates into r1.
-    register int floored __asm__("r0") = (bias >> 5) << 5;
-    pkt2[1] = (u16)(v - floored + 16);
-    *(u16 *)(pkt+8) = zero; *(u16 *)(pkt+10) = zero;
-    // The base is loaded AFTER the `bl` (ROM 0x08009B8C), so it must not be a
-    // function-wide variable -- live across the call it costs a callee-saved
-    // register and the prologue becomes `push {r4,r5,lr}`.
     {
-        // Same lever once more: the ROM materialises the +24 destination
-        // (`mov r3,sp` at 0x08009B8A) BEFORE loading the WA base.
-        register u16 *pkt24 __asm__("r3") = (u16 *)pkt;
-        volatile u8 *wa = (volatile u8 *)((uintptr_t)&MenuWaB60);
-        s16 *idxp;
-        // Two SEPARATE reads of the same halfword: the ROM loads it with
-        // `ldrh` for the packet field and again with `ldrsh` for the index.
-        pkt24[12] = *(volatile u16 *)(wa + 0x574);
-        // NON-volatile `s16 *` read: agbcc lowers a `volatile s16` READ to
-        // `ldrh; lsls #16; asrs #16`, but the ROM has one
-        // `movs r0,#0 / ldrsh r1,[r1,r0]` (the MenuEcac_0800ECAC recipe
-        // above). `int` rather than `s16` forces the extension at the capture
-        // site instead of a bare `ldrh`.
-        idxp = (s16 *)(wa + 0x574);
-        int idx = *idxp;
-        pkt[29] = wa[0x31 + idx*12];
-        pkt[20] = (u8)(*(volatile u16 *)(wa + 0x5E0) & 0xFF);
-        sub_080188B0(pkt);
+        u8 pkt[56];
+        // Materialised once and live ACROSS the `bl`, so it lands in r4 and the
+        // prologue is `push {r4,lr}` as the ROM has it.
+        // Base of the FIRST store pinned to r1, and declared BEFORE `zero`: the
+        // ROM's opening pair is `mov r1,sp / movs r4,#0 / movs r0,#9 /
+        // strh r0,[r1,#0]`, so the pointer materialises first and the zero
+        // constant (live across the `bl`) second. (r1 is free again by the `bl`,
+        // where the return value is pinned back onto r1.)
+        register u16 *pkt0 __asm__("r1") = (u16 *)pkt;
+        u16 zero = 0;
+        pkt0[0] = 9;
+        // Pinned to r1: the ROM copies the return value into r1 (`adds r1,r0,#0`
+        // at 0x08009B70) and keeps the packet pointer in r2 (`mov r2,sp`), so the
+        // index compare is `cmp r1,#0`. Left free, agbcc hands `v` r2 and the
+        // packet pointer r1 (87/108).
+        {
+            register int v __asm__("r1") = sub_08008014();
+            // Bias-then-shift, not the `? :` over two shifts: the ROM's `cmp r1,#0 /
+            // bge` skips only `adds r0,#31` and BOTH paths share the `asrs r0,r0,#5`
+            // at 0x08009B7A. The conditional-shift spelling duplicates the shift and
+            // costs a branch.
+            // Packet base in r2 from here on: the ROM's `mov r2,sp` sits between the
+            // value copy and the `cmp r1,#0` (0x08009B72) and the store is
+            // `strh r0,[r2,#2]`, i.e. the pointer is the BASE, not base+2.
+            register u16 *pkt2 __asm__("r2") = (u16 *)pkt;
+            int bias = (v < 0) ? v + 31 : v;
+            // The floored value is pinned to r0 so the final chain is
+            // `subs r0,r1,r0 / adds r0,#16 / strh r0,[r2,#2]`. Left as a named plain
+            // local the extra pseudo changes which register agbcc hands to `v`
+            // (87/108); left as an inline expression the chain accumulates into r1.
+            register int floored __asm__("r0") = (bias >> 5) << 5;
+            pkt2[1] = (u16)(v - floored + 16);
+            *(u16 *)(pkt+8) = zero; *(u16 *)(pkt+10) = zero;
+            // The base is loaded AFTER the `bl` (ROM 0x08009B8C), so it must not be a
+            // function-wide variable -- live across the call it costs a callee-saved
+            // register and the prologue becomes `push {r4,r5,lr}`.
+            {
+                // Same lever once more: the ROM materialises the +24 destination
+                // (`mov r3,sp` at 0x08009B8A) BEFORE loading the WA base.
+                register u16 *pkt24 __asm__("r3") = (u16 *)pkt;
+                volatile u8 *wa = (volatile u8 *)((uintptr_t)&MenuWaB60);
+                s16 *idxp;
+                // Two SEPARATE reads of the same halfword: the ROM loads it with
+                // `ldrh` for the packet field and again with `ldrsh` for the index.
+                pkt24[12] = *(volatile u16 *)(wa + 0x574);
+                // NON-volatile `s16 *` read: agbcc lowers a `volatile s16` READ to
+                // `ldrh; lsls #16; asrs #16`, but the ROM has one
+                // `movs r0,#0 / ldrsh r1,[r1,r0]` (the MenuEcac_0800ECAC recipe
+                // above). `int` rather than `s16` forces the extension at the capture
+                // site instead of a bare `ldrh`.
+                idxp = (s16 *)(wa + 0x574);
+                {
+                    int idx = *idxp;
+                    pkt[29] = wa[0x31 + idx*12];
+                    pkt[20] = (u8)(*(volatile u16 *)(wa + 0x5E0) & 0xFF);
+                    sub_080188B0(pkt);
+                }
+            }
+        }
     }
 }
 
@@ -234,8 +244,10 @@ void MenuC0F0_0800C0F0(void *rec) {
     _080056B8(1);
     // asm/menu_c0f0.s:14-16 — the +0x5C halfword is left in r0 and is the
     // argument to 0x08004E1C (the ROM does not reload rec into r0 first).
-    u16 v = *(volatile u16 *)((u8 *)rec + 92);
-    sub_08004E1C((void *)(uintptr_t)v);
+    {
+        u16 v = *(volatile u16 *)((u8 *)rec + 92);
+        sub_08004E1C((void *)(uintptr_t)v);
+    }
 }
 void _0800C0F0(void *c) __attribute__((alias("MenuC0F0_0800C0F0")));
 void sub_0800C0F0(void *c) __attribute__((alias("MenuC0F0_0800C0F0")));
@@ -306,9 +318,11 @@ void sub_0800CC3C(void *a,u32 b,u32 c,void *d) __attribute__((alias("MenuCC3C_08
 void MenuCC80_0800CC80(void *ctx, u16 a, u16 mask) {
     (void)ctx;
     (void)a;
-    void *mgr = _08004B68();
-    if (mask & 1) sub_08004BB8(mgr);
-    if (mask & 2) sub_08004BC8(mgr);
+    {
+        void *mgr = _08004B68();
+        if (mask & 1) sub_08004BB8(mgr);
+        if (mask & 2) sub_08004BC8(mgr);
+    }
 }
 void _0800CC80(void *a, u16 b, u16 c) __attribute__((alias("MenuCC80_0800CC80")));
 void MenuCCB0_0800CCB0(int mode, u32 x, u32 y, void *ctx) {
@@ -317,12 +331,14 @@ void MenuCCB0_0800CCB0(int mode, u32 x, u32 y, void *ctx) {
 void _0800CCB0(int a, u32 b, u32 c, void *d) __attribute__((alias("MenuCCB0_0800CCB0")));
 void MenuCCC8_0800CCC8(void *ctx, void *rec) {
     (void)ctx;
-    volatile u16 *hw = (volatile u16 *)_08004B68();
-    volatile u8 *r4 = (volatile u8 *)rec;
-    if (hw[1] == 3)
-        *(volatile u16 *)(r4 + 84) = 6;
-    else
-        *(volatile u16 *)(r4 + 84) = 1;
+    {
+        volatile u16 *hw = (volatile u16 *)_08004B68();
+        volatile u8 *r4 = (volatile u8 *)rec;
+        if (hw[1] == 3)
+            *(volatile u16 *)(r4 + 84) = 6;
+        else
+            *(volatile u16 *)(r4 + 84) = 1;
+    }
 }
 void _0800CCC8(void *a, void *b) __attribute__((alias("MenuCCC8_0800CCC8")));
 
@@ -346,8 +362,10 @@ void MenuC604_0800C604(void *rec) {
         _08002060(1);
     _080050E8((void *)(uintptr_t)(r + 8), 1);
     _080056B8(1);
-    u16 v = *(volatile u16 *)(r + 92);
-    _08004E1C((void *)(uintptr_t)v);
+    {
+        u16 v = *(volatile u16 *)(r + 92);
+        _08004E1C((void *)(uintptr_t)v);
+    }
 }
 // The body is 58 bytes, two short of the section's 4-byte alignment. Under
 // -ffunction-sections gas closes the section itself and fills a Thumb code
@@ -465,14 +483,17 @@ void MenuDD20_0800DD20(void *rec_, u32 a1, u32 a2) {
     int r6 = (int)a2;
     int one = 1;
     int zero = 0;
-    for (int r4 = 0, r9 = 29; r9 >= 0; r4 += 8, r9--) {
-        switch (r6) {
-        case 2:
-            sub_08007B18((void *)(uintptr_t)(rec + 68), 7, r4, r7, 3, one, one, zero);
-            break;
-        case 3:
-            sub_08007B18((void *)(uintptr_t)(rec + 68), 7, r4, r7, 4, one, one, zero);
-            break;
+    {
+        int r4 = 0, r9 = 29;
+        for (; r9 >= 0; r4 += 8, r9--) {
+            switch (r6) {
+            case 2:
+                sub_08007B18((void *)(uintptr_t)(rec + 68), 7, r4, r7, 3, one, one, zero);
+                break;
+            case 3:
+                sub_08007B18((void *)(uintptr_t)(rec + 68), 7, r4, r7, 4, one, one, zero);
+                break;
+            }
         }
     }
 }
@@ -494,29 +515,31 @@ void sub_0800DD20(void *a,u32 b,u32 c) __attribute__((alias("MenuDD20_0800DD20")
 void MenuDD9C_0800DD9C(void *arg1, volatile u8 *rec) {
     volatile u8 *base = (volatile u8 *)(rec + 88);
     *base = 1;
-    extern void *_08004B68(void);
+
     // NON-volatile sh rte: the volatile spelling STOPS agbcc from reusing the
     // 0x0800DDC8 pool word, causing an extra ldr; and the read must be
     // written as `(s16)(u16) - 15` so agbcc emits ldrh/subs/lsls/asrs in the
     // ROM's order (subtract FIRST, then sign-extend; writing `(s16)(u16-x)`
     // inverts that and emits `subs` last).
-    volatile u8 *ctx = (volatile u8 *)_08004B68();
-    int v = (int)(s16)((int)*(u16 *)(uintptr_t)(ctx + 2) - 15);
-    u16 out;
-    // STORES IN EACH ARM, not one shared store: the ROM emits one full copy of
-    // the address expression and the store in each arm (`adds r1,r4,#0 /
-    // adds r1,#84 / movs r0,#5 / b`, then the same with `movs r0,#1`). The
-    // store base lives in ARG2 (r4 via the prologue copy from r1), so
-    // putting the store AFTER the switch with `out = N` instead tail-merges
-    // both arms (`movs r1,#5 / movs r1,#1 / adds r0,#84 / strh r1`), which
-    // is the last 2 bytes (174/176).
-    switch (v) {
-    case 0: case 2: case 5: case 8: case 16: case 21: case 22: case 26: case 27:
-        *(volatile u16 *)(uintptr_t)(rec + 84) = 5;
-        break;
-    default:
-        *(volatile u16 *)(uintptr_t)(rec + 84) = 1;
-        break;
+    {
+        volatile u8 *ctx = (volatile u8 *)_08004B68();
+        int v = (int)(s16)((int)*(u16 *)(uintptr_t)(ctx + 2) - 15);
+        u16 out;
+        // STORES IN EACH ARM, not one shared store: the ROM emits one full copy of
+        // the address expression and the store in each arm (`adds r1,r4,#0 /
+        // adds r1,#84 / movs r0,#5 / b`, then the same with `movs r0,#1`). The
+        // store base lives in ARG2 (r4 via the prologue copy from r1), so
+        // putting the store AFTER the switch with `out = N` instead tail-merges
+        // both arms (`movs r1,#5 / movs r1,#1 / adds r0,#84 / strh r1`), which
+        // is the last 2 bytes (174/176).
+        switch (v) {
+        case 0: case 2: case 5: case 8: case 16: case 21: case 22: case 26: case 27:
+            *(volatile u16 *)(uintptr_t)(rec + 84) = 5;
+            break;
+        default:
+            *(volatile u16 *)(uintptr_t)(rec + 84) = 1;
+            break;
+    }
     } }
 // The ROM's 174-byte body is followed by a zero halfword (00 00) before the
 // next function at 0x0800DE50; the top-level asm must sit BEFORE the alias
@@ -656,10 +679,19 @@ extern void sub_08025DBC(u32 a,u32 b);
 //     straight-line `movs r0,#0/1/2; bl` pairs.  Control: looped -> 49/88
 //     prefix 49, unrolled -> 88/88.
 void MenuE0BC_0800E0BC(void) {
-    for (int r=0;r<4;r++) for(int c=0;c<=10;c++){ sub_08025C84(0,r,c,3); sub_08025C84(1,r,c,3); }
+    {
+        int r = 0;
+        for (;r<4;r++) {
+            int c = 0;
+            for (;c<=10;c++){ sub_08025C84(0,r,c,3); sub_08025C84(1,r,c,3); }
+        }
+    }
     sub_080241C8();
     sub_08025FF0(0); sub_08025FF0(1); sub_08025FF0(2);
-    for(int i=0;i<=31;i++) sub_08025DBC(i,3);
+    {
+        int i = 0;
+        for (;i<=31;i++) sub_08025DBC(i,3);
+    }
 }
 void _0800E0BC(void) __attribute__((alias("MenuE0BC_0800E0BC")));
 
@@ -712,18 +744,20 @@ void MenuE650_0800E650(void *rec, void *arg) {
         register int row __asm__("r1") = (int)*(s16 *)(w2 + 0x0FF6u) * 2;
         // Keep the ROM's second offset read separate from the first.
         __asm__ volatile("" ::: "memory");
-        register int col __asm__("r0") = (int)*(s16 *)(w2 + 0x0FF2u);
-        col = col * 8;
-        row = row + col;
-        w2 += (253 << 4);
-        row = row + (int)w2;
-        if (*(s16 *)row != 0)
-            goto def6;
-        dst = (u16 *)((u8 *)arg + 84);
-        out = 1;
-        // Preserve the ROM's separate success block for case 15.
-        __asm__ volatile("" ::: "r3");
-        break;
+        {
+            register int col __asm__("r0") = (int)*(s16 *)(w2 + 0x0FF2u);
+            col = col * 8;
+            row = row + col;
+            w2 += (253 << 4);
+            row = row + (int)w2;
+            if (*(s16 *)row != 0)
+                goto def6;
+            dst = (u16 *)((u8 *)arg + 84);
+            out = 1;
+            // Preserve the ROM's separate success block for case 15.
+            __asm__ volatile("" ::: "r3");
+            break;
+        }
     }
     case 11: case 12: case 13: case 14:
     case 16: case 23: case 33:
@@ -1374,12 +1408,14 @@ case2: {
         dst = r4 + scale;
         table = (u8 *)0x080CB588u;
         asm volatile("" : "+r"(table) : : "memory");
-        s32 index = *(s16 *)(r4 + 0xC0);
-        offset = index * 2;
-        table += 20;
-        val = *(u16 *)(uintptr_t)(offset + (uintptr_t)table);
-        *(u32 *)dst = val;
-        sub_08007ABC(*(void **)(r4 + 20), (int)val, *(int *)(r4 + 0xFC));
+        {
+            s32 index = *(s16 *)(r4 + 0xC0);
+            offset = index * 2;
+            table += 20;
+            val = *(u16 *)(uintptr_t)(offset + (uintptr_t)table);
+            *(u32 *)dst = val;
+            sub_08007ABC(*(void **)(r4 + 20), (int)val, *(int *)(r4 + 0xFC));
+        }
     }
 done:
     return;
@@ -1410,27 +1446,31 @@ void MenuF8B4_0800F8B4(void *rec, u32 sel) {
     // sign-extension, so name it in its own statement (agbcc evaluates call
     // arguments right-to-left, which would otherwise sink the pool load past
     // the `lsls/asrs` pair).
-    void *addr = (void *)0x082D7660u;
-    int idx = (s16)v;
-    sub_08007614(addr, 2u,
-                 (u32)*(s16 *)(stk + idx * 2), 6u);
-    // ROM builds the rec+0x148 destination address first (`movs r0,#0xa4;
-    // lsls r0,#1; adds r2,r5,r0`), then loads the table word.
-    register volatile u32 *dst __asm__("r2") =
-        (volatile u32 *)((u8 *)rec + 0x148);
-    // Assembler-resolved absolute base keeps the pool load BEFORE the
-    // `idx*4` scale (docs/findings/track_car_26180_pool_order.md): a folded
-    // C constant is loaded at its first use, i.e. after the scale.
     {
-        extern u8 MenuF8B4Tbl[];
-        uintptr_t base;
-        __asm__(".globl MenuF8B4Tbl\nMenuF8B4Tbl = 0x080CB57C\n");
-        base = (uintptr_t)MenuF8B4Tbl;
-        w = *(const u32 *)(base + (u32)idx * 4u);
+        void *addr = (void *)0x082D7660u;
+        int idx = (s16)v;
+        sub_08007614(addr, 2u,
+                     (u32)*(s16 *)(stk + idx * 2), 6u);
+        // ROM builds the rec+0x148 destination address first (`movs r0,#0xa4;
+        // lsls r0,#1; adds r2,r5,r0`), then loads the table word.
+        {
+            register volatile u32 *dst __asm__("r2") =
+                (volatile u32 *)((u8 *)rec + 0x148);
+            // Assembler-resolved absolute base keeps the pool load BEFORE the
+            // `idx*4` scale (docs/findings/track_car_26180_pool_order.md): a folded
+            // C constant is loaded at its first use, i.e. after the scale.
+            {
+                extern u8 MenuF8B4Tbl[];
+                uintptr_t base;
+                __asm__(".globl MenuF8B4Tbl\nMenuF8B4Tbl = 0x080CB57C\n");
+                base = (uintptr_t)MenuF8B4Tbl;
+                w = *(const u32 *)(base + (u32)idx * 4u);
+            }
+            *dst = w;
+            sub_08007ABC(*(void **)((u8 *)rec + 36), (int)w,
+                         *(int *)((u8 *)rec + 0x144));
+        }
     }
-    *dst = w;
-    sub_08007ABC(*(void **)((u8 *)rec + 36), (int)w,
-                 *(int *)((u8 *)rec + 0x144));
 }
 void _0800F8B4(void *a,u32 b) __attribute__((alias("MenuF8B4_0800F8B4")));
 
@@ -1884,14 +1924,17 @@ void MenuF040_0800F040(void *rec_, u32 a1, u32 a2) {
     int r6 = (int)a2;
     int one = 1;
     int zero = 0;
-    for (int r4 = 0, r9 = 8; r9 >= 0; r4 += 8, r9--) {
-        switch (r6) {
-        case 2:
-            sub_08007B18((void *)(uintptr_t)(rec + 76), 7, r4, r7, 3, one, one, zero);
-            break;
-        case 3:
-            sub_08007B18((void *)(uintptr_t)(rec + 76), 7, r4, r7, 4, one, one, zero);
-            break;
+    {
+        int r4 = 0, r9 = 8;
+        for (; r9 >= 0; r4 += 8, r9--) {
+            switch (r6) {
+            case 2:
+                sub_08007B18((void *)(uintptr_t)(rec + 76), 7, r4, r7, 3, one, one, zero);
+                break;
+            case 3:
+                sub_08007B18((void *)(uintptr_t)(rec + 76), 7, r4, r7, 4, one, one, zero);
+                break;
+            }
         }
     }
 }
@@ -2475,7 +2518,7 @@ void MenuED98_0800ED98(void *rec) {
     // base in a named `wa` is also what stops the +0x0FC4/+0x0FC6 offsets
     // folding into the address and costing the two extra pool words.
     v = MenuED98_Snd(1, 4);
-    extern u8 MenuED98_WA[];
+
     __asm__("MenuED98_WA = 0x03001780");
     wa = (u8 *)MenuED98_WA;
     *(volatile u16 *)(wa + 0x0FC4) = v;
@@ -2735,16 +2778,18 @@ s16 sub_0800F7EC(s32 a, s32 b) __attribute__((alias("MenuF7EC_0800F7EC")));
 
 void MenuD280_0800D280(void *unused, void *rec) {
     (void)unused;
-    volatile u8 *flag = (volatile u8 *)0x0203EE64u;
-    if (*flag == 0) return;
-    *flag = 0;
-    *(volatile u16 *)((volatile u8 *)rec + 84) = 2;
+    {
+        volatile u8 *flag = (volatile u8 *)0x0203EE64u;
+        if (*flag == 0) return;
+        *flag = 0;
+        *(volatile u16 *)((volatile u8 *)rec + 84) = 2;
+    }
 }
 void _0800D280(void *a, void *b) __attribute__((alias("MenuD280_0800D280")));
 void sub_0800D280(void *a, void *b) __attribute__((alias("MenuD280_0800D280")));
 
 // Promoted from instruction splices to plain C (2026-10-16), measured on
-// the pinned old_agbcc (corpus_match_probe --c89 --require-exact):
+// the pinned old_agbcc (corpus_match_probe --require-exact):
 //   * the two `add r0, r2, r1` splices are plain pointer arithmetic through
 //     the r2-pinned base: `base + 0xFBCu` / `base + 0x10C3u` keep the base
 //     in r2 and rematerialise each offset as its own pool word, which is
@@ -2777,11 +2822,13 @@ void MenuF924_0800F924(void *a, void *b) {
             register volatile u8 *clearp __asm__("r1") = r4 + 88;
             register u8 clearValue __asm__("r0") = 0;
             *clearp = clearValue;
-            register u32 flagOffset __asm__("r1") = 0x10C3u;
-            register volatile u8 *flagp __asm__("r0") = base + flagOffset;
-            if (*flagp == 0) {
-                _080056F4(r4, 1, 1);
-                *(volatile u16 *)r5 = 1;
+            {
+                register u32 flagOffset __asm__("r1") = 0x10C3u;
+                register volatile u8 *flagp __asm__("r0") = base + flagOffset;
+                if (*flagp == 0) {
+                    _080056F4(r4, 1, 1);
+                    *(volatile u16 *)r5 = 1;
+                }
             }
         }
     }
@@ -3363,71 +3410,73 @@ extern void _08007ABC(void *rec, int id, int lane);
 void MenuFF78_Body_080010088(void *rec_) {
     __asm__(".globl MenuWA10088\nMenuWA10088 = 0x03001780\n"
             ".globl MenuFF78Table10088\nMenuFF78Table10088 = 0x080CB55C\n");
-    u8 *rec = (u8 *)rec_;
-    u8 *wa;
-    u16 t;
-    u16 *q;
-    u16 *p190;
-    u16 *p192;
-    u16 *p194;
-    register u32 *p280 __asm__("r4");
-    u32 *p292;
-    register u16 *p168 __asm__("r1");
-
-    p168 = (u16 *)(rec + 168);
-    *p168 = 3;
-    wa = (u8 *)(uintptr_t)&MenuWA10088;
-    t = (u16)_080256D8(*(s16 *)(wa + 0xFF6), *(s16 *)(wa + 0x103A));
-    q = (u16 *)(rec + 172);
-    *q = t;
-    t = (u16)_080256F4(*(s16 *)(wa + 0xFF6), *(s16 *)(wa + 0x103A));
-    p190 = (u16 *)(rec + 190);
-    *p190 = t;
-    *(u16 *)(rec + 188) = (u16)_0802572C(*(s16 *)(wa + 0xFF6),
-                                         *(s16 *)(wa + 0x103A));
-    t = (u16)_08025710(*(s16 *)(wa + 0xFF6), *(s16 *)(wa + 0x103A));
-    p192 = (u16 *)(rec + 192);
-    *p192 = t;
-    t = (u16)_08025CF4(*(s16 *)(wa + 0xFF2), *(s16 *)(wa + 0xFF6),
-                       *(s16 *)(wa + 0x103A));
-    p194 = (u16 *)(rec + 194);
-    *p194 = t;
-    p280 = (u32 *)(rec + 280);
-    *p280 = 4;
-    p292 = (u32 *)(rec + 292);
-    *p292 = 2;
-    _0800F8B4(rec, (u32)(s16)(*(volatile u16 *)p194 - 1));
-    t = (u16)_080258B8(*(s16 *)q);
     {
-        u32 *lb = (u32 *)(rec + 340);
-        register u32 base __asm__("r2") = (u32)(uintptr_t)MenuFF78Table10088;
-        *lb = *(u16 *)(uintptr_t)(base + (s16)t * 2);
-        __asm__ volatile("" : "+r"(base));
+        u8 *rec = (u8 *)rec_;
+        u8 *wa;
+        u16 t;
+        u16 *q;
+        u16 *p190;
+        u16 *p192;
+        u16 *p194;
+        register u32 *p280 __asm__("r4");
+        u32 *p292;
+        register u16 *p168 __asm__("r1");
+
+        p168 = (u16 *)(rec + 168);
+        *p168 = 3;
+        wa = (u8 *)(uintptr_t)&MenuWA10088;
+        t = (u16)_080256D8(*(s16 *)(wa + 0xFF6), *(s16 *)(wa + 0x103A));
+        q = (u16 *)(rec + 172);
+        *q = t;
+        t = (u16)_080256F4(*(s16 *)(wa + 0xFF6), *(s16 *)(wa + 0x103A));
+        p190 = (u16 *)(rec + 190);
+        *p190 = t;
+        *(u16 *)(rec + 188) = (u16)_0802572C(*(s16 *)(wa + 0xFF6),
+                                             *(s16 *)(wa + 0x103A));
+        t = (u16)_08025710(*(s16 *)(wa + 0xFF6), *(s16 *)(wa + 0x103A));
+        p192 = (u16 *)(rec + 192);
+        *p192 = t;
+        t = (u16)_08025CF4(*(s16 *)(wa + 0xFF2), *(s16 *)(wa + 0xFF6),
+                           *(s16 *)(wa + 0x103A));
+        p194 = (u16 *)(rec + 194);
+        *p194 = t;
+        p280 = (u32 *)(rec + 280);
+        *p280 = 4;
+        p292 = (u32 *)(rec + 292);
+        *p292 = 2;
+        _0800F8B4(rec, (u32)(s16)(*(volatile u16 *)p194 - 1));
+        t = (u16)_080258B8(*(s16 *)q);
         {
-            u32 *lb2 = (u32 *)(rec + 352);
-            register u16 *t2 __asm__("r1");
-            register u32 idx2 __asm__("r0");
-            idx2 = (s16)*p190 * 2;
-            t2 = (u16 *)(uintptr_t)(base + 10);
-            *lb2 = *(u16 *)(uintptr_t)(idx2 + (u32)(uintptr_t)t2);
+            u32 *lb = (u32 *)(rec + 340);
+            register u32 base __asm__("r2") = (u32)(uintptr_t)MenuFF78Table10088;
+            *lb = *(u16 *)(uintptr_t)(base + (s16)t * 2);
+            __asm__ volatile("" : "+r"(base));
             {
-                u32 *lb3 = (u32 *)(rec + 364);
-                u32 idx3 = (s16)*p192 * 2;
-                u32 t3 = base + 20;
-                *lb3 = *(u16 *)(uintptr_t)(idx3 + t3);
+                u32 *lb2 = (u32 *)(rec + 352);
+                register u16 *t2 __asm__("r1");
+                register u32 idx2 __asm__("r0");
+                idx2 = (s16)*p190 * 2;
+                t2 = (u16 *)(uintptr_t)(base + 10);
+                *lb2 = *(u16 *)(uintptr_t)(idx2 + (u32)(uintptr_t)t2);
                 {
-                    u32 a0 = *(u32 *)(rec + 44);
-                    u32 v = *p280;
-                    _08007ABC((void *)(uintptr_t)a0, v, *(u32 *)(rec + 276));
+                    u32 *lb3 = (u32 *)(rec + 364);
+                    u32 idx3 = (s16)*p192 * 2;
+                    u32 t3 = base + 20;
+                    *lb3 = *(u16 *)(uintptr_t)(idx3 + t3);
+                    {
+                        u32 a0 = *(u32 *)(rec + 44);
+                        u32 v = *p280;
+                        _08007ABC((void *)(uintptr_t)a0, v, *(u32 *)(rec + 276));
+                    }
+                    _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 44), *p292,
+                              *(u32 *)(rec + 288));
+                    _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 36), *lb,
+                              *(u32 *)(rec + 336));
+                    _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 36), *lb2,
+                              *(u32 *)(rec + 348));
+                    _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 36), *lb3,
+                              *(u32 *)(rec + 360));
                 }
-                _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 44), *p292,
-                          *(u32 *)(rec + 288));
-                _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 36), *lb,
-                          *(u32 *)(rec + 336));
-                _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 36), *lb2,
-                          *(u32 *)(rec + 348));
-                _08007ABC((void *)(uintptr_t)*(u32 *)(rec + 36), *lb3,
-                          *(u32 *)(rec + 360));
             }
         }
     }
@@ -3478,47 +3527,51 @@ void MenuRecordUpdate_0800BCD4(void *a0, u32 a1, void *a2, u32 a3, void *sp24, v
     extern u8 BcdWaOff10E8[];
     __asm__(".globl BcdWaBase\nBcdWaBase = 0x03001780\n"
             ".globl BcdWaOff10E8\nBcdWaOff10E8 = 0x10E8\n");
-    const u32 C = 0x001BB0A9u;
-    register void *arg0 __asm__("r12") = a0;
-    register u32 *bestOut __asm__("r5") = (u32 *)a2;
-    register u16 *indexOut __asm__("r8") = (u16 *)a3;
-    u32 *currentPtr = (u32 *)sp36;
-    register u32 best __asm__("r3") = C;
-    register u16 bestIdx __asm__("r4") = 0;
-    register s32 i __asm__("r1") = 0;
-    register volatile u8 *tableBase __asm__("r0") = (volatile u8 *)BcdWaBase;
-    register u32 tableOffset __asm__("r6") = (u32)(uintptr_t)BcdWaOff10E8;
-    register volatile u32 *table __asm__("r2");
-    table = (volatile u32 *)(uintptr_t)
-        ((uintptr_t)tableBase + (uintptr_t)tableOffset);
-    do {
-        register u32 value __asm__("r0") = *table;
-        if (value < best && value != 0) {
-            best = value;
-            {
-                // The ROM's `lsls r0, r1, #16 / lsrs r4, r0, #16` needs an
-                // intermediate that is NOT coalesced with bestIdx: a plain
-                // `bestIdx = i` sinks the truncation into `strh`, and an
-                // unpinned intermediate coalesces into r4. Pinning it to the
-                // just-dead value register r0 reproduces the pair (measured
-                // in build/scratch_trunc*.c).
-                register u32 sh __asm__("r0") = (u32)i << 16;
-                bestIdx = sh >> 16;
-                __asm__ volatile ("" : "+r" (bestIdx));
+    {
+        const u32 C = 0x001BB0A9u;
+        register void *arg0 __asm__("r12") = a0;
+        register u32 *bestOut __asm__("r5") = (u32 *)a2;
+        register u16 *indexOut __asm__("r8") = (u16 *)a3;
+        u32 *currentPtr = (u32 *)sp36;
+        register u32 best __asm__("r3") = C;
+        register u16 bestIdx __asm__("r4") = 0;
+        register s32 i __asm__("r1") = 0;
+        register volatile u8 *tableBase __asm__("r0") = (volatile u8 *)BcdWaBase;
+        register u32 tableOffset __asm__("r6") = (u32)(uintptr_t)BcdWaOff10E8;
+        register volatile u32 *table __asm__("r2");
+        table = (volatile u32 *)(uintptr_t)
+            ((uintptr_t)tableBase + (uintptr_t)tableOffset);
+        do {
+            register u32 value __asm__("r0") = *table;
+            if (value < best && value != 0) {
+                best = value;
+                {
+                    // The ROM's `lsls r0, r1, #16 / lsrs r4, r0, #16` needs an
+                    // intermediate that is NOT coalesced with bestIdx: a plain
+                    // `bestIdx = i` sinks the truncation into `strh`, and an
+                    // unpinned intermediate coalesces into r4. Pinning it to the
+                    // just-dead value register r0 reproduces the pair (measured
+                    // in build/scratch_trunc*.c).
+                    register u32 sh __asm__("r0") = (u32)i << 16;
+                    bestIdx = sh >> 16;
+                    __asm__ volatile ("" : "+r" (bestIdx));
+                }
             }
+            table++;
+            i++;
+        } while (i <= 2);
+        {
+            register u32 current __asm__("r0") = *currentPtr;
+            if ((s32)best < (s32)current && best != C) {
+                *currentPtr = best;
+                *(u32 *)sp28 = 1;
+            }
+            *bestOut = best;
+            *indexOut = bestIdx;
+            sub_0800BA3C(arg0, sp32, sp24);
+            (void)a1;
         }
-        table++;
-        i++;
-    } while (i <= 2);
-    register u32 current __asm__("r0") = *currentPtr;
-    if ((s32)best < (s32)current && best != C) {
-        *currentPtr = best;
-        *(u32 *)sp28 = 1;
     }
-    *bestOut = best;
-    *indexOut = bestIdx;
-    sub_0800BA3C(arg0, sp32, sp24);
-    (void)a1;
 }
 void _0800BCD4(void *a0, u32 a1, void *a2, u32 a3, void *s1, void *s2, void *s3, void *s4) __attribute__((alias("MenuRecordUpdate_0800BCD4")));
 void sub_0800BCD4(void *a0, u32 a1, void *a2, u32 a3, void *s1, void *s2, void *s3, void *s4) __attribute__((alias("MenuRecordUpdate_0800BCD4")));
@@ -3603,25 +3656,29 @@ void MenuTick_080012D54(void *rec_) {
     // one 16-bit pool word and loses both ldrs and the adds.
     extern u8 MenuWaBase[] __asm__("MenuWaBase");
     __asm__(".globl MenuWaBase\nMenuWaBase = 0x03001780\n");
-    uintptr_t base = (uintptr_t)MenuWaBase;
-    if (*(volatile u16 *)(uintptr_t)(base + 0xFBCu) == 3) {
-        if (_08002140() == 2) goto reset;
-        u32 v = *(volatile u32 *)(uintptr_t)((volatile u8 *)rec_ + 148);
-        v += 1;
-        *(volatile u32 *)(uintptr_t)((volatile u8 *)rec_ + 148) = v;
-        // `cmp r0,#180; ble @ 0x08012D78` is a SIGNED compare, so the
-        // "still counting" edge is `(s32)v <= 180`.
-        if ((s32)v > 180) {
-            extern void sub_08004D4C(u32 a, u32 b, u32 c);
-            sub_08004D4C(21, 0, 0);
+    {
+        uintptr_t base = (uintptr_t)MenuWaBase;
+        if (*(volatile u16 *)(uintptr_t)(base + 0xFBCu) == 3) {
+            if (_08002140() == 2) goto reset;
+            {
+                u32 v = *(volatile u32 *)(uintptr_t)((volatile u8 *)rec_ + 148);
+                v += 1;
+                *(volatile u32 *)(uintptr_t)((volatile u8 *)rec_ + 148) = v;
+                // `cmp r0,#180; ble @ 0x08012D78` is a SIGNED compare, so the
+                // "still counting" edge is `(s32)v <= 180`.
+                if ((s32)v > 180) {
+                    extern void sub_08004D4C(u32 a, u32 b, u32 c);
+                    sub_08004D4C(21, 0, 0);
+                }
+            }
         }
+        return;
+    reset:
+        // The ROM places this block OUT OF LINE after the literal pool
+        // (0x08012D90), reached by `beq @ 0x08012D6A`; a fall-through `return`
+        // inside the `if` emits it inline instead.
+        *(volatile u32 *)(uintptr_t)((volatile u8 *)rec_ + 148) = 0;
     }
-    return;
-reset:
-    // The ROM places this block OUT OF LINE after the literal pool
-    // (0x08012D90), reached by `beq @ 0x08012D6A`; a fall-through `return`
-    // inside the `if` emits it inline instead.
-    *(volatile u32 *)(uintptr_t)((volatile u8 *)rec_ + 148) = 0;
 }
 // The ROM pads the body's last two bytes with 0x0000 (0x08012D9E..0x08012D9F)
 // after `bx r0`; agbcc emits a one-instruction `nop` (0xC046) there. The
@@ -3640,25 +3697,27 @@ void MenuD4EC_0800D4EC(void *rec) {
     _08002124(0x1399);
     *(volatile u16 *)((u8 *)r4 + 2) = 2;
     *(volatile u8 *)((u8 *)r4 + 8) = 1;
-    int v = sub_080022D8(0);
-    // `cmp r0,#0; bne @ 0x0800D50C` sends the NON-zero case to the
-    // OUT-OF-LINE block at 0x0800D528, and the ROM DUPLICATES the whole
-    // CpuSet sequence per arm (0x0800D50E..0x0800D51E and
-    // 0x0800D528..0x0800D538) rather than sharing a tail — only a goto
-    // shape reproduces both blocks and the two identical pool words.
-    // ONE 4-byte stack slot: the ROM writes `[sp,#0]` in BOTH arms
-    // (0x0800D510 and 0x0800D52A) and passes `sp` itself as r0, so the local
-    // must be declared once at function scope. Two block-scoped copies give
-    // `sub sp,#8` and an `add r0,sp,#4` the ROM does not have.
-    u8 sp4_local[4];
-    if (v != 0) goto fill0;
-    *(volatile u32 *)sp4_local = 100;
-    sub_0802D974(sp4_local, (u8 *)r4 + 12, 0x05000200);
-    goto done;
-fill0:
-    *(volatile u32 *)sp4_local = 0;
-    sub_0802D974(sp4_local, (u8 *)r4 + 12, 0x05000200);
-done:
+    {
+        int v = sub_080022D8(0);
+        // `cmp r0,#0; bne @ 0x0800D50C` sends the NON-zero case to the
+        // OUT-OF-LINE block at 0x0800D528, and the ROM DUPLICATES the whole
+        // CpuSet sequence per arm (0x0800D50E..0x0800D51E and
+        // 0x0800D528..0x0800D538) rather than sharing a tail — only a goto
+        // shape reproduces both blocks and the two identical pool words.
+        // ONE 4-byte stack slot: the ROM writes `[sp,#0]` in BOTH arms
+        // (0x0800D510 and 0x0800D52A) and passes `sp` itself as r0, so the local
+        // must be declared once at function scope. Two block-scoped copies give
+        // `sub sp,#8` and an `add r0,sp,#4` the ROM does not have.
+        u8 sp4_local[4];
+        if (v != 0) goto fill0;
+        *(volatile u32 *)sp4_local = 100;
+        sub_0802D974(sp4_local, (u8 *)r4 + 12, 0x05000200);
+        goto done;
+    fill0:
+        *(volatile u32 *)sp4_local = 0;
+        sub_0802D974(sp4_local, (u8 *)r4 + 12, 0x05000200);
+    done:
+    }
 }
 void _0800D4EC(void *a) __attribute__((alias("MenuD4EC_0800D4EC")));
 void sub_0800D4EC(void *a) __attribute__((alias("MenuD4EC_0800D4EC")));
@@ -3712,7 +3771,7 @@ void Sub_080013E4C(void) __attribute__((alias("Menu13E4C_080013E4C")));
 // Evidence: asm/menu_ff78.s:9652-9665, objdump 0x080014C70: b510 1c0c f7ff ff?? 3234 3006 8801 bc10 bc01 4700, no literal pool, no branch, no record-layout struct (rec+84 is opaque +84), no VRAM; next smallest fully bounded after 0x013E4C, complete CFG, callers via subsystem (no direct bl xref, but typed entry present)
 void Menu14C70_080014C70(void *a, void *rec) {
     (void)a;
-    extern void *sub_08004B68(void);
+
     (void)sub_08004B68();
     *(volatile u16*)((u8*)rec + 84) = 6;
 }
@@ -3786,17 +3845,19 @@ void Menu010914_080010914(void *rec, u32 dummy, u16 arg) {
     (void)dummy;
     // Keep the second copy of the normalized argument in the callee-saved r5
     // across Menu108D4; the original remains available for the arg == 2 test.
-    register u16 a __asm__("r5") = arg;
-    u16 v168 = *(volatile u16 *)((u8 *)rec + 168);
-    if (v168 != 3) goto end;
-    if (arg == 2) {
-        MEN_CALLEE(Menu108D4_0800108D4, _0800108D4)(rec);
+    {
+        register u16 a __asm__("r5") = arg;
+        u16 v168 = *(volatile u16 *)((u8 *)rec + 168);
+        if (v168 != 3) goto end;
+        if (arg == 2) {
+            MEN_CALLEE(Menu108D4_0800108D4, _0800108D4)(rec);
+        }
+        if (a == 1) {
+            Menu108F0_0800108F0(rec);
+        }
+    end:
+        return;
     }
-    if (a == 1) {
-        Menu108F0_0800108F0(rec);
-    }
-end:
-    return;
 }
 void _080010914(void *a, u32 b, u16 c) __attribute__((alias("Menu010914_080010914")));
 void sub_080010914(void *a, u32 b, u16 c) __attribute__((alias("Menu010914_080010914")));
@@ -3807,17 +3868,19 @@ void Menu010940_080010940(void *rec, u32 dummy, u16 arg) {
     (void)dummy;
     // Keep the second copy of the normalized argument in the callee-saved r5
     // across Menu108D4; the original remains available for the arg == 2 test.
-    register u16 a __asm__("r5") = arg;
-    u16 v168 = *(volatile u16 *)((u8 *)rec + 168);
-    if (v168 != 3) goto end;
-    if (arg == 2) {
-        MEN_CALLEE(Menu108D4_0800108D4, _0800108D4)(rec);
+    {
+        register u16 a __asm__("r5") = arg;
+        u16 v168 = *(volatile u16 *)((u8 *)rec + 168);
+        if (v168 != 3) goto end;
+        if (arg == 2) {
+            MEN_CALLEE(Menu108D4_0800108D4, _0800108D4)(rec);
+        }
+        if (a == 1) {
+            Menu108F0_0800108F0(rec);
+        }
+    end:
+        return;
     }
-    if (a == 1) {
-        Menu108F0_0800108F0(rec);
-    }
-end:
-    return;
 }
 void _080010940(void *a, u32 b, u16 c) __attribute__((alias("Menu010940_080010940")));
 void sub_080010940(void *a, u32 b, u16 c) __attribute__((alias("Menu010940_080010940")));

@@ -183,23 +183,31 @@ void Ai_ClaimSlotAndSetBit(int slot){
     u8 buf[8];
     _0802E0A4(buf, (const void *)(uintptr_t)0x08060D4Cu, 6u);
     // clamp 0..2
-    int r4 = slot;
-    if(r4 <= 0) r4 = 0;
-    if(r4 > 1) r4 = 2;
-    uintptr_t base_v, slot_off;
-    { extern u8 AiColFlagBase[], AiColFlagOff[];
-      __asm__(".globl AiColFlagBase\nAiColFlagBase = 0x03001780\n");
-      __asm__(".globl AiColFlagOff\nAiColFlagOff = 0x57C\n");
-      base_v = (uintptr_t)AiColFlagBase;
-      slot_off = (uintptr_t)AiColFlagOff; }
-    // r4 on the LEFT of the final add: the ROM emits `adds r0, r4, r0`, and C's
-    // left-associative `+` would give `adds r0, r0, r4` (0x1900 vs 0x1820).
-    volatile u8 *flag = (volatile u8 *)((uintptr_t)r4 + (base_v + slot_off));
-    *flag = 1;
-    // plain s16, not volatile: a volatile read lowers to ldrh + lsls/asrs
-    // where the ROM has one ldrsh.
-    int half = *(s16*)(buf + (r4<<1));
-    AA_CALLEE(Ai_AwardSetBit, sub_08025F78)(half);
+    {
+        int r4 = slot;
+        if(r4 <= 0) r4 = 0;
+        if(r4 > 1) r4 = 2;
+        {
+            uintptr_t base_v, slot_off;
+            { extern u8 AiColFlagBase[], AiColFlagOff[];
+              __asm__(".globl AiColFlagBase\nAiColFlagBase = 0x03001780\n");
+              __asm__(".globl AiColFlagOff\nAiColFlagOff = 0x57C\n");
+              base_v = (uintptr_t)AiColFlagBase;
+              slot_off = (uintptr_t)AiColFlagOff; }
+            // r4 on the LEFT of the final add: the ROM emits `adds r0, r4, r0`, and C's
+            // left-associative `+` would give `adds r0, r0, r4` (0x1900 vs 0x1820).
+            {
+                volatile u8 *flag = (volatile u8 *)((uintptr_t)r4 + (base_v + slot_off));
+                *flag = 1;
+                // plain s16, not volatile: a volatile read lowers to ldrh + lsls/asrs
+                // where the ROM has one ldrsh.
+                {
+                    int half = *(s16*)(buf + (r4<<1));
+                    AA_CALLEE(Ai_AwardSetBit, sub_08025F78)(half);
+                }
+            }
+        }
+    }
 }
 void _08026020(int a) __attribute__((alias("Ai_ClaimSlotAndSetBit")));
 // The closure binds `sub_08026020` (lowercase). A capital-`Sub_` spelling is a
@@ -261,9 +269,11 @@ void Ai_AwardLeafSet(int idx, int a, int b){
 s16 Ai_AwardLeafGet(int idx){
     extern u8 AiAwardRecBase[];
     __asm__(".globl AiAwardRecBase\nAiAwardRecBase = 0x030015F0\n");
-    uintptr_t base = (uintptr_t)AiAwardRecBase;
-    int off = (idx << 16) >> 13;
-    return *(s16 *)(uintptr_t)(off + base);
+    {
+        uintptr_t base = (uintptr_t)AiAwardRecBase;
+        int off = (idx << 16) >> 13;
+        return *(s16 *)(uintptr_t)(off + base);
+    }
 }
 s16 _080261B0(int a) __attribute__((alias("Ai_AwardLeafGet")));
 s16 sub_080261B0(int a) __attribute__((alias("Ai_AwardLeafGet")));
@@ -273,10 +283,12 @@ s16 sub_080261B0(int a) __attribute__((alias("Ai_AwardLeafGet")));
 void Ai_AwardLeafPut(int idx, int v){
     extern u8 AiAwardRecBase[];
     __asm__(".globl AiAwardRecBase\nAiAwardRecBase = 0x030015F0\n");
-    uintptr_t base = (uintptr_t)AiAwardRecBase;
-    int off = (idx << 16) >> 13;
-    volatile u16 *p = (volatile u16 *)(uintptr_t)(off + base);
-    p[0] = (u16)v;
+    {
+        uintptr_t base = (uintptr_t)AiAwardRecBase;
+        int off = (idx << 16) >> 13;
+        volatile u16 *p = (volatile u16 *)(uintptr_t)(off + base);
+        p[0] = (u16)v;
+    }
 }
 void _080261C4(int a, int b) __attribute__((alias("Ai_AwardLeafPut")));
 void sub_080261C4(int a, int b) __attribute__((alias("Ai_AwardLeafPut")));

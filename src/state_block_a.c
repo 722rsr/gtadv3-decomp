@@ -8,6 +8,7 @@
 // Record selection uses ROM table at 0x0802E190 with sel = st->sioBits style.
 // Each table entry holds a record index; record 16 bytes at +0x70.
 
+extern void _08001704(void);
 static inline volatile StateBlockA *stateA(void) {
     return (volatile StateBlockA *)* (volatile u32 *)STATE_BLOCK_A_SLOT_ADDR;
 }
@@ -93,8 +94,10 @@ void *StateA_GetRecordPtrInverted(void) {
     volatile StateBlockA *st = stateA();
     u16 sel = 1;
     sel ^= st->sioBits;
-    u32 off = (u32)sel << 4;
-    return (void *)((uintptr_t)st + 0x70 + off);
+    {
+        u32 off = (u32)sel << 4;
+        return (void *)((uintptr_t)st + 0x70 + off);
+    }
 }
 
 u16 _080015F4(int idx) __attribute__((alias("StateA_GetRecordHalfword")));
@@ -171,7 +174,7 @@ void StateA_Register(void) {
     // The slice links no C object, so a promoted body may only call a
     // spelling the assembly closure defines. The host build has no
     // VMA-named symbol, so it keeps the friendly name.
-    extern void _08001704(void);
+
     _08001704();
 }
 void _080016EC(void) __attribute__((alias("StateA_Register")));
@@ -512,27 +515,31 @@ after_record:
         eventState = (volatile u8 *)(uintptr_t)*lateSlot;
         _08001E48(0, *(volatile u16 *)(eventState + 24));
     }
-    register s16 *phaseMinutes __asm__("r2");
-    phaseMinutes = (s16 *)(uintptr_t)*lateSlot;
-    lastMinute = phaseMinutes[12];
-    if (lastMinute == 0) {
-        _08001E48(1, *(volatile u16 *)((volatile u8 *)phaseMinutes + 44));
-        {
-            register volatile u8 *secondEventState __asm__("r0");
-            secondEventState = (volatile u8 *)(uintptr_t)*lateSlot;
-            _08001E48(2, *(volatile u16 *)(secondEventState + 22));
-        }
-    } else {
+    {
+        register s16 *phaseMinutes __asm__("r2");
+        phaseMinutes = (s16 *)(uintptr_t)*lateSlot;
         lastMinute = phaseMinutes[12];
-        register int recordOffset __asm__("r0");
-        register int scaledOffset __asm__("r1");
-        recordOffset = lastMinute - 1;
-        scaledOffset = ((recordOffset << 1) + recordOffset) << 2;
-        source = *(volatile u32 *)((volatile u8 *)phaseMinutes + 36) + scaledOffset;
-        {
-            register void *copyDestination __asm__("r1");
-            copyDestination = (void *)((volatile u8 *)phaseMinutes + 196);
-            sub_0802D974((const void *)(uintptr_t)source, copyDestination, 6);
+        if (lastMinute == 0) {
+            _08001E48(1, *(volatile u16 *)((volatile u8 *)phaseMinutes + 44));
+            {
+                register volatile u8 *secondEventState __asm__("r0");
+                secondEventState = (volatile u8 *)(uintptr_t)*lateSlot;
+                _08001E48(2, *(volatile u16 *)(secondEventState + 22));
+            }
+        } else {
+            lastMinute = phaseMinutes[12];
+            {
+                register int recordOffset __asm__("r0");
+                register int scaledOffset __asm__("r1");
+                recordOffset = lastMinute - 1;
+                scaledOffset = ((recordOffset << 1) + recordOffset) << 2;
+                source = *(volatile u32 *)((volatile u8 *)phaseMinutes + 36) + scaledOffset;
+                {
+                    register void *copyDestination __asm__("r1");
+                    copyDestination = (void *)((volatile u8 *)phaseMinutes + 196);
+                    sub_0802D974((const void *)(uintptr_t)source, copyDestination, 6);
+                }
+            }
         }
     }
     }

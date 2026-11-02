@@ -13,8 +13,8 @@ make full-rom-match
 git diff --check
 ```
 
-`matching-ready` checks the reference ROM hash, generates compiler-compatible
-C copies, checks original/transformed object equivalence, scores the C corpus,
+`matching-ready` checks the reference ROM hash, compiles every maintained C
+translation unit directly with the pinned C89 compiler, scores the C corpus,
 and links the selected C functions into the independent executable slice.
 It also runs an instruction-mutation negative control, runtime-provenance
 comparison, and source/data ownership checks.
@@ -31,7 +31,7 @@ The checked-in inventories contain metadata and hashes, not replacement code.
 For a focused comparison:
 
 ```sh
-python3 tools/corpus_match_probe.py --function NAME --c89 --require-all --require-exact
+python3 tools/corpus_match_probe.py --function NAME --require-all --require-exact
 make fast-check
 ```
 
@@ -783,7 +783,7 @@ Two naming traps that block an otherwise exact body at link time:
 A body whose candidate carries an unresolved `bl` cannot be exact while the
 relocation is unresolved, so the first move on any `UNRESOLVED_RELOCATION`
 record is to make the call resolve.
-Three recurring causes, all found with `--function NAME --c89` (the `call`
+Three recurring causes, all found with `--function NAME` (the `call`
 lines name the symbol the probe could not place):
 
 * **`static` helper called twice or more.** agbcc `-O2` never inlines it, so the
@@ -886,7 +886,7 @@ body may already be byte-correct and only a symbol reference blocks it. Snapshot
 the whole corpus and read the class back:
 
 ```sh
-python3 tools/corpus_match_probe.py --c89 --limit 0 --json build/lab/full-status.json
+python3 tools/corpus_match_probe.py --limit 0 --json build/lab/full-status.json
 python3 - <<'PY'
 import json
 d = json.load(open('build/lab/full-status.json'))
@@ -1146,7 +1146,7 @@ prints the ROM and candidate listings side by side; `--asm` prints just the
 candidate. It also reports whether the candidate is a **pure register
 permutation** of the ROM, which is the check that separates "the C is wrong"
 from "the C is right and only the allocation differs". `--raw-tu` lifts a TU
-that is already past the C89 transform, i.e. a saved sweep winner.
+verbatim, i.e. a saved sweep winner that is already C89.
 
 `--sweep REG[,REG...]` is the automated version of the barrier search: it
 inserts `__asm__ volatile("" : "+r"(REG));` after every statement boundary of
@@ -1311,11 +1311,11 @@ register-frame grind, same family as `_0800AA40`.
 ## `_080021018` prepared battery re-measured (2026-10-12)
 
 The 13 prepared case variants (`build/cases_21018c.py`) were run through
-the kit (`transform_file` -> `evaluate`). All 12 compilable ones confirm
+the kit (`evaluate`). All 12 compilable ones confirm
 the source comment: the statement-expression family stays at 148/164,
 the plain-`rec+8` family collapses the loop prologue to 74-76/164 (the
-r0 pin is load-bearing), none EXACT. X4 (`pin nine=r0`) fails the
-transform helper itself (`six` undeclared -- a `_x()` substitution bug
+r0 pin is load-bearing), none EXACT. X4 (`pin nine=r0`) fails in the
+prepared file itself (`six` undeclared -- a `_x()` substitution bug
 in the prepared file, not a compiler verdict), so it remains unmeasured.
 The 8 missing bytes are the ROM's stack-arg stores using r0 as scratch
 BEFORE `mov r0,r9 / adds r0,#8`, with r1-scratch after -- the scheduler

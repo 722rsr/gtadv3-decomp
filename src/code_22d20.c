@@ -38,11 +38,13 @@ static const u32 C22D_SENTINEL_B = 0x000003E7u;  // _0800230B8
 void Code22D24_UpdateCell(void *self, void *rec_arg, int arg) {
     volatile u8 *r = (volatile u8 *)rec_arg;
     sub_080025C60((void *)(uintptr_t)r, (void *)(uintptr_t)arg);
-    volatile u8 *s = (volatile u8 *)self;
-    void *a = (void *)(uintptr_t)*(volatile u32 *)(s + 12);
-    int b = (int)*(volatile u32 *)(r + 24);
-    int c = (int)*(volatile u32 *)(r + 20);
-    sub_08007ABC(a, b, c);
+    {
+        volatile u8 *s = (volatile u8 *)self;
+        void *a = (void *)(uintptr_t)*(volatile u32 *)(s + 12);
+        int b = (int)*(volatile u32 *)(r + 24);
+        int c = (int)*(volatile u32 *)(r + 20);
+        sub_08007ABC(a, b, c);
+    }
 }
 // The body is 30 bytes, two short of the section's 4-byte alignment. Under
 // -ffunction-sections gas closes the section itself and fills a Thumb code
@@ -103,11 +105,13 @@ int Code22D74_RecEq(void *ra, void *rb) {
         return 0;
     if ((*(u32 *)(a + 8) & 0x00FFFFFFu) != (*(u32 *)(b + 8) & 0x00FFFFFFu))
         return 0;
-    register u16 ha __asm__("r3");
-    ha = *(u16 *)(a + 4);
-    if (ha != *(u16 *)(b + 4))
-        return 0;
-    return 1;
+    {
+        register u16 ha __asm__("r3");
+        ha = *(u16 *)(a + 4);
+        if (ha != *(u16 *)(b + 4))
+            return 0;
+        return 1;
+    }
 }
 int _08022D74(void *a, void *b) __attribute__((alias("Code22D74_RecEq")));
 int sub_08022D74(void *a, void *b) __attribute__((alias("Code22D74_RecEq")));

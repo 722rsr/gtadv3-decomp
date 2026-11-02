@@ -103,7 +103,7 @@ def variants():
 def probe_line():
     out = subprocess.run(
         ["python3", "tools/corpus_match_probe.py", "--function",
-         "SaveUpdate_080241C8", "--c89"],
+         "SaveUpdate_080241C8"],
         cwd=ROOT, capture_output=True, text=True).stdout
     return next((l for l in out.splitlines() if "0x080241c8" in l and "bytes" in l), "")
 

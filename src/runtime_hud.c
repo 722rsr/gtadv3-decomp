@@ -2,6 +2,13 @@
 #include "gtadv/memory.h"
 #include "gba/regs.h"
 #include "gba/bios.h"
+extern u8 CellTbl04440[];
+extern u8 CellTbl03B8[];
+extern u8 GlyphAdvTbl[];
+extern u8 GlyphAdvTbl[];
+extern u8 GlyphAdvTbl[];
+extern u8 GlyphAdvTbl[];
+extern u8 GlyphAdvTbl[];
 void _080038A4(int a, u32 b, const volatile u8 *c);  /* alias of ObjLane_038A4, below */
 extern void _08002C34(int a, void *b);   // foundation_runtime.c free-list push
 extern int _08005790(u32 a);             // save.c allocator (returns the new cursor)
@@ -138,14 +145,20 @@ void _0800315C(volatile u8 *req)
         tagc = *(volatile u16 *)(p + 8);
         tagv |= tagc;
         *(volatile u16 *)(o + 0) = (u16)tagv;
-        register u32 f1 __asm__("r0") = *(volatile u32 *)(p + 4);
-        *(volatile u16 *)(o + 2) = (u16)f1;
-        u32 v = (u32)(f3 << 1);
-        v += *(volatile u16 *)(src + 2);
-        register u32 idxv __asm__("r0") = *(volatile u32 *)(p + 20);
-        idxv += *(volatile u16 *)(src + 0);
-        v |= idxv << 12;
-        *(volatile u16 *)(o + 4) = (u16)v;
+        {
+            register u32 f1 __asm__("r0") = *(volatile u32 *)(p + 4);
+            *(volatile u16 *)(o + 2) = (u16)f1;
+            {
+                u32 v = (u32)(f3 << 1);
+                v += *(volatile u16 *)(src + 2);
+                {
+                    register u32 idxv __asm__("r0") = *(volatile u32 *)(p + 20);
+                    idxv += *(volatile u16 *)(src + 0);
+                    v |= idxv << 12;
+                    *(volatile u16 *)(o + 4) = (u16)v;
+                }
+            }
+        }
     }
 }
 // Body is 54 bytes, so the -ffunction-sections section pads to 56; gas would
@@ -169,14 +182,20 @@ void _08003210(volatile u8 *req)
         tagc = *(volatile u16 *)(p + 8);
         tagv |= tagc;
         *(volatile u16 *)(o + 0) = (u16)tagv;
-        register u32 f1 __asm__("r0") = *(volatile u32 *)(p + 4);
-        *(volatile u16 *)(o + 2) = (u16)f1;
-        u32 v = (u32)(f3 << 1);
-        v += *(volatile u16 *)(src + 2);
-        register u32 idxv __asm__("r0") = *(volatile u32 *)(p + 20);
-        idxv += *(volatile u16 *)(src + 0);
-        v |= idxv << 12;
-        *(volatile u16 *)(o + 4) = (u16)v;
+        {
+            register u32 f1 __asm__("r0") = *(volatile u32 *)(p + 4);
+            *(volatile u16 *)(o + 2) = (u16)f1;
+            {
+                u32 v = (u32)(f3 << 1);
+                v += *(volatile u16 *)(src + 2);
+                {
+                    register u32 idxv __asm__("r0") = *(volatile u32 *)(p + 20);
+                    idxv += *(volatile u16 *)(src + 0);
+                    v |= idxv << 12;
+                    *(volatile u16 *)(o + 4) = (u16)v;
+                }
+            }
+        }
     }
 }
 __asm__(".align 2, 0");
@@ -196,20 +215,28 @@ void _08003194(volatile u8 *req)
         tagc = *(volatile u16 *)(p + 8);
         tagv |= tagc;
         *(volatile u16 *)(o + 0) = (u16)tagv;
-        register u32 f1 __asm__("r0") = *(volatile u32 *)(p + 4);
-        *(volatile u16 *)(o + 2) = (u16)f1;
-        u32 v = (u32)(f3 << 1);
-        v += *(volatile u16 *)(src + 2);
-        register u32 idxv __asm__("r0") = *(volatile u32 *)(p + 20);
-        idxv += *(volatile u16 *)(src + 0);
-        v |= idxv << 12;
-        register u32 bitc __asm__("r2") = 0x400u;
-        register u32 bitv __asm__("r0");
-        __asm__("" : "+r" (bitc));
-        bitv = bitc;
-        __asm__("" : "+r" (bitv));
-        v |= bitv;
-        *(volatile u16 *)(o + 4) = (u16)v;
+        {
+            register u32 f1 __asm__("r0") = *(volatile u32 *)(p + 4);
+            *(volatile u16 *)(o + 2) = (u16)f1;
+            {
+                u32 v = (u32)(f3 << 1);
+                v += *(volatile u16 *)(src + 2);
+                {
+                    register u32 idxv __asm__("r0") = *(volatile u32 *)(p + 20);
+                    idxv += *(volatile u16 *)(src + 0);
+                    v |= idxv << 12;
+                    {
+                        register u32 bitc __asm__("r2") = 0x400u;
+                        register u32 bitv __asm__("r0");
+                        __asm__("" : "+r" (bitc));
+                        bitv = bitc;
+                        __asm__("" : "+r" (bitv));
+                        v |= bitv;
+                        *(volatile u16 *)(o + 4) = (u16)v;
+                    }
+                }
+            }
+        }
     }
 }
 __asm__(".align 2, 0");
@@ -230,23 +257,31 @@ void _080031D4(volatile u8 *req)
         tagc = *(volatile u16 *)(p + 8);
         tagv |= tagc;
         *(volatile u16 *)(o + 0) = (u16)tagv;
-        register u32 f1 __asm__("r0") = *(volatile u32 *)(p + 4);
-        *(volatile u16 *)(o + 2) = (u16)f1;
-        register u32 v __asm__("r1") = (u32)(f3 << 1);
-        register u32 src2 __asm__("r2");
-        src2 = *(volatile u16 *)(src + 2);
-        __asm__("" : "+r" (src2));
-        v = src2 + v;
-        register u32 idxv __asm__("r0") = *(volatile u32 *)(p + 20);
-        idxv += 12;
-        v |= idxv << 12;
-        register u32 bitc __asm__("r2") = 0x400u;
-        register u32 bitv __asm__("r0");
-        __asm__("" : "+r" (bitc));
-        bitv = bitc;
-        __asm__("" : "+r" (bitv));
-        v |= bitv;
-        *(volatile u16 *)(o + 4) = (u16)v;
+        {
+            register u32 f1 __asm__("r0") = *(volatile u32 *)(p + 4);
+            *(volatile u16 *)(o + 2) = (u16)f1;
+            {
+                register u32 v __asm__("r1") = (u32)(f3 << 1);
+                register u32 src2 __asm__("r2");
+                src2 = *(volatile u16 *)(src + 2);
+                __asm__("" : "+r" (src2));
+                v = src2 + v;
+                {
+                    register u32 idxv __asm__("r0") = *(volatile u32 *)(p + 20);
+                    idxv += 12;
+                    v |= idxv << 12;
+                    {
+                        register u32 bitc __asm__("r2") = 0x400u;
+                        register u32 bitv __asm__("r0");
+                        __asm__("" : "+r" (bitc));
+                        bitv = bitc;
+                        __asm__("" : "+r" (bitv));
+                        v |= bitv;
+                        *(volatile u16 *)(o + 4) = (u16)v;
+                    }
+                }
+            }
+        }
     }
 }
 __asm__(".align 2, 0");
@@ -416,29 +451,35 @@ void ObjList_03350(int sel, u32 x, u32 a2, u32 a3, const volatile u8 *str, u32 w
     req[5] = a3;
     while (*p) {
         rq = req;
-        extern u8 GlyphAdvTbl[];
+
         __asm__(".globl GlyphAdvTbl\nGlyphAdvTbl = 0x080C49A0\n");
-        register u32 c __asm__("r1") = *p;
-        __asm__("" : "+r" (c));
-        register u32 off __asm__("r0") = c << 1;
-        __asm__("" : "+r" (off));
-        register const s16 *tbl __asm__("r2") = (const s16 *)GlyphAdvTbl;
-        __asm__("" : "+r" (tbl));
-        adv = *(const s16 *)(off + (uintptr_t)tbl) - 1;
-        __asm__("" : : "r" (tbl));
-        req[1] = x & 0x1FF;
-        req[3] = (u32)adv;
-        if (adv >= 0) {
-            u32 obj = (u32)(uintptr_t)_08002BFC(x & 0x1FF);
-            register const u16 *pw5 __asm__("r0") = (const u16 *)(uintptr_t)&w5;
-            __asm__("" : "+r"(pw5));
-            *(volatile u16 *)(uintptr_t)(obj + 12) = *pw5;
-            req[0] = obj;
-            ((tmpl_fn)(uintptr_t)fnv)(rq);
-            _08002C34(0, (void *)(uintptr_t)obj);
+        {
+            register u32 c __asm__("r1") = *p;
+            __asm__("" : "+r" (c));
+            {
+                register u32 off __asm__("r0") = c << 1;
+                __asm__("" : "+r" (off));
+                {
+                    register const s16 *tbl __asm__("r2") = (const s16 *)GlyphAdvTbl;
+                    __asm__("" : "+r" (tbl));
+                    adv = *(const s16 *)(off + (uintptr_t)tbl) - 1;
+                    __asm__("" : : "r" (tbl));
+                    req[1] = x & 0x1FF;
+                    req[3] = (u32)adv;
+                    if (adv >= 0) {
+                        u32 obj = (u32)(uintptr_t)_08002BFC(x & 0x1FF);
+                        register const u16 *pw5 __asm__("r0") = (const u16 *)(uintptr_t)&w5;
+                        __asm__("" : "+r"(pw5));
+                        *(volatile u16 *)(uintptr_t)(obj + 12) = *pw5;
+                        req[0] = obj;
+                        ((tmpl_fn)(uintptr_t)fnv)(rq);
+                        _08002C34(0, (void *)(uintptr_t)obj);
+                    }
+                    p++;
+                    x += lane;
+                }
+            }
         }
-        p++;
-        x += lane;
     }
 }
 
@@ -477,29 +518,35 @@ void ObjList_03400(int sel, u32 x, u32 a2, u32 a3, const volatile u8 *str, u32 w
     req[5] = a3;
     while (*p) {
         rq = req;
-        extern u8 GlyphAdvTbl[];
+
         __asm__(".globl GlyphAdvTbl\nGlyphAdvTbl = 0x080C49A0\n");
-        register u32 c __asm__("r1") = *p;
-        __asm__("" : "+r" (c));
-        register u32 off __asm__("r0") = c << 1;
-        __asm__("" : "+r" (off));
-        register const s16 *tbl __asm__("r2") = (const s16 *)GlyphAdvTbl;
-        __asm__("" : "+r" (tbl));
-        adv = *(const s16 *)(off + (uintptr_t)tbl) - 1;
-        __asm__("" : : "r" (tbl));
-        req[1] = x & 0x1FF;
-        req[3] = (u32)adv;
-        if (adv >= 0) {
-            u32 obj = (u32)(uintptr_t)_08002BFC(x & 0x1FF);
-            register const u16 *pw6 __asm__("r0") = (const u16 *)(uintptr_t)&w6;
-            __asm__("" : "+r"(pw6));
-            *(volatile u16 *)(uintptr_t)(obj + 12) = *pw6;
-            req[0] = obj;
-            ((tmpl_fn)(uintptr_t)fnv)(rq);
-            _08002C34(0, (void *)(uintptr_t)obj);
+        {
+            register u32 c __asm__("r1") = *p;
+            __asm__("" : "+r" (c));
+            {
+                register u32 off __asm__("r0") = c << 1;
+                __asm__("" : "+r" (off));
+                {
+                    register const s16 *tbl __asm__("r2") = (const s16 *)GlyphAdvTbl;
+                    __asm__("" : "+r" (tbl));
+                    adv = *(const s16 *)(off + (uintptr_t)tbl) - 1;
+                    __asm__("" : : "r" (tbl));
+                    req[1] = x & 0x1FF;
+                    req[3] = (u32)adv;
+                    if (adv >= 0) {
+                        u32 obj = (u32)(uintptr_t)_08002BFC(x & 0x1FF);
+                        register const u16 *pw6 __asm__("r0") = (const u16 *)(uintptr_t)&w6;
+                        __asm__("" : "+r"(pw6));
+                        *(volatile u16 *)(uintptr_t)(obj + 12) = *pw6;
+                        req[0] = obj;
+                        ((tmpl_fn)(uintptr_t)fnv)(rq);
+                        _08002C34(0, (void *)(uintptr_t)obj);
+                    }
+                    p++;
+                    x += lane;
+                }
+            }
         }
-        p++;
-        x += lane;
     }
 }
 // ROM 0x080034B0 (176 B) — same stream as 0x08003400 with two constants
@@ -529,29 +576,35 @@ void _080034B0(int sel, u32 x, u32 a2, u32 a3, const volatile u8 *str, u32 w5, u
     req[5] = a3;
     while (*p) {
         rq = req;
-        extern u8 GlyphAdvTbl[];
+
         __asm__(".globl GlyphAdvTbl\nGlyphAdvTbl = 0x080C49A0\n");
-        register u32 c __asm__("r1") = *p;
-        __asm__("" : "+r" (c));
-        register u32 off __asm__("r0") = c << 1;
-        __asm__("" : "+r" (off));
-        register const s16 *tbl __asm__("r2") = (const s16 *)GlyphAdvTbl;
-        __asm__("" : "+r" (tbl));
-        adv = *(const s16 *)(off + (uintptr_t)tbl) - 1;
-        __asm__("" : : "r" (tbl));
-        req[1] = x & 0x1FF;
-        req[3] = (u32)adv;
-        if (adv >= 0) {
-            u32 obj = (u32)(uintptr_t)_08002BFC(x & 0x1FF);
-            register const u16 *pw5 __asm__("r0") = (const u16 *)(uintptr_t)&w5;
-            __asm__("" : "+r"(pw5));
-            *(volatile u16 *)(uintptr_t)(obj + 12) = *pw5;
-            req[0] = obj;
-            ((tmpl_fn)(uintptr_t)fnv)(rq);
-            _08002C34(0, (void *)(uintptr_t)obj);
+        {
+            register u32 c __asm__("r1") = *p;
+            __asm__("" : "+r" (c));
+            {
+                register u32 off __asm__("r0") = c << 1;
+                __asm__("" : "+r" (off));
+                {
+                    register const s16 *tbl __asm__("r2") = (const s16 *)GlyphAdvTbl;
+                    __asm__("" : "+r" (tbl));
+                    adv = *(const s16 *)(off + (uintptr_t)tbl) - 1;
+                    __asm__("" : : "r" (tbl));
+                    req[1] = x & 0x1FF;
+                    req[3] = (u32)adv;
+                    if (adv >= 0) {
+                        u32 obj = (u32)(uintptr_t)_08002BFC(x & 0x1FF);
+                        register const u16 *pw5 __asm__("r0") = (const u16 *)(uintptr_t)&w5;
+                        __asm__("" : "+r"(pw5));
+                        *(volatile u16 *)(uintptr_t)(obj + 12) = *pw5;
+                        req[0] = obj;
+                        ((tmpl_fn)(uintptr_t)fnv)(rq);
+                        _08002C34(0, (void *)(uintptr_t)obj);
+                    }
+                    p++;
+                    x += lane;
+                }
+            }
         }
-        p++;
-        x += lane;
     }
 }
 // Residual, measured: 9 bytes in 164, all in the request-base setup at
@@ -610,30 +663,36 @@ void ObjList_03560(int sel, u32 x, u32 a2, u32 a3, const volatile u8 *str)
     req[5] = a3;
     while (*p) {
         rq = req;
-        extern u8 GlyphAdvTbl[];
+
         __asm__(".globl GlyphAdvTbl\nGlyphAdvTbl = 0x080C49A0\n");
-        register u32 c __asm__("r1") = *p;
-        __asm__("" : "+r" (c));
-        register u32 off __asm__("r0") = c << 1;
-        __asm__("" : "+r" (off));
-        register const s16 *tbl __asm__("r2") = (const s16 *)GlyphAdvTbl;
-        __asm__("" : "+r" (tbl));
-        adv = *(const s16 *)(off + (uintptr_t)tbl) - 1;
-        __asm__("" : : "r" (c), "r" (tbl));
-        req[1] = x;
-        req[3] = (u32)adv;
-        if (adv >= 0) {
-            // `bl sub_08002BFC` carries NO `movs r0,#0`: the ROM passes the
-            // advance that is already in r0. ObjAlloc_02BFC is documented
-            // `(void)a; // asm takes r0 but never reads it`, so this is the
-            // same call, not a new argument.
-            u32 obj = (u32)(uintptr_t)_08002BFC(adv);
-            req[0] = obj;
-            ((tmpl_fn)(uintptr_t)fnv)(rq);
-            _08002C34(0, (void *)(uintptr_t)obj);
+        {
+            register u32 c __asm__("r1") = *p;
+            __asm__("" : "+r" (c));
+            {
+                register u32 off __asm__("r0") = c << 1;
+                __asm__("" : "+r" (off));
+                {
+                    register const s16 *tbl __asm__("r2") = (const s16 *)GlyphAdvTbl;
+                    __asm__("" : "+r" (tbl));
+                    adv = *(const s16 *)(off + (uintptr_t)tbl) - 1;
+                    __asm__("" : : "r" (c), "r" (tbl));
+                    req[1] = x;
+                    req[3] = (u32)adv;
+                    if (adv >= 0) {
+                        // `bl sub_08002BFC` carries NO `movs r0,#0`: the ROM passes the
+                        // advance that is already in r0. ObjAlloc_02BFC is documented
+                        // `(void)a; // asm takes r0 but never reads it`, so this is the
+                        // same call, not a new argument.
+                        u32 obj = (u32)(uintptr_t)_08002BFC(adv);
+                        req[0] = obj;
+                        ((tmpl_fn)(uintptr_t)fnv)(rq);
+                        _08002C34(0, (void *)(uintptr_t)obj);
+                    }
+                    p++;
+                    x += lane;
+                }
+            }
         }
-        p++;
-        x += lane;
     }
 }
 // 0x08003FD4 — template 0x0802E250; obj[+12] = the sixth argument w5. The
@@ -667,32 +726,40 @@ void ObjList_03FD4(int sel, u32 x, u32 a2, u32 a3,
     req[5] = a3;
     while (*p) {
         rq = req;
-        extern u8 GlyphAdvTbl[];
+
         __asm__(".globl GlyphAdvTbl\nGlyphAdvTbl = 0x080C49A0\n");
-        register u32 c __asm__("r1") = *p;
-        __asm__("" : "+r"(c));
-        register u32 off __asm__("r0") = c << 1;
-        __asm__("" : "+r"(off));
-        register const s16 *tbl __asm__("r2") = (const s16 *)GlyphAdvTbl;
-        __asm__("" : "+r"(tbl));
-        adv = *(const s16 *)(off + (uintptr_t)tbl) - 1;
-        __asm__("" : : "r"(tbl));
-        req[1] = x & 0x1FF;
-        req[3] = (u32)adv;
-        if (adv >= 0) {
-            u32 obj = (u32)(uintptr_t)_08002BFC(x & 0x1FF);
-            register const u16 *pw5 __asm__("r0") =
-                (const u16 *)(uintptr_t)&w5;
-            __asm__("" : "+r"(pw5));
-            *(volatile u16 *)(uintptr_t)(obj + 12) = *pw5;
-            req[0] = obj;
-            register u32 *tmplReq __asm__("r0") = rq;
-            __asm__("" : "+r"(tmplReq));
-            ((tmpl_fn_03fd4)(uintptr_t)fnv)(tmplReq, w6, w7n);
-            _08002C34(0, (void *)(uintptr_t)obj);
+        {
+            register u32 c __asm__("r1") = *p;
+            __asm__("" : "+r"(c));
+            {
+                register u32 off __asm__("r0") = c << 1;
+                __asm__("" : "+r"(off));
+                {
+                    register const s16 *tbl __asm__("r2") = (const s16 *)GlyphAdvTbl;
+                    __asm__("" : "+r"(tbl));
+                    adv = *(const s16 *)(off + (uintptr_t)tbl) - 1;
+                    __asm__("" : : "r"(tbl));
+                    req[1] = x & 0x1FF;
+                    req[3] = (u32)adv;
+                    if (adv >= 0) {
+                        u32 obj = (u32)(uintptr_t)_08002BFC(x & 0x1FF);
+                        register const u16 *pw5 __asm__("r0") =
+                            (const u16 *)(uintptr_t)&w5;
+                        __asm__("" : "+r"(pw5));
+                        *(volatile u16 *)(uintptr_t)(obj + 12) = *pw5;
+                        req[0] = obj;
+                        {
+                            register u32 *tmplReq __asm__("r0") = rq;
+                            __asm__("" : "+r"(tmplReq));
+                            ((tmpl_fn_03fd4)(uintptr_t)fnv)(tmplReq, w6, w7n);
+                            _08002C34(0, (void *)(uintptr_t)obj);
+                        }
+                    }
+                    p++;
+                    x += lane;
+                }
+            }
         }
-        p++;
-        x += lane;
     }
 }
 void _08003350(int a, u32 b, u32 c, u32 d, const volatile u8 *e, u16 f)
@@ -1019,9 +1086,12 @@ int GlyphIndex_03B2C(int a)
 int GlyphIndex_03B34(int a)
 {
     int want = a + 1;
-    for (int i = 0; i <= 255; i++) {
-        if (*(volatile s16 *)(uintptr_t)(0x080C49A0 + (u32)i * 2) == want)
-            return i;
+    {
+        int i = 0;
+        for (; i <= 255; i++) {
+            if (*(volatile s16 *)(uintptr_t)(0x080C49A0 + (u32)i * 2) == want)
+                return i;
+        }
     }
     return 0;
 }
@@ -1117,8 +1187,8 @@ void _08003C48(int a, u32 b, int digit) __attribute__((alias("ObjDigit_03C48")))
 // (`register T v __asm__("rN")`), a GNU extension. Each pin names a register
 // the ROM actually uses and the instruction that forces it; agbcc's own
 // allocation is the mirror image (mask in r4, value in r2), which costs every
-// byte from +2 on. Each pin sits in its OWN declaration block: two pins in one
-// block make tools/agbcc_c89_transform.py bail with "budget exhausted".
+// byte from +2 on. Each pin sits in its OWN declaration block, the measured
+// shape that reproduces the ROM.
 //   i  -> r3  `adds r3,r2,#0` (0x8003c84): a copy of n, decremented in place.
 //   m  -> r2  `movs r2,#15` (0x8003c90, hoisted to the preheader) feeding the
 //            single `ands r0,r2` (0x8003c96). Pinning it also keeps r2 out of
@@ -1146,9 +1216,11 @@ void HexWrite_03C80(int val, volatile u8 *end, int n)
             register u32 m __asm__("r2") = 0xF;
             do {
                 p--;
-                s32 nib = (s32)(v & m);
-                *p = (u8)(nib <= 9 ? '0' + nib : 'A' + nib);
-                v >>= 4;
+                {
+                    s32 nib = (s32)(v & m);
+                    *p = (u8)(nib <= 9 ? '0' + nib : 'A' + nib);
+                    v >>= 4;
+                }
             } while (--i != 0);
         }
     }
@@ -1387,11 +1459,13 @@ void ObjIndexed_03F18(u32 x, u32 a1, const volatile u8 *str, int idx)
     register const volatile u8 *str8 __asm__("r8") = str;
     register int idx6 __asm__("r6") = idx;
     __asm__ volatile("" : "+r"(str8), "+r"(idx6));
-    u32 len = strlength_03148(str8);
-    volatile u8 buf[16];
-    sub_08003CB4(idx6, buf, 16);
-    sub_080038A4((int)x, a1, str8);
-    sub_080038A4((int)(x + len * 8), a1, buf);
+    {
+        u32 len = strlength_03148(str8);
+        volatile u8 buf[16];
+        sub_08003CB4(idx6, buf, 16);
+        sub_080038A4((int)x, a1, str8);
+        sub_080038A4((int)(x + len * 8), a1, buf);
+    }
 }
 void sub_08003F18(u32 a, u32 b, const volatile u8 *c, int d) __attribute__((alias("ObjIndexed_03F18")));
 void _08003F18(u32 a, u32 b, const volatile u8 *c, int d) __attribute__((alias("ObjIndexed_03F18")));
@@ -1567,17 +1641,20 @@ void SpriteFree_04180(u16 id)
     register volatile s32 *t __asm__("r0") =
         (volatile s32 *)(uintptr_t)0x03000178;
     volatile u8 *p = (volatile u8 *)(uintptr_t)t[0];
-    for (s32 i = 0; i < t[1]; i++, p += 16,
+    {
+        s32 i = 0;
+        for (; i < t[1]; i++, p += 16,
                    t = (volatile s32 *)(uintptr_t)0x03000178) {
-        if (*(volatile u16 *)(p + 2) != 0) {
-            // ROM compares with movs r1,#0; ldrsh r0,[r4,r1].
-            register s32 slotId __asm__("r0");
-            __asm__ volatile ("" : : : "memory");
-            slotId = *(const s16 *)(uintptr_t)p;
-            if (slotId == (s16)id) {
-                typedef void (*rel_fn)(u32);
-                ((rel_fn)(uintptr_t)*(volatile u32 *)(p + 4))
-                    (*(volatile u32 *)(p + 8));
+            if (*(volatile u16 *)(p + 2) != 0) {
+                // ROM compares with movs r1,#0; ldrsh r0,[r4,r1].
+                register s32 slotId __asm__("r0");
+                __asm__ volatile ("" : : : "memory");
+                slotId = *(const s16 *)(uintptr_t)p;
+                if (slotId == (s16)id) {
+                    typedef void (*rel_fn)(u32);
+                    ((rel_fn)(uintptr_t)*(volatile u32 *)(p + 4))
+                        (*(volatile u32 *)(p + 8));
+                }
             }
         }
     }
@@ -1685,26 +1762,32 @@ int CamSector_042C4(int a0, int a1, volatile u32 *out)
     out[0] = (u32)dx;
     if (_08005B5C(dx) > 0x20000)
         return 0;
-    s32 dy = a1 - (s32)cam[1];
-    out[1] = (u32)dy;
-    if (_08005B5C(dy) > 0x20000)
-        return 0;
-    volatile u32 *cell = (volatile u32 *)(uintptr_t)0x0203F6C0;
-    s32 crossA = (s32)cell[0];
-    s32 storedDy = (s32)out[1];
-    s32 crossLeft = crossA * storedDy;
-    s32 crossB = (s32)cell[1];
-    s32 storedDx = (s32)out[0];
-    s32 crossRight = crossB * storedDx;
-    s32 cross = crossLeft - crossRight;
-    if (cross > 0)
-        return 0;
-    s32 dotA = (s32)cell[2] * storedDy;
-    s32 dotB = (s32)cell[3] * storedDx;
-    s32 dot = dotA - dotB;
-    if (dot < 0)
-        return 0;
-    return 1;
+    {
+        s32 dy = a1 - (s32)cam[1];
+        out[1] = (u32)dy;
+        if (_08005B5C(dy) > 0x20000)
+            return 0;
+        {
+            volatile u32 *cell = (volatile u32 *)(uintptr_t)0x0203F6C0;
+            s32 crossA = (s32)cell[0];
+            s32 storedDy = (s32)out[1];
+            s32 crossLeft = crossA * storedDy;
+            s32 crossB = (s32)cell[1];
+            s32 storedDx = (s32)out[0];
+            s32 crossRight = crossB * storedDx;
+            s32 cross = crossLeft - crossRight;
+            if (cross > 0)
+                return 0;
+            {
+                s32 dotA = (s32)cell[2] * storedDy;
+                s32 dotB = (s32)cell[3] * storedDx;
+                s32 dot = dotA - dotB;
+                if (dot < 0)
+                    return 0;
+                return 1;
+            }
+        }
+    }
 }
 int sub_080042C4(int a, int b, volatile u32 *c) __attribute__((alias("CamSector_042C4")));
 
@@ -1797,23 +1880,27 @@ int TrackDigit_043B8(volatile u32 *rec)
     if ((camret << 24) == 0)
         return 0;
     _08005BA8(pt, *(const s16 *)(uintptr_t)0x0203F728);
-    s32 v = pt[1];
-    if ((u32)(v + (s32)0xFFFFDD9F) > 0x0001549Eu)
-        return 0;
-    rec[11] = (u32)(v >> 6);
-    extern u8 CellTbl03B8[];
-    __asm__("CellTbl03B8 = 0x0802E260");
-    u32 cellidx = (u32)(v >> 8) * 12;
-    const u8 *cell = (const u8 *)(uintptr_t)((u32)(uintptr_t)CellTbl03B8 + cellidx);
-    rec[9] = (u32)(120 - sub_0802DE04(pt[0] * 200, v));
     {
-        s32 d = sub_0802DE04(0x000ED800, v);
-        s32 glyph = *(const s16 *)(cell + 4);
-        glyph -= '0';
-        rec[10] = (u32)(d - glyph);
+        s32 v = pt[1];
+        if ((u32)(v + (s32)0xFFFFDD9F) > 0x0001549Eu)
+            return 0;
+        rec[11] = (u32)(v >> 6);
+
+        __asm__("CellTbl03B8 = 0x0802E260");
+        {
+            u32 cellidx = (u32)(v >> 8) * 12;
+            const u8 *cell = (const u8 *)(uintptr_t)((u32)(uintptr_t)CellTbl03B8 + cellidx);
+            rec[9] = (u32)(120 - sub_0802DE04(pt[0] * 200, v));
+            {
+                s32 d = sub_0802DE04(0x000ED800, v);
+                s32 glyph = *(const s16 *)(cell + 4);
+                glyph -= '0';
+                rec[10] = (u32)(d - glyph);
+            }
+            rec[15] = (u32)(uintptr_t)cell;
+            return 1;
+        }
     }
-    rec[15] = (u32)(uintptr_t)cell;
-    return 1;
 }
 // Span tail: gas closes the Thumb section with the 2-byte nop filler `c0 46`
 // where the ROM holds `00 00`. An explicit `.align 2, 0` in the still-open
@@ -1826,23 +1913,27 @@ int TrackDigit_04440(volatile u32 *rec)
     if ((camret << 24) == 0)
         return 0;
     _08005BA8(pt, *(const s16 *)(uintptr_t)0x0203F728);
-    s32 v = pt[1];
-    if ((u32)(v + (s32)0xFFFFDD9F) > 0x0001549Eu)
-        return 0;
-    rec[11] = (u32)(v >> 6);
-    extern u8 CellTbl04440[];
-    __asm__("CellTbl04440 = 0x0802FA60");
-    u32 cellidx = (u32)(v >> 8) * 8;
-    const u8 *cell = (const u8 *)(uintptr_t)((u32)(uintptr_t)CellTbl04440 + cellidx);
-    rec[9] = (u32)(120 - sub_0802DE04(pt[0] * 200, v));
     {
-        s32 d = sub_0802DE04(0x000ED800, v);
-        s32 glyph = *(const s16 *)(cell + 2);
-        glyph -= '0';
-        rec[10] = (u32)(d - glyph);
+        s32 v = pt[1];
+        if ((u32)(v + (s32)0xFFFFDD9F) > 0x0001549Eu)
+            return 0;
+        rec[11] = (u32)(v >> 6);
+
+        __asm__("CellTbl04440 = 0x0802FA60");
+        {
+            u32 cellidx = (u32)(v >> 8) * 8;
+            const u8 *cell = (const u8 *)(uintptr_t)((u32)(uintptr_t)CellTbl04440 + cellidx);
+            rec[9] = (u32)(120 - sub_0802DE04(pt[0] * 200, v));
+            {
+                s32 d = sub_0802DE04(0x000ED800, v);
+                s32 glyph = *(const s16 *)(cell + 2);
+                glyph -= '0';
+                rec[10] = (u32)(d - glyph);
+            }
+            rec[15] = (u32)(uintptr_t)cell;
+            return 1;
+        }
     }
-    rec[15] = (u32)(uintptr_t)cell;
-    return 1;
 }
 // Span tail: same `.align 2, 0` filler as TrackDigit_043B8 above.
 __asm__(".align 2, 0");
@@ -1857,19 +1948,25 @@ int TrackDigit_04508(volatile u32 *rec)
     r5[4] = (u32)glyph;
     r5[3] = 32u;
     r5[2] = (u32)(r6 >> 6);
-    register int numerator __asm__("r0") = 200 * (s32)r5[0];
-    register s32 denominator __asm__("r1") = r6;
-    r5[0] = (u32)(120 - sub_0802DE04(numerator, denominator));
-    register int constant __asm__("r0") = 0x000ED800;
-    denominator = r6;
-    register s32 quotient __asm__("r0") = sub_0802DE04(constant, denominator);
-    register int offset __asm__("r2") = 4;
-    register s32 digit __asm__("r1") = *(const s16 *)(r4 + offset);
-    digit -= '0';
-    quotient -= digit;
-    r5[1] = (u32)quotient;
-    r5[11] = (u32)(uintptr_t)r4;
-    return 1;
+    {
+        register int numerator __asm__("r0") = 200 * (s32)r5[0];
+        register s32 denominator __asm__("r1") = r6;
+        r5[0] = (u32)(120 - sub_0802DE04(numerator, denominator));
+        {
+            register int constant __asm__("r0") = 0x000ED800;
+            denominator = r6;
+            {
+                register s32 quotient __asm__("r0") = sub_0802DE04(constant, denominator);
+                register int offset __asm__("r2") = 4;
+                register s32 digit __asm__("r1") = *(const s16 *)(r4 + offset);
+                digit -= '0';
+                quotient -= digit;
+                r5[1] = (u32)quotient;
+                r5[11] = (u32)(uintptr_t)r4;
+                return 1;
+            }
+        }
+    }
 }
 int TrackArrow_044C4(int a0, int a1, volatile u32 *out)
 {
@@ -1881,10 +1978,12 @@ int TrackArrow_044C4(int a0, int a1, volatile u32 *out)
     }
     ap = (s16 *)(uintptr_t)0x0203F728;
     _08005BA8((void *)out, *ap);
-    s32 probe = (s32)out[1] + (s32)0xFFFFEBAF;
-    if ((u32)probe > 0x0001EBAE)
-        return 0;
-    return 1;
+    {
+        s32 probe = (s32)out[1] + (s32)0xFFFFEBAF;
+        if ((u32)probe > 0x0001EBAE)
+            return 0;
+        return 1;
+    }
 }
 // 0x04760/0x04818 — one body in ROM (0x04818 = push preamble falling into
 // 0x04760's register setup); both VMAs exported.
@@ -1894,31 +1993,41 @@ static int track_proj(volatile u32 *out, s32 sx, s32 sy, s32 sz, uintptr_t strip
     s32 dx = sx - (s32)cam[0];
     if (MathAbs(dx) > (192 << 9))
         return 0;
-    s32 dy = sy - (s32)cam[1];
-    if (MathAbs(dy) > (192 << 9))
-        return 0;
-    s32 ang = (s32)(0x800 - *(volatile u16 *)((u8 *)cam + 8)) & 0xFFF;
-    s32 pt[2] = { dx, dy };
-    MathRot(pt, ang);
-    s32 u = pt[1] + (s32)0xFFFFE890;
-    if ((u32)u > 0x00015BA8)
-        return 0;
-    s32 v = pt[0];
-    // cross gates exactly as written in the asm (u' = u + 2*v as loaded)
-    s32 up = u + 2 * v;
-    if (Div(-(60 * up), u) + 0 < 0)
-        return 0;
-    if (-(60 * up) > 0)
-        return 0;
-    s32 col = u >> 8;
-    const u8 *rec = (const u8 *)(uintptr_t)(strip + (u32)((col * 2 + col) * 2));
-    *(volatile u16 *)((u8 *)out + 54) = *(volatile u16 *)rec;
-    *(volatile s32 *)((u8 *)out + 48) = *(volatile s16 *)(rec + 2);
-    *(volatile s32 *)((u8 *)out + 44) = col;
-    *(volatile s32 *)((u8 *)out + 36) = 120 + Div(-(60 * up), col);
-    *(volatile s32 *)((u8 *)out + 40) = *(volatile s16 *)(rec + 4);
-    (void)sz;
-    return 1;
+    {
+        s32 dy = sy - (s32)cam[1];
+        if (MathAbs(dy) > (192 << 9))
+            return 0;
+        {
+            s32 ang = (s32)(0x800 - *(volatile u16 *)((u8 *)cam + 8)) & 0xFFF;
+            s32 pt[2] = { dx, dy };
+            MathRot(pt, ang);
+            {
+                s32 u = pt[1] + (s32)0xFFFFE890;
+                if ((u32)u > 0x00015BA8)
+                    return 0;
+                {
+                    s32 v = pt[0];
+                    // cross gates exactly as written in the asm (u' = u + 2*v as loaded)
+                    s32 up = u + 2 * v;
+                    if (Div(-(60 * up), u) + 0 < 0)
+                        return 0;
+                    if (-(60 * up) > 0)
+                        return 0;
+                    {
+                        s32 col = u >> 8;
+                        const u8 *rec = (const u8 *)(uintptr_t)(strip + (u32)((col * 2 + col) * 2));
+                        *(volatile u16 *)((u8 *)out + 54) = *(volatile u16 *)rec;
+                        *(volatile s32 *)((u8 *)out + 48) = *(volatile s16 *)(rec + 2);
+                        *(volatile s32 *)((u8 *)out + 44) = col;
+                        *(volatile s32 *)((u8 *)out + 36) = 120 + Div(-(60 * up), col);
+                        *(volatile s32 *)((u8 *)out + 40) = *(volatile s16 *)(rec + 4);
+                        (void)sz;
+                        return 1;
+                    }
+                }
+            }
+        }
+    }
 }
 int TrackProjectObject_04758(volatile u8 *obj)
 {
@@ -1929,57 +2038,83 @@ int TrackProjectObject_04758(volatile u8 *obj)
     point[0] = dx;
     if (RM_CALLEE(MathAbs, _08005B5C)(dx) > (192 << 9))
         return 0;
-    s32 dy = (s32)*(volatile s32 *)(obj + 8) - (s32)cam[1];
-    point[1] = dy;
-    if (RM_CALLEE(MathAbs, _08005B5C)(dy) > (192 << 9))
-        return 0;
-    register s32 angleBase __asm__("r0") = 0x800;
-    __asm__ volatile("" : "+r"(angleBase));
-    register s32 angle __asm__("r1") = angleBase;
-    __asm__ volatile("" : "+r"(angle) : : "memory");
-    register u32 angleValue __asm__("r4") =
-        *(volatile u16 *)((volatile u8 *)cam + 8);
-    /* The ROM reuses r4 for this halfword value before the subtract. */
-    __asm__ volatile("" : "+r"(angleValue));
-    angle -= (s32)angleValue;
-    register s32 angleMask __asm__("r2") = 0xFFF;
-    __asm__ volatile("" : "+r"(angleMask));
-    register s32 angleMaskValue __asm__("r0") = angleMask;
-    __asm__ volatile("" : "+r"(angleMaskValue) : : "memory");
-    angle &= angleMaskValue;
-    RM_CALLEE(MathRot, sub_08005BA8)(point, angle);
-    register s32 y __asm__("r6") = point[1];
-    register s32 rowBias __asm__("r3") = (s32)0xFFFFE890;
-    __asm__ volatile("" : "+r"(rowBias) : : "memory");
-    register s32 row __asm__("r1") = y + rowBias;
-    if ((u32)row > 0x00015BA8u)
-        return 0;
-    register s32 y8 __asm__("r3") = y << 3;
-    __asm__ volatile("" : "+r"(y8) : : "memory");
-    register s32 x __asm__("r2") = point[0];
-    register s32 x8 __asm__("r0") = x << 3;
-    register s32 x7 __asm__("r1") = x8 - x;
-    register s32 clip __asm__("r0") = y8 - x7;
-    if (clip < 0)
-        return 0;
-    clip = -y8 - x7;
-    if (clip > 0)
-        return 0;
-    register s32 col __asm__("r1") = y >> 8;
-    register s32 tableOffset __asm__("r4") = col * 6;
-    __asm__ volatile("" : "+r"(tableOffset) : : "memory");
-    register uintptr_t tableBase __asm__("r0") = 0x080C53E4u;
-    __asm__ volatile("" : "+r"(tableBase) : : "memory");
-    register const u8 *record __asm__("r4") =
-        (const u8 *)(tableOffset + tableBase);
-    *(volatile u16 *)(obj + 54) = *(const u16 *)record;
-    record += 2;
-    *(volatile s32 *)(obj + 48) = *(const s16 *)record;
-    record += 2;
-    *(volatile s32 *)(obj + 44) = col;
-    *(volatile s32 *)(obj + 36) = 120 + sub_0802DE04(-180 * x, y);
-    *(volatile s32 *)(obj + 40) = *(const s16 *)record;
-    return 1;
+    {
+        s32 dy = (s32)*(volatile s32 *)(obj + 8) - (s32)cam[1];
+        point[1] = dy;
+        if (RM_CALLEE(MathAbs, _08005B5C)(dy) > (192 << 9))
+            return 0;
+        {
+            register s32 angleBase __asm__("r0") = 0x800;
+            __asm__ volatile("" : "+r"(angleBase));
+            {
+                register s32 angle __asm__("r1") = angleBase;
+                __asm__ volatile("" : "+r"(angle) : : "memory");
+                {
+                    register u32 angleValue __asm__("r4") =
+                        *(volatile u16 *)((volatile u8 *)cam + 8);
+                    /* The ROM reuses r4 for this halfword value before the subtract. */
+                    __asm__ volatile("" : "+r"(angleValue));
+                    angle -= (s32)angleValue;
+                    {
+                        register s32 angleMask __asm__("r2") = 0xFFF;
+                        __asm__ volatile("" : "+r"(angleMask));
+                        {
+                            register s32 angleMaskValue __asm__("r0") = angleMask;
+                            __asm__ volatile("" : "+r"(angleMaskValue) : : "memory");
+                            angle &= angleMaskValue;
+                            RM_CALLEE(MathRot, sub_08005BA8)(point, angle);
+                            {
+                                register s32 y __asm__("r6") = point[1];
+                                register s32 rowBias __asm__("r3") = (s32)0xFFFFE890;
+                                __asm__ volatile("" : "+r"(rowBias) : : "memory");
+                                {
+                                    register s32 row __asm__("r1") = y + rowBias;
+                                    if ((u32)row > 0x00015BA8u)
+                                        return 0;
+                                    {
+                                        register s32 y8 __asm__("r3") = y << 3;
+                                        __asm__ volatile("" : "+r"(y8) : : "memory");
+                                        {
+                                            register s32 x __asm__("r2") = point[0];
+                                            register s32 x8 __asm__("r0") = x << 3;
+                                            register s32 x7 __asm__("r1") = x8 - x;
+                                            register s32 clip __asm__("r0") = y8 - x7;
+                                            if (clip < 0)
+                                                return 0;
+                                            clip = -y8 - x7;
+                                            if (clip > 0)
+                                                return 0;
+                                            {
+                                                register s32 col __asm__("r1") = y >> 8;
+                                                register s32 tableOffset __asm__("r4") = col * 6;
+                                                __asm__ volatile("" : "+r"(tableOffset) : : "memory");
+                                                {
+                                                    register uintptr_t tableBase __asm__("r0") = 0x080C53E4u;
+                                                    __asm__ volatile("" : "+r"(tableBase) : : "memory");
+                                                    {
+                                                        register const u8 *record __asm__("r4") =
+                                                            (const u8 *)(tableOffset + tableBase);
+                                                        *(volatile u16 *)(obj + 54) = *(const u16 *)record;
+                                                        record += 2;
+                                                        *(volatile s32 *)(obj + 48) = *(const s16 *)record;
+                                                        record += 2;
+                                                        *(volatile s32 *)(obj + 44) = col;
+                                                        *(volatile s32 *)(obj + 36) = 120 + sub_0802DE04(-180 * x, y);
+                                                        *(volatile s32 *)(obj + 40) = *(const s16 *)record;
+                                                        return 1;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 __asm__(".align 2, 0");
 int TrackProj_04760(volatile u32 *out, int a0, int a1, int a2)
@@ -2007,57 +2142,81 @@ int TrackProj_04818(volatile u8 *obj_)
     point[0] = dx;
     if (RM_CALLEE(MathAbs, _08005B5C)(dx) > (192 << 9))
         return 0;
-    s32 dy = (s32)*(volatile s32 *)(obj + 4) - (s32)cam[1];
-    point[1] = dy;
-    if (RM_CALLEE(MathAbs, _08005B5C)(dy) > (192 << 9))
-        return 0;
-    register s32 angleBase __asm__("r0") = 0x800;
-    __asm__ volatile("" : "+r"(angleBase));
-    register s32 angle __asm__("r1") = angleBase;
-    __asm__ volatile("" : "+r"(angle) : : "memory");
-    register u32 angleValue __asm__("r4") =
-        *(volatile u16 *)((volatile u8 *)cam + 8);
-    /* The ROM reuses r4 for this halfword value before the subtract. */
-    __asm__ volatile("" : "+r"(angleValue));
-    angle -= (s32)angleValue;
-    register s32 angleMask __asm__("r2") = 0xFFF;
-    __asm__ volatile("" : "+r"(angleMask));
-    register s32 angleMaskValue __asm__("r0") = angleMask;
-    __asm__ volatile("" : "+r"(angleMaskValue) : : "memory");
-    angle &= angleMaskValue;
-    RM_CALLEE(MathRot, sub_08005BA8)(point, angle);
-    register s32 y __asm__("r2") = point[1];
-    register s32 rowBias __asm__("r3") = (s32)0xFFFFF448;
-    __asm__ volatile("" : "+r"(rowBias) : : "memory");
-    register s32 row __asm__("r1") = y + rowBias;
-    if ((u32)row > 0x0000DEA8u)
-        return 0;
-    // NB: read point[0] straight from the array in both places -- the ROM
-    // keeps x in its stack home (`ldr r1,[sp,#0]` for the gates, `ldr r0,[sp,#0]`
-    // again for the divider argument), so a pinned `x` local costs the reload.
-    register s32 clip __asm__("r0") = y - point[0];
-    if (clip < 0)
-        return 0;
-    clip = -y - point[0];
-    if (clip > 0)
-        return 0;
-    register s32 col __asm__("r1") = y >> 6;
-    register s32 tableOffset __asm__("r4") = col * 6;
-    __asm__ volatile("" : "+r"(tableOffset) : : "memory");
-    register uintptr_t tableBase __asm__("r0") = 0x080C5FE4u;
-    __asm__ volatile("" : "+r"(tableBase) : : "memory");
-    register const u8 *record __asm__("r4") =
-        (const u8 *)(tableOffset + tableBase);
-    register volatile u32 *dst __asm__("r5") =
-        *(volatile u32 *volatile *)(obj + 8);
-    *(volatile u32 *)(dst + 4) = *(const s16 *)record;
-    record += 2;
-    *(volatile s32 *)(dst + 3) = *(const s16 *)record;
-    record += 2;
-    *(volatile s32 *)(dst + 2) = col;
-    *(volatile s32 *)dst = 120 + sub_0802DE04(-180 * point[0], y);
-    *(volatile s32 *)(dst + 1) = *(const s16 *)record;
-    return 1;
+    {
+        s32 dy = (s32)*(volatile s32 *)(obj + 4) - (s32)cam[1];
+        point[1] = dy;
+        if (RM_CALLEE(MathAbs, _08005B5C)(dy) > (192 << 9))
+            return 0;
+        {
+            register s32 angleBase __asm__("r0") = 0x800;
+            __asm__ volatile("" : "+r"(angleBase));
+            {
+                register s32 angle __asm__("r1") = angleBase;
+                __asm__ volatile("" : "+r"(angle) : : "memory");
+                {
+                    register u32 angleValue __asm__("r4") =
+                        *(volatile u16 *)((volatile u8 *)cam + 8);
+                    /* The ROM reuses r4 for this halfword value before the subtract. */
+                    __asm__ volatile("" : "+r"(angleValue));
+                    angle -= (s32)angleValue;
+                    {
+                        register s32 angleMask __asm__("r2") = 0xFFF;
+                        __asm__ volatile("" : "+r"(angleMask));
+                        {
+                            register s32 angleMaskValue __asm__("r0") = angleMask;
+                            __asm__ volatile("" : "+r"(angleMaskValue) : : "memory");
+                            angle &= angleMaskValue;
+                            RM_CALLEE(MathRot, sub_08005BA8)(point, angle);
+                            {
+                                register s32 y __asm__("r2") = point[1];
+                                register s32 rowBias __asm__("r3") = (s32)0xFFFFF448;
+                                __asm__ volatile("" : "+r"(rowBias) : : "memory");
+                                {
+                                    register s32 row __asm__("r1") = y + rowBias;
+                                    if ((u32)row > 0x0000DEA8u)
+                                        return 0;
+                                    // NB: read point[0] straight from the array in both places -- the ROM
+                                    // keeps x in its stack home (`ldr r1,[sp,#0]` for the gates, `ldr r0,[sp,#0]`
+                                    // again for the divider argument), so a pinned `x` local costs the reload.
+                                    {
+                                        register s32 clip __asm__("r0") = y - point[0];
+                                        if (clip < 0)
+                                            return 0;
+                                        clip = -y - point[0];
+                                        if (clip > 0)
+                                            return 0;
+                                        {
+                                            register s32 col __asm__("r1") = y >> 6;
+                                            register s32 tableOffset __asm__("r4") = col * 6;
+                                            __asm__ volatile("" : "+r"(tableOffset) : : "memory");
+                                            {
+                                                register uintptr_t tableBase __asm__("r0") = 0x080C5FE4u;
+                                                __asm__ volatile("" : "+r"(tableBase) : : "memory");
+                                                {
+                                                    register const u8 *record __asm__("r4") =
+                                                        (const u8 *)(tableOffset + tableBase);
+                                                    register volatile u32 *dst __asm__("r5") =
+                                                        *(volatile u32 *volatile *)(obj + 8);
+                                                    *(volatile u32 *)(dst + 4) = *(const s16 *)record;
+                                                    record += 2;
+                                                    *(volatile s32 *)(dst + 3) = *(const s16 *)record;
+                                                    record += 2;
+                                                    *(volatile s32 *)(dst + 2) = col;
+                                                    *(volatile s32 *)dst = 120 + sub_0802DE04(-180 * point[0], y);
+                                                    *(volatile s32 *)(dst + 1) = *(const s16 *)record;
+                                                    return 1;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 // The 192-byte ROM span ends `... 20 01 00 00` (zero fill after the final
 // `movs r0,#1`); gas pads code with the Thumb NOP unless the zero fill is
@@ -2105,24 +2264,26 @@ void BgRot_04564(void)
     register s32 idx __asm__("r1");
     __asm__("" : "+r" (angle));
     idx = (s32)((angle << 20) >> 23);
-    s32 dest = (s32)src[3] + (208 << 2);
-    extern u8 RSB[] __asm__("RSB");
-    const u8 *rec;
-    int n;
-    __asm__(".globl RSB\nRSB = 0x08033260\n");
-    rec = (const u8 *)(RSB + (u32)(idx * 1296));
-    n = 107;
-    do {
-        volatile u8 *d = (volatile u8 *)(uintptr_t)dest;
-        volatile u32 *dw = (volatile u32 *)(uintptr_t)dest;
-        dw[2] = (u32)(x + *(volatile s32 *)(rec + 0));
-        dw[3] = (u32)(y - *(volatile s32 *)(rec + 4));
-        *(volatile u16 *)(d + 0) = *(volatile u16 *)(rec + 8);
-        *(volatile u16 *)(d + 4) = *(volatile u16 *)(rec + 10);
-        dest += 16;
-        rec += 12;
-        n--;
-    } while (n >= 0);
+    {
+        s32 dest = (s32)src[3] + (208 << 2);
+        extern u8 RSB[] __asm__("RSB");
+        const u8 *rec;
+        int n;
+        __asm__(".globl RSB\nRSB = 0x08033260\n");
+        rec = (const u8 *)(RSB + (u32)(idx * 1296));
+        n = 107;
+        do {
+            volatile u8 *d = (volatile u8 *)(uintptr_t)dest;
+            volatile u32 *dw = (volatile u32 *)(uintptr_t)dest;
+            dw[2] = (u32)(x + *(volatile s32 *)(rec + 0));
+            dw[3] = (u32)(y - *(volatile s32 *)(rec + 4));
+            *(volatile u16 *)(d + 0) = *(volatile u16 *)(rec + 8);
+            *(volatile u16 *)(d + 4) = *(volatile u16 *)(rec + 10);
+            dest += 16;
+            rec += 12;
+            n--;
+        } while (n >= 0);
+    }
 }
 void BgRot_045B8(void)
 {
@@ -2135,31 +2296,37 @@ void BgRot_045B8(void)
     register s32 idx __asm__("r1");
     __asm__("" : "+r" (angle));
     idx = (s32)((angle << 20) >> 23);
-    s32 dest;
-    extern u8 RSB045B8[] __asm__("RSB045B8");
-    const u8 *rec;
-    int n;
-    __asm__(".globl RSB045B8\nRSB045B8 = 0x08033260\n");
-    idx -= 128;
-    dest = (s32)src[3] + (208 << 2);
-    rec = (const u8 *)(RSB045B8 + (u32)(idx * 1296));
-    n = 107;
-    do {
-        volatile u8 *d = (volatile u8 *)(uintptr_t)dest;
-        volatile u32 *dw = (volatile u32 *)(uintptr_t)dest;
-        dw[2] = (u32)(x + *(volatile s32 *)(rec + 4));
-        dw[3] = (u32)(y + *(volatile s32 *)(rec + 0));
-        register u32 negv __asm__("r6") = *(volatile u16 *)(rec + 10);
-        // Keep the ROM's r6 input live so agbcc preserves the x/y allocation.
-        __asm__ volatile ("" : "+r"(negv));
-        register u32 negresult __asm__("r0");
-        negresult = 0u - negv;
-        *(volatile u16 *)(d + 0) = (u16)negresult;
-        *(volatile u16 *)(d + 4) = *(volatile u16 *)(rec + 8);
-        dest += 16;
-        rec += 12;
-        n--;
-    } while (n >= 0);
+    {
+        s32 dest;
+        extern u8 RSB045B8[] __asm__("RSB045B8");
+        const u8 *rec;
+        int n;
+        __asm__(".globl RSB045B8\nRSB045B8 = 0x08033260\n");
+        idx -= 128;
+        dest = (s32)src[3] + (208 << 2);
+        rec = (const u8 *)(RSB045B8 + (u32)(idx * 1296));
+        n = 107;
+        do {
+            volatile u8 *d = (volatile u8 *)(uintptr_t)dest;
+            volatile u32 *dw = (volatile u32 *)(uintptr_t)dest;
+            dw[2] = (u32)(x + *(volatile s32 *)(rec + 4));
+            dw[3] = (u32)(y + *(volatile s32 *)(rec + 0));
+            {
+                register u32 negv __asm__("r6") = *(volatile u16 *)(rec + 10);
+                // Keep the ROM's r6 input live so agbcc preserves the x/y allocation.
+                __asm__ volatile ("" : "+r"(negv));
+                {
+                    register u32 negresult __asm__("r0");
+                    negresult = 0u - negv;
+                    *(volatile u16 *)(d + 0) = (u16)negresult;
+                    *(volatile u16 *)(d + 4) = *(volatile u16 *)(rec + 8);
+                    dest += 16;
+                    rec += 12;
+                    n--;
+                }
+            }
+        } while (n >= 0);
+    }
 }
 void BgRot_04610(void)
 {
@@ -2174,39 +2341,47 @@ void BgRot_04610(void)
     register s32 dest_offset __asm__("r6");
     __asm__("" : "+r" (angle));
     idx = (s32)((angle << 20) >> 23);
-    s32 dest;
-    extern u8 RSB04610[] __asm__("RSB04610");
-    const u8 *rec;
-    int n;
-    __asm__(".globl RSB04610\nRSB04610 = 0x08033260\n");
-    register s32 idx_delta __asm__("r3") = (s32)0xFFFFFF00;
-    __asm__("" : "+r" (idx_delta));
-    idx += idx_delta;
-    dest_base = (s32)src[3];
-    dest_offset = 208;
-    __asm__("" : "+r" (dest_offset));
-    dest = dest_base + (dest_offset << 2);
-    rec = (const u8 *)(RSB04610 + (u32)(idx * 1296));
-    n = 107;
-    do {
-        volatile u8 *d = (volatile u8 *)(uintptr_t)dest;
-        volatile u32 *dw = (volatile u32 *)(uintptr_t)dest;
-        dw[2] = (u32)(x - *(volatile s32 *)(rec + 0));
-        dw[3] = (u32)(y + *(volatile s32 *)(rec + 4));
-        register u32 negv __asm__("r6") = *(volatile u16 *)(rec + 8);
-        /* Keep r6 live for both of the ROM's neg r0, r6 operations. */
-        __asm__ volatile ("" : "+r"(negv));
-        register u32 negresult __asm__("r0");
-        negresult = 0u - negv;
-        *(volatile u16 *)(d + 0) = (u16)negresult;
-        negv = *(volatile u16 *)(rec + 10);
-        __asm__ volatile ("" : "+r"(negv));
-        negresult = 0u - negv;
-        *(volatile u16 *)(d + 4) = (u16)negresult;
-        dest += 16;
-        rec += 12;
-        n--;
-    } while (n >= 0);
+    {
+        s32 dest;
+        extern u8 RSB04610[] __asm__("RSB04610");
+        const u8 *rec;
+        int n;
+        __asm__(".globl RSB04610\nRSB04610 = 0x08033260\n");
+        {
+            register s32 idx_delta __asm__("r3") = (s32)0xFFFFFF00;
+            __asm__("" : "+r" (idx_delta));
+            idx += idx_delta;
+            dest_base = (s32)src[3];
+            dest_offset = 208;
+            __asm__("" : "+r" (dest_offset));
+            dest = dest_base + (dest_offset << 2);
+            rec = (const u8 *)(RSB04610 + (u32)(idx * 1296));
+            n = 107;
+            do {
+                volatile u8 *d = (volatile u8 *)(uintptr_t)dest;
+                volatile u32 *dw = (volatile u32 *)(uintptr_t)dest;
+                dw[2] = (u32)(x - *(volatile s32 *)(rec + 0));
+                dw[3] = (u32)(y + *(volatile s32 *)(rec + 4));
+                {
+                    register u32 negv __asm__("r6") = *(volatile u16 *)(rec + 8);
+                    /* Keep r6 live for both of the ROM's neg r0, r6 operations. */
+                    __asm__ volatile ("" : "+r"(negv));
+                    {
+                        register u32 negresult __asm__("r0");
+                        negresult = 0u - negv;
+                        *(volatile u16 *)(d + 0) = (u16)negresult;
+                        negv = *(volatile u16 *)(rec + 10);
+                        __asm__ volatile ("" : "+r"(negv));
+                        negresult = 0u - negv;
+                        *(volatile u16 *)(d + 4) = (u16)negresult;
+                        dest += 16;
+                        rec += 12;
+                        n--;
+                    }
+                }
+            } while (n >= 0);
+        }
+    }
 }
 void BgRot_04670(void)
 {
@@ -2221,36 +2396,44 @@ void BgRot_04670(void)
     register s32 dest_offset __asm__("r6");
     __asm__("" : "+r" (angle));
     idx = (s32)((angle << 20) >> 23);
-    s32 dest;
-    extern u8 RSB04670[] __asm__("RSB04670");
-    const u8 *rec;
-    int n;
-    __asm__(".globl RSB04670\nRSB04670 = 0x08033260\n");
-    register s32 idx_delta __asm__("r3") = (s32)0xFFFFFE80;
-    __asm__("" : "+r" (idx_delta));
-    idx += idx_delta;
-    dest_base = (s32)src[3];
-    dest_offset = 208;
-    __asm__("" : "+r" (dest_offset));
-    dest = dest_base + (dest_offset << 2);
-    rec = (const u8 *)(RSB04670 + (u32)(idx * 1296));
-    n = 107;
-    do {
-        volatile u8 *d = (volatile u8 *)(uintptr_t)dest;
-        volatile u32 *dw = (volatile u32 *)(uintptr_t)dest;
-        dw[2] = (u32)(x - *(volatile s32 *)(rec + 4));
-        dw[3] = (u32)(y - *(volatile s32 *)(rec + 0));
-        *(volatile u16 *)(d + 0) = *(volatile u16 *)(rec + 10);
-        register u32 negv __asm__("r6") = *(volatile u16 *)(rec + 8);
-        /* Keep the ROM's r6 input live so agbcc preserves the x/y allocation. */
-        __asm__ volatile ("" : "+r"(negv));
-        register u32 negresult __asm__("r0");
-        negresult = 0u - negv;
-        *(volatile u16 *)(d + 4) = (u16)negresult;
-        dest += 16;
-        rec += 12;
-        n--;
-    } while (n >= 0);
+    {
+        s32 dest;
+        extern u8 RSB04670[] __asm__("RSB04670");
+        const u8 *rec;
+        int n;
+        __asm__(".globl RSB04670\nRSB04670 = 0x08033260\n");
+        {
+            register s32 idx_delta __asm__("r3") = (s32)0xFFFFFE80;
+            __asm__("" : "+r" (idx_delta));
+            idx += idx_delta;
+            dest_base = (s32)src[3];
+            dest_offset = 208;
+            __asm__("" : "+r" (dest_offset));
+            dest = dest_base + (dest_offset << 2);
+            rec = (const u8 *)(RSB04670 + (u32)(idx * 1296));
+            n = 107;
+            do {
+                volatile u8 *d = (volatile u8 *)(uintptr_t)dest;
+                volatile u32 *dw = (volatile u32 *)(uintptr_t)dest;
+                dw[2] = (u32)(x - *(volatile s32 *)(rec + 4));
+                dw[3] = (u32)(y - *(volatile s32 *)(rec + 0));
+                *(volatile u16 *)(d + 0) = *(volatile u16 *)(rec + 10);
+                {
+                    register u32 negv __asm__("r6") = *(volatile u16 *)(rec + 8);
+                    /* Keep the ROM's r6 input live so agbcc preserves the x/y allocation. */
+                    __asm__ volatile ("" : "+r"(negv));
+                    {
+                        register u32 negresult __asm__("r0");
+                        negresult = 0u - negv;
+                        *(volatile u16 *)(d + 4) = (u16)negresult;
+                        dest += 16;
+                        rec += 12;
+                        n--;
+                    }
+                }
+            } while (n >= 0);
+        }
+    }
 }
 void sub_08004564(void) __attribute__((alias("BgRot_04564")));
 void sub_080045B8(void) __attribute__((alias("BgRot_045B8")));
@@ -2295,48 +2478,50 @@ void BgRotDispatch_046D0(void)
 
     *(volatile u16 *)(src + 10) = 52;
     angle = *(volatile s16 *)(src + 8);
-    register s32 mid __asm__("r0") = (s32)angle << 16;
-    switch ((mid >> 26) & 3) {
-    // Promotion rule 6, the shape this file already uses at the top: the
-    // closure spells these four addresses `_08004564`/`sub_08004564` etc
-    // (asm/runtime_2aac.s:3547-3549, 3637-3639, 3686-3688), so a promoted body
-    // must CALL that spelling -- the splice can only export a name agbcc
-    // wrote, and the friendly `BgRot_*` name is one it does not write.
-    case 0: _08004564(); break;
-    case 1: _080045B8(); break;
-    case 2: _08004610(); break;
-    case 3: _08004670(); break;
-    }
     {
-    // `hi` is declared BEFORE `lo`, and that ORDER is load-bearing: it decides
-    // which address constant agbcc materialises first, and the ROM loads
-    // 0x0203F724 into r3 at 0x08004718 BEFORE 0x0203F700 into r1 at
-    // 0x0800471A, with the pool words in that same order at 0x08004734/38.
-    // Declared second, `lo` wins the race and both the two `ldr`s and the two
-    // pool words swap (104/108, first diff +0x49).
-    register volatile u16 *hi __asm__("r3") = (volatile u16 *)(uintptr_t)0x0203F724;
-    volatile u16 *lo = (volatile u16 *)(uintptr_t)0x0203F700;
-    // Pinned to r3 because agbcc rematerialises a single-use address constant:
-    // unpinned it sinks the 0x0203F724 load to the store at the end of the
-    // function instead of holding it live in r3 across the clear loop for its
-    // one use (0x0800472C `strh r0,[r3]`). The pin reaches the ROM's shape
-    // honestly. The alternative lever found -- giving `hi` a SECOND use
-    // by duplicating the `*hi = 0` store, 91/108 -- is a fidelity lie, since
-    // the ROM has one use. Forcing a definition point with an assignment
-    // expression does not work either: agbcc still sinks the load to the use.
-    // Hoisting the clear value into a named u16 is load-bearing too: it gives
-    // the `movs r2,#0` a definition point BEFORE the loop, which is where the
-    // ROM has it (0x0800471C). As the literal `0` in the store, agbcc sinks
-    // the materialisation past `adds r0,r1,#0` / `adds r0,#34` to 0x08004720
-    // (96/108). The `u16` width matters: a `u8`/`u32` value changes the store
-    // or the sign of the clear.
-    u16 z = 0;
-    volatile u8 *p = (volatile u8 *)lo + 34;
-    while ((s32)(uintptr_t)p >= (s32)(uintptr_t)lo) {
-        *(volatile u16 *)(uintptr_t)p = z;
-        p -= 2;
-    }
-    *(volatile u16 *)(uintptr_t)hi = 0;
+        register s32 mid __asm__("r0") = (s32)angle << 16;
+        switch ((mid >> 26) & 3) {
+        // Promotion rule 6, the shape this file already uses at the top: the
+        // closure spells these four addresses `_08004564`/`sub_08004564` etc
+        // (asm/runtime_2aac.s:3547-3549, 3637-3639, 3686-3688), so a promoted body
+        // must CALL that spelling -- the splice can only export a name agbcc
+        // wrote, and the friendly `BgRot_*` name is one it does not write.
+        case 0: _08004564(); break;
+        case 1: _080045B8(); break;
+        case 2: _08004610(); break;
+        case 3: _08004670(); break;
+        }
+        {
+        // `hi` is declared BEFORE `lo`, and that ORDER is load-bearing: it decides
+        // which address constant agbcc materialises first, and the ROM loads
+        // 0x0203F724 into r3 at 0x08004718 BEFORE 0x0203F700 into r1 at
+        // 0x0800471A, with the pool words in that same order at 0x08004734/38.
+        // Declared second, `lo` wins the race and both the two `ldr`s and the two
+        // pool words swap (104/108, first diff +0x49).
+        register volatile u16 *hi __asm__("r3") = (volatile u16 *)(uintptr_t)0x0203F724;
+        volatile u16 *lo = (volatile u16 *)(uintptr_t)0x0203F700;
+        // Pinned to r3 because agbcc rematerialises a single-use address constant:
+        // unpinned it sinks the 0x0203F724 load to the store at the end of the
+        // function instead of holding it live in r3 across the clear loop for its
+        // one use (0x0800472C `strh r0,[r3]`). The pin reaches the ROM's shape
+        // honestly. The alternative lever found -- giving `hi` a SECOND use
+        // by duplicating the `*hi = 0` store, 91/108 -- is a fidelity lie, since
+        // the ROM has one use. Forcing a definition point with an assignment
+        // expression does not work either: agbcc still sinks the load to the use.
+        // Hoisting the clear value into a named u16 is load-bearing too: it gives
+        // the `movs r2,#0` a definition point BEFORE the loop, which is where the
+        // ROM has it (0x0800471C). As the literal `0` in the store, agbcc sinks
+        // the materialisation past `adds r0,r1,#0` / `adds r0,#34` to 0x08004720
+        // (96/108). The `u16` width matters: a `u8`/`u32` value changes the store
+        // or the sign of the clear.
+        u16 z = 0;
+        volatile u8 *p = (volatile u8 *)lo + 34;
+        while ((s32)(uintptr_t)p >= (s32)(uintptr_t)lo) {
+            *(volatile u16 *)(uintptr_t)p = z;
+            p -= 2;
+        }
+        *(volatile u16 *)(uintptr_t)hi = 0;
+        }
     }
 }
 void sub_080046D0(void) __attribute__((alias("BgRotDispatch_046D0")));
@@ -2427,10 +2612,12 @@ void *HeapBump_049C4(u32 n)
     }
     *cur = old + n;
     *rem = *rem - n;
-    u32 mode = ((n << 9) >> 11) | 0x050000A0u;
-    u32 zero = 0;
-    CpuFastSet(&zero, (void *)(uintptr_t)old, mode);
-    return (void *)(uintptr_t)old;
+    {
+        u32 mode = ((n << 9) >> 11) | 0x050000A0u;
+        u32 zero = 0;
+        CpuFastSet(&zero, (void *)(uintptr_t)old, mode);
+        return (void *)(uintptr_t)old;
+    }
 }
 void HeapSnap_04A10(void)
 {
@@ -2461,18 +2648,20 @@ void sub_08004A10(void) __attribute__((alias("HeapSnap_04A10")));
 void *ObjAlloc_02BFC(int a)
 {
     (void)a; // asm takes r0 but never reads it
-    volatile u32 *cur = (volatile u32 *)(uintptr_t)0x03000154;
-    u32 ret = *cur;
-    volatile int *cnt = (volatile int *)(uintptr_t)0x03000150;
-    int c = *cnt;
-    if (c > 0) {
-        *cnt = c - 1;
-        *cur = ret + 16;
-    } else {
-        // ROM `bl 0x0800295C` (asm/code_295c.s).
-        _0800295C((u32)(uintptr_t)0x0802E204, 0);
+    {
+        volatile u32 *cur = (volatile u32 *)(uintptr_t)0x03000154;
+        u32 ret = *cur;
+        volatile int *cnt = (volatile int *)(uintptr_t)0x03000150;
+        int c = *cnt;
+        if (c > 0) {
+            *cnt = c - 1;
+            *cur = ret + 16;
+        } else {
+            // ROM `bl 0x0800295C` (asm/code_295c.s).
+            _0800295C((u32)(uintptr_t)0x0802E204, 0);
+        }
+        return (void *)(uintptr_t)ret;
     }
-    return (void *)(uintptr_t)ret;
 }
 void *sub_08002BFC(int a) __attribute__((alias("ObjAlloc_02BFC")));
 void *_08002BFC(int a) __attribute__((alias("ObjAlloc_02BFC")));
@@ -2519,58 +2708,64 @@ void ObjFlush_02C98(void){
     volatile int sv;
     register u32 *src __asm__("r5") = (u32 *)(uintptr_t)*(volatile u32 *)(uintptr_t)0x03000140u;
     __asm__("" : : "r"(src) : "r0");
-    volatile u32 *cell = (volatile u32 *)(uintptr_t)0x03000134u;
-    register u8 *dst __asm__("r6") = (u8 *)(uintptr_t)*cell;
-    register u32 *cur __asm__("ip");
-    int idx = 0;
-    u32 kv = 0;
-    register volatile int *cp2 __asm__("r1");
-    int cntv;
-    volatile int *cp = (volatile int *)(uintptr_t)0x03000144u;
-    int cnt = *cp;
-    register volatile int *p134 __asm__("sl") = (volatile int *)cell;
-    register volatile int *cntPtr __asm__("r9") = cp;
-    extern void _0802D970(const void *, void *, u32);
-    if (idx < cnt) {
-        register const ObjFlushKp *fields __asm__("r8") = (const ObjFlushKp *)(uintptr_t)0x030035C0u;
-        do {
-            u8 *entry = (u8 *)(uintptr_t)*src;
-            src++;
-            idx++;
-            sv = idx;
-            cur = src;
-            if (entry != (u8 *)0) {
-                u32 maskv = 0x1FF;
-                register const ObjFlushKp *f __asm__("r5") = fields;
-                do {
-                    register u16 ty __asm__("r1") = *(volatile u16 *)(entry + 12);
-                    if (ty == 1) {
-                        u16 raw = *(volatile u16 *)(entry + 2);
-                        int lo = raw & maskv;
-                        kv = (u32)f->of_kp_shift;
-                        u32 sh = kv << 16;
-                        lo -= (s32)sh >> 19;
-                        {
-                            u16 hi = (u16)((raw >> 9) << 9);
-                            *(volatile u16 *)(entry + 2) = hi | (lo & maskv);
+    {
+        volatile u32 *cell = (volatile u32 *)(uintptr_t)0x03000134u;
+        register u8 *dst __asm__("r6") = (u8 *)(uintptr_t)*cell;
+        register u32 *cur __asm__("ip");
+        int idx = 0;
+        u32 kv = 0;
+        register volatile int *cp2 __asm__("r1");
+        int cntv;
+        volatile int *cp = (volatile int *)(uintptr_t)0x03000144u;
+        int cnt = *cp;
+        register volatile int *p134 __asm__("sl") = (volatile int *)cell;
+        register volatile int *cntPtr __asm__("r9") = cp;
+        extern void _0802D970(const void *, void *, u32);
+        if (idx < cnt) {
+            register const ObjFlushKp *fields __asm__("r8") = (const ObjFlushKp *)(uintptr_t)0x030035C0u;
+            do {
+                u8 *entry = (u8 *)(uintptr_t)*src;
+                src++;
+                idx++;
+                sv = idx;
+                cur = src;
+                if (entry != (u8 *)0) {
+                    u32 maskv = 0x1FF;
+                    register const ObjFlushKp *f __asm__("r5") = fields;
+                    do {
+                        register u16 ty __asm__("r1") = *(volatile u16 *)(entry + 12);
+                        if (ty == 1) {
+                            u16 raw = *(volatile u16 *)(entry + 2);
+                            int lo = raw & maskv;
+                            kv = (u32)f->of_kp_shift;
+                            {
+                                u32 sh = kv << 16;
+                                lo -= (s32)sh >> 19;
+                                {
+                                    u16 hi = (u16)((raw >> 9) << 9);
+                                    *(volatile u16 *)(entry + 2) = hi | (lo & maskv);
+                                }
+                            }
                         }
-                    }
-                    *(volatile u32 *)dst = *(volatile u32 *)entry;
-                    *(volatile u16 *)(dst + 4) = *(volatile u16 *)(entry + 4);
-                    dst += 8;
-                    entry = *(u8 **)(entry + 8);
-                } while (entry != (u8 *)0);
-            }
-            idx = sv;
-            src = cur;
-            cp2 = cntPtr;
-            cntv = *cp2;
-        } while (idx < cntv);
+                        *(volatile u32 *)dst = *(volatile u32 *)entry;
+                        *(volatile u16 *)(dst + 4) = *(volatile u16 *)(entry + 4);
+                        dst += 8;
+                        entry = *(u8 **)(entry + 8);
+                    } while (entry != (u8 *)0);
+                }
+                idx = sv;
+                src = cur;
+                cp2 = cntPtr;
+                cntv = *cp2;
+            } while (idx < cntv);
+        }
+        {
+            register volatile int *cellp __asm__("r7") = p134;
+            u32 oamSrc = *(volatile u32 *)cellp;
+            _0802D970((const void *)(uintptr_t)oamSrc,
+                      (void *)(uintptr_t)((u32)224 << 19), (u32)((u32)128 << 1));
+        }
     }
-    register volatile int *cellp __asm__("r7") = p134;
-    u32 oamSrc = *(volatile u32 *)cellp;
-    _0802D970((const void *)(uintptr_t)oamSrc,
-              (void *)(uintptr_t)((u32)224 << 19), (u32)((u32)128 << 1));
 }
 void sub_08002C98(void) __attribute__((alias("ObjFlush_02C98")));
 void _08002C98(void) __attribute__((alias("ObjFlush_02C98")));

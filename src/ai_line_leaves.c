@@ -179,9 +179,11 @@ int Ai_LineEqual(const void *a,const void *b){
     // destination of `ldrh r3,[r3,#4]` at +0x1C. `pa` is r3 and dies at that
     // load, so this coalesces into `pa` rather than displacing it. Without
     // the pin: `ldrh r0,[r3,#4] / cmp r0,r4`, 50/52, first diff +0x1C.
-    register u16 ha __asm__("r3") = ((const u16*)pa)[2];
-    if( ha != ((u16*)pb)[2]) return 0;
-    return 1;
+    {
+        register u16 ha __asm__("r3") = ((const u16*)pa)[2];
+        if( ha != ((u16*)pb)[2]) return 0;
+        return 1;
+    }
 }
 int _080250FC(const void *a,const void *b) __attribute__((alias("Ai_LineEqual")));
 
@@ -249,22 +251,31 @@ void _08025198(void *a, void *b){
     volatile u8 *src = (volatile u8*)b;
     extern int _080250FC(const void*,const void*);
     extern void sub_080250A0(void*,const void*);   // 0x080250A0, the closure spelling
-    for(int r6=0; r6<=4; ++r6){
-        for(int r5=0; r5<=4; ++r5){
-            volatile u8 *pSrc = src + (r5*3)*4;
-            volatile u8 *pDst = dst + (r6*3)*4;
-            int eq = _080250FC((const void*)pSrc, (const void*)pDst);
-            if((eq<<24)!=0){
-                *(volatile u32*)pSrc = 0; // u32 width via str
-                break;
+    {
+        int r6 = 0;
+        for (; r6<=4; ++r6){
+            {
+                int r5 = 0;
+                for (; r5<=4; ++r5){
+                    volatile u8 *pSrc = src + (r5*3)*4;
+                    volatile u8 *pDst = dst + (r6*3)*4;
+                    int eq = _080250FC((const void*)pSrc, (const void*)pDst);
+                    if((eq<<24)!=0){
+                        *(volatile u32*)pSrc = 0; // u32 width via str
+                        break;
+                    }
+                }
             }
         }
     }
     {
         volatile u8 *p = src;
-        for(int n=4; n>=0; --n){
-            sub_080250A0((void*)dst, (const void*)p);
-            p += 12;
+        {
+            int n = 4;
+            for (; n>=0; --n){
+                sub_080250A0((void*)dst, (const void*)p);
+                p += 12;
+            }
         }
     }
 }
@@ -275,22 +286,31 @@ void _08025130(void *a, void *b){
     volatile u8 *src = (volatile u8*)b;
     extern int _080250FC(const void*,const void*);
     extern void sub_08025028(void*,const void*);   // 0x08025028, the closure spelling
-    for(int r6=0; r6<=4; ++r6){
-        for(int r5=0; r5<=4; ++r5){
-            volatile u8 *pSrc = src + (r5*3)*4;
-            volatile u8 *pDst = dst + (r6*3)*4;
-            int eq = _080250FC((const void*)pSrc, (const void*)pDst);
-            if((eq<<24)!=0){
-                *(volatile u32*)pSrc = 0x7FFFFFFFu; // sentinel u32 via ldr 0x7FFFFFFF pool
-                break;
+    {
+        int r6 = 0;
+        for (; r6<=4; ++r6){
+            {
+                int r5 = 0;
+                for (; r5<=4; ++r5){
+                    volatile u8 *pSrc = src + (r5*3)*4;
+                    volatile u8 *pDst = dst + (r6*3)*4;
+                    int eq = _080250FC((const void*)pSrc, (const void*)pDst);
+                    if((eq<<24)!=0){
+                        *(volatile u32*)pSrc = 0x7FFFFFFFu; // sentinel u32 via ldr 0x7FFFFFFF pool
+                        break;
+                    }
+                }
             }
         }
     }
     {
         volatile u8 *p = src;
-        for(int n=4; n>=0; --n){
-            sub_08025028((void*)dst, (const void*)p);
-            p += 12;
+        {
+            int n = 4;
+            for (; n>=0; --n){
+                sub_08025028((void*)dst, (const void*)p);
+                p += 12;
+            }
         }
     }
 }
@@ -303,23 +323,27 @@ int Ai_LineScoreSum(const void *rec){
        section, so a file-scope asm definition is omitted from the link. */
     extern const u8 LineScoreTable[];
     __asm__(".globl LineScoreTable\nLineScoreTable = 0x080CD6A8\n");
-    const u8 *tbl = LineScoreTable;
-    const u8 *p2 = tbl + r[2] * 8;
-    const u8 *p6 = tbl + r[6] * 8 + 34;
-    register int v2 __asm__("r1") = p2[2];
-    __asm__("" : "+r"(v2));
-    register int v6 __asm__("r0") = *p6;
-    register int sum __asm__("r0");
-    /* Keep v6 live so agbcc emits the ROM's r1 + r0 operand order. */
-    __asm__("" : "+r"(v6));
-    sum = v2 + v6;
-    sum += (tbl + r[4] * 8)[66];
-    sum += (tbl + r[7] * 8)[98];
-    sum += (tbl + r[5] * 8)[130];
-    sum += (tbl + r[9] * 8)[162];
-    sum += (tbl + r[3] * 8)[194];
-    sum += (tbl + r[8] * 8)[226];
-    return (s8)sum;
+    {
+        const u8 *tbl = LineScoreTable;
+        const u8 *p2 = tbl + r[2] * 8;
+        const u8 *p6 = tbl + r[6] * 8 + 34;
+        register int v2 __asm__("r1") = p2[2];
+        __asm__("" : "+r"(v2));
+        {
+            register int v6 __asm__("r0") = *p6;
+            register int sum __asm__("r0");
+            /* Keep v6 live so agbcc emits the ROM's r1 + r0 operand order. */
+            __asm__("" : "+r"(v6));
+            sum = v2 + v6;
+            sum += (tbl + r[4] * 8)[66];
+            sum += (tbl + r[7] * 8)[98];
+            sum += (tbl + r[5] * 8)[130];
+            sum += (tbl + r[9] * 8)[162];
+            sum += (tbl + r[3] * 8)[194];
+            sum += (tbl + r[8] * 8)[226];
+            return (s8)sum;
+        }
+    }
 }
 __asm__(".align 2, 0");
 int _08025548(const void *a) __attribute__((alias("Ai_LineScoreSum")));
