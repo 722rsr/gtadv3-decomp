@@ -988,206 +988,155 @@ __asm__(".align 2, 0");
 void _0800F59C(void *a) __attribute__((alias("Stub_0F59C")));
 void sub_0800F59C(void *a) __attribute__((alias("Stub_0F59C")));
 
-__attribute__((naked)) void CollectProximity_068D4(void) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        ".L068d4_080068D4:\n"
-        "  push {r4, r5, r6, r7, lr}\n"
-        "  mov r7, sl\n"
-        "  mov r6, r9\n"
-        "  mov r5, r8\n"
-        "  push {r5, r6, r7}\n"
-        "  ldr r1, .L068d4_08006948\n"
-        "  movs r2, #192\n"
-        "  lsls r2, r2, #4\n"
-        "  adds r0, r2, #0\n"
-        "  ldrh r1, [r1]\n"
-        "  subs r0, r0, r1\n"
-        "  ldr r3, .L068d4_0800694C\n"
-        "  adds r1, r3, #0\n"
-        "  ands r0, r1\n"
-        "  adds r0, #64\n"
-        "  asrs r4, r0, #7\n"
-        "  movs r0, #31\n"
-        "  ands r4, r0\n"
-        "  ldr r2, .L068d4_08006950\n"
-        "  ldr r1, .L068d4_08006954\n"
-        "  ldr r7, [r1]\n"
-        "  mov ip, r7\n"
-        "  mov r3, ip\n"
-        "  asrs r0, r3, #11\n"
-        "  cmp r0, #0\n"
-        "  bge .L068d4_0800690A\n"
-        "  adds r0, #15\n"
-        ".L068d4_0800690A:\n"
-        "  asrs r0, r0, #4\n"
-        "  str r0, [r2]\n"
-        "  ldr r7, [r1, #4]\n"
-        "  asrs r0, r7, #11\n"
-        "  cmp r0, #0\n"
-        "  bge .L068d4_08006918\n"
-        "  adds r0, #15\n"
-        ".L068d4_08006918:\n"
-        "  asrs r0, r0, #4\n"
-        "  str r0, [r2, #4]\n"
-        "  ldr r2, .L068d4_08006958\n"
-        "  lsls r4, r4, #16\n"
-        "  asrs r1, r4, #13\n"
-        "  adds r0, r1, r2\n"
-        "  ldr r3, [r0]\n"
-        "  mov r0, ip\n"
-        "  subs r3, r0, r3\n"
-        "  adds r5, r3, #0\n"
-        "  adds r2, #4\n"
-        "  adds r1, r1, r2\n"
-        "  ldr r0, [r1]\n"
-        "  subs r6, r7, r0\n"
-        "  cmp r3, #0\n"
-        "  bge .L068d4_0800695C\n"
-        "  asrs r0, r5, #11\n"
-        "  cmp r0, #0\n"
-        "  bge .L068d4_08006940\n"
-        "  adds r0, #15\n"
-        ".L068d4_08006940:\n"
-        "  asrs r0, r0, #4\n"
-        "  subs r5, r0, #1\n"
-        "  b .L068d4_08006966\n"
-        "  .align 2, 0\n"
-        ".L068d4_08006948: .word 0x0203F728\n"
-        ".L068d4_0800694C: .word 0x00000FFF\n"
-        ".L068d4_08006950: .word 0x0203F8E0\n"
-        ".L068d4_08006954: .word 0x0203F6B0\n"
-        ".L068d4_08006958: .word 0x0805DBF4\n"
-        ".L068d4_0800695C:\n"
-        "  asrs r0, r5, #11\n"
-        "  cmp r0, #0\n"
-        "  bge .L068d4_08006964\n"
-        "  adds r0, #15\n"
-        ".L068d4_08006964:\n"
-        "  asrs r5, r0, #4\n"
-        ".L068d4_08006966:\n"
-        "  cmp r6, #0\n"
-        "  bge .L068d4_08006978\n"
-        "  asrs r0, r6, #11\n"
-        "  cmp r0, #0\n"
-        "  bge .L068d4_08006972\n"
-        "  adds r0, #15\n"
-        ".L068d4_08006972:\n"
-        "  asrs r0, r0, #4\n"
-        "  subs r6, r0, #1\n"
-        "  b .L068d4_08006982\n"
-        ".L068d4_08006978:\n"
-        "  asrs r0, r6, #11\n"
-        "  cmp r0, #0\n"
-        "  bge .L068d4_08006980\n"
-        "  adds r0, #15\n"
-        ".L068d4_08006980:\n"
-        "  asrs r6, r0, #4\n"
-        ".L068d4_08006982:\n"
-        "  ldr r0, .L068d4_08006A38\n"
-        "  str r5, [r0]\n"
-        "  str r6, [r0, #4]\n"
-        "  asrs r1, r4, #16\n"
-        "  movs r0, #200\n"
-        "  muls r1, r0\n"
-        "  ldr r0, .L068d4_08006A3C\n"
-        "  adds r1, r1, r0\n"
-        "  mov ip, r1\n"
-        "  ldr r2, .L068d4_08006A40\n"
-        "  movs r1, #0\n"
-        "  strh r1, [r2]\n"
-        "  ldr r0, .L068d4_08006A44\n"
-        "  strh r1, [r0]\n"
-        "  mov r1, ip\n"
-        "  movs r0, #0\n"
-        "  ldrsb r0, [r1, r0]\n"
-        "  cmp r0, #0\n"
-        "  blt .L068d4_08006A2A\n"
-        "  movs r3, #7\n"
-        "  mov r8, r3\n"
-        "  ldr r7, .L068d4_08006A48\n"
-        "  mov r9, r7\n"
-        "  movs r0, #4\n"
-        "  add r0, r9\n"
-        "  mov sl, r0\n"
-        "  mov r4, ip\n"
-        ".L068d4_080069B8:\n"
-        "  movs r0, #0\n"
-        "  ldrsb r0, [r4, r0]\n"
-        "  adds r2, r0, r5\n"
-        "  movs r0, #1\n"
-        "  ldrsb r0, [r4, r0]\n"
-        "  adds r3, r0, r6\n"
-        "  adds r1, r3, #0\n"
-        "  mov r7, r8\n"
-        "  ands r1, r7\n"
-        "  lsls r1, r1, #3\n"
-        "  adds r0, r2, #0\n"
-        "  ands r0, r7\n"
-        "  orrs r1, r0\n"
-        "  lsls r1, r1, #2\n"
-        "  ldr r0, .L068d4_08006A4C\n"
-        "  adds r1, r1, r0\n"
-        "  movs r0, #0\n"
-        "  ldrsb r0, [r1, r0]\n"
-        "  cmp r0, r2\n"
-        "  bne .L068d4_080069E8\n"
-        "  movs r0, #1\n"
-        "  ldrsb r0, [r1, r0]\n"
-        "  cmp r0, r3\n"
-        "  beq .L068d4_08006A18\n"
-        ".L068d4_080069E8:\n"
-        "  strb r2, [r1]\n"
-        "  strb r3, [r1, #1]\n"
-        "  ldr r7, .L068d4_08006A40\n"
-        "  movs r0, #0\n"
-        "  ldrsh r1, [r7, r0]\n"
-        "  lsls r1, r1, #3\n"
-        "  add r1, r9\n"
-        "  lsls r0, r2, #24\n"
-        "  asrs r0, r0, #24\n"
-        "  str r0, [r1]\n"
-        "  movs r2, #0\n"
-        "  ldrsh r1, [r7, r2]\n"
-        "  lsls r1, r1, #3\n"
-        "  add r1, sl\n"
-        "  lsls r0, r3, #24\n"
-        "  asrs r0, r0, #24\n"
-        "  str r0, [r1]\n"
-        "  ldrh r0, [r7]\n"
-        "  adds r0, #1\n"
-        "  strh r0, [r7]\n"
-        "  lsls r0, r0, #16\n"
-        "  asrs r0, r0, #16\n"
-        "  cmp r0, #3\n"
-        "  bgt .L068d4_08006A2A\n"
-        ".L068d4_08006A18:\n"
-        "  adds r4, #4\n"
-        "  mov r0, ip\n"
-        "  adds r0, #196\n"
-        "  cmp r4, r0\n"
-        "  bgt .L068d4_08006A2A\n"
-        "  movs r0, #0\n"
-        "  ldrsb r0, [r4, r0]\n"
-        "  cmp r0, #0\n"
-        "  bge .L068d4_080069B8\n"
-        ".L068d4_08006A2A:\n"
-        "  pop {r3, r4, r5}\n"
-        "  mov r8, r3\n"
-        "  mov r9, r4\n"
-        "  mov sl, r5\n"
-        "  pop {r4, r5, r6, r7}\n"
-        "  pop {r0}\n"
-        "  bx r0\n"
-        "  .align 2, 0\n"
-        ".L068d4_08006A38: .word 0x0203F8B0\n"
-        ".L068d4_08006A3C: .word 0x0805DCF4\n"
-        ".L068d4_08006A40: .word 0x0203F870\n"
-        ".L068d4_08006A44: .word 0x0203F8A4\n"
-        ".L068d4_08006A48: .word 0x0203F8C0\n"
-        ".L068d4_08006A4C: .word 0x0203F770\n"
-        ".syntax divided\n"
-    );
+// ============================================================================
+// 0x080068D4 — proximity collector.  Reads the camera origin pair
+// (u32[0x0203F6B0/4]), the rotation halfword (u16 0x0203F728) and the
+// per-column origin table at 0x0805DBF4 (8-byte rows), then walks the
+// 4-byte entry table at 0x0805DCF4 + col*200 (50 entries max, `dx >= 0`
+// sentinel) and collects up to four distinct cells:
+//
+//   col    = (((0xC00 - angle) & 0xFFF) + 64) >> 7 & 31
+//   F8E0/4 = ceil(camX/0x8000), ceil(camY/0x8000)
+//   dx/dy  = camera - origin row[col]; tile = trunc(d >> 11) / 16, and a
+//            negative d subtracts one more from the tile (floor)
+//   F8B0/4 = tileX, tileY
+//   F870   = collected count (reset to 0); F8A4 = stream cursor (reset to 0)
+//   loop   : x = e->dx + tileX, y = e->dy + tileY; if the 64-cell cache at
+//            0x0203F770 (index ((y&7)<<3 | (x&7))*4) does not already hold
+//            the pair, cache it and append sign-extended x/y to the u32
+//            arrays at 0x0203F8C0 (x) and 0x0203F8C4 (y), 8 bytes per slot.
+//            Stop after four, at the sentinel, or past table + 49 entries.
+//
+// Matching shape (all pins/barriers below are load-bearing, measured):
+//  * `m`/`t` split: agbcc folds `(s16)x >> 7` to a logical shift once the
+//    destination is HImode, so the shift is performed on an opaque SImode
+//    temp pinned to r0 and the column keeps the ROM's `asrs r4, r0, #7`.
+//  * `camX` lives in ip and `camY` in r7; the empty `"r7"` clobber before
+//    the origin read stops agbcc from reusing r7 for the camX copy (it
+//    otherwise clobbers the pinned camY value and miscompiles the dy arm).
+//  * the origin row index is the explicit `col << 16 >> 13` shift pair so
+//    gas sees `lsls r4, r4, #16 / asrs r1, r4, #13` on col's own register.
+//  * `q` is pinned to r0 for the origin-y load; the trailing `"r"(q)` use
+//    keeps it live across the subtract so the load cannot fold into r6.
+//  * the tile divides are written as `/ 16` on an opaque temp so agbcc
+//    keeps the branchy `cmp;adds #15;asrs` form, and the `- 1` arm keeps
+//    the quotient in r0 with `subs r5, r0, #1` as the ROM does.
+//  * the table is `col * 200`: `n` reuses the sign-extended column so
+//    `muls r1, r0` runs in place, and the barrier on `tblbase` keeps the
+//    0x0805DCF4 pool word in r0 with `adds r1, r1, r0`.
+//  * `mask = 7` is materialised inside the guard so the loop-invariant
+//    constant lands in r3/r8 after the `blt`, matching the ROM preheader.
+// ============================================================================
+void CollectProximity_068D4(void) {
+    register s32 col __asm__("r4");
+    s16 m;
+    register s32 t __asm__("r0");
+    register s32 camX __asm__("ip");
+    register s32 camY __asm__("r7");
+    register s32 dx __asm__("r3");
+    register s32 tileX __asm__("r5");
+    register s32 tileY __asm__("r6");
+    s32 table;
+    s32 entry;
+    s32 idx;
+    s32 sh;
+    s32 mask;
+    register s32 q __asm__("r0");
+    s32 n;
+    register u32 tblbase __asm__("r0");
+    register u32 *cam __asm__("r1");
+    u32 *origin;
+    u32 *dstB;
+    u32 *dst;
+    u32 *nearbyX;
+    u32 *nearbyY;
+
+    // Sector column: round the rotated camera angle to 32 steps of 128 units.
+    m = (s16)((0xC00 - *(u16 *)0x0203F728) & 0xFFF);
+    t = m + 64;
+    __asm__ volatile ("" : "+r"(t));
+    col = t >> 7;
+    col &= 31;
+
+    // Camera tile pair: ceil(camera / 0x8000).
+    dst = (u32 *)0x0203F8E0;
+    cam = (u32 *)0x0203F6B0;
+    camX = (s32)cam[0];
+    dst[0] = (camX >> 11) / 16;
+    camY = (s32)cam[1];
+    dst[1] = (camY >> 11) / 16;
+
+    // Origin-relative deltas and their tiles (negative deltas floor).
+    origin = (u32 *)0x0805DBF4;
+    sh = col << 16;
+    idx = sh >> 13;
+    __asm__ volatile ("" ::: "r7");
+    dx = camX - *(u32 *)((u8 *)origin + idx);
+    tileX = dx;
+    origin = (u32 *)((u8 *)origin + 4);
+    q = *(u32 *)((u8 *)origin + idx);
+    tileY = camY - q;
+    __asm__ volatile ("" : : "r"(q));
+
+    if (dx < 0) {
+        t = tileX >> 11;
+        __asm__ volatile ("" : "+r"(t));
+        q = t / 16;
+        __asm__ volatile ("" : "+r"(q));
+        tileX = q - 1;
+    } else {
+        t = tileX >> 11;
+        __asm__ volatile ("" : "+r"(t));
+        tileX = t / 16;
+    }
+
+    if (tileY < 0) {
+        t = tileY >> 11;
+        __asm__ volatile ("" : "+r"(t));
+        q = t / 16;
+        __asm__ volatile ("" : "+r"(q));
+        tileY = q - 1;
+    } else {
+        t = tileY >> 11;
+        __asm__ volatile ("" : "+r"(t));
+        tileY = t / 16;
+    }
+
+    // Publish the tile pair and select this column's 200-byte entry table.
+    dstB = (u32 *)0x0203F8B0;
+    dstB[0] = tileX;
+    dstB[1] = tileY;
+
+    n = sh >> 16;
+    n = n * 200;
+    tblbase = 0x0805DCF4;
+    __asm__ volatile ("" : "+r"(tblbase));
+    table = n + tblbase;
+    *(u16 *)0x0203F870 = 0;
+    *(u16 *)0x0203F8A4 = 0;
+
+    if (*(s8 *)table >= 0) {
+        mask = 7;
+        nearbyX = (u32 *)0x0203F8C0;
+        nearbyY = nearbyX + 1;
+        entry = table;
+        while (*(s8 *)entry >= 0) {
+            s32 x = *(s8 *)entry + tileX;
+            s32 y = *(s8 *)(entry + 1) + tileY;
+            s8 *c = (s8 *)(0x0203F770 + ((((y & mask) << 3) | (x & mask)) << 2));
+
+            if (c[0] != x || c[1] != y) {
+                c[0] = (s8)x;
+                c[1] = (s8)y;
+                *(u32 *)((u8 *)nearbyX + *(s16 *)0x0203F870 * 8) = (s8)x;
+                *(u32 *)((u8 *)nearbyY + *(s16 *)0x0203F870 * 8) = (s8)y;
+                *(u16 *)0x0203F870 = *(u16 *)0x0203F870 + 1u;
+                if (*(s16 *)0x0203F870 > 3) break;
+            }
+            entry += 4;
+            if (entry > table + 196) break;
+        }
+    }
 }
 
 void _080068D4(void) __attribute__((alias("CollectProximity_068D4")));

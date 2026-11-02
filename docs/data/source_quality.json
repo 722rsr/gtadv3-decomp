@@ -3111,11 +3111,10 @@
    "size": 604
   },
   "0x080068d4": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 167,
-    "naked": true
+    "barrier": 10,
+    "pin": 10
    },
    "file": "src/runtime_state_dispatch.c",
    "name": "CollectProximity_068D4",
@@ -13215,16 +13214,16 @@
  },
  "totals": {
   "asm": {
-   "bytes": 47028,
-   "functions": 123
+   "bytes": 46648,
+   "functions": 122
   },
   "c": {
    "bytes": 44418,
    "functions": 877
   },
   "c_fakematch": {
-   "bytes": 96490,
-   "functions": 672
+   "bytes": 96870,
+   "functions": 673
   },
   "partial": {
    "bytes": 200,

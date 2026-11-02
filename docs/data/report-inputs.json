@@ -278,7 +278,7 @@
     "docs/data/code_data_ownership.json": "c75da6a07a59b633bfcffdca2eda64242b371b08aa1350884e42b7c3043771d8",
     "docs/data/era_runtime_probe.json": "45f420977850ba27e0edc15550d66e0179af7c64081d36f0ade14f0d2e7d1501",
     "docs/data/independent_slice.json": "d4cce27bdbb8bbd9e3c7959394a645abb3ec09c71f8ef97910d299b2e6a8c3f6",
-    "docs/data/source_quality.json": "d5fe861d325824603e84c93ea20af2ca429188ee500978ff07bcc9f93348dcbb",
+    "docs/data/source_quality.json": "66cf17b8a824121a56ab482f063456aa804ae5fab908b457e1dd0e66a602b0a5",
     "include/gba/bios.h": "b9317c06d31b76c89cc4e85a355463bfd2aa7bc61be70af1f24d49e530deb7d3",
     "include/gba/regs.h": "575c70a056190a3162f8ef2adaa937bb8520893045e1fcfe87af402c8e1f6ba9",
     "include/gba/types.h": "bab89e846a1b98c889c22352ac8043a5e01bd2ef6576bf25ff8f337ea02d0b2a",
@@ -434,7 +434,7 @@
     "src/runtime_hud.c": "379f87fed2e23a02d306435972b19eed659fec04b28c642899b4790c2d01e639",
     "src/runtime_memset.c": "9fe98cc6befa03cdc7a6b530b39969191e59441793b7c8fd20dd3d181fc467d0",
     "src/runtime_record_helpers.c": "51590c41c9fb6b3ee8e519879d43c1366c87333a8cd992e1cfeae3167bef7d22",
-    "src/runtime_state_dispatch.c": "4c9579f004bdfab852aa322387194012219368784003ec8e7b44530f47f1da8e",
+    "src/runtime_state_dispatch.c": "f3f3e4647b4e49193855c1b1e238bc881d11fdcf34da2bf40bd273936eb702d3",
     "src/save.c": "33472b081b6cc9a8e90889c3277f78e628dec2a2adddb2f3cca620a05aa06b47",
     "src/scene_record_dispatch.c": "8539f8651aa3c253af754da71e78f7fc46f1117b16f5bbd83825cd5c7e634bfd",
     "src/sound.c": "167ee72b46fc9245aa412217272857f8b7ef0b283bf3b872f9d7bcf04d8c15a3",
@@ -565,7 +565,7 @@
     "tools/update_progress.py": "e08737da0578dd62dc5a064ddf8d4361066ba4637bb5e472aa87e631d9743696",
     "tools/xref.py": "94676a3ecfce87a6e6a5f335dda9800da01e1a3d453692a9c0ac827f8cc7be2e"
   },
-  "report_sha256": "2daf0df0d0f569c92bae9f2daac50b5317b831c84841449715d979e32aeaebb2",
+  "report_sha256": "cfe23a45f84a1fd52cbcf3492da9d66833270fc8460f652dd2b44267541bd593",
   "verification": {
     "command": "make full-rom-match",
     "full_hybrid_rom_link": "pass",
