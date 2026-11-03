@@ -1,6 +1,6 @@
 @ GT Advance 3 - course record scan helper
 @ Region: file offset 0x006050-0x0060EC (VMA 0x08006050-0x080060EC).
-@ Pure Thumb; ARMCC high-register function with no literal pool.
+@ Pure Thumb; high-register function with no literal pool.
 
 .thumb
 .type sub_08006050, %function

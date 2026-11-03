@@ -1,6 +1,6 @@
 @ GT Advance 3 - menu record handlers
 @ Region: file offset 0x00DBE8-0x00E650 (VMA 0x0800DBE8-0x0800E650).
-@ Pure Thumb, ARMCC; first slice of the big raw menu span
+@ Pure Thumb; first slice of the big raw menu span
 @ (menu_dab8.s ends at 0xDBE8; next raw resumes at 0xE650).
 @
 @ Function map:

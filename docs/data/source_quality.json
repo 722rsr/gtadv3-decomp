@@ -11773,11 +11773,10 @@
    "size": 16
   },
   "0x0802b66c": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 80,
-    "naked": true
+    "barrier": 4,
+    "pin": 11
    },
    "file": "src/sound_parameter_apply.c",
    "name": "SoundB66C_Applier",
@@ -13214,16 +13213,16 @@
  },
  "totals": {
   "asm": {
-   "bytes": 46648,
-   "functions": 122
+   "bytes": 46476,
+   "functions": 121
   },
   "c": {
    "bytes": 44418,
    "functions": 877
   },
   "c_fakematch": {
-   "bytes": 96870,
-   "functions": 673
+   "bytes": 97042,
+   "functions": 674
   },
   "partial": {
    "bytes": 200,

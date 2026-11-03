@@ -2,7 +2,7 @@
 """Census VMA-shaped labels against their ASSEMBLED addresses.
 
 A label's address must come from the symbol table, never from parsing its name.
-In this tree the code generator emits the .type/label pair *after* an armcc
+In this tree the code generator emits the .type/label pair *after* a
 high-register prologue preamble, so a VMA-shaped label can assemble several
 bytes past the address its name claims. A wrong address derived from a name
 produces valid, resolvable, in-range code that links, compiles and lints; the

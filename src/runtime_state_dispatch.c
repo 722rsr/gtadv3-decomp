@@ -618,7 +618,7 @@ void sub_0802CE20(void *a, void *b) __attribute__((alias("VoiceParamTick_2CE20")
 // Weak stubs here and in agbmain_session.c coexist (both no-ops).
 //
 // CONFIRMED NON-ENTRY  — do not lift, do not promote.
-// 0x0802DDC8..0x0802DE03 is the armcc register-branch veneer POOL, not code:
+// 0x0802DDC8..0x0802DE03 is the GCC 2.95.3 register-branch veneer pool, not code:
 // fifteen 4-byte slots `bx r0`, `bx r1`, `bx r2`,... `bx lr`, each followed
 // by the halfword pad `46 c0` (`mov r8,r8`). Read straight out of
 // build/era-corpus/code.lst, which lists VMAs directly:
@@ -1399,11 +1399,12 @@ void _0802C738(void *a) __attribute__((alias("SoundTick_2C738")));
 void sub_0802C738(void *a) __attribute__((alias("SoundTick_2C738")));
 
 // ============================================================================
-// sound_uaeabi_uidiv.s 0x0802DF6C — __aeabi_uidiv (bit-by-bit restoring
-// division; zero divisor routes through the _0802DE98 no-op leaf → 0).
-// NOT PROMOTABLE: ARMCC runtime (`mov pc, lr` / `pop {pc}` returns, lazy
-// single-register frame) like the rest of the EABI division block
-// (build/scan_armcc.py); byte-exact via asm/sound_uaeabi_uidiv.s.
+// sound_uaeabi_uidiv.s 0x0802DF6C — project label __aeabi_uidiv; the body
+// matches GCC's __udivsi3 (bit-by-bit restoring division; zero divisor routes
+// through the _0802DE98 no-op leaf → 0). NOT PROMOTABLE as C: runtime
+// assembly (`mov pc, lr` / `pop {pc}` returns, lazy single-register frame)
+// like the rest of the lib1thumb division block; byte-exact via
+// asm/sound_uaeabi_uidiv.s. See `make era-runtime-probe`.
 // ============================================================================
 HOST_STUB(void _0802DE98(void));
 

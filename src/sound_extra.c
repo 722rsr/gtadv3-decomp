@@ -18,11 +18,12 @@ void sub_0802DE98(void) __attribute__((alias("SoundDivNoop_2DE98")));
 void Sub_0802DE98(void) __attribute__((alias("SoundDivNoop_2DE98")));
 void _08002DE98(void) __attribute__((alias("SoundDivNoop_2DE98")));  // 9-digit corpus spelling
 
-// --- Signed EABI div (sound_aeabi_idiv.s 0x02DE04) ---
-// s32 __aeabi_idiv(s32 num, s32 den) — shift/subtract quotient core, handles sign via ip.
-// 0x0802DE04 — __aeabi_idiv. NOT PROMOTABLE: ARMCC runtime (returns `mov pc, lr`,
-// lazy `push {r4}` frame), unlike every agbcc body. Byte-exact via
-// asm/sound_aeabi_idiv.s; see build/scan_armcc.py for the marker scan.
+// --- GCC 2.95.3 signed divide (sound_aeabi_idiv.s 0x02DE04) ---
+// s32 __divsi3(s32 num, s32 den) — shift/subtract quotient core, handles sign via ip.
+// 0x0802DE04 — project label __aeabi_idiv; the body matches GCC's __divsi3
+// (lib1thumb.asm L_divsi3). NOT PROMOTABLE as C: runtime assembly (returns
+// `mov pc, lr`, lazy `push {r4}` frame), unlike agbcc codegen. Byte-exact via
+// asm/sound_aeabi_idiv.s; see `make era-runtime-probe` for the provenance check.
 __attribute__((naked)) s32 SoundSignedDiv(s32 num, s32 den) {
     __asm__ volatile (
         ".syntax unified\n"
@@ -183,7 +184,7 @@ void sub_0802CBBC(void *a, void *b, u32 c) __attribute__((alias("SoundStreamAllo
 // --- Bank claim layer (sound_bank.s 0x02B488) —
 // The volume/pan leaf is a complete ROM body.  Its two walker calls carry the
 // scaled volume and signed pan values into the sound descriptor layer; keeping
-// the literal pool in place preserves the ARMCC register split at the call
+// the literal pool in place preserves the ROM's register split at the call
 // boundary.
 extern void _0802B718(u32 id, u32 chsel, u32 val);
 extern void _0802B74C(u32 id, u32 chsel, u32 val);

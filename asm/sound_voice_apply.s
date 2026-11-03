@@ -1,6 +1,6 @@
 @ GT Advance 3 - sound voice pan/volume envelope apply
 @ Region: file offset 0x02C160-0x02C190 (VMA 0x0802C160-0x0802C190).
-@ Pure Thumb; ARMCC outline leaf with no literal pool.
+@ Pure Thumb; outline leaf with no literal pool.
 
 .thumb
 .type sub_0802C160, %function

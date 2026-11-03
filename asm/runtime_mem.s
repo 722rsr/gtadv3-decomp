@@ -1,4 +1,4 @@
-@ GT Advance 3 - ARMCC memory helpers
+@ GT Advance 3 - memory helpers
 @ Region: file offset 0x02E0A4-0x02E158 (VMA 0x0802E0A4-0x0802E158).
 @ Pure Thumb; byte-exact transcriptions of memcpy and memset.
 

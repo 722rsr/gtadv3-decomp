@@ -1,6 +1,6 @@
 @ GT Advance 3 - course proximity iterator
 @ Region: file offset 0x007110-0x007210 (VMA 0x08007110-0x08007210).
-@ Exact ARMCC high-register Thumb transcription with one private threshold
+@ Exact high-register Thumb transcription with one private threshold
 @ pool at 0x720C.
 
 .thumb

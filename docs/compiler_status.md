@@ -30,6 +30,34 @@ Reproduce with `make era-runtime-probe`. The recorded comparison is
 Third-party source and its license are documented in
 [`tools/third_party/gcc-2.95.3/README.md`](../tools/third_party/gcc-2.95.3/README.md).
 
+## Single compiler and source provenance
+
+The project has one C compiler: `old_agbcc`. Every maintained C translation
+unit is compiled by it. The build does not invoke ARMCC or any second C
+compiler; `asm/` is assembled by GNU `as`. The runtime probe identifies the
+linked compiler runtime as the pinned agbcc variant: the division and
+interworking routines match the pret/agbcc `lib1thumb.asm`, and vanilla GCC
+2.95.3's mode-switching `_interwork_call_via_rX` veneer is absent.
+
+Some bodies are not agbcc C output. They contain `tst`, `mov pc, lr`,
+`pop {pc}`, a bare `push {rN}` with a `bl`, an `.arm` island, `swi`, or a
+fall-through tail, and they stay `asm` or `partial` (C with an explicit
+instruction splice). Those bodies are hand-written assembly or splices, not
+evidence of a second compiler, and they must not trigger a per-body compiler
+switch. `tools/backlog_census.py --lift-screen` is the pre-lift gate; the
+marker list and the six `tst` bodies are in
+[matching workflow](matching_workflow.md#bodies-that-are-not-agbcc-c-output-asmsplice-only).
+
+Older notes use "ARMCC" as shorthand for ARM-style instruction idioms (the
+high-register save dance, `tst`, `mov pc, lr` returns). It is not a measured
+provenance claim. Use "non-agbcc assembly" unless the body has been compared
+against a specific toolchain.
+
+A proposal to change the C compiler requires the AGENTS.md exception:
+concrete provenance evidence, agreement on scope, and a full corpus regression.
+One body that cannot be produced by `old_agbcc` is not evidence, and a compiler
+patch that only helps one body is a red flag.
+
 ## Source language and matching
 
 Maintained C is C89 in the dialect accepted by the pinned `old_agbcc`. There is

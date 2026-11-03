@@ -79,7 +79,7 @@ _08009B7A:
 	add sp, #56
 	pop {r4}
 	pop {r0}
-	bx r0				@ armcc interworking return
+	bx r0				@ interworking return
 	movs r0, r0			@ pad halfword
 
 	.align 2, 0

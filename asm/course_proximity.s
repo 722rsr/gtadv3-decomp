@@ -1,6 +1,6 @@
 @ GT Advance 3 - course proximity search
 @ Region: file offset 0x007210-0x007368 (VMA 0x08007210-0x08007368).
-@ Exact ARMCC high-register Thumb transcription; pool-free.
+@ Exact high-register Thumb transcription; pool-free.
 
 .thumb
 .type sub_08007210, %function

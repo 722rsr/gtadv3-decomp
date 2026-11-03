@@ -186,6 +186,7 @@ fast-check:
 	@python3 tools/corpus_match_probe.py --self-test
 	@python3 tools/lift_scout.py --self-test
 	@python3 tools/backlog_census.py --self-test
+	@python3 tools/test_compiler_provenance.py
 	@python3 tools/frame_probe.py --self-test
 	@python3 tools/expr_probe.py --self-test
 	@python3 tools/test_matching_assist.py
@@ -376,6 +377,7 @@ distclean:
 .PHONY: ci-check progress progress-check source-quality update-progress
 ci-check: progress-check
 	@python3 tools/source_quality.py --self-test
+	@python3 tools/test_compiler_provenance.py
 	@python3 tools/body_segments.py --self-test
 	@python3 tools/source_quality.py
 	@python3 tools/export_audit.py --self-test

@@ -30,11 +30,13 @@ a second) and reads the evidence notes out of the C files. `--snapshot` uses
 the committed `docs/data/source_quality.json` instead, which is faster but can
 list bodies that have since been promoted.
 
-`--lift-screen` additionally reads the naked body's own instruction stream and
-marks the raw rows whose stream does not follow the corpus's agbcc idioms, so a
-straight C lift is unlikely to reach an exact match without a splice or a
-different control-flow group. They stay backlog under a separate tally. The
-markers are documented in the matching guide: a `bl` with no `lr` save on the
+`--lift-screen` is the first step before choosing any C lift target. It reads
+the naked body's own instruction stream and marks the raw rows whose stream
+does not follow the corpus's agbcc idioms, so a straight C lift cannot reach an
+exact match without a splice or a different control-flow group. A blocked row
+is asm/splice-only, not a reason to try another compiler. They stay backlog
+under a separate tally. The markers are documented in the matching guide: a
+`bl` with no `lr` save on the
 entry push, a `mov pc, lr` or `pop {..., pc}` return, a `mov ip, lr` / `bx ip`
 veneer, `tst` (the current pattern lowers it to `and`+`cmp`), `swi`, an `.arm`
 body (the C corpus builds `-mthumb`), and a body whose last real instruction is
@@ -404,7 +406,7 @@ def self_test() -> None:
         "void f(void) {\n"
         "    /* pins are load-bearing here */\n"
         "}\n"
-        "// The ROM's `tst` needs a splice with the current patterns.\n"
+        "// The `tst` gate is not produced by any spelling tried so far.\n"
         "void g(void) { }\n"
         "void h(void) { }\n"
     )

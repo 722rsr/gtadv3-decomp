@@ -1,7 +1,7 @@
 @ GT Advance 3 - MTO sound PSG channel updater
 @ Region: file offset 0x02D034-0x02D480 (VMA 0x0802D034-0x0802D480).
-@ Pure Thumb armcc state machine. This listing preserves every decoded
-@ instruction, literal pool, branch target, and armcc pad halfword byte-exactly.
+@ Pure Thumb state machine. This listing preserves every decoded
+@ instruction, literal pool, branch target, and pad halfword byte-exactly.
 
 .thumb
 .type sub_0802D034, %function

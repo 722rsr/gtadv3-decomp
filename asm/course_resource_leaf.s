@@ -1,6 +1,6 @@
 @ GT Advance 3 - course resource update helper
 @ Region: file offset 0x007ABC-0x007B18 (VMA 0x08007ABC-0x08007B18).
-@ Exact ARMCC Thumb transcription, including both private pools.
+@ Exact Thumb transcription, including both private pools.
 
 .thumb
 .type sub_08007ABC, %function

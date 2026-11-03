@@ -150,7 +150,7 @@ _award_send:				@ 0x0800B17E
 	mov r8, r3
 	pop {r4, r5, r6, r7}
 	pop {r0}
-	bx r0				@ armcc interworking return
+	bx r0				@ interworking return
 
 @ end of pocket: next VMA 0x0800B190 (raw region owned by the follow-up task)
 award_pkt_end:

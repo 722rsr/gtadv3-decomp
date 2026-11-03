@@ -129,7 +129,7 @@ ALIAS_DECL = re.compile(
 # no VMA in the spelling, so the closure cannot resolve them by name.
 RUNTIME_NAMES = {
     "memcpy": 0x0802E0A4,
-    # The 16-entry armcc interworking veneer pool, read off the ROM at
+    # The 16-entry interworking veneer pool, read off the ROM at
     # 0x0802DDC8..0x0802DE03: `bx r0`, `bx r1`, ... `bx lr`, each 4 bytes
     # (2 for the bx, `c0 46` for the pad). Only the first was bound, so a body
     # calling through r2 -- a call THROUGH A REGISTER rather than through lr --
@@ -524,7 +524,7 @@ class Screen:
         """Label -> the address it *assembles* at, from the linked closure object.
 
         A label's address must come from the assembler, never from its spelling:
-        the converter emits the `.type`/label pair *after* an armcc high-register
+        the converter emits the `.type`/label pair *after* a high-register
         prologue preamble, so `sub_08002BB4` can assemble 4 bytes past the address
         its name claims.  `resolve()` below used the name, and recommended
         retargeting a call onto a label that pointed somewhere else -- which

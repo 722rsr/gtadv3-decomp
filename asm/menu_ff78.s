@@ -1,6 +1,6 @@
 @ GT Advance 3 - menu span completion
 @ Region: file offset 0x00FF78-0x015CB4 (VMA 0x0800FF78-0x08015CB4).
-@ Pure Thumb, ARMCC; closes the big raw menu span (menu_fa24.s ends at
+@ Pure Thumb; closes the big raw menu span (menu_fa24.s ends at
 @ 0xFF78; rec35_init.s resumes at 0x015CB4). Transcribed from baserom.gba
 @ via objdump; byte-exact (make SHA gate). Unconverted targets keep numeric
 @ `bl 0x0800XXXX` form. Pools at original offsets.

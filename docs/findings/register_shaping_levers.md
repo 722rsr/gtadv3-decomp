@@ -538,7 +538,7 @@ one register and one rotated test. That draft was not the end of the search:
 the promoted body is now exact at 240/240, so the frame is a source-shape
 problem and the 224/240 measurement is a useful control.
 
-## `Race_Setup_19250` (0x08019250, 200 B): the ARMCC r8 slot, measured
+## `Race_Setup_19250` (0x08019250, 200 B): the r8 slot, measured
 
 Lifted 2026-10-21 in stages; the best plain-C draft at that point reached
 **93/200 bytes (candidate 192 B, first diff +0x6)** and was reverted. Measured

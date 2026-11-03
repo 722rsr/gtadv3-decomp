@@ -14,7 +14,8 @@ and only a byte-compare or a driven runtime path catches it.  Several real bugs 
 
 How the true arity is derived
 -----------------------------
-The ROM is ARM ADS/armcc Thumb-1 with a deterministic prologue:
+The ROM is Thumb-1 code from the pinned GCC 2.95.3/pret-agbcc toolchain, with
+some hand-written assembly. Its deterministic prologue is:
 
     push {r4, r5, r6, r7, lr}   /  push {lr}          (low regs + lr)
     mov  r7, r8  /  mov r6, r9  ...                   (high-reg save dance)
@@ -69,15 +70,16 @@ VMA_RE = re.compile(r"^_?0*80([0-9A-Fa-f]{2,6})$")
 PUSH_RE = re.compile(r"^\s*push\s*\{([^}]*)\}")
 SUBSP_RE = re.compile(r"^\s*sub\s+sp,\s*#?(\d+)")
 ADJSP_RE = re.compile(r"^\s*add\s+sp,\s*#?(\d+)")
-# The armcc high-register save dance.  Disassemblers print r8-r12 either as
-# `r8`..`r12` or as the aliases `sl`/`fp`/`ip`, so accept both spellings.
+# The high-register save dance used by the ROM.  Disassemblers print r8-r12
+# either as `r8`..`r12` or as the aliases `sl`/`fp`/`ip`, so accept both
+# spellings.
 SAVEDANCE_RE = re.compile(
     r"^\s*mov\s+r[0-7],\s*(?:r(?:[89]|1[01])|sl|fp|ip|r12)\s*$")
 LABEL_RE = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*):")
 TYPE_RE = re.compile(r"^\s*\.type\s+([A-Za-z_][A-Za-z0-9_]*),\s*%function")
 SPLOAD_RE = re.compile(r"^\s*(ldr|ldrb|ldrh|ldrsh|ldrsb|ldrsb)\s+r\d+,\s*\[sp,\s*#(\d+)\]")
 SPANY_RE = re.compile(r"\[sp,\s*#(\d+)\]")
-# armcc emits `mov rN, sp` + `ldr rM, [rN, #off]` for stack-word loads the
+# The ROM emits `mov rN, sp` + `ldr rM, [rN, #off]` for stack-word loads the
 # literal `[sp, #off]` form cannot spell (e.g. _08002ED0's 10th word via
 # `mov r0, sp` / `ldrh r0, [r0, #56]`). Only the adjacent pair is accepted:
 # any arithmetic on rN between the copy and the load would break the

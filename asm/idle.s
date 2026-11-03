@@ -123,7 +123,7 @@ _08001A32:
 	adds r0, r1, #0
 _08001A56:
 	adds r4, #0xd0
-	.short 0x0300        @ literal-pool residue emitted by armcc
+	.short 0x0300        @ literal-pool residue
 	bl sub_0802DE04
 	str r0, [r4]
 	cmp r0, #0

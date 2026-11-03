@@ -145,7 +145,7 @@ u32 sub_0802BCCC(u32 w) __attribute__((alias("SoundBCCC_Entry")));
 // _0802BCCE` into it. The  label sweep is what made both interior
 // entries (`0x0802BCCE` 26 B, `0x0802BCEA` 10 B below) inventory spans at all.
 //
-// Contract (armcc's, nonstandard): the word to validate arrives in r2, the
+// Contract (the ROM's, nonstandard): the word to validate arrives in r2, the
 // fetched byte in r3 (in/out), and r0 is preserved across. r3 survives iff
 // (w>>25)!=0, or (w>=0x080614E0 and (w>>14)==0); otherwise it is zeroed --
 // i.e. a cursor outside the 0x080614E0..0x0003FFFF window kills the byte.

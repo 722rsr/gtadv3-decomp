@@ -8,7 +8,7 @@
 // IWRAM 0x03001780+0xFF2/0xFF6/0x0FD0..0x0FD8/0x0FC2/0x1076/0x1078 and the
 // ROM record tables 0x080CC078..0x080CC168. Transcribed instruction-faithful
 // from the byte-exact asm; register names kept in comments where the mapping
-// is non-obvious. armcc fall-through entries 0x08022240/0x08022438 inside
+// is non-obvious. ROM fall-through entries 0x08022240/0x08022438 inside
 // 0x08022348's body are external BL targets (xref.py: 0x02239E→0x08022240,
 // 0x02254C→0x08022438). The 0x08022C2C label is the tail dispatcher's in-body
 // `mov pc,r0` instruction.
@@ -658,7 +658,7 @@ void sub_080022348(void *a) __attribute__((alias("RaceVM_022348")));
 void RaceVM_02234C(u32 ev, u32 p1, u32 p2, void *p3) {
     if (ev == 0 || ev > 7) return;
     switch (ev) {
-        // armcc emitted the case bodies in source order 2, 1, 5, 7, 6 —
+        // the ROM has the case bodies in source order 2, 1, 5, 7, 6 —
         // match that layout, it is what fixes every table entry address.
         case 2: RaceVM_02227C(p3, (int)p1); break;
         case 1:
@@ -1304,7 +1304,7 @@ void sub_0800227C0(void *a) __attribute__((alias("RaceVM_0227C0")));
 void RaceVM_021A4(u32 ev, u32 p1, u32 p2, void *p3) {
     if (ev == 0 || ev > 12) return;
     switch (ev) {
-        // Keep the armcc case layout: 2, 5, 7, 6, 1, 12.
+        // Keep the ROM case layout: 2, 5, 7, 6, 1, 12.
         case 2: PV_CALLEE(Gap_021C94_Select, sub_080021C94)(p3, (void *)(uintptr_t)p1); break;
         case 5: _0800D854((u8 *)p3 + 8); _0800D8E4((u8 *)p3 + 112); break;
         case 7: PV_CALLEE(RaceVM_02205C, sub_08002205C)(p3); break;
@@ -1331,7 +1331,7 @@ void _0800221A4(u32 ev, u32 p1, u32 p2, void *p3) __attribute__((alias("RaceVM_0
 void RaceVM_02285C(u32 ev, u32 p1, u32 p2, void *p3) {
     if (ev == 0 || ev > 12) return;
     switch (ev) {
-        // armcc emitted the case bodies in source order 2, 5, 7, 6, 1, 12 —
+        // the ROM has the case bodies in source order 2, 5, 7, 6, 1, 12 —
         // that layout is what fixes every jump-table entry address.
         case 2:
             _080022454((void *)p3, (void *)(uintptr_t)p1);    // closure spelling
@@ -1689,7 +1689,7 @@ void sub_080022BBC(void *a) __attribute__((alias("RaceVM_022BBC")));
 void RaceVM_022C18(u32 ev, u32 p1, u32 p2, void *p3) {
     if (ev == 0 || ev > 12) return;
     switch (ev) {
-        // armcc laid the case bodies out in source order 2, 5, 7, 6, 1, 12.
+        // the ROM lays the case bodies out in source order 2, 5, 7, 6, 1, 12.
         case 2: PV_CALLEE(RaceVM_0228F8, sub_0800228F8)((void *)p3, (void *)(uintptr_t)p1); break;
         case 5: _0800D854((u8 *)p3 + 8); _0800D8E4((u8 *)p3 + 112); break;
         case 7: PV_CALLEE(RaceVM_022BBC, sub_080022BBC)(p3); break;

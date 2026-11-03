@@ -16,7 +16,7 @@
 #define CAR_PARAM_ROW ((const u8 *)(uintptr_t)0x0806134Cu)
 #define CAR_GEAR_GROUP ((const u8 *)(uintptr_t)0x08061354u)
 
-// Two bodies capture caller-register residue from the armcc prologue idioms
+// Two bodies capture caller-register residue from the ROM prologue idioms
 // (r8 in 0x08029044, r3 in 0x0802937C). Those register names do not exist off
 // ARM, so a host build takes the documented 0 instead. The ARM build keeps
 // the original instruction.

@@ -1,6 +1,6 @@
 @ GT Advance 3 - course resource setup helper
 @ Region: file offset 0x007664-0x007770 (VMA 0x08007664-0x08007770).
-@ Exact ARMCC Thumb transcription with the DMA3 descriptor pool at 0x776C.
+@ Exact Thumb transcription with the DMA3 descriptor pool at 0x776C.
 
 .thumb
 .type sub_08007664, %function

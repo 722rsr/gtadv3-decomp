@@ -1,6 +1,6 @@
 @ GT Advance 3 - sound sequencer note-on host
 @ Region: file offset 0x02C190-0x02C390 (VMA 0x0802C190-0x0802C390).
-@ Pure Thumb; ARMCC high-register function with private pools at the tail.
+@ Pure Thumb; high-register function with private pools at the tail.
 
 .thumb
 .type sub_0802C190, %function

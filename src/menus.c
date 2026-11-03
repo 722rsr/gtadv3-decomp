@@ -442,7 +442,7 @@ void Sub_0800DBE8(void *c) __attribute__((alias("MenuDBE8_0800DBE8")));
 __asm__(".align 2, 0");
 
 // menu_dbe8.s sub_0800DC7C(rec, extra) : same shape as DBE8 but the caller's
-// second arg (spilled into r8 by the armcc prologue) replaces every stack word
+// second arg (spilled into r8 by the ROM prologue) replaces every stack word
 // 3 — {1,1,extra,0} for B8C and {[rec+24]+16 | [rec+16], n, 1, extra, 0} for
 // 7C68. That is the whole difference between the twins.
 void MenuDC7C_0800DC7C(void *rec, u32 extra) {

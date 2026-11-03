@@ -300,7 +300,7 @@ _08009EDC:
 	b _08009F4C
 
 @ --- keys 6..9: racer-slot refresh packet --------------------------------
-@ Three armcc-shared entry points add r4 += 1/2/3 so sub-slot r4 ends up
+@ Three shared entry points add r4 += 1/2/3 so sub-slot r4 ends up
 @ 0..3 for keys 6..9 respectively (key 6 enters straight at the body).
 @ Packet: +0 = 10, +23 = sub-slot byte, +24 = bl 0x8002340(idx),
 @ +28 = copy of garage record[idx] where idx = s16[wa+0x574];
@@ -1914,7 +1914,7 @@ _0800A99A:
 @ seeded at 3, so a row with no qualifying cell yields 3.
 @   sub_0800A9A0(type,row): cols 0..2   (first grid block)
 @   sub_0800A9E0(type,row): cols 3..10  (second grid block)
-@ armcc high-register dance (r8 saved via r7 push/pop) + interworking
+@ high-register dance (r8 saved via r7 push/pop) + interworking
 @ return; no literal pools.
 	.thumb
 	.type sub_0800A9A0, %function

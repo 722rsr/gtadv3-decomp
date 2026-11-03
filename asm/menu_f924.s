@@ -1,6 +1,6 @@
 @ GT Advance 3 - menu record helpers X
 @ Region: file offset 0x00F924-0x00FA24 (VMA 0x0800F924-0x0800FA24).
-@ Pure Thumb, ARMCC; continuation of the menu span (menu_f8b4.s ends at
+@ Pure Thumb; continuation of the menu span (menu_f8b4.s ends at
 @ 0xF924; next raw resumes at 0xFA24).
 @
 @ Function map:

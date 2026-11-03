@@ -1,6 +1,6 @@
 @ GT Advance 3 - course proximity search continuation
 @ Region: file offset 0x007368-0x00748C (VMA 0x08007368-0x0800748C).
-@ Exact ARMCC high-register Thumb transcription; includes the adjacent leaf.
+@ Exact high-register Thumb transcription; includes the adjacent leaf.
 
 .thumb
 .type sub_08007368, %function

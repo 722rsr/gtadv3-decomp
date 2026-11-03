@@ -224,7 +224,7 @@ __asm__(".align 2, 0");
 // ----------------------------------------------------------------------------
 // ---- 0x08001EFAC — big scene assembly: 7B18/7BFC chains + grid loops ----
 // Pools: {0x080CBBE4 (8-byte entry table), WA 0x03001780 (s8 thresholds)}.
-// r0=rec only. armcc high-register frame (r5=3, r6=1, sl=0 staging the
+// r0=rec only. ROM high-register frame (r5=3, r6=1, sl=0 staging the
 // shared (3,1,1,0) stack tail of the lane emits).
 // ----------------------------------------------------------------------------
 __attribute__((naked)) void _08001EFAC(void *rec0) {

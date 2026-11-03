@@ -8,6 +8,14 @@ compiler limit. If an earlier note says a shape is impossible, unreachable, or
 with `make matching-ready` before repeating or accepting the claim. Keep new
 notes to the measured result plus the next concrete lead.
 
+Before lifting an assembly body, run `python3 tools/backlog_census.py
+--lift-screen`. A body carrying a lift-screen marker (`tst`, `mov pc, lr`,
+`pop {pc}`, a bare `push {rN}` with a `bl`, an `.arm` body, `swi`, or a
+fall-through tail) is asm/splice-only under the pinned `old_agbcc`; keep it asm
+or lift the rest and splice the marker. That is not a closed body, but the next
+lever is a splice or a grouped control-flow conversion, not another C spelling
+and not a compiler switch.
+
 ## Compiler changes
 
 Do not recommend a compiler patch as a way to close a matching body. The

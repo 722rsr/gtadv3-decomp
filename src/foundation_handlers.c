@@ -120,8 +120,9 @@ typedef struct { vu8 f00; vu8 _01[3]; vu32 p04; vu32 _08; vu32 cnt08; vu32 _0C; 
 // `default` first -- and agbcc emits [head][neg][mode1][store] for all of them:
 // it places a trailing `goto`'s target block immediately after the block that
 // jumps to it, so the else block is always pushed past the join. The head's
-// two-branch dispatch (`bge store; b neg`) is what armcc produced; agbcc never
-// emits both arms out of line. Do not re-derive the 196-byte body.
+// two-branch dispatch (`bge store; b neg`) is what the ROM has; agbcc never
+// emits both arms out of line, so the body stays asm-owned. Do not re-derive
+// the 196-byte body.
 __attribute__((naked)) void EWRAM_Handler_BlobB(void)
 {
     __asm__ volatile (

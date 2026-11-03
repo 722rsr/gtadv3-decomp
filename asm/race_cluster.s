@@ -1,6 +1,6 @@
 @ GT Advance 3 - race caller/dispatcher cluster
 @ Region: file offset 0x01A008-0x01A204 (VMA 0x0801A008-0x0801A204).
-@ Exact ARMCC Thumb transcription; pools, jump table, and pads kept at original ROM offsets.
+@ Exact Thumb transcription; pools, jump table, and pads kept at original ROM offsets.
 @ Four leaf resource callers plus the 8-way dispatcher that fans out to them and
 @ to the course-load helpers.  Pools are word-aligned with.align 2.
 

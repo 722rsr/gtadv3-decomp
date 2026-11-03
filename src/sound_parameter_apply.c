@@ -6,110 +6,82 @@ extern void sub_0802D4A8(void *state, u32 chsel, u32 wid);
 extern void sub_0802D510(void *state, u32 chsel, u32 wid);
 extern void sub_0802D584(void *state, u32 chsel, u32 wid);
 
-// MEASURED 2026-10-22: the C lift reaches 65/172 (candidate 168 B). The last
-// 13 instructions are: (1) the u16 volume compare — the ROM shifts both sides
-// (`lsls r3,sl,#16; cmp r3,#0x1000000`) while agbcc compares the already
-// zero-extended SImode value against a synthesised 0x100; (2) the corresponding
-// argument form (`lsrs r2,r3,#16` vs `mov r2,sl`); (3) the sign-extended s16 pan
-// (`asrs r3,r2,#16` vs `asrs r2,r2,#16`, a one-register difference that neither
-// `(s16)` on the parameter nor an r3 pin reproduces); (4) `lsls r1,r5,#3` is
-// scheduled between the two pool loads here but after both in the ROM, and only
-// the two-statement form `rec = SoundRecs; ... rec[id*4+2]` moves it, at the
-// cost of the id/sel/vol homes (id leaves r8 for r9).
 // --- _0802B66C(id, selmask, w_pan, w_vol, w_x) — combined multi-op applier, VMA 0x0802B66C–0x0802B700 ---
-// Exact: push {r4-r7,lr} + r8/r9/sl spill, ldr r4,[sp+32] w_x, lsls/lsrs #16 for id/selmask/w_vol u16, asrs #16 for s16 w_pan,
-// cmp #0 beq, then each non-zero section: ldr r2=0x08061F74, ldr r0=0x08061FA4, lsls r1=id*8, adds, ldrh gate [r1+4] u16, gate*12, adds, ldr state [r0], bl helper
-// Pools at 0x02B6BC 0x08061F74 and 0x02B6C0 0x08061FA4 proven via ldr [pc]; helper ABIs r0=state r1=selmask r2=wid preserved with u16/s16 widths.
-__attribute__((naked)) void SoundB66C_Applier(u32 id, u32 selmask, u32 w_pan, u32 w_vol, u32 w_x){
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, r7, lr}\n"
-        "mov r7, sl\n"
-        "mov r6, r9\n"
-        "mov r5, r8\n"
-        "push {r5, r6, r7}\n"
-        "ldr r4, [sp, #32]\n"
-        "lsls r0, r0, #16\n"
-        "lsrs r5, r0, #16\n"
-        "mov r8, r5\n"
-        "lsls r1, r1, #16\n"
-        "lsrs r6, r1, #16\n"
-        "mov r9, r6\n"
-        "lsls r3, r3, #16\n"
-        "lsrs r3, r3, #16\n"
-        "mov sl, r3\n"
-        "lsls r4, r4, #16\n"
-        "lsrs r4, r4, #16\n"
-        "lsls r2, r2, #16\n"
-        "asrs r3, r2, #16\n"
-        "cmp r3, #0\n"
-        "beq.n .Lb66c_after_pan\n"
-        "ldr r2, 1f\n"
-        "ldr r0, 2f\n"
-        "lsls r1, r5, #3\n"
-        "adds r1, r1, r0\n"
-        "ldrh r7, [r1, #4]\n"
-        "lsls r0, r7, #1\n"
-        "adds r1, r7, #0\n"
-        "adds r0, r0, r1\n"
-        "lsls r0, r0, #2\n"
-        "adds r0, r0, r2\n"
-        "ldr r0, [r0, #0]\n"
-        "adds r1, r6, #0\n"
-        "adds r2, r3, #0\n"
-        "bl sub_0802D510\n"
-        ".Lb66c_after_pan:\n"
-        "mov r0, sl\n"
-        "lsls r3, r0, #16\n"
-        "movs r0, #128\n"
-        "lsls r0, r0, #17\n"
-        "cmp r3, r0\n"
-        "beq.n .Lb66c_after_vol\n"
-        "ldr r2, 1f\n"
-        "ldr r0, 2f\n"
-        "lsls r1, r5, #3\n"
-        "adds r1, r1, r0\n"
-        "ldrh r5, [r1, #4]\n"
-        "lsls r0, r5, #1\n"
-        "adds r0, r0, r5\n"
-        "lsls r0, r0, #2\n"
-        "adds r0, r0, r2\n"
-        "ldr r0, [r0, #0]\n"
-        "adds r1, r6, #0\n"
-        "lsrs r2, r3, #16\n"
-        "bl sub_0802D4A8\n"
-        ".Lb66c_after_vol:\n"
-        "cmp r4, #0\n"
-        "beq.n .Lb66c_done\n"
-        "ldr r2, 1f\n"
-        "ldr r0, 2f\n"
-        "mov r7, r8\n"
-        "lsls r1, r7, #3\n"
-        "adds r1, r1, r0\n"
-        "ldrh r3, [r1, #4]\n"
-        "lsls r0, r3, #1\n"
-        "adds r0, r0, r3\n"
-        "lsls r0, r0, #2\n"
-        "adds r0, r0, r2\n"
-        "ldr r0, [r0, #0]\n"
-        "mov r1, r9\n"
-        "lsls r2, r4, #24\n"
-        "asrs r2, r2, #24\n"
-        "bl sub_0802D584\n"
-        ".Lb66c_done:\n"
-        "pop {r3, r4, r5}\n"
-        "mov r8, r3\n"
-        "mov r9, r4\n"
-        "mov sl, r5\n"
-        "pop {r4, r5, r6, r7}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        ".short 0\n"
-        ".align 2\n"
-        "1: .word 0x08061F74\n"
-        "2: .word 0x08061FA4\n"
-        ".syntax divided\n"
-    );
+// Exact in C (172/172, calls resolve). Three blocks share the same shape:
+//   state_table[gate_table[id].gate].state, then call(state, selmask, param).
+// The two table bases are pinned r0/r2 per block and held by an empty "+r"
+// barrier, otherwise the constant initialisers are rematerialised at each use
+// and block 1 collapses to a reload after the multiply. A block-scoped
+// `u32 s = (u16)vol << 16` is what makes the volume guard compare the shifted
+// pair (`lsls r3,#16` / `cmp r3, 0x1000000`); passing `s >> 16` then reuses the
+// same register with `lsrs`. Both later blocks stage their call arguments in
+// ROM order (sellmask before the converted wid) with an explicit local and an
+// empty "+r" barrier on the first, which is what keeps `adds r1,r6,#0` ahead of
+// `lsrs r2,r3,#16`.
+void SoundB66C_Applier(u32 id, u32 selmask, u32 w_pan, u32 w_vol, u32 w_x) {
+    register u32 idv __asm__("r8");
+    register u32 sel __asm__("r9");
+    register u32 vol __asm__("sl");
+    register u32 xv __asm__("r4");
+    register s32 pan __asm__("r3");
+    u32 idl, sell;
+
+    idl = (u16)id;
+    idv = idl;
+    sell = (u16)selmask;
+    sel = sell;
+    vol = (u16)w_vol;
+    xv = (u16)w_x;
+    pan = (s16)w_pan;
+
+    if (pan != 0) {
+        register u8 *gb __asm__("r0");
+        register u8 *sb __asm__("r2");
+        u16 gate;
+        void *state;
+        sb = (u8 *)(uintptr_t)0x08061F74u;
+        gb = (u8 *)(uintptr_t)0x08061FA4u;
+        __asm__ volatile ("" : "+r"(sb), "+r"(gb));
+        gate = *(u16 *)(gb + idl * 8 + 4);
+        state = *(void **)(sb + gate * 12);
+        sub_0802D510(state, sell, (u32)pan);
+    }
+    {
+    u32 s;
+    s = (u32)(u16)vol << 16;
+    if (s != 0x1000000u) {
+        register u8 *gb __asm__("r0");
+        register u8 *sb __asm__("r2");
+        u16 gate;
+        void *state;
+        u32 sa, wa;
+        sb = (u8 *)(uintptr_t)0x08061F74u;
+        gb = (u8 *)(uintptr_t)0x08061FA4u;
+        __asm__ volatile ("" : "+r"(sb), "+r"(gb));
+        gate = *(u16 *)(gb + idl * 8 + 4);
+        state = *(void **)(sb + gate * 12);
+        sa = sell;
+        __asm__ volatile ("" : "+r"(sa));
+        wa = s >> 16;
+        sub_0802D4A8(state, sa, wa);
+    }
+    }
+    if (xv != 0u) {
+        register u8 *gb __asm__("r0");
+        register u8 *sb __asm__("r2");
+        u16 gate;
+        void *state;
+        u32 sa, xa;
+        sb = (u8 *)(uintptr_t)0x08061F74u;
+        gb = (u8 *)(uintptr_t)0x08061FA4u;
+        __asm__ volatile ("" : "+r"(sb), "+r"(gb));
+        gate = *(u16 *)(gb + idv * 8 + 4);
+        state = *(void **)(sb + gate * 12);
+        sa = sel;
+        xa = (u32)(s8)xv;
+        sub_0802D584(state, sa, xa);
+    }
 }
+
 void _0802B66C(u32 a, u32 b, u32 c, u32 d, u32 e) __attribute__((alias("SoundB66C_Applier")));
 void sub_0802B66C(u32 a, u32 b, u32 c, u32 d, u32 e) __attribute__((alias("SoundB66C_Applier")));

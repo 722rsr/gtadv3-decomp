@@ -1,6 +1,6 @@
 @ GT Advance 3 - course resource helpers (DMA3 VRAM/palette setup)
 @ Region: file offset 0x007770-0x00798C (VMA 0x08007770-0x0800798C).
-@ Exact ARMCC Thumb transcription, four DMA3 descriptor pools at 0x7858/0x78E8/0x7920/0x7974 = 0x040000D4.
+@ Exact Thumb transcription, four DMA3 descriptor pools at 0x7858/0x78E8/0x7920/0x7974 = 0x040000D4.
 
 .thumb
 .type sub_08007770, %function

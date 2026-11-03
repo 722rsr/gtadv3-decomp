@@ -8,10 +8,10 @@ plausible original source, and a single matched function (n=1) cannot separate
 "this toolchain" from "this toolchain's Thumb backend agrees on simple code".
 
 This probe closes that gap with evidence carrying no source-reconstruction risk
-at all.  An ARM EABI ROM links a small set of hand-written runtime routines --
-the 32-bit division cores and the interworking call veneers.  Those are *not*
-compiler output: they are a fixed assembly source file shipped with the
-toolchain (`libgcc/lib1thumb.asm` in the GCC tree).  So if the ROM contains a
+at all.  A GCC 2.95.3-linked ROM includes a small set of hand-written runtime
+routines -- the 32-bit division cores and the interworking call veneers.  Those
+are *not* compiler output: they are a fixed assembly source file shipped with
+the toolchain (`libgcc/lib1thumb.asm` in the GCC tree).  So if the ROM contains a
 toolchain's runtime byte-for-byte, that toolchain's runtime is what was linked,
 and no choice of C source could have produced that evidence.
 

@@ -2,7 +2,7 @@
 #define GTADV_COURSE_COLLISION_H
 #include "gba/types.h"
 
-// Collision / proximity helpers (ARMCC high-register Thumb)
+// Collision / proximity helpers (high-register Thumb)
 
 // 0x08006E70: candidate segment test, returns bool, writes corrected pos via out ptr
 int Course_CollisionTest(void *a, void *b, void *c, void *out, void *extra);

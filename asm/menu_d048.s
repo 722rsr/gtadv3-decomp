@@ -1,6 +1,6 @@
 @ GT Advance 3 - menu record updater
 @ Region: file offset 0x00D048-0x00D13C (VMA 0x0800D048-0x0800D13C).
-@ Pure Thumb; ARMCC high-register updater with private literal pool.
+@ Pure Thumb; high-register updater with private literal pool.
 
 .thumb
 .type sub_0800D048, %function

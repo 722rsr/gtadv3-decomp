@@ -175,21 +175,22 @@ HOST_STUB(u32   _080074A8(void *x));
 HOST_STUB(void  _08007770(int a, void *b, int c, int d, u32 e, u32 f)); // 0x08007770 course-resource setup (6 machine args)
 
 // ============================================================================
-// Faithful div-remainder cores (sound_divmod.s 0x0802DFE4, armcc ROR
+// Faithful div-remainder cores (sound_divmod.s 0x0802DFE4, GCC lib1thumb ROR
 // shift-and-subtract; sound_aeabi_idiv_core.s 0x0802DE9C, same core on
 // magnitudes with sign fixup). r0 = exact remainder for all game-range
 // inputs; the ROR-assembly + rounding tail is replicated verbatim so even
 // the huge-quotient corners match the ROM bit-for-bit. Differential-tested
 // on host against an independent Python transcription of the asm.
 // ============================================================================
-// NOT PROMOTABLE (ARMCC runtime, same class as _0802C390): the three bodies in
-// the EABI division block (this pair plus _0802DE04 / _0802DF6C) return with
-// `mov pc, lr` / `pop {pc}` and wrap their only callee in a lazy single-register
-// frame (`push {r4}` / `push {r0}` after the early exits), while agbcc always
-// saves lr in a packed `push {r4, lr}` at entry and returns `pop {r0}; bx r0`.
-// Empirically 0 of 1396 promoted bodies carry the marker (build/scan_armcc.py);
-// the block is byte-exact via asm (asm/sound_aeabi_idiv_core.s,
-// asm/sound_divmod.s) and stays asm-owned.
+// NOT PROMOTABLE as C (GCC 2.95.3/pret-agbcc runtime assembly, same class as
+// _0802C390): the three bodies in the lib1thumb division block (this pair plus
+// _0802DE04 / _0802DF6C) return with `mov pc, lr` / `pop {pc}` and wrap their
+// only callee in a lazy single-register frame (`push {r4}` / `push {r0}` after
+// the early exits), while agbcc always saves lr in a packed `push {r4, lr}` at
+// entry and returns `pop {r0}; bx r0`. No promoted C body carries the marker;
+// `make era-runtime-probe` matches the block to lib1thumb.asm. The block is
+// byte-exact via asm (asm/sound_aeabi_idiv_core.s, asm/sound_divmod.s) and
+// stays asm-owned.
 //
 // The core is a MACRO, not a static helper: the ROM has no callee for it --
 // both division bodies carry their own inline copy

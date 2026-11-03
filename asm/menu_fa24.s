@@ -1,6 +1,6 @@
 @ GT Advance 3 - menu record setup + record state dispatcher
 @ Region: file offset 0x00FA24-0x00FF78 (VMA 0x0800FA24-0x0800FF78).
-@ Pure Thumb, ARMCC; continuation of the menu span (menu_f924.s ends at
+@ Pure Thumb; continuation of the menu span (menu_f924.s ends at
 @ 0xFA24; next raw resumes at 0xFF78).
 @
 @ Function map:

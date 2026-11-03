@@ -1,6 +1,6 @@
 @ GT Advance 3 - menu record handlers
 @ Region: file offset 0x00CE78-0x00CFE4 (VMA 0x0800CE78-0x0800CFE4).
-@ Pure Thumb; four ARMCC handlers with private literal pools.
+@ Pure Thumb; four handlers with private literal pools.
 
 .thumb
 .type sub_0800CE78, %function

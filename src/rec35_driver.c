@@ -3,7 +3,7 @@
 
 // 0x080163B8 (284 B) — rec35 runtime-registered event driver.
 // _080163B8(ev, arg_b, arg_c, ctx): `idx = ev - 1`, ev > 12 falls to the shared
-// epilogue. Slots 2/3 (ev 3/4) and 7..10 (ev 8..11) are empty. armcc puts the
+// epilogue. Slots 2/3 (ev 3/4) and 7..10 (ev 8..11) are empty. The ROM puts the
 // jump-table base literal in word[0] of the table block and the 12 absolute
 // slot addresses in words[1..12]; agbcc's thumb.md switch expansion emits the
 // same base-literal-then-entries layout, so this is a plain `switch`.

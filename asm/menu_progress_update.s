@@ -1,6 +1,6 @@
 @ GT Advance 3 - menu/results progress update
 @ Region: file offset 0x00BD40-0x00BE20 (VMA 0x0800BD40-0x0800BE20).
-@ Pure Thumb with armcc high-register prologue/epilogue and private pools;
+@ Pure Thumb with high-register prologue/epilogue and private pools;
 @ byte-exact.
 
 .thumb

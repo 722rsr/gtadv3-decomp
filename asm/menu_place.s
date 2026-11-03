@@ -1,6 +1,6 @@
 @ GT Advance 3 - menu placement/tier updater
 @ Region: file offset 0x00BE74-0x00C010 (VMA 0x0800BE74-0x0800C010).
-@ Pure Thumb with armcc high-register prologue/epilogue and private pools;
+@ Pure Thumb with high-register prologue/epilogue and private pools;
 @ byte-exact.
 
 .thumb

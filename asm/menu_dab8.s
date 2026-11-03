@@ -1,6 +1,6 @@
 @ GT Advance 3 - menu object initializer
 @ Region: file offset 0x00DAB8-0x00DBE8 (VMA 0x0800DAB8-0x0800DBE8).
-@ Pure Thumb, ARMCC; jump table at 0x0800DB24 (10 entries), private pools DB10/DB14/DB18/DB1C/DB20/DB78/DB7C/DBE0/DBE4.
+@ Pure Thumb; jump table at 0x0800DB24 (10 entries), private pools DB10/DB14/DB18/DB1C/DB20/DB78/DB7C/DBE0/DBE4.
 @ First function of raw pocket post-menu_d9a4; next raw starts at 0x0800DBE8.
 
 .thumb

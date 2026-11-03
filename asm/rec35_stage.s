@@ -22,7 +22,7 @@
 @              re-run, _08002618(1,1), phase 3; else ctx+20=0
 @   phase 3/4 -> shared pop epilogue
 @
-@ Table layout quirk (armcc): the `ldr r1,[pc,#N]` base literal IS
+@ Table layout quirk: the `ldr r1,[pc,#N]` base literal IS
 @ word[0] of the table block; dispatch slots are words [1..5] read at
 @ base_literal + idx*4. Slot 0 therefore targets the first body directly.
 
@@ -102,7 +102,7 @@ _08015F60:
 	pop {r4, r5}
 	pop {r0}
 	bx r0
-.short 0x0000           @ armcc pad halfword
+.short 0x0000           @ pad halfword
 
 @ ----------------------------------------------------------------------------
 @ _08015F68(ctx) - twin stage machine B, phase cell s16[ctx+0x96];

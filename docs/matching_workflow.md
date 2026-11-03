@@ -35,12 +35,19 @@ python3 tools/corpus_match_probe.py --function NAME --require-all --require-exac
 make fast-check
 ```
 
-For a body that is still assembly, start with a packet instead of a probe:
+For a body that is still assembly, the first step is the lift screen, then a
+packet instead of a probe:
 
 ```sh
 python3 tools/backlog_census.py --lift-screen
 python3 tools/lift_packet.py 0x0801EFAC
 ```
+
+If the screen reports a blocker (`tst`, `mov pc, lr`, `pop {pc}`, a bare
+`push {rN}` with a `bl`, an `.arm` body, `swi`, or a fall-through tail), the
+body is not a pure-C target. Keep it asm, or lift the rest and splice the
+marker; see [Bodies that are not agbcc C output](#bodies-that-are-not-agbcc-c-output-asmsplice-only).
+Do not treat a blocker as a reason to try a different compiler.
 
 The packet collects the ROM prologue, ROM-derived arity, callers, callees,
 literal references, nearest decompiled siblings, existing findings, and an
@@ -195,13 +202,14 @@ See [candidate-length diagnostics](findings/oversized_plus4_class.md).
   `tsrc = temp` into `movs r3, #12` and `= &found` (slot 64) into `#76`;
   twelve as u16 or a plain local also dodges it but loses the first loop's
   `mov r7, #12 / add r8, r8, r7`.
-- agbcc cannot emit the Thumb `tst` instruction at all: its thumb.md
-  `tstsi` pattern expands to `cmp %0, #0`, so `if (flags & mask)` always
-  lowers to `and` + `cmp #0` + `beq` (3 instructions where armcc has
-  `tst r0, r1`). The register-form `tst` in a ROM body keeps its one-
-  instruction asm splice; measured on `SoundChannelFreeAll` (0x0802BC84),
-  where plain `flags & 199` scored PARTIAL 16/48 with the first difference
-  at the test (+0x08).
+- `tst`: the pinned Thumb backend has no two-register form. `thumb.md`'s only
+  `tst`-named pattern is `tstsi`, which emits `cmp %0, #0`; the `tst`-emitting
+  `*andsi3_compare0_scratch` pattern is in the ARM-mode description, which
+  `-mthumb` does not use. `if (flags & mask)` therefore lowers to `and` +
+  `cmp #0` + `beq`, and `SoundChannelFreeAll` (0x0802BC84) keeps the gate as an
+  explicit `asm()` splice. This is a backend-pattern fact, not a
+  missing C spelling: a body whose ROM stream contains `tst` is asm/splice-only
+  under the pinned compiler. See "Bodies that are not agbcc C output".
 - agbcc *can* emit `cmn`, but only from the negated-operand spelling:
   `if (a < -b)` (likewise `a >= -b`) lowers to `cmn a, b` + branch, while
   the equivalent `if (a + b < 0)` always gives `adds` + `cmp #0`. Checked
@@ -480,7 +488,7 @@ not the block order. A label plus `goto` is the spelling that reproduces the
 ROM: `else goto sound10;`, then `B`, then `goto after_mode;`, then `sound10:`.
 
 A dense Thumb `switch` needs no special spelling: agbcc's arm.md/thumb.md
-expansion already emits armcc's dispatch, `lsls r0,r0,#2 / ldr r1,<pool> /
+expansion already emits the ROM's dispatch, `lsls r0,r0,#2 / ldr r1,<pool> /
 adds r0,r0,r1 / ldr r0,[r0] / mov pc,r0`, with the base literal in the word
 *before* the absolute slot entries and the slot order fixed by case value.
 What differs is the *body* order: agbcc emits arms in source order, so write
@@ -810,20 +818,27 @@ Checking the `static`s in a file for a hex name suffix is cheap:
 grep -n '^\s*static.*_[0-9A-Fa-f]\{4,\}\s*(' src/*.c
 ```
 
-## Bodies that are not agbcc output (do not re-lift)
+## Bodies that are not agbcc C output (asm/splice only)
 
-`build/scan_armcc.py` flags unmatched bodies carrying non-agbcc markers. Two
-facts measured against the pinned compiler:
+`tools/backlog_census.py --lift-screen` flags unmatched bodies carrying markers
+the pinned compiler cannot emit. Three facts measured against it:
 
 * agbcc always saves `lr` on the entry path when the body calls (`push {r4,
   lr}`, `push {r4, r5, r6, r7, lr}`); it does not emit a bare `push {rN}` with a
   `bl` in the body, and never defers the frame past the early exits.
 * returns are `bx lr` / `pop {r0}; bx r0` -- never `mov pc, lr` or `pop {pc}`.
+* `tst rX, rY` is not in the Thumb machine description. `thumb.md`'s only
+  `tst`-named pattern is `tstsi`, which emits `cmp %0, #0`; the `tst`-emitting
+  `*andsi3_compare0_scratch` pattern belongs to the ARM-mode description, which
+  `-mthumb` does not use. C89/C99 declaration placement does not change this.
 
-0 of 1396 promoted bodies contain `mov pc, lr` (the single exception is a
-`__attribute__((naked))` inline-asm leaf, `SoundDivNoop_2DE98`). The four ROM
-spans that do are the EABI division runtime, taken from ARM's library, and stay
-asm-owned:
+The promoted C bodies contain no `mov pc, lr`; the single exception in the
+tree is a `__attribute__((naked))` inline-asm leaf, `SoundDivNoop_2DE98`. The
+four ROM spans that do are GCC 2.95.3/pret-agbcc runtime assembly from
+`libgcc/lib1thumb.asm`, not ARMCC output: `make era-runtime-probe` matches all
+724 bytes and the vanilla GCC 2.95.3 negative control is absent. The
+`__aeabi_*` names in the project's asm filenames are labels; the toolchain
+symbols are `__udivsi3`, `__umodsi3`, `__divsi3`, `__modsi3`.
 
 | VMA | bytes | asm |
 |-----|-------|-----|
@@ -832,10 +847,32 @@ asm-owned:
 | 0x0802DF6C | 120 | `asm/sound_uaeabi_uidiv.s` |
 | 0x0802DFE4 | 192 | `asm/sound_divmod.s` |
 
-Same class as `_0802C390` (proved earlier by its `push` lacking the `lr` save).
-Their inline core uses the Thumb ALU rotate (`rors r3, r4`), which agbcc does
-produce for `(v >> n) | (v << (32 - n))` with a constant `n`, so the rotates are
-not the blocker -- the frame/return idioms are.
+The `sound_aeabi_*` filenames are historical labels;
+`sound_aeabi_idiv_core.s` is the signed remainder (`__modsi3`) core at
+0x0802DE9C.
+
+The `tst` writers are:
+
+| VMA | bytes | current source | note |
+|-----|-------|----------------|------|
+| 0x0802B8AA | 894 | `src/sound_mixer.c` | mixed-ISA hand-written asm; ARM islands |
+| 0x0802BC84 | 48 | `src/sound_seq_follow.c` | C body with an explicit `tst` gate splice |
+| 0x0802C190 | 512 | `src/sound_channel_lists.c` | naked transcription |
+| 0x0802C390 | 64 | `src/sound_voice_commands.c` | naked transcription; the named-bound head is reachable, the two gates are not |
+| 0x0802DE9C | 208 | `src/scene_record_dispatch.c` | runtime asm (also in the table above) |
+| 0x0802DFE4 | 192 | `src/scene_record_dispatch.c` | runtime asm (also in the table above) |
+
+`python3 tools/thumb_idiom_scan.py --idiom tst` reproduces the list from the
+ROM. A body carrying any lift-screen marker is not a pure-C target: keep it
+asm, or lift the rest of the body to C and splice the gate explicitly
+(`source_quality.py` classifies that as `partial`, not decompiled). Do not
+switch compilers for one body; the policy is in
+[compiler status](compiler_status.md#single-compiler-and-source-provenance).
+
+The division block's rotate core (`rors r3, r4`) is not the blocker: agbcc does
+produce it for `(v >> n) | (v << (32 - n))` with a constant `n`. The blockers
+are the frame/return idioms above, and for the sound bodies the missing `tst`
+pattern.
 
 ## Optional matching diagnostics
 
@@ -852,20 +889,21 @@ register pins) and lists the naked transcriptions separately, so a session can
 see a body's history before choosing a target. The classes are a reading order,
 not a verdict; every row is reopenable.
 
-`--lift-screen` additionally reads each naked body's own instruction stream and
-marks the transcriptions that are not a straight agbcc-corpus lift, because the
-ROM bytes do not follow those idioms: a `bl` with no `lr` save on the entry
-push, a `mov pc, lr` or
+`--lift-screen` is the pre-lift gate. It reads each naked body's own
+instruction stream and marks the transcriptions that are not a straight
+agbcc-corpus lift, because the ROM bytes do not follow those idioms: a `bl`
+with no `lr` save on the entry push, a `mov pc, lr` or
 `pop {..., pc}` return, a `mov ip, lr` / `bx ip` or `add rN, pc` veneer, `tst`
 (agbcc lowers it to `and`+`cmp`), `swi`, an `.arm` body (the C corpus builds
 `-mthumb`), and a stream whose last real instruction (past the section-fill
 `movs r0, r0` and labelled pool words) is not a return -- a guard or tail that
 falls through into the next function, such as 0x0802B898's Smsh check before the
 mixer setup. Those markers are the documented non-agbcc idioms below; a body
-carrying one is not a straight C lift, but it remains backlog for a splice or
-a grouped control-flow conversion. Bodies whose stream assembles from an
-`.include` have no inline instructions to screen and are reported as unknown
-rather than liftable.
+carrying one is asm/splice-only, not a pure-C target. Do not attempt a pure-C
+lift or a compiler switch for it. It remains backlog for a splice or a grouped
+control-flow conversion. Bodies whose stream assembles from an `.include` have
+no inline instructions to screen and are reported as unknown rather than
+liftable.
 
 Family matching compares instruction and branch patterns with consistent
 register normalization, while retaining load/store widths. It is a retrieval

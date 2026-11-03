@@ -1,6 +1,6 @@
 @ GT Advance 3 - menu record/award update helper
 @ Region: file offset 0x00BCD4-0x00BD40 (VMA 0x0800BCD4-0x0800BD40).
-@ Pure Thumb with armcc high-register epilogue and private pools; byte-exact.
+@ Pure Thumb with high-register epilogue and private pools; byte-exact.
 
 .thumb
 .type sub_0800BCD4, %function

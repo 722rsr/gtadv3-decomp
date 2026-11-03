@@ -1,6 +1,6 @@
 @ GT Advance 3 - course collision/proximity helper
 @ Region: file offset 0x006E70-0x006FD4 (VMA 0x08006E70-0x08006FD4).
-@ Exact ARMCC high-register Thumb transcription; pool-free.
+@ Exact high-register Thumb transcription; pool-free.
 
 .thumb
 .type sub_08006E70, %function

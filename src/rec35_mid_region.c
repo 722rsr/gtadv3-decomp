@@ -8,7 +8,7 @@
 // rec35 event dispatchers. 27/27 function VMAs, 0 gaps.
 //
 // Evidence: instruction-for-instruction from objdump ROM ground truth
-// (0x080168E8-0x08018174). Pool words preserved as immediates; armcc u16
+// (0x080168E8-0x08018174). Pool words preserved as immediates; ROM u16
 // truncation idioms (lsls #16 / lsrs #16) transcribed with (u16)/(s16)
 // casts. High-register spills are locals; clamps/loops match exactly.
 //

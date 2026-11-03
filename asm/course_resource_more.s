@@ -1,6 +1,6 @@
 @ GT Advance 3 - course resource helper continuation
 @ Region: file offset 0x00798C-0x007ABC (VMA 0x0800798C-0x08007ABC).
-@ Exact ARMCC Thumb transcription, including the private literal pool.
+@ Exact Thumb transcription, including the private literal pool.
 
 .thumb
 .type sub_0800798C, %function

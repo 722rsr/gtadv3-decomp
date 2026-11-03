@@ -45,7 +45,7 @@ extern void sub_08003E34(int a, volatile u8 *b);  /* defined below, alias of Tim
 // runtime_2aac.s tail lift — HUD/object families 0x08003104–0x08004A28.
 //
 // Transcribed 1:1 from asm/runtime_2aac.s (byte-exact asm at each cited VMA).
-// AAPCS note: 5th+ parameters live on the stack; after the armcc high-register
+// AAPCS note: 5th+ parameters live on the stack; after the ROM high-register
 // prologues here (20+12+40 = 72 bytes), [sp+72] = 5th param, [sp+76] = 6th, ….
 // All mappings below follow the register/stack slots of the asm literally —
 // field *meanings* are not asserted beyond what the asm shows.

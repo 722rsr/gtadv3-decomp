@@ -825,7 +825,7 @@ def encode_thumb_bl(insn_vma: int, target_vma: int) -> bytes:
 def encode_thumb_b(insn_vma: int, target_vma: int) -> bytes:
     """Encode a 16-bit Thumb-1 unconditional `b` branching to `target_vma`.
 
-    armcc's tail merges emit this as `b.n <interior label>` (relocation
+    The ROM's tail merges emit this as `b.n <interior label>` (relocation
     R_ARM_THM_JUMP11, ELF type 102). agbcc performs no sibling calls at all,
     so a body that tail-branches can only spell the branch in a transcribed
     body -- and the probe must resolve the displacement like it does `bl`.

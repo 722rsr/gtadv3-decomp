@@ -1,6 +1,6 @@
 @ GT Advance 3 - rec35 scene initializer
 @ Region: file offset 0x015CB4-0x015E28 (VMA 0x08015CB4-0x08015E28).
-@ Pure Thumb with armcc high-register prologue/epilogue and private pools;
+@ Pure Thumb with high-register prologue/epilogue and private pools;
 @ byte-exact.
 
 .thumb

@@ -56,7 +56,7 @@ structure of the constant path.
 
 A signed byte read used only in a zero test is folded to a QImode compare, so
 agbcc emits `ldrb r0,[p] / lsls r0,#24 / asrs r0,#24 / cmp r0,#0` where the
-ROM (armcc) has the shorter `movs r0,#0 / ldrsb r0,[p,r0] / cmp r0,#0`.
+ROM has the shorter `movs r0,#0 / ldrsb r0,[p,r0] / cmp r0,#0`.
 Spelling the load into an `int`, an `s8`, a `!(...)`, a `volatile` or an empty
 `"+r"` barrier on the value all still produce the shift pair.
 

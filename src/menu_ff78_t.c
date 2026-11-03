@@ -346,7 +346,7 @@ void sub_080014F60(void *a) __attribute__((alias("MenuFF78_14F60")));
 //     7ABC(u32[rec+4], val, u32[rec+176+(d+1)*12]).
 //   14078(rec).
 // MEASURED 2026-10-29: a full C draft reaches 696/732 bytes with 57% of the ROM
-// instructions inside matching runs. The body is armcc output over one global
+// instructions inside matching runs. The body is ROM output over one global
 // CSE of the rec+offset pointers: the preheader build reuses the previous base
 // (`subs r3,#68` from 248, `subs r3,#136` from 180, `subs r2,#124` from 176,
 // `adds r0,#18` from 148, `adds r2,#116` from 52), and the outer loop head

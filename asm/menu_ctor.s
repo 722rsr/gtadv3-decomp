@@ -1,6 +1,6 @@
 @ GT Advance 3 - menu/save scene constructor
 @ Region: file offset 0x00C010-0x00C0F0 (VMA 0x0800C010-0x0800C0F0).
-@ Pure Thumb with armcc high-register prologue/epilogue and private pools;
+@ Pure Thumb with high-register prologue/epilogue and private pools;
 @ byte-exact.
 
 .thumb

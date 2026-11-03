@@ -208,169 +208,103 @@ __attribute__((naked)) int Course_CollisionTest(void *sl, void *par, void *ip, v
 
 // _08006FD4 — 166 L, 4 args (r0=sl,r1=r9,r2=r8,r3=r5), pool-free, s32 diff>>4, origin 0x0805DBF4
 // Complete CFG with explicit stack temporaries at sp+0/4/8/12, high-reg r8/sl/r9, s16 widths, proven helpers
-__attribute__((naked)) int Course_CollisionMore(void *sl, void *a, void *b, void *c) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, r7, lr}\n"
-        "mov r7, sl\n"
-        "mov r6, r9\n"
-        "mov r5, r8\n"
-        "push {r5, r6, r7}\n"
-        "sub sp, #20\n"
-        "adds r7, r0, #0\n"
-        "mov r9, r1\n"
-        "mov r8, r2\n"
-        "adds r5, r3, #0\n"
-        "movs r0, #0\n"
-        "mov sl, r0\n"
-        "adds r0, r7, #0\n"
-        "movs r1, #0\n"
-        "bl 0x08006C10\n"
-        "adds r6, r0, #0\n"
-        "cmp r6, #0\n"
-        "beq.n .Lcourse6fd4_080070E2\n"
-        "mov r1, r8\n"
-        "ldr r1, [r1, #0]\n"
-        "mov ip, r1\n"
-        "ldr r2, [r6, #12]\n"
-        "subs r2, r1, r2\n"
-        "str r2, [sp, #4]\n"
-        "mov r4, r8\n"
-        "ldr r3, [r4, #4]\n"
-        "ldr r1, [r6, #16]\n"
-        "subs r1, r3, r1\n"
-        "str r1, [sp, #8]\n"
-        "movs r4, #26\n"
-        "ldrsh r0, [r6, r4]\n"
-        "mov r8, r0\n"
-        "mov r0, r8\n"
-        "muls r0, r2\n"
-        "mov r8, r0\n"
-        "movs r2, #24\n"
-        "ldrsh r0, [r6, r2]\n"
-        "muls r0, r1\n"
-        "mov r4, r8\n"
-        "subs r2, r4, r0\n"
-        "str r2, [sp, #12]\n"
-        "movs r0, #0\n"
-        "mov r8, r0\n"
-        "mov r4, ip\n"
-        "cmp r2, #0\n"
-        "bgt.n .Lcourse6fd4_08007040\n"
-        "movs r1, #1\n"
-        "negs r1, r1\n"
-        "mov r8, r1\n"
-        "cmp r2, #0\n"
-        "bge.n .Lcourse6fd4_08007040\n"
-        "movs r2, #1\n"
-        "mov r8, r2\n"
-        ".Lcourse6fd4_08007040:\n"
-        "str r4, [sp, #4]\n"
-        "str r3, [sp, #8]\n"
-        "ldr r0, [r7, #0]\n"
-        "ldrb r0, [r0, #0]\n"
-        "cmp r0, #0\n"
-        "bne.n .Lcourse6fd4_080070B2\n"
-        "movs r1, #1\n"
-        "negs r1, r1\n"
-        "adds r0, r7, #0\n"
-        "bl 0x08006C10\n"
-        "cmp r0, #0\n"
-        "bne.n .Lcourse6fd4_08007080\n"
-        "ldr r0, [r7, #0]\n"
-        "adds r0, #4\n"
-        "str r0, [sp, #0]\n"
-        "adds r0, r6, #0\n"
-        "mov r1, r9\n"
-        "add r2, sp, #4\n"
-        "adds r3, r5, #0\n"
-        "bl 0x08006E70\n"
-        "lsls r0, r0, #24\n"
-        "cmp r0, #0\n"
-        "ble.n .Lcourse6fd4_08007080\n"
-        "ldr r0, [r7, #0]\n"
-        "adds r0, #12\n"
-        "mov sl, r0\n"
-        "ldr r0, [r5, #0]\n"
-        "str r0, [sp, #4]\n"
-        "ldr r0, [r5, #4]\n"
-        "str r0, [sp, #8]\n"
-        ".Lcourse6fd4_08007080:\n"
-        "adds r0, r7, #0\n"
-        "movs r1, #1\n"
-        "bl 0x08006C10\n"
-        "cmp r0, #0\n"
-        "bne.n .Lcourse6fd4_080070B2\n"
-        "ldr r0, [r7, #0]\n"
-        "adds r0, #32\n"
-        "str r0, [sp, #0]\n"
-        "adds r0, r6, #0\n"
-        "mov r1, r9\n"
-        "add r2, sp, #4\n"
-        "adds r3, r5, #0\n"
-        "bl 0x08006E70\n"
-        "lsls r0, r0, #24\n"
-        "cmp r0, #0\n"
-        "ble.n .Lcourse6fd4_080070B2\n"
-        "ldr r0, [r7, #0]\n"
-        "adds r0, #40\n"
-        "mov sl, r0\n"
-        "ldr r0, [r5, #0]\n"
-        "str r0, [sp, #4]\n"
-        "ldr r0, [r5, #4]\n"
-        "str r0, [sp, #8]\n"
-        ".Lcourse6fd4_080070B2:\n"
-        "mov r4, r8\n"
-        "cmp r4, #0\n"
-        "blt.n .Lcourse6fd4_080070E2\n"
-        "lsls r0, r4, #3\n"
-        "subs r0, r0, r4\n"
-        "lsls r0, r0, #2\n"
-        "adds r0, #32\n"
-        "adds r4, r6, r0\n"
-        "str r4, [sp, #0]\n"
-        "adds r0, r6, #0\n"
-        "mov r1, r9\n"
-        "add r2, sp, #4\n"
-        "adds r3, r5, #0\n"
-        "bl 0x08006E70\n"
-        "lsls r0, r0, #24\n"
-        "cmp r0, #0\n"
-        "ble.n .Lcourse6fd4_080070E2\n"
-        "adds r4, #8\n"
-        "mov sl, r4\n"
-        "ldr r0, [r5, #0]\n"
-        "str r0, [sp, #4]\n"
-        "ldr r0, [r5, #4]\n"
-        "str r0, [sp, #8]\n"
-        ".Lcourse6fd4_080070E2:\n"
-        "mov r0, sl\n"
-        "cmp r0, #0\n"
-        "beq.n .Lcourse6fd4_080070FE\n"
-        "ldr r0, [sp, #4]\n"
-        "str r0, [r5, #0]\n"
-        "ldr r0, [sp, #8]\n"
-        "str r0, [r5, #4]\n"
-        "mov r1, sl\n"
-        "ldr r0, [r1, #0]\n"
-        "str r0, [r5, #8]\n"
-        "ldr r0, [r1, #4]\n"
-        "str r0, [r5, #12]\n"
-        "movs r0, #1\n"
-        "b.n .Lcourse6fd4_08007100\n"
-        ".Lcourse6fd4_080070FE:\n"
-        "movs r0, #0\n"
-        ".Lcourse6fd4_08007100:\n"
-        "add sp, #20\n"
-        "pop {r3, r4, r5}\n"
-        "mov r8, r3\n"
-        "mov r9, r4\n"
-        "mov sl, r5\n"
-        "pop {r4, r5, r6, r7}\n"
-        "pop {r1}\n"
-        "bx r1\n"
-        ".syntax divided\n"
-    );
+int Course_CollisionMore(void *state0, void *par0, void *pos0, void *out0) {
+    void *state = state0;
+    register void *par asm("r9") = par0;
+    register void *u asm("r8") = pos0;
+    register s32 *out asm("r5") = (s32 *)out0;
+    register void *rec asm("r6");
+    register void *result asm("sl") = 0;
+    s32 v[4];
+    void *arg;
+    register s32 px asm("ip");
+    register s32 py asm("r3");
+    s32 *rp;
+    s32 p2;
+    register s32 reserved asm("r4");
+
+    rec = _08006C10(state, 0);
+    if (rec == 0) goto done;
+    __asm__ volatile("" : "=r"(reserved));
+    {
+        register s32 *p1 asm("r1");
+        register s32 t0 asm("r2");
+        p1 = (s32 *)u;
+        v[0] = (px = p1[0]) - (t0 = *(s32 *)((u8 *)rec + 12));
+    }
+    __asm__ volatile("" : "+r"(reserved));
+    {
+        register s32 t1 asm("r1");
+        reserved = (s32)u;
+        v[1] = (py = ((s32 *)reserved)[1]) - (t1 = *(s32 *)((u8 *)rec + 16));
+    }
+    {
+        register s32 t2 asm("r0");
+        t2 = *(s16 *)((u8 *)rec + 26);
+        __asm__ volatile("" : : "r"(t2));
+        u = (void *)t2;
+        __asm__ volatile("" : : "r"(u));
+    }
+    u = (void *)((s32)u * v[0]);
+    __asm__ volatile("" : : "r"(u));
+    {
+        register s32 t3 asm("r0");
+        t3 = *(s16 *)((u8 *)rec + 24);
+        __asm__ volatile("" : : "r"(t3));
+        p2 = t3 * v[1];
+        __asm__ volatile("" : : "r"(p2) : "r2");
+    }
+    {
+        register s32 v2 asm("r2");
+        reserved = (s32)u;
+        v2 = reserved - p2;
+        v[2] = v2;
+        u = 0;
+        reserved = (s32)px;
+        if (v2 <= 0) {
+            u = (void *)-1;
+            if (v2 < 0)
+                u = (void *)1;
+        }
+    }
+    v[0] = (s32)reserved;
+    v[1] = py;
+    if (*(u8 *)(*(void **)state) == 0) {
+        if (_08006C10(state, -1) == 0) {
+            arg = (u8 *)(*(void **)state) + 4;
+            if ((s32)(_08006E70(rec, par, v, out, arg) << 24) > 0) {
+                result = (u8 *)(*(void **)state) + 12;
+                v[0] = out[0];
+                v[1] = out[1];
+            }
+        }
+        if (_08006C10(state, 1) == 0) {
+            arg = (u8 *)(*(void **)state) + 32;
+            if ((s32)(_08006E70(rec, par, v, out, arg) << 24) > 0) {
+                result = (u8 *)(*(void **)state) + 40;
+                v[0] = out[0];
+                v[1] = out[1];
+            }
+        }
+    }
+    if ((s32)u >= 0) {
+        register s32 off asm("r0") = (s32)u * 28 + 32;
+        register void *arg4 asm("r4") = (u8 *)rec + off;
+        if ((s32)(_08006E70(rec, par, v, out, arg4) << 24) > 0) {
+            result = (u8 *)arg4 + 8;
+            v[0] = out[0];
+            v[1] = out[1];
+        }
+    }
+done:
+    if (result == 0)
+        return 0;
+    out[0] = v[0];
+    out[1] = v[1];
+    rp = (s32 *)result;
+    out[2] = rp[0];
+    out[3] = rp[1];
+    return 1;
 }
 int _08006FD4(void *a,void *b,void *c,void *d) __attribute__((alias("Course_CollisionMore")));
 

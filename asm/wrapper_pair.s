@@ -1,6 +1,6 @@
 @ GT Advance 3 - resource wrapper helpers
 @ Regions: file offset 0x026230-0x0263C4 (VMA 0x08026230-0x080263C4)
-@ Exact ARMCC Thumb transcription; pools kept at original ROM offsets.
+@ Exact Thumb transcription; pools kept at original ROM offsets.
 @ The live wrapper 0x080263C4 itself lives in resource_wrap.s and is not duplicated here.
 @ Two pure-Thumb helpers plus private literal pools (word-aligned).
 

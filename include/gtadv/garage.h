@@ -4,7 +4,7 @@
 #include "gba/types.h"
 
 // Garage / course-record placement cluster — asm/garage_26f50.s
-// VMA 0x08026F50–0x0802B04C, 97 funcs, pure Thumb ARMCC.
+// VMA 0x08026F50–0x0802B04C, 97 funcs, pure Thumb.
 // Wraps sub_08007538 / 75E8 / 02ED0-family helpers over tables 0x080CDB78 / 0x083A4374.
 // Related implementations: asm/carphys_tick.s, asm/saveblock.s, course pipeline docs.
 

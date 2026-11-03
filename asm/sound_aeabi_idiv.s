@@ -1,6 +1,8 @@
-@ GT Advance 3 - ARM EABI signed divide helper
+@ GT Advance 3 - GCC 2.95.3 signed divide helper (__divsi3)
 @ Region: file offset 0x02DE04-0x02DE98 (VMA 0x0802DE04-0x0802DE98).
-@ Pure Thumb; byte-exact transcription of __aeabi_idiv.
+@ Pure Thumb; byte-exact transcription of lib1thumb.asm L_divsi3. The project
+@ label __aeabi_idiv is historical; `make era-runtime-probe` proves the body
+@ matches the pret/agbcc runtime, not ARMCC output.
 
 .thumb
 .type sub_0802DE04, %function

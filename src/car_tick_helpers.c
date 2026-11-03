@@ -62,7 +62,7 @@ extern int  RecAF84(void *c);
 
 #define WA 0x03001780u
 
-// armcc sometimes returns a register it never wrote (the "stale tail"): the
+// The ROM sometimes returns a register it never wrote (the "stale tail"): the
 // ROM's branch tree jumps to a shared `adds r0, rN, #0` epilogue on an
 // unexpected key, so the value returned is whatever the CALLER left in rN.
 // C has no direct spelling for "whatever the caller left in rN", so the ARM

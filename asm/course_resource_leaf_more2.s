@@ -1,6 +1,6 @@
 @ GT Advance 3 - course resource record emitter continuation
 @ Region: file offset 0x007B8C-0x007BFC (VMA 0x08007B8C-0x08007BFC).
-@ Exact ARMCC high-register Thumb transcription; pool-free.
+@ Exact high-register Thumb transcription; pool-free.
 
 .thumb
 .type sub_08007B8C, %function

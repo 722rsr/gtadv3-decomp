@@ -621,7 +621,7 @@ u16 _08004D48(void *a) __attribute__((alias("MgrSubstateRead_04D48")));
 // Index through a base pointer rather than folding the +8 into the literal:
 // agbcc materialises `0x030001a0` and folds the offset to [r0,#0] when the
 // address is one expression, which is not the ROM's `ldr r0,=0x03000198 /
-// ldr r0,[r0,#8]`. Naming the base makes armcc keep the pool word.
+// ldr r0,[r0,#8]`. Naming the base keeps the pool word.
 void *MgrGet80(void){ volatile u32 *base = (volatile u32*)(uintptr_t)MGR_BASE; return (void*)(uintptr_t)base[2]; }
 void *_08004B68(void) __attribute__((alias("MgrGet80")));
 // code_4d4c leaf — _08004DC8: push {r4,r5,lr}, movs r0 #12 bl 0x049AC, node=AllocSlot(12),

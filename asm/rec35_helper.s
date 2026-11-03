@@ -1,6 +1,6 @@
 @ GT Advance 3 - rec35 scene helper pair
 @ Region: file offset 0x015E28-0x015ED0 (VMA 0x08015E28-0x08015ED0),
-@ two 0x54-byte bodies incl. trailing armcc pad halfwords:
+@ two 0x54-byte bodies incl. trailing pad halfwords:
 @   helper A 0x08015E28-0x08015E7C, helper B 0x08015E7C-0x08015ED0
 @   (B abuts asm/rec35_stage.s exactly - no overlap).
 @
@@ -71,7 +71,7 @@ _08015E74:
 	pop {r4, r5}
 	pop {r0}
 	bx r0
-	.short 0x0000           @ armcc pad halfword
+	.short 0x0000           @ pad halfword
 
 @ ----------------------------------------------------------------------------
 @ _08015E7C(ctx) - helper B: twin of A over machine-B phase cell s16[ctx+0x96],
@@ -116,5 +116,5 @@ _08015EC8:
 	pop {r4, r5}
 	pop {r0}
 	bx r0
-	.short 0x0000           @ armcc pad halfword
+	.short 0x0000           @ pad halfword
 rec35_helper_end:

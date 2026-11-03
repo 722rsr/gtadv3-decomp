@@ -1,6 +1,6 @@
 @ GT Advance 3 - course/state resource accessors
 @ Region: file offset 0x005F8C-0x006050 (VMA 0x08005F8C-0x08006050).
-@ Pure Thumb; eight ARMCC leaves and their private literal pools.
+@ Pure Thumb; eight leaves and their private literal pools.
 
 .thumb
 .type sub_08005F8C, %function

@@ -51,6 +51,13 @@ python3 tools/lift_packet.py 0x0801EFAC
 python3 tools/asmlift_seed.py --queue --evidence raw --limit 10   # optional seeds
 ```
 
+If the lift screen reports a blocker (`tst`, `mov pc, lr`, `pop {pc}`, a bare
+`push {rN}` with a `bl`, an `.arm` body, `swi`, or a fall-through tail), the
+body is not a pure-C target. Keep it asm, or lift the rest and splice the
+marker; do not switch compilers for it. The marker list and the one-compiler
+policy are in the [matching workflow](docs/matching_workflow.md#bodies-that-are-not-agbcc-c-output-asmsplice-only)
+and [compiler status](docs/compiler_status.md#single-compiler-and-source-provenance).
+
 A packet records the ABI, callers, callees, nearest decompiled siblings,
 existing findings, and a seed when asmlift is installed. Treat the seed as a
 draft: review its ABI and access widths, replace it with readable C in the

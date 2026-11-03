@@ -14,7 +14,7 @@
 @
 @ _080163B8(ev r0, arg_b r1, arg_c r2, ctx r3): 12-way event switch,
 @ idx = ev-1, ev>12 -> shared epilogue. Table base literal IS word[0] of
-@ the table block (armcc duplicate-target quirk, same as the stage
+@ the table block (duplicate-target quirk, same as the stage
 @ machines); dispatch slots are words [1..12] read at base_literal+idx*4.
 @
 @   ev 1 -> _08015CB4(ctx)                          (raw)
@@ -168,9 +168,9 @@ _L080164BE:                     @ ev 1: _08015CB4(ctx)
 _L080164C6:                     @ ev 12: _08015CB0(ctx)
 	adds	r0, r4, #0
 	bl	0x08015CB0              @ raw (numeric exact VMA)
-_080164CC:                      @ shared epilogue (armcc interworking return)
+_080164CC:                      @ shared epilogue (interworking return)
 	pop	{r4, r5}
 	pop	{r0}
 	bx	r0
-.short	0x0000                  @ armcc pad halfword (@0x164D2)
+.short	0x0000                  @ pad halfword (@0x164D2)
 rec35_driver_end:

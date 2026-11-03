@@ -1,6 +1,6 @@
 @ GT Advance 3 - award/collection grid copy twins
 @ Region: file offset 0x00BA3C-0x00BC08 (VMA 0x0800BA3C-0x0800BC08).
-@ Pure Thumb with armcc high-register prologues and private pools; byte-exact.
+@ Pure Thumb with high-register prologues and private pools; byte-exact.
 
 .thumb
 .type sub_0800BA3C, %function

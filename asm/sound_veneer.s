@@ -1,4 +1,4 @@
-@ GT Advance 3 - armcc register-branch veneer pool (relocated-code calls)
+@ GT Advance 3 - GCC 2.95.3 register-branch veneer pool (relocated-code calls)
 @ Region: file offset 0x02DDC8-0x02DE04 (VMA 0x0802DDC8-0x0802DE04).
 @ Pool of 15 four-byte veneer entry points: `bx rN` + halfword pad
 @ (mov r8,r8), reached by `ldr rN, <ram_addr>; bl veneer[rN]` to execute code
