@@ -215,8 +215,31 @@ void sub_08002711C(void) __attribute__((alias("Garage_2711C")));
 // allocates two successive signed slot indices, not random values. Both nodes
 // use (u16)(obj[44] / 16) for the list index and a wide bit of 0x400 or 0x800
 // selected by the byte at 0x03001780 + 0x10BC.
-// A C draft reached the same 44-byte frame but still differed in register and
-// control-flow allocation; retain this body until the complete span matches.
+// MEASURED 2026-11-03 with the pinned old_agbcc (hash-identical to
+// old_agbcc.pinned; the old "302/312" note does not reproduce). Best plain-C
+// body is 149/312: dy born after node 1's word2 store (ROM +0xB2), `m8` typed
+// u32, flag as `wide ? 0x800 : 0x400`. That body's instruction *sequence* is
+// already the ROM's 138 instructions; only register roles differ, and the
+// allocator is one register short: it spills m8 (16-byte frame: w, m8, i0,
+// idx) where the ROM keeps m6/m8/flag in r4/r5/r6, o in r7, i1 in r8, obj in
+// r9, st in sl and spills only w/i0/idx (12-byte frame). The extra resident is
+// the shared `p[12] = 0` temp: old_agbcc cse's the two `movhi` temps into one
+// HI pseudo that then survives both calls (`mov r9,r0` ... `mov r1,r9`); the
+// ROM rematerialises `movs r2,#0` per node. Shrinking dy's birth removed one
+// call-crossing qty but not that one.
+// Levers measured and rejected: `register ... __asm__("rX")` pins (agbcc then
+// uses rX as scratch; all-pins body 332 B / 57 matched -- same failure class
+// as docs/findings/local_alloc_register_choice.md), "+r" and "r" empty-asm
+// barriers at the head/tail of each value's live range (best 96/138
+// instructions, and in_obj lengthens the body to 143), 32 declarations-order
+// permutations, u16/s16/u32/s32 for every local, 31 operand-order permutations
+// of the three OR chains per node, two node pointers instead of one, and
+// `((u16 *)p)[k]` / `*(u16 *)(st + n)` index spellings. All land on or below
+// 149. `tools/regalloc_report.py --function Garage_275B8` prints the allocno
+// table (allocno_compare = floor_log2(refs)*refs/live_length); sorted order is
+// o, obj, flag, st, m6, i0, i1, m8, so obj takes r6 before m8 is reached.
+// Next lead: give the zero temp its own pseudo per node (its value is a
+// constant, so reload would rematerialise `movs r2,#0` and free r9 for obj).
 __attribute__((naked)) void Garage_275B8(void *a0, int a1, int a2, void *a3, int a4) {
     __asm__ volatile (
         ".syntax unified\n"

@@ -17,6 +17,13 @@ extern void *_08005F98(void);
 extern int _08006E70(void *a,void *b,void *c,void *d,void *e);
 
 // _08006E70 — 189 L, pool-free, 5 args (r0=sl, r1=r9, r2=ip, r3=?, [sp+68]=r8)
+// MEASURED 2026-11-04: the 36-byte frame is one local scratch object, not six
+// spills (d 0/4/8, t1 12, t2 16, ep 20, out 24, h 28, t0 32). Spelling it as a
+// struct reproduces the frame exactly; best full lift is 360/356 bytes at
+// 30/356 equal (draft: docs/findings/course_collision_test/frame36.c). The
+// residual is the prologue staging set: the ROM saves r4-r7 and stages
+// sl/r9/r8 through r7/r6/r5, the draft saves r4-r6 because r7 is not marked
+// live. NEXT: get r7 allocated, not pinned.
 __attribute__((naked)) int Course_CollisionTest(void *sl, void *par, void *ip, void *out, void *extra) {
     __asm__ volatile (
         ".syntax unified\n"
@@ -452,32 +459,6 @@ __attribute__((naked)) int Course_CollisionLoop(void *query, void *candidate, vo
         ".syntax divided\n"
     );
 }
-// _08007210 — proximity search, 188 L, 2-iteration gate, rect via _08005DA4, dedup 0x0203F770
-int Course_ProximitySearch(void *query, void *candidate) {
-    // Early gate: ldr r0,[r7+8] s32, ldr r1,[r7+12] s32, cmp #0
-    if (*(volatile s32*)((volatile u8*)query+8)==0 && *(volatile s32*)((volatile u8*)query+12)==0) return 0;
-    // Build rect: sub sp#16, bl _08005DA4 with r0=candidate,r1=query
-    // extern _08005DA4 already declared at top
-    {
-        int rect = _08005DA4(candidate, query); // returns 0/1 via lsls #24 gate
-        if (!rect) return 0;
-        // Min/max clamping via 5/6 slots at sp+0/4 etc. — exact s32 via ldr/str, uses 0x0203F770 dedup
-        {
-            volatile u32 *sp0 = (volatile u32*)candidate; // placeholder for sp+0 rect min
-            (void)sp0;
-            // Proven roots: 0x0203F770 dedup u8[64] at 0x0203F770, cursors 0x0203F8B0 etc. via volatile
-            {
-                volatile u8 *dedup = (volatile u8*)0x0203F770;
-                volatile u16 *cursor = (volatile u16*)0x0203F8B0;
-                (void)dedup; (void)cursor;
-                // Second iteration gate: same rect build with swapped candidate/query as in asm second half
-                // For brevity, return rect gate
-                return rect;
-            }
-        }
-    }
-}
-
 // _08007368 — proximity continuation, 165 L, u16 width, 32-entry sp+40 loop, _08006C10/_08005BA8/_08005DA4
 // Approximation only: the live VMA body is runtime_record_helpers.c _08007368. This copy
 // exists for the header decl; its _08005BA8 call below carries the ROM call

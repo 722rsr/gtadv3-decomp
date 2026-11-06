@@ -3241,11 +3241,10 @@
    "size": 356
   },
   "0x08006fd4": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 152,
-    "naked": true
+    "barrier": 7,
+    "pin": 16
    },
    "file": "src/course_collision.c",
    "name": "Course_CollisionMore",
@@ -3263,11 +3262,9 @@
    "size": 256
   },
   "0x08007210": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 169,
-    "naked": true
+    "pin": 2
    },
    "file": "src/scene_record_dispatch.c",
    "name": "CourseProximity_07210",
@@ -6114,11 +6111,13 @@
    "size": 4
   },
   "0x080141ac": {
-   "class": "asm",
+   "class": "partial",
    "detail": {
-    "insn": 1,
-    "insn_lines": 310,
-    "naked": true
+    "barrier": 14,
+    "directive": 1,
+    "insn": 2,
+    "insn_lines": 85,
+    "pin": 31
    },
    "file": "src/menu_ff78_t.c",
    "name": "MenuFF78_141AC",
@@ -8161,11 +8160,10 @@
    "size": 384
   },
   "0x0801efac": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 661,
-    "naked": true
+    "barrier": 1,
+    "directive": 1
    },
    "file": "src/race_scene_d2.c",
    "name": "_08001EFAC",
@@ -13213,20 +13211,20 @@
  },
  "totals": {
   "asm": {
-   "bytes": 46476,
-   "functions": 121
+   "bytes": 43636,
+   "functions": 117
   },
   "c": {
    "bytes": 44418,
    "functions": 877
   },
   "c_fakematch": {
-   "bytes": 97042,
-   "functions": 674
+   "bytes": 99150,
+   "functions": 677
   },
   "partial": {
-   "bytes": 200,
-   "functions": 4
+   "bytes": 932,
+   "functions": 5
   }
  },
  "version": 1

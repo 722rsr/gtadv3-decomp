@@ -71,11 +71,13 @@ earlier revision of this note arrived at "24 bodies contain the sequence".
 
 `SoundVoiceFollow_NoteOff` (`0x0802C390`, 64 B) is the smallest measured body
 where the named bound reproduces the range test. With the bound in a local the
-head of the lift emits the ROM's `ldrb` / `cmp #128` / `bcs` sequence (register
-homes and the merged load-and-store still differ). The two `tst` gates
-(`(flags & 0x83)` / `(flags & 0x40)`) cannot be produced by the pinned Thumb
-backend, so the body stays asm-owned or becomes `partial` with an explicit gate
-splice.
+head of the lift emits the ROM's `ldrb` / `cmp #128` / `bcs` sequence; pinning
+the cursor to r2 and the id to r3 makes the whole 16-byte head (through the
+`>= 128` arm) byte-identical. The two `tst` gates (`(flags & 0x83)` /
+`(flags & 0x40)`) cannot be produced by the pinned Thumb backend, and the
+`push {r4,r5}` / `bx lr` frame is not a Thumb C frame either, so the body stays
+asm-owned; see
+[sound_voice_follow_noteoff_lift.md](sound_voice_follow_noteoff_lift.md).
 
 Related narrowing already documented: `volatile u16` reads force
 `ldrh`+extend while plain `s16` reads take `ldrsh`

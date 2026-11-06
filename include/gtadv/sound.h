@@ -106,7 +106,8 @@ void *SoundBankGetChArray(u32 idx);           // bankDescs chArray via ldr +4 u3
 void SoundD034_TimerWrite(u16 val);           // REG 0x04000090 u16
 u32 SoundSeqNch(u32 idx);                     // nch via ldr +8 u32
 // Body complete exact bodies (sound_voice_commands.c)
-void SoundVoiceFollow_NoteOff(void *chan, void *seq); // _0802C390
+void SoundVoiceFollow_NoteOff(void *unused, void *chan); // _0802C390 byte-exact listing, hand-written frame/gates
+void SoundVoiceFollow_NoteOffModel(void *unused, void *chan); // readable C model of _0802C390 (not the linked body)
 void SoundInit_Voice(void *voice);                   // _0802C780
 void SoundInterp(void *a, u8 x, u8 y, u8 z);         // _0802CED4
 void SoundResetMore(void *state);                    // _0802CA34

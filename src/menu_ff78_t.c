@@ -23,15 +23,15 @@ extern void Sub_08007BFC(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 
 extern void Sub_08007770(int a, void *b, int c, int d, u32 e, u32 f);
 extern void _08007770(int a, void *b, int c, int d, u32 e, u32 f); // R2-faithful strong body
 extern void Sub_0800DAB8(void *a);
-extern void Sub_08007614(void *a, int b, int c, int d);
-extern void Sub_0800798C(void *a, void *b);
-extern void Sub_08007A58(void *a);
-extern void Sub_080075E8(void *a, int b, int c);
-extern void Sub_08007ABC(u32 a, u32 b, u32 c);
-extern void Sub_0800D77C(void *a, int b, int c);
-extern void Sub_08002B214(int v);
-extern void *Sub_08004B68(void);
-extern u32 Sub_0800572C(int v);
+extern void sub_08007614(void *a, int b, int c, int d);
+extern void sub_0800798C(void *a, void *b);
+extern void sub_08007A58(void *a);
+extern void sub_080075E8(void *a, int b, int c);
+extern void sub_08007ABC(u32 a, u32 b, u32 c);
+extern void sub_0800D77C(void *a, int b, int c);
+extern void sub_0802B214(int v);
+extern void *sub_08004B68(void);
+extern u32 sub_0800572C(int v);
 extern void Sub_08003954(int a, int b, u32 c);
 extern void Sub_0800D97C(void *a, int b);
 extern void Sub_0800DBE8(void *a);
@@ -357,237 +357,218 @@ void sub_080014F60(void *a) __attribute__((alias("MenuFF78_14F60")));
 // declaration order (p180,p44,p52,p248,p148,p158,p160,p166,p168,p32,p176).
 // Remaining: those CSE base choices, the loop-head scheduling, and the
 // `i + 1` placement, which is what the tail's two blankets depend on.
-__attribute__((naked)) void MenuFF78_141AC(void *a) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push	{r4, r5, r6, r7, lr}\n"
-        "mov	r7, sl\n"
-        "mov	r6, r9\n"
-        "mov	r5, r8\n"
-        "push	{r5, r6, r7}\n"
-        "sub	sp, #52\n"
-        "adds	r7, r0, #0\n"
-        "movs	r0, #52\n"
-        "bl 0x0802B214\n"
-        "ldr r6, .L141ac_38c\n"
-        "movs	r0, #4\n"
-        "str	r0, [sp, #0]\n"
-        "movs	r4, #1\n"
-        "str	r4, [sp, #4]\n"
-        "movs	r0, #0\n"
-        "adds	r1, r6, #0\n"
-        "movs	r2, #2\n"
-        "movs	r3, #0\n"
-        "bl 0x08007770\n"
-        "movs	r0, #6\n"
-        "str	r0, [r7, #104]\n"
-        "movs	r0, #0\n"
-        "str	r0, [r7, #116]\n"
-        "adds	r0, r7, #0\n"
-        "adds	r0, #128\n"
-        "str	r4, [r0, #0]\n"
-        "movs	r0, #32\n"
-        "adds	r0, r0, r7\n"
-        "mov	r8, r0\n"
-        "bl 0x0800DAB8\n"
-        "ldr r0, .L141ac_390\n"
-        "movs	r1, #1\n"
-        "movs	r2, #0\n"
-        "movs	r3, #3\n"
-        "bl 0x08007614\n"
-        "ldr r4, .L141ac_394\n"
-        "adds	r5, r7, #0\n"
-        "adds	r5, #16\n"
-        "adds	r0, r4, #0\n"
-        "adds	r1, r5, #0\n"
-        "bl 0x0800798C\n"
-        "adds	r0, r4, #0\n"
-        "movs	r1, #0\n"
-        "movs	r2, #10\n"
-        "bl 0x080075E8\n"
-        "adds	r0, r4, #0\n"
-        "movs	r1, #1\n"
-        "movs	r2, #11\n"
-        "bl 0x080075E8\n"
-        "adds	r0, r5, #0\n"
-        "bl 0x08007A58\n"
-        "adds	r4, r7, #0\n"
-        "adds	r4, #8\n"
-        "adds	r0, r6, #0\n"
-        "adds	r1, r4, #0\n"
-        "bl 0x0800798C\n"
-        "adds	r0, r4, #0\n"
-        "bl 0x08007A58\n"
-        "adds	r0, r6, #0\n"
-        "movs	r1, #0\n"
-        "movs	r2, #5\n"
-        "bl 0x080075E8\n"
-        "ldr r0, .L141ac_398\n"
-        "adds	r1, r7, #0\n"
-        "adds	r1, #24\n"
-        "bl 0x0800798C\n"
-        "movs	r1, #0\n"
-        "mov	r2, r8\n"
-        "str	r2, [sp, #44]\n"
-        "adds	r3, r7, #0\n"
-        "adds	r3, #248\n"
-        "str	r3, [sp, #20]\n"
-        "movs	r0, #252\n"
-        "adds	r0, r0, r7\n"
-        "mov	r9, r0\n"
-        "adds	r2, r7, #0\n"
-        "adds	r2, #176\n"
-        "str	r2, [sp, #48]\n"
-        "subs	r3, #68\n"
-        "str	r3, [sp, #8]\n"
-        "adds	r0, r7, #0\n"
-        "adds	r0, #148\n"
-        "str	r0, [sp, #24]\n"
-        "subs	r2, #124\n"
-        "str	r2, [sp, #16]\n"
-        "subs	r3, #136\n"
-        "str	r3, [sp, #12]\n"
-        "adds	r0, #18\n"
-        "str	r0, [sp, #36]\n"
-        "adds	r2, #116\n"
-        "str	r2, [sp, #40]\n"
-        ".L141ac_27a:\n"
-        "lsls	r0, r1, #3\n"
-        "adds	r3, r1, #1\n"
-        "mov	r8, r3\n"
-        "movs	r2, #156\n"
-        "adds	r2, r2, r7\n"
-        "mov	sl, r2\n"
-        "adds	r3, r7, #0\n"
-        "adds	r3, #158\n"
-        "str	r3, [sp, #28]\n"
-        "adds	r2, r7, #0\n"
-        "adds	r2, #160\n"
-        "str	r2, [sp, #32]\n"
-        "adds	r0, r0, r1\n"
-        "lsls	r0, r0, #3\n"
-        "ldr	r3, [sp, #20]\n"
-        "adds	r4, r0, r3\n"
-        "mov	r1, r9\n"
-        "adds	r5, r0, r1\n"
-        "movs	r6, #5\n"
-        ".L141ac_2a0:\n"
-        "movs	r0, #2\n"
-        "bl 0x0800572C\n"
-        "str	r0, [r4, #0]\n"
-        "movs	r0, #9\n"
-        "str	r0, [r5, #0]\n"
-        "ldr	r0, [r7, #28]\n"
-        "ldr	r2, [r4, #0]\n"
-        "movs	r1, #9\n"
-        "bl 0x08007ABC\n"
-        "adds	r4, #12\n"
-        "adds	r5, #12\n"
-        "subs	r6, #1\n"
-        "cmp	r6, #0\n"
-        "bge .L141ac_2a0\n"
-        "mov	r1, r8\n"
-        "cmp	r1, #3\n"
-        "ble .L141ac_27a\n"
-        "ldr r4, .L141ac_39c\n"
-        "adds	r0, r4, #0\n"
-        "adds	r1, r7, #0\n"
-        "bl 0x0800798C\n"
-        "adds	r0, r4, #0\n"
-        "movs	r1, #0\n"
-        "movs	r2, #0\n"
-        "movs	r3, #7\n"
-        "bl 0x08007614\n"
-        "adds	r0, r4, #0\n"
-        "movs	r1, #0\n"
-        "movs	r2, #3\n"
-        "movs	r3, #6\n"
-        "bl 0x08007614\n"
-        "adds	r0, r4, #0\n"
-        "movs	r1, #0\n"
-        "movs	r2, #1\n"
-        "movs	r3, #8\n"
-        "bl 0x08007614\n"
-        "adds	r0, r4, #0\n"
-        "movs	r1, #0\n"
-        "movs	r2, #2\n"
-        "movs	r3, #9\n"
-        "bl 0x08007614\n"
-        "movs	r6, #0\n"
-        "ldr r2, .L141ac_3a0\n"
-        "mov	r9, r2\n"
-        "ldr r3, .L141ac_3a4\n"
-        "mov	r8, r3\n"
-        "ldr	r4, [sp, #48]\n"
-        "ldr	r5, [sp, #8]\n"
-        ".L141ac_30e:\n"
-        "movs	r0, #12\n"
-        "bl 0x0800572C\n"
-        "lsls	r1, r6, #1\n"
-        "str	r0, [r4, #0]\n"
-        "mov	r0, r8\n"
-        "movs	r3, #0\n"
-        "ldrsh	r2, [r0, r3]\n"
-        "movs	r0, #22\n"
-        "muls	r0, r2\n"
-        "adds	r1, r1, r0\n"
-        "add	r1, r9\n"
-        "movs	r0, #0\n"
-        "ldrsh	r1, [r1, r0]\n"
-        "str	r1, [r5, #0]\n"
-        "ldr	r0, [r7, #4]\n"
-        "ldr	r2, [r4, #0]\n"
-        "bl 0x08007ABC\n"
-        "adds	r4, #12\n"
-        "adds	r5, #12\n"
-        "adds	r6, #1\n"
-        "cmp	r6, #5\n"
-        "ble .L141ac_30e\n"
-        "ldr	r1, [sp, #44]\n"
-        "ldr	r2, [sp, #24]\n"
-        "str	r1, [r2, #0]\n"
-        "movs	r0, #0\n"
-        "str	r0, [r7, #32]\n"
-        "movs	r0, #1\n"
-        "strh	r0, [r7, #36]\n"
-        "movs	r2, #32\n"
-        "negs	r2, r2\n"
-        "ldr	r0, [sp, #16]\n"
-        "movs	r1, #0\n"
-        "bl 0x0800D77C\n"
-        "ldr	r0, [sp, #12]\n"
-        "movs	r1, #0\n"
-        "movs	r2, #160\n"
-        "bl 0x0800D77C\n"
-        "movs	r0, #6\n"
-        "strh	r0, [r7, #40]\n"
-        "movs	r0, #5\n"
-        "strh	r0, [r7, #42]\n"
-        "ldr	r3, [sp, #36]\n"
-        "strh	r0, [r3, #0]\n"
-        "movs	r0, #2\n"
-        "ldr	r1, [sp, #40]\n"
-        "str	r0, [r1, #0]\n"
-        "bl 0x08004B68\n"
-        "ldrh	r0, [r0, #2]\n"
-        "cmp	r0, #17\n"
-        "bne .L141ac_3b0\n"
-        "ldr r0, .L141ac_3a8\n"
-        "ldr r2, .L141ac_3ac\n"
-        "adds	r0, r0, r2\n"
-        "ldrh	r0, [r0, #0]\n"
-        "mov	r3, sl\n"
-        "strh	r0, [r3, #0]\n"
-        "b .L141ac_3d4\n"
-        ".L141ac_38c: .4byte 0x082F0FF0\n"
-        ".L141ac_390: .4byte 0x082A798C\n"
-        ".L141ac_394: .4byte 0x082D7660\n"
-        ".L141ac_398: .4byte 0x082F3150\n"
-        ".L141ac_39c: .4byte 0x082F36D8\n"
-        ".L141ac_3a0: .4byte 0x080CB714\n"
-        ".L141ac_3a4: .4byte 0x03002776\n"
-        ".L141ac_3a8: .4byte 0x03001780\n"
-        ".L141ac_3ac: .4byte 0x0000103A\n"
+void MenuFF78_141AC(void *a) {
+    volatile u8 *rec = (volatile u8 *)a;
+    register u8 *p32r __asm__("r8");
+    register u8 *t0 __asm__("r0");
+    register u8 *z __asm__("r0");
+    register u8 *t2 __asm__("r2");
+    register u8 *t3 __asm__("r3");
+    u8 *frame[11];
+    register u8 *p252 __asm__("r9");
+    register s16 *p156 __asm__("sl");
+    int i, i1, k, d;
+    register int n __asm__("r3");
+    register u16 five __asm__("r0");
+    register u32 two __asm__("r0");
+
+    sub_0802B214(52);
+    _08007770(0, (void *)(uintptr_t)0x082F0FF0u, 2, 0, 4, 1);
+    *(volatile u32 *)(uintptr_t)(rec + 104) = 6;
+    *(volatile u32 *)(uintptr_t)(rec + 116) = 0;
+    *(volatile u32 *)(uintptr_t)(rec + 128) = 1;
+    p32r = (u8 *)(rec + 32);
+    Sub_0800DAB8((void *)p32r);
+    sub_08007614((void *)(uintptr_t)0x082A798Cu, 1, 0, 3);
+    sub_0800798C((void *)(uintptr_t)0x082D7660u, (void *)(uintptr_t)(rec + 16));
+    sub_080075E8((void *)(uintptr_t)0x082D7660u, 0, 10);
+    sub_080075E8((void *)(uintptr_t)0x082D7660u, 1, 11);
+    sub_08007A58((void *)(uintptr_t)(rec + 16));
+    sub_0800798C((void *)(uintptr_t)0x082F0FF0u, (void *)(uintptr_t)(rec + 8));
+    sub_08007A58((void *)(uintptr_t)(rec + 8));
+    sub_080075E8((void *)(uintptr_t)0x082F0FF0u, 0, 5);
+    sub_0800798C((void *)(uintptr_t)0x082F3150u, (void *)(uintptr_t)(rec + 24));
+
+    i = 0;
+    {
+        register u8 *q __asm__("r2");
+        q = p32r;
+        __asm__ volatile ("" : "+r"(q));
+        frame[9] = q;
+    }
+    t3 = (u8 *)(uintptr_t)((u32)(uintptr_t)rec + 248);
+    frame[3] = t3;
+    z = (u8 *)(uintptr_t)252;
+    __asm__ volatile ("" : "+r"(z));
+    z = (u8 *)(uintptr_t)((u32)(uintptr_t)z + (u32)(uintptr_t)rec);
+    __asm__ volatile ("" : "+r"(z));
+    p252 = z;
+    t2 = (u8 *)(uintptr_t)((u32)(uintptr_t)rec + 176);
+    frame[10] = t2;
+    t3 = t3 - 68;
+    frame[0] = t3;
+    t0 = (u8 *)(uintptr_t)((u32)(uintptr_t)rec + 148);
+    frame[4] = t0;
+    t2 = t2 - 124;
+    frame[2] = t2;
+    t3 = t3 - 136;
+    frame[1] = t3;
+    t0 = t0 + 18;
+    frame[7] = t0;
+    t2 = t2 + 116;
+    frame[8] = t2;
+
+    do {
+        u8 *cell;
+        u8 *cell2;
+        register u32 off __asm__("r0");
+
+        __asm__ volatile ("" : "=r"(off) : "0"((u32)i << 3));
+        n = i + 1;
+        __asm__ volatile ("" : "+r"(n));
+        i1 = n;
+        {
+            register u8 *q2 __asm__("r2");
+            q2 = (u8 *)(uintptr_t)156;
+            __asm__ volatile ("" : "+r"(q2));
+            q2 = (u8 *)(uintptr_t)((u32)(uintptr_t)q2 + (u32)(uintptr_t)rec);
+            __asm__ volatile ("" : "+r"(q2));
+            p156 = (s16 *)q2;
+        }
+        {
+            register u8 *q3 __asm__("r3");
+            register u8 *q2b __asm__("r2");
+
+            q3 = (u8 *)(rec + 158);
+            frame[5] = q3;
+            q2b = (u8 *)(rec + 160);
+            frame[6] = q2b;
+        }
+        off = off + (u32)i;
+        off = off * 8;
+        {
+            register u8 *cb __asm__("r3");
+            cb = frame[3];
+            cell = (u8 *)(uintptr_t)((u32)off + (u32)(uintptr_t)cb);
+        }
+        {
+            register u8 *c2 __asm__("r1");
+            c2 = p252;
+            __asm__ volatile ("" : "+r"(c2));
+            cell2 = (u8 *)(uintptr_t)((u32)off + (u32)(uintptr_t)c2);
+        }
+        for (k = 5; k >= 0; k--) {
+            *(volatile u32 *)(uintptr_t)cell = sub_0800572C(2);
+            *(volatile u32 *)(uintptr_t)cell2 = 9;
+            sub_08007ABC(*(volatile u32 *)(uintptr_t)(rec + 28), 9,
+                         *(volatile u32 *)(uintptr_t)cell);
+            cell += 12;
+            cell2 += 12;
+        }
+        i = i1;
+    } while (i <= 3);
+
+    sub_0800798C((void *)(uintptr_t)0x082F36D8u, (void *)(uintptr_t)rec);
+    sub_08007614((void *)(uintptr_t)0x082F36D8u, 0, 0, 7);
+    sub_08007614((void *)(uintptr_t)0x082F36D8u, 0, 3, 6);
+    sub_08007614((void *)(uintptr_t)0x082F36D8u, 0, 1, 8);
+    sub_08007614((void *)(uintptr_t)0x082F36D8u, 0, 2, 9);
+
+    {
+        register u8 *tbl __asm__("r9");
+        register s16 *wp __asm__("r8");
+        u8 *q176;
+        u8 *q180;
+
+        k = 0;
+        {
+            register u8 *t2 __asm__("r2");
+            t2 = (u8 *)(uintptr_t)0x080CB714u;
+            __asm__ volatile ("" : "+r"(t2));
+            tbl = (u8 *)t2;
+        }
+        {
+            register u8 *w3 __asm__("r3");
+            w3 = (u8 *)(uintptr_t)0x03002776u;
+            __asm__ volatile ("" : "+r"(w3));
+            wp = (s16 *)w3;
+        }
+        q176 = frame[10];
+        q180 = frame[0];
+
+        for (; k <= 5; k++) {
+            u32 val;
+            u32 v;
+            register u32 idx __asm__("r1");
+            register int w __asm__("r2");
+            register int p __asm__("r0");
+
+            v = sub_0800572C(12);
+            idx = (u32)k * 2;
+            __asm__ volatile ("" : "+r"(idx));
+            *(volatile u32 *)(uintptr_t)q176 = v;
+            w = *(s16 *)(uintptr_t)wp;
+            p = 22 * w;
+            idx = idx + (u32)p;
+            val = (u32)(s32)*(s16 *)(uintptr_t)(tbl + idx);
+            *(volatile u32 *)(uintptr_t)q180 = val;
+            sub_08007ABC(*(volatile u32 *)(uintptr_t)(rec + 4), val,
+                         *(volatile u32 *)(uintptr_t)q176);
+            q176 += 12;
+            q180 += 12;
+        }
+    }
+
+    {
+        register u32 p32v __asm__("r1");
+        register u8 *dst __asm__("r2");
+        p32v = (u32)(uintptr_t)frame[9];
+        dst = frame[4];
+        __asm__ volatile ("" : "+r"(dst));
+        *(volatile u32 *)(uintptr_t)dst = p32v;
+    }
+    *(volatile u32 *)(uintptr_t)(rec + 32) = 0;
+    *(volatile s16 *)(uintptr_t)(rec + 36) = 1;
+    {
+        register int n32 __asm__("r2");
+        n32 = -32;
+        sub_0800D77C((void *)(uintptr_t)frame[2], 0, n32);
+    }
+    sub_0800D77C((void *)(uintptr_t)frame[1], 0, 160);
+    *(volatile s16 *)(uintptr_t)(rec + 40) = 6;
+    five = 5;
+    *(volatile s16 *)(uintptr_t)(rec + 42) = five;
+    {
+        register u8 *d166 __asm__("r3");
+        d166 = frame[7];
+        __asm__ volatile ("" : "+r"(d166));
+        *(volatile s16 *)(uintptr_t)d166 = five;
+    }
+    two = 2;
+    *(volatile u32 *)(uintptr_t)frame[8] = two;
+
+    {
+        u16 car;
+        s16 *wp6;
+        register u8 *wa __asm__("r0");
+        u16 v17;
+
+        car = *(volatile u16 *)(uintptr_t)((u8 *)sub_08004B68() + 2);
+        if (car == 17) {
+            extern u8 J141AC_WA[];
+
+            __asm__(".globl J141AC_WA\nJ141AC_WA = 0x03001780\n");
+            wa = (u8 *)(uintptr_t)J141AC_WA;
+            {
+                register u32 c103a __asm__("r2");
+                c103a = 0x103Au;
+                __asm__ volatile ("" : "+r"(c103a));
+                v17 = *(u16 *)(uintptr_t)(wa + c103a);
+            }
+            goto car17_store;
+        }
+        __asm__ volatile (
+            ".syntax unified\n"
         ".L141ac_3b0:\n"
         "ldr r2, .L141ac_474\n"
         "ldr r1, .L141ac_478\n"
@@ -607,6 +588,11 @@ __attribute__((naked)) void MenuFF78_141AC(void *a) {
         "ldrh	r0, [r1, #0]\n"
         "mov	r1, sl\n"
         "strh	r0, [r1, #0]\n"
+            ".syntax divided\n"
+            : : : "r0", "r1", "r2", "r3", "r5", "r8", "r9", "sl", "cc", "memory");
+    after_car:;
+        __asm__ volatile (
+            ".syntax unified\n"
         ".L141ac_3d4:\n"
         "ldr r1, .L141ac_474\n"
         "ldr r2, .L141ac_47c\n"
@@ -680,23 +666,31 @@ __attribute__((naked)) void MenuFF78_141AC(void *a) {
         "ble .L141ac_418\n"
         "adds	r0, r7, #0\n"
         "bl 0x08014078\n"
-        "add	sp, #52\n"
-        "pop	{r3, r4, r5}\n"
-        "mov	r8, r3\n"
-        "mov	r9, r4\n"
-        "mov	sl, r5\n"
-        "pop	{r4, r5, r6, r7}\n"
-        "pop	{r0}\n"
-        "bx	r0\n"
-        "movs	r0, r0\n"
+            ".syntax divided\n"
+            : : : "r0", "r1", "r2", "r3", "r4", "r5", "r6", "r8", "sl", "cc", "memory");
+        goto after_all;
+    car17_store:
+        {
+            register s16 *d3 __asm__("r3");
+            d3 = p156;
+            *d3 = v17;
+        }
+        goto after_car;
+    after_all:;
+    }
+}
+
+void _0800141AC(void *a) __attribute__((alias("MenuFF78_141AC")));
+void Sub_0800141AC(void *a) __attribute__((alias("MenuFF78_141AC")));
+void sub_0800141AC(void *a) __attribute__((alias("MenuFF78_141AC")));
+
+__asm__(
+    ".pushsection .text.MenuFF78_141AC,\"ax\",%progbits\n"
+    ".subsection 1\n"
+    ".align 2, 0\n"
         ".L141ac_474: .4byte 0x03001780\n"
         ".L141ac_478: .4byte 0x00000FF6\n"
         ".L141ac_47c: .4byte 0x00000FF2\n"
         ".L141ac_480: .4byte 0x00000FFA\n"
         ".L141ac_484: .4byte 0x080CB714\n"
-        ".syntax divided\n"
-    );
-}
-void _0800141AC(void *a) __attribute__((alias("MenuFF78_141AC")));
-void Sub_0800141AC(void *a) __attribute__((alias("MenuFF78_141AC")));
-void sub_0800141AC(void *a) __attribute__((alias("MenuFF78_141AC")));
+    ".popsection\n");

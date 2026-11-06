@@ -15,7 +15,6 @@
 //   asm/menu_c4d0.s              0x0800C4D0 (menu record-20 constructor)
 //   asm/course_resource_leaf_more2.s 0x08007B8C (record emitter twin)
 //   asm/course_resource_leaf_more.s  0x08007B18 (record emitter)
-//   asm/course_proximity.s       0x08007210 (proximity search)
 //   asm/code_25264.s             0x08025264 (lineup builder)
 //   asm/code_23628.s             0x08023628 (race scene ctor)
 //   asm/ai_racefsm.s             0x0800AA40 (per-frame race FSM, 8-way)
@@ -1585,195 +1584,122 @@ static void CourseSetup7770_Static(void *ctx, void *X, int r2in, int r3in,
     }
 }
 
-// projects the query delta (05DA4), clamps to the 2-attempt entry list and
-// runs the half-plane + tile-range acceptance test (05E14), publishing the
-// hit into the out record. Returns 1 on accept, 0 otherwise.
 // ============================================================================
-__attribute__((naked)) int CourseProximity_07210(void *state, void *out) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, r7, lr}\n"
-        "mov r7, sl\n"
-        "mov r6, r9\n"
-        "mov r5, r8\n"
-        "push {r5, r6, r7}\n"
-        "sub sp, #72\n"
-        "adds r7, r1, #0\n"
-        "movs r1, #0\n"
-        "bl 0x08006C10\n"
-        "mov r8, r0\n"
-        "ldr r0, [r7, #8]\n"
-        "cmp r0, #0\n"
-        "bne.n .Lcp07210_08007234\n"
-        "ldr r0, [r7, #12]\n"
-        "cmp r0, #0\n"
-        "bne.n .Lcp07210_08007234\n"
-        "b.n .Lcp07210_08007356\n"
-        ".Lcp07210_08007234:\n"
-        "add r4, sp, #24\n"
-        "ldr r0, [r7, #0]\n"
-        "mov r2, r8\n"
-        "ldr r1, [r2, #12]\n"
-        "subs r0, r0, r1\n"
-        "str r0, [sp, #24]\n"
-        "ldr r0, [r7, #4]\n"
-        "ldr r1, [r2, #16]\n"
-        "subs r0, r0, r1\n"
-        "str r0, [r4, #4]\n"
-        "ldr r0, [r7, #8]\n"
-        "str r0, [r4, #8]\n"
-        "ldr r0, [r7, #12]\n"
-        "str r0, [r4, #12]\n"
-        "mov r0, sp\n"
-        "adds r1, r4, #0\n"
-        "bl 0x08005DA4\n"
-        "ldr r2, [sp, #24]\n"
-        "ldr r0, [r4, #8]\n"
-        "adds r0, r2, r0\n"
-        "str r0, [sp, #52]\n"
-        "adds r5, r0, #0\n"
-        "ldr r1, [r4, #4]\n"
-        "ldr r0, [r4, #12]\n"
-        "adds r0, r1, r0\n"
-        "str r0, [sp, #56]\n"
-        "adds r6, r0, #0\n"
-        "cmp r5, r2\n"
-        "ble.n .Lcp07210_08007272\n"
-        "adds r5, r2, #0\n"
-        ".Lcp07210_08007272:\n"
-        "cmp r6, r1\n"
-        "ble.n .Lcp07210_08007278\n"
-        "adds r6, r1, #0\n"
-        ".Lcp07210_08007278:\n"
-        "ldr r3, [sp, #52]\n"
-        "cmp r3, r2\n"
-        "bge.n .Lcp07210_08007280\n"
-        "str r2, [sp, #52]\n"
-        ".Lcp07210_08007280:\n"
-        "ldr r0, [sp, #56]\n"
-        "cmp r0, r1\n"
-        "bge.n .Lcp07210_08007288\n"
-        "str r1, [sp, #56]\n"
-        ".Lcp07210_08007288:\n"
-        "movs r1, #0\n"
-        "str r1, [sp, #48]\n"
-        ".Lcp07210_0800728c:\n"
-        "mov r2, sp\n"
-        "adds r2, #40\n"
-        "str r2, [sp, #60]\n"
-        "mov r4, r8\n"
-        "adds r4, #40\n"
-        "mov r9, r1\n"
-        ".Lcp07210_08007298:\n"
-        "ldr r0, [sp, #60]\n"
-        "mov r1, sp\n"
-        "adds r2, r4, #0\n"
-        "bl 0x08005E14\n"
-        "lsls r0, r0, #24\n"
-        "cmp r0, #0\n"
-        "beq.n .Lcp07210_08007346\n"
-        "mov r0, r8\n"
-        "adds r0, #32\n"
-        "add r0, r9\n"
-        "ldr r1, [sp, #24]\n"
-        "ldr r0, [r0, #0]\n"
-        "subs r1, r1, r0\n"
-        "str r1, [r7, #0]\n"
-        "mov r0, r8\n"
-        "adds r0, #36\n"
-        "add r0, r9\n"
-        "ldr r2, [sp, #28]\n"
-        "ldr r0, [r0, #0]\n"
-        "subs r2, r2, r0\n"
-        "str r2, [r7, #4]\n"
-        "mov r0, r8\n"
-        "adds r0, #40\n"
-        "add r0, r9\n"
-        "mov sl, r0\n"
-        "ldr r0, [r0, #0]\n"
-        "muls r1, r0\n"
-        "mov r0, r8\n"
-        "adds r0, #44\n"
-        "add r0, r9\n"
-        "mov ip, r0\n"
-        "ldr r0, [r0, #0]\n"
-        "muls r0, r2\n"
-        "adds r1, r1, r0\n"
-        "ldr r3, [sp, #40]\n"
-        "cmp r1, #0\n"
-        "bge.n .Lcp07210_08007324\n"
-        "cmp r5, r3\n"
-        "bgt.n .Lcp07210_08007346\n"
-        "ldr r0, [sp, #60]\n"
-        "ldr r1, [r0, #4]\n"
-        "cmp r6, r1\n"
-        "bgt.n .Lcp07210_08007346\n"
-        "ldr r2, [sp, #52]\n"
-        "cmp r2, r3\n"
-        "blt.n .Lcp07210_08007346\n"
-        "ldr r0, [sp, #56]\n"
-        "cmp r0, r1\n"
-        "blt.n .Lcp07210_08007346\n"
-        "movs r2, #12\n"
-        "ldrsh r0, [r4, r2]\n"
-        "asrs r2, r3, #8\n"
-        "str r2, [sp, #68]\n"
-        "cmp r0, r2\n"
-        "bgt.n .Lcp07210_08007346\n"
-        "movs r2, #14\n"
-        "ldrsh r0, [r4, r2]\n"
-        "asrs r1, r1, #8\n"
-        "cmp r0, r1\n"
-        "bgt.n .Lcp07210_08007346\n"
-        "movs r2, #16\n"
-        "ldrsh r0, [r4, r2]\n"
-        "ldr r2, [sp, #68]\n"
-        "cmp r0, r2\n"
-        "blt.n .Lcp07210_08007346\n"
-        "movs r2, #18\n"
-        "ldrsh r0, [r4, r2]\n"
-        "cmp r0, r1\n"
-        "blt.n .Lcp07210_08007346\n"
-        ".Lcp07210_08007324:\n"
-        "mov r1, r8\n"
-        "ldr r0, [r1, #12]\n"
-        "adds r0, r3, r0\n"
-        "str r0, [r7, #0]\n"
-        "ldr r2, [sp, #60]\n"
-        "ldr r0, [r2, #4]\n"
-        "ldr r1, [r1, #16]\n"
-        "adds r0, r0, r1\n"
-        "str r0, [r7, #4]\n"
-        "mov r3, sl\n"
-        "ldr r0, [r3, #0]\n"
-        "str r0, [r7, #8]\n"
-        "mov r1, ip\n"
-        "ldr r0, [r1, #0]\n"
-        "str r0, [r7, #12]\n"
-        "movs r0, #1\n"
-        "b.n .Lcp07210_08007358\n"
-        ".Lcp07210_08007346:\n"
-        "adds r4, #28\n"
-        "movs r2, #28\n"
-        "add r9, r2\n"
-        "ldr r3, [sp, #48]\n"
-        "adds r3, #1\n"
-        "str r3, [sp, #48]\n"
-        "cmp r3, #1\n"
-        "ble.n .Lcp07210_08007298\n"
-        ".Lcp07210_08007356:\n"
-        "movs r0, #0\n"
-        ".Lcp07210_08007358:\n"
-        "add sp, #72\n"
-        "pop {r3, r4, r5}\n"
-        "mov r8, r3\n"
-        "mov r9, r4\n"
-        "mov sl, r5\n"
-        "pop {r4, r5, r6, r7}\n"
-        "pop {r1}\n"
-        "bx r1\n"
-        ".syntax divided\n"
-    );
+// asm/course_proximity.s 0x08007210 -- proximity search over the current row.
+//
+//   row = _08006C10(state, 0)
+//   if (out[2] == 0 && out[3] == 0) return 0
+//   v = { out[0] - row->camX, out[1] - row->camY, out[2], out[3] }
+//   _08005DA4(line, v)                       // perpendicular projection
+//   max/min X/Y over the v[0]/v[2] and v[1]/v[3] pairs
+//   for both row segments:
+//     if (_08005E14(hit, line, &seg->ray) == 0) continue
+//     out[0..1] = v[0..1] - seg->{dx,dy}
+//     if (dot(out, seg->ray) >= 0) accept
+//     else require the hit inside the clamped rect and inside the tile rect
+//   accept: out[0..3] = camera-relative hit and the segment heading
+//
+// Row layout (0x08006C10 returns an 88-byte row): +12/+16 camera x/y, then two
+// 28-byte segments at +32: { dx, dy, ray { x, y, len, s16 tile rect } }.  The
+// 28-byte stride is why the loop walks `row->e[i]` instead of a pointer.
+//
+// MEASURED 2026-11-04: EXACT 344/344 bytes with the pinned old_agbcc. Two
+// source levers reproduce the frame exactly, so keep them:
+//   * `s32 line[6]` -- 05DA4 writes three words, but the ROM reserves a 24-byte
+//     frame slot for the buffer (sp+0..sp+23, v lands at sp+24).  Any smaller
+//     declaration shrinks the frame and shifts every later slot.
+//   * `minX`/`minY` pinned to r5/r6.  Unpinned, the allocator keeps them in
+//     high registers, which drags `i` in from sp+48 and reorders the loop.
+// The `hit` pointer the ROM reloads from sp+60 is agbcc's own spilled address
+// of `hit`; no source pointer variable is needed (adding one mis-compiles the
+// call's first argument).
+// ============================================================================
+typedef struct {
+    s32 x;
+    s32 y;
+    s32 len;
+    s16 minX;
+    s16 minY;
+    s16 maxX;
+    s16 maxY;
+} CourseProxRay;
+
+typedef struct {
+    s32 dx;
+    s32 dy;
+    CourseProxRay ray;
+} CourseProxEntry;
+
+typedef struct {
+    u8 pad0[12];
+    s32 camX;
+    s32 camY;
+    u8 pad1[12];
+    CourseProxEntry e[2];
+} CourseProxRow;
+
+int CourseProximity_07210(void *state, s32 *out) {
+    CourseProxRow *row = (CourseProxRow *)_08006C10(state, 0);
+    s32 line[6];
+    s32 v[4];
+    s32 hit[2];
+    s32 i;
+    s32 maxX;
+    s32 maxY;
+    register s32 minX __asm__("r5");
+    register s32 minY __asm__("r6");
+
+    if (out[2] == 0 && out[3] == 0)
+        return 0;
+    v[0] = out[0] - row->camX;
+    v[1] = out[1] - row->camY;
+    v[2] = out[2];
+    v[3] = out[3];
+    _08005DA4(line, v);
+    maxX = v[0] + v[2];
+    minX = maxX;
+    maxY = v[1] + v[3];
+    minY = maxY;
+    if (minX > v[0])
+        minX = v[0];
+    if (minY > v[1])
+        minY = v[1];
+    if (maxX < v[0])
+        maxX = v[0];
+    if (maxY < v[1])
+        maxY = v[1];
+
+    i = 0;
+    for (; i < 2; i++) {
+        if ((s32)(_08005E14(hit, line, &row->e[i].ray) << 24) == 0)
+            continue;
+        out[0] = v[0] - row->e[i].dx;
+        out[1] = v[1] - row->e[i].dy;
+        if (out[0] * row->e[i].ray.x + out[1] * row->e[i].ray.y < 0) {
+            if (minX > hit[0])
+                continue;
+            if (minY > hit[1])
+                continue;
+            if (maxX < hit[0])
+                continue;
+            if (maxY < hit[1])
+                continue;
+            if (row->e[i].ray.minX > (hit[0] >> 8))
+                continue;
+            if (row->e[i].ray.minY > (hit[1] >> 8))
+                continue;
+            if (row->e[i].ray.maxX < (hit[0] >> 8))
+                continue;
+            if (row->e[i].ray.maxY < (hit[1] >> 8))
+                continue;
+        }
+        out[0] = hit[0] + row->camX;
+        out[1] = hit[1] + row->camY;
+        out[2] = row->e[i].ray.x;
+        out[3] = row->e[i].ray.y;
+        return 1;
+    }
+    return 0;
 }
 int _08007210(void *s, void *o) __attribute__((alias("CourseProximity_07210")));
 int sub_08007210(void *s, void *o) __attribute__((alias("CourseProximity_07210")));

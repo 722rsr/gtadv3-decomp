@@ -10,6 +10,14 @@
 // The body works on the SECOND parameter (r1): the first is unused. The cursor
 // byte either becomes the searched id (advancing the +64 cursor) or, when it is
 // >= 128, the id is taken from c[5]; the ROM's two-arm `bcs` keeps that shape.
+//
+// This body is not agbcc C output; see
+// docs/findings/sound_voice_follow_noteoff_lift.md for the measurement. Its two
+// `tst` gates have no two-register pattern in the Thumb description (thumb.md
+// has only `tstsi` -> `cmp #0`), and its `push {r4,r5}` / `bx lr` frame is not
+// a Thumb C frame (thumb.c adds lr to the push as soon as a low callee-saved
+// register is live). It stays the byte-exact listing; the readable C model
+// below is behavior only.
 __attribute__((naked)) void SoundVoiceFollow_NoteOff(void *unused, void *chan){
     __asm__ volatile (
         ".syntax unified\n"
@@ -55,6 +63,49 @@ __attribute__((naked)) void SoundVoiceFollow_NoteOff(void *unused, void *chan){
 }
 void _0802C390(void *c, void *s) __attribute__((alias("SoundVoiceFollow_NoteOff")));
 void sub_0802C390(void *c, void *s) __attribute__((alias("SoundVoiceFollow_NoteOff")));
+
+// Readable C model of the same walk (behavior only, not the linked body).
+// The cursor byte is a note id when bit 7 is clear: it latches at +5 and the
+// +64 cursor advances. Otherwise the latched byte is the id to match. The +32
+// child list is walked through +52 links; the first voice whose +17 key
+// matches and whose +0 flags carry one of 0x83 without 0x40 gets 0x40 set.
+typedef struct SoundVoice SoundVoice;
+
+struct SoundVoice {
+    u8 flags;            // +0x00
+    u8 _01[4];
+    u8 note;             // +0x05
+    u8 _06[11];
+    u8 track;            // +0x11
+    u8 _12[14];
+    SoundVoice *child;   // +0x20
+    u8 _24[16];
+    SoundVoice *next;    // +0x34
+    u8 _38[8];
+    u8 *cursor;          // +0x40
+};
+
+void SoundVoiceFollow_NoteOffModel(void *unused, void *chan){
+    SoundVoice *voice = (SoundVoice *)chan;
+    u8 *cursor = voice->cursor;
+    u32 note = *cursor;
+
+    (void)unused;
+    if (note < 128) {
+        voice->note = (u8)note;
+        voice->cursor = cursor + 1;
+    } else {
+        note = voice->note;
+    }
+
+    for (voice = voice->child; voice != 0; voice = voice->next) {
+        u32 flags = voice->flags;
+        if ((flags & 0x83) != 0 && (flags & 0x40) == 0 && voice->track == note) {
+            voice->flags = (u8)(flags | 0x40);
+            break;
+        }
+    }
+}
 
 // _0802C780 voice initializer — blocked, exact in src/sound_core.c as _0802C780 (SoundVoiceInit)
 // No duplicate alias here.

@@ -503,30 +503,30 @@ Measured 2026-10-21 (`--function _080026FF4 --require-exact` plus
   before the call (+4 B, `OVERSIZED`). Suspect a phantom trailing register
   whenever the last argument equals a constant already used as a load index.
 
-## Leaves that save r4/r5 but not lr: an open frame shape
+## Leaves that save r4/r5 but not lr: a compiler-boundary shape
 
 `SoundVoiceFollow_NoteOff` (`0x0802C390`, 64 B) is a leaf whose ROM prologue
 is `push {r4,r5}` and whose epilogue is `pop {r4,r5}` / `bx lr`: it holds the
 `131`/`64` masks in r4/r5 across a linked-list walk and never touches lr.
-The C body is small and otherwise reachable (the abort-on-cursor and
-two-`tst` gates are a `if (id >= 128)` plus `if (flags & mask)` /
-`if (!(flags & busy))` shape), so the frame is the remaining difference.
 
-Measured 2026-10-21 with a scratch TU compiled by both shipped compilers
-(`build/toolchains/agbcc/{old_agbcc,agbcc}`, `-O2 -ffunction-sections`):
+Measured with both shipped compilers (`-O2 -ffunction-sections`), and the
+mechanism is now traced: `thumb_function_prologue` in
+`gcc_arm/config/arm/thumb.c` does `if (live_regs_mask || ! leaf_function_p ()
+|| far_jump_used_p()) live_regs_mask |= 1 << 14;`, and r4/r5 are callee-saved,
+so any C body that keeps the masks in them saves lr. `output_return` then takes
+the `live_regs_mask != 0` arm, which under `-mthumb-interwork` is
+`pop {r4,r5}` + `thumb_exit(-1)`:
 
 | options | prologue | epilogue |
 | --- | --- | --- |
 | `-mthumb-interwork` | `push {r4,r5,lr}` | `pop {r4,r5}` / `pop {r0}` / `bx r0` (+4 B) |
 | `-mno-thumb-interwork` | `push {r4,r5,lr}` | `pop {r4,r5,pc}` (no `bx lr`) |
 
-A minimal leaf (`u32 a = 131, b = 64;` + the same loop, no calls) reproduces
-the lr save, so this is not pressure from the surrounding body. Neither option
-set reached `push {r4,r5}` + `bx lr` in that probe, and the mechanism was not
-traced into the compiler source; treat the four emitted shapes as the
-measurement, not as a limit. `SoundVoiceFollow_NoteOff` is still a naked body,
-and its frame remains a concrete target for the next pass rather than a reason
-to stop.
+The frame can only come from a `naked` body that splices it, and
+`source_quality.classify_body` returns `asm` for any naked body, so the body
+stays asm; the sibling `tst` gates are compiler-boundary too
+([note](sound_voice_follow_noteoff_lift.md)). A minimal leaf reproduces the lr
+save, so this is not pressure from the surrounding body.
 
 `Garage_CarPos_27120` (`0x08027120`, 240 B) was in the same position: its ROM
 frame is `push {r4,r5,r6,r7,lr}` + `sub sp,#12` (so lr *is* saved there), and
@@ -905,3 +905,28 @@ loop body's two operand copies, but every pinned constant is then materialised
 in a temp and copied at setup (`ldr r0,<pool> / adds r7,r0,#0`), which the ROM
 does not have. Homes and copy site must move together, so the next attempt
 should aim at the allocno order rather than at either pin alone.
+
+## Frame geometry is a source lever: declare the buffer the ROM reserved
+
+`CourseProximity_07210` (0x08007210, 344 B) reached EXACT 344/344 on 2026-11-04
+once the frame slot the ROM reserves for a 05DA4 output buffer was declared at
+its full size. 05DA4 writes three words, but the ROM reserves sp+0..sp+23 for
+the buffer: `v` lands at sp+24 and every later slot follows (hit 40, i 48,
+maxX 52, maxY 56, the spilled `hit` address at 60, the shifted-mask temp at
+68). `s32 line[3..5]` still compiles and still produces the right *values*, but
+it shrinks the frame and shifts every one of those stores; only `s32 line[6]`
+reproduces the 72-byte frame and the aligned diff collapses to zero. When a
+callee's real output is narrower than the frame slot, size the local to the
+slot, not to the callee.
+
+Two more measured facts from the same body:
+
+* `minX`/`minY` pinned to r5/r6 are load-bearing. Unpinned, the allocator homes
+  them in high registers, which pulls the loop index `i` out of its sp+48 slot
+  and reorders the whole loop; the ROM keeps `i` in memory and the scaled index
+  `i*28` in r9.
+* Do not add a source pointer for a buffer the ROM reloads through a stack
+  slot. The pointer at sp+60 that the ROM loads at the 05E14 call is agbcc's
+  own spilled address of `hit`; declaring `s32 *hp = hit;` makes the first
+  argument compile to `add r0,sp,#40` instead of `ldr r0,[sp,#60]`, which is a
+  2-byte miss and (with a pin added to force it) a mis-compile.

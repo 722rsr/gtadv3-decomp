@@ -58,6 +58,8 @@ neither target replaces `make matching-ready`.
 | --- | --- |
 | `era_compiler_probe.py` | Compare era compilers on reference functions. |
 | `era_runtime_probe.py` | Compare handwritten compiler runtimes with the ROM and a negative control. |
+| `shape_search.py` | Score many candidate C shapes for one ROM body in one sweep; reports frame size, matched bytes and per-instruction diffs. |
+| `shape_matrix.py` | Expand one C template over a knob matrix (spelling choices) and score every cell through `shape_search`; use when a body is stuck on several independent spellings at once. |
 | `era_corpus_scope.py` | Classify source compatibility diagnostics across translation units. |
 | `derisk_probe.py` | Probe pool-free leaf instruction selection. |
 | `derisk_pool_probe.py` | Probe literal-pool placement at real ROM addresses. |

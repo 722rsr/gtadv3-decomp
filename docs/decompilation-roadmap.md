@@ -57,6 +57,20 @@ number quoted elsewhere. The [ownership map](code_data_ownership.md),
 [compiler documentation](compiler_status.md), and
 [build verification guide](matching_workflow.md) document the underlying gates.
 
+## Tracking the asm remainder
+
+The `asm` row is not all outstanding C work. `python3 tools/backlog_census.py
+--lift-screen` splits the raw rows by whether their own instruction stream
+carries idioms the pinned Thumb backend does not emit: `tst` (lowered to
+`and` + `cmp`), `mov ip,lr` / `bx ip`, a `bl` with no `lr` save, `.arm`,
+`swi`, or a mid-function continuation. Those rows stay `asm`: they are
+documented source assembly for completion criterion 1, they are not credited as
+decompiled, and they are reported under a separate tally instead of being
+ranked as straight-C lift targets. The split is a reading order, not a closure:
+a body returns to the liftable backlog if a new lever or a different agreed
+toolchain appears. Worked example:
+[`SoundVoiceFollow_NoteOff`](findings/sound_voice_follow_noteoff_lift.md).
+
 ## Completion criteria
 
 1. Every executable byte is classified as C-owned, documented source assembly,

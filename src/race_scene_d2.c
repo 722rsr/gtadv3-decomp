@@ -25,7 +25,7 @@ HOST_STUB(void _0802B368(u16 v));                                               
 HOST_STUB(void _08002B214(int v));                                              // 0x08002B214 sound wake
 HOST_STUB(void *_08004B68(void));                                               // 0x08004B68 scene mgr
 HOST_STUB(void _08007B18(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h)); // 0x08007B18 emit
-HOST_STUB(void Sub_08007BFC(void *a, int b, int c, int d, int e, int f, int g, int h, int i)); // 0x08007BFC exact ROM
+extern void sub_08007BFC(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h, u32 i); // 0x08007BFC 9-arg emit
 HOST_STUB(void _08002ED0(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h, u32 i, u32 j)); // 0x08002ED0 10 machine args
 HOST_STUB(void _08007770(int a, void *b, int c, int d, u32 e, u32 f));         // 0x08007770 6 machine args
 HOST_STUB(void Sub_08007770(int a, void *b, int c, int d, u32 e, u32 f));      // 0x08007770 exact ROM body
@@ -49,6 +49,14 @@ HOST_STUB(void _08001FF7C(void *rec));                                          
 
 // ---- shared anchors --------------------------------------------------------
 #define WA 0x03001780u
+// Symbol anchors keep the two constants pooled verbatim and added at run time
+// (`ldr rX,=K` then `adds`), instead of folding K+delta into one pool word.
+__asm__(".set D2WaBase, 0x03001780");
+extern u8 D2WaBase;
+__asm__(".set D2EntryTbl, 0x080CBBE4");
+extern u8 D2EntryTbl;
+#define D2_WA(o) ((u8 *)((uintptr_t)&D2WaBase + (uintptr_t)(o)))
+#define D2_ENT(o) ((u8 *)((uintptr_t)&D2EntryTbl + (uintptr_t)(o)))
 static inline u8  R8(volatile u8 *p, u32 o)  { return *(volatile u8 *)(p + o); }
 static inline s8  S8(volatile u8 *p, u32 o)  { return *(volatile s8 *)(p + o); }
 static inline u16 R16(volatile u8 *p, u32 o) { return *(volatile u16 *)(p + o); }
@@ -226,704 +234,155 @@ __asm__(".align 2, 0");
 // Pools: {0x080CBBE4 (8-byte entry table), WA 0x03001780 (s8 thresholds)}.
 // r0=rec only. ROM high-register frame (r5=3, r6=1, sl=0 staging the
 // shared (3,1,1,0) stack tail of the lane emits).
+//
+// C, EXACT 1448/1448 on both gates.
+//
+// The two grid preheaders are the load-bearing part (agbcc runs loop
+// optimization twice, `flag_rerun_loop_opt`):
+//  * The `u8 *wa = D2_WA(0);` at the head of each loop body is what puts the
+//    D2WaBase pool load ahead of the row-base address in the movable list.
+//    It is moved in pass 1 (move_movables lowers `threshold` by 3 per moved
+//    move-insn), so the row base -- normally 13*4*4 = 208 >= insn_count --
+//    drops to 10*4*4 = 160 and is deferred to the second pass. That pass
+//    emits it after strength_reduce's 40/192 giv init, which is the ROM's
+//    `3, 1, 40/0, sl` order. Without the named base the row base is first in
+//    the list and hoists in pass 1, costing 28 bytes of preheader order.
+//  * `(uintptr_t)(idx * 12) + (uintptr_t)wa` keeps the scaled index on the
+//    left of the address add; the macro's symbol-first order emits
+//    `adds r1,r2,r1` instead of the ROM's `adds r1,r1,r2` (6 bytes).
+//  * The entry-table arm needs the "r" hint below (the ROM loads the pool
+//    word into r3 before the index).
 // ----------------------------------------------------------------------------
-__attribute__((naked)) void _08001EFAC(void *rec0) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push	{r4, r5, r6, r7, lr}\n"
-        "mov	r7, sl\n"
-        "mov	r6, r9\n"
-        "mov	r5, r8\n"
-        "push	{r5, r6, r7}\n"
-        "sub	sp, #24\n"
-        "adds	r7, r0, #0\n"
-        "adds	r0, #60\n"
-        "movs	r1, #6\n"
-        "str	r1, [sp, #0]\n"
-        "movs	r5, #3\n"
-        "str	r5, [sp, #4]\n"
-        "movs	r6, #1\n"
-        "str	r6, [sp, #8]\n"
-        "movs	r1, #0\n"
-        "mov	sl, r1\n"
-        "str	r1, [sp, #12]\n"
-        "movs	r1, #8\n"
-        "movs	r2, #72\n"
-        "movs	r3, #88\n"
-        "bl 0x08007B18\n"
-        "movs	r2, #134\n"
-        "lsls	r2, r2, #1\n"
-        "adds	r0, r7, r2\n"
-        "ldr	r0, [r0, #0]\n"
-        "movs	r1, #120\n"
-        "movs	r2, #56\n"
-        "bl 0x08026A2C\n"
-        "adds	r4, r7, #0\n"
-        "adds	r4, #16\n"
-        "str	r5, [sp, #0]\n"
-        "str	r6, [sp, #4]\n"
-        "str	r6, [sp, #8]\n"
-        "mov	r0, sl\n"
-        "str	r0, [sp, #12]\n"
-        "adds	r0, r4, #0\n"
-        "movs	r1, #2\n"
-        "movs	r2, #8\n"
-        "movs	r3, #40\n"
-        "bl 0x08007B18\n"
-        "str	r5, [sp, #0]\n"
-        "str	r6, [sp, #4]\n"
-        "str	r6, [sp, #8]\n"
-        "mov	r1, sl\n"
-        "str	r1, [sp, #12]\n"
-        "adds	r0, r4, #0\n"
-        "movs	r1, #8\n"
-        "movs	r2, #0\n"
-        "movs	r3, #64\n"
-        "bl 0x08007B18\n"
-        "str	r5, [sp, #0]\n"
-        "str	r6, [sp, #4]\n"
-        "str	r6, [sp, #8]\n"
-        "mov	r2, sl\n"
-        "str	r2, [sp, #12]\n"
-        "adds	r0, r4, #0\n"
-        "movs	r1, #6\n"
-        "movs	r2, #0\n"
-        "movs	r3, #88\n"
-        "bl 0x08007B18\n"
-        "str	r5, [sp, #0]\n"
-        "str	r6, [sp, #4]\n"
-        "str	r6, [sp, #8]\n"
-        "mov	r0, sl\n"
-        "str	r0, [sp, #12]\n"
-        "adds	r0, r4, #0\n"
-        "movs	r1, #5\n"
-        "movs	r2, #16\n"
-        "movs	r3, #112\n"
-        "bl 0x08007B18\n"
-        "str	r5, [sp, #0]\n"
-        "str	r6, [sp, #4]\n"
-        "str	r6, [sp, #8]\n"
-        "mov	r1, sl\n"
-        "str	r1, [sp, #12]\n"
-        "adds	r0, r4, #0\n"
-        "movs	r1, #3\n"
-        "movs	r2, #192\n"
-        "movs	r3, #40\n"
-        "bl 0x08007B18\n"
-        "str	r5, [sp, #0]\n"
-        "str	r6, [sp, #4]\n"
-        "str	r6, [sp, #8]\n"
-        "mov	r2, sl\n"
-        "str	r2, [sp, #12]\n"
-        "adds	r0, r4, #0\n"
-        "movs	r1, #7\n"
-        "movs	r2, #200\n"
-        "movs	r3, #64\n"
-        "bl 0x08007B18\n"
-        "str	r5, [sp, #0]\n"
-        "str	r6, [sp, #4]\n"
-        "str	r6, [sp, #8]\n"
-        "mov	r0, sl\n"
-        "str	r0, [sp, #12]\n"
-        "adds	r0, r4, #0\n"
-        "movs	r1, #4\n"
-        "movs	r2, #200\n"
-        "movs	r3, #88\n"
-        "bl 0x08007B18\n"
-        "str	r5, [sp, #0]\n"
-        "str	r6, [sp, #4]\n"
-        "str	r6, [sp, #8]\n"
-        "mov	r1, sl\n"
-        "str	r1, [sp, #12]\n"
-        "adds	r0, r4, #0\n"
-        "movs	r1, #1\n"
-        "movs	r2, #192\n"
-        "movs	r3, #112\n"
-        "bl 0x08007B18\n"
-        "subs	r4, #8\n"
-        "adds	r0, r7, #0\n"
-        "adds	r0, #160\n"
-        "ldr	r1, [r0, #0]\n"
-        "adds	r0, #4\n"
-        "ldr	r2, [r0, #0]\n"
-        "movs	r0, #40\n"
-        "mov	r9, r0\n"
-        "str	r0, [sp, #0]\n"
-        "adds	r0, r7, #0\n"
-        "adds	r0, #168\n"
-        "ldr	r0, [r0, #0]\n"
-        "str	r0, [sp, #4]\n"
-        "str	r6, [sp, #8]\n"
-        "str	r6, [sp, #12]\n"
-        "mov	r0, sl\n"
-        "str	r0, [sp, #16]\n"
-        "adds	r0, r4, #0\n"
-        "movs	r3, #48\n"
-        "bl 0x08007BFC\n"
-        "adds	r0, r7, #0\n"
-        "adds	r0, #172\n"
-        "ldr	r1, [r0, #0]\n"
-        "adds	r0, #4\n"
-        "ldr	r2, [r0, #0]\n"
-        "movs	r0, #64\n"
-        "mov	r8, r0\n"
-        "str	r0, [sp, #0]\n"
-        "adds	r0, r7, #0\n"
-        "adds	r0, #180\n"
-        "ldr	r0, [r0, #0]\n"
-        "str	r0, [sp, #4]\n"
-        "str	r6, [sp, #8]\n"
-        "str	r6, [sp, #12]\n"
-        "mov	r0, sl\n"
-        "str	r0, [sp, #16]\n"
-        "adds	r0, r4, #0\n"
-        "movs	r3, #48\n"
-        "bl 0x08007BFC\n"
-        "adds	r0, r7, #0\n"
-        "adds	r0, #184\n"
-        "ldr	r1, [r0, #0]\n"
-        "adds	r0, #4\n"
-        "ldr	r2, [r0, #0]\n"
-        "movs	r0, #88\n"
-        "str	r0, [sp, #0]\n"
-        "adds	r0, r7, #0\n"
-        "adds	r0, #192\n"
-        "ldr	r0, [r0, #0]\n"
-        "str	r0, [sp, #4]\n"
-        "str	r6, [sp, #8]\n"
-        "str	r6, [sp, #12]\n"
-        "mov	r0, sl\n"
-        "str	r0, [sp, #16]\n"
-        "adds	r0, r4, #0\n"
-        "movs	r3, #48\n"
-        "bl 0x08007BFC\n"
-        "adds	r0, r7, #0\n"
-        "adds	r0, #196\n"
-        "ldr	r1, [r0, #0]\n"
-        "adds	r0, #4\n"
-        "ldr	r2, [r0, #0]\n"
-        "movs	r5, #112\n"
-        "str	r5, [sp, #0]\n"
-        "adds	r0, #4\n"
-        "ldr	r0, [r0, #0]\n"
-        "str	r0, [sp, #4]\n"
-        "str	r6, [sp, #8]\n"
-        "str	r6, [sp, #12]\n"
-        "mov	r0, sl\n"
-        "str	r0, [sp, #16]\n"
-        "adds	r0, r4, #0\n"
-        "movs	r3, #48\n"
-        "bl 0x08007BFC\n"
-        "adds	r0, r7, #0\n"
-        "adds	r0, #208\n"
-        "ldr	r1, [r0, #0]\n"
-        "adds	r0, #4\n"
-        "ldr	r2, [r0, #0]\n"
-        "mov	r0, r9\n"
-        "str	r0, [sp, #0]\n"
-        "adds	r0, r7, #0\n"
-        "adds	r0, #216\n"
-        "ldr	r0, [r0, #0]\n"
-        "str	r0, [sp, #4]\n"
-        "str	r6, [sp, #8]\n"
-        "str	r6, [sp, #12]\n"
-        "mov	r0, sl\n"
-        "str	r0, [sp, #16]\n"
-        "adds	r0, r4, #0\n"
-        "movs	r3, #168\n"
-        "bl 0x08007BFC\n"
-        "adds	r0, r7, #0\n"
-        "adds	r0, #220\n"
-        "ldr	r1, [r0, #0]\n"
-        "adds	r0, #4\n"
-        "ldr	r2, [r0, #0]\n"
-        "mov	r0, r8\n"
-        "str	r0, [sp, #0]\n"
-        "adds	r0, r7, #0\n"
-        "adds	r0, #228\n"
-        "ldr	r0, [r0, #0]\n"
-        "str	r0, [sp, #4]\n"
-        "str	r6, [sp, #8]\n"
-        "str	r6, [sp, #12]\n"
-        "mov	r0, sl\n"
-        "str	r0, [sp, #16]\n"
-        "adds	r0, r4, #0\n"
-        "movs	r3, #168\n"
-        "bl 0x08007BFC\n"
-        "adds	r0, r7, #0\n"
-        "adds	r0, #232\n"
-        "ldr	r1, [r0, #0]\n"
-        "adds	r0, #4\n"
-        "ldr	r2, [r0, #0]\n"
-        "movs	r0, #88\n"
-        "str	r0, [sp, #0]\n"
-        "adds	r0, r7, #0\n"
-        "adds	r0, #240\n"
-        "ldr	r0, [r0, #0]\n"
-        "str	r0, [sp, #4]\n"
-        "str	r6, [sp, #8]\n"
-        "str	r6, [sp, #12]\n"
-        "mov	r0, sl\n"
-        "str	r0, [sp, #16]\n"
-        "adds	r0, r4, #0\n"
-        "movs	r3, #168\n"
-        "bl 0x08007BFC\n"
-        "adds	r0, r7, #0\n"
-        "adds	r0, #244\n"
-        "ldr	r1, [r0, #0]\n"
-        "adds	r0, #4\n"
-        "ldr	r2, [r0, #0]\n"
-        "str	r5, [sp, #0]\n"
-        "adds	r0, #4\n"
-        "ldr	r0, [r0, #0]\n"
-        "str	r0, [sp, #4]\n"
-        "str	r6, [sp, #8]\n"
-        "str	r6, [sp, #12]\n"
-        "mov	r0, sl\n"
-        "str	r0, [sp, #16]\n"
-        "adds	r0, r4, #0\n"
-        "movs	r3, #168\n"
-        "bl 0x08007BFC\n"
-        "adds	r4, #128\n"
-        "ldrh	r1, [r4, #0]\n"
-        "cmp	r1, #8\n"
-        "beq .L1efac_f200\n"
-        "ldr r3, .L1efac_f274\n"
-        "movs	r2, #0\n"
-        "ldrsh	r0, [r4, r2]\n"
-        "lsls	r0, r0, #3\n"
-        "adds	r1, r0, r3\n"
-        "ldr	r2, [r1, #0]\n"
-        "adds	r3, #4\n"
-        "adds	r0, r0, r3\n"
-        "ldr	r3, [r0, #0]\n"
-        "movs	r0, #4\n"
-        "str	r0, [sp, #0]\n"
-        "str	r6, [sp, #4]\n"
-        "str	r6, [sp, #8]\n"
-        "mov	r0, sl\n"
-        "str	r0, [sp, #12]\n"
-        "adds	r0, r7, #0\n"
-        "movs	r1, #10\n"
-        "bl 0x08007B18\n"
-        "ldrh	r4, [r4, #0]\n"
-        "cmp	r4, #8\n"
-        "bne .L1efac_f21c\n"
-        ".L1efac_f200:\n"
-        "adds	r0, r7, #0\n"
-        "adds	r0, #138\n"
-        "ldrh	r1, [r0, #0]\n"
-        "movs	r0, #5\n"
-        "str	r0, [sp, #0]\n"
-        "str	r6, [sp, #4]\n"
-        "str	r6, [sp, #8]\n"
-        "mov	r2, sl\n"
-        "str	r2, [sp, #12]\n"
-        "adds	r0, r7, #0\n"
-        "movs	r2, #104\n"
-        "movs	r3, #128\n"
-        "bl 0x08007B18\n"
-        ".L1efac_f21c:\n"
-        "movs	r5, #0\n"
-        "adds	r0, r7, #0\n"
-        "adds	r0, #24\n"
-        "str	r0, [sp, #20]\n"
-        "movs	r1, #3\n"
-        "mov	r9, r1\n"
-        "movs	r4, #1\n"
-        "movs	r6, #40\n"
-        "movs	r2, #130\n"
-        "adds	r2, r2, r7\n"
-        "mov	sl, r2\n"
-        "mov	r8, r5\n"
-        ".L1efac_f234:\n"
-        "movs	r0, #0\n"
-        "bl 0x08025F20\n"
-        "cmp	r5, r0\n"
-        "bge .L1efac_f294\n"
-        "mov	r1, sl\n"
-        "movs	r2, #0\n"
-        "ldrsh	r0, [r1, r2]\n"
-        "lsls	r1, r0, #1\n"
-        "adds	r1, r1, r0\n"
-        "lsls	r1, r1, #2\n"
-        "ldr r0, .L1efac_f278\n"
-        "adds	r1, r1, r0\n"
-        "adds	r1, #50\n"
-        "movs	r0, #0\n"
-        "ldrsb	r0, [r1, r0]\n"
-        "cmp	r5, r0\n"
-        "bge .L1efac_f27c\n"
-        "mov	r1, r9\n"
-        "str	r1, [sp, #0]\n"
-        "str	r4, [sp, #4]\n"
-        "str	r4, [sp, #8]\n"
-        "mov	r2, r8\n"
-        "str	r2, [sp, #12]\n"
-        "adds	r0, r7, #0\n"
-        "movs	r1, #11\n"
-        "adds	r2, r6, #0\n"
-        "movs	r3, #48\n"
-        "bl 0x08007B18\n"
-        "b .L1efac_f294\n"
-        "movs	r0, r0\n"
-        ".L1efac_f274: .4byte 0x080CBBE4\n"
-        ".L1efac_f278: .4byte 0x03001780\n"
-        ".L1efac_f27c:\n"
-        "mov	r0, r9\n"
-        "str	r0, [sp, #0]\n"
-        "str	r4, [sp, #4]\n"
-        "str	r4, [sp, #8]\n"
-        "mov	r1, r8\n"
-        "str	r1, [sp, #12]\n"
-        "adds	r0, r7, #0\n"
-        "movs	r1, #12\n"
-        "adds	r2, r6, #0\n"
-        "movs	r3, #48\n"
-        "bl 0x08007B18\n"
-        ".L1efac_f294:\n"
-        "movs	r0, #1\n"
-        "bl 0x08025F20\n"
-        "cmp	r5, r0\n"
-        "bge .L1efac_f2f0\n"
-        "mov	r2, sl\n"
-        "movs	r1, #0\n"
-        "ldrsh	r0, [r2, r1]\n"
-        "lsls	r1, r0, #1\n"
-        "adds	r1, r1, r0\n"
-        "lsls	r1, r1, #2\n"
-        "ldr r2, .L1efac_f2d4\n"
-        "adds	r1, r1, r2\n"
-        "adds	r1, #54\n"
-        "movs	r0, #0\n"
-        "ldrsb	r0, [r1, r0]\n"
-        "cmp	r5, r0\n"
-        "bge .L1efac_f2d8\n"
-        "mov	r0, r9\n"
-        "str	r0, [sp, #0]\n"
-        "str	r4, [sp, #4]\n"
-        "str	r4, [sp, #8]\n"
-        "mov	r1, r8\n"
-        "str	r1, [sp, #12]\n"
-        "adds	r0, r7, #0\n"
-        "movs	r1, #11\n"
-        "adds	r2, r6, #0\n"
-        "movs	r3, #72\n"
-        "bl 0x08007B18\n"
-        "b .L1efac_f2f0\n"
-        "movs	r0, r0\n"
-        ".L1efac_f2d4: .4byte 0x03001780\n"
-        ".L1efac_f2d8:\n"
-        "mov	r2, r9\n"
-        "str	r2, [sp, #0]\n"
-        "str	r4, [sp, #4]\n"
-        "str	r4, [sp, #8]\n"
-        "mov	r0, r8\n"
-        "str	r0, [sp, #12]\n"
-        "adds	r0, r7, #0\n"
-        "movs	r1, #12\n"
-        "adds	r2, r6, #0\n"
-        "movs	r3, #72\n"
-        "bl 0x08007B18\n"
-        ".L1efac_f2f0:\n"
-        "movs	r0, #2\n"
-        "bl 0x08025F20\n"
-        "cmp	r5, r0\n"
-        "bge .L1efac_f34c\n"
-        "mov	r1, sl\n"
-        "movs	r2, #0\n"
-        "ldrsh	r0, [r1, r2]\n"
-        "lsls	r1, r0, #1\n"
-        "adds	r1, r1, r0\n"
-        "lsls	r1, r1, #2\n"
-        "ldr r0, .L1efac_f330\n"
-        "adds	r1, r1, r0\n"
-        "adds	r1, #52\n"
-        "movs	r0, #0\n"
-        "ldrsb	r0, [r1, r0]\n"
-        "cmp	r5, r0\n"
-        "bge .L1efac_f334\n"
-        "mov	r1, r9\n"
-        "str	r1, [sp, #0]\n"
-        "str	r4, [sp, #4]\n"
-        "str	r4, [sp, #8]\n"
-        "mov	r2, r8\n"
-        "str	r2, [sp, #12]\n"
-        "adds	r0, r7, #0\n"
-        "movs	r1, #11\n"
-        "adds	r2, r6, #0\n"
-        "movs	r3, #96\n"
-        "bl 0x08007B18\n"
-        "b .L1efac_f34c\n"
-        "movs	r0, r0\n"
-        ".L1efac_f330: .4byte 0x03001780\n"
-        ".L1efac_f334:\n"
-        "mov	r0, r9\n"
-        "str	r0, [sp, #0]\n"
-        "str	r4, [sp, #4]\n"
-        "str	r4, [sp, #8]\n"
-        "mov	r1, r8\n"
-        "str	r1, [sp, #12]\n"
-        "adds	r0, r7, #0\n"
-        "movs	r1, #12\n"
-        "adds	r2, r6, #0\n"
-        "movs	r3, #96\n"
-        "bl 0x08007B18\n"
-        ".L1efac_f34c:\n"
-        "movs	r0, #3\n"
-        "bl 0x08025F20\n"
-        "cmp	r5, r0\n"
-        "bge .L1efac_f3a8\n"
-        "mov	r2, sl\n"
-        "movs	r1, #0\n"
-        "ldrsh	r0, [r2, r1]\n"
-        "lsls	r1, r0, #1\n"
-        "adds	r1, r1, r0\n"
-        "lsls	r1, r1, #2\n"
-        "ldr r2, .L1efac_f38c\n"
-        "adds	r1, r1, r2\n"
-        "adds	r1, #55\n"
-        "movs	r0, #0\n"
-        "ldrsb	r0, [r1, r0]\n"
-        "cmp	r5, r0\n"
-        "bge .L1efac_f390\n"
-        "mov	r0, r9\n"
-        "str	r0, [sp, #0]\n"
-        "str	r4, [sp, #4]\n"
-        "str	r4, [sp, #8]\n"
-        "mov	r1, r8\n"
-        "str	r1, [sp, #12]\n"
-        "adds	r0, r7, #0\n"
-        "movs	r1, #11\n"
-        "adds	r2, r6, #0\n"
-        "movs	r3, #120\n"
-        "bl 0x08007B18\n"
-        "b .L1efac_f3a8\n"
-        "movs	r0, r0\n"
-        ".L1efac_f38c: .4byte 0x03001780\n"
-        ".L1efac_f390:\n"
-        "mov	r2, r9\n"
-        "str	r2, [sp, #0]\n"
-        "str	r4, [sp, #4]\n"
-        "str	r4, [sp, #8]\n"
-        "mov	r0, r8\n"
-        "str	r0, [sp, #12]\n"
-        "adds	r0, r7, #0\n"
-        "movs	r1, #12\n"
-        "adds	r2, r6, #0\n"
-        "movs	r3, #120\n"
-        "bl 0x08007B18\n"
-        ".L1efac_f3a8:\n"
-        "subs	r6, #8\n"
-        "adds	r5, #1\n"
-        "cmp	r5, #2\n"
-        "bgt .L1efac_f3b2\n"
-        "b .L1efac_f234\n"
-        ".L1efac_f3b2:\n"
-        "movs	r5, #0\n"
-        "movs	r1, #3\n"
-        "mov	r9, r1\n"
-        "movs	r4, #1\n"
-        "mov	r8, r5\n"
-        "movs	r6, #192\n"
-        "movs	r2, #130\n"
-        "adds	r2, r2, r7\n"
-        "mov	sl, r2\n"
-        ".L1efac_f3c4:\n"
-        "movs	r0, #4\n"
-        "bl 0x08025F20\n"
-        "cmp	r5, r0\n"
-        "bge .L1efac_f420\n"
-        "mov	r1, sl\n"
-        "movs	r2, #0\n"
-        "ldrsh	r0, [r1, r2]\n"
-        "lsls	r1, r0, #1\n"
-        "adds	r1, r1, r0\n"
-        "lsls	r1, r1, #2\n"
-        "ldr r0, .L1efac_f404\n"
-        "adds	r1, r1, r0\n"
-        "adds	r1, #53\n"
-        "movs	r0, #0\n"
-        "ldrsb	r0, [r1, r0]\n"
-        "cmp	r5, r0\n"
-        "bge .L1efac_f408\n"
-        "mov	r1, r9\n"
-        "str	r1, [sp, #0]\n"
-        "str	r4, [sp, #4]\n"
-        "str	r4, [sp, #8]\n"
-        "mov	r2, r8\n"
-        "str	r2, [sp, #12]\n"
-        "adds	r0, r7, #0\n"
-        "movs	r1, #11\n"
-        "adds	r2, r6, #0\n"
-        "movs	r3, #48\n"
-        "bl 0x08007B18\n"
-        "b .L1efac_f420\n"
-        "movs	r0, r0\n"
-        ".L1efac_f404: .4byte 0x03001780\n"
-        ".L1efac_f408:\n"
-        "mov	r0, r9\n"
-        "str	r0, [sp, #0]\n"
-        "str	r4, [sp, #4]\n"
-        "str	r4, [sp, #8]\n"
-        "mov	r1, r8\n"
-        "str	r1, [sp, #12]\n"
-        "adds	r0, r7, #0\n"
-        "movs	r1, #12\n"
-        "adds	r2, r6, #0\n"
-        "movs	r3, #48\n"
-        "bl 0x08007B18\n"
-        ".L1efac_f420:\n"
-        "movs	r0, #5\n"
-        "bl 0x08025F20\n"
-        "cmp	r5, r0\n"
-        "bge .L1efac_f47c\n"
-        "mov	r2, sl\n"
-        "movs	r1, #0\n"
-        "ldrsh	r0, [r2, r1]\n"
-        "lsls	r1, r0, #1\n"
-        "adds	r1, r1, r0\n"
-        "lsls	r1, r1, #2\n"
-        "ldr r2, .L1efac_f460\n"
-        "adds	r1, r1, r2\n"
-        "adds	r1, #57\n"
-        "movs	r0, #0\n"
-        "ldrsb	r0, [r1, r0]\n"
-        "cmp	r5, r0\n"
-        "bge .L1efac_f464\n"
-        "mov	r0, r9\n"
-        "str	r0, [sp, #0]\n"
-        "str	r4, [sp, #4]\n"
-        "str	r4, [sp, #8]\n"
-        "mov	r1, r8\n"
-        "str	r1, [sp, #12]\n"
-        "adds	r0, r7, #0\n"
-        "movs	r1, #11\n"
-        "adds	r2, r6, #0\n"
-        "movs	r3, #72\n"
-        "bl 0x08007B18\n"
-        "b .L1efac_f47c\n"
-        "movs	r0, r0\n"
-        ".L1efac_f460: .4byte 0x03001780\n"
-        ".L1efac_f464:\n"
-        "mov	r2, r9\n"
-        "str	r2, [sp, #0]\n"
-        "str	r4, [sp, #4]\n"
-        "str	r4, [sp, #8]\n"
-        "mov	r0, r8\n"
-        "str	r0, [sp, #12]\n"
-        "adds	r0, r7, #0\n"
-        "movs	r1, #12\n"
-        "adds	r2, r6, #0\n"
-        "movs	r3, #72\n"
-        "bl 0x08007B18\n"
-        ".L1efac_f47c:\n"
-        "movs	r0, #6\n"
-        "bl 0x08025F20\n"
-        "cmp	r5, r0\n"
-        "bge .L1efac_f4d8\n"
-        "mov	r1, sl\n"
-        "movs	r2, #0\n"
-        "ldrsh	r0, [r1, r2]\n"
-        "lsls	r1, r0, #1\n"
-        "adds	r1, r1, r0\n"
-        "lsls	r1, r1, #2\n"
-        "ldr r0, .L1efac_f4bc\n"
-        "adds	r1, r1, r0\n"
-        "adds	r1, #51\n"
-        "movs	r0, #0\n"
-        "ldrsb	r0, [r1, r0]\n"
-        "cmp	r5, r0\n"
-        "bge .L1efac_f4c0\n"
-        "mov	r1, r9\n"
-        "str	r1, [sp, #0]\n"
-        "str	r4, [sp, #4]\n"
-        "str	r4, [sp, #8]\n"
-        "mov	r2, r8\n"
-        "str	r2, [sp, #12]\n"
-        "adds	r0, r7, #0\n"
-        "movs	r1, #11\n"
-        "adds	r2, r6, #0\n"
-        "movs	r3, #96\n"
-        "bl 0x08007B18\n"
-        "b .L1efac_f4d8\n"
-        "movs	r0, r0\n"
-        ".L1efac_f4bc: .4byte 0x03001780\n"
-        ".L1efac_f4c0:\n"
-        "mov	r0, r9\n"
-        "str	r0, [sp, #0]\n"
-        "str	r4, [sp, #4]\n"
-        "str	r4, [sp, #8]\n"
-        "mov	r1, r8\n"
-        "str	r1, [sp, #12]\n"
-        "adds	r0, r7, #0\n"
-        "movs	r1, #12\n"
-        "adds	r2, r6, #0\n"
-        "movs	r3, #96\n"
-        "bl 0x08007B18\n"
-        ".L1efac_f4d8:\n"
-        "movs	r0, #7\n"
-        "bl 0x08025F20\n"
-        "cmp	r5, r0\n"
-        "bge .L1efac_f534\n"
-        "mov	r2, sl\n"
-        "movs	r1, #0\n"
-        "ldrsh	r0, [r2, r1]\n"
-        "lsls	r1, r0, #1\n"
-        "adds	r1, r1, r0\n"
-        "lsls	r1, r1, #2\n"
-        "ldr r2, .L1efac_f518\n"
-        "adds	r1, r1, r2\n"
-        "adds	r1, #56\n"
-        "movs	r0, #0\n"
-        "ldrsb	r0, [r1, r0]\n"
-        "cmp	r5, r0\n"
-        "bge .L1efac_f51c\n"
-        "mov	r0, r9\n"
-        "str	r0, [sp, #0]\n"
-        "str	r4, [sp, #4]\n"
-        "str	r4, [sp, #8]\n"
-        "mov	r1, r8\n"
-        "str	r1, [sp, #12]\n"
-        "adds	r0, r7, #0\n"
-        "movs	r1, #11\n"
-        "adds	r2, r6, #0\n"
-        "movs	r3, #120\n"
-        "bl 0x08007B18\n"
-        "b .L1efac_f534\n"
-        "movs	r0, r0\n"
-        ".L1efac_f518: .4byte 0x03001780\n"
-        ".L1efac_f51c:\n"
-        "mov	r2, r9\n"
-        "str	r2, [sp, #0]\n"
-        "str	r4, [sp, #4]\n"
-        "str	r4, [sp, #8]\n"
-        "mov	r0, r8\n"
-        "str	r0, [sp, #12]\n"
-        "adds	r0, r7, #0\n"
-        "movs	r1, #12\n"
-        "adds	r2, r6, #0\n"
-        "movs	r3, #120\n"
-        "bl 0x08007B18\n"
-        ".L1efac_f534:\n"
-        "adds	r6, #8\n"
-        "adds	r5, #1\n"
-        "cmp	r5, #2\n"
-        "bgt .L1efac_f53e\n"
-        "b .L1efac_f3c4\n"
-        ".L1efac_f53e:\n"
-        "ldr	r0, [sp, #20]\n"
-        "bl 0x0800DBE8\n"
-        "add	sp, #24\n"
-        "pop	{r3, r4, r5}\n"
-        "mov	r8, r3\n"
-        "mov	r9, r4\n"
-        "mov	sl, r5\n"
-        "pop	{r4, r5, r6, r7}\n"
-        "pop	{r0}\n"
-        "bx	r0\n"
-        ".syntax divided\n"
-    );
+void _08001EFAC(void *rec0) {
+    u8 *p;
+    u8 *rec;
+    u8 *tail;
+    int j;
+
+    __asm__(".globl D2WaBase\nD2WaBase = 0x03001780\n"
+            ".globl D2EntryTbl\nD2EntryTbl = 0x080CBBE4\n");
+    rec = (u8 *)rec0;
+    _08007B18(rec + 60, 8, 72, 88, 6u, 3u, 1u, 0u);
+    _080026A2C(*(void **)(rec + 268), 120, 56);
+
+    _08007B18(rec + 16, 2, 8, 40, 3u, 1u, 1u, 0u);
+    _08007B18(rec + 16, 8, 0, 64, 3u, 1u, 1u, 0u);
+    _08007B18(rec + 16, 6, 0, 88, 3u, 1u, 1u, 0u);
+    _08007B18(rec + 16, 5, 16, 112, 3u, 1u, 1u, 0u);
+    _08007B18(rec + 16, 3, 192, 40, 3u, 1u, 1u, 0u);
+    _08007B18(rec + 16, 7, 200, 64, 3u, 1u, 1u, 0u);
+    _08007B18(rec + 16, 4, 200, 88, 3u, 1u, 1u, 0u);
+    _08007B18(rec + 16, 1, 192, 112, 3u, 1u, 1u, 0u);
+
+    sub_08007BFC(rec + 8, (int)*(u32 *)(rec + 160), (int)*(u32 *)(rec + 164), 48,
+                 40, (int)*(u32 *)(rec + 168), 1, 1, 0);
+    sub_08007BFC(rec + 8, (int)*(u32 *)(rec + 172), (int)*(u32 *)(rec + 176), 48,
+                 64, (int)*(u32 *)(rec + 180), 1, 1, 0);
+    sub_08007BFC(rec + 8, (int)*(u32 *)(rec + 184), (int)*(u32 *)(rec + 188), 48,
+                 88, (int)*(u32 *)(rec + 192), 1, 1, 0);
+    sub_08007BFC(rec + 8, (int)*(u32 *)(rec + 196), (int)*(u32 *)(rec + 200), 48,
+                 112, (int)*(u32 *)(rec + 204), 1, 1, 0);
+    sub_08007BFC(rec + 8, (int)*(u32 *)(rec + 208), (int)*(u32 *)(rec + 212), 168,
+                 40, (int)*(u32 *)(rec + 216), 1, 1, 0);
+    sub_08007BFC(rec + 8, (int)*(u32 *)(rec + 220), (int)*(u32 *)(rec + 224), 168,
+                 64, (int)*(u32 *)(rec + 228), 1, 1, 0);
+    sub_08007BFC(rec + 8, (int)*(u32 *)(rec + 232), (int)*(u32 *)(rec + 236), 168,
+                 88, (int)*(u32 *)(rec + 240), 1, 1, 0);
+    sub_08007BFC(rec + 8, (int)*(u32 *)(rec + 244), (int)*(u32 *)(rec + 248), 168,
+                  112, (int)*(u32 *)(rec + 252), 1, 1, 0);
+
+    p = rec + 136;
+    if (*(u16 *)p != 8u) {
+        /* The ROM loads the entry table's base into r3 before the index, so
+           the symbol must already be in a register at this point. */
+        __asm__ volatile("" : : "r"((u32)(uintptr_t)D2_ENT(0)));
+        _08007B18(rec, 10,
+                  (int)*(u32 *)(D2_ENT(0) + (s32)*(s16 *)p * 8),
+                  (int)*(u32 *)(D2_ENT(0) + (s32)*(s16 *)p * 8 + 4),
+                  4u, 1u, 1u, 0u);
+    }
+    if (*(u16 *)p == 8u) {
+        _08007B18(rec, (int)*(u16 *)(rec + 138), 104, 128, 5u, 1u, 1u, 0u);
+    }
+
+    j = 0;
+    tail = rec + 24;
+    do {
+        u8 *wa = D2_WA(0);
+        if (j < _08025F20(0)) {
+            int idx = (int)*(s16 *)(rec + 130);
+            u8 *row = (u8 *)((uintptr_t)((u32)idx * 12u) + (uintptr_t)wa);
+            if (j < (int)*(s8 *)(row + 50u))
+                _08007B18(rec, 11, 40 - (j << 3), 48, 3u, 1u, 1u, 0u);
+            else
+                _08007B18(rec, 12, 40 - (j << 3), 48, 3u, 1u, 1u, 0u);
+        }
+        if (j < _08025F20(1)) {
+            int idx = (int)*(s16 *)(rec + 130);
+            u8 *row = (u8 *)((uintptr_t)((u32)idx * 12u) + (uintptr_t)wa);
+            if (j < (int)*(s8 *)(row + 54u))
+                _08007B18(rec, 11, 40 - (j << 3), 72, 3u, 1u, 1u, 0u);
+            else
+                _08007B18(rec, 12, 40 - (j << 3), 72, 3u, 1u, 1u, 0u);
+        }
+        if (j < _08025F20(2)) {
+            int idx = (int)*(s16 *)(rec + 130);
+            u8 *row = (u8 *)((uintptr_t)((u32)idx * 12u) + (uintptr_t)wa);
+            if (j < (int)*(s8 *)(row + 52u))
+                _08007B18(rec, 11, 40 - (j << 3), 96, 3u, 1u, 1u, 0u);
+            else
+                _08007B18(rec, 12, 40 - (j << 3), 96, 3u, 1u, 1u, 0u);
+        }
+        if (j < _08025F20(3)) {
+            int idx = (int)*(s16 *)(rec + 130);
+            u8 *row = (u8 *)((uintptr_t)((u32)idx * 12u) + (uintptr_t)wa);
+            if (j < (int)*(s8 *)(row + 55u))
+                _08007B18(rec, 11, 40 - (j << 3), 120, 3u, 1u, 1u, 0u);
+            else
+                _08007B18(rec, 12, 40 - (j << 3), 120, 3u, 1u, 1u, 0u);
+        }
+        j++;
+    } while (j <= 2);
+
+    j = 0;
+    do {
+        u8 *wa = D2_WA(0);
+        if (j < _08025F20(4)) {
+            int idx = (int)*(s16 *)(rec + 130);
+            u8 *row = (u8 *)((uintptr_t)((u32)idx * 12u) + (uintptr_t)wa);
+            if (j < (int)*(s8 *)(row + 53u))
+                _08007B18(rec, 11, 192 + (j << 3), 48, 3u, 1u, 1u, 0u);
+            else
+                _08007B18(rec, 12, 192 + (j << 3), 48, 3u, 1u, 1u, 0u);
+        }
+        if (j < _08025F20(5)) {
+            int idx = (int)*(s16 *)(rec + 130);
+            u8 *row = (u8 *)((uintptr_t)((u32)idx * 12u) + (uintptr_t)wa);
+            if (j < (int)*(s8 *)(row + 57u))
+                _08007B18(rec, 11, 192 + (j << 3), 72, 3u, 1u, 1u, 0u);
+            else
+                _08007B18(rec, 12, 192 + (j << 3), 72, 3u, 1u, 1u, 0u);
+        }
+        if (j < _08025F20(6)) {
+            int idx = (int)*(s16 *)(rec + 130);
+            u8 *row = (u8 *)((uintptr_t)((u32)idx * 12u) + (uintptr_t)wa);
+            if (j < (int)*(s8 *)(row + 51u))
+                _08007B18(rec, 11, 192 + (j << 3), 96, 3u, 1u, 1u, 0u);
+            else
+                _08007B18(rec, 12, 192 + (j << 3), 96, 3u, 1u, 1u, 0u);
+        }
+        if (j < _08025F20(7)) {
+            int idx = (int)*(s16 *)(rec + 130);
+            u8 *row = (u8 *)((uintptr_t)((u32)idx * 12u) + (uintptr_t)wa);
+            if (j < (int)*(s8 *)(row + 56u))
+                _08007B18(rec, 11, 192 + (j << 3), 120, 3u, 1u, 1u, 0u);
+            else
+                _08007B18(rec, 12, 192 + (j << 3), 120, 3u, 1u, 1u, 0u);
+        }
+        j++;
+    } while (j <= 2);
+
+    _0800DBE8(tail);
 }
 
 void _08001FA64(void *dst0, int b, const u8 *tbl0, int d) {

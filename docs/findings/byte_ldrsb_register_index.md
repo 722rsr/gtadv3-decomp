@@ -87,3 +87,22 @@ with the retained asm splice. For the REG+REG argument, compile the scratch
 snippet above with `build/toolchains/agbcc/old_agbcc -O2 -mthumb-interwork`
 (or the comparison `agbcc` binary; both agree) and inspect the emitted
 address sequence.
+
+## `volatile` on the pointee drops `ldrsh` to the shift pair
+
+A signed halfword read spelled `*(volatile s16 *)p` does not use
+`*extendhisi2_insn` at all: it loads HImode and extends in registers, so it
+emits `ldrh` + `lsls #16` + `asrs #16`. Measured on `_080020E04`
+(`0x080020E04`) for one address already in a register:
+
+```text
+*(s16 *)p            movs rZ, #0 / ldrsh rY, [p, rZ]     the ROM form
+*(volatile s16 *)p   ldrh rY, [p, #0] / lsls #16 / asrs #16
+```
+
+So an address shape that is otherwise right cannot recover the ROM's `ldrsh`
+while the read is volatile. Read through a non-`volatile` `s16 *` view when the
+ROM uses `ldrsh`, and keep the volatile view only for the accesses the ROM
+re-loads as `ldrh` (`strh`-updated counters and the like). This is the first
+two spellings to try on any body whose remaining diff is a `ldrh`/shift pair
+where the ROM has one `ldrsh`.
