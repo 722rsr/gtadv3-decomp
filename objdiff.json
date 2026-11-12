@@ -8781,7 +8781,7 @@
       }
     },
     {
-      "name": "race_scene_e/_080020E04",
+      "name": "race_scene_e/sub_080020E04",
       "target_path": "build/objdiff/08020e04/target.o",
       "base_path": "build/objdiff/08020e04/candidate.o",
       "metadata": {

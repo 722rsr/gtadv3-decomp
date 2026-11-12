@@ -133,6 +133,12 @@ extern const u8 RaceSceneTblF50[];
 extern const u8 RaceSceneWaD28[];
 extern const u8 RaceSceneTblD28[];
 extern const u8 RaceSceneWa210BC[];
+extern const u8 RaceSceneWaE04[];
+extern const u8 RaceSceneTblE04[];
+extern const u8 RaceSceneTmplE04[];
+extern const u8 RaceSceneTbl2E04[];
+extern const u8 RaceSceneTbl3E04[];
+extern const u8 RaceSceneTbl4E04[];
 
 #define WA 0x03001780u
 static inline u8  R8(volatile u8 *p, u32 o)  { return *(volatile u8 *)(p + o); }
@@ -1464,175 +1470,96 @@ void _080020D28(void *rec0, int a, int b, int gate, int h5) {
 void sub_080020D28(void *rec0, int a, int b, int gate, int h5) __attribute__((alias("_080020D28")));
 
 // ---- 0x08020E04 — key/counter handler: lane tick, clamp, rebind + pools {WA, 0x0203F980, 0x08349754, 0x080CBEF0, 0x080CBEB0, 0x080CBF30} ----
-// NOTE: b (r1-in) is dead; kept for ABI shape.
-__attribute__((naked)) void _080020E04(void *rec0, int b, int key) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "\tpush\t{r4, r5, r6, r7, lr}\n"
-        "\tmov\tr7, r9\n"
-        "\tmov\tr6, r8\n"
-        "\tpush\t{r6, r7}\n"
-        "\tadds\tr4, r0, #0\n"
-        "\tlsls\tr2, r2, #16\n"
-        "\tlsrs\tr6, r2, #16\n"
-        "\tmov\tr9, r6\n"
-        "\tadds\tr5, r4, #0\n"
-        "\tadds\tr5, #142\n"
-        "\tldrh\tr0, [r5, #0]\n"
-        "\tmov\tr8, r0\n"
-        "\tcmp\tr6, #2\n"
-        "\tbne .Lrace_080020e04_080020E32\n"
-        "\tmovs\tr0, #4\n"
-        "\tbl 0x0802B368\n"
-        "\tmovs\tr1, #10\n"
-        "\tstr\tr1, [r4, #32]\n"
-        "\tmovs\tr0, #0\n"
-        "\tstrh\tr0, [r4, #36]\n"
-        "\tstr\tr1, [r4, #64]\n"
-        "\tstr\tr0, [r4, #60]\n"
-        ".Lrace_080020e04_080020E32:\n"
-        "\tcmp\tr6, #1\n"
-        "\tbne .Lrace_080020e04_080020E64\n"
-        "\tmovs\tr0, #1\n"
-        "\tbl 0x0802B368\n"
-        "\tmovs\tr1, #10\n"
-        "\tstr\tr1, [r4, #32]\n"
-        "\tmovs\tr0, #0\n"
-        "\tstrh\tr0, [r4, #36]\n"
-        "\tstr\tr1, [r4, #64]\n"
-        "\tstr\tr0, [r4, #60]\n"
-        "\tldr r2, .Lrace_080020e04_080020F38\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tadds\tr0, #138\n"
-        "\tmovs\tr1, #0\n"
-        "\tldrsh\tr0, [r0, r1]\n"
-        "\tlsls\tr1, r0, #1\n"
-        "\tadds\tr1, r1, r0\n"
-        "\tlsls\tr1, r1, #2\n"
-        "\tadds\tr1, r1, r2\n"
-        "\tadds\tr1, #48\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tadds\tr0, #152\n"
-        "\tldmia\tr0!, {r2, r3, r7}\n"
-        "\tstmia\tr1!, {r2, r3, r7}\n"
-        ".Lrace_080020e04_080020E64:\n"
-        "\tcmp\tr6, #32\n"
-        "\tbne .Lrace_080020e04_080020E6E\n"
-        "\tldrh\tr0, [r5, #0]\n"
-        "\tsubs\tr0, #1\n"
-        "\tstrh\tr0, [r5, #0]\n"
-        ".Lrace_080020e04_080020E6E:\n"
-        "\tmov\tr0, r9\n"
-        "\tcmp\tr0, #16\n"
-        "\tbne .Lrace_080020e04_080020E7A\n"
-        "\tldrh\tr0, [r5, #0]\n"
-        "\tadds\tr0, #1\n"
-        "\tstrh\tr0, [r5, #0]\n"
-        ".Lrace_080020e04_080020E7A:\n"
-        "\tmovs\tr1, #0\n"
-        "\tldrsh\tr0, [r5, r1]\n"
-        "\tcmp\tr0, #0\n"
-        "\tbgt .Lrace_080020e04_080020E86\n"
-        "\tmovs\tr0, #0\n"
-        "\tstrh\tr0, [r5, #0]\n"
-        ".Lrace_080020e04_080020E86:\n"
-        "\tldr r1, .Lrace_080020e04_080020F3C\n"
-        "\tldr r0, .Lrace_080020e04_080020F38\n"
-        "\tmovs\tr2, #252\n"
-        "\tlsls\tr2, r2, #4\n"
-        "\tadds\tr6, r0, r2\n"
-        "\tmovs\tr3, #0\n"
-        "\tldrsh\tr0, [r6, r3]\n"
-        "\tlsls\tr0, r0, #1\n"
-        "\tadds\tr0, r0, r1\n"
-        "\tmovs\tr7, #0\n"
-        "\tldrsh\tr1, [r5, r7]\n"
-        "\tldrh\tr2, [r0, #0]\n"
-        "\tmovs\tr3, #0\n"
-        "\tldrsh\tr0, [r0, r3]\n"
-        "\tcmp\tr1, r0\n"
-        "\tblt .Lrace_080020e04_080020EA8\n"
-        "\tstrh\tr2, [r5, #0]\n"
-        ".Lrace_080020e04_080020EA8:\n"
-        "\tldrh\tr7, [r5, #0]\n"
-        "\tcmp\tr7, r8\n"
-        "\tbeq .Lrace_080020e04_080020EF8\n"
-        "\tmovs\tr0, #2\n"
-        "\tbl 0x0802B368\n"
-        "\tldr r0, .Lrace_080020e04_080020F40\n"
-        "\tldr r3, .Lrace_080020e04_080020F44\n"
-        "\tmovs\tr2, #0\n"
-        "\tldrsh\tr1, [r5, r2]\n"
-        "\tlsls\tr1, r1, #1\n"
-        "\tmovs\tr7, #0\n"
-        "\tldrsh\tr2, [r6, r7]\n"
-        "\tlsls\tr2, r2, #3\n"
-        "\tadds\tr1, r1, r2\n"
-        "\tadds\tr1, r1, r3\n"
-        "\tmovs\tr2, #0\n"
-        "\tldrsh\tr1, [r1, r2]\n"
-        "\tmovs\tr2, #7\n"
-        "\tbl sub_080075E8\n"
-        "\tmovs\tr3, #0\n"
-        "\tldrsh\tr0, [r5, r3]\n"
-        "\tcmp\tr0, #0\n"
-        "\tbne .Lrace_080020e04_080020EF8\n"
-        "\tadds\tr2, r4, #0\n"
-        "\tadds\tr2, #196\n"
-        "\tldr r1, .Lrace_080020e04_080020F48\n"
-        "\tmovs\tr5, #0\n"
-        "\tldrsh\tr0, [r6, r5]\n"
-        "\tlsls\tr0, r0, #3\n"
-        "\tadds\tr0, r0, r1\n"
-        "\tmovs\tr7, #0\n"
-        "\tldrsh\tr1, [r0, r7]\n"
-        "\tstr\tr1, [r2, #0]\n"
-        "\tldr\tr0, [r4, #28]\n"
-        "\tsubs\tr2, #4\n"
-        "\tldr\tr2, [r2, #0]\n"
-        "\tbl sub_08007ABC\n"
-        ".Lrace_080020e04_080020EF8:\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tadds\tr0, #148\n"
-        "\tldr\tr1, [r0, #0]\n"
-        "\tadds\tr2, r4, #0\n"
-        "\tadds\tr2, #142\n"
-        "\tldrh\tr0, [r2, #0]\n"
-        "\tstrb\tr0, [r1, #0]\n"
-        "\tadds\tr4, #184\n"
-        "\tldr r3, .Lrace_080020e04_080020F4C\n"
-        "\tmovs\tr0, #0\n"
-        "\tldrsh\tr2, [r2, r0]\n"
-        "\tldr r0, .Lrace_080020e04_080020F38\n"
-        "\tmovs\tr1, #252\n"
-        "\tlsls\tr1, r1, #4\n"
-        "\tadds\tr0, r0, r1\n"
-        "\tmovs\tr5, #0\n"
-        "\tldrsh\tr1, [r0, r5]\n"
-        "\tlsls\tr0, r1, #2\n"
-        "\tadds\tr0, r0, r1\n"
-        "\tadds\tr0, r0, r2\n"
-        "\tlsls\tr0, r0, #1\n"
-        "\tadds\tr0, r0, r3\n"
-        "\tmovs\tr7, #0\n"
-        "\tldrsh\tr0, [r0, r7]\n"
-        "\tstr\tr0, [r4, #0]\n"
-        "\tpop\t{r3, r4}\n"
-        "\tmov\tr8, r3\n"
-        "\tmov\tr9, r4\n"
-        "\tpop\t{r4, r5, r6, r7}\n"
-        "\tpop\t{r0}\n"
-        "\tbx\tr0\n"
-        "\tmovs\tr0, r0\n"
-        ".Lrace_080020e04_080020F38: .word 0x03001780\n"
-        ".Lrace_080020e04_080020F3C: .word 0x0203F980\n"
-        ".Lrace_080020e04_080020F40: .word 0x08349754\n"
-        ".Lrace_080020e04_080020F44: .word 0x080CBEF0\n"
-        ".Lrace_080020e04_080020F48: .word 0x080CBEB0\n"
-        ".Lrace_080020e04_080020F4C: .word 0x080CBF30\n"
-        ".syntax divided\n"
-    );
+// b (r1-in) is dead; kept for ABI shape. Three spellings carry the body:
+//  * `k` is a narrowed u16 LOCAL, not a u16 parameter: agbcc then emits the
+//    truncation after `rec = rec0` and keeps the second copy in r9 that the
+//    later `== 16` test reads.
+//  * every table base is an asm symbol held in a pointer VARIABLE, and the
+//    byte store / tail read the counter through `cnt`, so the ROM's `Wa` pool
+//    word plus in-register `+0xFC0` / `+48` adds appear instead of one folded
+//    pool word.
+//  * each table lookup is spelled as its own ROM-ordered locals (template,
+//    base, index, address), which is what lands every `ldr` at its ROM offset.
+void _080020E04(void *rec0, int b, int key)
+{
+    volatile u8 *rec = (volatile u8 *)rec0;
+    u16 k = (u16)key;
+    u16 *cnt = (u16 *)(rec + 142);
+    u16 old = *cnt;
+    (void)b;
+
+    __asm__(".globl RaceSceneWaE04\nRaceSceneWaE04 = 0x03001780\n"
+            ".globl RaceSceneTblE04\nRaceSceneTblE04 = 0x0203F980\n"
+            ".globl RaceSceneTmplE04\nRaceSceneTmplE04 = 0x08349754\n"
+            ".globl RaceSceneTbl2E04\nRaceSceneTbl2E04 = 0x080CBEF0\n"
+            ".globl RaceSceneTbl3E04\nRaceSceneTbl3E04 = 0x080CBEB0\n"
+            ".globl RaceSceneTbl4E04\nRaceSceneTbl4E04 = 0x080CBF30\n");
+    if (k == 2) {
+        sub_0802B368(4);
+        *(volatile u32 *)(rec + 32) = 10;
+        W16I(rec, 36, 0);
+        *(volatile u32 *)(rec + 64) = 10;
+        *(volatile u32 *)(rec + 60) = 0;
+    }
+    if (k == 1) {
+        struct trio { u32 a, b, c; };
+        volatile u8 *wa;
+        int i;
+        sub_0802B368(1);
+        *(volatile u32 *)(rec + 32) = 10;
+        W16I(rec, 36, 0);
+        *(volatile u32 *)(rec + 64) = 10;
+        *(volatile u32 *)(rec + 60) = 0;
+        wa = (volatile u8 *)RaceSceneWaE04;
+        i = *(s16 *)(rec + 138);
+        *(struct trio *)((u8 *)wa + i * 12 + 48) = *(struct trio *)(rec + 152);
+    }
+    if (k == 32)
+        (*cnt)--;
+    if (k == 16)
+        (*cnt)++;
+    if (*(s16 *)cnt <= 0)
+        *cnt = 0;
+    {
+        volatile u8 *tbl = (volatile u8 *)RaceSceneTblE04;
+        volatile u8 *wa = (volatile u8 *)RaceSceneWaE04;
+        u16 *lim = (u16 *)((u8 *)tbl + (int)RD16(wa, 0xFC0) * 2);
+        if (*(s16 *)cnt >= *(s16 *)lim)
+            *cnt = *lim;
+    }
+    if (*cnt != old) {
+        volatile u8 *wa = (volatile u8 *)RaceSceneWaE04;
+        sub_0802B368(2);
+        {
+            void *tmpl = (void *)(uintptr_t)RaceSceneTmplE04;
+            u32 base = (uintptr_t)RaceSceneTbl2E04;
+            int c2 = (int)*(s16 *)cnt * 2;
+            int j8 = (int)RD16(wa, 0xFC0) * 8;
+            int q = (int)RD16((volatile u8 *)((u32)c2 + (u32)j8 + base), 0);
+            _080075E8(tmpl, q, 7);
+        }
+        if (*(s16 *)cnt == 0) {
+            u32 *dst = (u32 *)(rec + 196);
+            u32 base = (uintptr_t)RaceSceneTbl3E04;
+            int j = (int)RD16(wa, 0xFC0);
+            u32 addr = (u32)(8 * j) + base;
+            s32 v = (s32)RD16((volatile u8 *)addr, 0);
+            *dst = v;
+            _08007ABC((void *)*(u32 *)(rec + 28), (void *)(uintptr_t)v,
+                      (int)*(dst - 1));
+        }
+    }
+    *(u8 *)*(u32 *)(rec + 148) = *(u16 *)(rec + 142);
+    {
+        u32 *dst = (u32 *)(rec + 184);
+        u32 base = (uintptr_t)RaceSceneTbl4E04;
+        int c = (int)*(s16 *)(rec + 142);
+        volatile u8 *wa = (volatile u8 *)RaceSceneWaE04;
+        int j = (int)RD16(wa, 0xFC0);
+        *dst = *(s16 *)(base + (u32)((j * 5 + c) * 2));
+    }
 }
+void sub_080020E04(void *rec0, int b, int key) __attribute__((alias("_080020E04")));
 
 // ---- 0x08020F50 — twin 7B18 emit on +166 (kinds 11/14 x8, 15/16 x64) ----
 void _080020F50(void *rec0, int sel) {

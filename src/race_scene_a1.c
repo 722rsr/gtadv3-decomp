@@ -27,6 +27,7 @@ HOST_STUB(void  _0802DDD0(void *a, void *b, void *c));            // 0x0802DDD0 
 HOST_STUB(void  _0802DDCC(void *a, void *b));                     // 0x0802DDCC veneer
 HOST_STUB(void  _08004090(void *a, u32 b, void *c, u32 d, int e)); // 0x08004090 5 machine args (r3 select + caller stack word)
 HOST_STUB(void  _0800390C(int a, u32 b, const volatile u8 *c));    // 0x0800390C
+HOST_STUB(void  sub_0800390C(int a, u32 b, const volatile u8 *c)); // 0x0800390C in-slice spelling
 HOST_STUB(u16   _08026150(int a, int b));                          // 0x08026150 award leaf (strh ret)
 HOST_STUB(void  _080261E8(int a, int b));                          // 0x080261E8 award leaf
 HOST_STUB(void  _0802612C(void));                                  // 0x0802612C
@@ -1069,183 +1070,117 @@ int _08001B730(void *rec_, void *cell_) {
 // DF6C remainder and calls 04090 (5 machine args: r3 select + stack 1)
 // or 0390C. Tail writes the 0x10000/1536-scaled pair to [[ctx]+16/+20].
 // ----------------------------------------------------------------------------
-__attribute__((naked)) void _08001B77C(void) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push	{r4, r5, r6, r7, lr}\n"
-        "mov	r7, sl\n"
-        "mov	r6, r9\n"
-        "mov	r5, r8\n"
-        "push	{r5, r6, r7}\n"
-        "sub	sp, #40\n"
-        "ldr r0, .Lrs1b7_868\n"
-        "ldr	r0, [r0, #0]\n"
-        "adds	r1, r0, #0\n"
-        "adds	r1, #102\n"
-        "movs	r2, #0\n"
-        "ldrsh	r1, [r1, r2]\n"
-        "adds	r0, #100\n"
-        "movs	r3, #0\n"
-        "ldrsh	r0, [r0, r3]\n"
-        "muls	r0, r1\n"
-        "movs	r1, #80\n"
-        "bl 0x0802DE04\n"
-        "adds	r6, r0, #0\n"
-        "add	r5, sp, #20\n"
-        "adds	r1, r5, #0\n"
-        "ldr r0, .Lrs1b7_86c\n"
-        "ldmia	r0!, {r2, r3, r4}\n"
-        "stmia	r1!, {r2, r3, r4}\n"
-        "ldr	r0, [r0, #0]\n"
-        "str	r0, [r1, #0]\n"
-        "add	r4, sp, #36\n"
-        "adds	r0, r4, #0\n"
-        "movs	r1, #0\n"
-        "movs	r2, #2\n"
-        "bl 0x0802E104\n"
-        "movs	r0, #32\n"
-        "bl 0x08018ACC\n"
-        "cmp	r0, #0\n"
-        "bne .Lrs1b7_88e\n"
-        "subs	r6, #1\n"
-        "mov	sl, r6\n"
-        "add	r4, sp, #4\n"
-        "movs	r6, #3\n"
-        ".Lrs1b7_7d0:\n"
-        "bl 0x08002BE8\n"
-        "lsls	r0, r0, #16\n"
-        "asrs	r0, r0, #16\n"
-        "stmia	r4!, {r0}\n"
-        "ldmia	r5!, {r1}\n"
-        "lsls	r1, r1, #16\n"
-        "lsrs	r1, r1, #16\n"
-        "bl 0x08002C48\n"
-        "subs	r6, #1\n"
-        "cmp	r6, #0\n"
-        "bge .Lrs1b7_7d0\n"
-        "mov	r6, sl\n"
-        "cmp	r6, #0\n"
-        "blt .Lrs1b7_88e\n"
-        "ldr r4, .Lrs1b7_868\n"
-        "mov	r9, r4\n"
-        "ldr r0, .Lrs1b7_870\n"
-        "mov	r8, r0\n"
-        "lsls	r7, r6, #3\n"
-        ".Lrs1b7_7fa:\n"
-        "mov	r1, r9\n"
-        "ldr	r0, [r1, #0]\n"
-        "add	r0, r8\n"
-        "add	r0, sl\n"
-        "movs	r1, #12\n"
-        "strb	r1, [r0, #0]\n"
-        "mov	r2, r9\n"
-        "ldr	r0, [r2, #0]\n"
-        "add	r0, r8\n"
-        "adds	r1, r0, r6\n"
-        "ldrb	r0, [r1, #0]\n"
-        "cmp	r0, #0\n"
-        "beq .Lrs1b7_818\n"
-        "subs	r0, #1\n"
-        "strb	r0, [r1, #0]\n"
-        ".Lrs1b7_818:\n"
-        "mov	r3, r9\n"
-        "ldr	r1, [r3, #0]\n"
-        "movs	r4, #148\n"
-        "lsls	r4, r4, #3\n"
-        "adds	r0, r1, r4\n"
-        "adds	r0, r0, r6\n"
-        "ldrb	r0, [r0, #0]\n"
-        "add	r2, sp, #36\n"
-        "strb	r0, [r2, #0]\n"
-        "mov	r3, r8\n"
-        "adds	r0, r1, r3\n"
-        "adds	r2, r0, r6\n"
-        "ldrb	r0, [r2, #0]\n"
-        "cmp	r0, #0\n"
-        "beq .Lrs1b7_874\n"
-        "adds	r0, r1, #0\n"
-        "adds	r0, #164\n"
-        "ldr	r4, [r0, #0]\n"
-        "adds	r4, r4, r7\n"
-        "subs	r4, #4\n"
-        "adds	r0, #4\n"
-        "ldr	r5, [r0, #0]\n"
-        "subs	r5, #8\n"
-        "ldrb	r0, [r2, #0]\n"
-        "movs	r1, #3\n"
-        "bl 0x0802DF6C\n"
-        "lsls	r0, r0, #24\n"
-        "lsrs	r0, r0, #22\n"
-        "add	r0, sp\n"
-        "adds	r0, #4\n"
-        "ldr	r3, [r0, #0]\n"
-        "movs	r0, #1\n"
-        "str	r0, [sp, #0]\n"
-        "adds	r0, r4, #0\n"
-        "adds	r1, r5, #0\n"
-        "add	r2, sp, #36\n"
-        "bl 0x08004090\n"
-        "b .Lrs1b7_886\n"
-        ".Lrs1b7_868: .word 0x03004E20\n"
-        ".Lrs1b7_86c: .word 0x0805FBB0\n"
-        ".Lrs1b7_870: .word 0x000004B4\n"
-        ".Lrs1b7_874:\n"
-        "adds	r0, r1, #0\n"
-        "adds	r0, #164\n"
-        "ldr	r0, [r0, #0]\n"
-        "adds	r0, r0, r7\n"
-        "adds	r1, #168\n"
-        "ldr	r1, [r1, #0]\n"
-        "add	r2, sp, #36\n"
-        "bl 0x0800390C\n"
-        ".Lrs1b7_886:\n"
-        "subs	r7, #8\n"
-        "subs	r6, #1\n"
-        "cmp	r6, #0\n"
-        "bge .Lrs1b7_7fa\n"
-        ".Lrs1b7_88e:\n"
-        "ldr r0, .Lrs1b7_8d8\n"
-        "ldr	r5, [r0, #0]\n"
-        "adds	r4, r5, #0\n"
-        "adds	r4, #100\n"
-        "ldrh	r1, [r4, #0]\n"
-        "lsls	r0, r1, #16\n"
-        "movs	r1, #160\n"
-        "bl 0x0802DE04\n"
-        "movs	r1, #128\n"
-        "lsls	r1, r1, #9\n"
-        "subs	r1, r1, r0\n"
-        "str	r1, [r5, #16]\n"
-        "movs	r2, #0\n"
-        "ldrsh	r1, [r4, r2]\n"
-        "lsls	r0, r1, #1\n"
-        "adds	r0, r0, r1\n"
-        "lsls	r0, r0, #9\n"
-        "movs	r1, #160\n"
-        "bl 0x0802DE04\n"
-        "movs	r1, #192\n"
-        "lsls	r1, r1, #3\n"
-        "subs	r1, r1, r0\n"
-        "str	r1, [r5, #20]\n"
-        "cmp	r1, #0\n"
-        "bge .Lrs1b7_8c8\n"
-        "movs	r0, #0\n"
-        "str	r0, [r5, #20]\n"
-        ".Lrs1b7_8c8:\n"
-        "add	sp, #40\n"
-        "pop	{r3, r4, r5}\n"
-        "mov	r8, r3\n"
-        "mov	r9, r4\n"
-        "mov	sl, r5\n"
-        "pop	{r4, r5, r6, r7}\n"
-        "pop	{r0}\n"
-        "bx	r0\n"
-        ".Lrs1b7_8d8: .word 0x03004E20\n"
-        ".syntax divided\n"
-    );
+void _08001B77C(void)
+{
+    extern int _0802DE04(int a, int b);
+    extern u32 _0802DF6C(u32 a, u32 b);
+    extern int _08002BE8_narg(void) __asm__("_08002BE8");
+    struct Four16 { u32 w[4]; };
+    u32 sel[4];
+    u32 tbl[4];
+    u16 laneWord;
+    register s32 count __asm__("r6");
+    register s32 last __asm__("sl");
+    register u32 *sp_sel __asm__("r4");
+    register u32 *sp_tbl __asm__("r5");
+    s32 i;
+    s32 lane;
+
+    {
+        volatile u32 *cellp = (volatile u32 *)(uintptr_t)CTX;
+        u8 *c = (u8 *)(uintptr_t)*cellp;
+        s32 hi = *(s16 *)(c + 102);
+        s32 lo = *(s16 *)(c + 100);
+        count = _0802DE04(lo * hi, 80);
+    }
+    sp_tbl = tbl;
+    *(struct Four16 *)sp_tbl = *(const struct Four16 *)(uintptr_t)0x0805FBB0u;
+    _08002E104(&laneWord, 0, 2);
+    if (_08018ACC(32) == 0) {
+        last = count - 1;
+        __asm__ volatile("" : "+r"(last));
+        sp_sel = sel;
+        i = 3;
+        do {
+            s16 r = (s16)_08002BE8_narg();
+            *sp_sel++ = (u32)r;
+            _08002C48(r, (u16)*sp_tbl++);
+        } while (--i >= 0);
+        lane = last;
+        if (lane >= 0) {
+            register volatile u32 *cellp __asm__("r9") =
+                (volatile u32 *)(uintptr_t)CTX;
+            register u32 off __asm__("r8") = 0x4B4;
+            __asm__ volatile("" : "+r"(off));
+            do {
+                register volatile u32 *cc1 __asm__("r1");
+                register volatile u32 *cc2 __asm__("r2");
+                register volatile u32 *cc3 __asm__("r3");
+                register u32 off4a0 __asm__("r4");
+                u8 *c1;
+                u8 *c2;
+                u8 *c3;
+                volatile u8 *col1;
+                volatile u8 *col2;
+                volatile u8 *col3;
+                s32 cur1;
+                s32 cur2;
+                cc1 = cellp;
+                c1 = (u8 *)(uintptr_t)*cc1;
+                col1 = (volatile u8 *)(c1 + off);
+                col1[last] = 12;
+                cc2 = cellp;
+                c2 = (u8 *)(uintptr_t)*cc2;
+                col2 = (volatile u8 *)(c2 + off);
+                cur1 = col2[lane];
+                if (cur1 != 0)
+                    col2[lane] = (u8)(cur1 - 1);
+                cc3 = cellp;
+                c3 = (u8 *)(uintptr_t)*cc3;
+                off4a0 = 0x4A0;
+                __asm__ volatile("" : "+r"(off4a0));
+                {
+                    u32 base4a0;
+                    base4a0 = (u32)(uintptr_t)c3;
+                    base4a0 += off4a0;
+                    __asm__ volatile("" : "+r"(base4a0), "+r"(off4a0));
+                    *(u8 *)&laneWord = *(u8 *)(base4a0 + lane);
+                }
+                col3 = (volatile u8 *)(c3 + off);
+                cur2 = col3[lane];
+                if (cur2 != 0) {
+                    u32 x = *(u32 *)(c3 + 164) + (u32)lane * 8u - 4u;
+                    u32 y = *(u32 *)(c3 + 168) - 8u;
+                    u32 q = _0802DF6C(col3[lane], 3u);
+                    _08004090((void *)(uintptr_t)x, y, &laneWord, sel[(u8)q], 1);
+                } else {
+                    sub_0800390C(*(u32 *)(c3 + 164) + (u32)lane * 8u,
+                              *(u32 *)(c3 + 168), (const volatile u8 *)&laneWord);
+                }
+                lane--;
+            } while (lane >= 0);
+        }
+    }
+    {
+        volatile u32 *cellp = (volatile u32 *)(uintptr_t)CTX;
+        u8 *c = (u8 *)(uintptr_t)*cellp;
+        register u8 *tp __asm__("r4");
+        u16 uv;
+        s16 sv;
+        s32 out;
+        tp = c;
+        tp += 100;
+        uv = *(u16 *)tp;
+        *(volatile s32 *)(c + 16) =
+            0x10000 - _0802DE04((s32)(s16)uv << 16, 160);
+        sv = *(s16 *)tp;
+        out = 1536 - _0802DE04((s32)sv * 3 << 9, 160);
+        *(volatile s32 *)(c + 20) = out;
+        if (out < 0)
+            *(volatile s32 *)(c + 20) = 0;
+    }
 }
 
-// ----------------------------------------------------------------------------
 // ---- 0x0801B8DC — +100/+104 state machine over B77C ----
 // Pools: {CTX}. s16[[ctx]+100] ticks up while <= 159; s16[[ctx]+104]
 // selects: 0 → ACC(32)-gated 19A2C(0); 1 → B77C + miteinander 79/ACC(32)

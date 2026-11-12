@@ -110,19 +110,20 @@ void _08000AF4(void) __attribute__((alias("EWRAM_Handler_BlobA")));
 // Blob B — _08000E80 (SIO-normal polling, 0x0203F150 state)
 typedef struct { vu8 f00; vu8 _01[3]; vu32 p04; vu32 _08; vu32 cnt08; vu32 _0C; } EwramF150;
 #define F150 ((EwramF150*)0x0203F150)
-// MEASURED 2026-10-29: C reaches 196/200 with the three SIODATA32 stores kept
-// apart by a bare `__asm__ volatile ("")` after the first two -- the earlier
-// 192-byte reading was agbcc's cross-jump merging them into one shared copy.
-// What is left is BLOCK LAYOUT only: the ROM puts the mode-0 negative arm
-// (`*[r5+8] = v-1`) after the mode-1 blocks at 0x08000EEA, i.e.
-// [head][mode1][neg][store chain]. Four spellings were measured -- if/else-if,
-// `if (v >= 0) goto store; goto neg;`, a `goto`-only else, and a `switch` with
-// `default` first -- and agbcc emits [head][neg][mode1][store] for all of them:
-// it places a trailing `goto`'s target block immediately after the block that
-// jumps to it, so the else block is always pushed past the join. The head's
-// two-branch dispatch (`bge store; b neg`) is what the ROM has; agbcc never
-// emits both arms out of line, so the body stays asm-owned. Do not re-derive
-// the 196-byte body.
+// RE-MEASURED 2026-11-06 (13 shapes, tools/shape_search.py): the best C shape
+// reproduces the ROM's whole instruction stream except four bytes. It pins
+// `st`->r5 and `rec`->r4, dispatches `if (v >= 0) goto store; goto neg;` and
+// spells both clamp tests `if (v > 0x1FFF) goto over;` so the indexed arm is
+// the fallthrough -- that order is what emits the ROM's `bgt` (0x08000EE4,
+// 0x08000F10). Score 196/200: the two missing instructions are the ROM's
+// `b .L0e80_rx_negative` at 0x08000EA0 and the `.align` pad before its pool
+// at 0x08000EA4. The ROM keeps `neg` after `mode1` because that block has a
+// second predecessor; with one predecessor agbcc's block merge moves it up to
+// the `goto` and deletes the jump. A dead second `if (v < 0) goto neg;`
+// restores `bge store; b neg` (204/200) but also moves `sio` to r6. Next lead:
+// a source construct that gives `neg` a second predecessor without emitting an
+// instruction, or value locals that keep `sio` in r2. The "196-byte body"
+// this note used to cite is not in the tree or in git history.
 __attribute__((naked)) void EWRAM_Handler_BlobB(void)
 {
     __asm__ volatile (

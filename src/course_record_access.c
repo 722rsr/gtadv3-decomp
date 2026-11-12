@@ -11,11 +11,11 @@ extern void _0800798C(void *a, void *b);                 // 0x0800798C (defined 
 extern void _08007614(void *a, int b, int c, int d);     // 0x08007614 lane emit
 extern void _0802E0A4(void *dst, const void *src, u32 n);  // memcpy (ROM: r0=dst, r1=src, r2=n)
 extern void _08007B18(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 h); // 0x08007B18 record build (4 stack args;)
-extern void _080038C8(int a, u32 b, const void *c);      // 0x080038C8 obj lane
-extern void _080039C0(int a, u32 b, int c);              // 0x080039C0 obj measure
-extern s8   _08025500(int a);                            // 0x08025500 Ai_LineGet1
-extern s8   _08025518(int a);                            // 0x08025518 Ai_LineGet2
-extern s8   _08025530(int a);                            // 0x08025530 Ai_LineGet3
+extern void sub_080038C8(int a, u32 b, const void *c);   // 0x080038C8 obj lane
+extern void sub_080039C0(int a, u32 b, int c);           // 0x080039C0 obj measure
+extern s16  _08025500(int a);                            // 0x08025500 Ai_LineGet1 (call site stores 16 bits)
+extern s16  _08025518(int a);                            // 0x08025518 Ai_LineGet2 (call site stores 16 bits)
+extern s16  _08025530(int a);                            // 0x08025530 Ai_LineGet3 (call site stores 16 bits)
 extern int  _080097E8(u16 a, u16 b);                     // 0x080097E8 (course_leaves.c)
 extern void _08009748(u16 a, u16 b);                     // 0x08009748 (course_leaves.c)
 
@@ -191,168 +191,146 @@ void sub_08009900(void) __attribute__((alias("CourseLeaves_09900")));
 // sub_080099D0 — results HUD builder: positions from blk[4]*16+16,
 // labels from 0x080CB190/0x080CB19C/0x080CB1A8 tables and IWRAM s8 rows
 // (0x03001780+0x1114/0x111A/0x111D), drawn via 038C8/039C0.
-__attribute__((naked)) void CourseLeaves_099D0(void) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, r7, lr}\n"
-        "mov r7, r8\n"
-        "push {r7}\n"
-        "sub sp, #68\n"
-        "ldr r0, .Lcr099d0_08009b04\n"
-        "ldr r0, [r0, #0]\n"
-        "ldr r1, [r0, #4]\n"
-        "lsls r1, r1, #4\n"
-        "adds r1, #16\n"
-        "ldr r2, .Lcr099d0_08009b08\n"
-        "movs r0, #0\n"
-        "bl 0x080038C8\n"
-        "movs r4, #0\n"
-        "add r7, sp, #52\n"
-        "ldr r6, .Lcr099d0_08009b0c\n"
-        "movs r5, #16\n"
-        ".Lcr099d0_080099f2:\n"
-        "ldmia r6!, {r2}\n"
-        "movs r0, #20\n"
-        "adds r1, r5, #0\n"
-        "bl 0x080038C8\n"
-        "ldr r0, .Lcr099d0_08009b04\n"
-        "ldr r0, [r0, #0]\n"
-        "lsls r1, r4, #1\n"
-        "adds r0, #20\n"
-        "adds r0, r0, r1\n"
-        "movs r1, #0\n"
-        "ldrsh r2, [r0, r1]\n"
-        "movs r0, #120\n"
-        "adds r1, r5, #0\n"
-        "bl 0x080039C0\n"
-        "adds r5, #16\n"
-        "adds r4, #1\n"
-        "cmp r4, #2\n"
-        "ble .Lcr099d0_080099f2\n"
-        "ldr r4, .Lcr099d0_08009b10\n"
-        "ldr r2, .Lcr099d0_08009b14\n"
-        "adds r4, r4, r2\n"
-        "movs r1, #0\n"
-        "ldrsh r0, [r4, r1]\n"
-        "bl sub_08025500\n"
-        "strh r0, [r7, #0]\n"
-        "movs r2, #0\n"
-        "ldrsh r0, [r4, r2]\n"
-        "bl sub_08025518\n"
-        "strh r0, [r7, #2]\n"
-        "movs r1, #0\n"
-        "ldrsh r0, [r4, r1]\n"
-        "bl sub_08025530\n"
-        "strh r0, [r7, #4]\n"
-        "movs r4, #0\n"
-        "adds r6, r7, #0\n"
-        "movs r5, #80\n"
-        "ldr r2, .Lcr099d0_08009b18\n"
-        "mov r8, r2\n"
-        ".Lcr099d0_08009a48:\n"
-        "mov r0, r8\n"
-        "adds r0, #4\n"
-        "mov r8, r0\n"
-        "subs r0, #4\n"
-        "ldmia r0!, {r2}\n"
-        "movs r0, #20\n"
-        "adds r1, r5, #0\n"
-        "bl 0x080038C8\n"
-        "movs r1, #0\n"
-        "ldrsh r2, [r6, r1]\n"
-        "movs r0, #120\n"
-        "adds r1, r5, #0\n"
-        "bl 0x080039C0\n"
-        "adds r6, #2\n"
-        "adds r5, #16\n"
-        "adds r4, #1\n"
-        "cmp r4, #2\n"
-        "ble .Lcr099d0_08009a48\n"
-        "ldr r1, .Lcr099d0_08009b10\n"
-        "ldr r2, .Lcr099d0_08009b1c\n"
-        "adds r0, r1, r2\n"
-        "ldrb r0, [r0, #0]\n"
-        "lsls r0, r0, #24\n"
-        "asrs r0, r0, #24\n"
-        "strh r0, [r7, #0]\n"
-        "adds r2, #4\n"
-        "adds r0, r1, r2\n"
-        "ldrb r0, [r0, #0]\n"
-        "lsls r0, r0, #24\n"
-        "asrs r0, r0, #24\n"
-        "strh r0, [r7, #2]\n"
-        "subs r2, #2\n"
-        "adds r0, r1, r2\n"
-        "ldrb r0, [r0, #0]\n"
-        "lsls r0, r0, #24\n"
-        "asrs r0, r0, #24\n"
-        "strh r0, [r7, #4]\n"
-        "adds r2, #3\n"
-        "adds r0, r1, r2\n"
-        "ldrb r0, [r0, #0]\n"
-        "lsls r0, r0, #24\n"
-        "asrs r0, r0, #24\n"
-        "strh r0, [r7, #6]\n"
-        "subs r2, #4\n"
-        "adds r0, r1, r2\n"
-        "ldrb r0, [r0, #0]\n"
-        "lsls r0, r0, #24\n"
-        "asrs r0, r0, #24\n"
-        "strh r0, [r7, #8]\n"
-        "adds r2, #5\n"
-        "adds r0, r1, r2\n"
-        "ldrb r0, [r0, #0]\n"
-        "lsls r0, r0, #24\n"
-        "asrs r0, r0, #24\n"
-        "strh r0, [r7, #10]\n"
-        "adds r2, #1\n"
-        "adds r0, r1, r2\n"
-        "ldrb r0, [r0, #0]\n"
-        "lsls r0, r0, #24\n"
-        "asrs r0, r0, #24\n"
-        "strh r0, [r7, #12]\n"
-        "ldr r0, .Lcr099d0_08009b20\n"
-        "adds r1, r1, r0\n"
-        "movs r0, #0\n"
-        "ldrsb r0, [r1, r0]\n"
-        "strh r0, [r7, #14]\n"
-        "adds r6, r7, #0\n"
-        "ldr r7, .Lcr099d0_08009b24\n"
-        "movs r5, #16\n"
-        "movs r4, #7\n"
-        ".Lcr099d0_08009ad8:\n"
-        "ldmia r7!, {r2}\n"
-        "movs r0, #130\n"
-        "adds r1, r5, #0\n"
-        "bl 0x080038C8\n"
-        "movs r1, #0\n"
-        "ldrsh r2, [r6, r1]\n"
-        "movs r0, #220\n"
-        "adds r1, r5, #0\n"
-        "bl 0x080039C0\n"
-        "adds r6, #2\n"
-        "adds r5, #16\n"
-        "subs r4, #1\n"
-        "cmp r4, #0\n"
-        "bge .Lcr099d0_08009ad8\n"
-        "add sp, #68\n"
-        "pop {r3}\n"
-        "mov r8, r3\n"
-        "pop {r4, r5, r6, r7}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        ".align 2, 0\n"
-        ".Lcr099d0_08009b04: .word 0x030003E4\n"
-        ".Lcr099d0_08009b08: .word 0x0805F6B0\n"
-        ".Lcr099d0_08009b0c: .word 0x080CB190\n"
-        ".Lcr099d0_08009b10: .word 0x03001780\n"
-        ".Lcr099d0_08009b14: .word 0x00001114\n"
-        ".Lcr099d0_08009b18: .word 0x080CB19C\n"
-        ".Lcr099d0_08009b1c: .word 0x0000111A\n"
-        ".Lcr099d0_08009b20: .word 0x0000111D\n"
-        ".Lcr099d0_08009b24: .word 0x080CB1A8\n"
-        ".syntax divided\n"
-    );
+void CourseLeaves_099D0(void)
+{
+    extern u8 CourseLeaves_099D0_Wa[];
+    u8 frame[52];
+    s16 v[8];
+    s16 *rows, *src, *q;
+    const u32 *tab1, *tab2, *tab3;
+    s8 b;
+    register int i __asm__("r4");
+    register int y __asm__("r5");
+    u32 o;
+
+    __asm__(".globl CourseLeaves_099D0_Wa\nCourseLeaves_099D0_Wa = 0x03001780\n");
+
+    sub_080038C8(0, (*(u32 *)((u8 *)(uintptr_t)*CL_SLOT + 4) << 4) + 16,
+               (const void *)0x0805F6B0u);
+
+    i = 0;
+    rows = v;
+    tab1 = (const u32 *)0x080CB190u;
+    y = 16;
+    do {
+        s16 *rowp;
+        s32 idx;
+        sub_080038C8(20, y, (const void *)*tab1++);
+        rowp = (s16 *)(uintptr_t)*CL_SLOT;
+        idx = i * 2;
+        rowp = (s16 *)((u8 *)rowp + 20);
+        sub_080039C0(120, y, *(s16 *)((u8 *)rowp + idx));
+        y += 16;
+        i++;
+    } while (i <= 2);
+
+    {
+        register u8 *work __asm__("r4");
+        register u32 off __asm__("r2");
+        work = (u8 *)CourseLeaves_099D0_Wa;
+        off = 0x1114u;
+        __asm__ volatile ("" : "+r" (work), "+r" (off));
+        src = (s16 *)(work + off);
+    }
+    {
+        // The three reads use zero-index scratch registers r1/r2/r1. Bracket
+        // each load with a dummy in the register it must avoid.
+        register s32 val __asm__("r0");
+        register s32 hold __asm__("r2");
+        __asm__ volatile ("" : "=r" (hold));
+        val = *src;
+        __asm__ volatile ("" : : "r" (hold));
+        rows[0] = _08025500(val);
+    }
+    {
+        register s32 val __asm__("r0");
+        register s32 hold __asm__("r1");
+        __asm__ volatile ("" : "=r" (hold));
+        val = *src;
+        __asm__ volatile ("" : : "r" (hold));
+        rows[1] = _08025518(val);
+    }
+    {
+        register s32 val __asm__("r0");
+        register s32 hold __asm__("r2");
+        __asm__ volatile ("" : "=r" (hold));
+        val = *src;
+        __asm__ volatile ("" : : "r" (hold));
+        rows[2] = _08025530(val);
+    }
+
+    i = 0;
+    q = rows;
+    y = 80;
+    {
+        register u32 t2 __asm__("r2");
+        t2 = 0x080CB19Cu;
+        __asm__ volatile ("" : "+r" (t2));
+        tab2 = (const u32 *)t2;
+    }
+    do {
+        sub_080038C8(20, y, (const void *)*tab2++);
+        {
+            register s32 val __asm__("r2");
+            register s32 hold __asm__("r0");
+            __asm__ volatile ("" : "=r" (hold));
+            val = *q;
+            __asm__ volatile ("" : : "r" (hold));
+            sub_080039C0(120, y, (s16)val);
+        }
+        q++;
+        y += 16;
+        i++;
+    } while (i <= 2);
+
+    {
+        register u8 *wb __asm__("r1");
+        register u32 off __asm__("r2");
+        register s8 bb __asm__("r0");
+        wb = (u8 *)CourseLeaves_099D0_Wa;
+        off = 0x111Au;
+        bb = *(u8 *)(wb + off);
+        rows[0] = bb;
+        off += 4;
+        bb = *(u8 *)(wb + off);
+        rows[1] = bb;
+        off -= 2;
+        bb = *(u8 *)(wb + off);
+        rows[2] = bb;
+        off += 3;
+        bb = *(u8 *)(wb + off);
+        rows[3] = bb;
+        off -= 4;
+        bb = *(u8 *)(wb + off);
+        rows[4] = bb;
+        off += 5;
+        bb = *(u8 *)(wb + off);
+        rows[5] = bb;
+        off += 1;
+        bb = *(u8 *)(wb + off);
+        rows[6] = bb;
+        __asm__ volatile ("" : "+r" (off));
+        {
+            register s32 hold __asm__("r2");
+            s32 last;
+            __asm__ volatile ("" : "=r" (hold));
+            last = *(s8 *)(wb + 0x111D);
+            __asm__ volatile ("" : : "r" (hold));
+            rows[7] = last;
+        }
+    }
+
+    q = rows;
+    tab3 = (const u32 *)0x080CB1A8u;
+    y = 16;
+    i = 7;
+    do {
+        sub_080038C8(130, y, (const void *)*tab3++);
+        sub_080039C0(220, y, *q);
+        q++;
+        y += 16;
+        i--;
+    } while (i >= 0);
 }
 void _080099D0(void) __attribute__((alias("CourseLeaves_099D0")));
 void sub_080099D0(void) __attribute__((alias("CourseLeaves_099D0")));

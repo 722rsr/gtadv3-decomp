@@ -3224,8 +3224,17 @@ __asm__(".align 2, 0");
 //   * a hard-reg pin on `pos`/`w` costs the folded word offset (agbcc emits
 //     `adds r1,r9,#4; ldr r1,[r1]` instead of `ldr r1,[r9,#4]`), so those two
 //     roles cannot be pinned; unpinned, agbcc picks pos=r5, i=r8, w=r7.
-//   * pinning the 1500 bound to r7 miscompiles: agbcc clobbers the pinned
-//     register and keeps reading the stale &out from it.
+//   * the 1500 bound *can* live in r7: pin it (`register s32 lim
+//     __asm__("r7") = 1500;` assigned inside the loop) and add a
+//     block-spanning unpinned dummy anchored with empty `"+r"` barriers at
+//     entry and at each loop/block boundary. The pin alone does not make r7
+//     live (no save slot, so the prologue drops r7); the dummy is what puts
+//     it in regs_ever_live. Measured: exact prologue and both bound checks
+//     reading the r7 copy (65/292 matched, 304 B -- no longer the 96-row
+//     barrier shape). Remaining are allocation/scheduling details only: the
+//     bound read (`ldrh/lsls/asrs` vs ROM `movs r2,#0; ldrsh`), `outp = out`
+//     folding to one insn where the ROM has `mov r0,sp; adds r0,#8`, block-1
+//     load order, and the block-2 indexed loads.
 // ----------------------------------------------------------------------------
 __attribute__((naked)) void _08002A90C(void *acc, void *pos, void *extra, void *unused) {
     __asm__ volatile (

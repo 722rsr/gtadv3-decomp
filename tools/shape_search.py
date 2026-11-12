@@ -29,6 +29,7 @@ work from next.
 from __future__ import annotations
 
 import argparse
+import difflib
 import hashlib
 import json
 import re
@@ -177,26 +178,66 @@ def insn_rows(blob: bytes, vma: int, tag: str) -> dict[int, str]:
     return rows
 
 
-def diff_map(rec: dict, rom: bytes, vma: int, limit: int = 24) -> list[str]:
-    """Instruction rows where the candidate and the ROM disagree.
+def insn_list(blob: bytes, vma: int, tag: str) -> list[tuple[int, str]]:
+    """Ordered `(offset, mnemonic)` rows for one blob."""
+    rows: list[tuple[int, str]] = []
+    for line in probe.objdump_text(blob, vma, tag).splitlines():
+        parts = line.split("\t")
+        if len(parts) < 3:
+            continue
+        head = parts[0].strip()
+        if not head.endswith(":"):
+            continue
+        try:
+            off = int(head[:-1], 16)
+        except ValueError:
+            continue
+        operands = parts[3].strip() if len(parts) > 3 else ""
+        rows.append((off, (parts[2] + " " + operands).strip()))
+    return rows
 
-    The point of a sweep is *which* slots a shape allocates, so the differences
-    are listed at instruction granularity with both mnemonics on one line.
+
+def diff_map(rec: dict, rom: bytes, vma: int, limit: int = 40) -> list[str]:
+    """Instructions that differ, aligned rather than compared by offset.
+
+    Comparing row-by-row at equal offsets only works while the candidate has
+    the same length as the ROM: one missing instruction shifts every later row
+    (and a literal pool then decodes as code) so the table shows noise instead
+    of the one insertion that matters. The sequences are aligned here, and each
+    run is reported as ROM-only, candidate-only, or a paired replacement, with
+    its own offset so the location in the body is still obvious.
     """
     rom_blob = rom[vma - probe.ROM_BASE:rec["rom_bytes"] + vma - probe.ROM_BASE]
-    rom_rows = insn_rows(rom_blob, vma, f"{rec['name']}_rom")
+    rom_rows = insn_list(rom_blob, vma, f"{rec['name']}_rom")
     cand_blob = (probe.WORK / f"{rec['name']}_cand.bin").read_bytes()
-    cand_rows = insn_rows(cand_blob, vma, f"{rec['name']}_cand")
+    cand_rows = insn_list(cand_blob, vma, f"{rec['name']}_cand")
+    matcher = difflib.SequenceMatcher(
+        a=[text for _off, text in rom_rows],
+        b=[text for _off, text in cand_rows], autojunk=False)
     out: list[str] = []
-    for off in sorted(set(rom_rows) & set(cand_rows)):
-        if rom_rows[off] != cand_rows[off]:
-            out.append(f"+{off - vma:#05x}  rom: {rom_rows[off]:<28} "
-                       f"c: {cand_rows[off]}")
-    total = len(out)
-    shown = out[:limit]
-    if total > limit:
-        shown.append(f"... {total - limit} more differing instructions")
-    return shown
+    total = 0
+    for tag, i1, i2, j1, j2 in matcher.get_opcodes():
+        if tag == "equal":
+            continue
+        total += max(i2 - i1, j2 - j1)
+        if tag == "replace":
+            for k in range(max(i2 - i1, j2 - j1)):
+                left = rom_rows[i1 + k] if i1 + k < i2 else None
+                right = cand_rows[j1 + k] if j1 + k < j2 else None
+                out.append(f"-{left[0] - vma:#05x} rom: {left[1]}" if left
+                           else "           rom: (none)")
+                out.append(f"+{right[0] - vma:#05x} can: {right[1]}" if right
+                           else "           can: (none)")
+        elif tag == "delete":
+            out.extend(f"-{rom_rows[k][0] - vma:#05x} rom-only: {rom_rows[k][1]}"
+                       for k in range(i1, i2))
+        else:
+            out.extend(f"+{cand_rows[k][0] - vma:#05x} can-only: {cand_rows[k][1]}"
+                       for k in range(j1, j2))
+    if not out:
+        return ["(instruction streams identical)"]
+    tail = f"... {total} differing instructions in total"
+    return out[:limit] + ([tail] if total > limit else [])
 
 
 def listing(blob: bytes, vma: int, tag: str, at: int, halfwords: int = 4) -> list[str]:

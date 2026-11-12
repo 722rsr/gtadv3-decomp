@@ -3854,11 +3854,11 @@
    "size": 208
   },
   "0x080099d0": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 144,
-    "naked": true
+    "barrier": 13,
+    "directive": 1,
+    "pin": 17
    },
    "file": "src/course_record_access.c",
    "name": "CourseLeaves_099D0",
@@ -8464,11 +8464,9 @@
    "size": 220
   },
   "0x08020e04": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 149,
-    "naked": true
+    "directive": 1
    },
    "file": "src/race_scene_e.c",
    "name": "_080020E04",
@@ -13211,16 +13209,16 @@
  },
  "totals": {
   "asm": {
-   "bytes": 43636,
-   "functions": 117
+   "bytes": 42960,
+   "functions": 115
   },
   "c": {
    "bytes": 44418,
    "functions": 877
   },
   "c_fakematch": {
-   "bytes": 99150,
-   "functions": 677
+   "bytes": 99826,
+   "functions": 679
   },
   "partial": {
    "bytes": 932,
