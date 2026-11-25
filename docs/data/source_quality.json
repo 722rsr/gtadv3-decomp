@@ -7656,11 +7656,11 @@
    "size": 76
   },
   "0x0801b77c": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 158,
-    "naked": true
+    "barrier": 4,
+    "directive": 1,
+    "pin": 11
    },
    "file": "src/race_scene_a1.c",
    "name": "_08001B77C",
@@ -13209,16 +13209,16 @@
  },
  "totals": {
   "asm": {
-   "bytes": 42960,
-   "functions": 115
+   "bytes": 42608,
+   "functions": 114
   },
   "c": {
    "bytes": 44418,
    "functions": 877
   },
   "c_fakematch": {
-   "bytes": 99826,
-   "functions": 679
+   "bytes": 100178,
+   "functions": 680
   },
   "partial": {
    "bytes": 932,
