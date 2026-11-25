@@ -302,30 +302,39 @@ sweep above closed `Garage_Ticker_278F0` (232 B). What is left of the
 | `_08002C160` `VoiceEnvelopeApply_2C160` | 48 | register-indexed `ldrsb` |
 | `_080015A0` | 24 | `mov r0,pc` |
 
-## `MenuFF78_141AC` (732 B): block 1 closes, the `c` load scratch does not (2026-11-25)
+## `MenuFF78_141AC` (732 B) closed: the `c` load scratch is a reload cursor (2026-11-25)
 
-Measured with `python3 tools/lift_loop.py src/menu_ff78_t.c MenuFF78_141AC`.
-The span is 710 B of body plus the 22 B hand-written pool. Both splice blocks
-can be C; the best measured body was 334/338 insns at the exact 732 B length.
+Measured with `python3 tools/lift_loop.py src/menu_ff78_t.c MenuFF78_141AC`,
+then `corpus_match_probe.py --function MenuFF78_141AC --require-exact` and
+`match_c_slice.py 0x080141AC`. Both splice blocks are now C; the body and its
+compiler-emitted literal pool are 732/732 bytes exact, the hand-written pool
+was deleted, and the isolated slice passes. The `partial` class lost 732 B.
 
-- Block 0x3B0-0x3D4 is byte-exact: pinned `wa` r2, `x` r1, `y` r0, `idx` r1,
-  `d` r1; non-volatile `*(s16 *)` loads; and one input-only barrier
-  `__asm__ volatile ("" : : "r"((int)a), "r"(wa), "r"(off));` after the first
-  load. The barrier keeps `off` live, so both loads take `movs r3,#0 / ldrsh`
-  and the tail is `ldrh r0,[r1] / mov r1,sl / strh r0,[r1]`.
-- The 0x3D4 loop closes with pins `w` r0, `idx` r2, `dst` r5, `val` r1,
-  `f0`/`f10` r3, `t3` r2, `a0` r0; the two `local_alloc` cursor sites
-  (`ldr r3,[sp,#8] / adds r5,r3,r2`, `ldr r3,[sp,#48] / adds r2,r3,r2`) need
-  those pins.
-- Still short: the `c` load at 0x3E2 needs scratch r3, and agbcc takes the
-  lowest free r2. Holding `off` (r2) live across the load with any asm barrier
-  (`"r"`, `"+r"`, `"+m"`, output-bracket) makes `*extendhisi2` fall back to
-  `ldrh / lsls / asrs`: 329-330/338 with a 736 B body. A `--sweep off,c,cp`
-  over every statement boundary found no placement above 330 aligned, and
-  every improving barrier grew the body by 4 B.
+The blocker looked like "the scratch must be r3, agbcc picks r2". The actual
+mechanism is reload: the `match_scratch:SI "=&l"` clobber is allocated from
+`spill_regs` with the `last_spill_reg` round-robin, so the register is a
+*cursor position*, not a fixed choice. It shifts with the number and order of
+reloads before the insn. Two no-byte liveness brackets moved the cursor:
 
-Next lever: keep a pseudo that is dead at the following call live in r2 across
-the load without an asm barrier (the `_0800A074` style, where a later value
-in r2 moved the zero scratch to r3), or find a source shape that keeps the
-first load's r3 scratch pseudo live through the second load. The second
-remaining site is only the `adds r2,r3,r2` destination at 0x0801444C.
+- `c` load (0x3E2): `c` must be `int` and read through `*(s16 *)cp` so the
+  sign-extend is formed at expand (a `s16` local expands as `zero_extend` +
+  shifts, and combine folds those into `extendhisi2` later -- a barrier placed
+  between the load and the shifts blocks that fold and produces `ldrh`).
+  Then bracket r2 around the load:
+  `register int hold2 asm("r2"); asm("" : "=r"(hold2)); c = *(s16 *)cp;
+  asm("" : : "r"(hold2));` -> `movs r3,#0 / ldrsh r1,[r5,r3]`.
+- `*slv` clamp (0x3FC): bracket r1 the same way around the compare/store ->
+  `movs r3,#0 / ldrsh r0,[r2,r3]`. This one bracket also put the `tbl`
+  constant load in r0, the loop's `frame[6]` load scratch in r2, and the
+  `adds r2,r3,r2` third-argument add back on the ROM's registers.
+
+Block 0x3B0 is exact with pins `wa` r2, `x` r1, `y` r0, `idx` r1, `d` r1 and
+one input-only barrier after the first load:
+`asm("" : : "r"((int)a), "r"(wa), "r"(off));`. The 0x3D4 loop uses pins
+`w` r0, `idx` r2, `dst` r5, `val` r1, `f0`/`f10` r3, `t3` r2, `a0` r0 and
+`sub_08025D64`/`sub_080013F94`/`sub_080014078` (the closure spellings) so the
+isolated slice resolves the calls.
+
+The lesson for the rest of the class: when one scratch site is off by a
+register, fix the *first* wrong cursor site and re-measure; do not pin the
+site itself if the bracket would block a combine.

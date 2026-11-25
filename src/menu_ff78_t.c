@@ -23,6 +23,7 @@ extern void Sub_08007BFC(void *a, int b, int c, int d, u32 e, u32 f, u32 g, u32 
 extern void Sub_08007770(int a, void *b, int c, int d, u32 e, u32 f);
 extern void _08007770(int a, void *b, int c, int d, u32 e, u32 f); // R2-faithful strong body
 extern void Sub_0800DAB8(void *a);
+extern void sub_0800DAB8(void *a);
 extern void sub_08007614(void *a, int b, int c, int d);
 extern void sub_0800798C(void *a, void *b);
 extern void sub_08007A58(void *a);
@@ -36,8 +37,11 @@ extern void Sub_08003954(int a, int b, u32 c);
 extern void Sub_0800D97C(void *a, int b);
 extern void Sub_0800DBE8(void *a);
 extern void Sub_080013F94(void *a);
+extern void sub_080013F94(void *a);
 extern void Sub_080014078(void *a);
+extern void sub_080014078(void *a);
 extern int Sub_08025D64(int a, int b);
+extern int sub_08025D64(int a, int b);
 
 // ----------------------------------------------------------------------------
 // sub_080014F60 — (rec):
@@ -378,7 +382,7 @@ void MenuFF78_141AC(void *a) {
     *(volatile u32 *)(uintptr_t)(rec + 116) = 0;
     *(volatile u32 *)(uintptr_t)(rec + 128) = 1;
     p32r = (u8 *)(rec + 32);
-    Sub_0800DAB8((void *)p32r);
+    sub_0800DAB8((void *)p32r);
     sub_08007614((void *)(uintptr_t)0x082A798Cu, 1, 0, 3);
     sub_0800798C((void *)(uintptr_t)0x082D7660u, (void *)(uintptr_t)(rec + 16));
     sub_080075E8((void *)(uintptr_t)0x082D7660u, 0, 10);
@@ -567,107 +571,113 @@ void MenuFF78_141AC(void *a) {
             }
             goto car17_store;
         }
-        __asm__ volatile (
-            ".syntax unified\n"
-        ".L141ac_3b0:\n"
-        "ldr r2, .L141ac_474\n"
-        "ldr r1, .L141ac_478\n"
-        "adds	r0, r2, r1\n"
-        "movs	r3, #0\n"
-        "ldrsh	r1, [r0, r3]\n"
-        "lsls	r1, r1, #1\n"
-        "ldr r3, .L141ac_47c\n"
-        "adds	r0, r2, r3\n"
-        "movs	r3, #0\n"
-        "ldrsh	r0, [r0, r3]\n"
-        "lsls	r0, r0, #3\n"
-        "adds	r1, r1, r0\n"
-        "ldr r0, .L141ac_480\n"
-        "adds	r2, r2, r0\n"
-        "adds	r1, r1, r2\n"
-        "ldrh	r0, [r1, #0]\n"
-        "mov	r1, sl\n"
-        "strh	r0, [r1, #0]\n"
-            ".syntax divided\n"
-            : : : "r0", "r1", "r2", "r3", "r5", "r8", "r9", "sl", "cc", "memory");
+        {
+            register u8 *wa __asm__("r2");
+            register int x __asm__("r1");
+            register int y __asm__("r0");
+            register int idx __asm__("r1");
+            register u16 v __asm__("r0");
+            register s16 *d __asm__("r1");
+            u8 *base2;
+
+            wa = (u8 *)(uintptr_t)0x03001780u;
+            x = (int)*(s16 *)(uintptr_t)(wa + 0x0FF6);
+            x *= 2;
+            y = (int)*(s16 *)(uintptr_t)(wa + 0x0FF2);
+            y *= 8;
+            idx = x + y;
+            base2 = wa + 0x0FFA;
+            idx += (int)(uintptr_t)base2;
+            v = *(volatile u16 *)(uintptr_t)idx;
+            d = p156;
+            *d = v;
+        }
     after_car:;
-        __asm__ volatile (
-            ".syntax unified\n"
-        ".L141ac_3d4:\n"
-        "ldr r1, .L141ac_474\n"
-        "ldr r2, .L141ac_47c\n"
-        "adds	r0, r1, r2\n"
-        "movs	r3, #0\n"
-        "ldrsh	r0, [r0, r3]\n"
-        "adds	r2, #4\n"
-        "adds	r5, r1, r2\n"
-        "movs	r3, #0\n"
-        "ldrsh	r1, [r5, r3]\n"
-        "bl 0x08025D64\n"
-        "ldr	r1, [sp, #28]\n"
-        "strh	r0, [r1, #0]\n"
-        "lsls	r0, r0, #16\n"
-        "asrs	r0, r0, #16\n"
-        "cmp	r0, #9\n"
-        "ble .L141ac_3fa\n"
-        "movs	r0, #10\n"
-        "strh	r0, [r1, #0]\n"
-        ".L141ac_3fa:\n"
-        "mov	r2, sl\n"
-        "movs	r3, #0\n"
-        "ldrsh	r0, [r2, r3]\n"
-        "cmp	r0, #9\n"
-        "ble .L141ac_408\n"
-        "movs	r0, #10\n"
-        "strh	r0, [r2, #0]\n"
-        ".L141ac_408:\n"
-        "adds	r0, r7, #0\n"
-        "bl 0x08013F94\n"
-        "movs	r4, #1\n"
-        "negs	r4, r4\n"
-        "ldr r0, .L141ac_484\n"
-        "mov	r8, r0\n"
-        "adds	r6, r5, #0\n"
-        ".L141ac_418:\n"
-        "ldr	r1, [sp, #32]\n"
-        "movs	r2, #0\n"
-        "ldrsh	r0, [r1, r2]\n"
-        "adds	r0, r0, r4\n"
-        "cmp	r0, #0\n"
-        "bge .L141ac_426\n"
-        "movs	r0, #0\n"
-        ".L141ac_426:\n"
-        "cmp	r0, #9\n"
-        "ble .L141ac_42c\n"
-        "movs	r0, #10\n"
-        ".L141ac_42c:\n"
-        "adds	r4, #1\n"
-        "lsls	r2, r4, #1\n"
-        "adds	r2, r2, r4\n"
-        "lsls	r2, r2, #2\n"
-        "ldr	r3, [sp, #8]\n"
-        "adds	r5, r3, r2\n"
-        "lsls	r1, r0, #1\n"
-        "movs	r0, #0\n"
-        "ldrsh	r3, [r6, r0]\n"
-        "movs	r0, #22\n"
-        "muls	r0, r3\n"
-        "adds	r1, r1, r0\n"
-        "add	r1, r8\n"
-        "movs	r3, #0\n"
-        "ldrsh	r1, [r1, r3]\n"
-        "str	r1, [r5, #0]\n"
-        "ldr	r0, [r7, #4]\n"
-        "ldr	r3, [sp, #48]\n"
-        "adds	r2, r3, r2\n"
-        "ldr	r2, [r2, #0]\n"
-        "bl 0x08007ABC\n"
-        "cmp	r4, #4\n"
-        "ble .L141ac_418\n"
-        "adds	r0, r7, #0\n"
-        "bl 0x08014078\n"
-            ".syntax divided\n"
-            : : : "r0", "r1", "r2", "r3", "r4", "r5", "r6", "r8", "sl", "cc", "memory");
+        {
+            register u8 *wa __asm__("r1");
+            register u32 off __asm__("r2");
+            register s16 *cp __asm__("r5");
+            register s16 *slv __asm__("r2");
+            s16 a;
+            int c;
+            int v;
+
+            wa = (u8 *)(uintptr_t)0x03001780u;
+            off = 0x0FF2u;
+            a = *(s16 *)(uintptr_t)(wa + off);
+            __asm__ volatile ("" : : "r"((int)a), "r"(wa), "r"(off));
+            off += 4;
+            cp = (s16 *)(uintptr_t)(wa + off);
+            {
+                register int hold2 __asm__("r2");
+
+                __asm__ volatile ("" : "=r"(hold2));
+                c = *(s16 *)(uintptr_t)cp;
+                __asm__ volatile ("" : : "r"(hold2));
+            }
+            v = sub_08025D64(a, c);
+            *(volatile u16 *)(uintptr_t)frame[5] = (u16)v;
+            if ((s16)v > 9) {
+                *(volatile u16 *)(uintptr_t)frame[5] = 10;
+            }
+            slv = p156;
+            {
+                register int h1 __asm__("r1");
+
+                __asm__ volatile ("" : "=r"(h1));
+                if (*slv > 9) {
+                    *slv = 10;
+                }
+                __asm__ volatile ("" : : "r"(h1));
+            }
+            sub_080013F94((void *)(uintptr_t)rec);
+            {
+                register int j __asm__("r4");
+                register s16 *pc __asm__("r6");
+                register u8 *tbl __asm__("r8");
+
+                j = -1;
+                tbl = (u8 *)(uintptr_t)0x080CB714u;
+                pc = cp;
+                do {
+                    register int w __asm__("r0");
+                    register u32 idx __asm__("r2");
+                    register u8 *dst __asm__("r5");
+                    register u32 val __asm__("r1");
+                    register s16 *qw __asm__("r1");
+                    register u32 off2 __asm__("r1");
+                    register int cc __asm__("r3");
+                    register u8 *f0 __asm__("r3");
+                    register u32 t3 __asm__("r2");
+                    register u32 a0 __asm__("r0");
+                    register u8 *f10 __asm__("r3");
+
+                    qw = (s16 *)(uintptr_t)frame[6];
+                    w = (int)*qw;
+                    w += j;
+                    if (w < 0) {
+                        w = 0;
+                    }
+                    if (w > 9) {
+                        w = 10;
+                    }
+                    j++;
+                    idx = (u32)j * 12;
+                    f0 = frame[0];
+                    dst = f0 + idx;
+                    off2 = (u32)w * 2;
+                    cc = (int)*pc;
+                    off2 += (u32)cc * 22;
+                    val = (u32)(s32)*(s16 *)(uintptr_t)(off2 + (u32)(uintptr_t)tbl);
+                    *(volatile u32 *)(uintptr_t)dst = val;
+                    a0 = *(volatile u32 *)(uintptr_t)(rec + 4);
+                    f10 = frame[10];
+                    t3 = (u32)(uintptr_t)f10 + idx;
+                    sub_08007ABC(a0, val, *(volatile u32 *)(uintptr_t)t3);
+                } while (j <= 4);
+            }
+            sub_080014078((void *)(uintptr_t)rec);
+        }
         goto after_all;
     car17_store:
         {
@@ -684,13 +694,3 @@ void _0800141AC(void *a) __attribute__((alias("MenuFF78_141AC")));
 void Sub_0800141AC(void *a) __attribute__((alias("MenuFF78_141AC")));
 void sub_0800141AC(void *a) __attribute__((alias("MenuFF78_141AC")));
 
-__asm__(
-    ".pushsection .text.MenuFF78_141AC,\"ax\",%progbits\n"
-    ".subsection 1\n"
-    ".align 2, 0\n"
-        ".L141ac_474: .4byte 0x03001780\n"
-        ".L141ac_478: .4byte 0x00000FF6\n"
-        ".L141ac_47c: .4byte 0x00000FF2\n"
-        ".L141ac_480: .4byte 0x00000FFA\n"
-        ".L141ac_484: .4byte 0x080CB714\n"
-    ".popsection\n");

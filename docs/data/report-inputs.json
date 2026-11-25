@@ -278,7 +278,7 @@
     "docs/data/code_data_ownership.json": "6fb8b0b61903076b247616f83e4734dc2967edf06a04a84f1b08e472d1f8adf1",
     "docs/data/era_runtime_probe.json": "45f420977850ba27e0edc15550d66e0179af7c64081d36f0ade14f0d2e7d1501",
     "docs/data/independent_slice.json": "518098deeb85b749fe6fc1b893ea042689ccace688755cdca8b442ea20dec6f5",
-    "docs/data/source_quality.json": "d2856e7682387c46cee70da590ade2cc1653c0f44e7a09fbf0a17a04198157f1",
+    "docs/data/source_quality.json": "291c642b65ab53fa56c8faa2ca3777ee766019cd7f9f72cd6d9df844357bcd91",
     "include/gba/bios.h": "b9317c06d31b76c89cc4e85a355463bfd2aa7bc61be70af1f24d49e530deb7d3",
     "include/gba/regs.h": "575c70a056190a3162f8ef2adaa937bb8520893045e1fcfe87af402c8e1f6ba9",
     "include/gba/types.h": "bab89e846a1b98c889c22352ac8043a5e01bd2ef6576bf25ff8f337ea02d0b2a",
@@ -397,7 +397,7 @@
     "src/menu_ff78_q.c": "e018825057a2080872b4f1dd8b3fb85126ff9c60bf1134b38a94959b5f5f1f87",
     "src/menu_ff78_r.c": "0e98fd1f4ce0861da5ae38507151be7dc97d71a06b3b68f767ee4d2ae70714e8",
     "src/menu_ff78_s.c": "2e006fb27f0f09b178f209204c8dae1d813f7838b4669eef70873d722791105d",
-    "src/menu_ff78_t.c": "f7cfff9cfa00a29d97112352dd3db040f49d18269e92fc8fde4c0c2810d800f9",
+    "src/menu_ff78_t.c": "36aaeb9049caf089de2ae57afecddb4299ed8f914ce1a59802886bec594df1c5",
     "src/menu_ff78_u.c": "3359000074507e3f75f4df0a3f58fdf16fee8c0f4a8c72dc632fba3768fdbae1",
     "src/menu_records.c": "a6622a0219eec455c68adf5d855aacd58a0fc3eabd0b6f668a646a1cef5779ca",
     "src/menu_stage.c": "6ddd8e2ce26779b6ca49a2f0c62c7898fdd5109c9534ddf32fa995c35e3bc603",
@@ -568,7 +568,7 @@
     "tools/update_progress.py": "e08737da0578dd62dc5a064ddf8d4361066ba4637bb5e472aa87e631d9743696",
     "tools/xref.py": "94676a3ecfce87a6e6a5f335dda9800da01e1a3d453692a9c0ac827f8cc7be2e"
   },
-  "report_sha256": "177ea0539f7d7fcaae198245839dd8bb61c407d1fee63ed2a544b5a41c2de100",
+  "report_sha256": "9108fbfee89fd878f4427f467e0a1cae8d9a8bd0faf639be029666e713673437",
   "verification": {
     "command": "make full-rom-match",
     "full_hybrid_rom_link": "pass",

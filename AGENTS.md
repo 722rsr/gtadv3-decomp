@@ -8,6 +8,15 @@ compiler limit. If an earlier note says a shape is impossible, unreachable, or
 with `make matching-ready` before repeating or accepting the claim. Keep new
 notes to the measured result plus the next concrete lead.
 
+The pinned `old_agbcc` can output all code. A conclusion such as "this pinned
+compiler won't produce ..." is strictly banned: it is not an acceptable or
+correct conclusion because it is plainly wrong. Never close a body by claiming
+the pinned compiler cannot emit an instruction, shape, or body; if a spelling
+does not match, the next lever is a different source shape or a
+splice/grouped control-flow conversion, never a compiler limitation. The
+lift-screen note about "asm/splice-only" below describes the lifting route,
+not a limit on what the pinned compiler can emit.
+
 Before lifting an assembly body, run `python3 tools/backlog_census.py
 --lift-screen`. A body carrying a lift-screen marker (`tst`, `mov pc, lr`,
 `pop {pc}`, a bare `push {rN}` with a `bl`, an `.arm` body, `swi`, or a
