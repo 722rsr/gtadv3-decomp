@@ -107,128 +107,103 @@ void EWRAM_Handler_BlobA(void)
 }
 void _08000AF4(void) __attribute__((alias("EWRAM_Handler_BlobA")));
 
-// Blob B — _08000E80 (SIO-normal polling, 0x0203F150 state)
-typedef struct { vu8 f00; vu8 _01[3]; vu32 p04; vu32 _08; vu32 cnt08; vu32 _0C; } EwramF150;
-#define F150 ((EwramF150*)0x0203F150)
-// RE-MEASURED 2026-11-06 (13 shapes, tools/shape_search.py): the best C shape
-// reproduces the ROM's whole instruction stream except four bytes. It pins
-// `st`->r5 and `rec`->r4, dispatches `if (v >= 0) goto store; goto neg;` and
-// spells both clamp tests `if (v > 0x1FFF) goto over;` so the indexed arm is
-// the fallthrough -- that order is what emits the ROM's `bgt` (0x08000EE4,
-// 0x08000F10). Score 196/200: the two missing instructions are the ROM's
-// `b .L0e80_rx_negative` at 0x08000EA0 and the `.align` pad before its pool
-// at 0x08000EA4. The ROM keeps `neg` after `mode1` because that block has a
-// second predecessor; with one predecessor agbcc's block merge moves it up to
-// the `goto` and deletes the jump. A dead second `if (v < 0) goto neg;`
-// restores `bge store; b neg` (204/200) but also moves `sio` to r6. Next lead:
-// a source construct that gives `neg` a second predecessor without emitting an
-// instruction, or value locals that keep `sio` in r2. The "196-byte body"
-// this note used to cite is not in the tree or in git history.
-__attribute__((naked)) void EWRAM_Handler_BlobB(void)
-{
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, lr}\n"
-        "ldr r2, .L0e80_p0\n"
-        "ldr r3, [r2, #0]\n"
-        "ldr r5, .L0e80_p1\n"
-        "adds r4, r5, #0\n"
-        "ldrb r0, [r5, #0]\n"
-        "cmp r0, #1\n"
-        "beq .L0e80_mode1\n"
-        "ldr r0, .L0e80_p2\n"
-        "ldrh r1, [r0, #0]\n"
-        "movs r2, #128\n"
-        "orrs r1, r2\n"
-        "strh r1, [r0, #0]\n"
-        "ldr r2, [r4, #8]\n"
-        "cmp r2, #0\n"
-        "bge .L0e80_store_rx\n"
-        "b .L0e80_rx_negative\n"
-        ".align 2, 0\n"
-        ".L0e80_p0: .4byte 0x04000120\n"
-        ".L0e80_p1: .4byte 0x0203F150\n"
-        ".L0e80_p2: .4byte 0x04000128\n"
-        ".L0e80_mode1:\n"
-        "ldr r1, .L0e80_p3\n"
-        "movs r0, #0\n"
-        "strh r0, [r1, #0]\n"
-        "ldr r1, [r4, #8]\n"
-        "cmp r1, #0\n"
-        "bge .L0e80_mode1_count\n"
-        "ldr r0, .L0e80_p4\n"
-        "str r0, [r2, #0]\n"
-        "b .L0e80_tail\n"
-        ".align 2, 0\n"
-        ".L0e80_p3: .4byte 0x0400010E\n"
-        ".L0e80_p4: .4byte 0xFEFEFEFE\n"
-        ".L0e80_mode1_count:\n"
-        "ldr r0, .L0e80_p5\n"
-        "cmp r1, r0\n"
-        "bgt .L0e80_mode1_over\n"
-        "ldr r0, [r4, #4]\n"
-        "lsls r1, r1, #2\n"
-        "adds r1, r1, r0\n"
-        "ldr r0, [r1, #0]\n"
-        "str r0, [r2, #0]\n"
-        "b .L0e80_tail\n"
-        ".align 2, 0\n"
-        ".L0e80_p5: .4byte 0x00001FFF\n"
-        ".L0e80_mode1_over:\n"
-        "ldr r0, [r4, #12]\n"
-        "str r0, [r2, #0]\n"
-        "b .L0e80_tail\n"
-        ".L0e80_rx_negative:\n"
-        "ldr r0, .L0e80_p6\n"
-        "cmp r3, r0\n"
-        "beq .L0e80_tail\n"
-        "subs r0, r2, #1\n"
-        "str r0, [r5, #8]\n"
-        "b .L0e80_tail\n"
-        ".align 2, 0\n"
-        ".L0e80_p6: .4byte 0xFEFEFEFE\n"
-        ".L0e80_store_rx:\n"
-        "ldr r0, .L0e80_p7\n"
-        "cmp r2, r0\n"
-        ".L0e80_store_rx_cmp:\n"
-        "bgt .L0e80_store_over\n"
-        "ldr r1, [r4, #4]\n"
-        "lsls r0, r2, #2\n"
-        "adds r0, r0, r1\n"
-        "str r3, [r0, #0]\n"
-        "b .L0e80_tail\n"
-        ".align 2, 0\n"
-        ".L0e80_p7: .4byte 0x00001FFF\n"
-        ".L0e80_store_over:\n"
-        "str r3, [r4, #12]\n"
-        ".L0e80_tail:\n"
-        "ldr r1, [r4, #8]\n"
-        "ldr r0, .L0e80_p8\n"
-        "cmp r1, r0\n"
-        "bgt .L0e80_done\n"
-        "adds r0, r1, #1\n"
-        "str r0, [r4, #8]\n"
-        "ldrb r4, [r4, #0]\n"
-        "cmp r4, #1\n"
-        "bne .L0e80_done\n"
-        "ldr r2, .L0e80_p9\n"
-        "ldrh r0, [r2, #0]\n"
-        "movs r1, #128\n"
-        "orrs r0, r1\n"
-        "strh r0, [r2, #0]\n"
-        "ldr r1, .L0e80_p10\n"
-        "movs r0, #192\n"
-        "strh r0, [r1, #0]\n"
-        ".L0e80_done:\n"
-        "pop {r4, r5}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        ".align 2, 0\n"
-        ".L0e80_p8: .4byte 0x00002002\n"
-        ".L0e80_p9: .4byte 0x04000128\n"
-        ".L0e80_p10: .4byte 0x0400010E\n"
-        ".syntax divided\n"
-    );
+// Blob B — _08000E80 (SIO-normal polling, 0x0203F150 state).
+// The record fields used here are the mode byte at +0, the descriptor pointer
+// at +4, the signed receive count at +8, and the overflow slot at +12.
+typedef struct {
+    vu8 f00;
+    vu8 _01[3];
+    vu32 p04;
+    vu32 count08;
+    vu32 overflow0C;
+} EwramF150;
+#define F150 ((EwramF150 *)(uintptr_t)0x0203F150)
+
+// The ROM keeps RCNT in r2 only on the mode-1 edge; the normal arm reuses r2
+// for its signed count. Splitting the count into path-local variables models
+// that disjoint liveness without a spill. r3 holds the received word, r5 the
+// original record, and r4 the working copy.
+//
+// The tautological guard in mode1_over is load-bearing for block layout. It
+// gives the later `neg` block a second CFG predecessor while merge_blocks runs,
+// so agbcc keeps the ROM's normal/mode1/.../neg/store order. A later pass folds
+// `x | ~x` to -1 and emits the ROM's unconditional tail branch. A plain
+// `goto tail` lets merge_blocks move `neg` upward and deletes that branch.
+void EWRAM_Handler_BlobB(void) {
+    register volatile u32 *rcnt __asm__("r2") =
+        (volatile u32 *)0x04000120u;
+    register u32 rx __asm__("r3") = *rcnt;
+    register EwramF150 *st __asm__("r5") = F150;
+    register EwramF150 *rec __asm__("r4") = st;
+    register s32 normal_v __asm__("r2");
+    s32 mode_v;
+    s32 tail_v;
+
+    if (st->f00 == 1)
+        goto mode1;
+    *(volatile u16 *)0x04000128u |= 0x80u;
+    normal_v = (s32)rec->count08;
+    if (normal_v >= 0)
+        goto store_rx;
+    goto neg;
+
+mode1:
+    *(volatile u16 *)0x0400010Eu = 0;
+    mode_v = (s32)rec->count08;
+    if (mode_v >= 0)
+        goto mode1_count;
+    *rcnt = 0xFEFEFEFEu;
+    goto tail;
+
+mode1_count:
+    if (mode_v > 0x1FFF)
+        goto mode1_over;
+    *rcnt = *(volatile u32 *)((u8 *)rec->p04 + mode_v * 4);
+    goto tail;
+
+mode1_over:
+    *rcnt = rec->overflow0C;
+    if ((mode_v | ~mode_v) == -1)
+        goto tail;
+
+neg:
+    if (rx == 0xFEFEFEFEu)
+        goto tail;
+    {
+        register u32 dec __asm__("r0") = (u32)normal_v - 1u;
+        st->count08 = dec;
+    }
+    goto tail;
+
+store_rx:
+    if (normal_v > 0x1FFF)
+        goto store_over;
+    {
+        register volatile u32 *table __asm__("r1") =
+            (volatile u32 *)rec->p04;
+        register u32 off __asm__("r0") = (u32)normal_v * 4u;
+        *(volatile u32 *)(off + (u32)(uintptr_t)table) = rx;
+    }
+    goto tail;
+
+store_over:
+    rec->overflow0C = rx;
+
+tail:
+    tail_v = (s32)rec->count08;
+    if (tail_v > 0x2002)
+        goto done;
+    rec->count08 = (u32)(tail_v + 1);
+    {
+        register u8 mode __asm__("r4") = rec->f00;
+        if (mode == 1) {
+            *(volatile u16 *)0x04000128u |= 0x80u;
+            *(volatile u16 *)0x0400010Eu = 0xC0u;
+        }
+    }
+
+done:
+    ;
 }
 void _08000E80(void) __attribute__((alias("EWRAM_Handler_BlobB")));
 

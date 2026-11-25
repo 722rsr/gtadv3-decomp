@@ -278,7 +278,7 @@
     "docs/data/code_data_ownership.json": "6fb8b0b61903076b247616f83e4734dc2967edf06a04a84f1b08e472d1f8adf1",
     "docs/data/era_runtime_probe.json": "45f420977850ba27e0edc15550d66e0179af7c64081d36f0ade14f0d2e7d1501",
     "docs/data/independent_slice.json": "518098deeb85b749fe6fc1b893ea042689ccace688755cdca8b442ea20dec6f5",
-    "docs/data/source_quality.json": "291c642b65ab53fa56c8faa2ca3777ee766019cd7f9f72cd6d9df844357bcd91",
+    "docs/data/source_quality.json": "2bafe4b687416a7683230a63e0fe0a2edaea7861e6422d01d610f32fbc04696b",
     "include/gba/bios.h": "b9317c06d31b76c89cc4e85a355463bfd2aa7bc61be70af1f24d49e530deb7d3",
     "include/gba/regs.h": "575c70a056190a3162f8ef2adaa937bb8520893045e1fcfe87af402c8e1f6ba9",
     "include/gba/types.h": "bab89e846a1b98c889c22352ac8043a5e01bd2ef6576bf25ff8f337ea02d0b2a",
@@ -356,7 +356,7 @@
     "src/foundation_agbmain.c": "a2b98f40b2a14e8051d960b84dd99391a87eeb1b567f98575cf4ebd368e16f0d",
     "src/foundation_boot.c": "27e585f1662dbf2dbdffc9458ce2c079e7d1d84c151d486f8eb73093027afd60",
     "src/foundation_fa0.c": "75b3f1fd7ebd3c02ea343ff7f23249cc13a77efe6f99bb4b558c54c80e0b2598",
-    "src/foundation_handlers.c": "9a6daee7e4c3f07b04779aaab40d0a9f4a6308cba6d1e315049960fa84c0bee5",
+    "src/foundation_handlers.c": "e21b62b8f3560505a18a76fff76d57cbe24ea62a7057b39f512ee0b83738a1ea",
     "src/foundation_late.c": "76cee93837a818e63ac7fc88dbd8768f5ac4c292c51e7ba42d8c46bbb826d55b",
     "src/foundation_math.c": "d2c1c56e960bacd00ffd32dcb9f5b80890316e7a16b7c8236d66aca83f17b3ae",
     "src/foundation_runtime.c": "fc13a3a6449a2311ed56a8b472d02b94e0bc2c8cf2c26312e9dee0044d8745f9",
@@ -568,7 +568,7 @@
     "tools/update_progress.py": "e08737da0578dd62dc5a064ddf8d4361066ba4637bb5e472aa87e631d9743696",
     "tools/xref.py": "94676a3ecfce87a6e6a5f335dda9800da01e1a3d453692a9c0ac827f8cc7be2e"
   },
-  "report_sha256": "9108fbfee89fd878f4427f467e0a1cae8d9a8bd0faf639be029666e713673437",
+  "report_sha256": "556dfa416cd20fb8e5ab3d3e5aac133b331c5e717fb48dcc394328b70752619b",
   "verification": {
     "command": "make full-rom-match",
     "full_hybrid_rom_link": "pass",

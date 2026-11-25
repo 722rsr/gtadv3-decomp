@@ -138,11 +138,9 @@
    "size": 480
   },
   "0x08000e80": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 73,
-    "naked": true
+    "pin": 9
    },
    "file": "src/foundation_handlers.c",
    "name": "EWRAM_Handler_BlobB",
@@ -13207,16 +13205,16 @@
  },
  "totals": {
   "asm": {
-   "bytes": 42608,
-   "functions": 114
+   "bytes": 42408,
+   "functions": 113
   },
   "c": {
    "bytes": 44418,
    "functions": 877
   },
   "c_fakematch": {
-   "bytes": 100910,
-   "functions": 681
+   "bytes": 101110,
+   "functions": 682
   },
   "partial": {
    "bytes": 200,
