@@ -2549,300 +2549,218 @@ __attribute__((naked)) void _08002A160(void *rec) {
 // arm never applies the `rec+68/rec+72` decay of the other arm and never
 // reads the steering accumulator `rec+32` except in the >200 rpm-hold path.
 // ----------------------------------------------------------------------------
-__attribute__((naked)) void _08002A398(void *rec) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "	push	{r4, r5, r6, r7, lr}\n"
-        "	mov	r7, sl\n"
-        "	mov	r6, r9\n"
-        "	mov	r5, r8\n"
-        "	push	{r5, r6, r7}\n"
-        "	sub	sp, #8\n"
-        "	adds	r5, r0, #0\n"
-        "	adds	r0, #118\n"
-        "	movs	r1, #0\n"
-        "	ldrsh	r0, [r0, r1]\n"
-        "	adds	r1, r5, #0\n"
-        "	adds	r1, #157\n"
-        "	ldrb	r1, [r1, #0]\n"
-        "	lsls	r1, r1, #24\n"
-        "	asrs	r1, r1, #24\n"
-        "	adds	r1, #6\n"
-        "	bl 0x0802DE04\n"
-        "	lsls	r0, r0, #14\n"
-        "	lsrs	r0, r0, #16\n"
-        "	mov	r8, r0\n"
-        "	adds	r0, r5, #0\n"
-        "	adds	r0, #148\n"
-        "	movs	r2, #0\n"
-        "	ldrsh	r0, [r0, r2]\n"
-        "	cmp	r0, #0\n"
-        "	ble .Lgarage_a398_08002A3F8\n"
-        "	adds	r2, r5, #0\n"
-        "	adds	r2, #126\n"
-        "	ldr r0, .Lgarage_a398_08002A3F0\n"
-        "	movs	r1, #7\n"
-        "	ldrsb	r1, [r0, r1]\n"
-        "	lsls	r0, r1, #4\n"
-        "	ldrh	r2, [r2, #0]\n"
-        "	adds	r0, r2, r0\n"
-        "	ldr r3, .Lgarage_a398_08002A3F4\n"
-        "	adds	r0, r0, r3\n"
-        "	lsls	r0, r0, #16\n"
-        "	lsrs	r0, r0, #16\n"
-        "	str	r0, [sp, #0]\n"
-        "	mov	r2, r8\n"
-        "	lsls	r0, r2, #16\n"
-        "	b .Lgarage_a398_08002A41A\n"
-        "	movs	r0, r0\n"
-        ".Lgarage_a398_08002A3F0: .word 0x0806134C\n"
-        ".Lgarage_a398_08002A3F4: .word 0xFFFFFEC0\n"
-        ".Lgarage_a398_08002A3F8:\n"
-        "	adds	r2, r5, #0\n"
-        "	adds	r2, #126\n"
-        "	ldr r0, .Lgarage_a398_08002A488\n"
-        "	ldrb	r3, [r5, #0]\n"
-        "	adds	r0, r3, r0\n"
-        "	movs	r1, #0\n"
-        "	ldrsb	r1, [r0, r1]\n"
-        "	lsls	r0, r1, #4\n"
-        "	ldrh	r2, [r2, #0]\n"
-        "	adds	r0, r2, r0\n"
-        "	ldr r2, .Lgarage_a398_08002A48C\n"
-        "	adds	r0, r0, r2\n"
-        "	lsls	r0, r0, #16\n"
-        "	lsrs	r0, r0, #16\n"
-        "	str	r0, [sp, #0]\n"
-        "	mov	r3, r8\n"
-        "	lsls	r0, r3, #16\n"
-        ".Lgarage_a398_08002A41A:\n"
-        "	asrs	r0, r0, #16\n"
-        "	adds	r0, r0, r1\n"
-        "	lsls	r0, r0, #16\n"
-        "	lsrs	r0, r0, #16\n"
-        "	mov	r8, r0\n"
-        "	mov	r1, r8\n"
-        "	lsls	r0, r1, #16\n"
-        "	asrs	r0, r0, #16\n"
-        "	cmp	r0, #1\n"
-        "	bgt .Lgarage_a398_08002A432\n"
-        "	movs	r2, #2\n"
-        "	mov	r8, r2\n"
-        ".Lgarage_a398_08002A432:\n"
-        "	adds	r1, r5, #0\n"
-        "	adds	r1, #159\n"
-        "	movs	r3, #0\n"
-        "	mov	r9, r3\n"
-        "	movs	r0, #0\n"
-        "	strb	r0, [r1, #0]\n"
-        "	adds	r0, r5, #0\n"
-        "	adds	r0, #140\n"
-        "	movs	r3, #0\n"
-        "	ldrsh	r2, [r0, r3]\n"
-        "	adds	r6, r1, #0\n"
-        "	adds	r7, r0, #0\n"
-        "	adds	r0, r5, #4\n"
-        "	str	r0, [sp, #4]\n"
-        "	movs	r1, #36\n"
-        "	adds	r1, r1, r5\n"
-        "	mov	sl, r1\n"
-        "	cmp	r2, #200\n"
-        "	ble .Lgarage_a398_08002A474\n"
-        "	movs	r2, #1\n"
-        "	bl sub_0800294C0\n"
-        "	adds	r4, r5, #0\n"
-        "	adds	r4, #32\n"
-        "	adds	r1, r4, #0\n"
-        "	movs	r2, #8\n"
-        "	bl sub_08002937C\n"
-        "	adds	r0, r4, #0\n"
-        "	bl _080029354\n"
-        "	ldr	r0, [r5, #32]\n"
-        "	str	r0, [r5, #28]\n"
-        ".Lgarage_a398_08002A474:\n"
-        "	movs	r2, #0\n"
-        "	ldrsh	r1, [r7, r2]\n"
-        "	ldr r0, .Lgarage_a398_08002A490\n"
-        "	cmp	r1, r0\n"
-        "	bgt .Lgarage_a398_08002A494\n"
-        "	movs	r0, #1\n"
-        "	ldrb	r3, [r6, #0]\n"
-        "	orrs	r0, r3\n"
-        "	b .Lgarage_a398_08002A510\n"
-        "	movs	r0, r0\n"
-        ".Lgarage_a398_08002A488: .word 0x0806134C\n"
-        ".Lgarage_a398_08002A48C: .word 0xFFFFFEC0\n"
-        ".Lgarage_a398_08002A490: .word 0x0000012B\n"
-        ".Lgarage_a398_08002A494:\n"
-        "	movs	r0, #0\n"
-        "	ldrsh	r2, [r7, r0]\n"
-        "	adds	r2, #80\n"
-        "	asrs	r2, r2, #3\n"
-        "	ldr	r0, [sp, #4]\n"
-        "	mov	r1, sl\n"
-        "	bl sub_0800294FC\n"
-        "	adds	r3, r0, #0\n"
-        "	ldr	r1, [r5, #28]\n"
-        "	bl _0800293D8\n"
-        "	adds	r3, r0, #0\n"
-        "	cmp	r3, #0\n"
-        "	bge .Lgarage_a398_08002A4B4\n"
-        "	negs	r3, r3\n"
-        ".Lgarage_a398_08002A4B4:\n"
-        "	movs	r0, #1\n"
-        "	ldrb	r2, [r6, #0]\n"
-        "	orrs	r2, r0\n"
-        "	mov	r1, r9\n"
-        "	orrs	r2, r1\n"
-        "	strb	r2, [r6, #0]\n"
-        "	movs	r0, #0\n"
-        "	ldrsh	r1, [r7, r0]\n"
-        "	ldr r0, .Lgarage_a398_08002A4E8\n"
-        "	subs	r0, r0, r1\n"
-        "	cmp	r3, r0\n"
-        "	ble .Lgarage_a398_08002A4D2\n"
-        "	movs	r0, #2\n"
-        "	orrs	r2, r0\n"
-        "	strb	r2, [r6, #0]\n"
-        ".Lgarage_a398_08002A4D2:\n"
-        "	movs	r2, #0\n"
-        "	ldrsh	r1, [r7, r2]\n"
-        "	ldr r0, .Lgarage_a398_08002A4EC\n"
-        "	subs	r0, r0, r1\n"
-        "	cmp	r3, r0\n"
-        "	ble .Lgarage_a398_08002A4F0\n"
-        "	movs	r0, #254\n"
-        "	ldrb	r3, [r6, #0]\n"
-        "	ands	r0, r3\n"
-        "	b .Lgarage_a398_08002A510\n"
-        "	movs	r0, r0\n"
-        ".Lgarage_a398_08002A4E8: .word 0x00001676\n"
-        ".Lgarage_a398_08002A4EC: .word 0x00000F6E\n"
-        ".Lgarage_a398_08002A4F0:\n"
-        "	adds	r0, r5, #0\n"
-        "	adds	r0, #130\n"
-        "	movs	r1, #0\n"
-        "	ldrsh	r0, [r0, r1]\n"
-        "	movs	r2, #0\n"
-        "	ldrsh	r1, [r7, r2]\n"
-        "	cmp	r0, r1\n"
-        "	blt .Lgarage_a398_08002A50A\n"
-        "	ldr	r3, [sp, #0]\n"
-        "	lsls	r0, r3, #16\n"
-        "	asrs	r0, r0, #16\n"
-        "	cmp	r0, r1\n"
-        "	bge .Lgarage_a398_08002A512\n"
-        ".Lgarage_a398_08002A50A:\n"
-        "	movs	r0, #254\n"
-        "	ldrb	r1, [r6, #0]\n"
-        "	ands	r0, r1\n"
-        ".Lgarage_a398_08002A510:\n"
-        "	strb	r0, [r6, #0]\n"
-        ".Lgarage_a398_08002A512:\n"
-        "	movs	r0, #1\n"
-        "	ldrb	r2, [r6, #0]\n"
-        "	ands	r0, r2\n"
-        "	cmp	r0, #0\n"
-        "	beq .Lgarage_a398_08002A530\n"
-        "	adds	r1, r5, #0\n"
-        "	adds	r1, #104\n"
-        "	mov	r3, r8\n"
-        "	lsls	r0, r3, #16\n"
-        "	asrs	r0, r0, #16\n"
-        "	ldrh	r2, [r1, #0]\n"
-        "	adds	r0, r2, r0\n"
-        "	strh	r0, [r1, #0]\n"
-        "	adds	r2, r1, #0\n"
-        "	b .Lgarage_a398_08002A53C\n"
-        ".Lgarage_a398_08002A530:\n"
-        "	adds	r0, r5, #0\n"
-        "	adds	r0, #104\n"
-        "	ldrh	r1, [r0, #0]\n"
-        "	subs	r1, #12\n"
-        "	strh	r1, [r0, #0]\n"
-        "	adds	r2, r0, #0\n"
-        ".Lgarage_a398_08002A53C:\n"
-        "	movs	r0, #2\n"
-        "	ldrb	r6, [r6, #0]\n"
-        "	ands	r0, r6\n"
-        "	cmp	r0, #0\n"
-        "	beq .Lgarage_a398_08002A562\n"
-        "	ldrh	r1, [r2, #0]\n"
-        "	subs	r1, #96\n"
-        "	adds	r0, r5, #0\n"
-        "	adds	r0, #157\n"
-        "	ldrb	r0, [r0, #0]\n"
-        "	lsls	r0, r0, #24\n"
-        "	asrs	r0, r0, #24\n"
-        "	lsls	r0, r0, #2\n"
-        "	subs	r1, r1, r0\n"
-        "	strh	r1, [r2, #0]\n"
-        "	ldr	r0, [r5, #92]\n"
-        "	movs	r1, #64\n"
-        "	orrs	r0, r1\n"
-        "	b .Lgarage_a398_08002A56A\n"
-        ".Lgarage_a398_08002A562:\n"
-        "	ldr	r0, [r5, #92]\n"
-        "	movs	r1, #65\n"
-        "	negs	r1, r1\n"
-        "	ands	r0, r1\n"
-        ".Lgarage_a398_08002A56A:\n"
-        "	str	r0, [r5, #92]\n"
-        "	adds	r1, r2, #0\n"
-        "	movs	r3, #0\n"
-        "	ldrsh	r0, [r1, r3]\n"
-        "	cmp	r0, #0\n"
-        "	bge .Lgarage_a398_08002A57A\n"
-        "	movs	r0, #0\n"
-        "	strh	r0, [r1, #0]\n"
-        ".Lgarage_a398_08002A57A:\n"
-        "	ldr	r0, [r5, #92]\n"
-        "	movs	r1, #1\n"
-        "	ands	r0, r1\n"
-        "	cmp	r0, #0\n"
-        "	bne .Lgarage_a398_08002A58C\n"
-        "	ldrh	r2, [r2, #0]\n"
-        "	lsls	r0, r2, #16\n"
-        "	asrs	r0, r0, #19\n"
-        "	strh	r0, [r7, #0]\n"
-        ".Lgarage_a398_08002A58C:\n"
-        "	movs	r1, #0\n"
-        "	ldrsh	r0, [r7, r1]\n"
-        "	negs	r0, r0\n"
-        "	str	r0, [r5, #24]\n"
-        "	movs	r0, #0\n"
-        "	str	r0, [r5, #20]\n"
-        "	adds	r0, r5, #0\n"
-        "	adds	r0, #20\n"
-        "	ldr	r1, [r5, #28]\n"
-        "	lsls	r1, r1, #12\n"
-        "	asrs	r1, r1, #16\n"
-        "	bl 0x08005BA8\n"
-        "	ldr	r1, [r5, #4]\n"
-        "	str	r1, [r5, #12]\n"
-        "	ldr	r2, [r5, #8]\n"
-        "	str	r2, [r5, #16]\n"
-        "	ldr	r0, [r5, #20]\n"
-        "	adds	r1, r1, r0\n"
-        "	str	r1, [r5, #4]\n"
-        "	ldr	r0, [r5, #24]\n"
-        "	adds	r2, r2, r0\n"
-        "	str	r2, [r5, #8]\n"
-        "	mov	r0, sl\n"
-        "	ldr	r1, [sp, #4]\n"
-        "	bl sub_08006CB8\n"
-        "	add	sp, #8\n"
-        "	pop	{r3, r4, r5}\n"
-        "	mov	r8, r3\n"
-        "	mov	r9, r4\n"
-        "	mov	sl, r5\n"
-        "	pop	{r4, r5, r6, r7}\n"
-        "	pop	{r0}\n"
-        "	bx	r0\n"
-        "	movs	r0, r0\n"
-        ".syntax divided\n"
-    );
+void _08002A398(void *rec) {
+    u8 *r = (u8 *)rec;
+    register u8 *status;
+    register u8 *status_init __asm__("r1");
+    s16 *limit;
+    register u8 *q __asm__("sl");
+    register u32 zero;
+    register s16 *rpm;
+    register s16 *rpm_copy __asm__("r1");
+    register u8 *callq;
+    register u32 zero_src __asm__("r3");
+    register s32 stepcmp __asm__("r1");
+    register u32 step __asm__("r8");
+    s32 delta;
+    s32 step_hi;
+    volatile struct { u32 thr; u8 *p; } f;
+    s32 t;
+    register s32 e __asm__("r3");
+    register u32 current_status __asm__("r2");
+    register u32 status_out __asm__("r0");
+    s32 call_arg;
+    u32 status_move;
+    register u32 status_hold_r1 __asm__("r1");
+    register u32 status_hold_r3 __asm__("r3");
+
+    step = (u16)((u32)sub_0802DE04((s32)*(s16 *)(r + 118), (s32)*(s8 *)(r + 157) + 6) >> 2);
+    {
+        const u8 *row = CAR_PARAM_ROW;
+        if (*(s16 *)(r + 148) > 0) {
+            s8 t1 = (s8)row[7];
+            f.thr = (u16)(*(u16 *)(r + 126) + (t1 << 4) - 320);
+            delta = t1;
+            step_hi = step << 16;
+            goto after_arm;
+        }
+        {
+        register u16 *p126;
+        register const s8 *table;
+        register s32 bias __asm__("r2");
+        register s32 sum __asm__("r0");
+        register u32 stepcopy __asm__("r3");
+        u8 index;
+        s8 t1;
+        p126 = (u16 *)(r + 126);
+        table = (const s8 *)CAR_PARAM_ROW;
+        __asm__ volatile ("" : "+r"(table));
+        index = *(u8 *)r;
+        t1 = table[index];
+        sum = (s32)*p126 + ((s32)t1 << 4);
+        bias = -320;
+        f.thr = (u16)(sum + bias);
+        delta = t1;
+        stepcopy = step;
+        __asm__ volatile ("" : "+r"(stepcopy));
+        step_hi = stepcopy << 16;
+        }
+    }
+after_arm:
+    step = (u16)((s16)(step_hi >> 16) + delta);
+    stepcmp = step;
+    __asm__ volatile ("" : "+r"(stepcmp));
+    {
+        register s32 stepwide __asm__("r0");
+        stepwide = stepcmp << 16;
+        stepwide >>= 16;
+        if (stepwide <= 1) {
+            register s32 step2 __asm__("r2");
+            step2 = 2;
+            __asm__ volatile ("" : "+r"(step2));
+            step = step2;
+        }
+    }
+
+
+    status_init = r + 159;
+    zero_src = 0;
+    __asm__ volatile ("" : "+r"(zero_src));
+    zero = zero_src;
+    *status_init = 0;
+    {
+        register s16 *limit_init;
+        limit_init = (s16 *)(r + 140);
+        t = *limit_init;
+        status = status_init;
+        limit = limit_init;
+    }
+    f.p = r + 4;
+    q = r + 36;
+    if (t > 200) {
+        s32 x = _0800294C0(r + 4, q, 1);
+        _08002937C(x, (u32 *)(r + 32), 8);
+        _080029354((u32 *)(r + 32));
+        *(u32 *)(r + 28) = *(u32 *)(r + 32);
+    }
+    {
+        register s32 threshold;
+        register s32 limit_value;
+        limit_value = *limit;
+        threshold = 299;
+        if (limit_value <= threshold) {
+            status_out = 1;
+            e = *(volatile u8 *)status;
+            status_out |= e;
+            __asm__ volatile ("" : : "r"(status_out), "r"(e) : "memory");
+            goto store_status_c;
+        }
+    }
+    __asm__ volatile ("" : : : "memory");
+    {
+        register u32 hold_r3 __asm__("r3");
+        __asm__ volatile ("" : "=r"(hold_r3));
+        call_arg = ((s32)*limit + 80) >> 3;
+        __asm__ volatile ("" : : "r"(hold_r3));
+    }
+    e = _0800294FC(f.p, q, call_arg);
+    e = _0800293D8(e, *(s32 *)(r + 28));
+    if (e < 0)
+        e = -e;
+    {
+        register u32 flag_one;
+        flag_one = 1;
+        current_status = *(volatile u8 *)status;
+        current_status |= flag_one;
+        current_status |= zero;
+        *(volatile u8 *)status = (u8)current_status;
+    }
+    {
+        register s32 limit_value;
+        register s32 threshold;
+        limit_value = *limit;
+        threshold = 0x1676;
+        if (e > threshold - limit_value) {
+            current_status |= 2;
+            *(volatile u8 *)status = (u8)current_status;
+        }
+    }
+    {
+        register s32 limit_value2;
+        register s32 threshold2;
+        limit_value2 = *limit;
+        threshold2 = 0xF6E;
+        if (e > threshold2 - limit_value2) {
+            register u32 status_byte2 __asm__("r3");
+            status_out = 254;
+            status_byte2 = *(volatile u8 *)status;
+            __asm__ volatile ("" : "+r"(status_byte2));
+            status_out &= status_byte2;
+            goto store_status_c;
+        }
+    }
+        {
+        register s32 record_value;
+        s32 limit_value3;
+        register s32 threshold_raw __asm__("r3");
+        register s32 threshold_sign __asm__("r0");
+        record_value = *(s16 *)(r + 130);
+        __asm__ volatile ("" : : "r"(e) : "memory");
+        limit_value3 = *limit;
+        if (record_value < limit_value3)
+            goto clear_tail;
+        threshold_raw = f.thr;
+        threshold_sign = (s16)threshold_raw;
+        if (threshold_sign >= limit_value3)
+            goto no_clear_tail;
+clear_tail:
+        {
+            status_out = 254;
+            status_out &= *(volatile u8 *)status;
+store_status_c:
+            *(volatile u8 *)status = (u8)status_out;
+        }
+        no_clear_tail:
+    }
+    __asm__ volatile ("" : "=r"(status_hold_r1), "=r"(status_hold_r3));
+    status_move = (u32)(*status & 1);
+    __asm__ volatile ("" : : "r"(status_hold_r1), "r"(status_hold_r3) : "memory");
+    if (status_move != 0) {
+        register u16 *p __asm__("r1");
+        register s32 step_s16;
+        p = (u16 *)(r + 104);
+        step_s16 = (s16)step;
+        *p = (u16)(*p + step_s16);
+        rpm = (s16 *)p;
+    } else {
+        register u16 *p __asm__("r0");
+        p = (u16 *)(r + 104);
+        *p = (u16)(*p - 12);
+        rpm = (s16 *)p;
+    }
+    if (*status & 2) {
+        *rpm = (s16)((u16)*rpm - 96 - ((s8)r[157] << 2));
+        *(u32 *)(r + 92) |= 64;
+    } else {
+        *(u32 *)(r + 92) &= ~64u;
+    }
+    rpm_copy = rpm;
+    if (*rpm_copy < 0)
+        *rpm_copy = 0;
+    if ((*(u32 *)(r + 92) & 1u) == 0)
+        *limit = (s16)(((s32)*rpm) >> 3);
+    *(u32 *)(r + 24) = (u32)(-(s32)*limit);
+    *(u32 *)(r + 20) = 0;
+    _08005BA8(r + 20, (s32)((u32)*(u32 *)(r + 28) << 12) >> 16);
+    *(u32 *)(r + 12) = *(u32 *)(r + 4);
+    *(u32 *)(r + 16) = *(u32 *)(r + 8);
+    *(u32 *)(r + 4) += *(u32 *)(r + 20);
+    *(u32 *)(r + 8) += *(u32 *)(r + 24);
+    callq = q;
+    _08006CB8(callq, f.p);
 }
+__asm__(".hword 0");
+__asm__(".align 2, 0");
 
 // ----------------------------------------------------------------------------
 // 0x0802A5D4 — record constructor (41-word zero fill + spec copy + kind
