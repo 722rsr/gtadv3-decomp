@@ -297,10 +297,10 @@ sweep above closed `Garage_Ticker_278F0` (232 B). What is left of the
 | --- | ---: | --- |
 | `_080053DC` `OAMGrid_Build` | 200 | `volatile` on `cols`/`rows`/`palette` keeps the shift and the reloads in the loop; with both splices replaced the body re-rolls (81/99): `rowTab`(r6)/`rowBytes`(r5)/the r7 `ip` copy and the `lo`/`up`/`palShift` tail (r2/r0/r1) still differ |
 | `_08001D7B8` | 160 | a half-defined `u64` return: plain `(u64)out` costs a `movs r1,#0`; `\|`-ing a pinned r1 word builds the pair in r4:r5 (+6); a 2-word struct return takes the memory-return path (frame copy, no match) |
-| `_08002C11C` `SoundVoiceCleanup` | 68 | `tst` is not in the compiler's repertoire |
-| `_08002BE78` `SoundPump` | 60 | a literal-pool load and two flag-coupled branches |
+| `_08002C11C` `SoundVoiceCleanup` | 68 | linked exact; C now forms the second mask, with entry TST and conditional branch splices remaining. Next lead: grouped branch control flow |
+| `_08002BE78` `SoundPump` | 60 | two shared-pool loads and BGT/BCC branches remain; direct C addresses measured 25/60 aligned and +8 B. Next lead: reference the words at 0x0802C114/0x0802C118 through a C symbol |
 | `_08002C160` `VoiceEnvelopeApply_2C160` | 48 | register-indexed `ldrsb` |
-| `_080015A0` | 24 | `mov r0,pc` |
+| `_080015A0` | 24 | C decrement plus one BGT splice is exact; PC read remains spliced. Next lead: test a C PC-read shape while preserving r2/r1 allocation |
 
 ## `MenuFF78_141AC` (732 B) closed: the `c` load scratch is a reload cursor (2026-11-25)
 

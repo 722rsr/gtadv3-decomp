@@ -168,15 +168,17 @@ int sub_08001370(void *ctx, u16 v) __attribute__((alias("_08001370")));
 void _080015A0(int delay)
 {
     register u32 pc __asm__("r2");
-    register int step __asm__("r1");
-    register int remaining __asm__("r0") = delay;
+    int step;
+    int remaining = delay;
 
     /* The ROM selects a decrement from the executing address's high byte.
-       Both remaining asm pieces are architectural: the PC read, and the
-       `subs` / `bgt` loop -- thumb.md's `cmpsi` always materialises a separate
-       `cmp` and there is no compare-from-subtract pattern, so the plain C
-       `do { remaining -= step; } while (remaining > 0);` measures +2 bytes
-       (`sub` / `cmp` / `bgt`) in every spelling tried. */
+       Pinning that `mov r2, pc` result to r2 lets agbcc allocate the unpinned
+       step to r1; the full 24-byte body matches. Pinning step instead also
+       matches, while freeing both makes their registers swap (16/24). A
+       grouped-branch step selection with both unpinned scored 13/24. A
+       scratch split with the decrement in C and only BGT spliced also matches
+       24/24. Next lead: try a source-level PC read while preserving the r2
+       allocation and the current nested step selection. */
     __asm__ volatile ("mov %0, pc" : "=r"(pc));
     pc >>= 24;
     step = 12;
@@ -185,12 +187,10 @@ void _080015A0(int delay)
         if (pc != 8)
             step = 4;
     }
-    __asm__ volatile (
-        ".syntax unified\n"
-        "1: subs %0, %0, %1\n"
-        "bgt 1b\n"
-        ".syntax divided\n"
-        : "+r"(remaining) : "r"(step) : "cc");
+    __asm__ volatile (".syntax unified\n.L015A0_loop:\n.syntax divided");
+    remaining -= step;
+    __asm__ volatile (".syntax unified\nbgt .L015A0_loop\n.syntax divided"
+                      : : "r"(remaining), "r"(step) : "cc");
 }
 void sub_080015A0(int delay) __attribute__((alias("_080015A0")));
 

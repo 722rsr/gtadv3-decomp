@@ -32,51 +32,36 @@ operand at that point and folds into the compare as `#128` afterwards. So the
 pair is reachable; an earlier revision of this note called it out of reach,
 which was wrong.
 
-## The `tst` half is a backend-pattern absence, not a source-shape wall
+## `tst` bodies: measured spellings and splice route
 
-The *other* instruction in these bodies, `tst rX, rY`, is not reachable from C
-with the pinned compiler for a different reason: the Thumb machine description
-has no two-register `tst` pattern. `thumb.md`'s only `tst`-named pattern is
-`tstsi`, which emits `cmp %0, #0`; the `tst`-emitting
-`*andsi3_compare0_scratch` pattern belongs to the ARM-mode description, which
-`-mthumb` does not use. All five `thumb*.md` copies in the pinned tree agree on
-this point.
+`thumb.md`'s `tstsi` pattern emits `cmp %0, #0`; the measured straight-C
+gate spellings (`(f & m) != 0`, `== 0`, bare `(f & m)`, `!(f & m)`,
+`while`, `switch`, `u32`/`u8` mask operands, bitfield read, and
+`(u8)(f & m)`) likewise compiled to `and` + `cmp #0` in the tested drafts.
+This records those attempts; it does not close the bodies. For a body flagged
+by `backlog_census.py --lift-screen`, continue with an explicit gate splice or
+a grouped control-flow conversion, keeping C for the surrounding operations.
 
-The sixteen gate spellings measured so far (`(f & m) != 0`, `== 0`, bare
-`(f & m)`, `!(f & m)`, `while`, `switch`, a `u32`/`u8` mask operand, a bitfield
-read, `(u8)(f & m)`) all expand to `and` + `cmp #0`, as expected from that
-description. Compiling the same C with a backend that has the two-register
-pattern (modern `arm-none-eabi-gcc -mthumb`, or the ARM-mode description) emits
-`tst` immediately, so this is a backend-pattern absence, not a missing source
-shape. C89/C99 declaration placement is irrelevant: the old C89 transform only
-moved declarations and did not change instruction selection.
+The earlier C89/C99 declaration-placement experiment only moved declarations
+and did not change the tested instruction selection. It does not rule out other
+source shapes or splice groupings.
 
-A body whose ROM stream contains `tst` is therefore asm/splice-only under the
-pinned compiler. Keep it asm, or lift the rest of the body to C and splice the
-gate explicitly; `source_quality.py` classifies the latter as `partial`, not
-decompiled. Do not switch compilers for one body.
-
-Consequence: a body containing `cmp #128` + `bcs` **and no lift-screen marker**
-is worth lifting first with the named-bound spelling above; `python3
-tools/thumb_idiom_scan.py --exclude tst` lists exactly those (currently none).
 Of the 24 not-yet-decompiled bodies that contain `cmp #128`
 (`--idiom cmp128any`), only `SoundVoiceFollow_NoteOff` and `SoundNoteOn_2C190`
-use the `bcs` form -- the other 22 compare for equality, which needs no special
-spelling. `--idiom tst` lists the six bodies that carry the test: the two sound
-walkers above, `SoundChannelFreeAll`, the two `DivRem*` runtime routines and
-`MixerSetup_2B8AA`. They are asm/splice-only, not targets for another C shape.
+use the `bcs` form; the other 22 compare for equality. `--idiom tst` lists the
+six bodies that carry the test: the two sound walkers above,
+`SoundChannelFreeAll`, the two `DivRem*` runtime routines and
+`MixerSetup_2B8AA`. Treat those entries as splice/grouped-control-flow work.
 The scanner decodes literal-pool words as data: without that, a pool word such
 as `0x4200xxxx` reports a `tst` the body never executes, which is how an
 earlier revision of this note arrived at "24 bodies contain the sequence".
 
-`SoundVoiceFollow_NoteOff` (`0x0802C390`, 64 B) is the smallest measured body
-where the named bound reproduces the range test. With the bound in a local the
-head of the lift emits the ROM's `ldrb` / `cmp #128` / `bcs` sequence; pinning
-the cursor to r2 and the id to r3 makes the whole 16-byte head (through the
-`>= 128` arm) byte-identical. The two `tst` gates (`(flags & 0x83)` /
-`(flags & 0x40)`) cannot be produced by the pinned Thumb backend, and the
-`push {r4,r5}` / `bx lr` frame is not a Thumb C frame either, so the body stays
-asm-owned; see
+`SoundVoiceFollow_NoteOff` (`0x0802C390`, 64 B) now has an exact grouped-splice
+source: a named bound, r2/r3 pins, and C for the cursor decode/update and full
+linked-list traversal; assembly keeps the frame, mask setup, `tst` gates, key
+comparison, and success update. It measures 64/64 bytes exact and classifies as
+`partial`. The next lead is to move the key comparison and success update into
+C while preserving the inline success arm; see
 [sound_voice_follow_noteoff_lift.md](sound_voice_follow_noteoff_lift.md).
 
 Related narrowing already documented: `volatile u16` reads force

@@ -15,14 +15,15 @@ extern void _08002C48(int value, u16 course);
 extern void _080026550(void *source, u32 delta, volatile u32 *record);
 extern int _0802A8F0(void *a, int v);   // 0x0802A8F0 s16 store/clamp
 extern void _080023AC(int slot, void *handler);
-extern void Course_0x080263E0(u8 *a, int b); // ROM: (r0 = buf, r1 = s16[racectx+132])
+extern void _0800263E0(u8 *a, int b); // ROM: (r0 = buf, r1 = s16[racectx+132])
 // ROM call shapes (asm/race_setup_18adc.s _08018B18/_08018B4A):
 //   _080264D8(u32[racer+280], racer[8]-racectx[8]) -> derivation feeding the
 //   263E0 blit; _080267FC(u16[racer+26], racer[8]-racectx[8]) -> result goes
 //   to _08026868(result, s16[racectx+86]) or zeroes racer[31].
-extern void *Course_0x080267FC(int a, u32 b); // 0x080267FC
+extern void *_0800267FC(int a, u32 b); // 0x080267FC
 extern void *_0800264D8(void *a, u32 b);     // 0x080264D8 course byte lookup
 extern void  _080026868(u8 *a, int b);       // 0x08026868 palette upload
+extern void _0802D970(const void *src, void *dst, u32 mode);
 
 // 0x08018E28 — initialize one racer record from the live race context. The
 // index is sign-extended from its low halfword; the record stride is 284 bytes.
@@ -261,180 +262,214 @@ void _080019F1C(void) {
     _080023AC(3, (void *)(uintptr_t)0x08019EC9u);
 }
 
-__attribute__((naked)) void Race_Setup_18ADC(void) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push	{r4, r5, r6, r7, lr}\n"
-        "sub	sp, #32\n"
-        "ldr r4, .Lrace18adc_080018B00\n"
-        "movs	r5, #128\n"
-        "lsls	r5, r5, #3\n"
-        "adds	r0, r5, #0\n"
-        "bl 0x08018ACC\n"
-        "cmp	r0, #0\n"
-        "beq .Lrace18adc_080018B04\n"
-        "movs	r0, #1\n"
-        "strb	r0, [r4, #31]\n"
-        "adds	r0, r5, #0\n"
-        "movs	r1, #0\n"
-        "bl 0x08018AA8\n"
-        "b .Lrace18adc_080018B06\n"
-        "movs	r0, r0\n"
-        ".Lrace18adc_080018B00: .word 0x03004E80\n"
-        ".Lrace18adc_080018B04:\n"
-        "strb	r0, [r4, #31]\n"
-        ".Lrace18adc_080018B06:\n"
-        "movs	r1, #140\n"
-        ".Lrace18adc_080018B08: .word 0x18600049\n"
-        "ldr	r0, [r0, #0]\n"
-        "ldr r5, .Lrace18adc_080018B64\n"
-        "ldr	r2, [r5, #0]\n"
-        "ldr	r1, [r4, #8]\n"
-        "ldr	r2, [r2, #8]\n"
-        "subs	r1, r1, r2\n"
-        ".Lrace18adc_080018B18: .word 0xFCDEF00D\n"
-        "adds	r2, r0, #0\n"
-        "ldr	r3, [r5, #0]\n"
-        "adds	r1, r3, #0\n"
-        "adds	r1, #148\n"
-        "ldr	r0, [r1, #0]\n"
-        "cmp	r2, r0\n"
-        "beq .Lrace18adc_080018B3A\n"
-        "str	r2, [r1, #0]\n"
-        "adds	r0, r3, #0\n"
-        "adds	r0, #132\n"
-        "movs	r3, #0\n"
-        "ldrsh	r1, [r0, r3]\n"
-        "adds	r0, r2, #0\n"
-        "bl 0x080263E0\n"
-        ".Lrace18adc_080018B3A:\n"
-        "ldrb	r0, [r4, #31]\n"
-        ".Lrace18adc_080018B3C: .word 0xD0142800\n"
-        "ldrh	r0, [r4, #26]\n"
-        "ldr	r2, [r5, #0]\n"
-        "ldr	r1, [r4, #8]\n"
-        "ldr	r2, [r2, #8]\n"
-        "subs	r1, r1, r2\n"
-        "bl 0x080267FC\n"
-        "adds	r3, r0, #0\n"
-        "cmp	r3, #0\n"
-        "beq .Lrace18adc_080018B68\n"
-        "ldr	r0, [r5, #0]\n"
-        "adds	r0, #86\n"
-        "movs	r2, #0\n"
-        "ldrsh	r1, [r0, r2]\n"
-        ".Lrace18adc_080018B5C: .word 0xF00D1C18\n"
-        ".hword 0xFE83\n"
-        "b .Lrace18adc_080018B6A\n"
-        ".Lrace18adc_080018B64: .word 0x03004E20\n"
-        ".Lrace18adc_080018B68:\n"
-        "strb	r3, [r4, #31]\n"
-        ".Lrace18adc_080018B6A:\n"
-        "ldr r0, .Lrace18adc_080018C30\n"
-        "mov	r1, sp\n"
-        "movs	r2, #8\n"
-        "bl 0x0802D970\n"
-        "ldrb	r0, [r4, #30]\n"
-        "cmp	r0, #0\n"
-        "beq .Lrace18adc_080018B80\n"
-        "mov	r1, sp\n"
-        "movs	r0, #31\n"
-        "strh	r0, [r1, #2]\n"
-        ".Lrace18adc_080018B80:\n"
-        "ldr r1, .Lrace18adc_080018C34\n"
-        "mov	r0, sp\n"
-        "movs	r2, #8\n"
-        "bl 0x0802D970\n"
-        "movs	r5, #1\n"
-        "ldr r2, .Lrace18adc_080018C38\n"
-        "ldr	r0, [r2, #0]\n"
-        "adds	r0, #70\n"
-        "movs	r3, #0\n"
-        "ldrsh	r0, [r0, r3]\n"
-        "cmp	r5, r0\n"
-        "bge .Lrace18adc_080018C26\n"
-        "ldr r0, .Lrace18adc_080018C3C\n"
-        "ldr	r4, [r0, #0]\n"
-        "cmp	r4, #0\n"
-        "beq .Lrace18adc_080018C26\n"
-        "adds	r6, r2, #0\n"
-        "ldr r7, .Lrace18adc_080018C40\n"
-        ".Lrace18adc_080018BA6:\n"
-        "movs	r1, #140\n"
-        "lsls	r1, r1, #1\n"
-        "adds	r0, r4, r1\n"
-        "ldr	r0, [r0, #0]\n"
-        "ldr	r2, [r6, #0]\n"
-        "ldr	r1, [r4, #8]\n"
-        "ldr	r2, [r2, #8]\n"
-        "subs	r1, r1, r2\n"
-        "bl 0x080264D8\n"
-        "adds	r2, r0, #0\n"
-        "ldr	r3, [r6, #0]\n"
-        "lsls	r1, r5, #2\n"
-        "adds	r0, r3, #0\n"
-        "adds	r0, #148\n"
-        "adds	r1, r0, r1\n"
-        "ldr	r0, [r1, #0]\n"
-        "cmp	r2, r0\n"
-        "beq .Lrace18adc_080018BE0\n"
-        "str	r2, [r1, #0]\n"
-        "lsls	r0, r5, #1\n"
-        "adds	r1, r3, #0\n"
-        "adds	r1, #132\n"
-        "adds	r1, r1, r0\n"
-        "movs	r3, #0\n"
-        "ldrsh	r1, [r1, r3]\n"
-        "adds	r0, r2, #0\n"
-        "bl 0x080263E0\n"
-        ".Lrace18adc_080018BE0:\n"
-        "movs	r1, #12\n"
-        "ldrsh	r0, [r4, r1]\n"
-        "lsls	r0, r0, #5\n"
-        "ldr r1, .Lrace18adc_080018C30\n"
-        "adds	r0, r0, r1\n"
-        "mov	r1, sp\n"
-        "movs	r2, #8\n"
-        "bl 0x0802D970\n"
-        "ldrb	r0, [r4, #30]\n"
-        "cmp	r0, #0\n"
-        "beq .Lrace18adc_080018BFE\n"
-        "mov	r1, sp\n"
-        "movs	r0, #31\n"
-        "strh	r0, [r1, #2]\n"
-        ".Lrace18adc_080018BFE:\n"
-        "mov	r0, sp\n"
-        "adds	r1, r7, #0\n"
-        "movs	r2, #8\n"
-        "bl 0x0802D970\n"
-        "adds	r7, #32\n"
-        "adds	r5, #1\n"
-        "ldr	r0, [r6, #0]\n"
-        "adds	r0, #70\n"
-        "movs	r2, #0\n"
-        "ldrsh	r0, [r0, r2]\n"
-        "cmp	r5, r0\n"
-        "bge .Lrace18adc_080018C26\n"
-        "ldr r1, .Lrace18adc_080018C3C\n"
-        "subs	r0, r5, #1\n"
-        "lsls	r0, r0, #2\n"
-        "adds	r0, r0, r1\n"
-        "ldr	r4, [r0, #0]\n"
-        "cmp	r4, #0\n"
-        "bne .Lrace18adc_080018BA6\n"
-        ".Lrace18adc_080018C26:\n"
-        "add	sp, #32\n"
-        "pop	{r4, r5, r6, r7}\n"
-        "pop	{r0}\n"
-        "bx	r0\n"
-        "movs	r0, r0\n"
-        ".Lrace18adc_080018C30: .word 0x03005780\n"
-        ".Lrace18adc_080018C34: .word 0x050002A0\n"
-        ".Lrace18adc_080018C38: .word 0x03004E20\n"
-        ".Lrace18adc_080018C3C: .word 0x03000598\n"
-        ".Lrace18adc_080018C40: .word 0x050002C0\n"
-        ".syntax divided\n"
-    );
+void Race_Setup_18ADC(void)
+{
+    volatile u8 *record;
+    register void *source __asm__("r0");
+    u32 delta;
+    u32 scratch[8];
+
+    record = (volatile u8 *)(uintptr_t)0x03004E80u;
+    if (Ghost_FlagTest(0x400u) != 0) {
+        record[31] = 1;
+        Ghost_FlagOp(0x400u, 0);
+    } else {
+        record[31] = 0;
+    }
+
+    {
+        volatile u8 *volatile *early_cell;
+        volatile u8 *context;
+        volatile u8 *delta_context;
+        register u32 delta_r1 __asm__("r1");
+
+        source = (void *)(uintptr_t)*(volatile u32 *)(record + 280);
+        early_cell = (volatile u8 *volatile *)(uintptr_t)0x03004E20u;
+        /* Keep the reads sequential so agbcc reuses the context register. */
+        delta_context = *early_cell;
+        delta_r1 = *(volatile u32 *)(record + 8);
+        delta_r1 -= *(volatile u32 *)(delta_context + 8);
+        {
+            register void *course_first __asm__("r2");
+
+            course_first = _0800264D8(source, delta_r1);
+            context = *early_cell;
+            if (course_first != (void *)(uintptr_t)*(volatile u32 *)(context + 148)) {
+                *(volatile u32 *)(context + 148) = (u32)(uintptr_t)course_first;
+                {
+                    register volatile u8 *course_context __asm__("r3");
+                    register s32 selection __asm__("r1");
+
+                    course_context = context;
+                    __asm__ volatile(
+                        ".syntax unified\n"
+                        "adds r0, %1, #0\n"
+                        "adds r0, #132\n"
+                        "movs r3, #0\n"
+                        "ldrsh %0, [r0, r3]\n"
+                        ".syntax divided\n"
+                        : "=r"(selection), "+r"(course_context)
+                        :
+                        : "r0");
+                    _0800263E0((u8 *)course_first, selection);
+                }
+            }
+        }
+
+        if (record[31] != 0) {
+            u16 flag_value;
+
+            flag_value = *(volatile u16 *)(record + 26);
+            delta_context = *early_cell;
+            delta_r1 = *(volatile u32 *)(record + 8);
+            delta_r1 -= *(volatile u32 *)(delta_context + 8);
+            {
+                register void *course_flag __asm__("r3");
+
+                course_flag = _0800267FC(flag_value, delta_r1);
+                if (course_flag != 0) {
+                    register volatile u8 *cell_reg __asm__("r5");
+                    register s32 selection __asm__("r1");
+
+                    cell_reg = early_cell;
+                    __asm__ volatile(
+                        ".syntax unified\n"
+                        "ldr r0, [%1]\n"
+                        "adds r0, #86\n"
+                        "movs r2, #0\n"
+                        "ldrsh %0, [r0, r2]\n"
+                        ".syntax divided\n"
+                        : "=r"(selection)
+                        : "r"(cell_reg)
+                        : "r0", "r2");
+                    _080026868((u8 *)course_flag, selection);
+                } else {
+                    record[31] = (u8)course_flag;
+                }
+            }
+        }
+    }
+
+    _0802D970((const void *)(uintptr_t)0x03005780u, scratch, 8);
+    if (record[30] != 0)
+        ((volatile u16 *)scratch)[1] = 31;
+    _0802D970(scratch, (void *)(uintptr_t)0x050002A0u, 8);
+
+    {
+        register volatile u8 *volatile *limit_cell __asm__("r2");
+        register volatile u8 *volatile *loop_cell __asm__("r6");
+        register volatile u8 *slot_context __asm__("r3");
+        volatile u8 *destination;
+        register volatile u32 *course_slot __asm__("r1");
+        volatile u32 *table;
+        s32 table_index;
+        register void *course __asm__("r2");
+        register s32 index __asm__("r5");
+        register s32 initial_limit __asm__("r0");
+
+        index = 1;
+        limit_cell = (volatile u8 *volatile *)(uintptr_t)0x03004E20u;
+        __asm__ volatile(
+            ".syntax unified\n"
+            "ldr r0, [%1]\n"
+            "adds r0, #70\n"
+            "movs r3, #0\n"
+            "ldrsh r0, [r0, r3]\n"
+            ".syntax divided\n"
+            : "=r"(initial_limit)
+            : "r"(limit_cell)
+            : "r3", "cc");
+        if (index >= initial_limit)
+            return;
+
+        record = (volatile u8 *)(uintptr_t)
+            *(volatile u32 *)(uintptr_t)0x03000598u;
+        if (record == 0)
+            return;
+
+        loop_cell = limit_cell;
+        destination = (volatile u8 *)(uintptr_t)0x050002C0u;
+loop_start:
+        {
+            register u32 loop_delta __asm__("r1");
+            volatile u8 *loop_context;
+            register s32 next_limit __asm__("r0");
+
+            source = (void *)(uintptr_t)*(volatile u32 *)(record + 280);
+            loop_context = *loop_cell;
+            loop_delta = *(volatile u32 *)(record + 8);
+            loop_delta -= *(volatile u32 *)(loop_context + 8);
+            course = _0800264D8(source, loop_delta);
+            slot_context = *loop_cell;
+            __asm__ volatile(
+                ".syntax unified\n"
+                "lsls %0, %1, #2\n"
+                "adds r0, %2, #0\n"
+                "adds r0, #148\n"
+                "adds %0, r0, %0\n"
+                ".syntax divided\n"
+                : "=r"(course_slot)
+                : "r"(index), "r"(slot_context)
+                : "r0", "cc");
+            if (course != (void *)(uintptr_t)*course_slot) {
+                register s32 selection __asm__("r1");
+
+                *course_slot = (u32)(uintptr_t)course;
+                __asm__ volatile(
+                    ".syntax unified\n"
+                    "lsls r0, %2, #1\n"
+                    "adds r1, %1, #0\n"
+                    "adds r1, #132\n"
+                    "adds r1, r1, r0\n"
+                    "movs r3, #0\n"
+                    "ldrsh %0, [r1, r3]\n"
+                    ".syntax divided\n"
+                    : "=r"(selection), "+r"(slot_context)
+                    : "r"(index)
+                    : "r0", "cc");
+                _0800263E0((u8 *)course, selection);
+            }
+
+            __asm__ volatile(
+                ".syntax unified\n"
+                "movs r1, #12\n"
+                "ldrsh r0, [%1, r1]\n"
+                "lsls r0, r0, #5\n"
+                ".syntax divided\n"
+                : "=r"(source)
+                : "r"(record)
+                : "r1", "cc");
+            source = (void *)(uintptr_t)((u32)(uintptr_t)source + 0x03005780u);
+            _0802D970(source, scratch, 8);
+            if (record[30] != 0)
+                ((volatile u16 *)scratch)[1] = 31;
+            _0802D970(scratch, (void *)destination, 8);
+
+            destination += 32;
+            index++;
+            __asm__ volatile(
+                ".syntax unified\n"
+                "ldr r0, [%1]\n"
+                "adds r0, #70\n"
+                "movs r2, #0\n"
+                "ldrsh r0, [r0, r2]\n"
+                ".syntax divided\n"
+                : "=r"(next_limit)
+                : "r"(loop_cell)
+                : "r2", "cc");
+            if (index >= next_limit)
+                goto loop_exit;
+            table = (volatile u32 *)(uintptr_t)0x03000598u;
+            __asm__ volatile("" : "+r"(table));
+            table_index = index - 1;
+            record = (volatile u8 *)(uintptr_t)table[table_index];
+            if (record == 0)
+                goto loop_exit;
+            goto loop_start;
+        }
+loop_exit:
+        ;
+    }
 }
 void _080018ADC(void) __attribute__((alias("Race_Setup_18ADC")));
 

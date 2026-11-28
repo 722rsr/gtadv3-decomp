@@ -361,54 +361,33 @@ void _0802BEB4(void *s) __attribute__((alias("SoundBeb4Worker")));
 void sub_0802BEB4(void *s) __attribute__((alias("SoundBeb4Worker")));
 
 // --- _0802C11C voice-list cleanup (62 B + private pool 0x03007FF0 at 0x02C15C) ---
-// Instruction shape is reproduced; a pure-C body is not byte-exact yet: the
-// ROM tests bit 7 with `tst r0, r1` and takes the second mask branch straight
-// off the AND's flags (`ands r0, r3` / `beq`), and pret/agbcc do not emit
-// either idiom through their current patterns. thumb.md has a single TST-named
-// pattern (`tstsi`, line 818) whose template is `cmp\t%0, #0`, it has no
-// two-register TST at all, and `*andsi3_insn` sets only the register, never
-// (cc0) -- so agbcc always follows an `and` with an explicit `cmp`. Both sites
-// therefore cost 2 bytes more than the ROM, which shifts everything after
-// them. Verified against both toolchain builds (`old_agbcc` and the `agbcc`
-// baseline) with the minimal gate alone: 4 instructions in,
-// `and r0,r0,r2` + `cmp r0,#0` out. The current C spellings of
-// `(c[0] & 0x80) == 0` or `(node[1] & 7) != 0` do not reach TST, and the
-// ROM's 8-byte groups above are only 5 instructions wide, so the 2-byte
-// deficit is not paid back elsewhere in the same group. The two sites stay
-// spliced; a new lowering pattern or a different group shape can reopen it.
-//
-// What the body does get right, and what a future compiler swap needs:
-// - the root-ptr cell is reached by a PRIVATE POOL word equal to 0x03007FF0
-//   itself (`ldr r3,[pc,#28]`), so the cell is spelled as an assembler
-//   absolute symbol declared *inside* the body -- promotion's splice keeps
-//   only the brace-matched function text, and a CONST holding a SYMBOL_REF is
-//   the one shape agbcc sends through the literal pool (cf. SoundVoiceInit's
-//   `.set` block in this file).
-// - the callback is NOT called through a C function pointer: agbcc lowers
-//   that to its `bl _call_via_r2` runtime helper, while the ROM's
-//   `bl 0x0802C10C` targets the standalone `bx r3` thunk (asm/sound_beb4.s,
-//   manifest-owned) reached with the callback preloaded into r3. The three
-//   pointer-chain statements keep the root cell, root pointer, and callback
-//   in r3; spelling the call directly moves the relocation onto _0802C10C.
-// - r6 holds the zero reused by node[0], node[44] and the head store. It must
-//   be materialised where the ROM materialises it (after the head null test,
-//   not in the prologue) and it must not be left dead: an unused pin gets no
-//   prologue save and the stores collapse back to two `movs r0,#0`.
-// Probe: EXACT 68/68, including the literal pool and callback relocation.
+// Linked measurement: `make matching-ready` reports all 68/68 bytes exact,
+// including the call to the manifest-owned `bx r3` thunk at 0x0802C10C. The
+// root pointer still uses the private-pool word 0x03007FF0, and the callback
+// chain reaches r3 without pinning its C variable. The body remains partial
+// because the entry TST and second conditional branch remain spliced; the
+// second gate's load and mask are C. Next lead: reshape the grouped branch
+// control flow, then measure its allocation and linked bytes before changing
+// either remaining instruction splice.
 extern void _0802C10C(u32 bits); // 0x0802C10C `bx r3` dispatch thunk
 void SoundVoiceCleanup(void *unused, void *chan){
     (void)unused;
     {
-        register volatile u8 *c __asm__("r5") = (volatile u8*)chan;
-        register u32 z __asm__("r6");
+        register volatile u8 *c = (volatile u8*)chan;
+        register u32 z;
+        register u32 root_flags;
+        register u32 high_bit;
         volatile u32 *node;
         /* Keep the ROM's TST form and let the zero path skip directly to bx lr. */
+        root_flags = c[0];
+        __asm__ volatile ("" : : : "r0", "r2", "r3", "memory");
+        high_bit = 128;
         __asm__ volatile(
-            "ldrb r1, [%0, #0]\n\t"
-            "movs r0, #128\n\t"
-            "tst r0, r1\n\t"
+            ".syntax unified\n\t"
+            "tst %0, %1\n\t"
             "beq .Lsound_voice_cleanup_exit\n\t"
-            : : "l"(c) : "r0", "r1", "cc", "memory");
+            ".syntax divided\n\t"
+            : : "r"(high_bit), "r"(root_flags) : "cc");
         node = (volatile u32 *)*(volatile u32 *)((uintptr_t)c + 32);
         if (node != 0) {
             z = 0;
@@ -417,14 +396,13 @@ void SoundVoiceCleanup(void *unused, void *chan){
                 if (mode != 0){
                     register u32 mode_bits __asm__("r0") =
                         ((volatile u8 *)node)[1];
-                    /* Branch on the mask's own flags; agbcc adds a CMP in C. */
+                    register u32 mode_mask __asm__("r3") = 7;
+                    mode_bits &= mode_mask;
                     __asm__ volatile(
                         ".syntax unified\n\t"
-                        "movs r3, #7\n\t"
-                        "ands %0, %0, r3\n\t"
                         "beq .Lsound_voice_cleanup_skip_cb\n\t"
                         ".syntax divided\n\t"
-                        : "+l"(mode_bits) : : "r3", "cc", "memory");
+                        : : "r"(mode_bits), "r"(mode_mask) : "cc");
                     {
                         register u32 cb __asm__("r3");
                         extern u8 SndRootCell[];
@@ -432,6 +410,7 @@ void SoundVoiceCleanup(void *unused, void *chan){
                         cb = (u32)(uintptr_t)SndRootCell;
                         cb = *(volatile u32 *)(uintptr_t)cb;
                         cb = *(volatile u32 *)((uintptr_t)cb + 44u);
+                        __asm__ volatile ("" : "+r" (cb) : : "r1", "r2", "memory");
                         _0802C10C(mode_bits);
                     }
                     __asm__ volatile(".Lsound_voice_cleanup_skip_cb:");

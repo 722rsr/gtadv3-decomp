@@ -818,19 +818,21 @@ Checking the `static`s in a file for a hex name suffix is cheap:
 grep -n '^\s*static.*_[0-9A-Fa-f]\{4,\}\s*(' src/*.c
 ```
 
-## Bodies that are not agbcc C output (asm/splice only)
+## Bodies flagged for asm/splice lifting
 
-`tools/backlog_census.py --lift-screen` flags unmatched bodies carrying markers
-the pinned compiler cannot emit. Three facts measured against it:
+Run `python3 tools/backlog_census.py --lift-screen` before lifting assembly.
+Its markers route a body to asm or splice work for the current lift; they are
+not a compiler-limit verdict. Keep the marked instruction or control-flow
+group in asm, or lift the surrounding operations and splice the marker. The
+next lever is a splice or grouped control-flow conversion, followed by a fresh
+`make matching-ready` measurement.
 
-* agbcc always saves `lr` on the entry path when the body calls (`push {r4,
-  lr}`, `push {r4, r5, r6, r7, lr}`); it does not emit a bare `push {rN}` with a
-  `bl` in the body, and never defers the frame past the early exits.
-* returns are `bx lr` / `pop {r0}; bx r0` -- never `mov pc, lr` or `pop {pc}`.
-* `tst rX, rY` is not in the Thumb machine description. `thumb.md`'s only
-  `tst`-named pattern is `tstsi`, which emits `cmp %0, #0`; the `tst`-emitting
-  `*andsi3_compare0_scratch` pattern belongs to the ARM-mode description, which
-  `-mthumb` does not use. C89/C99 declaration placement does not change this.
+Measured examples explain these routes: C drafts with calls and callee-saved
+registers have produced lr-saving frames, while sampled ROM bodies use bare
+register pushes; sampled return shapes include `mov pc, lr` and `pop {pc}`;
+tested straight-C spellings for two-register `tst` have emitted `and` +
+`cmp #0`. These results guide source-shape experiments and do not close the
+bodies.
 
 The promoted C bodies contain no `mov pc, lr`; the single exception in the
 tree is a `__attribute__((naked))` inline-asm leaf, `SoundDivNoop_2DE98`. The

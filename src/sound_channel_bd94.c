@@ -9,22 +9,26 @@
 // Helper return in r3 (nonstandard r3 ABI): BCCE validates via lsrs #25 / ldr 0x080614E0 / cmp / lsrs #14, clears r3 to 0 on else, then bx lr (pop {r0}).
 // Caller ABI: channel in r1 (nonstandard r1), r0 ignored, r2/r3 temps. Proven via ROM table at 0x061504 (0x0802BD95 thumb entry at file 0x061506: 95 BD 02 08) within 0x061504 table (4 entries 0x0802BD75/0x0802BD81/0x0802BD95/0x0802BDA9), dispatched via r1 channel.
 // Do not guess voice layout beyond +10 (u8) / +0 (u8) directly via strb/ldrb/orrs, proven via objdump.
+// Shared across BD94/BDD8/BDEC/BE00/BE14/BE4C: an unpinned mask with dummy
+// `a` live at the barrier is EXACT 20/20 in each real TU. Freeing BD94's value
+// adds `adds r3,r2,#0`; next lead is a splice for the flag-byte load/OR pair.
 
 void _0802BD94(void *a, void *b) __attribute__((alias("SoundBD94_Store")));
 void sub_0802BD94(void *a, void *b) __attribute__((alias("SoundBD94_Store")));
 __attribute__((naked)) void SoundBD94_Store(void *a, void *chan) {
-    register u32 frame __asm__("ip");
     register u32 value __asm__("r3");
-    register volatile u8 *channel __asm__("r1") = (volatile u8 *)chan;
-    __asm__ volatile(".syntax unified\n\tmov %0, lr\n\tbl _0802BCE8\n\t.syntax divided"
-                     : "=r"(frame), "=r"(value) : : "lr", "cc", "memory");
+    register volatile u8 *channel = (volatile u8 *)chan;
+    __asm__ volatile(".syntax unified\n\tmov ip, lr\n\tbl _0802BCE8\n\t.syntax divided"
+                     : "=r"(value) : : "ip", "lr", "cc", "memory");
     *(volatile u8 *)(channel + 10) = (u8)value;
     {
-        register u32 flags __asm__("r3") = channel[0];
-        register u32 mask __asm__("r2") = 12;
-        __asm__ volatile("" : "+r"(flags), "+r"(mask) : : "cc", "memory");
-        flags |= mask;
-        channel[0] = (u8)flags;
-        __asm__ volatile("bx %0\n\t.short 0x0000" : : "r"(frame) : "cc");
+        register u32 mask;
+        value = channel[0];
+        mask = 12;
+        /* Keep dummy a live so the unpinned mask allocates to r2. */
+        __asm__ volatile("" : "+r"(value), "+r"(mask) : "r"(a) : "cc", "memory");
+        value |= mask;
+        channel[0] = (u8)value;
+        __asm__ volatile("bx ip\n\t.short 0x0000" : : : "cc");
     }
 }

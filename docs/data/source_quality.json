@@ -207,9 +207,10 @@
   "0x080015a0": {
    "class": "partial",
    "detail": {
+    "directive": 1,
     "insn": 2,
-    "insn_lines": 3,
-    "pin": 3
+    "insn_lines": 2,
+    "pin": 1
    },
    "file": "src/runtime_accessors.c",
    "name": "_080015A0",
@@ -3025,11 +3026,10 @@
    "size": 212
   },
   "0x0800628c": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 218,
-    "naked": true
+    "barrier": 15,
+    "pin": 46
    },
    "file": "src/course_orch_helpers.c",
    "name": "CourseOrch_0800628C",
@@ -3228,11 +3228,10 @@
    "size": 84
   },
   "0x08006e70": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 175,
-    "naked": true
+    "barrier": 42,
+    "pin": 59
    },
    "file": "src/course_collision.c",
    "name": "Course_CollisionTest",
@@ -3251,9 +3250,11 @@
   "0x08007110": {
    "class": "asm",
    "detail": {
-    "insn": 1,
-    "insn_lines": 122,
-    "naked": true
+    "barrier": 1,
+    "directive": 1,
+    "insn": 17,
+    "insn_lines": 84,
+    "pin": 12
    },
    "file": "src/course_collision.c",
    "name": "Course_CollisionLoop",
@@ -5177,11 +5178,10 @@
    "size": 36
   },
   "0x0800e7cc": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 434,
-    "naked": true
+    "barrier": 18,
+    "pin": 22
    },
    "file": "src/menus.c",
    "name": "MenuE7CC_0800E7CC",
@@ -7133,11 +7133,12 @@
    "size": 16
   },
   "0x08018adc": {
-   "class": "asm",
+   "class": "partial",
    "detail": {
-    "insn": 1,
-    "insn_lines": 147,
-    "naked": true
+    "barrier": 1,
+    "insn": 7,
+    "insn_lines": 29,
+    "pin": 18
    },
    "file": "src/race_setup.c",
    "name": "Race_Setup_18ADC",
@@ -7754,8 +7755,10 @@
   "0x0801c3e0": {
    "class": "asm",
    "detail": {
-    "insn": 1,
-    "insn_lines": 1554
+    "barrier": 3,
+    "insn": 4,
+    "insn_lines": 1542,
+    "pin": 4
    },
    "file": "src/race_scene_b2.c",
    "name": "_08001C3E0",
@@ -8760,9 +8763,10 @@
   "0x0802247c": {
    "class": "asm",
    "detail": {
-    "insn": 1,
-    "insn_lines": 178,
-    "naked": true
+    "barrier": 2,
+    "insn": 14,
+    "insn_lines": 63,
+    "pin": 15
    },
    "file": "src/race_phase_vms.c",
    "name": "RaceVM_02247C",
@@ -10685,22 +10689,21 @@
    "size": 212
   },
   "0x08027308": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 150,
-    "naked": true
+    "barrier": 3,
+    "pin": 2
    },
    "file": "src/garage.c",
    "name": "Garage_27308",
    "size": 344
   },
   "0x08027460": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 137,
-    "naked": true
+    "barrier": 5,
+    "directive": 1,
+    "pin": 5
    },
    "file": "src/garage.c",
    "name": "Garage_27460",
@@ -11422,11 +11425,10 @@
    "size": 568
   },
   "0x0802a398": {
-   "class": "asm",
+   "class": "c_fakematch",
    "detail": {
-    "insn": 1,
-    "insn_lines": 264,
-    "naked": true
+    "barrier": 13,
+    "pin": 22
    },
    "file": "src/garage_records.c",
    "name": "_08002A398",
@@ -11979,7 +11981,7 @@
     "insn": 1,
     "insn_lines": 4,
     "naked": true,
-    "pin": 4
+    "pin": 1
    },
    "file": "src/sound_seq_follow.c",
    "name": "SoundBCEA_FetchTail",
@@ -12001,7 +12003,7 @@
     "insn": 2,
     "insn_lines": 7,
     "naked": true,
-    "pin": 5
+    "pin": 2
    },
    "file": "src/sound_seq_follow.c",
    "name": "SoundBD14_Dispatch",
@@ -12019,10 +12021,11 @@
   "0x0802bd44": {
    "class": "asm",
    "detail": {
-    "insn": 7,
-    "insn_lines": 19,
+    "barrier": 1,
+    "insn": 5,
+    "insn_lines": 13,
     "naked": true,
-    "pin": 4
+    "pin": 3
    },
    "file": "src/sound_seq_follow.c",
    "name": "SoundBD44_LoopStart",
@@ -12031,10 +12034,11 @@
   "0x0802bd74": {
    "class": "asm",
    "detail": {
+    "barrier": 1,
     "insn": 2,
     "insn_lines": 6,
     "naked": true,
-    "pin": 3
+    "pin": 1
    },
    "file": "src/sound_channel_bd74.c",
    "name": "SoundBD74_Store",
@@ -12046,7 +12050,7 @@
     "insn": 3,
     "insn_lines": 5,
     "naked": true,
-    "pin": 3
+    "pin": 2
    },
    "file": "src/sound_channel_bd80.c",
    "name": "SoundBD80_Scale",
@@ -12059,7 +12063,7 @@
     "insn": 2,
     "insn_lines": 5,
     "naked": true,
-    "pin": 5
+    "pin": 1
    },
    "file": "src/sound_channel_bd94.c",
    "name": "SoundBD94_Store",
@@ -12068,10 +12072,10 @@
   "0x0802bda8": {
    "class": "asm",
    "detail": {
-    "insn": 6,
-    "insn_lines": 16,
+    "insn": 5,
+    "insn_lines": 14,
     "naked": true,
-    "pin": 9
+    "pin": 1
    },
    "file": "src/sound_seq_follow.c",
    "name": "SoundBDA8_LoadRecord",
@@ -12084,7 +12088,7 @@
     "insn": 2,
     "insn_lines": 5,
     "naked": true,
-    "pin": 5
+    "pin": 1
    },
    "file": "src/sound_channel_bdd8.c",
    "name": "SoundBDD8_Store",
@@ -12097,7 +12101,7 @@
     "insn": 2,
     "insn_lines": 4,
     "naked": true,
-    "pin": 5
+    "pin": 1
    },
    "file": "src/sound_channel_bdec.c",
    "name": "SoundBDEC_Store",
@@ -12110,7 +12114,7 @@
     "insn": 2,
     "insn_lines": 4,
     "naked": true,
-    "pin": 5
+    "pin": 1
    },
    "file": "src/sound_channel_be00.c",
    "name": "SoundBE00_Store",
@@ -12123,7 +12127,7 @@
     "insn": 2,
     "insn_lines": 5,
     "naked": true,
-    "pin": 5
+    "pin": 1
    },
    "file": "src/sound_channel_be14.c",
    "name": "SoundBE14_Store",
@@ -12132,10 +12136,11 @@
   "0x0802be28": {
    "class": "asm",
    "detail": {
+    "barrier": 1,
     "insn": 2,
     "insn_lines": 6,
     "naked": true,
-    "pin": 3
+    "pin": 1
    },
    "file": "src/sound_channel_be28.c",
    "name": "SoundBE28_Store",
@@ -12144,11 +12149,11 @@
   "0x0802be34": {
    "class": "asm",
    "detail": {
-    "barrier": 2,
+    "barrier": 1,
     "insn": 2,
     "insn_lines": 4,
     "naked": true,
-    "pin": 6
+    "pin": 2
    },
    "file": "src/sound_seq_follow.c",
    "name": "SoundBE34_TrackSel",
@@ -12161,7 +12166,7 @@
     "insn": 2,
     "insn_lines": 4,
     "naked": true,
-    "pin": 5
+    "pin": 1
    },
    "file": "src/sound_seq_follow.c",
    "name": "SoundBE4C_Volume",
@@ -12174,7 +12179,7 @@
     "insn": 3,
     "insn_lines": 7,
     "naked": true,
-    "pin": 6
+    "pin": 2
    },
    "file": "src/sound_seq_follow.c",
    "name": "SoundBE60_PSGWrite",
@@ -12183,11 +12188,11 @@
   "0x0802be78": {
    "class": "partial",
    "detail": {
-    "barrier": 3,
+    "barrier": 1,
     "directive": 4,
     "insn": 2,
     "insn_lines": 2,
-    "pin": 9
+    "pin": 2
    },
    "file": "src/sound_support.c",
    "name": "SoundPump",
@@ -12213,10 +12218,11 @@
   "0x0802c11c": {
    "class": "partial",
    "detail": {
+    "barrier": 2,
     "directive": 3,
     "insn": 2,
-    "insn_lines": 10,
-    "pin": 4
+    "insn_lines": 7,
+    "pin": 3
    },
    "file": "src/sound_core.c",
    "name": "SoundVoiceCleanup",
@@ -12228,7 +12234,7 @@
     "barrier": 3,
     "insn": 1,
     "insn_lines": 1,
-    "pin": 4
+    "pin": 1
    },
    "file": "src/sound_channel_be14.c",
    "name": "VoiceEnvelopeApply_2C160",
@@ -12248,9 +12254,10 @@
   "0x0802c390": {
    "class": "asm",
    "detail": {
-    "insn": 1,
-    "insn_lines": 32,
-    "naked": true
+    "barrier": 1,
+    "insn": 4,
+    "insn_lines": 16,
+    "pin": 3
    },
    "file": "src/sound_voice_commands.c",
    "name": "SoundVoiceFollow_NoteOff",
@@ -12280,7 +12287,7 @@
     "insn": 3,
     "insn_lines": 8,
     "naked": true,
-    "pin": 3
+    "pin": 1
    },
    "file": "src/sound_seq_follow.c",
    "name": "SoundC3F8_NoteOn",
@@ -12292,7 +12299,7 @@
     "insn": 3,
     "insn_lines": 8,
     "naked": true,
-    "pin": 3
+    "pin": 1
    },
    "file": "src/sound_seq_follow.c",
    "name": "SoundC40C_EnvByte",
@@ -13205,20 +13212,20 @@
  },
  "totals": {
   "asm": {
-   "bytes": 42408,
-   "functions": 113
+   "bytes": 38920,
+   "functions": 106
   },
   "c": {
    "bytes": 44418,
    "functions": 877
   },
   "c_fakematch": {
-   "bytes": 101110,
-   "functions": 682
+   "bytes": 104238,
+   "functions": 688
   },
   "partial": {
-   "bytes": 200,
-   "functions": 4
+   "bytes": 560,
+   "functions": 5
   }
  },
  "version": 1

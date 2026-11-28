@@ -13,18 +13,19 @@
 void _0802BDD8(void *a, void *b) __attribute__((alias("SoundBDD8_Store")));
 void sub_0802BDD8(void *a, void *b) __attribute__((alias("SoundBDD8_Store")));
 __attribute__((naked)) void SoundBDD8_Store(void *a, void *chan) {
-    register u32 frame __asm__("ip");
     register u32 value __asm__("r3");
-    register volatile u8 *channel __asm__("r1") = (volatile u8 *)chan;
-    __asm__ volatile(".syntax unified\n\tmov %0, lr\n\tbl _0802BCE8\n\t.syntax divided"
-                     : "=r"(frame), "=r"(value) : : "lr", "cc", "memory");
+    register volatile u8 *channel = (volatile u8 *)chan;
+    __asm__ volatile(".syntax unified\n\tmov ip, lr\n\tbl _0802BCE8\n\t.syntax divided"
+                     : "=r"(value) : : "ip", "lr", "cc", "memory");
     *(volatile u8 *)(channel + 18) = (u8)value;
     {
-        register u32 flags __asm__("r3") = channel[0];
-        register u32 bits __asm__("r2") = 3;
-        __asm__ volatile("" : "+r"(flags), "+r"(bits) : : "cc", "memory");
-        flags |= bits;
-        channel[0] = (u8)flags;
-        __asm__ volatile("bx %0\n\t.short 0x0000" : : "r"(frame) : "cc");
+        register u32 bits;
+        value = channel[0];
+        bits = 3;
+        /* Keep dummy a live so the unpinned mask allocates to r2. */
+        __asm__ volatile("" : "+r"(value), "+r"(bits) : "r"(a) : "cc", "memory");
+        value |= bits;
+        channel[0] = (u8)value;
+        __asm__ volatile("bx ip\n\t.short 0x0000" : : : "cc");
     }
 }

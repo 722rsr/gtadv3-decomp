@@ -13,16 +13,15 @@
 void _0802BD80(void *a, void *b) __attribute__((alias("SoundBD80_Scale")));
 void sub_0802BD80(void *a, void *b) __attribute__((alias("SoundBD80_Scale")));
 __attribute__((naked)) void SoundBD80_Scale(void *state, void *chan) {
-    register u32 frame __asm__("ip");
     register u32 value __asm__("r3");
     register u32 scale __asm__("r2");
-    __asm__ volatile(".syntax unified\n\tmov %0, lr\n\tbl _0802BCE8\n\t.syntax divided"
-                     : "=r"(frame), "=r"(value) : : "lr", "cc", "memory");
+    __asm__ volatile(".syntax unified\n\tmov ip, lr\n\tbl _0802BCE8\n\t.syntax divided"
+                     : "=r"(value) : : "ip", "lr", "cc", "memory");
     value <<= 1;
     *(volatile u16 *)((volatile u8 *)state + 28) = (u16)value;
     __asm__ volatile("ldrh %0, [r0, #30]" : "=r"(scale) : : "memory");
     value *= scale;
     value >>= 8;
     *(volatile u16 *)((volatile u8 *)state + 32) = (u16)value;
-    __asm__ volatile("bx %0" : : "r"(frame) : "cc");
+    __asm__ volatile("bx ip" : : : "cc");
 }

@@ -47,10 +47,22 @@ instructions in `asm/*.s`, 101 have index == destination; this is the only
 exception. The one reg+reg word `ldr` in the generated corpus comes from the
 naked asm body `SoundBeb4Worker`, not from C.
 
-Keep this function's byte read as the existing single-instruction `partial`
-splice; do not re-spend source permutations or register pins on it. Pins can
-move which register plays which role, but not the destination-is-index
-structure of the constant path.
+Reopened 2026-11-27. A full-TU candidate using
+`r2 = *(s8 *)(g_voice_2C160_r4 + off)` still emits
+`movs r2, #20 / ldrsb r2, [r4, r2]` (46/48 bytes); a file-scope fixed-r0
+index instead emits `adds / ldrb / lsls / asrs` and grows to 54 bytes. The
+existing one-instruction splice remains, with `"=&r"(r2)` and `r1` as a live
+input; that preserves 48/48 bytes while removing the local pins on `r1`, `r2`,
+and `off`. `make matching-ready` passes with only the `r3` local pin retained.
+
+Reopened 2026-11-28: unpinning `r3` alone gives 4/48 aligned. Hoisting the
+128 accumulator before the load gives 3/48 aligned. Pinning `r1`/`r2` and
+spelling the second accumulator as `r3 = 127; r3 -= r2;` gives 24/24, but
+raises the fixed-register count from one to two, so it is not promoted. A
+25-point `+r(r2)` sweep peaks at 15/48; two rounds over `r1`/`r2` find no
+better variant. Next lead: change the first product's C expression and result
+lifetime while keeping the load splice and one fixed register, then measure
+whether the coefficient and accumulator return to their ROM registers.
 
 ## A plain `if (*(s8 *)p == 0)` collapses to the shift pair
 

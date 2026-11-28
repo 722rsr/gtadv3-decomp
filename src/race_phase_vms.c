@@ -822,203 +822,212 @@ void sub_080022478(void *a) __attribute__((alias("RaceVM_022478")));
 // for col 0..2: rows u16[rec+132+col*4] = id or 8, u16[rec+136+col*4] =
 // tag or 9, u32[rec+152+col*8] = word pair from 0x080CC140+id*6 (ldr pair)
 // or 88, u32[rec+156+col*8] = sp+20 words or u32[rec+196].
-__attribute__((naked)) void RaceVM_02247C(void *rec) {
+void RaceVM_02247C(void *rec) {
+    volatile u8 *r = (volatile u8 *)rec;
+    u8 scratch[32];
+    register s32 col __asm__("r8");
+    register s32 colCmp __asm__("r2");
+    register u32 tableOffset __asm__("r3");
+    register volatile u8 *tableBase __asm__("r0");
+    register u32 cellOffset __asm__("r6");
+    register u32 *cellSource __asm__("r9");
+    register volatile u16 *idDest __asm__("r5");
+    register volatile u16 *tagDest __asm__("r4");
+    register volatile u8 *recPlus8 __asm__("r10");
+    register u16 six __asm__("r1");
+    register s32 mappedValue __asm__("r0");
+    register u32 *copySrc __asm__("r0");
+    register u32 *copyDst __asm__("r1");
+    register u32 *copyDstTmp __asm__("r2");
+    u32 tableSave;
+    register s32 present __asm__("r0");
+
+    _0802B214(51);
+    col = 0x03001780u;
+    copySrc = (u32 *)(uintptr_t)0x1078u;
     __asm__ volatile (
         ".syntax unified\n"
-        "\tpush\t{r4, r5, r6, r7, lr}\n"
-        "\tmov\tr7, sl\n"
-        "\tmov\tr6, r9\n"
-        "\tmov\tr5, r8\n"
-        "\tpush\t{r5, r6, r7}\n"
-        "\tsub\tsp, #44\n"
-        "\tadds\tr7, r0, #0\n"
-        "\tmovs\tr0, #51\n"
-        "\tbl 0x0802B214\n"
-        "\tldr r0, .Lx_08002247c_0800225B4\n"
-        "\tmov\tr8, r0\n"
-        "\tldr r0, .Lx_08002247c_0800225B8\n"
-        "\tadd\tr0, r8\n"
-        "\tmovs\tr1, #0\n"
-        "\tmov\tr9, r1\n"
-        "\tmov\tr2, r9\n"
-        "\tstrh\tr2, [r0, #0]\n"
-        "\tldr r5, .Lx_08002247c_0800225BC\n"
-        "\tmovs\tr0, #4\n"
-        "\tstr\tr0, [sp, #0]\n"
-        "\tmovs\tr6, #1\n"
-        "\tstr\tr6, [sp, #4]\n"
-        "\tmovs\tr0, #0\n"
-        "\tadds\tr1, r5, #0\n"
-        "\tmovs\tr2, #1\n"
-        "\tmovs\tr3, #0\n"
-        "\tbl 0x08007770\n"
-        "\tmovs\tr3, #6\n"
-        "\tstr\tr3, [r7, #80]\n"
-        "\tmovs\tr0, #20\n"
-        "\tstr\tr0, [r7, #92]\n"
-        "\tstr\tr6, [r7, #104]\n"
-        "\tmovs\tr4, #8\n"
-        "\tadds\tr4, r4, r7\n"
-        "\tmov\tsl, r4\n"
-        "\tmov\tr0, sl\n"
-        "\tbl 0x0800DAB8\n"
-        "\tldr r4, .Lx_08002247c_0800225C0\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tmovs\tr1, #1\n"
-        "\tmovs\tr2, #0\n"
-        "\tmovs\tr3, #4\n"
-        "\tbl 0x08007614\n"
-        "\tadds\tr0, r4, #0\n"
-        "\tmovs\tr1, #1\n"
-        "\tmovs\tr2, #1\n"
-        "\tmovs\tr3, #5\n"
-        "\tbl 0x08007614\n"
-        "\tadds\tr0, r5, #0\n"
-        "\tadds\tr1, r7, #0\n"
-        "\tbl 0x0800798C\n"
-        "\tadds\tr0, r7, #0\n"
-        "\tbl 0x08007A58\n"
-        "\tadds\tr0, r5, #0\n"
-        "\tmovs\tr1, #0\n"
-        "\tmovs\tr2, #6\n"
-        "\tbl 0x080075E8\n"
-        "\tadds\tr4, r7, #0\n"
-        "\tadds\tr4, #196\n"
-        "\tstr\tr4, [r7, #120]\n"
-        "\tmov\tr5, sl\n"
-        "\tstr\tr5, [r7, #124]\n"
-        "\tmov\tr0, r9\n"
-        "\tstr\tr0, [r7, #8]\n"
-        "\tstrh\tr6, [r7, #12]\n"
-        "\tadds\tr0, r7, #0\n"
-        "\tadds\tr0, #28\n"
-        "\tmovs\tr2, #32\n"
-        "\tnegs\tr2, r2\n"
-        "\tmovs\tr1, #0\n"
-        "\tbl 0x0800D77C\n"
-        "\tadds\tr0, r7, #0\n"
-        "\tadds\tr0, #20\n"
-        "\tmovs\tr1, #0\n"
-        "\tmovs\tr2, #160\n"
-        "\tbl 0x0800D77C\n"
-        "\tmovs\tr1, #6\n"
-        "\tstrh\tr1, [r7, #16]\n"
-        "\tmovs\tr0, #5\n"
-        "\tstrh\tr0, [r7, #18]\n"
-        "\tadds\tr0, r7, #0\n"
-        "\tbl sub_0800223F0\n"
-        "\tmovs\tr0, #2\n"
-        "\tstr\tr0, [r4, #0]\n"
-        "\tldr r0, .Lx_08002247c_0800225C4\n"
-        "\tadd\tr0, r8\n"
-        "\tmov\tr2, r9\n"
-        "\tstrh\tr2, [r0, #0]\n"
-        "\tldr r3, .Lx_08002247c_0800225C8\n"
-        "\tadd\tr8, r3\n"
-        "\tmov\tr4, r8\n"
-        "\tmovs\tr5, #0\n"
-        "\tldrsh\tr0, [r4, r5]\n"
-        "\tbl _080022438\n"
-        "\tadds\tr1, r7, #0\n"
-        "\tadds\tr1, #132\n"
-        "\tstrh\tr0, [r1, #0]\n"
-        "\tldr r1, .Lx_08002247c_0800225CC\n"
-        "\tadd\tr0, sp, #8\n"
-        "\tmovs\tr2, #6\n"
-        "\tbl 0x0802E0A4\n"
-        "\tadd\tr2, sp, #16\n"
-        "\tadds\tr1, r2, #0\n"
-        "\tldr r0, .Lx_08002247c_0800225D0\n"
-        "\tldmia\tr0!, {r3, r4, r5}\n"
-        "\tstmia\tr1!, {r3, r4, r5}\n"
-        "\tldmia\tr0!, {r3, r4, r5}\n"
-        "\tstmia\tr1!, {r3, r4, r5}\n"
-        "\tmovs\tr0, #0\n"
-        "\tmov\tr8, r0\n"
-        "\tmovs\tr6, #0\n"
-        "\tadds\tr5, r7, #0\n"
-        "\tadds\tr5, #136\n"
-        "\tmovs\tr3, #0\n"
-        "\tmov\tr9, r2\n"
-        "\tadds\tr4, r7, #0\n"
-        "\tadds\tr4, #144\n"
-        ".Lx_08002247c_080022580:\n"
-        "\tmov\tr0, r8\n"
-        "\tstr\tr3, [sp, #40]\n"
-        "\tbl 0x08026068\n"
-        "\tldr\tr3, [sp, #40]\n"
-        "\tcmp\tr0, #0\n"
-        "\tbeq .Lx_08002247c_0800225DC\n"
-        "\tldr r0, .Lx_08002247c_0800225D4\n"
-        "\tadds\tr0, r3, r0\n"
-        "\tldrh\tr0, [r0, #0]\n"
-        "\tstrh\tr0, [r5, #0]\n"
-        "\tldr r0, .Lx_08002247c_0800225D8\n"
-        "\tadds\tr0, r3, r0\n"
-        "\tldrh\tr0, [r0, #0]\n"
-        "\tstrh\tr0, [r4, #0]\n"
-        "\tadds\tr2, r7, #0\n"
-        "\tadds\tr2, #152\n"
-        "\tadds\tr2, r2, r6\n"
-        "\tmov\tsl, r2\n"
-        "\tmov\tr2, r9\n"
-        "\tldr\tr0, [r2, #0]\n"
-        "\tldr\tr1, [r2, #4]\n"
-        "\tmov\tr2, sl\n"
-        "\tstr\tr0, [r2, #0]\n"
-        "\tstr\tr1, [r2, #4]\n"
-        "\tb .Lx_08002247c_0800225FC\n"
-        ".Lx_08002247c_0800225B4: .word 0x03001780\n"
-        ".Lx_08002247c_0800225B8: .word 0x00001078\n"
-        ".Lx_08002247c_0800225BC: .word 0x0839CFE0\n"
-        ".Lx_08002247c_0800225C0: .word 0x082A798C\n"
-        ".Lx_08002247c_0800225C4: .word 0x00001076\n"
-        ".Lx_08002247c_0800225C8: .word 0x00000FC2\n"
-        ".Lx_08002247c_0800225CC: .word 0x0805FC64\n"
-        ".Lx_08002247c_0800225D0: .word 0x0805FC6C\n"
-        ".Lx_08002247c_0800225D4: .word 0x080CC140\n"
-        ".Lx_08002247c_0800225D8: .word 0x080CC146\n"
-        ".Lx_08002247c_0800225DC:\n"
-        "\tmovs\tr0, #8\n"
-        "\tstrh\tr0, [r5, #0]\n"
-        "\tmovs\tr0, #9\n"
-        "\tstrh\tr0, [r4, #0]\n"
-        "\tadds\tr0, r7, #0\n"
-        "\tadds\tr0, #152\n"
-        "\tadds\tr0, r0, r6\n"
-        "\tmovs\tr1, #88\n"
-        "\tstr\tr1, [r0, #0]\n"
-        "\tadds\tr1, r7, #0\n"
-        "\tadds\tr1, #156\n"
-        "\tadds\tr1, r1, r6\n"
-        "\tadd\tr0, sp, #20\n"
-        "\tadds\tr0, r0, r6\n"
-        "\tldr\tr0, [r0, #0]\n"
-        "\tstr\tr0, [r1, #0]\n"
-        ".Lx_08002247c_0800225FC:\n"
-        "\tadds\tr6, #8\n"
-        "\tadds\tr5, #2\n"
-        "\tadds\tr4, #2\n"
-        "\tadds\tr3, #2\n"
-        "\tmovs\tr0, #8\n"
-        "\tadd\tr9, r0\n"
-        "\tmovs\tr1, #1\n"
-        "\tadd\tr8, r1\n"
-        "\tmov\tr2, r8\n"
-        "\tcmp\tr2, #2\n"
-        "\tble .Lx_08002247c_080022580\n"
-        "\tadd\tsp, #44\n"
-        "\tpop\t{r3, r4, r5}\n"
-        "\tmov\tr8, r3\n"
-        "\tmov\tr9, r4\n"
-        "\tmov\tsl, r5\n"
-        "\tpop\t{r4, r5, r6, r7}\n"
-        "\tpop\t{r0}\n"
-        "\tbx\tr0\n"
-        "\tmovs\tr0, r0\n"
+        "add %0, r8\n"
+        "movs r1, #0\n"
+        "mov %1, r1\n"
+        "mov r2, %1\n"
+        "strh r2, [%0]\n"
         ".syntax divided\n"
-    );
+        : "+r" (copySrc), "=r" (cellSource)
+        : "r" (col) : "r1", "r2", "cc", "memory");
+    _08007770(0, (void *)(uintptr_t)0x0839CFE0u, 1, 0, 4, 1);
+    tableOffset = 6;
+    *(volatile u32 *)(r + 80) = tableOffset;
+    *(volatile u32 *)(r + 92) = 20;
+    *(volatile u32 *)(r + 104) = 1;
+    __asm__ volatile (
+        ".syntax unified\n"
+        "movs r4, #8\n"
+        "adds r4, r4, r7\n"
+        "mov sl, r4\n"
+        ".syntax divided\n"
+        : "=r" (recPlus8) : : "r4", "cc", "memory");
+    _0800DAB8((void *)recPlus8);
+__asm__ volatile("" : "+r"(cellSource));
+    _08007614((void *)(uintptr_t)0x082A798Cu, 1, 0, 4);
+    _08007614((void *)(uintptr_t)0x082A798Cu, 1, 1, 5);
+    _0800798C((void *)(uintptr_t)0x0839CFE0u, rec);
+    _08007A58(rec);
+    _080075E8((void *)(uintptr_t)0x0839CFE0u, 0, 6);
+    *(volatile u32 *)(r + 120) = (u32)(uintptr_t)(r + 196);
+    __asm__ volatile (
+        ".syntax unified\n"
+        "mov r5, sl\n"
+        "str r5, [%1, #124]\n"
+        "mov r0, %0\n"
+        "str r0, [%1, #8]\n"
+        ".syntax divided\n"
+        : : "r" (cellSource), "r" (r) : "r0", "r5", "memory");
+    *(volatile u16 *)(r + 12) = 1;
+    _0800D77C((void *)(r + 28), 0, -32);
+    _0800D77C((void *)(r + 20), 0, 160);
+    six = 6;
+    *(volatile u16 *)(r + 16) = six;
+    *(volatile u16 *)(r + 18) = 5;
+    sub_0800223F0(rec);
+    *(volatile u32 *)(r + 196) = 2;
+    copySrc = (u32 *)(uintptr_t)0x1076u;
+    __asm__ volatile (
+        ".syntax unified\n"
+        "add %0, r8\n"
+        "mov r2, %1\n"
+        "strh r2, [%0]\n"
+        ".syntax divided\n"
+        : "+r" (copySrc)
+        : "r" (cellSource), "r" (col) : "r2", "cc", "memory");
+    tableOffset = 0x0FC2u;
+    __asm__ volatile (
+        ".syntax unified\n"
+        "add %0, %1\n"
+        ".syntax divided\n"
+        : "+r" (col) : "r" (tableOffset) : "cc", "memory");
+    __asm__ volatile (
+        ".syntax unified\n"
+        "mov r4, %1\n"
+        "movs r5, #0\n"
+        "ldrsh r0, [r4, r5]\n"
+        ".syntax divided\n"
+        : "=r" (mappedValue) : "r" (col) : "r4", "r5", "cc", "memory");
+    *(volatile u16 *)(r + 132) = (u16)_080022438((int)mappedValue);
+    _0802E0A4(scratch, (const void *)(uintptr_t)0x0805FC64u, 6);
+    copyDstTmp = (u32 *)(scratch + 8);
+    copyDst = copyDstTmp;
+    copySrc = (u32 *)(uintptr_t)0x0805FC6Cu;
+    __asm__ volatile (
+        ".syntax unified\n"
+        "ldmia r0!, {r3, r4, r5}\n"
+        "stmia r1!, {r3, r4, r5}\n"
+        "ldmia r0!, {r3, r4, r5}\n"
+        "stmia r1!, {r3, r4, r5}\n"
+        ".syntax divided\n"
+        : "+r" (copySrc), "+r" (copyDst), "+r" (copyDstTmp)
+        : : "r3", "r4", "r5", "memory");
+
+    __asm__ volatile (
+        ".syntax unified\n"
+        "movs r0, #0\n"
+        "mov %0, r0\n"
+        ".syntax divided\n"
+        : "=r" (col) : : "r0", "cc");
+    cellOffset = 0;
+    idDest = (volatile u16 *)(r + 136);
+    tableOffset = 0;
+    cellSource = copyDstTmp;
+    tagDest = (volatile u16 *)(r + 144);
+    do {
+        __asm__ volatile (
+            ".syntax unified\n"
+            "mov r0, %3\n"
+            "str %1, %2\n"
+            "bl 0x08026068\n"
+            "ldr %1, %2\n"
+            ".syntax divided\n"
+            : "=r" (present), "+r" (tableOffset), "=m" (tableSave)
+            : "r" (col) : "r1", "r2", "r12", "lr", "cc", "memory");
+        if (present) {
+            tableBase = (volatile u8 *)(uintptr_t)0x080CC140u;
+            __asm__ volatile (
+                ".syntax unified\n"
+                "adds r0, %1, r0\n"
+                "ldrh r0, [r0, #0]\n"
+                "strh r0, [%2]\n"
+                ".syntax divided\n"
+                : "+r" (tableBase)
+                : "r" (tableOffset), "r" (idDest) : "cc", "memory");
+            tableBase = (volatile u8 *)(uintptr_t)0x080CC146u;
+            __asm__ volatile (
+                ".syntax unified\n"
+                "adds r0, %1, r0\n"
+                "ldrh r0, [r0, #0]\n"
+                "strh r0, [%2]\n"
+                ".syntax divided\n"
+                : "+r" (tableBase)
+                : "r" (tableOffset), "r" (tagDest) : "cc", "memory");
+            __asm__ volatile (
+                ".syntax unified\n"
+                "adds r2, %2, #0\n"
+                "adds r2, #152\n"
+                "adds r2, r2, %0\n"
+                "mov r10, r2\n"
+                "mov r2, %1\n"
+                "ldr r0, [r2, #0]\n"
+                "ldr r1, [r2, #4]\n"
+                "mov r2, r10\n"
+                "str r0, [r2, #0]\n"
+                "str r1, [r2, #4]\n"
+                ".syntax divided\n"
+                : : "r" (cellOffset), "r" (cellSource), "r" (r)
+                : "r0", "r1", "r2", "r10", "cc", "memory");
+        } else {
+            __asm__ volatile (
+                ".syntax unified\n"
+                "movs r0, #8\n"
+                "strh r0, [%0]\n"
+                "movs r0, #9\n"
+                "strh r0, [%1]\n"
+                "adds r0, %3, #0\n"
+                "adds r0, #152\n"
+                "adds r0, r0, %2\n"
+                "movs r1, #88\n"
+                "str r1, [r0]\n"
+                "adds r1, %3, #0\n"
+                "adds r1, #156\n"
+                "adds r1, r1, %2\n"
+                "add r0, sp, #20\n"
+                "adds r0, r0, %2\n"
+                "ldr r0, [r0]\n"
+                "str r0, [r1]\n"
+                ".syntax divided\n"
+                : : "r" (idDest), "r" (tagDest), "r" (cellOffset), "r" (r)
+                : "r0", "r1", "cc", "memory");
+        }
+        cellOffset += 8;
+        idDest++;
+        tagDest++;
+        tableOffset += 2;
+        cellSource += 2;
+        __asm__ volatile (
+            ".syntax unified\n"
+            "movs r1, #1\n"
+            "add %0, r1\n"
+            ".syntax divided\n"
+            : "+r" (col) : : "r1", "cc");
+        colCmp = col;
+        __asm__ volatile ("" : "+r" (colCmp));
+    } while (colCmp <= 2);
 }
+
+__asm__(
+    ".pushsection .text.RaceVM_02247C,\"ax\",%progbits\n"
+    ".short 0\n"
+    ".size RaceVM_02247C, .-RaceVM_02247C\n"
+    ".popsection\n");
+
 void _08002247C(void *a) __attribute__((alias("RaceVM_02247C")));
 void sub_08002247C(void *a) __attribute__((alias("RaceVM_02247C")));
 

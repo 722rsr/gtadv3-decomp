@@ -225,252 +225,267 @@ void sub_080061B8(void *a, int b, void *c) __attribute__((alias("CourseOrch_0800
 //   g10[t] LZ77 -> EWRAM 0x02000000, tile-index fixup (+0x100 in low 10
 //   bits), fill run with 0x100, then 20-entry DMA row list to
 //   0x0600F000/0x0600F800 (64 B rows, ctrl 0x80000020).
-__attribute__((naked)) void CourseOrch_0800628C(void *hdr, int idx_unused, void *base) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        "push {r4, r5, r6, r7, lr}\n"
-        "mov r7, r8\n"
-        "push {r7}\n"
-        "adds r6, r2, #0\n"
-        "movs r1, #128\n"
-        "lsls r1, r1, #18\n"
-        "mov r8, r1\n"
-        "ldr r0, [r0, #0]\n"
-        "ldrb r4, [r0, #3]\n"
-        "movs r7, #0\n"
-        "ldr r0, [pc, #20]\n"
-        "movs r1, #2\n"
-        "ldrsh r5, [r0, r1]\n"
-        "movs r1, #0\n"
-        "ldrsh r0, [r0, r1]\n"
-        "cmp r0, #1\n"
-        "beq .Lco628c_080062ca\n"
-        "cmp r0, #1\n"
-        "bgt .Lco628c_080062bc\n"
-        "cmp r0, #0\n"
-        "beq .Lco628c_080062c2\n"
-        "b .Lco628c_080062f8\n"
-        ".align 2, 0\n"
-        "_080062B8: .word 0x0203F758\n"
-        ".Lco628c_080062bc:\n"
-        "cmp r0, #2\n"
-        "beq .Lco628c_080062d4\n"
-        "b .Lco628c_080062f8\n"
-        ".Lco628c_080062c2:\n"
-        "cmp r5, #1\n"
-        "bne .Lco628c_080062f8\n"
-        "movs r7, #2\n"
-        "b .Lco628c_080062f8\n"
-        ".Lco628c_080062ca:\n"
-        "movs r7, #1\n"
-        "cmp r5, #1\n"
-        "bne .Lco628c_080062f8\n"
-        "movs r7, #3\n"
-        "b .Lco628c_080062f8\n"
-        ".Lco628c_080062d4:\n"
-        "cmp r5, #1\n"
-        "bne .Lco628c_080062da\n"
-        "movs r7, #1\n"
-        ".Lco628c_080062da:\n"
-        "cmp r4, #2\n"
-        "bne .Lco628c_080062e0\n"
-        "movs r4, #8\n"
-        ".Lco628c_080062e0:\n"
-        "cmp r4, #3\n"
-        "bne .Lco628c_080062e6\n"
-        "movs r4, #9\n"
-        ".Lco628c_080062e6:\n"
-        "cmp r4, #4\n"
-        "bne .Lco628c_080062ec\n"
-        "movs r4, #10\n"
-        ".Lco628c_080062ec:\n"
-        "cmp r4, #5\n"
-        "bne .Lco628c_080062f2\n"
-        "movs r4, #11\n"
-        ".Lco628c_080062f2:\n"
-        "cmp r4, #6\n"
-        "bne .Lco628c_080062f8\n"
-        "movs r4, #12\n"
-        ".Lco628c_080062f8:\n"
-        "cmp r5, #2\n"
-        "bne .Lco628c_080062fe\n"
-        "adds r4, #13\n"
-        ".Lco628c_080062fe:\n"
-        "adds r0, r6, #0\n"
-        "movs r1, #8\n"
-        "adds r2, r4, #0\n"
-        "bl _08006590\n"
-        "adds r2, r0, #0\n"
-        "ldr r1, [pc, #168]\n"
-        "bl sub_0802D984\n"
-        "adds r0, r6, #0\n"
-        "movs r1, #9\n"
-        "adds r2, r4, #0\n"
-        "bl _08006590\n"
-        "adds r2, r0, #0\n"
-        "ldr r1, [pc, #152]\n"
-        "lsls r0, r7, #5\n"
-        "adds r0, r2, r0\n"
-        "str r0, [r1, #0]\n"
-        "ldr r0, [pc, #148]\n"
-        "str r0, [r1, #4]\n"
-        "ldr r0, [pc, #148]\n"
-        "str r0, [r1, #8]\n"
-        "ldr r0, [r1, #8]\n"
-        "adds r0, r6, #0\n"
-        "movs r1, #10\n"
-        "adds r2, r4, #0\n"
-        "bl _08006590\n"
-        "adds r2, r0, #0\n"
-        "cmp r5, #2\n"
-        "bne .Lco628c_080063d4\n"
-        "mov r4, r8\n"
-        "mov r1, r8\n"
-        "bl sub_0802D988\n"
-        "ldr r7, [pc, #124]\n"
-        "movs r6, #252\n"
-        "lsls r6, r6, #8\n"
-        "movs r3, #176\n"
-        "lsls r3, r3, #2\n"
-        "movs r0, #128\n"
-        "lsls r0, r0, #1\n"
-        "adds r5, r0, #0\n"
-        ".Lco628c_08006356:\n"
-        "ldrh r0, [r4, #0]\n"
-        "adds r1, r7, #0\n"
-        "ands r1, r0\n"
-        "adds r2, r6, #0\n"
-        "ands r2, r0\n"
-        "adds r1, r5, r1\n"
-        "orrs r1, r2\n"
-        "strh r1, [r4, #0]\n"
-        "subs r3, #1\n"
-        "adds r4, #2\n"
-        "cmp r3, #0\n"
-        "bne .Lco628c_08006356\n"
-        "movs r1, #128\n"
-        "lsls r1, r1, #1\n"
-        "adds r0, r1, #0\n"
-        "movs r3, #144\n"
-        "lsls r3, r3, #2\n"
-        ".Lco628c_08006378:\n"
-        "strh r0, [r4, #0]\n"
-        "subs r3, #1\n"
-        "adds r4, #2\n"
-        "cmp r3, #0\n"
-        "bne .Lco628c_08006378\n"
-        "movs r3, #0\n"
-        "ldr r2, [pc, #48]\n"
-        "ldr r7, [pc, #64]\n"
-        "mov r4, r8\n"
-        "adds r4, #64\n"
-        "mov r1, r8\n"
-        "ldr r6, [pc, #60]\n"
-        "ldr r5, [pc, #60]\n"
-        ".Lco628c_08006392:\n"
-        "str r1, [r2, #0]\n"
-        "str r5, [r2, #4]\n"
-        "str r7, [r2, #8]\n"
-        "ldr r0, [r2, #8]\n"
-        "str r4, [r2, #0]\n"
-        "str r6, [r2, #4]\n"
-        "str r7, [r2, #8]\n"
-        "ldr r0, [r2, #8]\n"
-        "adds r4, #128\n"
-        "adds r1, #128\n"
-        "adds r6, #64\n"
-        "adds r5, #64\n"
-        "adds r3, #1\n"
-        "cmp r3, #19\n"
-        "ble .Lco628c_08006392\n"
-        "b .Lco628c_08006448\n"
-        "movs r0, r0\n"
-        ".align 2, 0\n"
-        "_080063B4: .word 0x0600A000\n"
-        "_080063B8: .word 0x040000D4\n"
-        "_080063BC: .word 0x050001C0\n"
-        "_080063C0: .word 0x80000010\n"
-        "_080063C4: .word 0x000003FF\n"
-        "_080063C8: .word 0x80000020\n"
-        "_080063CC: .word 0x0600F800\n"
-        "_080063D0: .word 0x0600F000\n"
-        ".Lco628c_080063d4:\n"
-        "mov r4, r8\n"
-        "adds r0, r2, #0\n"
-        "mov r1, r8\n"
-        "bl sub_0802D988\n"
-        "ldr r7, [pc, #116]\n"
-        "movs r6, #252\n"
-        "lsls r6, r6, #8\n"
-        "movs r3, #128\n"
-        "lsls r3, r3, #2\n"
-        "movs r0, #128\n"
-        "lsls r0, r0, #1\n"
-        "adds r5, r0, #0\n"
-        ".Lco628c_080063ee:\n"
-        "ldrh r0, [r4, #0]\n"
-        "adds r1, r7, #0\n"
-        "ands r1, r0\n"
-        "adds r2, r6, #0\n"
-        "ands r2, r0\n"
-        "adds r1, r5, r1\n"
-        "orrs r1, r2\n"
-        "strh r1, [r4, #0]\n"
-        "subs r3, #1\n"
-        "adds r4, #2\n"
-        "cmp r3, #0\n"
-        "bne .Lco628c_080063ee\n"
-        "movs r1, #128\n"
-        "lsls r1, r1, #1\n"
-        "adds r0, r1, #0\n"
-        "movs r3, #192\n"
-        "lsls r3, r3, #2\n"
-        ".Lco628c_08006410:\n"
-        "strh r0, [r4, #0]\n"
-        "subs r3, #1\n"
-        "adds r4, #2\n"
-        "cmp r3, #0\n"
-        "bne .Lco628c_08006410\n"
-        "movs r3, #0\n"
-        "ldr r2, [pc, #56]\n"
-        "ldr r7, [pc, #60]\n"
-        "mov r4, r8\n"
-        "adds r4, #64\n"
-        "mov r1, r8\n"
-        "ldr r6, [pc, #56]\n"
-        "ldr r5, [pc, #56]\n"
-        ".Lco628c_0800642a:\n"
-        "str r1, [r2, #0]\n"
-        "str r5, [r2, #4]\n"
-        "str r7, [r2, #8]\n"
-        "ldr r0, [r2, #8]\n"
-        "str r4, [r2, #0]\n"
-        "str r6, [r2, #4]\n"
-        "str r7, [r2, #8]\n"
-        "ldr r0, [r2, #8]\n"
-        "adds r4, #128\n"
-        "adds r1, #128\n"
-        "adds r6, #64\n"
-        "adds r5, #64\n"
-        "adds r3, #1\n"
-        "cmp r3, #19\n"
-        "ble .Lco628c_0800642a\n"
-        ".Lco628c_08006448:\n"
-        "pop {r3}\n"
-        "mov r8, r3\n"
-        "pop {r4, r5, r6, r7}\n"
-        "pop {r0}\n"
-        "bx r0\n"
-        "movs r0, r0\n"
-        ".align 2, 0\n"
-        "_08006454: .word 0x000003FF\n"
-        "_08006458: .word 0x040000D4\n"
-        "_0800645C: .word 0x80000020\n"
-        "_08006460: .word 0x0600F800\n"
-        "_08006464: .word 0x0600F000\n"
-        ".syntax divided\n"
-    );
+void CourseOrch_0800628C(void *hdr, int idx_unused, void *base)
+{
+    register u8 *resourceBase __asm__("r6");
+    register u8 *ewram __asm__("r8");
+    register s32 theme __asm__("r4");
+    register s32 mode __asm__("r5");
+    register s32 paletteSlot;
+    register u32 baseValue __asm__("r1");
+    register s32 form __asm__("r0");
+    u8 *src;
+    volatile u32 *dma;
+
+    (void)idx_unused;
+    resourceBase = (u8 *)base;
+    __asm__ volatile("" : "+r" (resourceBase));
+    baseValue = 128;
+    __asm__ volatile("" : "+r" (baseValue));
+    baseValue <<= 18;
+    ewram = (u8 *)baseValue;
+    __asm__ volatile("" : "+r" (ewram));
+    {
+        register u8 *payload __asm__("r0");
+        payload = *(u8 **)hdr;
+        __asm__ volatile("" : "+r" (payload));
+        theme = payload[3];
+        __asm__ volatile("" : "+r" (theme));
+    }
+    paletteSlot = 0;
+    {
+        register s16 *cell __asm__("r0");
+        cell = (s16 *)CO_VAR;
+        __asm__ volatile("" : "+r" (cell));
+        mode = cell[1];
+        __asm__ volatile("" : "+r" (mode));
+        form = cell[0];
+        __asm__ volatile("" : "+r" (form));
+    }
+
+    if (form == 1)
+        goto form_one;
+    if (form > 1)
+        goto form_high;
+    if (form == 0)
+        goto form_zero;
+    goto mode_adjust;
+
+form_high:
+    if (form == 2)
+        goto form_two;
+    goto mode_adjust;
+
+form_zero:
+    if (mode == 1)
+        paletteSlot = 2;
+    goto mode_adjust;
+
+form_one:
+    paletteSlot = 1;
+    if (mode == 1)
+        paletteSlot = 3;
+    goto mode_adjust;
+
+form_two:
+    if (mode == 1)
+        paletteSlot = 1;
+    if (theme == 2) theme = 8;
+    if (theme == 3) theme = 9;
+    if (theme == 4) theme = 10;
+    if (theme == 5) theme = 11;
+    if (theme == 6) theme = 12;
+
+mode_adjust:
+    if (mode == 2) theme += 13;
+
+fetch:
+    src = (u8 *)_08006590(resourceBase, 8, theme);
+    sub_0802D984(src, (void *)(uintptr_t)0x0600A000u);
+
+    src = (u8 *)_08006590(resourceBase, 9, theme);
+    dma = CO_DMA3;
+    dma[0] = (u32)(uintptr_t)src + ((u32)paletteSlot << 5);
+    dma[1] = 0x050001C0u;
+    dma[2] = 0x80000010u;
+    (void)dma[2];
+
+    {
+        register u8 *srcDirect __asm__("r0");
+        register u8 *srcCopy __asm__("r2");
+        srcDirect = (u8 *)_08006590(resourceBase, 10, theme);
+        srcCopy = srcDirect;
+        __asm__ volatile("" : "+r" (srcDirect), "+r" (srcCopy));
+        if (mode == 2) {
+        register volatile u16 *tile __asm__("r4");
+        register s32 count __asm__("r3");
+        register s32 maskLow __asm__("r7");
+        register s32 maskHigh __asm__("r6");
+        register s32 bias __asm__("r5");
+        tile = (volatile u16 *)ewram;
+        __asm__ volatile("" : "+r" (tile));
+        sub_0802D988(srcDirect, ewram);
+        maskLow = 0x3FF;
+        maskHigh = 252;
+        maskHigh <<= 8;
+        count = 176;
+        count <<= 2;
+        {
+            register s32 seed __asm__("r0");
+            seed = 128;
+            seed <<= 1;
+            __asm__ volatile("" : "+r" (seed));
+            bias = seed;
+        }
+        do {
+            register s32 value __asm__("r0");
+            register s32 low __asm__("r1");
+            register s32 high __asm__("r2");
+            value = *tile;
+            low = maskLow;
+            low &= value;
+            high = maskHigh;
+            high &= value;
+            low = bias + low;
+            low |= high;
+            *tile = (u16)low;
+            count--;
+            tile++;
+        } while (count != 0);
+        {
+            register s32 fillValue __asm__("r0");
+            register s32 count2 __asm__("r3");
+            register s32 fillSeed __asm__("r1");
+            fillSeed = 128;
+            fillSeed <<= 1;
+            __asm__ volatile("" : "+r" (fillSeed));
+            fillValue = fillSeed;
+            count2 = 144;
+            count2 <<= 2;
+            do {
+                *tile = (u16)fillValue;
+                count2--;
+                tile++;
+            } while (count2 != 0);
+        }
+        {
+            register volatile u32 *dmaPort __asm__("r2");
+            register u32 control __asm__("r7");
+            register u8 *source0 __asm__("r1");
+            register u8 *target0 __asm__("r5");
+            register u8 *target1 __asm__("r6");
+            register s32 row __asm__("r3");
+            row = 0;
+            dmaPort = CO_DMA3;
+            control = 0x80000020u;
+            tile = (volatile u16 *)ewram;
+            tile += 32;
+            source0 = ewram;
+            target1 = (u8 *)0x0600F800u;
+            target0 = (u8 *)0x0600F000u;
+            do {
+                dmaPort[0] = (u32)(uintptr_t)source0;
+                dmaPort[1] = (u32)(uintptr_t)target0;
+                dmaPort[2] = control;
+                (void)dmaPort[2];
+                dmaPort[0] = (u32)(uintptr_t)tile;
+                dmaPort[1] = (u32)(uintptr_t)target1;
+                dmaPort[2] = control;
+                (void)dmaPort[2];
+                tile += 64;
+                source0 += 128;
+                target1 += 64;
+                target0 += 64;
+                row++;
+            } while (row <= 19);
+        }
+    } else {
+        register volatile u16 *tile __asm__("r4");
+        register s32 count __asm__("r3");
+        register s32 maskLow __asm__("r7");
+        register s32 maskHigh __asm__("r6");
+        register s32 bias __asm__("r5");
+        tile = (volatile u16 *)ewram;
+        __asm__ volatile("" : "+r" (tile));
+        sub_0802D988(srcCopy, ewram);
+        maskLow = 0x3FF;
+        maskHigh = 252;
+        maskHigh <<= 8;
+        count = 128;
+        count <<= 2;
+        {
+            register s32 seed __asm__("r0");
+            seed = 128;
+            seed <<= 1;
+            __asm__ volatile("" : "+r" (seed));
+            bias = seed;
+        }
+        do {
+            register s32 value __asm__("r0");
+            register s32 low __asm__("r1");
+            register s32 high __asm__("r2");
+            value = *tile;
+            low = maskLow;
+            low &= value;
+            high = maskHigh;
+            high &= value;
+            low = bias + low;
+            low |= high;
+            *tile = (u16)low;
+            count--;
+            tile++;
+        } while (count != 0);
+        {
+            register s32 fillValue __asm__("r0");
+            register s32 count2 __asm__("r3");
+            register s32 fillSeed __asm__("r1");
+            fillSeed = 128;
+            fillSeed <<= 1;
+            __asm__ volatile("" : "+r" (fillSeed));
+            fillValue = fillSeed;
+            count2 = 192;
+            count2 <<= 2;
+            do {
+                *tile = (u16)fillValue;
+                count2--;
+                tile++;
+            } while (count2 != 0);
+        }
+        {
+            register volatile u32 *dmaPort __asm__("r2");
+            register u32 control __asm__("r7");
+            register u8 *source0 __asm__("r1");
+            register u8 *target0 __asm__("r5");
+            register u8 *target1 __asm__("r6");
+            register s32 row __asm__("r3");
+            row = 0;
+            dmaPort = CO_DMA3;
+            control = 0x80000020u;
+            tile = (volatile u16 *)ewram;
+            tile += 32;
+            source0 = ewram;
+            target1 = (u8 *)0x0600F800u;
+            target0 = (u8 *)0x0600F000u;
+            do {
+                dmaPort[0] = (u32)(uintptr_t)source0;
+                dmaPort[1] = (u32)(uintptr_t)target0;
+                dmaPort[2] = control;
+                (void)dmaPort[2];
+                dmaPort[0] = (u32)(uintptr_t)tile;
+                dmaPort[1] = (u32)(uintptr_t)target1;
+                dmaPort[2] = control;
+                (void)dmaPort[2];
+                tile += 64;
+                source0 += 128;
+                target1 += 64;
+                target0 += 64;
+                row++;
+            } while (row <= 19);
+        }
+        }
+    }
 }
+
 void _0800628C(void *a, int b, void *c) __attribute__((alias("CourseOrch_0800628C")));
 void sub_0800628C(void *a, int b, void *c) __attribute__((alias("CourseOrch_0800628C")));
 

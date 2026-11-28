@@ -97,44 +97,56 @@ HOST_STUB(void  _08018C44(void));                                  // 0x08018C44
 // WA+0x1108, CTX, CTX, 0x03005760/0x03005DF0/0x03005E30, WA, WA+0x10FC,
 // WA+0x10B8, CTX, WA, WA+0x10DC, 0x0805FBD0 ("GHOST OVER").
 // ----------------------------------------------------------------------------
-// Skeleton: the compiler emits the prologue and epilogue; the ROM's body is
-// still one asm block, and `sub sp, #136` / `add sp, #136` are the block's first
-// and last instructions. Two limits of agbcc force that split:
-//   * `regs_ever_live[7]` is never set from asm (r7 is FRAME_POINTER_REGNUM and
-//     in `elim_reg_set`, so flow.c returns before marking it). It is set only by
-//     a real pseudo allocated to r7, so the prologue's `push {r4,r5,r6,r7,lr}`
-//     and the `mov r7,sl` / `push {r5,r6,r7}` high-register save need four live
-//     low values. `"l"`-constrained locals with r0-r3 clobbered give exactly
-//     that, with no instructions of their own.
-//   * an addressed local always costs a `mov r0, sp`, so a compiler-emitted
-//     136-byte frame cannot be instruction-free; the block does the two sp
-//     adjustments itself and the compiler frame stays 0.
-// With both in place the epilogue is the compiler's `pop {r3,r4,r5}` /
-// `mov r8,r3` ... / `pop {r4,r5,r6,r7}` sequence. The ROM puts its last four
-// pool words *after* the epilogue, which C cannot express from inside the body,
-// so they are appended to this function's section below. As the body converts
-// to C and real locals appear, the sp adjustments move into the prologue and
-// drop out of the block.
+// Measured skeleton: the linked body remains exact at 3640/3640 after the first
+// two `_08018AA8` calls, the first pool-based context test, and the C4A8 address
+// addition moved to C; the linked report has zero unresolved bytes. The
+// isolated lift probe omits the 18-byte post-function pool tail and measures
+// 3622/3640, with its 1678 instructions aligned. Four `"l"` inputs still
+// reproduce the ROM's r7 save, and the one-block remainder keeps the 136-byte
+// stack adjustments in the asm stream. A C4AE load/compare draft measured
+// 1672/1686 aligned instructions and 3632/3640 bytes; fixed r0/r5 locals added
+// a 4-byte stack slot and the load became `ldrh` plus shifts. Next lead: keep
+// r5's zero setup and compare in the splice, and shape the C load with a live
+// r3 zero index to recover the ROM's indexed `ldrsh`.
 void _08001C3E0(void) {
     /* Register liveness for the prologue only; never read. */
     u32 v0, v1, v2, v3;
+    register u32 mask __asm__("r0");
+    register u32 context_addr __asm__("r0");
+    register u32 context_base __asm__("r1");
+    register u32 context_offset __asm__("r2");
     __asm__ volatile (
         ".syntax unified\n"
         "\tsub\tsp, #136\n"
-        "\tmovs\tr0, #128\n"
-        "\tlsls\tr0, r0, #1\n"
-        "\tmovs\tr1, #0\n"
-        "\tbl 0x08018AA8\n"
-        "\tmovs\tr0, #128\n"
-        "\tlsls\tr0, r0, #20\n"
-        "\tmovs\tr1, #0\n"
-        "\tbl 0x08018AA8\n"
+        ".syntax divided\n"
+        : "+r"(context_base)
+        : "l"(v0), "l"(v1), "l"(v2), "l"(v3)
+        : "r0", "r2", "r3", "r8", "r9", "sl", "lr", "cc", "memory"
+    );
+    mask = 128;
+    __asm__ volatile ("" : "+r"(mask));
+    mask <<= 1;
+    _08018AA8(mask, 0);
+    mask = 128;
+    __asm__ volatile ("" : "+r"(mask));
+    mask <<= 20;
+    _08018AA8(mask, 0);
+    __asm__ volatile (
+        ".syntax unified\n"
         "\tldr r1, .Lb_08001c3e0_08001C484\n"
         "\tldr r2, .Lb_08001c3e0_08001C488\n"
-        "\tadds\tr0, r1, r2\n"
-        "\tldrh\tr0, [r0, #0]\n"
-        "\tcmp\tr0, #8\n"
-        "\tbne .Lb_08001c3e0_08001C4A8\n"
+        ".syntax divided\n"
+        : "=r"(context_base), "=r"(context_offset)
+        :
+        : "cc", "memory"
+    );
+    context_addr = context_base + context_offset;
+    __asm__ volatile ("" : "+r"(context_addr));
+    context_addr = *(volatile u16 *)(uintptr_t)context_addr;
+    if (context_addr != 8)
+        goto sound_c4a8;
+    __asm__ volatile (
+        ".syntax unified\n"
         "\tldr r4, .Lb_08001c3e0_08001C48C\n"
         "\tldr\tr1, [r4, #0]\n"
         "\tmovs\tr3, #153\n"
@@ -208,10 +220,24 @@ void _08001C3E0(void) {
         ".Lb_08001c3e0_08001C4A0: .word 0x00000534\n"
         "\t.align 2, 0\n"
         ".Lb_08001c3e0_08001C4A4: .word 0x080CBB2C\n"
-        ".Lb_08001c3e0_08001C4A8:\n"
+        ".syntax divided\n"
+        : : "l"(v0), "l"(v1), "l"(v2), "l"(v3)
+        : "r0", "r1", "r2", "r3", "r8", "r9", "sl", "lr", "cc", "memory"
+    );
+sound_c4a8:
+    __asm__ volatile (
+        ".syntax unified\n"
         "\tmovs\tr5, #0\n"
         "\tldr r2, .Lb_08001c3e0_08001C540\n"
-        "\tadds\tr1, r1, r2\n"
+        ".syntax divided\n"
+        : "=r"(context_offset)
+        :
+        : "cc"
+    );
+    context_base += context_offset;
+    __asm__ volatile ("" : "+r"(context_base));
+    __asm__ volatile (
+        ".syntax unified\n"
         "\tmovs\tr3, #0\n"
         "\tldrsh\tr0, [r1, r3]\n"
         "\tadd\tr4, sp, #128\n"

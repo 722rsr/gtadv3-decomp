@@ -11,16 +11,18 @@
 // Do not guess voice layout beyond +29 (u8) / +64 (u32) directly via strb/ldr, proven via objdump.
 
 // The helper's custom r3 result and ip return stay explicit; C performs the
-// byte store into the channel record.
+// byte store into the channel record. Keeping dummy `a` live at the store lets
+// channel use incoming r1 without a pin; probe EXACT 12/12. Unpinning value
+// stores from r2 (11/12), so the next lead is an r3 byte-result splice.
 void _0802BD74(void *a, void *b) __attribute__((alias("SoundBD74_Store")));
 void sub_0802BD74(void *a, void *b) __attribute__((alias("SoundBD74_Store")));
 __attribute__((naked)) void SoundBD74_Store(void *a, void *chan) {
-    register u32 frame __asm__("ip");
     register u32 value __asm__("r3");
-    register volatile u8 *channel __asm__("r1") = (volatile u8 *)chan;
-    __asm__ volatile (".syntax unified\n\tmov %0, lr\n\tbl _0802BCE8\n\t.syntax divided"
-                      : "=r"(frame), "=r"(value) : : "lr", "cc", "memory");
+    register volatile u8 *channel = (volatile u8 *)chan;
+    __asm__ volatile (".syntax unified\n\tmov ip, lr\n\tbl _0802BCE8\n\t.syntax divided"
+                      : "=r"(value) : : "ip", "lr", "cc", "memory");
+    __asm__ volatile ("" : : "r"(a));
     channel[29] = (u8)value;
-    __asm__ volatile (".syntax unified\n\tbx %0\n\t.short 0x0000\n\t.syntax divided"
-                      : : "r"(frame) : "cc");
+    __asm__ volatile (".syntax unified\n\tbx ip\n\t.short 0x0000\n\t.syntax divided"
+                      : : : "cc");
 }

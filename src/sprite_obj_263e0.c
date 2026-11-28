@@ -591,6 +591,88 @@ __attribute__((naked)) void Sprite_PlaceEmitters(void *rec, int off, int z, int 
         ".syntax divided\n"
     );
 }
+// Advisory C reconstruction, intentionally unaliased.
+// MEASURED 2026-11-28: this C candidate scores 71/392 bytes (404 B; first
+// difference +0x0A). Best scratch mixed C/asm frame-slot candidate scores
+// 119/392 (400 B; first difference +0x1B) and puts z/y at sp+0/+4. Next lead:
+// match the zero store at sp+8 with r2 without changing the prologue, then
+// align the first literal load at +0x2C.
+void Sprite_PlaceEmitters_Candidate(void *rec, int off, int z, int y,
+                                    int a4, int a5, int a6, int a7, volatile int a8) {
+    void *course;
+    void *arr;
+    void *arr2;
+    int offset;
+    int yv;
+    int pack8;
+    int pack16;
+    u32 ybits;
+    u16 yhalf;
+    int absY;
+    int fifth;
+    int remainder;
+    u32 laneA;
+    u32 laneB;
+    u32 colorFlag;
+    register u8 *obj __asm__("r1");
+    u16 attr0;
+    u16 attr2;
+    u16 attr4;
+
+    laneA = (u16)a4;
+    laneB = (u16)(a4 + 64);
+    pack8 = 0;
+    pack16 = 0;
+    __asm__ volatile("" : : : "memory");
+    course = _08007498(CREC_TABLE0, (int)*(volatile u32 *)rec);
+    arr = _0800748C(course);
+    colorFlag = WA_10BC ? 2048 : 1024;
+    offset = off & 0xFFF;
+    offset = asr_low8(offset, arr);
+    arr2 = _0800748C(_08007498(course, 0));
+    if ((*(volatile u8 *)((u8 *)arr2 + offset) & 128) != 0) {
+        _08002C84(a8);
+        laneA = (u16)(a4 + 64);
+        laneB = (u16)a4;
+    }
+    __asm__ volatile("" : : : "memory");
+    if (a7 < 0)
+        a7 += 15;
+    ybits = (u32)a7 << 12;
+    yhalf = (u16)(ybits >> 16);
+    absY = (s16)yhalf;
+    if (_08005B5C(absY) <= 4)
+        yhalf = 0;
+    yv = (s16)yhalf;
+    if (yv != 0) {
+        _08002C74(a8, (u16)yv);
+        pack8 = (u16)_0802D978(-yv, 10);
+        pack16 = _0802D978(yv, 10);
+        fifth = _0802D978(yv, 5);
+        remainder = _0802D97C(fifth, 2);
+        pack16 = (u16)(pack16 + remainder);
+    }
+    obj = (u8 *)_08002BFC(0);
+    attr0 = (u16)(((u32)(y - (s16)pack8) & 0xFF) | 0x100);
+    attr2 = (u16)(((u32)(z - 56) & 0x1FF) | 0xC000 | ((u32)a8 << 9));
+    attr4 = (u16)(laneA | (u32)a5 | colorFlag);
+    *(volatile u16 *)(obj + 0) = attr0;
+    *(volatile u16 *)(obj + 2) = attr2;
+    *(volatile u16 *)(obj + 4) = attr4;
+    *(volatile u16 *)(obj + 12) = 0;
+    _08002C34(a6, obj);
+
+    obj = (u8 *)_08002BFC(0);
+    attr0 = (u16)(((u32)(y - (s16)pack16) & 0xFF) | 0x100);
+    attr2 = (u16)(((u32)(z - 8) & 0x1FF) | 0xC000 | ((u32)a8 << 9));
+    attr4 = (u16)(laneB | (u32)a5 | colorFlag);
+    *(volatile u16 *)(obj + 0) = attr0;
+    *(volatile u16 *)(obj + 2) = attr2;
+    *(volatile u16 *)(obj + 4) = attr4;
+    *(volatile u16 *)(obj + 12) = 0;
+    _08002C34(a6, obj);
+}
+
 void _080026674(void *a, int b, int c, int d, int e, int f, int g, int h, int i)
     __attribute__((alias("Sprite_PlaceEmitters")));
 void sub_080026674(void *a, int b, int c, int d, int e, int f, int g, int h, int i)

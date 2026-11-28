@@ -14,11 +14,11 @@ __attribute__((weak)) void sub_0802B898(void) {} // mixer entry marker
 
 // _0802BE78 pump — DMA1 DirectSound A re-arm, preserve register semantics
 void SoundPump(void){
-    register volatile u32 *rootCell __asm__("r0");
-    register volatile u8 *root __asm__("r0");
-    register u32 magic __asm__("r2");
+    register volatile u32 *rootCell;
+    register volatile u8 *root;
+    register volatile u32 *dma;
     register u32 lock __asm__("r3");
-    register u32 countdown __asm__("r1");
+    register u32 r1 __asm__("r1");
 
     /* The shared pool at 0x0802C114/0x0802C118 is 0x298 bytes ahead. */
     __asm__ volatile (
@@ -31,42 +31,39 @@ void SoundPump(void){
         ".syntax unified\n"
         ".hword 0x4AA6 @ %0\n"
         ".syntax divided\n"
-        : "=r"(magic));
+        : "=r"(dma));
     lock = *(volatile u32 *)root;
-    lock -= magic;
+    lock -= (u32)(uintptr_t)dma;
     if (lock > 1)
         goto pump_done;
 
-    countdown = root[4];
-    countdown -= 1;
-    root[4] = (u8)countdown;
+    r1 = root[4];
+    r1 -= 1;
+    root[4] = (u8)r1;
     /* Consume the signed flags from the decrement, as the ROM's BGT does. */
     __asm__ volatile (".syntax unified\nbgt .Lsound_pump_done\n.syntax divided" : : : "cc");
-    countdown = root[11];
-    root[4] = (u8)countdown;
+    r1 = root[11];
+    root[4] = (u8)r1;
 
     {
-        register volatile u32 *dma __asm__("r2") =
-            (volatile u32 *)(uintptr_t)0x040000BCu;
-        register u32 dmaCount __asm__("r1") = dma[2];
-        dmaCount <<= 7;
-        __asm__ volatile ("" : "+r"(dmaCount));
+        dma = (volatile u32 *)(uintptr_t)0x040000BCu;
+        r1 = dma[2];
+        r1 <<= 7;
         /* BCC consumes the shift's carry (original DMA word bit 25). */
-        __asm__ volatile (".syntax unified\nbcc .Lsound_pump_rearm\n.syntax divided" : : : "cc");
+        __asm__ volatile (".syntax unified\nbcc .Lsound_pump_rearm\n.syntax divided" : : "r"(r1) : "cc");
         {
-            register u32 prime __asm__("r1") = 0x84400004u;
-            __asm__ volatile ("" : "+r"(prime));
-            *(volatile u32 *)(dma + 2) = prime;
+            r1 = 0x84400004u;
+            *(volatile u32 *)(dma + 2) = r1;
             __asm__ volatile (".syntax unified\n.Lsound_pump_rearm:\n.syntax divided");
 
             {
-                register u32 control __asm__("r1") = 4;
-                __asm__ volatile ("" : "+r"(control));
-                control <<= 8;
-                *(volatile u16 *)((volatile u8 *)dma + 10) = (u16)control;
-                control = 182;
-                control <<= 8;
-                *(volatile u16 *)((volatile u8 *)dma + 10) = (u16)control;
+                r1 = 4;
+                __asm__ volatile ("" : "+r"(r1));
+                r1 <<= 8;
+                *(volatile u16 *)((volatile u8 *)dma + 10) = (u16)r1;
+                r1 = 182;
+                r1 <<= 8;
+                *(volatile u16 *)((volatile u8 *)dma + 10) = (u16)r1;
             pump_done:
                 __asm__ volatile (".syntax unified\n.Lsound_pump_done:\n.syntax divided");
             }
@@ -163,13 +160,15 @@ void SoundUnlinkVoice(void *chan){
 void _0802BC64(void *c) __attribute__((alias("SoundUnlinkVoice")));
 void sub_0802BC64(void *c) __attribute__((alias("SoundUnlinkVoice")));
 
-// _0802BC4C clear 64B array, _0802DFE4 divmod
-// ROM is a fully unrolled 16-word zero (movs r1-r4,#0 + 4x stmia r0! fenced
-// by mov ip,r4 / mov r4,ip, no push, no branches). __builtin_memset emits
-// bl memset (UNRESOLVED, closure has no such symbol). Measured 2026-10-13:
-// 16 scalar word stores compile to 16x str (36 B, OVERSIZED 0/24), not
-// stmia, so no plain-C zeroing reproduces the multi-store; stays asm-owned
-// (asm/sound_mixer_leaf.s) with this behavioral spelling.
+// _0802BC4C clears 64 B with four stmia groups after saving/restoring r4 in ip.
+// Earlier probes: __builtin_memset emits unresolved bl memset; sixteen scalar
+// word stores emit 36 B. MEASURED 2026-11-28: a four-word struct-copy draft
+// reaches 7/24 aligned bytes in 72 B; it spills zero words, then copies three
+// registers with ldmia/stmia and handles the fourth separately. Fixed r1-r4
+// with scalar postincrements reaches 7/24 in 46 B, emitting sixteen
+// one-register stmia operations. Next lead: express one four-word aggregate
+// from live r1-r4 directly to the output without materializing a local source
+// block.
 __attribute__((naked)) void SoundClearVoiceArray(void *base){
     __asm__ volatile(
         ".syntax unified\n"

@@ -16,205 +16,294 @@ extern void *_08006AEC(void);
 extern void *_08005F98(void);
 extern int _08006E70(void *a,void *b,void *c,void *d,void *e);
 
-// _08006E70 — 189 L, pool-free, 5 args (r0=sl, r1=r9, r2=ip, r3=?, [sp+68]=r8)
-// MEASURED 2026-11-04: the 36-byte frame is one local scratch object, not six
-// spills (d 0/4/8, t1 12, t2 16, ep 20, out 24, h 28, t0 32). Spelling it as a
-// struct reproduces the frame exactly; best full lift is 360/356 bytes at
-// 30/356 equal (draft: docs/findings/course_collision_test/frame36.c). The
-// residual is the prologue staging set: the ROM saves r4-r7 and stages
-// sl/r9/r8 through r7/r6/r5, the draft saves r4-r6 because r7 is not marked
-// live. NEXT: get r7 allocated, not pinned.
-__attribute__((naked)) int Course_CollisionTest(void *sl, void *par, void *ip, void *out, void *extra) {
-    __asm__ volatile (
-        ".syntax unified\n"
-        ".L6e70_08006E70:\n"
-        "        push {r4, r5, r6, r7, lr}\n"
-        "        mov r7, sl\n"
-        "        mov r6, r9\n"
-        "        mov r5, r8\n"
-        "        push {r5, r6, r7}\n"
-        "        sub sp, #36\n"
-        "        mov sl, r0\n"
-        "        mov r9, r1\n"
-        "        mov ip, r2\n"
-        "        ldr r0, [sp, #68]\n"
-        "        mov r8, r0\n"
-        "        ldr r2, [r2, #4]\n"
-        "        ldr r0, [r1, #4]\n"
-        "        subs r2, r2, r0\n"
-        "        asrs r2, r2, #4\n"
-        "        str r2, [sp, #28]\n"
-        "        str r2, [sp, #0]\n"
-        "        ldr r2, [r1, #0]\n"
-        "        mov r0, ip\n"
-        "        ldr r0, [r0, #0]\n"
-        "        subs r1, r2, r0\n"
-        "        asrs r0, r1, #4\n"
-        "        str r0, [sp, #4]\n"
-        "        ldr r1, [sp, #28]\n"
-        "        cmp r1, #0\n"
-        "        bne.n .L6e70_08006EAA\n"
-        "        cmp r0, #0\n"
-        "        bne.n .L6e70_08006EAA\n"
-        "        b.n .L6e70_08006FC0\n"
-        ".L6e70_08006EAA:\n"
-        "        mov r2, r9\n"
-        "        ldr r0, [r2, #0]\n"
-        "        mov r1, sl\n"
-        "        ldr r1, [r1, #12]\n"
-        "        subs r0, r0, r1\n"
-        "        asrs r6, r0, #4\n"
-        "        ldr r0, [r2, #4]\n"
-        "        mov r1, sl\n"
-        "        ldr r1, [r1, #16]\n"
-        "        subs r2, r0, r1\n"
-        "        asrs r7, r2, #4\n"
-        "        mov r2, ip\n"
-        "        ldr r2, [r2, #0]\n"
-        "        mov r0, sl\n"
-        "        ldr r0, [r0, #12]\n"
-        "        subs r2, r2, r0\n"
-        "        str r2, [sp, #32]\n"
-        "        asrs r1, r2, #4\n"
-        "        str r1, [sp, #12]\n"
-        "        mov r2, ip\n"
-        "        ldr r0, [r2, #4]\n"
-        "        mov r1, sl\n"
-        "        ldr r1, [r1, #16]\n"
-        "        subs r0, r0, r1\n"
-        "        asrs r0, r0, #4\n"
-        "        str r0, [sp, #16]\n"
-        "        ldr r0, [sp, #0]\n"
-        "        muls r0, r6\n"
-        "        ldr r1, [sp, #4]\n"
-        "        muls r1, r7\n"
-        "        adds r0, r0, r1\n"
-        "        str r0, [sp, #8]\n"
-        "        mov r2, r8\n"
-        "        adds r2, #8\n"
-        "        str r2, [sp, #20]\n"
-        "        adds r0, r3, #0\n"
-        "        adds r1, r2, #0\n"
-        "        mov r2, sp\n"
-        "        str r3, [sp, #24]\n"
-        "        bl 0x08005E14\n"
-        "        lsls r0, r0, #24\n"
-        "        ldr r3, [sp, #24]\n"
-        "        cmp r0, #0\n"
-        "        beq.n .L6e70_08006F9A\n"
-        "        mov r1, r8\n"
-        "        ldr r0, [r1, #0]\n"
-        "        ldr r2, [sp, #12]\n"
-        "        subs r4, r2, r0\n"
-        "        ldr r0, [r1, #4]\n"
-        "        ldr r1, [sp, #16]\n"
-        "        subs r5, r1, r0\n"
-        "        mov r0, r8\n"
-        "        ldr r2, [r0, #12]\n"
-        "        adds r0, r2, #0\n"
-        "        muls r0, r5\n"
-        "        mov r1, r8\n"
-        "        ldr r6, [r1, #8]\n"
-        "        adds r1, r6, #0\n"
-        "        muls r1, r4\n"
-        "        adds r0, r0, r1\n"
-        "        cmp r0, #0\n"
-        "        ble.n .L6e70_08006FC0\n"
-        "        mov r4, r8\n"
-        "        movs r5, #20\n"
-        "        ldrsh r0, [r4, r5]\n"
-        "        subs r0, #16\n"
-        "        ldr r1, [r3, #0]\n"
-        "        cmp r1, r0\n"
-        "        blt.n .L6e70_08006FC0\n"
-        "        mov r4, r8\n"
-        "        movs r5, #24\n"
-        "        ldrsh r0, [r4, r5]\n"
-        "        adds r0, #16\n"
-        "        cmp r1, r0\n"
-        "        bgt.n .L6e70_08006FC0\n"
-        "        mov r1, r8\n"
-        "        movs r4, #22\n"
-        "        ldrsh r0, [r1, r4]\n"
-        "        subs r0, #16\n"
-        "        ldr r1, [r3, #4]\n"
-        "        cmp r1, r0\n"
-        "        blt.n .L6e70_08006FC0\n"
-        "        mov r5, r8\n"
-        "        movs r4, #26\n"
-        "        ldrsh r0, [r5, r4]\n"
-        "        adds r0, #16\n"
-        "        cmp r1, r0\n"
-        "        bgt.n .L6e70_08006FC0\n"
-        "        str r2, [sp, #0]\n"
-        "        negs r1, r6\n"
-        "        str r1, [sp, #4]\n"
-        "        ldr r5, [sp, #12]\n"
-        "        adds r0, r2, #0\n"
-        "        muls r0, r5\n"
-        "        ldr r2, [sp, #16]\n"
-        "        muls r1, r2\n"
-        "        adds r0, r0, r1\n"
-        "        str r0, [sp, #8]\n"
-        "        adds r0, r3, #0\n"
-        "        ldr r1, [sp, #20]\n"
-        "        mov r2, sp\n"
-        "        str r3, [sp, #24]\n"
-        "        bl 0x08005E14\n"
-        "        lsls r0, r0, #24\n"
-        "        ldr r3, [sp, #24]\n"
-        "        cmp r0, #0\n"
-        "        beq.n .L6e70_08006FC0\n"
-        "        ldr r0, [r3, #0]\n"
-        "        lsls r0, r0, #4\n"
-        "        mov r4, sl\n"
-        "        ldr r1, [r4, #12]\n"
-        "        adds r0, r0, r1\n"
-        "        str r0, [r3, #0]\n"
-        "        ldr r0, [r3, #4]\n"
-        "        lsls r0, r0, #4\n"
-        "        ldr r1, [r4, #16]\n"
-        "        adds r0, r0, r1\n"
-        "        b.n .L6e70_08006FBA\n"
-        ".L6e70_08006F9A:\n"
-        "        mov r1, r8\n"
-        "        ldr r0, [r1, #0]\n"
-        "        subs r4, r6, r0\n"
-        "        ldr r0, [r1, #4]\n"
-        "        subs r5, r7, r0\n"
-        "        ldr r0, [r1, #12]\n"
-        "        muls r0, r5\n"
-        "        ldr r1, [r1, #8]\n"
-        "        muls r1, r4\n"
-        "        adds r0, r0, r1\n"
-        "        cmp r0, #0\n"
-        "        ble.n .L6e70_08006FC0\n"
-        "        mov r2, r9\n"
-        "        ldr r0, [r2, #0]\n"
-        "        str r0, [r3, #0]\n"
-        "        ldr r0, [r2, #4]\n"
-        ".L6e70_08006FBA:\n"
-        "        str r0, [r3, #4]\n"
-        "        movs r0, #1\n"
-        "        b.n .L6e70_08006FC2\n"
-        ".L6e70_08006FC0:\n"
-        "        movs r0, #0\n"
-        ".L6e70_08006FC2:\n"
-        "        add sp, #36\n"
-        "        pop {r3, r4, r5}\n"
-        "        mov r8, r3\n"
-        "        mov r9, r4\n"
-        "        mov sl, r5\n"
-        "        pop {r4, r5, r6, r7}\n"
-        "        pop {r1}\n"
-        "        bx r1\n"
-        "        .short 0x0000\n"
-        ".syntax divided\n"
-    );
+// MEASURED 2026-11-28: 354-byte function symbol, 175/175 aligned instructions;
+// the linked 356-byte slice is byte-exact with the resolved helper calls and pad.
+// Entire body is C with empty register/memory barriers: 175/175 instructions
+// align with the ROM, and the linked 356-byte span is byte-exact.
+typedef struct { u8 pad[12]; s32 x, y; } CourseCollisionTestState;
+
+typedef struct { s32 x, y, dx, dy, unk; s16 minx, miny, maxx, maxy; } CourseCollisionTestEdge;
+
+typedef struct {
+    s32 d0, d1, d2;
+    s32 t1, t2;
+    s32 *ep;
+    s32 *out;
+    s32 h, t0;
+} CourseCollisionTestScratch;
+
+int Course_CollisionTest(void *state0, void *p0, void *q0, void *out0, void *e0)
+{
+    register CourseCollisionTestState *state __asm__("sl");
+    register s32 *p __asm__("r9");
+    register s32 *q __asm__("ip");
+    register s32 *out __asm__("r3");
+    register CourseCollisionTestEdge *e __asm__("r8");
+    register s32 gx __asm__("r6");
+    s32 gy;
+    register s32 t1 __asm__("r4");
+    register s32 t2 __asm__("r5");
+    register s32 firstD1 __asm__("r0");
+    register s32 firstCallResult __asm__("r0");
+    register s32 dotDy __asm__("r2");
+    register s32 dotDx __asm__("r6");
+    register s32 dotSum __asm__("r0");
+    register s32 boundValue __asm__("r1");
+    register s32 dotNegDx __asm__("r1");
+    register s32 secondCallResult __asm__("r0");
+    register s32 *p2 __asm__("r2");
+    register CourseCollisionTestState *state4 __asm__("r4");
+    register CourseCollisionTestEdge *e1 __asm__("r1");
+    register s32 resultY __asm__("r0");
+    CourseCollisionTestScratch f;
+
+    state = (CourseCollisionTestState *)state0;
+    p = (s32 *)p0;
+    q = (s32 *)q0;
+    out = (s32 *)out0;
+    e = (CourseCollisionTestEdge *)e0;
+
+    __asm__ volatile ("" : "+r" (state), "+r" (p), "+r" (q),
+                      "+r" (out), "+r" (e));
+    {
+        register s32 deltaY __asm__("r2");
+        register s32 pY __asm__("r0");
+        deltaY = ((s32 *)q0)[1];
+        pY = ((s32 *)p0)[1];
+        deltaY -= pY;
+        deltaY >>= 4;
+        f.h = deltaY;
+        f.d0 = deltaY;
+        {
+            register s32 pX __asm__("r2");
+            register s32 qX __asm__("r0");
+            register s32 diffX __asm__("r1");
+            pX = ((s32 *)p0)[0];
+            __asm__ volatile("" : "+r" (pX));
+            qX = q[0];
+            __asm__ volatile("" : "+r" (qX));
+            diffX = pX - qX;
+            firstD1 = diffX >> 4;
+        }
+        f.d1 = firstD1;
+    }
+    __asm__ volatile ("" : "+m" (f.h));
+    if (f.h == 0 && firstD1 == 0)
+        return 0;
+    {
+        register s32 *pBase __asm__("r2");
+        register s32 pValue __asm__("r0");
+        register CourseCollisionTestState *stateR1 __asm__("r1");
+        pBase = p;
+        __asm__ volatile("" : "+r" (pBase));
+        pValue = pBase[0];
+        __asm__ volatile("" : "+r" (pValue));
+        stateR1 = state;
+        __asm__ volatile("" : "+r" (stateR1));
+        gx = (pValue - stateR1->x) >> 4;
+        pValue = pBase[1];
+        __asm__ volatile("" : "+r" (pValue));
+        stateR1 = state;
+        __asm__ volatile("" : "+r" (stateR1));
+        {
+            register s32 stateY __asm__("r1");
+            register s32 delta __asm__("r2");
+            stateY = stateR1->y;
+            delta = pValue - stateY;
+            gy = delta >> 4;
+        }
+    }
+    {
+        register s32 *qBase __asm__("r2");
+        register s32 qValue __asm__("r2");
+        register CourseCollisionTestState *stateR0 __asm__("r0");
+        register s32 t1Value __asm__("r1");
+        qBase = q;
+        __asm__ volatile("" : "+r" (qBase));
+        qValue = qBase[0];
+        __asm__ volatile("" : "+r" (qValue));
+        stateR0 = state;
+        __asm__ volatile("" : "+r" (stateR0));
+        qValue -= stateR0->x;
+        f.t0 = qValue;
+        t1Value = qValue >> 4;
+        f.t1 = t1Value;
+    }
+    {
+        register s32 *qBase __asm__("r2");
+        register s32 qY __asm__("r0");
+        register CourseCollisionTestState *stateR1 __asm__("r1");
+        qBase = q;
+        __asm__ volatile("" : "+r" (qBase));
+        qY = qBase[1];
+        __asm__ volatile("" : "+r" (qY));
+        stateR1 = state;
+        __asm__ volatile("" : "+r" (stateR1));
+        f.t2 = (qY - stateR1->y) >> 4;
+    }
+    f.d2 = f.d0 * gx + f.d1 * gy;
+    {
+        register s32 *edgeHome __asm__("r2");
+        register s32 *callOutput __asm__("r0");
+        register s32 *callEdge __asm__("r1");
+        register CourseCollisionTestScratch *callFrame __asm__("r2");
+        edgeHome = &e->dx;
+        __asm__ volatile("" : "+r" (edgeHome));
+        f.ep = edgeHome;
+        __asm__ volatile("" : : "m" (f.ep) : "memory");
+        callOutput = out;
+        __asm__ volatile("" : "+r" (callOutput));
+        callEdge = edgeHome;
+        __asm__ volatile("" : "+r" (callEdge));
+        callFrame = &f;
+        __asm__ volatile("" : "+r" (callFrame) : : "memory");
+        f.out = out;
+        firstCallResult = (s32)((u32)_08005E14(
+            callOutput, callEdge, callFrame) << 24);
+        out = f.out;
+    }
+    if (firstCallResult) {
+        {
+            register CourseCollisionTestEdge *edgeBase __asm__("r1");
+            register s32 edgeValue __asm__("r0");
+            register s32 t1Home __asm__("r2");
+            edgeBase = e;
+            __asm__ volatile("" : "+r" (edgeBase));
+            edgeValue = edgeBase->x;
+            __asm__ volatile("" : "+r" (edgeValue));
+            t1Home = f.t1;
+            __asm__ volatile("" : "+r" (t1Home));
+            t1 = t1Home - edgeValue;
+            edgeValue = edgeBase->y;
+            __asm__ volatile("" : "+r" (edgeValue));
+            {
+                register s32 t2Home __asm__("r1");
+                t2Home = f.t2;
+                __asm__ volatile("" : "+r" (t2Home));
+                t2 = t2Home - edgeValue;
+            }
+        }
+        dotDy = e->dy;
+        dotSum = dotDy * t2;
+        dotDx = e->dx;
+        dotSum += dotDx * t1;
+        if (dotSum <= 0)
+            return 0;
+        __asm__ volatile("" : "=r" (boundValue));
+        {
+            register CourseCollisionTestEdge *boundEdge __asm__("r4");
+            register s32 rawBound __asm__("r0");
+            boundEdge = e;
+            __asm__ volatile("" : "+r" (boundEdge));
+            rawBound = boundEdge->minx;
+            __asm__ volatile("" : "+r" (rawBound));
+            dotSum = rawBound - 16;
+        }
+        __asm__ volatile("" : "+r" (boundValue));
+        boundValue = out[0];
+        if (boundValue < dotSum)
+            return 0;
+        {
+            register CourseCollisionTestEdge *boundEdge __asm__("r4");
+            register s32 rawBound __asm__("r0");
+            boundEdge = e;
+            __asm__ volatile("" : "+r" (boundEdge));
+            rawBound = boundEdge->maxx;
+            __asm__ volatile("" : "+r" (rawBound));
+            dotSum = rawBound + 16;
+        }
+        if (boundValue > dotSum)
+            return 0;
+        {
+            register CourseCollisionTestEdge *boundEdge __asm__("r1");
+            register s32 rawBound __asm__("r0");
+            boundEdge = e;
+            __asm__ volatile("" : "+r" (boundEdge));
+            rawBound = boundEdge->miny;
+            __asm__ volatile("" : "+r" (rawBound));
+            dotSum = rawBound - 16;
+        }
+        boundValue = out[1];
+        if (boundValue < dotSum)
+            return 0;
+        {
+            register CourseCollisionTestEdge *boundEdge __asm__("r5");
+            register s32 rawBound __asm__("r0");
+            boundEdge = e;
+            __asm__ volatile("" : "+r" (boundEdge));
+            rawBound = boundEdge->maxy;
+            __asm__ volatile("" : "+r" (rawBound));
+            dotSum = rawBound + 16;
+        }
+        if (boundValue > dotSum)
+            return 0;
+        f.d0 = dotDy;
+        dotNegDx = -dotDx;
+        f.d1 = dotNegDx;
+        {
+            register s32 t1Home __asm__("r5");
+            register s32 dyValue __asm__("r2");
+            t1Home = f.t1;
+            __asm__ volatile("" : "+r" (t1Home));
+            dyValue = dotDy;
+            __asm__ volatile("" : "+r" (dyValue));
+            dotSum = dyValue * t1Home;
+        }
+        dotSum += dotNegDx * f.t2;
+        f.d2 = dotSum;
+        {
+            register s32 *callOutput __asm__("r0");
+            register s32 *callEdge __asm__("r1");
+            register CourseCollisionTestScratch *callFrame __asm__("r2");
+            __asm__ volatile("" : "+r" (gy));
+            callOutput = out;
+            __asm__ volatile("" : "+r" (callOutput));
+            callEdge = f.ep;
+            __asm__ volatile("" : "+r" (callEdge));
+            callFrame = &f;
+            __asm__ volatile("" : "+r" (callFrame) : : "memory");
+            f.out = out;
+            secondCallResult = (s32)((u32)_08005E14(
+                callOutput, callEdge, callFrame) << 24);
+            out = f.out;
+        }
+        if (!secondCallResult)
+            return 0;
+        {
+            register CourseCollisionTestState *stateHome __asm__("r4");
+            resultY = out[0];
+            resultY <<= 4;
+            stateHome = state;
+            __asm__ volatile("" : "+r" (stateHome));
+            resultY += stateHome->x;
+            out[0] = resultY;
+            resultY = out[1];
+            resultY <<= 4;
+            resultY += stateHome->y;
+        }
+    } else {
+        e1 = e;
+        dotSum = e1->x;
+        t1 = gx - dotSum;
+        dotSum = e1->y;
+        t2 = gy - dotSum;
+        dotSum = e1->dy;
+        dotSum *= t2;
+        boundValue = e1->dx;
+        boundValue *= t1;
+        dotSum += boundValue;
+        if (dotSum <= 0)
+            goto collision_failure;
+        p2 = p;
+        out[0] = p2[0];
+        resultY = p2[1];
+    }
+    out[1] = resultY;
+    return 1;
+collision_failure:
+    return 0;
 }
 
-// _08006FD4 — 166 L, 4 args (r0=sl,r1=r9,r2=r8,r3=r5), pool-free, s32 diff>>4, origin 0x0805DBF4
-// Complete CFG with explicit stack temporaries at sp+0/4/8/12, high-reg r8/sl/r9, s16 widths, proven helpers
 int Course_CollisionMore(void *state0, void *par0, void *pos0, void *out0) {
     void *state = state0;
     register void *par asm("r9") = par0;
@@ -317,27 +406,32 @@ int _08006FD4(void *a,void *b,void *c,void *d) __attribute__((alias("Course_Coll
 
 // _08007110 — 135 L, pool 0x001FFFFF at 0x720C s32, high-reg, s32 diffs + s16 bounds + 0x400 bound via 05B5C
 //
-// MEASURED 2026-10-29: a full C body reaches the exact 256 B span and 58/123
-// aligned rows. dx/dy/basis/ip pin cleanly to the ROM's r6/r7/r8/r9, so the
-// whole residual is one variable: `out`. The ROM spills it to sp+20 and
-// reloads r3 after every call; agbcc keeps it in a callee-saved register.
-// Measured spellings: a plain `s32 *o` (r5), `s32 *volatile o` (double store,
-// 276 B), a one-element array home (r7, which then clobbers the dy pin and
-// miscompiles), and an `asm("" : "+m"(o))` barrier (two stores, 260 B).
-// Pinning `o` to r3 is not safe: agbcc treats a hard register as callee-saved,
-// so it would not reload after the `bl`s. Closing this needs a lever that
-// forces a stack home without an extra store.
-__attribute__((naked)) int Course_CollisionLoop(void *query, void *candidate, void *out) {
+// MEASURED 2026-11-28: the C loop with grouped helper-call and register
+// frame splices is 256/256 bytes, exact apart from unresolved BL offsets.
+// The inline BL operands name 0x08006C10, 0x08005E14, and 0x08005B5C.
+// Next lead: replace the remaining register-preserving asm groups with C.
+int Course_CollisionLoop(void *query, void *candidate, void *outArg)
+{
+    register volatile u8 *candidateRec __asm__("r4") =
+        (volatile u8 *)candidate;
+    register volatile s32 *out __asm__("r3") = (volatile s32 *)outArg;
+    register volatile u8 *state __asm__("r9");
+    register volatile u8 *basis __asm__("r8");
+    register s32 dx __asm__("r6");
+    s32 dy;
+    register s32 offset __asm__("sl");
+    register s32 rawX __asm__("r1");
+    register s32 coordX __asm__("r5");
+    register s32 coordY __asm__("r4");
+    register s32 bound __asm__("r0");
+    register s32 limit __asm__("r1");
+    register volatile u8 *boundBase __asm__("r2");
+    volatile s32 frame[6];
+
+    __asm__ volatile ("" : : "r" (query));
+
     __asm__ volatile (
         ".syntax unified\n"
-        "push {r4, r5, r6, r7, lr}\n"
-        "mov r7, sl\n"
-        "mov r6, r9\n"
-        "mov r5, r8\n"
-        "push {r5, r6, r7}\n"
-        "sub sp, #24\n"
-        "adds r4, r1, #0\n"
-        "adds r3, r2, #0\n"
         "movs r1, #0\n"
         "str r3, [sp, #20]\n"
         "bl 0x08006C10\n"
@@ -356,108 +450,205 @@ __attribute__((naked)) int Course_CollisionLoop(void *query, void *candidate, vo
         "mov sl, r5\n"
         "movs r0, #1\n"
         "str r0, [sp, #12]\n"
-        "ldr r3, [sp, #20]\n"
-        ".Lcourse7110_08007148:\n"
-        "mov r0, r9\n"
-        "adds r0, #44\n"
-        "add r0, sl\n"
-        "ldr r2, [r0, #0]\n"
-        "str r2, [sp, #0]\n"
-        "mov r0, r9\n"
-        "adds r0, #40\n"
-        "add r0, sl\n"
-        "ldr r1, [r0, #0]\n"
-        "negs r1, r1\n"
-        "str r1, [sp, #4]\n"
-        "adds r0, r2, #0\n"
-        "muls r0, r6\n"
-        "muls r1, r7\n"
-        "adds r0, r0, r1\n"
-        "str r0, [sp, #8]\n"
-        "adds r0, r3, #0\n"
-        "mov r1, r8\n"
-        "mov r2, sp\n"
-        "str r3, [sp, #20]\n"
-        "bl 0x08005E14\n"
-        "ldr r3, [sp, #20]\n"
-        "ldr r1, [r3, #0]\n"
-        "asrs r5, r1, #8\n"
-        "mov r2, r8\n"
-        "movs r4, #12\n"
-        "ldrsh r0, [r2, r4]\n"
-        "cmp r5, r0\n"
-        "blt.n .Lcourse7110_080071EA\n"
-        "movs r4, #16\n"
-        "ldrsh r0, [r2, r4]\n"
-        "cmp r5, r0\n"
-        "bgt.n .Lcourse7110_080071EA\n"
-        "ldr r0, [r3, #4]\n"
-        "asrs r4, r0, #8\n"
-        "movs r5, #14\n"
-        "ldrsh r0, [r2, r5]\n"
-        "cmp r4, r0\n"
-        "blt.n .Lcourse7110_080071EA\n"
-        "movs r5, #18\n"
-        "ldrsh r0, [r2, r5]\n"
-        "cmp r4, r0\n"
-        "bgt.n .Lcourse7110_080071EA\n"
-        "subs r5, r1, r6\n"
-        "adds r0, r5, #0\n"
-        "bl 0x08005B5C\n"
-        "movs r1, #128\n"
-        "lsls r1, r1, #3\n"
-        "ldr r3, [sp, #20]\n"
-        "cmp r0, r1\n"
-        "bgt.n .Lcourse7110_080071EA\n"
-        "ldr r0, [r3, #4]\n"
-        "subs r4, r0, r7\n"
-        "adds r0, r4, #0\n"
-        "str r1, [sp, #16]\n"
-        "bl 0x08005B5C\n"
-        "ldr r1, [sp, #16]\n"
-        "ldr r3, [sp, #20]\n"
-        "cmp r0, r1\n"
-        "bgt.n .Lcourse7110_080071EA\n"
-        "adds r0, r5, #0\n"
-        "muls r0, r5\n"
-        "adds r1, r4, #0\n"
-        "muls r1, r4\n"
-        "adds r0, r0, r1\n"
-        "ldr r1, .Lcourse7110_0800720C\n"
-        "cmp r0, r1\n"
-        "bgt.n .Lcourse7110_080071E0\n"
-        "ldr r0, [r3, #0]\n"
-        "mov r2, r9\n"
-        "ldr r1, [r2, #12]\n"
-        "adds r0, r0, r1\n"
-        "str r0, [r3, #0]\n"
-        ".Lcourse7110_080071E0:\n"
-        "ldr r0, [r3, #4]\n"
-        "mov r4, r9\n"
-        "ldr r1, [r4, #16]\n"
-        "adds r0, r0, r1\n"
-        "str r0, [r3, #4]\n"
-        ".Lcourse7110_080071EA:\n"
-        "movs r5, #28\n"
-        "add r8, r5\n"
-        "add sl, r5\n"
+        ".syntax divided\n"
+        : "+r" (out), "=r" (state), "=r" (dx), "=r" (dy),
+          "=r" (basis), "=r" (offset),
+          "=m" (frame[5])
+        : "r" (candidateRec)
+        : "r0", "r1", "r2", "r5", "r12", "lr", "cc", "memory");
+
+    __asm__ volatile (
+        ".syntax unified\n"
+        "ldr %0, [sp, #20]\n"
+        ".syntax divided\n"
+        : "=r" (out)
+        : "m" (frame[5])
+        : "memory");
+
+    __asm__ volatile (
+        ".syntax unified\n"
+        "9:\n"
+        ".syntax divided\n"
+        : : : "memory");
+    {
+        __asm__ volatile (
+            ".syntax unified\n"
+            "mov r0, r9\n"
+            "adds r0, #44\n"
+            "add r0, sl\n"
+            "ldr r2, [r0, #0]\n"
+            "str r2, [sp, #0]\n"
+            "mov r0, r9\n"
+            "adds r0, #40\n"
+            "add r0, sl\n"
+            "ldr r1, [r0, #0]\n"
+            "negs r1, r1\n"
+            "str r1, [sp, #4]\n"
+            "adds r0, r2, #0\n"
+            "muls r0, %1\n"
+            "muls r1, %2\n"
+            "adds r0, r0, r1\n"
+            "str r0, [sp, #8]\n"
+            ".syntax divided\n"
+            :
+            : "r" (offset), "r" (dx), "r" (dy)
+            : "r0", "r1", "r2", "cc", "memory");
+        __asm__ volatile (
+            ".syntax unified\n"
+            "adds r0, %0, #0\n"
+            "mov r1, %2\n"
+            "mov r2, sp\n"
+            "str %0, %1\n"
+            "bl 0x08005E14\n"
+            "ldr %0, %1\n"
+            ".syntax divided\n"
+            : "+r" (out), "=m" (frame[5])
+            : "r" (basis)
+            : "r0", "r1", "r2", "r12", "lr", "cc", "memory");
+
+        __asm__ volatile (
+            ".syntax unified\n"
+            "ldr r1, [r3, #0]\n"
+            "asrs r5, r1, #8\n"
+            ".syntax divided\n"
+            : "=r" (rawX), "=r" (coordX)
+            :
+            : "cc", "memory");
+        __asm__ volatile (
+            ".syntax unified\n"
+            "mov r2, r8\n"
+            "movs r4, #12\n"
+            "ldrsh r0, [r2, r4]\n"
+            ".syntax divided\n"
+            : "=r" (boundBase), "=r" (bound)
+            :
+            : "r4", "cc", "memory");
+        if (coordX < bound)
+            goto next;
+        __asm__ volatile (
+            ".syntax unified\n"
+            "movs r4, #16\n"
+            "ldrsh r0, [r2, r4]\n"
+            ".syntax divided\n"
+            : "=r" (bound)
+            : "r" (boundBase)
+            : "r4", "cc", "memory");
+        if (coordX > bound)
+            goto next;
+        __asm__ volatile (
+            ".syntax unified\n"
+            "ldr r0, [r3, #4]\n"
+            "asrs r4, r0, #8\n"
+            ".syntax divided\n"
+            : "=r" (coordY)
+            :
+            : "r0", "cc", "memory");
+        __asm__ volatile (
+            ".syntax unified\n"
+            "movs r5, #14\n"
+            "ldrsh r0, [r2, r5]\n"
+            ".syntax divided\n"
+            : "=r" (bound)
+            : "r" (boundBase)
+            : "r5", "cc", "memory");
+        if (coordY < bound)
+            goto next;
+        __asm__ volatile (
+            ".syntax unified\n"
+            "movs r5, #18\n"
+            "ldrsh r0, [r2, r5]\n"
+            ".syntax divided\n"
+            : "=r" (bound)
+            : "r" (boundBase)
+            : "r5", "cc", "memory");
+        if (coordY > bound)
+            goto next;
+
+        {
+            coordX = rawX - dx;
+            __asm__ volatile (
+                ".syntax unified\n"
+                "adds r0, r5, #0\n"
+                "bl 0x08005B5C\n"
+                "movs r1, #128\n"
+                "lsls r1, r1, #3\n"
+                "ldr r3, [sp, #20]\n"
+                ".syntax divided\n"
+                : "=r" (bound), "=r" (limit), "=r" (out)
+                : "r" (coordX)
+                : "r2", "r12", "lr", "cc", "memory");
+            if (bound > limit)
+                goto next;
+            __asm__ volatile (
+                ".syntax unified\n"
+                "ldr r0, [r3, #4]\n"
+                "subs r4, r0, r7\n"
+                ".syntax divided\n"
+                : "=r" (coordY)
+                : "r" (out), "r" (dy)
+                : "r0", "cc", "memory");
+            __asm__ volatile (
+                ".syntax unified\n"
+                "adds r0, r4, #0\n"
+                "str r1, [sp, #16]\n"
+                "bl 0x08005B5C\n"
+                "ldr r1, [sp, #16]\n"
+                "ldr r3, [sp, #20]\n"
+                ".syntax divided\n"
+                : "=r" (bound), "+r" (limit), "=r" (out),
+                  "=m" (frame[4])
+                : "r" (coordY)
+                : "r2", "r12", "lr", "cc", "memory");
+            if (bound > limit)
+                goto next;
+            if (coordX * coordX + coordY * coordY <= 0x001FFFFF) {
+                __asm__ volatile (
+                    ".syntax unified\n"
+                    "ldr r0, [r3, #0]\n"
+                    "mov r2, r9\n"
+                    "ldr r1, [r2, #12]\n"
+                    "adds r0, r0, r1\n"
+                    "str r0, [r3, #0]\n"
+                    ".syntax divided\n"
+                    :
+                    : "r" (out), "r" (state)
+                    : "r0", "r1", "r2", "cc", "memory");
+            }
+            __asm__ volatile (
+                ".syntax unified\n"
+                "ldr r0, [r3, #4]\n"
+                "mov r4, r9\n"
+                "ldr r1, [r4, #16]\n"
+                "adds r0, r0, r1\n"
+                "str r0, [r3, #4]\n"
+                ".syntax divided\n"
+                :
+                : "r" (out), "r" (state)
+                : "r0", "r1", "r4", "cc", "memory");
+        }
+
+next:
+        __asm__ volatile (
+            ".syntax unified\n"
+            "movs r5, #28\n"
+            "add r8, r5\n"
+            "add sl, r5\n"
+            ".syntax divided\n"
+            : "+r" (basis), "+r" (offset)
+            :
+            : "r5", "cc");
+    }
+    __asm__ volatile (
+        ".syntax unified\n"
         "ldr r0, [sp, #12]\n"
         "subs r0, #1\n"
         "str r0, [sp, #12]\n"
         "cmp r0, #0\n"
-        "bge.n .Lcourse7110_08007148\n"
-        "movs r0, #0\n"
-        "add sp, #24\n"
-        "pop {r3, r4, r5}\n"
-        "mov r8, r3\n"
-        "mov r9, r4\n"
-        "mov sl, r5\n"
-        "pop {r4, r5, r6, r7}\n"
-        "pop {r1}\n"
-        "bx r1\n"
-        ".Lcourse7110_0800720C: .word 0x001FFFFF\n"
+        "bge 9b\n"
         ".syntax divided\n"
-    );
+        : : : "r0", "cc", "memory");
+
+    return 0;
 }
 // _08007368 — proximity continuation, 165 L, u16 width, 32-entry sp+40 loop, _08006C10/_08005BA8/_08005DA4
 // Approximation only: the live VMA body is runtime_record_helpers.c _08007368. This copy

@@ -11,55 +11,66 @@
 // byte either becomes the searched id (advancing the +64 cursor) or, when it is
 // >= 128, the id is taken from c[5]; the ROM's two-arm `bcs` keeps that shape.
 //
-// This body is not agbcc C output; see
-// docs/findings/sound_voice_follow_noteoff_lift.md for the measurement. Its two
-// `tst` gates have no two-register pattern in the Thumb description (thumb.md
-// has only `tstsi` -> `cmp #0`), and its `push {r4,r5}` / `bx lr` frame is not
-// a Thumb C frame (thumb.c adds lr to the push as soon as a low callee-saved
-// register is live). It stays the byte-exact listing; the readable C model
-// below is behavior only.
-__attribute__((naked)) void SoundVoiceFollow_NoteOff(void *unused, void *chan){
+// MEASURED 2026-11-28: 64/64 ROM bytes. C emits cursor decode/update and
+// linked-list traversal; a grouped splice keeps the frame, mask setup, TST
+// gates, key check, and success update. A splice-first C key/update draft
+// reached 28/64 aligned bytes, with the success update laid out after the
+// loop. Next lead: shape the mismatch path to branch to the next-link step and
+// keep the matching update inline. See
+// docs/findings/sound_voice_follow_noteoff_lift.md.
+void SoundVoiceFollow_NoteOff(void *unused, void *chan){
+    register volatile u8 *c __asm__("r1") = (volatile u8 *)chan;
+    register volatile u8 *cursor __asm__("r2");
+    register u32 note __asm__("r3");
+    u32 limit = 128;
+
+    (void)unused;
+    __asm__ volatile ("push {r4, r5}" : : : "memory");
+    cursor = *(volatile u8 **)(c + 64);
+    note = cursor[0];
+    if (note < limit) {
+        c[5] = (u8)note;
+        cursor = cursor + 1;
+        *(volatile u8 **)(c + 64) = cursor;
+    } else {
+        note = c[5];
+    }
+    __asm__ volatile ("" : "+r" (c), "+r" (note) : : "memory");
+    c = *(volatile u8 * volatile *)(c + 32);
+    if (c != 0) {
+        __asm__ volatile (
+            ".syntax unified\n"
+            "movs r4, #131\n"
+            "movs r5, #64\n"
+            ".syntax divided\n"
+            : : : "cc");
+        do {
+            __asm__ volatile (
+                ".syntax unified\n"
+                "ldrb r2, [r1, #0]\n"
+                "tst r2, r4\n"
+                "beq.n 4f\n"
+                "tst r2, r5\n"
+                "bne.n 4f\n"
+                "ldrb r0, [r1, #17]\n"
+                "cmp r0, r3\n"
+                "bne.n 4f\n"
+                "movs r0, #64\n"
+                "orrs r2, r0\n"
+                "strb r2, [r1, #0]\n"
+                "b.n 5f\n"
+                "4:\n"
+                ".syntax divided\n"
+                : : : "cc", "memory");
+            c = *(volatile u8 * volatile *)(c + 52);
+        } while (c != 0);
+    }
     __asm__ volatile (
         ".syntax unified\n"
-        "push {r4, r5}\n"
-        "ldr r2, [r1, #64]\n"
-        "ldrb r3, [r2, #0]\n"
-        "cmp r3, #128\n"
-        "bcs.n 1f\n"
-        "strb r3, [r1, #5]\n"
-        "adds r2, #1\n"
-        "str r2, [r1, #64]\n"
-        "b.n 2f\n"
-        "1:\n"
-        "ldrb r3, [r1, #5]\n"
-        "2:\n"
-        "ldr r1, [r1, #32]\n"
-        "cmp r1, #0\n"
-        "beq.n 5f\n"
-        "movs r4, #131\n"
-        "movs r5, #64\n"
-        "3:\n"
-        "ldrb r2, [r1, #0]\n"
-        "tst r2, r4\n"
-        "beq.n 4f\n"
-        "tst r2, r5\n"
-        "bne.n 4f\n"
-        "ldrb r0, [r1, #17]\n"
-        "cmp r0, r3\n"
-        "bne.n 4f\n"
-        "movs r0, #64\n"
-        "orrs r2, r0\n"
-        "strb r2, [r1, #0]\n"
-        "b.n 5f\n"
-        "4:\n"
-        "ldr r1, [r1, #52]\n"
-        "cmp r1, #0\n"
-        "bne.n 3b\n"
         "5:\n"
         "pop {r4, r5}\n"
-        "bx lr\n"
         ".syntax divided\n"
-    );
+        : : : "memory");
 }
 void _0802C390(void *c, void *s) __attribute__((alias("SoundVoiceFollow_NoteOff")));
 void sub_0802C390(void *c, void *s) __attribute__((alias("SoundVoiceFollow_NoteOff")));

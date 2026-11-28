@@ -11,18 +11,16 @@ register u8 *g_voice_2C160_r4 __asm__("r4");
 register u8 *g_param_2C160_r5 __asm__("r5");
 
 void VoiceEnvelopeApply_2C160(void) {
-    register u32 r1 __asm__("r1") = g_voice_2C160_r4[18];
-    register s32 off __asm__("r0") = 20;
-    register s32 r2 __asm__("r2");
+    register u32 r1 = g_voice_2C160_r4[18];
+    register s32 off = 20;
+    register s32 r2;
     register s32 r3 __asm__("r3");
-    // ROM `movs r0, #20 / ldrsb r2, [r4, r0]` (index != destination) is not
-    // reproduced by a pure-C spelling so far: the constant path of
-    // *extendqisi2_insn reuses the destination as the index, and REG+REG
-    // addresses do not form from that shape. The one `ldrsb` stays spliced
-    // until a C shape produces the register-offset form; see
-    // docs/findings/byte_ldrsb_register_index.md for the measured spellings.
+    // C emits the same ldrsb with r2 reused as the index (46/48); an opaque
+    // index adds the base before loading. Keep this load spliced, using the
+    // live r1 input and early-clobber output to preserve the ROM's r1/r2 roles.
     __asm__ volatile ("ldrsb %0, [%1, %2]"
-                      : "=r"(r2) : "r"(g_voice_2C160_r4), "r"(off));
+                      : "=&r"(r2)
+                      : "r"(g_voice_2C160_r4), "r"(off), "r"(r1));
     r3 = 128;
     __asm__ volatile ("" : "+r"(r3));
     r3 += r2;
@@ -57,18 +55,19 @@ void sub_0802C160(void) __attribute__((alias("VoiceEnvelopeApply_2C160")));
 void _0802BE14(void *a, void *b) __attribute__((alias("SoundBE14_Store")));
 void sub_0802BE14(void *a, void *b) __attribute__((alias("SoundBE14_Store")));
 __attribute__((naked)) void SoundBE14_Store(void *a, void *chan) {
-    register u32 frame __asm__("ip");
     register u32 value __asm__("r3");
-    register volatile u8 *channel __asm__("r1") = (volatile u8 *)chan;
-    __asm__ volatile(".syntax unified\n\tmov %0, lr\n\tbl _0802BCE8\n\t.syntax divided"
-                     : "=r"(frame), "=r"(value) : : "lr", "cc", "memory");
+    register volatile u8 *channel = (volatile u8 *)chan;
+    __asm__ volatile(".syntax unified\n\tmov ip, lr\n\tbl _0802BCE8\n\t.syntax divided"
+                     : "=r"(value) : : "ip", "lr", "cc", "memory");
     *(volatile u8 *)(channel + 15) = (u8)value;
     {
-        register u32 flags __asm__("r3") = channel[0];
-        register u32 bits __asm__("r2") = 12;
-        __asm__ volatile("" : "+r"(flags), "+r"(bits) : : "cc", "memory");
-        flags |= bits;
-        channel[0] = (u8)flags;
-        __asm__ volatile("bx %0\n\t.short 0x0000" : : "r"(frame) : "cc");
+        register u32 bits;
+        value = channel[0];
+        bits = 12;
+        /* Keep dummy a live so the unpinned mask allocates to r2. */
+        __asm__ volatile("" : "+r"(value), "+r"(bits) : "r"(a) : "cc", "memory");
+        value |= bits;
+        channel[0] = (u8)value;
+        __asm__ volatile("bx ip\n\t.short 0x0000" : : : "cc");
     }
 }

@@ -503,30 +503,18 @@ Measured 2026-10-21 (`--function _080026FF4 --require-exact` plus
   before the call (+4 B, `OVERSIZED`). Suspect a phantom trailing register
   whenever the last argument equals a constant already used as a load index.
 
-## Leaves that save r4/r5 but not lr: a compiler-boundary shape
+## `SoundVoiceFollow_NoteOff`: C child traversal with a grouped gate splice
 
-`SoundVoiceFollow_NoteOff` (`0x0802C390`, 64 B) is a leaf whose ROM prologue
-is `push {r4,r5}` and whose epilogue is `pop {r4,r5}` / `bx lr`: it holds the
-`131`/`64` masks in r4/r5 across a linked-list walk and never touches lr.
+The ROM saves `r4/r5` around the child walk and returns with `bx lr`. A
+scratch C draft that kept the `131`/`64` masks in those registers grew the
+frame to include `lr`. The promoted source manually pairs the frame, compiles
+the cursor decode/update and full linked-list traversal as C, and groups mask
+setup plus the `tst` gates, key comparison, and success update in one splice.
+It measures 64/64 bytes exact and is classified `partial`.
 
-Measured with both shipped compilers (`-O2 -ffunction-sections`), and the
-mechanism is now traced: `thumb_function_prologue` in
-`gcc_arm/config/arm/thumb.c` does `if (live_regs_mask || ! leaf_function_p ()
-|| far_jump_used_p()) live_regs_mask |= 1 << 14;`, and r4/r5 are callee-saved,
-so any C body that keeps the masks in them saves lr. `output_return` then takes
-the `live_regs_mask != 0` arm, which under `-mthumb-interwork` is
-`pop {r4,r5}` + `thumb_exit(-1)`:
-
-| options | prologue | epilogue |
-| --- | --- | --- |
-| `-mthumb-interwork` | `push {r4,r5,lr}` | `pop {r4,r5}` / `pop {r0}` / `bx r0` (+4 B) |
-| `-mno-thumb-interwork` | `push {r4,r5,lr}` | `pop {r4,r5,pc}` (no `bx lr`) |
-
-The frame can only come from a `naked` body that splices it, and
-`source_quality.classify_body` returns `asm` for any naked body, so the body
-stays asm; the sibling `tst` gates are compiler-boundary too
-([note](sound_voice_follow_noteoff_lift.md)). A minimal leaf reproduces the lr
-save, so this is not pressure from the surrounding body.
+Next lead: move the key comparison and success update into C while keeping
+their instructions inline after the gates. See
+[the current measurement](sound_voice_follow_noteoff_lift.md).
 
 `Garage_CarPos_27120` (`0x08027120`, 240 B) was in the same position: its ROM
 frame is `push {r4,r5,r6,r7,lr}` + `sub sp,#12` (so lr *is* saved there), and

@@ -2195,6 +2195,134 @@ __attribute__((naked)) void MenuF22C_0800F22C(void *rec) {
 void _0800F22C(void *c) __attribute__((alias("MenuF22C_0800F22C")));
 void sub_0800F22C(void *c) __attribute__((alias("MenuF22C_0800F22C")));
 
+// Advisory C reconstruction, intentionally unaliased. The extracted-TU
+// measurement is 872 matching bytes / 880, with a 878-byte candidate.
+// The first mismatch is +0x93: the field_242 check uses r4 as the zero
+// index and r3 as the signed value, while the ROM uses r3 then r4. Next
+// lead: test a scoped splice for this four-instruction field access.
+struct MenuF22C_CandidateElem0 { s32 field_0; u8 _pad0[4]; };
+struct MenuF22C_CandidateElem1 { s32 field_0; u8 _pad0[4]; };
+struct MenuF22C_CandidateRecord { u8 _pad0[192]; s32 field_192; s32 field_196; s32 field_200; s32 field_204; s32 field_208; s32 field_212; s32 field_216; s32 field_220; s16 field_224; u8 _pad1[2]; u16 field_228; u8 _pad2[12]; s16 field_242; s16 field_244; s16 field_246; u8 _pad3[2]; s16 field_250; };
+void MenuF22C_0800F22C_Candidate(void *rec) {
+    struct MenuF22C_CandidateRecord *a0 = (struct MenuF22C_CandidateRecord *)rec;
+    s32 v1;
+    u8 *paramBase;
+    s32 paramValue;
+    s32 v2;
+    s32 v3;
+    s32 v4;
+    s32 v5;
+    s32 v6;
+    s32 v7;
+    s32 v8;
+    s32 v9;
+    s32 v10;
+    s32 v11;
+    s32 v12;
+    s32 switchValue;
+    s32 v16;
+    s32 v17;
+    s32 v18;
+    s32 field133Value;
+    s32 index224;
+    s32 *p0a, *p0b, *p0c;
+    u16 *p1a, *p1b, *p1c;
+    extern s32 MenuF22C_DataTbl[];
+    extern u16 MenuF22C_MenuTbl[];
+    __asm__(".globl MenuF22C_DataTbl\nMenuF22C_DataTbl = 0x080CB508\n.globl MenuF22C_MenuTbl\nMenuF22C_MenuTbl = 0x080CB548");
+    sub_08007B18((u8 *)a0 + 76, 8, 72, 88, 7, 3, 1, 0);
+    sub_08026A2C(*(s32 *)(struct MenuF22C_CandidateRecord *)((u8 *)a0 + (158 << 1)), 120, 56);
+    paramBase = (u8 *)135057132;
+__asm__ volatile("" : "+r"(paramBase));
+    v1 = a0->field_250;
+    paramValue = *(s8 *)(paramBase + v1 * 20 + 8);
+    if (paramValue == 1) sub_08007B18(a0, 11, 128, 104, 9, paramValue, paramValue, 0);
+    if (a0->field_228 != 2) {
+        p0a = MenuF22C_DataTbl;
+        v2 = p0a[2];
+        v3 = p0a[3];
+        p1a = MenuF22C_MenuTbl;
+        v4 = p1a[1];
+        {
+            register u32 flagBase __asm__("r0") = 0x03001780;
+            register u32 flagOffset __asm__("r3") = 0x1058;
+            __asm__ volatile("" : "+r"(flagBase), "+r"(flagOffset));
+            if (*(volatile u16 *)(flagBase + flagOffset) == 1) {
+                s32 fieldValue;
+                fieldValue = a0->field_242;
+                if (fieldValue == 1) sub_08007B18(a0, v4, v2, v3, 5, fieldValue, fieldValue, 0);
+            }
+        }
+        p0b = MenuF22C_DataTbl;
+        v5 = p0b[4];
+        v6 = p0b[5];
+        p1b = MenuF22C_MenuTbl;
+        v7 = p1b[2];
+        {
+            register u32 flagBase __asm__("r0") = 0x03001780;
+            register u32 flagOffset __asm__("r4") = 0x105A;
+            __asm__ volatile("" : "+r"(flagBase), "+r"(flagOffset));
+            if (*(volatile u16 *)(flagBase + flagOffset) == 1) {
+                s32 fieldValue;
+                fieldValue = a0->field_242;
+                if (fieldValue == 1) sub_08007B18(a0, v7, v5, v6, 5, fieldValue, fieldValue, 0);
+            }
+        }
+        if (a0->field_228 != 1) {
+            p0c = MenuF22C_DataTbl;
+            v8 = p0c[6];
+            v9 = p0c[7];
+            p1c = MenuF22C_MenuTbl;
+            v10 = p1c[3];
+            if (sub_080027EC((u32)(uintptr_t)MenuF22C_MenuTbl) == 1) {
+                s32 fieldValue;
+                fieldValue = a0->field_242;
+                if (fieldValue == 1) sub_08007B18(a0, v10, v8, v9, 5, fieldValue, fieldValue, 0);
+            }
+        }
+    }
+    {
+        register u32 tableBase __asm__("r2") = (u32)(uintptr_t)MenuF22C_DataTbl;
+        register s32 tableIndex __asm__("r0") = a0->field_224;
+        __asm__ volatile("" : "+r"(tableBase), "+r"(tableIndex));
+        tableIndex *= 8;
+        v11 = *(s32 *)(tableIndex + tableBase);
+        tableBase += 4;
+        v12 = *(s32 *)(tableIndex + tableBase);
+    }
+    sub_0800F040(a0, v12, *(s32 *)(struct MenuF22C_CandidateRecord *)((u8 *)a0 + (130 << 1)));
+    sub_0800F0BC(a0, v11, v12, *(s32 *)(struct MenuF22C_CandidateRecord *)((u8 *)a0 + (130 << 1)));
+    sub_08007B18(a0, 8, *(s32 *)((u8 *)a0 + 160), *(s32 *)((u8 *)a0 + 160 + 4), 6, 1, 1, 0);
+    sub_08007B18(a0, 8, *(s32 *)((u8 *)a0 + 168), *(s32 *)((u8 *)a0 + 168 + 4), 6, 1, 1, 0);
+    sub_08007B18(a0, 8, *(s32 *)((u8 *)a0 + 176), *(s32 *)((u8 *)a0 + 176 + 4), 6, 1, 1, 0);
+    sub_08007B18(a0, 6, a0->field_192, a0->field_196, 6, 1, 1, 0);
+    sub_08007B18(a0, 7, *(s32 *)((u8 *)a0 + 184), *(s32 *)((u8 *)a0 + 184 + 4), 6, 1, 1, 0);
+    switchValue = *(s16 *)((u8 *)(struct MenuF22C_CandidateRecord *)((u8 *)a0 + (132 << 1)) + 0);
+    switch (switchValue) {
+        case 0:
+            sub_08007B18(a0, 9, 96, 128, 6, 1, 1, 0);
+            break;
+        case 1:
+            sub_08007B18(a0, 10, 120, 128, 6, switchValue, switchValue, 0);
+            break;
+    }
+    sub_08007BFC((u8 *)a0 + 8, *(s32 *)(struct MenuF22C_CandidateRecord *)((u8 *)a0 + (134 << 1)), *(s32 *)(struct MenuF22C_CandidateRecord *)((u8 *)a0 + (136 << 1)), a0->field_200, a0->field_204, 8, 1, 1, 0);
+    v16 = 8;
+    v17 = 1;
+    v18 = 0;
+    sub_08007BFC((u8 *)a0 + 16, *(s32 *)(struct MenuF22C_CandidateRecord *)((u8 *)a0 + (140 << 1)), *(s32 *)(struct MenuF22C_CandidateRecord *)((u8 *)a0 + (142 << 1)), a0->field_208, a0->field_212, v16, v17, v17, v18);
+    sub_08007BFC((u8 *)a0 + 24, *(s32 *)(struct MenuF22C_CandidateRecord *)((u8 *)a0 + (146 << 1)), *(s32 *)(struct MenuF22C_CandidateRecord *)((u8 *)a0 + (148 << 1)), a0->field_216, a0->field_220, v16, v17, v17, v18);
+    sub_0800399C(a0->field_192 + 24, a0->field_196 + 8, a0->field_244);
+    sub_0800399C(a0->field_192 + 48, a0->field_196 + 8, a0->field_246);
+    field133Value = *(s16 *)((u8 *)(struct MenuF22C_CandidateRecord *)((u8 *)a0 + (133 << 1)) + 0);
+    if (field133Value == 1) sub_08007C68((u8 *)a0 + 32, *(s32 *)((u8 *)a0 + 304), *(s32 *)((u8 *)a0 + 308), 20, 112, 10, field133Value, v18, v18);
+    sub_0800D97C((u8 *)a0 + 240, 15);
+    sub_0800DBE8((u8 *)a0 + 40);
+    sub_0800F59C(a0);
+    return;
+}
+
+
 // menu_f5a0.s sub_0800F5A0 — countdown ticker, NOT a dispatcher: the asm
 // listing's own function map says "sub_0800F5A0 - ticker: when
 // s16[0x03001780+0xFBC]==3, reads _08002140 and either clears rec+0x144
@@ -3136,6 +3264,182 @@ __attribute__((naked)) void MenuFA24_0800FA24(void *rec) {
 }
 
 void _0800FA24(void *c) __attribute__((alias("MenuFA24_0800FA24")));
+
+// Advisory source reconstruction only; the alias above continues to
+// select the exact naked ROM body. The corrected real-TU seed is 1130 B with
+// 609/1132 matching bytes when call relocations are masked; first byte
+// difference is +0x2A at the first literal-pool reference. Keeping the three
+// allocated record pointers live in r10/r9/r8 and routing their reads through
+// r3 improves the candidate from 221 to 609 matching bytes. Next lead: retain
+// the 0x080CB55C table base while using its +0/+10/+20 halfword offsets without
+// shifting the earlier register allocation, then refine the signed range test.
+//
+// Field labels below remain byte offsets; no semantic names are inferred from
+// the generic asmlift record layout.
+struct MenuFA24Record49 {
+    u8 _pad0[20];
+    s32 field_20;
+    u8 _pad1[4];
+    s32 field_28;
+    u8 _pad2[4];
+    s32 field_36;
+    u8 _pad3[4];
+    s32 field_44;
+    u8 _pad4[4];
+    s32 field_52;
+    u8 _pad5[4];
+    s32 field_60;
+    s32 field_64;
+    u8 _pad6[4];
+    u16 field_72;
+    u16 field_74;
+    u8 _pad7[138];
+    u16 field_214;
+    u16 field_216;
+    u8 _pad8[10];
+    s32 field_228;
+    s32 field_232;
+    u8 _pad9[16];
+    s32 field_252;
+    };
+void MenuFA24_0800FA24_Candidate(void *rec) {
+    struct MenuFA24Record49 *a0 = (struct MenuFA24Record49 *)rec;
+    s32 v0;
+    s32 v1;
+    s32 v2;
+    s32 v3;
+    s32 v4;
+    s32 v5;
+    s32 v6;
+    s32 v7;
+    s32 v8;
+    s32 v9;
+    s32 v10;
+    s32 v11;
+    register u32 *p168 __asm__("r10");
+    register u32 *p174 __asm__("r9");
+    register u32 *p180 __asm__("r8");
+    register u32 alloc __asm__("r0");
+    register u32 *loadptr __asm__("r3");
+    *(s32 *)((u8 *)a0 + 136) = 6;
+    *(s32 *)((u8 *)a0 + 136 + 12) = 2;
+    *(s32 *)((u8 *)a0 + 136 + 12 + 12) = 1;
+    sub_0800DAB8((u8 *)a0 + 64);
+    sub_080075E8((void *)(uintptr_t)(137001356), 0, 3);
+    v0 = 137207544;
+    sub_0800798C((void *)(uintptr_t)(v0), a0);
+    sub_08007A58(a0);
+    sub_080075E8((void *)(uintptr_t)(v0), 0, 4);
+    v1 = 137197152;
+    sub_0800798C((void *)(uintptr_t)(v1), (u8 *)a0 + 32);
+    sub_080075E8((void *)(uintptr_t)(v1), 0, 5);
+    sub_08007614((void *)(uintptr_t)(v1), 2, 0, 6);
+    alloc = (u32)(uintptr_t)sub_0800572C(16);
+    p168 = (u32 *)((u8 *)a0 + (168 << 1));
+    *p168 = alloc;
+    *(s32 *)(struct MenuFA24Record49 *)((u8 *)a0 + (170 << 1)) = *(u16 *)135050588;
+    alloc = (u32)(uintptr_t)sub_0800572C(16);
+    p174 = (u32 *)((u8 *)a0 + (174 << 1));
+    *p174 = alloc;
+    *(s32 *)(struct MenuFA24Record49 *)((u8 *)a0 + (176 << 1)) = ((u16 *)135050588)[5];
+    alloc = (u32)(uintptr_t)sub_0800572C(16);
+    p180 = (u32 *)((u8 *)a0 + (180 << 1));
+    *p180 = alloc;
+    *(s32 *)(struct MenuFA24Record49 *)((u8 *)a0 + (182 << 1)) = ((u16 *)135050588)[10];
+    sub_08007ABC((void *)(uintptr_t)a0->field_36, *(s32 *)(struct MenuFA24Record49 *)((u8 *)a0 + (170 << 1)), (loadptr = p168, *loadptr));
+    sub_08007ABC((void *)(uintptr_t)a0->field_36, *(s32 *)(struct MenuFA24Record49 *)((u8 *)a0 + (176 << 1)), (loadptr = p174, *loadptr));
+    sub_08007ABC((void *)(uintptr_t)a0->field_36, *(s32 *)(struct MenuFA24Record49 *)((u8 *)a0 + (182 << 1)), (loadptr = p180, *loadptr));
+    v2 = *(u16 *)((u8 *)a0 + 214);
+    if (v2 != 1) {
+        *(s32 *)(struct MenuFA24Record49 *)((186 << 1) + (u8 *)a0) = (s32)(uintptr_t)sub_0800572C(16);
+        *(s32 *)(struct MenuFA24Record49 *)((u8 *)a0 + (188 << 1)) = *(u16 *)135050588;
+        *(s32 *)(struct MenuFA24Record49 *)((192 << 1) + (u8 *)a0) = (s32)(uintptr_t)sub_0800572C(16);
+        *(s32 *)(struct MenuFA24Record49 *)((u8 *)a0 + (194 << 1)) = ((u16 *)135050588)[5];
+        *(s32 *)(struct MenuFA24Record49 *)((198 << 1) + (u8 *)a0) = (s32)(uintptr_t)sub_0800572C(16);
+        *(s32 *)(struct MenuFA24Record49 *)((u8 *)a0 + (200 << 1)) = ((u16 *)135050588)[10];
+        sub_08007ABC((void *)(uintptr_t)a0->field_36, *(s32 *)(struct MenuFA24Record49 *)((u8 *)a0 + (188 << 1)), *(s32 *)(struct MenuFA24Record49 *)((186 << 1) + (u8 *)a0));
+        sub_08007ABC((void *)(uintptr_t)a0->field_36, *(s32 *)(struct MenuFA24Record49 *)((u8 *)a0 + (194 << 1)), *(s32 *)(struct MenuFA24Record49 *)((192 << 1) + (u8 *)a0));
+        sub_08007ABC((void *)(uintptr_t)a0->field_36, *(s32 *)(struct MenuFA24Record49 *)((u8 *)a0 + (200 << 1)), *(s32 *)(struct MenuFA24Record49 *)((198 << 1) + (u8 *)a0));
+    }
+        if (*(u16 *)((u8 *)a0 + 214) <= 1 || *(u16 *)((u8 *)a0 + 214) <= 6 && *(u16 *)((u8 *)a0 + 214) >= 3) {
+            *(s32 *)(struct MenuFA24Record49 *)((u8 *)a0 + (162 << 1)) = (s32)(uintptr_t)sub_0800572C(16);
+            v3 = *(s32 *)135050620;
+            *(s32 *)(struct MenuFA24Record49 *)((u8 *)a0 + (164 << 1)) = v3;
+            sub_08007ABC((void *)(uintptr_t)a0->field_36, v3, *(s32 *)(struct MenuFA24Record49 *)((u8 *)a0 + (162 << 1)));
+        }
+    v4 = a0->field_214;
+    switch (v4) {
+        case 2:
+        case 7:
+            *(s32 *)(struct MenuFA24Record49 *)((u8 *)a0 + (222 << 1)) = (s32)(uintptr_t)sub_0800572C(16);
+            *(s32 *)(struct MenuFA24Record49 *)((u8 *)a0 + (224 << 1)) = 20;
+            sub_08007ABC((void *)(uintptr_t)a0->field_36, 20, *(s32 *)(struct MenuFA24Record49 *)((u8 *)a0 + (222 << 1)));
+            break;
+    }
+    sub_080075E8((void *)(uintptr_t)(137118248), 0, 12);
+    sub_0800798C((void *)(uintptr_t)(137121856), (u8 *)a0 + 56);
+    sub_0800798C((void *)(uintptr_t)(137222396), (u8 *)a0 + 40);
+    *(s32 *)(struct MenuFA24Record49 *)((u8 *)a0 + (138 << 1)) = (s32)(uintptr_t)sub_0800572C(48);
+    v5 = 3;
+    *(s32 *)(struct MenuFA24Record49 *)((u8 *)a0 + (140 << 1)) = v5;
+    sub_08007ABC((void *)(uintptr_t)a0->field_44, 3, *(s32 *)(struct MenuFA24Record49 *)((u8 *)a0 + (138 << 1)));
+    *(s32 *)(struct MenuFA24Record49 *)((u8 *)a0 + (144 << 1)) = (s32)(uintptr_t)sub_0800572C(48);
+    *(s32 *)(struct MenuFA24Record49 *)((u8 *)a0 + (146 << 1)) = v5;
+    sub_08007ABC((void *)(uintptr_t)a0->field_44, 3, *(s32 *)(struct MenuFA24Record49 *)((u8 *)a0 + (144 << 1)));
+    if (a0->field_214 == 1) {
+        *(s32 *)(struct MenuFA24Record49 *)((u8 *)a0 + (150 << 1)) = (s32)(uintptr_t)sub_0800572C(32);
+        *(s32 *)(struct MenuFA24Record49 *)((u8 *)a0 + (152 << 1)) = 6;
+        sub_08007ABC((void *)(uintptr_t)a0->field_44, 6, *(s32 *)(struct MenuFA24Record49 *)((u8 *)a0 + (150 << 1)));
+        *(s32 *)(struct MenuFA24Record49 *)((u8 *)a0 + (156 << 1)) = (s32)(uintptr_t)sub_0800572C(14);
+        v6 = sub_08024C3C((s16)sub_080256BC(*(s16 *)50341750, *(s16 *)50341818, 4154, 0));
+        *(s32 *)(struct MenuFA24Record49 *)((u8 *)a0 + (158 << 1)) = v6;
+        sub_08007ABC((void *)(uintptr_t)a0->field_60, v6, *(s32 *)(struct MenuFA24Record49 *)((u8 *)a0 + (156 << 1)));
+    }
+    v7 = 137231324;
+    sub_0800798C((void *)(uintptr_t)(v7), (u8 *)a0 + 24);
+    sub_080075E8((void *)(uintptr_t)(v7), 0, 10);
+    a0->field_228 = (s32)(uintptr_t)sub_0800572C(12);
+    v8 = sub_080258A8(0);
+    a0->field_232 = (s16)v8;
+    sub_08007ABC((void *)(uintptr_t)a0->field_28, (s16)v8, a0->field_228);
+    v9 = 137252812;
+    sub_0800798C((void *)(uintptr_t)(v9), (u8 *)a0 + 16);
+    a0->field_252 = (s32)(uintptr_t)sub_0800572C(32);
+    *(s32 *)(struct MenuFA24Record49 *)((u8 *)a0 + (128 << 1)) = 2;
+    sub_08007ABC((void *)(uintptr_t)a0->field_20, 2, a0->field_252);
+    sub_080075E8((void *)(uintptr_t)(v9), 1, 8);
+    sub_080075E8((void *)(uintptr_t)(v9), 0, 9);
+    if (a0->field_214 != 1) {
+        v10 = 137065488;
+        sub_0800798C((void *)(uintptr_t)(v10), (u8 *)a0 + 48);
+        sub_080075E8((void *)(uintptr_t)(v10), 0, 11);
+        if (*(u8 *)50341955 == 1) {
+            sub_08025BC8((struct MenuFA24Record49 *)((u8 *)a0 + (204 << 1)), 11, 204 << 1);
+            sub_08007ABC((void *)(uintptr_t)a0->field_52, *(s32 *)(struct MenuFA24Record49 *)((u8 *)a0 + (206 << 1)), *(s32 *)(struct MenuFA24Record49 *)((u8 *)a0 + (204 << 1)));
+            sub_08007770(1, (void *)(uintptr_t)v10, 1, 0, 0, v5);
+        } else {
+            sub_08025BC8((struct MenuFA24Record49 *)((u8 *)a0 + (204 << 1)), 5);
+            sub_08007ABC((void *)(uintptr_t)a0->field_52, *(s32 *)(struct MenuFA24Record49 *)((u8 *)a0 + (206 << 1)), *(s32 *)(struct MenuFA24Record49 *)((u8 *)a0 + (204 << 1)));
+            sub_08007770(1, (void *)(uintptr_t)v10, 2, 0, 0, v5);
+            a0->field_216 = 1;
+        }
+        *(s32 *)(struct MenuFA24Record49 *)((u8 *)a0 + (210 << 1)) = (s32)(uintptr_t)sub_0800572C(8);
+        *(s32 *)(struct MenuFA24Record49 *)((u8 *)a0 + (212 << 1)) = 22;
+        sub_08007ABC((void *)(uintptr_t)a0->field_52, 22, *(s32 *)(struct MenuFA24Record49 *)((u8 *)a0 + (210 << 1)));
+        *(s32 *)(struct MenuFA24Record49 *)((u8 *)a0 + (216 << 1)) = (s32)(uintptr_t)sub_0800572C(8);
+        *(s32 *)(struct MenuFA24Record49 *)((u8 *)a0 + (218 << 1)) = 21;
+        sub_08007ABC((void *)(uintptr_t)a0->field_52, 21, *(s32 *)(struct MenuFA24Record49 *)((u8 *)a0 + (216 << 1)));
+    }
+    a0->field_64 = 0;
+    v11 = 1;
+    *(u16 *)((u8 *)a0 + 68) = v11;
+    sub_0800D77C((u8 *)a0 + 68 + 16, 0, -32);
+    sub_0800D77C((u8 *)a0 + 76, 0, 160);
+    a0->field_72 = v11;
+    a0->field_74 = 5;
+    return;
+}
+
 
 // ----------------------------------------------------------------------------
 // 0x08010088 — course-setup twin (372 B, straight line).
